@@ -374,12 +374,15 @@ function Field({
   onChange,
   placeholder,
   type = "text",
+  listId,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   type?: string;
+  /** G42 — an HTML `<datalist>` id to wire this input's autocomplete to (see `EntitlementDatalist`). */
+  listId?: string;
 }) {
   return (
     <label className="stack" style={{ gap: 4 }}>
@@ -393,8 +396,27 @@ function Field({
         placeholder={placeholder}
         className="mono"
         style={{ padding: 6 }}
+        {...(listId === undefined ? {} : { list: listId })}
       />
     </label>
+  );
+}
+
+const ENTITLEMENT_DATALIST_ID = "grantable-entitlement-ids";
+
+// ponytail: a native <datalist> matches against the WHOLE input value, so with the
+// comma-separated multi-id field it only helps typing the FIRST id (or right after a fresh comma
+// on some browsers) — good enough to kill a bare-typo round trip without building a tag-input
+// component for a single free-text field. Upgrade to a real multi-select/tag input if operators
+// report it's not catching enough.
+function EntitlementDatalist({ ids }: { ids: string[] }) {
+  if (ids.length === 0) return null;
+  return (
+    <datalist id={ENTITLEMENT_DATALIST_ID}>
+      {ids.map((id) => (
+        <option key={id} value={id} />
+      ))}
+    </datalist>
   );
 }
 
@@ -596,7 +618,12 @@ function RevokePurchaseCard() {
   );
 }
 
-export function AdminMutations() {
+export function AdminMutations({
+  grantableEntitlementIds,
+}: {
+  /** G42 — the registry's known entitlement ids, fed into the grant field's autocomplete. */
+  grantableEntitlementIds: string[];
+}) {
   const [grantAcct, setGrantAcct] = useState("");
   const [grantIds, setGrantIds] = useState("");
   const [revokeAcct, setRevokeAcct] = useState("");
@@ -606,6 +633,10 @@ export function AdminMutations() {
   const [adjustReason, setAdjustReason] = useState("");
   const [reissueAcct, setReissueAcct] = useState("");
   const [reissueMajor, setReissueMajor] = useState("");
+  const [firstMintAcct, setFirstMintAcct] = useState("");
+  const [firstMintMajor, setFirstMintMajor] = useState("");
+  const [resendAcct, setResendAcct] = useState("");
+  const [resendOrderId, setResendOrderId] = useState("");
 
   const ids = grantIds
     .split(",")
@@ -613,6 +644,7 @@ export function AdminMutations() {
     .filter((s) => s !== "");
   const delta = Number.parseInt(adjustDelta, 10);
   const major = Number.parseInt(reissueMajor, 10);
+  const firstMintMajorNum = Number.parseInt(firstMintMajor, 10);
 
   return (
     <div
@@ -645,7 +677,9 @@ export function AdminMutations() {
           value={grantIds}
           onChange={setGrantIds}
           placeholder="compliance, ai-kit"
+          listId={ENTITLEMENT_DATALIST_ID}
         />
+        <EntitlementDatalist ids={grantableEntitlementIds} />
       </MutationCard>
 
       <MutationCard
@@ -719,6 +753,57 @@ export function AdminMutations() {
           value={reissueMajor}
           onChange={setReissueMajor}
           placeholder="1"
+        />
+      </MutationCard>
+
+      <MutationCard
+        title="First-mint license"
+        description="Issue a license for an account with entitlements but no prior grant. Rescue path — reissue 404s here; use this only when reissue can't."
+        targetAccountId={firstMintAcct}
+        disabled={!Number.isInteger(firstMintMajorNum) || firstMintMajorNum < 0}
+        onSubmit={() =>
+          callRoute("/api/admin/license/first-mint", {
+            targetAccountId: firstMintAcct.trim(),
+            major: firstMintMajorNum,
+          })
+        }
+      >
+        <Field
+          label="Target account id"
+          value={firstMintAcct}
+          onChange={setFirstMintAcct}
+        />
+        <Field
+          label="Major version"
+          value={firstMintMajor}
+          onChange={setFirstMintMajor}
+          placeholder="1"
+        />
+      </MutationCard>
+
+      <MutationCard
+        title="Resend email"
+        description="Resend a purchase-confirmation-style email carrying the account's current entitlements + dashboard link. Not a byte-exact historical receipt — the original amount isn't stored."
+        targetAccountId={resendAcct}
+        onSubmit={() =>
+          callRoute("/api/admin/email/resend", {
+            targetAccountId: resendAcct.trim(),
+            ...(resendOrderId.trim() === ""
+              ? {}
+              : { orderId: resendOrderId.trim() }),
+          })
+        }
+      >
+        <Field
+          label="Target account id"
+          value={resendAcct}
+          onChange={setResendAcct}
+        />
+        <Field
+          label="Order id (optional)"
+          value={resendOrderId}
+          onChange={setResendOrderId}
+          placeholder="txn_… (defaults to an admin-resend marker)"
         />
       </MutationCard>
 

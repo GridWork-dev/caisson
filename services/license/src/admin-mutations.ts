@@ -49,6 +49,7 @@ import {
 } from "@caisson/registry-schema";
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { insertAdminActionLog, type AdminAction } from "./admin-audit-log.ts";
+import { notifyPurchaseEmail, resolveEmailer } from "./email-notify.ts";
 import {
   acquireAccountBillingLock,
   grantAdminComp,
@@ -579,6 +580,160 @@ export async function reissueLicenseAdmin(
     major: input.major,
     licenseId: reissued.licenseId,
     token: reissued.token,
+    worm,
+  };
+}
+
+// ADR-0292 admin first-mint lever (buyer-lifecycle audit G1's operational rescue path). Reissue
+// (above) structurally CANNOT first-mint — it re-serves a STORED tier/expiry, and there is none to
+// read when no license_grant row exists yet. This is the SIBLING action for exactly that gap: an
+// account holds real entitlements (route-guarded — see apps/admin's first-mint route, which checks
+// this BEFORE calling in, mirroring how reissue's own 404-on-no-prior-grant guard lives in its
+// route, not here) but no license was ever minted. `tier` is fixed to `"pro"` — every account
+// reaching this lever holds real purchased entitlements, so `"community"` would underclaim, and
+// `/issue`'s own IssueBody doc is explicit that `tier` is caller-asserted / informational (real
+// access gates on the server-resolved `entitlements` list `/issue` computes itself, never on this
+// label). `expiry` is fixed to `null` (perpetual-per-major) — the one-time-purchase norm this
+// rescue lever targets; ADR-0292's own webhook-push (the primary, non-admin path, built separately)
+// owns any subscription-specific expiry policy.
+export const FirstMintLicenseBody = z
+  .object({
+    targetAccountId: accountId,
+    major: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export type FirstMintLicenseInput = z.infer<typeof FirstMintLicenseBody> & {
+  actorEmail: string;
+};
+
+export interface FirstMintResult {
+  targetAccountId: string;
+  major: number;
+  licenseId: string;
+  token: string;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the mint + log already committed). */
+  worm: WormStatus;
+}
+
+const FIRST_MINT_TIER = "pro";
+
+/**
+ * Action 6 (ADR-0292) — first-mint a license for an account that holds entitlements but has never
+ * had one issued. Calls the SAME `/issue` proxy reissue uses (Fork AM-5) — `/issue` itself is
+ * idempotent-per-(accountId, major) and self-resolves the signed `entitlements` from the account's
+ * REAL active grants (never trusts a caller-supplied list), so this never mints a wrong scope; it
+ * only supplies the two inputs `/issue` cannot infer (`tier`, `expiry`) with the fixed defaults
+ * documented above. No DB mutation of its own — persistence is `/issue`'s job. Dual-logged like
+ * every other action (before = null, no prior grant; after = the minted licenseId).
+ */
+export async function firstMintLicenseAdmin(
+  deps: AdminMutationDeps,
+  input: FirstMintLicenseInput,
+): Promise<FirstMintResult> {
+  const minted = await deps.issue({
+    accountId: input.targetAccountId,
+    tier: FIRST_MINT_TIER,
+    major: input.major,
+    expiry: null,
+  });
+  // Log AFTER the proxy succeeds — a failed mint (proxy throws) writes no audit rows.
+  await withAdminWrite(deps.db, (tx) =>
+    insertAdminActionLog(tx, {
+      actorEmail: input.actorEmail,
+      targetAccountId: input.targetAccountId,
+      action: "license_first_mint",
+      before: { major: input.major, licenseId: null },
+      after: { major: input.major, licenseId: minted.licenseId },
+    }),
+  );
+  const worm = await appendWorm(
+    deps,
+    input.targetAccountId,
+    "license_first_mint",
+    input.actorEmail,
+    { major: input.major, licenseId: null },
+    { major: input.major, licenseId: minted.licenseId },
+  );
+  return {
+    targetAccountId: input.targetAccountId,
+    major: input.major,
+    licenseId: minted.licenseId,
+    token: minted.token,
+    worm,
+  };
+}
+
+// G40 admin email resend. `notifyPurchaseEmail`'s only prior call site was the webhook itself — no
+// admin-triggered call site existed, so support could not get a buyer their access back into their
+// inbox without hand-copying a token out of band. NOT a byte-exact reproduction of a historical
+// receipt: no per-purchase price/currency/order-id is stored anywhere the operator can read
+// (`entitlement_grant` carries none), so `amountTotalMinor` is reported as 0 rather than a
+// fabricated figure, and `lines` is the account's CURRENT active entitlements, not the original
+// purchase's line items. `entitlementIds` is resolved by the caller (apps/admin's route, via the
+// ADR-0141 admin read role) and passed in, NOT part of the Zod body — mirrors how reissue's
+// `tier`/`expiry` are input fields, not body fields.
+export const ResendPurchaseEmailBody = z
+  .object({
+    targetAccountId: accountId,
+    orderId: z.string().trim().min(1).max(256).optional(),
+  })
+  .strict();
+
+export type ResendPurchaseEmailInput = z.infer<
+  typeof ResendPurchaseEmailBody
+> & {
+  actorEmail: string;
+  entitlementIds: string[];
+};
+
+export interface ResendPurchaseEmailResult {
+  targetAccountId: string;
+  orderId: string;
+  lineCount: number;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the send + log already committed). */
+  worm: WormStatus;
+}
+
+/**
+ * Action 7 (G40) — resend a purchase-confirmation-style email to the account's resolved address,
+ * carrying its current active entitlements + the dashboard link. Reuses `notifyPurchaseEmail`
+ * (which already never throws) and `resolveEmailer()` (already safe-degrades to a capture driver
+ * when unconfigured) — no new email-sending path. Dual-logged like every other action.
+ */
+export async function resendPurchaseEmailAdmin(
+  deps: AdminMutationDeps,
+  input: ResendPurchaseEmailInput,
+): Promise<ResendPurchaseEmailResult> {
+  const orderId = input.orderId ?? `admin-resend-${new Date().toISOString()}`;
+  await notifyPurchaseEmail(deps.db, resolveEmailer(), {
+    accountId: input.targetAccountId,
+    orderId,
+    currency: "usd",
+    amountTotalMinor: 0,
+    lines: input.entitlementIds.map((id) => ({ productSlug: id })),
+  });
+  await withAdminWrite(deps.db, (tx) =>
+    insertAdminActionLog(tx, {
+      actorEmail: input.actorEmail,
+      targetAccountId: input.targetAccountId,
+      action: "email_resend",
+      before: null,
+      after: { orderId, entitlementCount: input.entitlementIds.length },
+    }),
+  );
+  const worm = await appendWorm(
+    deps,
+    input.targetAccountId,
+    "email_resend",
+    input.actorEmail,
+    null,
+    { orderId, entitlementCount: input.entitlementIds.length },
+  );
+  return {
+    targetAccountId: input.targetAccountId,
+    orderId,
+    lineCount: input.entitlementIds.length,
     worm,
   };
 }

@@ -12,9 +12,15 @@ import { NotFoundError } from "@caisson/kernel";
 // exercise the 400 path for real below) survive the mock — self-importing the mocked specifier
 // from inside its own factory would deadlock on the module still being defined.
 import * as realServiceLicense from "@caisson/service-license";
+// Same reason: `mock.module` is process-wide (Bun loads every *.test.ts file's top-level code
+// before running any test body, so this fires regardless of file execution order) — spreading the
+// REAL module means a route added later that imports a function this test doesn't override (e.g.
+// `readActiveEntitlementIds`) still gets the real implementation instead of silently `undefined`.
+import * as realAdminMutationsRuntime from "@/lib/admin-mutations-runtime";
 import { setAdminAuthFixture, VERIFIED_ADMIN } from "@/lib/admin-auth-mock";
 
 mock.module("@/lib/admin-mutations-runtime", () => ({
+  ...realAdminMutationsRuntime,
   getAdminMutationDeps: async () => ({}) as never,
   readLicenseForReissue: async () => null,
 }));

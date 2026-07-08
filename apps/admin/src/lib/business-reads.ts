@@ -14,10 +14,34 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
 /** One tenant's business footprint — the operator's tenants overview. */
 export interface TenantRow {
   accountId: string;
+  /** The account's resolved notification address (better-auth "user" table, via account_member's
+   *  owner-or-first-member — same resolution `@caisson/service-license`'s `findBuyerEmail` uses for
+   *  a single account). `null` when no "user" row is resolvable (G29). */
+  email: string | null;
   creditBalance: number;
   entitlementCount: number;
   licenseCount: number;
 }
+
+export interface ReadTenantsOptions {
+  /** Case-insensitive substring match against the account id OR the resolved email (G29). */
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ReadTenantsResult {
+  rows: TenantRow[];
+  /** Total matching rows ignoring limit/offset — drives the pager. */
+  total: number;
+}
+
+const TENANTS_DEFAULT_LIMIT = 50;
+const TENANTS_MAX_LIMIT = 200;
+
+/** Bound every OTHER business-table read too (G29: "no search/filter/pagination on any table" —
+ *  these three have no dedicated search UI yet, but must stop being literally unbounded). */
+const OTHER_READS_LIMIT = 200;
 
 /** An entitlement/purchase grant (a `one_time` row IS a purchase; `subscription` is recurring). */
 export interface EntitlementRow {
@@ -43,20 +67,37 @@ export interface LicenseRow {
 
 /**
  * The tenants overview: every account with any business state (credits ∪ entitlements ∪ licenses),
- * with its credit balance + active-entitlement + license counts. Derived from the business tables
- * (not better-auth's `user` table) so it stays self-contained; email enrichment is a DEPLOY follow-up.
+ * with its credit balance + active-entitlement + license counts, EMAIL-ENRICHED (G29 — the
+ * "DEPLOY follow-up" that never shipped) via a LATERAL join to account_member (owner, else the
+ * earliest member) → better-auth's own "user" table. Search (account id or email substring, ILIKE)
+ * and LIMIT/OFFSET pagination replace the previous fully-unbounded read; `total` (a `count(*)
+ * OVER()` window, avoiding a second round trip) drives the pager.
  */
-export async function readTenants(tx: TenantExecutor): Promise<TenantRow[]> {
+export async function readTenants(
+  tx: TenantExecutor,
+  opts: ReadTenantsOptions = {},
+): Promise<ReadTenantsResult> {
+  const limit = Math.min(
+    Math.max(Math.trunc(opts.limit ?? TENANTS_DEFAULT_LIMIT), 1),
+    TENANTS_MAX_LIMIT,
+  );
+  const offset = Math.max(Math.trunc(opts.offset ?? 0), 0);
+  const search = opts.search?.trim();
+  const hasSearch = search !== undefined && search.length > 0;
   const { rows } = await tx.query<{
     account_id: string;
+    email: string | null;
     credit_balance: number;
     entitlement_count: number;
     license_count: number;
+    total: string;
   }>(
     `SELECT t.account_id,
+            u.email,
             COALESCE(cw.balance, 0)          AS credit_balance,
             COALESCE(e.entitlement_count, 0) AS entitlement_count,
-            COALESCE(l.license_count, 0)     AS license_count
+            COALESCE(l.license_count, 0)     AS license_count,
+            count(*) OVER()::text            AS total
        FROM (
          SELECT account_id FROM credit_wallet
          UNION SELECT account_id FROM entitlement_grant
@@ -71,14 +112,28 @@ export async function readTenants(tx: TenantExecutor): Promise<TenantRow[]> {
          SELECT account_id, COUNT(*)::int AS license_count
            FROM license_grant GROUP BY account_id
        ) l ON l.account_id = t.account_id
-      ORDER BY t.account_id`,
+       LEFT JOIN LATERAL (
+         SELECT user_id FROM account_member
+          WHERE account_id = t.account_id
+          ORDER BY (role = 'owner') DESC, created_at
+          LIMIT 1
+       ) am ON true
+       LEFT JOIN "user" u ON u.id = am.user_id
+      WHERE ${hasSearch ? "(t.account_id ILIKE $3 OR u.email ILIKE $3)" : "true"}
+      ORDER BY t.account_id
+      LIMIT $1 OFFSET $2`,
+    hasSearch ? [limit, offset, `%${search}%`] : [limit, offset],
   );
-  return rows.map((r) => ({
-    accountId: r.account_id,
-    creditBalance: Number(r.credit_balance),
-    entitlementCount: Number(r.entitlement_count),
-    licenseCount: Number(r.license_count),
-  }));
+  return {
+    rows: rows.map((r) => ({
+      accountId: r.account_id,
+      email: r.email,
+      creditBalance: Number(r.credit_balance),
+      entitlementCount: Number(r.entitlement_count),
+      licenseCount: Number(r.license_count),
+    })),
+    total: rows.length > 0 ? Number(rows[0]!.total) : 0,
+  };
 }
 
 export async function readEntitlements(
@@ -93,7 +148,8 @@ export async function readEntitlements(
   }>(
     `SELECT account_id, entitlement_id, source_kind, status, granted_at
        FROM entitlement_grant
-      ORDER BY granted_at DESC`,
+      ORDER BY granted_at DESC
+      LIMIT ${String(OTHER_READS_LIMIT)}`,
   );
   return rows.map((r) => ({
     accountId: r.account_id,
@@ -106,7 +162,7 @@ export async function readEntitlements(
 
 export async function readCredits(tx: TenantExecutor): Promise<CreditRow[]> {
   const { rows } = await tx.query<{ account_id: string; balance: number }>(
-    `SELECT account_id, balance FROM credit_wallet ORDER BY balance DESC`,
+    `SELECT account_id, balance FROM credit_wallet ORDER BY balance DESC LIMIT ${String(OTHER_READS_LIMIT)}`,
   );
   return rows.map((r) => ({
     accountId: r.account_id,
@@ -253,7 +309,8 @@ export async function readLicenses(tx: TenantExecutor): Promise<LicenseRow[]> {
   }>(
     `SELECT account_id, major, tier, expiry, issued_at
        FROM license_grant
-      ORDER BY issued_at DESC`,
+      ORDER BY issued_at DESC
+      LIMIT ${String(OTHER_READS_LIMIT)}`,
   );
   return rows.map((r) => ({
     accountId: r.account_id,

@@ -17,7 +17,9 @@ import {
 } from "@caisson/audit-worm";
 import { fetchWithTimeout } from "@caisson/kernel";
 import {
+  BUNDLE_IDS,
   loadRegistryIndexFromFile,
+  RESERVED_MODULE_ENTITLEMENT_IDS,
   type RegistryIndex,
 } from "@caisson/registry-schema";
 import type {
@@ -150,6 +152,24 @@ export function registryIndex(): RegistryIndex {
   return cachedIndex;
 }
 
+/**
+ * The full set of ids the grant-entitlement mutation would actually accept (G42) — the SAME
+ * vocabulary `assertGrantableEntitlementIds` validates a typed id against (bundle ids, indexed
+ * module ids, reserved sold-not-yet-published ids), so the datalist can never suggest an id the
+ * mutation would then reject. Legacy aliases are deliberately excluded — the datalist should steer
+ * the operator toward the CANONICAL id, not a deprecated one (a typed alias still resolves fine;
+ * this only affects what's suggested). Sorted for a stable, scannable dropdown.
+ */
+export function grantableEntitlementIds(): string[] {
+  const index = registryIndex();
+  const ids = new Set<string>([
+    ...BUNDLE_IDS,
+    ...RESERVED_MODULE_ENTITLEMENT_IDS,
+    ...index.modules.map((m) => m.id),
+  ]);
+  return [...ids].sort();
+}
+
 export async function getAdminMutationDeps(): Promise<AdminMutationDeps> {
   const db = await getAdminDb();
   return {
@@ -176,6 +196,8 @@ export interface LicenseForReissue {
  * Read the stored license grant's tier/expiry for (account, major) via the ADR-0141 admin READ role
  * — reissue v1 re-serves an EXISTING token only, so a route 404s when this is null. tier/expiry are
  * supplied to `/issue` (which requires them to parse) and then ignored by its idempotent re-serve.
+ * The first-mint route (ADR-0292) reads this too, INVERTED: a non-null result means a grant already
+ * exists for that (account, major), so first-mint is the wrong lever — reissue is.
  */
 export async function readLicenseForReissue(
   accountId: string,
@@ -193,5 +215,23 @@ export async function readLicenseForReissue(
         ? null
         : new Date(row.expiry as string | number | Date).toISOString();
     return { tier: row.tier, expiry };
+  });
+}
+
+/**
+ * Read an account's ACTIVE entitlement ids via the ADR-0141 admin READ role. Two callers: the
+ * first-mint route (ADR-0292) — an account with none is the wrong target for a rescue mint, there
+ * is nothing to license — and the resend-email route (G40), which needs the current set to build
+ * the resend notice's line items.
+ */
+export async function readActiveEntitlementIds(
+  accountId: string,
+): Promise<string[]> {
+  return readAdmin(async (tx: TenantExecutor) => {
+    const r = await tx.query<{ entitlement_id: string }>(
+      `SELECT entitlement_id FROM entitlement_grant WHERE account_id = $1 AND status = 'active' ORDER BY entitlement_id`,
+      [accountId],
+    );
+    return r.rows.map((row) => row.entitlement_id);
   });
 }

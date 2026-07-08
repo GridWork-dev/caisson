@@ -124,7 +124,7 @@ test("business readers run cross-tenant through the admin seam (empty double)", 
     readAdmin(readCredits),
     readAdmin(readLicenses),
   ]);
-  expect(tenants).toEqual([]);
+  expect(tenants).toEqual({ rows: [], total: 0 });
   expect(entitlements).toEqual([]);
   expect(credits).toEqual([]);
   expect(licenses).toEqual([]);
