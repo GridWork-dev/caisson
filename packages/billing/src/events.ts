@@ -91,6 +91,19 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
       }),
     ),
   }),
+  // ADR-0294: a chargeback/dispute — Paddle's merchant-of-record bank-initiated event, distinct
+  // from a refund (which the merchant/buyer initiates). ALERT-ONLY: the mapper below never grants,
+  // revokes, or claws from this event — Paddle absorbs the dispute financially, and an operator
+  // reviews + acts manually via the existing admin revoke lever (ADR-0225). `paymentId` joins back
+  // to the original transaction for the alert's context; no money/entitlement effect reads it.
+  strictObject({
+    type: z.literal("chargeback.detected"),
+    sourceEventId: z.string(),
+    accountId: z.string(),
+    paymentId: z.string(),
+    amountDisputed: z.number().int().nonnegative(),
+    currency: z.string(),
+  }),
   strictObject({
     type: z.literal("invoice.paid"),
     sourceEventId: z.string(),

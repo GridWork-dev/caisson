@@ -872,6 +872,63 @@ describe("event mapping", () => {
   });
 });
 
+describe("ADR-0294: chargeback/dispute event mapping", () => {
+  test("adjustment.created action:'chargeback' -> chargeback.detected (ALERT-ONLY)", () => {
+    const ev = parsePaddleEvent({
+      event_id: "evt_chargeback_1",
+      event_type: "adjustment.created",
+      data: {
+        id: "adj_chargeback_1",
+        action: "chargeback",
+        transaction_id: "txn_disputed_1",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "74900" },
+      },
+    });
+    expect(ev).toEqual({
+      type: "chargeback.detected",
+      sourceEventId: "evt_chargeback_1",
+      accountId: "acct_a",
+      paymentId: "txn_disputed_1",
+      amountDisputed: 74900,
+      currency: "usd",
+    });
+  });
+
+  test("adjustment.created with a NON-chargeback action (a refund's own pending creation) is a no-op", () => {
+    // A refund settles entirely via adjustment.updated (its own describe block above) — the
+    // CREATION event for a normal refund must never be misread as a dispute.
+    const ev = parsePaddleEvent({
+      event_id: "evt_adj_created_refund",
+      event_type: "adjustment.created",
+      data: {
+        id: "adj_refund_pending",
+        action: "refund",
+        status: "pending_approval",
+        transaction_id: "txn_x",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "5000" },
+      },
+    });
+    expect(ev).toBeNull();
+  });
+
+  test("adjustment.created with no action at all is a no-op", () => {
+    const ev = parsePaddleEvent({
+      event_id: "evt_adj_created_bare",
+      event_type: "adjustment.created",
+      data: {
+        id: "adj_bare",
+        transaction_id: "txn_x",
+        custom_data: { account_id: "acct_a" },
+      },
+    });
+    expect(ev).toBeNull();
+  });
+});
+
 describe("PaddleEventSchema (envelope boundary validation, services-hardening MED)", () => {
   test("accepts a well-formed envelope", () => {
     const result = PaddleEventSchema.safeParse({
