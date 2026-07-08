@@ -22,8 +22,9 @@ import {
 } from "@caisson/kernel";
 
 /** Append-only version stamp — a plan-row change bumps this, never edits it in place (ADR-0006).
- *  2026-07-06.1: the developer rows gain `coversOwnedEntitlements: true` (ADR-0269). */
-export const PRICEBOOK_VERSION = "2026-07-06.1";
+ *  2026-07-06.1: the developer rows gain `coversOwnedEntitlements: true` (ADR-0269).
+ *  2026-07-07.1: adds the `priority-support` PLACEHOLDER plan row (ADR-0278/0288). */
+export const PRICEBOOK_VERSION = "2026-07-07.1";
 
 /** Billing cadence; an annual invoice grants the annual allotment once (ADR-0095). */
 export const planCadenceSchema = z.enum(["month", "year"]);
@@ -85,6 +86,22 @@ export const PLAN_BOOK: Record<string, PlanBookEntry> = {
     creditsPerCycle: asCredits(12000),
     cadence: "year",
     entitlements: ["compliance"], // the compliance edition (expanded to member slugs by the index)
+  },
+  // Priority-support subscription (ADR-0278 Track K frame, ADR-0288 price/SLA lock: $999/yr,
+  // next-business-day first response). PLACEHOLDER like every row in this section — no Paddle
+  // product exists yet for it (the operator creates one + swaps this key for the real `pri_…` id,
+  // the same graduation every other row here already took). `entitlements: ["priority-support"]`
+  // is a SUPPORT-TIER id, never a package — @caisson/registry-schema's
+  // NON_MODULE_ENTITLEMENT_IDS reserves it so the shared fail-closed expansion never bricks the
+  // rest of a buyer's software entitlements over it (the exact risk that left this row unwired
+  // until now). `creditsPerCycle` is a nominal placeholder (the schema requires a positive integer;
+  // this plan's real value is the support role + response-time lane, not a credit allotment) —
+  // round and NON-FINAL like every other number in this book (SD-6).
+  price_priority_support_annual_PLACEHOLDER: {
+    planTag: "priority_support",
+    creditsPerCycle: asCredits(100),
+    cadence: "year",
+    entitlements: ["priority-support"],
   },
   // ---- REAL Paddle sandbox price ids (ADR-0106/0116 go-live wiring) ----
   // The PLACEHOLDER rows above are kept in place (existing test-suite fixtures, ADR-0089's bound

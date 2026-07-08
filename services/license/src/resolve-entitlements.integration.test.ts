@@ -155,6 +155,25 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
     expect([...resolved]).toEqual(["@caisson/audit-worm"]);
   });
 
+  test("priority-support alongside a real entitlement never bricks the account's expansion (ADR-0278/0288)", async () => {
+    // The risk a support-tier purchased id must never carry: a stray non-module id must not
+    // fail-closed-throw the WHOLE account's expansion the moment the buyer also holds real
+    // software entitlements. NON_MODULE_ENTITLEMENT_IDS closes it.
+    const acct = "acct_priority_support";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance", "priority-support"],
+        sourceEventId: "in_ps",
+        source: { kind: "subscription", subscriptionId: "sub_ps" },
+      }),
+    );
+    const resolved = await withTenant(tp.pg, acct, (tx) =>
+      resolveAccountEntitlements(tx, acct, index),
+    );
+    expect([...resolved].sort()).toEqual(["@caisson/compliance"]);
+  });
+
   test("a graduated bare-slug purchase resolves to its real indexed grant (no longer reserved)", async () => {
     // "alerting" graduated: it left RESERVED_MODULE_ENTITLEMENT_IDS once its package shipped and got
     // indexed, so a purchase now resolves to the real @caisson/alerting grant rather than fail-softing

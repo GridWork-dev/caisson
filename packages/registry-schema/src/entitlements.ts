@@ -90,6 +90,24 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
   new Set<string>([]);
 
+/**
+ * Bare-slug entitlement ids that are SOLD and stored as purchased grants for their OWN routing
+ * purpose (a support tier, a Discord role signal, …) but are NOT a package and never will be —
+ * unlike {@link RESERVED_MODULE_ENTITLEMENT_IDS} above (a temporary publishing-gap reservation
+ * that graduates the moment its package is indexed), an id here has no package to graduate to and
+ * stays fail-soft-to-nothing PERMANENTLY. Never throws (the same TM-E carve-out rationale): a
+ * stray non-software purchased id must never fail-closed-brick the rest of a buyer's software
+ * entitlement expansion — the risk `resolveAccountEntitlements`/the `/issue` validation/the
+ * registry Worker all share this one function, so one bad id here would 500 every OTHER
+ * entitlement the account holds too.
+ *
+ * Currently: `priority-support` (ADR-0278/0288) — a subscription that grants a Discord role +
+ * a response-time support lane (`services/support-bot`), never registry/module access.
+ */
+export const NON_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>([
+  "priority-support",
+]);
+
 /** Boundary guard (ADR-0021 input-validation): the purchased ids are an array of bounded, non-empty
  *  strings. Classification + fail-closed rejection of unknown values happens below. */
 const PurchasedIds = z.array(z.string().trim().min(1).max(128));
@@ -318,11 +336,13 @@ function fullCatalogMembers(index: RegistryIndex): string[] {
  * dissolved edition ids are NOT aliases anymore (ADR-0270 purge); they resolve, if at all, only as their
  * still-indexed `@caisson/<edition>` meta-package. Fail-closed: an unknown
  * purchased id throws (TM-E) — EXCEPT a reserved future-module slug
- * (`RESERVED_MODULE_ENTITLEMENT_IDS`), which expands to nothing rather than throwing (fail-soft:
- * the module is sold but not yet published, never a substitute grant). A KNOWN bundle id with no
- * index presence likewise expands to nothing (same semantics an index-absent edition always had —
- * never an over-grant, never a whole-expansion throw for a paying buyer's other ids). An empty
- * purchase yields an empty set (no entitlement → no access).
+ * (`RESERVED_MODULE_ENTITLEMENT_IDS`) or a permanent non-module id (`NON_MODULE_ENTITLEMENT_IDS`),
+ * either of which expands to nothing rather than throwing (fail-soft): the module is sold but not
+ * yet published (reserved), or is not a module at all and never will be (non-module) — neither is
+ * ever a substitute grant. A KNOWN bundle id with no index presence likewise expands to nothing
+ * (same semantics an index-absent edition always had — never an over-grant, never a
+ * whole-expansion throw for a paying buyer's other ids). An empty purchase yields an empty set (no
+ * entitlement → no access).
  *
  * `snapshot` (ADR-0257 §1.2 / ADR-0247 F7, OPTIONAL) applies the per-member snapshot-at-sale filter
  * (see {@link EntitlementSnapshot}): a bundle member that joined after the buyer's `entitledSince`
@@ -361,19 +381,26 @@ export function expandEntitlements(
       continue;
     }
     if (MODULE_SLUG_RE.test(id)) {
+      if (NON_MODULE_ENTITLEMENT_IDS.has(id)) {
+        // permanently non-module (sold, never a package) — grants nothing, never throws, and
+        // wins over the indexed-module allowlist: if a package ever collided with this slug it
+        // must NOT become a silent module grant to every holder of the id (TM-E carve-out).
+        continue;
+      }
       const candidate = `@caisson/${id}`;
       if (allowlist.has(candidate)) {
         members.add(candidate);
         continue;
       }
       if (RESERVED_MODULE_ENTITLEMENT_IDS.has(id)) {
-        continue; // reserved (sold, not yet published) — grants nothing yet; never throws (TM-E carve-out)
+        // reserved (sold, not yet published) — grants nothing, never throws (TM-E carve-out).
+        continue;
       }
     }
-    // Fail closed (TM-E): not a bundle id, not an indexed module, and not a reserved future-module
-    // slug → never grant.
+    // Fail closed (TM-E): not a bundle id, not an indexed module, not a reserved future-module
+    // slug, and not a permanent non-module id → never grant.
     throw new Error(
-      `unknown purchased entitlement id (not a bundle, a legacy edition alias, an indexed module, or a reserved future module): ${JSON.stringify(
+      `unknown purchased entitlement id (not a bundle, a legacy edition alias, an indexed module, a reserved future module, or a non-module id): ${JSON.stringify(
         purchased,
       )}`,
     );

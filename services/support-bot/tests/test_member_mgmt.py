@@ -17,6 +17,7 @@ from caisson_support_bot.member_mgmt import (
     may_moderate,
     member_can_manage_role,
     member_has_priority_support,
+    priority_support_role_id,
     role_outranks_bot,
     toggle_role,
     welcome_member,
@@ -89,6 +90,12 @@ def test_member_has_priority_support_fail_closed_paths() -> None:
 def test_member_has_priority_support_true_when_role_held() -> None:
     configured = _settings(role_priority_support_id=999)
     assert member_has_priority_support(configured, _member_with_roles(1, 999)) is True
+
+
+def test_priority_support_role_id_resolves_and_fails_closed() -> None:
+    # ADR-0278/0288: unset ⇒ None (the billing-grant push skips the role, never guesses one).
+    assert priority_support_role_id(_settings(role_priority_support_id=999)) == 999
+    assert priority_support_role_id(_settings(role_priority_support_id=None)) is None
 
 
 def test_role_outranks_bot() -> None:
