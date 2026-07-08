@@ -392,7 +392,7 @@ async function issueOrReuseLicense(
 
   // Window-changed RE-MINT (ADR-0251 Decision 3): a stored grant exists but its signed window is
   // stale — replace the stored row's token in place (still exactly one row per (account, major)).
-  // IN-01 (PR #182 review): a mint that hit the `withDeadline` timeout but keeps running in the
+  // Late-loser caveat: a mint that hit the `withDeadline` timeout but keeps running in the
   // background (abandoned, not canceled) can still land HERE late — if two renewals for the SAME
   // account race within seconds, the late one's UPDATE can clobber a newer token with a stale one.
   // Self-heals on the account's next renewal event; only reachable once a slow KMS signer replaces
@@ -438,7 +438,7 @@ async function issueOrReuseLicense(
     : { kind: "ok", token, licenseId: claims.licenseId };
 }
 
-// PR #177 review IN-02: the local Ed25519 signer never blocks, but a future KMS-backed `Signer`
+// The local Ed25519 signer never blocks, but a future KMS-backed `Signer`
 // could — and `mintLicensePostCommit` is AWAITED inline in the webhook response path. This bounds
 // an otherwise-INFINITE hang and preserves the never-5xx contract (the mint always resolves one way
 // or another within this window). It does NOT guarantee the response stays inside Paddle's own ~5s
