@@ -170,20 +170,14 @@ export function NavPanels({ panels }: { panels: readonly NavPanelSpec[] }) {
             </button>
 
             {/* Kept in the DOM so aria-controls resolves; `hidden` drops it from the a11y tree +
-                tab order when closed. */}
+                tab order when closed. The wider/scrollable groups variant rides a `data-groups`
+                attribute → CSS (never a conditional inline style object), so SSR and client render
+                byte-identical markup with no inline-style branch to diverge on hydration. */}
             <div
               id={panelId}
               className={styles.panel}
+              data-groups={panel.groups ? "" : undefined}
               hidden={!open}
-              style={
-                panel.groups
-                  ? {
-                      maxHeight: "calc(100vh - 6rem)",
-                      overflowY: "auto",
-                      width: "min(40rem, 92vw)",
-                    }
-                  : undefined
-              }
             >
               {panel.lede && <p className={styles.lede}>{panel.lede}</p>}
               {panel.cards && (
@@ -193,10 +187,7 @@ export function NavPanels({ panels }: { panels: readonly NavPanelSpec[] }) {
                 <div className={styles.groups}>
                   {panel.groups.map((g) => (
                     <div key={g.heading} className={styles.group}>
-                      <p
-                        className={styles.lede}
-                        style={{ fontWeight: "var(--cs-weight-semibold)" }}
-                      >
+                      <p className={`${styles.lede} ${styles.groupHeading}`}>
                         {g.heading}
                       </p>
                       <CardList cards={g.cards} pathname={pathname} />
