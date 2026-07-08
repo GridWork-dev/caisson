@@ -28,6 +28,14 @@ export { DiffViewer } from "./diff-viewer";
 export type { DiffViewerProps } from "./diff-viewer";
 export { KanbanBoard } from "./kanban-board";
 export type { KanbanBoardProps } from "./kanban-board";
+// Interactive primitives (ADR-0291) — the three focus-managed/positioning-hard primitives that
+// stay commercial (Tabs/Checkbox/Radio/Switch/Badge/Accordion are the open-base counterparts).
+export { Tooltip } from "./tooltip";
+export type { TooltipProps } from "./tooltip";
+export { Popover } from "./popover";
+export type { PopoverProps } from "./popover";
+export { Menu } from "./menu";
+export type { MenuItemSpec, MenuProps } from "./menu";
 
 // Pure transforms + shared types — exported for direct testing and server-side reuse (the AGENTS
 // contract): the sellable logic behind the interactive components lives in these, not the UI.
@@ -97,3 +105,5 @@ export type {
 } from "../lib/diff";
 export { columnCards, moveCard } from "../lib/board";
 export type { BoardCard, BoardColumn, BoardLane } from "../lib/board";
+export { computeFloatingPosition } from "../lib/position";
+export type { FloatingPosition, Placement, Rect, Size } from "../lib/position";

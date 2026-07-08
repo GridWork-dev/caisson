@@ -1,0 +1,37 @@
+/* Tooltip — recipe reference (ADR-0099/ADR-0291). Portaled + position:fixed (inline style carries
+ * the computed coordinates — runtime data, not a design token, so the recipe's no-inline-style
+ * rule doesn't apply here; see ui-pro's existing virtualization components). Values via --cs-*
+ * only; z-index matches the kit's other floating-layer surfaces (nav-panels dropdown = 60). */
+.cs-tooltip {
+  z-index: 60;
+  max-width: 18rem;
+  padding: var(--cs-space-1) var(--cs-space-3);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-fg);
+  color: var(--cs-bg);
+  font-size: var(--cs-text-xs);
+  line-height: var(--cs-leading-snug);
+  box-shadow: var(--cs-shadow-md);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-tooltip[data-visible="true"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-tooltip {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .cs-tooltip {
+    border: 1px solid CanvasText;
+    forced-color-adjust: none;
+    background: Canvas;
+    color: CanvasText;
+  }
+}

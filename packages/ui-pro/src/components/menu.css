@@ -1,0 +1,97 @@
+/* Menu (Dropdown) — recipe reference (ADR-0099/ADR-0291). Portaled + position:fixed (inline style
+ * carries the computed coordinates — runtime data, not a design token; see ui-pro's existing
+ * virtualization components for the same allowance). Values via --cs-* only; z-index matches the
+ * kit's other floating-layer surfaces (nav-panels dropdown = 60). */
+.cs-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  color: var(--cs-fg);
+  font: inherit;
+  font-size: var(--cs-text-sm);
+  cursor: pointer;
+}
+
+.cs-menu-trigger:hover {
+  border-color: var(--cs-accent);
+  color: var(--cs-accent);
+}
+
+.cs-menu-trigger:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
+
+.cs-menu-trigger[aria-expanded="true"] {
+  border-color: var(--cs-accent);
+  color: var(--cs-accent);
+}
+
+.cs-menu {
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  padding: var(--cs-space-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  box-shadow: var(--cs-shadow-lg);
+  opacity: 0;
+  transition: opacity var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-menu[data-visible="true"] {
+  opacity: 1;
+}
+
+.cs-menu__item {
+  display: flex;
+  align-items: center;
+  min-height: var(--cs-space-8);
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 0;
+  border-radius: var(--cs-radius-sm);
+  background: none;
+  color: var(--cs-fg);
+  font: inherit;
+  font-size: var(--cs-text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cs-menu__item:hover,
+.cs-menu__item:focus-visible {
+  background: var(--cs-surface-2);
+}
+
+.cs-menu__item:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: -2px;
+}
+
+.cs-menu__item[data-danger] {
+  color: var(--cs-danger);
+}
+
+.cs-menu__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-menu {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .cs-menu-trigger,
+  .cs-menu {
+    border: 1px solid CanvasText;
+  }
+}
