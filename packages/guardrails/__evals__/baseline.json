@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "evals": {
+    "pii-catches": {
+      "promptVersionId": "00000000-0000-4000-8000-000000000002",
+      "promptRef": "guardrails/pii@offline",
+      "threshold": 1,
+      "cases": 2,
+      "score": 1,
+      "scorers": {
+        "catches-pii": 1
+      }
+    },
+    "pii-preserves": {
+      "promptVersionId": "00000000-0000-4000-8000-000000000002",
+      "promptRef": "guardrails/pii@offline",
+      "threshold": 1,
+      "cases": 3,
+      "score": 1,
+      "scorers": {
+        "preserves-clean": 1
+      }
+    }
+  }
+}
