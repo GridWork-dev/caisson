@@ -229,6 +229,25 @@ export default function EulaPage() {
           and does not affect the perpetual license for versions already
           delivered.
         </p>
+
+        <h3 style={prose.h3}>Credits</h3>
+        <p style={prose.paragraph}>
+          Certain AI-feature and codegen functionality within the Software is
+          metered using a prepaid credit balance (&ldquo;Credits&rdquo;).
+          Credits are issued in grants &mdash; through a subscription cycle, a
+          one-time top-up purchase, or a promotional grant &mdash; and are
+          pooled into a single wallet; unused Credits from a prior grant roll
+          over and are not forfeited at the end of a billing cycle. Each Credit
+          grant expires twelve (12) months after it is issued, unless we state a
+          different expiration for that grant at the time it is issued. Credits
+          are consumed on a first-in, first-out basis, drawing from your oldest
+          outstanding grant first, so that Credits nearing expiration are used
+          before newer Credits &mdash; an actively used balance is not lost to
+          expiration through non-use alone. Credits remaining in a grant that
+          expires unused are forfeited without refund; expiration of a Credit
+          grant does not affect your license to the Software or any other right
+          under this Agreement.
+        </p>
       </Section>
 
       {/* 6. Term & termination */}
