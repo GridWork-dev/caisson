@@ -1,0 +1,57 @@
+---
+title: Provenance
+description: Cryptographic provenance — detached signing over a canonical manifest, an append-only WORM audit chain, and per-tenant field encryption. Proof, not a promise.
+---
+
+The **Provenance** bundle is the cryptographic-proof layer: every claim it makes is checkable by a
+third party without your keys. A signature verifies or it doesn't; a chain link either matches its
+predecessor's hash or it doesn't; a ciphertext decrypts under the tenant that owns it or it fails
+closed. None of the three guarantees depends on trusting a log entry.
+
+## What's in the bundle
+
+- **[signing-primitive](/docs/provenance/signing-primitive)** — per-tenant evidence signing: a
+  detached Ed25519 signature over a canonical, chain-anchored manifest body, with an optional
+  RFC-3161 trusted-timestamp countersignature and a fail-closed verify path.
+- **[audit-worm](/docs/provenance/audit-worm)** — S3/GCS/R2 Object-Lock WORM storage plus an
+  append-only SHA-256 audit chain and a derived-current locked-version table: evidence that
+  cannot be altered before retention expires, and tampering that is provable.
+- **[field-crypto](/docs/provenance/field-crypto)** — per-tenant field encryption via HKDF key
+  derivation behind a pluggable KMS port: one tenant's key never decrypts another tenant's data.
+
+## How it composes
+
+`audit-worm` is the append-only ledger everything else roots into: each entry chains to its
+predecessor's hash, and the chain's own committed bytes never include plaintext, only ciphertext
+envelopes and payload hashes. `signing-primitive` produces a detached signature over that chain's
+canonical manifest — a third party verifies the signature against the public key, never against
+your database. `field-crypto`'s crypto-shred erasure destroys a tenant's key-encryption key
+without mutating a single committed chain byte: `verifyChain` still passes after a shred, because
+the chain never committed the plaintext it's erasing.
+
+```ts
+import { cryptoShred } from "@caisson/field-crypto";
+
+const { auditPayload } = await cryptoShred(kmsProvider, {
+  keyScopeId: subjectId,
+  tenantId,
+  subjectId,
+  reason: "gdpr-art17",
+  occurredAt: new Date().toISOString(),
+});
+// auditPayload carries no PII — append it to the audit-worm chain to record the erasure
+// without ever mutating a previously committed entry.
+```
+
+## Composing with the base
+
+The encryption boundary equals the RLS tenant boundary (`@caisson/tenancy-rls`): bind
+`withFieldCryptoContext` alongside `withTenant` so a query can never touch an encrypted column
+outside its own tenant scope.
+
+## Entitlement
+
+Provenance is a commercial bundle (`LicenseRef-Caisson-Commercial`). Buy the bundle, or any member
+module à la carte — a purchase grants the module's entitlement id, checked offline against the
+license. All three modules are also members of the Compliance bundle; `field-crypto` additionally
+composes with AI-Production and Local-first.

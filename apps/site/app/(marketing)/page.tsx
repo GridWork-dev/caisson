@@ -2,7 +2,7 @@ import {
   Button,
   Card,
   CodeBlock,
-  EditionCard,
+  BundleCard,
   FeatureGrid,
   Icon,
   Reveal,
@@ -369,7 +369,7 @@ export default function HomePage() {
             className="cs-editions"
             style={{ marginTop: "var(--cs-space-8)" }}
           >
-            <EditionCard
+            <BundleCard
               lead
               href="/compliance"
               name="Compliance"
@@ -384,7 +384,7 @@ export default function HomePage() {
               line="Fail-closed RLS, S3 WORM, append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator."
               proof="ALTER TABLE evidence FORCE ROW LEVEL SECURITY;"
             />
-            <EditionCard
+            <BundleCard
               href="/ai-kit"
               name="AI-Production"
               icon="gauge"
@@ -398,7 +398,7 @@ export default function HomePage() {
               line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, versioned prompts, and guardrails."
               proof="breaker open: tenant spend cap hit"
             />
-            <EditionCard
+            <BundleCard
               href="/local-first"
               name="Local-first AI"
               icon="cpu"
@@ -412,7 +412,7 @@ export default function HomePage() {
               line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Own the source."
               proof="egress: blocked at the privacy gate"
             />
-            <EditionCard
+            <BundleCard
               href="/agentic-dev"
               name="Agentic-Dev"
               icon="git-branch"
@@ -426,7 +426,7 @@ export default function HomePage() {
               line="The governed-agent kernel: typed agent/skill/rule schema, a lifecycle state machine, and a hooks dispatcher."
               proof="agent · skill · rule — typed, validated, hooked"
             />
-            <EditionCard
+            <BundleCard
               href="/provenance"
               name="Provenance"
               icon="audit-chain"
@@ -440,7 +440,7 @@ export default function HomePage() {
               line="Detached Ed25519 + RFC-3161 signing, an append-only audit chain where one altered row breaks every link after it, and per-tenant field encryption."
               proof="caisson evidence verify pack.json  →  sig ✓ · tsa ✓ · root 2c9f…b7"
             />
-            <EditionCard
+            <BundleCard
               // Whole-catalog closer spans the row like the Compliance lead, but stays a
               // neutral surface — `lead`'s accent identity belongs to the hero card alone.
               style={{ gridColumn: "1 / -1" }}

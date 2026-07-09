@@ -1,0 +1,69 @@
+---
+title: AI-Production
+description: The production-rigor layer for AI features — token metering with spend caps, a CI eval gate, PII/moderation guardrails, and a versioned prompt registry.
+---
+
+The **AI-Production** bundle is the layer between "the model call works in dev" and "the model
+call survives production": every call is metered and capped, every prompt change is scored
+against a regression gate before it ships, and every input/output crosses one guardrail boundary.
+
+```bash
+HTTP/1.1 402 Payment Required
+
+{
+  "error": {
+    "code": "spend_cap_reached",
+    "message": "Spend cap reached: circuit breaker open",
+    "details": { "scope": "ai:complete" }
+  }
+}
+```
+
+The cap is enforced before the provider is called, in integer credit units, fail-closed — over
+budget returns `402`, never an unbounded charge.
+
+## What's in the bundle
+
+- **[ai-meter](/docs/ai-production/ai-meter)** — Postgres-atomic reserve/reconcile token
+  metering, per-tenant spend caps, and a circuit breaker. Integer credits only, no floats.
+- **[ai-evals](/docs/ai-production/ai-evals)** — a regression gate for prompt and model changes:
+  `defineEval()` scores a dataset, `gateAgainstBaseline()` fails the build on a real score drop.
+- **[guardrails](/docs/ai-production/guardrails)** — a fail-closed guard around every model call:
+  PII redaction, a swappable moderator, and an unconditional secret-shape gate.
+- **[prompt-registry](/docs/ai-production/prompt-registry)** — append-only prompt versioning
+  with a mutable alias pointer, so promoting or rolling back a prompt is a pointer move, not a
+  redeploy.
+- **[credits](/docs/ai-production/credits)** — the integer credit wallet the spend caps debit
+  against: append-only ledger, debit-before-spend, fail-closed `402` on an empty balance.
+- **[field-crypto](/docs/provenance/field-crypto)** — per-tenant field encryption, shared with
+  the Compliance, Local-first, and Provenance bundles, for any prompt input or output you store.
+
+## How it composes
+
+Metering, guardrails, and the eval gate sit at the same seam: a call to a model provider is
+metered and checked against the cap before the provider is reached. The eval harness runs the
+same prompts offline in CI, so a regression fails the pull request instead of a customer's
+session:
+
+```bash
+$ bun run eval
+FAIL  prompts/summarize@v3
+  faithfulness  0.71   gate >= 0.80
+1 regression — exit 1. Build blocked.
+```
+
+The prompt registry versions the string both the live call and the eval read, and the credit
+wallet is the ledger the spend cap debits against.
+
+## Composing with the base
+
+AI-Production reads the tenant id from `@caisson/tenancy-rls`'s bound context, so a spend cap is
+never checked against the wrong tenant's budget. Guardrails and the eval harness run independent
+of billing — wire `@caisson/billing` separately if a spend cap should also gate a subscription
+tier.
+
+## Entitlement
+
+AI-Production is a commercial bundle (`LicenseRef-Caisson-Commercial`). Buy the bundle, or any
+member module à la carte — a purchase grants the module's entitlement id, checked offline against
+the license.

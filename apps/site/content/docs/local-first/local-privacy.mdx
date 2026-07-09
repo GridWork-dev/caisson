@@ -1,0 +1,103 @@
+---
+title: local-privacy
+description: A default-deny egress boundary every payload crosses before it can leave the process — a strict zero-egress PrivacyPolicy plus the EgressGuard runtime wrapper, with an empty allowlist blocking every host.
+---
+
+`@caisson/local-privacy` is the Local-first bundle's privacy gate: a strict, zero-egress
+`PrivacyPolicy` (Zod `.strict()`, closed enums) plus `EgressGuard`, the runtime wrapper over the
+kernel `fetchWithTimeout` chokepoint. The package imports no vendor SDK and makes no live network
+call itself — it only decides, before any socket opens, whether a request is allowed to leave.
+
+## What it does
+
+- **Fail-closed-to-offline.** An empty or omitted allowlist blocks every host. A
+  non-allowlisted host, a non-`https:` scheme, or a malformed URL are all blocked before
+  `fetchWithTimeout` is ever reached, so no socket opens and no bytes leave the device.
+- **A closed privacy mode.** `privacy` is a Zod enum whose only member is `"local-only"` —
+  there is deliberately no `"hosted"` mode a config value could flip to.
+- **Purpose-bound sinks.** Every allowlist entry declares one of two sanctioned kinds,
+  `model-fetch` or `rented-backend`. `assertAllowedFor` / `fetchAs` require a host to be
+  allowlisted for the specific kind in use, so a Bearer-credentialed rented-backend request
+  can never reach a host sanctioned only for the model-fetch download, and vice versa.
+- **`guardedFetch`** — the guard as a bare `(input, init) => Promise<Response>` another
+  runtime can install as its sole outbound hook (e.g. transformers.js's `env.fetch`), so that
+  runtime cannot egress out of band.
+
+## Install
+
+```bash
+bun add @caisson/local-privacy
+```
+
+## Quickstart
+
+```ts
+import { createEgressGuard, localOnlyPolicy } from "@caisson/local-privacy";
+
+const guard = createEgressGuard(
+  localOnlyPolicy([{ host: "huggingface.co", kind: "model-fetch" }]),
+);
+
+// blocked before any socket opens — huggingface.co isn't allowlisted for "rented-backend"
+await guard.fetchAs("rented-backend", "https://huggingface.co/model.onnx");
+
+// allowed — sanctioned for model-fetch
+const res = await guard.fetch("https://huggingface.co/model.onnx");
+```
+
+## The air-gap default
+
+`ZERO_EGRESS_POLICY` is `local-only` with an empty allowlist — every outbound host blocked,
+with no config to flip. It's the baseline an edition installs unless a deployer explicitly
+opts a sanctioned sink in:
+
+```ts
+import { ZERO_EGRESS_POLICY, createEgressGuard } from "@caisson/local-privacy";
+
+const guard = createEgressGuard(ZERO_EGRESS_POLICY);
+await guard.fetch("https://anything.example.com"); // throws: not on the privacy allowlist
+```
+
+## Installing as another runtime's fetch hook
+
+`guardedFetch` matches the `(input, init) => Promise<Response>` shape a runtime like
+transformers.js expects for its outbound hook, so the model loader itself cannot reach a
+host the policy hasn't sanctioned:
+
+```ts
+env.fetch = guard.guardedFetch;
+```
+
+## Configuration
+
+The policy is data, not env vars — construct a `PrivacyPolicy` and pass it to
+`createEgressGuard`:
+
+```ts
+import { parsePrivacyPolicy } from "@caisson/local-privacy";
+
+const policy = parsePrivacyPolicy({
+  privacy: "local-only",
+  allowlist: [
+    { host: "huggingface.co", kind: "model-fetch" },
+    { host: "api.your-rented-backend.com", kind: "rented-backend" },
+  ],
+});
+```
+
+`allowlist` is capped at 16 entries and defaults to `[]`. `parsePrivacyPolicy` throws a
+redaction-safe `ValidationError` on any unknown key, bad host, or unknown mode/kind — the one
+boundary every policy passes through before a guard trusts it. `EgressGuard`'s constructor
+re-parses defensively, so a hand-built or deserialized policy object that bypassed that
+boundary still fails closed.
+
+## Composing with the base
+
+`EgressGuard.fetch` routes every allowed request through the kernel `fetchWithTimeout`
+chokepoint — the package never opens a socket itself. Errors are the kernel's typed
+`ValidationError` (malformed URL) and `AuthzError` (blocked scheme or host), carrying only
+the host and scheme in their details, never the full URL, so a blocked path or query string
+can't leak a token or PII into a log.
+
+local-privacy is sold standalone, or as one of the primitives composing the Local-first
+bundle alongside `@caisson/local-inference`, `@caisson/local-store`, and `@caisson/local-sync`.

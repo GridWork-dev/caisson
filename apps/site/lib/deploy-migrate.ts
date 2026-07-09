@@ -5,11 +5,15 @@
 // Two responsibilities over ONE connection:
 //  1. PLATFORM schema — the `app` RLS role + every FORCE-RLS platform table (credits, entitlement,
 //     license_grant, ai-meter). The shared chain (@caisson/platform-migrations, CAISSON-21) plus the
-//     two apps/site-local ask_ai_* migrations (their SQL lives in this app, not a package — see
-//     platformPackage() below). apps/admin's PGlite bootstrap applies the SAME shared chain, so a new
-//     platform migration lands for both consumers or neither — closing the CAISSON-11 hand-mirror
-//     drift class. The kernel assembler + the shared forward-only runner (@caisson/migrate) give
-//     ordering, checksums, and run-once for free.
+//     apps/site-local extras from `./site-migrations.ts` (see platformPackage() below) — the SAME
+//     list `lib/db.ts`'s dev PGlite double applies (CAISSON-64: these used to be two separately
+//     hand-maintained lists that drifted — the dev double ran 3 migrations the real-Postgres apply
+//     never learned about, so `byok_key_meta` was never created in prod and /dashboard/ai-keys
+//     crashed for every account). apps/admin's PGlite bootstrap applies the SAME shared
+//     @caisson/platform-migrations chain, so a new PLATFORM migration lands for both consumers or
+//     neither — closing the CAISSON-11 hand-mirror drift class; `./site-migrations.ts` closes the
+//     sibling apps/site-local-extras drift class. The kernel assembler + the shared forward-only
+//     runner (@caisson/migrate) give ordering, checksums, and run-once for free.
 //  2. better-auth tables — user/session/account/verification, created by better-auth's OWN migrator
 //     (getMigrations) over the same pool, so they always match the adapter the app signs in with.
 //
@@ -20,35 +24,21 @@ import type { PackageMigrations } from "@caisson/kernel";
 import type { MigrationApplier, MigrationRunResult } from "@caisson/migrate";
 import { pgMigrationApplier } from "@caisson/migrate/pg";
 import {
-  type MigrationFile,
   applyAll,
   platformMigrationsPackage,
 } from "@caisson/platform-migrations";
 import { getMigrations } from "better-auth/db/migration";
 import { Pool } from "pg";
 import { createAuth } from "./auth-server.ts";
-import { ASK_AI_QUESTION_SCHEMA_SQL } from "./ask-ai/question-log.ts";
-import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
-
-/** The two apps/site-local migrations folded onto the shared chain — their SQL lives in this app, not
- *  a package (a package cannot depend "up" on an app, ADR-0003 / standards-gate Gate 3). Unchanged
- *  filenames + content from before the CAISSON-21 extraction. */
-const SITE_LOCAL_MIGRATIONS: readonly MigrationFile[] = [
-  // ADR-0234: the Ask-AI per-lane (public + premium) daily spend counters. Global (non-tenant), no
-  // RLS — accessed outside withTenant.
-  { name: "0011_ask_ai_spend.sql", sql: ASK_AI_SPEND_SCHEMA_SQL },
-  // ADR-0236: consent-noticed question-text capture. Global (non-tenant), no RLS — same posture
-  // as 0011. Anonymous by construction (no IP / user id / answer text); 90-day retention is a
-  // hard DELETE swept on insert (question-log.ts), not a schema concern.
-  { name: "0012_ask_ai_question.sql", sql: ASK_AI_QUESTION_SCHEMA_SQL },
-];
+import { SITE_LOCAL_MIGRATIONS } from "./site-migrations.ts";
 
 /**
- * The platform migration set: the shared chain (@caisson/platform-migrations) plus the two
- * apps/site-local ask_ai_* entries above, folded in at their original filenames — the kernel sorts
- * one package's migrations by filename before renumbering, so this reproduces the exact pre-
- * extraction merged sequence (proven byte-identical against a pinned digest in
- * @caisson/platform-migrations's own test).
+ * The platform migration set: the shared chain (@caisson/platform-migrations) plus the
+ * apps/site-local extras (`./site-migrations.ts`), folded in at their original filenames — the
+ * kernel sorts one package's migrations by filename before renumbering, so the two prod-canonical
+ * `ask_ai_*` entries reproduce the exact pre-extraction merged sequence (proven byte-identical
+ * against a pinned digest in @caisson/platform-migrations's own test); the 3 net-new BYOK/
+ * compliance-attestation entries land after them.
  *
  * Exported for read-only drift auditing (compare the assembled checksums against a live DB's
  * `schema_version` rows before any bless/apply — the CAISSON-16 procedure).
