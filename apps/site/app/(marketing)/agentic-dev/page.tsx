@@ -15,7 +15,8 @@ import {
 } from "@/components";
 import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
-import { MediaPlaceholder } from "@/components/media-placeholder";
+import { MediaCarousel } from "@/components/media-carousel";
+import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import {
@@ -25,7 +26,7 @@ import {
   softwareApplication,
 } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
-import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
+import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
 import {
   bundlePrice,
@@ -292,7 +293,10 @@ export default function AgenticDevPage() {
 
       {/* ===== Media slot (ADR-0237 F2) ===== */}
       <Section>
-        <MediaPlaceholder icon={BUNDLE_MARKS["agentic-dev"]} />
+        <MediaCarousel
+          slides={mediaSlides("bundle", "agentic-dev")}
+          label="Agentic-Dev bundle media"
+        />
       </Section>
 
       {/* ===== Four composed packages ===== */}

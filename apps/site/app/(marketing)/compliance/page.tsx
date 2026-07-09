@@ -17,7 +17,8 @@ import {
 } from "@/components";
 import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
-import { MediaPlaceholder } from "@/components/media-placeholder";
+import { MediaCarousel } from "@/components/media-carousel";
+import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
@@ -27,7 +28,7 @@ import {
   serializeJsonLd,
   softwareApplication,
 } from "@/lib/jsonld";
-import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
+import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
 import { bundlePrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
@@ -248,7 +249,10 @@ export default function CompliancePage() {
 
       {/* ===== Media slot (ADR-0237 F2) ===== */}
       <Section>
-        <MediaPlaceholder icon={BUNDLE_MARKS.compliance} />
+        <MediaCarousel
+          slides={mediaSlides("bundle", "compliance")}
+          label="Compliance bundle media"
+        />
       </Section>
 
       {/* ===== The ten composed packages ===== */}
