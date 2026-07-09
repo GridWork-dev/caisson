@@ -26,6 +26,8 @@ const NAV_ITEMS: readonly Omit<AppShellNavItem, "active">[] = [
 export interface DashboardShellProps {
   /** Top-bar content (account id + sign-out) — built server-side in the layout. */
   topBar: ReactNode;
+  /** Mobile-drawer-only extra (e.g. Sign-out) — CAISSON-69, see `AppShellProps.mobileNavFooter`. */
+  mobileNavFooter?: ReactNode;
   children: ReactNode;
 }
 
@@ -37,7 +39,11 @@ export interface DashboardShellProps {
  * match so a sub-route (none exist yet, but the pattern is the right default) still highlights its
  * parent nav item.
  */
-export function DashboardShell({ topBar, children }: DashboardShellProps) {
+export function DashboardShell({
+  topBar,
+  mobileNavFooter,
+  children,
+}: DashboardShellProps) {
   const pathname = usePathname();
 
   const nav: AppShellNavItem[] = NAV_ITEMS.map((item) => ({
@@ -52,6 +58,7 @@ export function DashboardShell({ topBar, children }: DashboardShellProps) {
     <AppShell
       nav={nav}
       topBar={topBar}
+      mobileNavFooter={mobileNavFooter}
       brand={<Wordmark />}
       renderNavItem={(item, renderProps: AppShellNavItemRenderProps) => (
         <Link href={item.href} {...renderProps} />

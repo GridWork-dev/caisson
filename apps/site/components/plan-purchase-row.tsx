@@ -4,6 +4,27 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Button, Card } from "@caisson/ui/components";
 import { isPaddleConfigured, openCheckout } from "@/lib/paddle-checkout";
+import { BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
+
+/**
+ * Resolve a purchase row's display label from the committed bundle/module catalog rather than
+ * title-casing the raw purchase tag — `textTransform: capitalize` over a bare id like
+ * "ai-production" rendered "Ai Production" (CAISSON-69), not the canonical "AI-Production"
+ * `BUNDLE_PRICES` carries. `purchaseTag` may be a bare id ("ai-production") or suffixed with
+ * `_bundle`/`_module` (`packages/pricebook/src/purchases.ts`'s "ai-production_bundle" /
+ * "field-crypto_module") — strip the suffix before matching either catalog. Falls back to the raw,
+ * underscore-humanized tag for anything else (subscription purchase tags — e.g. "credit_pack" —
+ * that have no bundle/module-catalog entry).
+ */
+export function displayLabel(tag: string): string {
+  const id = tag.replace(/_(bundle|module)$/, "");
+  const canonical =
+    BUNDLE_PRICES.find((b) => b.id === id)?.label ??
+    MODULE_PRICES.find((m) => m.id === id)?.label;
+  if (canonical !== undefined) return canonical;
+  const humanized = tag.replace(/_/g, " ");
+  return humanized.charAt(0).toUpperCase() + humanized.slice(1);
+}
 
 export interface PlanPurchaseRowProps {
   priceId: string;
@@ -57,9 +78,7 @@ export function PlanPurchaseRow({
           flexWrap: "wrap",
         }}
       >
-        <span className="cs-card-title" style={{ textTransform: "capitalize" }}>
-          {label.replace(/_/g, " ")}
-        </span>
+        <span className="cs-card-title">{displayLabel(label)}</span>
         {owned ? (
           <div
             style={{

@@ -7,16 +7,31 @@
 import { NextResponse } from "next/server";
 import { assertCanManageMembers } from "@caisson/org-controls";
 import { AuthzError } from "@caisson/kernel";
+import { accountHoldsAiProduction } from "@/lib/ai-production-gate";
 import { getSession } from "@/lib/auth";
 import { ByokSubmitBody, readKeyStatuses, submitTenantKey } from "@/lib/byok";
+import { getDb } from "@/lib/db";
 
 // Authed + tenant-scoped — never statically cached.
 export const dynamic = "force-dynamic";
+
+/** Fail-closed re-check (defense-in-depth, CAISSON-64 P1) — the page hides the surface from an
+ *  unentitled account, but a direct request must be denied here too. Deny on ANY read error. */
+async function isAiProductionEntitled(accountId: string): Promise<boolean> {
+  try {
+    return await accountHoldsAiProduction(await getDb(), accountId);
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(): Promise<NextResponse> {
   const session = await getSession();
   if (session === null) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  }
+  if (!(await isAiProductionEntitled(session.accountId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   const keys = await readKeyStatuses(session.accountId);
   return NextResponse.json({ keys });
@@ -27,10 +42,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (session === null) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
+  if (!(await isAiProductionEntitled(session.accountId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
   // Owner-only: the org's BYOK provider key is a single shared, org-wide credential — a `seat`
   // rotating it could DoS the org's inference or route it through an attacker-controlled key.
   // Same owner-gate ADR-0176 mandates for shared/billing org resources and the members path
-  // already uses. GET stays open — it returns masked metadata only, never the key.
+  // already uses. GET stays open (once entitled) — it returns masked metadata only, never the key.
   try {
     assertCanManageMembers(session.role);
   } catch (err) {
