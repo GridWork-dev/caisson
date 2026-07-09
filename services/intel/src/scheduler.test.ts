@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { createCaptureChannel } from "@caisson/alerting";
+import type { AlertChannel } from "@caisson/alerting";
 import {
+  alertWatcherFailure,
   createOverlapGuard,
   isEnrichable,
   longInterval,
   MAX_TIMER_DELAY_MS,
   runWatcher,
+  watcherFailedEvent,
 } from "./scheduler.ts";
 import { InMemoryStore } from "./store.ts";
 import type { Store } from "./store.ts";
@@ -306,6 +310,59 @@ describe("longInterval (CAISSON-49 — no 32-bit clamp)", () => {
     // The throw propagates out of the timer callback, but the finally re-arms the next period first.
     expect(() => fns[0]?.()).toThrow("tick boom");
     expect(armed[1]).toBe(1_000); // re-armed despite the throw
+  });
+});
+
+describe("watcherFailedEvent / alertWatcherFailure (CAISSON-53)", () => {
+  test("watcherFailedEvent shapes a critical, watcher-keyed AlertEvent", () => {
+    const event = watcherFailedEvent(
+      "github",
+      "upstream down",
+      1_750_000_000_000,
+    );
+    expect(event).toEqual({
+      id: event.id,
+      type: "intel.watcher_failed",
+      severity: "critical",
+      tenantId: "operator",
+      recipient: "operator",
+      dedupeKey: "intel.watcher_failed:github",
+      title: "Watcher failed: github",
+      body: "upstream down",
+      createdAt: 1_750_000_000_000,
+    });
+  });
+
+  test("alertWatcherFailure delivers to every configured channel", async () => {
+    const capture = createCaptureChannel("capture");
+
+    await alertWatcherFailure("github", "upstream down", [capture]);
+
+    expect(capture.delivered).toHaveLength(1);
+    expect(capture.delivered[0]).toMatchObject({
+      type: "intel.watcher_failed",
+      title: "Watcher failed: github",
+      body: "upstream down",
+    });
+  });
+
+  test("an empty channel list is a harmless no-op", async () => {
+    await expect(
+      alertWatcherFailure("github", "upstream down", []),
+    ).resolves.toBeUndefined();
+  });
+
+  test("a failing channel never throws back into the caller", async () => {
+    const failing: AlertChannel = {
+      name: "flaky",
+      deliver: () => {
+        throw new Error("channel down");
+      },
+    };
+
+    await expect(
+      alertWatcherFailure("github", "upstream down", [failing]),
+    ).resolves.toBeUndefined();
   });
 });
 

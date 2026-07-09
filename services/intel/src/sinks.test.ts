@@ -148,4 +148,35 @@ describe("buildAlertChannels", () => {
     );
     expect(channels.map((c) => c.name).sort()).toEqual(["linear", "tg-bridge"]);
   });
+
+  test("the discord channel builds only when DISCORD_OPS_WEBHOOK_URL is configured (CAISSON-53)", () => {
+    expect(
+      buildAlertChannels(
+        {
+          ...baseConfig,
+          discordOpsWebhookUrl: "https://discord.com/api/webhooks/1/abc",
+        },
+        fakeFetch(200),
+      ).map((c) => c.name),
+    ).toEqual(["discord"]);
+  });
+
+  test("all three sinks build when all three are configured", () => {
+    const channels = buildAlertChannels(
+      {
+        ...baseConfig,
+        tgBridgeAlertUrl: "https://tg.example.com/alert",
+        tgBridgeAlertToken: "t",
+        linearApiKey: "lin_api_x",
+        linearTeamId: "team_1",
+        discordOpsWebhookUrl: "https://discord.com/api/webhooks/1/abc",
+      },
+      fakeFetch(200),
+    );
+    expect(channels.map((c) => c.name).sort()).toEqual([
+      "discord",
+      "linear",
+      "tg-bridge",
+    ]);
+  });
 });

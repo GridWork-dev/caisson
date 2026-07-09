@@ -12,6 +12,7 @@
 // headless service needs the same Pool→Transactor adapter.
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { Pool, type PoolClient } from "pg";
+import { createJobAlertingDeps, loadOpsAlertChannels } from "./alerting.ts";
 import {
   loadCreditExpiryScheduleConfig,
   startCreditExpiryScheduler,
@@ -88,5 +89,9 @@ if (import.meta.main) {
     dashboardUrl: "https://caisson.sh/dashboard/credits",
     // G24: the updates-window expiry notice's own CTA — a different dashboard page than credits.
     updatesWindowDashboardUrl: "https://caisson.sh/dashboard/license",
+    // Alerts on a sweep/notice/tick task failure or a pg-boss infra error. Empty when
+    // DISCORD_OPS_WEBHOOK_URL is unset — the same fail-safe-absent posture as every other env-gated
+    // notifier in this file.
+    alerting: createJobAlertingDeps(loadOpsAlertChannels()),
   });
 }
