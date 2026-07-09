@@ -11,7 +11,8 @@
       "registry",
       "services/license",
       "services/docs",
-      "services/intel"
+      "services/intel",
+      "services/betterstack-adapter"
     ],
     "catalog": {
       "zod": "^3.23.8",

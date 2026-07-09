@@ -1,0 +1,28 @@
+# Better Stack → Discord reshaper (CAISSON-53). Better Stack's Uptime plan alerts natively to
+# email/Slack only; this tiny, stateless Worker receives Better Stack's "Incident" outgoing webhook,
+# validates + optionally authenticates it, and reshapes it into a Discord embed POST — unifying
+# uptime alerts into the same ops Discord channel as the job/watcher alerting wired the same wave
+# (packages/alerting's createDiscordChannel). Mirrors registry/worker/wrangler.toml's shape
+# (name/main/compat) at a fraction of the surface — no R2, no custom domain, no KV.
+name = "caisson-betterstack-adapter"
+main = "handler.ts"
+compatibility_date = "2026-06-27"
+# node:crypto's timingSafeEqual (the webhook-secret header check, handler.ts) needs the Node
+# compat shim — the SAME reason registry/worker/wrangler.toml enables it, there for node:fs.
+compatibility_flags = ["nodejs_compat"]
+
+# Publish to the account's workers.dev subdomain; point Better Stack's outgoing-webhook URL at it
+# (or attach a custom domain the same way registry/worker does, if the operator wants a stable host).
+workers_dev = true
+
+# Secrets (never committed — set via `bunx wrangler secret put <NAME>`, see README.md):
+#   DISCORD_OPS_WEBHOOK_URL     — the operator's Discord ops channel webhook (required; a 500
+#                                  response with no Discord POST attempted while unset).
+#   BETTERSTACK_WEBHOOK_SECRET  — the shared value Better Stack's outgoing-webhook custom
+#                                  `X-Betterstack-Secret` header carries (optional; absent = the
+#                                  header check is skipped — fine for local testing, not the live
+#                                  posture).
+
+[observability]
+enabled = true
+head_sampling_rate = 1
