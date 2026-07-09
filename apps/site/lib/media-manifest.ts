@@ -46,7 +46,8 @@ export type DiagramKey =
   | "prompt-render-boundary"
   | "local-hybrid-rrf"
   | "agent-lifecycle-fsm"
-  | "runner-env-scrub";
+  | "runner-env-scrub"
+  | "retention-erasure";
 
 /** The one live-rendered kit component wired into a media slide today (ADR-0290) — ui-pro is the
  *  only catalog item whose product IS a set of UI components; every other item is a backend/library
@@ -91,6 +92,7 @@ const DIAGRAM_ORDER: readonly DiagramKey[] = [
   "local-hybrid-rrf",
   "agent-lifecycle-fsm",
   "runner-env-scrub",
+  "retention-erasure",
 ];
 
 const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
@@ -132,6 +134,8 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
     "The seven-act lifecycle FSM: only legal transitions advance — a failed verify re-opens plan, and an illegal skip throws, never a silent pass.",
   "runner-env-scrub":
     "The child env is built from scratch — a fixed non-secret allowlist plus only the target provider's key — and the run streams to an auditable .jsonl transcript.",
+  "retention-erasure":
+    "One validated erasure request fans out to every registered target with per-target error isolation — a failing store lands in its own result, never aborting the others — then exactly one reason-tagged audit row is written.",
 };
 
 // Which entries carry which authored diagram (`kind:slug`). Mapped to the top entries whose shipped
@@ -149,11 +153,14 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
     "module:audit-worm",
     "module:signing-primitive",
   ]),
+  // NOT module:retention-runner — the diagram depicts audit-worm's evidence lifecycle (write/
+  // chain/anchor/verify + Object-Lock), not retention sweeps or erasure; showing it on the
+  // erasure module's buy surface misrepresents what ships (ADR-0082 artifacts-true-to-built).
+  // retention-runner carries its own bespoke `retention-erasure` diagram below.
   "worm-lifecycle": new Set([
     "bundle:compliance",
     "bundle:provenance",
     "module:audit-worm",
-    "module:retention-runner",
   ]),
   "credits-ledger": new Set(["module:credits"]),
   "local-sync-merge": new Set(["module:local-sync"]),
@@ -171,6 +178,7 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
   "local-hybrid-rrf": new Set(["module:local-store"]),
   "agent-lifecycle-fsm": new Set(["module:agent-kernel"]),
   "runner-env-scrub": new Set(["module:agent-runner"]),
+  "retention-erasure": new Set(["module:retention-runner"]),
 };
 
 /** The entry's mark, for the placeholder slide and the card glyph. */
