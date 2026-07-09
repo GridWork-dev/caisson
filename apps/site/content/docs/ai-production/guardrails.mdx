@@ -69,7 +69,7 @@ const restored = detokenizePii(tokenized, tokens, ctx);
 ## Configuration
 
 A `GuardPolicy` carries the moderator, an optional `failOpen` (default `false`), a
-`timeoutMs` deadline (2,000ms default) for `moderateWithDeadline`, an always-on `cheapDeny`
+`timeoutMs` deadline (`2000ms` default) for `moderateWithDeadline`, an always-on `cheapDeny`
 regex pre-screen, and an optional `pii` mode for the input leg. `GuardRuntime` carries the
 `tenantId` and the kernel `EventSink` the block event emits to.
 
