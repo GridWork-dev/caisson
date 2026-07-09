@@ -26,9 +26,15 @@ RUN bun install --frozen-lockfile
 ARG NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=""
 ARG NEXT_PUBLIC_PADDLE_ENV="sandbox"
 ARG NEXT_PUBLIC_PLAUSIBLE_DOMAIN=""
+# The footer's Discord link (G12) renders at build time on every statically prerendered page —
+# without this ARG the Railway service var never reaches `next build` and every static footer
+# bakes with the link missing (only request-time-rendered pages saw it). Empty default = the
+# same env-gated no-op as the rest.
+ARG NEXT_PUBLIC_DISCORD_INVITE_URL=""
 ENV NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=$NEXT_PUBLIC_PADDLE_CLIENT_TOKEN \
     NEXT_PUBLIC_PADDLE_ENV=$NEXT_PUBLIC_PADDLE_ENV \
-    NEXT_PUBLIC_PLAUSIBLE_DOMAIN=$NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+    NEXT_PUBLIC_PLAUSIBLE_DOMAIN=$NEXT_PUBLIC_PLAUSIBLE_DOMAIN \
+    NEXT_PUBLIC_DISCORD_INVITE_URL=$NEXT_PUBLIC_DISCORD_INVITE_URL
 
 RUN bunx turbo run build --filter=@caisson/site --concurrency=50%
 
