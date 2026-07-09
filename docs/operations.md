@@ -5,7 +5,7 @@ and deploy Caisson. This file OWNS the synthesized ops map; the canonical source
 `specs/` + `knowledge/decisions/`. Deploy specifics route to
 [`infra/terraform/README.md`](../infra/terraform/README.md) as canonical.
 
-Verified against the filesystem on 2026-06-28. Anything not directly checked is marked `(unverified)`.
+Verified against the filesystem on 2026-07-09. Anything not directly checked is marked `(unverified)`.
 
 ---
 
@@ -43,25 +43,19 @@ SIGBUS-crashes locally (project memory `caisson-reconcile-merged`). The `~` keep
 
 ## 2. Build status snapshot (the honest map)
 
-Per **ADR-0082 §3** (authoritative go-live posture), only the base substrate +
-`create-caisson` are GA-built; the edition packages are classified "structure only". All
-packages are `private`, version `0.0.0`, unpublished.
+Per-package build status now lives in one place: [`docs/build-state.md`](build-state.md) -- the
+per-package `src / tests / loc` table is machine-regenerated off disk truth (`ADR-0253`,
+`bun run sot --update`), so it does not drift the way a hand-typed snapshot in this file would.
+The 2026-06-28 posture this section used to restate ("only the base substrate + `create-caisson`
+are GA-built, four editions are structure-only stubs", `ADR-0082` §3) is superseded: those four
+editions dissolved into six commercial **bundles** 2026-07-06 (`ADR-0257`/`0258`, see
+[`docs/glossary.md`](glossary.md) "Bundle"), several packages are now published, and every base +
+carve package has real, tested code behind it. Do not restate package counts or GA status here --
+read `docs/build-state.md`.
 
-| Group                  | Packages                                                              | Status (verified)                                                                                          |
-| ---------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Base substrate (BUILT) | `kernel`, `tenancy-rls`, `field-crypto`, `auth`, `billing`, `credits` | Real src + tests; the hero fail-closed-RLS + field-crypto + `verifyChain` demos come from here             |
-| Generator (BUILT)      | `cli` (`create-caisson`)                                              | src + tests present                                                                                        |
-| Editions (NOT GA)      | `audit-worm`, `compliance`, `local-ai`, `ai-kit`, `agent-dev`         | Source present, but NOT shipped/GA; treat as structure per ADR-0082 §3. Do not claim they are fully built. |
-
-> ACCURACY FLAG: ADR-0082 §3 calls the four editions "currently empty stubs". The
-> filesystem disagrees -- `packages/compliance/src` has 16 non-test `.ts` + 11 tests,
-> `packages/local-ai` 14 + 9, `packages/audit-worm` 7 + 6 (real exports, not placeholders).
-> So the editions are "structure / partial, not GA", not literally empty. The ADR wording is
-> stale vs the tree as of 2026-06-28; the binding intent (editions are not shipped, only the
-> substrate is) holds. When in doubt, say "structure only, not GA".
-
-Canonical build plan: [`plan.md`](../plan.md) (P0->P7). Edition truth-to-built rule:
-[`knowledge/decisions/ADR-0082-go-live-site-posture.md`](../knowledge/decisions/ADR-0082-go-live-site-posture.md).
+Canonical build plan: [`plan.md`](../plan.md) (P0->P7). Historical edition truth-to-built rule:
+[`knowledge/decisions/ADR-0082-go-live-site-posture.md`](../knowledge/decisions/ADR-0082-go-live-site-posture.md)
+(superseded on this view by `ADR-0257`/`0258`; still binding on the site-copy honesty question it decided).
 
 ---
 
@@ -117,12 +111,14 @@ changeset -> version bump -> STANDARDS GATE -> publish (CI-only) -> index rebuil
 compliance primitives -> editions -> app-templates`. Publish only what exists; each edition
   publishes as it lands. `create-caisson --edition` degrades gracefully against the
   not-yet-published set.
-- **Status: the `publish-and-index` job is WIRED + active but DRY-RUN by default** (`CAISSON_PUBLISH_DRY_RUN=true`,
-  ADR-0069). It runs main-only (`needs: [check, standards-gate, registry-index]`) and scaffolds the
-  full flow without pushing packages; set the env var `=false` operator-side to go live. The actual
-  **publishability flip** (24 pkgs private→public + per-pkg license correctness + the changeset
-  presence gate) is the deferred P6 readiness pass. Today's enforcing jobs are `registry-index`
-  (proves `index.json` is a clean rebuild from the ledger) + `standards-gate`.
+- **Status: `publish.yml`'s `publish-and-index` job is WIRED + active but DRY-RUN by default**
+  (`CAISSON_PUBLISH_DRY_RUN=true`, ADR-0069). It runs main-only, ordering enforced structurally
+  (`ci.yml`'s 4 required checks must pass before a merge lands on `main`, which is this job's
+  trigger — see §7) and scaffolds the full flow without pushing packages; set the env var `=false`
+  operator-side to go live. The **publishability flip** already happened incrementally per-package
+  as each one shipped (`ui-pro`, the Stage-2 modules, the W1/W7 catalog carves are all published;
+  see `docs/state/package-catalog.md` for the current public-vs-commercial view). Today's enforcing
+  jobs are `registry-index` (proves `index.json` is a clean rebuild from the ledger) + `standards-gate`.
 
 Canonical: [`knowledge/decisions/ADR-0021-registry-publish-pipeline.md`](../knowledge/decisions/ADR-0021-registry-publish-pipeline.md)
 · schema [`registry/SCHEMA.md`](../registry/SCHEMA.md) · read-path worker
@@ -186,8 +182,20 @@ second operator or a CI-driven apply. Detail:
 
 ## 7. CI workflows
 
-Three workflows under [`.github/workflows/`](../.github/workflows/). All Bun + Turbo,
+**Eight workflows** under [`.github/workflows/`](../.github/workflows/): `ci.yml`, `quality.yml`,
+`publish.yml`, `deploy-railway.yml`, `lighthouse.yml`, `mirror-sync.yml`, `aeo-probe.yml`,
+`support-bot.yml`. All Bun + Turbo (except the Python-only `support-bot.yml`),
 `--frozen-lockfile`, bun pinned to `1.3.14` (the `packageManager` line — no `latest` floats).
+
+**Review gate: Greptile RETIRED 2026-07-06.** The `greptile-gate` path-scoped required check
+mentioned in older revisions of this doc no longer exists — `.github/workflows/greptile-gate.yml`
+and `.greptile/` are deleted (Starter-plan review-limit hit, no replacement vendor). The review
+gate is now the **in-session SHIP audit lane** (`gw-code-reviewer` + `gw-security-auditor`/fable
+run against the branch diff before the PR opens); see root `CLAUDE.md` §PR review gate. **Required
+status checks on `main` reduce to four: `check`, `standards-gate`, `registry-index`,
+`oscal-conformance`** — all four live in `ci.yml` and stay UNCONDITIONAL (no `paths:`, no `if:`).
+This repo has no enforced GitHub branch protection (single-owner account — CODEOWNERS documents
+the intent, "required" is discipline, not a platform gate).
 
 ### Self-hosted runner fleet (2026-06-29; runscaler scale sets 2026-07-02)
 
@@ -197,10 +205,11 @@ Three workflows under [`.github/workflows/`](../.github/workflows/). All Bun + T
 > `gridwork-core/system/ci/runscaler.toml`. Runners are ephemeral (nothing persists on-box between
 > jobs; caches are network-backed `actions/cache`, never local-disk). The `gw-linux-amd64` /
 > `[self-hosted, …]` labels in the prose + table below are the pre-runscaler names — read them as
-> `caisson-amd64`. The same PR also split the workflows (`ci.yml` = the required checks only;
-> `quality.yml` = eval/native-ext/token-drift; `publish.yml`, `deploy-railway.yml`) and swapped the
-> Greptile posture to the path-scoped **`greptile-gate`** required check (see root `CLAUDE.md`
-> §PR review gate).
+> `caisson-amd64`. The same PR split the workflows into `ci.yml` (the required checks only) +
+> `quality.yml` (eval/native-ext/token-drift/knip/evidence-pack) + `publish.yml` +
+> `deploy-railway.yml`; `mirror-sync.yml`, `aeo-probe.yml`, and `support-bot.yml` were added later
+> (see below). The Greptile `greptile-gate` required check this PR originally added was itself
+> retired 2026-07-06 (see the review-gate note above).
 
 - **Enrollment: DONE.** Caisson has **3 runners registered + ONLINE** (verify:
   `gh api repos/caisson-sh/caisson/actions/runners`): `gw-linux-amd64` (the gw-ms-a2 box, the
@@ -220,24 +229,69 @@ Three workflows under [`.github/workflows/`](../.github/workflows/). All Bun + T
 gw-linux-amd64]` → `runs-on: ubuntu-latest` (one line) and re-run. Every job carries a
   `timeout-minutes` ceiling so a hung job frees the runner rather than holding it to the 6h default.
 
-### `ci.yml` (push to `main` + every PR)
+### `ci.yml` (push to `main` + every PR) — the 4 required checks, always unconditional
 
 Required-check intent: build · lint · test(unit) · test(integration) · standards-gate ·
-golden-file (ADR-0016). PGlite makes integration + golden-file hermetic, so they fold into the
-`check` job rather than separate jobs. A `concurrency` group cancels superseded in-flight runs so
-the limited fleet is not tied up on stale commits. Required status checks on `main` (CODEOWNERS):
-`check`, `standards-gate`, `registry-index`, `oscal-conformance`, `greptile-gate` (the last two
-added 2026-07-02 — ADR-0208 + PR#51).
+golden-file (ADR-0016), plus the registry-index provenance proof and the OSCAL NIST conformance
+gate. PGlite makes integration + golden-file hermetic, so they fold into the `check` job rather
+than separate jobs. A `concurrency` group cancels superseded in-flight runs so the limited fleet
+is not tied up on stale commits. **This file carries exactly the 4 required status checks and
+nothing else** — every other job that used to live here (`eval`, `native-ext`, `token-drift`,
+`publish-and-index`) moved to its own workflow file where path-filtering and main-only gating are
+safe (they are not required checks, so a path-skip never blocks a PR forever).
 
-| Job                 | Runner (timeout)                                                                                        | Does                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `standards-gate`    | **fleet** `gw-linux-amd64` (15m)                                                                        | The sole registry ingress (ADR-0021/0022). Runs `tooling/standards-gate` pre-install (SPDX/AGPL/down-only/declarations) AND post-install (external-AGPL + manifest agreement), then `eslint .` (provider-SDK boundaries) + `depcruise` graph boundaries                                                                                                      |
-| `check`             | **fleet** `gw-linux-amd64` (30m)                                                                        | `format:check` then `bunx turbo run build lint test --no-daemon --concurrency=50% && bun run gate`. `--concurrency=50%` avoids PGlite `beforeAll` starvation under fan-out (38-pkg tree, 5 Next builds). The heaviest job → biggest fleet-compute win                                                                                                        |
-| `eval`              | **fleet** `gw-linux-amd64` (15m)                                                                        | `bun run eval` -- regression vs committed baseline, offline cassette replay, BLESS unset (ADR-0062). Monorepo-only; never injected into a buyer repo (ADR-0072)                                                                                                                                                                                              |
-| `native-ext`        | linux → **fleet** `gw-linux-amd64`; macos → **hosted** `macos-latest` (matrix, `fail-fast: false`, 20m) | `bun test packages/local-store/src` -- exercises the platform-specific sqlite-vec `.so`/`.dylib`; macOS step `brew install sqlite` + `Database.setCustomSQLite`. NOT a required check. **macOS leg stays hosted pending a fleet provisioning follow-up** (below)                                                                                             |
-| `registry-index`    | **fleet** `gw-linux-amd64` (15m)                                                                        | Registry schema/builder/worker tests, then rebuilds `registry/index.json` from the ledger and `git diff --exit-code` -- proves the index is CI-built, not hand-edited                                                                                                                                                                                        |
-| `token-drift`       | **fleet** `gw-linux-amd64` (15m)                                                                        | Rebuilds `packages/ui/styles/tokens.css` from the TS token objects and `git diff --exit-code` -- proves the committed sheet is a byte-identical rebuild (ADR-0101 design-quality gate #1)                                                                                                                                                                    |
-| `publish-and-index` | **hosted** `ubuntu-latest` (15m)                                                                        | Main-only (`if: refs/heads/main`), `needs: [check, standards-gate, registry-index]`. Changesets publish (CI-only ephemeral `GITHUB_TOKEN`) → append ledger → rebuild index → commit registry files back to main. **Active but dry-run by default** (`CAISSON_PUBLISH_DRY_RUN=true`). **Stays hosted** — write/publish privilege does not belong on the fleet |
+| Job                 | Runner (timeout)                 | Does                                                                                                                                                                                                                                                                            |
+| ------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `standards-gate`    | **fleet** `caisson-amd64` (15m)  | The sole registry ingress (ADR-0021/0022). Runs `tooling/standards-gate` pre-install (SPDX/AGPL/down-only/declarations) AND post-install (external-AGPL + manifest agreement), then `eslint .` (provider-SDK boundaries) + `depcruise` graph boundaries                         |
+| `check`             | **fleet** `caisson-amd64` (30m)  | `format:check` then `bunx turbo run build lint test --no-daemon --concurrency=50% && bun run gate`. `--concurrency=50%` avoids PGlite `beforeAll` starvation under fan-out. The heaviest job → biggest fleet-compute win                                                        |
+| `registry-index`    | **fleet** `caisson-amd64` (15m)  | Registry schema/builder/worker tests, then rebuilds `registry/index.json` from the ledger and `git diff --exit-code` -- proves the index is CI-built, not hand-edited                                                                                                           |
+| `oscal-conformance` | **hosted** `ubuntu-latest` (15m) | NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180): the JSON→XML→schema-validate round-trip via `oscal-cli` (installs a JDK + oscal-cli from Maven Central). Hosted because the fleet `check` job skips oscal-cli entirely — this is where NIST schema validation actually runs |
+
+### `quality.yml` — the non-required quality gates
+
+Split out of `ci.yml` precisely so they can be path-filtered without risking a required check.
+**On pull requests** each job may skip when its package tree is untouched (skip = "nothing to
+validate," never "merge blocked"). **On pushes to `main`, every job runs unconditionally**
+(operator call, 2026-07-09) — main is the full-truth signal, so even a docs-only commit still
+exercises eval, token-drift, and native-ext.
+
+| Job             | Runner (timeout)                                                                           | Does                                                                                                                                                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `changes`       | **fleet** `caisson-amd64` (5m)                                                             | `dorny/paths-filter` detects which package trees changed, feeding the `if:` skip logic below                                                                                                                           |
+| `eval`          | **fleet** `caisson-amd64` (15m)                                                            | `bun run eval` -- regression vs committed baseline, offline cassette replay, BLESS unset (ADR-0062). Monorepo-only; never injected into a buyer repo (ADR-0072)                                                        |
+| `token-drift`   | **fleet** `caisson-amd64` (15m)                                                            | Rebuilds `packages/ui/styles/tokens.css` from the TS token objects and `git diff --exit-code` -- proves the committed sheet is a byte-identical rebuild (ADR-0101 design-quality gate #1)                              |
+| `knip`          | **fleet** `caisson-amd64` (15m)                                                            | Unused-dep / unused-export report (`bun run knip -- --no-exit-code`) — advisory, never blocks; repo-wide, not path-filtered                                                                                            |
+| `native-ext`    | linux → **fleet** `caisson-amd64`; macos → **fleet** `[self-hosted, gw-macos-arm64]` (20m) | `bun test packages/local-store/src` -- exercises the platform-specific sqlite-vec `.so`/`.dylib` on both OSes, `fail-fast: false`                                                                                      |
+| `evidence-pack` | **fleet** `caisson-amd64` (15m)                                                            | Assembles the CI build-provenance evidence pack (ADR-0275) from the standards-gate + registry-index outputs into one manifest'd artifact for a security reviewer. Unconditional (no path-filter); NOT a required check |
+
+### `publish.yml` (main-only, ADR-0021 ordering)
+
+Renamed from `ci.yml`'s old `publish-and-index` job. Its `needs:` on the 4 `ci.yml` checks was
+dropped when it moved to its own file (GitHub Actions `needs:` cannot cross workflow files) —
+ordering is now enforced structurally: this workflow triggers on `push: branches: [main]`, which
+only fires after a PR has already merged, which only happens after `ci.yml`'s checks passed on
+that PR. **Buyer delivery is now a self-hosted npm registry** (`registry.caisson.sh`, ADR-0223) —
+the GitHub-Packages leg is retired. Per changed non-private package: `bun pm pack` → hash → record
+into `registry/tarballs.json` → upload the tarball to R2, plus the `changeset version` bump +
+ledger/index rebuild, committed back to `main`. Guarded by `CAISSON_PUBLISH_DRY_RUN` (default
+`true`) — dry-run logs the plan and writes nothing.
+
+### `mirror-sync.yml` / `aeo-probe.yml` / `support-bot.yml`
+
+- **`mirror-sync.yml`** — snapshot-syncs the open (Apache-2.0) base into the public mirror repo
+  `caisson-sh/caisson-oss` (force-pushed as one fresh commit per sync, no mirror-side history).
+  Triggers on `workflow_dispatch` + `push: main` path-filtered to the open packages. **Stays inert
+  until armed:** `MIRROR_PUSH_TOKEN` (a fine-grained PAT scoped to `contents:write` on the mirror
+  repo) is not yet a valid repo secret — the current token lacks the Workflows scope the sync
+  needs, so this workflow has been failing on every `main` push since 2026-07-04
+  (`docs/state/outstanding-work.md` §1, the one credential rotation left from the 2026-07-08 sweep).
+- **`aeo-probe.yml`** — the monthly AI-citation probe loop (ADR-0254): runs
+  `tooling/scripts/aeo-probe.ts` against 18 canonical questions × 3 OpenRouter-routed engines,
+  commits the dated snapshot into `docs/gtm/aeo-citation-tracking.md`. `schedule` (1st of month) +
+  `workflow_dispatch`. Self-hosted; write scope is one docs file via the ephemeral `GITHUB_TOKEN`.
+- **`support-bot.yml`** — the Python gate for `services/support-bot` (uv/ruff/pyright/pytest), the
+  repo's only Python surface. Path-scoped to `services/support-bot/**`; deliberately NOT one of the
+  4 required checks. Runs on the same `caisson-amd64` fleet as the TS gates.
 
 **Fleet first-run verification (done on PR#22, the wiring PR).** All `gw-linux-amd64` jobs picked
 up the runner and ran (they SERIALIZE — there is one amd64 runner, one-job-then-reset, so the gate

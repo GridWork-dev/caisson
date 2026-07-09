@@ -1,14 +1,25 @@
 # Package catalog
 
+> **STALE STATUS COLUMN — read this first.** This file catalogs the **original 24** workspaces
+> under `packages/` as scoped at `ADR-0082` §3 (2026-06-28 snapshot); `packages/*` has since grown
+> to **54 dirs**. Its **Status** column (BUILT/STUB) and edition framing predate
+> editions-go-live (`ADR-0201`, all live transports proven), the Stage-2/harvest builds, and the
+> 2026-07-06 six-bundle catalog rework (`ADR-0257`/`0258`) that **dissolved editions into
+> bundles** and carved 5+ new commercial packages out of several rows this file still marks
+> `STUB`. **For current build status, read [`docs/build-state.md`](build-state.md); for current
+> license/sold-as/price, read [`docs/state/package-catalog.md`](state/package-catalog.md)** — both
+> are machine-checked or dated 2026-07-06+ and supersede this file on those two views. What
+> remains live here: the purpose/dependency-direction mapping for the 24 original packages.
+
 Internal source-of-truth index for the **original 24** workspaces under `packages/` (kernel +
 base substrate + edition + shared packages, as scoped at ADR-0082 §3). `packages/*` has since
-grown to **35 dirs** — 11 later additions (`agent-runner`, `alerting`, `audit-harness`,
-`license-issue`, `migrate`, `observability`, `platform-reads`, `pricebook`, `registry-schema`,
-`retention-runner`, `tool-exec`, from the Stage-2/harvest waves) are not yet catalogued in the
-tables below; see [`docs/build-state.md`](build-state.md) for their per-package status until this
-catalog is extended. This file OWNS the synthesized catalog view (purpose + edition membership +
-build status + evidence + ADR routing) for the packages it covers; it does NOT restate canonical
-prose. Canonical sources stay authoritative:
+grown to **54 dirs** — the 30 later additions (Stage-2/harvest waves, the W1/W7 catalog-rework
+carves, `ui-pro`, `agent-runner`, etc.) are not catalogued in the tables below; see
+[`docs/build-state.md`](build-state.md) for their per-package status and
+[`docs/state/package-catalog.md`](state/package-catalog.md) for their license/sold-as/price. This
+file OWNS the synthesized catalog view (purpose + edition membership + build status + evidence +
+ADR routing) for the 24 packages it covers; it does NOT restate canonical prose. Canonical sources
+stay authoritative:
 
 - Architecture + package taxonomy: [`specs/01-architecture.md`](../specs/01-architecture.md), [`specs/00-product-spec.md`](../specs/00-product-spec.md)
 - The decision record: [`knowledge/decisions/`](../knowledge/decisions/) (ADR-NNNN, append-only)
@@ -33,8 +44,11 @@ On any conflict, the canonical source wins over this catalog.
 2026-06-28. High LOC inside a STUB row means scaffolding was merged, not that the edition works
 end-to-end. Several BUILT substrate packages are also still thin seams (see Candor notes per group).
 
-All 24 catalogued here are `@caisson/*`, `"private": true`, `version 0.0.0` (unpublished; publish
-flow = ADR-0069).
+All 24 catalogued here are `@caisson/*`. At the 2026-06-28 snapshot date all were `"private":
+true`, `version 0.0.0` (unpublished; publish flow = ADR-0069) — that is no longer true repo-wide:
+several packages (base-substrate + generator + a growing set of commercial modules) have since
+published real versions. Verify a given package's current `private`/`version` field on disk, or
+read [`docs/state/package-catalog.md`](state/package-catalog.md) for the current sold-as/license view.
 
 ---
 
@@ -152,12 +166,13 @@ These resolve from sibling workspaces (`workspaces: tooling/*, registry, service
 `apps/*` (7: admin, agent-dev, ai-kit, base, compliance, local-ai, site) and `services/*` (3: docs,
 license, support-bot) are out of scope for this catalog; see [`specs/01-architecture.md`](../specs/01-architecture.md).
 
-## Build-status rollup
+## Build-status rollup (STALE — see banner at top of file)
 
-- **BUILT (7):** `kernel`, `tenancy-rls`, `field-crypto`, `auth`_, `billing`_, `credits`, `cli`. (*thin seams)
-- **STUB (17):** `audit-worm`, `compliance`, `ai-kit`, `ai-meter`, `prompt-registry`, `ai-evals`, `guardrails`, `ai-config`, `local-ai`, `local-store`, `agent-kernel`, `agent-dev`, `mcp-server`, `license-verify`, `ui`, `email`, `jobs`.
+- **BUILT (7) at the 2026-06-28 snapshot:** `kernel`, `tenancy-rls`, `field-crypto`, `auth`_, `billing`_, `credits`, `cli`. (*thin seams)
+- **STUB (17) at the 2026-06-28 snapshot:** `audit-worm`, `compliance`, `ai-kit`, `ai-meter`, `prompt-registry`, `ai-evals`, `guardrails`, `ai-config`, `local-ai`, `local-store`, `agent-kernel`, `agent-dev`, `mcp-server`, `license-verify`, `ui`, `email`, `jobs`.
 
-Authoritative honesty boundary: [`ADR-0082` sec.3-4](../knowledge/decisions/ADR-0082-go-live-site-posture.md)
-(sec.4's Agentic-Dev roadmap label retired by ADR-0237 rider 2).
-Merged LOC inside a STUB row is real scaffolding, not a shippable edition. Re-verify this table
-against the filesystem before citing build status downstream.
+This rollup is the same 2026-06-28 `ADR-0082` sec.3-4 snapshot as every Status cell above and is
+**not current** — `docs/build-state.md`'s per-package table (machine-regenerated, `ADR-0253`) is
+the live rollup; every package once listed here as STUB now has real, tested, live-transport-proven
+code behind it (`ADR-0201`, the Stage-2 build, the 2026-07-06 catalog rework). Kept for lineage —
+do not cite this section for current build status.

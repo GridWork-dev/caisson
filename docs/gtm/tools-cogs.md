@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-09
 status: live
 grounds:
   - docs/state/providers.md
@@ -19,16 +19,18 @@ looks like per sale.
 
 ## The flat monthly stack
 
-| Tool            | Buys                                                                                        | Cost                                                                                                                                             | Locked by                         |
-| --------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
-| Railway         | Hosting for all 5 caisson services (site/admin/license/docs/support-bot) + managed Postgres | Pro plan $20/mo base + usage → **~$20–40/mo all-in**                                                                                             | ADR-0114/0115                     |
-| Plausible       | Cookieless web analytics (no consent banner)                                                | $9/mo Starter (no free hosted tier)                                                                                                              | ADR-0118                          |
-| Linear          | Issue tracking + agent automations                                                          | $16/mo Business plan (issue/project CRUD works free; the $16 buys the agent-automation tier) — **not yet turned on**, an operator billing action | providers.md §Config-audit item 8 |
-| Greptile + TREX | AI PR review, path-scoped to security-critical diffs only                                   | Free Starter tier; **TREX $2/run** since 2026-06-30 (per-run, not flat — bounded by how many critical-path PRs fire the gate)                    | providers.md                      |
+| Tool      | Buys                                                                                        | Cost                                                                                                                                             | Locked by                         |
+| --------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| Railway   | Hosting for all 5 caisson services (site/admin/license/docs/support-bot) + managed Postgres | Pro plan $20/mo base + usage → **~$20–40/mo all-in**                                                                                             | ADR-0114/0115                     |
+| Plausible | Cookieless web analytics (no consent banner)                                                | $9/mo Starter (no free hosted tier)                                                                                                              | ADR-0118                          |
+| Linear    | Issue tracking + agent automations                                                          | $16/mo Business plan (issue/project CRUD works free; the $16 buys the agent-automation tier) — **not yet turned on**, an operator billing action | providers.md §Config-audit item 8 |
 
-**Flat floor today: ≈$30–50/mo** (Railway + Plausible; Linear Business and TREX runs are
-optional/variable on top). This is a **big drop from the 2026-06 baseline** — self-hosted SigNoz
-(~$45–70/mo) was removed 2026-07-01 and replaced by Grafana Cloud's free tier (see below).
+**Flat floor today: ≈$30–50/mo** (Railway + Plausible; Linear Business is optional/variable on
+top). This is a **big drop from the 2026-06 baseline** — self-hosted SigNoz (~$45–70/mo) was
+removed 2026-07-01 and replaced by Grafana Cloud's free tier (see below); **Greptile + TREX
+dropped entirely 2026-07-06** (vendor retired after the Starter plan's monthly review limit hit
+mid-PR-#128 — no replacement external reviewer, review gate is now the in-session SHIP audit lane
+per `CLAUDE.md` §PR review gate), removing what had been a variable per-run line.
 
 ## Free-tier / $0 today, scales with usage
 
@@ -92,16 +94,15 @@ ADR-0222). Two different COGS shapes follow from that split:
 scales per sale is platform-key credit consumption, and BYOK exists specifically to let a tenant
 opt out of that line entirely.
 
-## Open fork — do not read pricing structure as settled
+## Catalog-doctrine lock — pricing structure is settled
 
-The operator has redirected a related question (the compliance-edition price-split fork, R3) into
-a broader catalog-doctrine research round — direction under study: _all editions become bundle
-options over an individually-sellable package catalog, with an explicit OSS/commercial-line split
-and package-split standards_ (`outputs/research/catalog-doctrine-2026-07.md`, forks arriving). This
-does not change the tools/COGS figures above, but if that direction locks, the **per-sale COGS
-shape in §"COGS floor per sale"** may need a second pass — a package-level catalog could shift
-which unit ("edition" vs "package") the license-issuance COGS attaches to. Treat this section's
-license-sale-COGS claim as current-state, not future-proofed.
+The operator's related question (the compliance-edition price-split fork, R3) was redirected into
+a broader catalog-doctrine research round, which **locked 2026-07-06** (ADR-0257 vocabulary ·
+ADR-0258 numbers): all editions dissolved into six individually-priced bundles over a fully
+à-la-carte package catalog, live in Paddle SANDBOX. This does not change the tools/COGS figures
+above — the **per-sale COGS shape in §"COGS floor per sale"** is unit-agnostic (a license-token
+issuance + registry-gated npm pull, whether the purchased SKU is a bundle or a standalone module),
+so the catalog-shape lock doesn't require a second pass here.
 
 ## Contradictions found while distilling
 

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-06
+updated: 2026-07-09
 status: live
 ---
 
@@ -72,7 +72,10 @@ These BLOCK a real sale and are **operator-owned** (I can't do them from the box
    after checkout works + Compliance is buyable.
 3. **Discord** — enable GUILD_MEMBERS + MESSAGE_CONTENT privileged intents (Dev Portal), set
    `SUPPORT_CHANNEL_ID`/`MEMBER_ROLE_ID` on the box, scope the bot role down from Administrator.
-4. **Rotate the leaked Discord/OpenRouter creds** (flagged in memory, no evidence done) before public launch.
+4. **Rotate the leaked Discord/OpenRouter creds** — **DONE 2026-07-08** (`OPENROUTER_API_KEY` split
+   into six per-service keys, `DISCORD_TOKEN` regenerated; see
+   `docs/state/operator-runbook-2026-07-08.md` Phase 1.1/1.2 and `docs/deploy/STATE.md`'s
+   2026-07-08 entry). Only `MIRROR_PUSH_TOKEN` rotation is still open (runbook Phase 1.3).
 5. Legal stack (above) live on the site + the Paddle attribution line.
 
 Box-drivable go-live tail (I do these): mount/verify is already built (webhook route exists,

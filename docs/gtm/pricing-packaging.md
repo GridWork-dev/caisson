@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-06
+updated: 2026-07-09
 status: live
 grounds:
   - knowledge/decisions/ADR-0259-ui-pro-spec-locks.md
@@ -43,7 +43,7 @@ formula demanded it. **Superseding rows (everything else in the Stage-2 table be
 | **Renewal cents (moved/new)** | AI **$289** · Local-first **$249** · Everything **$819** · sync **$79** · inference **$99** · privacy **$39** | flat-40% X9 ladder otherwise unchanged                                                                                                                                                                                  |
 
 Below-sum ✓ on all six bundles at lock. Display still flips in one wave (W6/W7 of
-`outputs/specs/catalog-rework/PLAN.md`); Paddle sandbox rebuilds big-bang at W7.
+`outputs/archive/specs/catalog-rework/PLAN.md`); Paddle sandbox rebuilds big-bang at W7.
 
 ## Stage-2 price locks (ADR-0260, 2026-07-06) — display rides the catalog-rework build
 
@@ -80,28 +80,49 @@ tension resolved sum-of-parts: the Vanta/Drata TCO band ($8–40k+/yr, quote-gat
 narrative ("less than 2 months of your first Vanta invoice — and you own it forever"), never
 pricing logic.
 
-## Locked price matrix (current, live in `apps/site/lib/pricing.ts` — pre-rework display)
+## Locked price matrix (current, live in `apps/site/lib/pricing.ts`)
 
-| SKU                                                     | Price                   | Note                                                                                                                   |
-| ------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **Compliance** (edition, one-time)                      | **$799**                | Flagship/wedge. $749 → $799 same day as the module-sum check (ADR-0227), keeping it below its $846 member-sum by 5.6%. |
-| **AI Production Kit** (edition, one-time)               | **$599**                | Unchanged since ADR-0129.                                                                                              |
-| **Agentic-Dev** (edition, one-time)                     | **$249**                | ADR-0137 cut from $499.                                                                                                |
-| **Local-first AI** (edition, one-time)                  | **$349**                | ADR-0137 canonical; ADR-0240 closed a manifest-comment drift flag confirming $349, not $399 — no number changed.       |
-| **Everything Bundle** (base + all 4 editions, one-time) | **$1,499**              | ADR-0137; ~23% off the $1,946 edition-sum.                                                                             |
-| **Per-module à la carte**                               | $49–$299                | 11 standalone modules (ADR-0238 dropped 4 edition-core rows — see below).                                              |
-| **Compliance-Updates** (subscription)                   | **$1,499/yr**           | Annual cadence per ADR-0095 §3, numbers per ADR-0106.                                                                  |
-| **Developer** (subscription)                            | **$499/yr**             | Same.                                                                                                                  |
-| **Enterprise / SLA**                                    | **Contact us**          | No public number, founder-assisted only (ADR-0095 §2).                                                                 |
-| **Credit top-up pack**                                  | **$49** (5,000 credits) | ADR-0222.                                                                                                              |
-| **Agent-runner** (à la carte module)                    | **$49**                 | ADR-0222, 15th marketplace module.                                                                                     |
+The six-bundle catalog (ADR-0257 vocabulary · ADR-0258 numbers) is what `pricing.ts`
+`BUNDLE_PRICES` exports today — editions dissolved into these bundles at the Stage-3/4
+catalog-rework build (W7 Paddle SANDBOX big-bang, PR #130, 2026-07-06). The Stage-2/Stage-3
+sections above show the derivation; this is the flat lookup, cents verified against code:
+
+| SKU                                        | Price                   | Note                                                                                                                                                       |
+| ------------------------------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Compliance** (bundle, one-time)          | **$1,049**              | Fail-closed RLS, WORM, audit chain, evidence packs, framework + signing carves. Supersedes the $799 edition (ADR-0227).                                    |
+| **AI-Production** (bundle, one-time)       | **$739**                | Metering, guardrails, prompt versioning, CI eval harness; credits joined the member set at Stage 3 (ADR-0258), recompute over $629.                        |
+| **Local-first** (bundle, one-time)         | **$629**                | On-device inference, privacy egress gate, local vector search; full 3-way carve (sync/inference/privacy), ADR-0258 supersedes the $349 edition (ADR-0240). |
+| **Agentic-Dev** (bundle, one-time)         | **$329**                | Governed-agent kernel: typed agent/skill/rule schema, guarded lifecycle, sandboxed execution.                                                              |
+| **Provenance** (bundle, one-time, net-new) | **$399**                | Detached signing, append-only WORM audit chain, per-tenant field encryption; $0 incremental into Everything (member-subset of Compliance).                 |
+| **Everything** (bundle, one-time)          | **$2,059**              | Every sellable SKU incl. ui-pro (only private `brand` excluded); 0.75 × Σ(the five persona bundles), ADR-0258 supersedes Stage-2's $1,749.                 |
+| **Per-module à la carte**                  | $49–$299                | Every sellable commercial SKU individually priced (ADR-0246 F1b) — see the module-catalog section below.                                                   |
+| **Compliance-Updates** (subscription)      | **$1,499/yr**           | Annual cadence per ADR-0095 §3, numbers per ADR-0106.                                                                                                      |
+| **Developer** (subscription)               | **$499/yr**             | Same.                                                                                                                                                      |
+| **Enterprise / SLA**                       | **Contact us**          | No public number, founder-assisted only (ADR-0095 §2).                                                                                                     |
+| **Credit top-up pack**                     | **$49** (5,000 credits) | ADR-0222.                                                                                                                                                  |
+
+### Superseded — pre-catalog-rework 4-edition matrix (historical only)
+
+Retained for continuity; every row below was replaced by the six-bundle matrix above at the
+Stage-3 rework (ADR-0257/0258, 2026-07-06) — do not sell against these numbers:
+
+| SKU (edition, one-time)                   | Price  | Superseded by             |
+| ----------------------------------------- | ------ | ------------------------- |
+| Compliance                                | $799   | Compliance bundle $1,049  |
+| AI Production Kit                         | $599   | AI-Production bundle $739 |
+| Agentic-Dev                               | $249   | Agentic-Dev bundle $329   |
+| Local-first AI                            | $349   | Local-first bundle $629   |
+| Everything Bundle (base + all 4 editions) | $1,499 | Everything bundle $2,059  |
 
 ## The below-sum invariant
 
-Every edition must price **below** the sum of its constituent modules — this is the current,
-binding rule (ADR-0137, superseding ADR-0129's opposite "thin editions premium above sum" thesis
-once the full storefront showed both edition and module cards on the same page). Discount depth
-per edition, as locked:
+Every bundle must price **below** the sum of its constituent modules — still the current, binding
+rule, now formalized at the catalog rework as the flat **0.75 × priced-member-sum** formula
+(ADR-0258), superseding the per-edition ad hoc discount depths this section used to carry.
+Below-sum ✓ verified on all six bundles at lock; the Stage-2/Stage-3 sections above carry each live
+bundle's member-sum basis.
+
+**Historical — pre-rework per-edition discount depth (ADR-0137, superseded 2026-07-06):**
 
 - Compliance: $846 member-sum → $799 (5.6% off — the thinnest margin of the four; ADR-0227
   reopened this specific number after a module-sum recount pushed the old $749 to ~11.5% off,
@@ -111,13 +132,13 @@ per edition, as locked:
 - Local-first AI: $398 sum → $349 (~12% off).
 - Everything Bundle: $1,946 edition-sum → $1,499 (~23% off, $447 saved).
 
-**Any future change to a module's price or an edition's member list that pushes an edition's
-price above its own member-sum re-opens that edition's number** — this is a standing check, not
-a one-time fix (ADR-0227's own consequence clause). No fabricated "was" strikethrough anchors are
-shown; the site never charged the earlier numbers, so a struck-through price would be a dark
-pattern (ADR-0137).
+**Any future change to a module's price or a bundle's member list that pushes a bundle's price
+above its own member-sum re-opens that bundle's number** — this is a standing check, not a
+one-time fix (ADR-0227's original consequence clause, carried into ADR-0258). No fabricated "was"
+strikethrough anchors are shown; the site never charged the earlier numbers, so a struck-through
+price would be a dark pattern (ADR-0137).
 
-## Module catalog: 11 standalone, not 12 or 15
+## Module catalog: 22 sellable modules across six bundles
 
 ADR-0129 originally value-anchored 12 individually-sellable modules against commercial
 comparables (e.g. `field-crypto` vs. IronCore/Evervault $395–1,954/mo; `ai-meter` vs.
@@ -126,12 +147,17 @@ whose module id collided with its own parent edition id (`compliance`, `ai-kit`,
 `agent-dev`) — a $299 module purchase was resolving to a full $799 edition grant because
 `expandEntitlements` resolves edition-first and there is no separable "core" artifact to sell
 (every edition meta-package hard-depends on its commercial members). The fix was removal, not
-rename: editions are how composition is bought, modules are entry points into them. Net catalog:
-11 standalone modules + `agent-runner` (ADR-0222) = the current à-la-carte list in the price
-matrix above. No price _number_ changed in this cut — only which rows are sellable.
+rename: editions were how composition was bought, modules were entry points into them. That
+11-standalone-module count was itself superseded at the Stage-3 catalog rework (ADR-0246 F1b):
+every commercial package is now individually priced, and `apps/site/lib/pricing.ts`
+`MODULE_PRICES` carries **22 sellable modules** — 19 hold membership in one or more of the six
+bundles (`bundles: [...]`), and 3 are genuinely standalone with no bundle grant
+(`org-controls`, `billing-orchestration`, `ui-pro`).
 
-`ai-evals` is `standaloneOnly`: no edition or bundle grants it (its manifest states it is not a
-base service or an edition), so every "included in" surface must show it as a separate add.
+`ai-evals` is **no longer** `standaloneOnly`: the ADR-0258 members-fold joined it to the
+`ai-production` bundle (it was never in the legacy `ai-kit` edition map) — verify current
+membership against `MODULE_PRICES` before restating it, since bundle membership is registry-truth
+pinned by `pricing.test.ts`, not hand-tracked here.
 
 ## Updates window (ADR-0244, locked 2026-07-05)
 
@@ -191,11 +217,11 @@ comparables in ADR-0129, the two GTM reports behind ADR-0106) but not WTP-valida
 interviews, no paid WTP pilots, no live purchase data yet. Each pricing ADR names itself as
 revisit-after-launch via a superseding ADR once real data exists.
 
-Sandbox-only detail: all 11 module + `agent-runner` + edition Paddle products/prices were created
-in **SANDBOX now** (ADR-0227 operator override of a guard-until-flip recommendation), so the full
-cart → checkout → webhook → grant path is exercisable pre-launch. Sandbox catalog ids do not port
-— the same catalog must be re-created in the production Paddle account at the commerce flip
-(accepted double entry).
+Sandbox-only detail: the full six-bundle + 22-module Paddle products/prices were created in
+**SANDBOX now** (ADR-0227 operator override of a guard-until-flip recommendation, carried through
+the W7 catalog-rework big-bang with editions archived), so the full cart → checkout → webhook →
+grant path is exercisable pre-launch. Sandbox catalog ids do not port — the same catalog must be
+re-created in the production Paddle account at the commerce flip (accepted double entry).
 
 ## Catalog doctrine — RESOLVED (ADR-0246–0252); what stays open
 
@@ -215,10 +241,12 @@ bands, which are catalog-ladder-grounded rather than comps-researched).
 
 ## Contradictions found while distilling
 
-- **ADR-0240 vs. build-state prose**: `docs/build-state.md`/`docs/state/package-catalog.md` may
-  still carry a stale "$749" or "12-module" figure in places not yet swept by the ADR-0238/0240
-  closeout PRs — this file states the current live numbers ($799 compliance, 11 standalone
-  modules, $349 local-first) as ground truth per `apps/site/lib/pricing.ts`, which matches the
-  latest ADRs exactly.
-- No numeric contradiction found between ADR-0227 and ADR-0137/0238/0240 — each supersession is
-  explicit and the live pricing.ts file matches the final chain.
+- **Pre-rework build-state prose**: `docs/build-state.md`/`docs/state/package-catalog.md` may
+  still carry stale edition-era figures ("$799 compliance," "$749," "11 standalone modules," "12
+  modules") in places not yet swept by the catalog-rework closeout PRs — this file states the
+  current live numbers (six bundles: $1,049/$739/$629/$329/$399/$2,059; 22 sellable modules) as
+  ground truth per `apps/site/lib/pricing.ts`, verified directly against `BUNDLE_PRICES` and
+  `MODULE_PRICES` in code, which matches ADR-0257/0258 exactly.
+- No numeric contradiction found between ADR-0227/0137/0238/0240 (the superseded edition chain)
+  and ADR-0257/0258 (the six-bundle successor) — each supersession is explicit and the live
+  pricing.ts file matches the final chain.

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-07
+updated: 2026-07-09
 status: live
 ---
 
@@ -216,8 +216,11 @@ so merging a wave never changes runtime behavior.
 
 ## Open picks (operator-owned, do NOT pre-bind)
 
-- Which SSO vendor leads Tier 1C (WorkOS vs Clerk vs Auth0) — recommend **WorkOS** (SAML/SCIM, on-brand
-  with compliance).
-- Whether to build **all** KMS providers in 1B or AWS-only first (recommend AWS-only, then GCP/Azure on demand).
-- Test-cred availability for KMS / SES / WorkOS (needed to exercise the live transports in CI; today
-  all live transports are CI-dormant by design).
+- **SSO vendor (§1C) — RESOLVED, not a single pick.** Both **WorkOS** (SAML/SCIM directory sync,
+  ADR-0172) and **Clerk** (session-token verification, ADR-0287) **SHIPPED**. Genuinely open: whether
+  Auth0/Okta is worth a third driver, on enterprise demand.
+- **KMS providers (§1B) — RESOLVED, not AWS-only.** Both **AWS** (live-proven, ADR-0171) and **GCP**
+  (Kickoff-F wave, same ADR-0171 binding) **SHIPPED**. Genuinely open: Azure Key Vault / HashiCorp
+  Vault, build on demand.
+- Test-cred availability for SES / WorkOS / Clerk (needed to exercise the remaining live transports in
+  CI; AWS KMS is already real-CMK live-proven — most others stay CI-dormant by design).

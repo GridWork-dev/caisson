@@ -121,9 +121,13 @@ changeset -> version bump -> STANDARDS GATE -> publish (CI) -> append ledger.jso
 rebuilt from it by `registry/scripts/build-index.ts` (CI only, never hand-edited). The CI
 `registry-index` job re-runs the build and fails on any drift (`git diff --exit-code`), so
 the index is provably CI-built. The index IS the allowlist - every generation validates a
-caller's module id + version against it before any path/subprocess. The publish-and-index
-job that appends a gated publish is wired at build phase **P6** (deferred publishability flip) and is currently commented
-in `.github/workflows/ci.yml` (pre-publish every package is private `0.0.0`).
+caller's module id + version against it before any path/subprocess. The gated-publish job
+(`publish-and-index`, now its own `.github/workflows/publish.yml`, ADR-0223) is wired and
+active, publishing to the self-hosted `registry.caisson.sh` npm registry — it stays
+**dry-run by default** (`CAISSON_PUBLISH_DRY_RUN=true`; `docs/operations.md` §7). Publishing
+is no longer all-or-nothing: several packages (base substrate, `cli`, `ui-pro`, the Stage-2
+and catalog-rework carve packages) have real published versions today — see
+`docs/state/package-catalog.md` for the current per-package sold-as/license view.
 
 ## Testing
 
@@ -146,22 +150,24 @@ in `.github/workflows/ci.yml` (pre-publish every package is private `0.0.0`).
 
 ## CI required jobs
 
-`.github/workflows/ci.yml` (on push to `main` + every PR). The conceptual six required
-checks (ADR-0016) - build, lint, test(unit), test(integration), standards-gate, golden-file
+`.github/workflows/ci.yml` (on push to `main` + every PR) carries exactly the 4 required status
+checks and nothing else — `eval`/`native-ext`/`token-drift`/`knip` live in the separate
+`quality.yml` (non-required, path-filtered on PRs, unconditional on `main` pushes) so a path-skip
+never blocks a required check forever. Full per-workflow detail (8 workflows total, the Greptile
+retirement, the review-gate posture): `docs/operations.md` §7 - this section is not the canonical
+CI map, do not extend it here.
 
-- map onto these jobs:
+| Job                 | Does                                                                                                    | Notes                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `standards-gate`    | gate run pre-install (fs-only) + post-install, then `eslint .`, then `depcruise packages apps tooling`  | the only registry ingress; all three layers block merge                                                            |
+| `check`             | `prettier --check`, then `turbo run build lint test --concurrency=50%` + `bun run gate`                 | golden fixtures compared with BLESS unset; `--concurrency=50%` avoids PGlite hook-timeout starvation on the runner |
+| `registry-index`    | registry tests + rebuild `index.json` from ledger, `git diff --exit-code`                               | provenance proof the index is CI-built, not hand-appended                                                          |
+| `oscal-conformance` | NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180), JSON->XML->schema-validate round-trip via oscal-cli | hosted (needs a JDK); the fleet `check` job skips oscal-cli entirely                                               |
 
-| Job              | Does                                                                                                   | Notes                                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `standards-gate` | gate run pre-install (fs-only) + post-install, then `eslint .`, then `depcruise packages apps tooling` | the only registry ingress; all three layers block merge                                                            |
-| `check`          | `prettier --check`, then `turbo run build lint test --concurrency=50%` + `bun run gate`                | golden fixtures compared with BLESS unset; `--concurrency=50%` avoids PGlite hook-timeout starvation on the runner |
-| `eval`           | `bun run eval` - regression vs committed baseline, offline                                             | cassette-replayed; no provider/network/secret                                                                      |
-| `native-ext`     | `bun test packages/local-store/src` on ubuntu + macOS                                                  | exercises the sqlite-vec native ext (vec0 + FTS5 + RRF) on both OSes; `fail-fast: false`                           |
-| `registry-index` | registry tests + rebuild `index.json` from ledger, `git diff --exit-code`                              | provenance proof the index is CI-built, not hand-appended                                                          |
-
-Separate workflows: `.github/workflows/deploy-railway.yml` (`apps/site` -> Railway, ADR-0114/0115,
-superseding the retired static-export `deploy-site.yml`/Cloudflare Pages path) and
-`.github/workflows/lighthouse.yml`.
+Separate workflows: `quality.yml` (eval/native-ext/token-drift/knip/evidence-pack),
+`publish.yml` (registry publish, ADR-0223), `.github/workflows/deploy-railway.yml` (`apps/site`
+-> Railway, ADR-0114/0115), `lighthouse.yml`, `mirror-sync.yml`, `aeo-probe.yml`, and
+`support-bot.yml`.
 
 ## Commit conventions
 
@@ -172,42 +178,23 @@ starts): `auth` `tenancy-rls` `billing` `credits` `ai-config` `mcp` `ui` `audit-
 `field-crypto` `compliance` `ai-kit` `local-ai` `agent-dev` `cli` `support-bot` `license`
 `docs`. The full authoritative scope list lives in `CLAUDE.md`; add a scope there first.
 
-## Build reality (verified against the filesystem)
+## Build reality
 
-Authoritative posture: `knowledge/decisions/ADR-0082-go-live-site-posture.md` section 3.
-Only the base substrate + `create-caisson` are genuinely built and feature-complete; the
-edition packages exist + have merged + carry committed tests, but are "structure only" (not
-feature-complete). Do not represent editions as shipped.
+**Superseded — read [`docs/build-state.md`](build-state.md).** The table this section used to
+carry (only the base substrate + `create-caisson` "genuinely built", four editions "structure
+only" per `ADR-0082` section 3, citing `packages/local-ai/src/inference/stub.ts` as evidence) is
+stale on every count: `local-ai` was carved 2026-07-06 into `local-sync`/`local-inference`/
+`local-privacy` (`ADR-0258` §1) and no longer has an `inference/stub.ts` file at all; editions
+dissolved into six commercial bundles the same day (`ADR-0257`/`0258`); and every package once
+listed as a stub now has live-transport-proven code (`ADR-0201`) with real tests. `docs/build-state.md`'s
+per-package table is machine-regenerated off disk truth (`ADR-0253`) - it is the live source, this
+section is not.
 
-**Built substrate (the real, exercised core):**
-
-| Package                 | src files | test files | Role                                   |
-| ----------------------- | --------- | ---------- | -------------------------------------- |
-| `packages/kernel`       | 12        | 9          | gate + error model + shared kernel     |
-| `packages/tenancy-rls`  | 2         | 1          | fail-closed RLS (ADR-0005)             |
-| `packages/field-crypto` | 13        | 9          | per-tenant field encryption (ADR-0006) |
-| `packages/auth`         | 3         | 1          | auth substrate                         |
-| `packages/billing`      | 4         | 1          | billing substrate                      |
-| `packages/credits`      | 3         | 2          | integer credit metering (ADR-0007)     |
-| `packages/cli`          | 5         | 3          | `create-caisson` generator             |
-
-**Edition packages - structure only per ADR-0082 section 3 (NOT feature-complete):**
-`compliance` (HERO), `audit-worm`, `local-ai` (commercial, ADR-0083), `ai-kit`, `agent-dev`
-(the ADR-0082 §4 roadmap label retired by ADR-0237 rider 2). They carry committed `src/` + tests (e.g. `compliance` ~16 src / 11 test,
-`local-ai` ~14 / 9, `audit-worm` ~7 / 6) and pass the gate, but per the authoritative ADR
-they are scaffolding + stubs - e.g. `packages/local-ai/src/inference/stub.ts`. Treat
-edition feature-completeness as unverified beyond what the substrate provides.
-
-**Other workspace packages** (present, merged, gate-passing; individual completeness
-unverified, not certified by an ADR): `agent-kernel` `ai-config` `ai-evals` `ai-meter`
-`email` `guardrails` `jobs` `license-verify` `local-store` `mcp-server` `prompt-registry`
-`ui`. (`local-store` is exercised on both OSes by the `native-ext` CI matrix.)
-
-**Apps** (`apps/`): `base` `compliance` `ai-kit` `local-ai` `agent-dev` are edition
-reference apps (consumers ABOVE the package tower - exempt from the down-only rule, never
-registry-published); `site` is the marketing + docs app (Next, standalone Node app on
-Railway, ADR-0114/0115); `admin` is the operator control-plane (absorbed the design-system
-studio, ADR-0140). **Services** (`services/`): `docs` `license` `support-bot`.
+**Apps** (`apps/`): `base` `compliance` `ai-kit` `local-ai` `agent-dev` are bundle reference apps
+(consumers ABOVE the package tower - exempt from the down-only rule, never registry-published);
+`site` is the marketing + docs + buyer-dashboard app (Next, standalone Node app on Railway,
+ADR-0114/0115); `admin` is the operator control-plane (absorbed the design-system studio,
+ADR-0140). **Services** (`services/`): `docs` `intel` `license` `support-bot`.
 
 ## Quickstart
 

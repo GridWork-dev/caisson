@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-08
+updated: 2026-07-09
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -50,8 +50,10 @@ service's Railway/GH variable; then the agent probes.
     `listmodels`, site ask route.
   - **DONE 2026-07-08:** six keys minted + propagated (Railway ×3, box env, intel `.env` +
     recreate, GH secret) — all six verified live against the OpenRouter key endpoint. The
-    PAL MCP picks up the box key at next session start. **Follow-up:** no per-key credit
-    limit was set at mint (`limit=null` on all six) — add caps in the OpenRouter UI.
+    PAL MCP picks up the box key at next session start. **Resolved WONTFIX:** no per-key
+    credit limit was set at mint (`limit=null` on all six) — the operator explicitly
+    **waived** per-key caps 2026-07-08 (uncapped keys accepted; attribution, not caps, was
+    the goal of the split — see `docs/deploy/STATE.md`'s 2026-07-08 entry). Not an open ask.
 
 - [x] **1.2 `DISCORD_TOKEN`** — Discord Developer Portal (one visit, three acts) —
       **DONE 2026-07-08** via the vault flow: token regenerated + propagated, support-bot

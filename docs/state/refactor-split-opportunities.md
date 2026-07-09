@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-09
 status: live
 ---
 
@@ -9,8 +9,10 @@ Status: **R1 + R2 EXECUTED 2026-07-05** (PR #119 hygiene wave — Apache-2.0 `@c
 now owns the token-bucket limiter + the per-account PG store/hook; `services/docs` +
 `services/license` import it down and `apps/base/src/app.ts` imports `@caisson/rate-limit`, the
 app→commercial-service up-dep is gone). **R4's env-gate half was already fixed** (`936f54f`); the
-analytics _port_ stays owned by `adapter-expansion.md`. **R3 remains open and price-lock-gated**
-(now against the ADR-0227 $799 anchor) — queued in the SOT-expansion kickoff, do NOT auto-start.
+analytics _port_ stays owned by `adapter-expansion.md`. **R3 SHIPPED 2026-07-06** (PR #130, Kickoff D
+catalog program) — the operator's six-bundle price re-lock (ADR-0257/0258) cleared the price-lock gate
+and this exact 3-way split landed as `packages/compliance-core` / `frameworks-pack` /
+`signing-primitive` (ADR-0257 §1; confirmed built in `docs/state/package-catalog.md`).
 Authored 2026-06-30. A ranked survey of where
 the package structure should move: split a god-package, extract a shared concern to base, decouple an
 up-dependency, clean the open↔commercial boundary. Grounded in code-on-disk at `main`, not vibes —
@@ -51,12 +53,12 @@ package → consumers import DOWN, never copy):
 
 ## Ranked opportunities
 
-| Rank   | Opportunity                                                                                              | Type                                  | Files                                                                                                                       | Value                                                                                                                                          | Effort | Spec-gated?             |
-| ------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------------- |
-| **R1** | Hoist the per-IP token-bucket rate-limiter into a shared base package                                    | extract-to-base                       | `services/docs/src/rate-limit.ts` + `services/license/src/rate-limit.ts` (near-identical)                                   | Hygiene — kills a ~165-line copy-paste; one owner; third surface (the site) is one flood away                                                  | **S**  | Yes                     |
-| **R2** | Decouple the open base reference app from the commercial license service (per-account ADR-0112 throttle) | extract-to-base · decouple · boundary | `services/license/src/{rate-limit-store,rate-limit-hook}.ts` → base; `apps/base/src/app.ts:13`, `apps/base/package.json:25` | Boundary — restores open/commercial purity; removes an app→commercial-service up-dep; any base embedder gets throttling with no commercial dep | **M**  | Yes                     |
-| **R3** | Split the `compliance` god-package into framework-catalog / evidence-assembly / signing                  | split                                 | `packages/compliance/src/{frameworks/*, evidence/*}` (16 src / 2871 loc)                                                    | **Product** — unlocks a-la-carte framework packs (P7 "compliance vertical packs") + a standalone evidence-signing primitive; speculative       | **L**  | Yes **+ price re-lock** |
-| **R4** | Give web analytics a port (currently hardcoded, no seam)                                                 | boundary · extract-port               | `apps/site/app/layout.tsx:61` (`data-domain` hardcoded)                                                                     | Hygiene + a live bug — already owned by `adapter-expansion.md` §1D / ADR-0122                                                                  | S      | Yes (tracked elsewhere) |
+| Rank   | Opportunity                                                                                                      | Type                                  | Files                                                                                                                       | Value                                                                                                                                          | Effort | Spec-gated?                                  |
+| ------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------ | -------------------------------------------- |
+| **R1** | Hoist the per-IP token-bucket rate-limiter into a shared base package                                            | extract-to-base                       | `services/docs/src/rate-limit.ts` + `services/license/src/rate-limit.ts` (near-identical)                                   | Hygiene — kills a ~165-line copy-paste; one owner; third surface (the site) is one flood away                                                  | **S**  | Yes                                          |
+| **R2** | Decouple the open base reference app from the commercial license service (per-account ADR-0112 throttle)         | extract-to-base · decouple · boundary | `services/license/src/{rate-limit-store,rate-limit-hook}.ts` → base; `apps/base/src/app.ts:13`, `apps/base/package.json:25` | Boundary — restores open/commercial purity; removes an app→commercial-service up-dep; any base embedder gets throttling with no commercial dep | **M**  | Yes                                          |
+| **R3** | Split the `compliance` god-package into framework-catalog / evidence-assembly / signing — **SHIPPED 2026-07-06** | split                                 | `packages/compliance/src/{frameworks/*, evidence/*}` (16 src / 2871 loc)                                                    | **Product** — unlocked a-la-carte framework packs + a standalone evidence-signing primitive                                                    | **L**  | Yes **+ price re-lock** — done (ADR-0257 §1) |
+| **R4** | Give web analytics a port (currently hardcoded, no seam)                                                         | boundary · extract-port               | `apps/site/app/layout.tsx:61` (`data-domain` hardcoded)                                                                     | Hygiene + a live bug — already owned by `adapter-expansion.md` §1D / ADR-0122                                                                  | S      | Yes (tracked elsewhere)                      |
 
 **Considered and rejected** (below the table) — the thin-package _merge_ and the `ai-kit` _absorb_: both are anti-recommendations. Thin ≠ mergeable when the seam is the product.
 
@@ -106,9 +108,16 @@ package clears the docs↔license dup _and_ the app→service up-dep in one seam
 
 - re-point three consumers + keep `mcp-server` DB-free). Boundary/open-core integrity.
 
-## R3 — Split the `compliance` god-package _(product value, but price-locked — do NOT auto-start)_
+## R3 — Split the `compliance` god-package _(SHIPPED 2026-07-06 — kept as the historical rationale)_
 
-`packages/compliance` is the largest edition at **16 src / 2871 loc** and bundles three separable
+**SHIPPED 2026-07-06** (PR #130, Kickoff D catalog program): the operator's six-bundle price re-lock
+(ADR-0257/0258) satisfied the price-lock gate below, and this exact 3-way split landed as
+`packages/compliance-core` (evidence assembly), `packages/frameworks-pack` (framework catalog), and
+`packages/signing-primitive` (signing) — confirmed `built (commercial carve, ADR-0257 §1)` in
+`docs/state/package-catalog.md`. The analysis below is kept as the rationale that motivated the split;
+its dollar figures predate the catalog rework (superseded by ADR-0258's bundle pricing).
+
+`packages/compliance` was the largest edition at **16 src / 2871 loc** and bundled three separable
 concerns behind one barrel (`packages/compliance/src/index.ts`):
 
 1. **Framework catalog** — `frameworks/soc2-tsc.ts` (270) + `hipaa-security.ts` (267) + `eu-ai-act.ts`
@@ -165,12 +174,14 @@ versioned ports, (b) break ADR-0003 composability — a buyer composes `email` w
 blur the Apache-2.0 base granularity that `tooling/standards-gate` enforces. The line count is the
 _point_, not a defect. Leave them alone.
 
-**ABSORB / dissolve `ai-kit` (358 loc, "thinnest edition root") — NO.** `ai-kit` is an **edition root**,
-not a utility: it's the composition surface sold as the "AI Production Kit" $599 SKU (ADR-0059),
-gatewaying `ai-meter` + `ai-evals` + `guardrails` + `prompt-registry`. The composition _is_ the product;
-dissolving it would erase a sold edition. Its `src/gateway.ts` (22.8 KB, one dense file) is a god-_file_
-inside a thin package — an optional internal split into pipeline stages is available but is pure
-low-value hygiene; the **package** boundary is correct. Do not touch the SKU; file-split is optional.
+**ABSORB / dissolve `ai-kit` (358 loc, "thinnest edition root") — NO** (historical verdict; `ai-kit`
+was retired outright since, mooting the question). `ai-kit` was an **edition root**, not a utility: it
+was the composition surface sold as the "AI Production Kit" $599 SKU (ADR-0059), gatewaying
+`ai-meter` + `ai-evals` + `guardrails` + `prompt-registry`. The composition _was_ the product —
+dissolving it would have erased a sold edition. **Retired 2026-07-06** in the six-bundle catalog
+rework: `ai-kit`'s purchase id was purged (ADR-0270, zero real buyers held it) and its members joined
+the AI-Production bundle directly (ADR-0257/0258). Its `src/gateway.ts` (22.8 KB, one dense file) was
+a god-_file_ inside the now-retired package; the optional pipeline-stage split is moot with the SKU gone.
 
 ## Cross-links
 
