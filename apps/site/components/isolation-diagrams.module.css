@@ -121,6 +121,22 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* CAISSON-67: the tenant rows get the same 1-column stack .flow already had — three ~100px
+   * lanes couldn't hold "SET app.current_account = A" mono text, and the overflow rendered the
+   * whole page 449px wide at a 390px viewport. The per-lane ↓ arrow rows collapse to a single
+   * centered ↓ (they're aria-hidden decoration; three stacked arrows would read as noise). */
+  .isoRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .arrows {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .arrows span + span {
+    display: none;
+  }
+
   .stage:not(:first-child)::before {
     content: "↓";
     left: 50%;
