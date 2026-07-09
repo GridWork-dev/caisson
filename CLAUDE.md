@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0297** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0300** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -50,7 +50,11 @@ edited — supersede with a later ADR).
    repoint dropped, refines ADR-0291; 0296 = the delta-review re-lock: mobile-nav reuses the
    open Dialog drawer variant, ui-pro Drawer deleted, supersedes 0295 mechanism; 0297 = the
    twelfth-sitting design-partner terms — 5 partners · 40% off · 12-month reverting ·
-   case-study contingent on conversion, executes ADR-0273).
+   case-study contingent on conversion, executes ADR-0273; 0298-0300 = the Kickoff-H W3
+   commerce/license locks 2026-07-09 — read-only mutation gate as an admin lever only, no
+   dunning freeze · priority-support creditsPerCycle 1000 at Developer parity, executes the
+   0288 rider (b) · subscription-refund coverage-horizon claw, supersedes the 0269 Decision-6
+   accept).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec

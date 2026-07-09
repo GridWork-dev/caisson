@@ -1812,7 +1812,7 @@ research fanned out (13 agents) then this first fork round. Four locks:
 - **Support-SKU `creditsPerCycle` → 1000 (Developer parity)** — resolves the ADR-0288 rider (b)
   owed number. Schema forbids 0; the SKU's real value is the support lane, but parity with the
   $499 Developer grant reads clean and avoids the stingy-optics of 100-next-to-1000 on a pricing
-  page. Wired in W3 (`packages/pricebook/src/plans.ts` priority_support row). To ADR at W3 SHIP.
+  page. Wired in W3 (`packages/pricebook/src/plans.ts` priority_support row). **ADR-0299** (filed at W3 SHIP).
 - **External uptime monitor → Better Stack Free ($0)** — 10 monitors / 3-min checks / native
   Slack+email; defers spend. Discord/Telegram reach needs a small webhook-shape adapter (handled
   in W2). Ruled out: UptimeRobot free (2024 ToS bars commercial use). Points at `caisson.sh` +
@@ -1823,7 +1823,7 @@ research fanned out (13 agents) then this first fork round. Four locks:
 Full access` (grace) and caisson already ships exactly that (deliberately-unhandled past_due,
   only `canceled` revokes) — a dunning freeze would be a new caisson-specific policy contradicting
   both. Closes CAISSON-58's useful half; the dunning-freeze half is dropped as won't-fix (correct
-  per Paddle). To ADR at W3 SHIP.
+  per Paddle). **ADR-0298** (filed at W3 SHIP).
 
 Fork round 2 (changeset-cut timing · strix round-2 scope/engine + the missing E2E CF-Access
 bypass creds · CAISSON-25 residual disposition · pg-boss alert routing) follows before the
@@ -1844,7 +1844,7 @@ gated builds; the fully-unblocked wave items build in parallel worktree workflow
   `outstanding-work.md` §1. W4 this session = eval widening + live-harness re-run only.
 - **CAISSON-25 → BUILD BOTH residuals.** (a) static-grant ordering-race liveness fix (cancel
   tombstone / grant-time liveness check) AND (b) subscription-payment-refund → coverage-horizon
-  rollback. (b) REVERSES the ADR-0269 D6 accept lock → a superseding ADR is filed at W3 SHIP.
+  rollback. (b) REVERSES the ADR-0269 D6 accept lock → **ADR-0300** (superseding ADR filed at W3 SHIP).
   Both are money-seam → fable implementation + opus review + fable security verdict.
 - **Alert routing → ADD a Discord webhook adapter, unify in Discord.** pg-boss failure alerts get
   a new `createDiscordChannel` in `@caisson/alerting` (SSRF-guarded, embed shape) → the caisson
