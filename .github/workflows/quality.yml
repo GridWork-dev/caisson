@@ -1,8 +1,10 @@
 name: quality
 # The NON-required quality gates — split out of ci.yml so they can be path-filtered without
 # risking a required check (branch protection only watches standards-gate/check/registry-index,
-# which stay unconditional in ci.yml). Each job here is safe to skip when its package tree is
-# untouched: skip just means "nothing to validate," never "merge blocked."
+# which stay unconditional in ci.yml). On PULL REQUESTS each job may skip when its package tree
+# is untouched: skip just means "nothing to validate," never "merge blocked." On MAIN PUSHES
+# every job runs unconditionally (operator call 2026-07-09) — main is the full-truth signal, so
+# a docs-only commit still exercises eval, token-drift, and native-ext.
 on:
   push:
     branches: [main]
@@ -54,10 +56,11 @@ jobs:
   # and baseline; gating their merges on OUR regression baseline is wrong. The eval task ships in the
   # library for the buyer to opt into, but it is not one of the required buyer-repo CI checks.
   #
-  # NOT a required check → safe to path-skip on packages/** and apps/** changes.
+  # NOT a required check → safe to path-skip on PRs when packages/** and apps/** are untouched;
+  # always runs on main pushes.
   eval:
     needs: changes
-    if: needs.changes.outputs.eval == 'true'
+    if: github.event_name == 'push' || needs.changes.outputs.eval == 'true'
     runs-on: caisson-amd64
     timeout-minutes: 15
     steps:
@@ -80,10 +83,11 @@ jobs:
   # `bun run gen:tokens`, or hand-editing tokens.css, fails `git diff --exit-code`. Mirrors the
   # registry-index provenance gate; tokens.css is .prettierignore'd so the generator is sole authority.
   #
-  # NOT a required check → safe to path-skip on packages/ui/** changes.
+  # NOT a required check → safe to path-skip on PRs when packages/ui/** is untouched; always
+  # runs on main pushes.
   token-drift:
     needs: changes
-    if: needs.changes.outputs.ui == 'true'
+    if: github.event_name == 'push' || needs.changes.outputs.ui == 'true'
     runs-on: caisson-amd64
     timeout-minutes: 15
     steps:
@@ -141,10 +145,11 @@ jobs:
   # leg uses the LABEL ARRAY form, unlike the bare-name scale-set jobs. Manual fallback if the mini
   # is down: flip back to `runs-on: macos-latest` (one line).
   #
-  # NOT a required check → safe to path-skip on packages/local-store/** changes.
+  # NOT a required check → safe to path-skip on PRs when packages/local-store/** is untouched;
+  # always runs on main pushes.
   native-ext:
     needs: changes
-    if: needs.changes.outputs.local-store == 'true'
+    if: github.event_name == 'push' || needs.changes.outputs.local-store == 'true'
     strategy:
       fail-fast: false
       matrix:
