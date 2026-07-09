@@ -4,7 +4,9 @@ name: quality
 # which stay unconditional in ci.yml). On PULL REQUESTS each job may skip when its package tree
 # is untouched: skip just means "nothing to validate," never "merge blocked." On MAIN PUSHES
 # every job runs unconditionally (operator call 2026-07-09) — main is the full-truth signal, so
-# a docs-only commit still exercises eval, token-drift, and native-ext.
+# a docs-only commit still exercises eval, token-drift, and native-ext. The `!cancelled()` in
+# each job's `if` replaces the implicit success() gate so a failed/flaky `changes` job cannot
+# skip the push path — on PRs a failed `changes` still skips (its outputs read empty).
 on:
   push:
     branches: [main]
@@ -60,7 +62,7 @@ jobs:
   # always runs on main pushes.
   eval:
     needs: changes
-    if: github.event_name == 'push' || needs.changes.outputs.eval == 'true'
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.eval == 'true') }}
     runs-on: caisson-amd64
     timeout-minutes: 15
     steps:
@@ -87,7 +89,7 @@ jobs:
   # runs on main pushes.
   token-drift:
     needs: changes
-    if: github.event_name == 'push' || needs.changes.outputs.ui == 'true'
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.ui == 'true') }}
     runs-on: caisson-amd64
     timeout-minutes: 15
     steps:
@@ -149,7 +151,7 @@ jobs:
   # always runs on main pushes.
   native-ext:
     needs: changes
-    if: github.event_name == 'push' || needs.changes.outputs.local-store == 'true'
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.local-store == 'true') }}
     strategy:
       fail-fast: false
       matrix:

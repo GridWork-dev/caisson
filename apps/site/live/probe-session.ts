@@ -22,20 +22,32 @@ function parseSetCookie(
 ): Parameters<BrowserContext["addCookies"]>[0][number] {
   const [pair = "", ...attrs] = sc.split(";");
   const eq = pair.indexOf("=");
+  // Flag attributes (Secure/HttpOnly) are matched as whole attribute names — a substring test
+  // over the raw header would false-positive on a `__Secure-` name prefix or a value containing
+  // "httponly". SameSite comes from the real attribute (better-auth sends Lax), defaulting to
+  // Lax like a browser does, not Strict.
+  const flags = attrs.map((a) => a.trim().toLowerCase());
   const attr = (k: string): string | undefined =>
     attrs
-      .find((a) => a.trim().toLowerCase().startsWith(k))
+      .find((a) => a.trim().toLowerCase().startsWith(`${k}=`))
       ?.split("=")[1]
       ?.trim();
+  const rawSameSite = attr("samesite")?.toLowerCase();
+  const sameSite: "Strict" | "Lax" | "None" =
+    rawSameSite === "strict"
+      ? "Strict"
+      : rawSameSite === "none"
+        ? "None"
+        : "Lax";
   return {
     name: pair.slice(0, eq).trim(),
     value: pair.slice(eq + 1).trim(),
     domain: attr("domain") ?? hostname,
     path: attr("path") ?? "/",
     expires: -1,
-    httpOnly: /httponly/i.test(sc),
-    secure: /secure/i.test(sc),
-    sameSite: "Strict",
+    httpOnly: flags.includes("httponly"),
+    secure: flags.includes("secure"),
+    sameSite,
   };
 }
 
