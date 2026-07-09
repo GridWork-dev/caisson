@@ -182,7 +182,7 @@ export default function AiKitPage() {
             {bundleCartItem && (
               <AddToCartButton item={bundleCartItem} variant="primary" />
             )}
-            <Button href="/docs/ai-kit" variant="ghost">
+            <Button href="/docs/ai-production" variant="ghost">
               Read the docs
             </Button>
           </>
@@ -396,7 +396,7 @@ export default function AiKitPage() {
           {bundleCartItem && (
             <AddToCartButton item={bundleCartItem} variant="primary" />
           )}
-          <Button href="/docs/ai-kit" variant="ghost">
+          <Button href="/docs/ai-production" variant="ghost">
             Read the docs
           </Button>
         </div>
