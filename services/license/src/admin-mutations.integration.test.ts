@@ -35,7 +35,12 @@ import {
   grant,
 } from "@caisson/credits";
 import { withAdvisoryXactLock } from "@caisson/jobs";
-import { asCredits, NotFoundError, ValidationError } from "@caisson/kernel";
+import {
+  asCredits,
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "@caisson/kernel";
 import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
 import {
   LEGACY_ENTITLEMENT_ALIASES,
@@ -56,14 +61,17 @@ import {
   GrantEntitlementBody,
   ResendPurchaseEmailBody,
   RevokePurchaseBody,
+  SetSystemModeBody,
   type AdminMutationDeps,
   adjustCreditsAdmin,
   firstMintLicenseAdmin,
   grantEntitlementAdmin,
+  readSystemMode,
   reissueLicenseAdmin,
   resendPurchaseEmailAdmin,
   revokeEntitlementAdmin,
   revokePurchaseAdmin,
+  setSystemModeAdmin,
   wormAnchorAccount,
 } from "./admin-mutations.ts";
 import { applyBillingEvent } from "./apply-billing-event.ts";
@@ -1614,6 +1622,73 @@ describe("paid revoke strict boundary body (ADR-0225)", () => {
         clawUnspentCredits: true,
         revokeEdgeAccess: true,
       }).success,
+    ).toBe(false);
+  });
+});
+
+describe("system write-mode lever (read-only gate)", () => {
+  test("unset source reads active; read_only blocks a mutation fail-closed; active unblocks", async () => {
+    // No `system_mode` row has been written by any earlier test in this file — the default is active.
+    expect(await readSystemMode(db)).toBe("active");
+
+    const acct = await realAccount();
+    // Arm read-only: the lever dual-logs and the mode read flips.
+    const armed = await setSystemModeAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      mode: "read_only",
+    });
+    expect(armed.previous).toBe("active");
+    expect(armed.worm).toBe("ok");
+    expect(await readSystemMode(db)).toBe("read_only");
+
+    // Every mutating action is gated fail-closed (409 ConflictError), BEFORE any write lands.
+    await expect(
+      grantEntitlementAdmin(deps(), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        entitlementIds: ["compliance"],
+      }),
+    ).rejects.toThrow(ConflictError);
+    await expect(
+      adjustCreditsAdmin(deps(), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        deltaCredits: 100,
+        reason: "should be blocked",
+      }),
+    ).rejects.toThrow(ConflictError);
+    // Ground truth: nothing was written for the account while read-only.
+    const rows = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM entitlement_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect(rows[0]?.n).toBe(0);
+
+    // The lever itself is NOT gated — flipping back to active must work while read-only.
+    const unarmed = await setSystemModeAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      mode: "active",
+    });
+    expect(unarmed.previous).toBe("read_only");
+    expect(await readSystemMode(db)).toBe("active");
+
+    // Unblocked: the same mutation now lands.
+    const g = await grantEntitlementAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      entitlementIds: ["compliance"],
+    });
+    expect(g.after).toEqual(["compliance"]);
+  });
+
+  test("SetSystemModeBody is strict and only admits the two modes", () => {
+    expect(SetSystemModeBody.safeParse({ mode: "read_only" }).success).toBe(
+      true,
+    );
+    expect(SetSystemModeBody.safeParse({ mode: "active" }).success).toBe(true);
+    expect(SetSystemModeBody.safeParse({ mode: "frozen" }).success).toBe(false);
+    expect(
+      SetSystemModeBody.safeParse({ mode: "active", rogue: 1 }).success,
     ).toBe(false);
   });
 });

@@ -100,6 +100,7 @@ export {
   RevokePurchaseBody,
   FirstMintLicenseBody,
   ResendPurchaseEmailBody,
+  SetSystemModeBody,
   grantEntitlementAdmin,
   revokeEntitlementAdmin,
   adjustCreditsAdmin,
@@ -107,6 +108,8 @@ export {
   revokePurchaseAdmin,
   firstMintLicenseAdmin,
   resendPurchaseEmailAdmin,
+  readSystemMode,
+  setSystemModeAdmin,
   wormAnchorAccount,
 } from "./admin-mutations.ts";
 export type {
@@ -119,12 +122,14 @@ export type {
   PurchaseRevokeInput,
   FirstMintLicenseInput,
   ResendPurchaseEmailInput,
+  SetSystemModeInput,
   EntitlementMutationResult,
   CreditAdjustResult,
   ReissueResult,
   PurchaseRevokeResult,
   FirstMintResult,
   ResendPurchaseEmailResult,
+  SystemModeResult,
   WormStatus,
 } from "./admin-mutations.ts";
 export { resolveEmailer, notifyPurchaseEmail } from "./email-notify.ts";

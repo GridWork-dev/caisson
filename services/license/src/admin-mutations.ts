@@ -34,9 +34,11 @@ import {
 } from "@caisson/credits";
 import {
   asCredits,
+  assertNotReadOnly,
   NotFoundError,
   ValidationError,
   type JsonValue,
+  type SystemMode,
 } from "@caisson/kernel";
 import {
   buildAdminSelectPolicySql,
@@ -91,6 +93,11 @@ export const ADMIN_MUTATION_PROVISION_SQL = [
   // edge. It NEVER writes license_grant (the reissue proxy persists it), so it gets the SELECT-only
   // variant — the paid-revoke blast radius stops at a cross-tenant read of the license index.
   buildAdminSelectPolicySql("license_grant"),
+  // The system-mode read (the read-only lever): every mutation consults the LATEST `system_mode`
+  // row in `admin_action_log` before writing, and the mutation surface runs as `admin_write` — so
+  // the role needs SELECT on the log it already INSERTs into. Read-back of an operator-owned,
+  // cross-tenant log by the operator-write role adds no new exposure.
+  `GRANT SELECT ON admin_action_log TO admin_write;`,
 ].join("\n");
 
 /** The re-served token an injected `/issue` proxy returns (Fork AM-5); never carries the bearer. */
@@ -329,6 +336,107 @@ async function assertAccountExists(
   }
 }
 
+// --- System write-mode (the operator read-only lever) -------------------------------------------
+//
+// The persisted mode SOURCE is `admin_action_log` itself: the LATEST `system_mode` row's
+// `payload_after.mode` is the current mode (no row ever written -> `active`). Reusing the log as
+// the store means the lever is flippable at runtime (no redeploy), persisted across instances, and
+// audit-trailed by construction — every flip IS an admin action row. This is an operator
+// maintenance/incident switch ONLY; it is deliberately NOT wired to any billing/dunning state
+// (`subscription.past_due` keeps full access — the provider-recommended grace posture this repo
+// already ships — so a dunning freeze would contradict the shipped behavior and is won't-fix).
+
+/** The pseudo-target the mode lever logs under — the lever mutates SYSTEM state, not an account. */
+const SYSTEM_MODE_TARGET = "system";
+
+const systemModePayloadSchema = z.object({
+  mode: z.enum(["active", "read_only"]),
+});
+
+export const SetSystemModeBody = z
+  .object({ mode: z.enum(["active", "read_only"]) })
+  .strict();
+
+export type SetSystemModeInput = z.infer<typeof SetSystemModeBody> & {
+  actorEmail: string;
+};
+
+/**
+ * Read the current system write-mode from the latest `system_mode` action row. Defaults to
+ * `active` when no row exists, the payload is malformed, or the read itself fails.
+ *
+ * // ponytail: fail-open-to-available on a SOURCE read error — `read_only` is the exceptional
+ * // state an operator explicitly arms, and the un-arming lever writes through this same surface;
+ * // defaulting to `read_only` on a transient read failure would brick every mutation including
+ * // the lever that un-bricks it. The GATE itself stays fail-closed: an armed `read_only` always
+ * // blocks. Upgrade path: a dedicated single-row mode table with a strict read if the log-derived
+ * // source ever needs to distinguish "unreadable" from "unset".
+ */
+export async function readSystemMode(db: Transactor): Promise<SystemMode> {
+  try {
+    return await withAdminWrite(db, async (tx) => {
+      const r = await tx.query<{ payload_after: unknown }>(
+        `SELECT payload_after FROM admin_action_log
+          WHERE action = 'system_mode'
+          ORDER BY created_at DESC, id DESC
+          LIMIT 1`,
+      );
+      const row = r.rows[0];
+      if (row === undefined) return "active";
+      const parsed = systemModePayloadSchema.safeParse(row.payload_after);
+      return parsed.success ? parsed.data.mode : "active";
+    });
+  } catch {
+    return "active";
+  }
+}
+
+/** The fail-closed gate every mutating action calls FIRST: `read_only` -> throw (409), else no-op. */
+async function assertSystemModeActive(
+  db: Transactor,
+  action: string,
+): Promise<void> {
+  assertNotReadOnly(await readSystemMode(db), action);
+}
+
+export interface SystemModeResult {
+  mode: SystemMode;
+  previous: SystemMode;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the flip already committed). */
+  worm: WormStatus;
+}
+
+/**
+ * The admin lever: persist a new system write-mode by appending a `system_mode` action row (the
+ * row IS the store — see the module note above). Deliberately NOT gated by the read-only check
+ * itself: this is the only way back to `active`, so gating it would make `read_only` permanent.
+ * Dual-logged like every other action.
+ */
+export async function setSystemModeAdmin(
+  deps: AdminMutationDeps,
+  input: SetSystemModeInput,
+): Promise<SystemModeResult> {
+  const previous = await readSystemMode(deps.db);
+  await withAdminWrite(deps.db, (tx) =>
+    insertAdminActionLog(tx, {
+      actorEmail: input.actorEmail,
+      targetAccountId: SYSTEM_MODE_TARGET,
+      action: "system_mode",
+      before: { mode: previous },
+      after: { mode: input.mode },
+    }),
+  );
+  const worm = await appendWorm(
+    deps,
+    SYSTEM_MODE_TARGET,
+    "system_mode",
+    input.actorEmail,
+    { mode: previous },
+    { mode: input.mode },
+  );
+  return { mode: input.mode, previous, worm };
+}
+
 /**
  * Fail closed on an entitlement id the comp-grant boundary cannot resolve (ADR-0278 F1). Reuses
  * `expandEntitlements` itself, one id at a time, rather than a hand-maintained allowlist: the
@@ -378,6 +486,7 @@ export async function grantEntitlementAdmin(
   deps: AdminMutationDeps,
   input: GrantEntitlementInput,
 ): Promise<EntitlementMutationResult> {
+  await assertSystemModeActive(deps.db, "grant entitlements");
   // Reject an unresolvable id BEFORE the transaction opens (ADR-0278 F1) — never write a grant that
   // would fail-closed-throw the target account's ENTIRE entitlement expansion on its next read.
   assertGrantableEntitlementIds(deps.index, input.entitlementIds);
@@ -415,6 +524,7 @@ export async function revokeEntitlementAdmin(
   deps: AdminMutationDeps,
   input: RevokeEntitlementInput,
 ): Promise<EntitlementMutationResult> {
+  await assertSystemModeActive(deps.db, "revoke entitlement");
   const result = await withAdminWrite(deps.db, async (tx) => {
     const before = await readEntitlements(tx, input.targetAccountId);
     const changed = await revokeAdminComp(tx, {
@@ -464,6 +574,7 @@ export async function adjustCreditsAdmin(
   deps: AdminMutationDeps,
   input: AdjustCreditsInput,
 ): Promise<CreditAdjustResult> {
+  await assertSystemModeActive(deps.db, "adjust credits");
   const result = await withAdminWrite(deps.db, async (tx) => {
     await assertAccountExists(tx, input.targetAccountId);
     const balanceBefore = await balance(tx, input.targetAccountId);
@@ -551,6 +662,7 @@ export async function reissueLicenseAdmin(
   deps: AdminMutationDeps,
   input: ReissueLicenseInput,
 ): Promise<ReissueResult> {
+  await assertSystemModeActive(deps.db, "reissue license");
   const reissued = await deps.issue({
     accountId: input.targetAccountId,
     tier: input.tier,
@@ -631,6 +743,7 @@ export async function firstMintLicenseAdmin(
   deps: AdminMutationDeps,
   input: FirstMintLicenseInput,
 ): Promise<FirstMintResult> {
+  await assertSystemModeActive(deps.db, "first-mint license");
   const minted = await deps.issue({
     accountId: input.targetAccountId,
     tier: FIRST_MINT_TIER,
@@ -705,6 +818,7 @@ export async function resendPurchaseEmailAdmin(
   deps: AdminMutationDeps,
   input: ResendPurchaseEmailInput,
 ): Promise<ResendPurchaseEmailResult> {
+  await assertSystemModeActive(deps.db, "resend purchase email");
   const orderId = input.orderId ?? `admin-resend-${new Date().toISOString()}`;
   await notifyPurchaseEmail(deps.db, resolveEmailer(), {
     accountId: input.targetAccountId,
@@ -802,6 +916,7 @@ export async function revokePurchaseAdmin(
   deps: AdminMutationDeps,
   input: PurchaseRevokeInput,
 ): Promise<PurchaseRevokeResult> {
+  await assertSystemModeActive(deps.db, "revoke purchase");
   // The FULL cross-tenant deny-set as of THIS revoke's commit, captured inside the tx and published
   // post-commit (below). Assigned from the closure so the atomic post-revoke truth escapes.
   let fullDenySet: string[] = [];

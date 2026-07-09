@@ -19,6 +19,9 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
  * `license_first_mint` (the buyer-lifecycle-audit G1 rescue lever, ADR-0292): a DISTINCT action from
  * `license_reissue` (which MEANS re-serve-an-existing-token-only) so the two never conflate in the log.
  * `email_resend` (G40): a resend of the purchase-confirmation-style email to the account's own address.
+ * `system_mode`: the operator read-only lever — the LATEST `system_mode` row's `payload_after.mode`
+ * IS the persisted system write-mode every other mutation consults (the log doubles as the store:
+ * flipping the lever is itself a logged admin action, so the mode is audit-trailed by construction).
  */
 export const ADMIN_ACTIONS = [
   "entitlement_grant",
@@ -28,6 +31,7 @@ export const ADMIN_ACTIONS = [
   "purchase_revoke",
   "license_first_mint",
   "email_resend",
+  "system_mode",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
@@ -43,7 +47,7 @@ CREATE TABLE admin_action_log (
   payload_before jsonb,
   payload_after jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT admin_action_log_action CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend'))
+  CONSTRAINT admin_action_log_action CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend', 'system_mode'))
 );
 GRANT INSERT ON admin_action_log TO admin_write;
 GRANT SELECT ON admin_action_log TO admin;
@@ -63,7 +67,7 @@ GRANT SELECT ON admin_action_log TO admin;
 export const ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL = `
 ALTER TABLE admin_action_log DROP CONSTRAINT IF EXISTS admin_action_log_action;
 ALTER TABLE admin_action_log ADD CONSTRAINT admin_action_log_action
-  CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend'));
+  CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend', 'system_mode'));
 `;
 
 export interface AdminActionLogInput {
