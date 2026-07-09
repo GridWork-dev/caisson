@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { buildMetadata } from "@/lib/metadata";
@@ -9,6 +8,7 @@ import {
   baseToolingList,
 } from "@/lib/base-substrate";
 import { faqPage, serializeJsonLd } from "@/lib/jsonld";
+import { prose } from "../prose";
 
 export const metadata = buildMetadata({
   title: "License",
@@ -45,30 +45,6 @@ const FAQ_ITEMS = [
       "No. Caisson ships the technical controls that SOC 2, HIPAA, and other frameworks require: fail-closed RLS, WORM storage, an append-only audit chain, field encryption, and an evidence-pack generator. The audit itself, the organizational controls (HR, vendor management, incident response), and the certification decision remain yours. Your auditor certifies your organization; Caisson provides the code that makes the technical evidence.",
   },
 ];
-
-const prose = {
-  paragraph: {
-    marginTop: "var(--cs-space-4)",
-    lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "72ch",
-  } as CSSProperties,
-  h3: {
-    marginTop: "var(--cs-space-8)",
-    marginBottom: "var(--cs-space-3)",
-    fontSize: "var(--cs-text-lg)",
-    fontWeight: "var(--cs-weight-semibold)",
-    letterSpacing: "var(--cs-tracking-tight)",
-  } as CSSProperties,
-  list: {
-    marginTop: "var(--cs-space-3)",
-    paddingLeft: "var(--cs-space-5)",
-    lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "68ch",
-  } as CSSProperties,
-  li: {
-    marginBottom: "var(--cs-space-2)",
-  } as CSSProperties,
-};
 
 export default function LicensePage() {
   const ldFaq = faqPage(FAQ_ITEMS);

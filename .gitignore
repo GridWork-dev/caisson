@@ -40,9 +40,13 @@ docs/session-logs/
 # visual-harness run output (scripts/visual-harness.ts — local tool, never committed)
 outputs/visual-audit/
 outputs/screenshots/
+# W1 remediation review/proof screenshots (session-local, never committed)
+outputs/w1-proof/
+outputs/review-g1/
 
 # ADR-0223: CI-only tarball staging for R2 upload (never committed)
 registry/.tarball-staging/
 
 # ADR-0275 CI build-evidence pack output (assembled fresh each run, uploaded as an artifact)
 evidence-pack/
+outputs/w3-proof/

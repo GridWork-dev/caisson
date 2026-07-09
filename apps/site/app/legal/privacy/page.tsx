@@ -1,7 +1,6 @@
-import type { CSSProperties } from "react";
-
 import { buildMetadata } from "@/lib/metadata";
 import { Card, Section } from "@/components";
+import { prose } from "../prose";
 
 export const metadata = buildMetadata({
   title: "Privacy Policy",
@@ -9,31 +8,6 @@ export const metadata = buildMetadata({
     "How Caisson collects and handles personal data on caisson.sh — product-update email, purchase account communications, cookieless analytics, and your rights under GDPR.",
   path: "/legal/privacy",
 });
-
-/* Shared prose styles for legal pages — inline style props reading --cs-* tokens. */
-const prose = {
-  paragraph: {
-    marginTop: "var(--cs-space-4)",
-    lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "72ch",
-  } as CSSProperties,
-  h3: {
-    marginTop: "var(--cs-space-8)",
-    marginBottom: "var(--cs-space-3)",
-    fontSize: "var(--cs-text-lg)",
-    fontWeight: "var(--cs-weight-semibold)",
-    letterSpacing: "var(--cs-tracking-tight)",
-  } as CSSProperties,
-  list: {
-    marginTop: "var(--cs-space-3)",
-    paddingLeft: "var(--cs-space-5)",
-    lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "68ch",
-  } as CSSProperties,
-  li: {
-    marginBottom: "var(--cs-space-2)",
-  } as CSSProperties,
-};
 
 export default function PrivacyPage() {
   return (

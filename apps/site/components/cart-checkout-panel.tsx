@@ -79,7 +79,8 @@ export function CartCheckoutPanel({ accountId }: CartCheckoutPanelProps) {
 
       {items.length === 0 ? (
         <p className="cs-muted">
-          Your cart is empty. Go back to pricing to add an edition or a module.
+          Your cart is empty. Head to the marketplace to add a bundle or a
+          module.
         </p>
       ) : (
         <>

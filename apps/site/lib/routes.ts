@@ -68,8 +68,9 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/legal/eula", label: "EULA", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore
 ];
 
-/** The editions, in display order — single-sourced for the nav, the footer, and the sitemap. */
-export const EDITION_ROUTES = MARKETING_ROUTES.filter(
+/** The bundle persona pages, in display order — single-sourced for the nav, the footer, and the
+ *  sitemap. (The `edition` group name is the legacy persona-page grouping, ADR-0257.) */
+export const BUNDLE_ROUTES = MARKETING_ROUTES.filter(
   (r) => r.group === "edition",
 );
 

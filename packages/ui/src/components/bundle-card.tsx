@@ -3,15 +3,15 @@ import type { AnchorHTMLAttributes, ReactNode } from "react";
 
 import { Icon, type IconName } from "./icon";
 
-import "./edition-card.css";
+import "./bundle-card.css";
 
-export interface EditionCardProps extends Omit<
+export interface BundleCardProps extends Omit<
   AnchorHTMLAttributes<HTMLAnchorElement>,
   "title"
 > {
-  /** Destination — EditionCard is ALWAYS a link, so it renders a plain `<a href>` (no framework). */
+  /** Destination — BundleCard is ALWAYS a link, so it renders a plain `<a href>` (no framework). */
   href: string;
-  /** Edition display name (rendered beside the glyph in the head). */
+  /** Bundle display name (rendered beside the glyph in the head). */
   name: string;
   /** Domain glyph (Lucide / bespoke) via the one `<Icon>` surface — rendered at `size="lg"`. */
   icon: IconName;
@@ -26,18 +26,20 @@ export interface EditionCardProps extends Omit<
 }
 
 /**
- * EditionCard — a featured-lead edition link (V12), ported from the inline-style `apps/site`
+ * BundleCard — a featured-lead bundle link (V12; renamed from EditionCard when the editions
+ * dissolved into the six-bundle catalog, ADR-0257/0258), ported from the inline-style `apps/site`
  * primitive to the recipe (ADR-0099): co-located CSS reading only `var(--cs-*)`, the `lead`
  * variant expressed as the `data-lead` attribute, and a self-contained `.cs-edition` surface that
  * replicates the interactive-card tonal hover + lift (no dependency on the sibling `card`).
+ * The `.cs-edition*` class names are part of the shipped CSS contract and stay unchanged.
  *
  *   - Framework-agnostic: ALWAYS navigates, so it renders a plain `<a href>` (no `next/link`); a
  *     Next consumer can still wrap/route normally since it's a real anchor.
  *   - `forwardRef` onto the single `<a>` DOM root, BEM block `cs-edition`.
  *   - `.cs-editions` (exported below) is the grid wrapper the page wraps cards in.
  */
-export const EditionCard = forwardRef<HTMLAnchorElement, EditionCardProps>(
-  function EditionCard(
+export const BundleCard = forwardRef<HTMLAnchorElement, BundleCardProps>(
+  function BundleCard(
     { href, name, icon, status, line, lead = false, proof, className, ...rest },
     ref,
   ) {

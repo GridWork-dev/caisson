@@ -18,7 +18,7 @@ import {
   DataTable,
   DetailList,
   Dialog,
-  EditionCard,
+  BundleCard,
   EmptyState,
   ErrorState,
   Faq,
@@ -344,7 +344,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   },
   {
     id: "ui.edition-card",
-    name: "EditionCard",
+    name: "BundleCard",
     package: "@caisson/ui",
     tier: "apache-base",
     description:
@@ -352,7 +352,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
     variants: ["lead", "default"],
     render: () => (
       <div className="cs-editions">
-        <EditionCard
+        <BundleCard
           lead
           href="#"
           name="Compliance"
