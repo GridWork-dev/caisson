@@ -61,6 +61,7 @@ import {
   GrantEntitlementBody,
   ResendPurchaseEmailBody,
   RevokePurchaseBody,
+  RotateLicenseBody,
   SetSystemModeBody,
   type AdminMutationDeps,
   adjustCreditsAdmin,
@@ -71,6 +72,7 @@ import {
   resendPurchaseEmailAdmin,
   revokeEntitlementAdmin,
   revokePurchaseAdmin,
+  rotateLicenseAdmin,
   setSystemModeAdmin,
   wormAnchorAccount,
 } from "./admin-mutations.ts";
@@ -1689,6 +1691,212 @@ describe("system write-mode lever (read-only gate)", () => {
     expect(SetSystemModeBody.safeParse({ mode: "frozen" }).success).toBe(false);
     expect(
       SetSystemModeBody.safeParse({ mode: "active", rogue: 1 }).success,
+    ).toBe(false);
+  });
+});
+
+describe("license rotation (true key rotation via the edge deny-set)", () => {
+  /** A rotation-aware /issue stub: mints a FRESH id per call and records what it was asked. */
+  function rotatingIssue(): {
+    issue: AdminMutationDeps["issue"];
+    calls: Array<{ rotate?: boolean }>;
+    minted: string[];
+  } {
+    const calls: Array<{ rotate?: boolean }> = [];
+    const minted: string[] = [];
+    const issue: AdminMutationDeps["issue"] = async (req) => {
+      calls.push({
+        ...(req.rotate !== undefined ? { rotate: req.rotate } : {}),
+      });
+      const licenseId = randomUUID();
+      minted.push(licenseId);
+      return { token: `ROTATED-${licenseId}`, licenseId };
+    };
+    return { issue, calls, minted };
+  }
+
+  /** Seed a stored license grant (the key being rotated) for (acct, major 0). */
+  async function seedLicense(acct: string, licenseId: string): Promise<void> {
+    await withTenant(db, acct, (tx) =>
+      storeLicenseGrant(tx, {
+        accountId: acct,
+        major: 0,
+        licenseId,
+        tier: "pro",
+        expiry: null,
+        token: `TOK-${licenseId}`,
+      }),
+    );
+  }
+
+  test("rotate denies the OLD key, mints a fresh one, dual-logs, and re-runs idempotently", async () => {
+    const acct = await realAccount();
+    const oldKey = randomUUID();
+    await seedLicense(acct, oldKey);
+    const stub = rotatingIssue();
+
+    const r = await rotateLicenseAdmin(deps({ issue: stub.issue }), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      major: 0,
+      reason: "key leaked in a paste",
+      tier: "pro",
+      expiry: null,
+      oldLicenseId: oldKey,
+    });
+    // A FRESH key came back; the old one is what got denied.
+    expect(r.oldLicenseId).toBe(oldKey);
+    expect(r.licenseId).not.toBe(oldKey);
+    expect(r.token).toBe(`ROTATED-${r.licenseId}`);
+    expect(stub.calls).toEqual([{ rotate: true }]); // the proxy was asked for a FORCED re-mint
+    expect(r.worm).toBe("ok");
+    expect(r.edgePublish).toBe("skipped"); // no publisher provisioned in this suite
+
+    // Deny-set truth: the OLD key is a license_revocation row (the edge CRL's DB half)…
+    const denied = await ground<{
+      license_id: string;
+      account_id: string;
+      reason: string | null;
+    }>(
+      `SELECT license_id, account_id, reason FROM license_revocation WHERE license_id = $1`,
+      [oldKey],
+    );
+    expect(denied).toHaveLength(1);
+    expect(denied[0]?.account_id).toBe(acct);
+    expect(denied[0]?.reason).toBe("key leaked in a paste");
+    // …and the deny-set READ (what the publish path ships to the Worker) contains it.
+    const denySet = await asAdmin((tx) => readDenySet(tx));
+    expect(denySet).toContain(oldKey);
+    // The NEW key is NOT denied.
+    expect(denySet).not.toContain(r.licenseId);
+
+    // Dual log: a license_rotate action row landed with the old→new transition.
+    const browsed = await asAdmin((tx) => readAdminActionLog(tx, 50));
+    const mine = browsed.filter(
+      (row) => row.targetAccountId === acct && row.action === "license_rotate",
+    );
+    expect(mine).toHaveLength(1);
+
+    // Idempotent re-run (a retried rotation of the same old key): the PK conflict no-ops the
+    // denial — still one row — and a second fresh key is minted.
+    const again = await rotateLicenseAdmin(deps({ issue: stub.issue }), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      major: 0,
+      tier: "pro",
+      expiry: null,
+      oldLicenseId: oldKey,
+    });
+    expect(again.licenseId).not.toBe(r.licenseId);
+    const deniedRows = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE license_id = $1`,
+      [oldKey],
+    );
+    expect(deniedRows[0]?.n).toBe(1);
+  });
+
+  test("a failed MINT still leaves the old key denied (revoke-first; retry converges)", async () => {
+    const acct = await realAccount();
+    const oldKey = randomUUID();
+    await seedLicense(acct, oldKey);
+    const failingIssue: AdminMutationDeps["issue"] = async () => {
+      throw new Error("license /issue proxy returned 503");
+    };
+
+    await expect(
+      rotateLicenseAdmin(deps({ issue: failingIssue }), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        major: 0,
+        tier: "pro",
+        expiry: null,
+        oldLicenseId: oldKey,
+      }),
+    ).rejects.toThrow("503");
+
+    // The denial COMMITTED FIRST — durable despite the failed mint (deny-without-replacement is
+    // the fail-safe direction for a compromised key)…
+    const denied = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE license_id = $1`,
+      [oldKey],
+    );
+    expect(denied[0]?.n).toBe(1);
+    // …no action log claims a rotation that never completed…
+    const browsed = await asAdmin((tx) => readAdminActionLog(tx, 50));
+    expect(
+      browsed.filter(
+        (row) =>
+          row.targetAccountId === acct && row.action === "license_rotate",
+      ),
+    ).toHaveLength(0);
+    // …and the stored grant is untouched (the mint never ran).
+    const stored = await withTenant(db, acct, (tx) =>
+      tx.query<{ license_id: string }>(
+        `SELECT license_id FROM license_grant WHERE account_id = $1 AND major = 0`,
+        [acct],
+      ),
+    );
+    expect(stored.rows[0]?.license_id).toBe(oldKey);
+
+    // The RETRY converges: the denial re-insert no-ops and the fresh mint lands.
+    const stub = rotatingIssue();
+    const retried = await rotateLicenseAdmin(deps({ issue: stub.issue }), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      major: 0,
+      tier: "pro",
+      expiry: null,
+      oldLicenseId: oldKey,
+    });
+    expect(retried.licenseId).not.toBe(oldKey);
+    expect(retried.worm).toBe("ok");
+  });
+
+  test("a failed REVOKE never mints — no orphan new key (atomic leg 1)", async () => {
+    // A nonexistent target fails the existence check INSIDE the revoke transaction, rolling the
+    // denial back — the mint proxy must never have been called.
+    const stub = rotatingIssue();
+    const ghost = betterAuthId(); // never seeded
+    await expect(
+      rotateLicenseAdmin(deps({ issue: stub.issue }), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: ghost,
+        major: 0,
+        tier: "pro",
+        expiry: null,
+        oldLicenseId: "lic-ghost",
+      }),
+    ).rejects.toThrow(NotFoundError);
+    expect(stub.calls).toHaveLength(0); // no mint without its revoke
+    expect(stub.minted).toHaveLength(0);
+    const denied = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE license_id = 'lic-ghost'`,
+    );
+    expect(denied[0]?.n).toBe(0); // the denial rolled back with the failed leg
+  });
+
+  test("RotateLicenseBody is strict (unknown fields rejected; reason optional)", () => {
+    expect(
+      RotateLicenseBody.safeParse({ targetAccountId: "acct", major: 0 })
+        .success,
+    ).toBe(true);
+    expect(
+      RotateLicenseBody.safeParse({
+        targetAccountId: "acct",
+        major: 0,
+        reason: "leak",
+      }).success,
+    ).toBe(true);
+    expect(
+      RotateLicenseBody.safeParse({
+        targetAccountId: "acct",
+        major: 0,
+        rogue: 1,
+      }).success,
+    ).toBe(false);
+    expect(
+      RotateLicenseBody.safeParse({ targetAccountId: "acct", major: -1 })
+        .success,
     ).toBe(false);
   });
 });

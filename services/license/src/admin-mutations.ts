@@ -62,6 +62,7 @@ import {
 } from "./entitlement-store.ts";
 import {
   readDenySet,
+  recordLicenseRevocation,
   recordLicenseRevocations,
 } from "./license-revocation-store.ts";
 
@@ -133,6 +134,9 @@ export interface AdminMutationDeps {
     tier: string;
     major: number;
     expiry: string | null;
+    /** True → `/issue` skips the idempotent re-serve and mints a FRESH token + licenseId (the
+     *  rotation lever's forced re-mint). Omitted for reissue/first-mint (re-serve semantics). */
+    rotate?: boolean;
   }) => Promise<ReissueProxyResult>;
   /**
    * Publish the FULL current edge deny-set to the artifact the registry Worker reads (ADR-0225
@@ -692,6 +696,149 @@ export async function reissueLicenseAdmin(
     major: input.major,
     licenseId: reissued.licenseId,
     token: reissued.token,
+    worm,
+  };
+}
+
+// --- License rotation (TRUE key rotation, v2 of the reissue lever) -------------------------------
+//
+// Reissue (above) re-serves the buyer's EXISTING token — useless when the key itself leaked. This
+// lever ROTATES: the OLD licenseId is denied via the edge deny-set (the same CRL the registry
+// Worker reads; the revocation row is the DB truth, republished post-commit), and a FRESH key is
+// minted through the same `/issue` proxy with `rotate: true` (a forced re-mint that replaces the
+// stored grant in place — still one row per (account, major)).
+//
+// EXTEND-TO-PAID-HORIZON posture: the old key is never DELETED — offline perpetual tokens still
+// carry it, so it is denied at the edge (an append to `license_revocation`), while the fresh mint
+// re-signs the buyer's REAL current entitlements/windows, honoring every horizon they paid for.
+//
+// ORDERING (the atomicity contract across the HTTP mint boundary): the deny-set insert COMMITS
+// FIRST, then the mint runs. The mint replaces `license_grant.license_id` in place, so minting
+// first would — on a crash before the revoke landed — lose the only durable copy of the old
+// licenseId, leaving the rotated-away key valid at the edge forever. Revoke-first instead fails
+// safe: a mint failure leaves the old key denied and the grant row untouched; a retry re-denies
+// as a no-op (PK conflict) and mints again — the flow converges with no orphan live key in either
+// direction. A failed revoke aborts BEFORE the mint, so a new key can never exist without its
+// old-key denial.
+
+export const RotateLicenseBody = z
+  .object({
+    targetAccountId: accountId,
+    major: z.number().int().nonnegative(),
+    reason: z.string().trim().min(1).max(500).optional(),
+  })
+  .strict();
+
+export type RotateLicenseInput = z.infer<typeof RotateLicenseBody> & {
+  actorEmail: string;
+  /** The stored grant's tier/expiry (read by the route via the admin read role) — the fresh mint
+   *  re-signs under the same label/expiry the buyer already holds. */
+  tier: string;
+  expiry: string | null;
+  /** The stored grant's CURRENT licenseId — the key this rotation denies (read by the route;
+   *  a route 404s before calling in when no grant exists, mirroring reissue v1). */
+  oldLicenseId: string;
+};
+
+export interface RotateLicenseResult {
+  targetAccountId: string;
+  major: number;
+  /** The rotated-away key, now in the edge deny-set. */
+  oldLicenseId: string;
+  /** The fresh key. */
+  licenseId: string;
+  token: string;
+  /** Edge deny-set publish outcome — see `EdgePublishStatus`; the DB truth is durable either way. */
+  edgePublish: EdgePublishStatus;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the rotation already committed). */
+  worm: WormStatus;
+}
+
+/**
+ * Action 8 — rotate a license key: deny the OLD key at the edge, then mint a FRESH one. See the
+ * section comment above for the posture + ordering contract. Dual-logged; the action id is pinned
+ * up front so the `license_revocation` row FK-by-values to it (a mint failure after the revoke
+ * committed leaves that row pointing at an action whose log lands on the successful retry — the
+ * account id + revoked_at keep it traceable).
+ */
+export async function rotateLicenseAdmin(
+  deps: AdminMutationDeps,
+  input: RotateLicenseInput,
+): Promise<RotateLicenseResult> {
+  await assertSystemModeActive(deps.db, "rotate license");
+  const adminActionId = randomUUID();
+  // Leg 1 — REVOKE FIRST, COMMIT FIRST: the old key's denial is durable before any mint replaces
+  // the stored grant. A nonexistent target rolls the whole leg back (no ghost denial).
+  let fullDenySet: string[] = [];
+  await withAdminWrite(deps.db, async (tx) => {
+    await assertAccountExists(tx, input.targetAccountId);
+    await recordLicenseRevocation(tx, {
+      licenseId: input.oldLicenseId,
+      accountId: input.targetAccountId,
+      adminActionId,
+      reason: input.reason ?? null,
+    });
+    // The FULL cross-tenant set as of this commit — republish-whole is the Worker artifact's shape.
+    fullDenySet = await readDenySet(tx);
+  });
+  // Leg 2 — the forced re-mint through the same admin-scoped `/issue` proxy reissue uses. A throw
+  // here leaves the old key denied (fail-safe: rotation is a compromised-key response, so deny
+  // without replacement beats replacement without deny); the operator retries and converges.
+  const minted = await deps.issue({
+    accountId: input.targetAccountId,
+    tier: input.tier,
+    major: input.major,
+    expiry: input.expiry,
+    rotate: true,
+  });
+  // Leg 3 — the queryable log half, only after both effects exist (mirrors reissue's log-after-
+  // proxy convention), then the WORM half post-commit.
+  await withAdminWrite(deps.db, (tx) =>
+    insertAdminActionLog(tx, {
+      id: adminActionId,
+      actorEmail: input.actorEmail,
+      targetAccountId: input.targetAccountId,
+      action: "license_rotate",
+      before: { major: input.major, licenseId: input.oldLicenseId },
+      after: {
+        major: input.major,
+        licenseId: minted.licenseId,
+        deniedLicenseId: input.oldLicenseId,
+        reason: input.reason ?? null,
+      },
+    }),
+  );
+  const worm = await appendWorm(
+    deps,
+    input.targetAccountId,
+    "license_rotate",
+    input.actorEmail,
+    { major: input.major, licenseId: input.oldLicenseId },
+    {
+      major: input.major,
+      licenseId: minted.licenseId,
+      deniedLicenseId: input.oldLicenseId,
+      reason: input.reason ?? null,
+    },
+  );
+  // Post-commit best-effort edge publish — identical contract to revokePurchaseAdmin's: the DB
+  // deny-set is already durable, so a publisher throw is surfaced as "failed", never rethrown.
+  let edgePublish: EdgePublishStatus = "skipped";
+  if (deps.publishDenySet !== undefined) {
+    try {
+      await deps.publishDenySet(fullDenySet);
+      edgePublish = "ok";
+    } catch {
+      edgePublish = "failed";
+    }
+  }
+  return {
+    targetAccountId: input.targetAccountId,
+    major: input.major,
+    oldLicenseId: input.oldLicenseId,
+    licenseId: minted.licenseId,
+    token: minted.token,
+    edgePublish,
     worm,
   };
 }

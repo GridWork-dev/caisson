@@ -82,10 +82,14 @@ export type {
 } from "./admin-audit-log.ts";
 export {
   LICENSE_REVOCATION_SCHEMA_SQL,
+  recordLicenseRevocation,
   recordLicenseRevocations,
   readDenySet,
 } from "./license-revocation-store.ts";
-export type { RecordLicenseRevocationsInput } from "./license-revocation-store.ts";
+export type {
+  RecordLicenseRevocationInput,
+  RecordLicenseRevocationsInput,
+} from "./license-revocation-store.ts";
 // The eval-application table (ADR-0274/0280 verified time-boxed eval licenses). Schema ONLY — the
 // operator-gated DEPLOY provisioning path (mirroring how LICENSE_GRANT_SCHEMA_SQL /
 // LICENSE_REVOCATION_SCHEMA_SQL are consumed) applies this; the store functions stay internal
@@ -100,6 +104,7 @@ export {
   RevokePurchaseBody,
   FirstMintLicenseBody,
   ResendPurchaseEmailBody,
+  RotateLicenseBody,
   SetSystemModeBody,
   grantEntitlementAdmin,
   revokeEntitlementAdmin,
@@ -108,6 +113,7 @@ export {
   revokePurchaseAdmin,
   firstMintLicenseAdmin,
   resendPurchaseEmailAdmin,
+  rotateLicenseAdmin,
   readSystemMode,
   setSystemModeAdmin,
   wormAnchorAccount,
@@ -122,6 +128,7 @@ export type {
   PurchaseRevokeInput,
   FirstMintLicenseInput,
   ResendPurchaseEmailInput,
+  RotateLicenseInput,
   SetSystemModeInput,
   EntitlementMutationResult,
   CreditAdjustResult,
@@ -129,6 +136,7 @@ export type {
   PurchaseRevokeResult,
   FirstMintResult,
   ResendPurchaseEmailResult,
+  RotateLicenseResult,
   SystemModeResult,
   WormStatus,
 } from "./admin-mutations.ts";
