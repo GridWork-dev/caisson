@@ -1,0 +1,86 @@
+---
+title: guardrails
+description: A fail-closed guard around every model call — PII redaction (mask, hash, or tokenize), a swappable moderator, and an unconditional secret-shape gate.
+---
+
+`@caisson/guardrails` is the chokepoint between your app and a model call. `guardInput`
+moderates then redacts PII on the way in; `guardOutput` moderates on the way out. Either leg
+throws a `GuardrailError` (422) on a block — a moderator outage never silently lets content
+through.
+
+## What it does
+
+- **Fail-closed by default** — a moderator timeout or outage blocks the call unless the policy
+  explicitly sets `failOpen: true`.
+- **An unconditional secret-shape gate** — before either leg reaches a moderator, `guard.ts`
+  runs `looksLikeSecret(text)` and blocks category `"secret"` with no policy field and no
+  opt-out. A leaked credential never becomes a moderation call, live or not.
+- **A swappable `Moderator` port** — `localModerator` is a zero-network regex blocklist;
+  `providerModerator` wraps an injected async check for a real vendor call; `customModerator`
+  hooks in your own function.
+- **A PII engine** — `detectPii` finds email, SSN, Luhn-validated credit card, and phone spans.
+  `redactPii` replaces them irreversibly (`mask` → `[EMAIL]`, `hash` → `[EMAIL:ab12…]`);
+  `tokenizePii` instead seals the original via `@caisson/field-crypto` and swaps in an opaque
+  placeholder that `detokenizePii` can restore.
+- **An FTC "4 Ps" dark-pattern evaluator** — `evaluateFtc4P` scores marketing/UI copy across
+  prominence, presentation, placement, and proximity; wrap it as a moderator with
+  `ftc4pModerator` to gate `guardOutput` on your own copy.
+- **A metadata-only blocked event** — every block emits `guardrail.blocked` to the kernel
+  `EventSink` with `blockId`, `stage`, `category`, `policy`, and `failClosed` — never the
+  flagged text.
+
+## Install
+
+```sh
+bun add @caisson/guardrails
+```
+
+## Quickstart
+
+```ts
+import { guardInput, guardOutput, localModerator } from "@caisson/guardrails";
+
+const policy = {
+  policyName: "default",
+  moderator: localModerator(["forbidden phrase"]),
+};
+const runtime = { tenantId: accountId, sink: eventSink };
+
+const { text: safeInput, tokens } = await guardInput(userText, policy, runtime);
+// ... send safeInput to the model ...
+await guardOutput(modelReply, policy, runtime); // throws GuardrailError if the reply is flagged
+```
+
+## PII redaction modes
+
+```ts
+import { detectPii, redactPii, tokenizePii, detokenizePii } from "@caisson/guardrails";
+
+const matches = detectPii(text); // email, ssn, credit_card, phone spans
+
+const { text: masked } = redactPii(text, "mask"); // "[EMAIL]" — irreversible
+const { text: hashed } = redactPii(text, "hash"); // "[EMAIL:ab12…]" — irreversible, correlatable
+
+// tokenize seals the original via field-crypto; detokenizePii restores it under the same context.
+const { text: tokenized, tokens } = tokenizePii(text, ctx);
+const restored = detokenizePii(tokenized, tokens, ctx);
+```
+
+## Configuration
+
+A `GuardPolicy` carries the moderator, an optional `failOpen` (default `false`), a
+`timeoutMs` deadline (2,000ms default) for `moderateWithDeadline`, an always-on `cheapDeny`
+regex pre-screen, and an optional `pii` mode for the input leg. `GuardRuntime` carries the
+`tenantId` and the kernel `EventSink` the block event emits to.
+
+## Composition
+
+Guardrails is a base primitive — it never imports an edition. It composes `@caisson/kernel`
+for the `EventSink`/`looksLikeSecret` primitives and `@caisson/field-crypto` for reversible
+PII tokenization; the AI-Production bundle's metered gateway wires `guardInput`/`guardOutput`
+around its `infer()`/`embed()` calls.
+
+## Entitlement
+
+Guardrails ships inside the AI-Production bundle (with ai-meter and prompt-registry) or
+standalone.

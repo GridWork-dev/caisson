@@ -1,4 +1,10 @@
 {
-  "title": "Local-first AI",
-  "pages": ["index"]
+  "title": "Local-first",
+  "pages": [
+    "index",
+    "local-store",
+    "local-sync",
+    "local-inference",
+    "local-privacy"
+  ]
 }

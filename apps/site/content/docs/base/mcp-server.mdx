@@ -27,9 +27,15 @@ without an entitlement does not see the tool — scoping happens before dispatch
 
 A call outside the token's entitlements is refused, not silently downgraded:
 
-```text
-$ caisson-agent call generate.edition --edition compliance
-ERROR  entitlement_required: token is not scoped for "compliance"
+```jsonc
+// generate — a requested module outside the token's entitlements (HTTP 403)
+{
+  "error": {
+    "code": "not_entitled",
+    "message": "Not entitled to: field-crypto",
+    "details": { "notEntitled": ["field-crypto"] }
+  }
+}
 ```
 
 ## Related

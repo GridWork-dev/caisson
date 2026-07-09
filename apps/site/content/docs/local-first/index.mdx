@@ -1,61 +1,51 @@
 ---
-title: Local-first AI
-description: On-device inference and vector search behind a privacy gate that keeps data on the machine. Own the source.
+title: Local-first
+description: On-device inference and vector search behind a default-deny privacy gate, two-way offline sync, and per-tenant field encryption. Your data never leaves the device.
 ---
 
-`@caisson/local-ai` is the **Local-first AI** bundle: a compute seam, a privacy gate, on-device
-vector search, an offline license check, and a local store. Inference and retrieval run on the
-machine that holds the data. Your data never leaves the device.
+The **Local-first** bundle keeps inference and retrieval on the machine that holds the data. A
+default-deny egress gate is the contract: nothing crosses the network boundary unless a typed
+allowlist names it, so "on-device" is enforced in code, not promised in a README.
 
-## What it does
+## What's in the bundle
 
-- **Compute seam** — one swappable point that decides where a model runs. The default target is the
-  local device; a remote target is an explicit opt-in, never the fallback.
-- **Privacy gate** — the egress boundary. A call that would cross the network is denied unless the
-  policy allows it, so "on-device" is enforced in code, not promised in a README.
-- **On-device vector search** — approximate nearest-neighbor over a local index using
-  `sqlite-vec`. Embeddings and queries stay in the local store.
-- **Offline license** — license verification that does not call home, so the bundle keeps working
-  on an air-gapped machine.
-- **Local store** — the SQLite-backed home for vectors, documents, and the license record.
+- **[local-inference](/docs/local-first/local-inference)** — the `InferenceBackend` seam over a
+  MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use. On-device by
+  default; a remote target is an explicit opt-in.
+- **[local-privacy](/docs/local-first/local-privacy)** — the `EgressGuard` runtime wrapper over a
+  strict zero-egress `PrivacyPolicy`: every payload crosses it before it can leave the process,
+  and an empty allowlist blocks every host.
+- **[local-store](/docs/local-first/local-store)** — hybrid vector + full-text retrieval on disk,
+  one SQLite file per tenant — `sqlite-vec` KNN fused with FTS5 by Reciprocal Rank Fusion, no
+  vector cloud involved.
+- **[local-sync](/docs/local-first/local-sync)** — two-way offline sync for those per-tenant
+  SQLite files: a changeset log, a hybrid-logical-clock last-writer-wins merge, and
+  tombstone-aware convergence.
+- **[field-crypto](/docs/provenance/field-crypto)** — per-tenant field encryption for anything
+  stored in the local database, shared with the Compliance, AI-Production, and Provenance
+  bundles.
 
-## The guarantee
+## How it composes
 
-The privacy gate is the contract: data crosses the network boundary only on an explicit allow. The
-gate fails closed — with no allow rule, a remote call is denied, not silently downgraded.
+`local-inference` runs embeddings on-device; `local-store` persists and searches the vectors it
+produces; `local-sync` reconciles that same per-tenant SQLite file across devices without a server
+round-trip. `local-privacy`'s `EgressGuard` sits in front of all three — any path that would send a
+payload off the device passes through it first, and an empty allowlist blocks every host by
+default. `field-crypto` seals sensitive columns in the local store the same way it seals a
+Postgres column: a per-tenant derived key, never a shared one.
 
-```ts
-import { createLocalAI } from "@caisson/local-ai";
-import type { LocalAIConfig } from "@caisson/local-ai";
+## Composing with the base
 
-const config: LocalAIConfig = {
-  // The gate fails closed: no network egress without an explicit allow rule.
-  privacy: "device-only",
-  vector: { backend: "sqlite-vec" },
-};
+The tenant boundary is the same one `@caisson/tenancy-rls` enforces server-side: each local SQLite
+file is scoped to one tenant, so a sync merge or a vector search never crosses into another
+tenant's data even without a network round-trip to check.
 
-const ai = createLocalAI(config);
+## Entitlement
 
-// Embeddings and ANN search run on-device against the local store.
-const hits = await ai.search("quarterly variance", { topK: 5 });
-```
-
-## License
-
-`@caisson/local-ai` ships under the **Caisson Commercial License**
-(`LicenseRef-Caisson-Commercial`) — own the source, build unlimited products, no redistribution of
-the kit. The same one-time perpetual model as every other bundle; your data never leaves the device.
-
-<Callout type="info">
-  The Local-first bundle is **$629**, one-time. See [the
-  marketplace](/marketplace) for all six bundles and the per-module options.
-</Callout>
-
-<Callout type="warn">
-  This page previews the `@caisson/local-ai` surface. The full API reference —
-  compute-seam adapters, the privacy-gate policy schema, the `sqlite-vec` index
-  format, and the offline-license record — is still expanding.
-</Callout>
+Local-first is a commercial bundle (`LicenseRef-Caisson-Commercial`) — own the source, build
+unlimited products, no redistribution of the kit. Buy the bundle, or any member module à la
+carte; a purchase grants the module's entitlement id, checked offline against the license so the
+bundle keeps working on an air-gapped machine.
 
 ## Next steps
 

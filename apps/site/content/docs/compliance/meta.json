@@ -1,4 +1,10 @@
 {
   "title": "Compliance",
-  "pages": ["compliance"]
+  "pages": [
+    "index",
+    "compliance-core",
+    "frameworks-pack",
+    "retention-runner",
+    "alerting"
+  ]
 }
