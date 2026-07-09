@@ -1,7 +1,16 @@
 // The shared branded shell every template renders into (ADR-0018). Email clients strip
-// <style>/external CSS and don't resolve CSS custom properties, so these are frozen inline hex
-// snapshots of the light-mode palette "a" tokens (packages/ui/src/tokens/candidates.ts) — not
-// live tokens. Regenerate by hand if the locked palette (ADR-0042/0078) ever changes.
+// external CSS and don't resolve CSS custom properties, so these are frozen inline hex
+// snapshots of the locked palette (packages/ui/styles/tokens.css) — not live tokens.
+// Regenerate by hand if the locked palette (ADR-0042/0078) ever changes.
+//
+// Dark mode is the HYBRID technique (CAISSON-60 sibling):
+//   1. The LIGHT palette is tuned off the pure-white/near-black extremes so Gmail-style
+//      forced inversion (which ignores author dark styles and remaps by luminance) lands on
+//      legible mid-luminance colors in both directions.
+//   2. Clients that honor author dark styles (Apple Mail, Outlook.com) get a real dark
+//      palette via <meta name="color-scheme"> + a prefers-color-scheme block in <Head>,
+//      keyed off explicit classes on the layout components. `!important` is required —
+//      the base palette is inline styles, which otherwise always win over the style block.
 import {
   Body,
   Button,
@@ -16,14 +25,40 @@ import {
 import type { ReactNode } from "react";
 
 export const BRAND_COLOR = {
-  bg: "#fafcfd",
-  surface: "#f3f8f9",
+  bg: "#f2f6f7",
+  surface: "#e9eef0",
   border: "#d2d9db",
-  fg: "#131c1f",
+  fg: "#1a2327",
   fgMuted: "#4b585c",
   accent: "#007491",
-  onAccent: "#f5feff",
+  onAccent: "#eefafc",
 } as const;
+
+// Hex snapshots of the dark-theme tokens (tokens.css :root, oklch → sRGB).
+export const BRAND_COLOR_DARK = {
+  bg: "#0f171a",
+  surface: "#162125",
+  border: "#2c3437",
+  fg: "#eff2f4",
+  fgMuted: "#9da6aa",
+  accent: "#34bfcd",
+  onAccent: "#05282e",
+} as const;
+
+const DARK_STYLES = `
+:root { color-scheme: light dark; }
+@media (prefers-color-scheme: dark) {
+  /* react-email's <Body> copies the inline bg onto an unclassed wrapper td — cover both. */
+  .em-body, .em-body > table > tbody > tr > td { background-color: ${BRAND_COLOR_DARK.bg} !important; }
+  .em-container { background-color: ${BRAND_COLOR_DARK.surface} !important; border-color: ${BRAND_COLOR_DARK.border} !important; }
+  .em-brand { color: ${BRAND_COLOR_DARK.accent} !important; }
+  .em-heading { color: ${BRAND_COLOR_DARK.fg} !important; }
+  .em-text { color: ${BRAND_COLOR_DARK.fg} !important; }
+  .em-footer { color: ${BRAND_COLOR_DARK.fgMuted} !important; }
+  .em-hr { border-color: ${BRAND_COLOR_DARK.border} !important; }
+  .em-btn { background-color: ${BRAND_COLOR_DARK.accent} !important; color: ${BRAND_COLOR_DARK.onAccent} !important; }
+}
+`;
 
 export function EmailLayout({
   preview,
@@ -36,9 +71,14 @@ export function EmailLayout({
 }): React.ReactElement {
   return (
     <Html>
-      <Head />
+      <Head>
+        <meta name="color-scheme" content="light dark" />
+        <meta name="supported-color-schemes" content="light dark" />
+        <style>{DARK_STYLES}</style>
+      </Head>
       <Preview>{preview}</Preview>
       <Body
+        className="em-body"
         style={{
           backgroundColor: BRAND_COLOR.bg,
           margin: 0,
@@ -48,6 +88,7 @@ export function EmailLayout({
         }}
       >
         <Container
+          className="em-container"
           style={{
             backgroundColor: BRAND_COLOR.surface,
             border: `1px solid ${BRAND_COLOR.border}`,
@@ -57,6 +98,7 @@ export function EmailLayout({
           }}
         >
           <Text
+            className="em-brand"
             style={{
               fontSize: 13,
               letterSpacing: 1,
@@ -69,15 +111,20 @@ export function EmailLayout({
             Caisson
           </Text>
           <Heading
+            className="em-heading"
             style={{ fontSize: 20, color: BRAND_COLOR.fg, margin: "0 0 16px" }}
           >
             {heading}
           </Heading>
           {children}
           <Hr
+            className="em-hr"
             style={{ borderColor: BRAND_COLOR.border, margin: "32px 0 16px" }}
           />
-          <Text style={{ fontSize: 12, color: BRAND_COLOR.fgMuted, margin: 0 }}>
+          <Text
+            className="em-footer"
+            style={{ fontSize: 12, color: BRAND_COLOR.fgMuted, margin: 0 }}
+          >
             Caisson — fail-closed by construction. This is a transactional email
             triggered by an action on your account, not a marketing message.
           </Text>
@@ -93,7 +140,10 @@ export function EmailBody({
   children: ReactNode;
 }): React.ReactElement {
   return (
-    <Text style={{ fontSize: 14, color: BRAND_COLOR.fg, lineHeight: 1.6 }}>
+    <Text
+      className="em-text"
+      style={{ fontSize: 14, color: BRAND_COLOR.fg, lineHeight: 1.6 }}
+    >
       {children}
     </Text>
   );
@@ -108,6 +158,7 @@ export function EmailButton({
 }): React.ReactElement {
   return (
     <Button
+      className="em-btn"
       href={href}
       style={{
         backgroundColor: BRAND_COLOR.accent,
