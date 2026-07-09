@@ -893,6 +893,14 @@ ADR-0088 numbering split held — no collision).
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | -------- | ------------- |
 | [0297](../knowledge/decisions/ADR-0297-design-partner-first-n-terms.md) | Design-partner first-N terms: 5 partners · 40% off · 12-month reverting discount · case-study rights contingent on conversion (candidate A, comparables mid-point) | Pricing | accepted | executes 0273 |
 
+### Kickoff-H W3 commerce/license seams (0298-0300, 2026-07-09) - status `accepted`
+
+| ADR                                                                         | Title                                                                                                                                                                              | Domain   | Status   | Chain                     |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------- | ------------------------- |
+| [0298](../knowledge/decisions/ADR-0298-read-only-admin-lever-only.md)       | Read-only mutation gate is an admin maintenance/incident lever only — the mode source is the latest `system_mode` action-log row; no dunning freeze (`past_due` keeps full access) | Platform | accepted | wires the ADR-0229 gate   |
+| [0299](../knowledge/decisions/ADR-0299-support-sku-credits-per-cycle.md)    | Priority-support SKU `creditsPerCycle` = 1000 (Developer parity) — resolves the ADR-0288 rider (b) owed number                                                                     | Pricing  | accepted | executes 0288, refs 0278  |
+| [0300](../knowledge/decisions/ADR-0300-subscription-refund-horizon-claw.md) | A subscription-payment refund claws back the coverage horizon (order-row latch, one cadence, any-status rows); also records the cancel-tombstone grant-time liveness fix           | Billing  | accepted | supersedes 0269 D6 accept |
+
 ---
 
 ## Accepted is not the same as shipped
