@@ -123,7 +123,7 @@ export default async function DashboardPlanPage() {
             marginBottom: "var(--cs-space-4)",
           }}
         >
-          Editions &amp; bundle
+          Bundles &amp; modules
         </h2>
         <div style={{ display: "grid", gap: "var(--cs-space-3)" }}>
           {purchases.map(([priceId, entry]) => {
