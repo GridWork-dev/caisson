@@ -4,6 +4,7 @@
 // channels run on buyer destinations. Each self-catches into a failed DeliveryResult (per-channel
 // isolation) and never puts a response body in an error — a body can echo a token or PII.
 import { z } from "zod";
+import { createDiscordChannel } from "@caisson/alerting";
 import { InternalError } from "@caisson/kernel";
 import type {
   AlertChannel,
@@ -129,7 +130,9 @@ export function createLinearTriageChannel(
 }
 
 /** The alert channels enabled by config — tg-bridge when its url+token are set, Linear when its
- *  key+team are set. An empty list is valid: findings still persist, alerts just go nowhere. */
+ *  key+team are set, the operator's Discord ops channel when its webhook url is set (CAISSON-53,
+ *  reuses `@caisson/alerting`'s SSRF-guarded driver rather than a fourth bespoke local channel).
+ *  An empty list is valid: findings still persist, alerts just go nowhere. */
 export function buildAlertChannels(
   config: Config,
   fetchImpl: Fetcher,
@@ -152,6 +155,11 @@ export function buildAlertChannels(
         { apiKey: config.linearApiKey, teamId: config.linearTeamId },
         fetchImpl,
       ),
+    );
+  }
+  if (config.discordOpsWebhookUrl !== undefined) {
+    channels.push(
+      createDiscordChannel({ webhookUrl: config.discordOpsWebhookUrl }),
     );
   }
   return channels;

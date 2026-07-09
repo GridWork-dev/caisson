@@ -97,6 +97,7 @@ const ConfigSchema = strictObject({
   tgBridgeAlertToken: z.string().trim().optional(),
   linearApiKey: z.string().trim().optional(),
   linearTeamId: z.string().trim().optional(),
+  discordOpsWebhookUrl: z.string().trim().url().optional(),
 
   alertRateMaxPerWindow: positiveInt(3),
   alertTz: z.string().trim().min(1).default("UTC"),
@@ -137,6 +138,7 @@ export function loadConfig(env: Env = process.env): Config {
     tgBridgeAlertToken: env.TG_BRIDGE_ALERT_TOKEN,
     linearApiKey: env.LINEAR_API_KEY,
     linearTeamId: env.LINEAR_TEAM_ID,
+    discordOpsWebhookUrl: env.DISCORD_OPS_WEBHOOK_URL,
     alertRateMaxPerWindow: env.INTEL_ALERT_RATE_MAX_PER_WINDOW,
     alertTz: env.INTEL_ALERT_TZ,
     alertQuietStart: env.INTEL_ALERT_QUIET_START,

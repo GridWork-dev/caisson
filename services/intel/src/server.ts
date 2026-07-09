@@ -9,6 +9,7 @@ import { loadConfig } from "./config.ts";
 import { startHealthzServer } from "./healthz.ts";
 import { logger } from "./logger.ts";
 import { startScheduler } from "./scheduler.ts";
+import { buildAlertChannels } from "./sinks.ts";
 import { PostgresStore } from "./store.ts";
 
 export async function startService(): Promise<{ stop: () => Promise<void> }> {
@@ -61,7 +62,12 @@ export async function startService(): Promise<{ stop: () => Promise<void> }> {
   logger.info("healthz listening", { port: config.healthzPort });
 
   const scheduler = config.schedulerEnabled
-    ? startScheduler(config, store, fetchWithTimeout)
+    ? startScheduler(
+        config,
+        store,
+        fetchWithTimeout,
+        buildAlertChannels(config, fetchWithTimeout),
+      )
     : { stop: (): void => undefined };
   if (!config.schedulerEnabled) {
     logger.warn(
