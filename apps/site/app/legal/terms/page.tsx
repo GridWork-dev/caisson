@@ -1,9 +1,9 @@
-import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { buildMetadata } from "@/lib/metadata";
 import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import { Card, Section } from "@/components";
+import { prose } from "../prose";
 
 export const metadata = buildMetadata({
   title: "Terms of Use",
@@ -11,30 +11,6 @@ export const metadata = buildMetadata({
     "Terms governing use of caisson.sh and purchase of Caisson software licenses. Caisson Software LLC, governed by the laws of Georgia, USA.",
   path: "/legal/terms",
 });
-
-const prose = {
-  paragraph: {
-    marginTop: "var(--cs-space-4)",
-    lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "72ch",
-  } as CSSProperties,
-  h3: {
-    marginTop: "var(--cs-space-8)",
-    marginBottom: "var(--cs-space-3)",
-    fontSize: "var(--cs-text-lg)",
-    fontWeight: "var(--cs-weight-semibold)",
-    letterSpacing: "var(--cs-tracking-tight)",
-  } as CSSProperties,
-  list: {
-    marginTop: "var(--cs-space-3)",
-    paddingLeft: "var(--cs-space-5)",
-    lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "68ch",
-  } as CSSProperties,
-  li: {
-    marginBottom: "var(--cs-space-2)",
-  } as CSSProperties,
-};
 
 export default function TermsPage() {
   return (
