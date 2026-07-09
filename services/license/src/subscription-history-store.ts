@@ -91,11 +91,17 @@ export async function upsertSubscriptionStatus(
 }
 
 /**
- * Flip a subscription's status row to 'canceled' — a no-op (0 rows) if no row exists for this
- * (account, subscription) pair, which is fine: nothing else reads this table for that subscription
- * either. Scoped by BOTH account and subscription id (never subscription id alone — see the schema
- * comment) so a cancel for one account can never touch a same-id row under another. Run inside
- * `withTenant`.
+ * Flip a subscription's status row to 'canceled' — and when NO row exists for this (account,
+ * subscription) pair, INSERT a canceled TOMBSTONE (empty price_id/plan_tag sentinels; every
+ * consumer filters on `status = 'active'`, so a tombstone never renders or resolves a price).
+ * The tombstone is what closes the static-grant ordering race: a `subscription.canceled`
+ * delivered BEFORE its subscription's first granting invoice used to leave nothing behind, so
+ * the late `invoice.paid` minted grant rows no later event would ever revoke — the grant-time
+ * liveness check ({@link readSubscriptionStatus} in apply-billing-event) now finds this row and
+ * refuses the entitlement grant. Scoped by BOTH account and subscription id (never subscription
+ * id alone — see the schema comment) so a cancel for one account can never touch a same-id row
+ * under another. The conflict UPDATE only touches status/updated_at — a real row's
+ * price_id/plan_tag are never overwritten with sentinels. Run inside `withTenant`.
  */
 export async function cancelSubscriptionStatus(
   tx: TenantExecutor,
@@ -103,10 +109,30 @@ export async function cancelSubscriptionStatus(
   subscriptionId: string,
 ): Promise<void> {
   await tx.query(
-    `UPDATE subscription_status SET status = 'canceled', updated_at = now()
+    `INSERT INTO subscription_status (id, account_id, subscription_id, price_id, plan_tag, status, updated_at)
+     VALUES ($1, $2, $3, '', '', 'canceled', now())
+     ON CONFLICT (account_id, subscription_id)
+     DO UPDATE SET status = 'canceled', updated_at = now()`,
+    [randomUUID(), accountId, subscriptionId],
+  );
+}
+
+/**
+ * Read ONE (account, subscription) pair's lifecycle status — the grant-time liveness check
+ * `invoice.paid` runs before minting subscription grants (see {@link cancelSubscriptionStatus}).
+ * `null` = no row (the subscription has never granted nor canceled here). Run inside `withTenant`.
+ */
+export async function readSubscriptionStatus(
+  tx: TenantExecutor,
+  accountId: string,
+  subscriptionId: string,
+): Promise<"active" | "canceled" | null> {
+  const r = await tx.query<{ status: "active" | "canceled" }>(
+    `SELECT status FROM subscription_status
       WHERE account_id = $1 AND subscription_id = $2`,
     [accountId, subscriptionId],
   );
+  return r.rows[0]?.status ?? null;
 }
 
 export interface SubscriptionStatusRow {
@@ -247,6 +273,29 @@ export async function refundOrderRecord(
       WHERE source_event_id = $1 AND kind = 'purchase' AND status = 'paid'`,
     [paymentId],
   );
+}
+
+/**
+ * Flip a SUBSCRIPTION invoice's order row to 'refunded' on a whole-transaction refund of that
+ * payment — the SIBLING of {@link refundOrderRecord} for `kind = 'subscription'` rows, returning
+ * the flipped row's `price_id` (or `null` when nothing flipped: the refunded payment was not a
+ * subscription invoice, predates this table, or was already flipped by a redelivery). The
+ * paid→refunded transition is the LATCH the coverage-horizon rollback keys on: a redelivered
+ * refund event flips nothing and therefore rolls nothing back a second time. Run inside
+ * `withTenant`.
+ */
+export async function refundSubscriptionOrderRecord(
+  tx: TenantExecutor,
+  paymentId: string,
+): Promise<{ priceId: string | null } | null> {
+  const r = await tx.query<{ price_id: string | null }>(
+    `UPDATE order_record SET status = 'refunded'
+      WHERE source_event_id = $1 AND kind = 'subscription' AND status = 'paid'
+      RETURNING price_id`,
+    [paymentId],
+  );
+  const row = r.rows[0];
+  return row === undefined ? null : { priceId: row.price_id };
 }
 
 export interface OrderRecordRow {

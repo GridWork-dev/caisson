@@ -654,6 +654,51 @@ export async function grantOwnedCoverageMirrors(
   );
 }
 
+export interface RollbackSubscriptionCoverageHorizonInput {
+  /** The buyer account — MUST equal the `withTenant` scope. */
+  accountId: string;
+  /** The subscription whose refunded payment's coverage is being clawed — never another's rows. */
+  subscriptionId: string;
+  /** The refunded plan's billing cadence — one paid period is what the refund claws back. */
+  cadence: "month" | "year";
+}
+
+/**
+ * Claw back ONE paid period of coverage horizon after a SUBSCRIPTION-payment refund: every grant
+ * row this subscription stamped a horizon on (static plan grants AND coverage mirrors) shrinks
+ * `updates_expires_at` by one cadence interval. The horizon is a PAID fact — grandfathered across
+ * cancel precisely because the payment was real — so un-paying it (a refund) is the one event
+ * that legitimately shrinks it; leaving it live would leak a refunded period of updates/member
+ * coverage into perpetual offline tokens forever. Deliberately NO status filter: a revoked row's
+ * horizon still feeds the claim fold (the grandfathering read has no status filter either), so
+ * the claw must reach revoked rows too. Horizons are fungible periods on one axis, so subtracting
+ * one cadence is correct whichever cycle's payment was refunded. Idempotency is the CALLER's
+ * order-record latch (the paid→refunded flip) — this UPDATE itself is not re-run-safe. Run inside
+ * `withTenant`.
+ *
+ * // ponytail: a fixed one-cadence shrink (the renewal-reversal convention) rather than a stored
+ * // pre-value: webhook-delivery jitter between granting invoices can leave the rolled-back bound
+ * // off by that jitter, always favoring the buyer. Store per-invoice horizon deltas only if
+ * // refund-exactness across jittered cycles ever matters.
+ */
+export async function rollbackSubscriptionCoverageHorizon(
+  tx: TenantExecutor,
+  input: RollbackSubscriptionCoverageHorizonInput,
+): Promise<number> {
+  const interval = input.cadence === "year" ? "1 year" : "1 month";
+  const r = await tx.query<{ id: string }>(
+    `UPDATE entitlement_grant
+        SET updates_expires_at = updates_expires_at - $3::interval
+      WHERE account_id = $1
+        AND source_kind = 'subscription'
+        AND subscription_id = $2
+        AND updates_expires_at IS NOT NULL
+      RETURNING id`,
+    [input.accountId, input.subscriptionId, interval],
+  );
+  return r.rows.length;
+}
+
 /**
  * The account's per-spelling COVERAGE HORIZONS (ADR-0269, hardened 2026-07-06): for every purchased
  * id backed by a subscription grant that carries a horizon (`updates_expires_at` — stamped by

@@ -80,15 +80,21 @@ describe("readSubscriptionStatuses (ADR-0293 G13/G14)", () => {
     expect(rows[0]?.status).toBe("canceled");
   });
 
-  test("cancelSubscriptionStatus on an unknown subscription id is a no-op, never throws", async () => {
+  test("cancelSubscriptionStatus with no prior row writes a canceled TOMBSTONE, never throws", async () => {
+    // The tombstone (empty price/plan sentinels) is the cancel-before-grant ordering-race fix:
+    // a late granting invoice's liveness check must find the cancel even when the subscription
+    // never granted. Every "owned"/cancel-control consumer filters on status === 'active', so a
+    // tombstone never renders as a plan nor resolves a price.
     await withTenant(tp.pg, "acct_sub_noop", (tx) =>
       cancelSubscriptionStatus(tx, "acct_sub_noop", "sub_never_existed"),
     );
-    expect(
-      await withTenant(tp.pg, "acct_sub_noop", (tx) =>
-        readSubscriptionStatuses(tx, "acct_sub_noop"),
-      ),
-    ).toEqual([]);
+    const rows = await withTenant(tp.pg, "acct_sub_noop", (tx) =>
+      readSubscriptionStatuses(tx, "acct_sub_noop"),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.status).toBe("canceled");
+    expect(rows[0]?.subscriptionId).toBe("sub_never_existed");
+    expect(rows[0]?.priceId).toBe(""); // sentinel — can never collide with a real price id
   });
 
   test("cancel is scoped by account — cannot flip another account's row of the same subscription id", async () => {

@@ -198,6 +198,7 @@ function invoicePaid(
     priceId?: string;
     eventId?: string;
     amountTotal?: number;
+    subscriptionId?: string;
   } = {},
 ): DomainBillingEvent {
   return {
@@ -206,10 +207,22 @@ function invoicePaid(
     accountId,
     amountTotal: opts.amountTotal ?? 9900,
     currency: "usd",
-    subscriptionId: "sub_1",
+    subscriptionId: opts.subscriptionId ?? "sub_1",
     priceId: opts.priceId ?? PLAN_ID,
     billingReason: opts.billingReason ?? "subscription_cycle",
     invoiceId,
+  };
+}
+
+function subscriptionCanceled(
+  accountId: string,
+  subscriptionId: string,
+): DomainBillingEvent {
+  return {
+    type: "subscription.canceled",
+    sourceEventId: `evt_cancel_${subscriptionId}`,
+    accountId,
+    subscriptionId,
   };
 }
 
@@ -2194,5 +2207,146 @@ describe("applyBillingEvent — ADR-0293 subscription-status + order-history rev
       readOrderRecords(tx, acct),
     );
     expect(orders).toEqual([]); // no order-history row for the negative-total invoice
+  });
+});
+
+describe("cancel-before-grant ordering race (grant-time liveness check)", () => {
+  test("a granting invoice AFTER subscription.canceled leaves no live entitlement grant; credits still land", async () => {
+    const acct = "acct_cancel_race";
+    const sub = "sub_race";
+    // The cancel arrives FIRST — before ANY invoice for this subscription ever granted. The
+    // tombstone it writes is what the late invoice's liveness check reads.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, subscriptionCanceled(acct, sub)),
+    );
+    // The (out-of-order) granting invoice for an entitlement-carrying plan lands afterwards.
+    const effect = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_race_1", {
+          priceId: EDITION_PLAN_ID,
+          subscriptionId: sub,
+        }),
+      ),
+    );
+    // No live grant — the leak this closes was an active row nothing would ever revoke.
+    const grants = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(grants).toEqual([]);
+    expect(effect.grantedEntitlements).toEqual([]); // no Discord/PostHog/email push either
+    // Credits are honored — the payment was real; a refund of it claws them back.
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(12000);
+    // The tombstone is not resurrected to 'active' by the late invoice.
+    const statuses = await withTenant(tp.pg, acct, (tx) =>
+      readSubscriptionStatuses(tx, acct),
+    );
+    expect(statuses).toHaveLength(1);
+    expect(statuses[0]?.status).toBe("canceled");
+  });
+
+  test("the normal order (grant then cancel) still revokes — the tombstone changes nothing there", async () => {
+    const acct = "acct_cancel_normal";
+    const sub = "sub_normal";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_normal_1", {
+          priceId: EDITION_PLAN_ID,
+          subscriptionId: sub,
+        }),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, subscriptionCanceled(acct, sub)),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
+  });
+});
+
+describe("subscription-payment refund -> coverage-horizon rollback", () => {
+  const DAY = 86_400_000;
+
+  test("a refunded subscription payment claws back the paid period's coverage horizon, idempotently", async () => {
+    const acct = "acct_sub_refund";
+    const sub = "sub_refund_dev";
+    // The buyer OWNS compliance via a one_time purchase — backdated two years so the one_time
+    // window is long lapsed and the subscription coverage horizon is the BINDING bound.
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_owned",
+        source: { kind: "one_time", purchaseId: "pay_owned" },
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = now() - interval '2 years' WHERE account_id = $1`,
+      [acct],
+    );
+    // A Developer (covers-owned) granting invoice stamps the coverage horizon (now + 1 month).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "txn_sub_pay_1", { subscriptionId: sub }),
+      ),
+    );
+    const before = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    const beforeMs = new Date(before["compliance"] ?? "").getTime();
+    // Covered: the bound extends WELL past the lapsed own-window (>= ~1 month out).
+    expect(beforeMs).toBeGreaterThan(Date.now() + 20 * DAY);
+
+    // Refund THAT subscription payment (a whole-transaction refund of the invoice's txn id).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "txn_sub_pay_1")),
+    );
+    const after = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    const afterMs = new Date(after["compliance"] ?? "").getTime();
+    // The horizon rolled back by the refunded period: the previously-covered id has lost its
+    // subscription-sourced coverage (the bound is back to ~now, not a month out; +/- calendar
+    // month arithmetic tolerance).
+    expect(afterMs).toBeLessThan(beforeMs - 20 * DAY);
+    expect(Math.abs(afterMs - Date.now())).toBeLessThan(5 * DAY);
+
+    // The credits the refunded invoice granted were clawed too (the pre-existing claw path
+    // keys on the same payment id).
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+
+    // Redelivery: the order-row latch already flipped, so nothing double-shrinks.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "txn_sub_pay_1")),
+    );
+    const again = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    expect(again["compliance"]).toBe(after["compliance"]);
+  });
+
+  test("a one-time purchase refund never trips the subscription rollback (no subscription order row)", async () => {
+    const acct = "acct_onetime_refund_notrip";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_nt_1", ONETIME_EDITION_ID),
+      ),
+    );
+    // The refund runs the whole-transaction branch; the subscription latch matches no row and
+    // the existing one_time revoke semantics are unchanged.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pay_nt_1")),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
   });
 });
