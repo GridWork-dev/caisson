@@ -1,26 +1,50 @@
 #!/usr/bin/env bun
 /**
- * Full-page visual-regression / audit harness for apps/site. Screenshots every public marketing
- * route at mobile + desktop widths, each in light + dark mode, with `fullPage: true` — the
- * viewport WIDTH stays fixed (that's the point: regular device widths) but the screenshot height
- * captures the whole scrollable page, not just the first viewport.
+ * Categorized full-surface visual harness for caisson.sh — a LOCAL operator tool, never CI.
  *
- * Requires a running site (dev or built+started) — this script does not start one itself. Theme is
- * forced via the same mechanism the site uses (`localStorage["cs-theme"]` read by
- * `public/theme-init.js`, which sets `[data-theme]` on `<html>`), with a belt-and-suspenders
- * `data-theme` override after navigation so a slow/cached init script can't leave the wrong mode.
+ * Captures every visual surface at mobile + desktop widths, each in light + dark mode, with
+ * `fullPage: true` (viewport WIDTH stays a real device width; height captures the whole page):
  *
- * Dashboard routes (`/dashboard/*`) are NOT included — they require an authenticated session this
- * harness doesn't establish.
+ *   - every page route (marketing, marketplace, module depth, compare, glossary, docs, legal, auth)
+ *   - the marketplace card-viewer pop-outs (`?view=bundle:<slug>` / `?view=module:<slug>` deep links)
+ *   - every branded email template (`@caisson/email` rendered with EMAIL_SAMPLE_DATA)
+ *   - interaction states (mobile nav drawer, docs search, marketplace search, add-to-cart → cart,
+ *     invalid login submit, module media carousel) — a failed interaction is recorded in the
+ *     manifest as a behavior signal, not silently skipped
+ *   - the buyer dashboard (all /dashboard routes) when CAISSON_E2E_ACCOUNT_EMAIL/PASSWORD are set;
+ *     the leg self-skips without them (same contract as buyer-dashboard-flow.live.test.ts)
+ *
+ * Targets a local server by default. `--prod` targets https://caisson.sh through the CF-Access
+ * pre-launch gate using the e2e_prober service token (CAISSON_E2E_CF_CLIENT_ID/SECRET — same
+ * bypass as live/prod-routes.live.test.ts; Service Auth, never a human bypass).
+ *
+ * Output: ONE clean run directory (default outputs/visual-audit/<date>/, gitignored) with one
+ * subdirectory per category and a manifest.json describing every shot (route, viewport, mode,
+ * console errors, interaction failures).
  *
  * Usage:
- *   bun run scripts/visual-harness.ts [--base-url http://localhost:3000] [--out screenshots]
+ *   bun run scripts/visual-harness.ts [--prod] [--base-url http://localhost:3030]
+ *                                     [--out outputs/visual-audit/<date>] [--only <category>]
  */
 import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
-import { chromium, type Browser } from "playwright";
-import { MODULE_PAGES } from "../lib/module-pages.ts";
+import { readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
+import {
+  chromium,
+  type Browser,
+  type BrowserContext,
+  type Page,
+} from "playwright";
+import {
+  EMAIL_SAMPLE_DATA,
+  EMAIL_TEMPLATE_IDS,
+  renderEmailTemplate,
+} from "@caisson/email";
+import { BUNDLE_PAGES } from "../lib/bundle-pages.ts";
+import { COMPARISONS } from "../lib/comparisons.ts";
 import { GLOSSARY_TERMS } from "../lib/glossary.ts";
+import { LEGAL_ROUTES } from "../lib/routes.ts";
+import { MODULE_PAGES } from "../lib/module-pages.ts";
 
 interface Viewport {
   name: string;
@@ -35,167 +59,586 @@ const VIEWPORTS: readonly Viewport[] = [
 
 const MODES: readonly ("light" | "dark")[] = ["light", "dark"];
 
-const STATIC_ROUTES: readonly string[] = [
-  "/",
-  "/compliance",
-  "/ai-kit",
-  "/local-first",
-  "/agentic-dev",
-  "/procurement",
-  "/updates",
-  "/security",
-  "/cart",
-  "/marketplace",
-  "/marketplace/plans",
-  "/compare",
-  "/stack-fit",
-  "/ui",
-  "/glossary",
-  "/docs",
-  "/docs/getting-started",
-  "/legal/terms",
-  "/legal/privacy",
-  "/legal/license",
-  "/legal/eula",
-  "/frameworks/eu-ai-act",
-  "/login",
-  "/forgot-password",
-  "/reset-password",
-];
+export type ShotCategory =
+  | "marketing"
+  | "marketplace"
+  | "module"
+  | "popout"
+  | "compare"
+  | "glossary"
+  | "docs"
+  | "legal"
+  | "auth"
+  | "dashboard"
+  | "email"
+  | "interaction";
 
-export function allRoutes(): readonly string[] {
-  return [
-    ...STATIC_ROUTES,
-    ...MODULE_PAGES.map((m) => `/marketplace/modules/${m.slug}`),
-    ...GLOSSARY_TERMS.map((g) => `/glossary/${g.slug}`),
-  ];
+interface Shot {
+  category: ShotCategory;
+  /** Unique within its category; becomes the filename stem. */
+  name: string;
+  /** Page shots navigate here (may carry a query string for deep-linked pop-outs). */
+  route?: string;
+  /** Email shots render this HTML from a file:// URL instead of navigating the site. */
+  html?: string;
+  /** Interaction shots run this after navigation, before the screenshot. */
+  act?: (page: Page) => Promise<void>;
+  /** Restrict to a subset of viewports (e.g. the mobile nav drawer only exists on mobile). */
+  viewports?: readonly Viewport[];
+  /** Interactions capture the viewport (modal/drawer state); pages capture the full page. */
+  fullPage?: boolean;
+  /** Requires the authenticated buyer session (dashboard leg). */
+  auth?: boolean;
 }
 
-/** Route → filename-safe slug ("/" → "home", strip leading slash, "/" → "__"). */
-export function routeSlug(route: string): string {
-  if (route === "/") return "home";
-  return route.replace(/^\//, "").replace(/\//g, "__");
-}
-
-export function parseArgs(argv: readonly string[]): {
-  baseUrl: string;
-  outDir: string;
-} {
-  let baseUrl = "http://localhost:3030"; // apps/site's `dev`/`start` scripts both pin -p 3030
-  let outDir = "outputs/screenshots"; // matches the existing .gitignore'd local-artifacts convention
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--base-url" && argv[i + 1]) baseUrl = String(argv[++i]);
-    else if (argv[i] === "--out" && argv[i + 1]) outDir = String(argv[++i]);
-  }
-  return { baseUrl, outDir };
-}
-
-async function shootOne(
-  browser: Browser,
-  baseUrl: string,
-  outDir: string,
-  route: string,
-  viewport: Viewport,
-  mode: "light" | "dark",
-): Promise<{
-  route: string;
+interface ShotResult {
+  category: ShotCategory;
+  name: string;
+  route?: string;
   viewport: string;
   mode: string;
   file: string;
   ok: boolean;
   error?: string;
-}> {
+  consoleErrors?: readonly string[];
+  skipped?: string;
+}
+
+const MARKETING_ROUTES: readonly string[] = [
+  "/",
+  "/compliance",
+  "/ai-kit",
+  "/local-first",
+  "/agentic-dev",
+  "/provenance",
+  "/procurement",
+  "/build-vs-buy",
+  "/evidence",
+  "/partners",
+  "/affiliates",
+  "/stack-fit",
+  "/security",
+  "/updates",
+  "/ui",
+  "/frameworks/eu-ai-act",
+];
+
+const MARKETPLACE_ROUTES: readonly string[] = [
+  "/marketplace",
+  "/marketplace/plans",
+  "/cart",
+  "/compare",
+  "/glossary",
+];
+
+const AUTH_ROUTES: readonly string[] = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+];
+
+const DASHBOARD_ROUTES: readonly string[] = [
+  "/dashboard",
+  "/dashboard/activity",
+  "/dashboard/ai-keys",
+  "/dashboard/cart",
+  "/dashboard/compliance",
+  "/dashboard/credits",
+  "/dashboard/invoices",
+  "/dashboard/license",
+  "/dashboard/members",
+  "/dashboard/plan",
+];
+
+/** content/docs/**.mdx → /docs routes ("index" collapses to its directory). */
+export function docsRoutes(): readonly string[] {
+  const root = join(import.meta.dir, "..", "content", "docs");
+  const routes: string[] = [];
+  const walk = (dir: string, prefix: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory())
+        walk(join(dir, entry.name), `${prefix}/${entry.name}`);
+      else if (entry.name.endsWith(".mdx")) {
+        const stem = entry.name.replace(/\.mdx$/, "");
+        routes.push(
+          stem === "index" ? `/docs${prefix}` : `/docs${prefix}/${stem}`,
+        );
+      }
+    }
+  };
+  walk(root, "");
+  return routes.sort();
+}
+
+export function allRoutes(): readonly string[] {
+  return [
+    ...MARKETING_ROUTES,
+    ...MARKETPLACE_ROUTES,
+    ...AUTH_ROUTES,
+    ...LEGAL_ROUTES.map((r) => r.path),
+    ...MODULE_PAGES.map((m) => `/marketplace/modules/${m.slug}`),
+    ...COMPARISONS.map((c) => `/compare/${c.slug}`),
+    ...GLOSSARY_TERMS.map((g) => `/glossary/${g.slug}`),
+    ...docsRoutes(),
+  ];
+}
+
+/** Route → filename-safe slug ("/" → "home"; "/" → "__"; query/anything unsafe → "-"). */
+export function routeSlug(route: string): string {
+  if (route === "/") return "home";
+  return route
+    .replace(/^\//, "")
+    .replace(/\//g, "__")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-");
+}
+
+function pageShots(category: ShotCategory, routes: readonly string[]): Shot[] {
+  return routes.map((route) => ({ category, name: routeSlug(route), route }));
+}
+
+async function emailShots(): Promise<Shot[]> {
+  const shots: Shot[] = [];
+  for (const id of EMAIL_TEMPLATE_IDS) {
+    const { html } = await renderEmailTemplate(id, EMAIL_SAMPLE_DATA[id]);
+    shots.push({ category: "email", name: id, html });
+  }
+  return shots;
+}
+
+function interactionShots(): Shot[] {
+  const firstModule = MODULE_PAGES[0];
+  const popoutRoute = `/marketplace?view=module:${firstModule?.slug ?? "audit-worm"}`;
+  // getByRole, not a [role=…] CSS selector — the card viewer is a native <dialog> whose role is
+  // implicit, so an attribute selector never matches it.
+  const inDialog = (page: Page) => page.getByRole("dialog");
+  return [
+    {
+      category: "interaction",
+      name: "mobile-nav-open",
+      route: "/",
+      viewports: [VIEWPORTS[0]],
+      fullPage: false,
+      act: async (page) => {
+        await page.getByLabel("Open menu").first().click();
+        await page.waitForTimeout(600);
+      },
+    },
+    {
+      category: "interaction",
+      name: "docs-search-open",
+      route: "/docs",
+      fullPage: false,
+      // Fumadocs binds Ctrl/Cmd+K — steadier than hunting its viewport-dependent trigger buttons.
+      act: async (page) => {
+        await page.keyboard.press("ControlOrMeta+k");
+        await page.waitForTimeout(600);
+      },
+    },
+    {
+      category: "interaction",
+      name: "marketplace-search-filtered",
+      route: "/marketplace",
+      fullPage: false,
+      act: async (page) => {
+        await page
+          .locator('input[type="search"], input[placeholder*="earch"]')
+          .first()
+          .fill("audit");
+        await page.waitForTimeout(600);
+      },
+    },
+    {
+      category: "interaction",
+      name: "cart-with-item",
+      route: popoutRoute,
+      fullPage: false,
+      // Scope to the open dialog — the grid behind the overlay has its own Add-to-cart buttons
+      // that DOM-order .first() would hit and Playwright (correctly) refuses to click through.
+      act: async (page) => {
+        await inDialog(page)
+          .getByRole("button", { name: /add to cart/i })
+          .first()
+          .click();
+        await page.goto(new URL("/cart", page.url()).toString(), {
+          waitUntil: "load",
+        });
+        await page.waitForTimeout(600);
+      },
+    },
+    {
+      category: "interaction",
+      name: "login-invalid-submit",
+      route: "/login",
+      fullPage: false,
+      act: async (page) => {
+        await page
+          .getByRole("button", { name: /sign in|log in/i })
+          .first()
+          .click();
+        await page.waitForTimeout(600);
+      },
+    },
+    {
+      category: "interaction",
+      name: "popout-media-carousel-next",
+      route: popoutRoute,
+      fullPage: false,
+      // The slide carousel lives in the card-viewer pop-out (module depth pages have no controls).
+      act: async (page) => {
+        await inDialog(page).getByLabel("Next slide").first().click();
+        await page.waitForTimeout(600);
+      },
+    },
+  ];
+}
+
+export function parseArgs(argv: readonly string[]): {
+  baseUrl: string;
+  outDir: string;
+  prod: boolean;
+  only: string | null;
+  match: RegExp | null;
+} {
+  let baseUrl = "http://localhost:3030"; // apps/site's `dev`/`start` scripts both pin -p 3030
+  let outDir = "";
+  let prod = false;
+  let only: string | null = null;
+  let match: RegExp | null = null;
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--base-url" && argv[i + 1]) baseUrl = String(argv[++i]);
+    else if (argv[i] === "--out" && argv[i + 1]) outDir = String(argv[++i]);
+    else if (argv[i] === "--prod") prod = true;
+    else if (argv[i] === "--only" && argv[i + 1]) only = String(argv[++i]);
+    else if (argv[i] === "--match" && argv[i + 1])
+      match = new RegExp(String(argv[++i]));
+  }
+  if (prod) baseUrl = "https://caisson.sh";
+  if (outDir === "") {
+    const stamp = new Date().toISOString().slice(0, 10);
+    outDir = `outputs/visual-audit/${stamp}`;
+  }
+  return { baseUrl, outDir, prod, only, match };
+}
+
+const NAV_TIMEOUT = 30_000; // Railway cold start + CF Access hop can be slow on the first hit
+
+async function shootOne(
+  browser: Browser,
+  opts: {
+    baseUrl: string;
+    outDir: string;
+    shot: Shot;
+    viewport: Viewport;
+    mode: "light" | "dark";
+    extraHTTPHeaders?: Record<string, string>;
+    storageState?: string;
+  },
+): Promise<ShotResult> {
+  const { baseUrl, outDir, shot, viewport, mode } = opts;
+  const file = join(
+    outDir,
+    shot.category,
+    `${shot.name}__${viewport.name}__${mode}.png`,
+  );
+  const base: ShotResult = {
+    category: shot.category,
+    name: shot.name,
+    route: shot.route,
+    viewport: viewport.name,
+    mode,
+    file,
+    ok: false,
+  };
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
     colorScheme: mode,
     // Deterministic screenshots — a scroll-reveal mid-animation would make two runs of the same
     // route diff for no reason. The site already honors prefers-reduced-motion (shows final state).
     reducedMotion: "reduce",
+    ...(opts.extraHTTPHeaders
+      ? { extraHTTPHeaders: opts.extraHTTPHeaders }
+      : {}),
+    ...(opts.storageState ? { storageState: opts.storageState } : {}),
   });
   await context.addInitScript((theme) => {
     window.localStorage.setItem("cs-theme", theme);
   }, mode);
   const page = await context.newPage();
-  const file = join(
-    outDir,
-    `${routeSlug(route)}__${viewport.name}__${mode}.png`,
-  );
+  const consoleErrors: string[] = [];
+  page.on("console", (msg) => {
+    if (msg.type() === "error") consoleErrors.push(msg.text());
+  });
+  page.on("pageerror", (err) => consoleErrors.push(err.message));
   try {
-    // "load" not "networkidle" — a persistent connection (analytics beacon, HMR) never lets
-    // networkidle fire and the nav times out even though the page rendered fine long ago.
-    const res = await page.goto(`${baseUrl}${route}`, {
-      waitUntil: "load",
-      timeout: 20_000,
-    });
-    if (!res || !res.ok()) {
-      throw new Error(`HTTP ${res?.status() ?? "no response"}`);
+    if (shot.html !== undefined) {
+      // Email leg: render from a temp HTML file so relative behavior matches a real client-ish load.
+      const htmlFile = join(
+        outDir,
+        shot.category,
+        `_html`,
+        `${shot.name}.html`,
+      );
+      await Bun.write(htmlFile, shot.html);
+      await page.goto(`file://${resolve(htmlFile)}`, { waitUntil: "load" });
+    } else if (shot.route !== undefined) {
+      // "load" not "networkidle" — a persistent connection (analytics beacon, HMR) never lets
+      // networkidle fire and the nav times out even though the page rendered fine long ago.
+      // One retry: a Railway cold start / CF hop occasionally blows the first nav's budget.
+      let res = await page
+        .goto(`${baseUrl}${shot.route}`, {
+          waitUntil: "load",
+          timeout: NAV_TIMEOUT,
+        })
+        .catch(() => null);
+      if (res === null) {
+        res = await page.goto(`${baseUrl}${shot.route}`, {
+          waitUntil: "load",
+          timeout: NAV_TIMEOUT,
+        });
+      }
+      if (!res || !res.ok())
+        throw new Error(`HTTP ${res?.status() ?? "no response"}`);
+      if (page.url().includes("cloudflareaccess.com"))
+        throw new Error("bounced to the Cloudflare Access interstitial");
+      await page.evaluate((theme) => {
+        document.documentElement.setAttribute("data-theme", theme);
+      }, mode);
+    } else {
+      throw new Error("shot has neither route nor html");
     }
-    await page.evaluate((theme) => {
-      document.documentElement.setAttribute("data-theme", theme);
-    }, mode);
     await page.waitForTimeout(400); // let the theme repaint + any reveal-on-scroll settle
-    await page.screenshot({ path: file, fullPage: true });
-    return { route, viewport: viewport.name, mode, file, ok: true };
+    if (shot.act) await shot.act(page);
+    await page.screenshot({ path: file, fullPage: shot.fullPage ?? true });
+    return {
+      ...base,
+      ok: true,
+      ...(consoleErrors.length > 0 ? { consoleErrors } : {}),
+    };
   } catch (err) {
     return {
-      route,
-      viewport: viewport.name,
-      mode,
-      file,
-      ok: false,
+      ...base,
       error: err instanceof Error ? err.message : String(err),
+      ...(consoleErrors.length > 0 ? { consoleErrors } : {}),
     };
   } finally {
     await context.close();
   }
 }
 
-async function main(): Promise<void> {
-  const { baseUrl, outDir } = parseArgs(process.argv.slice(2));
-  await mkdir(outDir, { recursive: true });
+/** Log into the buyer account once and persist the session for the dashboard leg. */
+async function establishBuyerSession(
+  browser: Browser,
+  baseUrl: string,
+  outDir: string,
+  extraHTTPHeaders?: Record<string, string>,
+): Promise<string | null> {
+  const email = process.env.CAISSON_E2E_ACCOUNT_EMAIL ?? "";
+  const password = process.env.CAISSON_E2E_ACCOUNT_PASSWORD ?? "";
+  if (email === "" || password === "") return null;
+  const context = await browser.newContext(
+    extraHTTPHeaders ? { extraHTTPHeaders } : {},
+  );
+  const page = await context.newPage();
+  try {
+    await page.goto(`${baseUrl}/login`, {
+      waitUntil: "load",
+      timeout: NAV_TIMEOUT,
+    });
+    await page.locator('input[type="email"]').first().fill(email);
+    await page.locator('input[type="password"]').first().fill(password);
+    await page
+      .getByRole("button", { name: /sign in|log in/i })
+      .first()
+      .click();
+    await page.waitForURL(/\/dashboard/, { timeout: NAV_TIMEOUT });
+    const statePath = join(outDir, "buyer-session-state.json");
+    await context.storageState({ path: statePath });
+    return statePath;
+  } catch (err) {
+    console.error(
+      `dashboard leg: login failed (${err instanceof Error ? err.message : String(err)}) — skipping`,
+    );
+    return null;
+  } finally {
+    await context.close();
+  }
+}
 
-  const routes = allRoutes();
-  const total = routes.length * VIEWPORTS.length * MODES.length;
-  console.log(
-    `visual-harness: ${routes.length} routes × ${VIEWPORTS.length} viewports × ${MODES.length} modes = ${total} screenshots -> ${outDir}`,
+async function asyncPool<T, R>(
+  limit: number,
+  items: readonly T[],
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from(
+    { length: Math.min(limit, items.length) },
+    async () => {
+      while (next < items.length) {
+        const i = next++;
+        results[i] = await fn(items[i] as T);
+      }
+    },
+  );
+  await Promise.all(workers);
+  return results;
+}
+
+async function main(): Promise<void> {
+  const { baseUrl, outDir, prod, only, match } = parseArgs(
+    process.argv.slice(2),
   );
 
-  const browser = await chromium.launch();
-  const results: Array<Awaited<ReturnType<typeof shootOne>>> = [];
-  try {
-    for (const route of routes) {
-      for (const viewport of VIEWPORTS) {
-        for (const mode of MODES) {
-          const result = await shootOne(
-            browser,
-            baseUrl,
-            outDir,
-            route,
-            viewport,
-            mode,
-          );
-          results.push(result);
-          console.log(
-            `${result.ok ? "ok  " : "FAIL"} ${result.route} ${result.viewport}/${result.mode}${
-              result.ok ? "" : ` — ${result.error}`
-            }`,
-          );
-        }
-      }
+  let extraHTTPHeaders: Record<string, string> | undefined;
+  if (prod) {
+    const id = process.env.CAISSON_E2E_CF_CLIENT_ID ?? "";
+    const secret = process.env.CAISSON_E2E_CF_CLIENT_SECRET ?? "";
+    if (id === "" || secret === "") {
+      console.error(
+        "--prod needs CAISSON_E2E_CF_CLIENT_ID + CAISSON_E2E_CF_CLIENT_SECRET (source ~/.gridwork/caisson.env)",
+      );
+      process.exitCode = 1;
+      return;
     }
+    extraHTTPHeaders = {
+      "CF-Access-Client-Id": id,
+      "CF-Access-Client-Secret": secret,
+    };
+  }
+
+  const shots: Shot[] = [
+    ...pageShots("marketing", MARKETING_ROUTES),
+    ...pageShots("marketplace", MARKETPLACE_ROUTES),
+    ...pageShots("auth", AUTH_ROUTES),
+    ...pageShots(
+      "legal",
+      LEGAL_ROUTES.map((r) => r.path),
+    ),
+    ...pageShots(
+      "module",
+      MODULE_PAGES.map((m) => `/marketplace/modules/${m.slug}`),
+    ),
+    ...pageShots(
+      "compare",
+      COMPARISONS.map((c) => `/compare/${c.slug}`),
+    ),
+    ...pageShots(
+      "glossary",
+      GLOSSARY_TERMS.map((g) => `/glossary/${g.slug}`),
+    ),
+    ...pageShots("docs", docsRoutes()),
+    // Card-viewer pop-outs: every bundle (the `everything` bundle has NO standalone page — the
+    // pop-out is its only surface) + every module's pop-out variant.
+    ...BUNDLE_PAGES.map((b): Shot => ({
+      category: "popout",
+      name: `bundle-${b.slug}`,
+      route: `/marketplace?view=bundle:${b.slug}`,
+      fullPage: false,
+    })),
+    ...MODULE_PAGES.map((m): Shot => ({
+      category: "popout",
+      name: `module-${m.slug}`,
+      route: `/marketplace?view=module:${m.slug}`,
+      fullPage: false,
+    })),
+    ...(await emailShots()),
+    ...interactionShots(),
+    ...DASHBOARD_ROUTES.map((route): Shot => ({
+      category: "dashboard",
+      name: routeSlug(route),
+      route,
+      auth: true,
+    })),
+  ]
+    .filter((s) => only === null || s.category === only)
+    .filter((s) => match === null || match.test(`${s.category}/${s.name}`));
+
+  const categories = [...new Set(shots.map((s) => s.category))];
+  for (const c of categories)
+    await mkdir(join(outDir, c, "_html"), { recursive: true });
+
+  const browser = await chromium.launch();
+  const results: ShotResult[] = [];
+  try {
+    const storageState = shots.some((s) => s.auth)
+      ? await establishBuyerSession(browser, baseUrl, outDir, extraHTTPHeaders)
+      : null;
+
+    const jobs: Array<{
+      shot: Shot;
+      viewport: Viewport;
+      mode: "light" | "dark";
+    }> = [];
+    const skipped: ShotResult[] = [];
+    for (const shot of shots) {
+      if (shot.auth && storageState === null) {
+        skipped.push({
+          category: shot.category,
+          name: shot.name,
+          route: shot.route,
+          viewport: "-",
+          mode: "-",
+          file: "",
+          ok: false,
+          skipped:
+            "no buyer session (CAISSON_E2E_ACCOUNT_EMAIL/PASSWORD unset or login failed)",
+        });
+        continue;
+      }
+      for (const viewport of shot.viewports ?? VIEWPORTS)
+        for (const mode of MODES) jobs.push({ shot, viewport, mode });
+    }
+
+    console.log(
+      `visual-harness: ${shots.length} surfaces → ${jobs.length} screenshots (${categories.join(", ")}) -> ${outDir}`,
+    );
+
+    const shotResults = await asyncPool(
+      4,
+      jobs,
+      async ({ shot, viewport, mode }) => {
+        const r = await shootOne(browser, {
+          baseUrl,
+          outDir,
+          shot,
+          viewport,
+          mode,
+          ...(extraHTTPHeaders ? { extraHTTPHeaders } : {}),
+          ...(shot.auth && storageState ? { storageState } : {}),
+        });
+        console.log(
+          `${r.ok ? "ok  " : "FAIL"} [${r.category}] ${r.name} ${r.viewport}/${r.mode}${r.ok ? "" : ` — ${r.error}`}`,
+        );
+        return r;
+      },
+    );
+    results.push(...shotResults, ...skipped);
   } finally {
     await browser.close();
   }
 
-  const failed = results.filter((r) => !r.ok);
+  const failed = results.filter((r) => !r.ok && r.skipped === undefined);
+  const withConsoleErrors = results.filter(
+    (r) => (r.consoleErrors?.length ?? 0) > 0,
+  );
   console.log(
     `visual-harness: ${results.length - failed.length}/${results.length} succeeded` +
-      (failed.length > 0 ? `, ${failed.length} FAILED (see above)` : ""),
+      (failed.length > 0 ? `, ${failed.length} FAILED` : "") +
+      (withConsoleErrors.length > 0
+        ? `, ${withConsoleErrors.length} shots logged console errors`
+        : ""),
   );
-  await Bun.write(
-    join(outDir, "manifest.json"),
-    JSON.stringify(results, null, 2),
-  );
+  // Merge into an existing manifest (a --only/--match re-run patches its subset, never clobbers
+  // the rest of the run directory's record).
+  const manifestPath = join(outDir, "manifest.json");
+  const keyOf = (r: ShotResult) =>
+    `${r.category}/${r.name}/${r.viewport}/${r.mode}`;
+  const prior = (await Bun.file(manifestPath)
+    .json()
+    .catch(() => [])) as ShotResult[];
+  const merged = new Map(prior.map((r) => [keyOf(r), r]));
+  for (const r of results) merged.set(keyOf(r), r);
+  await Bun.write(manifestPath, JSON.stringify([...merged.values()], null, 2));
   if (failed.length > 0) process.exitCode = 1;
 }
 

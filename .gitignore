@@ -37,6 +37,9 @@ docs/session-logs/
 /*.png
 /*.jpeg
 .playwright-mcp/
+# visual-harness run output (scripts/visual-harness.ts — local tool, never committed)
+outputs/visual-audit/
+outputs/screenshots/
 
 # ADR-0223: CI-only tarball staging for R2 upload (never committed)
 registry/.tarball-staging/
