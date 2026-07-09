@@ -1,0 +1,122 @@
+---
+title: local-store
+description: Hybrid vector + full-text retrieval that runs on disk, one SQLite file per tenant — sqlite-vec KNN fused with FTS5 by Reciprocal Rank Fusion, no vector cloud involved.
+---
+
+`@caisson/local-store` is Caisson's on-disk hybrid retrieval engine: `sqlite-vec` (`vec0`) for
+vector KNN and SQLite FTS5 for keyword search, fused by Reciprocal Rank Fusion (`RRF_K=60`). It
+runs FTS5-only with no embedder configured — the vector leg degrades cleanly on any backend
+fault, so retrieval never hard-fails for lack of a model.
+
+## Install
+
+```bash
+bun add @caisson/local-store
+```
+
+## Quickstart
+
+```ts
+import { LocalStore, openTenantDb, tenantDbPath } from "@caisson/local-store";
+
+// Per-tenant file is the isolation boundary (tenantId comes from authenticated context).
+const db = openTenantDb("/var/lib/caisson/tenants", tenantId);
+
+const store = LocalStore.open({ dim: 3 }); // dimension fixed at table creation
+store.upsert({
+  id: "a",
+  text: "the quick brown fox",
+  embedding: [0.9, 0.1, 0.0],
+});
+store.upsert({ id: "b", text: "lazy dog sleeps" }); // FTS-only doc (no embedding)
+
+// Hybrid (both legs); omit queryVector to take the always-available FTS5-only path.
+const hits = store.hybridSearch({
+  queryText: "fox",
+  queryVector: [1, 0, 0],
+  limit: 10,
+});
+```
+
+## Hybrid search
+
+`hybridSearch` runs the `vec0` KNN leg and the FTS5 leg independently, then fuses them by
+Reciprocal Rank Fusion. Either leg can come up empty — a missing query vector, an empty query, or
+a vec backend fault — and the other still returns results:
+
+```ts
+hybridSearch(opts: HybridSearchOptions): SearchHit[] {
+  const legLimit = Math.max(limit * 8, 50);
+  const vecRanks = this.vecLeg(opts.queryVector, legLimit);
+  const ftsRanks = this.ftsLeg(opts.queryText, legLimit);
+
+  // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs.
+  const fused = new Map<number, number>();
+  for (const [rowid, rank] of vecRanks)
+    fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));
+  for (const [rowid, rank] of ftsRanks)
+    fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));
+
+  return [...fused.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0] - b[0]) // score desc, deterministic tie-break by rowid
+    .slice(0, limit)
+    .map(([rowid, score]) => ({ id: this.docId(rowid), score }));
+}
+```
+
+A dimension mismatch on an indexed embedding throws — the package flags rather than guesses.
+
+## File-per-tenant isolation
+
+`tenantDbPath` and `openTenantDb` resolve one SQLite file per tenant under a root directory. The
+path is rejected fail-closed on traversal, null bytes, absolute paths, or path separators before
+anything is opened — a cross-tenant query is not expressible, because a connection only ever
+holds one tenant's file.
+
+## Embedding is an injected seam
+
+`local-store` never calls an embedding model or opens a socket. `Embedder` is an interface your
+app or the consuming bundle wires; `embedOrSkip` treats an absent embedder as a first-class mode
+— retrieval runs on the FTS5 leg alone, not an error, not a silent default model.
+
+When you do wire a cloud embedder, `scrubForEgress` runs on every text before it leaves the box,
+stripping PEM key blocks, URL userinfo passwords, secret-named assignments, and bare token
+shapes. `guardEmbedder` and `createCloudEmbedder` apply it structurally:
+
+```ts
+import type { Embedder } from "@caisson/local-store";
+import { createCloudEmbedder } from "@caisson/local-store";
+
+const embedder: Embedder = createCloudEmbedder({
+  // scrubForEgress runs on every text before this fetch — PEM blocks, URL passwords,
+  // secret-named fields, and bare token shapes are redacted first.
+  endpoint: "https://api.example.com/embed",
+});
+```
+
+## Dedup-on-write + retention GC
+
+`decideWrite` hashes normalized content per scope and reinforces an existing duplicate (resets
+its recency, slides its TTL) instead of writing a second row. `planGc` then evicts in order —
+expired, decayed below a score floor, or over a per-scope cap — as a pure function of items,
+config, and the current time. `MemoryItemSchema` is a Zod `.strict()` boundary: UUID ids, bounded
+text (100k chars) and scope (256 chars), optional string-to-string metadata — an unknown key is
+rejected, not silently dropped.
+
+## Configuration surface
+
+- `LocalStore.open({ dim })` — vector dimension fixed at table creation; a later mismatch throws.
+- `openTenantDb(root, tenantId)` — the root directory and tenant id resolving to one file.
+- `parseGcConfig` — `.strict()`-validated retention config (TTL, per-scope cap).
+
+## Composing with the base
+
+`local-store` runs `bun:sqlite` plus the `sqlite-vec` extension on disk — no separate database to
+run or pay for, and no vendor SDK import. It contributes the store/fuse/isolation mechanism only;
+the consuming bundle wires the embedder and the curated content on top.
+
+<Callout type="info" title="Sold standalone">
+  `@caisson/local-store` is the retrieval engine inside the Local-first bundle, alongside
+  on-device inference and the privacy gate. It is also sold standalone at $99 to add hybrid
+  search to any stack without the rest of the bundle.
+</Callout>

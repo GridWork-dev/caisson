@@ -22,6 +22,9 @@ chainAnchor.tipHash` with an `Ed25519Signer` scoped to the tenant. The signature
   returns `false` on an unknown algorithm, malformed hex, or wrong-length key or signature. A
   forgery never passes as valid, and a malformed signing result throws rather than emitting a
   bad signature.
+- **Timing-safe compares** — `signaturesEqual` and `timestampCountersignsSignature` compare
+  hex signatures and RFC-3161 message imprints with a constant-time equality, so neither leaks
+  how many leading bytes matched.
 
 ## The guarantee
 
@@ -50,12 +53,17 @@ if (!ok) {
 }
 ```
 
+`manifest` only needs to structurally satisfy `SignableManifest` — a `chainAnchor.tipHash`
+field. The evidence-pack manifest produced by `@caisson/compliance-core` matches it; this
+package never imports that generator, so the signing surface stands alone.
+
 ## The timestamp authority port
 
-The RFC-3161 countersignature is reached through a `TimestampAuthority` port. A live
-authority is one implementation of that port — it POSTs a DER `TimeStampReq` (message
-imprint `sha256(signature)`) over `fetchWithTimeout` and parses the response; the port is
-stable, so it slots in without touching call sites.
+The RFC-3161 countersignature is reached through a `TimestampAuthority` port. It attests
+that a signature existed at a point in time, layered on top of the Ed25519 signature, never
+replacing it. A live authority implements `countersign(signature)` by POSTing a DER
+`TimeStampReq` (message imprint `sha256(signature)`) over `fetchWithTimeout` and parsing
+the response — the port is stable, so it slots in without touching call sites.
 
 ```ts
 import {
@@ -71,8 +79,44 @@ const signature = await signEvidencePack(signer, manifest, {
 });
 ```
 
-<Callout type="info" title="Reference docs at GA">
-  This page covers the essentials. The full API reference — the canonical
-  signable payload, the `Signer` and `TimestampAuthority` contracts, and the
-  key-rotation model — is still expanding.
-</Callout>
+For tests, `StubTimestampAuthority` is a network-free double that reproduces the same
+message imprint a live TSA would attest, against an injected clock:
+
+```ts
+import { StubTimestampAuthority } from "@caisson/signing-primitive";
+
+const tsa = new StubTimestampAuthority({ now: new Date("2026-01-01") });
+```
+
+## API reference
+
+- **`Ed25519Signer(keyId, secretKey)`** — the base `Signer`. `secretKey` must be a 32-byte
+  seed; construction throws on an empty `keyId` or a wrong-length key. `publicKey()` and
+  `sign(payload)` are async; the seed is a private field, never enumerable or logged.
+- **`Signer`** — the signing-identity port (`keyId`, `algorithm`, `publicKey()`, `sign()`).
+  A buyer-supplied KMS asymmetric-sign implementation is a drop-in of this same interface —
+  the secret key never leaves the HSM.
+- **`signEvidencePack(signer, manifest, options?)`** — returns an `EvidenceSignature`
+  (`algorithm`, `keyId`, `publicKey`, `signature`, optional `timestamp`). Throws on a
+  malformed signing result rather than emitting a bad signature.
+- **`verifyEvidenceSignature(manifest, signature)`** — `Promise<boolean>`, fails closed.
+- **`evidenceSignablePayload(manifest)`** — the exact `Uint8Array` that gets signed:
+  `canonicalize(manifest)` concatenated with `manifest.chainAnchor.tipHash`. Exposed so a
+  caller can hash or log the signed payload without re-deriving it.
+- **`TimestampAuthority` / `TimestampToken` / `StubTimestampAuthority`** — the RFC-3161
+  countersign port, its token shape, and the CI-safe test double.
+- **`signaturesEqual(a, b)`** — timing-safe hex-signature compare.
+- **`timestampCountersignsSignature(token, signature)`** — recomputes `sha256(signature)`
+  and timing-safe compares it against `token.messageImprint`, confirming a timestamp token
+  actually countersigns *this* signature rather than a different one.
+
+## Composition
+
+`@caisson/signing-primitive` depends only on `@caisson/kernel` (`canonicalize`,
+`safeEqualFixed`) — dependencies are down-only, so it never imports the evidence generator
+or an edition. The **Compliance** and **Provenance** bundles compose it alongside
+`@caisson/compliance-core` and `@caisson/audit-worm` to sign the evidence packs those
+packages produce.
+
+Sold standalone at $199 or bundled — check current bundle composition and pricing on the
+[marketplace](/marketplace).

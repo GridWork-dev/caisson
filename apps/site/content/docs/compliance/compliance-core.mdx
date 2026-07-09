@@ -1,0 +1,104 @@
+---
+title: compliance-core
+description: The compliance evidence engine — typed collectors, a deterministic byte-stable evidence pack that hard-blocks on any unresolved control, and OSCAL exports.
+---
+
+`@caisson/compliance-core` runs typed collectors over already-gathered substrate facts, assembles
+the results into a deterministic, byte-stable evidence pack, and exports the pack through the OSCAL
+seam. It never certifies or attests — every summary line is readiness/posture language only.
+
+## Install
+
+```bash
+bun add @caisson/compliance-core
+```
+
+Commercial module (`LicenseRef-Caisson-Commercial`). Composed by the Compliance bundle; consumes
+`@caisson/kernel`, `@caisson/frameworks-pack`, and `@caisson/field-crypto` — down-only, per ADR-0003.
+
+## Flag-never-guess
+
+A collector never infers a passing status it cannot evidence. Each `CollectorResult` carries one of
+three verdicts:
+
+- `pass` — the check ran and was satisfied.
+- `flagged` — the check ran and found a real deficiency; a recorded reason is mandatory.
+- `unresolved` — the evidence needed to decide was absent; the collector refuses to guess.
+
+```ts
+import { flaggedResult, passResult, unresolvedResult } from "@caisson/compliance-core";
+```
+
+If **any** control has an `unresolved` result, `generateEvidencePack` throws
+`EvidencePackBlockedError` before assembling anything — there is no partial pack.
+
+## Generating a pack
+
+Collectors are pure: a substrate fact in, a `CollectorResult` out. The facts themselves (an audit
+chain anchor, an RLS posture snapshot, a WORM retention term) are gathered at the edge by code that
+depends on `audit-worm`/`tenancy-rls`, then handed to the collector.
+
+```ts
+import { rlsForceCollector, generateEvidencePack } from "@caisson/compliance-core";
+
+const collector = rlsForceCollector();
+const result = collector.collect({
+  tables: [
+    { table: "patients", rowSecurityEnabled: true, rowSecurityForced: true, tenantPolicyPresent: true },
+  ],
+});
+
+const pack = generateEvidencePack({
+  tenantId,
+  framework,
+  chainAnchor,
+  now: new Date(), // injected clock — never hashed into the canonical body
+  controls: [
+    {
+      controlId: "ACCESS-CONTROL.LOGICAL",
+      title: "Logical access control",
+      family: "AC",
+      statement: "...",
+      crosswalk: [],
+      evidence: [result],
+    },
+  ],
+});
+
+// pack.manifest       — the validated canonical body (no timestamp, no signature)
+// pack.canonicalManifest — exact bytes a signer signs
+// pack.archive         — deterministic ZIP (manifest + per-control evidence + auditor summary)
+// pack.sha256          — byte-stable digest, independent of `now`
+```
+
+The archive is a dependency-free deterministic ZIP: fixed 1980-epoch entry mtimes, name-sorted
+entries, fixed deflate level — identical evidence always serializes to identical bytes, so the pack
+is independently golden-checkable.
+
+## Collectors shipped
+
+`rlsForceCollector`, plus collectors for audit-chain verification, WORM retention, field-crypto
+policy, the AI risk register, and impersonation posture — each importable from the package root and
+each scoped to one canonical control id.
+
+## OSCAL export
+
+```ts
+import { toOscalBundle, toOscalAssessmentPlan } from "@caisson/compliance-core";
+
+const bundle = toOscalBundle(pack.manifest, { newId: crypto.randomUUID });
+// bundle.assessmentResults          — OSCAL Security Assessment Results
+// bundle.planOfActionAndMilestones  — OSCAL POA&M, one item per flagged evidence item
+```
+
+`toOscalAssessmentResults` derives one OSCAL finding per control (`ready` → `satisfied`, `gap` →
+`not-satisfied`) and one observation per evidence item. An XML round-trip
+(`convertJsonToXml`/`convertAndValidate`) is available via the OSCAL CLI seam for tooling that
+requires the XML representation. Delivery to a GRC platform's OSCAL ingest endpoint is an un-wired
+port (`OscalExportTransport`) — no network call ships in v1.
+
+## Composition
+
+`compliance-core` is the evidence-engine carve-out of the Compliance bundle (ADR-0246/0257): the
+bundle composes this engine with the framework catalogs (`@caisson/frameworks-pack`) and evidence
+signing, never the reverse.

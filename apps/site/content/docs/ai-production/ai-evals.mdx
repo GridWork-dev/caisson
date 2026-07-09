@@ -1,0 +1,124 @@
+---
+title: ai-evals
+description: A regression gate for prompt and model changes — defineEval() scores a dataset through a grader taxonomy, gateAgainstBaseline() fails the build on a real score drop, all offline and deterministic.
+---
+
+`@caisson/ai-evals` is an eval harness for AI features: define a dataset of cases, score them with
+a grader, and gate a build on a committed baseline instead of a gut feeling. It runs fully offline
+and deterministic — no live model call, no secret, no flaky network dependency — so the same suite
+produces the same verdict in CI every time.
+
+## Install
+
+```bash
+bun add @caisson/ai-evals
+```
+
+## Quickstart
+
+```ts
+import {
+  defineEval,
+  exactGrader,
+  gateAgainstBaseline,
+} from "@caisson/ai-evals";
+
+const run = await defineEval({
+  name: "greeting-quality",
+  promptVersionId: version.id,
+  threshold: 0.95,
+  cases: [{ id: "case-1", input: { name: "Ada" }, output: "Hello, Ada!" }],
+  scorers: { "exact-match": exactGrader() },
+});
+
+const gate = gateAgainstBaseline("__evals__/baseline.json", [run]);
+if (!gate.passed) throw new Error("eval regressed past its committed baseline");
+```
+
+## Grader taxonomy
+
+Six graders in two classes. `exactGrader`, `regexGrader`, `jsonShapeGrader`, and `schemaGrader` run
+pure and offline — no model call. `judgeGrader` routes through a `Judge` port for model-graded
+scoring. `injectionGrader` is its own fail-closed class: its refusal rubric is a hard-coded
+deny-list, so a persuasive input can talk a model judge out of a refusal but can never talk a
+deny-list out of one.
+
+```ts
+import { schemaGrader, judgeGrader, cassetteJudge } from "@caisson/ai-evals";
+import { z } from "zod";
+
+const shapeCheck = schemaGrader(z.object({ ok: z.boolean() }));
+const judged = judgeGrader(cassetteJudge(committedCassette), "matches the house tone");
+```
+
+## Offline judge via cassette replay
+
+`cassetteJudge()` replays recorded verdicts from a committed cassette file — zero network call,
+zero provider secret, safe to run in CI. An unrecorded case id is a hard cassette-miss error, not a
+silent pass. `recordingJudge()` wraps a real local judge to mint a fresh cassette for review before
+you commit it.
+
+## The regression gate
+
+`gateAgainstBaseline()` compares a fresh run against a committed JSON baseline and fails closed — a
+missing baseline, a score below threshold, or any individual scorer regression blocks the gate:
+
+```ts
+export function compareToBaseline(
+  run: EvalRun,
+  baseline: BaselineFile,
+): BaselineComparison {
+  const findings: RegressionFinding[] = [];
+
+  if (run.score + EPS < run.threshold) {
+    findings.push({
+      kind: "below-threshold",
+      actual: run.score,
+      baseline: run.threshold,
+      detail: `score ${run.score} < threshold ${run.threshold}`,
+    });
+  }
+
+  const prior = baseline.evals[run.name];
+  if (prior === undefined) {
+    findings.push({
+      kind: "missing-baseline",
+      actual: run.score,
+      detail: `no committed baseline for eval "${run.name}" — bless to record it`,
+    });
+    return { eval: run.name, passed: false, findings, blessed: false };
+  }
+  // ...
+}
+```
+
+`BLESS=1 bun run eval` is the one sanctioned path to rewrite the baseline — it merges into existing
+entries so a partial run never drops other evals, mirroring the golden-fixture discipline in
+`@caisson/testing`.
+
+## Confidence and agreement statistics
+
+`wilsonLowerBound()` threads an opt-in Wilson confidence floor into the baseline gate, so a small
+lucky-draw sample can't pass as reliable. `fleissKappa`, `ensembleAgreement`, and
+`counterfactualStability` score an eval suite's own reliability, not just its pass rate.
+`classifyExit()` tags *why* a run exited — error, timeout, budget-exhausted, refusal, empty-output —
+as a signal orthogonal to pass/fail.
+
+## Reflexivity queue
+
+`captureDisagreement()` enqueues a case only when a model verdict and a human verdict disagree;
+`consolidateReflexivityQueue()` dedupes and caps the list for operator review. Nothing here
+auto-writes a committed dataset — merging a candidate back in stays a human act.
+
+## Spend, and how it composes
+
+`recordEvalSpend()` tracks eval-run cost on its own budget-isolated ledger — it never touches the
+production credit wallet or `@caisson/ai-meter`. `ai-evals` is a base primitive: the AI Production
+bundle's prompt registry and metering compose on top of it to gate quality in the same CI run that
+gates spend.
+
+<Callout type="info" title="Sold standalone">
+  `ai-evals` is sold standalone at $199 and is included in the AI-Production
+  bundle. It pairs with the bundle's metering and guardrails to gate CI on
+  regression.
+</Callout>

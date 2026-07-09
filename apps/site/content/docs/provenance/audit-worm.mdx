@@ -1,64 +1,151 @@
 ---
 title: audit-worm
-description: S3 Object-Lock WORM storage plus an append-only SHA-256 audit chain — evidence that cannot be altered before retention expires, and tampering that is provable.
+description: S3/GCS/R2 Object-Lock WORM storage plus an append-only SHA-256 audit chain and a derived-current locked-version table — evidence that cannot be altered before retention expires, and tampering that is provable.
 ---
 
-`@caisson/audit-worm` does two jobs an auditor asks about by name: it writes evidence to
-S3 Object-Lock in compliance mode, and it records every privileged action into an
-append-only SHA-256 chain. Stored evidence cannot be changed before its retention period
-ends, and the log of who-did-what cannot be rewritten without the break showing.
+`@caisson/audit-worm` is three composable layers over `@caisson/kernel`'s pure integrity
+algebra, each enforced by a different mechanism: a write-once `ArtifactStore` backed by
+Object-Lock, an append-only `AuditChainStore` anchored into that store, and a
+`LockedVersionStore` whose "current" version is derived, never stored. Every method is
+tenant-scoped through `withTenant` — a forgotten filter still sees only the caller's rows.
 
 ## What it does
 
-- **WORM evidence storage** — evidence objects land in an S3 bucket with Object-Lock in
-  _compliance mode_. Once an object is written under a retention period, it cannot be
-  overwritten or deleted before that period expires — not by the application, not by an
-  admin, not by a leaked root key.
-- **Append-only audit chain** — each event hashes its payload together with the previous
-  entry's hash. The chain verifies end to end; editing any past entry breaks every hash
-  after it.
+- **WORM evidence storage** — `ArtifactStore.put` is write-once: a second `put` to an
+  existing key throws `ArtifactExistsError`, never overwrites. `S3ArtifactStore`,
+  `GcsArtifactStore`, and `R2ArtifactStore` all bind the same port over a real
+  Object-Lock/Object-Retention backend; `LocalArtifactStore` is a filesystem double for
+  dev/CI that enforces write-once but not the time lock.
+- **Append-only audit chain** — `AuditChainStore.append` composes the kernel's
+  `canonicalize`/`chainEntry`/`anchorChain` functions, writes to a table whose migration
+  grants the app role SELECT + INSERT only, and mints a fresh WORM anchor after every
+  entry. `verify` catches tamper, reorder, _and_ truncation.
+- **Locked-version table with a derived current** — `LockedVersionStore.insertVersion`
+  appends under an advisory lock with `UNIQUE(account_id, supersedes_id)`; `currentVersion`
+  derives the tip two independent ways and throws if they ever disagree.
+
+## Install
+
+```bash
+bun add @caisson/audit-worm
+```
 
 ## The guarantee
 
 Compliance-mode Object-Lock means immutability is enforced by the storage layer, not by
-your code. The audit chain makes tampering _detectable_, not merely discouraged — verify
-the chain and a single edited row surfaces with its sequence number:
-
-```bash
-$ caisson audit verify --tenant tenant_4f2c
-✗ chain broken at seq 1184
-  expected prev = 9f3a…c021
-  found    prev = 51bd…7e08   (entry was edited after it was written)
-```
-
-## Usage
+your code. The audit chain makes tampering _detectable_ — verify the chain and a single
+edited or truncated entry surfaces with its sequence number:
 
 ```ts
-import { appendEvent, putEvidence, verifyChain } from "@caisson/audit-worm";
+const result = await chain.verify("tenant_4f2c");
+// { valid: false, brokenAt: 1184 }  — the entry at seq 1184 was edited after it was written
+```
 
-// Append a privileged action to the SHA-256 chain.
-await appendEvent({
-  tenantId,
+`verify` treats the WORM store as the trusted length oracle: if an anchor exists for a
+length beyond what the DB can currently produce, the tail was cut — even though the
+surviving rows still hash together as a clean prefix.
+
+## Quickstart
+
+```ts
+import { AuditChainStore, LocalArtifactStore, retainUntilFrom } from "@caisson/audit-worm";
+
+const store = new LocalArtifactStore("./worm-data"); // swap for S3ArtifactStore in prod
+const chain = new AuditChainStore({ db, store });
+
+// Append a privileged action to the SHA-256 chain — mints a fresh WORM anchor too.
+const { entry, anchor } = await chain.append(accountId, {
+  kind: "invoice.export",
   actor: "user_4f2c",
-  action: "invoice.export",
-});
-
-// Write an evidence object under a retention lock — immutable until it expires.
-await putEvidence({
-  key: `evidence/${tenantId}/soc2-access-review.pdf`,
-  body: pdf,
-  retainUntil: "2033-06-27T00:00:00Z",
 });
 
 // Verify the chain is intact before you hand the log to an auditor.
-const result = await verifyChain(tenantId);
-if (!result.ok) {
+const result = await chain.verify(accountId);
+if (!result.valid) {
   throw new Error(`audit chain broken at seq ${result.brokenAt}`);
 }
 ```
 
-<Callout type="info" title="Reference docs at GA">
-  This page covers the essentials. The full API reference — every event type,
-  the Object-Lock retention modes, and the chain-verification contract — is
-  still expanding.
+```ts
+// Write evidence under a retention lock. retainUntilFrom enforces the 6-year HIPAA/SEC
+// floor — a term below it throws rather than silently rounding up.
+import { buildArtifactKey } from "@caisson/audit-worm";
+
+const key = buildArtifactKey(accountId, "evidence", "soc2-access-review.pdf");
+await store.put(key, pdfBytes, { retainUntil: retainUntilFrom(new Date(), 7) });
+```
+
+```ts
+// Escalate GOVERNANCE → COMPLIANCE and record the change as chain evidence in one call —
+// an unrecorded retention change is treated as a FAILED escalation.
+import {
+  escalateRetention,
+  irreversibleComplianceOptIn,
+  COMPLIANCE_ACKNOWLEDGEMENT,
+} from "@caisson/audit-worm";
+
+const optIn = irreversibleComplianceOptIn({
+  bucket: "caisson-worm-prod",
+  acknowledgement: COMPLIANCE_ACKNOWLEDGEMENT,
+  deployment: "production",
+});
+
+await escalateRetention({
+  store: s3Store,
+  chain,
+  accountId,
+  key,
+  retainUntil: retainUntilFrom(new Date(), 7),
+  compliance: { optIn },
+});
+```
+
+## The `ArtifactStore` port
+
+`put`/`get`/`head`/`extendRetention` — a minimal object-store contract every backend binds.
+`assertSafeKey` enforces the `{account_id}/…` prefix and rejects every traversal vector
+(empty/`.`/`..` segments, null bytes, absolute paths); `extendRetention` is strictly
+monotonic and throws rather than shorten or clamp a lock. Three cloud backends ship today:
+
+- **`S3ArtifactStore`** — Object-Lock over `@aws-sdk/client-s3`, `GOVERNANCE` mode by
+  default. `COMPLIANCE` mode (SEC 17a-4 grade, irreversible until `retain_until`) requires
+  a typed `irreversibleComplianceOptIn()` naming the exact bucket, and only builds under
+  `NODE_ENV === "production"` — never under a test runner.
+- **`GcsArtifactStore`** — the same port over GCS Object Retention Lock.
+- **`R2ArtifactStore`** — an S3-compatible data plane paired with Cloudflare's separate
+  bucket-lock retention plane.
+- **`LocalArtifactStore`** — a filesystem double for dev/CI. Write-once is real (`wx`
+  open flag, TOCTOU-safe); the retention time-lock is echoed back as metadata but never
+  enforced. Not court-admissible — only the cloud backends are.
+
+The S3 transport is injected as `S3Sendable = Pick<S3Client, "send">`, so CI binds a stub
+and no live cloud call runs in tests.
+
+## Configuration surface
+
+`retainUntilFrom(now, years?)` computes a calendar-correct retention date. `MIN_RETENTION_YEARS`
+is 6 (HIPAA §164.316(b)(2) and SEC 17a-4 both floor there) and `DEFAULT_RETENTION_YEARS` is
+7; a term below the floor throws rather than rounding up. `AuditChainStore` takes an
+optional `now` clock (for deterministic tests) and `retentionYears` for its own anchor
+objects. `S3ArtifactStoreConfig` takes the injected `client`, `bucket`, an optional `mode`
+(`"GOVERNANCE" | "COMPLIANCE"`, default `GOVERNANCE`), a `complianceOptIn` required iff
+`mode === "COMPLIANCE"`, and an optional per-tenant SSE-KMS key id for encryption at rest.
+
+## Composing with the base
+
+`AuditChainStore` and `LockedVersionStore` both take a `Transactor` from `@caisson/tenancy-rls`
+and run every operation through `withTenant`, so they sit directly on the base's RLS
+boundary — the same tenant scoping every other Caisson package uses. `audit-worm` depends
+down on `@caisson/kernel` (the pure chain/version algebra) and `@caisson/tenancy-rls` only;
+it never depends up on an edition or bundle.
+
+<Callout type="info" title="Not a compliance certification">
+  audit-worm ships the technical control an auditor checks for — tamper-evident
+  evidence and a hash-chained log of privileged actions. It does not make an
+  organization compliant; that determination is your organization's and its
+  auditor's to make.
 </Callout>
+
+audit-worm is a paid primitive: sold standalone, or composed at runtime as a real
+`workspace:*` dependency inside the Compliance bundle alongside `@caisson/field-crypto`,
+`@caisson/retention-runner`, and the alert pipeline.

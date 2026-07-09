@@ -1,0 +1,109 @@
+---
+title: prompt-registry
+description: Append-only prompt versioning with name@version and name@alias addressing, a mutable alias pointer for zero-redeploy promotion, and injection-safe rendering.
+---
+
+Prompts hardcoded three layers deep in a route handler, versioned like everything else that
+ships. `@caisson/prompt-registry` stores prompt templates as append-only versions and resolves
+them by `name@version` or `name@alias` — an edit mints a new row instead of mutating one, and a
+mutable alias pointer (`prod`, `canary`) promotes a prompt to production with no redeploy.
+
+## What it does
+
+- **Append-only versions** — `registerPrompt` derives the current tip from the kernel's
+  versioning chain and supersedes it. The first call to a name is v1; each later call is
+  `tip.version + 1`. A version row cannot be updated or deleted.
+- **`name@version` and `name@alias` addressing** — `parsePromptRef` reads a bare name as the
+  current tip, a numeric suffix as an exact version, and anything else as an alias.
+  `resolvePrompt` takes that parsed reference straight to the matching row.
+- **Promote without a redeploy** — `setAlias` points `prod` or `canary` at a specific version
+  number. It resolves the target version first, so an alias can never point at a version that
+  doesn't exist, and it only ever writes the pointer row — never a version.
+- **Injection-safe rendering** — `renderPrompt`/`renderVersion` validate raw vars against the
+  version's own `varSpec` (a strict Zod schema — unknown vars rejected, missing vars fail), then
+  substitute `{{name}}` placeholders in a single non-recursive pass. Every inserted value is
+  brace-escaped, so a variable's own content can never open a new placeholder or forge a message
+  role.
+- **Tenant-isolated by default** — `prompt_version` and `prompt_alias` both go through
+  `buildTenantPolicySql` (FORCE-RLS), and every registry function takes a `TenantExecutor` — a
+  query outside a `withTenant` scope sees nothing.
+
+## Install
+
+```bash
+bun add @caisson/prompt-registry
+```
+
+## Quickstart
+
+```ts
+import { withTenant } from "@caisson/tenancy-rls";
+import {
+  PROMPT_REGISTRY_SCHEMA_SQL,
+  registerPrompt,
+  resolvePrompt,
+  setAlias,
+  renderVersion,
+} from "@caisson/prompt-registry";
+
+// migrate: exec PROMPT_REGISTRY_SCHEMA_SQL once (a numbered migration in prod).
+
+await withTenant(db, accountId, async (tx) => {
+  const v1 = await registerPrompt(tx, {
+    accountId,
+    name: "soc2-summary",
+    messages: [
+      { role: "system", content: "You are {{persona}}." },
+      { role: "user", content: "Summarize:\n{{document}}" },
+    ],
+    varSpec: { persona: "string", document: "string" },
+  });
+  await setAlias(tx, {
+    accountId,
+    name: "soc2-summary",
+    alias: "prod",
+    version: v1.version,
+  });
+
+  const live = await resolvePrompt(tx, accountId, "soc2-summary@prod");
+  const messages = renderVersion(live, {
+    persona: "a compliance assistant",
+    document: untrustedUserInput, // escaped — cannot break out of its slot
+  });
+});
+```
+
+## Rolling back
+
+Point the alias at an earlier version — nothing is deleted or re-inserted:
+
+```ts
+await setAlias(tx, { accountId, name: "soc2-summary", alias: "prod", version: 3 });
+```
+
+## The render contract
+
+`renderContent` re-checks the rendered length against the content cap *after* escaping, not
+before — escaping can inflate a value, so the cap has to catch the real rendered total. The
+single-pass, brace-escaped substitution behavior is locked against a golden fixture
+(`src/__golden__/render.json`), so a change that shifts the output has to update the fixture
+deliberately.
+
+<Callout type="info" title="Library, not a service">
+  Prompt registry is a `TenantExecutor`-scoped API you import and call directly —
+  the same primitive the AI Production Kit's inference gateway resolves prompt
+  refs through before every model call. There's no standalone server or HTTP route.
+</Callout>
+
+## Composition
+
+Built on `@caisson/kernel` (versioning + errors) and `@caisson/tenancy-rls` (FORCE-RLS); it
+never depends "up" on an edition. It's a base primitive of the **AI-Production** bundle, where
+the inference gateway resolves every `promptRef` through it before rendering and metering a
+call — alongside `ai-meter` and `guardrails`.
+
+## Test
+
+```sh
+bun test ./src        # render golden (BLESS unset) + RLS/versioning integration (PGlite)
+```

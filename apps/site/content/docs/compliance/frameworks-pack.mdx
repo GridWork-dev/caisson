@@ -1,0 +1,87 @@
+---
+title: frameworks-pack
+description: Own-authored, clean-room control catalogs for SOC 2, HIPAA Security, and the EU AI Act, crosswalked to each framework's requirement ids.
+---
+
+`@caisson/frameworks-pack` ships a typed, Zod-strict canonical-control model plus three
+own-authored control packs — SOC 2 Trust Services Criteria, HIPAA Security, and the EU AI
+Act — with every control crosswalked to the external framework's requirement ids.
+
+Clean-room authorship: crosswalk references are pointers to an external requirement id
+(`CC6.1`, `164.312(a)(2)(i)`, `Art. 9`) — never copied control text. The catalog is hand-authored
+Caisson prose; the citation is a fact, not a transform of the AICPA/NIST/regulation text.
+
+## Install
+
+```bash
+bun add @caisson/frameworks-pack
+```
+
+## What it does
+
+- **Canonical control model** — `defineControl` / `defineFramework` builders validate a
+  control set at author time and fail closed on the first violation (duplicate id, empty
+  statement, malformed crosswalk reference).
+- **Three framework packs** — `soc2Tsc`, `hipaaSecurity`, `euAiAct`: pre-built, validated
+  `Framework` catalogs, each control mapped to its external requirement id.
+- **Named-regime crosswalks** — `soc2Crosswalk`, `pciDssCrosswalk`, `gdprCrosswalk` (and
+  `regimeCrosswalks`, all three together): the buyer-facing mapping from a regime's control
+  id to the concrete Caisson package/mechanism that addresses it, with a `claim` of either
+  `"maps-to"` (domain overlap) or `"implements"` (proven by a live test or CI artifact, and
+  only ever used when a `proof` pointer backs it) — and a required `buyerResponsibility`
+  column naming what Caisson does not cover.
+
+## Quickstart
+
+```ts
+import { soc2Tsc, hipaaSecurity, euAiAct } from "@caisson/frameworks-pack";
+
+// Each pack is a validated Framework: { id, title, version, description, controls[] }.
+for (const control of soc2Tsc.controls) {
+  console.log(control.id, control.crosswalk.map((c) => c.reference));
+}
+```
+
+Author your own control on top of the same model:
+
+```ts
+import { defineControl } from "@caisson/frameworks-pack";
+
+const control = defineControl({
+  id: "ACCESS-CONTROL.MFA",
+  title: "Multi-factor authentication for privileged access",
+  family: "Access Control",
+  statement: "Privileged accounts require a second authentication factor.",
+  crosswalk: [{ framework: "SOC2-TSC", reference: "CC6.1" }],
+});
+```
+
+## Regime crosswalks
+
+```ts
+import { soc2Crosswalk, exportRegimeCrosswalk } from "@caisson/frameworks-pack";
+
+// exportRegimeCrosswalk embeds the disclaimer block IN the returned artifact — a cold
+// reader opening the export never sees a mapping row without the scope language beside it.
+const artifact = exportRegimeCrosswalk(soc2Crosswalk);
+```
+
+<Callout type="info" title="Maps to, not certified by">
+  Every crosswalk row is `"maps-to"` unless a live repo test or CI artifact proves the
+  control, in which case it is `"implements"` with a `proof` pointer. Neither claim is a
+  certification — Caisson holds no SOC 2 report, no HIPAA attestation, and no EU AI Act
+  conformity assessment on itself. The `buyerResponsibility` column on every row names what
+  stays yours.
+</Callout>
+
+## Composition
+
+Depends only on `@caisson/kernel` — down-only, no edition or sibling-package dependency.
+The catalogs are consumed by `@caisson/compliance-core`, which assembles the evidence pack
+and generates the OSCAL export against the control ids defined here. `frameworks-pack` is
+one of the ten packages composed by the Compliance bundle.
+
+## License
+
+Commercial module (`LicenseRef-Caisson-Commercial`) — part of the Compliance bundle, also
+available standalone.

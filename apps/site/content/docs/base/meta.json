@@ -4,12 +4,15 @@
     "auth",
     "tenancy-rls",
     "billing",
-    "credits",
     "ai-config",
     "mcp-server",
     "ui",
     "jobs",
     "email",
-    "kernel"
+    "kernel",
+    "---Platform---",
+    "org-controls",
+    "billing-orchestration",
+    "ui-pro"
   ]
 }

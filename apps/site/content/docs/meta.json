@@ -8,10 +8,11 @@
     "base",
     "---Bundles---",
     "compliance",
-    "provenance",
-    "ai-kit",
+    "ai-production",
     "local-first",
     "agentic-dev",
+    "provenance",
+    "everything",
     "---Tooling---",
     "cli"
   ]
