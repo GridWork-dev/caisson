@@ -1798,3 +1798,59 @@ pre-install Bun-auto-install roulette (install-first, #183), the audit-harness b
 mode-flip reading as a phantom changed-package in the changeset gate (executable bit committed),
 and the apps-are-changeset-covered convention (#184's missing changeset added — builders assume
 apps are exempt; they are not).
+
+## 2026-07-09 Kickoff-H platform-hardening — fork round 1 (operator-locked)
+
+Session `feat/platform-hardening` (worktree; sibling `KICKOFF-G` owns buyer surface). W1–W4
+research fanned out (13 agents) then this first fork round. Four locks:
+
+- **Parked-bucket re-triage → CONFIRM all 13** (operator-ordered). 12 rows verified as the
+  kickoff verdict table states; no revisit trigger fired since 2026-07-06. The 13th ("Real media
+  on module depth pages") was a filing slip — correctly PULLED to Kickoff-G but still physically
+  in `outstanding-work.md` §3; removed from §3 this session. First-cycle credit race (CAISSON-25)
+  stays PARTIAL→W3: accept-vs-build fork stays open, the two code residuals ride W3.
+- **Support-SKU `creditsPerCycle` → 1000 (Developer parity)** — resolves the ADR-0288 rider (b)
+  owed number. Schema forbids 0; the SKU's real value is the support lane, but parity with the
+  $499 Developer grant reads clean and avoids the stingy-optics of 100-next-to-1000 on a pricing
+  page. Wired in W3 (`packages/pricebook/src/plans.ts` priority_support row). To ADR at W3 SHIP.
+- **External uptime monitor → Better Stack Free ($0)** — 10 monitors / 3-min checks / native
+  Slack+email; defers spend. Discord/Telegram reach needs a small webhook-shape adapter (handled
+  in W2). Ruled out: UptimeRobot free (2024 ToS bars commercial use). Points at `caisson.sh` +
+  license `/health` — operator-signup checkpoint in W2.
+- **Read-only mutation gate → ADMIN LEVER ONLY, no dunning freeze** — wire `assertNotReadOnly`
+  to a manual maintenance/incident switch (doubles as the W2 incident-runbook tool); do NOT
+  freeze writes on `subscription.past_due`. Rationale: Paddle's own docs recommend `past_due →
+Full access` (grace) and caisson already ships exactly that (deliberately-unhandled past_due,
+  only `canceled` revokes) — a dunning freeze would be a new caisson-specific policy contradicting
+  both. Closes CAISSON-58's useful half; the dunning-freeze half is dropped as won't-fix (correct
+  per Paddle). To ADR at W3 SHIP.
+
+Fork round 2 (changeset-cut timing · strix round-2 scope/engine + the missing E2E CF-Access
+bypass creds · CAISSON-25 residual disposition · pg-boss alert routing) follows before the
+gated builds; the fully-unblocked wave items build in parallel worktree workflows after.
+
+### Fork round 2 (operator-locked, same session)
+
+- **Strix round-2 → FULL authed-live; operator provisions creds first.** Engine defaults to the
+  ChatGPT-sub bridge (gpt-5.5-class, matches round-1). BLOCKER surfaced as an operator checkpoint:
+  add `CAISSON_E2E_CF_CLIENT_ID`/`CAISSON_E2E_CF_CLIENT_SECRET` to `~/.gridwork/caisson.env` (the
+  CF-Access service-token that lets the tool through the pre-launch gate) + add the E2E identity to
+  admin's GitHub-OAuth allowlist (`ADMIN_GITHUB_ALLOWED_USER_IDS`) + `codex login --device-auth` +
+  the `chatgpt-bridge serve` daemon. Until then: white-box + Worker/support-bot black-box can run;
+  authed buyer/owner/seat + admin sessions wait. W1 rate-limit / free-floor / SHA-pins proceed
+  regardless.
+- **Changeset cut → SCHEDULE its own sitting.** W4 does NOT `changeset version` this session (the
+  4 concurrent waves keep adding changesets). Deferred to a dedicated release act; tracked in
+  `outstanding-work.md` §1. W4 this session = eval widening + live-harness re-run only.
+- **CAISSON-25 → BUILD BOTH residuals.** (a) static-grant ordering-race liveness fix (cancel
+  tombstone / grant-time liveness check) AND (b) subscription-payment-refund → coverage-horizon
+  rollback. (b) REVERSES the ADR-0269 D6 accept lock → a superseding ADR is filed at W3 SHIP.
+  Both are money-seam → fable implementation + opus review + fable security verdict.
+- **Alert routing → ADD a Discord webhook adapter, unify in Discord.** pg-boss failure alerts get
+  a new `createDiscordChannel` in `@caisson/alerting` (SSRF-guarded, embed shape) → the caisson
+  support Discord `#ops-alerts`; the Better Stack uptime monitor's webhook is reshaped to Discord
+  embed format by a small adapter. Operator checkpoint: create the Discord webhook + set its URL.
+
+All forks now closed; the fully-unblocked wave items build in parallel worktree workflows, money
+seams on the fable lane with opus review. Operator checkpoints (strix creds · Railway PITR · Grafana
+contact point + 4 rules · Better Stack signup · Discord `#ops-alerts` webhook) run alongside.
