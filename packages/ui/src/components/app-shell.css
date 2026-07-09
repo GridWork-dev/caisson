@@ -103,8 +103,8 @@
 
 /* Account pill (the signed-in account id / switcher label a consumer renders in `topBar`) —
  * truncates with an ellipsis instead of pushing trailing topbar content (e.g. Sign-out) past
- * `.cs-shell`'s grid-level `overflow: hidden`, where it clips silently with no way to reach it
- * (CAISSON-69). Opt-in class — the kit renders whatever `topBar` ReactNode a consumer passes;
+ * `.cs-shell`'s grid-level `overflow: hidden`, where it clips silently with no way to reach it.
+ * Opt-in class — the kit renders whatever `topBar` ReactNode a consumer passes;
  * this is a utility hook the consumer applies to its own account-id element. */
 .cs-shell__account-pill {
   overflow: hidden;
@@ -353,7 +353,7 @@
     display: none;
   }
 
-  /* CAISSON-69: reachable regardless of how tight the topbar gets on a narrow viewport. */
+  /* Reachable regardless of how tight the topbar gets on a narrow viewport. */
   .cs-shell__mobile-nav-footer {
     display: block;
     padding: var(--cs-space-3) var(--cs-space-2);

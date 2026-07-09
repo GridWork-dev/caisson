@@ -45,7 +45,7 @@ export interface AppShellProps {
   topBar?: ReactNode;
   /** Extra content rendered inside the mobile off-canvas drawer only (CSS ≤48rem; invisible on
    *  desktop) — e.g. a Sign-out control the topbar can't always spare room for on a narrow
-   *  viewport (CAISSON-69). Typically the same or a subset of what `topBar` already renders. */
+   *  viewport. Typically the same or a subset of what `topBar` already renders. */
   mobileNavFooter?: ReactNode;
   /** Brand slot rendered top-left. Optional and brand-neutral — the kit ships no default mark;
    *  the consumer passes its own (e.g. `<Wordmark />` from `@caisson/brand`). */
@@ -151,7 +151,7 @@ export function AppShell({
         </div>
 
         {/* Mobile-only (CSS ≤48rem) — e.g. Sign-out, so it's reachable even when the topbar has
-         * no room for it (CAISSON-69). Invisible on desktop; the sidebar itself is a drawer only
+         * no room for it. Invisible on desktop; the sidebar itself is a drawer only
          * below the mobile breakpoint. */}
         {mobileNavFooter !== undefined ? (
           <div className="cs-shell__mobile-nav-footer">{mobileNavFooter}</div>
