@@ -28,7 +28,7 @@
   background: linear-gradient(to right, transparent, var(--cs-bg));
 }
 
-/* `table-layout: fixed` + a per-cell min-width (CAISSON-66): auto layout let a long unbroken
+/* `table-layout: fixed` + a per-cell min-width: auto layout let a long unbroken
  * cell decide the column widths, so adjacent columns collided with zero visual gap on desktop
  * ("Caisson" flush against "building it in-house") and the table could force the PAGE wider than
  * a 390px viewport. Fixed layout splits the width evenly; the min-width keeps every column
