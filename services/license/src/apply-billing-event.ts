@@ -52,7 +52,6 @@ import {
   cancelSubscriptionStatus,
   insertOrderRecord,
   readSubscriptionStatus,
-  readSubscriptionStatuses,
   refundOrderRecord,
   refundSubscriptionOrderRecord,
   upsertSubscriptionStatus,
@@ -239,6 +238,11 @@ export async function applyBillingEvent(
           });
         }
         // ADR-0293 G26: one order-history row per granting invoice — the SAME resend protection.
+        // The row carries its backing subscription id (the refund claw's unambiguous rollback
+        // target — never re-derived by price, which two subscriptions of one account can share
+        // across a cancel + re-subscribe) and whether this invoice actually stamped a coverage
+        // horizon (a canceled-before-grant invoice grants credits only; a refund of it must roll
+        // back nothing).
         await insertOrderRecord(tx, {
           accountId: ev.accountId,
           sourceEventId: ev.invoiceId,
@@ -247,6 +251,8 @@ export async function applyBillingEvent(
           label: plan.planTag,
           amount: ev.amountTotal,
           currency: ev.currency,
+          subscriptionId: ev.subscriptionId,
+          coverageStamped: !canceledBeforeGrant,
         });
         // ADR-0269: a `coversOwnedEntitlements` plan (Developer) RE-GRANTS, subscription-sourced,
         // every entitlement the buyer already holds via an active one_time grant — the
@@ -510,29 +516,32 @@ export async function applyBillingEvent(
         // that was just UN-paid) — unbounded value leakage into perpetual offline tokens. The
         // subscription ORDER row's paid→refunded flip is both the detector (only a subscription
         // invoice has one) and the idempotency latch (a redelivery flips nothing → rolls back
-        // nothing). The flipped row's price id resolves the plan's cadence (one paid period = the
-        // claw amount) and, via the status row, the subscription whose horizon-stamped grant rows
-        // — static AND mirrors, any status — shrink by that period. Access rows themselves are
-        // untouched: revoking a still-billing subscription's grants stays the cancel event's job.
+        // nothing). The flipped row itself names the rollback target: its `subscription_id`
+        // (stamped at insert — never re-derived by price id, which two subscriptions of one
+        // account can share across a cancel + re-subscribe) and its `coverage_stamped` bit (a
+        // canceled-before-grant invoice granted credits only — a refund of it rolls back nothing,
+        // or it would shrink coverage EARLIER un-refunded payments paid for). The row's price id
+        // resolves the plan's cadence; one paid period is the claw amount; the target
+        // subscription's horizon-stamped grant rows — static AND mirrors, any status — shrink by
+        // that period. Access rows themselves are untouched: revoking a still-billing
+        // subscription's grants stays the cancel event's job.
         const refundedSubscription = await refundSubscriptionOrderRecord(
           tx,
           ev.paymentId,
         );
         if (
           refundedSubscription !== null &&
+          refundedSubscription.coverageStamped &&
           refundedSubscription.priceId !== null &&
           refundedSubscription.priceId !== ""
         ) {
-          const statuses = await readSubscriptionStatuses(tx, ev.accountId);
-          const backing = statuses.find(
-            (s) => s.priceId === refundedSubscription.priceId,
-          );
-          if (backing === undefined) {
-            // No status row maps the price to a subscription id (a pre-ledger invoice) — there is
-            // no horizon-stamped row set to locate, so nothing to roll back. Logged, never thrown:
-            // failing the whole refund over the cosmetic rollback would block the credit claw.
+          if (refundedSubscription.subscriptionId === null) {
+            // A pre-link row (inserted before the subscription_id column existed): the backing
+            // subscription cannot be resolved unambiguously — by-price re-derivation is exactly
+            // the wrong-subscription defect the column fixed. Logged, never thrown: failing the
+            // whole refund over the cosmetic rollback would block the credit claw.
             process.stderr.write(
-              `[service-license] subscription refund ${ev.paymentId}: no subscription_status row for its price id — horizon rollback skipped\n`,
+              `[service-license] subscription refund ${ev.paymentId}: order row carries no subscription id (pre-link row) — horizon rollback skipped\n`,
             );
           } else {
             let cadence: "month" | "year" | null = null;
@@ -548,7 +557,7 @@ export async function applyBillingEvent(
             if (cadence !== null) {
               await rollbackSubscriptionCoverageHorizon(tx, {
                 accountId: ev.accountId,
-                subscriptionId: backing.subscriptionId,
+                subscriptionId: refundedSubscription.subscriptionId,
                 cadence,
               });
             }

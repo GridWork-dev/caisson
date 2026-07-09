@@ -198,6 +198,26 @@ CREATE UNIQUE INDEX order_record_source_event_uniq ON order_record (source_event
 ${buildTenantPolicySql("order_record")}
 `;
 
+// The subscription linkage + coverage-contribution columns (review R2 fixes). `subscription_id`
+// records WHICH subscription a kind='subscription' invoice row belongs to at insert time — the
+// refund-time coverage-horizon claw used to re-derive it by matching the row's price id against
+// `subscription_status`, and an account that canceled a subscription and later re-subscribed to
+// the SAME price has two status rows with that price id, so the claw could shrink the LIVE
+// subscription's horizon over a refund of the old one's invoice. `coverage_stamped` records
+// whether the invoice actually extended the coverage horizon: a canceled-before-grant late
+// invoice (see the grant-time liveness check in apply-billing-event.ts) grants credits only and
+// stamps nothing, so a refund of it must roll back nothing — without the bit, the claw would
+// shrink a horizon EARLIER un-refunded payments paid for. Backfill semantics for pre-column
+// rows: `coverage_stamped` defaults true (every pre-column subscription invoice stamped
+// unconditionally — the historically accurate value) and `subscription_id` stays NULL, which the
+// claw treats as "unresolvable — skip, log" (the pre-column ambiguity is exactly what it refuses
+// to guess through). SEPARATE migration, never an edit to ORDER_RECORD_SCHEMA_SQL above — that
+// constant is frozen as the checksum-pinned platform migration (append-only, ADR-0006).
+export const ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL = `
+ALTER TABLE order_record ADD COLUMN subscription_id text;
+ALTER TABLE order_record ADD COLUMN coverage_stamped boolean NOT NULL DEFAULT true;
+`;
+
 export interface InsertOrderRecordInput {
   accountId: string;
   /** The invoice id (subscription) / payment id (one-time) — the same anchor the credit/entitlement
@@ -210,6 +230,12 @@ export interface InsertOrderRecordInput {
   /** Integer minor currency units (ADR-0007) — the event's own `amountTotal`, never re-derived. */
   amount: number;
   currency: string;
+  /** The backing subscription (kind='subscription' rows) — the refund claw's unambiguous target.
+   *  Omitted/null for purchases; a NULL on a subscription row makes the claw skip, never guess. */
+  subscriptionId?: string | null;
+  /** False when this invoice deliberately stamped NO coverage horizon (the canceled-before-grant
+   *  path) — a refund of it then rolls back nothing. Defaults true (the normal granting invoice). */
+  coverageStamped?: boolean;
 }
 
 /**
@@ -236,8 +262,8 @@ export async function insertOrderRecord(
     return;
   }
   await tx.query(
-    `INSERT INTO order_record (id, account_id, source_event_id, kind, price_id, label, amount, currency)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO order_record (id, account_id, source_event_id, kind, price_id, label, amount, currency, subscription_id, coverage_stamped)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      ON CONFLICT (source_event_id, kind) DO NOTHING`,
     [
       randomUUID(),
@@ -248,6 +274,8 @@ export async function insertOrderRecord(
       input.label,
       input.amount,
       input.currency,
+      input.subscriptionId ?? null,
+      input.coverageStamped ?? true,
     ],
   );
 }
@@ -278,24 +306,40 @@ export async function refundOrderRecord(
 /**
  * Flip a SUBSCRIPTION invoice's order row to 'refunded' on a whole-transaction refund of that
  * payment — the SIBLING of {@link refundOrderRecord} for `kind = 'subscription'` rows, returning
- * the flipped row's `price_id` (or `null` when nothing flipped: the refunded payment was not a
- * subscription invoice, predates this table, or was already flipped by a redelivery). The
- * paid→refunded transition is the LATCH the coverage-horizon rollback keys on: a redelivered
- * refund event flips nothing and therefore rolls nothing back a second time. Run inside
- * `withTenant`.
+ * the flipped row's `price_id`, its `subscription_id` (the claw's unambiguous rollback target —
+ * NULL on a pre-link row, which the caller skips rather than re-deriving by price), and its
+ * `coverage_stamped` bit (false = the invoice stamped no horizon, so nothing to roll back). `null`
+ * when nothing flipped: the refunded payment was not a subscription invoice, predates this table,
+ * or was already flipped by a redelivery. The paid→refunded transition is the LATCH the
+ * coverage-horizon rollback keys on: a redelivered refund event flips nothing and therefore rolls
+ * nothing back a second time. Run inside `withTenant`.
  */
 export async function refundSubscriptionOrderRecord(
   tx: TenantExecutor,
   paymentId: string,
-): Promise<{ priceId: string | null } | null> {
-  const r = await tx.query<{ price_id: string | null }>(
+): Promise<{
+  priceId: string | null;
+  subscriptionId: string | null;
+  coverageStamped: boolean;
+} | null> {
+  const r = await tx.query<{
+    price_id: string | null;
+    subscription_id: string | null;
+    coverage_stamped: boolean;
+  }>(
     `UPDATE order_record SET status = 'refunded'
       WHERE source_event_id = $1 AND kind = 'subscription' AND status = 'paid'
-      RETURNING price_id`,
+      RETURNING price_id, subscription_id, coverage_stamped`,
     [paymentId],
   );
   const row = r.rows[0];
-  return row === undefined ? null : { priceId: row.price_id };
+  return row === undefined
+    ? null
+    : {
+        priceId: row.price_id,
+        subscriptionId: row.subscription_id,
+        coverageStamped: row.coverage_stamped,
+      };
 }
 
 export interface OrderRecordRow {

@@ -8,6 +8,7 @@ import {
   cancelSubscriptionStatus,
   insertOrderRecord,
   ORDER_RECORD_SCHEMA_SQL,
+  ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   refundOrderRecord,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
   upsertSubscriptionStatus,
@@ -22,6 +23,7 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
 });
 
 afterAll(async () => {
@@ -161,6 +163,12 @@ describe("readOrderRecords (ADR-0293 G26)", () => {
         amount: 49_900,
         currency: "usd",
       }),
+    );
+    // Two same-instant inserts tie on created_at (the reader's only sort key) and the tie order
+    // is unspecified — backdate the first row so "newest first" is deterministic to assert.
+    await tp.query(
+      `UPDATE order_record SET created_at = created_at - interval '1 minute'
+        WHERE source_event_id = 'in_ord_1'`,
     );
     await withTenant(tp.pg, acct, (tx) =>
       insertOrderRecord(tx, {

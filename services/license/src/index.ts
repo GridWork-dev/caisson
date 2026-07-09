@@ -51,6 +51,7 @@ export type {
 export {
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
   ORDER_RECORD_SCHEMA_SQL,
+  ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   upsertSubscriptionStatus,
   cancelSubscriptionStatus,
   readSubscriptionStatuses,

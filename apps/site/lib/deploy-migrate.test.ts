@@ -40,15 +40,16 @@ afterAll(async () => {
 });
 
 test("platform migrations apply in order then are idempotent", async () => {
+  // 20 = the shared chain's order-record subscription-link append (@caisson/platform-migrations).
   const first = await runPlatformMigrations(pgliteApplier(tp));
   expect(first.applied).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
   ]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
   expect(second.skipped).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
   ]);
 });
 

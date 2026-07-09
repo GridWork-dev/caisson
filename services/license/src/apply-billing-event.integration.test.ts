@@ -64,6 +64,7 @@ import {
 } from "./entitlement-store.ts";
 import {
   ORDER_RECORD_SCHEMA_SQL,
+  ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   readOrderRecords,
   readSubscriptionStatuses,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
@@ -184,6 +185,7 @@ beforeAll(async () => {
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
 });
 
 afterAll(async () => {
@@ -2348,5 +2350,158 @@ describe("subscription-payment refund -> coverage-horizon rollback", () => {
     expect(
       await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
     ).toEqual([]);
+  });
+
+  test("refunding a canceled-before-grant late invoice rolls back NO horizon (it stamped none); its credits still claw", async () => {
+    const acct = "acct_tomb_refund";
+    const sub = "sub_tomb_refund";
+    // Owned one_time compliance, backdated so the subscription coverage horizon is the binding
+    // bound (same setup as the rollback test above).
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_tomb_owned",
+        source: { kind: "one_time", purchaseId: "pay_tomb_owned" },
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = now() - interval '2 years' WHERE account_id = $1`,
+      [acct],
+    );
+    // Invoice 1 stamps the horizon (now + 1 month), then the subscription cancels.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "txn_tomb_pay_1", { subscriptionId: sub }),
+      ),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, subscriptionCanceled(acct, sub)),
+    );
+    // The horizon is grandfathered across the cancel (a paid fact) — capture it as the baseline.
+    const before = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    expect(new Date(before["compliance"] ?? "").getTime()).toBeGreaterThan(
+      Date.now() + 20 * DAY,
+    );
+    // A LATE out-of-order invoice lands after the cancel: credits only, NO horizon stamp — and
+    // its order row records exactly that (coverage_stamped = false, subscription_id carried).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "txn_tomb_pay_2", { subscriptionId: sub }),
+      ),
+    );
+    const rows = await tp.query<{
+      source_event_id: string;
+      subscription_id: string | null;
+      coverage_stamped: boolean;
+    }>(
+      `SELECT source_event_id, subscription_id, coverage_stamped FROM order_record
+        WHERE account_id = $1 AND kind = 'subscription' ORDER BY source_event_id`,
+      [acct],
+    );
+    expect(rows).toEqual([
+      {
+        source_event_id: "txn_tomb_pay_1",
+        subscription_id: sub,
+        coverage_stamped: true,
+      },
+      {
+        source_event_id: "txn_tomb_pay_2",
+        subscription_id: sub,
+        coverage_stamped: false,
+      },
+    ]);
+    const balBefore = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    // Refund the LATE invoice: the horizon it never stamped must not shrink — without the
+    // coverage_stamped gate this refund would claw a period invoice 1's un-refunded payment
+    // paid for. The late invoice's own credits still claw (same payment id).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "txn_tomb_pay_2")),
+    );
+    const after = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    expect(after["compliance"]).toBe(before["compliance"]);
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
+      balBefore - 1000, // the late invoice's own Developer-cycle grant, clawed by payment id
+    );
+  });
+
+  test("after a cancel + re-subscribe on the SAME price, refunding the OLD subscription's invoice claws the OLD rows only", async () => {
+    const acct = "acct_resub_refund";
+    const subA = "sub_resub_old";
+    const subB = "sub_resub_live";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_resub_owned",
+        source: { kind: "one_time", purchaseId: "pay_resub_owned" },
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = now() - interval '2 years' WHERE account_id = $1`,
+      [acct],
+    );
+    // Subscription A grants (stamps its horizon), then cancels; the buyer re-subscribes to the
+    // SAME plan/price as subscription B, which stamps its own horizon. Two subscription_status
+    // rows now share one price id — the exact ambiguity a by-price claw target would trip over.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "txn_resub_a_1", { subscriptionId: subA }),
+      ),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, subscriptionCanceled(acct, subA)),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "txn_resub_b_1", { subscriptionId: subB }),
+      ),
+    );
+    // Refund the OLD subscription's invoice: A's rows shrink, B's — the subscription the buyer
+    // is still paying for — keep their full horizon.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "txn_resub_a_1")),
+    );
+    const grants = await tp.query<{
+      subscription_id: string | null;
+      updates_expires_at: string | Date | null;
+    }>(
+      `SELECT subscription_id, updates_expires_at FROM entitlement_grant
+        WHERE account_id = $1 AND source_kind = 'subscription'`,
+      [acct],
+    );
+    const horizonMs = (v: string | Date | null): number =>
+      new Date(v ?? "").getTime();
+    const aRows = grants.filter((r) => r.subscription_id === subA);
+    const bRows = grants.filter((r) => r.subscription_id === subB);
+    expect(aRows.length).toBeGreaterThan(0);
+    expect(bRows.length).toBeGreaterThan(0);
+    for (const r of aRows) {
+      // A's stamped month was clawed — its horizon is back to ~now.
+      expect(
+        Math.abs(horizonMs(r.updates_expires_at) - Date.now()),
+      ).toBeLessThan(5 * DAY);
+    }
+    for (const r of bRows) {
+      // B untouched — still ~a month out.
+      expect(horizonMs(r.updates_expires_at)).toBeGreaterThan(
+        Date.now() + 20 * DAY,
+      );
+    }
+    // The fold still reads B's live coverage: the buyer-visible window survives the old refund.
+    const windows = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    expect(new Date(windows["compliance"] ?? "").getTime()).toBeGreaterThan(
+      Date.now() + 20 * DAY,
+    );
   });
 });

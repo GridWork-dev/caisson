@@ -37,6 +37,7 @@ import {
 } from "./entitlement-store.ts";
 import {
   ORDER_RECORD_SCHEMA_SQL,
+  ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "./subscription-history-store.ts";
 import { handleBillingWebhook } from "./webhook.ts";
@@ -63,6 +64,7 @@ beforeAll(async () => {
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
 });
 
