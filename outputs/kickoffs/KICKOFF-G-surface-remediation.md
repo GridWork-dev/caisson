@@ -9,8 +9,15 @@ investigate/research FIRST, then presents deep forks via AskUserQuestion (rounds
 auto-decide), then builds after locks. Waves are tree-disjoint and fan out as parallel worktree
 workflows inside the session. **Routing:** recon → haiku · bounded builds → sonnet ·
 synthesis/picker prep/review → opus main thread · every dispatch sets `model` (no money/license
-seams in this session — no fable lane). **Review gate:** in-session SHIP audit lane per wave
-(gw-code-reviewer opus on the wave diff; gw-frontend-designer pass on W1/W3 visual changes),
+seams in this session — no fable lane). **Design lane (binding for W1/W3/W4):** design/frontend
+work routes through `gw-frontend-designer` per `identity/design-doctrine.md` — **refero MCP
+research first** (real product screens for footer/compare/matrix/popout/docs patterns), then the
+**`impeccable` skill** for the craft pass inside the brand floor; never restyle from intuition.
+**Retrieval (binding):** library/vendor questions — fumadocs/Shiki theming config, the
+email-client dark-mode support matrix, Playwright behavior — go to **exa-code
+(`get_code_context_exa`) first**, web facts to exa search, per `identity/retrieval.md`; never
+answer from training memory. **Review gate:** in-session SHIP audit lane per wave
+(gw-code-reviewer opus on the wave diff; gw-frontend-designer pass on W1/W3/W4 visual changes),
 findings fixed in-branch before each PR opens.
 
 **Sources triaged into this kickoff:** the 2026-07-09 visual audit
@@ -18,6 +25,23 @@ findings fixed in-branch before each PR opens.
 CAISSON-50/60/61/64–70, `docs/state/outstanding-work.md` §1–§3 (incl. the parked "Real media on
 module depth pages" row PULLED here by the H re-triage), and the 2026-07-09 defect→file recon
 (every row below cites its owning source — no re-discovery needed in-session).
+
+## Session discipline (binding — applies to every wave)
+
+- **Every in-session finding gets remediated in-session.** Review-gate findings, audit findings,
+  CI failures, and harness regressions are fixed in the wave that surfaced them; genuinely
+  lower-priority findings may be batched into W5 or an end-of-session cleanup pass — **never
+  deferred out of the session, never parked without an operator lock.** "Filed a Linear issue"
+  is not remediation for anything surfaced here.
+- **CI failures are root-caused and fixed, never bypassed** — no `continue-on-error`, no test
+  deletion, no gate skip. The known CI gotcha classes live in project memory; check there before
+  re-deriving.
+- **Merge-when-green is standing approval:** once a wave's gates and review pass, open the PR and
+  merge — no per-wave ask.
+- **Forks:** AskUserQuestion only for REAL operator forks (price/policy/scope/irreversible acts,
+  or a finding whose fix needs a decision the operator owns — e.g. the ai-keys live-migration
+  apply, the deploy act). Surface the fork and hold only that item while other work proceeds;
+  never auto-decide, never work around it, and never use "deferred" as the workaround.
 
 ## W1 — Marketing-site layout + copy (P0s CAISSON-65/66/67; tags: `ui`, `frontend`)
 

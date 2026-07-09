@@ -9,12 +9,34 @@ AskUserQuestion (rounds of ≤4, never auto-decide), then builds after locks. Wa
 tree-disjoint and fan out as parallel worktree workflows inside the session. **Routing:** recon →
 haiku · bounded builds → sonnet · synthesis/picker prep/review → opus main thread · the
 license/money seams in W3 → fable per the caisson routing note · every dispatch sets `model`.
-**Review gate:** in-session SHIP audit lane per wave (gw-code-reviewer opus on the wave diff;
-gw-security-auditor on W1 and W3), findings fixed in-branch before each PR opens.
+**Retrieval (binding):** library/vendor questions — Workers rate-limit primitives, pg-boss
+failure-event surface, Railway backup/PITR APIs, uptime-vendor comparison — go to **exa-code
+(`get_code_context_exa`) first**, web facts to exa search, per `identity/retrieval.md`; never
+answer from training memory. **Review gate:** in-session SHIP audit lane per wave
+(gw-code-reviewer opus on the wave diff; gw-security-auditor on W1 and W3), findings fixed
+in-branch before each PR opens.
 
 **Sources triaged into this kickoff:** `docs/state/outstanding-work.md` §1–§3,
 `docs/state/production-readiness.md`, Linear CAISSON-25/31/39/42/52–59/62/63/71, the 2026-07-09
 visual-audit console triage (`outputs/reviews/visual-audit-2026-07-09.md`).
+
+## Session discipline (binding — applies to every wave)
+
+- **Every in-session finding gets remediated in-session.** Review-gate findings, security-audit
+  findings, CI failures, and live-harness regressions are fixed in the wave that surfaced them;
+  genuinely lower-priority findings may be batched into W4 or an end-of-session cleanup pass —
+  **never deferred out of the session, never parked without an operator lock.** "Filed a Linear
+  issue" is not remediation for anything surfaced here (strix round-1 set the pattern:
+  confirmed findings fixed in-wave, PR #45).
+- **CI failures are root-caused and fixed, never bypassed** — no `continue-on-error`, no test
+  deletion, no gate skip. The known CI gotcha classes live in project memory; check there before
+  re-deriving.
+- **Merge-when-green is standing approval:** once a wave's gates and review (incl. the fable
+  pass on W3) are clean, open the PR and merge — no per-wave ask.
+- **Forks:** AskUserQuestion only for REAL operator forks (price/policy/scope/irreversible acts
+  — e.g. the `creditsPerCycle` number, the uptime vendor, the changeset-cut timing, anything
+  touching live billing). Surface the fork and hold only that item while other work proceeds;
+  never auto-decide, never work around it, and never use "deferred" as the workaround.
 
 ## W1 — Security round-2 (tags: `security`)
 
