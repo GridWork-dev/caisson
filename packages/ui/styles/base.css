@@ -107,7 +107,10 @@ kbd,
   .cs-grid--2,
   .cs-grid--3,
   .cs-grid--4 {
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr), never bare 1fr: a bare 1fr track floors at min-content, so one long
+     * unbreakable token (e.g. a slash-joined identifier list in a card body) widens the whole
+     * page past the mobile viewport instead of wrapping inside the card. */
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
