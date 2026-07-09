@@ -63,7 +63,7 @@ export function CartDrawer() {
 
         {items.length === 0 ? (
           <p className="cs-muted">
-            Your cart is empty. Add an edition or a module to get started.
+            Your cart is empty. Add a bundle or a module to get started.
           </p>
         ) : (
           <>
