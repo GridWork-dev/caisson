@@ -120,20 +120,24 @@ export function MediaCarousel({
         <p className={styles.caption} role="status" aria-live="polite">
           {current.caption}
         </p>
-        <div className={styles.dots} aria-hidden="true">
-          {slides.map((s, i) => (
-            <button
-              key={`${s.kind}-${i}`}
-              type="button"
-              className={`${styles.dot} ${i === index ? styles.dotActive : ""}`}
-              onClick={() => setIndex(i)}
-              tabIndex={-1}
-            />
-          ))}
+        {/* Dots + the page count travel as ONE non-wrapping cluster, so the controls read
+            identically at every viewport (the count digit was clipping off when the row wrapped). */}
+        <div className={styles.controls}>
+          <div className={styles.dots} aria-hidden="true">
+            {slides.map((s, i) => (
+              <button
+                key={`${s.kind}-${i}`}
+                type="button"
+                className={`${styles.dot} ${i === index ? styles.dotActive : ""}`}
+                onClick={() => setIndex(i)}
+                tabIndex={-1}
+              />
+            ))}
+          </div>
+          <span className={styles.count}>
+            {Math.min(index, count - 1) + 1} / {count}
+          </span>
         </div>
-        <span className={styles.count}>
-          {Math.min(index, count - 1) + 1} / {count}
-        </span>
       </div>
     </div>
   );
