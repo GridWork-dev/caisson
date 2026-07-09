@@ -106,6 +106,7 @@ function createFakeQueueFactory(): {
   }>;
   workCalls: string[];
   scheduleCalls: Array<{ name: string; cron: string; data: unknown }>;
+  configCalls: Parameters<typeof createPgBossJobQueue>[1][];
 } {
   const registeredTaskNames: string[] = [];
   const registeredTasks: Array<{
@@ -115,9 +116,11 @@ function createFakeQueueFactory(): {
   const workCalls: string[] = [];
   const scheduleCalls: Array<{ name: string; cron: string; data: unknown }> =
     [];
-  const factory: typeof createPgBossJobQueue = (tasks) => {
+  const configCalls: Parameters<typeof createPgBossJobQueue>[1][] = [];
+  const factory: typeof createPgBossJobQueue = (tasks, config) => {
     registeredTaskNames.push(...tasks.map((t) => t.name));
     registeredTasks.push(...tasks);
+    configCalls.push(config);
     return {
       async enqueue() {},
       async work(name: string) {
@@ -138,6 +141,7 @@ function createFakeQueueFactory(): {
     registeredTasks,
     workCalls,
     scheduleCalls,
+    configCalls,
   };
 }
 
@@ -377,6 +381,26 @@ describe("startCreditExpiryScheduler — armed", () => {
     expect(task).toBeDefined();
     await task?.handler({ accountId: "acct_url_check" });
     expect(capturedUrl).toBe("https://example.test/dashboard/license");
+  });
+
+  test("threads `alerting` through to the queue factory's config (CAISSON-53)", async () => {
+    const fake = createFakeQueueFactory();
+    const alerting = {
+      reportTaskFailure: async () => {},
+      reportInfraError: async () => {},
+    };
+
+    await startCreditExpiryScheduler({
+      db,
+      connectionString: "postgres://unused",
+      schedule: "30 3 * * *",
+      createQueue: fake.factory,
+      alerting,
+      ...noEmailer,
+    });
+
+    expect(fake.configCalls).toHaveLength(1);
+    expect(fake.configCalls[0]?.alerting).toBe(alerting);
   });
 
   test("a start failure logs and resolves — never throws past the boot path", async () => {

@@ -1,0 +1,79 @@
+import { describe, expect, test } from "bun:test";
+import { createCaptureChannel } from "@caisson/alerting";
+import type { AlertChannel } from "@caisson/alerting";
+import { createJobAlertingDeps, loadOpsAlertChannels } from "./alerting.ts";
+
+describe("loadOpsAlertChannels", () => {
+  test("no channel when DISCORD_OPS_WEBHOOK_URL is unset", () => {
+    expect(loadOpsAlertChannels({})).toEqual([]);
+  });
+
+  test("no channel when DISCORD_OPS_WEBHOOK_URL is blank", () => {
+    expect(loadOpsAlertChannels({ DISCORD_OPS_WEBHOOK_URL: "   " })).toEqual(
+      [],
+    );
+  });
+
+  test("a discord channel is built when the webhook url is set", () => {
+    const channels = loadOpsAlertChannels({
+      DISCORD_OPS_WEBHOOK_URL: "https://discord.com/api/webhooks/1/abc",
+    });
+    expect(channels.map((c) => c.name)).toEqual(["discord"]);
+  });
+});
+
+describe("createJobAlertingDeps", () => {
+  test("reportTaskFailure delivers a critical jobs.task_failed event to every channel", async () => {
+    const capture = createCaptureChannel("capture");
+    const deps = createJobAlertingDeps([capture]);
+
+    await deps.reportTaskFailure("credits.expiry_sweep", new Error("boom"));
+
+    expect(capture.delivered).toHaveLength(1);
+    expect(capture.delivered[0]).toMatchObject({
+      type: "jobs.task_failed",
+      severity: "critical",
+      title: "Job task failed: credits.expiry_sweep",
+      body: "boom",
+    });
+  });
+
+  test("reportInfraError delivers a critical jobs.infra_error event to every channel", async () => {
+    const capture = createCaptureChannel("capture");
+    const deps = createJobAlertingDeps([capture]);
+
+    await deps.reportInfraError(new Error("connection refused"));
+
+    expect(capture.delivered).toHaveLength(1);
+    expect(capture.delivered[0]).toMatchObject({
+      type: "jobs.infra_error",
+      severity: "critical",
+      body: "connection refused",
+    });
+  });
+
+  test("an empty channel list is a harmless no-op — neither method throws", async () => {
+    const deps = createJobAlertingDeps([]);
+
+    await expect(
+      deps.reportTaskFailure("x", new Error("y")),
+    ).resolves.toBeUndefined();
+    await expect(
+      deps.reportInfraError(new Error("z")),
+    ).resolves.toBeUndefined();
+  });
+
+  test("a failing channel never throws back into the caller", async () => {
+    const failing: AlertChannel = {
+      name: "flaky",
+      deliver: () => {
+        throw new Error("channel down");
+      },
+    };
+    const deps = createJobAlertingDeps([failing]);
+
+    await expect(
+      deps.reportTaskFailure("x", new Error("y")),
+    ).resolves.toBeUndefined();
+  });
+});
