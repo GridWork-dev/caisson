@@ -1,0 +1,103 @@
+---
+title: agent-runner
+description: Spawn a headless coding agent in an isolated worktree with a scrubbed, from-scratch env — zero secret leak by construction, an auditable .jsonl transcript, and a structured run report.
+---
+
+`@caisson/agent-runner` spawns a headless AI coding agent CLI as a detached subprocess in a
+caller-supplied worktree. It streams the run's `stream-json` output to a durable `.jsonl`
+transcript that survives the launcher process exiting, then parses that transcript into a
+structured report — tool calls, files touched, final result.
+
+## What it does
+
+- **Env built from scratch, not inherited.** `buildEngineEnv()` never spreads `process.env`. It
+  starts empty, copies only the `PASSTHROUGH_KEYS` allowlist (`PATH`, `LANG`, `LC_ALL`,
+  `LC_CTYPE`, `TERM`, `TZ`, `TMPDIR`), then adds the target provider's routing vars and the one
+  auth key the caller passed in — nothing else reaches the child.
+- **Provider-agnostic profile.** `ProviderConfig` is a Zod-validated
+  `{binary, baseUrlEnv, authEnv, model, configDirEnv, modelEnv, args}` shape — no vendor is
+  hardcoded. The shipped `CLAUDE_CLI_PROFILE` runs the Claude Code CLI headless in `stream-json`
+  mode with `--strict-mcp-config`, so no MCP server can be smuggled into the sandbox.
+- **Detached, isolated worktree spawn.** `spawn()` launches the agent CLI with its own `HOME`
+  and config dir inside a caller-supplied worktree, detached and unref'd so the run survives the
+  launcher exiting. stdout/stderr write straight to the transcript file descriptor.
+- **A structured report, not a raw log.** `finalReport()` returns one `RunReport` — result text,
+  files touched, tool-call count, binary, model, timestamps — the shape a caller reviews before
+  trusting the diff.
+- **Fail-closed run registry.** Every `RunMeta` read off disk is `.strict()`-validated before use,
+  and a `runId` is checked against a UUID shape before it ever becomes a path segment. `status()`
+  self-heals a run whose process died without a recorded outcome.
+
+## Install
+
+```bash
+bun add @caisson/agent-runner
+```
+
+## Quickstart
+
+```ts
+import { CLAUDE_CLI_PROFILE, createAgentRunner } from "@caisson/agent-runner";
+
+const runner = createAgentRunner({ runsRoot: "/var/lib/caisson/agent-runs" });
+
+const { runId } = runner.spawn({
+  provider: CLAUDE_CLI_PROFILE, // or any { binary, baseUrlEnv, authEnv, model, args }
+  task: "implement the retry helper per SPEC.md",
+  worktree: "/work/checkouts/feature-retry", // the sandbox; the diff lands here
+  authKey: resolveProviderKey(), // injected — the runner never reads env/dotenv itself
+  baseUrl: "https://api.anthropic.com",
+});
+
+runner.tail(runId); // compact incremental transcript view
+runner.status(runId); // running | done | killed | error (+ rolling summary)
+runner.finalReport(runId); // { result, toolCalls, filesTouched, ... }
+```
+
+## The security contract
+
+The child env is the one place a secret could reach a process that egresses to a model
+provider. It is built from an empty object, never a `process.env` spread:
+
+```ts
+const env: Record<string, string> = {};
+for (const key of PASSTHROUGH_KEYS) {
+  const value = parentEnv[key];
+  if (typeof value === "string" && value.length > 0) env[key] = value;
+}
+// Isolation + provider routing only — no secret beyond the one provider key.
+env["HOME"] = opts.home;
+env[opts.provider.baseUrlEnv] = opts.baseUrl;
+env[opts.provider.authEnv] = opts.authKey;
+```
+
+Only the target provider's own auth key — the one the caller explicitly passed in — reaches the
+subprocess. A leak-guard test plants eight secret canaries (`OPENROUTER_API_KEY`, `GITHUB_TOKEN`,
+`AWS_SECRET_ACCESS_KEY`, and five more) into a polluted parent env and asserts none appear in the
+returned child env, by key or value; a second end-to-end test proves the same for a real spawned
+subprocess by planting a canary and asserting it never lands in the transcript.
+
+<Callout type="info" title="Whole-token argv templating">
+  The `{task}` and `{model}` placeholders in a provider's `args` substitute only when they are an
+  entire argv element, never spliced into a larger string — a hostile task string can't add,
+  split, or merge argv entries, and there's no shell in the spawn path to inject into.
+</Callout>
+
+## What it does not do
+
+The contract stops at the worktree: the subprocess produces a diff and a transcript inside the
+worktree you gave it, and never touches git, opens a PR, or reaches a deploy target. Committing,
+opening the PR, and deploying stay the caller's job, one call site away.
+
+## Composing with agent-kernel
+
+`@caisson/agent-runner` is the sandboxed execution primitive; `@caisson/agent-kernel` is the
+schema/FSM/governance/hooks/audit-chain base each run is accountable to. The Agentic-Dev bundle
+wires the two together with local hybrid memory, the sandboxed tool-exec gate, and a
+multi-harness emitter into one governed loop — buy the module alone to run agents from your own
+tooling, or the bundle for the assembled loop.
+
+<Callout type="info" title="Commercial">
+  `@caisson/agent-runner` is $49 à la carte, or included in the Agentic-Dev bundle alongside
+  `@caisson/agent-kernel`.
+</Callout>

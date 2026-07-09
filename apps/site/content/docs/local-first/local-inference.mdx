@@ -1,0 +1,86 @@
+---
+title: local-inference
+description: The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use — on-device by default.
+---
+
+`@caisson/local-inference` is one `InferenceBackend` port — `embed()` and `complete()` —
+with three implementations sharing it: a deterministic offline stub, an on-device ONNX
+embedder, and metered rented-provider transports. Every outbound byte, on-device or
+rented, routes through the same `@caisson/local-privacy` egress gate.
+
+## What it does
+
+- **One port, three backends.** `StubInferenceBackend` is a pure function of its input
+  text (SHA-256-seeded PRNG → unit-norm vector) and the only backend CI exercises.
+  `OnnxEmbeddingBackend` runs a MiniLM-class model on-device via transformers.js,
+  hash-verified before use. `RentedInferenceBackend` wraps a metered `RentedTransport`
+  behind the same port.
+- **`EMBEDDING_DIM` is the locked contract.** Every backend's `embed()` result is exactly
+  this many floats — the width `@caisson/local-store`'s vec0 table is opened with. A
+  mismatch throws at the store's dim-guard rather than silently padding or truncating.
+- **Egress stays purpose-bound.** The ONNX and rented backends both route outbound calls
+  through a `@caisson/local-privacy` `EgressGuard`, re-exported here.
+
+## Install
+
+```bash
+bun add @caisson/local-inference
+```
+
+## Quickstart
+
+```ts
+import { StubInferenceBackend, EMBEDDING_DIM } from "@caisson/local-inference";
+
+// deterministic, offline — no model, no socket
+const backend = new StubInferenceBackend({ dim: EMBEDDING_DIM });
+
+const vector = await backend.embed("the quick brown fox"); // Float32Array, unit-norm
+const { text } = await backend.complete({
+  prompt: "summarize: fox jumps",
+  maxTokens: 32,
+});
+```
+
+## On-device embeddings
+
+`OnnxEmbeddingBackend` loads a MiniLM-class model lazily on first `embed()` call. The
+model host is allowlisted through an `EgressGuard`, and every fetched file is SHA-256
+verified against a hash-pin before it reaches the runtime — a mismatch fails closed.
+Completion is intentionally unsupported on this backend; wire a rented backend for
+generation.
+
+```ts
+import { OnnxEmbeddingBackend, DEFAULT_ONNX_MODEL } from "@caisson/local-inference";
+
+const backend = new OnnxEmbeddingBackend({
+  ...DEFAULT_ONNX_MODEL,
+  cacheDir: "./.cache/models",
+  integrity: {
+    "model_quantized.onnx": "…64-char sha256 hex…",
+  },
+});
+
+const vector = await backend.embed("the quick brown fox");
+```
+
+Air-gapped deployments pre-seed the cache and pass `offline: true` — zero egress after
+the initial seed.
+
+## Rented (metered, off by default)
+
+`RentedInferenceBackend` wraps `createOpenRouterRentedTransport`,
+`createAzureOpenAIRentedTransport`, or `createBedrockRentedTransport`. It refuses to
+construct unless its endpoint host is HTTPS and explicitly allowlisted as a
+`rented-backend` sink in the privacy policy — there is no way to reach a hosted provider
+without that opt-in, and no silent fallback. Every call emits one metered record through
+a `meter` sink before returning; the caller wires that sink to `@caisson/credits` or
+leaves it a no-op in tests.
+
+## Composition
+
+Both real backends share `@caisson/local-privacy`'s `EgressGuard` — re-exported from this
+package so a consumer doesn't need a second import for the same policy. `embed()` output
+feeds `@caisson/local-store`'s vec0 table directly; the dimension must match at open time.
+
+Base primitive, paid: `LicenseRef-Caisson-Commercial`.

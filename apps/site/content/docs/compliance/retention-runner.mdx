@@ -1,0 +1,98 @@
+---
+title: retention-runner
+description: The CCPA/GDPR right-to-erasure runner — fans one subject's erasure across every registered store, isolates per-target failure, and writes one reason-tagged audit row.
+---
+
+`@caisson/retention-runner` is Caisson's right-to-erasure module: `runErasure` fans one
+subject's erasure out across every registered store — object storage, cascade DB, orphan
+sweep — isolates each target's failure so one broken store never blocks the others, and
+writes exactly one reason-tagged audit row per run.
+
+## What it does
+
+- **Pluggable multi-store erasure** — the `ErasureTarget` port covers object-storage purge,
+  cascade DB delete, and orphan-record sweep. `runErasure` fans out to every registered
+  target for one subject.
+- **Per-target error isolation** — each target's outcome is caught into a `TargetResult`
+  (`{ target, ok, error? }`) instead of propagating. A failing object-storage purge doesn't
+  stop the cascade DB delete from running.
+- **One reason-tagged audit row per run** — `RetentionRunResult` carries the trigger
+  (`auto_90d` | `ccpa_request` | `operator_manual`), every target's outcome, and the run
+  timestamp, written once through the injected `RetentionAuditSink`. Plain Postgres
+  audit-logging, not WORM — pair with `@caisson/audit-worm` where a write-once anchor matters.
+- **The recurring `auto_90d` sweep rides `@caisson/jobs`** — `defineRetentionTask` returns a
+  `TaskDefinition`; `enqueueAutoSweep` enqueues it under a singleton key of
+  `${tenantId}:${subjectId}`, so a subject already queued for a sweep is never double-enqueued.
+
+## Install
+
+```bash
+bun add @caisson/retention-runner @caisson/jobs
+```
+
+## Quickstart
+
+```ts
+import {
+  createObjectStorageTarget,
+  createCascadeDbTarget,
+  createOrphanSweepTarget,
+  createCaptureAuditSink,
+  runErasure,
+} from "@caisson/retention-runner";
+
+const targets = [
+  createObjectStorageTarget({ client: s3Client }), // your real client — an injected seam
+  createCascadeDbTarget({ client: pgClient }),
+  createOrphanSweepTarget({ client: pgClient }),
+];
+const sink = createCaptureAuditSink(); // swap for the pg driver in prod
+
+// One-shot: a CCPA request or an operator-triggered erasure.
+await runErasure(
+  { subjectId, tenantId, reason: "ccpa_request" },
+  targets,
+  sink,
+);
+```
+
+## Recurring auto_90d sweep
+
+```ts
+import { defineRetentionTask, enqueueAutoSweep } from "@caisson/retention-runner";
+import { createInMemoryQueue } from "@caisson/jobs";
+
+const queue = createInMemoryQueue([defineRetentionTask({ targets, sink })]);
+
+// enqueueAutoSweep sets the overlap-safe singleton key — a subject already
+// queued for a sweep is never double-enqueued, while distinct subjects sweep in parallel.
+await enqueueAutoSweep(queue, { subjectId, tenantId });
+```
+
+## Drivers
+
+`createObjectStorageTarget` / `createCascadeDbTarget` / `createOrphanSweepTarget` each take
+an injected minimal client interface (`purge` / `cascadeDelete` / `sweep`) — the real S3 or
+Postgres client is a documented seam, never a package dependency. No `aws-sdk` or `pg` import
+ships in `retention-runner` itself. `createCaptureTarget` and `createCaptureAuditSink` are the
+in-memory drivers for tests and the framework-agnostic reference.
+
+## Configuration surface
+
+`reason` is a closed Zod enum (`erasureReasonSchema`) — `auto_90d`, `ccpa_request`, or
+`operator_manual`. An unrecognized reason fails the `.strict()` request validation before any
+target runs. The audit row lands in `retention_audit`, with row-level security scoped to
+`app.current_account` so one tenant's erasure history can't leak into another's query.
+
+<Callout type="info" title="Evidence, not certification">
+  Running retention-runner doesn't make you GDPR or CCPA compliant on its own. It ships the
+  erasure execution and the audit row proving a subject's data was purged across every
+  registered store — the technical control an auditor checks for.
+</Callout>
+
+## Composes with
+
+`@caisson/compliance` composes `retention-runner` at runtime as a real workspace
+dependency. The recurring sweep composes with `@caisson/jobs` for scheduling; pair with
+`@caisson/audit-worm` where the audit trail needs a write-once anchor rather than plain
+Postgres logging.

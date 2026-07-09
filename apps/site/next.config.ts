@@ -69,6 +69,30 @@ const config: NextConfig = {
         destination: "/updates/rss.xml",
         permanent: true,
       },
+      // 2026-07-09 six-bundle docs rework (Kickoff G W4): the docs dir `ai-kit/` renamed to
+      // `ai-production/` (the bundle's real id), the stale pre-carve `@caisson/compliance` page
+      // folded into the bundle overview + compliance-core, and the commercial credits page moved
+      // from the open-base section to its selling bundle. Permanent 301s keep inbound links alive.
+      {
+        source: "/docs/ai-kit",
+        destination: "/docs/ai-production",
+        permanent: true,
+      },
+      {
+        source: "/docs/ai-kit/:path*",
+        destination: "/docs/ai-production/:path*",
+        permanent: true,
+      },
+      {
+        source: "/docs/base/credits",
+        destination: "/docs/ai-production/credits",
+        permanent: true,
+      },
+      {
+        source: "/docs/compliance/compliance",
+        destination: "/docs/compliance",
+        permanent: true,
+      },
     ];
   },
   // Security headers — the CSP/HSTS/X-Frame floor the (now-deleted) Cloudflare Pages public/_headers

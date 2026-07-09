@@ -63,6 +63,25 @@
   background: linear-gradient(to right, transparent, var(--cs-surface-1));
 }
 
+/* ===== Shiki dark-token re-key (CAISSON-70). fumadocs-ui's compiled css/lib/shiki.css gates the
+ * dark token colors behind a literal `.dark` class (`.dark .shiki … { color: var(--shiki-dark) }`),
+ * but this site signals dark via [data-theme="dark"] only (fumadocs theme manager disabled,
+ * ADR-0100) — so in dark mode every token kept its LIGHT color and code blocks read as faded /
+ * illegible. These are the two `.dark`-gated rules from fumadocs-ui/css/lib/shiki.css copied
+ * VERBATIM (block-code + inline-code twins), re-keyed to our attribute. The `@custom-variant dark`
+ * above only re-points Tailwind `dark:` utilities; it cannot reach these literal selectors. */
+[data-theme="dark"] .shiki:not(.not-fumadocs-codeblock *) {
+  code span {
+    color: var(--shiki-dark);
+    font-style: var(--shiki-dark-font-style);
+  }
+}
+
+[data-theme="dark"] code.shiki:not(.not-fumadocs-code *) span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+}
+
 /* ===== Reset re-assert — base.css already sets these, but it loads BEFORE the Tailwind/Fumadocs
  * @imports above; re-declaring here (after preflight) keeps Caisson's reset authoritative. ===== */
 *,
