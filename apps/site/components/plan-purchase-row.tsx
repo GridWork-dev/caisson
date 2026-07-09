@@ -4,23 +4,23 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Button, Card } from "@caisson/ui/components";
 import { isPaddleConfigured, openCheckout } from "@/lib/paddle-checkout";
-import { BUNDLE_PRICES } from "@/lib/pricing";
+import { BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
 
 /**
- * Resolve a purchase row's display label from the committed bundle catalog rather than
+ * Resolve a purchase row's display label from the committed bundle/module catalog rather than
  * title-casing the raw purchase tag — `textTransform: capitalize` over a bare id like
  * "ai-production" rendered "Ai Production" (CAISSON-69), not the canonical "AI-Production"
- * `BUNDLE_PRICES` carries. `purchaseTag` may be a bare bundle id ("ai-production") or the
- * `_bundle`-suffixed form (`packages/pricebook/src/purchases.ts`'s "ai-production_bundle") — strip
- * the suffix before matching. Falls back to the raw, underscore-humanized tag for anything else
- * (module/subscription purchase tags — e.g. "field-crypto_module", "credit_pack" — that have no
- * bundle-catalog entry).
+ * `BUNDLE_PRICES` carries. `purchaseTag` may be a bare id ("ai-production") or suffixed with
+ * `_bundle`/`_module` (`packages/pricebook/src/purchases.ts`'s "ai-production_bundle" /
+ * "field-crypto_module") — strip the suffix before matching either catalog. Falls back to the raw,
+ * underscore-humanized tag for anything else (subscription purchase tags — e.g. "credit_pack" —
+ * that have no bundle/module-catalog entry).
  */
-function displayLabel(tag: string): string {
-  const bundleId = tag.endsWith("_bundle")
-    ? tag.slice(0, -"_bundle".length)
-    : tag;
-  const canonical = BUNDLE_PRICES.find((b) => b.id === bundleId)?.label;
+export function displayLabel(tag: string): string {
+  const id = tag.replace(/_(bundle|module)$/, "");
+  const canonical =
+    BUNDLE_PRICES.find((b) => b.id === id)?.label ??
+    MODULE_PRICES.find((m) => m.id === id)?.label;
   if (canonical !== undefined) return canonical;
   const humanized = tag.replace(/_/g, " ");
   return humanized.charAt(0).toUpperCase() + humanized.slice(1);
