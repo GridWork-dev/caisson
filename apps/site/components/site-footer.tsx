@@ -44,7 +44,12 @@ const COLS = (["editions", "product", "resources", "legal"] as const).map(
   (col) => ({
     heading: HEADINGS[col],
     links: [
-      ...footerRoutes(col).map((r) => ({ href: r.path, label: r.label })),
+      // Prefer the terse navLabel when a route has one — the footer showed "Local-first AI"
+      // while the nav showed "Local-first" (naming drift, CAISSON-65).
+      ...footerRoutes(col).map((r) => ({
+        href: r.path,
+        label: r.navLabel ?? r.label,
+      })),
       ...EXTRAS[col],
     ],
   }),
