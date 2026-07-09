@@ -6,9 +6,13 @@ owns everything buyer-visible). **Sibling:** `KICKOFF-G-surface-remediation.md` 
 shared seam (registry Worker, license service). **Branch:** `feat/platform-hardening` off `main`
 (worktree). **Shape:** each wave runs investigate/research FIRST, then presents deep forks via
 AskUserQuestion (rounds of ≤4, never auto-decide), then builds after locks. Waves are
-tree-disjoint and fan out as parallel worktree workflows inside the session. **Routing:** recon →
-haiku · bounded builds → sonnet · synthesis/picker prep/review → opus main thread · the
-license/money seams in W3 → fable per the caisson routing note · every dispatch sets `model`.
+tree-disjoint and fan out as parallel worktree workflows inside the session. **Routing
+(operator-directed 2026-07-09):** the main session runs **fable with ultracode on** (Workflow
+orchestration is the default for every substantive task) · recon / file search / log-and-doc
+summarizing → **haiku** · bounded implementation → **sonnet** · the license/money seams in W3 →
+**fable** (implementation and the final security verdict, per the caisson routing note) ·
+**review stays opus** (gw-code-reviewer — fable implements, opus reviews) · every dispatch sets
+`model`.
 **Retrieval (binding):** library/vendor questions — Workers rate-limit primitives, pg-boss
 failure-event surface, Railway backup/PITR APIs, uptime-vendor comparison — go to **exa-code
 (`get_code_context_exa`) first**, web facts to exa search, per `identity/retrieval.md`; never
