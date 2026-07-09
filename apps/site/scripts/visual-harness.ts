@@ -267,18 +267,36 @@ function interactionShots(): Shot[] {
       name: "login-invalid-submit",
       route: "/login",
       fullPage: false,
+      // A REAL invalid submit, not a mode toggle: the old act's /sign in/i .first() matched the
+      // "Prefer a password? Sign in with email + password" MODE-TOGGLE button (the page loads in
+      // magic-link mode, whose submit says "Send magic link"), so both the baseline and the first
+      // re-run shot a pristine password form that had never been submitted. Toggle to password
+      // mode explicitly, submit wrong credentials, and wait for the role="alert" error the form
+      // renders — that alert (danger-colored "Incorrect email or password.") is the surface this
+      // interaction exists to prove.
       act: async (page) => {
+        await page.getByRole("button", { name: /prefer a password/i }).click();
+        await page.locator("#login-pw-email").fill("probe-invalid@caisson.sh");
+        await page.locator("#login-password").fill("definitely-wrong-password");
         await page
-          .getByRole("button", { name: /sign in|log in/i })
-          .first()
+          .getByRole("button", { name: "Sign in", exact: true })
           .click();
-        await page.waitForTimeout(600);
+        // The exact error copy, not getByRole("alert") — Next.js' route announcer is a
+        // permanently-mounted role="alert" node, so the role query resolves instantly and the
+        // shot catches the "Please wait…" in-flight state instead of the rendered error.
+        await page
+          .getByText(/incorrect email or password/i)
+          .waitFor({ timeout: 15_000 });
       },
     },
     {
       category: "interaction",
       name: "popout-media-carousel-next",
-      route: popoutRoute,
+      // NOT popoutRoute: the card viewer omits the code-artifact slide (ADR-0290 WR-03), so a
+      // module with a single targeting diagram renders the single-slide layout — no nav buttons
+      // to click. audit-worm carries two mechanism diagrams (audit-chain + worm-lifecycle), so
+      // its viewer always has a real carousel.
+      route: "/marketplace?view=module:audit-worm",
       fullPage: false,
       // The slide carousel lives in the card-viewer pop-out (module depth pages have no controls).
       act: async (page) => {

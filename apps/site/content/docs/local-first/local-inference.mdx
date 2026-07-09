@@ -16,7 +16,7 @@ rented, routes through the same `@caisson/local-privacy` egress gate.
   hash-verified before use. `RentedInferenceBackend` wraps a metered `RentedTransport`
   behind the same port.
 - **`EMBEDDING_DIM` is the locked contract.** Every backend's `embed()` result is exactly
-  this many floats — the width `@caisson/local-store`'s vec0 table is opened with. A
+  this many floats — the width `@caisson/local-store`'s `vec0` table is opened with. A
   mismatch throws at the store's dim-guard rather than silently padding or truncating.
 - **Egress stays purpose-bound.** The ONNX and rented backends both route outbound calls
   through a `@caisson/local-privacy` `EgressGuard`, re-exported here.
@@ -81,6 +81,6 @@ leaves it a no-op in tests.
 
 Both real backends share `@caisson/local-privacy`'s `EgressGuard` — re-exported from this
 package so a consumer doesn't need a second import for the same policy. `embed()` output
-feeds `@caisson/local-store`'s vec0 table directly; the dimension must match at open time.
+feeds `@caisson/local-store`'s `vec0` table directly; the dimension must match at open time.
 
 Base primitive, paid: `LicenseRef-Caisson-Commercial`.
