@@ -26,8 +26,10 @@
 // signed. Set up Basic HTTP authentication or add a custom header with a secret value and check
 // it on your server." This Worker expects the operator to configure a custom header
 // (`X-Betterstack-Secret: <value>`, via Better Stack's outgoing-webhook "Headers" advanced
-// setting) carrying the same value as `BETTERSTACK_WEBHOOK_SECRET`; absent secret config skips
-// the check (a dev/local posture — see README.md), present enforces it fail-closed (401).
+// setting) carrying the same value as `BETTERSTACK_WEBHOOK_SECRET`. FAIL CLOSED: a public
+// `workers_dev` endpoint with `BETTERSTACK_WEBHOOK_SECRET` unset rejects every request (401)
+// unless `ALLOW_UNAUTHENTICATED` is explicitly set — a local-dev-only opt-out, never set on a
+// real deploy (see README.md).
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { fetchWithTimeout } from "@caisson/kernel";
@@ -106,22 +108,35 @@ export function classifyEvent(event: string | undefined): {
   return { label: "TRIGGERED", color: TRIGGERED_COLOR };
 }
 
-/** Discord's embed `description`/field-value limits are generous (4096/1024) relative to
- *  anything Better Stack sends here; no truncation needed for these short fields. */
+// Discord's hard per-embed caps (title 256, field value 1024) — the schema above allows a `name`
+// up to 500 and a `url`/`cause` up to 2000, both of which can exceed these, so a truncation-free
+// embed can 400 at Discord and silently drop the alert. Mirrors the same slice-before-send intent
+// as the sibling channel in packages/alerting/src/channels.ts (Discord description cap).
+const DISCORD_TITLE_LIMIT = 256;
+const DISCORD_FIELD_VALUE_LIMIT = 1024;
+
 export function toDiscordEmbed(body: IncidentWebhookBody): unknown {
   const { attributes } = body.data;
   const { label, color } = classifyEvent(body.event);
   const fields: Array<{ name: string; value: string; inline: boolean }> = [];
   if (attributes.url !== undefined) {
-    fields.push({ name: "Monitor", value: attributes.url, inline: true });
+    fields.push({
+      name: "Monitor",
+      value: attributes.url.slice(0, DISCORD_FIELD_VALUE_LIMIT),
+      inline: true,
+    });
   }
   if (attributes.cause !== undefined) {
-    fields.push({ name: "Cause", value: attributes.cause, inline: true });
+    fields.push({
+      name: "Cause",
+      value: attributes.cause.slice(0, DISCORD_FIELD_VALUE_LIMIT),
+      inline: true,
+    });
   }
   return {
     embeds: [
       {
-        title: `[${label}] ${attributes.name}`,
+        title: `[${label}] ${attributes.name}`.slice(0, DISCORD_TITLE_LIMIT),
         color,
         fields,
       },
@@ -133,8 +148,13 @@ export interface Env {
   /** The operator's Discord ops-channel webhook. Required — a 500 with no delivery attempted
    *  while unset (never silently drop an incident). */
   DISCORD_OPS_WEBHOOK_URL?: string;
-  /** Optional shared secret — see the module doc's Auth section. */
+  /** The shared secret — see the module doc's Auth section. Required on a real deploy; a public
+   *  `workers_dev` endpoint with no secret configured fails closed (401) rather than accepting
+   *  unauthenticated POSTs. */
   BETTERSTACK_WEBHOOK_SECRET?: string;
+  /** Local-dev-only escape hatch: any non-empty value lets a request through when
+   *  `BETTERSTACK_WEBHOOK_SECRET` is unset. Never set this on a real deploy. */
+  ALLOW_UNAUTHENTICATED?: string;
 }
 
 /**
@@ -155,7 +175,15 @@ export async function handleRequest(
   }
 
   const secret = env.BETTERSTACK_WEBHOOK_SECRET;
-  if (secret !== undefined && secret.length > 0) {
+  if (secret === undefined || secret.length === 0) {
+    // Fail closed: a public workers_dev endpoint with no shared secret must refuse traffic, not
+    // silently accept it — mirrors services/license/src/deploy.ts's fail-closed posture on a
+    // missing DATABASE_URL. ALLOW_UNAUTHENTICATED is the explicit local-dev opt-out.
+    const devOverride = env.ALLOW_UNAUTHENTICATED;
+    if (devOverride === undefined || devOverride.length === 0) {
+      return jsonResponse({ error: "unauthorized" }, 401);
+    }
+  } else {
     const provided = request.headers.get(HEADER_NAME) ?? "";
     if (provided === "" || !secretsMatch(provided, secret)) {
       return jsonResponse({ error: "unauthorized" }, 401);

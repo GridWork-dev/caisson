@@ -276,8 +276,10 @@ export function createPgBossJobQueue(
       await ensureQueue(client, name);
       const workerId = await client.work(name, async (jobs) => {
         for (const job of jobs) {
-          const validated = parseStrict(task.schema, job.data);
           try {
+            // parseStrict INSIDE the try: a poison payload that fails schema validation must
+            // alert the same as a handler throw, before pg-boss's retry/dead-letter path sees it.
+            const validated = parseStrict(task.schema, job.data);
             await task.handler(validated);
           } catch (err) {
             if (config.alerting !== undefined) {

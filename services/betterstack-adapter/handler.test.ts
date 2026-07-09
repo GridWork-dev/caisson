@@ -96,6 +96,33 @@ describe("toDiscordEmbed", () => {
       { name: "Cause", value: "Error 500", inline: true },
     ]);
   });
+
+  test("truncates title/field values to Discord's hard caps (schema allows more than Discord accepts)", () => {
+    const overCap = {
+      ...INCIDENT_BODY,
+      data: {
+        ...INCIDENT_BODY.data,
+        attributes: {
+          ...INCIDENT_BODY.data.attributes,
+          name: "n".repeat(500), // schema max
+          url: "https://example.com/" + "u".repeat(2000), // schema max
+          cause: "c".repeat(2000), // schema max
+        },
+      },
+    } as unknown as IncidentWebhookBody;
+
+    const embed = toDiscordEmbed(overCap) as {
+      embeds: Array<{
+        title: string;
+        fields: Array<{ name: string; value: string }>;
+      }>;
+    };
+
+    expect(embed.embeds[0]?.title.length).toBeLessThanOrEqual(256);
+    for (const field of embed.embeds[0]?.fields ?? []) {
+      expect(field.value.length).toBeLessThanOrEqual(1024);
+    }
+  });
 });
 
 describe("secretsMatch", () => {
@@ -113,8 +140,12 @@ describe("secretsMatch", () => {
 });
 
 describe("handleRequest", () => {
+  // BETTERSTACK_WEBHOOK_SECRET fails closed when unset (see the dedicated describe block below);
+  // every test in THIS block is exercising something else, so it opts out via the explicit
+  // local-dev override rather than re-proving the auth gate each time.
   const okEnv: Env = {
     DISCORD_OPS_WEBHOOK_URL: "https://discord.com/api/webhooks/1/abc",
+    ALLOW_UNAUTHENTICATED: "1",
   };
 
   test("rejects a non-POST method", async () => {
@@ -156,7 +187,11 @@ describe("handleRequest", () => {
 
   test("500 when DISCORD_OPS_WEBHOOK_URL is not configured — no delivery attempted", async () => {
     const { fetcher, calls } = fakeFetch(200);
-    const res = await handleRequest(postRequest(INCIDENT_BODY), {}, fetcher);
+    const res = await handleRequest(
+      postRequest(INCIDENT_BODY),
+      { ALLOW_UNAUTHENTICATED: "1" },
+      fetcher,
+    );
     expect(res.status).toBe(500);
     expect(calls).toHaveLength(0);
   });
@@ -178,6 +213,24 @@ describe("handleRequest", () => {
     expect(res.status).toBe(502);
   });
 
+  test("an over-cap name/cause still delivers — truncation, not a 400 or a dropped alert", async () => {
+    const { fetcher, calls } = fakeFetch(200);
+    const overCap = {
+      ...INCIDENT_BODY,
+      data: {
+        ...INCIDENT_BODY.data,
+        attributes: {
+          ...INCIDENT_BODY.data.attributes,
+          name: "n".repeat(500),
+          cause: "c".repeat(2000),
+        },
+      },
+    };
+    const res = await handleRequest(postRequest(overCap), okEnv, fetcher);
+    expect(res.status).toBe(200);
+    expect(calls).toHaveLength(1);
+  });
+
   test("posts the reshaped embed body to the configured Discord webhook", async () => {
     const { fetcher, calls } = fakeFetch(200);
     const res = await handleRequest(postRequest(INCIDENT_BODY), okEnv, fetcher);
@@ -195,11 +248,22 @@ describe("handleRequest", () => {
       BETTERSTACK_WEBHOOK_SECRET: "shh-its-a-secret",
     };
 
-    test("no secret configured — no header required", async () => {
+    test("no secret configured, no dev override → 401 (fail closed)", async () => {
+      const { fetcher, calls } = fakeFetch(200);
+      const res = await handleRequest(
+        postRequest(INCIDENT_BODY),
+        { DISCORD_OPS_WEBHOOK_URL: "https://discord.com/api/webhooks/1/abc" },
+        fetcher,
+      );
+      expect(res.status).toBe(401);
+      expect(calls).toHaveLength(0);
+    });
+
+    test("no secret configured, ALLOW_UNAUTHENTICATED set → 200 (explicit dev opt-out)", async () => {
       const { fetcher } = fakeFetch(200);
       const res = await handleRequest(
         postRequest(INCIDENT_BODY),
-        okEnv,
+        okEnv, // no BETTERSTACK_WEBHOOK_SECRET, ALLOW_UNAUTHENTICATED: "1"
         fetcher,
       );
       expect(res.status).toBe(200);

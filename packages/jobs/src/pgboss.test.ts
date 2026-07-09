@@ -398,6 +398,25 @@ describe("pg-boss work() task-failure alerting (CAISSON-53)", () => {
     expect(reported).toEqual([{ taskName: "grant-credits", error: boom }]);
   });
 
+  test("a schema-invalid payload also alerts (not just a handler throw), then re-throws ValidationError", async () => {
+    const client = createFakeClient();
+    // Missing `amount` — fails grantCreditsSchema before the handler ever runs.
+    client.nextWorkBatch = [{ id: "job_1", data: { accountId: "acct_a" } }];
+    const reported: Array<{ taskName: string; error: unknown }> = [];
+    const alerting: JobAlertingDeps = {
+      async reportTaskFailure(taskName, error) {
+        reported.push({ taskName, error });
+      },
+      async reportInfraError() {},
+    };
+    const queue = createPgBossJobQueue(grantCreditsTasks, { client, alerting });
+
+    await expect(queue.work("grant-credits")).rejects.toThrow(ValidationError);
+    expect(reported).toHaveLength(1);
+    expect(reported[0]?.taskName).toBe("grant-credits");
+    expect(reported[0]?.error).toBeInstanceOf(ValidationError);
+  });
+
   test("an alerting failure never masks the original error or blocks the re-throw", async () => {
     const client = createFakeClient();
     client.nextWorkBatch = [

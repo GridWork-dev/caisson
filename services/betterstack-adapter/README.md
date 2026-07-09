@@ -12,7 +12,7 @@ watcher-failure alerting).
 ```bash
 cd services/betterstack-adapter
 bunx wrangler secret put DISCORD_OPS_WEBHOOK_URL
-bunx wrangler secret put BETTERSTACK_WEBHOOK_SECRET   # optional, see "Wire it to Better Stack" below
+bunx wrangler secret put BETTERSTACK_WEBHOOK_SECRET   # required — see "Wire it to Better Stack" below
 bunx wrangler deploy
 ```
 
@@ -30,9 +30,10 @@ bunx wrangler deploy
    `incident_change` JSON shape (see `handler.ts`'s module doc for the confirmed field list +
    source URLs).
 
-If `BETTERSTACK_WEBHOOK_SECRET` is left unset, the header check is skipped (any POST with a
-matching payload shape is accepted) — acceptable for local testing, not the recommended live
-posture.
+**Fails closed:** a deployed Worker with `BETTERSTACK_WEBHOOK_SECRET` unset rejects every request
+(401) — a public `workers_dev` endpoint with no secret configured must refuse traffic, not accept
+it silently. For local testing only, set `ALLOW_UNAUTHENTICATED` (any non-empty value) to opt out
+of the check; never set it on a real deploy.
 
 ## Payload
 
@@ -45,5 +46,5 @@ this repo before (every field Better Stack adds later must stay ignorable, not a
 ## Local test
 
 ```bash
-bun test .
+bun test handler.test.ts
 ```

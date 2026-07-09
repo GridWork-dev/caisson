@@ -76,4 +76,32 @@ describe("createJobAlertingDeps", () => {
       deps.reportTaskFailure("x", new Error("y")),
     ).resolves.toBeUndefined();
   });
+
+  test("a burst of same-key failures collapses to exactly one delivery (cooldown)", async () => {
+    const capture = createCaptureChannel("capture");
+    const deps = createJobAlertingDeps([capture]);
+
+    for (let i = 0; i < 10; i++) {
+      await deps.reportTaskFailure(
+        "credits.expiry_sweep",
+        new Error(`boom ${String(i)}`),
+      );
+    }
+
+    expect(capture.delivered).toHaveLength(1);
+  });
+
+  test("different keys (task names) each get their own cooldown, not suppressed by one another", async () => {
+    const capture = createCaptureChannel("capture");
+    const deps = createJobAlertingDeps([capture]);
+
+    await deps.reportTaskFailure("credits.expiry_sweep", new Error("a"));
+    await deps.reportTaskFailure(
+      "entitlement.updates_window_expiry_tick",
+      new Error("b"),
+    );
+    await deps.reportInfraError(new Error("c"));
+
+    expect(capture.delivered).toHaveLength(3);
+  });
 });
