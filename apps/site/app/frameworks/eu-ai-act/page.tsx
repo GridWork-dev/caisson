@@ -338,6 +338,10 @@ export default function EuAiActPage() {
                 <div
                   style={{
                     display: "flex",
+                    // Wrap on narrow viewports — the article + label chips are nowrap pills
+                    // (`.cs-chip`), and a single non-wrapping row of them was the audit's 570px
+                    // horizontal overflow at a 390px viewport.
+                    flexWrap: "wrap",
                     alignItems: "center",
                     gap: "var(--cs-space-3)",
                     marginBottom: "var(--cs-space-4)",
