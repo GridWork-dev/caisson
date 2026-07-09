@@ -49,3 +49,4 @@ registry/.tarball-staging/
 
 # ADR-0275 CI build-evidence pack output (assembled fresh each run, uploaded as an artifact)
 evidence-pack/
+outputs/w3-proof/

@@ -323,10 +323,18 @@ export function LoginForm({
       )}
 
       {message !== "" ? (
+        // An error must read as visually distinct from a success/info message — previously both
+        // used the identical muted style, so an invalid-submit error (e.g. wrong password) never
+        // registered as an error to the eye (CAISSON-69). Mirrors plan-purchase-row.tsx's error
+        // treatment: cs-footnote + the danger token; success/info stay muted.
         <p
-          className="cs-muted"
+          className={status === "error" ? "cs-footnote" : "cs-muted"}
           role={status === "error" ? "alert" : "status"}
-          style={{ fontSize: "var(--cs-text-sm)", margin: 0 }}
+          style={{
+            fontSize: "var(--cs-text-sm)",
+            margin: 0,
+            color: status === "error" ? "var(--cs-danger)" : undefined,
+          }}
         >
           {message}
         </p>

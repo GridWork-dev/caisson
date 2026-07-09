@@ -43,6 +43,10 @@ export interface AppShellProps {
   nav: readonly AppShellNavItem[];
   /** Top-bar content — account menu / actions. Right-aligned. */
   topBar?: ReactNode;
+  /** Extra content rendered inside the mobile off-canvas drawer only (CSS ≤48rem; invisible on
+   *  desktop) — e.g. a Sign-out control the topbar can't always spare room for on a narrow
+   *  viewport. Typically the same or a subset of what `topBar` already renders. */
+  mobileNavFooter?: ReactNode;
   /** Brand slot rendered top-left. Optional and brand-neutral — the kit ships no default mark;
    *  the consumer passes its own (e.g. `<Wordmark />` from `@caisson/brand`). */
   brand?: ReactNode;
@@ -64,6 +68,7 @@ export interface AppShellProps {
 export function AppShell({
   nav,
   topBar,
+  mobileNavFooter,
   brand,
   children,
   renderNavItem,
@@ -144,6 +149,13 @@ export function AppShell({
             <span className="cs-shell__collapse-label">Collapse</span>
           </button>
         </div>
+
+        {/* Mobile-only (CSS ≤48rem) — e.g. Sign-out, so it's reachable even when the topbar has
+         * no room for it. Invisible on desktop; the sidebar itself is a drawer only
+         * below the mobile breakpoint. */}
+        {mobileNavFooter !== undefined ? (
+          <div className="cs-shell__mobile-nav-footer">{mobileNavFooter}</div>
+        ) : null}
       </aside>
 
       <main className="cs-shell__main" tabIndex={-1}>

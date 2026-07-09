@@ -4,6 +4,9 @@
   border-radius: var(--cs-radius-lg);
   background: var(--cs-surface-1);
   padding: var(--cs-space-6);
+  /* A long unbreakable token (slash-joined identifiers, long URLs) wraps inside the card
+   * instead of forcing the card past its grid track on narrow viewports. */
+  overflow-wrap: break-word;
 }
 
 /* Accent treatment — accent border + tinted surface. */
