@@ -909,6 +909,82 @@ function RunnerEnvScrub() {
   );
 }
 
+/** @caisson/retention-runner — `runErasure` (src/run-erasure.ts): every registered target runs
+ *  with per-target error isolation (the allSettled shape ADR-0152 locks), then the injected sink
+ *  writes exactly one reason-tagged audit row. */
+function RetentionErasure() {
+  return (
+    <Frame title="One validated erasure request fans out to every registered target with per-target error isolation — a failing store lands in its own result, never aborting the others — then exactly one reason-tagged audit row is written.">
+      <Arrowheads />
+      <Node
+        x={10}
+        y={64}
+        w={88}
+        h={36}
+        head="runErasure"
+        sub="strict request"
+        tone="accent"
+      />
+      <path
+        d={`M 98 82 L 132 30`}
+        className={styles.arrow}
+        markerEnd="url(#cs-arrow)"
+      />
+      <path
+        d={`M 98 82 L 132 82`}
+        className={styles.arrow}
+        markerEnd="url(#cs-arrow)"
+      />
+      <path
+        d={`M 98 82 L 132 134`}
+        className={styles.arrow}
+        markerEnd="url(#cs-arrow)"
+      />
+      <Node x={136} y={16} w={96} h={28} head="object storage" />
+      <Node
+        x={136}
+        y={68}
+        w={96}
+        h={28}
+        head="cascade DB"
+        sub="throws — caught"
+        tone="danger"
+      />
+      <Node x={136} y={120} w={96} h={28} head="orphan sweep" />
+      <path
+        d={`M 232 30 L 248 76`}
+        className={styles.arrow}
+        markerEnd="url(#cs-arrow)"
+      />
+      <path
+        d={`M 232 82 L 248 82`}
+        className={styles.arrow}
+        markerEnd="url(#cs-arrow)"
+      />
+      <path
+        d={`M 232 134 L 248 88`}
+        className={styles.arrow}
+        markerEnd="url(#cs-arrow)"
+      />
+      <Node
+        x={252}
+        y={64}
+        w={80}
+        h={36}
+        head="audit row"
+        sub="reason-tagged"
+        tone="success"
+      />
+      <Note danger x={10} y={166}>
+        a throw lands in its own result — the run continues
+      </Note>
+      <Note x={10} y={180}>
+        reasons: auto_90d · ccpa_request · operator_manual
+      </Note>
+    </Frame>
+  );
+}
+
 const DIAGRAMS: Record<DiagramKey, () => React.ReactElement> = {
   "rls-deny": RlsDeny,
   "audit-chain": AuditChain,
@@ -929,6 +1005,7 @@ const DIAGRAMS: Record<DiagramKey, () => React.ReactElement> = {
   "local-hybrid-rrf": LocalHybridRrf,
   "agent-lifecycle-fsm": AgentLifecycleFsm,
   "runner-env-scrub": RunnerEnvScrub,
+  "retention-erasure": RetentionErasure,
 };
 
 export function MarketplaceDiagram({ name }: { name: DiagramKey }) {
