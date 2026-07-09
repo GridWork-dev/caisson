@@ -6,9 +6,11 @@ import {
   createWebhookChannel,
   createSlackChannel,
   createTelegramChannel,
+  createDiscordChannel,
   WebhookConfigSchema,
   SlackConfigSchema,
   TelegramConfigSchema,
+  DiscordConfigSchema,
 } from "./index.ts";
 import type { AlertChannel, AlertEvent } from "./index.ts";
 import { createCaptureEmailer } from "@caisson/email";
@@ -83,6 +85,11 @@ describe("SSRF guard — schema boundary", () => {
         TelegramConfigSchema.safeParse({ botApiUrl: url, chatId: "1" }).success,
       ).toBe(false);
     });
+    test(`DiscordConfigSchema rejects ${url}`, () => {
+      expect(DiscordConfigSchema.safeParse({ webhookUrl: url }).success).toBe(
+        false,
+      );
+    });
   }
 
   test("accepts a normal https destination", () => {
@@ -93,6 +100,9 @@ describe("SSRF guard — schema boundary", () => {
     expect(
       TelegramConfigSchema.safeParse({ botApiUrl: SAFE_URL, chatId: "1" })
         .success,
+    ).toBe(true);
+    expect(
+      DiscordConfigSchema.safeParse({ webhookUrl: SAFE_URL }).success,
     ).toBe(true);
   });
 });
@@ -120,6 +130,13 @@ describe("SSRF guard — fetch seam", () => {
       }).deliver(event);
       expect(result.ok).toBe(false);
       expect(result.channel).toBe("telegram");
+    });
+    test(`discord rejects ${url}`, async () => {
+      const result = await createDiscordChannel({ webhookUrl: url }).deliver(
+        event,
+      );
+      expect(result.ok).toBe(false);
+      expect(result.channel).toBe("discord");
     });
   }
 });
