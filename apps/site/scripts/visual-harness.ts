@@ -29,12 +29,7 @@
 import { mkdir } from "node:fs/promises";
 import { readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import {
-  chromium,
-  type Browser,
-  type BrowserContext,
-  type Page,
-} from "playwright";
+import { chromium, type Browser, type Page } from "playwright";
 import {
   EMAIL_SAMPLE_DATA,
   EMAIL_TEMPLATE_IDS,
@@ -53,8 +48,9 @@ interface Viewport {
   height: number;
 }
 
+const MOBILE_VIEWPORT: Viewport = { name: "mobile", width: 390, height: 844 };
 const VIEWPORTS: readonly Viewport[] = [
-  { name: "mobile", width: 390, height: 844 },
+  MOBILE_VIEWPORT,
   { name: "desktop", width: 1280, height: 900 },
 ];
 
@@ -95,14 +91,14 @@ interface Shot {
 interface ShotResult {
   category: ShotCategory;
   name: string;
-  route?: string;
+  route?: string | undefined;
   viewport: string;
   mode: string;
   file: string;
   ok: boolean;
-  error?: string;
-  consoleErrors?: readonly string[];
-  skipped?: string;
+  error?: string | undefined;
+  consoleErrors?: readonly string[] | undefined;
+  skipped?: string | undefined;
 }
 
 const MARKETING_ROUTES: readonly string[] = [
@@ -217,7 +213,7 @@ function interactionShots(): Shot[] {
       category: "interaction",
       name: "mobile-nav-open",
       route: "/",
-      viewports: [VIEWPORTS[0]],
+      viewports: [MOBILE_VIEWPORT],
       fullPage: false,
       act: async (page) => {
         await page.getByLabel("Open menu").first().click();
