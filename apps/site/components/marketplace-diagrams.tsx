@@ -522,7 +522,7 @@ function AlertPipeline() {
     { x: 6, head: "dedup", sub: "suppress repeat" },
     { x: 90, head: "rate-cap", sub: "digest at cap" },
     { x: 174, head: "quiet hours", sub: "hold · tz-aware" },
-    { x: 258, head: "deliver", sub: "5 channel ports", tone: "success" },
+    { x: 258, head: "deliver", sub: "4 channel ports", tone: "success" },
   ];
   return (
     <Frame title="Five-stage alert pipeline: dedup, rate-cap with digest fallback, timezone-aware quiet hours, then multi-channel delivery — every outcome writes an audit row.">
