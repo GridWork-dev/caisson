@@ -461,6 +461,10 @@
   .build {
     grid-template-columns: 1fr;
     gap: var(--cs-space-6);
+  }
+  /* Bottom clearance only while the fixed bar is actually rendered (selection non-empty) — an
+   * always-on "0 selected" bar obscured page content it had nothing to say about. */
+  .hasBar {
     padding-bottom: var(--cs-space-20); /* clear the fixed bar */
   }
   .rail {
