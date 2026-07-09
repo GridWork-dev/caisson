@@ -5,7 +5,7 @@ status: archived
 
 # Opportunity backlog — ARCHIVED
 
-**Archived 2026-07-05** (SOT-expansion session, absorbed per `outputs/specs/sot-expansion/SPEC.md`
+**Archived 2026-07-05** (SOT-expansion session, absorbed per `outputs/archive/specs/sot-expansion/SPEC.md`
 §1.1) → [`docs/archive/opportunity-backlog.md`](../archive/opportunity-backlog.md).
 
 Residue/status content moved to **`docs/state/outstanding-work.md`** (Trigger-parked bucket links

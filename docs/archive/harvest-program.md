@@ -1,6 +1,6 @@
 ---
-updated: 2026-07-02
-status: frozen
+updated: 2026-07-09
+status: archived
 ---
 
 # Post-go-live harvest program — ranked execution order

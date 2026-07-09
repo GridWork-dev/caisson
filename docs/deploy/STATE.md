@@ -15,7 +15,7 @@ diff that forced the redeploy) · live-verify evidence.
 **Going-forward convention:** every future DEPLOY act appends a NEW entry at the top of this file
 with **pasted** live-verify output (curl/health-check stdout), not a paraphrase. Do not edit a past
 entry except to fix a factual error — new truth is a new entry, per the frontmatter-freshness
-convention (`outputs/specs/sot-expansion/SPEC.md` §1.4).
+convention (`outputs/archive/specs/sot-expansion/SPEC.md` §1.4).
 
 **Seed note:** the entries below (2026-07-01 through 2026-07-05) are seeded RETROACTIVELY from
 `docs/build-state.md` banners, `docs/state/decisions-and-forks.md`, `docs/state/launch-runbook.md`,
