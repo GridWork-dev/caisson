@@ -1,6 +1,7 @@
 {
   "title": "Packages",
   "pages": [
+    "index",
     "auth",
     "tenancy-rls",
     "billing",
