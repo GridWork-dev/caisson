@@ -71,9 +71,9 @@ can't spend past the cap on the next retry.
 ```ts
 import { assertBreakerClosed, resetBreaker } from "@caisson/ai-meter";
 
-await assertBreakerClosed(tx, { accountId, scope: "default" });
+await assertBreakerClosed(tx, accountId, "default"); // throws SpendCapError if open
 // ... after investigating a tripped breaker ...
-await resetBreaker(tx, { accountId, scope: "default" });
+await resetBreaker(tx, accountId, "default");
 ```
 
 ## Dedup-before-meter gate

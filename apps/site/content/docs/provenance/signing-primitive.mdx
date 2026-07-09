@@ -10,6 +10,12 @@ body stays byte-stable and independently verifiable, and the per-tenant identity
 deliberately distinct from the Caisson license-issuer key — a buyer proves the provenance of
 their own evidence with their own identity.
 
+## Install
+
+```bash
+bun add @caisson/signing-primitive
+```
+
 ## What it does
 
 - **Per-tenant detached signing** — `signEvidencePack` signs `canonicalize(manifest) ∥
@@ -109,6 +115,22 @@ const tsa = new StubTimestampAuthority({ now: new Date("2026-01-01") });
 - **`timestampCountersignsSignature(token, signature)`** — recomputes `sha256(signature)`
   and timing-safe compares it against `token.messageImprint`, confirming a timestamp token
   actually countersigns *this* signature rather than a different one.
+
+## Configuration
+
+There is no env-based configuration — every input is a constructor or call argument, not a
+read environment variable:
+
+- **`Ed25519Signer(keyId, secretKey)`** — `secretKey` is a 32-byte seed you provision per
+  tenant and pass in directly; the module never reads or derives a
+  key from the environment. Construction throws on an empty `keyId` or a wrong-length key,
+  so a misconfigured signer fails at construction, not at first sign.
+- **`SignEvidencePackOptions.timestampAuthority`** — optional; omit it and
+  `signEvidencePack` returns a signature with no `timestamp` field. Supply any
+  `TimestampAuthority` implementation (a live RFC-3161 client or `StubTimestampAuthority`
+  for tests) to add the countersignature.
+- **`StubTimestampAuthority({ authority?, now? })`** — both fields default (`"urn:caisson:test-tsa"`,
+  epoch); only meant for tests, never wired to a live TSA.
 
 ## Composition
 

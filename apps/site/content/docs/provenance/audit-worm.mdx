@@ -131,6 +131,59 @@ objects. `S3ArtifactStoreConfig` takes the injected `client`, `bucket`, an optio
 (`"GOVERNANCE" | "COMPLIANCE"`, default `GOVERNANCE`), a `complianceOptIn` required iff
 `mode === "COMPLIANCE"`, and an optional per-tenant SSE-KMS key id for encryption at rest.
 
+## Cloud backend construction
+
+`S3ArtifactStore` takes `new`; `R2ArtifactStore.create` and `GcsArtifactStore.create` are async
+factories that verify the bucket's lock capability before the store is usable —
+each refuses to construct against a bucket with no enabled lock rule covering its key prefix
+(ADR-0267):
+
+```ts
+import { R2ArtifactStore, createR2LockReader } from "@caisson/audit-worm";
+
+const r2Store = await R2ArtifactStore.create({
+  client: r2Client, // an S3-compatible client pointed at R2's endpoint
+  bucket: "caisson-worm-prod",
+  lockReader: createR2LockReader({
+    accountId: cfAccountId, // the lock-rule read is Cloudflare's REST API, not the S3 data plane
+    bucket: "caisson-worm-prod",
+    apiToken: cfApiToken,
+  }),
+});
+```
+
+## Locked versions
+
+`LockedVersionStore` never stores a "current" flag — `currentVersion` derives the tip from a
+no-successor SQL predicate cross-checked against the kernel's pure `currentVersions` model, and
+throws if the two ever disagree instead of guessing:
+
+```ts
+import { LockedVersionStore } from "@caisson/audit-worm";
+
+const versions = new LockedVersionStore({ db });
+
+const v1 = await versions.insertVersion(accountId, {
+  artifactId: "policy-doc-4f2c",
+  provenance: { artifactHash: sha256Hex, lockedBy: userId, reason: "initial publish" },
+});
+
+// supersedesId must name the same lineage's current tip — a fork hits ConflictError, not a
+// silent second "current".
+const v2 = await versions.insertVersion(accountId, {
+  artifactId: "policy-doc-4f2c",
+  supersedesId: v1.id,
+  provenance: { artifactHash: newHash, lockedBy: userId, reason: "annual review" },
+});
+
+const current = await versions.currentVersion(accountId, "policy-doc-4f2c"); // v2
+```
+
+`provenance` is `unknown` on the way in — `provenanceSchema` (`artifactHash`, `lockedBy`,
+`reason`) Zod-parses it before the INSERT, so a malformed or extra field is rejected at the
+boundary, never stored. `chainFor` walks a version's full supersede lineage; `isCurrent` checks
+one id without loading the chain.
+
 ## Composing with the base
 
 `AuditChainStore` and `LockedVersionStore` both take a `Transactor` from `@caisson/tenancy-rls`

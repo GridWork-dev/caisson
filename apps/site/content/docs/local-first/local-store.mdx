@@ -91,6 +91,9 @@ const embedder: Embedder = createCloudEmbedder({
   // scrubForEgress runs on every text before this fetch — PEM blocks, URL passwords,
   // secret-named fields, and bare token shapes are redacted first.
   endpoint: "https://api.example.com/embed",
+  apiKey: process.env.EMBED_API_KEY!,
+  model: "text-embed-3",
+  dim: 3,
 });
 ```
 
