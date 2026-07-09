@@ -50,6 +50,16 @@ export default async function DashboardLayout({
   const session = await requireDashboardSession("/dashboard");
   const memberships = await getAccountMemberships(session.userId);
 
+  // Rendered both in the topbar (desktop + mobile, space permitting) AND — CAISSON-69 — inside the
+  // mobile off-canvas drawer, so a mobile user can always reach it even when the topbar is tight.
+  const signOutForm = (
+    <form action="/api/auth/sign-out" method="post" style={{ margin: 0 }}>
+      <Button type="submit" variant="ghost">
+        Sign out
+      </Button>
+    </form>
+  );
+
   const topBar = (
     <div
       style={{
@@ -88,8 +98,11 @@ export default async function DashboardLayout({
           </Button>
         </form>
       ) : (
+        // `cs-shell__account-pill` (CAISSON-69): truncates with an ellipsis instead of pushing
+        // Sign-out past `.cs-shell`'s grid-level overflow:hidden on narrow viewports, where it
+        // clipped silently with no way to reach it.
         <span
-          className="cs-muted"
+          className="cs-muted cs-shell__account-pill"
           style={{
             fontSize: "var(--cs-text-xs)",
             fontFamily: "var(--cs-font-mono)",
@@ -98,11 +111,7 @@ export default async function DashboardLayout({
           {session.accountId}
         </span>
       )}
-      <form action="/api/auth/sign-out" method="post" style={{ margin: 0 }}>
-        <Button type="submit" variant="ghost">
-          Sign out
-        </Button>
-      </form>
+      {signOutForm}
     </div>
   );
 
@@ -115,7 +124,9 @@ export default async function DashboardLayout({
       <Suspense fallback={null}>
         <PostHogInit accountId={session.accountId} />
       </Suspense>
-      <DashboardShell topBar={topBar}>{children}</DashboardShell>
+      <DashboardShell topBar={topBar} mobileNavFooter={signOutForm}>
+        {children}
+      </DashboardShell>
     </>
   );
 }
