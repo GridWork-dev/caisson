@@ -11,7 +11,10 @@ import type { QueueState } from "./queue.ts";
 import {
   createPgBossJobQueue,
   deriveIdempotentJobId,
+  wireBossErrorHandler,
+  type JobAlertingDeps,
   type PgBossClient,
+  type PgBossErrorEmitter,
   type PgBossJob,
 } from "./pgboss.ts";
 
@@ -365,6 +368,121 @@ describe("pg-boss getQueueState() (ADR-0211)", () => {
       activeCount: 0,
       failedCount: 0,
     });
+  });
+});
+
+describe("pg-boss work() task-failure alerting (CAISSON-53)", () => {
+  test("reports the failure through JobAlertingDeps, then re-throws (retry semantics preserved)", async () => {
+    const client = createFakeClient();
+    client.nextWorkBatch = [
+      { id: "job_1", data: { accountId: "acct_a", amount: 5 } },
+    ];
+    const reported: Array<{ taskName: string; error: unknown }> = [];
+    const alerting: JobAlertingDeps = {
+      async reportTaskFailure(taskName, error) {
+        reported.push({ taskName, error });
+      },
+      async reportInfraError() {},
+    };
+    const boom = new Error("handler boom");
+    const queue = createPgBossJobQueue(
+      [
+        defineTask("grant-credits", grantCreditsSchema, async () => {
+          throw boom;
+        }),
+      ],
+      { client, alerting },
+    );
+
+    await expect(queue.work("grant-credits")).rejects.toBe(boom);
+    expect(reported).toEqual([{ taskName: "grant-credits", error: boom }]);
+  });
+
+  test("an alerting failure never masks the original error or blocks the re-throw", async () => {
+    const client = createFakeClient();
+    client.nextWorkBatch = [
+      { id: "job_1", data: { accountId: "acct_a", amount: 5 } },
+    ];
+    const alerting: JobAlertingDeps = {
+      async reportTaskFailure() {
+        throw new Error("alerting itself is down");
+      },
+      async reportInfraError() {},
+    };
+    const boom = new Error("handler boom");
+    const queue = createPgBossJobQueue(
+      [
+        defineTask("grant-credits", grantCreditsSchema, async () => {
+          throw boom;
+        }),
+      ],
+      { client, alerting },
+    );
+
+    await expect(queue.work("grant-credits")).rejects.toBe(boom);
+  });
+
+  test("without alerting configured, a task failure still re-throws (today's behavior unchanged)", async () => {
+    const client = createFakeClient();
+    client.nextWorkBatch = [
+      { id: "job_1", data: { accountId: "acct_a", amount: 5 } },
+    ];
+    const boom = new Error("handler boom");
+    const queue = createPgBossJobQueue(
+      [
+        defineTask("grant-credits", grantCreditsSchema, async () => {
+          throw boom;
+        }),
+      ],
+      { client },
+    );
+
+    await expect(queue.work("grant-credits")).rejects.toBe(boom);
+  });
+});
+
+describe("wireBossErrorHandler (CAISSON-53 — an unhandled pg-boss 'error' event crashes the process)", () => {
+  function fakeEmitter(): PgBossErrorEmitter & { emit(error: Error): void } {
+    let listener: ((error: Error) => void) | undefined;
+    return {
+      on(event: "error", cb: (error: Error) => void) {
+        if (event === "error") listener = cb;
+        return undefined;
+      },
+      emit(error: Error) {
+        listener?.(error);
+      },
+    };
+  }
+
+  test("routes to alerting.reportInfraError when alerting is configured", () => {
+    const emitter = fakeEmitter();
+    const reported: unknown[] = [];
+    const alerting: JobAlertingDeps = {
+      async reportTaskFailure() {},
+      async reportInfraError(error) {
+        reported.push(error);
+      },
+    };
+    wireBossErrorHandler(emitter, alerting, () => {
+      throw new Error("log must not be called when alerting is configured");
+    });
+
+    const err = new Error("connection lost");
+    emitter.emit(err);
+
+    expect(reported).toEqual([err]);
+  });
+
+  test("falls back to the log seam when alerting is not configured", () => {
+    const emitter = fakeEmitter();
+    const logs: string[] = [];
+    wireBossErrorHandler(emitter, undefined, (message) => logs.push(message));
+
+    emitter.emit(new Error("connection lost"));
+
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toContain("connection lost");
   });
 });
 
