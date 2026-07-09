@@ -7,9 +7,15 @@ never edits those trees. G does NOT touch the registry Worker, license service, 
 **Branch:** `feat/surface-remediation` off `main` (worktree). **Shape:** each wave runs
 investigate/research FIRST, then presents deep forks via AskUserQuestion (rounds of ≤4, never
 auto-decide), then builds after locks. Waves are tree-disjoint and fan out as parallel worktree
-workflows inside the session. **Routing:** recon → haiku · bounded builds → sonnet ·
-synthesis/picker prep/review → opus main thread · every dispatch sets `model` (no money/license
-seams in this session — no fable lane). **Design lane (binding for W1/W3/W4):** design/frontend
+workflows inside the session. **Routing (operator-directed 2026-07-09):** the main session runs
+**fable with ultracode on** (Workflow orchestration is the default for every substantive task) ·
+recon / file search / log-and-doc summarizing → **haiku** · bounded non-UI implementation →
+**sonnet** · **UI implementation dispatches — the W1 layout/copy builds, W3 media/popout builds,
+W4 docs/email theming (the gw-frontend-designer implementer lane) — run as FABLE subagents**
+(explicit operator override of the never-fable-for-dispatch default: targeted implementers only,
+never fan-out recon) · **review stays opus** (gw-code-reviewer — fable implements, opus reviews,
+never the same lane both ways) · every dispatch sets `model`. **Design lane (binding for
+W1/W3/W4):** design/frontend
 work routes through `gw-frontend-designer` per `identity/design-doctrine.md` — **refero MCP
 research first** (real product screens for footer/compare/matrix/popout/docs patterns), then the
 **`impeccable` skill** for the craft pass inside the brand floor; never restyle from intuition.
