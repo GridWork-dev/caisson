@@ -21,6 +21,7 @@ import {
   resolveGate,
   windowFilterEntry,
 } from "./handler";
+import { type RateLimiterBinding, rateLimit } from "./rate-limit";
 
 // --- tarball sidecar (Fork 1.1) ------------------------------------------------------------------
 // Maps `<@caisson/module>@<version>` → the R2 object key + the two integrity forms npm needs
@@ -82,7 +83,16 @@ export interface TarballBucket {
   get(key: string): Promise<TarballObjectBody | null>;
 }
 export interface NpmEnv {
-  readonly TARBALLS: TarballBucket;
+  // Optional: absent (not yet provisioned at DEPLOY) → the tarball route 503s (unchanged behavior);
+  // the packument route never reads this binding at all. `| undefined` explicit (not just `?`) because
+  // deploy-entry.ts passes this key through from its own optional DeployEnv field, which under
+  // `exactOptionalPropertyTypes` is a distinct type from simply omitting the key.
+  readonly TARBALLS?: TarballBucket | undefined;
+  /** Native Cloudflare Rate Limiting bindings (CAISSON-55) — one independent namespace per route
+   *  class, so a burst against tarball bytes never eats into the packument budget or vice versa.
+   *  Absent/erroring → fails open (rate-limit.ts); this surface never blocks an install over it. */
+  readonly RATE_LIMIT_NPM_PACKUMENT?: RateLimiterBinding | undefined;
+  readonly RATE_LIMIT_TARBALL?: RateLimiterBinding | undefined;
 }
 
 export interface NpmHandlerOptions {
@@ -248,6 +258,25 @@ export function createNpmHandler(
 
     if (path === "/-/ping") return json({}, 200);
 
+    // Route-class rate limit (CAISSON-55), BEFORE the entitlement gate below: matched on the path
+    // shape alone (no auth/entitlement work yet) so a burst against tarball bytes is denied before it
+    // ever reaches R2, and can never eat into the packument budget (separate binding/namespace) or the
+    // catalog budget (handler.ts's route class, gated one layer up in deploy-entry.ts). `.exec()` here
+    // is reused below at the tb/pk match sites — neither regex carries the `g` flag, so re-running it
+    // is side-effect-free; declaring it once keeps the "which class is this" decision in one place.
+    const tbMatch = TARBALL_RE.exec(path);
+    const pkMatch = tbMatch === null ? PACKUMENT_RE.exec(path) : null;
+    const limiterBinding =
+      tbMatch !== null
+        ? env?.RATE_LIMIT_TARBALL
+        : pkMatch !== null
+          ? env?.RATE_LIMIT_NPM_PACKUMENT
+          : undefined;
+    if (limiterBinding !== undefined) {
+      const rl = await rateLimit(limiterBinding, request);
+      if (!rl.ok) return errorJson(429, "rate_limited");
+    }
+
     const gate: ResolvedGate = resolveGate(validated, resolve, request);
     const entitled = gate.entitled;
     // Window-filter an entitled COMMERCIAL entry's versions to its PER-MODULE most-favorable window
@@ -264,7 +293,7 @@ export function createNpmHandler(
     };
     const hasAuth = request.headers.get("authorization") !== null;
 
-    const tb = TARBALL_RE.exec(path);
+    const tb = tbMatch;
     if (tb) {
       const [, name, fileName, version] = tb;
       if (
@@ -303,7 +332,7 @@ export function createNpmHandler(
       });
     }
 
-    const pk = PACKUMENT_RE.exec(path);
+    const pk = pkMatch;
     if (pk) {
       const name = pk[1];
       if (name === undefined) return errorJson(404, "not_found");
