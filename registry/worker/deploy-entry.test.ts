@@ -9,7 +9,11 @@ import { describe, expect, test } from "bun:test";
 import worker, { buildLicenseEntitlementResolver } from "./deploy-entry";
 import { devVerify, mintDevToken } from "./dev-license";
 
-const get = (init?: RequestInit): Response =>
+// worker.fetch is genuinely async (CAISSON-55 added a real per-request rate-limit binding call in the
+// catalog branch — see deploy-entry.ts), so this pre-existing helper now awaits it. `env` defaults to
+// `{}` (no RATE_LIMIT_CATALOG binding), which fails open per rate-limit.ts — every test below except
+// the dedicated rate-limit block runs unthrottled, unchanged from before.
+const get = (init?: RequestInit): Promise<Response> =>
   worker.fetch(new Request("https://registry.caisson.sh/", init));
 
 const idsOf = async (res: Response): Promise<string[]> =>
@@ -19,7 +23,7 @@ const idsOf = async (res: Response): Promise<string[]> =>
 
 describe("deploy-entry live composition root (B2b seam pin)", () => {
   test("an anonymous caller sees the OPEN base only — editions AND commercial base-kind are filtered out", async () => {
-    const res = get();
+    const res = await get();
     expect(res.status).toBe(200);
     const ids = await idsOf(res);
     expect(ids).not.toContain("@caisson/ai-kit"); // edition-scoped → must never leak to community
@@ -38,7 +42,7 @@ describe("deploy-entry live composition root (B2b seam pin)", () => {
   });
 
   test("a forged Bearer license still fails SAFE to base — the edition module stays hidden", async () => {
-    const res = get({
+    const res = await get({
       headers: { authorization: "Bearer CAISSON-PRO-not-a-real-token" },
     });
     expect(res.status).toBe(200);
@@ -91,7 +95,7 @@ describe("deploy-entry edge revocation deny-set (ADR-0225 R-4=B)", () => {
   test("the SHIPPED worker rejects a dev-signed token (the production-key bake is wired live)", async () => {
     // The bake pin, proven negatively: if deploy-entry ever wired a non-baked verifier, this
     // dev-signed token would be accepted and @caisson/local-ai would leak into the response.
-    const res = worker.fetch(tokenReq());
+    const res = await worker.fetch(tokenReq());
     expect(res.status).toBe(200);
     expect(await idsOf(res)).not.toContain("@caisson/local-ai");
   });
@@ -119,5 +123,52 @@ describe("deploy-entry edge revocation deny-set (ADR-0225 R-4=B)", () => {
 
     const resolve = buildLicenseEntitlementResolver(devVerify);
     expect(resolve(tokenReq())).toBeNull(); // revoked → community (base-only view)
+  });
+});
+
+// Catalog-class rate limit (CAISSON-55): the check wired into deploy-entry's fetch(), BEFORE the
+// handler(request) call that runs the entitlement gate. Injected fake binding — the real Cloudflare
+// Rate Limiting binding is a Workers-runtime-only API unavailable under `bun test` (rate-limit.test.ts
+// unit-tests the shared helper itself; this pins the LIVE wiring).
+describe("deploy-entry catalog rate limit (CAISSON-55)", () => {
+  test("no binding provisioned (pre-DEPLOY) — every request served normally", async () => {
+    const res = await worker.fetch(new Request("https://registry.caisson.sh/"));
+    expect(res.status).toBe(200);
+  });
+
+  test("a binding that denies (bucket empty) → 429, never reaches the entitlement gate", async () => {
+    const res = await worker.fetch(
+      new Request("https://registry.caisson.sh/"),
+      {
+        RATE_LIMIT_CATALOG: { limit: async () => ({ success: false }) },
+      },
+    );
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "rate_limited" });
+  });
+
+  test("a binding that throws (limiter outage) fails OPEN — served normally, not a 500", async () => {
+    const res = await worker.fetch(
+      new Request("https://registry.caisson.sh/"),
+      {
+        RATE_LIMIT_CATALOG: {
+          limit: async () => {
+            throw new Error("rate limiting API unavailable");
+          },
+        },
+      },
+    );
+    expect(res.status).toBe(200);
+  });
+
+  test("the catalog binding is independent of the npm surface's — a catalog deny never blocks /-/ping", async () => {
+    const denyEverything = { limit: async () => ({ success: false }) };
+    const res = await worker.fetch(
+      new Request("https://registry.caisson.sh/-/ping"),
+      { RATE_LIMIT_CATALOG: denyEverything },
+    );
+    // /-/ping is dispatched to the npm surface (isNpmPath), which only ever consults
+    // RATE_LIMIT_NPM_PACKUMENT/RATE_LIMIT_TARBALL — the catalog binding above must have zero effect.
+    expect(res.status).toBe(200);
   });
 });

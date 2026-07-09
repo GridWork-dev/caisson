@@ -522,3 +522,91 @@ describe("updates-window filtering (ADR-0244/0255)", () => {
     expect(res.status).toBe(200);
   });
 });
+
+// npm-surface route-class rate limits (CAISSON-55): packument reads and tarball bytes are TWO
+// independent bindings/namespaces (see wrangler.toml), checked BEFORE resolveGate (the entitlement
+// gate) — same fail-open contract as the catalog class (deploy-entry.test.ts) and the shared helper
+// (rate-limit.test.ts). The real Cloudflare binding isn't available under `bun test`; every case here
+// injects a fake binding via `env`, same convention as the mock R2 `bucket` above.
+describe("npm route-class rate limits (CAISSON-55)", () => {
+  const community = handlerFor(null);
+  const deny = { limit: async () => ({ success: false }) };
+  const throwing = {
+    limit: async () => {
+      throw new Error("rate limiting API unavailable");
+    },
+  };
+
+  test("no bindings provisioned (pre-DEPLOY) — packument + tarball both served normally", async () => {
+    const pk = await community(req("/@caisson%2fkernel"), env);
+    expect(pk.status).toBe(200);
+    const tb = await community(req("/@caisson/kernel/-/kernel-1.0.0.tgz"), env);
+    expect(tb.status).toBe(200);
+  });
+
+  test("RATE_LIMIT_NPM_PACKUMENT denies → 429, never reaches the entitlement gate", async () => {
+    const res = await community(req("/@caisson%2fkernel"), {
+      ...env,
+      RATE_LIMIT_NPM_PACKUMENT: deny,
+    });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "rate_limited" });
+  });
+
+  test("RATE_LIMIT_TARBALL denies → 429, never reaches R2", async () => {
+    const res = await community(req("/@caisson/kernel/-/kernel-1.0.0.tgz"), {
+      ...env,
+      RATE_LIMIT_TARBALL: deny,
+    });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "rate_limited" });
+  });
+
+  test("a packument deny leaves the TARBALL budget untouched — separate namespaces", async () => {
+    const pk = await community(req("/@caisson%2fkernel"), {
+      ...env,
+      RATE_LIMIT_NPM_PACKUMENT: deny,
+    });
+    expect(pk.status).toBe(429);
+    const tb = await community(req("/@caisson/kernel/-/kernel-1.0.0.tgz"), {
+      ...env,
+      RATE_LIMIT_NPM_PACKUMENT: deny, // same env object shape; tarball route never reads this binding
+    });
+    expect(tb.status).toBe(200);
+  });
+
+  test("a tarball deny leaves the PACKUMENT budget untouched — separate namespaces", async () => {
+    const tb = await community(req("/@caisson/kernel/-/kernel-1.0.0.tgz"), {
+      ...env,
+      RATE_LIMIT_TARBALL: deny,
+    });
+    expect(tb.status).toBe(429);
+    const pk = await community(req("/@caisson%2fkernel"), {
+      ...env,
+      RATE_LIMIT_TARBALL: deny, // packument route never reads this binding
+    });
+    expect(pk.status).toBe(200);
+  });
+
+  test("a throwing binding fails OPEN on both route classes — never a 500", async () => {
+    const pk = await community(req("/@caisson%2fkernel"), {
+      ...env,
+      RATE_LIMIT_NPM_PACKUMENT: throwing,
+    });
+    expect(pk.status).toBe(200);
+    const tb = await community(req("/@caisson/kernel/-/kernel-1.0.0.tgz"), {
+      ...env,
+      RATE_LIMIT_TARBALL: throwing,
+    });
+    expect(tb.status).toBe(200);
+  });
+
+  test("/-/ping is unaffected by either binding (only tb/pk paths are rate-limited)", async () => {
+    const res = await community(req("/-/ping"), {
+      ...env,
+      RATE_LIMIT_NPM_PACKUMENT: deny,
+      RATE_LIMIT_TARBALL: deny,
+    });
+    expect(res.status).toBe(200);
+  });
+});

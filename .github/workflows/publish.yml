@@ -65,7 +65,7 @@ jobs:
       # dry_run=false runs one live consume. Push events have no inputs → falls back to "true".
       CAISSON_PUBLISH_DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           # Full history so changesets can read tags; built-in GITHUB_TOKEN for commit-back
           # (not a stored PAT — the ephemeral token does not trigger downstream CI runs).
@@ -75,7 +75,7 @@ jobs:
         with:
           bun-version: "1.3.14"
       - name: cache bun install
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
