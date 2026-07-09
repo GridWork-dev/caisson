@@ -18,64 +18,26 @@
 // The PGlite double applies the REAL platform migration chain (@caisson/platform-migrations,
 // CAISSON-21) — the SAME shared chain apps/site/lib/deploy-migrate.ts applies to a live Postgres
 // and apps/admin/src/lib/admin-db.ts applies to its own double — PLUS this app's own local extras
-// (BYOK metadata, compliance attestations, the Ask-AI counters). This used to be a hand-copied,
-// differently-ordered subset of the same schema constants (missing the 0013 RLS empty-GUC guard
-// and the 0017 renewal_extension ledger entirely) — the THIRD hand-mirror of the platform chain,
-// closed by routing through the same `applyAll` the other two consumers use.
+// (BYOK metadata, compliance attestations, the Ask-AI counters), now the SAME
+// `SITE_LOCAL_MIGRATIONS` list `deploy-migrate.ts` applies (`./site-migrations.ts`, CAISSON-64).
+// This used to be a hand-copied, differently-ordered, and (worse) DIFFERENT-CONTENT list from
+// deploy-migrate.ts's — this double ran 3 migrations the real-Postgres deploy apply never learned
+// about, so `byok_key_meta` was never created in prod and /dashboard/ai-keys crashed for every
+// account. Routing both consumers through one shared list closes that drift class for good.
 import { PGlite } from "@electric-sql/pglite";
-import { type MigrationFile, applyAll } from "@caisson/platform-migrations";
+import { applyAll } from "@caisson/platform-migrations";
 import { pgliteMigrationApplier } from "@caisson/platform-migrations/pglite";
 import {
   type TenantExecutor,
   type Transactor,
-  buildTenantPolicySql,
   withTenant,
 } from "@caisson/tenancy-rls";
-import { TENANT_AI_CREDENTIAL_SCHEMA_SQL } from "@caisson/ai-kit";
-import { ASK_AI_QUESTION_SCHEMA_SQL } from "./ask-ai/question-log.ts";
-import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool, type PoolClient } from "pg";
+import { SITE_LOCAL_MIGRATIONS } from "./site-migrations.ts";
 
 export type { TenantExecutor, Transactor };
 export { withTenant };
-
-// App-owned, tenant-scoped (FORCE RLS) tables the dashboard writes directly. In production these are
-// created by the deploy migration path; the DDL here bootstraps the in-memory PGlite double for
-// `bun dev` / `bun test`.
-//
-// BYOK display metadata (ADR-0183) — holds NO secret: the encrypted key lives in ai-kit's
-// `tenant_ai_credential`; this table carries only the masked tail + version so the write-only edge
-// can render status without ever reading the key back.
-const BYOK_KEY_META_SCHEMA_SQL = `
-CREATE TABLE byok_key_meta (
-  id          text PRIMARY KEY,
-  account_id  text NOT NULL,
-  provider    text NOT NULL,
-  last4       text NOT NULL,
-  key_version integer NOT NULL,
-  created_at  timestamptz NOT NULL DEFAULT now(),
-  updated_at  timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (account_id, provider)
-);
-${buildTenantPolicySql("byok_key_meta")}
-`;
-
-// Compliance manual-attestation slots (ADR-0181) — a filled row = the human attested that slot for a
-// framework. Presence = filled; deletion = cleared. No secret; free-text note bounded at the edge.
-const COMPLIANCE_ATTESTATION_SCHEMA_SQL = `
-CREATE TABLE compliance_attestation (
-  id          text PRIMARY KEY,
-  account_id  text NOT NULL,
-  framework   text NOT NULL,
-  slot_id     text NOT NULL,
-  note        text NOT NULL DEFAULT '',
-  attested_by text NOT NULL,
-  attested_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (account_id, framework, slot_id)
-);
-${buildTenantPolicySql("compliance_attestation")}
-`;
 
 function nodePgExecutor(client: PoolClient): TenantExecutor {
   return {
@@ -124,24 +86,6 @@ interface PlatformDbGlobal {
   caissonPglite?: PGlite;
 }
 const globalDb = globalThis as unknown as PlatformDbGlobal;
-
-/** This app's own local migrations, folded onto the shared chain — named `0020` and up so they land
- *  AFTER the shared chain's own `0019_order_record.sql` (see @caisson/platform-migrations's
- *  `platformMigrationsPackage` doc); nothing here depends on ordering relative to its siblings,
- *  only on the app role + tenant-policy machinery the shared chain's `0001` already established. */
-const SITE_LOCAL_MIGRATIONS: readonly MigrationFile[] = [
-  {
-    name: "0020_tenant_ai_credential.sql",
-    sql: TENANT_AI_CREDENTIAL_SCHEMA_SQL,
-  },
-  { name: "0021_byok_key_meta.sql", sql: BYOK_KEY_META_SCHEMA_SQL },
-  {
-    name: "0022_compliance_attestation.sql",
-    sql: COMPLIANCE_ATTESTATION_SCHEMA_SQL,
-  },
-  { name: "0023_ask_ai_spend.sql", sql: ASK_AI_SPEND_SCHEMA_SQL },
-  { name: "0024_ask_ai_question.sql", sql: ASK_AI_QUESTION_SCHEMA_SQL },
-];
 
 async function bootstrapPglite(): Promise<PGlite> {
   if (globalDb.caissonPglite) return globalDb.caissonPglite;
