@@ -43,12 +43,24 @@
 
 .cs-matrix th,
 .cs-matrix td {
-  min-width: 8rem;
   padding: var(--cs-space-3) var(--cs-space-4);
   border-bottom: 1px solid var(--cs-border);
   text-align: left;
   vertical-align: top;
   overflow-wrap: break-word;
+}
+
+/* Fixed layout ignores per-cell min-width, so the scroll floor lives on the table itself, keyed
+ * off column count: a wide matrix (5+ columns — the homepage/hub Module × 6-bundle grid) gets a
+ * floor and scrolls inside `.cs-matrix__wrap` (sticky first column + gradient cue); a 3-column
+ * compare table fits the viewport and simply wraps in place. The first column gets a fixed share
+ * on wide tables so the row labels stay readable while the bundle columns split the rest. */
+.cs-matrix:has(thead th:nth-child(5)) {
+  min-width: 52rem;
+}
+
+.cs-matrix:has(thead th:nth-child(5)) thead th:first-child {
+  width: 11rem;
 }
 
 /* Sticky first column (row labels) — the anchor while the wrap scrolls horizontally on mobile.
