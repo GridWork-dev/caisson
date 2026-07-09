@@ -15,7 +15,8 @@ import {
   type IconName,
 } from "@/components";
 import { TrialPath } from "@/components/trial-path";
-import { MediaPlaceholder } from "@/components/media-placeholder";
+import { MediaCarousel } from "@/components/media-carousel";
+import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage } from "@/lib/bundle-pages";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
@@ -229,7 +230,10 @@ export default function ProvenancePage() {
 
       {/* ===== Media slot (ADR-0237 F2) ===== */}
       <Section>
-        <MediaPlaceholder icon="audit-chain" />
+        <MediaCarousel
+          slides={mediaSlides("bundle", "provenance")}
+          label="Provenance bundle media"
+        />
       </Section>
 
       {/* ===== The three composed packages ===== */}
