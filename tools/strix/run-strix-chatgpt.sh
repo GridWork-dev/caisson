@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Strix Caisson pentest using your ChatGPT subscription via a localhost Codex bridge.
-# gpt-5.5-class quality, subscription-metered (not per-token). Read-only, full depth, TUI.
+# gpt-5.6 line (Sol/Terra/Luna; default Sol), subscription-metered (not per-token). Read-only, full depth, TUI.
 #
 # NOTE: using a consumer ChatGPT subscription programmatically is ToS-gray and rate-limited.
 #
@@ -11,14 +11,15 @@
 #        npx -y chatgpt-bridge serve --port 10531 --host 127.0.0.1 &
 #   3. ./apply-patches.sh run once (read-only + Exa web_search)
 #
-# Usage:  ./run-strix-chatgpt.sh
-#         CHATGPT_BRIDGE_PORT=8080 CHATGPT_MODEL=openai/gpt-5.5 ./run-strix-chatgpt.sh
+# Usage:  ./run-strix-chatgpt.sh                                             # default: gpt-5.6-sol @ high
+#         CHATGPT_MODEL=openai/gpt-5.6-terra STRIX_REASONING_EFFORT=medium ./run-strix-chatgpt.sh  # cheaper sweep
+#         CHATGPT_BRIDGE_PORT=8080 CHATGPT_MODEL=openai/gpt-5.6-sol ./run-strix-chatgpt.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 source ./_common.sh
 
 BRIDGE_PORT="${CHATGPT_BRIDGE_PORT:-10531}"
-export STRIX_LLM="${CHATGPT_MODEL:-openai/gpt-5.5}"
+export STRIX_LLM="${CHATGPT_MODEL:-openai/gpt-5.6-sol}"
 export LLM_API_BASE="http://127.0.0.1:${BRIDGE_PORT}/v1"
 export LLM_API_KEY="not-needed"   # auth handled by the bridge via ~/.codex/auth.json
 
