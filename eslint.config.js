@@ -15,6 +15,10 @@ export default [
       "**/out/**",
       "**/.source/**",
       "**/coverage/**",
+      // Local-only Python artifacts (services/support-bot dev venv) — git-ignored, but eslint
+      // does not read .gitignore, so a local `bunx eslint .` fails on vendored JS without this.
+      "**/.venv/**",
+      "**/.pytest_cache/**",
       "**/*.d.ts",
       "outputs/**",
       "infra/**",

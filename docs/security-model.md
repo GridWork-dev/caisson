@@ -12,37 +12,41 @@ wins over this file; this file is the index, not the decision. The gridwork secu
 fail-closed) is inherited globally and is not re-decided here - it is the baseline every row
 below assumes.
 
-## Build state (verified against the filesystem, 2026-06-28)
+## Build state (verified against the filesystem, 2026-07-09)
 
 Legend: **BUILT** = `src/` implementation + `*.test.ts` present on disk. **SPEC-ONLY** =
 ADR locked, no implementation. Build state is per the working tree; it does NOT assert
 CI-green, app-wiring, or production-readiness (run `bun test` / `turbo build` to confirm).
+Counts for the base rows below carry forward from the 2026-06-28 pass (unaffected by the carve);
+`docs/build-state.md`'s per-package table is machine-regenerated (`ADR-0253`) and is the source to
+re-verify against.
 
-| Mechanism                                                              | Package                              | src / test files (non-test `.ts` / `*.test.ts`) | State |
-| ---------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ----- |
-| Typed error model (`CaissonError`)                                     | `packages/kernel`                    | 12 / 9                                          | BUILT |
-| Audit chain (`anchorChain`/`verifyChain`/`canonicalize`)               | `packages/kernel` (`audit-chain.ts`) | (in kernel)                                     | BUILT |
-| Append-only versioning (`validateVersionSet`)                          | `packages/kernel` (`versioning.ts`)  | (in kernel)                                     | BUILT |
-| Fail-closed RLS (`withTenant`)                                         | `packages/tenancy-rls`               | 2 / 1                                           | BUILT |
-| Field-crypto (HKDF + AES-256-GCM + envelope + crypto-shred + KMS port) | `packages/field-crypto`              | 13 / 9                                          | BUILT |
-| Credit gate (debit-before-spend, 402)                                  | `packages/credits`                   | 3 / 2                                           | BUILT |
-| Billing webhook (HMAC)                                                 | `packages/billing`                   | 4 / 1                                           | BUILT |
-| License/entitlement verify (Ed25519 offline)                           | `packages/license-verify`            | 4 / 2                                           | BUILT |
-| Session/JWT seam                                                       | `packages/auth`                      | 3 / 1                                           | BUILT |
-| WORM ArtifactStore + chain-store + version-store                       | `packages/audit-worm`                | 7 / 6                                           | BUILT |
-| Evidence-pack signing + generation (compliance edition)                | `packages/compliance` (`evidence/`)  | 16 / 11                                         | BUILT |
-| Guardrails (moderation + PII redaction, fail-closed)                   | `packages/guardrails`                | 4 / 2                                           | BUILT |
+| Mechanism                                                              | Package                                  | src / test files (non-test `.ts` / `*.test.ts`) | State |
+| ---------------------------------------------------------------------- | ---------------------------------------- | ----------------------------------------------- | ----- |
+| Typed error model (`CaissonError`)                                     | `packages/kernel`                        | 12 / 9                                          | BUILT |
+| Audit chain (`anchorChain`/`verifyChain`/`canonicalize`)               | `packages/kernel` (`audit-chain.ts`)     | (in kernel)                                     | BUILT |
+| Append-only versioning (`validateVersionSet`)                          | `packages/kernel` (`versioning.ts`)      | (in kernel)                                     | BUILT |
+| Fail-closed RLS (`withTenant`)                                         | `packages/tenancy-rls`                   | 2 / 1                                           | BUILT |
+| Field-crypto (HKDF + AES-256-GCM + envelope + crypto-shred + KMS port) | `packages/field-crypto`                  | 13 / 9                                          | BUILT |
+| Credit gate (debit-before-spend, 402)                                  | `packages/credits`                       | 3 / 2                                           | BUILT |
+| Billing webhook (HMAC)                                                 | `packages/billing`                       | 4 / 1                                           | BUILT |
+| License/entitlement verify (Ed25519 offline)                           | `packages/license-verify`                | 4 / 2                                           | BUILT |
+| Session/JWT seam                                                       | `packages/auth`                          | 3 / 1                                           | BUILT |
+| WORM ArtifactStore + chain-store + version-store                       | `packages/audit-worm`                    | 7 / 6                                           | BUILT |
+| Evidence-pack generation (collectors, pack-format, OSCAL export)       | `packages/compliance-core` (`evidence/`) | 13 / 9                                          | BUILT |
+| Evidence-pack signing (Ed25519 + RFC-3161)                             | `packages/signing-primitive`             | 2 / 1                                           | BUILT |
+| Control-framework mappings (SOC2/HIPAA/EU-AI-Act, crosswalks)          | `packages/frameworks-pack`               | 7 / 3                                           | BUILT |
+| Guardrails (moderation + PII redaction, fail-closed)                   | `packages/guardrails`                    | 4 / 2                                           | BUILT |
+| SSO + owner-gated member management + admin-write RLS layer            | `packages/org-controls`                  | 6 / 5                                           | BUILT |
+| Multi-provider billing driver + idempotent webhook fulfillment         | `packages/billing-orchestration`         | 7 / 6                                           | BUILT |
 
-> **ACCURACY FLAG - divergence from ADR-0082 section 3.**
-> `knowledge/decisions/ADR-0082-go-live-site-posture.md` (accepted 2026-06-28) states "four of
-> five edition packages are currently empty stubs (audit-worm, compliance, local-ai, ai-kit -
-> 'structure only')." That statement governs **site copy** (what marketing may claim), and it
-> is **stale against the working tree**: the Wave-1 editions build-out (ADRs 0051-0077) landed
-> real implementations + tests in `audit-worm`, `compliance/evidence/*`, `local-ai`, and
-> `guardrails` (see file counts above). For a contributor, treat the security mechanisms below
-> as **implemented on disk**, not specced-only. What remains genuinely thin is **app wiring**
-> (`apps/{compliance,ai-kit,local-ai}` are minimal shells) and the Agentic-Dev edition (roadmap).
-> Do not infer "fully shipped / CI-proven" from "BUILT"; infer "code + tests exist."
+> **Carve note (`ADR-0257` §1, 2026-07-06).** The four rows above pulled out of `packages/compliance`
+> and `packages/billing` were carved into standalone commercial packages by the six-bundle catalog
+> rework — `packages/compliance/src/evidence/` now holds only `oscal-bundle.ts` (the collectors,
+> `generate.ts`, and `pack-format.ts` moved to `compliance-core`; `sign.ts` moved to
+> `signing-primitive`). Impl paths in the "Evidence-pack signing" boundary below are updated to
+> match. `org-controls` and `billing-orchestration` are net-new carve packages, not present at the
+> 2026-06-28 snapshot this table used to be dated to.
 
 ---
 
@@ -160,8 +164,8 @@ exact relative paths from the repo root.
   WORM-anchored chain state). An RFC-3161 trusted timestamp countersigns. Signer behind a port so
   buyer-supplied KMS is a drop-in; DSSE/in-toto + Sigstore/Rekor are an un-wired premium seam.
 - **Owning ADR:** `knowledge/decisions/ADR-0056-evidence-pack-signing.md` (supplies the key +
-  scheme ADR-0006 left undefined). Impl: `packages/compliance/src/evidence/sign.ts`,
-  `packages/compliance/src/evidence/generate.ts`.
+  scheme ADR-0006 left undefined). Impl (post-`ADR-0257` §1 carve): `packages/signing-primitive/src/sign.ts`,
+  `packages/compliance-core/src/evidence/generate.ts`.
 
 ### 5. Credit gate (the 402 spend boundary)
 

@@ -17,18 +17,22 @@ the source-of-truth hierarchy in `CLAUDE.md` wins (board > ADRs > specs > `plan.
 
 ## For X -> see Y
 
-| For...                                                                                                                  | See                                                             |
-| ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| How the system fits together: data model, ports/seams, base->edition layering topology, the kernel integrity algebra    | `docs/architecture.md` (synthesizes `specs/01-architecture.md`) |
-| What a given package is, its role, and which way it depends (catalogs the original 24 of 35 `packages/*`)               | `docs/packages.md`                                              |
-| What composes each edition, OSS-vs-paid posture, the hero wedge                                                         | `docs/editions.md`                                              |
-| Which ADR locked X; the full ADR catalog + the 0025-0039 gap + the 0045-0048 renumber map                               | `docs/adr-index.md` (indexes `knowledge/decisions/`)            |
-| Coding invariants, the single standards gate (`tooling/`), conventions, changeset/version discipline                    | `docs/engineering.md`                                           |
-| The security model: fail-closed RLS, field-crypto + crypto-shred, WORM audit chain, timing-safe license/secret compares | `docs/security-model.md`                                        |
-| Whether X is actually built vs a stub vs roadmap (honest per-package/app/service status)                                | `docs/build-state.md`                                           |
-| CI workflows, deploy, hosting (Railway on `caisson.sh`, ADR-0114/0115), infra, release flow                             | `docs/operations.md`                                            |
-| What a Caisson term means (edition, module, registry, leg, standards gate, buyer MCP, ...)                              | `docs/glossary.md`                                              |
-| What is locked vs open; any open fork awaiting an operator lock                                                         | `docs/state/decisions-and-forks.md`                             |
+| For...                                                                                                                                                                    | See                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| How the system fits together: data model, ports/seams, base->edition layering topology, the kernel integrity algebra                                                      | `docs/architecture.md` (synthesizes `specs/01-architecture.md`)                                     |
+| What a given package is, its role, and which way it depends (catalogs the original 24 of the current 54 `packages/*`; stale on build status -- see `docs/build-state.md`) | `docs/packages.md`                                                                                  |
+| The current sellable unit's license/sold-as/price (bundles, à-la-carte modules) -- editions DISSOLVED into six bundles 2026-07-06                                         | `docs/state/package-catalog.md` (`docs/editions.md` is now an archived tombstone, kept for lineage) |
+| Which ADR locked X; the full ADR catalog + the 0025-0039 gap + the 0045-0048 renumber map                                                                                 | `docs/adr-index.md` (indexes `knowledge/decisions/`)                                                |
+| Coding invariants, the single standards gate (`tooling/`), conventions, changeset/version discipline                                                                      | `docs/engineering.md`                                                                               |
+| The security model: fail-closed RLS, field-crypto + crypto-shred, WORM audit chain, timing-safe license/secret compares                                                   | `docs/security-model.md`                                                                            |
+| Compliance control-to-code traceability convention (the `Control: ADR-NNNN` docstring + golden `policyVersion` idiom)                                                     | `docs/compliance/control-traceability.md`                                                           |
+| Agentic pentest runbook (Strix) + the latest findings ledger                                                                                                              | `docs/security/strix-pentest.md`, `docs/security/strix-findings-2026-07-01.md`                      |
+| Whether X is actually built vs a stub vs roadmap (honest per-package/app/service status; machine-checked, `ADR-0253`)                                                     | `docs/build-state.md`                                                                               |
+| CI workflows, deploy, hosting (Railway on `caisson.sh`, ADR-0114/0115), infra, release flow                                                                               | `docs/operations.md`                                                                                |
+| What a Caisson term means (bundle, module, registry, leg, standards gate, buyer MCP, ...)                                                                                 | `docs/glossary.md`                                                                                  |
+| What is locked vs open; any open fork awaiting an operator lock                                                                                                           | `docs/state/decisions-and-forks.md`                                                                 |
+| The live work tracker: operator-owed / build-gated / trigger-parked / recently closed                                                                                     | `docs/state/outstanding-work.md`                                                                    |
+| Deploy log: what was redeployed, why, and the pasted live-verify evidence                                                                                                 | `docs/deploy/STATE.md`                                                                              |
 
 **Routing rules (mirrors `identity/index.md`):** each topic resolves to exactly one owning
 file; a dead pointer is a bug. The per-aspect files own the _synthesized view_; the
@@ -55,27 +59,29 @@ hierarchy), `README.md` (repo overview), `SUMMARY.md` (how-we-got-here), `PRODUC
 The nine per-aspect maps land together in this docs wave; each is a synthesized catalog/index
 that did not previously exist as one document.
 
-| File                                | Scope (one line)                                                                                                                                                                            |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/architecture.md`              | The system map: package layering (base composes down, never up - ADR-0003), the kernel integrity algebra, the RLS/crypto/WORM composition topology, and the seam ports.                     |
-| `docs/packages.md`                  | Catalog of the original 24 of 35 `packages/*`: what each is, its edition role, and its dependency direction.                                                                                |
-| `docs/editions.md`                  | The 5 editions (Base, Compliance hero, AI Production Kit, Local-first AI, Agentic-Dev) - what composes each and its commercial posture.                                                     |
-| `docs/adr-index.md`                 | Index of `knowledge/decisions/ADR-0001..0242`: title, status, supersede chains, the number gap, and the GTM 0045-0048->0084-0087 renumber (ADR-0088).                                       |
-| `docs/engineering.md`               | The engineering invariants (ADR-0002): TS-strict, Bun, Zod `.strict()`, integer money, the one standards gate, golden-file regression, changeset discipline.                                |
-| `docs/security-model.md`            | The security model: fail-closed RLS (ADR-0005), field-crypto + per-tenant keys + crypto-shred (ADR-0006/0043/0055), the WORM audit chain, license/secret timing-safe compares.              |
-| `docs/build-state.md`               | The honest build ledger: what is genuinely built vs structure-only vs roadmap, per package/app/service.                                                                                     |
-| `docs/operations.md`                | CI (`.github/workflows/{ci,deploy-railway,lighthouse}.yml`), the standards-gate job, Railway deploy (ADR-0114/0115) + `infra/terraform` (DNS), hosting on `caisson.sh`, changeset releases. |
-| `docs/glossary.md`                  | The Caisson vocabulary - one definition per term; this file wins vocabulary conflicts.                                                                                                      |
-| `docs/state/decisions-and-forks.md` | The live decision board (already present): every decision, locked or open, until the operator locks it (CLAUDE.md SoT #1).                                                                  |
+| File                                      | Scope (one line)                                                                                                                                                                       |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/architecture.md`                    | The system map: package layering (base composes down, never up - ADR-0003), the kernel integrity algebra, the RLS/crypto/WORM composition topology, and the seam ports.                |
+| `docs/packages.md`                        | Catalog of the original 24 of the current 54 `packages/*`: what each is, its (legacy) edition role, and its dependency direction. Status column is stale -- see `docs/build-state.md`. |
+| `docs/editions.md`                        | **ARCHIVED tombstone stub** (2026-07-05) -- editions DISSOLVED into six bundles 2026-07-06 (`ADR-0257`/`0258`). Current sold-as/price view: `docs/state/package-catalog.md`.           |
+| `docs/adr-index.md`                       | Index of `knowledge/decisions/ADR-0001..0297`: title, status, supersede chains, the number gap, and the GTM 0045-0048->0084-0087 renumber (ADR-0088).                                  |
+| `docs/engineering.md`                     | The engineering invariants (ADR-0002): TS-strict, Bun, Zod `.strict()`, integer money, the one standards gate, golden-file regression, changeset discipline.                           |
+| `docs/security-model.md`                  | The security model: fail-closed RLS (ADR-0005), field-crypto + per-tenant keys + crypto-shred (ADR-0006/0043/0055), the WORM audit chain, license/secret timing-safe compares.         |
+| `docs/compliance/control-traceability.md` | The control-to-code traceability convention (`Control: ADR-NNNN` docstrings + golden `policyVersion` pins) auditors use to trace a policy to its implementation.                       |
+| `docs/security/strix-pentest.md`          | The Strix agentic-pentest runbook (setup, patches, targets); findings ledger in the sibling `strix-findings-*.md` files.                                                               |
+| `docs/build-state.md`                     | The honest build ledger: what is genuinely built vs structure-only vs roadmap, per package/app/service. Machine-checked per-package counts (`ADR-0253`).                               |
+| `docs/operations.md`                      | The 8 CI workflows (`.github/workflows/*.yml`), the 4 required checks, Railway deploy (ADR-0114/0115) + `infra/terraform` (DNS), hosting on `caisson.sh`, changeset/publish releases.  |
+| `docs/glossary.md`                        | The Caisson vocabulary - one definition per term; this file wins vocabulary conflicts.                                                                                                 |
+| `docs/state/decisions-and-forks.md`       | The live decision board (already present): every decision, locked or open, until the operator locks it (CLAUDE.md SoT #1).                                                             |
+| `docs/state/outstanding-work.md`          | The live work tracker: operator-owed / build-gated / trigger-parked / recently closed, every row cites its ADR/spec/PR.                                                                |
 
 ## Build-state note (read before trusting any "shipped" claim)
 
-Verified against the filesystem on write: the **base substrate is built + tested** - `kernel`,
-`tenancy-rls`, `field-crypto`, `auth`, `billing`, `credits`, plus `cli` (`create-caisson`). The
-**edition packages now carry a first implemented leg + tests merged via Wave-1** (e.g.
-`packages/compliance` ~2.9k LOC / 11 tests, `packages/audit-worm` ~1.3k LOC / 6 tests,
-`packages/local-ai` ~2.2k LOC / 9 tests) - this is **beyond** ADR-0082 §3's 2026-06-28
-"four editions are empty stubs / structure only" snapshot, which is now **stale** for those
-packages. They are **not** feature-complete editions, and `services/support-bot` is README-only.
-Do not claim editions are fully built. The authoritative, reconciled per-unit status lives in
-`docs/build-state.md`; treat that file as the owner and this note as a pointer.
+`packages/*` has grown from the original 24 to **54 dirs**, and the four legacy editions
+(compliance, ai-kit, local-ai, agent-dev) **dissolved into six commercial bundles** 2026-07-06
+(`ADR-0257`/`0258`) -- compliance, ai-production, local-first, agentic-dev, provenance
+(net-new), everything. Every base + bundle-member package now has real, tested, live-transport-proven
+code behind it (`ADR-0201`); do not cite the pre-2026-07-06 "editions are structure-only stubs"
+framing (`ADR-0082` §3) as current. The authoritative, machine-checked per-unit status lives in
+`docs/build-state.md` (`ADR-0253`); the license/sold-as/price view lives in
+`docs/state/package-catalog.md`. Treat both as the owners and this note as a pointer.
