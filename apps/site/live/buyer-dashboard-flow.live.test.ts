@@ -29,6 +29,7 @@ import {
   type BrowserContext,
   type Page,
 } from "playwright";
+import { postAuth, signInProbeAccount } from "./probe-session.ts";
 
 const BASE_URL = "https://caisson.sh";
 const NAV_TIMEOUT = 30_000;
@@ -62,11 +63,20 @@ function requireContext(): BrowserContext {
  * no manual Set-Cookie parsing — it is simply there for the next navigation.
  */
 async function trySignIn(ctx: BrowserContext): Promise<boolean> {
-  const res = await ctx.request.post(`${BASE_URL}/api/auth/sign-in/email`, {
-    data: { email: PROBE_EMAIL, password: PROBE_PASSWORD },
-    timeout: 15_000,
-  });
-  return res.ok();
+  // Native fetch + cookie injection, NOT ctx.request — see live/probe-session.ts for the Bun
+  // APIRequestContext crash + the mandatory Origin header, both caught on this file's first
+  // credentialed run (2026-07-09).
+  const { ok } = await signInProbeAccount(
+    ctx,
+    BASE_URL,
+    PROBE_EMAIL,
+    PROBE_PASSWORD,
+    {
+      "CF-Access-Client-Id": CF_CLIENT_ID,
+      "CF-Access-Client-Secret": CF_CLIENT_SECRET,
+    },
+  );
+  return ok;
 }
 
 /** Idempotent: sign-in first; self-serve sign-up only on that failing (account missing, or —
@@ -77,18 +87,23 @@ async function trySignIn(ctx: BrowserContext): Promise<boolean> {
  *  distinguishable from bad credentials. */
 async function ensureProbeSession(ctx: BrowserContext): Promise<boolean> {
   if (await trySignIn(ctx)) return true;
-  const signUp = await ctx.request.post(`${BASE_URL}/api/auth/sign-up/email`, {
-    data: {
+  const signUp = await postAuth(
+    BASE_URL,
+    "/api/auth/sign-up/email",
+    {
       name: "Caisson E2E Probe",
       email: PROBE_EMAIL,
       password: PROBE_PASSWORD,
     },
-    timeout: 15_000,
-  });
+    {
+      "CF-Access-Client-Id": CF_CLIENT_ID,
+      "CF-Access-Client-Secret": CF_CLIENT_SECRET,
+    },
+  );
   if (await trySignIn(ctx)) return true;
-  sessionFailureDetail = signUp.ok()
-    ? `sign-up responded ${signUp.status()} — new account awaiting its one-time email verification`
-    : `sign-up responded ${signUp.status()} — account already exists (wrong password, or still unverified)`;
+  sessionFailureDetail = signUp.res?.ok
+    ? `sign-up responded ${signUp.status} — new account awaiting its one-time email verification`
+    : `sign-up responded ${signUp.status} — account already exists (wrong password, or still unverified)`;
   return false;
 }
 
@@ -101,7 +116,15 @@ async function hasEmptyState(
   const title = page.locator(".cs-empty .cs-empty__title", {
     hasText: titleFragment,
   });
-  return (await title.count()) > 0;
+  // Wait, don't count(): the dashboard pages stream their data sections behind Suspense, so an
+  // instant count() right after the h1 paints races the section into a false negative (caught on
+  // this file's first credentialed run, 2026-07-09 — the pages render the empty states fine).
+  try {
+    await title.first().waitFor({ state: "visible", timeout: 10_000 });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 beforeAll(async () => {
@@ -161,6 +184,7 @@ describe("buyer-dashboard flow — probe account, empty-state assertions", () =>
         ).toBe("/dashboard");
         await page
           .locator("h1", { hasText: "Overview" })
+          .first()
           .waitFor({ state: "visible", timeout: 10_000 });
         expect(await hasEmptyState(page, "No entitlements yet")).toBe(true);
       } finally {
@@ -188,6 +212,7 @@ describe("buyer-dashboard flow — probe account, empty-state assertions", () =>
         ).toBeLessThan(400);
         await page
           .locator("h1", { hasText: "License" })
+          .first()
           .waitFor({ state: "visible", timeout: 10_000 });
         expect(await hasEmptyState(page, "No license issued yet")).toBe(true);
         // A zero-entitlement account correctly renders NO updates-window section — the "Updates"
@@ -221,6 +246,7 @@ describe("buyer-dashboard flow — probe account, empty-state assertions", () =>
         ).toBeLessThan(400);
         await page
           .locator("h1", { hasText: "Credits" })
+          .first()
           .waitFor({ state: "visible", timeout: 10_000 });
         // No purchases -> no expiring-credits badge (the `expiring.credits > 0` gate) and the
         // ledger falls back to its own built-in EmptyState (packages/ui LedgerList default).

@@ -40,6 +40,7 @@ import {
   EMAIL_TEMPLATE_IDS,
   renderEmailTemplate,
 } from "@caisson/email";
+import { signInProbeAccount } from "../live/probe-session.ts";
 import { BUNDLE_PAGES } from "../lib/bundle-pages.ts";
 import { COMPARISONS } from "../lib/comparisons.ts";
 import { GLOSSARY_TERMS } from "../lib/glossary.ts";
@@ -438,19 +439,17 @@ async function establishBuyerSession(
   const context = await browser.newContext(
     extraHTTPHeaders ? { extraHTTPHeaders } : {},
   );
-  const page = await context.newPage();
   try {
-    await page.goto(`${baseUrl}/login`, {
-      waitUntil: "load",
-      timeout: NAV_TIMEOUT,
-    });
-    await page.locator('input[type="email"]').first().fill(email);
-    await page.locator('input[type="password"]').first().fill(password);
-    await page
-      .getByRole("button", { name: /sign in|log in/i })
-      .first()
-      .click();
-    await page.waitForURL(/\/dashboard/, { timeout: NAV_TIMEOUT });
+    // API sign-in, not UI automation: the /login page is magic-link-first (no immediate password
+    // input). See live/probe-session.ts for why this is native fetch, not context.request.
+    const signIn = await signInProbeAccount(
+      context,
+      baseUrl,
+      email,
+      password,
+      extraHTTPHeaders,
+    );
+    if (!signIn.ok) throw new Error(`sign-in HTTP ${signIn.status}`);
     const statePath = join(outDir, "buyer-session-state.json");
     await context.storageState({ path: statePath });
     return statePath;
