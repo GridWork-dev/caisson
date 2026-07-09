@@ -96,6 +96,7 @@ import {
 } from "./license-revocation-store.ts";
 import {
   ORDER_RECORD_SCHEMA_SQL,
+  ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "./subscription-history-store.ts";
 
@@ -219,6 +220,7 @@ beforeAll(async () => {
   // idempotency test) also touches these two tables now.
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
   // ADR-0225: the license index (read cross-tenant for the edge deny-set) + the deny-set truth table,
   // created BEFORE ADMIN_MUTATION_PROVISION_SQL (its new license_grant SELECT policy references it).
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
@@ -1793,6 +1795,31 @@ describe("license rotation (true key rotation via the edge deny-set)", () => {
       [oldKey],
     );
     expect(deniedRows[0]?.n).toBe(1);
+  });
+
+  test("a STALE route-read id denies BOTH ids: the stale one and the row's current key", async () => {
+    // The TOCTOU shape: the route read the grant's licenseId, then a concurrent /issue re-mint
+    // (a renewal landing mid-rotation) replaced the stored key before the rotation ran. Denying
+    // only the route-read id would leave the replacement key live at the edge forever — the
+    // rotation re-reads the CURRENT id inside the deny transaction and denies both.
+    const acct = await realAccount();
+    const staleKey = randomUUID(); // what the route read, one HTTP hop ago
+    const currentKey = randomUUID(); // what a concurrent re-mint stored since
+    await seedLicense(acct, currentKey);
+    const stub = rotatingIssue();
+
+    const r = await rotateLicenseAdmin(deps({ issue: stub.issue }), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      major: 0,
+      tier: "pro",
+      expiry: null,
+      oldLicenseId: staleKey,
+    });
+    const denySet = await asAdmin((tx) => readDenySet(tx));
+    expect(denySet).toContain(staleKey);
+    expect(denySet).toContain(currentKey);
+    expect(denySet).not.toContain(r.licenseId);
   });
 
   test("a failed MINT still leaves the old key denied (revoke-first; retry converges)", async () => {

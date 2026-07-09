@@ -770,14 +770,34 @@ export async function rotateLicenseAdmin(
   // Leg 1 — REVOKE FIRST, COMMIT FIRST: the old key's denial is durable before any mint replaces
   // the stored grant. A nonexistent target rolls the whole leg back (no ghost denial).
   let fullDenySet: string[] = [];
+  let deniedLicenseIds: string[] = [];
   await withAdminWrite(deps.db, async (tx) => {
     await assertAccountExists(tx, input.targetAccountId);
-    await recordLicenseRevocation(tx, {
-      licenseId: input.oldLicenseId,
-      accountId: input.targetAccountId,
-      adminActionId,
-      reason: input.reason ?? null,
-    });
+    // TOCTOU narrowing (review R2-3): `oldLicenseId` was read one HTTP hop ago, and a concurrent
+    // `/issue` post-commit mint (a renewal landing mid-rotation) may have replaced the stored key
+    // since — denying only the route-read id would leave that replacement key live at the edge
+    // forever, invisible to every future revocation lever (account-wide denies enumerate
+    // license_grant, which the forced re-mint overwrites). Re-read the CURRENT id inside this tx
+    // and deny BOTH. The row cannot be locked here (`admin_write` is deliberately SELECT-only on
+    // license_grant, and Postgres locking clauses need UPDATE privilege), so a mint interleaving
+    // between this read and leg 2's forced re-mint remains a micro-window residual — full closure
+    // would need the deny and the mint in one lock scope, which the HTTP boundary forbids.
+    const current = await tx.query<{ license_id: string }>(
+      `SELECT license_id FROM license_grant WHERE account_id = $1 AND major = $2`,
+      [input.targetAccountId, input.major],
+    );
+    const denyIds = new Set([input.oldLicenseId]);
+    const liveId = current.rows[0]?.license_id;
+    if (liveId !== undefined) denyIds.add(liveId);
+    deniedLicenseIds = [...denyIds];
+    for (const licenseId of deniedLicenseIds) {
+      await recordLicenseRevocation(tx, {
+        licenseId,
+        accountId: input.targetAccountId,
+        adminActionId,
+        reason: input.reason ?? null,
+      });
+    }
     // The FULL cross-tenant set as of this commit — republish-whole is the Worker artifact's shape.
     fullDenySet = await readDenySet(tx);
   });
@@ -803,7 +823,7 @@ export async function rotateLicenseAdmin(
       after: {
         major: input.major,
         licenseId: minted.licenseId,
-        deniedLicenseId: input.oldLicenseId,
+        deniedLicenseIds,
         reason: input.reason ?? null,
       },
     }),
@@ -817,7 +837,7 @@ export async function rotateLicenseAdmin(
     {
       major: input.major,
       licenseId: minted.licenseId,
-      deniedLicenseId: input.oldLicenseId,
+      deniedLicenseIds,
       reason: input.reason ?? null,
     },
   );
