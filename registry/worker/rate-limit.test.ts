@@ -64,6 +64,16 @@ describe("rateLimit (fail-open, CAISSON-55/ADR-0112 precedent)", () => {
     expect(result.ok).toBe(true);
   });
 
+  test("a malformed answer (missing/undefined success) fails OPEN, not closed", async () => {
+    // Deliberately violates the RateLimiterBinding return shape to prove the runtime guard (a real
+    // binding answering garbage), not the type — cast, not `any`, and confined to this one test double.
+    const malformed = {
+      limit: async () => ({}),
+    } as unknown as RateLimiterBinding;
+    const result = await rateLimit(malformed, req());
+    expect(result.ok).toBe(true);
+  });
+
   test("a present binding that answers success:false is a genuine deny", async () => {
     const denying: RateLimiterBinding = {
       limit: async () => ({ success: false }),

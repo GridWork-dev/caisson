@@ -41,7 +41,9 @@ export async function rateLimit(
   if (binding === undefined) return { ok: true };
   try {
     const { success } = await binding.limit({ key: clientIpKey(request) });
-    return { ok: success };
+    // ponytail: `!== false` not `=== true` — a malformed answer (`{}`, `{success: undefined}`) must
+    // fail OPEN like every other unexpected shape here, not silently deny (the file-level invariant).
+    return { ok: success !== false };
   } catch {
     // ponytail: fail-open on any limiter error — see the file-level doc comment (ADR-0112 precedent).
     return { ok: true };
