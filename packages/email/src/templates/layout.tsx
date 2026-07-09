@@ -3,7 +3,7 @@
 // snapshots of the locked palette (packages/ui/styles/tokens.css) — not live tokens.
 // Regenerate by hand if the locked palette (ADR-0042/0078) ever changes.
 //
-// Dark mode is the HYBRID technique (CAISSON-60 sibling):
+// Dark mode is the HYBRID technique:
 //   1. The LIGHT palette is tuned off the pure-white/near-black extremes so Gmail-style
 //      forced inversion (which ignores author dark styles and remaps by luminance) lands on
 //      legible mid-luminance colors in both directions.
