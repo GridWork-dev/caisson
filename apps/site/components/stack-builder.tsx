@@ -114,8 +114,14 @@ export function StackBuilder() {
     </Button>
   );
 
+  const hasSelection = summary.moduleCount > 0;
+
   return (
-    <div className={styles.build}>
+    <div
+      className={
+        hasSelection ? `${styles.build} ${styles.hasBar}` : styles.build
+      }
+    >
       {/* ===== Module picker ===== */}
       <div className={styles.picker}>
         {PICKER_GROUPS.map((g) => (
@@ -230,24 +236,28 @@ export function StackBuilder() {
         )}
       </aside>
 
-      {/* ===== Fixed bottom bar (< 768px) — total + CTA when the rail can't stick ===== */}
-      <div className={styles.mobileBar}>
-        <span className={styles.mobileBarMeta}>
-          <span
-            className="cs-num"
-            style={{
-              fontSize: "var(--cs-text-xs)",
-              color: "var(--cs-fg-muted)",
-            }}
-          >
-            {summary.moduleCount} selected
+      {/* ===== Fixed bottom bar (< 768px) — total + CTA when the rail can't stick. Renders only
+          once something is selected: an empty "0 selected / $0" bar just obscured page content
+          (visual-audit P0). ===== */}
+      {hasSelection && (
+        <div className={styles.mobileBar}>
+          <span className={styles.mobileBarMeta}>
+            <span
+              className="cs-num"
+              style={{
+                fontSize: "var(--cs-text-xs)",
+                color: "var(--cs-fg-muted)",
+              }}
+            >
+              {summary.moduleCount} selected
+            </span>
+            <span className={`cs-num ${styles.totalNum}`}>
+              {formatUsd(summary.total)}
+            </span>
           </span>
-          <span className={`cs-num ${styles.totalNum}`}>
-            {formatUsd(summary.total)}
-          </span>
-        </span>
-        {cta}
-      </div>
+          {cta}
+        </div>
+      )}
     </div>
   );
 }

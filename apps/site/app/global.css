@@ -273,6 +273,16 @@ kbd,
   }
 }
 
+/* Below ~480px the footer collapses to a single-column stack (CAISSON-65): the wordmark + tagline
+ * lockup on top, then each nav column full-width, the legal column last (DOM order). Two columns
+ * at 390px left each track too narrow for the brand lockup, which overflowed onto the Bundles nav
+ * column. */
+@media (max-width: 30rem) {
+  .cs-footer-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ===== Proof / CI strip (page utility — the green-checks substitute for a logo wall, C5) ===== */
 .cs-proof {
   display: flex;

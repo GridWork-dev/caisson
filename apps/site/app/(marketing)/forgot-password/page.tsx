@@ -11,6 +11,12 @@ export const metadata: Metadata = buildMetadata({
   path: "/forgot-password",
 });
 
+// Footer Discord parity (visual-audit): this page's footer once missed the env-gated Discord
+// link because NEXT_PUBLIC_DISCORD_INVITE_URL never reached `next build` — the real gap was the
+// missing build ARG in apps/site/Dockerfile (fixed there), which starved EVERY statically
+// prerendered footer, not just this page. With the var baked at build, a static render resolves
+// it like every other marketing page — no force-dynamic needed.
+
 export default function ForgotPasswordPage(): React.ReactElement {
   return (
     <>

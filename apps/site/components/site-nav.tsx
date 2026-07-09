@@ -16,7 +16,7 @@ import {
   isBundleId,
   planPrice,
 } from "@/lib/pricing";
-import { EDITION_ROUTES } from "@/lib/routes";
+import { BUNDLE_ROUTES } from "@/lib/routes";
 import styles from "./site-nav.module.css";
 
 // Server component. ADR-0237 F3 arrangement: logo left → CENTERED trigger row (the two card
@@ -37,7 +37,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
     {
       heading: "Bundles",
       cards: [
-        ...EDITION_ROUTES.map((r) => {
+        ...BUNDLE_ROUTES.map((r) => {
           const slug = r.path.slice(1);
           const bundleId = slug === "ai-kit" ? "ai-production" : slug;
           const anchor = isBundleId(bundleId)
@@ -146,7 +146,7 @@ const PANELS: readonly NavPanelSpec[] = [MARKETPLACE_PANEL, RESOURCES_PANEL];
 // The mobile drawer lists every destination flat (no disclosure): the bundle personas + Everything,
 // the marketplace tabs, then the resource surfaces — mirrors the merged Marketplace panel's groups.
 const MOBILE_LINKS: readonly { href: string; label: string }[] = [
-  ...EDITION_ROUTES.map((r) => ({
+  ...BUNDLE_ROUTES.map((r) => ({
     href: r.path,
     label: r.navLabel ?? r.label,
   })),

@@ -3,7 +3,7 @@ import { test, expect, describe } from "bun:test";
 import {
   MARKETING_ROUTES,
   MARKETPLACE_TAB_ROUTES,
-  EDITION_ROUTES,
+  BUNDLE_ROUTES,
   footerRoutes,
   NAV_ROUTES,
   LEGAL_ROUTES,
@@ -61,11 +61,11 @@ describe("MARKETING_ROUTES registry", () => {
 });
 
 describe("derived route slices", () => {
-  test("EDITION_ROUTES is exactly the five bundle persona pages in display order", () => {
+  test("BUNDLE_ROUTES is exactly the five bundle persona pages in display order", () => {
     // The four persona pages plus the net-new Provenance persona page (catalog-rework W6.2, ADR-0257).
     // The `edition` route group is the persona-page grouping (the bundles' front doors); the name is
     // retained until W7's commerce flip renames the surface.
-    expect(EDITION_ROUTES.map((r) => r.path)).toEqual([
+    expect(BUNDLE_ROUTES.map((r) => r.path)).toEqual([
       "/compliance",
       "/ai-kit",
       "/local-first",
@@ -108,7 +108,7 @@ describe("derived route slices", () => {
 
   test("footer derivation (ADR-0237): every column non-empty, security.txt page + glossary present", () => {
     expect(footerRoutes("editions").map((r) => r.path)).toEqual(
-      EDITION_ROUTES.map((r) => r.path),
+      BUNDLE_ROUTES.map((r) => r.path),
     );
     expect(footerRoutes("product").map((r) => r.path)).toEqual(
       MARKETPLACE_TAB_ROUTES.map((r) => r.path),
@@ -139,7 +139,7 @@ describe("derived route slices", () => {
 
   test("derived slices are all subsets of the registry", () => {
     const all = new Set(MARKETING_ROUTES);
-    for (const slice of [EDITION_ROUTES, NAV_ROUTES, LEGAL_ROUTES]) {
+    for (const slice of [BUNDLE_ROUTES, NAV_ROUTES, LEGAL_ROUTES]) {
       for (const r of slice) expect(all.has(r)).toBe(true);
     }
   });

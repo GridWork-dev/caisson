@@ -283,12 +283,11 @@ const result = verifyChain(entries, anchor);
       <Reveal>
         <Section eyebrow="Own it, don't rent it">
           <Card accent>
+            {/* cs-grid--2 (not an inline 1fr 1fr) so the two-up stacks below the 48rem rung —
+                the inline grid stayed two cramped columns at 390px (visual-audit P2). */}
             <div
-              style={{
-                display: "grid",
-                gap: "var(--cs-space-6)",
-                gridTemplateColumns: "1fr 1fr",
-              }}
+              className="cs-grid cs-grid--2"
+              style={{ gap: "var(--cs-space-6)" }}
             >
               <div>
                 <p

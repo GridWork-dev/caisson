@@ -12,7 +12,12 @@
   font-size: var(--cs-text-xs);
   letter-spacing: var(--cs-tracking-wide);
   color: var(--chip-fg, var(--cs-fg-muted));
-  white-space: nowrap;
+  /* Long fact labels (e.g. "Supabase facts verified 2026-06-28" in a compare hero) wrap inside
+   * the pill instead of forcing the page wider than the viewport (`nowrap` with no
+   * max-width made a 390px page 520-1014px wide). Short labels never wrap. */
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .cs-chip[data-tone="accent"] {
