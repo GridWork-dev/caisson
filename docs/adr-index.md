@@ -893,6 +893,12 @@ ADR-0088 numbering split held — no collision).
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | -------- | ------------- |
 | [0297](../knowledge/decisions/ADR-0297-design-partner-first-n-terms.md) | Design-partner first-N terms: 5 partners · 40% off · 12-month reverting discount · case-study rights contingent on conversion (candidate A, comparables mid-point) | Pricing | accepted | executes 0273 |
 
+### Kickoff-G surface-remediation fork locks (0298, 2026-07-09) - status `accepted`
+
+| ADR                                                                     | Title                                                                                                                                                                                                                                                                                                                                                                                    | Domain   | Status   | Chain                            |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------- | -------------------------------- |
+| [0298](../knowledge/decisions/ADR-0298-kickoff-g-surface-fork-locks.md) | Kickoff-G twelve fork locks: footer single-column stack · `.cs-matrix` fixed layout · contained-scroll mobile matrices · single shared migration list · pill truncate + drawer sign-out · ai-keys entitlement gate · 8 authored diagrams · metadata-first popout with bounded code · carousel code-slide dropped · full ~26-page docs sweep · hybrid email dark-mode · docs P3 riders in | Frontend | accepted | applies 0290 WR-03; extends 0296 |
+
 ---
 
 ## Accepted is not the same as shipped

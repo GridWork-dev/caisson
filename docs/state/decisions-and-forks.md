@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-08
 status: live
-adr_ceiling: 0297
+adr_ceiling: 0298
 ---
 
 # Decisions & Forks — live board
@@ -1798,3 +1798,21 @@ pre-install Bun-auto-install roulette (install-first, #183), the audit-harness b
 mode-flip reading as a phantom changed-package in the changeset gate (executable bit committed),
 and the apps-are-changeset-covered convention (#184's missing changeset added — builders assume
 apps are exempt; they are not).
+
+## Closed by the 2026-07-09 Kickoff-G fork rounds (operator-locked → ADR-0298)
+
+Kickoff G (buyer-surface remediation, `feat/surface-remediation` session; sibling H owns
+platform hardening) ran W1–W4 research first — recon verified every defect citation, refero
+supplied pattern evidence, exa-code/exa the fumadocs-Shiki root cause and email-client
+dark-mode matrix — then locked **twelve forks in three AskUserQuestion rounds**, all recorded
+in **ADR-0298**: footer single-column stack <480px · `.cs-matrix` fixed table layout ·
+contained-scroll mobile matrices (sticky first column) · single shared migration list
+(prod-canonical names) + drift test · topbar pill truncate + drawer sign-out · ai-keys
+entitlement gate + upsell · authored SVG diagrams ×8 (Remotion excluded per ADR-0290) ·
+metadata-first popout with bounded code region · carousel code-slide dropped (WR-03 pattern) ·
+docs FULL sweep ~26 pages · email hybrid dark-mode (invert-safe palette + authored dark CSS) ·
+docs sidebar/pagination P3s ride W4.
+
+Held checkpoints (NOT covered by merge-when-green): the EULA credit-clause **wording**
+(CAISSON-61) needs operator approval before the W2 merge; the live migration apply for
+`0020–0022` stays the operator-gated DEPLOY checkpoint in W5 (0006–0009 bless pattern).
