@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-09
 status: live
 grounds:
   - outputs/research/market-research.md
@@ -90,16 +90,15 @@ Two separate reads, both dated 2026-06-27, converge on the same shape:
   25x billing-shock event is cited as evidence of demand for usage-capped, predictable billing
   (market-research.md §1, dated within the same 2026-06-27 pass).
 
-**Open fork, not decided:** Caisson's own pricing structure — specifically whether the
-Compliance edition stays one SKU or splits into separately sellable framework-catalog /
-evidence-assembly / signing surfaces (the "R3 compliance split" fork) — was redirected 2026-07-05
-into a broader catalog-doctrine question: whether **all editions become bundle options over an
-individually-sellable package catalog**, with explicit OSS/commercial-line and package-split
-standards. That research is in flight (`outputs/research/catalog-doctrine-2026-07.md`, not yet
-landed as of this writing) and nothing above should be read as resolving it. Actual committed
-numbers and the locked purchase-policy ADRs (ADR-0244 perpetual-use + 12-month included updates +
-~40% paid renewal; ADR-0245 pooled-rollover credits, 12-month expiry, FIFO burn) live in
-`pricing-packaging.md`.
+**Resolved, not open:** Caisson's own pricing structure — specifically whether the Compliance
+edition stayed one SKU or split into separately sellable framework-catalog / evidence-assembly /
+signing surfaces (the "R3 compliance split" fork) — was redirected 2026-07-05 into a broader
+catalog-doctrine question, which **locked 2026-07-06** (ADR-0257 vocabulary · ADR-0258 numbers):
+all editions dissolved into six individually-priced bundles (Compliance, AI-Production,
+Local-first, Agentic-Dev, Provenance, Everything) over a fully à-la-carte package catalog, live in
+Paddle SANDBOX. Actual committed numbers and the locked purchase-policy ADRs (ADR-0244
+perpetual-use + 12-month included updates + ~40% paid renewal; ADR-0245 pooled-rollover credits,
+12-month expiry, FIFO burn) live in `pricing-packaging.md`.
 
 ## 4. Demand signals (dated)
 

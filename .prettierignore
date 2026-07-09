@@ -19,3 +19,8 @@ registry/index.json
 *.png
 outputs/streams/
 docs/session-logs/
+# git-ignored local dev artifacts prettier would otherwise glob into (CI never sees these,
+# but a local `bun run format:check` fails without them)
+**/.venv/
+**/.pytest_cache/
+.claude/

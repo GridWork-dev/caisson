@@ -13,9 +13,11 @@ export { createSmtpEmailer } from "./smtp.ts";
 export type { SmtpConfig, SmtpTransport } from "./smtp.ts";
 export {
   EMAIL_TEMPLATE_IDS,
+  isEmailTemplateId,
   renderEmailTemplate,
   tryRenderEmailTemplate,
 } from "./templates/index.ts";
+export { EMAIL_SAMPLE_DATA } from "./sample-data.ts";
 export type {
   CreditsExpiringData,
   EmailTemplateData,

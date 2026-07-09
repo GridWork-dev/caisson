@@ -1,11 +1,11 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-09
 status: live
 grounds:
   - knowledge/decisions/ADR-0040-positioning-hero.md
   - knowledge/decisions/ADR-0080-copy-messaging-expansion.md
   - specs/04-voice-and-brand.md
-  - outputs/kickoffs/positioning.md
+  - outputs/archive/kickoffs/positioning.md
 ---
 
 # Positioning
@@ -145,12 +145,12 @@ ADR-0087/0081," waitlist CTAs, "indicative — final pricing set before launch")
 superseded: the site is live self-serve with committed prices and real checkout (ADR-0082,
 reaffirmed FULL V1-live with no roadmap/waitlist framing anywhere by ADR-0237 rider 2). The wedge,
 umbrella, ICP firewall, voice floor, and proof strategy in this file are unaffected — they govern
-message content, not checkout state. Pricing _structure_ itself has an open fork: the operator
-redirected the compliance-split pricing question into a catalog-doctrine research round (direction
-under study: all editions become bundle options over an individually-sellable package catalog,
-with an explicit OSS/commercial line and package-split standards — see
-`outputs/research/catalog-doctrine-2026-07.md`). Where this file's edition-role language
-("Compliance = paid hero," "Local-first = free flank") intersects packaging structure, treat it as
-the current locked GTM weight (ADR-0040), not as a statement that today's edition/package
-boundaries are final — that boundary is the open fork, tracked in `pricing-packaging.md`,
-not here.
+message content, not checkout state. Pricing _structure_ itself was an open fork and is now
+CLOSED: the catalog-doctrine research round the compliance-split question was redirected into
+locked 2026-07-06 (ADR-0257 vocabulary · ADR-0258 numbers) — editions dissolved into six bundles
+(Compliance, AI-Production, Local-first, Agentic-Dev, Provenance, Everything), every commercial
+package individually priced, live in Paddle SANDBOX. Where this file's edition-role language
+("Compliance = paid hero," "Local-first = free flank") intersects packaging structure, read
+"edition" as its bundle successor of the same name — the roles carry over 1:1 (ADR-0040 GTM
+weight unchanged), only the vocabulary and package-split mechanics moved; the current numbers live
+in `pricing-packaging.md`.

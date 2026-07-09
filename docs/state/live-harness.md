@@ -73,7 +73,7 @@ in `fix(billing): accept real Paddle and Stripe webhook envelopes at the boundar
 `b674ed3`. One gotcha worth carrying forward: the simulator merges omitted payload-override fields in
 from its static example, so a nulled field (e.g. `subscription_id`) must be set explicitly `null` or it
 leaks in and misroutes the mapper. Evidence:
-`outputs/specs/audit-v2-remediation/TRIAGE.md` (2026-07-04 EXECUTED banner) + project memory
+`outputs/archive/specs/audit-v2-remediation/TRIAGE.md` (2026-07-04 EXECUTED banner) + project memory
 `remediation-closeout-live-proofs`.
 
 ## Invariants (why this is safe to run against production)

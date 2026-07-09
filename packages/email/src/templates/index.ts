@@ -346,7 +346,10 @@ export async function renderEmailTemplate<K extends EmailTemplateId>(
   return { subject, html, text };
 }
 
-function isEmailTemplateId(template: string): template is EmailTemplateId {
+/** Runtime membership check for a request-supplied id — never trust an unchecked string. */
+export function isEmailTemplateId(
+  template: string,
+): template is EmailTemplateId {
   return (EMAIL_TEMPLATE_IDS as readonly string[]).includes(template);
 }
 

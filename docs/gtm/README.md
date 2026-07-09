@@ -1,8 +1,8 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-09
 status: live
 grounds:
-  - outputs/specs/sot-expansion/SPEC.md
+  - outputs/archive/specs/sot-expansion/SPEC.md
 ---
 
 # docs/gtm — the business-side source of truth
@@ -27,15 +27,19 @@ distills stay in `outputs/research/`.
 
 ## Files
 
-| File                   | Owns                                                                                                                                                                                                                                                                       | Primary grounds                                                              |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `positioning.md`       | Who it's for (3 ICPs + buyer firewall), the wedge-and-umbrella split, what Caisson is NOT, the canonical one-sentence/one-paragraph positioning, message hierarchy, voice floor, and code-as-proof points.                                                                 | ADR-0040, ADR-0080, specs/04                                                 |
-| `pricing-packaging.md` | The locked price matrix, the below-sum invariant, the 11-module catalog, the updates window, the credit policy, grandfathering posture, and what stays operator-adjustable pre-flip. **The one owner for committed price numbers** — other files link here, never restate. | ADR-0012/0106/0129/0137/0227/0238/0240/0244/0245, `apps/site/lib/pricing.ts` |
-| `market-intel.md`      | The outside view only — per-segment competitor sets, the compliance wedge (Vanta-class vs library-class), component-market pricing norms, dated demand signals, and named threats. Not a decision surface.                                                                 | `outputs/research/` (market/demand/options)                                  |
-| `channels-launch.md`   | Distribution bets (SEO/AEO + glossary program, Discord, docs-as-funnel), the support-bot escalation surface, and the business-level launch-readiness inputs. Runbook mechanics stay in `../state/launch-runbook.md`.                                                       | ADR-0079/0206/0232/0235                                                      |
-| `tools-cogs.md`        | The real monthly stack bill (flat / usage-scaling / revenue-contingent / one-time) and the per-sale COGS floor. Distills `../state/providers.md` into GTM terms.                                                                                                           | `../state/providers.md`, ADR-0098/0182/0222                                  |
-| `legal-entity.md`      | Entity status (GA sole-prop, LLC trigger), the Paddle MoR chain (who sells/is liable/handles tax), EULA posture incl. the ADR-0244/0245 pre-flip copy gap, privacy/analytics posture.                                                                                      | `../state/go-live-legal-and-entity.md`, ADR-0108/0200/0244/0245/0236         |
-| `gaps-and-plays.md`    | The 13-gap disposition from the 2026-07 research sweep with live status, plus the standing do-not-copy anti-decision list.                                                                                                                                                 | `outputs/research/monorepo-bigpicture-2026-07.md`                            |
+| File                        | Owns                                                                                                                                                                                                                                                                       | Primary grounds                                                              |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `positioning.md`            | Who it's for (3 ICPs + buyer firewall), the wedge-and-umbrella split, what Caisson is NOT, the canonical one-sentence/one-paragraph positioning, message hierarchy, voice floor, and code-as-proof points.                                                                 | ADR-0040, ADR-0080, specs/04                                                 |
+| `pricing-packaging.md`      | The locked price matrix, the below-sum invariant, the 11-module catalog, the updates window, the credit policy, grandfathering posture, and what stays operator-adjustable pre-flip. **The one owner for committed price numbers** — other files link here, never restate. | ADR-0012/0106/0129/0137/0227/0238/0240/0244/0245, `apps/site/lib/pricing.ts` |
+| `market-intel.md`           | The outside view only — per-segment competitor sets, the compliance wedge (Vanta-class vs library-class), component-market pricing norms, dated demand signals, and named threats. Not a decision surface.                                                                 | `outputs/research/` (market/demand/options)                                  |
+| `channels-launch.md`        | Distribution bets (SEO/AEO + glossary program, Discord, docs-as-funnel), the support-bot escalation surface, and the business-level launch-readiness inputs. Runbook mechanics stay in `../state/launch-runbook.md`.                                                       | ADR-0079/0206/0232/0235                                                      |
+| `tools-cogs.md`             | The real monthly stack bill (flat / usage-scaling / revenue-contingent / one-time) and the per-sale COGS floor. Distills `../state/providers.md` into GTM terms.                                                                                                           | `../state/providers.md`, ADR-0098/0182/0222                                  |
+| `legal-entity.md`           | Entity status (GA sole-prop, LLC trigger), the Paddle MoR chain (who sells/is liable/handles tax), EULA posture incl. the ADR-0244/0245 pre-flip copy gap, privacy/analytics posture.                                                                                      | `../state/go-live-legal-and-entity.md`, ADR-0108/0200/0244/0245/0236         |
+| `gaps-and-plays.md`         | The 13-gap disposition from the 2026-07 research sweep with live status, plus the standing do-not-copy anti-decision list.                                                                                                                                                 | `outputs/research/monorepo-bigpicture-2026-07.md`                            |
+| `aeo-citation-tracking.md`  | The AI-citation tracking loop (gap #9): the canonical AEO query list + the pay-as-you-go OpenRouter probe cadence `gw-aeo-strategist` reads as its briefing input.                                                                                                         | ADR-0254, `tooling/scripts/aeo-probe.ts`                                     |
+| `aeo-crawlability-audit.md` | Code-level pass/fail audit of `apps/site`'s crawlability for search + AI-answer crawlers, plus the one launch blocker no code change can clear.                                                                                                                            | ADR-0079/0082/0235                                                           |
+| `comparison-targets.md`     | The verified `Caisson vs X` target list (15–20 pages) driving the strongest single AEO lever found in pre-launch research, with the honesty-rule build discipline.                                                                                                         | ADR-0080, `docs/gtm/positioning.md`                                          |
+| `directory-listings.md`     | Directory-submission prep (CAISSON-29 / D5) — dev-tools + compliance-infra directories ranked by fit, each verified to exist.                                                                                                                                              | ADR-0080/0082                                                                |
 
 ## Frontmatter convention
 
@@ -58,6 +62,8 @@ reconciled yet — set it rather than letting a reader trust drifted prose.
 
 Sibling files are referenced by bare filename (`pricing-packaging.md`), out-of-directory files by
 repo-root-relative path in backticks (`docs/state/launch-runbook.md`) or a `../` relative link.
-The open **catalog-doctrine fork** (whether editions become bundle options over an individually-
-sellable package catalog) is tracked as OPEN in every file that touches packaging structure and
-is not decided anywhere here — `outputs/research/catalog-doctrine-2026-07.md` is its landing spot.
+The **catalog-doctrine fork** (whether editions become bundle options over an individually-
+sellable package catalog) CLOSED 2026-07-06 — ADR-0257 (vocabulary: six bundles) / ADR-0258
+(numbers), live in Paddle SANDBOX. Files that touch packaging structure now state the six-bundle
+catalog as locked, not open; `outputs/archive/research/catalog-doctrine-2026-07.md` is the
+research trail behind the lock, not an open question.

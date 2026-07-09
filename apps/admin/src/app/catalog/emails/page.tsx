@@ -4,11 +4,11 @@
 // just dev). Server Component: `renderEmailTemplate` runs server-side via `@react-email/render`;
 // only the send button is a client island.
 import {
+  EMAIL_SAMPLE_DATA,
   EMAIL_TEMPLATE_IDS,
   renderEmailTemplate,
   type EmailTemplateId,
 } from "@caisson/email";
-import { EMAIL_SAMPLE_DATA } from "./sample-data";
 import { SendTestButton } from "./send-test-button";
 
 function renderSample(id: EmailTemplateId) {

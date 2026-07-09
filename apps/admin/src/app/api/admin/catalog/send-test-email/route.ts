@@ -16,10 +16,7 @@ import {
   parseBody,
   requireAdmin,
 } from "@/lib/admin-route";
-import {
-  EMAIL_SAMPLE_DATA,
-  isEmailTemplateId,
-} from "@/app/catalog/emails/sample-data";
+import { EMAIL_SAMPLE_DATA, isEmailTemplateId } from "@caisson/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

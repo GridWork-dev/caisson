@@ -15,6 +15,12 @@ describe("routeSlug", () => {
   test("a single-segment route strips only the leading slash", () => {
     expect(routeSlug("/login")).toBe("login");
   });
+
+  test("a deep-linked pop-out query string flattens to filename-safe dashes", () => {
+    expect(routeSlug("/marketplace?view=bundle:compliance")).toBe(
+      "marketplace-view-bundle-compliance",
+    );
+  });
 });
 
 describe("allRoutes", () => {
@@ -24,5 +30,12 @@ describe("allRoutes", () => {
     expect(routes).toContain("/marketplace/modules/field-crypto");
     expect(routes).toContain("/glossary/worm-audit-log");
     expect(routes).toContain("/");
+  });
+
+  test("includes the compare family and the enumerated docs tree", () => {
+    const routes = allRoutes();
+    expect(routes.some((r) => r.startsWith("/compare/"))).toBe(true);
+    expect(routes).toContain("/docs");
+    expect(routes).toContain("/docs/getting-started");
   });
 });

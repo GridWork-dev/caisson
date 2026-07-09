@@ -21,8 +21,8 @@ Control: ADR-NNNN — <policy name>
   no separate spreadsheet to drift.
 
 **Exemplar:** the `soc2Tsc` pack export in
-`packages/compliance/src/frameworks/soc2-tsc.ts` carries `Control: ADR-0057 — SOC 2 Trust Services
-Criteria coverage pack`.
+`packages/frameworks-pack/src/frameworks/soc2-tsc.ts` carries `Control: ADR-0057 — SOC 2 Trust Services
+Criteria coverage pack` (moved from `packages/compliance/` by the W1 carve extraction, `ADR-0257` §1).
 
 ## Rule 2 — control-logic goldens pin their policy revision
 
@@ -35,9 +35,9 @@ changed but _which policy revision_ the last-blessed evidence belongs to — the
   unknown keys by design) — the traceability record is a sibling of the control data, produced by
   the golden test.
 
-**Exemplar:** `packages/compliance/src/__golden__/control-traceability.json` pins the SOC 2 catalog
-to `ADR-0057` / catalog `2024.1`; it is (re)generated with `BLESS=1 bun test` like every other
-golden.
+**Exemplar:** `packages/frameworks-pack/src/__golden__/control-traceability.json` (moved from
+`packages/compliance/` by the W1 carve extraction, `ADR-0257` §1) pins the SOC 2 catalog to
+`ADR-0057` / catalog `2024.1`; it is (re)generated with `BLESS=1 bun test` like every other golden.
 
 ## Why this and not a framework
 

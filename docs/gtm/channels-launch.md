@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-06
+updated: 2026-07-09
 status: live
 grounds:
   - knowledge/decisions/ADR-0079-seo-strategy.md
@@ -94,12 +94,12 @@ At the business level, three things must land before or at that flip:
 2. **Legal content is a hard gate, not a nicety** — Paddle's MoR attribution line and refund policy
    must render on `/legal/terms` before the site goes public (launch-runbook §1 P2, §6 DO-NOT
    list) — verified 2026-07-05.
-3. **The catalog shape itself is not locked.** The editions/module pricing structure referenced
-   throughout this launch sequence (`launch-runbook.md` §2.2's per-edition table) reflects the
-   current locked catalog (ADR-0137/0227/0238), but a catalog-doctrine research round is underway
-   on whether editions become bundle options over an individually-sellable package catalog —
-   see `gaps-and-plays.md` "Open fork." Nothing in this launch sequence should be read as
-   foreclosing that direction.
+3. **The catalog shape is now locked.** The catalog-doctrine round closed 2026-07-06 (ADR-0257
+   vocabulary · ADR-0258 numbers): editions dissolved into six individually-priced bundles over a
+   fully à-la-carte package catalog, live in Paddle SANDBOX (PR #130). The editions/module pricing
+   structure referenced throughout this launch sequence (`launch-runbook.md` §2.2's per-edition
+   table) still needs a pass to the bundle-era numbers before the production flip — see
+   `pricing-packaging.md` for the current six-bundle matrix.
 
 Launch itself is DEPLOY-class and operator-executed, never part of the autonomous build loop
 (`docs/state/launch-runbook.md` header) — this page tracks the channel/business readiness inputs

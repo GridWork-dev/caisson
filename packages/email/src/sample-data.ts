@@ -1,10 +1,7 @@
-// Sample data for every branded email template — shared between the catalog page's preview render
-// and the send-test route, so a test send always matches what the operator just looked at.
-import {
-  EMAIL_TEMPLATE_IDS,
-  type EmailTemplateId,
-  type TemplateDataMap,
-} from "@caisson/email";
+// Sample data for every branded email template — the single source shared by the admin catalog
+// preview page, the admin send-test route, and the visual harness's email leg, so a preview, a
+// test send, and a screenshot always render the same thing.
+import type { EmailTemplateId, TemplateDataMap } from "./templates/index.ts";
 
 export const EMAIL_SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] } =
   {
@@ -65,8 +62,3 @@ export const EMAIL_SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] } =
       bundle: "Compliance",
     },
   };
-
-/** Runtime membership check for a request-supplied id — never trust an unchecked string. */
-export function isEmailTemplateId(id: string): id is EmailTemplateId {
-  return (EMAIL_TEMPLATE_IDS as readonly string[]).includes(id);
-}

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-06
+updated: 2026-07-09
 status: live
 grounds:
   - docs/state/go-live-legal-and-entity.md
@@ -73,34 +73,32 @@ version(s) covered by that Order. A separate, optional, recurring "Compliance Up
 subscription" is the only path to new package versions/control mappings today, framed as
 independent of and non-affecting to the perpetual grant.
 
-**Gap the EULA must close before the checkout flip — ADR-0244 (locked 2026-07-05):** every
-one-time purchase is perpetual-use **plus 12 months of updates included** from the purchase date
-(registry pulls of any entitled-package version published within that window, plus everything
-already pulled); continued updates past that window are an **optional renewal at ~40% of
-then-current list** (exact per-SKU cents land at the checkout-flip session, within a 35–50% band).
-Non-renewal is never punitive — everything already entitled keeps working. **Today's EULA text
-states neither the included window nor the renewal rate** — it currently reads as if any update
-beyond initial delivery requires opting into the separate Updates subscription from day one, which
-is a materially different (and less generous) commitment than what ADR-0244 locks. ADR-0244 is
-explicit that this policy "MUST be in checkout + EULA copy before the checkout flip" — this is a
-named, unclosed launch blocker, not yet built.
+**Updates-window clause — ADR-0244 (locked 2026-07-05), CLOSED in the EULA:** every one-time
+purchase is perpetual-use **plus 12 months of updates included** from the purchase date (registry
+pulls of any entitled-package version published within that window, plus everything already
+pulled); continued updates past that window are an **optional renewal at 40% of then-current
+list**. Non-renewal is never punitive — everything already entitled keeps working. **The live EULA
+text now states both the included window and the renewal rate** (`apps/site/app/legal/eula/page.tsx`
+§5 Fees and payment, ~lines 220-229: "includes 12 months of updates from your Order date… After
+that window, you may renew updates access for another 12 months at 40% of the then-current list
+price, or let it lapse"). ADR-0244's checkout-flip blocker on this clause is closed.
 
-**Credits get the equivalent treatment — ADR-0245 (locked 2026-07-05):** unused subscription-cycle
-credit grants **pool and roll over** (no use-it-or-lose-it reset); every grant — subscription-cycle,
-top-up pack (the $49 pack, ADR-0222), or promotional — **expires 12 months after issue**; consumption
-is **FIFO oldest-grant-first**, so a steady subscriber's balance near expiry burns before newer
-grants. Same gap: **neither the EULA nor the checkout/dashboard credit-balance copy states the
-12-month expiry or FIFO-burn behavior yet.**
+**Credits get the equivalent treatment — ADR-0245 (locked 2026-07-05), CLOSED on the dashboard,
+still open in the EULA:** unused subscription-cycle credit grants **pool and roll over** (no
+use-it-or-lose-it reset); every grant — subscription-cycle, top-up pack (the $49 pack, ADR-0222),
+or promotional — **expires 12 months after issue**; consumption is **FIFO oldest-grant-first**, so
+a steady subscriber's balance near expiry burns before newer grants. The dashboard side is done —
+`apps/site/app/dashboard/credits/page.tsx` carries an "Expiring within 30 days" badge with FIFO
+copy ("they burn first automatically") per an ADR-0245/0252 code comment. **The EULA text alone
+still doesn't state the 12-month expiry or FIFO-burn behavior** — the remaining launch-blocker
+surface for this clause is EULA copy only, not checkout/dashboard.
 
-**Open pricing-structure fork — do not treat as decided:** a separate, wider question is under
-research and explicitly NOT part of the ADR-0244/0245 locks above — the operator redirected an R3
-compliance-package-split pricing question into a broader **catalog-doctrine research round**: "all
-editions become bundle options over an individually-sellable package catalog, with an explicit
-OSS/commercial-line and package-split standard." Findings are slated for
-`outputs/research/catalog-doctrine-2026-07.md` (not yet written as of this distillation — see
-`docs/gtm/pricing-packaging.md` for the same open-fork framing). Nothing about edition/module
-_catalog shape_ is locked; only the purchase-mechanics terms above (updates window, renewal rate,
-credit rollover/expiry) are.
+**Pricing structure — locked, not open:** the R3 compliance-package-split question that was
+redirected into the catalog-doctrine research round **locked 2026-07-06** (ADR-0257 vocabulary ·
+ADR-0258 numbers): editions dissolved into six individually-priced bundles over a fully à-la-carte
+package catalog, live in Paddle SANDBOX. See `docs/gtm/pricing-packaging.md` for the current
+six-bundle matrix. The purchase-mechanics terms above (updates window, renewal rate, credit
+rollover/expiry) are unaffected by that lock — they govern any SKU, bundle or module alike.
 
 ## 4. Privacy / analytics posture
 
@@ -133,23 +131,21 @@ answered|escalated}` — no IP, no user id, no answer text, no Turnstile token; 
 
 | Item                                                                                 | Owner / trigger                                                                                                                                                                   |
 | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| EULA update-window + renewal-rate clause (ADR-0244)                                  | Operator/build — must land before the checkout flip; not yet written into EULA or checkout copy                                                                                   |
-| Credit rollover/12-month-expiry/FIFO clause (ADR-0245)                               | Operator/build — same flip gate; not yet written into EULA or dashboard credit-balance copy                                                                                       |
+| Credit rollover/12-month-expiry/FIFO clause (ADR-0245)                               | Operator/build — same flip gate; dashboard credit-balance copy done, EULA text still doesn't state it                                                                             |
 | Real counsel pass on the EULA                                                        | Operator — page itself is marked pending review before first sale                                                                                                                 |
 | DPA (Data Processing Agreement) template                                             | Operator — not legally forced for early B2C, but Caisson's buyer profile (audit-focused technical founder) makes it a near-certain early ask; have one ready at launch, not built |
 | GA LLC formation                                                                     | Operator — triggers at first meaningful revenue or first enterprise prospect, not before                                                                                          |
-| Rotate leaked Discord/OpenRouter creds                                               | Operator — flagged pre-launch, no evidence of completion as of the source doc                                                                                                     |
+| Rotate leaked Discord/OpenRouter creds                                               | **CLOSED** — credential sweep executed 2026-07-08 (per-service OpenRouter key split, `DISCORD_TOKEN` rotated); `MIRROR_PUSH_TOKEN` rotation still owed, unrelated to this leak    |
 | MSA/enterprise contract, SOC 2 report (~$10–30k, 3–6 mo), Delaware C-corp conversion | Deferred by design, not gaps — MSA waits for a buyer wanting custom terms; SOC 2 is a post-v1 enterprise-procurement item; C-corp conversion only applies if raising VC           |
 
 ## Contradictions found while distilling
 
-- **EULA copy vs. ADR-0244:** the live EULA text ("does not expire and does not require renewal,
-  periodic payment... to remain valid") reads as an unbounded perpetual-updates commitment gated
-  only by an optional separate subscription — closer to the failure mode ADR-0244 was locked to
-  close than to the policy it actually locks (perpetual-use _plus a 12-month included-updates
-  window_, then optional paid renewal). This is a real gap, not just an omission: the current text
-  and the locked policy describe two different commitments. Flagged in §3 above; not resolved by
-  this doc — resolution is a copy change at the checkout-flip build.
+- **EULA copy vs. ADR-0244 — RESOLVED:** at the time this file was originally distilled, the live
+  EULA text read as an unbounded perpetual-updates commitment gated only by an optional separate
+  subscription — closer to the failure mode ADR-0244 was locked to close than to the policy it
+  actually locks (perpetual-use _plus a 12-month included-updates window_, then optional paid
+  renewal at 40%). The EULA has since been updated (§5 Fees and payment) to state both the window
+  and the rate — see §3 above. The credit-clause half of the same gap (ADR-0245) remains open.
 - **A prior draft of this file (found at `~/lab/caisson/docs/gtm/legal-entity.md`, a different
   checkout) described the Stripe driver as "retired code."** ADR-0116 is explicit that it is not:
   Stripe stays a live, tested, buyer-selectable driver inside `@caisson/billing` for buyers'

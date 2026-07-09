@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-08
+updated: 2026-07-09
 status: live
 grounds:
   - packages/tenancy-rls/src/drizzle.ts
@@ -88,7 +88,7 @@ Discord. `adapter-expansion.md` carries the reconcile (ADR-0265 doc-correction p
 
 ## 7. ADR-0287 catalog wave-1 S-effort driver batch (2026-07-07)
 
-Four S-effort drivers landed same-day, per the compat-research picker (`outputs/research/admin-intel-catalog-roadmap-memo-2026-07-07.md`): the analytics port, Clerk auth, BullMQ jobs, and the Slack ChatPlatform driver — each folded into its row above rather than repeated here. None enter the sellable registry index (`packages/analytics` is open-Base infra, not a sold module; the other three extend already-indexed/non-indexed packages without a manifest change).
+Four S-effort drivers landed same-day, per the compat-research picker (`outputs/archive/research/admin-intel-catalog-roadmap-memo-2026-07-07.md`): the analytics port, Clerk auth, BullMQ jobs, and the Slack ChatPlatform driver — each folded into its row above rather than repeated here. None enter the sellable registry index (`packages/analytics` is open-Base infra, not a sold module; the other three extend already-indexed/non-indexed packages without a manifest change).
 
 ## Sources
 
