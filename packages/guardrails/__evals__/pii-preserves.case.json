@@ -1,0 +1,32 @@
+{
+  "eval": "pii-preserves",
+  "promptVersionId": "00000000-0000-4000-8000-000000000002",
+  "promptRef": "guardrails/pii@offline",
+  "threshold": 1.0,
+  "scorers": ["preserves-clean"],
+  "cases": [
+    {
+      "id": "clean-text-no-false-positive",
+      "input": {
+        "text": "Meet me at the office at 3pm to discuss the Q3 roadmap and budget review."
+      },
+      "expected": {
+        "mustNotContain": ["[EMAIL]", "[SSN]", "[CREDIT_CARD]", "[PHONE]"]
+      }
+    },
+    {
+      "id": "luhn-invalid-card-not-flagged",
+      "input": {
+        "text": "Reference number on file: 4111 1111 1111 1112 for the return."
+      },
+      "expected": { "mustNotContain": ["[CREDIT_CARD]"] }
+    },
+    {
+      "id": "unicode-fullwidth-at-email-known-gap",
+      "input": {
+        "text": "Reach out at alice.tester＠example.com if you have questions."
+      },
+      "expected": { "mustNotContain": ["[EMAIL]"] }
+    }
+  ]
+}
