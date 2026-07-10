@@ -1,6 +1,6 @@
 # SPEC — Deterministic security-scan findings triage (first hardening output of ADR-0314)
 
-**Status: DRAFT — operator lock required; this SPEC does NOT authorize building.** The ADR-0314
+**Status: LOCKED (ADR-0315, 2026-07-10) — armed for execution. F1 locked: shared `jsonLdScript()` helper refactor (suppressions rejected). F2 locked: wire Renovate for digest pins; `--strict-digests` flips at the first pin-wave merge (app install operator-owed, tracker §1).** The ADR-0314
 stack's `deterministic` CI job is red-as-signal BY DESIGN (non-required check). This spec turns its
 first real output — captured from run `29075504581` on PR #200 — into a bounded fix wave so the job
 can go green and stay green, making future reds meaningful.

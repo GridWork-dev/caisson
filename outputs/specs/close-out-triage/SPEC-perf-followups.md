@@ -1,6 +1,6 @@
 # SPEC — Perf-wave follow-ups (CAISSON-81 session-hint cookie · CAISSON-82 NFT trace)
 
-**Status: DRAFT — operator lock required; this SPEC does NOT authorize building.** Two Linear
+**Status: LOCKED (ADR-0315, 2026-07-10) — armed for execution.** Two Linear
 follow-ups minted by the Kickoff-I perf/mobile SHIP audit. Neither is urgent: `/` is at 0.95 with
 floors enforced at error level; these are the parked "do it properly" halves of two audit calls.
 

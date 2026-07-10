@@ -1,6 +1,6 @@
 # SPEC — Retrieval quality battery v2 (the real verdict on the FTS + embed fixes)
 
-**Status: DRAFT — operator lock required; this SPEC does NOT authorize building.** The 2026-07-10
+**Status: LOCKED (ADR-0315, 2026-07-10) — armed for execution. F1 locked: refund-policy page joins the corpus (answerable, cited; the docs page cites the site legal page as canonical).** The 2026-07-10
 retrieval fixes (FTS5 per-token sanitization `329150a8`, full-corpus embed via the deadline knob)
 are DEPLOYED and the corpus is warm (489/489 chunks, cache persisting). What nobody has verified
 is whether live hybrid ranking is now GOOD — the golden suite passes on the FTS floor, but the

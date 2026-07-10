@@ -1,6 +1,6 @@
 # Close-out triage specs — 2026-07-10 (I/J/K three-stream close-out)
 
-**Status: DRAFT set — operator picker decides which get armed.** Written at the 2026-07-10
+**Status: LOCKED set (ADR-0315, 2026-07-10) — the picker armed all four; fork outcomes recorded per spec.** Written at the 2026-07-10
 three-stream close-out (Kickoff-I perf/mobile · Kickoff-J pricing-gtm verification · Kickoff-K
 security round-2 / PR #200). Every deferred item, non-essential-CI finding, and interrupted
 follow-up from the three streams is triaged into exactly one spec below (or dispositioned in the

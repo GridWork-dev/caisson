@@ -1,6 +1,6 @@
 # SPEC — Affiliate program production flip (attribution capture + minting + reporting)
 
-**Status: DRAFT — operator lock required; this SPEC does NOT authorize building.** The mechanics
+**Status: LOCKED (ADR-0315, 2026-07-10) — armed for execution.** The mechanics
 are PROVEN in sandbox (2026-07-10: pricing-preview with `CAISSONAFF1` → exactly 10% off
 9900→8910; `transaction.completed` sim delivered `discount_id` intact to the live license webhook,
 200 `{"ok":true}`). What remains is the production-side build the tracker row names.
