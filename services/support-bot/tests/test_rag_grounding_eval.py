@@ -109,9 +109,7 @@ async def test_grounding_baseline(case: GroundingCase) -> None:
     else:
         assert result.brief is not None
         assert case.expect_sources_considered is not None
-        assert sorted(result.brief.sources_considered) == sorted(
-            case.expect_sources_considered
-        )
+        assert sorted(result.brief.sources_considered) == sorted(case.expect_sources_considered)
         # The escalation path must never carry an answer or a citation forward.
         assert result.answer == ""
         assert result.citations == []
