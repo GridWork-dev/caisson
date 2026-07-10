@@ -1,0 +1,95 @@
+/* Homepage signature piece — the ambient depth-fog lattice field (ADR-0304). A poster-first
+ * background layer that sits BEHIND the hero content: the server always renders the static poster
+ * (CSS depth gradients + an inline-SVG lattice suggestion + a waterline hairline); the client canvas
+ * fades in over it only after the idle/lg/no-reduced-motion gate. Theme-aware by --cs-* cascade, so
+ * light/dark "just work" with no branching. Every value is a token (no raw colour). */
+
+.field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Poster — the authored rest-frame of the field. Depth fog (a faint upper-right lift) plus the
+ * waterline depth-darkening toward the bottom (ADR-0078 §4). Base stays transparent so the real
+ * page --cs-bg shows through and the layer seams into it. */
+.poster {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      125% 80% at 72% 6%,
+      var(--cs-surface-1) 0%,
+      transparent 56%
+    ),
+    linear-gradient(to bottom, transparent 46%, var(--cs-bg) 95%);
+  transition: opacity var(--cs-duration-slow) var(--cs-ease-reveal);
+}
+
+/* Inline-SVG lattice suggestion — thin blueprint hairlines faded top+bottom (fog), the waterline a
+ * touch stronger, one short accent segment at rest (the scan-line the canvas will animate). */
+.posterSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--cs-border-strong);
+  opacity: 0.8;
+  transition: opacity var(--cs-duration-slow) var(--cs-ease-reveal);
+}
+
+/* Once the live canvas has hydrated, retire the flat poster lattice so the two don't stack into a
+ * doubled grid — desktop sees only the 3D field, the poster stays the pre-hydration + fallback frame. */
+.field:has(.canvas[data-active]) .posterSvg,
+.field:has(.canvas[data-active]) .poster {
+  opacity: 0;
+}
+
+.latticeLine {
+  stroke: currentColor;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.waterline {
+  stroke: var(--cs-border-strong);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.9;
+}
+
+.accentSeg {
+  stroke: var(--cs-accent);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.65;
+}
+
+/* The three.js canvas — transparent, crossfades in over the identical poster (no pop). */
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity var(--cs-duration-slow) var(--cs-ease-reveal);
+}
+
+.canvas[data-active] {
+  opacity: 1;
+}
+
+/* Contrast scrim — the guarantee that the field never touches headline contrast. Fades from the page
+ * bg on the left (behind the left-aligned h1) to transparent on the right (field visible in the
+ * periphery, per the Refero left-copy/right-visual calibration), plus a bottom seat for the lede and
+ * doors. Token-driven, so it darkens in dark theme and lightens in light theme automatically. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, var(--cs-bg) 0%, transparent 56%),
+    linear-gradient(to top, var(--cs-bg) 1%, transparent 40%);
+}

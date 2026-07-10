@@ -2,6 +2,20 @@
  * doors: Compliance leads (accent identity), production is the secondary door. Values via --cs-*
  * tokens only; theme-aware by cascade (no light/dark branching). */
 
+/* Hosts the ambient depth-fog lattice field (ADR-0304) behind the content. `isolate` scopes the
+ * z-order so the field (z-index:0) sits under the container (z-index:1); `overflow:hidden` clips the
+ * field to the hero section and seats the waterline at the bottom seam. */
+.heroShell {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.heroShell > :global(.cs-container) {
+  position: relative;
+  z-index: 1;
+}
+
 .doors {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
