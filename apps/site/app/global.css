@@ -435,16 +435,6 @@ kbd,
 .cs-mnav-search {
   color: var(--cs-fg-muted);
 }
-.cs-mnav-kbd {
-  margin-left: auto;
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-xs);
-  color: var(--cs-fg-muted);
-  border: 1px solid var(--cs-border);
-  border-radius: var(--cs-radius-sm);
-  padding: 0 var(--cs-space-1);
-  line-height: 1.4;
-}
 .cs-mnav-badge {
   margin-left: auto;
   min-width: 1.25rem;
@@ -501,13 +491,13 @@ kbd,
 .cs-mnav-sec[open]::details-content {
   grid-template-rows: 1fr;
 }
-.cs-mnav-sec::details-content > * {
-  min-height: 0;
-}
-
 .cs-mnav-list {
   list-style: none;
   margin: 0;
+  /* min-height 0 lets the 0fr grid track of ::details-content clip this list — a selector after
+   * the pseudo-element (`::details-content > *`) is invalid CSS (dev 500s, Lightning CSS drops
+   * it in prod), so the rule lives on the child class itself. */
+  min-height: 0;
   padding: 0 0 var(--cs-space-2);
 }
 .cs-mnav-link {
