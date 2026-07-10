@@ -1,0 +1,32 @@
+rules:
+  - id: require-fetch-with-timeout
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Use fetchWithTimeout(url, init, { timeoutMs }) — never a raw fetch() — for every
+      outbound call. The native AbortSignal.timeout() is forbidden on Bun; see
+      packages/kernel/src/fetch.ts. (identity/security.md, CLAUDE.md coding standards.)
+    metadata:
+      category: security
+      references:
+        - packages/kernel/src/fetch.ts
+    patterns:
+      - pattern: fetch(...)
+      # Worker / Bun.serve entrypoint `fetch(request, env[, ctx])` is a method DEFINITION,
+      # not an outbound call; the arg-shape excludes cover it belt-and-suspenders.
+      - pattern-not: fetch(request, env)
+      - pattern-not: fetch(request, env, ctx)
+      - pattern-not: fetch($REQ, $ENV, $CTX)
+    paths:
+      # fetchWithTimeout is a Bun/server helper — client React components use the browser
+      # fetch()+AbortController pattern and cannot import it. Scope to server runtimes only.
+      exclude:
+        - "**/kernel/src/fetch.ts"
+        - "**/fetch-with-timeout.ts"
+        - "**/*.tsx"
+        - "**/components/**"
+        - "**/live/**"
+        - "**/*.test.ts"
+        - "**/*.spec.ts"
+        - "**/scripts/**"
+        - "**/tools/**"

@@ -54,6 +54,9 @@ const IGNORE_GLOBS: readonly string[] = [
   ".gitignore",
   ".dockerignore",
   ".prettierignore",
+  // semgrep scan-scope config (tools/security stack) — a lint-tool ignore list, same class as the
+  // other ignore-dotfiles; its own audit lives in the tools/security domain + the security playbook.
+  ".semgrepignore",
   // repo/CI meta-config — mechanical, no secrets, not a product surface
   ".githooks/**",
   ".gridwork/**",
@@ -110,9 +113,9 @@ describe("coverage gate — complete, non-overlapping tree partition (ADR-0233)"
   });
 
   test("classifier spot-checks: the escaped tools/ + root-docs paths are now claimed; a genuinely new, un-ignored path stays unclaimed", () => {
-    // (a) tools/strix — the MUST-FIX escapee (shell scripts sourcing ~/.gridwork/env).
-    expect(domainForPath("tools/strix/_common.sh", domains)?.id).toBe(
-      "tools/strix",
+    // (a) tools/security — a tools/ subdir domain (shell scripts sourcing ~/.gridwork/caisson.env).
+    expect(domainForPath("tools/security/_common.sh", domains)?.id).toBe(
+      "tools/security",
     );
     // (b) a root doc.
     expect(domainForPath("README.md", domains)?.id).toBe("root-docs");

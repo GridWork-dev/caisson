@@ -1,0 +1,102 @@
+name: security-scan
+# The deterministic security layer (SAST + supply-chain), split into its own workflow per the
+# ci.yml convention: NON-required (branch protection only watches standards-gate/check/
+# registry-index/oscal-conformance), so it may go red on a finding to signal it, but never blocks
+# a merge. Runs the repo-local tools/security/scan.sh — the same driver the operator runs locally.
+#
+# No third-party marketplace actions (nothing extra to SHA-pin): tools install inline. No SARIF
+# upload to the GitHub Security tab — that needs Advanced Security, which this private free-plan
+# repo doesn't have; the SARIF set is saved as a downloadable artifact instead.
+#
+# The Semgrep PRO leg is a separate job gated on the SEMGREP_APP_TOKEN secret (a new external
+# egress sink to semgrep.dev — see identity/security-surfaces.md). It stays dormant until the
+# token is provisioned.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: "security-scan-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Deterministic layer: semgrep floor rules + p/security-audit, ruff flake8-bandit (support-bot),
+  # trivy, osv-scanner, trufflehog (verified-only), Dockerfile digest gate (advisory). SEMGREP_JOBS=1
+  # dodges the semgrep-core io_uring crash the fleet box can hit under parallelism.
+  deterministic:
+    runs-on: caisson-amd64
+    timeout-minutes: 20
+    env:
+      SEMGREP_JOBS: "1"
+      SEMGREP_SEND_METRICS: "off"
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0 # trufflehog git-history scan needs full history
+      - name: install scanners (uv tools + pinned binaries → ~/.local/bin)
+        run: |
+          # pipefail is mandatory: a `curl … | sh` install whose curl fails would otherwise leave
+          # `sh` reading empty stdin, exit 0, and silently drop the tool — then scan.sh self-skips
+          # it and the job passes green with a whole layer never run.
+          set -eo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+          for t in semgrep ruff; do command -v $t >/dev/null || uv tool install $t; done
+          command -v trivy >/dev/null || curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b "$HOME/.local/bin" v0.72.0
+          command -v trufflehog >/dev/null || curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b "$HOME/.local/bin" v3.95.9
+          command -v osv-scanner >/dev/null || { curl -sSL -o "$HOME/.local/bin/osv-scanner" https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 && chmod +x "$HOME/.local/bin/osv-scanner"; }
+          # Re-assert every tool resolved — a missing tool must hard-fail the job, never silent-skip.
+          for t in semgrep ruff trivy trufflehog osv-scanner; do
+            command -v "$t" >/dev/null || { echo "::error::$t missing after install — scan layer would silently skip"; exit 1; }
+          done
+      - name: security scan (SAST + supply-chain)
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          # SARIF lands in $RUNNER_TEMP (OUT of the scanned tree) so `trivy fs .` never re-scans
+          # semgrep's freshly-written SARIF. Set at step scope: the `runner` context is unavailable
+          # in a job-level `env:`, and $RUNNER_TEMP is the shell form of it inside a step.
+          export SECURITY_OUT_DIR="$RUNNER_TEMP/.security-out"
+          bash tools/security/scan.sh --layer ci
+      - name: upload SARIF artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: security-sarif-${{ github.sha }}
+          path: ${{ runner.temp }}/.security-out
+          if-no-files-found: warn
+          retention-days: 30
+
+  # Semgrep PRO (interfile / cross-function taint). Dormant until SEMGREP_APP_TOKEN is set. The job
+  # ALWAYS runs — a job-level `if` CANNOT reference the `secrets` context (doing so is a parse-time
+  # "Unrecognized named-value: secrets" that invalidates the ENTIRE workflow file, killing the
+  # deterministic job too) — but the single step below no-ops without a token. `semgrep ci`
+  # self-authenticates from the token and pulls the org policy rules. SEMGREP_APP_TOKEN and
+  # SEMGREP_RULES are mutually exclusive — never set both.
+  semgrep-pro:
+    runs-on: caisson-amd64
+    timeout-minutes: 20
+    env:
+      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      SEMGREP_JOBS: "1"
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      # One guarded step: skip cleanly (installing nothing) when the token is absent; otherwise
+      # install semgrep and run the Pro platform-policy scan (interfile/cross-function taint). The
+      # custom floor rules run in the `deterministic` job (pattern rules need no Pro engine); add
+      # them to the Semgrep policy to have them Pro-analyzed too.
+      - name: semgrep ci (Pro cross-file taint) — dormant until SEMGREP_APP_TOKEN is set
+        run: |
+          if [ -z "${SEMGREP_APP_TOKEN:-}" ]; then
+            echo "SEMGREP_APP_TOKEN not set — Pro scan skipped (provision the repo secret to activate)"
+            exit 0
+          fi
+          set -eo pipefail
+          export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+          command -v semgrep >/dev/null || uv tool install semgrep
+          semgrep ci -j 1

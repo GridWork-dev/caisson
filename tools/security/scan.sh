@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Caisson security-scan driver.
+#
+#   tools/security/scan.sh [--layer ci|deep|all] [--target URL] [--strict-digests]
+#
+# ci   (default) — deterministic, runs against the repo: semgrep (custom floor rules +
+#                  p/security-audit), ruff flake8-bandit (support-bot), trivy, osv-scanner,
+#                  trufflehog (verified-only), Dockerfile digest gate.
+# deep           — DAST against a live/local --target: nuclei + ZAP (+ schemathesis note).
+# all            — both.
+#
+# The AI-pentest layer (ptai / HexStrike) is Claude-Code-driven, NOT run here — see
+# docs/security/tooling-playbook.md. Each tool self-skips if not installed (run install.sh).
+# Env: SEMGREP_PACKS (default "p/security-audit"; set "" for offline), SEMGREP_JOBS (set 1 on
+# this box if semgrep hits an io_uring crash), SECURITY_OUT_DIR (SARIF dir, default out-of-tree).
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_common.sh"
+
+LAYER=ci; TARGET=""; STRICT_DIGESTS=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --layer) LAYER="$2"; shift 2;;
+    --target) TARGET="$2"; shift 2;;
+    --strict-digests) STRICT_DIGESTS=1; shift;;
+    -h|--help) grep -E '^#( |$)' "$0" | sed 's/^# \?//'; exit 0;;
+    *) warn "unknown arg: $1"; shift;;
+  esac
+done
+
+RC=0
+cd "$REPO"
+
+sast_semgrep() {
+  have semgrep || { skip "semgrep"; return; }
+  hr "SAST · semgrep (custom floor rules${SEMGREP_PACKS:+ + }${SEMGREP_PACKS-p/security-audit})"
+  local cfg=(--config tools/security/semgrep-rules/) pack
+  for pack in ${SEMGREP_PACKS-p/security-audit}; do cfg+=(--config "$pack"); done
+  SEMGREP_SEND_METRICS=off semgrep scan "${cfg[@]}" --metrics=off --error \
+    ${SEMGREP_JOBS:+-j "$SEMGREP_JOBS"} \
+    --sarif --output "$OUT_DIR/semgrep.sarif" . && ok "semgrep clean" || { RC=1; warn "semgrep findings → $OUT_DIR/semgrep.sarif"; }
+}
+
+sast_python() {
+  have ruff || { skip "ruff (support-bot python SAST)"; return; }
+  hr "SAST · ruff flake8-bandit (services/support-bot)"
+  ( cd services/support-bot && ruff check --select S src ) && ok "ruff-S clean" || RC=1
+}
+
+sca_trivy() {
+  have trivy || { skip "trivy"; return; }
+  hr "SCA · trivy fs (vuln + secret + misconfig)"
+  trivy fs --scanners vuln,secret,misconfig --severity CRITICAL,HIGH \
+    --exit-code 1 --format sarif --output "$OUT_DIR/trivy.sarif" . \
+    && ok "trivy clean" || { RC=1; warn "trivy findings → $OUT_DIR/trivy.sarif"; }
+}
+
+sca_osv() {
+  have osv-scanner || { skip "osv-scanner"; return; }
+  hr "SCA · osv-scanner (lockfiles incl. bun.lock)"
+  osv-scanner scan source -r --format sarif --output "$OUT_DIR/osv.sarif" . \
+    && ok "osv-scanner clean" || {
+      local c=$?
+      [[ $c -eq 127 ]] && warn "osv-scanner matched NO packages (exit 127) — config bug, not clean"
+      RC=1; warn "osv-scanner findings → $OUT_DIR/osv.sarif"
+    }
+}
+
+secrets_trufflehog() {
+  have trufflehog || { skip "trufflehog"; return; }
+  hr "Secrets · trufflehog (verified-only — live-confirmed creds)"
+  # --fail is mandatory: without it trufflehog exits 0 even WITH verified secrets found.
+  trufflehog git "file://$REPO" --results=verified --fail --no-update \
+    --json > "$OUT_DIR/trufflehog.json" 2>/dev/null \
+    && ok "trufflehog: no verified secrets" || { RC=1; warn "trufflehog verified secret(s) → $OUT_DIR/trufflehog.json"; }
+}
+
+supply_digests() {
+  hr "Supply-chain · Dockerfile digest pinning (K-03)"
+  if bash tools/security/check-docker-digests.sh; then
+    :
+  elif [[ $STRICT_DIGESTS -eq 1 ]]; then
+    RC=1
+  else
+    warn "digest pins not yet landed — ADVISORY (pass --strict-digests once Renovate pins merge)"
+  fi
+}
+
+dast_layer() {
+  if [[ -z "$TARGET" ]]; then warn "--layer $LAYER needs --target <url> for DAST — skipping"; return; fi
+  [[ -x tools/security/dast-nuclei.sh ]] && { bash tools/security/dast-nuclei.sh "$TARGET" || RC=1; }
+  [[ -x tools/security/dast-zap.sh ]] && { bash tools/security/dast-zap.sh "$TARGET" || RC=1; }
+  warn "schemathesis: tools/security/dast-schemathesis.sh <openapi-url|file> (emit spec first)"
+}
+
+case "$LAYER" in
+  ci)   sast_semgrep; sast_python; sca_trivy; sca_osv; secrets_trufflehog; supply_digests;;
+  deep) dast_layer;;
+  all)  sast_semgrep; sast_python; sca_trivy; sca_osv; secrets_trufflehog; supply_digests; dast_layer;;
+  *) warn "unknown --layer: $LAYER (want ci|deep|all)"; exit 2;;
+esac
+
+hr "scan done — layer=$LAYER rc=$RC · SARIF/JSON in $OUT_DIR"
+exit $RC
