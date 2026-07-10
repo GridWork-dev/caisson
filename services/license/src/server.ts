@@ -230,7 +230,15 @@ export function startServer(
         resolveDomainSignals(domain, evalSignalsConfig),
     },
   });
-  const server = Bun.serve({ port, fetch: handler });
+  // maxRequestBodySize caps every route BEFORE buffering (CWE-770, Kickoff-K): POST /webhook reads the
+  // raw body for HMAC verification (the signature IS the auth), so the body is buffered pre-credential;
+  // Bun's 128 MiB default is ~250x any real Paddle event. 512 KiB is generous for /webhook, /issue,
+  // /eval/* while sitting far below the default — matches the repo's MAX_BODY_BYTES idiom.
+  const server = Bun.serve({
+    port,
+    fetch: handler,
+    maxRequestBodySize: 512 * 1024,
+  });
   process.stderr.write(
     `[service-license] issuer serving on :${String(server.port)}\n`,
   );

@@ -41,10 +41,24 @@ function json(data: unknown, status: number): Response {
   });
 }
 
+// Request-body byte cap enforced BEFORE buffering/parsing (CWE-770, Kickoff-K). This route is public +
+// unauthenticated and a self-hosted Next App Router route handler imposes no body limit of its own, so an
+// unbounded POST would buffer fully in memory. 16 KiB is generous for the bounded Body above. Same idiom
+// as registry/worker/revocations-put.ts (content-length precheck + text-length check).
+const MAX_BODY_BYTES = 16_384;
+
 export async function POST(request: Request): Promise<Response> {
+  const declared = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    return json({ error: "payload_too_large" }, 413);
+  }
   let raw: unknown;
   try {
-    raw = await request.json();
+    const text = await request.text();
+    if (text.length > MAX_BODY_BYTES) {
+      return json({ error: "payload_too_large" }, 413);
+    }
+    raw = JSON.parse(text);
   } catch {
     return json({ error: "bad_request" }, 400);
   }
