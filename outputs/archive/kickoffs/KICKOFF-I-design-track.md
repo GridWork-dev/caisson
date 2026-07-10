@@ -1,6 +1,13 @@
 # Kickoff I — Design track: signature three.js piece · bespoke module media · polish backlog
 
-**Status: SCOPE LOCKED 2026-07-09 (ADR-0306..0309) — BUILD RUNNING.** Authored 2026-07-09 per
+**Status: EXECUTED + MERGED 2026-07-10.** All locked scope shipped on branch
+`kickoff/i-design-track` → main: W1 depth-fog lattice field (128.2 KiB gzip, under the ≤130KB
+budget) · W2 sitewide motion pass · W3 media full-depth (F2 closed) · lighthouse warn→error
+re-armed · docs-metadata + compare-P3 ride-alongs. Both SHIP audits green (code review 7
+findings fixed in-branch; visual pass zero P0–P2). Board re-dispositioned in
+`docs/state/outstanding-work.md` §4. Scope-lock history below preserved as authored.
+
+**Status at lock: SCOPE LOCKED 2026-07-09 (ADR-0306..0309).** Authored 2026-07-09 per
 ADR-0299 lock 4 ("spec next, don't start"). The scope-lock fork round ran as the opening act
 (seven questions, two rounds; the operator redirected the concept class mid-round to an ambient
 reactive background field). Locks: depth-fog lattice field · poster-first idle-hydrate ·
