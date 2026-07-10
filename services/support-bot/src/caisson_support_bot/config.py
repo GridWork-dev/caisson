@@ -50,6 +50,25 @@ class Settings(BaseSettings):
     retrieval_k: int = Field(default=6, ge=1, le=20)
     max_question_chars: int = Field(default=2000, ge=1, le=2000)
 
+    # --- 3-tier confidence gate (2026-07-10 picker) ---
+    support_confidence_high: float = Field(
+        default=0.85,
+        ge=0.0,
+        le=1.0,
+        description="Self-assessed confidence (0-1, from the model's own trailing `CONFIDENCE:` "
+        "line — rag.py) at or above which a resolved answer is returned plain (HIGH tier).",
+    )
+    support_confidence_low: float = Field(
+        default=0.55,
+        ge=0.0,
+        le=1.0,
+        description="Self-assessed confidence at or above which a resolved answer is returned "
+        "hedged with an escalation hint (MEDIUM tier) instead of plain; below this — or a "
+        "missing/unparseable signal — it escalates instead of answering (LOW tier, fail-closed). "
+        "Conservative defaults ship until real traffic lets the operator tune these without a code "
+        "change (the whole reason the gate was parked until now).",
+    )
+
     # --- optional Discord surfaces ---
     support_channel_id: int | None = Field(
         default=None, description="The #ask-ai channel id; the listener is disabled when unset."
@@ -170,6 +189,14 @@ class Settings(BaseSettings):
         if v.scheme != "https" and v.host not in ("127.0.0.1", "localhost"):
             raise ValueError("docs_service_url must be https (or loopback for local dev)")
         return v
+
+    @model_validator(mode="after")
+    def _confidence_thresholds_ordered(self) -> Settings:
+        # Fail-closed sanity: an inverted pair would make MEDIUM unreachable (or worse, make LOW's
+        # floor sit above HIGH's ceiling) — refuse to start with a nonsensical gate.
+        if self.support_confidence_low > self.support_confidence_high:
+            raise ValueError("support_confidence_low must be <= support_confidence_high")
+        return self
 
     @model_validator(mode="after")
     def _chat_platform_slack_requires_its_settings(self) -> Settings:

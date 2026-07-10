@@ -51,7 +51,7 @@ CASES: list[GroundingCase] = [
         id="grounded-single-source-cites-the-retrieved-doc",
         question="how do credits work?",
         chunks=[chunk(GROUNDING_DOC, "Credits are integer units, never floats.")],
-        reply=f"Credits are integer units, never floats. [{GROUNDING_DOC}]",
+        reply=f"Credits are integer units, never floats. [{GROUNDING_DOC}]\nCONFIDENCE: 0.95",
         expect_resolved=True,
         expect_citations=[GROUNDING_DOC],
     ),
@@ -62,7 +62,10 @@ CASES: list[GroundingCase] = [
             chunk(GROUNDING_DOC, "Credits are integer units."),
             chunk(OTHER_DOC, "Billing charges integer credits per module."),
         ],
-        reply=f"Billing charges integer credits [{OTHER_DOC}], which are integer units [{GROUNDING_DOC}].",
+        reply=(
+            f"Billing charges integer credits [{OTHER_DOC}], which are integer units "
+            f"[{GROUNDING_DOC}].\nCONFIDENCE: 0.95"
+        ),
         expect_resolved=True,
         # Citations must be EXACTLY the two retrieved sources — no third, invented source, and none
         # dropped, regardless of what the reply text itself mentions.

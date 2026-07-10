@@ -17,7 +17,7 @@ from discord.ext import commands
 
 from .chat_slack import SlackThreadOpener
 from .config import Settings
-from .contracts import AnswerResult
+from .contracts import AnswerResult, Brief, ConfidenceTier
 from .escalation import ChatPlatform, Escalator, IssueTracker, TicketStore
 from .linear_client import LinearIssueTracker
 from .member_mgmt import add_persistent_views, member_has_priority_support, register_member_commands
@@ -25,6 +25,17 @@ from .rag import RagPipeline
 
 # Discord hard-caps a message at 2000 chars; keep headroom for the sources footer.
 _MAX_REPLY = 1900
+
+# MEDIUM-tier answer-shaping (2026-07-10 picker). The hint points at `handle_escalate_reply` below —
+# the cheapest real escalation path: a bare reply to the bot's own message.
+_MEDIUM_HEDGE_PREFIX = (
+    "I'm not fully confident in this, but here's my best answer from the docs:\n\n"
+)
+_MEDIUM_ESCALATE_HINT = "\n\nNot fully confident in this one — reply `escalate` to page a human."
+
+# The reply-keyword a user can send (as a Discord reply to one of the bot's own messages) to force
+# an escalation on the spot — see `handle_escalate_reply`.
+_ESCALATE_KEYWORD = "escalate"
 
 
 def _unique(seq: list[str]) -> list[str]:
@@ -38,13 +49,22 @@ def _unique(seq: list[str]) -> list[str]:
 
 
 def format_answer(result: AnswerResult) -> str:
-    """Render a resolved answer with a deduped sources footer (citations are the grounding proof)."""
+    """Render a resolved answer with a deduped sources footer (citations are the grounding proof).
+
+    HIGH tier renders exactly as before (unchanged behavior). MEDIUM tier (2026-07-10 picker)
+    prefixes a hedge and appends a plain trailing line pointing at the reply-`escalate` handler
+    (``handle_escalate_reply`` below) — the cheapest real escalation path that already exists.
+    """
     body = result.answer.strip()
+    if result.tier is ConfidenceTier.medium:
+        body = _MEDIUM_HEDGE_PREFIX + body
     cites = _unique(result.citations)[:6]
     if cites:
         footer = "\n\n**Sources:** " + ", ".join(f"`{c}`" for c in cites)
     else:
         footer = ""
+    if result.tier is ConfidenceTier.medium:
+        footer += _MEDIUM_ESCALATE_HINT
     if len(body) + len(footer) > _MAX_REPLY:
         body = body[: _MAX_REPLY - len(footer) - 1].rstrip() + "…"
     return body + footer
@@ -77,6 +97,30 @@ async def handle_question(
         "I couldn't answer that confidently from the Caisson docs, so I've opened a thread and tagged a "
         "human with a brief — someone will follow up. "
     )
+
+
+async def handle_escalate_reply(
+    *,
+    content: str,
+    is_reply_to_bot: bool,
+    referenced_content: str | None,
+    escalator_factory: Callable[[], Escalator],
+) -> str | None:
+    """Handle a bare 'escalate' reply to one of the bot's own answers (2026-07-10 picker) — the
+    cheapest real escalation path MEDIUM-tier answers point at (``format_answer``'s hint). Files the
+    SAME Linear Triage + thread + ticket escalation the LOW tier already uses.
+
+    Returns the confirmation text to send, or ``None`` if this message is not an escalate reply — the
+    caller then falls through to the normal RAG pipeline (``on_message`` below).
+    """
+    if not is_reply_to_bot or content.strip().lower() != _ESCALATE_KEYWORD:
+        return None
+    brief = Brief(
+        question=referenced_content or "(escalation requested; original answer unavailable)",
+        summary="User explicitly requested escalation via a reply to a bot answer.",
+    )
+    await escalator_factory().escalate(brief)
+    return "Escalated — a human will follow up."
 
 
 class _DiscordThreadOpener:
@@ -279,6 +323,29 @@ def make_bot(
             return
         if settings.support_channel_id is None or message.channel.id != settings.support_channel_id:
             return
+
+        # Reply-'escalate' (2026-07-10 picker): a bare "escalate" reply to one of the bot's own
+        # messages forces the same Linear Triage escalation the LOW tier uses, without re-running
+        # the pipeline.
+        ref = message.reference.resolved if message.reference is not None else None
+        is_reply_to_bot = isinstance(ref, discord.Message) and ref.author == bot.user
+        escalate_reply = await handle_escalate_reply(
+            content=message.content,
+            is_reply_to_bot=is_reply_to_bot,
+            referenced_content=ref.content if isinstance(ref, discord.Message) else None,
+            escalator_factory=_escalator_factory(
+                settings,
+                store,
+                message.channel,
+                issue_tracker,
+                author=message.author,
+                http_client=http_client,
+            ),
+        )
+        if escalate_reply is not None:
+            await message.reply(escalate_reply)
+            return
+
         async with message.channel.typing():
             reply = await handle_question(
                 question=message.content,

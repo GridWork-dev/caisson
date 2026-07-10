@@ -64,6 +64,20 @@ class Brief(BaseModel):
     )
 
 
+class ConfidenceTier(str, Enum):
+    """The 3-tier graded-confidence verdict (2026-07-10 picker) for a resolved answer.
+
+    HIGH/MEDIUM only ever label a *resolved* ``AnswerResult`` — a LOW grade never reaches one:
+    ``RagPipeline.answer`` converts it into an escalation (``resolved=False``) instead, exactly like
+    the sentinel/empty-retrieval/leak paths already do. So a caller only ever observes HIGH or MEDIUM
+    on ``AnswerResult.tier``.
+    """
+
+    high = "high"
+    medium = "medium"
+    low = "low"
+
+
 class AnswerResult(BaseModel):
     """The pipeline's verdict for one question."""
 
@@ -73,6 +87,12 @@ class AnswerResult(BaseModel):
     answer: str = ""
     citations: list[str] = Field(
         default_factory=list, description="Source paths backing the answer."
+    )
+    tier: ConfidenceTier = Field(
+        default=ConfidenceTier.high,
+        description="Meaningful only when resolved is True (always HIGH or MEDIUM there); the "
+        "default keeps every pre-existing escalation construction site (tier is irrelevant when "
+        "resolved is False) unchanged.",
     )
     brief: Brief | None = Field(
         default=None, description="Present iff resolved is False (escalation)."
