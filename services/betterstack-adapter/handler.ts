@@ -213,8 +213,10 @@ export async function handleRequest(
       headers: { "content-type": "application/json" },
       body: JSON.stringify(toDiscordEmbed(parsed.data)),
       // No redirect-follow: the destination is a fixed operator secret, a real Discord webhook
-      // never legitimately redirects.
-      redirect: "error",
+      // never legitimately redirects. "manual" not "error" — workerd's fetch supports only
+      // follow/manual and THROWS on "error" (every delivery 502'd on the deployed Worker);
+      // a manual 3xx is !res.ok, so the fail-closed semantics are identical.
+      redirect: "manual",
     });
     if (!res.ok) {
       return jsonResponse({ error: "discord_delivery_failed" }, 502);
