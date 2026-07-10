@@ -3,7 +3,7 @@ updated: 2026-07-10
 status: live
 grounds:
   - docs/state/providers.md
-  - knowledge/decisions/ADR-0224-live-verification-harness.md
+  - knowledge/decisions/ADR-0224-live-harness-fork-locks.md
   - knowledge/decisions/ADR-0315-close-out-triage-locks.md
 ---
 
