@@ -135,13 +135,51 @@ rotation dates here when done. (Related, same flip gate but tracked in the pre-l
 
 ## 2. Step 1 — Paddle production credential + catalog swap
 
-### 2.1 Create the Paddle production account
+### 2.1 Create the Paddle production account (full verification walkthrough — expanded 2026-07-10)
 
-1. In the existing Paddle account (Sandbox was created against `caisson.sh`), request **Production**
-   access: Paddle Dashboard → complete seller verification (business/individual details, payout
-   account, tax forms). This is a Paddle-side review — allow lead time.
-2. Confirm you're using **Paddle Billing**, not legacy Paddle Classic (already true for Sandbox; keep
-   it consistent).
+Signup collects: legal name (**Caisson Software LLC** — exact string, §2.1.4 cause 2), business
+type (an LLC selects **Private Company**), business address, domain (`caisson.sh`), and a product
+description. Confirm **Paddle Billing**, not legacy Classic (already true for Sandbox). Live
+selling is then gated by **three sequential verification phases** — sandbox needed none of this.
+
+**2.1.1 Domain Review** (~5–7 business days when manual; often faster). Reviewers need, reachable
+via site navigation on the submitted domain: product description, pricing (a screenshot is the
+documented floor — but reviewers click through the FULL site, so live pages are the real bar),
+T&Cs/Refund/Privacy pages showing the legal entity name, HTTPS. Status: **already satisfied** —
+ADR-0303 made marketing/pricing/legal routes public, the entity name is live in the ToS, and the
+refund guarantee is unconditional (14-day live; Paddle's best-practice floor is 30 — the
+14-vs-30 call is a lawyer question in `docs/gtm/legal-review-brief.md`). Submit ONLY
+`caisson.sh`; each additional checkout subdomain needs its own separate approval later.
+
+**2.1.2 Business Identification / KYB** (~2–4 bd; triggers automatically after domain review; an
+LLC does NOT get the individual/sole-trader skip). Send: the **GA Certificate of Formation /
+stamped Articles** (control 26147198) + a **single-member ownership document naming the sole
+member at 100%** (the draft operating agreement / member schedule suffices). **Paddle explicitly
+refuses EIN/tax paperwork, utility bills, and accounting docs as KYB documents — do not send
+them.** PDF preferred; the GA SOS entity-search public record link also works.
+
+**2.1.3 Identity Verification** (~1–3 bd, often instant). Paddle verifies the sole member —
+background check from signup data first, else a Sumsub flow: government ID + proof of address,
+sometimes a liveness selfie. Names must match the formation/ID records character-for-character.
+
+**2.1.4 Rejection causes + resubmission.** The documented top causes: (1) ANY qualifier in the
+refund policy ("except…", "minus fees…"); (2) entity-name mismatch between site T&Cs and the
+Paddle account (capitalization counts); (3) offering framed as human consulting/managed services
+— **frame the custom support service as a bundled support/SLA tier of the software**, never
+standalone consulting (Paddle's AUP excludes primarily-human-services businesses; this exact
+framing caused a real applicant's 3 rejections); (4) missing/non-navigable legal pages; (5) new
+business with zero processing history — Paddle's FAQ says it "takes that into account," but
+budget 1–3 weeks end-to-end for a brand-new LLC. Rejection emails are deliberately generic; the
+real reason surfaces only after replying and asking. Resubmissions are batch-reviewed —
+even a one-line fix costs days, so get it right the first time.
+
+**2.1.5 Payouts + tax (separate from verification).** Bank/payout details live in Payout
+Settings/Transfer Preferences — self-serve, not a verification gate; complete before the first
+monthly run (balance ≥ $100 converts on the 1st, sent by the 15th, lands ~3 bd later; Mercury
+account from the entity chain in `docs/business/caisson-software-llc.md` §4). Paddle pays via a
+self-billed "Reverse Invoice" — **no documented seller-facing W-9/W-8 step exists** (unlike
+Stripe/PayPal/AWS), but that's absence of evidence: confirm directly with sellers@paddle.com
+during onboarding before assuming no 1099/backup-withholding exposure.
 
 ### 2.2 Recreate the product catalog in Paddle PRODUCTION
 
