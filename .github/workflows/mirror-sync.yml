@@ -14,31 +14,12 @@ name: mirror-sync
 # caisson-sh/caisson-oss ONLY) is not yet a repo secret. The guard step reads it and skips every
 # real step when absent, so the job runs as a GREEN no-op — the mirror repo may not exist yet.
 # It self-enables once the operator adds the secret (same posture as deploy-railway.yml).
+# TRIGGER: the release train (ADR-0318 R1/R2 — release-train.yml dispatches this as leg 2) or a
+# manual dispatch. The per-main-push trigger is RETIRED (Kickoff M, W4): under the append-only
+# mirror model a sync per push would mint a mirror commit per merge; the mirror advances per
+# RELEASE instead.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "packages/ai-config/**"
-      - "packages/auth/**"
-      - "packages/billing/**"
-      - "packages/cli/**"
-      - "packages/credits/**"
-      - "packages/email/**"
-      - "packages/jobs/**"
-      - "packages/kernel/**"
-      - "packages/license-verify/**"
-      - "packages/mcp-server/**"
-      - "packages/migrate/**"
-      - "packages/observability/**"
-      - "packages/registry-schema/**"
-      - "packages/tenancy-rls/**"
-      - "packages/ui/**"
-      - "packages/testing/**"
-      - "tooling/tsconfig/**"
-      - "tooling/eslint-config/**"
-      - "scripts/export-public-mirror.ts"
-      - "scripts/mirror-assets/**"
 
 permissions:
   contents: read
