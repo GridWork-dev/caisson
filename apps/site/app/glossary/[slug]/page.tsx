@@ -9,12 +9,8 @@ import {
   glossaryPageSpec,
   type GlossaryTerm,
 } from "@/lib/glossary";
-import {
-  breadcrumb,
-  definedTerm,
-  faqPage,
-  serializeJsonLd,
-} from "@/lib/jsonld";
+import { breadcrumb, definedTerm, faqPage } from "@/lib/jsonld";
+import { JsonLdScript } from "@/lib/jsonld-script";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -55,18 +51,9 @@ export default async function GlossaryTermPage(props: Params) {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(definedTermLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqLd) }}
-      />
+      <JsonLdScript data={breadcrumbLd} />
+      <JsonLdScript data={definedTermLd} />
+      <JsonLdScript data={faqLd} />
       <PageSections sections={spec.sections} />
     </>
   );

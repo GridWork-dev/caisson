@@ -63,6 +63,7 @@ import {
 import {
   ORDER_RECORD_SCHEMA_SQL,
   ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
+  ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "./subscription-history-store.ts";
 
@@ -119,6 +120,7 @@ beforeAll(async () => {
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
+  await tp.exec(ORDER_RECORD_DISCOUNT_MIGRATION_SQL); // ADR-0315 affiliate-attribution column
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   provider = createPaddleBilling({ webhookSecret: SECRET, apiKey: "pdl_test" });
@@ -494,8 +496,40 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
         ],
         // G33: a one-time purchase is never a subscription cycle.
         subscriptionCycle: false,
+        // ADR-0320: no discount redeemed on this fixture -> null annotation.
+        discountId: null,
       },
     ]);
+  });
+
+  test("a discounted purchase threads discount_id onto the posthog capture (ADR-0320)", async () => {
+    const captures: PurchaseCapture[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      async (capture) => {
+        captures.push(capture);
+      },
+    );
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_ph_disc_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ph_disc_1",
+        subscription_id: null,
+        discount_id: "dsc_affiliate_1",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_txn_ph_disc_1" },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "67410" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(captures).toHaveLength(1);
+    expect(captures[0]?.discountId).toBe("dsc_affiliate_1");
   });
 
   test("G33: a subscription-CYCLE invoice captures with subscriptionCycle=true", async () => {

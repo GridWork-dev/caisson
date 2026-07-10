@@ -38,6 +38,12 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
       )
       .min(1),
     paymentId: z.string(),
+    // ADR-0315 affiliate-attribution enrichment. The Paddle discount id (`dsc_…`) this transaction
+    // redeemed, threaded from `transaction.completed.discount_id` — the join key the affiliate
+    // commission report resolves against `affiliate_code`. `null` for an undiscounted purchase.
+    // OPTIONAL because only the Paddle mapper populates it; the Stripe/LemonSqueezy/Polar mappers
+    // emit these events without a discount id, and a strictObject would reject a missing key.
+    discountId: z.string().nullable().optional(),
   }),
   strictObject({
     type: z.literal("subscription.created"),
@@ -118,6 +124,11 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
     priceId: z.string(),
     billingReason: z.string(),
     invoiceId: z.string(),
+    // ADR-0315 affiliate-attribution enrichment — the same `dsc_…` join key as on
+    // purchase.completed above, captured on the subscription (invoice.paid) mapping too so a
+    // discounted subscription's cycle invoices attribute to the affiliate. Optional for the same
+    // provider-neutrality reason (only the Paddle mapper sets it).
+    discountId: z.string().nullable().optional(),
   }),
 ]);
 

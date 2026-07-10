@@ -4,11 +4,33 @@
 // owned by @caisson/credits + @caisson/service-license (the same deliberately-flagged cross-service
 // coupling apps/site carries): the schema DDL is imported into the double (admin-db.ts) so a column
 // rename fails the build, not silently at runtime.
+//
+// F4 (ADR-0316): `readEntitlements`/`readLicenses` now source their SELECT column lists from
+// `@caisson/platform-reads`' exported constants (and `readEntitlements` its row TYPE), so a
+// `services/license` schema rename fails THIS build too — the same column-contract seam the buyer
+// dashboard rides — while KEEPING admin's cross-tenant (no `account_id` predicate) SQL shape. The
+// package's readers are single-account-scoped by design (`WHERE account_id = $1`), so admin can never
+// call them directly, only reuse their column-list / type contract.
+//
+// The W-COMMERCE money-timeline reads below (`readAccountCreditTimeline` / `readAccountOrders` /
+// `readAccountSubscriptions`) are scoped to ONE operator-picked account (`WHERE account_id = $1`).
+// `credit_event` + `credit_wallet` already carry the `admin`-role read policy (ADR-0225). `order_record`
+// + `subscription_status` (and `grant_consumption`, which `expiringSoon` joins) do NOT yet — they must
+// be added to `ADMIN_READ_TABLES` in admin-db.ts (dev double) + provisioned via `buildAdminReadPolicySql`
+// on the Railway PG at DEPLOY, or these reads return a permission error the ledger page degrades to a
+// "not granted to the admin read role yet" hint rather than a 500.
 import {
   balance,
   creditsClawedForSource,
   creditsGrantedBySource,
+  getLedger,
+  GRANT_EVENT_TYPES,
 } from "@caisson/credits";
+import {
+  ENTITLEMENT_GRANT_READ_COLUMNS,
+  type EntitlementGrantRow,
+  type LICENSE_GRANT_READ_COLUMNS,
+} from "@caisson/platform-reads";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 
 /** One tenant's business footprint — the operator's tenants overview. */
@@ -43,13 +65,12 @@ const TENANTS_MAX_LIMIT = 200;
  *  these three have no dedicated search UI yet, but must stop being literally unbounded). */
 const OTHER_READS_LIMIT = 200;
 
-/** An entitlement/purchase grant (a `one_time` row IS a purchase; `subscription` is recurring). */
-export interface EntitlementRow {
+/** An entitlement/purchase grant (a `one_time` row IS a purchase; `subscription` is recurring),
+ *  cross-tenant. Extends the shared per-tenant {@link EntitlementGrantRow} (F4) with `accountId` —
+ *  the row TYPE comes from `@caisson/platform-reads` so a `services/license` rename of a projected
+ *  field is a compile error here, not a silent runtime desync. */
+export interface EntitlementRow extends EntitlementGrantRow {
   accountId: string;
-  entitlementId: string;
-  sourceKind: string;
-  status: string;
-  grantedAt: string;
 }
 
 export interface CreditRow {
@@ -64,6 +85,18 @@ export interface LicenseRow {
   expiry: string | null;
   issuedAt: string;
 }
+
+/** admin's cross-tenant license read is a strict SUBSET of `@caisson/platform-reads`'
+ *  `LICENSE_GRANT_READ_COLUMNS` (it omits `license_id`/`token` — the operator overview never renders
+ *  them). `satisfies` pins every name to a real member of the shared constant, so a `services/license`
+ *  rename fails THIS build too (F4) without widening the read to columns admin doesn't need. */
+const LICENSE_READ_COLUMNS = [
+  "account_id",
+  "major",
+  "tier",
+  "expiry",
+  "issued_at",
+] as const satisfies readonly (typeof LICENSE_GRANT_READ_COLUMNS)[number][];
 
 /**
  * The tenants overview: every account with any business state (credits ∪ entitlements ∪ licenses),
@@ -142,11 +175,14 @@ export async function readEntitlements(
   const { rows } = await tx.query<{
     account_id: string;
     entitlement_id: string;
-    source_kind: string;
-    status: string;
+    source_kind: EntitlementGrantRow["sourceKind"];
+    status: EntitlementGrantRow["status"];
     granted_at: string;
   }>(
-    `SELECT account_id, entitlement_id, source_kind, status, granted_at
+    // F4: the SELECT list is the shared `@caisson/platform-reads` constant (`account_id` first), so a
+    // schema rename desyncs at BUILD time, not silently at runtime — admin's cross-tenant shape stays
+    // (no `WHERE account_id`), only the column source-of-truth is shared.
+    `SELECT ${ENTITLEMENT_GRANT_READ_COLUMNS.join(", ")}
        FROM entitlement_grant
       ORDER BY granted_at DESC
       LIMIT ${String(OTHER_READS_LIMIT)}`,
@@ -307,7 +343,8 @@ export async function readLicenses(tx: TenantExecutor): Promise<LicenseRow[]> {
     expiry: string | null;
     issued_at: string;
   }>(
-    `SELECT account_id, major, tier, expiry, issued_at
+    // F4: SELECT list pinned to the shared `@caisson/platform-reads` column constant (subset thereof).
+    `SELECT ${LICENSE_READ_COLUMNS.join(", ")}
        FROM license_grant
       ORDER BY issued_at DESC
       LIMIT ${String(OTHER_READS_LIMIT)}`,
@@ -318,5 +355,173 @@ export async function readLicenses(tx: TenantExecutor): Promise<LicenseRow[]> {
     tier: r.tier,
     expiry: r.expiry === null ? null : String(r.expiry),
     issuedAt: String(r.issued_at),
+  }));
+}
+
+// --- W-COMMERCE money timeline (ADR-0316): per-account credit ledger + Paddle order/subscription
+// history, drilled into from the tenants overview. All three reads are scoped to ONE account
+// (`WHERE account_id = $1`) — the operator picks it; they are NOT the unbounded cross-tenant reads
+// above. --------------------------------------------------------------------------------------------
+
+export type LedgerKind = "grant" | "consume" | "claw" | "expiry";
+
+/**
+ * Map a `credit_event.event_type` to the operator-timeline bucket: `GRANT_EVENT_TYPES` → grant, the
+ * refund clawback (ADR-0113) → claw, the expiry-sweep residue burn (ADR-0252) → expiry, every spend
+ * debit → consume. Pure — the row's signed `amount` carries the direction; this is just the label.
+ */
+export function classifyLedgerKind(eventType: string): LedgerKind {
+  if ((GRANT_EVENT_TYPES as readonly string[]).includes(eventType))
+    return "grant";
+  if (eventType === "refund_clawback") return "claw";
+  if (eventType === "expiry_debit") return "expiry";
+  return "consume";
+}
+
+export interface CreditTimelineRow {
+  createdAt: string;
+  kind: LedgerKind;
+  eventType: string;
+  /** Signed integer credit units — positive for a grant, negative for consume/claw/expiry. */
+  amount: number;
+  sourceEventId: string | null;
+  feature: string | null;
+}
+
+export interface AccountCreditTimeline {
+  balance: number;
+  rows: CreditTimelineRow[];
+}
+
+/**
+ * The per-account credit money timeline (grant/consume/claw/expiry), newest first, plus the wallet
+ * balance. Reuses `@caisson/credits`' `getLedger` + `balance` verbatim (the package owns the ledger
+ * SQL — admin never hand-rolls it); both read through the `admin` role's existing `credit_event` /
+ * `credit_wallet` policies (ADR-0225). `getLedger` returns oldest-first — reversed here for the
+ * operator's newest-first view.
+ */
+export async function readAccountCreditTimeline(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<AccountCreditTimeline> {
+  // Sequential on the one tx connection (never Promise.all on a single client).
+  const ledger = await getLedger(tx, accountId);
+  const walletBalance = await balance(tx, accountId);
+  const rows: CreditTimelineRow[] = ledger.map((e) => ({
+    createdAt: e.created_at,
+    kind: classifyLedgerKind(e.event_type),
+    eventType: e.event_type,
+    amount: e.amount,
+    sourceEventId: e.source_event_id,
+    feature: e.feature,
+  }));
+  rows.reverse();
+  return { balance: walletBalance, rows };
+}
+
+/**
+ * One Paddle order/invoice row for the money timeline — the buyer-facing history `services/license`
+ * writes at webhook time (`order_record`, ADR-0293). `status = 'refunded'` is the refund flag (the
+ * ADR-0302 coverage-horizon claw fires on the same event); a chargeback is NOT a row here — ADR-0294
+ * makes it alert-only, surfaced in-page as a note, never a tracked state. `discountId` is the ADR-0315
+ * affiliate-attribution column, shown as a plain column (the commission REPORT is a separate lane).
+ */
+export interface OrderTimelineRow {
+  sourceEventId: string;
+  kind: string;
+  priceId: string | null;
+  label: string;
+  amount: number;
+  currency: string;
+  status: string;
+  discountId: string | null;
+  createdAt: string;
+}
+
+/**
+ * One account's Paddle orders, newest first, LIMIT-bounded (never an unbounded export). Selects the
+ * ADR-0315 `discount_id` column directly rather than through `@caisson/platform-reads`' base column
+ * set (which deliberately omits it — a separate ALTER migration, outside the shared column contract),
+ * so this stays admin-local raw SQL. Requires the `admin`-role read policy on `order_record` (see the
+ * module header) — absent, it throws a permission error the ledger page degrades gracefully.
+ */
+export async function readAccountOrders(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<OrderTimelineRow[]> {
+  const { rows } = await tx.query<{
+    source_event_id: string;
+    kind: string;
+    price_id: string | null;
+    label: string;
+    amount: number;
+    currency: string;
+    status: string;
+    discount_id: string | null;
+    created_at: unknown;
+  }>(
+    `SELECT source_event_id, kind, price_id, label, amount, currency, status, discount_id, created_at
+       FROM order_record
+      WHERE account_id = $1
+      ORDER BY created_at DESC
+      LIMIT ${String(OTHER_READS_LIMIT)}`,
+    [accountId],
+  );
+  return rows.map((r) => ({
+    sourceEventId: r.source_event_id,
+    kind: r.kind,
+    priceId: r.price_id,
+    label: r.label,
+    amount: Number(r.amount),
+    currency: r.currency,
+    status: r.status,
+    discountId: r.discount_id,
+    createdAt:
+      r.created_at instanceof Date
+        ? r.created_at.toISOString()
+        : String(r.created_at),
+  }));
+}
+
+export interface SubscriptionTimelineRow {
+  subscriptionId: string;
+  planTag: string;
+  priceId: string;
+  status: string;
+  updatedAt: string;
+}
+
+/**
+ * One account's subscription-lifecycle rows, newest-updated first, LIMIT-bounded (`subscription_status`,
+ * ADR-0293) — `status` is `active`/`canceled`. Requires the `admin`-role read policy on
+ * `subscription_status` (see the module header); absent, the ledger page degrades gracefully.
+ */
+export async function readAccountSubscriptions(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<SubscriptionTimelineRow[]> {
+  const { rows } = await tx.query<{
+    subscription_id: string;
+    plan_tag: string;
+    price_id: string;
+    status: string;
+    updated_at: unknown;
+  }>(
+    `SELECT subscription_id, plan_tag, price_id, status, updated_at
+       FROM subscription_status
+      WHERE account_id = $1
+      ORDER BY updated_at DESC
+      LIMIT ${String(OTHER_READS_LIMIT)}`,
+    [accountId],
+  );
+  return rows.map((r) => ({
+    subscriptionId: r.subscription_id,
+    planTag: r.plan_tag,
+    priceId: r.price_id,
+    status: r.status,
+    updatedAt:
+      r.updated_at instanceof Date
+        ? r.updated_at.toISOString()
+        : String(r.updated_at),
   }));
 }

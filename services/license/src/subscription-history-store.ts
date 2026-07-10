@@ -218,6 +218,16 @@ ALTER TABLE order_record ADD COLUMN subscription_id text;
 ALTER TABLE order_record ADD COLUMN coverage_stamped boolean NOT NULL DEFAULT true;
 `;
 
+// ADR-0315 affiliate attribution: the Paddle discount id (`dsc_…`) this order redeemed — the join
+// key the affiliate commission report resolves against `affiliate_code.discount_id`. Nullable, no
+// default: an undiscounted order (the norm) and every row that predates this column stay NULL
+// (backfill honesty is the report's label job — the report simply never attributes a NULL row).
+// SEPARATE migration, never an edit to the checksum-pinned ORDER_RECORD_SCHEMA_SQL above (append-
+// only, ADR-0006) — mirrors ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL's append pattern.
+export const ORDER_RECORD_DISCOUNT_MIGRATION_SQL = `
+ALTER TABLE order_record ADD COLUMN discount_id text;
+`;
+
 export interface InsertOrderRecordInput {
   accountId: string;
   /** The invoice id (subscription) / payment id (one-time) — the same anchor the credit/entitlement
@@ -236,6 +246,9 @@ export interface InsertOrderRecordInput {
   /** False when this invoice deliberately stamped NO coverage horizon (the canceled-before-grant
    *  path) — a refund of it then rolls back nothing. Defaults true (the normal granting invoice). */
   coverageStamped?: boolean;
+  /** ADR-0315: the redeemed Paddle discount id (`dsc_…`) — the affiliate report's join key.
+   *  Omitted/null for an undiscounted order. */
+  discountId?: string | null;
 }
 
 /**
@@ -262,8 +275,8 @@ export async function insertOrderRecord(
     return;
   }
   await tx.query(
-    `INSERT INTO order_record (id, account_id, source_event_id, kind, price_id, label, amount, currency, subscription_id, coverage_stamped)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `INSERT INTO order_record (id, account_id, source_event_id, kind, price_id, label, amount, currency, subscription_id, coverage_stamped, discount_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      ON CONFLICT (source_event_id, kind) DO NOTHING`,
     [
       randomUUID(),
@@ -276,6 +289,7 @@ export async function insertOrderRecord(
       input.currency,
       input.subscriptionId ?? null,
       input.coverageStamped ?? true,
+      input.discountId ?? null,
     ],
   );
 }

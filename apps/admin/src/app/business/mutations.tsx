@@ -609,6 +609,82 @@ function RevokePurchaseCard() {
   );
 }
 
+/**
+ * ADR-0315/0320 affiliate mint. Unlike every other card here this is a CREATE, not a per-account
+ * destructive action — there is no target account to type-to-confirm, so it uses a plain armed
+ * button (valid name + Paddle-format code). The minted `code` is shown once in the result; the
+ * program parameters (10% buyer / 30% commission) are LOCKED server-side, never entered here.
+ */
+function AffiliateMintCard() {
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [result, setResult] = useState<Result>({ kind: "idle" });
+  const trimmedCode = code.trim();
+  const codeOk = trimmedCode !== "" && /^[A-Za-z0-9]+$/.test(trimmedCode);
+  const armed = name.trim() !== "" && codeOk;
+
+  return (
+    <div
+      className="panel stack"
+      style={{ gap: "var(--cs-space-3)", padding: "var(--cs-space-4, 16px)" }}
+    >
+      <div>
+        <p className="section-title">Mint affiliate code</p>
+        <p className="muted" style={{ fontSize: "0.85em" }}>
+          Create a Paddle affiliate discount code — fixed 10% buyer discount /
+          30% commission (ADR-0320). The code is shown once below.
+        </p>
+      </div>
+      <div className="stack" style={{ gap: "var(--cs-space-2)" }}>
+        <Field
+          label="Affiliate name"
+          value={name}
+          onChange={setName}
+          placeholder="Acme Partners"
+        />
+        <Field
+          label="Code (letters + digits, ≤32)"
+          value={code}
+          onChange={setCode}
+          placeholder="ACMEAFF"
+        />
+        {trimmedCode !== "" && !codeOk ? (
+          <p style={{ fontSize: "0.75em", color: "var(--cs-danger, crimson)" }}>
+            Letters and digits only (Paddle discount-code format).
+          </p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        disabled={!armed || result.kind === "busy"}
+        onClick={() => {
+          setResult({ kind: "busy" });
+          void callRoute("/api/admin/affiliate/mint", {
+            affiliateName: name.trim(),
+            code: trimmedCode,
+          }).then(setResult);
+        }}
+        style={{
+          padding: "8px 14px",
+          alignSelf: "flex-start",
+          opacity: armed ? 1 : 0.5,
+          cursor: armed ? "pointer" : "not-allowed",
+        }}
+      >
+        Mint code
+      </button>
+      <a
+        href="/business/affiliates"
+        className="muted"
+        style={{ fontSize: "0.8em" }}
+      >
+        View commission report →
+      </a>
+      <ResultLine result={result} />
+    </div>
+  );
+}
+
 export function AdminMutations({
   grantableEntitlementIds,
 }: {
@@ -799,6 +875,8 @@ export function AdminMutations({
       </MutationCard>
 
       <RevokePurchaseCard />
+
+      <AffiliateMintCard />
     </div>
   );
 }

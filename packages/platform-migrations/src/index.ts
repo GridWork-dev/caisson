@@ -36,6 +36,7 @@ import {
   runMigrations,
 } from "@caisson/migrate";
 import {
+  AFFILIATE_CODE_SCHEMA_SQL,
   CHECKOUT_ABANDONMENT_NOTICE_SCHEMA_SQL,
   CHECKOUT_ABANDONMENT_SCHEMA_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
@@ -43,6 +44,7 @@ import {
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
+  ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   ORDER_RECORD_SCHEMA_SQL,
   ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   RENEWAL_EXTENSION_SCHEMA_SQL,
@@ -166,6 +168,18 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
     name: "0024_checkout_abandonment.sql",
     sql: `${CHECKOUT_ABANDONMENT_SCHEMA_SQL}\n${CHECKOUT_ABANDONMENT_NOTICE_SCHEMA_SQL}`,
   },
+  // ADR-0315 affiliate production flip — a nullable attribution column on order_record (0025), then
+  // the admin-scoped affiliate_code registry (0026). TAIL appends, same convention: every applied
+  // slot + checksum above is untouched. 0026's admin-role grants are self-guarded (see the schema
+  // constant) so this migration succeeds whether or not the admin roles exist yet.
+  {
+    name: "0025_order_record_discount.sql",
+    sql: ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
+  },
+  {
+    name: "0026_affiliate_code.sql",
+    sql: AFFILIATE_CODE_SCHEMA_SQL,
+  },
 ];
 
 /**
@@ -174,13 +188,14 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
  * together by filename — same slug, same shape, as the pre-extraction `platformPackage()`.
  *
  * `extra` entries' `name`s must NOT collide with the shared chain's own names above (`0001`–`0019`
- * plus `0023`–`0024`) — a duplicate name is two migrations racing for the same renumbered slot, not
+ * plus `0023`–`0026`) — a duplicate name is two migrations racing for the same renumbered slot, not
  * a merge. Effective apply order is `assembleMigrations`'s sort-by-filename over the COMBINED
  * array, not this function's array-position: an `extra` entry's numeric prefix decides where it
  * lands, not where it sits in the array you pass in (apps/site/lib/deploy-migrate.ts deliberately
  * uses `0011`/`0012` to reproduce their pre-extraction slot — see its own module doc). apps/site's
- * extras have since claimed `0020`–`0022`; a caller with no historical slot to preserve should use
- * `0025_*.sql` and up, landing after the shared chain's `0024_checkout_abandonment.sql`.
+ * extras have since claimed `0020`–`0022`, and the shared chain `0025`–`0026` (ADR-0315); a caller
+ * with no historical slot to preserve should use `0027_*.sql` and up, landing after the shared
+ * chain's `0026_affiliate_code.sql`.
  */
 export function platformMigrationsPackage(
   extra: readonly MigrationFile[] = [],

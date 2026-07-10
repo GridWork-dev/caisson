@@ -98,6 +98,7 @@ import {
 import {
   ORDER_RECORD_SCHEMA_SQL,
   ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
+  ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "./subscription-history-store.ts";
 
@@ -222,6 +223,7 @@ beforeAll(async () => {
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
+  await tp.exec(ORDER_RECORD_DISCOUNT_MIGRATION_SQL); // ADR-0315 affiliate-attribution column
   // ADR-0225: the license index (read cross-tenant for the edge deny-set) + the deny-set truth table,
   // created BEFORE ADMIN_MUTATION_PROVISION_SQL (its new license_grant SELECT policy references it).
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
