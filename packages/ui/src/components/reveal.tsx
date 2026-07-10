@@ -57,6 +57,35 @@ function offsetFor(
   }
 }
 
+// A4a (ADR-0310): ONE shared IntersectionObserver for every <Reveal> on the page instead of one
+// per instance (13 on the homepage alone). Lazily constructed on first use inside an effect —
+// never at module eval — so importing this file server-side (SSR still renders "use client"
+// components to HTML) never touches the `IntersectionObserver` constructor. A WeakMap keys each
+// observed element to its own reveal callback so the one observer's entries fan back out to the
+// right <Reveal> instance; entries are unobserved + evicted from the map the moment they fire
+// (reveal-once) or the owning instance unmounts first.
+let sharedObserver: IntersectionObserver | null = null;
+const revealCallbacks = new WeakMap<Element, () => void>();
+
+function getSharedObserver(): IntersectionObserver | null {
+  if (typeof IntersectionObserver === "undefined") return null;
+  if (!sharedObserver) {
+    sharedObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          revealCallbacks.get(entry.target)?.();
+          sharedObserver?.unobserve(entry.target);
+          revealCallbacks.delete(entry.target);
+        }
+      },
+      // Byte-identical to the old per-instance options.
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.1 },
+    );
+  }
+  return sharedObserver;
+}
+
 /**
  * Fade-up-once scroll reveal (recipe kit port of the old `apps/site` primitive, ADR-0099).
  *
@@ -87,26 +116,22 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (
-      typeof IntersectionObserver === "undefined" ||
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-    ) {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
       setVisible(true);
       return;
     }
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            setVisible(true);
-            obs.disconnect();
-          }
-        }
-      },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.1 },
-    );
+    const obs = getSharedObserver();
+    if (!obs) {
+      // No IntersectionObserver support — reveal immediately, same fallback as before.
+      setVisible(true);
+      return;
+    }
+    revealCallbacks.set(el, () => setVisible(true));
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => {
+      obs.unobserve(el);
+      revealCallbacks.delete(el);
+    };
   }, []);
 
   const cls = ["cs-reveal", visible ? "is-visible" : "", className]
