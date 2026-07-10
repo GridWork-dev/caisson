@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-04
+updated: 2026-07-09
 status: live
 ---
 
@@ -45,6 +45,38 @@ launch credentials actually work end-to-end.** Every proof self-skips without it
 | **3 · Linear Triage sink**        | `services/support-bot/tests/live/test_linear_live.py`                                                                                                               | `LINEAR_API_KEY` + `LINEAR_TEAM_ID` + `LINEAR_TRIAGE_STATE_ID`                                                                                                                                    | The real Linear API accepts the bare-header (no `Bearer`) auth + explicit team/state and returns a real `issue.url`; the proof issue is archived on teardown.                |
 | **4 · Grafana Cloud query**       | `apps/admin/live/grafana.live.test.ts`                                                                                                                              | `GRAFANA_URL` + `GRAFANA_QUERY_TOKEN` + `GRAFANA_TEMPO_DATASOURCE_UID`                                                                                                                            | The real datasource proxy accepts the real `glsa_` query token and returns the fleet's own service names (read-only, no teardown).                                           |
 | **5 · `NEXT_PUBLIC_*` analytics** | `apps/site/live/analytics-bundle.live.test.ts`                                                                                                                      | `NEXT_PUBLIC_POSTHOG_KEY` + `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`                                                                                                                                        | A real `next build` inlines the rotated key/domain into the shipped client bundle (F4=A build-grep).                                                                         |
+
+### Proof-cred fixtures — armed 2026-07-09 (Kickoff-H close-out)
+
+The four static proof vars are now set in `~/.gridwork/caisson.env`: `PADDLE_PROOF_PRICE_ID`
+(the field-crypto module's REAL sandbox price row — resolves in the deployed pricebook and
+grants an entitlement, matching the grant-row assertion), `LICENSE_WEBHOOK_URL`
+(`https://license.caisson.sh/webhook`), `DISCORD_PROOF_USER_ID` (the guild owner) and
+`DISCORD_PROOF_ROLE_ID` (the existing throwaway `caisson-proof` role). Armed-run results
+(2026-07-09): **seam-1 webhook→grant-row PASS · seam-1 simulator leg PASS · seam-2 Python
+full grant+teardown PASS** (first-ever armed run of both discord legs).
+
+Run-time notes for the two legs that need more than env vars:
+
+- **Seam-1 simulator receiver:** `PADDLE_SIM_RECEIVER_URL` stays deliberately UNSET in the env
+  file — a permanently-set value with no tunnel up turns a skip into a false red. Paddle
+  **aborts** deliveries to `trycloudflare.com` (blocklisted tunnel domain; run events show
+  `status: aborted` with no HTTP attempt). Use the Tailscale funnel instead:
+  `tailscale funnel --bg 8799`, warm the cold TLS cert with one
+  `curl https://gw-ms-a2.tail72081c.ts.net/` (the FIRST hit on a fresh funnel cert times out —
+  Paddle then records `failed`), then run
+  `PADDLE_SIM_RECEIVER_URL=https://gw-ms-a2.tail72081c.ts.net bun test ./live` in
+  `packages/billing-orchestration`, and `tailscale funnel --https=443 off` when done. Paddle
+  API drift fixed in the leg itself: a notification setting must opt in with
+  `traffic_source: "simulation"` or simulation runs abort against it.
+- **Seam-2 TS leg (license→bot) cannot pass from the box:** `SUPPORT_BOT_URL` is the
+  Railway-internal domain and the deployed bot has **no public domain**, so the armed leg runs
+  red locally (0 pushes recorded — the connection error is swallowed by design). That red is
+  environmental, not a credential failure. Open fork (operator): give the bot a public Railway
+  domain (its `/billing-grant` is Bearer fail-closed) so the leg is runnable from the box, or
+  accept the Python leg + unit coverage as seam-2's proof. Also: the webhook-grant leg needs
+  `DATABASE_URL="$DATABASE_PUBLIC_URL"` exported for local runs — the env default is the
+  railway-internal host.
 
 ### Seam-5 note — analytics ingestion stays dashboard-verified
 

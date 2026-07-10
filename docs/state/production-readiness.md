@@ -103,6 +103,14 @@ debt: `adjustment.created` never live-subscribed even in sandbox (tracked); the 
 rollover/12-month-expiry/FIFO policy shows in the dashboard but not in the EULA text (tracked);
 the first-cycle credit race stays open-by-choice (CAISSON-25 disposition pending).
 
+- **Launch-runbook check (CAISSON-25 item 1):** verify in the Paddle dashboard that the
+  failed-payment (dunning) setting **cancels** the subscription after the final retry — never
+  pauses. A pause emits no `subscription.canceled`, so static plan entitlement rows stay active
+  indefinitely. Check the SANDBOX account now and the production account at creation; this
+  setting is dashboard-only (no public API reads it). CAISSON-25 items 2 and 3 (static-grant
+  ordering race, subscription-refund horizon claw) were CLOSED in code by Kickoff-H W3
+  (cancel-tombstone liveness check + the refund-horizon claw).
+
 ## Operational — gaps
 
 SigNoz + Grafana OTLP pipeline live; docs/support-bot edge hardening live-verified; admin intel
