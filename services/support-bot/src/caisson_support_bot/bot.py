@@ -283,7 +283,9 @@ def make_bot(
     """
     issue_tracker = linear_issue_tracker(settings, http_client)
 
-    def observe(surface: str, user_id: str) -> Callable[[str, AnswerResult], Awaitable[None]] | None:
+    def observe(
+        surface: str, user_id: str
+    ) -> Callable[[str, AnswerResult], Awaitable[None]] | None:
         """Bind the telemetry callback for one interaction, or None when analytics is off."""
         if analytics is None:
             return None
@@ -295,6 +297,7 @@ def make_bot(
             )
 
         return on_result
+
     intents = discord.Intents.default()
     if settings.support_channel_id is not None:
         intents.message_content = True  # required to read #ask-ai messages.

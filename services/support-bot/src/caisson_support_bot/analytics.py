@@ -73,9 +73,7 @@ class AnswerAnalytics:
         event, props = answer_event(question=question, result=result, surface=surface)
         await self._post(event=event, distinct_id=hash_distinct_id(user_id), properties=props)
 
-    async def capture_escalate_reply(
-        self, *, user_id: str, referenced_answer: str | None
-    ) -> None:
+    async def capture_escalate_reply(self, *, user_id: str, referenced_answer: str | None) -> None:
         """The reply-``escalate`` label: a human overrode a hedged answer with a real escalation."""
         await self._post(
             event="support_escalate_reply",
@@ -86,9 +84,7 @@ class AnswerAnalytics:
             },
         )
 
-    async def _post(
-        self, *, event: str, distinct_id: str, properties: dict[str, object]
-    ) -> None:
+    async def _post(self, *, event: str, distinct_id: str, properties: dict[str, object]) -> None:
         try:
             resp = await self._client.post(
                 self._url,
@@ -104,6 +100,4 @@ class AnswerAnalytics:
                     f"[analytics] posthog capture {event} -> HTTP {resp.status_code}\n"
                 )
         except httpx.HTTPError as exc:
-            sys.stderr.write(
-                f"[analytics] posthog capture {event} failed: {type(exc).__name__}\n"
-            )
+            sys.stderr.write(f"[analytics] posthog capture {event} failed: {type(exc).__name__}\n")
