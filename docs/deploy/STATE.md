@@ -33,6 +33,44 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-10 — EXECUTED: G+H close-out fleet deploy (PR #198 merge → full DEPLOY sequence)
+
+**Operator-ordered ("once all on clean main full dpeloy sequence").** The Kickoff-H merge
+(PR #198 squash `2b65cf3d`, ADRs renumbered 0300–0302) + the close-out sweep (PR #199
+`6ebb6b3e`) landed both kickoffs on single-branch main; this act activated H's code live.
+
+- **Migration 0023** (`order_record_subscription_link`, ADR-0302): read-only bless first —
+  pasted: `bless: 22 already applied, 1 pending: 0023_order_record_subscription_link.sql` →
+  apply `[deploy-migrate] platform: applied 1, skipped 22` → re-bless
+  `bless: 23 already applied, 0 pending: (none)`. Zero checksum drift (the runner is
+  drift-fail-closed; bless ran the real code path with a no-op applier).
+- **Admin provision** (`provision-admin-mutation-surface.ts`, incl. H's action-CHECK widening):
+  pasted tail — `applied: admin_action_log action CHECK widening · applied: admin mutation
+provision · applied: role grants · roles: admin, admin_write, app`.
+- **Railway fleet ×5** redeployed from `main@2b65cf3d` (`railway up -y --service <s> --ci
+--detach`): probes — `caisson.sh → 200`, `license.caisson.sh/health → 200`,
+  `admin.caisson.sh → 200`, docs service healthy per boot log (`serving 489 chunks on :8080`;
+  no public domain by design), support-bot proven by the pytest live legs below.
+- **Registry Worker** redeployed (version `aed690f2`) with the CAISSON-55 rate-limit bindings —
+  dry-run binding table confirms `RATE_LIMIT_CATALOG (300/60s) · RATE_LIMIT_NPM_PACKUMENT
+(120/60s) · RATE_LIMIT_TARBALL (60/60s)` live. **Residual:** a 320-request curl burst did NOT
+  reproduce a live 429 (CF's `simple` limiter is per-server approximate; escalating the burst
+  was declined as prod load-testing). The limiter is fail-open abuse-throttling by design
+  (ADR-0112 posture), unit-tested; the live 429 repro stays an open verification item.
+- **Ops-alert env armed:** `DISCORD_OPS_WEBHOOK_URL` set on `caisson-license` (verified via
+  `railway variables`) + appended to `services/intel/.env`, `caisson-intel` container recreated
+  — `Up 5 seconds (healthy)`.
+- **Post-deploy live proofs (pasted):** license seam-1 webhook→grant-row PASS with the PUBLIC
+  DB URL (the env's `DATABASE_URL` is the Railway-internal hostname — ENOTFOUND from the box;
+  export `DATABASE_URL=$DATABASE_PUBLIC_URL` for box-side live runs); support-bot
+  `uv run pytest -m live` → `2 passed`. **Known-red leg:** license→bot Discord grant-push
+  (`discord-grant.live.test.ts`) fails because `SUPPORT_BOT_URL` still points at H's expired
+  Tailscale funnel — resolves with the "expose it" fork (public Railway domain), not a deploy
+  regression.
+- **Docs-service warm-up residual:** first boot after G's docs expansion hit the 180s embed
+  deadline (77/489 chunks semantically embedded, rest FTS-only; cache 1 hit / 84 misses) —
+  self-heals over subsequent boots as `/data/embed-cache.json` fills.
+
 ## 2026-07-09 — EXECUTED: Better Stack → Discord ops-alerting floor live (Kickoff-H W2 activation)
 
 **Operator-approved in-session ("can you create monitor and like configure etc with this?").**
