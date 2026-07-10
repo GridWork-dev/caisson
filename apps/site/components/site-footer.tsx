@@ -4,7 +4,7 @@ import { Wordmark } from "@caisson/brand";
 
 import { discordInviteUrl } from "@/lib/discord-grant";
 import { footerRoutes, type FooterCol } from "@/lib/routes";
-import { UpdatesForm } from "./waitlist-form";
+import { UpdatesFormLazy } from "./waitlist-form-lazy";
 
 // The footer derives from the canonical route registry's `footer` flag (ADR-0237) so it can't
 // drift from the nav/sitemap. Each column = registry routes + the few non-route extras (docs
@@ -16,6 +16,11 @@ import { UpdatesForm } from "./waitlist-form";
 // NEXT_PUBLIC_DISCORD_INVITE_URL (a silent no-op until then, same pattern as every other
 // NEXT_PUBLIC_-gated provider on this site).
 const DISCORD_INVITE_URL = discordInviteUrl();
+
+// ADR-0311: every footer <Link> below is `prefetch={false}` — below-fold, low-traffic routes
+// that don't need the eager-prefetch-on-viewport-entry Next.js does by default (54 links prefetch
+// on `/` today per the perf-mobile research round; the footer is most of that count).
+const FOOTER_PREFETCH = false;
 
 const EXTRAS: Record<FooterCol, { href: string; label: string }[]> = {
   editions: [],
@@ -71,7 +76,11 @@ export function SiteFooter() {
           </p>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-2)" }}>
             Base substrate is{" "}
-            <Link href="/legal/license" className="cs-link">
+            <Link
+              href="/legal/license"
+              className="cs-link"
+              prefetch={FOOTER_PREFETCH}
+            >
               Apache-2.0
             </Link>
             , free to use. Bundles and modules are commercial.
@@ -83,7 +92,7 @@ export function SiteFooter() {
             >
               Product updates
             </div>
-            <UpdatesForm source="footer" />
+            <UpdatesFormLazy source="footer" />
           </div>
         </div>
         {COLS.map((col) => (
@@ -97,7 +106,9 @@ export function SiteFooter() {
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {col.links.map((l) => (
                 <li key={l.href} style={{ marginBottom: "var(--cs-space-2)" }}>
-                  <Link href={l.href}>{l.label}</Link>
+                  <Link href={l.href} prefetch={FOOTER_PREFETCH}>
+                    {l.label}
+                  </Link>
                 </li>
               ))}
             </ul>
