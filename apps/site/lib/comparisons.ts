@@ -10,7 +10,8 @@
 // hardcoded here: the template reads them from the pricing display SOT (lib/pricing.ts) so a number
 // can't drift. Six-bundle vocabulary only; V1-live posture (no roadmap/"coming soon").
 //
-// SCOPE: all 20 targets of docs/gtm/comparison-targets.md, in three honest frames.
+// SCOPE: all targets of docs/gtm/comparison-targets.md (the original 20 + auditkit, added
+// 2026-07-10 off the CAISSON-76 parity research), in three honest frames.
 //  • Group A — SaaS boilerplates / starter kits (+ the free create-t3-app scaffold): they ship auth +
 //    billing + a landing page fast; Caisson ships the compliance and tenant-isolation substrate they
 //    leave to you (fail-closed RLS with isolation tests, a WORM + hash-chained audit trail, evidence
@@ -42,6 +43,9 @@ export interface ComparisonFaqItem {
 export interface Comparison {
   /** "shipfast" → /compare/shipfast */
   slug: string;
+  /** Per-record override of ACCESSED for targets verified on a later date (a record added after
+   *  the last full sweep must not claim the sweep's date). Omit = ACCESSED. */
+  accessed?: string;
   /** Display name, e.g. "ShipFast". */
   competitor: string;
   /** The live vendor URL the facts were read from (https, dated ACCESSED). */
@@ -1582,11 +1586,11 @@ export const COMPARISONS: readonly Comparison[] = [
     category: "AI-native compliance platform (GRC SaaS)",
     metaTitle: "Caisson vs Delve",
     metaDescription:
-      "Delve is an AI-native compliance platform whose agents auto-collect evidence with expert Slack support; Caisson is the code that implements the controls it evaluates — fail-closed RLS, a WORM audit trail, and deterministic OSCAL packs you own. An honest, dated comparison.",
+      "Delve is an AI-native compliance platform whose agents auto-collect evidence; Caisson is the code that implements the controls — evidence an auditor can verify without trusting any vendor. An honest, dated comparison, including the 2026 fabricated-reports allegations.",
     answer:
-      "Different layers, often paired. Delve is an AI-native compliance platform: autonomous agents gather screenshot evidence, fill out security questionnaires, and scan your infrastructure daily, backed by 1:1 Slack support from security experts — a subscription positioned as a compliance partner. Caisson is the code that implements the controls Delve evaluates: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and deterministic OSCAL evidence packs — one-time, in your codebase. Delve collects evidence with AI; Caisson produces deterministic evidence from your own code.",
+      "Different layers — and, since March 2026, a live trust question. Delve is an AI-native compliance platform: autonomous agents gather screenshot evidence, fill out security questionnaires, and scan your infrastructure daily, backed by 1:1 Slack support. In March 2026 it was publicly accused of delivering AI-fabricated SOC 2 reports to hundreds of customers (TechCrunch, 2026-03-22; one named customer confirmed exposure). Those are reported allegations, not findings — but they reframed the category's buying question: can you verify your compliance evidence without trusting the vendor that collected it? Caisson's answer is structural: the controls live in your codebase, and the evidence is deterministic, hash-chained, and anchored outside your database — verifiable by your auditor with no trust in a collector required.",
     heroLede:
-      "Delve's AI agents collect your evidence and answer questionnaires. Caisson is the controls in your codebase they evaluate. These compose — here is the honest line.",
+      "Delve's AI agents collect your evidence. Caisson is the controls in your codebase — producing evidence anyone can verify without trusting the collector. After 2026's fabricated-reports allegations, that difference is the story.",
     competitorPrice: "No public self-serve pricing — quote-based (book a demo)",
     competitorLicense: "Annual SaaS subscription (recurring).",
     competitorFacts: [
@@ -1594,6 +1598,7 @@ export const COMPARISONS: readonly Comparison[] = [
       "Covers SOC 2, HIPAA, GDPR, ISO 27001, and FedRAMP, and customizes controls to your team, integrations, and risk tolerance.",
       "Positions itself as a compliance partner, not just software — 1:1 Slack support with security experts responding in minutes, plus a free trust center.",
       "Connects to and scans your infrastructure; it does not ship the application controls it evaluates.",
+      "In March 2026, Delve (YC-backed, $32M raised) was publicly accused of delivering AI-fabricated SOC 2 reports to 400+ customers (TechCrunch, 2026-03-22; licens.io, 2026-04-03). One named customer, Lovable, publicly confirmed exposure, and Delve published its own response (2026-03-20/21). The incident was still the category's cautionary reference in vendor roundups as of 2026-06-28. These are reported allegations, dated — read the primary reporting.",
     ],
     competitorStrengths: [
       {
@@ -1607,12 +1612,16 @@ export const COMPARISONS: readonly Comparison[] = [
     ],
     caissonLine: [
       {
+        title: "Verification that doesn't require trust",
+        body: "The 2026 allegations reframed what compliance evidence is worth: evidence you can't independently verify is a promise, not proof. Caisson's audit trail is hash-chained and anchored write-once outside your database, and its evidence packs are deterministic and byte-stable — your auditor can check integrity without trusting Caisson, a collector, or an AI agent. That property is the product.",
+      },
+      {
         title: "Delve collects evidence; Caisson produces it deterministically",
         body: "Delve's agents gather evidence from the systems you built, screenshot by screenshot. Caisson is those controls — fail-closed RLS with isolation tests, a hash-chained audit trail, and an evidence-pack generator that emits byte-stable OSCAL — as source you own, CI-tested on every push, so the evidence is reproducible rather than re-collected.",
       },
       {
-        title: "Deterministic, owned, one-time",
-        body: "AI-collected evidence is only as reproducible as the run that gathered it; Caisson's evidence packs are deterministic and versioned in your repo. And Caisson is one-time and owned, not a subscription — it does not monitor your org or manage your auditor.",
+        title: "Owned, one-time, in your repo",
+        body: "Caisson is one-time and owned, not a subscription — it does not monitor your org or manage your auditor, and its evidence packs are versioned in your repo where they can be re-generated and re-verified at any time.",
       },
     ],
     rows: [
@@ -1628,6 +1637,11 @@ export const COMPARISONS: readonly Comparison[] = [
       },
       { label: GRC.trustCenter, caisson: false, competitor: true },
       { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      {
+        label: "Evidence verifiable without trusting the vendor",
+        caisson: "hash chain + external write-once anchor",
+        competitor: false,
+      },
       { label: SUBSTRATE.rls, caisson: true, competitor: false },
       { label: SUBSTRATE.worm, caisson: true, competitor: false },
       { label: SUBSTRATE.evidence, caisson: true, competitor: false },
@@ -1639,27 +1653,159 @@ export const COMPARISONS: readonly Comparison[] = [
       },
     ],
     whenPickCompetitor:
-      "You want AI agents to collect evidence and answer questionnaires with fast expert support — compliance busywork taken off your plate as a service.",
+      "You want AI agents to collect evidence and answer questionnaires with fast expert support — compliance busywork taken off your plate as a service — and you've done your own diligence on the vendor.",
     whenPickCaisson:
-      "You want the implemented controls and deterministic, reproducible evidence — RLS with isolation tests, a WORM audit trail, and byte-stable OSCAL packs — as code you own and test in CI, one-time.",
+      "You want the implemented controls and evidence your auditor can verify independently of any vendor — RLS with isolation tests, an externally anchored WORM audit trail, and byte-stable OSCAL packs — as code you own and test in CI, one-time.",
     whenBoth:
-      "Let Delve run evidence collection and expert support while Caisson implements the controls in your app — the deterministic OSCAL evidence Caisson emits is stronger source material for Delve's agents to present.",
+      "The layers still compose — a GRC platform can present evidence Caisson's code produces. The 2026 episode is the argument for owning the evidence layer no matter which platform presents it: deterministic, externally anchored evidence stays verifiable regardless of who collects, summarizes, or files it.",
     faq: [
       {
         question: "Is Caisson a Delve alternative?",
         answer:
-          "They sit at different layers and can be used together. Delve is an AI-native platform whose agents collect evidence and scan your stack; Caisson is the code that implements the controls it evaluates. Caisson doesn't run AI evidence-collection agents or provide expert support, and Delve doesn't ship the RLS, audit chain, or evidence generator that live in your codebase.",
+          "They sit at different layers. Delve is an AI-native platform whose agents collect evidence and scan your stack; Caisson is the code that implements the controls it evaluates. Caisson doesn't run AI evidence-collection agents or provide expert support, and Delve doesn't ship the RLS, audit chain, or evidence generator that live in your codebase. What Caisson does offer that no collection service can: evidence whose integrity is checkable without trusting the collector.",
+      },
+      {
+        question: "What are the Delve fabricated-reports allegations?",
+        answer:
+          "In March 2026, reporting alleged that Delve delivered AI-fabricated SOC 2 reports to 400+ customers (TechCrunch, 2026-03-22; licens.io, 2026-04-03). One named customer, Lovable, publicly confirmed exposure; Delve published its own response the same week. They remain reported allegations — read the primary sources. The relevance here is not the verdict but the question it surfaced: AI-collected compliance evidence is only as trustworthy as its collector. Caisson's evidence model — hash-chained, anchored write-once outside your database, deterministic to the byte — is built so that question never has to be asked.",
       },
       {
         question:
           "How is Caisson's evidence different from Delve's AI collection?",
         answer:
-          "Delve's agents gather evidence from your systems — screenshots, questionnaire answers, scans. Caisson's evidence-pack generator produces deterministic, byte-stable OSCAL packs from your own code, versioned in your repo and re-runnable in CI. One is AI-collected and re-gathered per run; the other is reproducible and owned. They can feed each other.",
+          "Delve's agents gather evidence from your systems — screenshots, questionnaire answers, scans — and you trust the gathering. Caisson's evidence-pack generator produces deterministic, byte-stable OSCAL packs from your own code, versioned in your repo, re-runnable in CI, and verifiable against an external write-once anchor. One is collected and trusted; the other is produced and provable.",
       },
       {
         question: "How do the two price?",
         answer:
           "Delve is an annual subscription with no public self-serve price, quote-based as of 2026-07-07. Caisson's Compliance bundle is a one-time perpetual license — see the licensing section for the live figure — with the source owned. One rents AI-driven collection; the other is the owned controls that produce the evidence.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  // The closest wedge-to-wedge target: a hash-chained audit-log SDK + SOC 2 prep layer sold as a
+  // subscription. Facts verified 2026-07-10 (per-record `accessed`); parity research:
+  // outputs/research/auditkit-parity-2026-07-10.md (CAISSON-76). Their GRC-lite workflow features
+  // are real strengths and stay in.
+  {
+    slug: "auditkit",
+    accessed: "2026-07-10",
+    competitor: "AuditKit",
+    competitorUrl: "https://auditkit.dev",
+    category: "Audit-log SDK + SOC 2 prep platform (subscription)",
+    metaTitle: "Caisson vs AuditKit",
+    metaDescription:
+      "AuditKit is a subscription audit-log SDK plus SOC 2 prep platform (hash-chained logs, evidence vault, $99–999+/mo); Caisson is the owned compliance substrate — externally anchored WORM chain, field encryption, deterministic OSCAL evidence packs — one-time source you own. An honest, dated comparison.",
+    answer:
+      "The closest wedge-to-wedge comparison on this list. AuditKit ships hash-chained, tamper-evident audit logs plus a SOC 2 prep layer — evidence vault, 51 pre-built controls, policy templates, access reviews — as a subscription: AGPLv3 core, with its differentiated features in a commercially-licensed /ee directory, and a managed cloud at $99–$999+/mo. Caisson ships the compliance substrate as source you own outright: a WORM audit chain anchored write-once outside your database, per-tenant field encryption with crypto-shred, deterministic evidence generation that refuses to guess, and NIST OSCAL export — one-time, licensed per organization. Rent the audit-log service, or own the audit infrastructure.",
+    heroLede:
+      "AuditKit rents you tamper-evident audit logs and SOC 2 prep as a subscription. Caisson sells you the audit infrastructure as source you own. Here is the honest line.",
+    competitorPrice:
+      "$99–$999+/mo published tiers (subscription, event-volume-metered)",
+    competitorLicense:
+      "AGPLv3 core; the /ee feature directory requires a commercial license even when self-hosting; managed cloud is a subscription.",
+    competitorFacts: [
+      "A TypeScript audit-log SDK (SHA-256 hash-chained events, Ed25519-signed uploads, an embeddable React viewer) plus a SOC 2 prep layer: evidence vault, 51 pre-built controls, 15 policy templates, access-review campaigns, vendor tracking, and a risk register (verified 2026-07-10).",
+      "Tier-gated: access-review campaigns sit in Pro ($299/mo) and up, Merkle-tree batch proofs and the auditor-collaboration portal in Business ($499/mo) and up; SSO/SCIM and the GraphQL API live in the /ee directory, which requires a commercial license even for self-hosters (auditkit.dev + repo README, 2026-07-10).",
+      "Client SDKs in TypeScript, Python, Go, and Java; exports PDF, CSV, JSON, OCSF, and CEF for SIEM ingestion.",
+      'Positions directly against GRC platforms — "80% cheaper vs Vanta/Drata" — with a self-hostable AGPLv3 core via Docker Compose.',
+    ],
+    competitorStrengths: [
+      {
+        title: "Turnkey SOC 2 prep workflow breadth",
+        body: "Access-review campaigns, vendor tracking, a general risk register, pre-written policy templates, and an auditor-collaboration portal are real workflow features Caisson does not ship. A team that wants the audit-prep busywork managed inside one tool gets genuine coverage here.",
+      },
+      {
+        title: "Multi-language SDKs and batch proofs",
+        body: "Native TypeScript, Python, Go, and Java SDKs reach stacks Caisson's TS/Bun substrate does not, and Merkle-tree batch proofs (Business tier) are an efficient verification primitive Caisson has not implemented.",
+      },
+      {
+        title: "A low subscription entry point",
+        body: "At $99/mo entry, the initial commitment is small — a real advantage for a team that wants tamper-evident logging this week without a purchase decision.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "The root of trust lives outside your database",
+        body: "AuditKit's chain verification reads the same database the chain lives in. Caisson's WORM anchor is written once, externally (S3 Object-Lock, GCS, R2) on every append — so wholesale DB rewrites and tail truncation are detectable against a root of trust no DB admin can alter. Chain-break detection alone can't make that guarantee.",
+      },
+      {
+        title: "Evidence is generated, not gathered",
+        body: "AuditKit's evidence vault is upload-then-hash — a human still collects the artifact (their own copy: evidence collection \"consumes 60-70% of total compliance effort\"). Caisson's collectors derive evidence from live system state, canonicalize it to identical bytes for identical inputs, hard-refuse to ship an incomplete pack, and export NIST OSCAL v1.2.2 validated in CI.",
+      },
+      {
+        title: "One purchase, the whole surface, per organization",
+        body: "No feature tier sits above you: the Compliance bundle ships its entire source — chain, anchors, field encryption, crypto-shred, evidence generation, crosswalks — for one per-organization license. Everyone your company authorizes works with the code; nothing is gated behind a higher subscription or a second /ee license.",
+      },
+    ],
+    rows: [
+      {
+        label: "Tamper-evident hash-chained audit log",
+        caisson: true,
+        competitor: true,
+      },
+      {
+        label: "External write-once root of trust (WORM anchor outside the DB)",
+        caisson: true,
+        competitor: false,
+      },
+      {
+        label: "Tail-truncation detection (anchor as length oracle)",
+        caisson: true,
+        competitor: "chain-break detection",
+      },
+      {
+        label: SUBSTRATE.fieldCrypto,
+        caisson: true,
+        competitor: false,
+      },
+      {
+        label: "GDPR/CCPA erasure automation + crypto-shred",
+        caisson: true,
+        competitor: false,
+      },
+      {
+        label: "Machine-readable compliance export",
+        caisson: "OSCAL v1.2.2 (NIST), CI-validated",
+        competitor: "PDF / CSV / JSON / OCSF / CEF",
+      },
+      {
+        label: "Access reviews, vendor tracking, policy templates",
+        caisson: false,
+        competitor: "Pro tier ($299/mo) and up",
+      },
+      {
+        label: "Auditor delivery",
+        caisson: "signed, downloadable evidence pack",
+        competitor: "hosted portal (Business tier)",
+      },
+      {
+        label: "License model",
+        caisson: "One-time perpetual, per-org, full source",
+        competitor: "Subscription; /ee needs a commercial license",
+      },
+    ],
+    whenPickCompetitor:
+      "You want a hosted audit-log service plus a managed SOC 2 prep workflow — access reviews, vendor tracking, policy templates, an auditor portal — at a low monthly entry, and renting it is fine.",
+    whenPickCaisson:
+      "You want the audit chain, encryption, and evidence generation as code you own — externally anchored, deterministic, OSCAL-exporting — for one per-organization purchase, with no feature tier above you.",
+    whenBoth:
+      "Less natural to pair than a GRC platform — the two overlap on the audit-log wedge itself. If you run AuditKit's SOC 2 prep workflow, Caisson's substrate can still own the in-app controls (RLS, field encryption, erasure); but most teams will pick one owner for the evidence chain.",
+    faq: [
+      {
+        question: "Is Caisson an AuditKit alternative?",
+        answer:
+          "On the tamper-evident audit-log and compliance-evidence wedge, yes — with a different model: AuditKit is a subscription service (SDK + managed API + prep workflow), Caisson is source-owned infrastructure. On the GRC-workflow features (access reviews, vendor tracking, policy templates, auditor portal), no — AuditKit ships those and Caisson doesn't; Caisson's substitute for the portal is a signed, downloadable evidence pack.",
+      },
+      {
+        question: "Both say self-hostable — what does that include?",
+        answer:
+          "AuditKit's AGPLv3 core self-hosts via Docker Compose, but its differentiated features — Merkle batch proofs, SSO/SCIM, the GraphQL API, the auditor portal — live in the /ee directory, which requires a commercial license even when self-hosting (repo README, 2026-07-10). Caisson's Compliance bundle ships its entire feature surface as source for one purchase; the base substrate is Apache-2.0.",
+      },
+      {
+        question: "How do the two price?",
+        answer:
+          "AuditKit publishes $99–$999+/mo subscription tiers, metered by event volume (auditkit.dev, 2026-07-10). Caisson's Compliance bundle is a one-time perpetual license per organization — see the licensing section for the live figure — with 12 months of updates included and the source yours either way. One is a metered service; the other is owned infrastructure.",
       },
     ],
   },

@@ -403,7 +403,7 @@ export default function AgenticDevPage() {
         <Section
           eyebrow="Connect over MCP"
           title="Where your agent connects."
-          lede="@caisson/mcp-server ships in the open Base substrate — every plan gets it, not just Agentic-Dev. Four stages on every call, in order: the same server the buyer dashboard and any MCP-speaking agent client connect through."
+          lede="Most kits ship an MCP server now; the difference is what it lets an agent do. @caisson/mcp-server ships in the open Base substrate — every plan gets it, not just Agentic-Dev — and it treats the agent as a principal: four stages on every call, in order, the same server the buyer dashboard and any MCP-speaking agent client connect through."
         >
           <FeatureGrid cols={2}>
             {MCP_SEQUENCE.map((s) => (
