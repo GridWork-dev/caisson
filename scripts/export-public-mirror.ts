@@ -87,6 +87,10 @@ const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
     "packages/cli/src/cli.test.ts",
     "its end-to-end describe block loads the repo-root registry/index.json (the CI-built private-monorepo artifact), which does not ship in the mirror — three e2e tests ENOENT/exit-1 there (W1 sandbox re-validation). The argv/TTY/sample coverage stays enforced in the private repo on every commit.",
   ],
+  [
+    "packages/cli/src/framework-next.compose.test.ts",
+    "the exit gate typechecks the generated Next tree against @caisson/* base packages resolved from cli's node_modules — the mirror installs those under the renamed @caisson-sh/* scope, so resolution fails by construction (the generated tree's @caisson/* imports are buyer-registry namespace, correctly left unrenamed). Enforced in the private repo (W1 sandbox re-validation).",
+  ],
 ]);
 
 /** Commercial devDependencies stripped from a mirrored package.json (keyed by ORIGINAL @caisson
