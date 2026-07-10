@@ -36,9 +36,12 @@ jobs:
 
       - name: run Lighthouse CI against the live origin
         working-directory: apps/site
+        # inputs.url rides an env var, never direct ${{ }} interpolation into the shell —
+        # expression-injection hardening (dispatch is write-gated, but the idiom costs nothing).
         run: >
           bunx @lhci/cli@0.15.1 autorun
-          --collect.url="${{ inputs.url || 'https://caisson.sh' }}/"
-          --collect.url="${{ inputs.url || 'https://caisson.sh' }}/marketplace"
+          --collect.url="${AUDIT_URL}/"
+          --collect.url="${AUDIT_URL}/marketplace"
         env:
+          AUDIT_URL: ${{ inputs.url || 'https://caisson.sh' }}
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

@@ -31,7 +31,7 @@ export interface RevealProps {
   /** Cascade the DIRECT CHILDREN instead of this element: each child reveals `stagger` ms after
    *  the previous one (via `nth-child` `transition-delay` reading `--cs-reveal-stagger`). Use on a
    *  grid/list wrapper so its cards enter in sequence; the wrapper itself is not hidden. Children
-   *  past the 8th share the last step (bounded — raise the ceiling in `reveal.css` if a grid grows).*/
+   *  past the 6th share the last step (bounded — raise the ceiling in `reveal.css` if a grid grows).*/
   stagger?: number;
   /** Extra inline styles, merged after the component's own custom-property style (e.g. a grid's
    *  `marginTop`). Lets a Reveal double as a layout container without a wrapping element. */

@@ -21,9 +21,11 @@
     transform var(--cs-duration-fast) var(--cs-ease-out);
 }
 
-/* Tactile press — a 1px settle on pointer/keyboard activation. Transform-only (composited);
-   the focus ring below stays instant and unmoved (a11y floor: never delay focus visibility). */
-.cs-button:active {
+/* Tactile press — a 1px settle on POINTER activation only. `:not(:focus-visible)` excludes
+   keyboard Space/Enter presses (ADR-0078 §6: no animation on keyboard-initiated actions);
+   pointer clicks don't set :focus-visible, so mouse/touch keep the press. Transform-only
+   (composited); the focus ring below stays instant and unmoved (a11y floor). */
+.cs-button:active:not(:focus-visible) {
   transform: translateY(1px);
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CodeBlock, Faq, Icon, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
@@ -253,15 +253,28 @@ export function PreviewDialog({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const entry = viewId ? entryByViewId(viewId) : undefined;
-  const vm = entry ? buildViewModel(entry) : undefined;
+  // Memoized on viewId so vm (and vm.slides) keeps a stable identity across parent re-renders —
+  // MediaCarousel resets its index on a new `slides` reference, so a fresh array every render
+  // would snap an open carousel back to slide 1 whenever cart/theme context re-renders the tree.
+  const liveVm = useMemo(() => {
+    const entry = viewId ? entryByViewId(viewId) : undefined;
+    return entry ? buildViewModel(entry) : undefined;
+  }, [viewId]);
+
+  // Retain the last-resolved view model through the authored close (ADR-0307): the parent nulls
+  // viewId at close, and unmounting the shell in that same render would leave the exit transition
+  // animating an empty panel. `heldVm` keeps the content mounted until the dialog's exit
+  // transition finishes (cleared on transitionend while closed).
+  const [heldVm, setHeldVm] = useState<ViewModel | undefined>(undefined);
+  if (liveVm && liveVm !== heldVm) setHeldVm(liveVm);
+  const vm = liveVm ?? heldVm;
 
   useEffect(() => {
     const dlg = ref.current;
     if (!dlg) return;
-    if (vm && !dlg.open) dlg.showModal();
-    else if (!vm && dlg.open) dlg.close();
-  }, [vm]);
+    if (liveVm && !dlg.open) dlg.showModal();
+    else if (!liveVm && dlg.open) dlg.close();
+  }, [liveVm]);
 
   return (
     <>
@@ -401,6 +414,13 @@ export function PreviewDialog({
         onClose={onClose}
         onClick={(e) => {
           if (e.target === ref.current) onClose();
+        }}
+        onTransitionEnd={(e) => {
+          // Exit settled while closed → release the held content (never mid-reopen: `open` is
+          // true again by then, so the guard holds and the fresh vm stays mounted).
+          if (e.target === ref.current && !ref.current?.open) {
+            setHeldVm(undefined);
+          }
         }}
       >
         {vm ? (
