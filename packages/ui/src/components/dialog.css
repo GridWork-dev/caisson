@@ -41,6 +41,69 @@
   margin-bottom: auto;
 }
 
+/* Authored slide-down for the top drawer (ADR-0307 gap — the nav drawer used to snap open/closed).
+ * @starting-style + `transition-behavior: allow-discrete` animate the top-layer <dialog> across
+ * display/overlay; transform + opacity only. This base rule is the EXIT (a token faster); [open] is
+ * the ENTER. Scoped to the top drawer so modal dialogs, side drawers, and the cart (own CSS) are
+ * untouched. Reduced motion: base.css zeroes durations on the element, and [open] restores
+ * transform/opacity, so the panel is never stuck hidden; the ::backdrop guard below covers the
+ * pseudo base.css's `*` reset can't reach. */
+.cs-dialog[data-variant="drawer"][data-side="top"] {
+  opacity: 0;
+  transform: translateY(-1rem);
+  transition:
+    opacity var(--cs-duration-fast) var(--cs-ease-out),
+    transform var(--cs-duration-fast) var(--cs-ease-out),
+    overlay var(--cs-duration-fast) allow-discrete,
+    display var(--cs-duration-fast) allow-discrete;
+}
+
+.cs-dialog[data-variant="drawer"][data-side="top"][open] {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--cs-duration-base) var(--cs-ease-out),
+    transform var(--cs-duration-base) var(--cs-ease-out),
+    overlay var(--cs-duration-base) allow-discrete,
+    display var(--cs-duration-base) allow-discrete;
+}
+
+@starting-style {
+  .cs-dialog[data-variant="drawer"][data-side="top"][open] {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+}
+
+.cs-dialog[data-variant="drawer"][data-side="top"]::backdrop {
+  opacity: 0;
+  transition:
+    opacity var(--cs-duration-fast) var(--cs-ease-out),
+    overlay var(--cs-duration-fast) allow-discrete,
+    display var(--cs-duration-fast) allow-discrete;
+}
+
+.cs-dialog[data-variant="drawer"][data-side="top"][open]::backdrop {
+  opacity: 1;
+  transition:
+    opacity var(--cs-duration-base) var(--cs-ease-out),
+    overlay var(--cs-duration-base) allow-discrete,
+    display var(--cs-duration-base) allow-discrete;
+}
+
+@starting-style {
+  .cs-dialog[data-variant="drawer"][data-side="top"][open]::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-dialog[data-variant="drawer"][data-side="top"],
+  .cs-dialog[data-variant="drawer"][data-side="top"]::backdrop {
+    transition-duration: 0.01ms;
+  }
+}
+
 .cs-dialog__panel {
   display: flex;
   flex-direction: column;
