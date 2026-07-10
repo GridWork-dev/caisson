@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { authClient } from "@/lib/auth-client";
-import { NAV_PILL_STYLE } from "./nav-account";
+import { NAV_PILL_STYLE } from "./nav-account-style";
 
 // The session-aware half of NavAccount, dynamically imported on idle by the shell (chrome slice a).
 // Isolating the better-auth `useSession` read here keeps its parse + execution out of the initial
