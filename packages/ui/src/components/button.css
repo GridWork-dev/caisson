@@ -17,7 +17,14 @@
     background var(--cs-duration-fast) var(--cs-ease-out),
     border-color var(--cs-duration-fast) var(--cs-ease-out),
     color var(--cs-duration-fast) var(--cs-ease-out),
-    box-shadow var(--cs-duration-fast) var(--cs-ease-out);
+    box-shadow var(--cs-duration-fast) var(--cs-ease-out),
+    transform var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+/* Tactile press — a 1px settle on pointer/keyboard activation. Transform-only (composited);
+   the focus ring below stays instant and unmoved (a11y floor: never delay focus visibility). */
+.cs-button:active {
+  transform: translateY(1px);
 }
 
 .cs-button[data-size="sm"] {

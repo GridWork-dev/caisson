@@ -23,11 +23,14 @@
   padding: var(--cs-space-6);
   color: inherit;
   text-decoration: none;
+  /* opacity is listed so a staggered scroll reveal (Reveal `stagger` on the .cs-editions grid)
+   * fades each card in smoothly — the card's own transition wins the :where()-zeroed reveal rule. */
   transition:
     border-color var(--cs-duration-fast) var(--cs-ease-out),
     background var(--cs-duration-fast) var(--cs-ease-out),
     box-shadow var(--cs-duration-base) var(--cs-ease-out),
-    transform var(--cs-duration-base) var(--cs-ease-out);
+    transform var(--cs-duration-base) var(--cs-ease-out),
+    opacity var(--cs-duration-slow) var(--cs-ease-reveal);
   will-change: transform;
 }
 
@@ -43,6 +46,13 @@
   background: var(--cs-surface-2);
   box-shadow: var(--cs-shadow-md);
   transform: translateY(-2px);
+}
+
+/* Press — settle the lift back down on activation (tactile confirm before the nav fires). */
+.cs-edition:active {
+  transform: translateY(0);
+  box-shadow: var(--cs-shadow-sm);
+  transition-duration: var(--cs-duration-fast);
 }
 
 /* The featured-lead card keeps its accent identity on hover — the generic :hover above would
