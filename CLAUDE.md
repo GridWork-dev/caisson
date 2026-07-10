@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0318** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0319** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -79,7 +79,10 @@ edited — supersede with a later ADR).
    cred-parity sweep, amends 0224 F6; 0318 = the OSS-launch program locks 2026-07-10 —
    sandbox validation gate, mirror backfill-at-cutover + append-only never-backdated,
    Kickoff-L folded as W0, window → Show HN, the gated release train with GH-Release
-   trigger + everything-rides + fresh full re-audit per release).
+   trigger + everything-rides + fresh full re-audit per release; 0319 = the WTP-synthesis
+   response locks 2026-07-10 — the R3/R6/R8/R10 copy wave shipped true-to-built with ISO
+   27001 deliberately unclaimed, R5 code-access/demo emphasis, the screened panel re-run
+   deferred until an anchor move pends, TRADEMARK.md drafted in-repo for lawyer redline).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
