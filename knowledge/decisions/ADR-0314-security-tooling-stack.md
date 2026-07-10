@@ -1,4 +1,4 @@
-# ADR-0310 — Repo-local security tooling stack; Strix harness retired
+# ADR-0314 — Repo-local security tooling stack; Strix harness retired
 
 **Status:** accepted · 2026-07-10 (Kickoff-K security round-2). **Tags:** `security`, `infra`,
 `tooling`. Replaces the Strix agentic-pentest harness with a four-layer open-source stack wired

@@ -2,12 +2,12 @@
 
 The repo-local security stack: open-source / local tools that cover every layer, runnable on this
 box, driven by Claude Code or the CLI. Supersedes the **Strix harness** (`tools/strix/`, removed
-2026-07-10 — ADR-0310): Strix's agent-lifecycle protocol needed a compliant external engine we
+2026-07-10 — ADR-0314): Strix's agent-lifecycle protocol needed a compliant external engine we
 don't run, and a black-box agent duplicated what the deterministic scanners + a CC-driven pentest
 already do. This stack is caisson-local (`tools/security/`, this playbook) — **not** a gridwork-core
 convention.
 
-Adoption + rationale: **ADR-0310**. The deep Layer-4 (Claude-Code-driven) pentest runbook is
+Adoption + rationale: **ADR-0314**. The deep Layer-4 (Claude-Code-driven) pentest runbook is
 `docs/security/pentest-runbook.md`. Pentest findings history (kept): `strix-findings-*.md` in this dir.
 
 ## Operator setup (one-time)
