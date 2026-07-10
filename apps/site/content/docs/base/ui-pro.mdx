@@ -52,7 +52,10 @@ transpilePackages: ["@caisson/ui", "@caisson/ui-pro"],
 ## Quickstart
 
 ```tsx
-import { DataTablePro, type DataTableProColumn } from "@caisson/ui-pro/components";
+import {
+  DataTablePro,
+  type DataTableProColumn,
+} from "@caisson/ui-pro/components";
 
 interface Row {
   id: string;
@@ -61,7 +64,13 @@ interface Row {
 }
 
 const columns: readonly DataTableProColumn<Row>[] = [
-  { key: "name", header: "Name", render: (r) => r.name, sortable: true, filterable: true },
+  {
+    key: "name",
+    header: "Name",
+    render: (r) => r.name,
+    sortable: true,
+    filterable: true,
+  },
   {
     key: "amount",
     header: "Amount",
@@ -121,7 +130,12 @@ import { AuditTimeline, shortHash } from "@caisson/ui-pro/components";
 import { CommandPalette, type CommandAction } from "@caisson/ui-pro/components";
 
 const actions: readonly CommandAction[] = [
-  { id: "new-tenant", label: "New tenant", group: "Create", run: () => createTenant() },
+  {
+    id: "new-tenant",
+    label: "New tenant",
+    group: "Create",
+    run: () => createTenant(),
+  },
 ];
 
 <CommandPalette actions={actions} open={open} onOpenChange={setOpen} hotkey />;

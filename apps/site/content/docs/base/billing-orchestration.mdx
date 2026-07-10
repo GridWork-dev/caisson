@@ -61,17 +61,29 @@ The credit ledger is already idempotent on its own insert. `processEvent` adds t
 everything else a webhook triggers:
 
 ```ts
-import { processEvent, withIdempotentSideEffect } from "@caisson/billing-orchestration";
+import {
+  processEvent,
+  withIdempotentSideEffect,
+} from "@caisson/billing-orchestration";
 
 await withTenant(tx, accountId, async () => {
-  const { alreadyProcessed } = await processEvent(tx, event.sourceEventId, async () => {
-    await grantCredits(tx, accountId, event.amountTotal);
-  });
+  const { alreadyProcessed } = await processEvent(
+    tx,
+    event.sourceEventId,
+    async () => {
+      await grantCredits(tx, accountId, event.amountTotal);
+    },
+  );
 
   if (!alreadyProcessed) {
-    await withIdempotentSideEffect(tx, event.sourceEventId, "discord-role", async () => {
-      await pushDiscordRole(accountId);
-    });
+    await withIdempotentSideEffect(
+      tx,
+      event.sourceEventId,
+      "discord-role",
+      async () => {
+        await pushDiscordRole(accountId);
+      },
+    );
   }
 });
 ```
@@ -82,12 +94,12 @@ delivery retries cleanly.
 
 ## Configuration
 
-| Driver | Required config |
-| --- | --- |
-| `createStripeBilling` | `apiKey`, `webhookSecret` |
-| `createPaddleBilling` | `apiKey`, `webhookSecret`; optional `env` (`sandbox` \| `production`, default `production`), `onWarn` |
-| `createLemonSqueezyBilling` | `apiKey`, `webhookSecret`, `storeId` |
-| `createPolarBilling` | `accessToken`, `webhookSecret`; optional `env` (`sandbox` \| `production`, default `production`) |
+| Driver                      | Required config                                                                                       |
+| --------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `createStripeBilling`       | `apiKey`, `webhookSecret`                                                                             |
+| `createPaddleBilling`       | `apiKey`, `webhookSecret`; optional `env` (`sandbox` \| `production`, default `production`), `onWarn` |
+| `createLemonSqueezyBilling` | `apiKey`, `webhookSecret`, `storeId`                                                                  |
+| `createPolarBilling`        | `accessToken`, `webhookSecret`; optional `env` (`sandbox` \| `production`, default `production`)      |
 
 `PROCESSED_EVENT_SCHEMA_SQL` ships the idempotency claim table as a checksum-pinned migration
 string — apply it as a new platform migration file, the same convention every other kernel-owned

@@ -1,7 +1,7 @@
 ---
-updated: 2026-07-08
+updated: 2026-07-09
 status: live
-adr_ceiling: 0298
+adr_ceiling: 0299
 ---
 
 # Decisions & Forks — live board
@@ -1816,3 +1816,18 @@ docs sidebar/pagination P3s ride W4.
 Held checkpoints (NOT covered by merge-when-green): the EULA credit-clause **wording**
 (CAISSON-61) needs operator approval before the W2 merge; the live migration apply for
 `0020–0022` stays the operator-gated DEPLOY checkpoint in W5 (0006–0009 bless pattern).
+
+## Closed by the 2026-07-09 post-audit residual round (operator-locked → ADR-0299)
+
+After Kickoff G closed (0 P0 / 0 buyer-visible P1 on G-owned surfaces), the residual board's
+four design calls went to the operator in one AskUserQuestion round, all recorded in
+**ADR-0299**: the sitewide barred zero → a Mona-Sans U+0030 unicode-range patch face composed
+ahead of Hubot (body font NOT swapped) · the 11 "still expanding" docs hedges → full
+source-grounded API-reference expansion, callouts deleted · both P3 cosmetics fixed now
+(compare 3-column Detail-half split; diagram chrome bar → short `<slug>.svg` label, caption
+stays the one visible narration) · the design-bandwidth remainder (three.js signature slot,
+bespoke module media) → one Kickoff-I design-track spec drafted next, operator locks scope
+before build. The same sitting root-fixed CAISSON-50/51 at the Cloudflare zone (the RUM
+injection ruleset's `enabled=false` — `auto_install=false` alone was proven insufficient;
+terraform pins both, PR #195) and armed the prod client env for Turnstile + dashboard PostHog
+(build ARGs + PostHog CSP origins, PR #195).
