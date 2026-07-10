@@ -51,9 +51,23 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <head>
         {/* Self-hosted fonts (next/font, lib/fonts.ts) — no render-blocking Google <link>.
-            No-flash theme set is externalized to /theme-init.js so script-src can drop
-            'unsafe-inline' for it; runs blocking before paint. */}
-        <script src="/theme-init.js" />
+            No-flash theme set, inlined (was externalized to /theme-init.js — that request bought
+            nothing: the CSP already carries 'unsafe-inline' on script-src, so dropping it was
+            never live; inlining removes one render-blocking request off the FCP path on every
+            route, same before-paint execution timing). `cs-js` gates the scroll-reveal so
+            content is never stuck hidden without JS (progressive enhancement): no class →
+            .cs-reveal renders fully visible. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.classList.add("cs-js");
+try {
+  var t = localStorage.getItem("cs-theme");
+  if (t) document.documentElement.setAttribute("data-theme", t);
+} catch {
+  /* storage blocked — keep the default dark theme */
+}`,
+          }}
+        />
         {/* Root @graph: Organization + WebSite (ADR-0079 §4) — XSS-safe serialized. */}
         <script
           type="application/ld+json"
