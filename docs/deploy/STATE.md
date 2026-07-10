@@ -33,6 +33,32 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-09 — EXECUTED: Better Stack → Discord ops-alerting floor live (Kickoff-H W2 activation)
+
+**Operator-approved in-session ("can you create monitor and like configure etc with this?").**
+First deploy of the `caisson-betterstack-adapter` Worker + the external-uptime half of the
+alerting floor wired end-to-end via the Better Stack API — then the WHOLE chain proven with a
+real incident and torn down.
+
+- **Worker:** `caisson-betterstack-adapter` →
+  `https://caisson-betterstack-adapter.broken-wood-97a9.workers.dev` (version `09329f10`), both
+  secrets set. First live delivery exposed a launch-blocking workerd incompatibility —
+  `redirect: "error"` throws under workerd (only follow/manual supported), so every delivery
+  502'd; fixed as `redirect: "manual"` (identical fail-closed semantics), commit `eed1949c`,
+  redeployed.
+- **Live-verify (pasted):** no-secret POST → `401` (fail-closed); with-secret e2e POST →
+  `{"ok":true}` / `deployed-e2e: 200`; real-chain probe — temp 404 monitor → Better Stack
+  incident `988503686` `"TEMP chain probe - will be deleted" Started` → embed delivered to
+  `#ops-alerts` (operator confirmed visually) → `resolve: 200`, `delete temp monitor: 204`.
+- **Better Stack objects:** monitors `4656433 https://caisson.sh up` ·
+  `4656434 https://license.caisson.sh/health up`; outgoing webhook `84150`
+  (`incident_change`, custom `X-Betterstack-Secret` header).
+- **Env SOT:** `DISCORD_OPS_WEBHOOK_URL` + `BETTERSTACK_API_TOKEN` + minted
+  `BETTERSTACK_WEBHOOK_SECRET` appended to `~/.gridwork/caisson.env`. Residual:
+  `DISCORD_OPS_WEBHOOK_URL` still needs setting on the license/intel Railway services at the
+  next fleet DEPLOY so the pg-boss/watcher alerts share the channel; Grafana contact point +
+  4 rules (the (a) half of the alerting-floor row) still open.
+
 ## 2026-07-08 — EXECUTED: credential-sweep propagation — per-service OpenRouter keys + vault + docs embed cache (PR #185)
 
 **Operator-approved same-session ("run the propagation fully and redeploy and resync").** The
