@@ -40,22 +40,31 @@ export function HeroFieldCanvas() {
     let idleId = 0;
     const timers: number[] = [];
 
+    // The RAF loop runs only when BOTH hold — the hero on-screen AND the tab visible. Each
+    // observer flips its own flag and syncs; a lone `resume()` per source would let a tab
+    // switch restart the loop while the hero is scrolled away (last-writer-wins burn).
+    let onScreen = true;
+    let docVisible = !document.hidden;
+    function syncRunState() {
+      if (!handle) return;
+      if (onScreen && docVisible) handle.resume();
+      else handle.pause();
+    }
+
     const io =
       "IntersectionObserver" in window
         ? new IntersectionObserver(
             ([entry]) => {
-              if (!handle) return;
-              if (entry?.isIntersecting) handle.resume();
-              else handle.pause();
+              onScreen = entry?.isIntersecting ?? true;
+              syncRunState();
             },
             { threshold: 0 },
           )
         : null;
 
     function onVisibility() {
-      if (!handle) return;
-      if (document.hidden) handle.pause();
-      else handle.resume();
+      docVisible = !document.hidden;
+      syncRunState();
     }
     function onContextLost(e: Event) {
       // GPU dropped the context — tear down to the poster (ADR-0306 resilience).
@@ -67,6 +76,12 @@ export function HeroFieldCanvas() {
     const themeObserver = new MutationObserver(() => {
       handle?.setDark(effectiveDark());
     });
+    // System-theme parity: with no pinned data-theme, an OS-level flip recolors the CSS poster
+    // via prefers-color-scheme but nothing re-stamps the attribute — listen to the mq directly.
+    const schemeMq = window.matchMedia("(prefers-color-scheme: dark)");
+    function onSchemeChange() {
+      handle?.setDark(effectiveDark());
+    }
 
     async function mount() {
       if (cancelled || !canvas) return;
@@ -82,6 +97,7 @@ export function HeroFieldCanvas() {
         attributes: true,
         attributeFilter: ["data-theme"],
       });
+      schemeMq.addEventListener("change", onSchemeChange);
     }
 
     function scheduleIdle() {
@@ -112,6 +128,7 @@ export function HeroFieldCanvas() {
       for (const t of timers) clearTimeout(t);
       io?.disconnect();
       themeObserver.disconnect();
+      schemeMq.removeEventListener("change", onSchemeChange);
       document.removeEventListener("visibilitychange", onVisibility);
       canvas.removeEventListener("webglcontextlost", onContextLost);
       handle?.dispose();
