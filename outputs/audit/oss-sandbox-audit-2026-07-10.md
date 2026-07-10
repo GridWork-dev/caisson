@@ -112,3 +112,28 @@ Minted against prod and **kept — no teardown** — as the permanent testing cr
 **W2 unblocked** (mirror-side zero open P0/P1; the one-time force-push to
 `caisson-sh/caisson-oss` awaits the operator picker). **W3/announce remains gated** on the
 registry P0 repair + the OA rider.
+
+## W2 cut-over record (executed same day, operator-approved via picker)
+
+Milestone backfill ran the HEAD exporter at 8 real historical SHAs; per ADR-0318 F2/F3 each
+export passed HEAD-level gates or was **dropped** (history stays real — historical trees were
+never patched):
+
+| Milestone (source SHA)             | Result   | Reason                                                                                      |
+| ---------------------------------- | -------- | ------------------------------------------------------------------------------------------- |
+| foundations reconcile (`075d71d0`) | dropped  | pre-open-core: exporter license gates fail by construction                                  |
+| Wave-0 substrate (`3562a2e9`)      | dropped  | pre-open-core                                                                               |
+| P5 generator (`9f6ea749`)          | dropped  | pre-open-core (no Apache LICENSE source)                                                    |
+| open-core split (`a0018f75`)       | dropped  | 12 prose files reference private seed repos (`gridwork`, `media-pipeline` provenance lines) |
+| P6 integration (`4fc7eed6`)        | dropped  | same private-seed-reference class                                                           |
+| Stage-2 (`747ea250`)               | dropped  | migrate README claimed a commercial license at that SHA (HEAD license-claim gate)           |
+| harvest terminal (`64f753f6`)      | dropped  | same migrate license-claim drift                                                            |
+| six-bundle catalog (`81703822`)    | **KEPT** | full gate pass (entity-name LICENSE stamps allowlisted — the true prior copyright holder)   |
+
+Cut-over pushed 2026-07-10: one-time force-push of the backfill history (`82996f5`), then the
+HEAD cut (`source 905e3070`) appended via a **plain push** (`cd21084`) through the exact flow
+the flipped `mirror-sync.yml` now runs — **append-only proven**. Mirror stays private. The
+live repo's stale force-push `mirror-sync` workflow is **disabled at the Actions level**
+(operator-approved) until Kickoff M merges the retired-trigger append-only version —
+**re-enable it at the M merge wrap**. Registry P0 disposition (operator picker): **ride the
+W4 release train** — recorded on CAISSON-85/86.
