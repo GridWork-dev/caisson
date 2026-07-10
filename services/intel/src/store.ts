@@ -57,6 +57,10 @@ export interface PgQueryable {
     sql: string,
     params?: unknown[],
   ): Promise<{ rows: T[] }>;
+  /** Multi-statement simple-protocol path. node-postgres's `query()` already accepts
+   *  multi-command strings, but PGlite's `query()` is prepared-statement-only — `migrate()`
+   *  prefers `exec` when the client provides it (PGlite does). */
+  exec?(sql: string): Promise<unknown>;
 }
 
 // ── in-memory store (tests) ────────────────────────────────────────────────────────────────
@@ -278,15 +282,19 @@ export class PostgresStore implements Store {
     }
   }
 
-  /** Apply the additive intel-schema migration (idempotent — every statement is IF NOT EXISTS).
-   *  Requires DDL privileges the runtime intel_role deliberately does NOT hold — see
-   *  migrations/provision-role.sql and the INTEL_MIGRATE_ON_BOOT gate in server.ts/cli.ts. */
+  /** Apply the additive intel-schema migrations in order (idempotent — every statement is
+   *  IF NOT EXISTS / role-guarded). Requires DDL privileges the runtime intel_role deliberately
+   *  does NOT hold — see migrations/provision-role.sql and the INTEL_MIGRATE_ON_BOOT gate in
+   *  server.ts/cli.ts. */
   async migrate(): Promise<void> {
-    const sql = readFileSync(
-      join(import.meta.dir, "../migrations/0001_intel_schema.sql"),
-      "utf8",
-    );
-    await this.client.query(sql);
+    for (const file of ["0001_intel_schema.sql", "0002_findings_triage.sql"]) {
+      const sql = readFileSync(
+        join(import.meta.dir, "../migrations", file),
+        "utf8",
+      );
+      if (this.client.exec) await this.client.exec(sql);
+      else await this.client.query(sql);
+    }
   }
 
   async close(): Promise<void> {
