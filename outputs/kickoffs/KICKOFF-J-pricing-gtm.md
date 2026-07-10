@@ -24,8 +24,18 @@
    Act, due 08-02) · 77 accepted (MCP reframe, scoped brief) · 76 accepted (AuditKit parity,
    analysis lane) · 78 deferred (trigger-parked). Copy builds ride the next site sitting.
 
-No product tree touched. Full picker record: `docs/state/decisions-and-forks.md` 2026-07-10
-section. Original charter below.
+**Second round (same sitting, operator-extended):** the non-code boundary was lifted by
+explicit operator instruction and the surfaced copy items EXECUTED as a site wave on this
+worktree — /compare/delve own-vs-verify rework + Compliance-page ownership paragraph
+(CAISSON-75) · /compare/auditkit off the CAISSON-76 parity research · /partners publishes the
+ADR-0297 terms · the EU AI Act Article-50 set: date section + standalone explainer + glossary
+term 36 (CAISSON-79) · MCP governed-surface reframe (CAISSON-77) · the ADR-0305 per-org line
+(plans FAQ, cart note, mid-tier bundle FAQs). All four intel tickets Done in Linear; AuditKit
+gap candidates trigger-parked in the tracker. Picker record: the fork board's "Kickoff-J
+second round" section.
+
+Full picker records: `docs/state/decisions-and-forks.md` 2026-07-10 sections. Original
+charter below.
 
 ---
 
