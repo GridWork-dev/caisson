@@ -158,6 +158,23 @@ export function mountDepthField(
   } catch {
     return null;
   }
+  // Software rasterizers (SwiftShader/llvmpipe — GPU-less VMs, remote desktops, CI) burn whole
+  // CPU cores per frame on this scene; the poster is the designed experience there, same as
+  // no-WebGL. Also what keeps the error-level Lighthouse run honest (it audits the real page,
+  // not 30s of software-GL blocking time).
+  try {
+    const gl = renderer.getContext();
+    const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+    const glRenderer = String(
+      dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "",
+    );
+    if (/swiftshader|llvmpipe|software|basic render/i.test(glRenderer)) {
+      renderer.dispose();
+      return null;
+    }
+  } catch {
+    // Detection failing is not a reason to drop the field on real hardware.
+  }
   renderer.setClearAlpha(0);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // ADR-0306: dpr capped at 2
 

@@ -182,11 +182,9 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
             strategy="afterInteractive"
             onLoad={() => setTurnstileReady(true)}
           />
-          <div
-            ref={turnstileRef}
-            style={{ flexBasis: "100%" }}
-            aria-label="Verification challenge"
-          />
+          {/* No aria-label: it's prohibited on a role-less div (axe aria-prohibited-attr);
+              the Turnstile iframe injected here names itself. */}
+          <div ref={turnstileRef} style={{ flexBasis: "100%" }} />
         </>
       )}
       <label

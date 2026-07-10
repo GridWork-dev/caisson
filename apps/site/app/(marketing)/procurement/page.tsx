@@ -351,14 +351,11 @@ export default function ProcurementPage() {
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-5)" }}>
           For security documentation, procurement questionnaires, W-9 requests,
           or to discuss the technical controls in detail, email{" "}
-          <a
-            href="mailto:security@caisson.sh"
-            style={{ color: "var(--cs-link)" }}
-          >
+          <a href="mailto:security@caisson.sh" className="cs-link">
             security@caisson.sh
           </a>{" "}
           (security/technical) or{" "}
-          <a href="mailto:admin@caisson.sh" style={{ color: "var(--cs-link)" }}>
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>{" "}
           (contracts, tax, entity). Ready to purchase or evaluate? See pricing.
