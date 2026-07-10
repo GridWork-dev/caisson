@@ -142,6 +142,9 @@ export async function sweepEligibleAbandonedCheckout(
           SELECT 1 FROM order_record o
            WHERE o.account_id = ca.account_id AND o.created_at > ca.started_at
         )
+        AND NOT EXISTS (
+          SELECT 1 FROM checkout_abandonment_notice n WHERE n.id = ca.id
+        )
       ORDER BY ca.started_at ASC
       LIMIT 1`,
     [accountId, cutoff.toISOString()],

@@ -384,7 +384,7 @@ export async function notifyAbandonedCheckout(
         ...(discount !== null
           ? {
               discountLabel: discount.label,
-              discountUrl: `${cartUrl}?promo=${discount.code}`,
+              discountUrl: `${cartUrl}?promo=${encodeURIComponent(discount.code)}`,
             }
           : {}),
       },

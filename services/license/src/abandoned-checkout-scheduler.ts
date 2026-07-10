@@ -1,6 +1,11 @@
 // The abandoned-checkout email scheduler (SPEC outputs/specs/deferred-respec/
 // SPEC-abandoned-checkout-email.md, operator-locked 2026-07-10). A single daily cron tick, cloned
 // from `credit-expiry-scheduler.ts`'s shape exactly: INERT UNTIL ARMED —
+// DEPLOY GATE: arm `ABANDONED_CHECKOUT_SCHEDULE` only AFTER `ADMIN_MUTATION_PROVISION_SQL` has
+// been re-run against the license DB — `listAbandonedCheckoutAccountIds` reads
+// `checkout_abandonment` as `admin_write`, whose SELECT policy ships in the admin provision
+// script, not migration 0024; armed-before-provisioned means every tick throws permission-denied
+// and no email ever sends (same dependency credit-expiry-scheduler carries).
 // `ABANDONED_CHECKOUT_SCHEDULE` (a cron expression) unset means `startAbandonedCheckoutScheduler`
 // returns immediately and no pg-boss connection is ever opened. When armed, a daily parent tick
 // enumerates every account holding a checkout_abandonment row old enough to be notice-eligible
