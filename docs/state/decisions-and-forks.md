@@ -1969,3 +1969,35 @@ per organization — your whole team can work with the code — while competitor
 sell 5-seat licenses. How does that land for you?"; also bump interview duration 15→30 min if
 the console exposes it. One in-flight interview may carry the stale premise — discount its seat
 answer at synthesis.
+
+### Kickoff-J second round — the site/copy pass picker (2026-07-10, operator-locked, same sitting)
+
+The operator extended the sitting into a build wave on the same worktree (the non-code boundary
+lifted by explicit instruction). Four picks, executed same-day:
+
+- **Delve treatment → rework `/compare/delve` to own-vs-verify + dated facts.** The "often
+  paired" recommendation removed; the 2026 fabricated-reports allegations cited factually
+  (TechCrunch 2026-03-22 · licens.io 2026-04-03 · Lovable confirmation · Delve's own response —
+  all dated, allegations labeled as such); a sourced ownership paragraph added to the Compliance
+  page's honesty-boundary section. Executes CAISSON-75.
+- **`/partners` → publish the locked ADR-0297 terms on-page** (5 partners · 40% off · 12-month
+  reverting · case-study contingent on conversion) — the pre-lock "no numbers" posture retired;
+  no countdown/roadmap framing kept.
+- **EU AI Act → full set:** enforcement-date section on `/frameworks/eu-ai-act`, a standalone
+  `/frameworks/eu-ai-act/article-50` explainer (obligations table, penalties, post-deadline
+  salvage wording), and glossary term #36 `eu-ai-act-article-50` (the term-count lock the
+  glossary data-lint requires — this picker is that lock). Executes CAISSON-79 inside its
+  2026-08-02 window. Stale "Compliance edition" vocabulary on the frameworks page fixed to
+  bundle in passing.
+- **AuditKit → `/compare/auditkit` built** off the clean CAISSON-76 parity research
+  (`outputs/research/auditkit-parity-2026-07-10.md`); a per-record `accessed` override added to
+  the comparison registry so the new page stamps its real verification date (2026-07-10) instead
+  of inheriting the 2026-07-07 sweep stamp. Gap candidates documented as a trigger-parked
+  tracker row (build-candidates: access reviews · general risk register · policy templates ·
+  SIEM drivers; wrong-class: auditor portal · trust center · personnel tracker).
+
+No-fork executions in the same wave: the CAISSON-77 MCP reframe (base-substrate tile +
+Agentic-Dev lede — the glossary + MCP-sequence copy were already mechanism-forward) and the
+ADR-0305 per-org license line (plans FAQ + cart trust note + the two mid-tier bundle FAQs); the
+12-month pricing-page answer was verified already shipped ("The one question everyone asks",
+/marketplace/plans).

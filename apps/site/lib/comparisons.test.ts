@@ -29,16 +29,25 @@ const EXPECTED_SLUGS = [
   "scytale",
   "thoropass",
   "delve",
+  "auditkit",
   "comp-ai",
   // Group C — build in-house
   "build-in-house",
 ] as const;
 
 describe("COMPARISONS registry", () => {
-  test("covers exactly the twenty comparison targets", () => {
+  test("covers exactly the comparison-target registry", () => {
     expect(COMPARISONS.map((c) => c.slug).sort()).toEqual(
       [...EXPECTED_SLUGS].sort(),
     );
+  });
+
+  test("a per-record accessed override is a valid ISO date", () => {
+    for (const c of COMPARISONS) {
+      if (c.accessed !== undefined) {
+        expect(c.accessed).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+    }
   });
 
   test("slugs are unique", () => {

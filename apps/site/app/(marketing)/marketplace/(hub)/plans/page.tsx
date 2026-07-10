@@ -40,6 +40,11 @@ const PLANS_FAQ = [
       "No. Every module and bundle is a one-time perpetual license that includes 12 months of updates from your purchase date, renewable per entitlement afterward at 40% of the then-current list price per year. Compliance Updates and the Developer plan add active-subscription updates and credits on top; they're not required for the code to run.",
   },
   {
+    question: "How many developers can use one license?",
+    answer:
+      "Everyone at your company. Every module and bundle is licensed per organization — the entitlement belongs to the purchasing entity and can be used by any personnel you authorize to work on your products. There is no per-seat pricing and no seat counting. For contrast: a similarly priced competitor tier caps at 5 developer seats (Supastarter Startup, $799, verified 2026-07-10).",
+  },
+  {
     question: "What happens to my code if I cancel Compliance Updates?",
     answer:
       "You keep it. Cancelling stops new control-mapping updates and evidence-pack regeneration — it doesn't revoke the audit chain, WORM store, or field-crypto module you already own.",

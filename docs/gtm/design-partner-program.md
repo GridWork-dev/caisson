@@ -11,9 +11,9 @@ grounds:
 
 # Design-partner program — the partner-facing terms one-pager
 
-The send-ready terms document behind the quiet `/partners` application surface. The live page
-deliberately shows no numbers (it shipped before ADR-0297 locked them); this one-pager is what
-the operator sends a qualified applicant or outreach candidate. Terms are LOCKED (ADR-0297):
+The send-ready terms document behind the `/partners` application surface (which publishes the
+same locked terms on-page since 2026-07-10); this one-pager is what the operator sends a
+qualified applicant or outreach candidate directly. Terms are LOCKED (ADR-0297):
 **first 5 partners · 40% off the initial purchase · 12-month reverting · case-study contingent
 on conversion.** Outreach prep lives in `design-partner-outreach.md`; the outreach itself is an
 operator act.
@@ -100,10 +100,9 @@ run it on your own stack before any conversation.
 - **Feedback cadence is a working ask, not a locked term.** ADR-0273 named cadence as a term
   to draft; ADR-0297 didn't lock a number. The one-pager says "roughly monthly (or async, as
   agreed)" — adjust per partner without an ADR.
-- **The live `/partners` page still carries no numbers.** Deliberate at ship time (pre-lock);
-  now that ADR-0297 is locked, whether the page states "5 partners / 40%" publicly is a site
-  sitting call — this sitting touches no product tree. Until then: page recruits quietly,
-  one-pager carries the terms.
+- **The `/partners` page publishes the locked terms** (Kickoff-J second picker round,
+  2026-07-10): 5 partners · 40% off · 12-month reverting · case-study-on-conversion now state
+  on-page, matching this one-pager. Keep the two surfaces in lockstep on any future term change.
 - **Grant mechanics** reuse existing machinery (ADR-0273): a discounted purchase (Paddle
   discount at checkout) or an operator-granted entitlement — no new engineering.
 - **Partners double as the real-ICP pricing instrument.** These are the first real ICP buyers
