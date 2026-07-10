@@ -33,6 +33,43 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-10 — EXECUTED: Kickoff-J tail wave — migration 0024 + abandoned-checkout arm + EULA clause live + alerting floor
+
+**Operator-ordered ("want you to do the full deploy sequence").** Ships the `5ece1d43` wave
+(EULA continuity clause · abandoned-checkout email build · CAISSON-71 harness stub) plus the
+same-sitting operational floor.
+
+- **Migration 0024** (`checkout_abandonment` + notice tables, RLS): read-only bless first —
+  pasted: `bless: 23 already applied, 1 pending: 0024_checkout_abandonment.sql` → apply
+  `[deploy-migrate] platform: applied 1, skipped 23` → re-bless `bless: 24 already applied,
+0 pending: (none)`. Zero drift.
+- **Admin provision re-run** (`provision-admin-mutation-surface.ts admin_app`) — pasted tail:
+  `applied: admin mutation provision · applied: role grants to admin_app · roles: admin,
+admin_write, app`. Policy verified live: `checkout_abandonment_admin_select|{admin_write}`
+  (the review's P2 deploy gate — provision BEFORE arming — honored in order).
+- **Paddle SANDBOX discount** `CAISSONCART10` (10%, `dsc_01kx5aw8mgvmxwmdym80tmzyq4`) created
+  over the API; `ABANDONED_CHECKOUT_SCHEDULE=30 6 * * *` + `ABANDONED_CHECKOUT_DISCOUNT_CODE/
+_LABEL` set on caisson-license (`--skip-deploys`, then redeploy).
+- **Railway ×2** from `main@665e7311`: `caisson-site` (EULA clause serves — pasted:
+  `Last updated: 10 July 2026` / `Section 365(n)` / `Vendor continuity and self-maintenance`
+  all present on https://caisson.sh/legal/eula, 200) + `caisson-license` (`/health` 200,
+  preDeploy `[deploy-migrate] platform: applied 0, skipped 24`, issuer on :8080). Scheduler
+  ARMED — pasted: `pgboss.schedule` row `checkout.abandonment_tick|30 6 * * *`.
+- **Grafana alerting floor over the provisioning API** (glsa_ token): contact point
+  `caisson-ops` → Discord #ops-alerts (delivery proven, webhook 204) + root policy + folder +
+  3 rules on metrics that EXIST (`caisson-heartbeat-lost` target_info<2 NoData=Alerting ·
+  `caisson-5xx-spike` http_server 5xx rate · `caisson-p95-latency` >2s) — all `inactive`
+  (evaluating). Four pre-existing console rules DELETED as provably dead (`up`/spanmetrics
+  don't exist in this stack; Loki has ZERO streams — see residual).
+- **Support-bot public HTTP leg CLOSED**: public domain already existed
+  (`caisson-support-bot-production.up.railway.app`, `/health` 200 `{"ok": true}`); the skipped
+  TS live leg run — pasted: `1 pass, 0 fail, 7 expect() calls` — the ADR-0224 all-seams matrix
+  is now fully closed.
+- **RESIDUAL (new finding):** the OTLP **logs** pipeline is dead — Loki label query over 24h
+  returns zero streams for every service, so log-based alerting is impossible until the log
+  pipeline is fixed; the dead Loki rules were pruned with the rest — re-add a log-error rule
+  once streams actually land.
+
 ## 2026-07-10 — EXECUTED: Kickoff-I design wave — caisson-site redeploy (ADR-0306–0309 live)
 
 **Operator-ordered ("push to branch and then also deploy the code").** The Kickoff-I merge
