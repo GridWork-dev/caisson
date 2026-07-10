@@ -37,6 +37,15 @@ interface ProdRoute {
   path: string;
   /** Final pathname after navigation, when it differs from `path` (a redirect). */
   expectPath?: string;
+  /** Positively assert the Turnstile widget rendered — the health check the source-frame
+   *  console filter below deliberately gives up (see its comment). One representative footer
+   *  route carries it. The probe is the hidden `cf-turnstile-response` input the widget
+   *  injects at render: it proves api.js loaded and `turnstile.render()` ran against our
+   *  container (the widget's own iframe sits in a closed shadow root and its src is empty —
+   *  neither is reachable/stable). A dead or blocked api.js turns THIS red even though the
+   *  platform's console output is filtered; a domain-allowlist mismatch is covered by the
+   *  deploy-time widget probe, not this sweep. */
+  expectTurnstileWidget?: boolean;
 }
 
 // Module depth pages derive from the real catalog registry (not hardcoded slugs) — "at least 3"
@@ -53,7 +62,7 @@ const ROUTES: readonly ProdRoute[] = [
   { path: "/marketplace" },
   // ADR-0237 F1: /pricing permanently 301s to the unified /marketplace hub.
   { path: "/pricing", expectPath: "/marketplace" },
-  { path: "/updates" },
+  { path: "/updates", expectTurnstileWidget: true },
   { path: "/docs" },
   ...LEGAL_ROUTES.map((r): ProdRoute => ({ path: r.path })),
   { path: "/login" },
@@ -70,12 +79,17 @@ const ROUTES: readonly ProdRoute[] = [
 // in browsers without Private-Access-Token support (this headless Chromium included): its PAT
 // probe 401s (expected — that 401 is how the platform detects PAT absence and falls back), and
 // its challenge script emits styled "%c%d font-size:0;color:transparent NaN" console-error lines.
-// The widget itself renders and solves (live-verified 2026-07-09). Unlike the beacon — our own
-// zone misconfiguration, fixable at the root — this is a third party's documented console
-// behavior on a deliberate product surface, with no our-side root fix. So the sweep drops console
-// errors whose SOURCE frame is the challenge platform, keyed on the console message's origin URL
-// (never on message text, never on our own frames), and stays zero-tolerance for everything else
-// — including page errors, which a Turnstile fault would still surface.
+// Unlike the beacon — our own zone misconfiguration, fixable at the root — this is a third
+// party's documented console behavior on a deliberate product surface, with no our-side root
+// fix. So the sweep drops console errors whose SOURCE frame is the challenge platform, keyed on
+// the console message's origin URL (never on message text — the noise shapes are brittle and
+// unlocalizable — and never on our own frames), and stays zero-tolerance for everything else.
+//
+// The trade-off, named: this drop is origin-scoped, so a REAL Turnstile fault that logs from the
+// same origin (a 110200 domain mismatch, an api.js load failure) is swallowed here too, and no
+// pageerror fires for those. Console-error absence is therefore NOT the Turnstile health signal
+// — the positive `expectTurnstileWidget` assertion on the /updates route is: it requires the
+// widget's injected response input to attach, which a dead or blocked api.js cannot produce.
 const THIRD_PARTY_CONSOLE_SOURCES: readonly RegExp[] = [
   /^https:\/\/challenges\.cloudflare\.com\//,
 ];
@@ -135,6 +149,16 @@ async function assertRoute(
       .locator('main, [role="main"], #main-content, h1')
       .first()
       .waitFor({ state: "visible", timeout: 10_000 });
+
+    // The positive Turnstile health check (see the THIRD_PARTY_CONSOLE_SOURCES comment): the
+    // widget's injected response input must attach. `attached`, not `visible` — it is a hidden
+    // input, and the footer widget can sit below the fold.
+    if (route.expectTurnstileWidget) {
+      await page
+        .locator('input[name="cf-turnstile-response"]')
+        .first()
+        .waitFor({ state: "attached", timeout: 15_000 });
+    }
 
     await page.waitForTimeout(500); // let deferred scripts (analytics init, etc.) settle
     expect(
