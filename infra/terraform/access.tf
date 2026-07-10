@@ -1,9 +1,13 @@
-# --- Cloudflare Access: pre-launch gate -------------------------------------------------------
-# The site is fully provisioned + deployed, but PRIVATE until launch: caisson.sh + www are served
-# behind Cloudflare Access, and every visitor must authenticate as a @gridwork.dev operator via
-# email one-time PIN (the built-in `onetimepin` IdP — no OAuth setup needed). At go-live, remove
-# ONLY the `site_gate` policy/application below (or flip `site_gate`'s policy to a `bypass`/
-# `everyone` include). Go-live posture: ADR-0082.
+# --- Cloudflare Access: pre-launch gate (SCOPED to the commerce surface, ADR-0303) --------------
+# ADR-0303 (2026-07-10, amends the A2 gated-until-checkout lock): the gate now covers ONLY the
+# commerce/buyer-private surface — `/dashboard*` and `/cart*` on apex + www. Everything else
+# (marketing, marketplace, docs, glossary, legal, llms.txt/robots.txt/sitemap, /api) is PUBLIC so
+# AI engines and search can index the site pre-launch (the 2026-07-09 AEO audit measured zero
+# citations anywhere with the full-host gate: every bot got the Access login page). /api is
+# deliberately public — every route carries its own auth per identity/security.md (strix-tested),
+# and gating it would 302 the sitewide `GET /api/auth/get-session` fetch on every public page.
+# Purchases stay impossible for visitors: buy CTAs land on the gated /cart. At go-live, remove the
+# `site_gate` application entirely. Prior posture (whole-host gate): ADR-0082 + the A2 fork lock.
 #
 # admin.caisson.sh's own CF-Access application/policy (formerly here, ADR-0138/0140) was REMOVED
 # by ADR-0283 — the admin control-plane gates itself now (in-app GitHub OAuth + a numeric-id
@@ -33,17 +37,20 @@ resource "cloudflare_zero_trust_access_policy" "site_gate" {
   }]
 }
 
-# Self-hosted Access application over the apex + www custom domains.
+# Self-hosted Access application over the COMMERCE surface only (ADR-0303): /dashboard* + /cart*
+# on apex + www. A CF Access path destination covers the path and everything under it.
 resource "cloudflare_zero_trust_access_application" "site_gate" {
   account_id           = var.cloudflare_account_id
-  name                 = "Caisson site (pre-launch gate)"
+  name                 = "Caisson site (pre-launch commerce gate)"
   type                 = "self_hosted"
   session_duration     = "24h"
   app_launcher_visible = false
 
   destinations = [
-    { type = "public", uri = var.zone_name },
-    { type = "public", uri = "www.${var.zone_name}" },
+    { type = "public", uri = "${var.zone_name}/dashboard" },
+    { type = "public", uri = "www.${var.zone_name}/dashboard" },
+    { type = "public", uri = "${var.zone_name}/cart" },
+    { type = "public", uri = "www.${var.zone_name}/cart" },
   ]
 
   policies = [
