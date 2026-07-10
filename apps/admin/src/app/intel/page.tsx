@@ -27,6 +27,32 @@ function fmtDate(iso: string): string {
   return iso.replace("T", " ").slice(0, 19);
 }
 
+type IntelReadStatus = "ok" | "unprovisioned" | "error";
+
+/** Guarded read — the degrade-to-EmptyState-never-500 invariant every admin read page holds
+ *  (same shape as /support's loadTickets). 42P01 (intel schema missing) / 42501 (the admin
+ *  role's cross-schema grant not provisioned) / 42703 (migration 0002's triage columns not
+ *  applied) all mean the intel DEPLOY step hasn't run yet; anything else is a transient DB
+ *  error and must NOT read as "not provisioned" (CAISSON-10 pattern). */
+async function loadFindings(
+  configured: boolean,
+  filter: IntelFindingFilter,
+): Promise<{ findings: IntelFindingRow[]; readStatus: IntelReadStatus }> {
+  if (!configured) return { findings: [], readStatus: "ok" };
+  try {
+    const findings = await readAdmin((tx) => readIntelFindings(tx, filter));
+    return { findings, readStatus: "ok" };
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    const unprovisioned =
+      code === "42P01" || code === "42501" || code === "42703";
+    return {
+      findings: [],
+      readStatus: unprovisioned ? "unprovisioned" : "error",
+    };
+  }
+}
+
 // ADR-0316 F5 — findings now carry a triage lifecycle (open → reviewed | dismissed). The page
 // DEFAULTS to `status=open` so triaged findings drop off the wall; the Status filter's "All" option
 // (empty value) shows every state. Per-row Review/Dismiss buttons POST to the dual-logged
@@ -71,9 +97,7 @@ export default async function IntelPage({
     ...(status === undefined ? {} : { status }),
   };
   const configured = adminDbConfigured();
-  const findings: IntelFindingRow[] = configured
-    ? await readAdmin((tx) => readIntelFindings(tx, filter))
-    : [];
+  const { findings, readStatus } = await loadFindings(configured, filter);
 
   return (
     <div className="shell stack" style={{ gap: "var(--cs-space-10)" }}>
@@ -95,6 +119,27 @@ export default async function IntelPage({
             Set <span className="mono">CAISSON_ADMIN_DB_URL</span> to read live
             findings. The intel daemon writes to the same admin Postgres, in its
             own <span className="mono">intel</span> schema.
+          </p>
+        </div>
+      ) : null}
+
+      {readStatus === "unprovisioned" ? (
+        <div className="panel">
+          <p className="section-title">Not provisioned</p>
+          <p className="muted">
+            The <span className="mono">intel</span> schema, its triage columns
+            (migration 0002), or the <span className="mono">admin</span>{" "}
+            role&apos;s cross-schema grant is missing on this database — the
+            intel DEPLOY step hasn&apos;t run yet. Findings render here once it
+            has.
+          </p>
+        </div>
+      ) : readStatus === "error" ? (
+        <div className="panel">
+          <p className="section-title">Read failed</p>
+          <p className="muted">
+            Transient database error reading intel findings — reload. The schema
+            is provisioned; this is not a deploy gap.
           </p>
         </div>
       ) : null}
