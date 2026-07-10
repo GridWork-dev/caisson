@@ -35,7 +35,12 @@ import {
   grant,
 } from "@caisson/credits";
 import { withAdvisoryXactLock } from "@caisson/jobs";
-import { asCredits, NotFoundError, ValidationError } from "@caisson/kernel";
+import {
+  asCredits,
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "@caisson/kernel";
 import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
 import {
   LEGACY_ENTITLEMENT_ALIASES,
@@ -56,14 +61,19 @@ import {
   GrantEntitlementBody,
   ResendPurchaseEmailBody,
   RevokePurchaseBody,
+  RotateLicenseBody,
+  SetSystemModeBody,
   type AdminMutationDeps,
   adjustCreditsAdmin,
   firstMintLicenseAdmin,
   grantEntitlementAdmin,
+  readSystemMode,
   reissueLicenseAdmin,
   resendPurchaseEmailAdmin,
   revokeEntitlementAdmin,
   revokePurchaseAdmin,
+  rotateLicenseAdmin,
+  setSystemModeAdmin,
   wormAnchorAccount,
 } from "./admin-mutations.ts";
 import { applyBillingEvent } from "./apply-billing-event.ts";
@@ -86,6 +96,7 @@ import {
 } from "./license-revocation-store.ts";
 import {
   ORDER_RECORD_SCHEMA_SQL,
+  ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "./subscription-history-store.ts";
 
@@ -209,6 +220,7 @@ beforeAll(async () => {
   // idempotency test) also touches these two tables now.
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
   // ADR-0225: the license index (read cross-tenant for the edge deny-set) + the deny-set truth table,
   // created BEFORE ADMIN_MUTATION_PROVISION_SQL (its new license_grant SELECT policy references it).
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
@@ -1614,6 +1626,304 @@ describe("paid revoke strict boundary body (ADR-0225)", () => {
         clawUnspentCredits: true,
         revokeEdgeAccess: true,
       }).success,
+    ).toBe(false);
+  });
+});
+
+describe("system write-mode lever (read-only gate)", () => {
+  test("unset source reads active; read_only blocks a mutation fail-closed; active unblocks", async () => {
+    // No `system_mode` row has been written by any earlier test in this file — the default is active.
+    expect(await readSystemMode(db)).toBe("active");
+
+    const acct = await realAccount();
+    // Arm read-only: the lever dual-logs and the mode read flips.
+    const armed = await setSystemModeAdmin(deps(), {
+      actorEmail: "<email>",
+      mode: "read_only",
+    });
+    expect(armed.previous).toBe("active");
+    expect(armed.worm).toBe("ok");
+    expect(await readSystemMode(db)).toBe("read_only");
+
+    // Every mutating action is gated fail-closed (409 ConflictError), BEFORE any write lands.
+    await expect(
+      grantEntitlementAdmin(deps(), {
+        actorEmail: "<email>",
+        targetAccountId: acct,
+        entitlementIds: ["compliance"],
+      }),
+    ).rejects.toThrow(ConflictError);
+    await expect(
+      adjustCreditsAdmin(deps(), {
+        actorEmail: "<email>",
+        targetAccountId: acct,
+        deltaCredits: 100,
+        reason: "should be blocked",
+      }),
+    ).rejects.toThrow(ConflictError);
+    // Ground truth: nothing was written for the account while read-only.
+    const rows = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM entitlement_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect(rows[0]?.n).toBe(0);
+
+    // The lever itself is NOT gated — flipping back to active must work while read-only.
+    const unarmed = await setSystemModeAdmin(deps(), {
+      actorEmail: "<email>",
+      mode: "active",
+    });
+    expect(unarmed.previous).toBe("read_only");
+    expect(await readSystemMode(db)).toBe("active");
+
+    // Unblocked: the same mutation now lands.
+    const g = await grantEntitlementAdmin(deps(), {
+      actorEmail: "<email>",
+      targetAccountId: acct,
+      entitlementIds: ["compliance"],
+    });
+    expect(g.after).toEqual(["compliance"]);
+  });
+
+  test("SetSystemModeBody is strict and only admits the two modes", () => {
+    expect(SetSystemModeBody.safeParse({ mode: "read_only" }).success).toBe(
+      true,
+    );
+    expect(SetSystemModeBody.safeParse({ mode: "active" }).success).toBe(true);
+    expect(SetSystemModeBody.safeParse({ mode: "frozen" }).success).toBe(false);
+    expect(
+      SetSystemModeBody.safeParse({ mode: "active", rogue: 1 }).success,
+    ).toBe(false);
+  });
+});
+
+describe("license rotation (true key rotation via the edge deny-set)", () => {
+  /** A rotation-aware /issue stub: mints a FRESH id per call and records what it was asked. */
+  function rotatingIssue(): {
+    issue: AdminMutationDeps["issue"];
+    calls: Array<{ rotate?: boolean }>;
+    minted: string[];
+  } {
+    const calls: Array<{ rotate?: boolean }> = [];
+    const minted: string[] = [];
+    const issue: AdminMutationDeps["issue"] = async (req) => {
+      calls.push({
+        ...(req.rotate !== undefined ? { rotate: req.rotate } : {}),
+      });
+      const licenseId = randomUUID();
+      minted.push(licenseId);
+      return { token: `ROTATED-${licenseId}`, licenseId };
+    };
+    return { issue, calls, minted };
+  }
+
+  /** Seed a stored license grant (the key being rotated) for (acct, major 0). */
+  async function seedLicense(acct: string, licenseId: string): Promise<void> {
+    await withTenant(db, acct, (tx) =>
+      storeLicenseGrant(tx, {
+        accountId: acct,
+        major: 0,
+        licenseId,
+        tier: "pro",
+        expiry: null,
+        token: `TOK-${licenseId}`,
+      }),
+    );
+  }
+
+  test("rotate denies the OLD key, mints a fresh one, dual-logs, and re-runs idempotently", async () => {
+    const acct = await realAccount();
+    const oldKey = randomUUID();
+    await seedLicense(acct, oldKey);
+    const stub = rotatingIssue();
+
+    const r = await rotateLicenseAdmin(deps({ issue: stub.issue }), {
+      actorEmail: "<email>",
+      targetAccountId: acct,
+      major: 0,
+      reason: "key leaked in a paste",
+      tier: "pro",
+      expiry: null,
+      oldLicenseId: oldKey,
+    });
+    // A FRESH key came back; the old one is what got denied.
+    expect(r.oldLicenseId).toBe(oldKey);
+    expect(r.licenseId).not.toBe(oldKey);
+    expect(r.token).toBe(`ROTATED-${r.licenseId}`);
+    expect(stub.calls).toEqual([{ rotate: true }]); // the proxy was asked for a FORCED re-mint
+    expect(r.worm).toBe("ok");
+    expect(r.edgePublish).toBe("skipped"); // no publisher provisioned in this suite
+
+    // Deny-set truth: the OLD key is a license_revocation row (the edge CRL's DB half)…
+    const denied = await ground<{
+      license_id: string;
+      account_id: string;
+      reason: string | null;
+    }>(
+      `SELECT license_id, account_id, reason FROM license_revocation WHERE license_id = $1`,
+      [oldKey],
+    );
+    expect(denied).toHaveLength(1);
+    expect(denied[0]?.account_id).toBe(acct);
+    expect(denied[0]?.reason).toBe("key leaked in a paste");
+    // …and the deny-set READ (what the publish path ships to the Worker) contains it.
+    const denySet = await asAdmin((tx) => readDenySet(tx));
+    expect(denySet).toContain(oldKey);
+    // The NEW key is NOT denied.
+    expect(denySet).not.toContain(r.licenseId);
+
+    // Dual log: a license_rotate action row landed with the old→new transition.
+    const browsed = await asAdmin((tx) => readAdminActionLog(tx, 50));
+    const mine = browsed.filter(
+      (row) => row.targetAccountId === acct && row.action === "license_rotate",
+    );
+    expect(mine).toHaveLength(1);
+
+    // Idempotent re-run (a retried rotation of the same old key): the PK conflict no-ops the
+    // denial — still one row — and a second fresh key is minted.
+    const again = await rotateLicenseAdmin(deps({ issue: stub.issue }), {
+      actorEmail: "<email>",
+      targetAccountId: acct,
+      major: 0,
+      tier: "pro",
+      expiry: null,
+      oldLicenseId: oldKey,
+    });
+    expect(again.licenseId).not.toBe(r.licenseId);
+    const deniedRows = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE license_id = $1`,
+      [oldKey],
+    );
+    expect(deniedRows[0]?.n).toBe(1);
+  });
+
+  test("a STALE route-read id denies BOTH ids: the stale one and the row's current key", async () => {
+    // The TOCTOU shape: the route read the grant's licenseId, then a concurrent /issue re-mint
+    // (a renewal landing mid-rotation) replaced the stored key before the rotation ran. Denying
+    // only the route-read id would leave the replacement key live at the edge forever — the
+    // rotation re-reads the CURRENT id inside the deny transaction and denies both.
+    const acct = await realAccount();
+    const staleKey = randomUUID(); // what the route read, one HTTP hop ago
+    const currentKey = randomUUID(); // what a concurrent re-mint stored since
+    await seedLicense(acct, currentKey);
+    const stub = rotatingIssue();
+
+    const r = await rotateLicenseAdmin(deps({ issue: stub.issue }), {
+      actorEmail: "<email>",
+      targetAccountId: acct,
+      major: 0,
+      tier: "pro",
+      expiry: null,
+      oldLicenseId: staleKey,
+    });
+    const denySet = await asAdmin((tx) => readDenySet(tx));
+    expect(denySet).toContain(staleKey);
+    expect(denySet).toContain(currentKey);
+    expect(denySet).not.toContain(r.licenseId);
+  });
+
+  test("a failed MINT still leaves the old key denied (revoke-first; retry converges)", async () => {
+    const acct = await realAccount();
+    const oldKey = randomUUID();
+    await seedLicense(acct, oldKey);
+    const failingIssue: AdminMutationDeps["issue"] = async () => {
+      throw new Error("license /issue proxy returned 503");
+    };
+
+    await expect(
+      rotateLicenseAdmin(deps({ issue: failingIssue }), {
+        actorEmail: "<email>",
+        targetAccountId: acct,
+        major: 0,
+        tier: "pro",
+        expiry: null,
+        oldLicenseId: oldKey,
+      }),
+    ).rejects.toThrow("503");
+
+    // The denial COMMITTED FIRST — durable despite the failed mint (deny-without-replacement is
+    // the fail-safe direction for a compromised key)…
+    const denied = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE license_id = $1`,
+      [oldKey],
+    );
+    expect(denied[0]?.n).toBe(1);
+    // …no action log claims a rotation that never completed…
+    const browsed = await asAdmin((tx) => readAdminActionLog(tx, 50));
+    expect(
+      browsed.filter(
+        (row) =>
+          row.targetAccountId === acct && row.action === "license_rotate",
+      ),
+    ).toHaveLength(0);
+    // …and the stored grant is untouched (the mint never ran).
+    const stored = await withTenant(db, acct, (tx) =>
+      tx.query<{ license_id: string }>(
+        `SELECT license_id FROM license_grant WHERE account_id = $1 AND major = 0`,
+        [acct],
+      ),
+    );
+    expect(stored.rows[0]?.license_id).toBe(oldKey);
+
+    // The RETRY converges: the denial re-insert no-ops and the fresh mint lands.
+    const stub = rotatingIssue();
+    const retried = await rotateLicenseAdmin(deps({ issue: stub.issue }), {
+      actorEmail: "<email>",
+      targetAccountId: acct,
+      major: 0,
+      tier: "pro",
+      expiry: null,
+      oldLicenseId: oldKey,
+    });
+    expect(retried.licenseId).not.toBe(oldKey);
+    expect(retried.worm).toBe("ok");
+  });
+
+  test("a failed REVOKE never mints — no orphan new key (atomic leg 1)", async () => {
+    // A nonexistent target fails the existence check INSIDE the revoke transaction, rolling the
+    // denial back — the mint proxy must never have been called.
+    const stub = rotatingIssue();
+    const ghost = betterAuthId(); // never seeded
+    await expect(
+      rotateLicenseAdmin(deps({ issue: stub.issue }), {
+        actorEmail: "<email>",
+        targetAccountId: ghost,
+        major: 0,
+        tier: "pro",
+        expiry: null,
+        oldLicenseId: "lic-ghost",
+      }),
+    ).rejects.toThrow(NotFoundError);
+    expect(stub.calls).toHaveLength(0); // no mint without its revoke
+    expect(stub.minted).toHaveLength(0);
+    const denied = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE license_id = 'lic-ghost'`,
+    );
+    expect(denied[0]?.n).toBe(0); // the denial rolled back with the failed leg
+  });
+
+  test("RotateLicenseBody is strict (unknown fields rejected; reason optional)", () => {
+    expect(
+      RotateLicenseBody.safeParse({ targetAccountId: "acct", major: 0 })
+        .success,
+    ).toBe(true);
+    expect(
+      RotateLicenseBody.safeParse({
+        targetAccountId: "acct",
+        major: 0,
+        reason: "leak",
+      }).success,
+    ).toBe(true);
+    expect(
+      RotateLicenseBody.safeParse({
+        targetAccountId: "acct",
+        major: 0,
+        rogue: 1,
+      }).success,
+    ).toBe(false);
+    expect(
+      RotateLicenseBody.safeParse({ targetAccountId: "acct", major: -1 })
+        .success,
     ).toBe(false);
   });
 });

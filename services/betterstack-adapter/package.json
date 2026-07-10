@@ -1,0 +1,31 @@
+{
+  "name": "@caisson/service-betterstack-adapter",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Minimal stateless Cloudflare Worker (CAISSON-53): reshapes Better Stack's Uptime 'Incident' outgoing webhook (no native Discord delivery on the operator's plan) into a Discord embed POST, unifying uptime alerts into the same ops Discord channel as the job/watcher alerting wired the same wave.",
+  "exports": {
+    ".": {
+      "bun": "./handler.ts",
+      "types": "./dist/handler.d.ts",
+      "default": "./dist/handler.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "bun test handler.test.ts"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

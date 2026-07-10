@@ -21,9 +21,11 @@ export {
   createWebhookChannel,
   createSlackChannel,
   createTelegramChannel,
+  createDiscordChannel,
   WebhookConfigSchema,
   SlackConfigSchema,
   TelegramConfigSchema,
+  DiscordConfigSchema,
 } from "./channels.ts";
 export type {
   DeliveryResult,
@@ -32,6 +34,7 @@ export type {
   WebhookConfig,
   SlackConfig,
   TelegramConfig,
+  DiscordConfig,
 } from "./channels.ts";
 
 export { createInMemoryAuditSink } from "./audit.ts";
@@ -42,5 +45,5 @@ export type {
   CaptureAuditSink,
 } from "./audit.ts";
 
-export { processAlert } from "./orchestrator.ts";
+export { processAlert, deliverImmediate } from "./orchestrator.ts";
 export type { ProcessAlertDeps, ProcessAlertResult } from "./orchestrator.ts";

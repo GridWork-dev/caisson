@@ -26,6 +26,12 @@
 // Overlap-safety (ADR-0229 row 56) is a SEPARATE concern from that idempotency note: `singletonKey`
 // maps straight to pg-boss's native `SendOptions.singletonKey`, which suppresses OVERLAP (at most one
 // job with that key active/queued at once) rather than dedup'ing a retry. Both can ride one send.
+//
+// Job-failure alerting: `work()`'s per-job handler call is wrapped in a try/catch that
+// reports through the optional `JobAlertingDeps` port, THEN re-throws — pg-boss's own retry/
+// dead-letter machinery is untouched, alerting only observes. The underlying `PgBoss` instance's
+// `error` event (undocumented-crash risk if left unhandled — see `wireBossErrorHandler`) is wired
+// the same way. See `JobAlertingDeps`'s doc for why this stays dependency-free of `@caisson/alerting`.
 import { PgBoss } from "pg-boss";
 import { createHash } from "node:crypto";
 import { ConfigError, NotFoundError, parseStrict } from "@caisson/kernel";
@@ -76,6 +82,24 @@ export interface PgBossClient {
   ): Promise<void>;
 }
 
+/**
+ * Job-failure alerting seam. Kept dependency-free of `@caisson/alerting` on purpose:
+ * this package is OPEN Apache-2.0 Base and must never depend "up" on a commercial package
+ * (ADR-0094/0097 open↔commercial boundary — `standards-gate`'s `checkOpenCommercialBoundary`
+ * enforces it). A caller with a commercial license (a service under `services/`) implements this
+ * tiny structural port using the real `@caisson/alerting` pipeline; absent = today's behavior,
+ * no alert, every existing `createPgBossJobQueue` call keeps compiling.
+ */
+export interface JobAlertingDeps {
+  /** Called AFTER a `work()` task handler throws, BEFORE the re-throw. Must never itself throw —
+   *  `pgboss.ts` never lets an alerting failure block or alter the re-throw that preserves
+   *  pg-boss's native retry/dead-letter machinery. */
+  reportTaskFailure(taskName: string, error: unknown): Promise<void>;
+  /** Called from the underlying `PgBoss` instance's own `error` event (an unhandled one crashes
+   *  the process per pg-boss's docs) — an infra-level failure, not tied to one task/job. */
+  reportInfraError(error: unknown): Promise<void>;
+}
+
 export interface PgBossJobQueueConfig {
   /** e.g. `DATABASE_URL` — read by the caller's env and injected here, never a module constant. */
   connectionString?: string;
@@ -84,6 +108,37 @@ export interface PgBossJobQueueConfig {
    * `connectionString` so this driver runs fully offline.
    */
   client?: PgBossClient;
+  /** Optional job-failure alerting (see {@link JobAlertingDeps}). */
+  alerting?: JobAlertingDeps;
+}
+
+/** The minimal event-emitter surface {@link wireBossErrorHandler} needs — a real `PgBoss`
+ *  instance satisfies it (it extends node:events `EventEmitter`); tests inject a bare object so
+ *  the wiring is provable without a live Postgres connection. */
+export interface PgBossErrorEmitter {
+  on(event: "error", listener: (error: Error) => void): unknown;
+}
+
+/**
+ * pg-boss's own docs warn an unhandled `error` event CRASHES the process (Node's `EventEmitter`
+ * default behavior for a listener-less `'error'` emit) — this repo previously shipped zero such
+ * listeners, a live crash risk on any connection-level pg-boss failure. Wired BEFORE
+ * `.start()` so even a startup-time error is caught. Routes to the injected alerting deps when
+ * present; falls back to the injected `log` seam otherwise — never silently dropped.
+ */
+export function wireBossErrorHandler(
+  emitter: PgBossErrorEmitter,
+  alerting: JobAlertingDeps | undefined,
+  log: (message: string) => void,
+): void {
+  emitter.on("error", (error: Error) => {
+    if (alerting !== undefined) {
+      // Alerting itself failing must never throw back into pg-boss's EventEmitter dispatch.
+      void alerting.reportInfraError(error).catch(() => {});
+    } else {
+      log(`[jobs] pg-boss error event: ${error.message}`);
+    }
+  });
 }
 
 /**
@@ -160,7 +215,7 @@ export function createPgBossJobQueue(
       clientPromise =
         config.client !== undefined
           ? Promise.resolve(config.client)
-          : startSdkClient(config.connectionString as string);
+          : startSdkClient(config.connectionString as string, config.alerting);
     }
     return clientPromise;
   }
@@ -221,8 +276,21 @@ export function createPgBossJobQueue(
       await ensureQueue(client, name);
       const workerId = await client.work(name, async (jobs) => {
         for (const job of jobs) {
-          const validated = parseStrict(task.schema, job.data);
-          await task.handler(validated);
+          try {
+            // parseStrict INSIDE the try: a poison payload that fails schema validation must
+            // alert the same as a handler throw, before pg-boss's retry/dead-letter path sees it.
+            const validated = parseStrict(task.schema, job.data);
+            await task.handler(validated);
+          } catch (err) {
+            if (config.alerting !== undefined) {
+              // Alerting must never mask the original failure or block the re-throw below —
+              // pg-boss's native retry/dead-letter machinery depends on that re-throw happening.
+              await config.alerting
+                .reportTaskFailure(name, err)
+                .catch(() => {});
+            }
+            throw err;
+          }
         }
       });
       return {
@@ -266,9 +334,17 @@ export function createPgBossJobQueue(
   };
 }
 
-/** Builds the real pg-boss-backed client and starts it. */
-async function startSdkClient(connectionString: string): Promise<PgBossClient> {
+/** Builds the real pg-boss-backed client, wires the crash-risk `error` event handler (see
+ *  {@link wireBossErrorHandler}), and starts it. */
+async function startSdkClient(
+  connectionString: string,
+  alerting?: JobAlertingDeps,
+  log: (message: string) => void = (message: string) => {
+    process.stderr.write(`${message}\n`);
+  },
+): Promise<PgBossClient> {
   const boss = new PgBoss(connectionString);
+  wireBossErrorHandler(boss, alerting, log);
   await boss.start();
   return boss;
 }

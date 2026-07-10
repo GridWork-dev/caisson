@@ -188,6 +188,12 @@ const IssueBody = z
     tier: licenseTierSchema,
     major: z.number().int().nonnegative(),
     expiry: z.string().datetime({ offset: true }).nullable(),
+    // TRUE key rotation (the admin rotation lever): skip the idempotent re-serve and mint a FRESH
+    // token + licenseId even when the stored claims are unchanged, replacing the stored grant in
+    // place. The caller is responsible for denying the OLD licenseId (the edge deny-set) BEFORE
+    // requesting this mint — this flag only forces the re-mint. Grants no new privilege: both
+    // bearers can already mint; absent/false keeps the persist-and-reuse contract byte-identical.
+    rotate: z.boolean().optional(),
   })
   .strict();
 
@@ -313,6 +319,9 @@ interface IssueOrReuseInput {
   tier: LicenseTier;
   major: number;
   expiry: string | null;
+  /** True → skip the re-serve equality check and ALWAYS mint fresh (key rotation). The stored
+   *  grant is still replaced in place — one row per (account, major) holds either way. */
+  forceRemint?: boolean;
 }
 
 /**
@@ -348,7 +357,7 @@ async function issueOrReuseLicense(
   // consumer expands against the index at verification. Signing the EXPANSION instead orphans the
   // purchased-id-keyed `updatesWindows`/`entitledSince` maps (audit F2, 2026-07-06).
   const entitlements = [...purchased].sort();
-  if (existing !== null) {
+  if (existing !== null && input.forceRemint !== true) {
     const stored = storedRemintClaims(existing.token);
     if (
       stored.entitlements.join(" ") === entitlements.join(" ") &&
@@ -585,17 +594,19 @@ export function createApp(
           400,
         );
       }
-      const { accountId, tier, major, expiry } = parsed.data;
+      const { accountId, tier, major, expiry, rotate } = parsed.data;
 
       // Idempotent re-serve (persist & reuse) with the ADR-0251 Decision 3 window-changed re-mint
       // and the race-loser re-read -- the full behavior contract lives on issueOrReuseLicense
       // above (extracted 2026-07-07, ADR-0292, so the webhook-push first-mint below shares this
-      // EXACT path rather than a second implementation).
+      // EXACT path rather than a second implementation). `rotate: true` (the admin rotation
+      // lever) forces a fresh mint instead of the re-serve — see IssueBody.
       const outcome = await issueOrReuseLicense(deps, {
         accountId,
         tier,
         major,
         expiry,
+        forceRemint: rotate === true,
       });
       if (outcome.kind === "unresolved") {
         // Fail-closed TM-E VALIDATION only (never the signed set): a stored purchased id absent

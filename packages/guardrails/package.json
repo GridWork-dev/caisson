@@ -26,6 +26,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@caisson/ai-evals": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",

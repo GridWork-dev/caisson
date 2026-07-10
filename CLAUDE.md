@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0299** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0302** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -54,7 +54,12 @@ edited — supersede with a later ADR).
    surface-remediation fork locks — twelve locks across footer/matrix stack, migration-list
    unification, ai-keys gate, media/popout, docs full-sweep, email dark-mode, 2026-07-09;
    0299 = the post-audit residual design locks — Mona-Sans zero-patch face, docs full
-   API-reference expansion, compare/diagram P3 dedupe, Kickoff-I spec-next, 2026-07-09).
+   API-reference expansion, compare/diagram P3 dedupe, Kickoff-I spec-next, 2026-07-09;
+   0300-0302 = the Kickoff-H W3 commerce/license locks 2026-07-09 (renumbered from
+   0298-0300 at merge per ADR-0088) — read-only mutation gate as an admin lever only, no
+   dunning freeze · priority-support creditsPerCycle 1000 at Developer parity, executes the
+   0288 rider (b) · subscription-refund coverage-horizon claw, supersedes the 0269 Decision-6
+   accept).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec

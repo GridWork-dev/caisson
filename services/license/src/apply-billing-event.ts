@@ -42,6 +42,7 @@ import {
   revokePurchaseGrants,
   revokePurchaseLineGrants,
   revokeSubscriptionGrants,
+  rollbackSubscriptionCoverageHorizon,
   upsertSubscriptionGrants,
 } from "./entitlement-store.ts";
 import type { SkuLine } from "./posthog-capture.ts";
@@ -50,7 +51,9 @@ import type { SkuLine } from "./posthog-capture.ts";
 import {
   cancelSubscriptionStatus,
   insertOrderRecord,
+  readSubscriptionStatus,
   refundOrderRecord,
+  refundSubscriptionOrderRecord,
   upsertSubscriptionStatus,
 } from "./subscription-history-store.ts";
 
@@ -182,6 +185,21 @@ export async function applyBillingEvent(
       // sink at once, and skips the redundant writes on a resend too.
       let effect: AppliedBillingEffect = NO_EFFECT;
       await withIdempotentSideEffect(tx, ev.invoiceId, "grant", async () => {
+        // Grant-time liveness check (the static-grant ordering-race fix, with the cancel-side
+        // tombstone in cancelSubscriptionStatus): a `subscription.canceled` processed BEFORE this
+        // invoice (out-of-order delivery) leaves a canceled status row — and when no grant rows
+        // existed yet, minting them NOW would create active grants no later event ever revokes
+        // (the cancel already ran; a redelivery revokes nothing new). So a canceled subscription's
+        // late invoice grants NO entitlements and NO coverage mirrors. The CREDITS still grant:
+        // the payment really happened, credits are a bounded paid-for allotment, and a refund of
+        // this same payment claws them by this invoice id. Serialization with a racing cancel is
+        // the account billing lock above (both paths take it first).
+        const lifecycle = await readSubscriptionStatus(
+          tx,
+          ev.accountId,
+          ev.subscriptionId,
+        );
+        const canceledBeforeGrant = lifecycle === "canceled";
         await grant(tx, {
           eventType: "sub_allotment",
           accountId: ev.accountId,
@@ -195,26 +213,36 @@ export async function applyBillingEvent(
         // derives from a subscription grant lapses with the LAST PAID period rather than living
         // forever in a stale token (audit hardening 2026-07-06). Idempotent per (account,
         // entitlement, subscription). A credits-only plan carries `entitlements: []` → no-op.
-        await upsertSubscriptionGrants(tx, {
-          accountId: ev.accountId,
-          entitlementIds: plan.entitlements,
-          subscriptionId: ev.subscriptionId,
-          sourceEventId: ev.invoiceId,
-          cadence: plan.cadence,
-        });
+        if (!canceledBeforeGrant) {
+          await upsertSubscriptionGrants(tx, {
+            accountId: ev.accountId,
+            entitlementIds: plan.entitlements,
+            subscriptionId: ev.subscriptionId,
+            sourceEventId: ev.invoiceId,
+            cadence: plan.cadence,
+          });
+        }
         // ADR-0293 G13/G14: the uniform subscription-status signal (see subscription-history-store.ts
         // header) — written for EVERY subscription plan, not just zero-entitlement ones, so it is the
         // one place the dashboard reads both "is this zero-entitlement plan owned" and "which Paddle
         // subscription id backs this price id, to cancel it". Runs INSIDE the G7 idempotency gate
         // (unlike the invoice-scoped grant calls above it never had its own natural dedupe key), so a
         // Resend's fresh event_id no longer refreshes this row for free either.
-        await upsertSubscriptionStatus(tx, {
-          accountId: ev.accountId,
-          subscriptionId: ev.subscriptionId,
-          priceId: ev.priceId,
-          planTag: plan.planTag,
-        });
+        // A canceled tombstone is never resurrected to 'active' by a late invoice either.
+        if (!canceledBeforeGrant) {
+          await upsertSubscriptionStatus(tx, {
+            accountId: ev.accountId,
+            subscriptionId: ev.subscriptionId,
+            priceId: ev.priceId,
+            planTag: plan.planTag,
+          });
+        }
         // ADR-0293 G26: one order-history row per granting invoice — the SAME resend protection.
+        // The row carries its backing subscription id (the refund claw's unambiguous rollback
+        // target — never re-derived by price, which two subscriptions of one account can share
+        // across a cancel + re-subscribe) and whether this invoice actually stamped a coverage
+        // horizon (a canceled-before-grant invoice grants credits only; a refund of it must roll
+        // back nothing).
         await insertOrderRecord(tx, {
           accountId: ev.accountId,
           sourceEventId: ev.invoiceId,
@@ -223,6 +251,8 @@ export async function applyBillingEvent(
           label: plan.planTag,
           amount: ev.amountTotal,
           currency: ev.currency,
+          subscriptionId: ev.subscriptionId,
+          coverageStamped: !canceledBeforeGrant,
         });
         // ADR-0269: a `coversOwnedEntitlements` plan (Developer) RE-GRANTS, subscription-sourced,
         // every entitlement the buyer already holds via an active one_time grant — the
@@ -239,18 +269,20 @@ export async function applyBillingEvent(
         // concurrent refund for this account can never interleave between the "owned" read and the
         // mirror write, so a mirror can never be minted for an id whose one_time backing a racing
         // refund just revoked.
-        const coveredIds = plan.coversOwnedEntitlements
-          ? await grantOwnedCoverageMirrors(tx, {
-              accountId: ev.accountId,
-              subscriptionId: ev.subscriptionId,
-              sourceEventId: ev.invoiceId,
-              cadence: plan.cadence,
-            })
-          : [];
+        const coveredIds =
+          !canceledBeforeGrant && plan.coversOwnedEntitlements
+            ? await grantOwnedCoverageMirrors(tx, {
+                accountId: ev.accountId,
+                subscriptionId: ev.subscriptionId,
+                sourceEventId: ev.invoiceId,
+                cadence: plan.cadence,
+              })
+            : [];
         effect = {
-          grantedEntitlements: [
-            ...new Set([...plan.entitlements, ...coveredIds]),
-          ],
+          // A canceled-before-grant invoice granted nothing — no Discord/PostHog/email push fires.
+          grantedEntitlements: canceledBeforeGrant
+            ? []
+            : [...new Set([...plan.entitlements, ...coveredIds])],
           skuLines: [
             {
               priceId: ev.priceId,
@@ -479,6 +511,62 @@ export async function applyBillingEvent(
         // ADR-0293 G26: the order-history row for this purchase flips to 'refunded' (a no-op if the
         // purchase predates this table, or a redelivery already flipped it).
         await refundOrderRecord(tx, ev.paymentId);
+        // SUBSCRIPTION-payment refund → coverage-horizon claw-back. A refunded subscription
+        // invoice used to leave the horizon it stamped fully live (grandfathered as a "paid fact"
+        // that was just UN-paid) — unbounded value leakage into perpetual offline tokens. The
+        // subscription ORDER row's paid→refunded flip is both the detector (only a subscription
+        // invoice has one) and the idempotency latch (a redelivery flips nothing → rolls back
+        // nothing). The flipped row itself names the rollback target: its `subscription_id`
+        // (stamped at insert — never re-derived by price id, which two subscriptions of one
+        // account can share across a cancel + re-subscribe) and its `coverage_stamped` bit (a
+        // canceled-before-grant invoice granted credits only — a refund of it rolls back nothing,
+        // or it would shrink coverage EARLIER un-refunded payments paid for). The row's price id
+        // resolves the plan's cadence; one paid period is the claw amount; the target
+        // subscription's horizon-stamped grant rows — static AND mirrors, any status — shrink by
+        // that period. Access rows themselves are untouched: revoking a still-billing
+        // subscription's grants stays the cancel event's job.
+        const refundedSubscription = await refundSubscriptionOrderRecord(
+          tx,
+          ev.paymentId,
+        );
+        if (
+          refundedSubscription !== null &&
+          refundedSubscription.coverageStamped &&
+          refundedSubscription.priceId !== null &&
+          refundedSubscription.priceId !== ""
+        ) {
+          if (refundedSubscription.subscriptionId === null) {
+            // A pre-link row (inserted before the subscription_id column existed): the backing
+            // subscription cannot be resolved unambiguously — by-price re-derivation is exactly
+            // the wrong-subscription defect the column fixed. Logged, never thrown: failing the
+            // whole refund over the cosmetic rollback would block the credit claw.
+            process.stderr.write(
+              `[service-license] subscription refund ${ev.paymentId}: order row carries no subscription id (pre-link row) — horizon rollback skipped\n`,
+            );
+          } else {
+            let cadence: "month" | "year" | null = null;
+            try {
+              cadence = resolvePlan(refundedSubscription.priceId).cadence;
+            } catch {
+              // A price id no longer in the plan book (theoretical — the book is append-only).
+              // Same fail-soft posture as above: the refund's money effects must still land.
+              process.stderr.write(
+                `[service-license] subscription refund ${ev.paymentId}: price id resolves no plan — horizon rollback skipped\n`,
+              );
+            }
+            if (cadence !== null) {
+              await rollbackSubscriptionCoverageHorizon(tx, {
+                accountId: ev.accountId,
+                subscriptionId: refundedSubscription.subscriptionId,
+                cadence,
+              });
+            }
+          }
+        }
+        // ponytail: the rollback keys on the WHOLE-transaction full-refund shape only. A per-line
+        // adjustment that fully refunds a subscription invoice's single line (a "partial"-typed
+        // full refund) leaves the horizon — bounded at one paid period, favoring the buyer —
+        // rather than teaching the per-line branch subscription semantics.
         // G27: a buyer-facing "your access changed" notice, ONLY when this call actually revoked
         // an active grant — idempotent by construction (revokePurchaseGrants only flips ACTIVE
         // rows), no separate gate needed.

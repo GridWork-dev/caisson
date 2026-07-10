@@ -53,12 +53,15 @@ export function wormStore(): ArtifactStore {
 }
 
 /** Server-side `/issue` reissue proxy (Fork AM-5). Throws on any non-2xx so a failed reissue writes
- *  no audit rows (the orchestration only logs after this resolves). The bearer never leaves here. */
+ *  no audit rows (the orchestration only logs after this resolves). The bearer never leaves here.
+ *  `rotate: true` (the rotation lever) rides through to `/issue`'s forced re-mint; omitted, the
+ *  JSON body carries no key and the re-serve semantics are byte-identical to before. */
 async function issueProxy(req: {
   accountId: string;
   tier: string;
   major: number;
   expiry: string | null;
+  rotate?: boolean;
 }): Promise<ReissueProxyResult> {
   const base = process.env.CAISSON_LICENSE_ISSUE_URL?.trim() ?? "";
   const token = process.env.ADMIN_ISSUE_TOKEN?.trim() ?? "";
@@ -222,22 +225,29 @@ export interface LicenseForReissue {
   tier: string;
   /** ISO-8601 with offset, or null (perpetual) — normalized for the `/issue` body's datetime schema. */
   expiry: string | null;
+  /** The stored grant's CURRENT licenseId — the key a rotation denies at the edge. */
+  licenseId: string;
 }
 
 /**
- * Read the stored license grant's tier/expiry for (account, major) via the ADR-0141 admin READ role
- * — reissue v1 re-serves an EXISTING token only, so a route 404s when this is null. tier/expiry are
- * supplied to `/issue` (which requires them to parse) and then ignored by its idempotent re-serve.
- * The first-mint route (ADR-0292) reads this too, INVERTED: a non-null result means a grant already
- * exists for that (account, major), so first-mint is the wrong lever — reissue is.
+ * Read the stored license grant's tier/expiry/licenseId for (account, major) via the ADR-0141
+ * admin READ role — reissue v1 re-serves an EXISTING token only, so a route 404s when this is
+ * null. tier/expiry are supplied to `/issue` (which requires them to parse) and then ignored by
+ * its idempotent re-serve. The first-mint route (ADR-0292) reads this too, INVERTED: a non-null
+ * result means a grant already exists for that (account, major), so first-mint is the wrong lever
+ * — reissue is. The rotate route reads `licenseId` as the old key its deny-set insert targets.
  */
 export async function readLicenseForReissue(
   accountId: string,
   major: number,
 ): Promise<LicenseForReissue | null> {
   return readAdmin(async (tx: TenantExecutor) => {
-    const r = await tx.query<{ tier: string; expiry: unknown }>(
-      `SELECT tier, expiry FROM license_grant WHERE account_id = $1 AND major = $2`,
+    const r = await tx.query<{
+      tier: string;
+      expiry: unknown;
+      license_id: string;
+    }>(
+      `SELECT tier, expiry, license_id FROM license_grant WHERE account_id = $1 AND major = $2`,
       [accountId, major],
     );
     const row = r.rows[0];
@@ -246,7 +256,7 @@ export async function readLicenseForReissue(
       row.expiry === null || row.expiry === undefined
         ? null
         : new Date(row.expiry as string | number | Date).toISOString();
-    return { tier: row.tier, expiry };
+    return { tier: row.tier, expiry, licenseId: row.license_id };
   });
 }
 

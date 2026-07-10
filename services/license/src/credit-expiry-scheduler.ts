@@ -22,7 +22,12 @@
 // returns — never throws past `startCreditExpiryScheduler` — so a misconfigured scheduler can never
 // take the license service down at boot. Once running, per-job failures are pg-boss's own retry
 // territory (never caught inside a task handler).
-import { createPgBossJobQueue, defineTask, type JobQueue } from "@caisson/jobs";
+import {
+  createPgBossJobQueue,
+  defineTask,
+  type JobAlertingDeps,
+  type JobQueue,
+} from "@caisson/jobs";
 import { strictObject } from "@caisson/kernel";
 // The admin-write role helpers moved to the commercial @caisson/org-controls carve (ADR-0257 §1.3);
 // only the Transactor type stays in the open @caisson/tenancy-rls base.
@@ -153,6 +158,10 @@ export interface CreditExpirySchedulerDeps {
    * `/dashboard/license` URL explicitly.
    */
   updatesWindowDashboardUrl?: string;
+  /** Job-failure alerting — absent = no alert, the same posture
+   *  `createPgBossJobQueue`'s own `alerting` field defaults to. `deploy.ts` wires
+   *  `createJobAlertingDeps(loadOpsAlertChannels())` (alerting.ts). */
+  alerting?: JobAlertingDeps;
   /** Injectable `createPgBossJobQueue` seam — tests assert this is NEVER called when inert. */
   createQueue?: typeof createPgBossJobQueue;
   /** Logger seam — defaults to this service's stderr convention (no console.log in product code). */
@@ -221,7 +230,10 @@ export async function startCreditExpiryScheduler(
         updatesWindowNoticeTask,
         updatesWindowTickTask,
       ],
-      { connectionString: deps.connectionString },
+      {
+        connectionString: deps.connectionString,
+        ...(deps.alerting !== undefined ? { alerting: deps.alerting } : {}),
+      },
     );
     queueBox.queue = started;
     await started.work(CREDIT_EXPIRY_SWEEP_TASK);

@@ -67,7 +67,10 @@ async def test_full_grant_lands_the_proof_role_then_removes_it() -> None:
         discord.Intents.default()
     )  # no privileged members intent — fetch_member is a REST call
     bot = commands.Bot(command_prefix="!caisson-proof!", intents=intents)
-    gateway = asyncio.create_task(bot.start(DISCORD_TOKEN))
+    # login() awaited directly: wait_until_ready() raises if the client is uninitialised, and a
+    # backgrounded start() may not have begun login before the wait — so split login/connect.
+    await bot.login(DISCORD_TOKEN)
+    gateway = asyncio.create_task(bot.connect())
     try:
         await asyncio.wait_for(bot.wait_until_ready(), timeout=30)
         guild = bot.get_guild(int(GUILD_ID))
