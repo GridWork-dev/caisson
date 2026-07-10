@@ -33,6 +33,18 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-10 — EXECUTED: ADR-0313 zone bot-management kill (terraform apply, operator-run)
+
+**Operator-locked at the perf/mobile picker, applied via `terraform apply bm.plan`.** One
+in-place update on `cloudflare_bot_management.caisson` (resource imported first):
+`fight_mode true→false` · `enable_js true→false` · `ai_bots_protection block→"disabled"`
+(the block value was a FOUND misalignment — the zone was blocking AI crawlers against the
+ADR-0303 public-for-AI-indexing posture). Live-verify pasted: API readback
+`fight_mode=False enable_js=False ai_bots_protection=disabled`; fresh fetches of `/`,
+`/marketplace`, `/compare` each `grep -c challenge-platform` → `0` (first probe seconds after
+apply still showed 1 — propagation lag, gone on re-fetch). Lighthouse best-practices floor
+returned 0.75→0.9 (`db8a3ba4`). Re-arm trigger: real bot pressure at launch (ADR-0313).
+
 ## 2026-07-10 — EXECUTED: Kickoff-J tail wave — migration 0024 + abandoned-checkout arm + EULA clause live + alerting floor
 
 **Operator-ordered ("want you to do the full deploy sequence").** Ships the `5ece1d43` wave
