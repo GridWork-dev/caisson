@@ -15,6 +15,44 @@ const config: NextConfig = {
   // ADR-0084). Marketing + docs routes still render statically (SSG / generateStaticParams) —
   // this only swaps the OUTPUT MODE so `/dashboard` can exist as a dynamic, authed route group.
   output: "standalone",
+  // Cloudflare brotli-compresses at the edge already (HTML already serves `br`); the origin's
+  // own gzip pre-compression was pinning ~1.7MB of cacheable JS+CSS to gzip on every cold load
+  // because CF caches whatever content-encoding the origin sent. Turning this off lets CF's
+  // edge brotli take over static assets — ~15-18% smaller transfer, no code change needed.
+  compress: false,
+  // Pin the file-tracing root to the monorepo root (mirrors turbopack.root above) so standalone
+  // output tracing walks from the real workspace boundary, not a misdetected ancestor.
+  outputFileTracingRoot: monorepoRoot,
+  outputFileTracingExcludes: {
+    // Source maps and type declarations are never `require()`d at runtime — safe to drop from
+    // every route's traced/copied output.
+    "*": [
+      "**/*.js.map",
+      "**/*.d.ts",
+      "**/*.d.ts.map",
+      // @caisson/service-license's dist/server.js (the standalone HTTP-server bootstrap,
+      // `startServer`) and dist/app.js (`createApp`, its router wiring) are never CALLED by
+      // apps/site at runtime — grep-verified: this app only pulls SQL schema constants (via
+      // @caisson/platform-migrations) and `recordCheckoutAbandonment`, and Turbopack fully
+      // bundles those into the route's compiled chunk (confirmed: the two symbols appear
+      // inlined in .next/server/chunks/*, and the compiled route.js never `require()`s
+      // @caisson/service-license from node_modules at runtime) — so excluding server.js/app.js
+      // from the standalone COPY is safe. server.js's
+      // `resolve(import.meta.dir, "../../../registry/index.json")` is a dynamic path Turbopack
+      // can't statically bound, which trips the "whole project traced unintentionally" NFT
+      // warning below on ./apps/site/app/api/ask/route.ts's import chain. Measured effect of
+      // this exclude on `.next/standalone` size: negligible (177557293 vs 177557865 bytes,
+      // clean before/after builds — the 124MB standalone is dominated by this app's own
+      // compiled server chunks, not a monorepo-wide copy) — kept anyway as a correctness
+      // guard (these two files must never ship) since the warning itself can only be silenced
+      // at its source (a turbopackIgnore comment in services/license/src/server.ts, outside
+      // this file's scope).
+      "**/services/license/dist/server.js",
+      "**/services/license/dist/server.js.map",
+      "**/services/license/dist/app.js",
+      "**/services/license/dist/app.js.map",
+    ],
+  },
   reactStrictMode: true,
   // next/image's optimizer needs a server, which standalone now has — keep unoptimized for now
   // (no incremental behavior change from the static-export era; revisit at DEPLOY).
@@ -38,6 +76,13 @@ const config: NextConfig = {
     "@caisson/audit-harness",
   ],
   turbopack: { root: monorepoRoot },
+  // ADR-0311 measured `experimental.optimizePackageImports: ["@caisson/ui",
+  // "@caisson/demo-registry"]` here: a clean before/after build produced a byte-identical
+  // `.next/static` output (20168326 bytes both times — Turbopack's per-route First Load JS
+  // table isn't emitted in this Next 16 build format, so the whole-app static bundle is the
+  // measured proxy). Both packages already ship flat raw-source entry points through
+  // transpilePackages, so there was no deep-barrel import for the optimizer to split; dropped
+  // rather than carrying a no-op experimental flag.
   // ADR-0237 F1 + ADR-0285: the commerce routes fold into the ONE /marketplace surface. The
   // original /pricing · /modules · /build 301 there; the ADR-0285 rework additionally folds the
   // former Modules + Build TABS (/marketplace/modules · /marketplace/build) into the same surface
@@ -148,25 +193,10 @@ const config: NextConfig = {
           },
         ],
       },
-      // Immutable long-cache for the content-hashed static assets — PRODUCTION ONLY. In dev,
-      // Turbopack serves chunks at stable (non-hashed) URLs, so an `immutable` header makes the
-      // browser pin a stale chunk across rebuilds — Next warns this "can break dev behavior", and
-      // it manifests as a phantom hydration mismatch (the client runs a cached older component than
-      // the freshly-compiled server render). Emitting the header only in production keeps the
-      // correct prod caching while letting dev always fetch fresh chunks.
-      ...(process.env.NODE_ENV === "production"
-        ? [
-            {
-              source: "/_next/static/:path*",
-              headers: [
-                {
-                  key: "Cache-Control",
-                  value: "public, max-age=31536000, immutable",
-                },
-              ],
-            },
-          ]
-        : []),
+      // No custom /_next/static/:path* Cache-Control entry here — Next 16 sets
+      // `public, max-age=31536000, immutable` on those content-hashed assets natively (verified
+      // live); a custom entry only duplicated it and tripped the build's "custom Cache-Control
+      // headers detected" warning.
     ];
   },
 };
