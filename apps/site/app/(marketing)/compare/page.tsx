@@ -42,7 +42,7 @@ export default function CompareHubPage() {
       <Section
         eyebrow="The honest frame"
         title="Where each alternative ends and Caisson begins"
-        lede={`Every competitor fact on these pages was read from the vendor's live site on ${ACCESSED} and stamped with that date. What a competitor is genuinely better at stays in — a comparison that overclaims is worse than no page. With the GRC platforms the job is to draw the own-vs-rent line honestly, not to declare a winner.`}
+        lede={`Every competitor fact on these pages was read from the vendor's live site — on ${ACCESSED} for the full sweep, with any later-added page stamped with its own verification date. What a competitor is genuinely better at stays in — a comparison that overclaims is worse than no page. With the GRC platforms the job is to draw the own-vs-rent line honestly, not to declare a winner.`}
       >
         {/* Static header, comparison cards cascade in (ADR-0307). */}
         <Reveal stagger={60} className="cs-grid cs-grid--2 cs-feature-grid">

@@ -88,8 +88,8 @@ export const BASE_CAPABILITIES: readonly BaseCapability[] = [
   },
   {
     icon: "server",
-    title: "AI config and an MCP server",
-    body: "Provider-agnostic AI configuration and a Model Context Protocol server, so agent tooling has somewhere to connect on day one.",
+    title: "AI config and a governed MCP server",
+    body: "Provider-agnostic AI configuration and a Model Context Protocol server that treats agents as principals: timing-safe Bearer auth, tools invisible outside the caller's entitlements, a per-account rate limit on every dispatch. Most kits ship an MCP server now — the question is what it lets an agent do.",
     packages: ["ai-config", "mcp-server"],
   },
   {

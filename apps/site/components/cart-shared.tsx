@@ -148,8 +148,8 @@ export function CartTrustNote() {
   return (
     <>
       <p className={styles.trust}>
-        One-time perpetual license, billed once — no seat count, no forced
-        renewal.
+        One-time perpetual license per organization, billed once — your whole
+        team, no seat count, no forced renewal.
       </p>
       <p className={styles.trust}>{PADDLE_MOR_DISCLOSURE}</p>
     </>

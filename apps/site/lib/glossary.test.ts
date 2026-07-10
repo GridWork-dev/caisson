@@ -9,8 +9,8 @@ import { GLOSSARY_TERMS, glossaryPageSpec } from "./glossary";
 // multi-tenant-RLS-for-compliance) as the new operator lock Fork A requires ("never add without a
 // new lock"). This pins the current total; a drift in either direction is a bug.
 describe("GLOSSARY_TERMS — data lint", () => {
-  test("all 35 locked terms ship (SPEC Task 5 gate, ADR-0235 Fork A + CAISSON-29)", () => {
-    expect(GLOSSARY_TERMS.length).toBe(35);
+  test("all 36 locked terms ship (SPEC Task 5 gate, ADR-0235 Fork A + CAISSON-29; 36th = eu-ai-act-article-50, operator-locked in the 2026-07-10 Kickoff-J site/copy picker, CAISSON-79)", () => {
+    expect(GLOSSARY_TERMS.length).toBe(36);
   });
 
   test("every slug is unique", () => {

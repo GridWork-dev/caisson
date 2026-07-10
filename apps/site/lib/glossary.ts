@@ -2276,6 +2276,56 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     },
     related: ["row-level-security", "multi-tenant-isolation", "fail-closed"],
   },
+  {
+    slug: "eu-ai-act-article-50",
+    term: "EU AI Act Article 50",
+    cluster: "compliance",
+    definition:
+      "EU AI Act Article 50 is the regulation's transparency chapter, enforceable from August 2, 2026: AI systems interacting with people must disclose it, and generated content must carry machine-readable marking — regardless of risk class. The obligation is disclosure-shaped; proving you met it needs a tamper-evident record that disclosure actually fired.",
+    artifact: {
+      label:
+        "Record the Article 50 disclosure as a tamper-evident audit event — a verifiable answer to “did disclosure fire for this session?”",
+      lang: "ts",
+      code: '// The disclosure surface is your UI; the RECORD that it fired is audit-chain evidence.\n// append() canonicalizes the payload, hash-chains it onto the tenant\'s tip, and mints a\n// write-once WORM anchor in the same call — so the disclosure log can\'t be quietly edited.\nawait chainStore.append(accountId, {\n  event: "ai.disclosure.shown",\n  clause: "eu-ai-act/art-50-1",\n  surface: "support-chat",\n  sessionId,\n  disclosureVersion: "2026-07-10", // the versioned copy shown to the user\n});\n\n// Later — for the evidence bundle, or a regulator\'s question:\nconst result = await chainStore.verify(accountId);\n// → { ok: true, length, tip } — tamper, truncation, or rewrite each surface here.',
+    },
+    properties: [
+      {
+        title: "It applies to ordinary products, not just high-risk systems",
+        body: "Unlike the Annex III high-risk regime, Article 50 covers any AI system that interacts directly with people — a SaaS chatbot, a support agent, a content generator. From August 2, 2026 (a date confirmed unmoved by the Digital Omnibus amendment, per reporting through 2026-07-07), the disclosure obligations are enforceable law.",
+      },
+      {
+        title: "The obligation is disclosure; the audit question is proof",
+        body: "A regulator or enterprise customer asking whether users knew they were talking to AI is asking for a record, not a recollection. Logging each disclosure event to a hash-chained, WORM-anchored audit trail turns the answer into something independently verifiable.",
+      },
+      {
+        title: "Marking happens at the generation boundary",
+        body: "Article 50(2) requires machine-readable marking of synthetic audio, image, video, and text. Applying the marking where content is generated — and versioning that configuration in the repo — keeps the control testable in CI instead of a per-feature afterthought.",
+      },
+    ],
+    faq: [
+      {
+        question: "Does Article 50 apply to my SaaS chatbot?",
+        answer:
+          "If the chatbot interacts directly with people, yes — regardless of whether your system is high-risk. Users must be informed they are interacting with AI unless that is obvious from context to a reasonably well-informed person (Art. 50(1)). Generated-content marking (Art. 50(2)) applies separately if you produce synthetic content.",
+      },
+      {
+        question: "When does Article 50 become enforceable?",
+        answer:
+          "August 2, 2026 — the AI Act's general application date. Independent reporting through 2026-07-07 confirmed it was not extended by the Digital Omnibus amendment. Penalties for transparency violations reach €15M or 3% of worldwide annual turnover, whichever is higher (Art. 99(4)).",
+      },
+      {
+        question: "Does Caisson make my product Article 50 compliant?",
+        answer:
+          "No — the disclosure UI is your product surface and the legal determination is yours. Caisson ships the evidence discipline behind the obligation: disclosure events recorded to a tamper-evident, WORM-anchored audit chain and packaged into dated evidence bundles, so the record of disclosure is verifiable rather than asserted.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel: "What Article 50 requires, and the record that proves it",
+      ctaHref: "/frameworks/eu-ai-act/article-50",
+    },
+    related: ["worm-audit-log", "hash-chain-audit-trail", "compliance-as-code"],
+  },
 ];
 
 /** Resolve a term's curated `related` slugs against GLOSSARY_TERMS, dropping anything that

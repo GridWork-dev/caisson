@@ -428,6 +428,21 @@ export default function CompliancePage() {
               </ul>
             </Card>
           </FeatureGrid>
+          <p
+            className="cs-muted"
+            style={{ marginTop: "var(--cs-space-6)", maxWidth: "72ch" }}
+          >
+            Why the ownership line matters: in March 2026 a venture-backed
+            compliance-automation vendor was publicly accused of delivering
+            AI-fabricated SOC 2 reports to hundreds of customers (TechCrunch,
+            2026-03-22). Whatever that case resolves to, the lesson stands —
+            evidence you cannot verify independently is a promise, not proof.
+            Caisson&rsquo;s audit chain is hash-linked and anchored write-once
+            outside your database, and its evidence packs are deterministic to
+            the byte, so your auditor verifies integrity without trusting any
+            vendor — including us.{" "}
+            <a href="/compare/delve">Read the dated comparison</a>.
+          </p>
         </Section>
       </Reveal>
 
