@@ -32,7 +32,9 @@ def _escalated() -> AnswerResult:
 
 
 def test_answer_event_resolved_high() -> None:
-    event, props = answer_event(question="How do credits expire?", result=_resolved(), surface="ask")
+    event, props = answer_event(
+        question="How do credits expire?", result=_resolved(), surface="ask"
+    )
     assert event == "support_answer"
     assert props["outcome"] == "answered_high"
     assert props["tier"] == "high"
