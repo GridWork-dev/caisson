@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0317** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0318** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -76,7 +76,10 @@ edited — supersede with a later ADR).
    JSON-LD helper refactor, Renovate digest pins, refund-policy page answerable; 0316 =
    the same-sitting admin-buildout locks — full six-wave cockpit, in-admin Loki,
    PostHog federation, all riders; 0317 = 1Password as primary secret SoT + the
-   cred-parity sweep, amends 0224 F6).
+   cred-parity sweep, amends 0224 F6; 0318 = the OSS-launch program locks 2026-07-10 —
+   sandbox validation gate, mirror backfill-at-cutover + append-only never-backdated,
+   Kickoff-L folded as W0, window → Show HN, the gated release train with GH-Release
+   trigger + everything-rides + fresh full re-audit per release).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
