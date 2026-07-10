@@ -111,6 +111,9 @@ describe("Paddle webhook verifier live proof (seam 1, ADR-0224 F1=C)", () => {
           destination: RECEIVER_URL,
           type: "url",
           subscribed_events: ["transaction.completed"],
+          // Paddle rejects simulation runs against a default (platform-traffic) destination:
+          // "Notification setting cannot be used for 'simulation' traffic."
+          traffic_source: "simulation",
         });
         expect(created.status).toBeLessThan(300);
         const setting = dataOf(created.json);
