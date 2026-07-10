@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0309** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0313** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -67,7 +67,10 @@ edited — supersede with a later ADR).
    the Kickoff-I scope-lock fork round 2026-07-09 — signature ambient depth-fog lattice field
    with poster-first idle-hydrate + ≤130KB three.js-core budget, amends 0104 · sitewide
    authored-motion pass executing 0078 §6 · marketplace media full-depth pass refining 0290,
-   F2 closes · lighthouse warn→error + wave evidence + ride-alongs).
+   F2 closes · lighthouse warn→error + wave evidence + ride-alongs; 0310-0313 = the
+   perf/mobile picker 2026-07-10 off the first error-level lighthouse evidence — homepage
+   hydration diet standard scope · perf config wave everything-measured · mobile nav
+   accordion + the search-stacking defect fix · CF JS-detections kill, terraform-pinned).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
