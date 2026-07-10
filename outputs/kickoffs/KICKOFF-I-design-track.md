@@ -1,11 +1,12 @@
 # Kickoff I — Design track: signature three.js piece · bespoke module media · polish backlog
 
-**Status: SELECTED 2026-07-10 (close-out kickoff split) — scope-lock fork round FIRST, then
-build.** Authored 2026-07-09 per ADR-0299 lock 4 ("spec next, don't start"). The operator
-selected this track to run; the session's **opening act is the scope-lock fork round** over the
-candidate scope below (concept direction · static-fallback posture · budget ceiling · which
-modules · motion scope) — nothing under "Candidate scope" is committed until that round locks it
-as ADRs. Build only after the locks.
+**Status: SCOPE LOCKED 2026-07-09 (ADR-0304..0307) — BUILD RUNNING.** Authored 2026-07-09 per
+ADR-0299 lock 4 ("spec next, don't start"). The scope-lock fork round ran as the opening act
+(seven questions, two rounds; the operator redirected the concept class mid-round to an ambient
+reactive background field). Locks: depth-fog lattice field · poster-first idle-hydrate ·
+≤130KB three.js core · sitewide motion pass · media full-depth pass · lighthouse warn→error ·
+compare-P3 + board-sweep ride-alongs. Fork-round record:
+`docs/state/decisions-and-forks.md` §Kickoff-I scope-lock round.
 
 **Provenance:** the residual board after Kickoff G closed (delta artifact
 `outputs/reviews/visual-audit-delta-2026-07-09.md` — 0 P0 / 0 buyer-visible P1 on G-owned
