@@ -100,3 +100,77 @@ def test_endpoint_set_wraps_streams_and_emits_scrubbed_log_record(
     init_telemetry()
     assert sys.stdout.write is wrapped_stdout_write
     assert sys.stderr.write is wrapped_stderr_write
+
+
+def test_export_path_stderr_writes_are_never_reingested(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    _reset_telemetry_state: None,
+) -> None:
+    """The recursion killer (SHIP-audit): a dead collector makes the OTLP exporter report its
+    failure via logging.lastResort -> sys.stderr.write — the bridged write. Without the
+    re-entrancy guard that error line becomes a NEW log record, re-exported, re-failed, forever.
+    This exporter reproduces the shape synchronously: every export writes to sys.stderr. The
+    guard must pass that inner write straight to the real stream and mint NO new record."""
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://fake-otel-collector.test:4318")
+    monkeypatch.setattr(
+        "opentelemetry.exporter.otlp.proto.http.trace_exporter.OTLPSpanExporter", SpanExporter
+    )
+
+    class StderrWritingExporter(InMemoryLogRecordExporter):
+        def export(self, batch):  # noqa: ANN001, ANN201 - mirrors the SDK signature
+            sys.stderr.write("otlp export failed: connection refused\n")
+            return super().export(batch)
+
+    log_exporter = StderrWritingExporter()
+    monkeypatch.setattr(
+        "opentelemetry.exporter.otlp.proto.http._log_exporter.OTLPLogExporter",
+        lambda: log_exporter,
+    )
+    monkeypatch.setattr(
+        "opentelemetry.sdk._logs.export.BatchLogRecordProcessor", SimpleLogRecordProcessor
+    )
+
+    init_telemetry()
+    capsys.readouterr()  # drop the "[telemetry] OTLP export enabled" line + its export echo
+
+    sys.stderr.write("boom\n")  # would recurse forever without the guard
+
+    captured = capsys.readouterr()
+    assert "boom" in captured.err
+    assert "otlp export failed" in captured.err  # the exporter's own line reached the REAL stream
+    bodies = [r.log_record.body for r in log_exporter.get_finished_logs()]
+    assert bodies.count("boom") == 1
+    assert not any("otlp export failed" in str(b) for b in bodies)  # never re-ingested
+
+
+def test_raising_emit_path_never_breaks_the_real_stream(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    _reset_telemetry_state: None,
+) -> None:
+    """The fail-open half of the bridge contract: the real write runs FIRST and an exception
+    anywhere in the emit/export path is swallowed — host log drains never break."""
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://fake-otel-collector.test:4318")
+    monkeypatch.setattr(
+        "opentelemetry.exporter.otlp.proto.http.trace_exporter.OTLPSpanExporter", SpanExporter
+    )
+
+    class RaisingExporter(InMemoryLogRecordExporter):
+        def export(self, batch):  # noqa: ANN001, ANN201 - mirrors the SDK signature
+            raise RuntimeError("exporter dead")
+
+    monkeypatch.setattr(
+        "opentelemetry.exporter.otlp.proto.http._log_exporter.OTLPLogExporter",
+        RaisingExporter,
+    )
+    monkeypatch.setattr(
+        "opentelemetry.sdk._logs.export.BatchLogRecordProcessor", SimpleLogRecordProcessor
+    )
+
+    init_telemetry()
+    capsys.readouterr()
+
+    rc = sys.stderr.write("still alive\n")  # must not raise
+    assert isinstance(rc, int)
+    assert "still alive" in capsys.readouterr().err

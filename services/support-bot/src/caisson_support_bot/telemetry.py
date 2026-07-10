@@ -18,6 +18,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+import threading
 from collections.abc import Callable
 
 _SERVICE_NAME = "service-support-bot"
@@ -83,18 +84,40 @@ def init_telemetry() -> None:
     set_logger_provider(logger_provider)
     logger = logger_provider.get_logger("caisson-support-bot-stream-bridge")
 
+    # Re-entrancy guard for the bridged writes (per-thread). When the OTLP exporter itself fails
+    # (collector down), opentelemetry reports the failure via `logging`, whose lastResort handler
+    # writes to sys.stderr — the bridged write. Without this guard that error line would be
+    # re-emitted as a NEW log record, re-exported, re-failed: a feedback loop that never quiesces.
+    # Any write made WHILE an emit is in flight goes straight to the real stream, never back into
+    # the pipeline.
+    _in_emit = threading.local()
+
     def make_bridged_write(
         original: Callable[[str], int], severity_number: SeverityNumber, severity_text: str
     ) -> Callable[[str], int]:
         """Wrap one `sys.{stdout,stderr}.write` so every line ALSO becomes an OTLP log record.
-        The real write always runs — host log drains keep working; only the OTel copy is scrubbed.
+        The real write ALWAYS runs, and runs FIRST — host log drains keep working even when the
+        emit path raises; only the OTel copy is scrubbed.
         """
 
         def write(text: str) -> int:
+            rc = original(text)
+            if getattr(_in_emit, "active", False):
+                return rc  # a write produced by the emit/export path itself — never re-ingest.
             body = _scrub_log_line(text).rstrip()
             if body:
-                logger.emit(body=body, severity_number=severity_number, severity_text=severity_text)
-            return original(text)
+                _in_emit.active = True
+                try:
+                    logger.emit(
+                        body=body, severity_number=severity_number, severity_text=severity_text
+                    )
+                except Exception:  # noqa: BLE001, S110 — never break the host stream; and logging
+                    # here would re-enter the very emit path that just failed (the recursion this
+                    # guard exists to kill), so the swallow is deliberate and silent.
+                    pass
+                finally:
+                    _in_emit.active = False
+            return rc
 
         return write
 
