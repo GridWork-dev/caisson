@@ -33,6 +33,58 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-10 — EXECUTED: support-bot listener armed + affiliate delivery proof + Loki rule (Kickoff-J later sitting)
+
+**Support-bot `#ask-ai` listener armed.** The operator toggled the privileged intents in the
+Developer Portal (verified over the Discord API: app flags carry MESSAGE_CONTENT-limited +
+GUILD_MEMBERS-limited — the enabled form for an unverified bot) and the token was confirmed
+rotated-and-consistent (railway `DISCORD_TOKEN` sha12 `ef2344d8e9c3` == local env; `users/@me`
+→ HTTP 200). The missing wiring was env: `SUPPORT_CHANNEL_ID` was UNSET, so the channel
+listener + the reply-`escalate` handler were dormant (code only requests message_content when
+the channel is configured). Set `SUPPORT_CHANNEL_ID=1521528418930524270` (`#ask-ai`) +
+`railway redeploy` — fresh container up clean:
+
+```
+SUPPORT_CHANNEL_ID=1521528418930524270
+Starting Container
+[telemetry] OTLP export enabled (service=service-support-bot)
+```
+
+Global slash commands verified over the API: `['ask', 'kick', 'ban', 'timeout', 'role-add',
+'role-remove', 'grant-role', 'post-roles']`.
+
+**Affiliate attribution delivery proof (sandbox):** pricing-preview with `CAISSONAFF1` on
+`pri_01kwwqa266p6smw4yaanxg1n5j` → `subtotal=9900 discount=990 total=8910` (exactly 10%);
+`transaction.completed` sim `ntfsim_01kx6822kdnaxzzxma3m8mf1q2` with `discount_id` delivered
+to `https://license.caisson.sh/webhook`:
+
+```
+event: transaction.completed | status: success
+  delivered discount_id: dsc_01kx5b0f9majy4wbgq5cjgdm7y
+  delivered subscription_id: None
+  delivered txn id: txn_01simaffproof0710aaaaaaaaa
+  endpoint response code: 200
+  endpoint response body: {"ok":true}
+```
+
+**OTLP logs fix landed on main (`0dd715ae`), fleet redeploy PENDING (operator-gated):**
+`@caisson/observability` now ships the logs pipeline + stdout/stderr bridge; the
+`caisson-log-error-burst` Loki rule is provisioned via the API (201, NoData=OK) and arms
+itself when site/admin/license/docs redeploy. The pipeline itself is LIVE-PROVEN against the
+real Grafana Cloud gateway — a local probe process booted the new package with the fleet's
+OTLP endpoint/headers and its lines landed in Loki:
+
+```
+streams: 2
+labels: {'detected_level': 'warn', 'service_name': 'caisson-logs-probe'}
+  line: [observability] OTel SDK started (service=caisson-logs-probe)
+  line: caisson-logs-probe: OTLP logs pipeline live proof 2026-07-10T14:58:40.719Z
+```
+
+Loki is no longer zero-streams; per-service streams appear at the fleet redeploy.
+
+---
+
 ## 2026-07-10 — EXECUTED: ADR-0313 zone bot-management kill (terraform apply, operator-run)
 
 **Operator-locked at the perf/mobile picker, applied via `terraform apply bm.plan`.** One

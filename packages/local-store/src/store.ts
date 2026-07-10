@@ -266,7 +266,19 @@ export class LocalStore {
   }
 }
 
-/** Wrap the query as an FTS5 phrase string literal so caller text cannot inject FTS operators. */
+/**
+ * Sanitize caller text into an FTS5 query that cannot inject operators: each whitespace-split
+ * token becomes its own quoted phrase, OR-joined. Quoting the WHOLE query as one phrase (the
+ * previous behavior) demanded the tokens appear adjacent in order — every natural-language
+ * multi-word query ("refund policy", "how do I install") matched zero rows, silently killing
+ * the FTS leg of hybrid retrieval. OR keeps recall high; bm25 still ranks multi-term matches
+ * first.
+ */
 function sanitizeFts(query: string): string {
-  return `"${query.trim().replace(/"/g, '""')}"`;
+  return query
+    .trim()
+    .split(/\s+/)
+    .filter((t) => t.length > 0)
+    .map((t) => `"${t.replace(/"/g, '""')}"`)
+    .join(" OR ");
 }
