@@ -141,8 +141,45 @@ export type {
   SystemModeResult,
   WormStatus,
 } from "./admin-mutations.ts";
-export { resolveEmailer, notifyPurchaseEmail } from "./email-notify.ts";
-export type { PurchaseEmailNotice, PurchaseEmailLine } from "./email-notify.ts";
+export {
+  resolveEmailer,
+  notifyPurchaseEmail,
+  notifyAbandonedCheckout,
+  resolveAbandonedCheckoutDiscount,
+} from "./email-notify.ts";
+export type {
+  PurchaseEmailNotice,
+  PurchaseEmailLine,
+  AbandonedCheckoutDiscount,
+  AbandonedCheckoutEmailLine,
+  AbandonedCheckoutNotice,
+} from "./email-notify.ts";
+export {
+  CHECKOUT_ABANDONMENT_SCHEMA_SQL,
+  CHECKOUT_ABANDONMENT_NOTICE_SCHEMA_SQL,
+  recordCheckoutAbandonment,
+  listAbandonedCheckoutAccountIds,
+  sweepEligibleAbandonedCheckout,
+  hasRecentAbandonedCheckoutNotice,
+} from "./checkout-abandonment-store.ts";
+export type {
+  CheckoutAbandonmentLine,
+  RecordCheckoutAbandonmentInput,
+  SweepAbandonedCheckoutResult,
+} from "./checkout-abandonment-store.ts";
+export {
+  ABANDONED_CHECKOUT_DELAY_HOURS,
+  ABANDONED_CHECKOUT_TICK_TASK,
+  ABANDONED_CHECKOUT_NOTICE_TASK,
+  loadAbandonedCheckoutScheduleConfig,
+  runAbandonedCheckoutTick,
+  startAbandonedCheckoutScheduler,
+} from "./abandoned-checkout-scheduler.ts";
+export type { AbandonedCheckoutSchedulerDeps } from "./abandoned-checkout-scheduler.ts";
+export {
+  capturePostHogAbandonedCheckoutEmailSent,
+  capturePostHogAbandonedCheckoutConverted,
+} from "./posthog-capture.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 export {
   LICENSE_GRANT_SCHEMA_SQL,

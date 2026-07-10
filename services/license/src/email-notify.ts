@@ -314,3 +314,84 @@ export async function recipientFor(
     return null;
   }
 }
+
+// --- Abandoned-checkout email (SPEC outputs/specs/deferred-respec/SPEC-abandoned-checkout-email.md,
+// operator-locked 2026-07-10) -----------------------------------------------------------------
+
+export interface AbandonedCheckoutDiscount {
+  /** A static Paddle discount code the operator creates out-of-band in the Paddle dashboard. */
+  code: string;
+  /** Human copy, e.g. "10% off". */
+  label: string;
+}
+
+/**
+ * Resolve the optional abandoned-checkout discount from env (operator lock, 2026-07-10): BOTH
+ * `ABANDONED_CHECKOUT_DISCOUNT_CODE` and `ABANDONED_CHECKOUT_DISCOUNT_LABEL` must be set, or the
+ * email renders with no discount block — no Paddle discount config exists yet, so this degrades
+ * gracefully rather than failing closed. Same bare-optional-string shape as
+ * `loadCreditExpiryScheduleConfig`/`loadDiscordNotifyConfig` — no Zod schema needed for a two-var
+ * env read.
+ */
+export function resolveAbandonedCheckoutDiscount(
+  env: Record<string, string | undefined> = process.env,
+): AbandonedCheckoutDiscount | null {
+  const code = env.ABANDONED_CHECKOUT_DISCOUNT_CODE?.trim();
+  const label = env.ABANDONED_CHECKOUT_DISCOUNT_LABEL?.trim();
+  if (code === undefined || code.length === 0) return null;
+  if (label === undefined || label.length === 0) return null;
+  return { code, label };
+}
+
+export interface AbandonedCheckoutEmailLine {
+  label: string;
+}
+
+export interface AbandonedCheckoutNotice {
+  accountId: string;
+  lines: readonly AbandonedCheckoutEmailLine[];
+}
+
+/**
+ * Fire the abandoned-checkout nudge email. NEVER throws — the SAME never-throw contract as
+ * `notifyPurchaseEmail`. A missing buyer address is a log-and-drop, not an error. The discount
+ * block (env-gated, `resolveAbandonedCheckoutDiscount`) is resolved fresh on every send so a
+ * mid-flight env change (the operator wiring up a Paddle discount code) takes effect without a
+ * redeploy of the caller.
+ */
+export async function notifyAbandonedCheckout(
+  db: Transactor,
+  emailer: Emailer,
+  notice: AbandonedCheckoutNotice,
+): Promise<void> {
+  try {
+    const buyer = await findBuyerEmail(db, notice.accountId);
+    if (buyer === null) {
+      process.stderr.write(
+        `[service-license] abandoned checkout email skipped: no resolvable buyer address for account ${notice.accountId}\n`,
+      );
+      return;
+    }
+    const discount = resolveAbandonedCheckoutDiscount();
+    const cartUrl = `${DASHBOARD_URL}/cart`;
+    await emailer.send({
+      to: buyer.email,
+      template: "abandoned-checkout",
+      data: {
+        buyerName: buyer.name ?? buyer.email,
+        lines: notice.lines.map((line) => ({ label: line.label })),
+        url: cartUrl,
+        ...(discount !== null
+          ? {
+              discountLabel: discount.label,
+              discountUrl: `${cartUrl}?promo=${discount.code}`,
+            }
+          : {}),
+      },
+    });
+  } catch (err) {
+    process.stderr.write(
+      `[service-license] abandoned checkout email failed for account ${notice.accountId}: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+  }
+}

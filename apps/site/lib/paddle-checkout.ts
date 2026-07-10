@@ -102,10 +102,17 @@ export interface CartCheckoutItem {
  * with N cart lines pays once, not N times. Same no-op-when-unconfigured contract as
  * `openCheckout`, and the same `custom_data.account_id` convention the webhook's
  * `parsePaddleEvent` reads to resolve the tenant.
+ *
+ * `discountCode` (SPEC-abandoned-checkout-email.md's discount fork, 2026-07-10 lock) is the
+ * caller-validated `?promo=` search param — passed straight through to Paddle.js's own
+ * `discountCode` checkout-open option (confirmed against developer.paddle.com: `Checkout.open`
+ * accepts `discountCode` as a top-level option alongside `items`/`customData`). Omitted when
+ * `undefined` — an unset discount is simply not part of the call, never a stray empty string.
  */
 export async function openCartCheckout(
   items: readonly CartCheckoutItem[],
   accountId: string,
+  discountCode?: string,
 ): Promise<boolean> {
   if (items.length === 0) return false;
   const paddle = await getPaddle();
@@ -124,6 +131,7 @@ export async function openCartCheckout(
     // defaults to `true` in Paddle.js, but we set it explicitly so the behaviour is pinned here and
     // survives a future default change (Paddle checkout settings, `showAddTaxId`).
     settings: { showAddTaxId: true },
+    ...(discountCode !== undefined ? { discountCode } : {}),
   });
   return true;
 }

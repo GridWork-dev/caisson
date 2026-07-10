@@ -40,23 +40,24 @@ afterAll(async () => {
 });
 
 test("platform migrations apply in order then are idempotent", async () => {
-  // 23 = the shared chain's order-record subscription-link append (@caisson/platform-migrations,
-  // 0023 — numbered past the site-local 0020–0022 by design).
+  // 24 = the shared chain's abandoned-checkout append (@caisson/platform-migrations, 0024 —
+  // numbered past the site-local 0020–0022 by design, following the order-record subscription-
+  // link append at 0023).
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  // 19 shared-chain migrations + the 5 apps/site-local extras (CAISSON-64: `SITE_LOCAL_MIGRATIONS`
-  // now carries 0011/0012 (ask_ai_*, prod-canonical names) plus the net-new
-  // 0020/0021/0022 (tenant_ai_credential / byok_key_meta / compliance_attestation) — previously
-  // dev-PGlite-only, never applied to a real deployment.
+  // 20 shared-chain migrations (0001–0019 plus 0023/0024) + the 5 apps/site-local extras
+  // (CAISSON-64: `SITE_LOCAL_MIGRATIONS` carries 0011/0012 (ask_ai_*, prod-canonical names) plus
+  // the net-new 0020/0021/0022 (tenant_ai_credential / byok_key_meta / compliance_attestation) —
+  // previously dev-PGlite-only, never applied to a real deployment.
   expect(first.applied).toEqual([
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-    22, 23,
+    22, 23, 24,
   ]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
   expect(second.skipped).toEqual([
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-    22, 23,
+    22, 23, 24,
   ]);
 });
 

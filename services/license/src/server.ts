@@ -17,8 +17,9 @@ import { createPaddleBilling } from "@caisson/billing-orchestration";
 import { Ed25519Signer } from "@caisson/license-issue";
 import { initObservability } from "@caisson/observability";
 import { loadRegistryIndex } from "@caisson/registry-schema";
-import type { Transactor } from "@caisson/tenancy-rls";
+import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
+import { hasRecentAbandonedCheckoutNotice } from "./checkout-abandonment-store.ts";
 import {
   type ChargebackAlert,
   loadChargebackAlertConfig,
@@ -41,6 +42,7 @@ import {
   type RevokeEmailNotice,
 } from "./email-notify.ts";
 import {
+  capturePostHogAbandonedCheckoutConverted,
   capturePostHogPurchase,
   loadPostHogCaptureConfig,
   type PurchaseCapture,
@@ -156,6 +158,25 @@ export function startServer(
     );
   }
 
+  // Abandoned-checkout conversion capture (SPEC-abandoned-checkout-email.md §e, 2026-07-10 lock):
+  // same config gate as posthogCapture — a granting purchase checks whether this account has a
+  // RECENT abandoned-checkout notice before firing `abandoned_checkout_converted`, reading the
+  // same marker table the scheduler's sweep writes. Never throws (both the tenant read and the
+  // capture itself fail closed to a no-op).
+  const abandonedCheckoutConverted =
+    posthogConfig === null
+      ? null
+      : async (accountId: string): Promise<void> => {
+          const recent = await withTenant(db, accountId, (tx) =>
+            hasRecentAbandonedCheckoutNotice(tx, accountId),
+          ).catch(() => false);
+          if (recent) {
+            await capturePostHogAbandonedCheckoutConverted(posthogConfig, {
+              accountId,
+            });
+          }
+        };
+
   // Post-grant purchase-confirmation email: ALWAYS wired, unlike discordNotify/posthogCapture —
   // resolveEmailer() falls back to the in-memory capture driver when RESEND_API_KEY is unset, so
   // an unconfigured deploy never crashes and never silently hits the network (mirrors
@@ -218,6 +239,7 @@ export function startServer(
     limiter,
     discordNotify,
     posthogCapture,
+    abandonedCheckoutConverted,
     purchaseEmailNotify,
     renewalEmailNotify,
     revokeEmailNotify,

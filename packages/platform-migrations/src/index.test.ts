@@ -94,6 +94,7 @@ test("platformMigrationsPackage() with no extra applies the shared chain (everyt
       (f) => f !== "0011_ask_ai_spend.sql" && f !== "0012_ask_ai_question.sql",
     ),
     "0023_order_record_subscription_link.sql",
+    "0024_checkout_abandonment.sql",
   ]);
   expect(assembly.sequence.map((m) => m.filename)).toEqual([
     "0001_app_role.sql",
@@ -114,6 +115,7 @@ test("platformMigrationsPackage() with no extra applies the shared chain (everyt
     "0016_subscription_status.sql",
     "0017_order_record.sql",
     "0018_order_record_subscription_link.sql",
+    "0019_checkout_abandonment.sql",
   ]);
 });
 
