@@ -33,6 +33,43 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-10 — EXECUTED: Kickoff-I perf/mobile wave deployed — `/` perf 0.57→0.95, all lighthouse floors green
+
+**What deployed:** `caisson-site` redeployed from `main`@`418b26f7` (`railway up -y --service
+caisson-site --ci` → `Deploy complete`, image `sha256:635fa583dca8…`). The three merged waves:
+ADR-0310 hydration diet (RepoArtifact→CSS, StackBuilder/waitlist defer, shared Reveal observer,
+NavAccount idle-mount) · ADR-0311 config (compress:false for CF brotli, theme-init inlined,
+header cleanup, NFT excludes) · ADR-0312 mobile-nav accordion (pinned account/cart/CTA block,
+three `<details>` sections derived from the desktop panel spec, authored slide-down, the
+dead-mobile-search P0 fixed). SHIP-audit fixes rode in `11396d6b` (owned-items fetch restored —
+the HttpOnly gate was a double-pay vector; the invalid `::details-content > *` selector that
+500'd dev and killed the prod section-slide).
+
+**Live-verify (pasted):** homepage HTML after deploy —
+
+```
+$ curl -s https://caisson.sh/ -w "%{http_code}"   → 200
+grep -c "theme-init.js"        → 0   (inlined, blocking request gone)
+grep -c "challenge-platform"   → 0   (ADR-0313 jsd kill holding)
+grep -c "cs-nav-toggle"        → 1   (drawer shell present)
+$ curl -sI -H "Accept-Encoding: br" https://caisson.sh/_next/static/chunks/0ghtei8evo-qs.js
+content-encoding: br            (CF brotli live — origin no longer pre-gzips)
+cache-control: public, max-age=31536000, immutable
+```
+
+**Lighthouse evidence (run `29106799203`, dispatch vs the live origin, error-level assertions):
+conclusion SUCCESS.** Median desktop scores:
+
+```
+https://caisson.sh/            performance=0.95 accessibility=1.00 best-practices=0.96 seo=1.00  TBT 70ms  LCP 1.4s
+https://caisson.sh/marketplace performance=0.90 accessibility=0.96 best-practices=0.96 seo=1.00  TBT 30ms  LCP 2.0s
+```
+
+The homepage residual red is CLOSED: `/` perf 0.57 → 0.95 (TBT ~1.36s → 70ms; the ADR-0313 jsd
+kill + the ADR-0310 diet in combination), best-practices 0.78 → 0.96 with the floor restored to
+0.9 and passing. Follow-ups filed: CAISSON-81 (session-hint cookie to land the slice-b signed-out
+skip), CAISSON-82 (NFT trace diagnostic in services/license).
+
 ## 2026-07-10 — EXECUTED: support-bot listener armed + affiliate delivery proof + Loki rule (Kickoff-J later sitting)
 
 **Support-bot `#ask-ai` listener armed.** The operator toggled the privileged intents in the
