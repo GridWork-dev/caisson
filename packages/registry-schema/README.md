@@ -10,10 +10,11 @@ credentials.
 ## What it gives you
 
 - **A module manifest schema.** `defineModule` validates and defaults a module's declaration — id,
-  version, kind (base / edition / primitive / app template), license, price, dependencies, and (for
-  an edition) its frozen member-version pin map. Invalid combinations reject at build time: an
-  open-source module can't carry a price, a paid module must carry one, and an edition must declare
-  which modules it bundles.
+  version, kind (`base` / `primitive` / `app-template` / `bundle` — `bundle` is the current
+  aggregate kind; `edition` is a legacy/back-compat kind kept for historical entries), license,
+  price, dependencies, and (for a bundle, or legacy edition) its frozen member-version pin map.
+  Invalid combinations reject at build time: an open-source module can't carry a price, a paid
+  module must carry one, and a bundle (or edition) must declare which modules it composes.
 - **A registry index schema.** `loadRegistryIndex` / `loadRegistryIndexFromFile` parse the built
   catalog — every module, every published version, and the manifest + provenance record for each.
   `moduleAllowlist` projects it down to the flat set of known module ids; `assertKnownModule` /
@@ -46,7 +47,7 @@ const manifest = defineModule({
 });
 
 const index = loadRegistryIndexFromFile("registry/index.json");
-const grantedModuleIds = expandEntitlements(index, ["bundle"]);
+const grantedModuleIds = expandEntitlements(index, ["everything"]);
 ```
 
 ## Test

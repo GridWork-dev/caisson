@@ -11,7 +11,7 @@ private key lives solely with the issuer service.
 
 - **Offline Ed25519 verification.** `crypto.verify` (algorithm `null`) over the kernel-canonical
   signed bytes against a **baked-in SPKI public key** — no key fetch, no network, no KMS. A
-  signature check, not a secret comparison (so `crypto.verify`, never `timingSafeEqual`; ADR-0010).
+  signature check, not a secret comparison (so `crypto.verify`, never `timingSafeEqual`).
 - **Fail-safe-to-community.** `verifyLicense` NEVER throws. An absent/null token, a malformed wire
   string, a bad signature, claims that fail strict-parse, a non-canonical payload, or an elapsed
   expiry all resolve to the free `community` tier — an unlicensed install keeps running and a
@@ -30,7 +30,7 @@ private key lives solely with the issuer service.
 import { verifyLicense } from "@caisson/license-verify";
 
 const license = verifyLicense(process.env.CAISSON_LICENSE_TOKEN);
-if (license.valid && license.entitlements.includes("local-ai")) {
+if (license.valid && license.entitlements.includes("local-first")) {
   // authorized — paid surface unlocked
 } else {
   // fail-closed: community tier

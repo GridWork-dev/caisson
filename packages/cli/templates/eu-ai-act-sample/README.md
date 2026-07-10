@@ -16,7 +16,7 @@ reason about. It does **not** include:
 - the full versioned evidence-pack generator,
 - the compliance control catalogue / framework mapping.
 
-Those ship in the commercial **Compliance edition** — see https://caisson.sh/compliance.
+Those ship in the commercial **Compliance bundle** — see https://caisson.sh/compliance.
 
 ## Run it
 
