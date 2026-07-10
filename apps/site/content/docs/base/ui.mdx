@@ -24,11 +24,160 @@ component tree.
 /* Re-skin = new values here. Components read the tokens; they never fork. */
 ```
 
-<Callout type="info">
-  The styled primitives ship today from `@caisson/ui/components` — Button, Card,
-  Hero, Terminal, DataTable, and more. Every one reads the tokens above; re-skin
-  by swapping token values, never by forking a component.
-</Callout>
+## API reference
+
+`@caisson/ui` has three entry points: `@caisson/ui/tokens` (the raw token contract),
+`@caisson/ui/theme` (compose and apply a theme at runtime), and `@caisson/ui/components`
+(the styled kit, transpiled from raw `.tsx` — set `transpilePackages: ["@caisson/ui"]` in
+`next.config`). `./styles/tokens.css` and `./styles/base.css` are exported for direct
+`<link>`/`@import` use outside a bundler that resolves `.css` imports.
+
+### Tokens — `@caisson/ui/tokens`
+
+```ts
+const foundation: Foundation; // type scale, weight, line-height, tracking, 4px space,
+// radius, the rem breakpoint ladder, motion, elevation — frozen `as const`
+
+const darkTheme: SemanticTheme; // locked default dark palette
+const lightTheme: SemanticTheme; // locked default light palette
+const functional: FunctionalTokens; // @deprecated back-compat alias of functionalDark
+const functionalDark: FunctionalTokens; // dark-tuned variant
+const functionalLight: FunctionalTokens; // light-tuned variant
+const fonts: { sans: string; mono: string }; // locked stacks, CSS-var-wrapped with a literal fallback
+
+function semanticThemeToCssVars(theme: SemanticTheme): Record<string, string>;
+function semanticCssLines(theme: SemanticTheme, indent?: number): string[];
+const SEMANTIC_VAR_NAMES: ReadonlyArray<readonly [keyof SemanticTheme, string]>;
+```
+
+Every `SemanticTheme` carries 15 OKLCH roles: `bg`, `surface1`/`surface2`,
+`border`/`borderStrong`, `fg`/`fgMuted`, `accent`/`accentHover`/`onAccent`/`accentTint`,
+`focus`, `link`, `glowAccent` (the accent instrument-glow shadow), and `scrim` (the
+modal/drawer backdrop veil). `semanticThemeToCssVars`/`semanticCssLines` are the single
+`--cs-*` mapping consumed by both the build-time CSS generator and the runtime theme API
+below, so the two can't drift apart.
+
+### Theme — `@caisson/ui/theme`
+
+```ts
+function createTheme(options?: {
+  preset?: string; // "caisson" (default) | "pressure" | "bulkhead" | a registered custom id
+  overrides?: ThemeOverrides; // partial per-mode token overrides, Zod `.strict()`-validated
+}): Theme; // { id: string; dark: SemanticTheme; light: SemanticTheme }
+
+function applyTheme(
+  theme: Theme,
+  options?: { target?: Document; styleId?: string },
+): void;
+function themeToCssText(theme: Theme): string;
+function themeToCssVars(theme: Theme): {
+  dark: Record<string, string>;
+  light: Record<string, string>;
+};
+
+function registerPreset(preset: ThemePreset): void;
+function getPreset(id: string): ThemePreset | undefined;
+function listPresets(): readonly ThemePreset[];
+const DEFAULT_PRESET_ID: "caisson";
+```
+
+`createTheme` throws on an unknown preset id (the error names the registered ones) and on
+an override with an unrecognized key or an empty-string token value — every token value is
+also denylist-validated against `{ } < > ;`, because `applyTheme`/`themeToCssText`
+interpolate it raw into a `<style>` block. `registerPreset` is append-only by id:
+re-registering an existing id with a different shape throws instead of silently swapping
+every consumer already resolved to it. `applyTheme` is a no-op with no `document`
+(SSR) — render `themeToCssText()` into a `<style>` tag server-side instead for a
+flash-free first paint.
+
+### Components — `@caisson/ui/components`
+
+Every component follows one recipe: Radix only where real behavior is needed (`asChild`
+polymorphism in `Button`/`FormField` — `Dialog`'s focus trap comes from the native
+`<dialog>` element instead), co-located CSS reading only `var(--cs-*)`, variants as
+`data-*` attributes (no theme branching in JS), and, where the component exposes one,
+`forwardRef` on its single DOM root. `Button` is the reference shape:
+
+```ts
+type ButtonVariant = "primary" | "ghost";
+type ButtonSize = "sm" | "md";
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  asChild?: boolean; // render as the single child element (Radix Slot) — e.g.
+  // <Button asChild><Link href="/x">…</Link></Button>
+  children?: ReactNode;
+}
+
+const Button: ForwardRefExoticComponent<
+  ButtonProps & RefAttributes<HTMLButtonElement>
+>;
+```
+
+**Marketing & layout** — purely presentational, server-safe (no `"use client"`):
+
+| Component         | Props                            | Behavior                                                                                                                                                                   |
+| ----------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Section`         | `SectionProps`                   | Eyebrow/title/lede block with a toned `band` (`tint`/`surface`) and an optional `flush` hairline.                                                                          |
+| `Hero`            | `HeroProps`                      | Split marketing header — eyebrow/title/lede/ctas/credentials plus an `artifact` slot (typically a `Terminal`).                                                             |
+| `Card`            | `CardProps`                      | Presentational panel — no navigation or toggle behavior of its own.                                                                                                        |
+| `Faq`             | `FaqProps`, `FaqItem`            | Native `<details>`/`<summary>` disclosure list.                                                                                                                            |
+| `FeatureGrid`     | `FeatureGridProps`               | Responsive feature-card grid.                                                                                                                                              |
+| `Terminal`        | `TerminalProps`                  | Framed evidence artifact — chrome bar + monospace body.                                                                                                                    |
+| `CodeBlock`       | `CodeBlockProps`                 | `<pre>` code surface; `frame` wraps it in `Terminal` chrome instead.                                                                                                       |
+| `StatusChip`      | `StatusChipProps`                | Glyph + label status pill — never color-alone.                                                                                                                             |
+| `CredentialStrip` | `CredentialStripProps`           | Compliance-framework name strip.                                                                                                                                           |
+| `BundleCard`      | `BundleCardProps`                | Featured bundle link card.                                                                                                                                                 |
+| `SkuMatrix`       | `SkuMatrixProps`, `SkuMatrixRow` | Feature-by-bundle comparison matrix.                                                                                                                                       |
+| `Reveal`          | `RevealProps`                    | Fade-up-once scroll reveal via `IntersectionObserver`.                                                                                                                     |
+| `MobileBuyBar`    | `MobileBuyBarProps`              | Sticky mobile price + purchase bar.                                                                                                                                        |
+| `ThemeToggle`     | `ThemeToggleProps`               | Dark/light pin toggle. Pairs with `THEME_STORAGE_KEY` + `themeInitScript` (inline in the root layout `<head>`) for a flash-free first paint that otherwise follows the OS. |
+
+**Dashboard shell & data** — the buyer-dashboard data-app surface:
+
+| Component                  | Props                                               | Behavior                                                                                                                        |
+| -------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `AppShell`                 | `AppShellProps`, `AppShellNavItem`                  | Collapsible sidebar + top bar shell; becomes an off-canvas drawer below the `md` breakpoint.                                    |
+| `DataTable`                | `DataTableProps<T>`, `DataTableColumn<T>`           | Sortable/filterable/paginated table; renders `LoadingState`/`EmptyState` internally for those states.                           |
+| `Pagination`               | `PaginationProps`                                   | Accessible page selector. `paginationRange(page, pageCount, siblingCount?)` is the pure windowing function it renders from.     |
+| `Select`                   | `SelectProps`, `SelectOption`                       | Styled wrapper over the native `<select>`.                                                                                      |
+| `CopyField`                | `CopyFieldProps`                                    | Read-only value with a one-click clipboard copy; `secret` masks it until copied.                                                |
+| `DetailList`               | `DetailListProps`, `DetailItem`                     | Semantic `<dl>` term/value rows; `columns` or `stacked` layout.                                                                 |
+| `MetricStat`               | `MetricStatProps`                                   | Label/value/hint stat tile with a tone-tinted icon.                                                                             |
+| `MoneyCell`                | `MoneyCellProps`                                    | Renders an integer cent/credit value via `formatMoneyCellValue(value, unit?, opts?)`, which throws on a non-safe-integer input. |
+| `LedgerList` / `LedgerRow` | `LedgerListProps` / `LedgerRowProps`, `LedgerEntry` | Signed credit-ledger transaction rows. `formatLedgerTimestamp(iso)` formats the entry time.                                     |
+| `StatusPill`               | `StatusPillProps`, `EntitlementStatus`              | `active`/`expired`/`revoked`/`pending` lifecycle pill.                                                                          |
+| `EmptyState`               | `EmptyStateProps`                                   | The calm "nothing here yet" affordance — `DataTable`'s default empty render.                                                    |
+| `ErrorState`               | `ErrorStateProps`                                   | The calm failed-fetch affordance.                                                                                               |
+| `LoadingState`             | `LoadingStateProps`                                 | Skeleton standing in for a `table`/`stat`/`list`/`block` layout, sized to avoid layout shift.                                   |
+| `FormField`                | `FormFieldProps`                                    | Label + control + helper/error, wired to the control via Radix `Slot`.                                                          |
+
+**Overlays & feedback:**
+
+| Component               | Props                             | Behavior                                                                                                                                                                        |
+| ----------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Dialog`                | `DialogProps`                     | Modal or edge-`drawer` on the native `<dialog>` — `showModal()` gives focus-trap, inert background, Escape-to-close, and focus-return for free.                                 |
+| `ConfirmDialog`         | `ConfirmDialogProps`              | Confirm/cancel prompt on `Dialog`; `tone: "danger"` tints the confirm action for a destructive step.                                                                            |
+| `Toast` / `ToastRegion` | `ToastProps` / `ToastRegionProps` | Transient notification. `danger`/`warning` announce assertively (`role="alert"`); `info`/`success` politely (`role="status"`). Mount toasts inside one `ToastRegion` per stack. |
+
+**Form & interactive primitives** — hand-rolled, zero extra dependency:
+
+| Component   | Props                             | Behavior                                                                                            |
+| ----------- | --------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `Badge`     | `BadgeProps`                      | Compact solid-fill tag — text only, no icon/dot slot.                                               |
+| `Checkbox`  | `CheckboxProps`                   | Real `<input type="checkbox">` under a CSS-drawn check mark.                                        |
+| `Radio`     | `RadioProps`                      | Real `<input type="radio">` under a CSS-drawn dot.                                                  |
+| `Switch`    | `SwitchProps`                     | `<button role="switch" aria-checked>` for an immediate-effect setting (not a form value).           |
+| `Accordion` | `AccordionProps`, `AccordionItem` | Native `<details>`/`<summary>` list; `type="single"` gets mutual exclusivity from `<details name>`. |
+| `Tabs`      | `TabsProps`, `TabItem`            | WAI-ARIA tablist — roving `tabindex`, arrow-key + Home/End navigation, disabled tabs skipped.       |
+
+**Icons:**
+
+| Export          | Signature                                                             | Behavior                                                                                                 |
+| --------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `Icon`          | `ForwardRefExoticComponent<IconProps & RefAttributes<SVGSVGElement>>` | Renders a Lucide glyph by name, or a bespoke glyph registered via `registerIcons`.                       |
+| `registerIcons` | `(glyphs: Partial<Record<RegisteredIconName, IconGlyph>>) => void`    | Populates the bespoke-glyph registry. The open kit ships no bespoke art — the consuming app supplies it. |
 
 ## Related
 
@@ -37,8 +186,3 @@ component tree.
     Install the base and run the standards gate.
   </Card>
 </Cards>
-
-<Callout type="info">
-  This page covers the essentials. The full `@caisson/ui` API reference — the
-  complete token map and the theming contract — is still expanding.
-</Callout>

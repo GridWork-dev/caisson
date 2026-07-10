@@ -11,6 +11,21 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
+/* Hubot Sans ships ONLY a barred zero (its woff2 carries no alternate glyph to reach via
+ * font-feature-settings), and in prose it reads as Greek theta ("© 2Θ26", "Apache-2.Θ"). This
+ * single-glyph face — Mona Sans, Hubot's sibling family, subset to just U+0030 (~4KB,
+ * public/fonts, OFL text alongside) — is composed IN FRONT of the Hubot stack on <html>
+ * (lib/fonts.ts fontSansZeroPatch), so every sans-serif "0" resolves to Mona's plain oval and
+ * every other character falls through to Hubot untouched. Mono surfaces are unaffected (their
+ * stack never includes this family). */
+@font-face {
+  font-family: "Mona Zero";
+  src: url("/fonts/mona-zero.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: swap;
+  unicode-range: U+0030;
+}
+
 /* Caisson owns the theme via [data-theme] (not a .dark class). Re-point Tailwind's `dark:`
  * variant — and therefore every fumadocs `dark:` utility — at our attribute so the docs surface
  * tracks the same toggle as marketing. */

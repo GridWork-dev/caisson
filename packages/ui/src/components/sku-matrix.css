@@ -63,6 +63,17 @@
   width: 11rem;
 }
 
+/* A 3-column table (a compare page: Detail + two value columns whose cells are often a single
+ * ✓/— glyph) reads badly under fixed layout's even split at 390px — each value column spends a
+ * third of the viewport on one glyph while the Detail prose wraps to 6–9 lines. Give Detail half
+ * the table; the value columns split the rest. Keyed to exactly-3 columns so the wide
+ * module × bundle grids above keep their even split. */
+.cs-matrix:has(thead th:nth-child(3)):not(:has(thead th:nth-child(4)))
+  thead
+  th:first-child {
+  width: 50%;
+}
+
 /* Sticky first column (row labels) — the anchor while the wrap scrolls horizontally on mobile.
  * Needs an opaque background or the scrolled columns show through; both current callers sit on
  * the plain page background (same reasoning as the `.cs-matrix__frame::after` fade). */
