@@ -31,7 +31,8 @@ import {
   type Comparison,
   type ComparisonRow,
 } from "@/lib/comparisons";
-import { breadcrumb, faqPage, serializeJsonLd } from "@/lib/jsonld";
+import { breadcrumb, faqPage } from "@/lib/jsonld";
+import { JsonLdScript } from "@/lib/jsonld-script";
 import { buildMetadata } from "@/lib/metadata";
 import {
   bundlePrice,
@@ -129,14 +130,8 @@ export default async function ComparePage(props: Params) {
   return (
     <>
       <TrackView item={`compare:${c.slug}`} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(bcLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqLd) }}
-      />
+      <JsonLdScript data={bcLd} />
+      <JsonLdScript data={faqLd} />
 
       {/* ===== Hero ===== */}
       <Hero

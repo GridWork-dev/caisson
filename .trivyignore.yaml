@@ -1,0 +1,37 @@
+# Trivy suppression policy (SPEC-security-scan-findings-triage, ADR-0315). Auto-discovered by
+# `trivy fs .` at the repo root (tools/security/scan.sh). Every entry carries a statement — an
+# accept, never a blanket mute. Vulnerability CVEs are NOT listed here: systeminformation + ws are
+# fixed by real version bumps (root package.json overrides), so trivy stops reporting them once
+# bun.lock updates. Dependency CVEs with no safe bump are accepted in osv-scanner.toml instead
+# (trivy at CRITICAL,HIGH does not surface them).
+
+secrets:
+  - id: github-pat
+    paths:
+      - "packages/local-store/src/__golden__/scrub.json"
+      - "packages/local-store/src/golden.ts"
+    statement: >-
+      Golden scrub fixtures. The fake GitHub PAT is deliberately-unsafe test input: it is the
+      INPUT to @caisson/local-store's secret-scrubber golden-file regression (the scrubber must
+      redact it). Not a live credential — the security floor's carve-out for test files
+      exercising deliberately unsafe input applies.
+  - id: private-key
+    paths:
+      - "packages/local-store/src/__golden__/scrub.json"
+      - "packages/local-store/src/golden.ts"
+    statement: >-
+      Golden scrub fixtures. The fake private key is deliberately-unsafe test input the
+      secret-scrubber must redact (golden-file regression). Not a live key — deliberately unsafe
+      test input per the security floor.
+
+misconfigurations:
+  - id: AVD-DS-0002
+    paths:
+      - "services/docs/Dockerfile"
+    statement: >-
+      services/docs runs its process non-root (uid 1000 `bun`, dropped via setpriv in both the
+      entrypoint and the healthcheck), but the container MUST enter as root: the entrypoint
+      chowns the ROOT-owned Railway volume mount to bun before dropping privileges, and setpriv
+      itself requires starting as root to drop. A `USER bun` instruction would break both the
+      runtime volume chown and the privilege drop. Accepted — the effective runtime user is
+      non-root; only the entrypoint's chown-then-drop window is root, by necessity.
