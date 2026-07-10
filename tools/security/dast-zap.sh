@@ -19,12 +19,17 @@ tok=""
 cp "$REPO/tools/security/zap/plan.yaml" "$OUT_DIR/plan.yaml"
 
 hr "DAST · OWASP ZAP active scan ($BASE)"
-# --network host so the container reaches a host-local target (localhost:PORT) on Linux.
+# Pass the Bearer by NAME (export + `-e ZAP_AUTH_TOKEN`), never `-e VAR=value` — a value on the
+# docker argv is world-readable via /proc/<pid>/cmdline and `docker inspect` for the whole run.
+export ZAP_AUTH_TOKEN="$tok"
+# --network host so the container reaches a host-local target (localhost:PORT) on Linux. `|| rc=$?`
+# is required: _common.sh's `set -e` would otherwise abort before the report pointer on a non-zero
+# ZAP exit — and a High-alert exitStatus is a DESIGNED non-zero, not an error.
+rc=0
 docker run --rm --network host \
   -v "$OUT_DIR:/zap/wrk:rw" \
-  -e "ZAP_TARGET=$BASE" -e "ZAP_AUTH_TOKEN=$tok" \
-  ghcr.io/zaproxy/zaproxy:stable zap.sh -cmd -autorun /zap/wrk/plan.yaml
-rc=$?
+  -e "ZAP_TARGET=$BASE" -e ZAP_AUTH_TOKEN \
+  ghcr.io/zaproxy/zaproxy:stable zap.sh -cmd -autorun /zap/wrk/plan.yaml || rc=$?
 [[ $rc -eq 0 ]] && ok "ZAP: no High alerts → $OUT_DIR/zap-report.json" \
   || warn "ZAP High alerts or error (rc=$rc) → $OUT_DIR/zap-report.json"
 exit $rc

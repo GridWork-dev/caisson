@@ -26,6 +26,9 @@ SPEC="$REPO/tools/security/openapi/$NAME.json"
 HEADERS=()
 if [[ "$NAME" == "license" ]]; then
   tok="$(env_get LICENSE_ISSUE_TOKEN)"
+  # ponytail: the Bearer rides on the schemathesis argv (readable via /proc/<pid>/cmdline for the
+  # fuzz run). Accepted LOW on this single-operator loopback box — schemathesis has no header env,
+  # and a secret-written-to-a-config-file trades a transient argv for a worse on-disk window.
   if [[ -n "$tok" ]]; then HEADERS=(--header "Authorization: Bearer $tok"); else
     warn "LICENSE_ISSUE_TOKEN not in caisson.env — authed routes fuzz the 401 path only"
   fi
