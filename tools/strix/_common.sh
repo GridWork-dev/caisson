@@ -30,17 +30,30 @@ build_clean_tree() {
 }
 
 # Live black-box targets. The site is reached via its Railway origin, which bypasses
-# Cloudflare Access + WAF (cleaner app-vuln signal). admin.caisson.sh is intentionally
-# EXCLUDED until its origin 502 / cert-issue is fixed (see docs/security/strix-pentest.md).
+# Cloudflare Access + WAF (cleaner app-vuln signal). Round-2 (Kickoff K) adds the surfaces
+# round-1 could not reach: admin (its origin 502 / cert-issue is resolved — now 307→/login,
+# ADR-0283 in-app GitHub OAuth), the registry Worker, and the support-bot inbound app
+# (/health + the Bearer-authed /billing-grant + /escalate). See docs/security/strix-pentest.md.
 SITE_ORIGIN="https://caisson-site-production.up.railway.app"
 LICENSE_URL="https://license.caisson.sh"
 DOCS_URL="https://docs-api.caisson.sh"
+ADMIN_URL="https://admin.caisson.sh"
+REGISTRY_URL="https://registry.caisson.sh"
+SUPPORT_BOT_URL="https://caisson-support-bot-production.up.railway.app"
 
 INSTRUCTION="Authorized READ-ONLY white-box + black-box security assessment of Caisson (operator-owned).
-White-box: the local source tree; correlate it to the live endpoints. Live: site (better-auth buyer
-dashboard, checkout/billing flows), license issuer (Ed25519 verify + Paddle webhook signatures), docs
-retrieval API. Focus on auth bypass, IDOR, injection, SSRF, business-logic, and webhook/signature
-flaws. Do NOT attempt to fix or patch code — validate and report only."
+White-box: the local source tree; correlate it to the live endpoints. Live targets: site (better-auth
+buyer dashboard, checkout/billing flows), license issuer (Ed25519 verify + Paddle webhook signatures),
+docs retrieval API, the admin control-plane (admin.caisson.sh — in-app GitHub OAuth + numeric-id
+allowlist, fail-closed middleware; probe the PRE-LOGIN surface for any route reachable without a
+session), the registry Worker (registry.caisson.sh — license-keyed entitlement filtering + per-IP rate
+limit; probe for entitlement/deny-set bypass and rate-limit evasion), and the support-bot inbound app
+(caisson-support-bot-production.up.railway.app — GET /health unauth, POST /billing-grant + POST
+/escalate Bearer-authed; probe auth bypass on the money/role-grant seam). This is ROUND 2: round-1's 6
+findings are already fixed — hunt the coverage GAPS (admin black-box, authed sessions, support-bot,
+Worker, DoS/body-size, supply-chain), not the fixed bugs. Focus on auth bypass, IDOR/BFLA, injection,
+SSRF, business-logic, and webhook/signature flaws. Do NOT attempt to fix or patch code — validate and
+report only."
 
 # Build the clean tree, run Strix across all targets, clean the tree on exit.
 # Caller passes any extra strix flags through ("$@"). Default scan-mode is deep.
@@ -53,6 +66,9 @@ run_strix() {
     -t "$SITE_ORIGIN" \
     -t "$LICENSE_URL" \
     -t "$DOCS_URL" \
+    -t "$ADMIN_URL" \
+    -t "$REGISTRY_URL" \
+    -t "$SUPPORT_BOT_URL" \
     --instruction "$INSTRUCTION" \
     "$@"
 }
