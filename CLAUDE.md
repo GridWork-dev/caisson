@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0302** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0303** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -59,7 +59,9 @@ edited — supersede with a later ADR).
    0298-0300 at merge per ADR-0088) — read-only mutation gate as an admin lever only, no
    dunning freeze · priority-support creditsPerCycle 1000 at Developer parity, executes the
    0288 rider (b) · subscription-refund coverage-horizon claw, supersedes the 0269 Decision-6
-   accept).
+   accept; 0303 = the CF-Access gate scoped to the commerce surface 2026-07-10 — dashboard
+   and cart paths stay gated, marketing/docs/llms.txt/api serve public pre-launch for AI
+   indexing, amends the A2 lock + ADR-0107, applied live).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
