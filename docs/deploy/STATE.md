@@ -55,6 +55,15 @@ landed the design wave on main; this act shipped it to the one service the wave 
   issues) — floor set to 0.75 with the cause documented in `lighthouse.yml`. Fixes merged to
   main; the green evidence run rides the next site redeploy. The prod visual-harness delta
   remains the second evidence leg.
+- **Second redeploy + rerun (same day, image `c39dd56a…`, run 29072745113):** the fixes
+  verified live — TBT 33s→710ms (`/`) / 90ms (`/marketplace`), `/` a11y 0.92→**1.0**,
+  `/marketplace` 0.96, TTI/TBT/best-practices/SEO assertions ALL green. ONE residual red:
+  `categories:performance` on `/` = 0.57 desktop (marketplace 0.9 passes). Named causes, both
+  out-of-wave: Cloudflare's `challenge-platform/jsd` script (676ms bootup — half the TBT; the
+  operator lever is killing zone JS-detections, same terraform class as the CAISSON-50 beacon
+  kill, at the cost of the bot-management signal) and homepage hydration (684ms — a
+  server-componentization diet, a future design-track item). The gate stays error-level and
+  red on purpose (ADR-0309: a red run, not a shrug) until one of those levers is pulled.
 
 ## 2026-07-10 — EXECUTED: G+H close-out fleet deploy (PR #198 merge → full DEPLOY sequence)
 
