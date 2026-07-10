@@ -25,6 +25,19 @@ export const SENSITIVE_ATTRIBUTE_KEY =
 /** A value-level backstop: a raw `Authorization: Bearer <token>` string under an unsuspicious key. */
 const BEARER_VALUE = /^bearer\s+\S+/i;
 
+/** In-line (non-anchored) form of the same backstop, for raw log-line bodies. */
+const BEARER_INLINE = /bearer\s+\S+/gi;
+
+/**
+ * Scrub a raw log line before it leaves the process as an OTLP log record: the bearer-token
+ * value backstop, applied in-line. Deliberately the same conservative philosophy as
+ * `scrubAttributes` — these lines already reach the host's log drain verbatim; this is the
+ * export-boundary backstop, not a PII filter.
+ */
+export function scrubLogLine(line: string): string {
+  return line.replace(BEARER_INLINE, "Bearer [REDACTED]");
+}
+
 const REDACTED = "[REDACTED]";
 const PATH_ID_PLACEHOLDER = ":id";
 

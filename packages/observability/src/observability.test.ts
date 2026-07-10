@@ -2,6 +2,10 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { ConfigError } from "@caisson/kernel";
 import { ExportResultCode } from "@opentelemetry/core";
 import type { ExportResult } from "@opentelemetry/core";
+import type {
+  LogRecordExporter,
+  ReadableLogRecord,
+} from "@opentelemetry/sdk-logs";
 import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
 import { initObservability, shutdownObservability } from "./observability.ts";
 
@@ -19,6 +23,28 @@ function createStubExporter(): SpanExporter & {
     },
     shutdown(): Promise<void> {
       this.shutdownCalls += 1;
+      return Promise.resolve();
+    },
+  };
+}
+
+/** A `LogRecordExporter` double capturing every record — the logs-pipeline test seam. */
+function createStubLogExporter(): LogRecordExporter & {
+  records: ReadableLogRecord[];
+} {
+  return {
+    records: [],
+    export(
+      records: ReadableLogRecord[],
+      resultCallback: (result: ExportResult) => void,
+    ): void {
+      this.records.push(...records);
+      resultCallback({ code: ExportResultCode.SUCCESS });
+    },
+    forceFlush(): Promise<void> {
+      return Promise.resolve();
+    },
+    shutdown(): Promise<void> {
       return Promise.resolve();
     },
   };
@@ -101,6 +127,33 @@ describe("initObservability / shutdownObservability", () => {
     expect(() =>
       initObservability({ endpoint: "not-a-url", instrumentations: [] }),
     ).toThrow(ConfigError);
+  });
+
+  test("stream bridge: stderr writes become scrubbed log records; shutdown restores the raw writes", async () => {
+    const preStdout = process.stdout.write;
+    const preStderr = process.stderr.write;
+    const logExporter = createStubLogExporter();
+    initObservability({
+      endpoint: "http://fake-otel-collector.test:4318",
+      exporter: createStubExporter(),
+      logExporter,
+      instrumentations: [],
+    });
+    expect(process.stderr.write).not.toBe(preStderr);
+
+    process.stderr.write("[license] webhook accepted Bearer sk_live_abc123\n");
+    await shutdownObservability(); // flushes the batch processor into the stub.
+
+    const bodies = logExporter.records.map((r) => String(r.body));
+    const line = bodies.find((b) => b.includes("[license] webhook accepted"));
+    expect(line).toBe("[license] webhook accepted Bearer [REDACTED]");
+    const record = logExporter.records.find(
+      (r) => String(r.body) === line,
+    ) as ReadableLogRecord;
+    expect(record.severityText).toBe("WARN");
+
+    expect(process.stdout.write).toBe(preStdout);
+    expect(process.stderr.write).toBe(preStderr);
   });
 
   test("the real (non-stubbed) HTTP+fetch+pg instrumentation set boots cleanly under Bun", async () => {
