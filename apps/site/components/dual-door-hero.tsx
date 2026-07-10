@@ -48,12 +48,13 @@ export function DualDoorHero() {
               className={styles.chip}
               tone="accent"
               dot
-              label={`Compliance · ${bundlePrice("compliance")}`}
+              label={`Compliance · ${bundlePrice("compliance")} one-time`}
             />
             <p className={styles.claim}>
               The compliance wedge: fail-closed RLS, WORM evidence storage, an
-              append-only audit chain, per-tenant field encryption, and a SOC 2
-              / HIPAA evidence-pack generator you run — never a certification we
+              append-only audit chain, per-tenant field encryption, and an
+              evidence-pack generator you run — mapped to SOC 2 and HIPAA, with
+              PCI DSS and GDPR crosswalk exports. Never a certification we
               claim.
             </p>
             <div className={styles.cta}>
