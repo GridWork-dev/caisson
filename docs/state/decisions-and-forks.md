@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-10
 status: live
-adr_ceiling: 0317
+adr_ceiling: 0318
 ---
 
 # Decisions & Forks — live board
@@ -186,6 +186,26 @@ _The Phase-2 hero fork is locked → **ADR-0104** (static code-as-proof, option 
 | Item                                                         | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ~~**Edition members-fold (Stage-2)**~~ **CLOSED — ADR-0178** | The three new commercial primitives — `@caisson/alerting` + `@caisson/retention-runner` (Compliance) and `@caisson/tool-exec` (Agentic-Dev) — are PUBLISHED standalone in the registry (index 27→32). Whether to **fold them into the edition `members` bundle** (buyer gets them with the edition price) was **NOT auto-decided at integration** — it changes edition-bundle economics (ADR-0137 repriced below module-sum without these). Their manifests already note "membership added by the edition at integration." **LOCKED 2026-07-01 → ADR-0178: FOLD into edition bundles** (Compliance `members` += alerting + retention-runner; Agentic-Dev += tool-exec). Source manifests edited on **PR #34**; realized at the next gated edition republish (`resolveEditionMembers` reads the index snapshot). |
+
+### ~~OSS mirror launch-program forks~~ ALL LOCKED same sitting → **ADR-0318** (2026-07-10)
+
+Operator direction 2026-07-10: no full OSS publish yet; a dedicated sandbox phase (all OSS +
+commercial packages installed clean-room, full prose/setup audit) gates it, and the mirror's
+history shape was re-opened (the PR #64 single-snapshot model vs chunked milestone backfill).
+GTM research: `outputs/research/oss-launch-gtm-2026-07-10.md` (workflow `wf_7a7952c2-474`).
+**Locked (two rounds): F1 keep vessel · F2 backfill-at-cutover + append-only forward (against
+the research rec, with the never-backdate + same-gates-as-HEAD rails) · F3 never backdate ·
+F4 fold Kickoff-L in as W0 · F5 window → Show HN · plus the release-train locks R1 GH-Release
+trigger / R2 everything-rides / R3 script+checklist gates / R4 fresh full re-audit per release.
+Spec `outputs/specs/oss-launch/SPEC-oss-launch-program.md` → LOCKED.** Rows kept for the record:
+
+| Fork                                 | Options                                                                                                                                     | Rec + confidence                                                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **F1 — repo vessel**                 | Keep `caisson-oss` + rewrite history · delete-and-recreate fresh (same name or new)                                                         | **Keep** — identical outcome on a private 1-commit repo; fresh breaks the repo-id-scoped `MIRROR_PUSH_TOKEN`. `high`                              |
+| **F2 — history shape**               | Curated milestone backfill (real exports at real SHAs; operator lean) · keep single-snapshot model · append-only from cut-over, no backfill | **Keep snapshot + one README explainer sentence** — industry default, zero evidenced penalty; backlash targets _unexplained_ thin history. `high` |
+| **F3 — commit dating** (if backfill) | ~~Backdate to real source merge dates~~ (research hard-no: documented scam signature) · date at cut-over, real dates in commit messages     | **Never backdate** — collapsed by research §2. `max`                                                                                              |
+| **F4 — Kickoff-L sequencing**        | Run L first as W0 (version cut before the mirror shows public state) · fold L into this program · L independently later                     | **L first as W0.** `high`                                                                                                                         |
+| **F5 — launch motion**               | Pre-launch window (public + npm + Awesome-lists + newsletters 2–4 wks) → Show HN anchor · same-day big-bang · quiet flip, no HN event       | **Pre-launch window → Show HN** — HN star half-life ~24h; the window compounds. `high`                                                            |
 
 ### Provider-optimization forks (2026-07-01 — Exa-research-backed, verified pricing, DO NOT auto-decide)
 
