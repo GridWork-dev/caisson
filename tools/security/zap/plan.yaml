@@ -1,0 +1,55 @@
+--- # ZAP Automation Framework plan — caisson DAST (spider + passive + active scan).
+# Target comes from ${ZAP_TARGET}; an optional Bearer from ${ZAP_AUTH_TOKEN} is injected on every
+# request by the replacer job (never hardcoded, never in the repo). Gates non-zero on any High
+# alert via the exitStatus job. Driven by tools/security/dast-zap.sh — see the tooling playbook.
+env:
+  contexts:
+    - name: caisson
+      urls:
+        - "${ZAP_TARGET}"
+      includePaths:
+        - "${ZAP_TARGET}.*"
+      excludePaths: []
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+jobs:
+  # Inject the Authorization header on every outgoing request. When ZAP_AUTH_TOKEN is empty the
+  # value is a harmless "Bearer " (unauthenticated scan) — the rule is always present so the authed
+  # and unauthed runs share one plan.
+  - type: replacer
+    parameters:
+      deleteAllRules: false
+    rules:
+      - description: "auth bearer"
+        matchType: "req_header"
+        matchString: "Authorization"
+        matchRegex: false
+        replacementString: "Bearer ${ZAP_AUTH_TOKEN}"
+  - type: passiveScan-config
+    parameters:
+      scanOnlyInScope: true
+  - type: spider
+    parameters:
+      context: caisson
+      maxDuration: 3
+      maxDepth: 10
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+  - type: activeScan
+    parameters:
+      context: caisson
+      maxRuleDurationInMins: 3
+      maxScanDurationInMins: 20
+  - type: report
+    parameters:
+      template: "traditional-json"
+      reportDir: "/zap/wrk"
+      reportFile: "zap-report"
+  # Exit non-zero when a High-risk alert is present so the driver / CI can gate on it.
+  - type: exitStatus
+    parameters:
+      errorLevel: "High"
+      warnLevel: "Medium"
