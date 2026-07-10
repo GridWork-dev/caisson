@@ -6,7 +6,7 @@ import { BUNDLE_PRICES, formatUsd } from "@/lib/pricing";
 export const metadata = buildMetadata({
   title: "Affiliate program",
   description:
-    "Refer Caisson and earn 30% of every sale, rising to 50% for top-tier partners. Apply by email, get paid directly once a sale clears its refund window, with plain refund-clawback terms.",
+    "Refer Caisson and earn 30% of every sale, with a personal code that gives your buyers 10% off. Apply by email, get paid directly once a sale clears its refund window, with plain refund-clawback terms.",
   path: "/affiliates",
 });
 
@@ -18,24 +18,26 @@ const BUNDLE_AMOUNTS = BUNDLE_PRICES.map((b) => b.amount).filter(
 );
 const MIN_BUNDLE = Math.min(...BUNDLE_AMOUNTS);
 const MAX_BUNDLE = Math.max(...BUNDLE_AMOUNTS);
-const BASE_LOW = Math.round((MIN_BUNDLE * 30) / 100);
-const BASE_HIGH = Math.round((MAX_BUNDLE * 30) / 100);
-const TOP_HIGH = Math.round((MAX_BUNDLE * 50) / 100);
+// Commission basis is what the buyer actually pays: list minus the code's 10%
+// discount, then 30% of that — 27% of list. Quoting 30%-of-list would overstate
+// every figure on this page by ~11%.
+const BASE_LOW = Math.round((MIN_BUNDLE * 27) / 100);
+const BASE_HIGH = Math.round((MAX_BUNDLE * 27) / 100);
 
 const HOW_IT_WORKS = [
   {
     icon: "users" as const,
-    label: "Refer a buyer",
-    body: "Share your link, review, tutorial, or recommendation. A buyer who follows it to caisson.sh and purchases a bundle or module is attributed to you.",
+    label: "Share your code",
+    body: "You get a personal discount code worth 10% off at checkout. A buyer who redeems it — from your review, tutorial, or recommendation — is attributed to you on the sale itself. No cookies, no tracking pixels.",
   },
   {
     icon: "wallet" as const,
-    label: "Earn 30%, up to 50%",
-    body: `You earn 30% of every sale, rising to 50% for top-tier partners. Across the ${formatUsd(
+    label: "Earn 30% of every sale",
+    body: `You earn 30% of every sale your code lands. Across the ${formatUsd(
       MIN_BUNDLE,
     )}–${formatUsd(MAX_BUNDLE)} bundle catalog, that is about ${formatUsd(
       BASE_LOW,
-    )} to ${formatUsd(BASE_HIGH)} per referred bundle at 30%.`,
+    )} to ${formatUsd(BASE_HIGH)} per referred bundle.`,
   },
   {
     icon: "check" as const,
@@ -52,20 +54,18 @@ const FAQ_ITEMS = [
   },
   {
     question: "How much do affiliates earn?",
-    answer: `30% of every sale you refer, rising to 50% for top-tier partners. Caisson's bundles run ${formatUsd(
+    answer: `30% of every sale you refer. Caisson's bundles run ${formatUsd(
       MIN_BUNDLE,
     )} to ${formatUsd(
       MAX_BUNDLE,
     )}, so a referred bundle pays roughly ${formatUsd(BASE_LOW)} to ${formatUsd(
       BASE_HIGH,
-    )} at 30%, and up to ${formatUsd(
-      TOP_HIGH,
-    )} on the largest bundle at the 50% tier. Modules pay the same rate on their own list price.`,
+    )}. Modules pay the same rate on their own list price.`,
   },
   {
-    question: "How does the 50% tier work?",
+    question: "What does my code give buyers?",
     answer:
-      "The 50% rate is for consistent, high-volume partners. We agree the tier with you directly once your referrals are landing sales — there's no volume you have to hit blind.",
+      "10% off at checkout, on bundles and modules alike. Every referral lands with a built-in reason to buy through you, and the redeemed code is what attributes the sale — no cookies, no tracking pixels.",
   },
   {
     question: "How are commissions paid?",
@@ -102,8 +102,8 @@ export default function AffiliatesPage() {
         flush
         as="h1"
         eyebrow="Affiliate program"
-        title="Refer Caisson. Earn 30% to 50%."
-        lede={`Point regulated and production-minded teams at Caisson and earn a share of every sale they make — 30% to start, up to 50% for top-tier partners. On the ${formatUsd(
+        title="Refer Caisson. Earn 30% of every sale."
+        lede={`Point regulated and production-minded teams at Caisson with a personal code that gives them 10% off — and earn 30% of every sale it lands. On the ${formatUsd(
           MIN_BUNDLE,
         )}–${formatUsd(MAX_BUNDLE)} bundle catalog that is roughly ${formatUsd(
           BASE_LOW,
@@ -156,17 +156,16 @@ export default function AffiliatesPage() {
       {/* ===== Commission ===== */}
       <Section eyebrow="Commission" title="What you earn.">
         <p className="cs-lede">
-          You earn <strong>30% of every sale</strong> you refer, rising to{" "}
-          <strong>50% for top-tier partners</strong>. Commission is paid on the
-          amount the buyer actually pays — bundle or module, one-time or
-          subscription.
+          You earn <strong>30% of every sale</strong> you refer. Commission is
+          paid on the amount the buyer actually pays — bundle or module,
+          one-time or subscription.
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
           Caisson bundles run {formatUsd(MIN_BUNDLE)} to {formatUsd(MAX_BUNDLE)}
-          . At the 30% base rate a single referred bundle pays about{" "}
-          {formatUsd(BASE_LOW)} to {formatUsd(BASE_HIGH)}; at the 50% tier the
-          largest bundle pays up to {formatUsd(TOP_HIGH)}. À-la-carte modules
-          pay the same rate on their own list price.
+          . Commission is 30% of the discounted amount the buyer actually pays
+          with your code&rsquo;s 10% off — a single referred bundle pays you
+          about {formatUsd(BASE_LOW)} to {formatUsd(BASE_HIGH)}. À-la-carte
+          modules pay the same rate on their own list price.
         </p>
       </Section>
 
@@ -217,7 +216,7 @@ export default function AffiliatesPage() {
             Every Caisson purchase carries a 14-day money-back guarantee. If a
             buyer you referred takes a refund, the commission for that sale is
             clawed back. You keep commissions on every sale that sticks — the
-            terms are the same for every partner, at every tier.
+            terms are the same for every partner.
           </p>
         </Card>
       </Section>
