@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-10
 status: live
-adr_ceiling: 0318
+adr_ceiling: 0319
 ---
 
 # Decisions & Forks — live board
@@ -2024,6 +2024,29 @@ Agentic-Dev lede — the glossary + MCP-sequence copy were already mechanism-for
 ADR-0305 per-org license line (plans FAQ + cart trust note + the two mid-tier bundle FAQs); the
 12-month pricing-page answer was verified already shipped ("The one question everyone asks",
 /marketplace/plans).
+
+### WTP-synthesis response picker (2026-07-10, operator-locked → ADR-0319)
+
+Ran over the R1–R10 fork block in `outputs/research/wtp-synthesis-2026-07-10.md` (the
+full-evidence Cookiy read: 12 real-ICP interviews + 2 quant surveys). Four picks, executed
+same-sitting:
+
+- **Copy wave — all four (R3+R10+R8+R6):** PCI DSS/GDPR named alongside SOC 2/HIPAA
+  (true-to-built via the ADR-0277 crosswalks; **ISO 27001 deliberately not claimed** — not
+  built, backlogged); support-included language at the offer level; a "one-time" cadence
+  marker on the hero price chip; a renewal-justification sentence (40% buys releases, not a
+  support retainer) on the plans renewal card.
+- **R5 proof → code-access + demo emphasis now:** marketplace live-component rendering
+  surfaced in the built-in-the-open lede; no fabricated testimonials; case studies stay the
+  design-partner deliverable.
+- **R7/R2 panel re-run → DEFERRED** until an anchor move pends; $2,059 probed via partner
+  conversations meanwhile. R9 guardrail recorded: "cheaper than expected" is NOT a raise
+  mandate.
+- **TRADEMARK.md → drafted now** (`scripts/mirror-assets/TRADEMARK.md`, wired into the mirror
+  exporter; ADR-0318 W0 dependency), lawyer redlines as Scope 3.
+
+R4 (hero frame) needed no fork — the evidence validates the locked ADR-0040 posture. Anchors
+stay ADR-0304 HOLD.
 
 ## Closed by the 2026-07-10 perf/mobile picker round (operator-locked → ADR-0310..0313)
 
