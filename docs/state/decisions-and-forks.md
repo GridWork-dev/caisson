@@ -1,7 +1,7 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-10
 status: live
-adr_ceiling: 0309
+adr_ceiling: 0310
 ---
 
 # Decisions & Forks — live board
