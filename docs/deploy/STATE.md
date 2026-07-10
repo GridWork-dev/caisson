@@ -70,8 +70,18 @@ event: transaction.completed | status: success
 **OTLP logs fix landed on main (`0dd715ae`), fleet redeploy PENDING (operator-gated):**
 `@caisson/observability` now ships the logs pipeline + stdout/stderr bridge; the
 `caisson-log-error-burst` Loki rule is provisioned via the API (201, NoData=OK) and arms
-itself when site/admin/license/docs redeploy. Loki stream verification belongs to that
-deploy's entry.
+itself when site/admin/license/docs redeploy. The pipeline itself is LIVE-PROVEN against the
+real Grafana Cloud gateway — a local probe process booted the new package with the fleet's
+OTLP endpoint/headers and its lines landed in Loki:
+
+```
+streams: 2
+labels: {'detected_level': 'warn', 'service_name': 'caisson-logs-probe'}
+  line: [observability] OTel SDK started (service=caisson-logs-probe)
+  line: caisson-logs-probe: OTLP logs pipeline live proof 2026-07-10T14:58:40.719Z
+```
+
+Loki is no longer zero-streams; per-service streams appear at the fleet redeploy.
 
 ---
 
