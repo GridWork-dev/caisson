@@ -166,6 +166,17 @@ class Settings(BaseSettings):
         description="Postgres DSN for support_ticket persistence; escalation is thread-only when unset.",
     )
 
+    # --- optional per-answer product telemetry (2026-07-10; analytics.py) ---
+    posthog_capture_key: str | None = Field(
+        default=None,
+        description="PostHog project capture key (phc_…); per-answer telemetry never runs when "
+        "unset. Same env convention as services/license's server-side purchase capture.",
+    )
+    posthog_capture_host: str = Field(
+        default="https://us.i.posthog.com",
+        description="PostHog ingestion host, no trailing slash needed.",
+    )
+
     # --- optional Linear triage sink (ADR-0206; all three must be set together or the sink stays off) ---
     linear_api_key: str | None = Field(
         default=None,
