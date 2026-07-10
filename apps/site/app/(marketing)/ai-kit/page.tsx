@@ -335,15 +335,12 @@ export default function AiKitPage() {
           </FeatureGrid>
 
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            <Link href="/marketplace" style={{ color: "var(--cs-link)" }}>
+            <Link href="/marketplace" className="cs-link">
               See the full lineup
             </Link>
             . Need regression evals in CI too? The eval harness is a separate
             standalone module:{" "}
-            <Link
-              href="/marketplace/modules/ai-evals"
-              style={{ color: "var(--cs-link)" }}
-            >
+            <Link href="/marketplace/modules/ai-evals" className="cs-link">
               see it on the marketplace
             </Link>
             .

@@ -176,7 +176,7 @@ export default function AffiliatesPage() {
           Email{" "}
           <a
             href="mailto:admin@caisson.sh?subject=Caisson%20affiliate%20application"
-            style={{ color: "var(--cs-link)" }}
+            className="cs-link"
           >
             admin@caisson.sh
           </a>{" "}
@@ -230,7 +230,7 @@ export default function AffiliatesPage() {
       <Section band="surface" eyebrow="Get started">
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-5)" }}>
           Ready to refer Caisson? Email{" "}
-          <a href="mailto:admin@caisson.sh" style={{ color: "var(--cs-link)" }}>
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>{" "}
           to apply, or browse the catalog to see what you&rsquo;d be referring.

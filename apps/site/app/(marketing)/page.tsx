@@ -465,7 +465,7 @@ export default function HomePage() {
               style={{ marginTop: "var(--cs-space-5)" }}
             >
               One-time perpetual unless marked /mo.{" "}
-              <Link href="/marketplace" style={{ color: "var(--cs-link)" }}>
+              <Link href="/marketplace" className="cs-link">
                 Browse the full marketplace
               </Link>
             </p>
@@ -484,7 +484,7 @@ export default function HomePage() {
             <StackBuilder />
           </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            <Link href="/marketplace" style={{ color: "var(--cs-link)" }}>
+            <Link href="/marketplace" className="cs-link">
               Build your stack on the full marketplace
             </Link>
           </p>
@@ -601,7 +601,7 @@ export default function HomePage() {
         </Reveal>
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
           Handing this to a security review?{" "}
-          <Link href="/evidence" style={{ color: "var(--cs-link)" }}>
+          <Link href="/evidence" className="cs-link">
             See the evidence pack
           </Link>
         </p>

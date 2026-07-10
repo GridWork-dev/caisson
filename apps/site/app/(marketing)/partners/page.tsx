@@ -188,7 +188,7 @@ export default function PartnersPage() {
           Email{" "}
           <a
             href="mailto:admin@caisson.sh?subject=Caisson%20design-partner%20application"
-            style={{ color: "var(--cs-link)" }}
+            className="cs-link"
           >
             admin@caisson.sh
           </a>{" "}

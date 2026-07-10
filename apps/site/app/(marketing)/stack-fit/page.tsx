@@ -198,10 +198,7 @@ export default function StackFitPage() {
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
             retention-runner needs Postgres transitively — it schedules through
             the pg-boss job queue.{" "}
-            <Link
-              href="/marketplace?type=modules"
-              style={{ color: "var(--cs-link)" }}
-            >
+            <Link href="/marketplace?type=modules" className="cs-link">
               Browse every module
             </Link>
           </p>
