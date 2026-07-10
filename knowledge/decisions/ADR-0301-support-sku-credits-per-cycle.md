@@ -1,4 +1,4 @@
-# ADR-0299 — Priority-support SKU creditsPerCycle = 1000 (Developer parity)
+# ADR-0301 — Priority-support SKU creditsPerCycle = 1000 (Developer parity)
 
 **Status:** accepted · 2026-07-09 (Kickoff-H W3 commerce/license wave; the number locked in the
 kickoff's fork rounds 1–2). Resolves the ADR-0288 rider (b) owed number; executes ADR-0288 and

@@ -1,4 +1,4 @@
-# ADR-0298 — Read-only mutation gate is an admin maintenance/incident lever only — no dunning freeze
+# ADR-0300 — Read-only mutation gate is an admin maintenance/incident lever only — no dunning freeze
 
 **Status:** accepted · 2026-07-09 (Kickoff-H W3 commerce/license wave; direction locked in the
 kickoff's fork rounds 1–2). **Tags:** `billing`, `security`.

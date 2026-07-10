@@ -1,4 +1,4 @@
-# ADR-0300 — A subscription-payment refund claws back the coverage horizon (supersedes ADR-0269 Decision 6 accept)
+# ADR-0302 — A subscription-payment refund claws back the coverage horizon (supersedes ADR-0269 Decision 6 accept)
 
 **Status:** accepted · 2026-07-09 (Kickoff-H W3 commerce/license wave; the reversal locked in
 the kickoff's fork rounds 1–2). **Supersedes** the ADR-0269 Decision 6 accepted residual "a
