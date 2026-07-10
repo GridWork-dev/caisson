@@ -102,13 +102,15 @@ describe("media manifest", () => {
   });
 
   test("code-artifact slides render a real depth-page artifact and count toward the MEDIA facet", () => {
-    // prompt-registry has a module-pages.ts record but no diagram/component mapping.
+    // prompt-registry leads with its module-pages.ts artifact, then its mechanism diagram.
     const slides = mediaSlides("module", "prompt-registry");
-    expect(slides.length).toBe(1);
+    expect(slides.length).toBe(2);
     expect(slides[0]?.kind).toBe("code-artifact");
     expect(slides[0]?.artifact?.file).toBe(
       "packages/prompt-registry/src/render.ts",
     );
+    expect(slides[1]?.kind).toBe("diagram");
+    expect(slides[1]?.diagram).toBe("prompt-render-boundary");
     expect(entryHasMedia("module", "prompt-registry")).toBe(true);
   });
 
@@ -143,8 +145,6 @@ describe("media manifest", () => {
   });
 
   test("omitCodeArtifact (ADR-0290 WR-03) drops the code-artifact slide but leaves other slides + entryHasMedia untouched", () => {
-    // prompt-registry has only a code-artifact slide (see above) — omitting it falls back to the
-    // placeholder, mirroring the depth page's redundant-code guard without breaking the type.
     const withCode = mediaSlides("module", "prompt-registry");
     const withoutCode = mediaSlides("module", "prompt-registry", {
       omitCodeArtifact: true,
@@ -159,5 +159,19 @@ describe("media manifest", () => {
       omitCodeArtifact: true,
     });
     expect(fieldCrypto.some((s) => s.kind === "diagram")).toBe(true);
+  });
+
+  test("depth-page slides (omitCodeArtifact) still carry real media for EVERY module — the silent-placeholder guard", () => {
+    // The module depth pages build their carousel with omitCodeArtifact (WR-03), so a module whose
+    // only slide is its code artifact ships the bare brand placeholder there — silently. Every
+    // module must own a diagram or component slide, so its depth page always shows real media; a
+    // future module cannot pass the 28/28 floor above on its code artifact alone.
+    for (const e of MODULE_ENTRIES) {
+      const slides = mediaSlides("module", e.id, { omitCodeArtifact: true });
+      expect(
+        slides.some((s) => s.kind === "diagram" || s.kind === "component"),
+        `module:${e.id} has no diagram/component slide — its depth page would ship the bare placeholder`,
+      ).toBe(true);
+    }
   });
 });

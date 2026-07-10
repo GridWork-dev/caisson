@@ -76,8 +76,10 @@ export function PostHogInit({ accountId }: { accountId: string }) {
       if (cancelled) return;
       if (!initialized.current) {
         posthog.init(key, {
+          // `||`, not `??`: the Dockerfile bakes this ARG with an empty-string default, and an
+          // inlined "" must fall through to the real host — `"" ?? x` keeps the empty string.
           api_host:
-            process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
+            process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
           ui_host: "https://us.posthog.com",
           defaults: "2026-05-30", // modern SPA defaults: pageleave + (overridden) pageview mode
           person_profiles: "identified_only",

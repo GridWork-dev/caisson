@@ -37,6 +37,15 @@ interface ProdRoute {
   path: string;
   /** Final pathname after navigation, when it differs from `path` (a redirect). */
   expectPath?: string;
+  /** Positively assert the Turnstile widget rendered — the health check the source-frame
+   *  console filter below deliberately gives up (see its comment). One representative footer
+   *  route carries it. The probe is the hidden `cf-turnstile-response` input the widget
+   *  injects at render: it proves api.js loaded and `turnstile.render()` ran against our
+   *  container (the widget's own iframe sits in a closed shadow root and its src is empty —
+   *  neither is reachable/stable). A dead or blocked api.js turns THIS red even though the
+   *  platform's console output is filtered; a domain-allowlist mismatch is covered by the
+   *  deploy-time widget probe, not this sweep. */
+  expectTurnstileWidget?: boolean;
 }
 
 // Module depth pages derive from the real catalog registry (not hardcoded slugs) — "at least 3"
@@ -53,41 +62,37 @@ const ROUTES: readonly ProdRoute[] = [
   { path: "/marketplace" },
   // ADR-0237 F1: /pricing permanently 301s to the unified /marketplace hub.
   { path: "/pricing", expectPath: "/marketplace" },
-  { path: "/updates" },
+  { path: "/updates", expectTurnstileWidget: true },
   { path: "/docs" },
   ...LEGAL_ROUTES.map((r): ProdRoute => ({ path: r.path })),
   { path: "/login" },
   ...MODULE_SAMPLE,
 ];
 
-// A known, root-caused CSP gap — NOT a harness bug (2026-07-07 first live run, root-caused
-// 2026-07-08, CAISSON-51/CAISSON-50). Cloudflare auto-injects a Web Analytics ("Insights") beacon
-// from `static.cloudflareinsights.com` at the zone level on a SAMPLED subset of real-browser
-// requests (confirmed live: present on one `/login` fetch, absent on a same-session `/` fetch with
-// identical browser-realistic headers — it is not deterministic per route). The site's own CSP
-// `script-src` (next.config.ts) does not allow that origin, so Chromium logs the block as a
-// console error on EVERY page it lands on. Filtered narrowly by domain (not a blanket CSP
-// exception) so the sweep can still catch a real per-route regression instead of drowning in this
-// one already-known, site-wide signal.
+// The Cloudflare Web Analytics beacon injection (CAISSON-50/51) was disabled at the zone
+// 2026-07-09 (infra/terraform/web-analytics.tf) — the KNOWN_NOISE filter that tolerated its CSP
+// console error came out with it. Any `static.cloudflareinsights.com` (or hydration #418) signal
+// this sweep sees now IS a regression: the injection ruleset has been re-enabled.
 //
-// This SAME injected `<script>` — appended as the literal last child of `<body>`, outside React's
-// own rendered tree — is also the confirmed root cause of CAISSON-50 (the `/login` minified React
-// error #418 this harness caught): React's hydration walk over `document` finds the unexpected
-// extra node and throws. It reproduced live twice and never reproduced locally with Cloudflare out
-// of the path (dev / `next start` / the real standalone `server.js`, 8-iteration loop), which is
-// what pins the cause on the edge injection rather than `/login`'s own code.
+// Turnstile is different. Once its site key baked into the prod bundle, the footer widget arms on
+// every marketing/legal/glossary/docs route — and Cloudflare's challenge platform logs by design
+// in browsers without Private-Access-Token support (this headless Chromium included): its PAT
+// probe 401s (expected — that 401 is how the platform detects PAT absence and falls back), and
+// its challenge script emits styled "%c%d font-size:0;color:transparent NaN" console-error lines.
+// Unlike the beacon — our own zone misconfiguration, fixable at the root — this is a third
+// party's documented console behavior on a deliberate product surface, with no our-side root
+// fix. So the sweep drops console errors whose SOURCE frame is the challenge platform, keyed on
+// the console message's origin URL (never on message text — the noise shapes are brittle and
+// unlocalizable — and never on our own frames), and stays zero-tolerance for everything else.
 //
-// Fix prepared, NOT yet applied: `infra/terraform/web-analytics.tf` adopts the existing
-// dashboard-created Web Analytics site and disables auto-injection (`auto_install = false`).
-// `terraform apply` is an operator DEPLOY act — until it lands, `/login` (and, rarely, other
-// routes on an unlucky sample) may still intermittently fail this sweep with error #418; that is
-// the known, tracked, pre-apply state, not a regression. Once applied, remove this KNOWN_NOISE
-// entry — the beacon will no longer exist to filter.
-const KNOWN_NOISE: readonly RegExp[] = [/static\.cloudflareinsights\.com/];
-
-function isKnownNoise(message: string): boolean {
-  return KNOWN_NOISE.some((re) => re.test(message));
-}
+// The trade-off, named: this drop is origin-scoped, so a REAL Turnstile fault that logs from the
+// same origin (a 110200 domain mismatch, an api.js load failure) is swallowed here too, and no
+// pageerror fires for those. Console-error absence is therefore NOT the Turnstile health signal
+// — the positive `expectTurnstileWidget` assertion on the /updates route is: it requires the
+// widget's injected response input to attach, which a dead or blocked api.js cannot produce.
+const THIRD_PARTY_CONSOLE_SOURCES: readonly RegExp[] = [
+  /^https:\/\/challenges\.cloudflare\.com\//,
+];
 
 let browser: Browser | null = null;
 let context: BrowserContext | null = null;
@@ -104,7 +109,10 @@ async function assertRoute(
   const page = await ctx.newPage();
   const consoleErrors: string[] = [];
   page.on("console", (msg) => {
-    if (msg.type() === "error") consoleErrors.push(msg.text());
+    if (msg.type() !== "error") return;
+    const source = msg.location().url;
+    if (THIRD_PARTY_CONSOLE_SOURCES.some((re) => re.test(source))) return;
+    consoleErrors.push(msg.text());
   });
   const pageErrors: string[] = [];
   page.on("pageerror", (err) => {
@@ -142,11 +150,21 @@ async function assertRoute(
       .first()
       .waitFor({ state: "visible", timeout: 10_000 });
 
+    // The positive Turnstile health check (see the THIRD_PARTY_CONSOLE_SOURCES comment): the
+    // widget's injected response input must attach. `attached`, not `visible` — it is a hidden
+    // input, and the footer widget can sit below the fold.
+    if (route.expectTurnstileWidget) {
+      await page
+        .locator('input[name="cf-turnstile-response"]')
+        .first()
+        .waitFor({ state: "attached", timeout: 15_000 });
+    }
+
     await page.waitForTimeout(500); // let deferred scripts (analytics init, etc.) settle
-    const realErrors = [...consoleErrors, ...pageErrors].filter(
-      (m) => !isKnownNoise(m),
-    );
-    expect(realErrors, `${route.path}: browser errors`).toEqual([]);
+    expect(
+      [...consoleErrors, ...pageErrors],
+      `${route.path}: browser errors`,
+    ).toEqual([]);
   } finally {
     await page.close();
   }

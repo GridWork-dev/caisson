@@ -5,6 +5,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+// ComparisonTable below hand-builds a `cs-matrix` table (correct corner header) WITHOUT importing
+// the SkuMatrix component — and the kit's co-located stylesheet only ships inside the component
+// module, which tree-shaking drops from this page's graph (`sideEffects: ["*.css"]` keeps css
+// files, not the unused module that imports one). The audit's "unstyled, zero-gap" compare tables
+// were this page rendering matrix markup with no matrix css. Own the dependency explicitly:
+import "@caisson/ui/components/sku-matrix.css";
+
 import {
   Button,
   Card,

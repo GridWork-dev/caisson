@@ -6,6 +6,7 @@ import {
   type EmailTemplateId,
   type TemplateDataMap,
 } from "./index.ts";
+import { BRAND_COLOR_DARK } from "./layout.tsx";
 
 const URL = "https://caisson.sh/action?token=sample";
 
@@ -69,6 +70,19 @@ describe("renderEmailTemplate", () => {
       expect(rendered.text).toContain(expectedUrl);
       // The HTML and text fallback are rendered from the SAME element — never drift.
       expect(rendered.text).not.toContain("<html");
+    });
+
+    test(`${id}: carries the dark-mode color-scheme metas and prefers-color-scheme palette`, async () => {
+      const rendered = await renderEmailTemplate(id, SAMPLE[id]);
+      // The hybrid dark-mode contract (layout.tsx): both scheme metas present…
+      expect(rendered.html).toContain('name="color-scheme"');
+      expect(rendered.html).toContain('name="supported-color-schemes"');
+      // …and the author dark palette, keyed off the layout classes with !important
+      // (inline light styles otherwise always win).
+      expect(rendered.html).toContain("@media (prefers-color-scheme: dark)");
+      expect(rendered.html).toContain(BRAND_COLOR_DARK.bg);
+      expect(rendered.html).toContain(BRAND_COLOR_DARK.fg);
+      expect(rendered.html).toMatch(/\.em-body[^{]*\{[^}]*!important/);
     });
   }
 

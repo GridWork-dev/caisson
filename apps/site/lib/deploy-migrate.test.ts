@@ -40,16 +40,23 @@ afterAll(async () => {
 });
 
 test("platform migrations apply in order then are idempotent", async () => {
-  // 20 = the shared chain's order-record subscription-link append (@caisson/platform-migrations).
+  // 23 = the shared chain's order-record subscription-link append (@caisson/platform-migrations,
+  // 0023 — numbered past the site-local 0020–0022 by design).
   const first = await runPlatformMigrations(pgliteApplier(tp));
+  // 19 shared-chain migrations + the 5 apps/site-local extras (CAISSON-64: `SITE_LOCAL_MIGRATIONS`
+  // now carries 0011/0012 (ask_ai_*, prod-canonical names) plus the net-new
+  // 0020/0021/0022 (tenant_ai_credential / byok_key_meta / compliance_attestation) — previously
+  // dev-PGlite-only, never applied to a real deployment.
   expect(first.applied).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+    22, 23,
   ]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
   expect(second.skipped).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+    22, 23,
   ]);
 });
 
@@ -203,6 +210,20 @@ test("0019 creates the ADR-0293 order_record table with FORCE RLS", async () => 
     `SELECT indexname FROM pg_indexes WHERE tablename = 'order_record' AND indexname = 'order_record_source_event_uniq'`,
   );
   expect(idx).toEqual([{ indexname: "order_record_source_event_uniq" }]);
+});
+
+test("0020/0021/0022 create tenant_ai_credential, byok_key_meta, and compliance_attestation with FORCE RLS (CAISSON-64: these previously only existed in the dev PGlite double, never in a real deployment)", async () => {
+  const rows = await tp.query<{ relname: string; force: boolean }>(
+    `SELECT relname, relforcerowsecurity AS force FROM pg_class
+     WHERE relname IN ('tenant_ai_credential', 'byok_key_meta', 'compliance_attestation')
+       AND relkind = 'r'
+     ORDER BY relname`,
+  );
+  expect(rows).toEqual([
+    { relname: "byok_key_meta", force: true },
+    { relname: "compliance_attestation", force: true },
+    { relname: "tenant_ai_credential", force: true },
+  ]);
 });
 
 test("every composed tenant table ships FORCE row-level security", async () => {

@@ -1,0 +1,86 @@
+---
+title: local-sync
+description: Two-way offline sync for per-tenant SQLite files — a changeset log, a hybrid-logical-clock last-writer-wins merge, and tombstone-aware convergence.
+---
+
+`@caisson/local-sync` converges any number of per-tenant replicas onto one canonical local
+store. It's an application-layer changeset log — `bun:sqlite` exposes no
+`sqlite3session_*` API, so this is the in-house analog — paired with a hybrid-logical-clock
+(HLC) last-writer-wins merge and a durable tombstone index, so a stale batch can't
+resurrect a row a peer already deleted.
+
+## What it does
+
+- **`ChangesetLog`** — per-tenant change capture bound to one already-open SQLite file (the
+  file IS the tenant partition). `recordUpsert` / `recordDelete` mirror your local writes as
+  they happen; `capture(sinceSeq)` packages everything past a watermark into a tenant-bound,
+  replica-stamped `Changeset` a peer can pull.
+- **`reconcileReplicas`** — a pure, deterministic LWW merge over any number of replicas'
+  changesets, keyed by `HlcStamp` (physical time → replica id → per-replica sequence), so the
+  winner is unambiguous and input-order-independent even under clock skew.
+- **`reconcileWithTombstones` / `gcTombstones`** — merge over a *persisted* tombstone set
+  (prior deletes participate as virtual deletes across sync rounds), plus horizon-based
+  garbage collection of tombstones that are safe to drop.
+
+## Install
+
+```bash
+bun add @caisson/local-sync
+```
+
+## Quickstart
+
+```ts
+import { ChangesetLog, reconcileReplicas } from "@caisson/local-sync";
+import { Database } from "bun:sqlite";
+
+const log = ChangesetLog.open(new Database(":memory:"), "tenant-a");
+log.recordUpsert("notes", "n1", { title: "hello" });
+
+const changeset = log.capture(0); // everything since watermark 0
+
+const converged = reconcileReplicas([changeset]);
+// [{ table: "notes", pk: "n1", values: { title: "hello" } }]
+```
+
+## The tenant-partition guard
+
+A `ChangesetLog` is bound to exactly one tenant's file on `open()`. A changeset from a
+different tenant can't be applied to it — `assertApplicable` fails closed before any merge
+runs:
+
+```ts
+const changeset = peerLog.capture(0); // tenant-b's changeset
+
+log.assertApplicable(changeset); // throws TenancyError: tenant-partition
+```
+
+## Convergence across sync rounds
+
+`reconcileWithTombstones` folds a persisted tombstone set into the merge, so a replica that
+reconnects late can't undo a delete another peer already made durable:
+
+```ts
+import { reconcileWithTombstones, gcTombstones } from "@caisson/local-sync";
+
+const { live, tombstones } = reconcileWithTombstones(priorTombstones, changesets);
+// live: converged live rows, delete-excluded
+// tombstones: the advanced set to persist for the next round
+
+const kept = gcTombstones(tombstones, horizon); // drop tombstones below the convergence horizon
+```
+
+A strictly-greater-stamped upsert still legitimately un-deletes a tombstoned row — the
+guard is against resurrection by a stale, lower-stamped batch, not against later intent.
+
+## Composition
+
+`local-sync` sits over the base kernel (`@caisson/kernel`) for its error model
+(`TenancyError`, `ValidationError`) and boundary parsing — a peer-supplied changeset is
+untrusted input, validated `.strict()` before it touches the merge. It composes into the
+Local-first bundle alongside `local-store`, `local-inference`, and `local-privacy`.
+
+<Callout type="info" title="Commercial base primitive">
+  `@caisson/local-sync` is licensed `LicenseRef-Caisson-Commercial` — sold standalone or as
+  part of the Local-first bundle.
+</Callout>

@@ -1,0 +1,58 @@
+---
+title: Compliance
+description: The compliance wedge — fail-closed evidence collection, an append-only WORM audit chain, per-tenant encryption, and a signed, OSCAL-exportable evidence pack mapped to named framework clauses.
+---
+
+The **Compliance** bundle turns the guarantees the other modules already enforce — fail-closed
+RLS, WORM storage, per-tenant encryption — into something you can hand an auditor: a deterministic,
+byte-stable evidence pack that maps each control to a cited clause, and a hard block if any control
+is unresolved rather than a silent guess.
+
+## What's in the bundle
+
+- **[compliance-core](/docs/compliance/compliance-core)** — the evidence engine: typed collectors
+  that flag or resolve a control, a byte-stable evidence pack, and an OSCAL export. Never
+  certifies — every summary line is readiness/posture language only.
+- **[frameworks-pack](/docs/compliance/frameworks-pack)** — own-authored, clean-room control
+  catalogs for SOC 2, HIPAA Security, and the EU AI Act, crosswalked to each framework's
+  requirement ids.
+- **[signing-primitive](/docs/provenance/signing-primitive)** — detached Ed25519 signing over the
+  evidence pack's canonical manifest, with an optional RFC-3161 trusted-timestamp
+  countersignature — shared with the Provenance bundle.
+- **[audit-worm](/docs/provenance/audit-worm)** — the append-only SHA-256 audit chain plus S3/GCS/
+  R2 Object-Lock WORM storage the evidence cites, shared with the Provenance bundle.
+- **[retention-runner](/docs/compliance/retention-runner)** — the CCPA/GDPR right-to-erasure
+  runner: fans one subject's erasure across every registered store and writes one reason-tagged
+  audit row.
+- **[alerting](/docs/compliance/alerting)** — a five-stage alert pipeline (dedup, rate-cap-to-
+  digest, quiet hours, multi-channel send, one audit row) — the SOC 2 CC7.2 control.
+- **[field-crypto](/docs/provenance/field-crypto)** — per-tenant field encryption, shared with the
+  AI-Production, Local-first, and Provenance bundles.
+
+## How it composes
+
+`compliance-core`'s collectors run over facts gathered by the other modules — an RLS posture
+snapshot, an `audit-worm` chain anchor, a `field-crypto` key policy — and refuse to guess: a
+control the collectors can't evidence blocks the pack rather than passing silently.
+`frameworks-pack` supplies the clause catalog each control resolves against, and
+`signing-primitive` produces the detached signature over the pack's canonical bytes so a third
+party can verify it wasn't edited after generation. `retention-runner` and `alerting` are the
+two operating controls (erasure, incident notification) the pack cites as evidence of an active
+program, not just point-in-time posture.
+
+## Composing with the base
+
+Every collector reads facts gathered at the tenant boundary `@caisson/tenancy-rls` enforces —
+`compliance-core` never infers a passing RLS control it can't evidence from a live posture
+snapshot.
+
+<Callout type="info" title="Not a compliance certification">
+  The Compliance bundle ships the technical controls the frameworks point at. It does not make an
+  organization compliant; that determination is your organization's and its auditor's to make.
+</Callout>
+
+## Entitlement
+
+Compliance is a commercial bundle (`LicenseRef-Caisson-Commercial`). Buy the bundle, or any member
+module à la carte — a purchase grants the module's entitlement id, checked offline against the
+license.

@@ -4,6 +4,12 @@
 .cs-wordmark {
   display: inline-flex;
   align-items: center;
+  /* The descriptor lockup ("compliance-grade infrastructure") must be able to drop to its own
+     line in a narrow footer column — an unwrappable inline-flex row overflowed its grid track and
+     rendered on top of the adjacent nav column at 390px. Wrap never triggers for the
+     plain glyph+wordmark nav usage. */
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: var(--cs-space-2);
   font-family: var(--cs-font-mono);
   font-weight: var(--cs-weight-medium);

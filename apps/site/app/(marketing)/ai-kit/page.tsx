@@ -6,7 +6,7 @@ import {
   serializeJsonLd,
   softwareApplication,
 } from "@/lib/jsonld";
-import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
+import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
 import {
   bundlePrice,
@@ -31,7 +31,8 @@ import {
 } from "@/components";
 import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
-import { MediaPlaceholder } from "@/components/media-placeholder";
+import { MediaCarousel } from "@/components/media-carousel";
+import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { TrackView } from "@/components/track-view";
@@ -182,7 +183,7 @@ export default function AiKitPage() {
             {bundleCartItem && (
               <AddToCartButton item={bundleCartItem} variant="primary" />
             )}
-            <Button href="/docs/ai-kit" variant="ghost">
+            <Button href="/docs/ai-production" variant="ghost">
               Read the docs
             </Button>
           </>
@@ -200,7 +201,10 @@ export default function AiKitPage() {
 
       {/* ===== Media slot (ADR-0237 F2) ===== */}
       <Section>
-        <MediaPlaceholder icon={BUNDLE_MARKS["ai-production"]} />
+        <MediaCarousel
+          slides={mediaSlides("bundle", "ai-production")}
+          label="AI-Production bundle media"
+        />
       </Section>
 
       {/* ===== Four composed modules ===== */}
@@ -396,7 +400,7 @@ export default function AiKitPage() {
           {bundleCartItem && (
             <AddToCartButton item={bundleCartItem} variant="primary" />
           )}
-          <Button href="/docs/ai-kit" variant="ghost">
+          <Button href="/docs/ai-production" variant="ghost">
             Read the docs
           </Button>
         </div>

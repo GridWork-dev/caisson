@@ -14,7 +14,7 @@ import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
 import { OwnedItemsProvider } from "@/components/owned-items-provider";
 import { PlausibleInit } from "@/components/plausible-init";
-import { fontVariables } from "@/lib/fonts";
+import { fontSansZeroPatch, fontVariables } from "@/lib/fonts";
 import { rootGraph, serializeJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
@@ -43,7 +43,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={fontVariables} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={fontVariables}
+      style={fontSansZeroPatch}
+      suppressHydrationWarning
+    >
       <head>
         {/* Self-hosted fonts (next/font, lib/fonts.ts) — no render-blocking Google <link>.
             No-flash theme set is externalized to /theme-init.js so script-src can drop

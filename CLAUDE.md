@@ -50,8 +50,13 @@ edited — supersede with a later ADR).
    repoint dropped, refines ADR-0291; 0296 = the delta-review re-lock: mobile-nav reuses the
    open Dialog drawer variant, ui-pro Drawer deleted, supersedes 0295 mechanism; 0297 = the
    twelfth-sitting design-partner terms — 5 partners · 40% off · 12-month reverting ·
-   case-study contingent on conversion, executes ADR-0273; 0298-0300 = the Kickoff-H W3
-   commerce/license locks 2026-07-09 — read-only mutation gate as an admin lever only, no
+   case-study contingent on conversion, executes ADR-0273; 0298 = the Kickoff-G
+   surface-remediation fork locks — twelve locks across footer/matrix stack, migration-list
+   unification, ai-keys gate, media/popout, docs full-sweep, email dark-mode, 2026-07-09;
+   0299 = the post-audit residual design locks — Mona-Sans zero-patch face, docs full
+   API-reference expansion, compare/diagram P3 dedupe, Kickoff-I spec-next, 2026-07-09;
+   0300-0302 = the Kickoff-H W3 commerce/license locks 2026-07-09 (renumbered from
+   0298-0300 at merge per ADR-0088) — read-only mutation gate as an admin lever only, no
    dunning freeze · priority-support creditsPerCycle 1000 at Developer parity, executes the
    0288 rider (b) · subscription-refund coverage-horizon claw, supersedes the 0269 Decision-6
    accept).

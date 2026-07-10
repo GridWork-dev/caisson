@@ -76,6 +76,14 @@
   fill: var(--cs-fg-muted);
 }
 
+/* Compact act-chip heading (the 7-node lifecycle FSM chain — 45px chips). */
+.actHead {
+  font-size: 9px;
+  font-weight: 600;
+  text-anchor: middle;
+  fill: var(--cs-fg);
+}
+
 /* ===== Boundary band (RLS) ===== */
 .boundary {
   fill: var(--cs-accent-tint);

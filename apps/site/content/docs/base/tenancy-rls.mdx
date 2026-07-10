@@ -42,6 +42,145 @@ await withTenant(tenantId, async (db) => {
 });
 ```
 
+## API reference
+
+### Tenant scoping
+
+- **`withTenant(db, accountId, fn)`** — the sole entry point to tenant data. Opens a
+  transaction, binds the `app.current_account` GUC to `accountId`, drops the connection to the
+  unprivileged `app` role, then runs `fn`. Throws `TenancyError` outright on an empty
+  `accountId` — it never runs a query unscoped.
+- **`withUser(db, userId, fn)`** — the identity→account bootstrap path: binds
+  `app.current_user` instead of the tenant GUC, for the one case that's legitimately a
+  cross-account read keyed by user (resolving which accounts a signed-in user belongs to). Same
+  fail-closed empty-id check, same drop to `app`. A table without a matching `user_id` policy
+  clause returns nothing under this scope.
+
+```ts
+export const TENANT_GUC = "app.current_account";
+export const USER_GUC = "app.current_user";
+
+function withTenant<T>(
+  db: Transactor,
+  accountId: string,
+  fn: (tx: TenantExecutor) => Promise<T>,
+): Promise<T>;
+
+function withUser<T>(
+  db: Transactor,
+  userId: string,
+  fn: (tx: TenantExecutor) => Promise<T>,
+): Promise<T>;
+```
+
+Both functions run a one-time-per-`(Transactor, role)` pre-flight the first time they touch a
+given database: they check `pg_roles` and refuse to `SET LOCAL ROLE app` if that role turns out
+to be `SUPERUSER` or `BYPASSRLS` — either one would silently no-op `FORCE ROW LEVEL SECURITY`
+and reopen the cross-tenant leak with zero runtime signal. The check throws `TenancyError`
+rather than warning, and a failed check is never cached, so fixing the role config un-wedges the
+very next call.
+
+### Policy generation
+
+- **`buildTenantPolicySql(table, options?)`** — returns the DDL that makes a table fail-closed
+  tenant-isolated: `ENABLE`+`FORCE ROW LEVEL SECURITY`, a `GRANT` to the app role, and a policy
+  that admits a row only when its tenant column matches the bound GUC. Emit it into the table's
+  migration so a tenant table can never ship without the policy attached.
+
+```ts
+interface TenantPolicyOptions {
+  /** The tenant-key column. Default "account_id". */
+  column?: string;
+  /** The role policies apply to — must not be a superuser or BYPASSRLS role. Default "app". */
+  role?: string;
+}
+
+function buildTenantPolicySql(
+  table: string,
+  options?: TenantPolicyOptions,
+): string;
+```
+
+The generated `USING`/`WITH CHECK` clause wraps the GUC read in `NULLIF(..., '')`: a connection
+pooler that resets a custom GUC to an empty string instead of fully unsetting it would otherwise
+compare `column = ''` — a deny that coincidentally holds only until a row's tenant column is
+literally empty. Folding `''` to `NULL` first keeps the comparison an unconditional deny.
+
+### Ports
+
+- **`TenantExecutor`** — the minimal query surface `withTenant`/`withUser` hand to your
+  callback: `query<T>(sql, params?)` returning `{ rows: T[] }`, and `exec(sql)`. Satisfied by
+  PGlite, a PGlite transaction, and a `pg`/Drizzle client alike.
+- **`Transactor`** — the minimal surface a driver exposes to open one: `transaction<T>(fn: (tx:
+TenantExecutor) => Promise<T>): Promise<T>`.
+
+### Drivers
+
+- **`createSupabaseTransactor(config)`** — a `node-postgres`-backed `Transactor`. Fails closed
+  at **construction** (`ConfigError`) — never at the first query — on an empty or unparseable
+  `connectionString`, or one shaped like Supabase's transaction-mode pooler (port `6543`):
+  Supavisor hands a different physical backend connection to each statement in that mode, so
+  `SET LOCAL ROLE`/`set_config(..., true)` silently evaporate between statements and RLS quietly
+  stops being tenant-scoped. Point it at a session-mode pooler or a direct connection (port
+  `5432`) instead. An idle pooled connection's `error` event is logged and survived rather than
+  crashing the process.
+
+```ts
+interface SupabaseTransactorConfig {
+  /** A Postgres connection string — session-mode pooler or direct connection only. */
+  connectionString: string;
+  /** Test-only override: inject a Transactor instead of opening a real socket. */
+  driver?: Transactor;
+}
+
+function createSupabaseTransactor(config: SupabaseTransactorConfig): Transactor;
+```
+
+### ORM bridges
+
+Both bridges feed an ORM's generated SQL through the unmodified `TenantExecutor` port — RLS
+still does the isolation, these only carry the query text and params across.
+
+- **`queryDrizzle(tx, query)`** / **`execDrizzle(tx, query)`** — run any object with a
+  `.toSQL()` method (a real `drizzle-orm` query builder, or anything shaped the same) through a
+  tenant-scoped `TenantExecutor`. `execDrizzle` is the exec-style convenience for a statement
+  whose rows don't matter; it still routes through `query` so bound params are never dropped.
+
+```ts
+interface DrizzleToSql {
+  toSQL(): { sql: string; params: unknown[] };
+}
+
+function queryDrizzle<T = Record<string, unknown>>(
+  tx: TenantExecutor,
+  query: DrizzleToSql,
+): Promise<{ rows: T[] }>;
+
+function execDrizzle(tx: TenantExecutor, query: DrizzleToSql): Promise<void>;
+```
+
+- **`createPrismaBridge(tx)`** — wraps a tenant-scoped `TenantExecutor` behind Prisma's raw
+  surface, so call sites written against `prisma.$queryRawUnsafe`/`$executeRawUnsafe` port over
+  with a rename. There is no nested `$transaction` — `withTenant`'s own callback is already the
+  transaction boundary, so multi-statement work nests directly inside it.
+
+```ts
+interface PrismaRawClient {
+  $queryRawUnsafe<T = unknown>(
+    query: string,
+    ...values: unknown[]
+  ): Promise<T[]>;
+  $executeRawUnsafe(query: string, ...values: unknown[]): Promise<number>;
+}
+
+function createPrismaBridge(tx: TenantExecutor): PrismaRawClient;
+```
+
+`$executeRawUnsafe`'s affected-row count is a best-effort `rows.length` — `TenantExecutor`
+exposes only returned rows, never a driver row count, so a bare `UPDATE`/`DELETE` with no
+`RETURNING` reports `0` even when it changed rows. Add a `RETURNING` clause when the caller
+needs an accurate count through this bridge.
+
 ## Related
 
 <Cards>
@@ -49,12 +188,6 @@ await withTenant(tenantId, async (db) => {
     The only producer of the tenant claim `withTenant` reads.
   </Card>
   <Card title="Kernel" href="/docs/base/kernel">
-    A tenancy denial returns 404 — no existence leak.
+    A tenancy denial returns `404` — no existence leak.
   </Card>
 </Cards>
-
-<Callout type="info">
-  This page covers the essentials. The full `@caisson/tenancy-rls` API reference
-  — the cross-tenant isolation test, migration helpers, and policy templates —
-  is still expanding.
-</Callout>

@@ -11,6 +11,21 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
+/* Hubot Sans ships ONLY a barred zero (its woff2 carries no alternate glyph to reach via
+ * font-feature-settings), and in prose it reads as Greek theta ("© 2Θ26", "Apache-2.Θ"). This
+ * single-glyph face — Mona Sans, Hubot's sibling family, subset to just U+0030 (~4KB,
+ * public/fonts, OFL text alongside) — is composed IN FRONT of the Hubot stack on <html>
+ * (lib/fonts.ts fontSansZeroPatch), so every sans-serif "0" resolves to Mona's plain oval and
+ * every other character falls through to Hubot untouched. Mono surfaces are unaffected (their
+ * stack never includes this family). */
+@font-face {
+  font-family: "Mona Zero";
+  src: url("/fonts/mona-zero.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: swap;
+  unicode-range: U+0030;
+}
+
 /* Caisson owns the theme via [data-theme] (not a .dark class). Re-point Tailwind's `dark:`
  * variant — and therefore every fumadocs `dark:` utility — at our attribute so the docs surface
  * tracks the same toggle as marketing. */
@@ -61,6 +76,25 @@
   width: 2rem;
   pointer-events: none;
   background: linear-gradient(to right, transparent, var(--cs-surface-1));
+}
+
+/* ===== Shiki dark-token re-key (CAISSON-70). fumadocs-ui's compiled css/lib/shiki.css gates the
+ * dark token colors behind a literal `.dark` class (`.dark .shiki … { color: var(--shiki-dark) }`),
+ * but this site signals dark via [data-theme="dark"] only (fumadocs theme manager disabled,
+ * ADR-0100) — so in dark mode every token kept its LIGHT color and code blocks read as faded /
+ * illegible. These are the two `.dark`-gated rules from fumadocs-ui/css/lib/shiki.css copied
+ * VERBATIM (block-code + inline-code twins), re-keyed to our attribute. The `@custom-variant dark`
+ * above only re-points Tailwind `dark:` utilities; it cannot reach these literal selectors. */
+[data-theme="dark"] .shiki:not(.not-fumadocs-codeblock *) {
+  code span {
+    color: var(--shiki-dark);
+    font-style: var(--shiki-dark-font-style);
+  }
+}
+
+[data-theme="dark"] code.shiki:not(.not-fumadocs-code *) span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
 }
 
 /* ===== Reset re-assert — base.css already sets these, but it loads BEFORE the Tailwind/Fumadocs
@@ -270,6 +304,16 @@ kbd,
 @media (max-width: 860px) {
   .cs-footer-cols {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* Below ~480px the footer collapses to a single-column stack (CAISSON-65): the wordmark + tagline
+ * lockup on top, then each nav column full-width, the legal column last (DOM order). Two columns
+ * at 390px left each track too narrow for the brand lockup, which overflowed onto the Bundles nav
+ * column. */
+@media (max-width: 30rem) {
+  .cs-footer-cols {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

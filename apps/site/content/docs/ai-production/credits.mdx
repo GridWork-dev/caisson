@@ -1,0 +1,118 @@
+---
+title: credits
+description: An integer credit wallet with an append-only ledger and debit-before-spend — an empty balance fails closed, never a negative wallet.
+---
+
+`@caisson/credits` is the credit wallet: grant, debit, and query an account's balance as
+whole integer units, never a float. A debit only records once the wallet can cover it —
+insufficient credits throw before any paid work runs, and nothing is written on that path.
+
+## What it does
+
+- **Grant and debit** — `grant()` adds credits from a purchase, subscription allotment,
+  top-up, or a registered feature grant; `debit()` subtracts them for codegen, an AI
+  feature, or a registered feature debit. Both are idempotent on a supplied
+  `sourceEventId` or `idempotencyKey` — a retried webhook is absorbed, not double-counted.
+- **Debit-before-spend, fail-closed** — an insufficient balance throws
+  `InsufficientCreditsError` and rolls back the whole transaction. No debit row, no
+  wallet mutation.
+- **FIFO grant consumption** — a debit walks the account's unexpired grants oldest-first
+  and records which grant(s) it drew from, splitting across grants when one remainder
+  can't cover it.
+- **Append-only ledger** — `getLedger()` reads every grant/debit event for an account;
+  nothing is ever mutated or deleted.
+- **Expiry** — grants default to a 12-month expiry; `sweepExpiredGrants()` claws back
+  unspent residue past `expires_at`, and `sweepExpiryNotices()` emails accounts inside a
+  configurable expiring-soon window. Both ship as `@caisson/jobs` task definitions.
+- **Clawback** — `clawback()` reverses unspent credits tied to a specific purchase line,
+  so a partial refund only claws back that line's grant.
+
+## Install
+
+```bash
+bun add @caisson/credits
+```
+
+## Quickstart
+
+Every call runs inside a tenant transaction from `@caisson/tenancy-rls`, which scopes the
+wallet and ledger rows to the account via RLS:
+
+```ts
+import { withTenant } from "@caisson/tenancy-rls";
+import { asCredits } from "@caisson/kernel";
+import { grant, debit, balance } from "@caisson/credits";
+
+await withTenant(pg, accountId, async (tx) => {
+  await grant(tx, {
+    accountId,
+    eventType: "purchase",
+    amount: asCredits(500),
+    sourceEventId: paddleTransactionId,
+  });
+
+  await debit(tx, {
+    accountId,
+    eventType: "codegen_debit",
+    amount: asCredits(10),
+    idempotencyKey: requestId,
+  });
+
+  return balance(tx, accountId); // 490
+});
+```
+
+## Fail-closed on an empty balance
+
+```ts
+import { InsufficientCreditsError } from "@caisson/kernel";
+
+try {
+  await debit(tx, { accountId, eventType: "ai_feature_debit", amount: asCredits(1000) });
+} catch (err) {
+  if (err instanceof InsufficientCreditsError) {
+    // 402 — nothing was recorded, the wallet is unchanged.
+  }
+}
+```
+
+## Reading the ledger
+
+`spendableBalance()` is the display-safe figure — the lower of the raw wallet aggregate
+and the FIFO sum over unexpired grants, so it never promises more than a debit will
+actually cover:
+
+```ts
+import { getLedger, spendableBalance } from "@caisson/credits";
+
+const entries = await getLedger(tx, accountId); // every grant/debit event, oldest first
+const spendable = await spendableBalance(tx, accountId);
+```
+
+## Expiry sweeps
+
+```ts
+import {
+  defineCreditExpirySweepTask,
+  defineCreditExpiryNoticeTask,
+} from "@caisson/credits";
+
+const sweepTask = defineCreditExpirySweepTask({ db });
+const noticeTask = defineCreditExpiryNoticeTask({
+  db,
+  emailer,
+  recipientFor: (accountId) => lookupAccountEmail(accountId),
+  dashboardUrl: "https://app.example.com/credits",
+});
+```
+
+Register both on a `@caisson/jobs` queue and enqueue one payload per account on a cron
+tick — both sweeps are idempotent, so a replayed tick is a no-op.
+
+## Composition
+
+`@caisson/credits` sits on `@caisson/kernel` (the `Credits`/`RoundedMoney` branded types
+and `InsufficientCreditsError`), `@caisson/tenancy-rls` (the `TenantExecutor` every
+function takes), and `@caisson/jobs` (the expiry-sweep task definitions). It is a
+commercial module in the AI-Production bundle — entitlement is required to install it
+from the registry.

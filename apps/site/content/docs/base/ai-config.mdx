@@ -13,22 +13,106 @@ Configuration is declared once, validated at the boundary, and read everywhere t
 typed accessor — no provider details leak into feature code.
 
 ```ts
-import { defineAiConfig } from "@caisson/ai-config";
+import { parseAiSettings, resolveProvider } from "@caisson/ai-config";
 
-export default defineAiConfig({
-  provider: "openai-compatible",
-  // Provider-agnostic by construction; the driver behind this is swappable.
+const settings = parseAiSettings({
+  defaultLane: "chat",
+  lanes: {
+    chat: {
+      provider: "anthropic",
+      model: "claude-sonnet",
+      apiKeyEnv: "ANTHROPIC_API_KEY",
+    },
+    cheap: {
+      provider: "openrouter",
+      model: "meta-llama/llama-3.1-8b",
+      apiKeyEnv: "OPENROUTER_API_KEY",
+    },
+  },
 });
+
+// Resolves by name, or falls back to defaultLane.
+const chat = resolveProvider(settings, "chat");
 ```
 
 Setup is **agent-assisted** — the shipped [MCP server](/docs/base/mcp-server) can drive
 configuration on your behalf, so an AI agent wires the providers instead of you hand-editing every
 field.
 
-<Callout type="info">
-  The provider driver matrix (which models, which capabilities, which limits)
-  is still expanding. Treat the example provider above as illustrative.
-</Callout>
+## API reference
+
+`@caisson/ai-config` exports two functions and their types. It is pure logic — no network calls,
+no SDK imports — so resolving a lane never touches a provider until your own call site does.
+
+### Settings shape
+
+```ts
+type ProviderConfig = {
+  provider:
+    | "openai"
+    | "anthropic"
+    | "google"
+    | "openrouter"
+    | "local"
+    | "bedrock"
+    | "azure-openai"
+    | "ollama"
+    | "groq"
+    | "mistral"
+    | "together";
+  model: string;
+  keySource?: "env" | "tenant";
+  apiKeyEnv?: string;
+  baseUrl?: string;
+  region?: string;
+  apiVersion?: string;
+  apiSecretEnv?: string;
+};
+
+type AiSettings = {
+  defaultLane: string;
+  lanes: Record<string, ProviderConfig>;
+};
+```
+
+`AiSettings` is a named-lane map: one `defaultLane` plus any number of `lanes`, each a
+`ProviderConfig` binding a provider + model to a lane name. The provider is always chosen from
+config — no provider name is hardcoded in the package — so adding a vendor or moving a lane to a
+different one is a config edit, not a code change.
+
+The package never reads a key's value, only where it lives:
+
+- **`keySource: "env"` (default)** — `apiKeyEnv` names the environment variable holding the key.
+  Required for every provider except `bedrock`, which falls back to the AWS default credential
+  chain when both `apiKeyEnv` and `apiSecretEnv` are omitted.
+- **`keySource: "tenant"`** — the key is stored encrypted per tenant and resolved at inference
+  time elsewhere. A tenant lane must **not** name `apiKeyEnv`.
+- **`bedrock`** takes a two-part credential (`apiKeyEnv` for the access key id, `apiSecretEnv` for
+  the secret) and an optional `region`.
+- **`azure-openai`** addresses a deployment through `model`, so `apiVersion` and `baseUrl` (the
+  Azure resource endpoint) are both required.
+- **`local` and `ollama`** are OpenAI-API-compatible and take a `baseUrl`; `groq`, `mistral`, and
+  `together` are OpenAI-API-compatible hosted vendors with a hardcoded default `baseUrl` you can
+  still override, same as `openrouter`.
+
+### Parsing and resolution
+
+```ts
+function parseAiSettings(input: unknown): AiSettings;
+
+function resolveProvider(settings: AiSettings, lane?: string): ProviderConfig;
+```
+
+`parseAiSettings` validates `input` against the schema above with `.strict()` — an unrecognized
+top-level key, a missing required field (like a non-`bedrock` lane without `apiKeyEnv`, or an
+`azure-openai` lane without `apiVersion`/`baseUrl`), or a `tenant` lane that names `apiKeyEnv`
+all fail closed. On failure it throws a `ValidationError` (HTTP 400) carrying the failing field
+paths and error codes — never a stack trace or the full input object.
+
+`resolveProvider` looks up `lane` in `settings.lanes`, or `settings.defaultLane` when `lane` is
+omitted. An unconfigured lane throws a `NotFoundError` (HTTP 404) rather than returning
+`undefined`, so a typo'd lane name fails at the call site instead of silently falling through to
+whatever provider happens to be default.
 
 ## Related
 
@@ -37,8 +121,3 @@ field.
     Drives agent-assisted setup, auth-gated and entitlement-scoped.
   </Card>
 </Cards>
-
-<Callout type="info">
-  This page covers the essentials. The full `@caisson/ai-config` API reference —
-  the config schema and the supported providers — is still expanding.
-</Callout>

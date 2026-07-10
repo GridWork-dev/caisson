@@ -1,0 +1,11 @@
+{
+  "title": "AI-Production",
+  "pages": [
+    "index",
+    "ai-meter",
+    "ai-evals",
+    "guardrails",
+    "prompt-registry",
+    "credits"
+  ]
+}

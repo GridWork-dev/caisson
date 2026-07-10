@@ -52,12 +52,18 @@ interface ViewModel {
   cartItem: CatalogItem | undefined;
   faq: readonly { question: string; answer: string }[];
   footer: { href: string; label: string } | null;
+  /** Kind-specific metadata rendered ABOVE the media region (CAISSON-68: blurb + badges first,
+   *  so the dialog opens on what the thing IS, never on a full-height code panel). */
+  badges?: React.ReactNode;
   /** Kind-specific body — rendered below the shared media + blurb. */
   body: React.ReactNode;
 }
 
 function buildViewModel(entry: SurfaceEntry): ViewModel {
-  const slides = mediaSlides(entry.kind, entry.id);
+  // omitCodeArtifact (ADR-0290 WR-03): the dialog body renders the record's artifact itself as a
+  // bounded CodeBlock below, so a code-artifact carousel slide would show the identical code
+  // twice — and, unclamped, it filled the whole dialog (CAISSON-68).
+  const slides = mediaSlides(entry.kind, entry.id, { omitCodeArtifact: true });
   if (entry.kind === "module") return moduleViewModel(entry, slides);
   return bundleViewModel(entry, slides);
 }
@@ -82,41 +88,40 @@ function moduleViewModel(
     footer: hasDetail
       ? { href: `/marketplace/modules/${entry.id}`, label: "Open full page →" }
       : null,
+    badges: (
+      // DB posture (single-sourced from /stack-fit) + stack-compat + bundle-membership badges —
+      // above the media region, so the module's identity reads before any artifact (CAISSON-68).
+      <div className="cs-preview-badges">
+        {posture ? (
+          <StatusChip
+            label={posture.heading}
+            icon={posture.icon}
+            tone="accent"
+          />
+        ) : null}
+        {STACK_COMPAT.map((c) => (
+          <StatusChip key={c} label={c} tone="muted" />
+        ))}
+        {m && m.bundles.length === 0 ? (
+          <span className="cs-muted" style={{ fontSize: "var(--cs-text-xs)" }}>
+            Sold standalone — not included in any bundle.
+          </span>
+        ) : (
+          m?.bundles.map((b) => (
+            <Link
+              key={b}
+              href={bundlePagePath(b)}
+              className="cs-chip"
+              style={{ textDecoration: "none" }}
+            >
+              {bundleLabel(b)}
+            </Link>
+          ))
+        )}
+      </div>
+    ),
     body: (
       <>
-        {/* DB posture (single-sourced from /stack-fit) + stack-compat + bundle-membership badges */}
-        <div className="cs-preview-badges">
-          {posture ? (
-            <StatusChip
-              label={posture.heading}
-              icon={posture.icon}
-              tone="accent"
-            />
-          ) : null}
-          {STACK_COMPAT.map((c) => (
-            <StatusChip key={c} label={c} tone="muted" />
-          ))}
-          {m && m.bundles.length === 0 ? (
-            <span
-              className="cs-muted"
-              style={{ fontSize: "var(--cs-text-xs)" }}
-            >
-              Sold standalone — not included in any bundle.
-            </span>
-          ) : (
-            m?.bundles.map((b) => (
-              <Link
-                key={b}
-                href={bundlePagePath(b)}
-                className="cs-chip"
-                style={{ textDecoration: "none" }}
-              >
-                {bundleLabel(b)}
-              </Link>
-            ))
-          )}
-        </div>
-
         <TrialPath compact />
 
         {record ? (
@@ -129,11 +134,15 @@ function moduleViewModel(
                 </li>
               ))}
             </ul>
-            <CodeBlock
-              frame
-              code={record.artifact.code}
-              label={`${record.artifact.label}: ${record.artifact.file}`}
-            />
+            {/* Bounded code region (CAISSON-68): the artifact scrolls inside its own clamp instead
+                of consuming the whole dialog — context first, code as its own bounded panel. */}
+            <div className="cs-preview-code">
+              <CodeBlock
+                frame
+                code={record.artifact.code}
+                label={`${record.artifact.label}: ${record.artifact.file}`}
+              />
+            </div>
             {record.faq.length > 0 ? <Faq items={record.faq} /> : null}
           </>
         ) : null}
@@ -291,6 +300,17 @@ export function PreviewDialog({
           padding: var(--cs-space-5) var(--cs-space-6);
           display: grid; gap: var(--cs-space-5);
         }
+        /* Grid items default to min-width auto — a wide artifact (a code pre, a diagram frame)
+           would expand the track past the dialog, clipping the carousel controls and the page
+           count. Every body child must shrink to the dialog's width; inner surfaces scroll. */
+        .cs-preview-body > * { min-width: 0; max-width: 100%; }
+        /* Bounded code region: the artifact's terminal BODY scrolls internally (both axes)
+           instead of consuming the dialog — blurb, badges, and media stay reachable within the
+           90vh shell. The clamp sits on the scrolling pre itself, not the wrapper: a max-height +
+           overflow grid item resolves to a 0-height row in Chromium and overlaps the FAQ. */
+        .cs-preview-code .cs-terminal__body {
+          max-height: min(40vh, 20rem); overflow-y: auto;
+        }
         .cs-preview-foot {
           padding: var(--cs-space-4) var(--cs-space-6) var(--cs-space-5);
           border-top: 1px solid var(--cs-border);
@@ -383,13 +403,14 @@ export function PreviewDialog({
               </button>
             </div>
 
-            {/* ===== Scroll body ===== */}
+            {/* ===== Scroll body — metadata first (blurb + badges), then media, then depth ===== */}
             <div className="cs-preview-body">
+              <p className="cs-muted cs-preview-def">{vm.entry.blurb}</p>
+              {vm.badges}
               <MediaCarousel
                 slides={vm.slides}
                 label={`${vm.entry.label} media`}
               />
-              <p className="cs-muted cs-preview-def">{vm.entry.blurb}</p>
               {vm.body}
             </div>
 

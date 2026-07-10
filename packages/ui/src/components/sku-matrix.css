@@ -28,8 +28,15 @@
   background: linear-gradient(to right, transparent, var(--cs-bg));
 }
 
+/* `table-layout: fixed` + a per-cell min-width: auto layout let a long unbroken
+ * cell decide the column widths, so adjacent columns collided with zero visual gap on desktop
+ * ("Caisson" flush against "building it in-house") and the table could force the PAGE wider than
+ * a 390px viewport. Fixed layout splits the width evenly; the min-width keeps every column
+ * readable and pushes real overflow into the contained `.cs-matrix__wrap` scroll instead of the
+ * page; `overflow-wrap` breaks a long token inside its own cell. */
 .cs-matrix {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--cs-text-sm);
 }
@@ -40,6 +47,42 @@
   border-bottom: 1px solid var(--cs-border);
   text-align: left;
   vertical-align: top;
+  overflow-wrap: break-word;
+}
+
+/* Fixed layout ignores per-cell min-width, so the scroll floor lives on the table itself, keyed
+ * off column count: a wide matrix (5+ columns — the homepage/hub Module × 6-bundle grid) gets a
+ * floor and scrolls inside `.cs-matrix__wrap` (sticky first column + gradient cue); a 3-column
+ * compare table fits the viewport and simply wraps in place. The first column gets a fixed share
+ * on wide tables so the row labels stay readable while the bundle columns split the rest. */
+.cs-matrix:has(thead th:nth-child(5)) {
+  min-width: 52rem;
+}
+
+.cs-matrix:has(thead th:nth-child(5)) thead th:first-child {
+  width: 11rem;
+}
+
+/* A 3-column table (a compare page: Detail + two value columns whose cells are often a single
+ * ✓/— glyph) reads badly under fixed layout's even split at 390px — each value column spends a
+ * third of the viewport on one glyph while the Detail prose wraps to 6–9 lines. Give Detail half
+ * the table; the value columns split the rest. Keyed to exactly-3 columns so the wide
+ * module × bundle grids above keep their even split. */
+.cs-matrix:has(thead th:nth-child(3)):not(:has(thead th:nth-child(4)))
+  thead
+  th:first-child {
+  width: 50%;
+}
+
+/* Sticky first column (row labels) — the anchor while the wrap scrolls horizontally on mobile.
+ * Needs an opaque background or the scrolled columns show through; both current callers sit on
+ * the plain page background (same reasoning as the `.cs-matrix__frame::after` fade). */
+.cs-matrix th:first-child,
+.cs-matrix td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--cs-bg);
 }
 
 /* Row-label weight — was `style={{ fontWeight: "var(--cs-weight-medium)" }}` inline. */

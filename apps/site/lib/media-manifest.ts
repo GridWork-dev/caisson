@@ -23,8 +23,10 @@ import { type BundleId, BUNDLE_PRICES, isBundleId } from "./pricing";
 export type SlideKind = "diagram" | "component" | "code-artifact" | "image";
 
 /** The authored token-styled diagram set (ADR-0285 §3 / ADR-0290) — each depicts SHIPPED behaviour
- *  only (copy law ADR-0080). The three original mechanism diagrams plus eight new ones closing the
- *  media gap for the modules with neither a showable component nor a depth-page artifact. */
+ *  only (copy law ADR-0080). The three original mechanism diagrams, the eight ADR-0290 additions,
+ *  and eight more single-target mechanism diagrams closing the depth-page media gap (Kickoff G W3)
+ *  for the modules whose only slide was their code artifact — which the depth page omits (WR-03),
+ *  leaving the bare placeholder. */
 export type DiagramKey =
   | "rls-deny"
   | "audit-chain"
@@ -36,7 +38,16 @@ export type DiagramKey =
   | "tool-exec-gate"
   | "org-controls-mutation"
   | "billing-provider-port"
-  | "frameworks-oscal";
+  | "frameworks-oscal"
+  | "alert-pipeline"
+  | "meter-reserve-reconcile"
+  | "eval-baseline-gate"
+  | "guard-fail-closed"
+  | "prompt-render-boundary"
+  | "local-hybrid-rrf"
+  | "agent-lifecycle-fsm"
+  | "runner-env-scrub"
+  | "retention-erasure";
 
 /** The one live-rendered kit component wired into a media slide today (ADR-0290) — ui-pro is the
  *  only catalog item whose product IS a set of UI components; every other item is a backend/library
@@ -73,6 +84,15 @@ const DIAGRAM_ORDER: readonly DiagramKey[] = [
   "org-controls-mutation",
   "billing-provider-port",
   "frameworks-oscal",
+  "alert-pipeline",
+  "meter-reserve-reconcile",
+  "eval-baseline-gate",
+  "guard-fail-closed",
+  "prompt-render-boundary",
+  "local-hybrid-rrf",
+  "agent-lifecycle-fsm",
+  "runner-env-scrub",
+  "retention-erasure",
 ];
 
 const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
@@ -98,6 +118,24 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
     "Four billing providers behind one port: a webhook fulfills exactly once, however many times it's redelivered.",
   "frameworks-oscal":
     "Named framework clauses map to controls, then export as an OSCAL v1.2.2 catalog the evidence packs render against.",
+  "alert-pipeline":
+    "Five-stage alert pipeline: dedup, rate-cap with digest fallback, timezone-aware quiet hours, then multi-channel delivery — every outcome lands an audit row.",
+  "meter-reserve-reconcile":
+    "Estimate, reserve, reconcile: credits debit before the provider is called and true up to actual usage — a crossed hard cap trips the breaker, fail-closed.",
+  "eval-baseline-gate":
+    "Every eval run gates against a committed JSON baseline: a score drop past tolerance fails the build — re-blessing is a deliberate act, never a silent pass.",
+  "guard-fail-closed":
+    "A flagged input, a credential-shaped string, or a moderator outage blocks the call — fail-closed by default, a typed 422, never a silent pass-through.",
+  "prompt-render-boundary":
+    "Injection-safe rendering: variables validate against the version's strict schema, then fill placeholders in one escaped pass — a value can never forge a role.",
+  "local-hybrid-rrf":
+    "Hybrid retrieval: a vec0 vector leg and an FTS5 keyword leg rank independently, then fuse by Reciprocal Rank Fusion — with no vector it degrades to keyword-only.",
+  "agent-lifecycle-fsm":
+    "The seven-act lifecycle FSM: only legal transitions advance — a failed verify re-opens plan, and an illegal skip throws, never a silent pass.",
+  "runner-env-scrub":
+    "The child env is built from scratch — a fixed non-secret allowlist plus only the target provider's key — and the run streams to an auditable .jsonl transcript.",
+  "retention-erasure":
+    "One validated erasure request fans out to every registered target with per-target error isolation — a failing store lands in its own result, never aborting the others — then exactly one reason-tagged audit row is written.",
 };
 
 // Which entries carry which authored diagram (`kind:slug`). Mapped to the top entries whose shipped
@@ -115,11 +153,14 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
     "module:audit-worm",
     "module:signing-primitive",
   ]),
+  // NOT module:retention-runner — the diagram depicts audit-worm's evidence lifecycle (write/
+  // chain/anchor/verify + Object-Lock), not retention sweeps or erasure; showing it on the
+  // erasure module's buy surface misrepresents what ships (ADR-0082 artifacts-true-to-built).
+  // retention-runner carries its own bespoke `retention-erasure` diagram below.
   "worm-lifecycle": new Set([
     "bundle:compliance",
     "bundle:provenance",
     "module:audit-worm",
-    "module:retention-runner",
   ]),
   "credits-ledger": new Set(["module:credits"]),
   "local-sync-merge": new Set(["module:local-sync"]),
@@ -129,6 +170,15 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
   "org-controls-mutation": new Set(["module:org-controls"]),
   "billing-provider-port": new Set(["module:billing-orchestration"]),
   "frameworks-oscal": new Set(["module:frameworks-pack"]),
+  "alert-pipeline": new Set(["module:alerting"]),
+  "meter-reserve-reconcile": new Set(["module:ai-meter"]),
+  "eval-baseline-gate": new Set(["module:ai-evals"]),
+  "guard-fail-closed": new Set(["module:guardrails"]),
+  "prompt-render-boundary": new Set(["module:prompt-registry"]),
+  "local-hybrid-rrf": new Set(["module:local-store"]),
+  "agent-lifecycle-fsm": new Set(["module:agent-kernel"]),
+  "runner-env-scrub": new Set(["module:agent-runner"]),
+  "retention-erasure": new Set(["module:retention-runner"]),
 };
 
 /** The entry's mark, for the placeholder slide and the card glyph. */

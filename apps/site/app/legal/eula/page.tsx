@@ -1,7 +1,6 @@
-import type { CSSProperties } from "react";
-
 import { buildMetadata } from "@/lib/metadata";
 import { Card, Section } from "@/components";
+import { prose } from "../prose";
 
 export const metadata = buildMetadata({
   title: "EULA",
@@ -9,36 +8,6 @@ export const metadata = buildMetadata({
     "The binding Caisson End User License Agreement (EULA) — the Commercial License Agreement governing your purchase and use of Caisson software. Caisson Software LLC, governed by the laws of Georgia, USA.",
   path: "/legal/eula",
 });
-
-// `ch` is defined against the font's "0" glyph, not its average character width — Hubot Sans's
-// "0" is narrow enough that the original `72ch`/`68ch` resolved to ~742-766px, fitting ~100-110
-// real characters per line (measured live), well past the 65-75ch readability cap the values were
-// meant to enforce (visual-audit remediation). Fixed rem widths, tuned against this typeface's
-// actual measured ~7.1px average character width at 16px, replace the ch units: 33rem/31rem land
-// paragraph/list back in the 65-75-real-character band this page's dense legal prose needs.
-const prose = {
-  paragraph: {
-    marginTop: "var(--cs-space-4)",
-    lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "33rem",
-  } as CSSProperties,
-  h3: {
-    marginTop: "var(--cs-space-8)",
-    marginBottom: "var(--cs-space-3)",
-    fontSize: "var(--cs-text-lg)",
-    fontWeight: "var(--cs-weight-semibold)",
-    letterSpacing: "var(--cs-tracking-tight)",
-  } as CSSProperties,
-  list: {
-    marginTop: "var(--cs-space-3)",
-    paddingLeft: "var(--cs-space-5)",
-    lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "31rem",
-  } as CSSProperties,
-  li: {
-    marginBottom: "var(--cs-space-2)",
-  } as CSSProperties,
-};
 
 export default function EulaPage() {
   return (
@@ -228,6 +197,25 @@ export default function EulaPage() {
           of your entitled packages published while it is active; it is optional
           and does not affect the perpetual license for versions already
           delivered.
+        </p>
+
+        <h3 style={prose.h3}>Credits</h3>
+        <p style={prose.paragraph}>
+          Certain AI-feature and codegen functionality within the Software is
+          metered using a prepaid credit balance (&ldquo;Credits&rdquo;).
+          Credits are issued in grants &mdash; through a subscription cycle, a
+          one-time top-up purchase, or a promotional grant &mdash; and are
+          pooled into a single wallet; unused Credits from a prior grant roll
+          over and are not forfeited at the end of a billing cycle. Each Credit
+          grant expires twelve (12) months after it is issued, unless we state a
+          different expiration for that grant at the time it is issued. Credits
+          are consumed on a first-in, first-out basis, drawing from your oldest
+          outstanding grant first, so that Credits nearing expiration are used
+          before newer Credits &mdash; an actively used balance is not lost to
+          expiration through non-use alone. Credits remaining in a grant that
+          expires unused are forfeited without refund; expiration of a Credit
+          grant does not affect your license to the Software or any other right
+          under this Agreement.
         </p>
       </Section>
 

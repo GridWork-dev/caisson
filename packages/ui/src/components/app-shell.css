@@ -101,6 +101,24 @@
   min-width: 0;
 }
 
+/* Account pill (the signed-in account id / switcher label a consumer renders in `topBar`) —
+ * truncates with an ellipsis instead of pushing trailing topbar content (e.g. Sign-out) past
+ * `.cs-shell`'s grid-level `overflow: hidden`, where it clips silently with no way to reach it.
+ * Opt-in class — the kit renders whatever `topBar` ReactNode a consumer passes;
+ * this is a utility hook the consumer applies to its own account-id element. */
+.cs-shell__account-pill {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+@media (max-width: 48rem) {
+  .cs-shell__account-pill {
+    max-width: 7rem;
+  }
+}
+
 /* Drawer scrim — a full-bleed close affordance. Hidden by default (desktop, or a
  * lingering open-state after a resize); the mobile breakpoint turns it on. */
 .cs-shell__scrim {
@@ -211,6 +229,12 @@
   flex: none;
   padding: var(--cs-space-2);
   border-top: 1px solid var(--cs-border);
+}
+
+/* Hidden on desktop — the sidebar isn't a drawer there, and its content (e.g. Sign-out) already
+ * has room in the always-visible topbar. Turned on at the mobile breakpoint below. */
+.cs-shell__mobile-nav-footer {
+  display: none;
 }
 
 .cs-shell__collapse-toggle {
@@ -327,6 +351,13 @@
   /* the desktop collapse toggle is meaningless in the drawer */
   .cs-shell__sidebar-footer {
     display: none;
+  }
+
+  /* Reachable regardless of how tight the topbar gets on a narrow viewport. */
+  .cs-shell__mobile-nav-footer {
+    display: block;
+    padding: var(--cs-space-3) var(--cs-space-2);
+    border-top: 1px solid var(--cs-border);
   }
 
   /* scrim covers the canvas under the drawer */

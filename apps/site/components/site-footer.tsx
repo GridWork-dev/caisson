@@ -44,7 +44,14 @@ const COLS = (["editions", "product", "resources", "legal"] as const).map(
   (col) => ({
     heading: HEADINGS[col],
     links: [
-      ...footerRoutes(col).map((r) => ({ href: r.path, label: r.label })),
+      // Prefer the terse navLabel when a route has one — the footer showed "Local-first AI"
+      // while the nav showed "Local-first" (naming drift, CAISSON-65). Same rule as
+      // site-nav.tsx, so the footer can never drift from the nav again; the one other route
+      // with a navLabel, /ui, deliberately reads "UI Pro" (its product name) here too.
+      ...footerRoutes(col).map((r) => ({
+        href: r.path,
+        label: r.navLabel ?? r.label,
+      })),
       ...EXTRAS[col],
     ],
   }),

@@ -26,9 +26,25 @@ RUN bun install --frozen-lockfile
 ARG NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=""
 ARG NEXT_PUBLIC_PADDLE_ENV="sandbox"
 ARG NEXT_PUBLIC_PLAUSIBLE_DOMAIN=""
+# The footer's Discord link (G12) renders at build time on every statically prerendered page —
+# without this ARG the Railway service var never reaches `next build` and every static footer
+# bakes with the link missing (only request-time-rendered pages saw it). Empty default = the
+# same env-gated no-op as the rest.
+ARG NEXT_PUBLIC_DISCORD_INVITE_URL=""
+# Same class as the Discord ARG above: these service vars were set on caisson-site but never
+# declared as build ARGs, so the Turnstile widget and dashboard PostHog capture shipped disabled
+# in every prod bundle. Their consumers all no-op on empty string (use-turnstile.ts,
+# waitlist-form.tsx, posthog-init.tsx — which is why the HOST fallback there is `||`, not `??`).
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=""
+ARG NEXT_PUBLIC_POSTHOG_KEY=""
+ARG NEXT_PUBLIC_POSTHOG_HOST=""
 ENV NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=$NEXT_PUBLIC_PADDLE_CLIENT_TOKEN \
     NEXT_PUBLIC_PADDLE_ENV=$NEXT_PUBLIC_PADDLE_ENV \
-    NEXT_PUBLIC_PLAUSIBLE_DOMAIN=$NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+    NEXT_PUBLIC_PLAUSIBLE_DOMAIN=$NEXT_PUBLIC_PLAUSIBLE_DOMAIN \
+    NEXT_PUBLIC_DISCORD_INVITE_URL=$NEXT_PUBLIC_DISCORD_INVITE_URL \
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY \
+    NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
+    NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 
 RUN bunx turbo run build --filter=@caisson/site --concurrency=50%
 

@@ -1,99 +1,50 @@
 ---
 title: Agentic-Dev
-description: "@caisson/agent-dev — the governed-agent kernel: a typed agent/skill/rule schema, a lifecycle state machine, local hybrid memory, and a hooks dispatcher."
+description: The governed-agent kernel plus sandboxed execution — typed agent/skill/rule schema, a seven-act lifecycle FSM, a default-deny tool-exec gate, and local hybrid memory.
 ---
 
-<Callout type="info">
-  Agentic-Dev ships today: a typed agent/skill/rule schema, a lifecycle state
-  machine, local hybrid memory, and a hooks dispatcher, all live in
-  `@caisson/agent-dev`. This page is the spine of the manual — the contract
-  below is what's shipped.
-</Callout>
+The **Agentic-Dev** bundle is the layer your own AI coding agent runs inside, not a layer that
+replaces your judgment with autonomy. Every agent, skill, and rule is a typed artifact; every act
+transition is a legal move on a state machine; every shell command an agent runs passes a
+default-deny gate. The kernel governs the loop — it does not hand the agent the keys.
 
-`@caisson/agent-dev` is the governed-agent kernel. It is the layer your AI coding agent
-runs inside, not a layer that replaces your judgment with autonomy. Every agent, skill,
-and rule is a typed artifact; every act transition is a legal move on a state machine; every
-side effect passes one dispatcher. The kernel governs the loop — it does not hand the agent
-the keys.
+## What's in the bundle
 
-The same kernel underpins the `create-caisson` generator and the buyer-facing MCP server, so
-the rules that govern your own workflow are the rules that govern code generation.
+- **[agent-kernel](/docs/agentic-dev/agent-kernel)** — the engine-neutral base: a Zod schema for
+  agent/skill/rule artifacts, a seven-act lifecycle FSM (spec through ship), allow/deny/mutate
+  governance guards, a hooks dispatcher, and an opt-in tamper-evident audit chain.
+- **[agent-runner](/docs/agentic-dev/agent-runner)** — spawns a headless coding agent into an
+  isolated worktree with a scrubbed, from-scratch environment: zero secret leak by construction,
+  plus an auditable `.jsonl` transcript and a structured run report.
+- **[tool-exec](/docs/agentic-dev/tool-exec)** — the governed tool-call primitive: a default-deny
+  command allowlist, Zod-strict argv validation, and `execFile` arg-arrays only — an agent never
+  reaches a shell.
+- **[local-store](/docs/local-first/local-store)** — the hybrid vector + full-text local memory
+  an agent recalls over, shared with the Local-first bundle.
 
-## What the kernel governs
+## How it composes
 
-- **Typed agent/skill/rule schema.** An agent, a skill, and a rule are each a validated
-  artifact — model, tools, and capabilities declared up front. An undeclared capability or a
-  tool the agent is not granted is a load-time error, not a runtime surprise.
-- **Lifecycle state machine.** Acts advance only along declared transitions. An illegal move —
-  `execute` before `plan`, `ship` before `verify` — is rejected at the boundary, not caught
-  after the side effect.
-- **Local hybrid memory.** Recall runs locally over a hybrid index (vector plus keyword). The
-  agent's context stays on the machine unless you wire an explicit egress.
-- **Hooks dispatcher.** Side effects route through a single deterministic dispatcher — one
-  audited place to gate, log, or deny an action before it leaves the process.
+`agent-kernel`'s FSM is the spine every governed act moves through — `verify` is the only act with
+two outgoing edges, so a failed goal-backward verify reopens `plan` rather than advancing toward
+`ship`. `agent-runner` spawns the actual worker inside that governed loop, in an isolated worktree
+with an environment built from scratch rather than inherited. `tool-exec` is the gate every shell
+command from that worker passes through — a command outside the declared allowlist is unreachable,
+not merely discouraged. `local-store` gives the agent hybrid vector-plus-keyword recall that stays
+on the machine unless you wire an explicit egress.
 
-## The contract it upholds
+## Composing with the base
 
-The kernel makes one promise: an agent cannot take an action it was not typed to take. A
-capability the schema does not declare is unreachable; a transition the state machine does not
-permit does not fire; a side effect the dispatcher denies does not happen. Governance is
-enforced at load and at each boundary, not asserted in a README.
+`agent-kernel` imports no vendor SDK and runs no LLM — it is composition mechanism only, and both
+the base `@caisson/cli`/`@caisson/mcp-server` and this bundle's curated content consume it
+down-only (ADR-0022, ADR-0065). The same kernel underpins the `create-caisson` generator and the
+buyer-facing MCP server, so the rules that govern your own workflow are the rules that govern code
+generation.
 
-## Usage
+## Entitlement
 
-A typed agent declares its model, the capabilities it is allowed to exercise, and the
-transitions it may drive. The kernel validates the definition before the agent runs, then
-constrains it to the declared moves.
-
-```ts
-import { defineAgent } from "@caisson/agent-dev";
-import type { LifecycleState } from "@caisson/agent-dev";
-
-// Capabilities and tools are declared up front and validated at load.
-// An undeclared capability is unreachable — not a runtime surprise.
-const reviewer = defineAgent({
-  name: "code-reviewer",
-  model: "opus",
-  capabilities: ["code_review"],
-  // The lifecycle state machine: only these transitions are legal.
-  transitions: {
-    spec: ["plan"],
-    plan: ["execute"],
-    execute: ["verify"],
-    verify: ["ship"],
-  },
-});
-
-// Legal move — advances along a declared edge.
-const next: LifecycleState = reviewer.advance("plan");
-
-// Illegal move — rejected at the boundary, before any side effect.
-reviewer.advance("ship"); // throws: no edge spec → ship
-```
-
-Side effects do not bypass the kernel. A hook registered on the dispatcher sees every action
-before it runs and can gate it.
-
-```ts
-import { onDispatch } from "@caisson/agent-dev";
-
-// One deterministic dispatcher — one place to gate, log, or deny.
-onDispatch((action, ctx) => {
-  if (
-    action.kind === "shell" &&
-    !ctx.agent.capabilities.includes("shell_exec")
-  ) {
-    return { allow: false, reason: "agent not typed for shell_exec" };
-  }
-  return { allow: true };
-});
-```
-
-<Callout type="info">
-  These snippets show the shape of the contract. For the exact schema fields,
-  state-machine config, and dispatcher interfaces, read the source in
-  `@caisson/agent-dev` — the package is the version-pinned reference.
-</Callout>
+Agentic-Dev is a commercial bundle (`LicenseRef-Caisson-Commercial`). Buy the bundle, or any
+member module à la carte — a purchase grants the module's entitlement id, checked offline against
+the license.
 
 ## Related
 
@@ -102,7 +53,6 @@ onDispatch((action, ctx) => {
     Install the base, wire a tenant, and run the standards gate.
   </Card>
   <Card title="Documentation home" href="/docs">
-    The full manual: every package, how to compose it, and the contract it
-    upholds.
+    The full manual: every package, how to compose it, and the contract it upholds.
   </Card>
 </Cards>

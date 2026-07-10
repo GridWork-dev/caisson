@@ -142,7 +142,7 @@ for (const lane of LANES) {
 
   test(`[${lane}] a normal grounded question streams tokens + citations from ONLY the retrieved chunks`, async () => {
     const DOC = "apps/site/content/docs/base/billing.mdx";
-    const OTHER = "apps/site/content/docs/base/credits.mdx";
+    const OTHER = "apps/site/content/docs/ai-production/credits.mdx";
     const { evs } = await drain(
       await handleAsk(
         ask("how do credits work?"),
