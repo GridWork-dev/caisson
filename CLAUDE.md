@@ -61,9 +61,11 @@ edited — supersede with a later ADR).
    0288 rider (b) · subscription-refund coverage-horizon claw, supersedes the 0269 Decision-6
    accept; 0303 = the CF-Access gate scoped to the commerce surface 2026-07-10 — dashboard
    and cart paths stay gated, marketing/docs/llms.txt/api serve public pre-launch for AI
-   indexing, amends the A2 lock + ADR-0107, applied live; 0306-0309 = the Kickoff-I
-   scope-lock fork round 2026-07-09 — signature ambient depth-fog lattice field with
-   poster-first idle-hydrate + ≤130KB three.js-core budget, amends 0104 · sitewide
+   indexing, amends the A2 lock + ADR-0107, applied live; 0304-0305 = the Kickoff-J pricing
+   picker 2026-07-10 — D3 anchor HOLD $1,049/$2,059 on the WTP memo · D2 corrected-and-closed,
+   licensing already per-org/no-seat per the EULA, surfaced as advantage copy; 0306-0309 =
+   the Kickoff-I scope-lock fork round 2026-07-09 — signature ambient depth-fog lattice field
+   with poster-first idle-hydrate + ≤130KB three.js-core budget, amends 0104 · sitewide
    authored-motion pass executing 0078 §6 · marketplace media full-depth pass refining 0290,
    F2 closes · lighthouse warn→error + wave evidence + ride-alongs).
    The full

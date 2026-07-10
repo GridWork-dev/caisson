@@ -1,11 +1,19 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "group:allNonMajor"],
+  "extends": ["config:recommended", "group:allNonMajor", "docker:pinDigests"],
   "schedule": ["before 6am on monday"],
   "timezone": "UTC",
   "automerge": false,
   "prConcurrentLimit": 5,
   "rangeStrategy": "replace",
   "semanticCommits": "enabled",
-  "commitMessagePrefix": "chore(deps):"
+  "commitMessagePrefix": "chore(deps):",
+  "packageRules": [
+    {
+      "description": "Buyer-facing create-caisson deploy scaffolds stay tag-pinned, NOT digest-pinned (Kickoff-K supply-chain finding): a frozen Caisson-resolved digest would rot in downstream buyer repos that have no Renovate to bump it. First-party service images still get docker:pinDigests.",
+      "matchFileNames": ["packages/cli/templates/**"],
+      "matchDatasources": ["docker"],
+      "pinDigests": false
+    }
+  ]
 }

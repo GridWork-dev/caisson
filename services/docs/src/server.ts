@@ -137,7 +137,15 @@ export async function startServer(): Promise<{
   // below, so a health check or the fronting proxy sees a real, immediate 503 the whole time instead
   // of a refused connection reported upstream as a 502. `.reload()` swaps in the real handler in
   // place once ready — no restart, no port gap.
-  const server = Bun.serve({ port, fetch: warmupHandler });
+  // maxRequestBodySize caps every route BEFORE buffering (CWE-770, Kickoff-K defense-in-depth): Bun's
+  // 128 MiB default is far above any real /query body. reload() below swaps only the fetch handler, not
+  // this server-level option, so the cap persists once the real handler is live. 512 KiB matches the
+  // license issuer's cap and the repo's MAX_BODY_BYTES idiom.
+  const server = Bun.serve({
+    port,
+    fetch: warmupHandler,
+    maxRequestBodySize: 512 * 1024,
+  });
   process.stderr.write(
     `[service-docs] listening on :${server.port} (warming up)\n`,
   );

@@ -6,6 +6,7 @@
 // streaming.
 //
 // Response contract:
+//   413 application/json {error:"payload_too_large"} — body exceeds the pre-parse size cap
 //   400 application/json {error:"invalid_request"}   — malformed body / Zod .strict() reject
 //   403 application/json {error:"challenge_failed"}  — Turnstile missing/invalid (fail closed)
 //   200 text/event-stream                            — SSE; every admitted request streams, incl. escalations
@@ -34,6 +35,13 @@ export const AskBody = z
   })
   .strict();
 export type AskBody = z.infer<typeof AskBody>;
+
+// Request-body byte cap enforced BEFORE buffering/parsing (CWE-770, Kickoff-K). /api/ask is public +
+// unauthenticated and its body read runs ahead of the Turnstile gate, so an unbounded POST would buffer
+// fully in memory pre-auth; a self-hosted Next App Router route handler imposes no body limit of its own.
+// 16 KiB is generous for AskBody (question ≤2000, turnstileToken ≤2048). Same idiom as
+// registry/worker/revocations-put.ts (content-length precheck + text-length check).
+const MAX_ASK_BODY_BYTES = 16_384;
 
 export type Lane = "public" | "premium";
 
@@ -130,10 +138,18 @@ export async function handleAsk(
   req: Request,
   deps: AskDeps,
 ): Promise<Response> {
-  // 1. body — a bad body dies here, not at OpenRouter.
+  // 1. body — size-capped BEFORE buffering (CWE-770), then a bad body dies here, not at OpenRouter.
+  const declared = Number(req.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declared) && declared > MAX_ASK_BODY_BYTES) {
+    return jsonError("payload_too_large", 413);
+  }
   let rawBody: unknown;
   try {
-    rawBody = await req.json();
+    const text = await req.text();
+    if (text.length > MAX_ASK_BODY_BYTES) {
+      return jsonError("payload_too_large", 413);
+    }
+    rawBody = JSON.parse(text);
   } catch {
     return jsonError("invalid_request", 400);
   }
