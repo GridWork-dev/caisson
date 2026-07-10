@@ -245,6 +245,50 @@ describe("POST /issue (ADR-0110)", () => {
     expect(verifyLicenseWithKey(stored?.token ?? "", DEV_PUB).valid).toBe(true);
   });
 
+  test("rotate: true forces a FRESH mint that replaces the stored grant in place (key rotation)", async () => {
+    const acct = "acct_issue_rotate";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "in_rotate",
+        source: { kind: "subscription", subscriptionId: "sub_rotate" },
+      }),
+    );
+    const body = { accountId: acct, tier: "pro", major: 1, expiry: null };
+
+    const first = await app(post(JSON.stringify(body), `Bearer ${TOKEN}`));
+    expect(first.status).toBe(200);
+    const a = (await first.json()) as { token: string; licenseId: string };
+
+    // The rotation mint: claims are UNCHANGED, so a plain call would re-serve — rotate must not.
+    const rotated = await app(
+      post(JSON.stringify({ ...body, rotate: true }), `Bearer ${TOKEN}`),
+    );
+    expect(rotated.status).toBe(200);
+    const b = (await rotated.json()) as { token: string; licenseId: string };
+    expect(b.licenseId).not.toBe(a.licenseId);
+    expect(b.token).not.toBe(a.token);
+    expect(verifyLicenseWithKey(b.token, DEV_PUB).valid).toBe(true);
+
+    // Replaced IN PLACE: still exactly one row per (account, major), now holding the fresh key.
+    const rows = await tp.query(
+      `SELECT count(*)::int AS n FROM license_grant WHERE account_id = $1 AND major = $2`,
+      [acct, 1],
+    );
+    expect((rows[0] as { n: number }).n).toBe(1);
+    const stored = await withTenant(tp.pg, acct, (tx) =>
+      readLicenseGrant(tx, acct, 1),
+    );
+    expect(stored?.licenseId).toBe(b.licenseId);
+
+    // The persist-and-reuse contract resumes on the NEW key: a plain call re-serves it.
+    const third = await app(post(JSON.stringify(body), `Bearer ${TOKEN}`));
+    const c = (await third.json()) as { token: string; licenseId: string };
+    expect(c.token).toBe(b.token);
+    expect(c.licenseId).toBe(b.licenseId);
+  });
+
   test("a different major for the same account mints + stores its own independent grant", async () => {
     const acct = "acct_issue_major";
     await withTenant(tp.pg, acct, (tx) =>

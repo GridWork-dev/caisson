@@ -34,9 +34,11 @@ import {
 } from "@caisson/credits";
 import {
   asCredits,
+  assertNotReadOnly,
   NotFoundError,
   ValidationError,
   type JsonValue,
+  type SystemMode,
 } from "@caisson/kernel";
 import {
   buildAdminSelectPolicySql,
@@ -60,6 +62,7 @@ import {
 } from "./entitlement-store.ts";
 import {
   readDenySet,
+  recordLicenseRevocation,
   recordLicenseRevocations,
 } from "./license-revocation-store.ts";
 
@@ -91,6 +94,11 @@ export const ADMIN_MUTATION_PROVISION_SQL = [
   // edge. It NEVER writes license_grant (the reissue proxy persists it), so it gets the SELECT-only
   // variant — the paid-revoke blast radius stops at a cross-tenant read of the license index.
   buildAdminSelectPolicySql("license_grant"),
+  // The system-mode read (the read-only lever): every mutation consults the LATEST `system_mode`
+  // row in `admin_action_log` before writing, and the mutation surface runs as `admin_write` — so
+  // the role needs SELECT on the log it already INSERTs into. Read-back of an operator-owned,
+  // cross-tenant log by the operator-write role adds no new exposure.
+  `GRANT SELECT ON admin_action_log TO admin_write;`,
 ].join("\n");
 
 /** The re-served token an injected `/issue` proxy returns (Fork AM-5); never carries the bearer. */
@@ -126,6 +134,9 @@ export interface AdminMutationDeps {
     tier: string;
     major: number;
     expiry: string | null;
+    /** True → `/issue` skips the idempotent re-serve and mints a FRESH token + licenseId (the
+     *  rotation lever's forced re-mint). Omitted for reissue/first-mint (re-serve semantics). */
+    rotate?: boolean;
   }) => Promise<ReissueProxyResult>;
   /**
    * Publish the FULL current edge deny-set to the artifact the registry Worker reads (ADR-0225
@@ -329,6 +340,107 @@ async function assertAccountExists(
   }
 }
 
+// --- System write-mode (the operator read-only lever) -------------------------------------------
+//
+// The persisted mode SOURCE is `admin_action_log` itself: the LATEST `system_mode` row's
+// `payload_after.mode` is the current mode (no row ever written -> `active`). Reusing the log as
+// the store means the lever is flippable at runtime (no redeploy), persisted across instances, and
+// audit-trailed by construction — every flip IS an admin action row. This is an operator
+// maintenance/incident switch ONLY; it is deliberately NOT wired to any billing/dunning state
+// (`subscription.past_due` keeps full access — the provider-recommended grace posture this repo
+// already ships — so a dunning freeze would contradict the shipped behavior and is won't-fix).
+
+/** The pseudo-target the mode lever logs under — the lever mutates SYSTEM state, not an account. */
+const SYSTEM_MODE_TARGET = "system";
+
+const systemModePayloadSchema = z.object({
+  mode: z.enum(["active", "read_only"]),
+});
+
+export const SetSystemModeBody = z
+  .object({ mode: z.enum(["active", "read_only"]) })
+  .strict();
+
+export type SetSystemModeInput = z.infer<typeof SetSystemModeBody> & {
+  actorEmail: string;
+};
+
+/**
+ * Read the current system write-mode from the latest `system_mode` action row. Defaults to
+ * `active` when no row exists, the payload is malformed, or the read itself fails.
+ *
+ * // ponytail: fail-open-to-available on a SOURCE read error — `read_only` is the exceptional
+ * // state an operator explicitly arms, and the un-arming lever writes through this same surface;
+ * // defaulting to `read_only` on a transient read failure would brick every mutation including
+ * // the lever that un-bricks it. The GATE itself stays fail-closed: an armed `read_only` always
+ * // blocks. Upgrade path: a dedicated single-row mode table with a strict read if the log-derived
+ * // source ever needs to distinguish "unreadable" from "unset".
+ */
+export async function readSystemMode(db: Transactor): Promise<SystemMode> {
+  try {
+    return await withAdminWrite(db, async (tx) => {
+      const r = await tx.query<{ payload_after: unknown }>(
+        `SELECT payload_after FROM admin_action_log
+          WHERE action = 'system_mode'
+          ORDER BY created_at DESC, id DESC
+          LIMIT 1`,
+      );
+      const row = r.rows[0];
+      if (row === undefined) return "active";
+      const parsed = systemModePayloadSchema.safeParse(row.payload_after);
+      return parsed.success ? parsed.data.mode : "active";
+    });
+  } catch {
+    return "active";
+  }
+}
+
+/** The fail-closed gate every mutating action calls FIRST: `read_only` -> throw (409), else no-op. */
+async function assertSystemModeActive(
+  db: Transactor,
+  action: string,
+): Promise<void> {
+  assertNotReadOnly(await readSystemMode(db), action);
+}
+
+export interface SystemModeResult {
+  mode: SystemMode;
+  previous: SystemMode;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the flip already committed). */
+  worm: WormStatus;
+}
+
+/**
+ * The admin lever: persist a new system write-mode by appending a `system_mode` action row (the
+ * row IS the store — see the module note above). Deliberately NOT gated by the read-only check
+ * itself: this is the only way back to `active`, so gating it would make `read_only` permanent.
+ * Dual-logged like every other action.
+ */
+export async function setSystemModeAdmin(
+  deps: AdminMutationDeps,
+  input: SetSystemModeInput,
+): Promise<SystemModeResult> {
+  const previous = await readSystemMode(deps.db);
+  await withAdminWrite(deps.db, (tx) =>
+    insertAdminActionLog(tx, {
+      actorEmail: input.actorEmail,
+      targetAccountId: SYSTEM_MODE_TARGET,
+      action: "system_mode",
+      before: { mode: previous },
+      after: { mode: input.mode },
+    }),
+  );
+  const worm = await appendWorm(
+    deps,
+    SYSTEM_MODE_TARGET,
+    "system_mode",
+    input.actorEmail,
+    { mode: previous },
+    { mode: input.mode },
+  );
+  return { mode: input.mode, previous, worm };
+}
+
 /**
  * Fail closed on an entitlement id the comp-grant boundary cannot resolve (ADR-0278 F1). Reuses
  * `expandEntitlements` itself, one id at a time, rather than a hand-maintained allowlist: the
@@ -378,6 +490,7 @@ export async function grantEntitlementAdmin(
   deps: AdminMutationDeps,
   input: GrantEntitlementInput,
 ): Promise<EntitlementMutationResult> {
+  await assertSystemModeActive(deps.db, "grant entitlements");
   // Reject an unresolvable id BEFORE the transaction opens (ADR-0278 F1) — never write a grant that
   // would fail-closed-throw the target account's ENTIRE entitlement expansion on its next read.
   assertGrantableEntitlementIds(deps.index, input.entitlementIds);
@@ -415,6 +528,7 @@ export async function revokeEntitlementAdmin(
   deps: AdminMutationDeps,
   input: RevokeEntitlementInput,
 ): Promise<EntitlementMutationResult> {
+  await assertSystemModeActive(deps.db, "revoke entitlement");
   const result = await withAdminWrite(deps.db, async (tx) => {
     const before = await readEntitlements(tx, input.targetAccountId);
     const changed = await revokeAdminComp(tx, {
@@ -464,6 +578,7 @@ export async function adjustCreditsAdmin(
   deps: AdminMutationDeps,
   input: AdjustCreditsInput,
 ): Promise<CreditAdjustResult> {
+  await assertSystemModeActive(deps.db, "adjust credits");
   const result = await withAdminWrite(deps.db, async (tx) => {
     await assertAccountExists(tx, input.targetAccountId);
     const balanceBefore = await balance(tx, input.targetAccountId);
@@ -551,6 +666,7 @@ export async function reissueLicenseAdmin(
   deps: AdminMutationDeps,
   input: ReissueLicenseInput,
 ): Promise<ReissueResult> {
+  await assertSystemModeActive(deps.db, "reissue license");
   const reissued = await deps.issue({
     accountId: input.targetAccountId,
     tier: input.tier,
@@ -580,6 +696,169 @@ export async function reissueLicenseAdmin(
     major: input.major,
     licenseId: reissued.licenseId,
     token: reissued.token,
+    worm,
+  };
+}
+
+// --- License rotation (TRUE key rotation, v2 of the reissue lever) -------------------------------
+//
+// Reissue (above) re-serves the buyer's EXISTING token — useless when the key itself leaked. This
+// lever ROTATES: the OLD licenseId is denied via the edge deny-set (the same CRL the registry
+// Worker reads; the revocation row is the DB truth, republished post-commit), and a FRESH key is
+// minted through the same `/issue` proxy with `rotate: true` (a forced re-mint that replaces the
+// stored grant in place — still one row per (account, major)).
+//
+// EXTEND-TO-PAID-HORIZON posture: the old key is never DELETED — offline perpetual tokens still
+// carry it, so it is denied at the edge (an append to `license_revocation`), while the fresh mint
+// re-signs the buyer's REAL current entitlements/windows, honoring every horizon they paid for.
+//
+// ORDERING (the atomicity contract across the HTTP mint boundary): the deny-set insert COMMITS
+// FIRST, then the mint runs. The mint replaces `license_grant.license_id` in place, so minting
+// first would — on a crash before the revoke landed — lose the only durable copy of the old
+// licenseId, leaving the rotated-away key valid at the edge forever. Revoke-first instead fails
+// safe: a mint failure leaves the old key denied and the grant row untouched; a retry re-denies
+// as a no-op (PK conflict) and mints again — the flow converges with no orphan live key in either
+// direction. A failed revoke aborts BEFORE the mint, so a new key can never exist without its
+// old-key denial.
+
+export const RotateLicenseBody = z
+  .object({
+    targetAccountId: accountId,
+    major: z.number().int().nonnegative(),
+    reason: z.string().trim().min(1).max(500).optional(),
+  })
+  .strict();
+
+export type RotateLicenseInput = z.infer<typeof RotateLicenseBody> & {
+  actorEmail: string;
+  /** The stored grant's tier/expiry (read by the route via the admin read role) — the fresh mint
+   *  re-signs under the same label/expiry the buyer already holds. */
+  tier: string;
+  expiry: string | null;
+  /** The stored grant's CURRENT licenseId — the key this rotation denies (read by the route;
+   *  a route 404s before calling in when no grant exists, mirroring reissue v1). */
+  oldLicenseId: string;
+};
+
+export interface RotateLicenseResult {
+  targetAccountId: string;
+  major: number;
+  /** The rotated-away key, now in the edge deny-set. */
+  oldLicenseId: string;
+  /** The fresh key. */
+  licenseId: string;
+  token: string;
+  /** Edge deny-set publish outcome — see `EdgePublishStatus`; the DB truth is durable either way. */
+  edgePublish: EdgePublishStatus;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the rotation already committed). */
+  worm: WormStatus;
+}
+
+/**
+ * Action 8 — rotate a license key: deny the OLD key at the edge, then mint a FRESH one. See the
+ * section comment above for the posture + ordering contract. Dual-logged; the action id is pinned
+ * up front so the `license_revocation` row FK-by-values to it (a mint failure after the revoke
+ * committed leaves that row pointing at an action whose log lands on the successful retry — the
+ * account id + revoked_at keep it traceable).
+ */
+export async function rotateLicenseAdmin(
+  deps: AdminMutationDeps,
+  input: RotateLicenseInput,
+): Promise<RotateLicenseResult> {
+  await assertSystemModeActive(deps.db, "rotate license");
+  const adminActionId = randomUUID();
+  // Leg 1 — REVOKE FIRST, COMMIT FIRST: the old key's denial is durable before any mint replaces
+  // the stored grant. A nonexistent target rolls the whole leg back (no ghost denial).
+  let fullDenySet: string[] = [];
+  let deniedLicenseIds: string[] = [];
+  await withAdminWrite(deps.db, async (tx) => {
+    await assertAccountExists(tx, input.targetAccountId);
+    // TOCTOU narrowing (review R2-3): `oldLicenseId` was read one HTTP hop ago, and a concurrent
+    // `/issue` post-commit mint (a renewal landing mid-rotation) may have replaced the stored key
+    // since — denying only the route-read id would leave that replacement key live at the edge
+    // forever, invisible to every future revocation lever (account-wide denies enumerate
+    // license_grant, which the forced re-mint overwrites). Re-read the CURRENT id inside this tx
+    // and deny BOTH. The row cannot be locked here (`admin_write` is deliberately SELECT-only on
+    // license_grant, and Postgres locking clauses need UPDATE privilege), so a mint interleaving
+    // between this read and leg 2's forced re-mint remains a micro-window residual — full closure
+    // would need the deny and the mint in one lock scope, which the HTTP boundary forbids.
+    const current = await tx.query<{ license_id: string }>(
+      `SELECT license_id FROM license_grant WHERE account_id = $1 AND major = $2`,
+      [input.targetAccountId, input.major],
+    );
+    const denyIds = new Set([input.oldLicenseId]);
+    const liveId = current.rows[0]?.license_id;
+    if (liveId !== undefined) denyIds.add(liveId);
+    deniedLicenseIds = [...denyIds];
+    for (const licenseId of deniedLicenseIds) {
+      await recordLicenseRevocation(tx, {
+        licenseId,
+        accountId: input.targetAccountId,
+        adminActionId,
+        reason: input.reason ?? null,
+      });
+    }
+    // The FULL cross-tenant set as of this commit — republish-whole is the Worker artifact's shape.
+    fullDenySet = await readDenySet(tx);
+  });
+  // Leg 2 — the forced re-mint through the same admin-scoped `/issue` proxy reissue uses. A throw
+  // here leaves the old key denied (fail-safe: rotation is a compromised-key response, so deny
+  // without replacement beats replacement without deny); the operator retries and converges.
+  const minted = await deps.issue({
+    accountId: input.targetAccountId,
+    tier: input.tier,
+    major: input.major,
+    expiry: input.expiry,
+    rotate: true,
+  });
+  // Leg 3 — the queryable log half, only after both effects exist (mirrors reissue's log-after-
+  // proxy convention), then the WORM half post-commit.
+  await withAdminWrite(deps.db, (tx) =>
+    insertAdminActionLog(tx, {
+      id: adminActionId,
+      actorEmail: input.actorEmail,
+      targetAccountId: input.targetAccountId,
+      action: "license_rotate",
+      before: { major: input.major, licenseId: input.oldLicenseId },
+      after: {
+        major: input.major,
+        licenseId: minted.licenseId,
+        deniedLicenseIds,
+        reason: input.reason ?? null,
+      },
+    }),
+  );
+  const worm = await appendWorm(
+    deps,
+    input.targetAccountId,
+    "license_rotate",
+    input.actorEmail,
+    { major: input.major, licenseId: input.oldLicenseId },
+    {
+      major: input.major,
+      licenseId: minted.licenseId,
+      deniedLicenseIds,
+      reason: input.reason ?? null,
+    },
+  );
+  // Post-commit best-effort edge publish — identical contract to revokePurchaseAdmin's: the DB
+  // deny-set is already durable, so a publisher throw is surfaced as "failed", never rethrown.
+  let edgePublish: EdgePublishStatus = "skipped";
+  if (deps.publishDenySet !== undefined) {
+    try {
+      await deps.publishDenySet(fullDenySet);
+      edgePublish = "ok";
+    } catch {
+      edgePublish = "failed";
+    }
+  }
+  return {
+    targetAccountId: input.targetAccountId,
+    major: input.major,
+    oldLicenseId: input.oldLicenseId,
+    licenseId: minted.licenseId,
+    token: minted.token,
+    edgePublish,
     worm,
   };
 }
@@ -631,6 +910,7 @@ export async function firstMintLicenseAdmin(
   deps: AdminMutationDeps,
   input: FirstMintLicenseInput,
 ): Promise<FirstMintResult> {
+  await assertSystemModeActive(deps.db, "first-mint license");
   const minted = await deps.issue({
     accountId: input.targetAccountId,
     tier: FIRST_MINT_TIER,
@@ -705,6 +985,7 @@ export async function resendPurchaseEmailAdmin(
   deps: AdminMutationDeps,
   input: ResendPurchaseEmailInput,
 ): Promise<ResendPurchaseEmailResult> {
+  await assertSystemModeActive(deps.db, "resend purchase email");
   const orderId = input.orderId ?? `admin-resend-${new Date().toISOString()}`;
   await notifyPurchaseEmail(deps.db, resolveEmailer(), {
     accountId: input.targetAccountId,
@@ -802,6 +1083,7 @@ export async function revokePurchaseAdmin(
   deps: AdminMutationDeps,
   input: PurchaseRevokeInput,
 ): Promise<PurchaseRevokeResult> {
+  await assertSystemModeActive(deps.db, "revoke purchase");
   // The FULL cross-tenant deny-set as of THIS revoke's commit, captured inside the tx and published
   // post-commit (below). Assigned from the closure so the atomic post-revoke truth escapes.
   let fullDenySet: string[] = [];

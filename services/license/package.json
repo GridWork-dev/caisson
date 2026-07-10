@@ -20,6 +20,7 @@
     "start": "bun run src/deploy.ts"
   },
   "dependencies": {
+    "@caisson/alerting": "workspace:*",
     "@caisson/audit-worm": "workspace:*",
     "@caisson/billing": "workspace:*",
     "@caisson/billing-orchestration": "workspace:*",

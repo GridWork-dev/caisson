@@ -753,6 +753,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@caisson/ai-evals": "workspace:*",
         "@caisson/eslint-config": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
@@ -1285,6 +1286,21 @@
         "typescript": "catalog:",
       },
     },
+    "services/betterstack-adapter": {
+      "name": "@caisson/service-betterstack-adapter",
+      "version": "0.0.1",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "services/docs": {
       "name": "@caisson/service-docs",
       "version": "0.0.6",
@@ -1329,6 +1345,7 @@
       "name": "@caisson/service-license",
       "version": "0.0.6",
       "dependencies": {
+        "@caisson/alerting": "workspace:*",
         "@caisson/audit-worm": "workspace:*",
         "@caisson/billing": "workspace:*",
         "@caisson/billing-orchestration": "workspace:*",
@@ -1685,6 +1702,8 @@
     "@caisson/registry-schema": ["@caisson/registry-schema@workspace:packages/registry-schema"],
 
     "@caisson/retention-runner": ["@caisson/retention-runner@workspace:packages/retention-runner"],
+
+    "@caisson/service-betterstack-adapter": ["@caisson/service-betterstack-adapter@workspace:services/betterstack-adapter"],
 
     "@caisson/service-docs": ["@caisson/service-docs@workspace:services/docs"],
 

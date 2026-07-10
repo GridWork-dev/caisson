@@ -1,6 +1,6 @@
 // Stage 4 of the alerting pipeline (ADR-0135 + ADR-0151): multi-channel delivery behind ONE
-// `AlertChannel` port. Four network drivers (email/webhook/Slack/Telegram) plus a capture driver
-// for tests. Every network driver reads its endpoint/token from injected config (never a module
+// `AlertChannel` port. Five network drivers (email/webhook/Slack/Telegram/Discord) plus a capture
+// driver for tests. Every network driver reads its endpoint/token from injected config (never a module
 // constant), routes through `fetchWithTimeout`, and on a non-ok response throws a `@caisson/kernel`
 // typed error WITHOUT the response body (the same no-body-leak rule `@caisson/email`'s drivers follow) — then CATCHES that
 // itself so one channel failing never aborts the others (per-channel isolation). `deliverAll` adds
@@ -17,7 +17,7 @@ import {
 } from "@caisson/kernel";
 import { z } from "zod";
 import type { Emailer } from "@caisson/email";
-import type { AlertEvent } from "./types.ts";
+import type { AlertEvent, AlertSeverity } from "./types.ts";
 
 export interface DeliveryResult {
   channel: string;
@@ -187,6 +187,54 @@ export function createSlackChannel(config: SlackConfig): AlertChannel {
         return { channel: "slack", ok: true };
       } catch (err) {
         return { channel: "slack", ok: false, error: toErrorMessage(err) };
+      }
+    },
+  };
+}
+
+export const DiscordConfigSchema = strictObject({
+  webhookUrl: safeHttpsUrl,
+});
+export type DiscordConfig = z.infer<typeof DiscordConfigSchema>;
+
+/** Discord embed color per severity — sidebar accent, decimal (Discord's API wants an int, not
+ *  hex-string). info=blue, warning=amber, critical=red. */
+const DISCORD_SEVERITY_COLOR: Record<AlertSeverity, number> = {
+  info: 0x3498db,
+  warning: 0xf39c12,
+  critical: 0xe74c3c,
+};
+
+/** Discord embed `description` is capped at 4096 chars server-side; a longer body 400s the whole
+ *  webhook post rather than truncating for you. */
+const DISCORD_DESCRIPTION_LIMIT = 4096;
+
+export function createDiscordChannel(config: DiscordConfig): AlertChannel {
+  return {
+    name: "discord",
+    async deliver(event: AlertEvent): Promise<DeliveryResult> {
+      try {
+        await assertSafePublicUrlResolved(config.webhookUrl);
+        const res = await fetchWithTimeout(config.webhookUrl, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            embeds: [
+              {
+                title: event.title,
+                description: event.body.slice(0, DISCORD_DESCRIPTION_LIMIT),
+                color: DISCORD_SEVERITY_COLOR[event.severity],
+              },
+            ],
+          }),
+          redirect: "error", // see the webhook seam — no redirect past the SSRF-checked host (vuln-0004)
+        });
+        if (!res.ok) {
+          throw new InternalError("discord alert delivery failed");
+        }
+        return { channel: "discord", ok: true };
+      } catch (err) {
+        return { channel: "discord", ok: false, error: toErrorMessage(err) };
       }
     },
   };

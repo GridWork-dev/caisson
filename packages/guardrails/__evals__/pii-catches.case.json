@@ -1,0 +1,25 @@
+{
+  "eval": "pii-catches",
+  "promptVersionId": "00000000-0000-4000-8000-000000000002",
+  "promptRef": "guardrails/pii@offline",
+  "threshold": 1.0,
+  "scorers": ["catches-pii"],
+  "cases": [
+    {
+      "id": "obvious-multi-pii-caught",
+      "input": {
+        "text": "Contact jane.doe@example.com or 404-555-0100. SSN 123-45-6789. Card 4111 1111 1111 1111 expires soon."
+      },
+      "expected": {
+        "matches": "(?=.*\\[EMAIL\\])(?=.*\\[PHONE\\])(?=.*\\[SSN\\])(?=.*\\[CREDIT_CARD\\])"
+      }
+    },
+    {
+      "id": "boundary-email-in-code-block",
+      "input": {
+        "text": "Debug log:\n```\nconst contact = \"bob.dev@example.org\";\n```\nPlease check the config above."
+      },
+      "expected": { "matches": "\\[EMAIL\\]" }
+    }
+  ]
+}

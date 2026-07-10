@@ -23,8 +23,9 @@ import {
 
 /** Append-only version stamp — a plan-row change bumps this, never edits it in place (ADR-0006).
  *  2026-07-06.1: the developer rows gain `coversOwnedEntitlements: true` (ADR-0269).
- *  2026-07-07.1: adds the `priority-support` PLACEHOLDER plan row (ADR-0278/0288). */
-export const PRICEBOOK_VERSION = "2026-07-07.1";
+ *  2026-07-07.1: adds the `priority-support` PLACEHOLDER plan row (ADR-0278/0288).
+ *  2026-07-09.1: priority-support `creditsPerCycle` 100 → 1000 (Developer parity). */
+export const PRICEBOOK_VERSION = "2026-07-09.1";
 
 /** Billing cadence; an annual invoice grants the annual allotment once (ADR-0095). */
 export const planCadenceSchema = z.enum(["month", "year"]);
@@ -94,12 +95,13 @@ export const PLAN_BOOK: Record<string, PlanBookEntry> = {
   // is a SUPPORT-TIER id, never a package — @caisson/registry-schema's
   // NON_MODULE_ENTITLEMENT_IDS reserves it so the shared fail-closed expansion never bricks the
   // rest of a buyer's software entitlements over it (the exact risk that left this row unwired
-  // until now). `creditsPerCycle` is a nominal placeholder (the schema requires a positive integer;
-  // this plan's real value is the support role + response-time lane, not a credit allotment) —
-  // round and NON-FINAL like every other number in this book (SD-6).
+  // until now). `creditsPerCycle` is 1000 — Developer parity: this plan's real value is the
+  // support role + response-time lane, not a credit allotment, but matching the Developer plan's
+  // grant reads clean next to it on a pricing page. Still a PLACEHOLDER row like the rest of this
+  // section (SD-6): the operator swaps the key for the real Paddle id at graduation.
   price_priority_support_annual_PLACEHOLDER: {
     planTag: "priority_support",
-    creditsPerCycle: asCredits(100),
+    creditsPerCycle: asCredits(1000),
     cadence: "year",
     entitlements: ["priority-support"],
   },

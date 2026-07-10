@@ -47,7 +47,7 @@ jobs:
             echo "armed=false" >> "$GITHUB_OUTPUT"
             echo "::notice::aeo-probe is inert — OPENROUTER_API_KEY not set; skipping (green no-op)"
           fi
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         if: steps.guard.outputs.armed == 'true'
         with:
           # Built-in GITHUB_TOKEN for the commit-back (no stored PAT — same posture as

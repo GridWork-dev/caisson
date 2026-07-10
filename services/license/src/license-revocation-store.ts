@@ -62,14 +62,49 @@ export async function recordLicenseRevocations(
   );
   const licenseIds = grants.rows.map((row) => row.license_id);
   for (const licenseId of licenseIds) {
-    await tx.query(
-      `INSERT INTO license_revocation (license_id, account_id, admin_action_id, reason)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (license_id) DO NOTHING`,
-      [licenseId, input.accountId, input.adminActionId, input.reason ?? null],
-    );
+    await recordLicenseRevocation(tx, {
+      licenseId,
+      accountId: input.accountId,
+      adminActionId: input.adminActionId,
+      reason: input.reason ?? null,
+    });
   }
   return licenseIds;
+}
+
+export interface RecordLicenseRevocationInput {
+  /** The ONE license id being denied at the edge (key rotation: the OLD key). */
+  licenseId: string;
+  /** The account holding it (audit column; the deny-set itself keys on license_id alone). */
+  accountId: string;
+  /** The `admin_action_log.id` of the driving action (FK-by-value, audit link). */
+  adminActionId: string;
+  /** Operator-supplied cause — null when absent. */
+  reason?: string | null;
+}
+
+/**
+ * Record ONE license id into the edge deny-set truth — the key-ROTATION revoke: unlike
+ * {@link recordLicenseRevocations} (which denies EVERY license the account holds, the fraud/ToS
+ * account-kill posture), a rotation denies exactly the key being rotated away, so the buyer's
+ * other majors' licenses stay live. Idempotent (`ON CONFLICT (license_id) DO NOTHING` on the PK) —
+ * a retried rotation re-denies as a no-op. Must run inside `withAdminWrite(db, …)`.
+ */
+export async function recordLicenseRevocation(
+  tx: TenantExecutor,
+  input: RecordLicenseRevocationInput,
+): Promise<void> {
+  await tx.query(
+    `INSERT INTO license_revocation (license_id, account_id, admin_action_id, reason)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (license_id) DO NOTHING`,
+    [
+      input.licenseId,
+      input.accountId,
+      input.adminActionId,
+      input.reason ?? null,
+    ],
+  );
 }
 
 /**

@@ -24,6 +24,11 @@ import {
   isNpmPath,
   loadTarballSidecar,
 } from "./npm-routes";
+import {
+  type RateLimiterBinding,
+  rateLimit,
+  rateLimitedResponse,
+} from "./rate-limit";
 import { makeRevocationDenySet } from "./revocation-list";
 import {
   REVOCATION_OBJECT_KEY,
@@ -49,6 +54,11 @@ interface DeployEnv {
   REVOCATIONS_PUT_TOKEN?: string;
   /** R2 tarball binding for the npm surface (ADR-0223); absent → npm tarball routes 503. */
   TARBALLS?: NpmEnv["TARBALLS"];
+  /** Native Cloudflare Rate Limiting bindings (CAISSON-55, wrangler.toml `[[ratelimits]]`) — one
+   *  independent namespace per route class. Absent → that class's checks fail open (rate-limit.ts). */
+  RATE_LIMIT_CATALOG?: RateLimiterBinding;
+  RATE_LIMIT_NPM_PACKUMENT?: RateLimiterBinding;
+  RATE_LIMIT_TARBALL?: RateLimiterBinding;
 }
 interface ExecutionContextLike {
   waitUntil(promise: Promise<unknown>): void;
@@ -96,11 +106,11 @@ const npmHandler = createNpmHandler(
 );
 
 export default {
-  fetch(
+  async fetch(
     request: Request,
     env: DeployEnv = {},
     ctx?: ExecutionContextLike,
-  ): Response {
+  ): Promise<Response> {
     boundEnv = env;
     // Stale-while-revalidate: kick a background refresh, NEVER await it before serving — a slow/failing
     // deny-set fetch must not add latency or block the response (fail-open).
@@ -110,17 +120,29 @@ export default {
     // path + PUT only, bearer-gated + Zod-strict inside, 404 until the secret + binding are
     // provisioned. Everything else on this Worker stays read-only.
     if (isRevocationPutRequest(request.method, pathname)) {
-      return handleRevocationPut(request, env) as unknown as Response;
+      return handleRevocationPut(request, env);
     }
     if (isNpmPath(pathname)) {
-      // The npm surface is async (R2 tarball reads); Cloudflare awaits a returned promise. The
-      // untouched deploy-entry.test.ts only exercises the sync index path below, which keeps the
-      // `: Response` contract — the npm branch hands back a Promise the workerd runtime awaits.
-      return npmHandler(
-        request,
-        env.TARBALLS === undefined ? undefined : { TARBALLS: env.TARBALLS },
-      ) as unknown as Response;
+      // The npm surface's OWN route-class rate limits (packument vs tarball, CAISSON-55) are wired
+      // inside createNpmHandler itself — see npm-routes.ts, which distinguishes the two before its
+      // entitlement gate. Both bindings ride the same env object as TARBALLS; all three are optional
+      // and independently fail open (rate-limit.ts) when not yet provisioned at DEPLOY.
+      return npmHandler(request, {
+        TARBALLS: env.TARBALLS,
+        RATE_LIMIT_NPM_PACKUMENT: env.RATE_LIMIT_NPM_PACKUMENT,
+        RATE_LIMIT_TARBALL: env.RATE_LIMIT_TARBALL,
+      });
     }
+    // Catalog-class rate limit (CAISSON-55), BEFORE the entitlement gate that `handler(request)` runs:
+    // wired here rather than inside handler.ts's createIndexHandler because that function is a widely
+    // reused SYNC pure function (handler.test.ts + handler-filter.test.ts drive it directly, ~50 call
+    // sites) — making it async to await a per-request binding call would rewrite every one of those
+    // call sites for no behavioral gain, since this dispatcher is the ONE place every catalog request
+    // already passes through before reaching it. Fail-open (missing binding / limiter error) is
+    // rate-limit.ts's job; a genuine deny short-circuits before the (comparatively expensive)
+    // entitlement resolve + index filtering below ever runs.
+    const rl = await rateLimit(env.RATE_LIMIT_CATALOG, request);
+    if (!rl.ok) return rateLimitedResponse();
     return handler(request);
   },
 };

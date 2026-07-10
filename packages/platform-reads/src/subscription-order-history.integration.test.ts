@@ -8,6 +8,7 @@ import {
   cancelSubscriptionStatus,
   insertOrderRecord,
   ORDER_RECORD_SCHEMA_SQL,
+  ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   refundOrderRecord,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
   upsertSubscriptionStatus,
@@ -22,6 +23,7 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
 });
 
 afterAll(async () => {
@@ -80,15 +82,21 @@ describe("readSubscriptionStatuses (ADR-0293 G13/G14)", () => {
     expect(rows[0]?.status).toBe("canceled");
   });
 
-  test("cancelSubscriptionStatus on an unknown subscription id is a no-op, never throws", async () => {
+  test("cancelSubscriptionStatus with no prior row writes a canceled TOMBSTONE, never throws", async () => {
+    // The tombstone (empty price/plan sentinels) is the cancel-before-grant ordering-race fix:
+    // a late granting invoice's liveness check must find the cancel even when the subscription
+    // never granted. Every "owned"/cancel-control consumer filters on status === 'active', so a
+    // tombstone never renders as a plan nor resolves a price.
     await withTenant(tp.pg, "acct_sub_noop", (tx) =>
       cancelSubscriptionStatus(tx, "acct_sub_noop", "sub_never_existed"),
     );
-    expect(
-      await withTenant(tp.pg, "acct_sub_noop", (tx) =>
-        readSubscriptionStatuses(tx, "acct_sub_noop"),
-      ),
-    ).toEqual([]);
+    const rows = await withTenant(tp.pg, "acct_sub_noop", (tx) =>
+      readSubscriptionStatuses(tx, "acct_sub_noop"),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.status).toBe("canceled");
+    expect(rows[0]?.subscriptionId).toBe("sub_never_existed");
+    expect(rows[0]?.priceId).toBe(""); // sentinel — can never collide with a real price id
   });
 
   test("cancel is scoped by account — cannot flip another account's row of the same subscription id", async () => {
@@ -155,6 +163,12 @@ describe("readOrderRecords (ADR-0293 G26)", () => {
         amount: 49_900,
         currency: "usd",
       }),
+    );
+    // Two same-instant inserts tie on created_at (the reader's only sort key) and the tie order
+    // is unspecified — backdate the first row so "newest first" is deterministic to assert.
+    await tp.query(
+      `UPDATE order_record SET created_at = created_at - interval '1 minute'
+        WHERE source_event_id = 'in_ord_1'`,
     );
     await withTenant(tp.pg, acct, (tx) =>
       insertOrderRecord(tx, {

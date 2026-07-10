@@ -13,6 +13,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL,
   ADMIN_ACTION_LOG_SCHEMA_SQL,
   ADMIN_MUTATION_PROVISION_SQL,
   ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,
@@ -101,6 +102,12 @@ async function main(): Promise<void> {
       ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,
     ],
     ["admin_action_log DDL", ADMIN_ACTION_LOG_SCHEMA_SQL],
+    // The action-enum CHECK widening (idempotent DROP IF EXISTS -> ADD): a LIVE DB skips the DDL
+    // step above on 42P07, so a newly registered action only reaches the live CHECK through this.
+    [
+      "admin_action_log action CHECK widening",
+      ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL,
+    ],
     ["audit-chain table (audit-worm 0001)", auditChainMigrationSql()],
     ["admin mutation provision", ADMIN_MUTATION_PROVISION_SQL],
     [

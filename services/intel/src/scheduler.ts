@@ -5,6 +5,8 @@
 // a watcher whose fetch fan-out ever runs longer than its own cadence skips the next tick rather
 // than piling up concurrent runs against the same watch_state keys (a concurrent read-modify-write
 // race, and — for the error watcher specifically — duplicate Telegram/Linear alerts).
+import { createInMemoryAuditSink, deliverImmediate } from "@caisson/alerting";
+import type { AlertChannel, AlertEvent } from "@caisson/alerting";
 import { enrichFindings } from "./llm.ts";
 import { logger } from "./logger.ts";
 import type { Config } from "./config.ts";
@@ -214,15 +216,65 @@ export function createOverlapGuard(
   };
 }
 
+/** Builds the `intel.watcher_failed` alert event for one failed tick. One `dedupeKey` per watcher
+ *  NAME (not per-failure) — meaningful only if this is ever fed through `processAlert` with a real
+ *  persisted incident store; `alertWatcherFailure` below uses `deliverImmediate` (no such store),
+ *  so today every failing tick re-alerts. That's the deliberate default for an unattended daemon:
+ *  never silently going quiet on a real, ongoing outage (see `deliverImmediate`'s own doc). */
+export function watcherFailedEvent(
+  watcherName: string,
+  message: string,
+  nowMs: number,
+): AlertEvent {
+  return {
+    id: crypto.randomUUID(),
+    type: "intel.watcher_failed",
+    severity: "critical",
+    tenantId: "operator",
+    recipient: "operator",
+    dedupeKey: `intel.watcher_failed:${watcherName}`,
+    title: `Watcher failed: ${watcherName}`,
+    body: message.slice(0, 5000),
+    createdAt: nowMs,
+  };
+}
+
+/** Deliver a watcher-failure alert to the configured channels (CAISSON-53). An empty/absent
+ *  channel list is a harmless no-op (`deliverAll` on `[]`). Never throws — the caller is a
+ *  fire-and-forget scheduler tick that must never crash the daemon on an alerting hiccup. */
+export async function alertWatcherFailure(
+  watcherName: string,
+  message: string,
+  channels: readonly AlertChannel[],
+  now: () => number = Date.now,
+): Promise<void> {
+  try {
+    await deliverImmediate(
+      watcherFailedEvent(watcherName, message, now()),
+      channels,
+      createInMemoryAuditSink(),
+      new Date(now()),
+    );
+  } catch (err) {
+    logger.error("failed to alert on watcher failure", {
+      watcher: watcherName,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 /** Start one interval timer per watcher at its configured cadence. Each watcher also fires once
  *  immediately on boot so a fresh deploy doesn't wait a full cadence for its first signal. Every
  *  fire-and-forget call carries a `.catch` — belt-and-suspenders on top of `runWatcher`'s own
  *  never-throws guarantee and `createOverlapGuard`'s try/finally, so a timer callback can never
- *  become an unhandled rejection regardless of what changes upstream. */
+ *  become an unhandled rejection regardless of what changes upstream. `alertChannels` (CAISSON-53,
+ *  default `[]` — no alert, today's behavior) fires an `intel.watcher_failed` alert on either
+ *  failure path: an `"error"` run summary, or the outer belt-and-suspenders `.catch`. */
 export function startScheduler(
   config: Config,
   store: Store,
   fetchImpl: Fetcher,
+  alertChannels: readonly AlertChannel[] = [],
 ): SchedulerHandle {
   const guardedRun = createOverlapGuard(config, store, fetchImpl);
 
@@ -234,13 +286,23 @@ export function startScheduler(
             "watcher tick skipped — the previous run is still in flight",
             { watcher: watcher.name },
           );
+          return;
+        }
+        if (result.status === "error") {
+          void alertWatcherFailure(
+            watcher.name,
+            result.error ?? "unknown error",
+            alertChannels,
+          );
         }
       })
       .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
         logger.error("scheduler tick rejected unexpectedly", {
           watcher: watcher.name,
-          err: err instanceof Error ? err.message : String(err),
+          err: message,
         });
+        void alertWatcherFailure(watcher.name, message, alertChannels);
       });
   }
 

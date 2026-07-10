@@ -11,7 +11,8 @@
       "registry",
       "services/license",
       "services/docs",
-      "services/intel"
+      "services/intel",
+      "services/betterstack-adapter"
     ],
     "catalog": {
       "zod": "^3.23.8",
@@ -44,8 +45,8 @@
     "build": "turbo run build --no-daemon",
     "lint": "turbo run lint --no-daemon",
     "test": "turbo run test --no-daemon",
-    "test:live": "turbo run test:live --no-daemon",
-    "test:live:all": "turbo run test:live --no-daemon",
+    "test:live": "turbo run test:live --no-daemon --env-mode=loose",
+    "test:live:all": "turbo run test:live --no-daemon --env-mode=loose",
     "eval": "turbo run eval --no-daemon",
     "gate": "bun packages/kernel/src/gate.ts",
     "check": "turbo run build lint test --no-daemon && bun run gate",

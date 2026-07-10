@@ -42,6 +42,7 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
   ORDER_RECORD_SCHEMA_SQL,
+  ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   RENEWAL_EXTENSION_SCHEMA_SQL,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "@caisson/service-license";
@@ -150,6 +151,13 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
     sql: SUBSCRIPTION_STATUS_SCHEMA_SQL,
   },
   { name: "0019_order_record.sql", sql: ORDER_RECORD_SCHEMA_SQL },
+  // Post-extraction append (the first since the package was carved out): apps/site's own extras
+  // claimed 0020–0022 (see site-migrations.ts), so the shared chain resumes at 0023 — a
+  // sort-by-filename TAIL append either way, leaving every applied slot + checksum untouched.
+  {
+    name: "0023_order_record_subscription_link.sql",
+    sql: ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
+  },
 ];
 
 /**
@@ -157,14 +165,14 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
  * (apps/site's two `ask_ai_*` migrations), combined into ONE array so `assembleMigrations` sorts them
  * together by filename — same slug, same shape, as the pre-extraction `platformPackage()`.
  *
- * `extra` entries' `name`s must NOT collide with `0001`–`0019` (the shared chain above) — a
- * duplicate name is two migrations racing for the same renumbered slot, not a merge. Effective
- * apply order is `assembleMigrations`'s sort-by-filename over the COMBINED array, not this
- * function's array-position: an `extra` entry's numeric prefix decides where it lands, not where
- * it sits in the array you pass in (apps/site/lib/deploy-migrate.ts deliberately uses `0011`/`0012`
- * to reproduce their pre-extraction slot — see its own module doc). A caller with no historical
- * slot to preserve should use `0020_*.sql` and up, landing after the shared chain's own
- * `0019_order_record.sql` (apps/site/lib/db.ts does this).
+ * `extra` entries' `name`s must NOT collide with the shared chain's own names above (`0001`–`0019`
+ * plus `0023`) — a duplicate name is two migrations racing for the same renumbered slot, not a
+ * merge. Effective apply order is `assembleMigrations`'s sort-by-filename over the COMBINED array,
+ * not this function's array-position: an `extra` entry's numeric prefix decides where it lands, not
+ * where it sits in the array you pass in (apps/site/lib/deploy-migrate.ts deliberately uses
+ * `0011`/`0012` to reproduce their pre-extraction slot — see its own module doc). apps/site's
+ * extras have since claimed `0020`–`0022`; a caller with no historical slot to preserve should use
+ * `0024_*.sql` and up, landing after the shared chain's `0023_order_record_subscription_link.sql`.
  */
 export function platformMigrationsPackage(
   extra: readonly MigrationFile[] = [],
