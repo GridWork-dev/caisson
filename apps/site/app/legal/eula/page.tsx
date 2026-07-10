@@ -15,7 +15,7 @@ export default function EulaPage() {
       {/* Page header */}
       <Section eyebrow="Legal" title="End User License Agreement" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
-          Last updated: 27 June 2026. The binding Commercial License Agreement
+          Last updated: 10 July 2026. The binding Commercial License Agreement
           (&ldquo;EULA&rdquo;) governing your purchase and use of Caisson
           software.
         </p>
@@ -82,6 +82,36 @@ export default function EulaPage() {
           <li style={prose.li}>
             <strong>&ldquo;Your Products&rdquo;</strong> means the products or
             services you build using the Software.
+          </li>
+          <li style={prose.li}>
+            <strong>&ldquo;Affiliate&rdquo;</strong> means an entity that
+            controls, is controlled by, or is under common control with you,
+            where &ldquo;control&rdquo; means ownership of more than fifty
+            percent (50%) of the voting interests of the entity or the power to
+            direct its management.
+          </li>
+          <li style={prose.li}>
+            <strong>&ldquo;Continuity Event&rdquo;</strong> means the first to
+            occur of any of: (i) Caisson publicly and formally announces the
+            discontinuation or end-of-life of the Software or of the commercial
+            Caisson product line as a whole; (ii) for a continuous period of
+            twelve (12) months, Caisson fails to make available to its licensees
+            generally any security patch or critical corrective update for the
+            Software despite at least one publicly disclosed vulnerability or
+            defect materially affecting the Software remaining unremediated
+            during that period, and no successor has assumed responsibility for
+            doing so; (iii) Caisson becomes insolvent, ceases business
+            operations, makes a general assignment for the benefit of creditors,
+            or a bankruptcy, receivership, or dissolution proceeding is
+            commenced against it and is not dismissed within ninety (90) days;
+            or (iv) Caisson is acquired, or its rights in the Software are sold
+            or transferred, and the acquirer or successor does not, within
+            ninety (90) days of the transaction, assume Caisson&rsquo;s
+            obligations under this Agreement (including the Vendor-continuity
+            Section) in writing. A Continuity Event is not triggered by the
+            lapse or non-renewal of your own updates window or Updates
+            Subscription; clause (ii) concerns availability to licensees
+            generally, not to you individually.
           </li>
         </ul>
       </Section>
@@ -239,8 +269,99 @@ export default function EulaPage() {
         </p>
         <p style={prose.paragraph}>
           Sections that by their nature should survive termination — including
-          Disclaimer of warranties, Limitation of liability, Indemnification,
-          Intellectual property, Confidentiality, and Governing law — survive.
+          Vendor continuity and self-maintenance, Disclaimer of warranties,
+          Limitation of liability, Indemnification, Intellectual property,
+          Confidentiality, and Governing law — survive.
+        </p>
+      </Section>
+
+      {/* 6a. Vendor continuity & self-maintenance (ADR-0276/0282; polish pass approved 2026-07-10) */}
+      <Section
+        eyebrow="Continuity"
+        title="Vendor continuity and self-maintenance"
+      >
+        <p style={prose.paragraph}>
+          A Continuity Event does not terminate, suspend, or diminish your
+          perpetual license. On and after a Continuity Event, the license
+          granted under License grant, above, continues in full force for the
+          Software and any versions already delivered to you, and for the
+          modules and bundles in your Entitlement; the offline verification
+          described under Entitlement and offline verification, above, continues
+          to function without dependence on any Caisson-operated service; and
+          your right to build, operate, and distribute Your Products is
+          unaffected. Caisson will not disable, revoke, or expire a validly
+          issued Entitlement by reason of a Continuity Event.
+        </p>
+        <p style={prose.paragraph}>
+          So that a Continuity Event cannot strand your continued secure
+          operation of the Software, and effective automatically on and for as
+          long as a Continuity Event subsists, Caisson additionally grants you,
+          under the same perpetual, non-exclusive, worldwide terms:
+        </p>
+        <ul style={prose.list}>
+          <li style={prose.li}>
+            <strong>Self-maintenance.</strong> The right to modify, fork, and
+            patch the Software as delivered to you &mdash; including for
+            security, compatibility, and continued operation &mdash; and to
+            engage third-party contractors, bound by confidentiality obligations
+            at least as protective as this Agreement, to do so on your behalf.
+          </li>
+          <li style={prose.li}>
+            <strong>Internal continuity copies.</strong> A waiver of the
+            redistribution restriction under Restrictions, above, solely as to
+            copies of the Software shared within your own organization, your
+            Affiliates, and contractors engaged under the preceding item, and
+            solely for self-maintenance and continued internal use. External
+            redistribution, resale, sublicensing, publication, or provision of
+            the Software to any other third party as a kit remains prohibited
+            without exception.
+          </li>
+          <li style={prose.li}>
+            <strong>Self-hosting of delivery.</strong> The right to host, on
+            infrastructure you control, copies of the Software and of any
+            versions already delivered to you that you would otherwise obtain
+            from <code className="mono">registry.caisson.sh</code>, so that
+            continued installation and deployment do not depend on any
+            Caisson-operated registry or service.
+          </li>
+        </ul>
+        <p style={prose.paragraph}>
+          If a Continuity Event is cured (including by a successor&rsquo;s
+          assumption), the additional rights above terminate prospectively only:
+          modifications made, copies shared, and hosting established during the
+          Continuity Event remain licensed as exercised.
+        </p>
+        <p style={{ marginTop: "var(--cs-space-5)", ...prose.paragraph }}>
+          For the avoidance of doubt, a Continuity Event does not grant, revive,
+          or continue: (a) any right to use the Caisson name, wordmark, glyph,
+          or other marks, which remain governed by Intellectual property, above;
+          (b) any obligation of Caisson to provide future updates, new versions,
+          security patches, support, or services &mdash; the rights above are
+          self-help rights, not a continuation of any Caisson service; (c) any
+          updates window or Updates Subscription, neither of which is extended,
+          renewed, or reinstated by a Continuity Event; (d) any warranty &mdash;
+          the disclaimers under Disclaimer of warranties and the limitations
+          under Limitation of liability survive a Continuity Event unchanged and
+          apply to any exercise of the rights in this Section; or (e) any right
+          of access to Caisson source, versions, or Confidential Information
+          beyond what was actually delivered to you before the Continuity Event;
+          Caisson has no obligation to escrow or deliver anything further.
+        </p>
+        <p style={prose.paragraph}>
+          Any successor to Caisson &mdash; by merger, acquisition, asset sale,
+          bankruptcy transfer, or otherwise &mdash; takes the Software subject
+          to this Section. This Section runs with Caisson&rsquo;s rights in the
+          Software and binds Caisson&rsquo;s successors and assigns; Caisson
+          shall make any assignment or transfer of its rights in the Software
+          expressly subject to this Section. The parties intend that this
+          Agreement is a license of &ldquo;intellectual property&rdquo; as
+          defined in Section 101(35A) of the U.S. Bankruptcy Code, and that you
+          retain the rights of a licensee under Section 365(n), including the
+          right to retain and use the Software as delivered. If a successor
+          assumes this Agreement (including this Section) in writing within the
+          period stated in clause (iv) of the definition of Continuity Event, no
+          Continuity Event occurs by reason of that transaction and this
+          Agreement continues in effect unchanged.
         </p>
       </Section>
 
