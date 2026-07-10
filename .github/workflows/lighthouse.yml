@@ -1,12 +1,12 @@
 name: lighthouse-ci
-# CWV + a11y audit (ADR-0079 §6, enforcement hardened by ADR-0307).
+# CWV + a11y audit (ADR-0079 §6, enforcement hardened by ADR-0309).
 #
-# RE-ARMED 2026-07-09 (ADR-0307): collection retargeted at the live Railway origin per the
+# RE-ARMED 2026-07-09 (ADR-0309): collection retargeted at the live Railway origin per the
 # deploy-runbook C.4/C.6 re-arm note — the old `staticDistDir: "out"` collection died with the
 # ADR-0114 flip to `output: 'standalone'`. Assertions are now ERROR-level and the job no longer
-# sets continue-on-error: a budget miss is a red run (ADR-0307: "a red run, not a shrug").
+# sets continue-on-error: a budget miss is a red run (ADR-0309: "a red run, not a shrug").
 #
-# Stays manual-dispatch ONLY — deliberately NOT a required PR check (ADR-0307 rejected the
+# Stays manual-dispatch ONLY — deliberately NOT a required PR check (ADR-0309 rejected the
 # required-gate option: no new flaky gate the week before launch). Dispatch it against prod after
 # a deploy as wave evidence; override `url` to point at any origin.
 on:

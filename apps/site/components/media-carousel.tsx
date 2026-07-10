@@ -12,7 +12,7 @@ import type { ComponentKey, MediaSlide } from "@/lib/media-manifest";
 
 import styles from "./media-carousel.module.css";
 
-// The `component` slides (ADR-0306 full-depth) — each a real kit/module surface rendered live. All
+// The `component` slides (ADR-0308 full-depth) — each a real kit/module surface rendered live. All
 // are client-only (ssr: false) so the commercial-tier trees never bloat the shared bundle, and lazy
 // so nothing loads until its slide renders. Keyed by ComponentKey so the manifest stays the single
 // source of which module shows which surface.

@@ -1892,7 +1892,7 @@ injection ruleset's `enabled=false` — `auto_install=false` alone was proven in
 terraform pins both, PR #195) and armed the prod client env for Turnstile + dashboard PostHog
 (build ARGs + PostHog CSP origins, PR #195).
 
-## Closed by the 2026-07-09 Kickoff-I scope-lock fork round (operator-locked → ADR-0304..0307)
+## Closed by the 2026-07-09 Kickoff-I scope-lock fork round (operator-locked → ADR-0306..0309)
 
 Kickoff I opened with the mandated scope-lock sitting: seven questions in two AskUserQuestion
 rounds over the candidate scope, grounded in a five-reader recon (residual board · governing
@@ -1901,17 +1901,17 @@ redirected the concept class itself — **not an authored object/diagram scene, 
 reactive background field**. All seven answers locked:
 
 - **Concept → depth-fog lattice field** (ambient instanced grid receding into fog, scan-line
-  sweep, pointer parallax — **ADR-0304**, amends ADR-0104's authored-scene preference).
+  sweep, pointer parallax — **ADR-0306**, amends ADR-0104's authored-scene preference).
 - **Fallback → poster-first, idle hydrate** (SSR poster always; canvas only ≥1024px + no
-  reduced-motion + post-LCP idle; mobile never downloads — ADR-0304).
+  reduced-motion + post-LCP idle; mobile never downloads — ADR-0306).
 - **Budget → ≤130KB gzip, three.js core only** (no R3F/drei; home-route-only lazy chunk;
-  `three` admitted as the repo's first heavy visual dep — ADR-0304).
+  `three` admitted as the repo's first heavy visual dep — ADR-0306).
 - **Motion scope → sitewide pass** (card-viewer `<dialog>` open/close + Reveal section
-  variants + micro-interactions, CSS-only — **ADR-0305**).
+  variants + micro-interactions, CSS-only — **ADR-0307**).
 - **Media batch → full-depth pass** (recon measured the F2 placeholder gap at ZERO — 21/22
   modules already carry authored diagrams; the batch becomes: every module carries all
-  applicable ADR-0290 slide kinds, honest-artifact floor governing — **ADR-0306**, F2 closes).
+  applicable ADR-0290 slide kinds, honest-artifact floor governing — **ADR-0308**, F2 closes).
 - **Perf gate → lighthouse assertions warn→error**, workflow stays manual-dispatch; wave
-  evidence = chunk ceiling + lighthouse dispatch + visual-harness delta (**ADR-0307**).
+  evidence = chunk ceiling + lighthouse dispatch + visual-harness delta (**ADR-0309**).
 - **Ride-alongs → compare mobile-table P3 + a fresh board sweep**; every surviving design row
-  ships or re-parks with a named trigger (ADR-0307).
+  ships or re-parks with a named trigger (ADR-0309).

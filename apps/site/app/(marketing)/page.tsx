@@ -120,7 +120,7 @@ export default function HomePage() {
       </Reveal>
 
       {/* ===== Evidence row — three controls, each with its receipt. Static header, cards cascade
-          in (stagger) — the first "showcase" beat of the authored rhythm (ADR-0305). ===== */}
+          in (stagger) — the first "showcase" beat of the authored rhythm (ADR-0307). ===== */}
       <Section
         eyebrow="What ships in the box"
         title="Prevention at the application layer — with the receipts."
@@ -165,7 +165,7 @@ export default function HomePage() {
       </Section>
 
       {/* ===== Honest-artifact bento (D4a) — the repo IS the artifact: real paths + real code. A
-          taller rise (distance 18) marks the big artifact block as its own beat (ADR-0305). ===== */}
+          taller rise (distance 18) marks the big artifact block as its own beat (ADR-0307). ===== */}
       <Reveal distance={18}>
         <Section
           eyebrow="The repository is the artifact"
@@ -178,7 +178,7 @@ export default function HomePage() {
 
       {/* ===== Architecture-isolation + data-lifecycle diagram pair (D4b) — drawn to real behaviour.
           Header fades; the two diagram blocks slide in laterally, staggered — a sideways beat that
-          sets "how it works" apart from the vertical rises around it (ADR-0305). ===== */}
+          sets "how it works" apart from the vertical rises around it (ADR-0307). ===== */}
       <Reveal direction="none">
         <Section
           eyebrow="How the guarantees hold"
@@ -347,7 +347,7 @@ export default function HomePage() {
 
       {/* ===== Bundles — featured-lead hierarchy, one accent. id="bundles" is the production
           door's target from the dual-door hero (D1). Six cards cascade in — the signature beat
-          of the authored rhythm (ADR-0305). ===== */}
+          of the authored rhythm (ADR-0307). ===== */}
       <Section
         id="bundles"
         eyebrow="Bundles"
@@ -511,7 +511,7 @@ export default function HomePage() {
       </Reveal>
 
       {/* ===== Named-engineer note — a real human supports it (ADR-0080 §2). A quiet fade, no rise
-          — the trust beat settles into focus rather than moving (ADR-0305). ===== */}
+          — the trust beat settles into focus rather than moving (ADR-0307). ===== */}
       <Reveal direction="none">
         <Section eyebrow="Who&rsquo;s behind it">
           <Card accent>
@@ -541,7 +541,7 @@ export default function HomePage() {
       </Reveal>
 
       {/* ===== Built in the open — the interim social-proof answer (ADR-0272 §4 / ADR-0273).
-          Static header, three check-cards cascade in (ADR-0305). ===== */}
+          Static header, three check-cards cascade in (ADR-0307). ===== */}
       <Section
         eyebrow="Built in the open"
         title="No logo wall yet. Here's what you can check instead."

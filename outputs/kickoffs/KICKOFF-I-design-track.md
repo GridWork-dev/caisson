@@ -1,6 +1,6 @@
 # Kickoff I — Design track: signature three.js piece · bespoke module media · polish backlog
 
-**Status: SCOPE LOCKED 2026-07-09 (ADR-0304..0307) — BUILD RUNNING.** Authored 2026-07-09 per
+**Status: SCOPE LOCKED 2026-07-09 (ADR-0306..0309) — BUILD RUNNING.** Authored 2026-07-09 per
 ADR-0299 lock 4 ("spec next, don't start"). The scope-lock fork round ran as the opening act
 (seven questions, two rounds; the operator redirected the concept class mid-round to an ambient
 reactive background field). Locks: depth-fog lattice field · poster-first idle-hydrate ·

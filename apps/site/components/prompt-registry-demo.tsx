@@ -1,6 +1,6 @@
 "use client";
 
-// The prompt-registry module's `component` media slide (ADR-0306 full-depth) — the module's own
+// The prompt-registry module's `component` media slide (ADR-0308 full-depth) — the module's own
 // shipped surface `@caisson/prompt-registry/ui` <PromptBrowser>, rendered live over sample append-
 // only prompt versions. The component derives the distinct-name / total-version headline, the role
 // chips, the variable count, and the first-message preview. Presentational still-frame — no filter/

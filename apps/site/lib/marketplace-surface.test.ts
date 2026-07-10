@@ -102,7 +102,7 @@ describe("media manifest", () => {
   });
 
   test("code-artifact slides render a real depth-page artifact and count toward the MEDIA facet", () => {
-    // prompt-registry now leads with its live component (ADR-0306), then its module-pages.ts
+    // prompt-registry now leads with its live component (ADR-0308), then its module-pages.ts
     // artifact, then its mechanism diagram — all three kinds present.
     const slides = mediaSlides("module", "prompt-registry");
     expect(slides.length).toBe(3);
@@ -118,7 +118,7 @@ describe("media manifest", () => {
     expect(entryHasMedia("module", "prompt-registry")).toBe(true);
   });
 
-  test("ADR-0306 full-depth: each module that ships a showable @caisson/ui surface leads with its component slide", () => {
+  test("ADR-0308 full-depth: each module that ships a showable @caisson/ui surface leads with its component slide", () => {
     const expected: Record<string, string> = {
       "ui-pro": "ui-pro",
       "audit-worm": "audit-worm",

@@ -5,10 +5,10 @@ import { useEffect, useRef } from "react";
 import styles from "./hero-field.module.css";
 import type { FieldHandle } from "./hero-field-scene";
 
-// The imperative client mount for the depth-fog lattice field (ADR-0304). It renders one transparent
+// The imperative client mount for the depth-fog lattice field (ADR-0306). It renders one transparent
 // <canvas> over the server poster and hydrates the three.js scene ONLY when every gate holds:
 //   viewport ≥1024px · prefers-reduced-motion: no-preference · browser idle after load.
-// The heavy scene is a dynamic import() — the ssr:false, home-route-only lazy chunk ADR-0304 §3
+// The heavy scene is a dynamic import() — the ssr:false, home-route-only lazy chunk ADR-0306 §3
 // budgets at ≤130KB gzip. Because the import fires only inside the passed gate, mobile and
 // reduced-motion visitors NEVER download it; they keep the poster. (dynamic import() is the
 // imperative-three equivalent of `next/dynamic({ ssr:false })`, which wraps React components — the
@@ -58,7 +58,7 @@ export function HeroFieldCanvas() {
       else handle.resume();
     }
     function onContextLost(e: Event) {
-      // GPU dropped the context — tear down to the poster (ADR-0304 resilience).
+      // GPU dropped the context — tear down to the poster (ADR-0306 resilience).
       e.preventDefault();
       handle?.dispose();
       handle = null;

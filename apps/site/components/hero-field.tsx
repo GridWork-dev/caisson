@@ -1,7 +1,7 @@
 import { HeroFieldCanvas } from "./hero-field-canvas";
 import styles from "./hero-field.module.css";
 
-// Homepage signature piece — the ambient depth-fog lattice field (ADR-0304, executes ADR-0078 §6).
+// Homepage signature piece — the ambient depth-fog lattice field (ADR-0306, executes ADR-0078 §6).
 // Server component: it ALWAYS renders the static poster (a CSS depth gradient + an inline-SVG lattice
 // suggestion + a waterline hairline), then layers the client canvas over it. The whole layer is
 // aria-hidden + pointer-events:none and absolutely positioned BEHIND the hero content, so it adds

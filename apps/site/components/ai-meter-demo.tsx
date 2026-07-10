@@ -1,6 +1,6 @@
 "use client";
 
-// The ai-meter module's `component` media slide (ADR-0306 full-depth) — the module's own shipped
+// The ai-meter module's `component` media slide (ADR-0308 full-depth) — the module's own shipped
 // surface `@caisson/ai-meter/ui` <UsageChart>, rendered live over sample metered-usage events. The
 // component owns the aggregation (a pure reduce), the per-model bar chart, and the credit/cost
 // rollup; credits + cost stay integer units end to end (ADR-0007). Presentational still-frame.

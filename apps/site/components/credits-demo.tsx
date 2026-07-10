@@ -1,6 +1,6 @@
 "use client";
 
-// The credits module's `component` media slide (ADR-0306 full-depth) — the real buyer-dashboard
+// The credits module's `component` media slide (ADR-0308 full-depth) — the real buyer-dashboard
 // credits surface: `@caisson/ui` <MetricStat>/<MoneyCell> balance tile + the append-only <LedgerList>
 // (integer credit units, ADR-0007). credits ships no /ui component of its own; this mirrors exactly
 // what the buyer's dashboard renders — source: apps/site/app/dashboard/credits/page.tsx. A
