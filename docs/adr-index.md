@@ -935,6 +935,12 @@ ADR-0088 numbering split held — no collision).
 | [0308](../knowledge/decisions/ADR-0308-marketplace-media-full-depth.md)  | Marketplace media full-depth pass: every module carries all applicable slide kinds (component + code-artifact + diagram where each genuinely exists); placeholder gap measured zero, F2 closes as "upgraded to standard-preferred kinds" | Frontend | accepted | refines 0290; honest floor 0082     |
 | [0309](../knowledge/decisions/ADR-0309-perf-gate-error-level.md)         | Lighthouse assertions warn→error (workflow stays manual-dispatch) · wave evidence = chunk ceiling + lighthouse dispatch + harness delta · ride-alongs: compare mobile P3 + board sweep, everything ships or re-parks named               | Infra    | accepted | hardens 0079 posture; refs 0306     |
 
+### Kickoff-K security round-2 (0310, 2026-07-10) - status `accepted`
+
+| ADR                                                               | Title                                                                                                                                                                                       | Domain   | Status   | Chain                              |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------- | ---------------------------------- |
+| [0310](../knowledge/decisions/ADR-0310-security-tooling-stack.md) | Repo-local four-layer security stack (SAST/supply-chain/DAST/AI-pentest) under `tools/security/` + local admin auth harness; Strix harness retired; records the semgrep.dev Pro egress sink | Security | accepted | replaces `tools/strix/`; refs 0283 |
+
 ---
 
 ## Accepted is not the same as shipped
