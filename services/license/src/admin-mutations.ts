@@ -51,6 +51,7 @@ import {
 } from "@caisson/registry-schema";
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { insertAdminActionLog, type AdminAction } from "./admin-audit-log.ts";
+import { insertAffiliateCode } from "./affiliate-store.ts";
 import { notifyPurchaseEmail, resolveEmailer } from "./email-notify.ts";
 import {
   acquireAccountBillingLock,
@@ -155,6 +156,21 @@ export interface AdminMutationDeps {
    * + the DB deny-set already committed and a retry would double-apply the money/entitlement change.
    */
   publishDenySet?: ((revokedLicenseIds: string[]) => Promise<void>) | undefined;
+  /**
+   * Mint an affiliate Paddle discount code (ADR-0315/0319). OPTIONAL — the affiliate lever is the
+   * only mutation that needs it, and every existing caller/test omits it. Injected because the
+   * actual `POST /discounts` call needs `PADDLE_API_KEY`, which lives on the license service, NOT in
+   * the admin blast radius: apps/admin wires this to an HTTP proxy to the license service's
+   * `/admin/affiliate/mint` endpoint (which holds the credential and calls the billing driver's
+   * `createDiscount`). Returns the `dsc_…` id + the code Paddle normalized/echoed. `undefined` ⇒ the
+   * mint mutation throws a clear "not configured" error (never silently no-ops).
+   */
+  mintDiscount?:
+    | ((input: {
+        code: string;
+        description: string;
+      }) => Promise<{ discountId: string; code: string }>)
+    | undefined;
 }
 
 // The real platform account-id shape (better-auth 32-char [A-Za-z0-9], ADR-0176) — NOT a UUID.
@@ -1219,6 +1235,114 @@ export async function revokePurchaseAdmin(
     purchaseId: input.purchaseId,
     ...result,
     edgePublish,
+    worm,
+  };
+}
+
+// --- Affiliate code mint (ADR-0315/0319) --------------------------------------------------------
+//
+// The affiliate lever mints a fixed 10%-buyer / 30%-commission Paddle discount code and registers
+// it so the commission report can join `order_record.discount_id → affiliate_code.discount_id`. It
+// is NOT per-account: an affiliate spans every buyer, so — like `system_mode` — it logs under a
+// synthetic target (`affiliate`) rather than a real account, and skips `assertAccountExists`.
+//
+// Split of duties (mirrors reissue's proxy-then-log shape): the EXTERNAL effect — Paddle
+// `createDiscount` — runs behind `deps.mintDiscount`, an injected proxy that holds `PADDLE_API_KEY`
+// on the license service, NEVER in the admin blast radius. The row registration
+// (`insertAffiliateCode`, `admin_write`) + the queryable audit-log row run in ONE `withAdminWrite`
+// transaction here, then the WORM half post-commit — because the `affiliate_code` INSERT is granted
+// to `admin_write`, which the license service (tenant `app` role) does not hold, so persistence must
+// live in the operator control plane. `commission_bps`/`discount_pct` are the LOCKED constants the
+// store stamps (never caller input); the mint takes only the affiliate's name + the redeemable code.
+
+/** The synthetic target the affiliate mint logs + WORM-anchors under (no real account, like `system`). */
+const AFFILIATE_MINT_TARGET = "affiliate";
+
+export const MintAffiliateCodeBody = z
+  .object({
+    affiliateName: z.string().trim().min(1).max(200),
+    // Paddle discount-code format: letters + digits, <=32 chars (case-insensitive; Paddle
+    // uppercases/normalizes at mint). A collision fails at Paddle BEFORE any row is written.
+    code: z
+      .string()
+      .trim()
+      .min(1)
+      .max(32)
+      .regex(
+        /^[A-Za-z0-9]+$/,
+        "code must be letters and digits only (Paddle discount-code format)",
+      ),
+  })
+  .strict();
+
+export type MintAffiliateCodeInput = z.infer<typeof MintAffiliateCodeBody> & {
+  actorEmail: string;
+};
+
+export interface MintAffiliateResult {
+  code: string;
+  discountId: string;
+  affiliateName: string;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the mint + registration committed). */
+  worm: WormStatus;
+}
+
+/**
+ * Mint + register an affiliate discount code (ADR-0315/0319). Order: (1) create the Paddle discount
+ * via the injected proxy (external effect first — a throw here writes no rows); (2) register the
+ * `affiliate_code` row + the queryable `admin_action_log` row atomically as `admin_write`; (3)
+ * append the WORM chain entry post-commit. A duplicate code is rejected by Paddle at step 1 (and by
+ * the table's UNIQUE at step 2 as a backstop), so a bad code never half-commits.
+ */
+export async function mintAffiliateCodeAdmin(
+  deps: AdminMutationDeps,
+  input: MintAffiliateCodeInput,
+): Promise<MintAffiliateResult> {
+  await assertSystemModeActive(deps.db, "mint affiliate code");
+  if (deps.mintDiscount === undefined) {
+    throw new ValidationError(
+      "affiliate minting is not configured (no discount proxy wired)",
+    );
+  }
+  const minted = await deps.mintDiscount({
+    code: input.code,
+    description: input.affiliateName,
+  });
+  await withAdminWrite(deps.db, async (tx) => {
+    await insertAffiliateCode(tx, {
+      code: minted.code,
+      discountId: minted.discountId,
+      affiliateName: input.affiliateName,
+      createdBy: input.actorEmail,
+    });
+    await insertAdminActionLog(tx, {
+      actorEmail: input.actorEmail,
+      targetAccountId: AFFILIATE_MINT_TARGET,
+      action: "affiliate_mint",
+      before: null,
+      after: {
+        code: minted.code,
+        discountId: minted.discountId,
+        affiliateName: input.affiliateName,
+      },
+    });
+  });
+  const worm = await appendWorm(
+    deps,
+    AFFILIATE_MINT_TARGET,
+    "affiliate_mint",
+    input.actorEmail,
+    null,
+    {
+      code: minted.code,
+      discountId: minted.discountId,
+      affiliateName: input.affiliateName,
+    },
+  );
+  return {
+    code: minted.code,
+    discountId: minted.discountId,
+    affiliateName: input.affiliateName,
     worm,
   };
 }

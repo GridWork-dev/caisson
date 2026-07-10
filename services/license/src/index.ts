@@ -126,6 +126,7 @@ export {
   ResendPurchaseEmailBody,
   RotateLicenseBody,
   SetSystemModeBody,
+  MintAffiliateCodeBody,
   grantEntitlementAdmin,
   revokeEntitlementAdmin,
   adjustCreditsAdmin,
@@ -134,6 +135,7 @@ export {
   firstMintLicenseAdmin,
   resendPurchaseEmailAdmin,
   rotateLicenseAdmin,
+  mintAffiliateCodeAdmin,
   readSystemMode,
   setSystemModeAdmin,
   wormAnchorAccount,
@@ -150,6 +152,7 @@ export type {
   ResendPurchaseEmailInput,
   RotateLicenseInput,
   SetSystemModeInput,
+  MintAffiliateCodeInput,
   EntitlementMutationResult,
   CreditAdjustResult,
   ReissueResult,
@@ -158,6 +161,7 @@ export type {
   ResendPurchaseEmailResult,
   RotateLicenseResult,
   SystemModeResult,
+  MintAffiliateResult,
   WormStatus,
 } from "./admin-mutations.ts";
 export {

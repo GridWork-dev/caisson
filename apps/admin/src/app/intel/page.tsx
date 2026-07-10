@@ -4,11 +4,17 @@ import { adminDbConfigured, readAdmin } from "@/lib/admin-db";
 import {
   INTEL_SEVERITIES,
   INTEL_SOURCES,
+  INTEL_STATUSES,
   isIntelSeverity,
   isIntelSource,
+  isIntelStatus,
   readIntelFindings,
+  type IntelFindingFilter,
   type IntelFindingRow,
+  type IntelStatus,
 } from "@/lib/intel-read";
+
+import { TriageControls } from "./triage-controls";
 
 // ADR-0286 — the admin intel findings page. The standing intel daemon (services/intel) has been
 // writing findings into the admin database's `intel` schema; until now nothing rendered them, so
@@ -21,14 +27,18 @@ function fmtDate(iso: string): string {
   return iso.replace("T", " ").slice(0, 19);
 }
 
-// intel.findings carries no "reviewed"/acknowledged column (services/intel/migrations/
-// 0001_intel_schema.sql: id, source, kind, severity, title, body, dedup_key, seen_count,
-// first_seen, last_seen, run_id, payload) — no mark-reviewed state is rendered here; the schema
-// does not support one yet.
+// ADR-0316 F5 — findings now carry a triage lifecycle (open → reviewed | dismissed). The page
+// DEFAULTS to `status=open` so triaged findings drop off the wall; the Status filter's "All" option
+// (empty value) shows every state. Per-row Review/Dismiss buttons POST to the dual-logged
+// review/dismiss routes.
 export default async function IntelPage({
   searchParams,
 }: {
-  searchParams: Promise<{ severity?: string; source?: string }>;
+  searchParams: Promise<{
+    severity?: string;
+    source?: string;
+    status?: string;
+  }>;
 }) {
   const params = await searchParams;
   const severity =
@@ -39,15 +49,30 @@ export default async function IntelPage({
     params.source !== undefined && isIntelSource(params.source)
       ? params.source
       : undefined;
+  // Default to `open` on first load (no status param); an explicit empty value ("All") clears it.
+  const rawStatus = params.status;
+  const status: IntelStatus | undefined =
+    rawStatus === undefined
+      ? "open"
+      : isIntelStatus(rawStatus)
+        ? rawStatus
+        : undefined;
+  // What the Status <select> shows: the resolved status, or "" ("All") when it was explicitly cleared.
+  const statusSelectValue =
+    rawStatus === undefined
+      ? "open"
+      : isIntelStatus(rawStatus)
+        ? rawStatus
+        : "";
 
+  const filter: IntelFindingFilter = {
+    ...(severity === undefined ? {} : { severity }),
+    ...(source === undefined ? {} : { source }),
+    ...(status === undefined ? {} : { status }),
+  };
   const configured = adminDbConfigured();
   const findings: IntelFindingRow[] = configured
-    ? await readAdmin((tx) =>
-        readIntelFindings(tx, {
-          ...(severity === undefined ? {} : { severity }),
-          ...(source === undefined ? {} : { source }),
-        }),
-      )
+    ? await readAdmin((tx) => readIntelFindings(tx, filter))
     : [];
 
   return (
@@ -91,13 +116,21 @@ export default async function IntelPage({
           value={source ?? ""}
           options={INTEL_SOURCES}
         />
+        <Select
+          name="status"
+          label="Status"
+          value={statusSelectValue}
+          options={INTEL_STATUSES}
+        />
         <button
           type="submit"
           style={{ alignSelf: "flex-end", padding: "6px 12px" }}
         >
           Filter
         </button>
-        {severity !== undefined || source !== undefined ? (
+        {severity !== undefined ||
+        source !== undefined ||
+        statusSelectValue !== "open" ? (
           <a
             href="/intel"
             className="muted"
@@ -115,17 +148,20 @@ export default async function IntelPage({
             "Source",
             "Title",
             "Seen",
-            "First seen",
             "Last seen",
+            "Status",
+            "Triage",
           ]}
+          textColumns={[0, 1, 3, 4, 5]}
           empty={configured ? "No findings match this filter." : "—"}
           rows={findings.map((f) => [
             f.severity,
             f.source,
             f.title,
             String(f.seenCount),
-            fmtDate(f.firstSeen),
             fmtDate(f.lastSeen),
+            f.status,
+            <TriageControls key={f.id} findingId={f.id} status={f.status} />,
           ])}
         />
       </Section>
@@ -174,14 +210,19 @@ function Table({
   head,
   rows,
   empty,
+  textColumns,
 }: {
   head: string[];
-  rows: string[][];
+  rows: ReactNode[][];
   empty: string;
+  /** Column indices rendered in the mono class (the rest render plain — e.g. Title + the Triage
+   *  control column). */
+  textColumns?: number[];
 }) {
   if (rows.length === 0) {
     return <p className="muted">{empty}</p>;
   }
+  const mono = new Set(textColumns ?? []);
   return (
     <table className="admin-table">
       <thead>
@@ -195,7 +236,7 @@ function Table({
         {rows.map((row, i) => (
           <tr key={i}>
             {row.map((cell, j) => (
-              <td key={j} className={j === 2 ? undefined : "mono"}>
+              <td key={j} className={mono.has(j) ? "mono" : undefined}>
                 {cell}
               </td>
             ))}

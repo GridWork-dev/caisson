@@ -230,6 +230,25 @@ export const EvalIssueBody = z
   })
   .strict();
 
+/**
+ * POST /admin/affiliate/mint body (ADR-0315/0319). `.strict()`. The admin-scoped, server-to-server
+ * affiliate mint: apps/admin's mint proxy sends the redeemable `code` + an internal `description`
+ * (the affiliate name); this endpoint holds `PADDLE_API_KEY` and calls the billing driver's
+ * `createDiscount` so that credential never enters the admin app. The 10%/30% program parameters are
+ * inlined in the driver (operator-locked, ADR-0319) — never taken from this body.
+ */
+export const AffiliateMintBody = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .min(1)
+      .max(32)
+      .regex(/^[A-Za-z0-9]+$/, "code must be letters and digits only"),
+    description: z.string().trim().min(1).max(200),
+  })
+  .strict();
+
 const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -632,6 +651,48 @@ export function createApp(
         return json({ error: "signing failed" }, 500);
       }
       return json({ token: outcome.token, licenseId: outcome.licenseId });
+    }
+
+    // ADR-0315/0319 — the admin-scoped affiliate discount mint. Server-to-server, bearer-gated (the
+    // apps/admin mint proxy holds the admin token), rate-limited under the same "issue" bucket. This
+    // endpoint holds `PADDLE_API_KEY` and calls the billing driver's `createDiscount` so that
+    // credential never enters the admin app; it does NOT touch the DB (the affiliate_code
+    // registration + dual-log run in apps/admin as `admin_write`). Returns only the minted
+    // `{ discountId, code }`.
+    if (pathname === "/admin/affiliate/mint") {
+      if (method !== "POST") return text("method not allowed", 405);
+      const limited = rateLimited("issue", req);
+      if (limited !== null) return limited;
+      if (!authorized(req, deps.token, deps.adminToken ?? ""))
+        return json({ error: "unauthorized" }, 401);
+      if (deps.provider === null || deps.provider.createDiscount === undefined)
+        return json({ error: "affiliate minting not configured" }, 501);
+
+      let raw: unknown;
+      try {
+        raw = await req.json();
+      } catch {
+        return json({ error: "invalid JSON body" }, 400);
+      }
+      const parsed = AffiliateMintBody.safeParse(raw);
+      if (!parsed.success) {
+        return json(
+          { error: "invalid mint request", issues: parsed.error.issues },
+          400,
+        );
+      }
+      try {
+        const minted = await deps.provider.createDiscount({
+          code: parsed.data.code,
+          description: parsed.data.description,
+        });
+        return json({ discountId: minted.discountId, code: minted.code });
+      } catch {
+        // createDiscount throws on any Paddle failure (bad key, duplicate code, network) — map to a
+        // generic 502 (never echo the provider's raw error). The admin orchestrator's proxy treats a
+        // non-2xx as a mint failure and writes no affiliate_code row.
+        return json({ error: "discount creation failed" }, 502);
+      }
     }
 
     // ADR-0274 §2 / ADR-0280 — the verified time-boxed eval-license surface. Both routes are
