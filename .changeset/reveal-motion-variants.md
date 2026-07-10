@@ -11,4 +11,4 @@ hidden-state rule reads, with fallbacks that reproduce the legacy fade-up-12 exa
 existing `<Reveal>` and `<Reveal delay={...}>` usages are unchanged. Pair `delay` across
 siblings (`delay={i * 70}`) for a staggered grid cascade. `prefers-reduced-motion` still
 forces the pre-reveal state visible (never stuck at `opacity: 0`), and the primitive stays
-gated on `.cs-js` so no-JS / pre-hydration renders content fully visible (ADR-0078 §6).
+gated on `.cs-js` so no-JS / pre-hydration renders content fully visible, per the design system's motion rules.
