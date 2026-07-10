@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Card, Faq, FeatureGrid, Icon, Reveal, Section } from "@/components";
+import { Card, Faq, Icon, Reveal, Section } from "@/components";
 
 import { MarketplaceSurface } from "@/components/marketplace-surface";
 import { bundlePagePath } from "@/components/marketplace";
@@ -92,47 +92,46 @@ export default function MarketplacePage() {
 
       {/* ===== The open base — "batteries included" under the prices (anxiety-relief beat;
           ADR-0094 open-core made visible at purchase time) ===== */}
-      <Reveal>
-        <Section
-          eyebrow="The open base"
-          title="Every bundle sits on this. So can you, for free."
-          lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license — source you own — but the base was always yours."
-          band="surface"
-        >
-          <FeatureGrid cols={3}>
-            {BASE_CAPABILITIES.map((c) => (
-              <Card key={c.title}>
-                <div className="cs-status">
-                  <Icon name={c.icon} size="lg" />
-                  {c.title}
-                </div>
-                <p
-                  className="cs-muted"
-                  style={{ marginTop: "var(--cs-space-3)" }}
-                >
-                  {c.body}
-                </p>
-                <p
-                  className="cs-footnote mono"
-                  style={{
-                    marginTop: "var(--cs-space-4)",
-                    overflowWrap: "anywhere",
-                  }}
-                >
-                  {c.packages.map((p) => `@caisson/${p}`).join(" · ")}
-                </p>
-              </Card>
-            ))}
-          </FeatureGrid>
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            {BASE_PACKAGES.length} packages under Apache-2.0.{" "}
-            <Link href="/legal/license" style={{ color: "var(--cs-link)" }}>
-              See the open / commercial split
-            </Link>
-            .
-          </p>
-        </Section>
-      </Reveal>
+      <Section
+        eyebrow="The open base"
+        title="Every bundle sits on this. So can you, for free."
+        lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license — source you own — but the base was always yours."
+        band="surface"
+      >
+        {/* Static header, base-capability cards cascade in (ADR-0305). */}
+        <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
+          {BASE_CAPABILITIES.map((c) => (
+            <Card key={c.title}>
+              <div className="cs-status">
+                <Icon name={c.icon} size="lg" />
+                {c.title}
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                {c.body}
+              </p>
+              <p
+                className="cs-footnote mono"
+                style={{
+                  marginTop: "var(--cs-space-4)",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {c.packages.map((p) => `@caisson/${p}`).join(" · ")}
+              </p>
+            </Card>
+          ))}
+        </Reveal>
+        <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
+          {BASE_PACKAGES.length} packages under Apache-2.0.{" "}
+          <Link href="/legal/license" style={{ color: "var(--cs-link)" }}>
+            See the open / commercial split
+          </Link>
+          .
+        </p>
+      </Section>
 
       {/* ===== FAQ ===== */}
       <script
