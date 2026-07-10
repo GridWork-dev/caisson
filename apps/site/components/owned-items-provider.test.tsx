@@ -1,18 +1,13 @@
 import { renderIntoJsdom } from "@caisson/testing";
 import { afterEach, describe, expect, mock, test } from "bun:test";
 
-import {
-  hasSessionCookie,
-  OwnedItemsProvider,
-  useOwnedItems,
-} from "./owned-items-provider";
+import { OwnedItemsProvider, useOwnedItems } from "./owned-items-provider";
 
-// Slice (b), ADR-0310: /api/cart/owned only fires when a better-auth session cookie is present.
-// `hasSessionCookie` is the load-bearing invariant — tested directly (pure, deterministic)
-// against the real cookie names better-auth mints, both bare and `__Secure-`-prefixed. The
-// component-level test proves the WIRING: no cookie in the jar (the default, and every marketing
-// page's steady state) means the effect never calls `fetch` at all — not "fetch and discard the
-// result", an actual skipped call.
+// The owned-items fetch is UNCONDITIONAL on mount (the session cookie is HttpOnly, so no
+// client-side signed-in check is possible) — the owned-items disable it feeds is the only guard
+// against a signed-in owner re-paying for something they already own. These tests pin that: the
+// fetch fires on mount, a good response fills `owned`, and a failure degrades to empty (stale Buy
+// button) rather than throwing.
 
 function Probe() {
   const owned = useOwnedItems();
@@ -25,44 +20,16 @@ afterEach(() => {
   global.fetch = originalFetch;
 });
 
-describe("hasSessionCookie", () => {
-  test("false when document.cookie carries no better-auth session cookie", () => {
-    const { document, unmount } = renderIntoJsdom(<div />);
-    try {
-      document.cookie = "";
-      document.cookie = "cs_theme=dark; path=/";
-      expect(hasSessionCookie()).toBe(false);
-    } finally {
-      unmount();
-    }
-  });
-
-  test("true for the bare cookie name", () => {
-    const { document, unmount } = renderIntoJsdom(<div />);
-    try {
-      document.cookie = "caisson.session_token=abc; path=/";
-      expect(hasSessionCookie()).toBe(true);
-    } finally {
-      unmount();
-    }
-  });
-
-  test("true for the __Secure- prefixed cookie name (production)", () => {
-    const { document, unmount } = renderIntoJsdom(<div />);
-    try {
-      // The `__Secure-` prefix is a browser-enforced cookie rule (RFC 6265bis, jsdom included):
-      // a prefixed cookie is silently dropped unless it also carries the `secure` attribute.
-      document.cookie = "__Secure-caisson.session_token=abc; path=/; secure";
-      expect(hasSessionCookie()).toBe(true);
-    } finally {
-      unmount();
-    }
-  });
-});
-
-describe("OwnedItemsProvider — session-cookie gate (ADR-0310 slice b)", () => {
-  test("no session cookie present: /api/cart/owned is never called", async () => {
-    const fetchSpy = mock(() => Promise.reject(new Error("should not fetch")));
+describe("OwnedItemsProvider", () => {
+  test("fetches /api/cart/owned on mount and fills owned from the response", async () => {
+    const fetchSpy = mock(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ owned: ["module:audit-worm"] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
     global.fetch = fetchSpy as unknown as typeof fetch;
 
     const { document, act, unmount } = renderIntoJsdom(
@@ -71,11 +38,29 @@ describe("OwnedItemsProvider — session-cookie gate (ADR-0310 slice b)", () => 
       </OwnedItemsProvider>,
     );
     try {
-      // A fresh renderIntoJsdom window starts with an empty cookie jar — the signed-out steady
-      // state — and the effect has already run synchronously by the time we get here.
-      document.cookie = "";
       await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
-      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]?.[0]).toBe("/api/cart/owned");
+      expect(document.querySelector('[data-testid="owned"]')?.textContent).toBe(
+        "module:audit-worm",
+      );
+    } finally {
+      unmount();
+    }
+  });
+
+  test("a failed fetch degrades to empty owned, not a crash", async () => {
+    const fetchSpy = mock(() => Promise.reject(new Error("offline")));
+    global.fetch = fetchSpy as unknown as typeof fetch;
+
+    const { document, act, unmount } = renderIntoJsdom(
+      <OwnedItemsProvider>
+        <Probe />
+      </OwnedItemsProvider>,
+    );
+    try {
+      await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
       expect(document.querySelector('[data-testid="owned"]')?.textContent).toBe(
         "",
       );
