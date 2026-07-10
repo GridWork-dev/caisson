@@ -1,0 +1,305 @@
+/**
+ * Homepage signature piece — the ambient depth-fog lattice FIELD (ADR-0304, executes ADR-0078 §6).
+ *
+ * This is the imperative three.js scene: a barely-there instanced grid of thin structural columns
+ * receding into depth fog behind the hero, with a slow accent scan-line sweep (the health-check
+ * pulse) and pointer parallax. It is an ENVIRONMENT, not an object — Refero calibration (Dovetail
+ * "wireframe grids are atmospheric backgrounds, not content"; Index "thin structure, ample void,
+ * accent only as a small travelling indicator").
+ *
+ * Loaded ONLY via a dynamic import() from `hero-field-canvas.tsx` after the idle/lg/no-reduced-motion
+ * gate passes — so it is the home-route-only lazy chunk ADR-0304 §3 budgets at ≤130KB gzip, and it
+ * NEVER downloads on mobile. Named imports from "three" only, so the core tree-shakes (no R3F, no
+ * drei, no postprocessing — all banned by ADR-0304).
+ *
+ * Colours are the sRGB conversions of the ADR-0042/0078 palette-A OKLCH tokens (three can't read the
+ * `--cs-*` CSS vars) — computed once with culori, NOT eyeballed. Source OKLCH is noted at each value.
+ * We feed raw sRGB vec3 uniforms and output them directly (no three colour-management round-trip), so
+ * the canvas interpolates in the same sRGB space as the poster's CSS gradients — the two stay matched.
+ */
+import {
+  BoxGeometry,
+  Clock,
+  InstancedMesh,
+  Matrix4,
+  PerspectiveCamera,
+  Quaternion,
+  Scene,
+  ShaderMaterial,
+  Vector2,
+  Vector3,
+  WebGLRenderer,
+} from "three";
+
+export interface FieldHandle {
+  pause(): void;
+  resume(): void;
+  /** Recolour in place on a live theme toggle — no teardown/remount. */
+  setDark(dark: boolean): void;
+  dispose(): void;
+}
+
+interface Palette {
+  /** Brightest structural tone (rod tops). */
+  rod: string;
+  /** Deep/waterline tone (rod bottoms — the depth-darkening motif). */
+  rodDeep: string;
+  /** The ONE accent — appears only in the scan-line seam (well under the 10% budget). */
+  accent: string;
+  /** Intrinsic field strength (rod alpha ceiling); the CSS fade-in is separate. */
+  opacity: number;
+}
+
+// sRGB hex = culori oklch->rgb of the palette-A tokens (packages/ui/src/tokens/candidates.ts).
+const DARK: Palette = {
+  rod: "#464f52", // oklch(0.42 0.012 220) — border-strong, wet-steel
+  rodDeep: "#0f171a", // oklch(0.20 0.013 220) — surface-1, a hair above bg #080f11 (waterline)
+  accent: "#34bfcd", // oklch(0.74 0.115 205) — the instrument light
+  opacity: 0.5,
+};
+const LIGHT: Palette = {
+  rod: "#b7bfc2", // oklch(0.80 0.010 220) — border-strong (darker than the near-white bg)
+  rodDeep: "#eaeff1", // oklch(0.95 220) — surface-2, fades toward bg #fafcfd at the bottom
+  accent: "#007491", // oklch(0.50 0.13 215) — light-theme accent
+  opacity: 0.36,
+};
+
+function hexToVec3(hex: string): Vector3 {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return new Vector3(
+    ((n >> 16) & 255) / 255,
+    ((n >> 8) & 255) / 255,
+    (n & 255) / 255,
+  );
+}
+
+// Deterministic per-instance jitter — a seeded hash, no RNG dependency, so the field is identical
+// every mount (the poster's static rest-frame stays a faithful preview of it).
+function hash(i: number): number {
+  const s = Math.sin(i * 12.9898) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+// Grid dimensions. Columns are TALL (tops leave the frame / dissolve in the fog mask) so the field
+// reads as structural members RECEDING into depth — not a bar chart of distinct tops. Denser + finer
+// than distinct bars, so it registers as atmosphere/texture (Refero: "wireframe grids are
+// atmospheric backgrounds, not content"; ample void via the fog + the scrim).
+const NX = 30; // columns across
+const NZ = 24; // rows into depth
+const COUNT = NX * NZ;
+const SPACING_X = 1.15;
+const SPACING_Z = 1.5;
+const Z_NEAR = -2;
+const SWEEP_PERIOD = 9; // seconds — a slow health-check pulse, not a strobe
+
+const VERTEX = /* glsl */ `
+  varying float vWorldY;
+  varying float vWorldZ;
+  varying float vViewDepth;
+  void main() {
+    vec4 world = instanceMatrix * vec4(position, 1.0);
+    vWorldY = world.y;
+    vWorldZ = world.z;
+    vec4 mv = modelViewMatrix * world;
+    vViewDepth = -mv.z;
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+
+const FRAGMENT = /* glsl */ `
+  uniform vec3 uRod;
+  uniform vec3 uRodDeep;
+  uniform vec3 uAccent;
+  uniform float uOpacity;
+  uniform float uFogDensity;
+  uniform float uSweep;   // current scan-line position along Z
+  varying float vWorldY;
+  varying float vWorldZ;
+  varying float vViewDepth;
+  void main() {
+    // Depth-darkening waterline (ADR-0078 §4): the lower a column sits, the closer it sinks to the
+    // deep tone — the darkening spans most of the tall column so the bottom baseline reads as a
+    // waterline the structure stands in.
+    float yf = smoothstep(-1.0, 7.0, vWorldY);
+    vec3 col = mix(uRodDeep, uRod, yf);
+
+    // Scan-line sweep — a soft gaussian band of the accent travelling through the lattice (the
+    // health-check pulse). Gentle: a brightening, not a strobe.
+    float band = exp(-pow((vWorldZ - uSweep) * 0.55, 2.0));
+    col = mix(col, uAccent, band * 0.5 * yf);
+    col += uAccent * band * 0.12;
+
+    // Depth fog by view distance (exp2) — far rods dissolve. Alpha only, so the real page bg shows
+    // through and the field seams perfectly into it (no painted fog colour to drift from --cs-bg).
+    float fog = 1.0 - exp(-uFogDensity * uFogDensity * vViewDepth * vViewDepth);
+    float alpha = uOpacity * (1.0 - clamp(fog, 0.0, 1.0));
+    gl_FragColor = vec4(col, alpha);
+  }
+`;
+
+/**
+ * Mount the field onto `canvas`. Returns a handle (pause/resume/dispose) or null when a WebGL
+ * context can't be created — the caller keeps the poster in that case (ADR-0304 resilience).
+ */
+export function mountDepthField(
+  canvas: HTMLCanvasElement,
+  dark: boolean,
+): FieldHandle | null {
+  const pal = dark ? DARK : LIGHT;
+
+  let renderer: WebGLRenderer;
+  try {
+    renderer = new WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true,
+      powerPreference: "low-power", // an ambient bg must not wake the discrete GPU
+    });
+  } catch {
+    return null;
+  }
+  renderer.setClearAlpha(0);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // ADR-0304: dpr capped at 2
+
+  const scene = new Scene();
+  const camera = new PerspectiveCamera(52, 1, 0.1, 120);
+  const camBase = new Vector3(0, 2.4, 6.2);
+  const lookAt = new Vector3(0, 1.7, -18);
+
+  const geometry = new BoxGeometry(1, 1, 1);
+  // Concrete uniforms object (not index-accessed off material.uniforms) so strict
+  // noUncheckedIndexedAccess sees each field as defined. ShaderMaterial keeps this same ref.
+  const uniforms = {
+    uRod: { value: hexToVec3(pal.rod) },
+    uRodDeep: { value: hexToVec3(pal.rodDeep) },
+    uAccent: { value: hexToVec3(pal.accent) },
+    uOpacity: { value: pal.opacity },
+    uFogDensity: { value: 0.058 },
+    uSweep: { value: Z_NEAR },
+  };
+  const material = new ShaderMaterial({
+    vertexShader: VERTEX,
+    fragmentShader: FRAGMENT,
+    transparent: true,
+    depthTest: false, // painter's order (instances built far->near); no depth buffer needed
+    depthWrite: false,
+    uniforms,
+  });
+
+  const mesh = new InstancedMesh(geometry, material, COUNT);
+  const m = new Matrix4();
+  const pos = new Vector3();
+  const quat = new Quaternion(); // identity — rods stay axis-aligned
+  const scl = new Vector3();
+
+  // Build instances FAR -> NEAR so painter's-order (depthTest off) draws nearer rods over farther.
+  let i = 0;
+  for (let iz = NZ - 1; iz >= 0; iz--) {
+    const z = Z_NEAR - iz * SPACING_Z;
+    for (let ix = 0; ix < NX; ix++) {
+      const jx = hash(i) - 0.5;
+      const jz = hash(i + 97) - 0.5;
+      const x = (ix - (NX - 1) / 2) * SPACING_X + jx * 0.5;
+      // Tall columns rooted at the y=0 waterline; tops rise out of frame / into the fog mask.
+      const height = 6.5 + hash(i + 31) * 5.5;
+      pos.set(x, height / 2, z + jz * 0.5);
+      scl.set(0.05, height, 0.05); // thin rods
+      m.compose(pos, quat, scl);
+      mesh.setMatrixAt(i, m);
+      i++;
+    }
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  scene.add(mesh);
+
+  // --- interaction + loop state ---
+  const pointer = new Vector2(0, 0); // target, normalised -1..1
+  const eased = new Vector2(0, 0); // lerped
+  const clock = new Clock();
+  let elapsed = 0; // accumulated RUNNING time (paused gaps discarded) — sweep never jumps
+  let raf = 0;
+  let running = false;
+
+  function onPointerMove(e: PointerEvent) {
+    pointer.set(
+      (e.clientX / window.innerWidth) * 2 - 1,
+      (e.clientY / window.innerHeight) * 2 - 1,
+    );
+  }
+
+  function resize() {
+    const w = canvas.clientWidth || 1;
+    const h = canvas.clientHeight || 1;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+
+  function frame() {
+    if (!running) return;
+    elapsed += clock.getDelta();
+    const t = elapsed;
+
+    // Scan-line: ease it from near to far across the depth each period (the pulse), then wrap.
+    const zFar = Z_NEAR - (NZ - 1) * SPACING_Z;
+    const phase = (t % SWEEP_PERIOD) / SWEEP_PERIOD;
+    const e =
+      phase < 0.5 ? 2 * phase * phase : 1 - Math.pow(-2 * phase + 2, 2) / 2; // ease-in-out
+    uniforms.uSweep.value = Z_NEAR + (zFar - Z_NEAR) * e;
+
+    // Gentle parallax: pointer + a slow autonomous drift so the depth breathes without a pointer.
+    eased.lerp(pointer, 0.04);
+    const driftX = Math.sin(t * 0.13) * 0.25;
+    const driftY = Math.cos(t * 0.09) * 0.12;
+    camera.position.set(
+      camBase.x + eased.x * 1.1 + driftX,
+      camBase.y - eased.y * 0.5 + driftY,
+      camBase.z,
+    );
+    camera.lookAt(lookAt);
+
+    renderer.render(scene, camera);
+    raf = requestAnimationFrame(frame);
+  }
+
+  const ro = new ResizeObserver(resize);
+  ro.observe(canvas);
+  window.addEventListener("pointermove", onPointerMove, { passive: true });
+  resize();
+
+  function resume() {
+    if (running) return;
+    running = true;
+    clock.getDelta(); // drop the paused interval so the sweep doesn't jump
+    raf = requestAnimationFrame(frame);
+  }
+  function pause() {
+    running = false;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+  }
+
+  resume();
+
+  return {
+    pause,
+    resume,
+    setDark(next: boolean) {
+      const p = next ? DARK : LIGHT;
+      uniforms.uRod.value.copy(hexToVec3(p.rod));
+      uniforms.uRodDeep.value.copy(hexToVec3(p.rodDeep));
+      uniforms.uAccent.value.copy(hexToVec3(p.accent));
+      uniforms.uOpacity.value = p.opacity;
+      if (!running) renderer.render(scene, camera); // repaint if paused
+    },
+    dispose() {
+      pause();
+      ro.disconnect();
+      window.removeEventListener("pointermove", onPointerMove);
+      geometry.dispose();
+      material.dispose();
+      renderer.dispose();
+      renderer.forceContextLoss();
+    },
+  };
+}
