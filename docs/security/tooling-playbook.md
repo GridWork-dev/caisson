@@ -7,8 +7,31 @@ don't run, and a black-box agent duplicated what the deterministic scanners + a 
 already do. This stack is caisson-local (`tools/security/`, this playbook) — **not** a gridwork-core
 convention.
 
-Adoption + rationale: **ADR-0310**. Pentest findings history (kept): `strix-findings-*.md`,
-`strix-pentest.md` in this dir.
+Adoption + rationale: **ADR-0310**. The deep Layer-4 (Claude-Code-driven) pentest runbook is
+`docs/security/pentest-runbook.md`. Pentest findings history (kept): `strix-findings-*.md` in this dir.
+
+## Operator setup (one-time)
+
+The stack runs $0 out of the box; two operator actions arm it fully.
+
+**1. Install the toolchain** on the box (needs `sudo pacman` for HexStrike's offensive binaries;
+everything else lands in `~/.local/bin`, no sudo):
+
+```bash
+tools/security/install.sh
+```
+
+**2. Arm Semgrep Pro interfile — FREE.** The Pro cross-file engine is included on Semgrep's **free
+tier** for ≤10 repos / ≤10 contributors, so **no paid plan is needed for this repo**. Sign in at
+**https://semgrep.dev** (GitHub auth) → **Settings → Tokens** → create an **Agent** (API) token, then:
+
+```bash
+gh secret set SEMGREP_APP_TOKEN --repo caisson-sh/caisson    # arms the semgrep-pro CI job
+# local use: export SEMGREP_APP_TOKEN=... ; semgrep ci -j 1
+```
+
+Until set, the `semgrep-pro` CI job cleanly no-ops. Setting it turns on interfile/cross-function
+taint + the org policy. **New egress sink** (semgrep.dev) — active only while the token is set.
 
 ## The four layers
 
@@ -106,6 +129,10 @@ replaying it through `auth.api.getSession` before writing `storageState`. Sentin
 server because both `source` the one generated env file.
 
 ## Layer 4: AI-pentest (Claude-Code-driven)
+
+> **Deep runbook: `docs/security/pentest-runbook.md`** — target/scope matrix (local vs prod, the
+> CF-Access service-token path, the admin harness), the hunt list (money/license/auth seams), PoC
+> discipline, and copy-paste drive prompts. The below is the wiring summary.
 
 Runs on your Claude subscription (free at the margin). Opt-in MCP set — **not** a repo-root
 `.mcp.json` (that would spawn these offensive engines in every caisson session):
