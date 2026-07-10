@@ -7,12 +7,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button, ThemeToggle } from "@caisson/ui/components";
 import { adminAuthClient } from "@/lib/admin-auth-client";
 
-// Top-level control-plane sections: ops/observability, business admin, live architecture, the
-// decisions SOT board, and the absorbed design studio + component/email catalog.
+// Top-level control-plane sections: ops/observability, business admin, product analytics,
+// support health, live architecture, the decisions SOT board, and the absorbed design
+// studio + component/email catalog.
 const LINKS = [
   { href: "/", label: "Overview" },
   { href: "/ops", label: "Ops" },
   { href: "/business", label: "Business" },
+  { href: "/product", label: "Product" },
+  { href: "/support", label: "Support" },
   { href: "/intel", label: "Intel" },
   { href: "/architecture", label: "Architecture" },
   { href: "/decisions", label: "Decisions" },
