@@ -29,6 +29,10 @@ export default [
       // tooling/eslint-config/index.js (NOT this root config), so excluding them here only keeps
       // the repo-wide `bunx eslint .` gate from flagging them; the meta-test is unaffected.
       "**/__fixtures__/**",
+      // Same class: the Semgrep floor-rule fixtures (tools/security/semgrep-rules/*.ts|py) exist to
+      // TRIP their rules — deliberate console.log / unused args / insecure compares — so eslint on the
+      // repo-wide `bunx eslint .` must skip them (they are exercised only by `semgrep test`).
+      "tools/security/semgrep-rules/**",
     ],
   },
   ...config,
