@@ -5,10 +5,12 @@ import { Wordmark } from "@caisson/brand";
 
 import { CartTrigger } from "./cart-trigger";
 import { MobileNav } from "./mobile-nav";
+import type { MobileNavItem, MobileNavSection } from "./mobile-drawer";
 import { NavAccount } from "./nav-account";
-import { NavPanels, type NavPanelSpec } from "./nav-panels";
+import { NavPanels, type NavCard, type NavPanelSpec } from "./nav-panels";
 import { NavSearchTrigger } from "./nav-search-trigger";
 import { Button } from "./button";
+import { type IconName } from "@caisson/ui/components";
 import { BUNDLE_MARKS } from "@/lib/marks";
 import {
   bundlePriceById,
@@ -143,23 +145,35 @@ const RESOURCES_PANEL: NavPanelSpec = {
 
 const PANELS: readonly NavPanelSpec[] = [MARKETPLACE_PANEL, RESOURCES_PANEL];
 
-// The mobile drawer lists every destination flat (no disclosure): the bundle personas + Everything,
-// the marketplace tabs, then the resource surfaces — mirrors the merged Marketplace panel's groups.
-const MOBILE_LINKS: readonly { href: string; label: string }[] = [
-  ...BUNDLE_ROUTES.map((r) => ({
-    href: r.path,
-    label: r.navLabel ?? r.label,
-  })),
-  { href: "/marketplace?view=bundle:everything", label: "Everything" },
-  { href: "/marketplace", label: "Marketplace" },
-  { href: "/marketplace/plans", label: "Plans" },
-  { href: "/compare", label: "Compare" },
-  { href: "/stack-fit", label: "Stack fit" },
-  { href: "/ui", label: "UI Pro showcase" },
-  { href: "/docs", label: "Docs" },
-  { href: "/glossary", label: "Glossary" },
-  { href: "/evidence", label: "Evidence pack" },
-];
+// The mobile drawer's accordion sections (ADR-0312) are DERIVED from the same panel spec as the
+// desktop dropdowns — one card group becomes one collapsed <details> section — so the two surfaces
+// can never drift. A panel with `groups` yields one section per group (Bundles / Marketplace); a
+// flat-`cards` panel yields one section under its own label (Resources).
+const SECTION_ICON: Record<string, IconName> = {
+  Bundles: "bundle",
+  Marketplace: "boxes",
+  Resources: "book",
+};
+
+function toMobileItem(c: NavCard): MobileNavItem {
+  return { href: c.href, label: c.label, icon: c.icon ?? "boxes" };
+}
+
+const MOBILE_SECTIONS: readonly MobileNavSection[] = PANELS.flatMap((p) =>
+  p.groups
+    ? p.groups.map((g) => ({
+        group: g.heading,
+        icon: SECTION_ICON[g.heading] ?? "boxes",
+        items: g.cards.map(toMobileItem),
+      }))
+    : [
+        {
+          group: p.label,
+          icon: SECTION_ICON[p.label] ?? "boxes",
+          items: (p.cards ?? []).map(toMobileItem),
+        },
+      ],
+);
 
 // Primary CTA destination — "Get started" points at the getting-started guide (label matches
 // destination). The buy path already has three affordances: the panels, the Marketplace link,
@@ -189,14 +203,11 @@ export function SiteNav() {
         <NavAccount />
       </div>
 
-      {/* Compact cluster below 900px: cart + hamburger (the drawer carries search + CTA). */}
+      {/* Compact cluster below 900px: cart + hamburger. The drawer carries its own search, account,
+          cart, and CTA in a pinned top block (ADR-0312). */}
       <div className={styles.navCompact}>
         <CartTrigger />
-        <MobileNav
-          links={MOBILE_LINKS}
-          cta={GET_STARTED}
-          search={<NavSearchTrigger />}
-        />
+        <MobileNav sections={MOBILE_SECTIONS} cta={GET_STARTED} />
       </div>
     </header>
   );

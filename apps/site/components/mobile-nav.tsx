@@ -1,36 +1,61 @@
 "use client";
 
-import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 
-import { Dialog, ThemeToggle } from "@caisson/ui/components";
+import type { MobileNavProps } from "./mobile-drawer";
 
-import { Button } from "./button";
-import { NavAccount } from "./nav-account";
+// Mobile hamburger nav (V27, rebuilt for ADR-0312). This shell is deliberately tiny: just the toggle
+// button + route-close. The heavy drawer body (Dialog, better-auth session read, cart read, search
+// wiring, the accordion sections) lives in `mobile-drawer`, dynamically imported on idle or first
+// interaction so it leaves the critical hydration path on every marketing page (ADR-0310 A4 /
+// ADR-0312 §7). The toggle is display:none above 900px (global.css), so the drawer chunk never even
+// arms on desktop until the button exists — no layout shift either way (the button is always there;
+// the drawer is a top-layer overlay).
+const MobileDrawer = dynamic(
+  () => import("./mobile-drawer").then((m) => m.MobileDrawer),
+  { ssr: false },
+);
 
-// Mobile hamburger nav (V27). The toggle is display:none above 680px (global.css); the shell's
-// desktop link row stays as-is. Closes on route change. Built on the open `Dialog` primitive's
-// drawer variant (ADR-0296 — supersedes ADR-0295's hand-rolled ui-pro `Drawer`) — native
-// `<dialog>` + `showModal()` supplies Escape, scrim-click, focus trap, inert background, and
-// focus-return, not us.
-export function MobileNav({
-  links,
-  cta,
-  search,
-}: {
-  links: readonly { href: string; label: string }[];
-  cta?: { href: string; label: string };
-  /** Optional search affordance rendered at the top of the drawer (D-9). */
-  search?: ReactNode;
-}) {
+export function MobileNav({ sections, cta }: MobileNavProps) {
+  const [armed, setArmed] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
+  // Close on route change (a drawer link was followed). Owned here — the persistent shell — so the
+  // deferred drawer never self-closes on its idle mount. Runs once at page mount (drawer closed,
+  // no-op) and on each navigation.
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  // Arm (load the drawer chunk) on idle so it's ready before the first tap without any layout shift;
+  // a tap before idle arms it immediately (the onClick below). setTimeout fallback for browsers
+  // without idle callbacks. Only idle-arm where the hamburger is actually shown (<=900px, the
+  // global.css toggle breakpoint) — desktop never eagerly loads the drawer; a resize-to-mobile user
+  // arms on first tap.
+  useEffect(() => {
+    if (armed) return;
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 900px)").matches) return;
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    let idleId: number | undefined;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+    if (typeof w.requestIdleCallback === "function") {
+      idleId = w.requestIdleCallback(() => setArmed(true));
+    } else {
+      timerId = setTimeout(() => setArmed(true), 1);
+    }
+    return () => {
+      if (idleId !== undefined) w.cancelIdleCallback?.(idleId);
+      if (timerId !== undefined) clearTimeout(timerId);
+    };
+  }, [armed]);
 
   return (
     <>
@@ -40,63 +65,21 @@ export function MobileNav({
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         aria-controls="cs-mobile-menu"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setArmed(true);
+          setOpen((v) => !v);
+        }}
       >
         {open ? <X size={18} /> : <Menu size={18} />}
       </button>
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        title="Mobile menu"
-        variant="drawer"
-        side="top"
-        hideHeader
-        className="cs-mobile-nav-drawer"
-      >
-        <nav
-          id="cs-mobile-menu"
-          className="cs-nav-mobile"
-          aria-label="Primary (mobile)"
-        >
-          {search && (
-            <div style={{ marginBottom: "var(--cs-space-2)" }}>{search}</div>
-          )}
-          {links.map((l) => {
-            const active = pathname.startsWith(l.href);
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                aria-current={active ? "page" : undefined}
-              >
-                {l.label}
-              </Link>
-            );
-          })}
-          {cta && (
-            <Button
-              href={cta.href}
-              variant="primary"
-              style={{ marginTop: "var(--cs-space-3)" }}
-            >
-              {cta.label}
-            </Button>
-          )}
-          <div
-            style={{
-              marginTop: "var(--cs-space-3)",
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <NavAccount />
-          </div>
-          {/* Theme toggle reachable on mobile (ADR-0194 / ADR-0195 — was desktop-only). */}
-          <div style={{ marginTop: "var(--cs-space-4)" }}>
-            <ThemeToggle />
-          </div>
-        </nav>
-      </Dialog>
+      {armed && (
+        <MobileDrawer
+          open={open}
+          onClose={() => setOpen(false)}
+          sections={sections}
+          cta={cta}
+        />
+      )}
     </>
   );
 }
