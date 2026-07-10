@@ -65,6 +65,10 @@ export interface PurchaseCapture {
    * attribution (`skuLines`) is unaffected either way. Defaults to a first purchase when omitted.
    */
   subscriptionCycle?: boolean;
+  /** ADR-0319 — the Paddle discount id the buyer redeemed (affiliate-code attribution rides
+   *  `order_record.discount_id` as the money SoT; this is the analytics annotation of the same
+   *  fact). `null`/omitted when no discount was applied or the event kind carries none. */
+  discountId?: string | null;
 }
 
 /** Cart-composition bucket for a set of canonical SKU slugs. `"mixed"` when the cart spans more
@@ -123,6 +127,9 @@ export async function capturePostHogPurchase(
             cart_composition: cartComposition(capture.skuLines),
             // G33: distinguishes a Developer-plan renewal cycle from a first purchase.
             subscription_cycle: capture.subscriptionCycle ?? false,
+            // ADR-0319: affiliate attribution annotation (JSON.stringify drops the key when
+            // no discount was redeemed).
+            discount_id: capture.discountId ?? undefined,
           },
         }),
       },

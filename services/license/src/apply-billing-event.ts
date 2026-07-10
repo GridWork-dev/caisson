@@ -253,6 +253,8 @@ export async function applyBillingEvent(
           currency: ev.currency,
           subscriptionId: ev.subscriptionId,
           coverageStamped: !canceledBeforeGrant,
+          // ADR-0315: attribute this cycle invoice to the affiliate whose discount it redeemed.
+          discountId: ev.discountId ?? null,
         });
         // ADR-0269: a `coversOwnedEntitlements` plan (Developer) RE-GRANTS, subscription-sourced,
         // every entitlement the buyer already holds via an active one_time grant — the
@@ -428,6 +430,8 @@ export async function applyBillingEvent(
           label: orderLabel,
           amount: ev.amountTotal,
           currency: ev.currency,
+          // ADR-0315: attribute this one-time purchase to the affiliate whose discount it redeemed.
+          discountId: ev.discountId ?? null,
         });
         effect = {
           grantedEntitlements: [...grantedEntitlements],

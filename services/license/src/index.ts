@@ -48,10 +48,12 @@ export type {
 } from "./entitlement-store.ts";
 
 // ADR-0293 — subscription-lifecycle status (G13/G14) + append-only order/invoice history (G26).
+// ADR-0315 adds `ORDER_RECORD_DISCOUNT_MIGRATION_SQL` (the affiliate-attribution column).
 export {
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
   ORDER_RECORD_SCHEMA_SQL,
   ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
+  ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   upsertSubscriptionStatus,
   cancelSubscriptionStatus,
   readSubscriptionStatuses,
@@ -65,6 +67,23 @@ export type {
   InsertOrderRecordInput,
   OrderRecordRow,
 } from "./subscription-history-store.ts";
+
+// ADR-0315 — the affiliate program store: minted-code registry + commission report.
+export {
+  AFFILIATE_CODE_SCHEMA_SQL,
+  AFFILIATE_COMMISSION_BPS,
+  AFFILIATE_DISCOUNT_PCT,
+  insertAffiliateCode,
+  readAffiliateCodes,
+  readAffiliateReport,
+} from "./affiliate-store.ts";
+export type {
+  InsertAffiliateCodeInput,
+  AffiliateCodeRow,
+  AffiliateReport,
+  AffiliateReportEntry,
+  AffiliateReportOrder,
+} from "./affiliate-store.ts";
 
 // ADR-0220 — the operator mutation surface + its queryable audit-log half. ADR-0225 adds the fifth
 // action `purchase_revoke` (paid one-time revoke + bounded claw + edge deny-set) and its migration.

@@ -957,6 +957,12 @@ export function createApp(
           subscriptionCycle:
             result.event.type === "invoice.paid" &&
             result.event.billingReason === "subscription_cycle",
+          // ADR-0319: the `amountTotal` narrowing also admits refund/chargeback, which carry
+          // no discountId — the `in` guard keeps this compiling across the whole union.
+          discountId:
+            "discountId" in result.event
+              ? (result.event.discountId ?? null)
+              : null,
         };
         try {
           void deps.posthogCapture(capture).catch(() => {

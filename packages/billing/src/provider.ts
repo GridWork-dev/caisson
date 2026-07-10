@@ -17,6 +17,15 @@ export interface CheckoutInput {
   cancelUrl: string;
 }
 
+/** Input for minting an affiliate discount code (ADR-0315). Provider-neutral shape; only the Paddle
+ *  driver implements `createDiscount` today (Paddle is the live merchant of record). */
+export interface CreateDiscountInput {
+  /** The redeemable code (Paddle format: letters + numbers, ≤32 chars, not case-sensitive). */
+  code: string;
+  /** Internal description (not shown to customers) — the affiliate's name/reference. */
+  description: string;
+}
+
 export interface BillingProvider {
   /** Verify the raw webhook (throws on bad signature) then map it to a domain event (or null). */
   verifyAndParse(
@@ -25,6 +34,15 @@ export interface BillingProvider {
     opts?: VerifyOptions,
   ): DomainBillingEvent | null;
   createCheckout(input: CheckoutInput): Promise<{ url: string }>;
+  /**
+   * Mint a fixed-percentage, checkout-enabled, recurring affiliate discount (ADR-0315) and return
+   * its provider discount id + code. OPTIONAL on the port: affiliate minting is Paddle-only (the
+   * other MoR drivers — Stripe/LemonSqueezy/Polar — do not implement it), so a caller checks for it
+   * before use. Keeps the port provider-neutral without forcing every driver to implement it.
+   */
+  createDiscount?(
+    input: CreateDiscountInput,
+  ): Promise<{ discountId: string; code: string }>;
 }
 
 export interface StripeConfig {

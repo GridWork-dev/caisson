@@ -65,10 +65,16 @@ import {
 import {
   ORDER_RECORD_SCHEMA_SQL,
   ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
+  ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   readOrderRecords,
   readSubscriptionStatuses,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "./subscription-history-store.ts";
+import {
+  AFFILIATE_CODE_SCHEMA_SQL,
+  readAffiliateReport,
+  insertAffiliateCode,
+} from "./affiliate-store.ts";
 
 const PLAN_ID = "price_developer_monthly_PLACEHOLDER"; // 1000 credits/cycle, entitlements [] (placeholder)
 const CREDITS = 1000;
@@ -186,6 +192,9 @@ beforeAll(async () => {
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
+  // ADR-0315: the affiliate-attribution column on order_record + the affiliate_code registry.
+  await tp.exec(ORDER_RECORD_DISCOUNT_MIGRATION_SQL);
+  await tp.exec(AFFILIATE_CODE_SCHEMA_SQL);
 });
 
 afterAll(async () => {
@@ -2503,5 +2512,123 @@ describe("subscription-payment refund -> coverage-horizon rollback", () => {
     expect(new Date(windows["compliance"] ?? "").getTime()).toBeGreaterThan(
       Date.now() + 20 * DAY,
     );
+  });
+});
+
+describe("ADR-0315 affiliate attribution — discountId stamped on order_record end to end", () => {
+  /** The stamped discount_id for an order (superuser read — bypasses order_record RLS). */
+  async function stampedDiscount(
+    sourceEventId: string,
+    kind: "purchase" | "subscription",
+  ): Promise<string | null> {
+    const rows = await tp.query<{ discount_id: string | null }>(
+      `SELECT discount_id FROM order_record WHERE source_event_id = $1 AND kind = $2`,
+      [sourceEventId, kind],
+    );
+    return rows[0]?.discount_id ?? null;
+  }
+
+  test("a one-time purchase.completed carrying discountId stamps order_record.discount_id", async () => {
+    const acct = "acct_aff_purchase";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "purchase.completed",
+        sourceEventId: "evt_aff_p",
+        accountId: acct,
+        amountTotal: 129900,
+        currency: "usd",
+        lineItems: [
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "",
+            chargedAmount: 0,
+          },
+        ],
+        paymentId: "pay_aff_p",
+        discountId: "dsc_apply_p",
+      }),
+    );
+    expect(await stampedDiscount("pay_aff_p", "purchase")).toBe("dsc_apply_p");
+  });
+
+  test("a subscription invoice.paid carrying discountId stamps order_record.discount_id", async () => {
+    const acct = "acct_aff_sub";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "invoice.paid",
+        sourceEventId: "evt_in_aff_s",
+        accountId: acct,
+        amountTotal: 9900,
+        currency: "usd",
+        subscriptionId: "sub_aff_s",
+        priceId: PLAN_ID,
+        billingReason: "subscription_cycle",
+        invoiceId: "in_aff_s",
+        discountId: "dsc_apply_s",
+      }),
+    );
+    expect(await stampedDiscount("in_aff_s", "subscription")).toBe(
+      "dsc_apply_s",
+    );
+  });
+
+  test("a purchase WITHOUT a discountId leaves order_record.discount_id NULL (regression)", async () => {
+    const acct = "acct_aff_none";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_aff_none", ONETIME_EDITION_ID),
+      ),
+    );
+    expect(await stampedDiscount("pay_aff_none", "purchase")).toBeNull();
+  });
+
+  test("a refund of an attributed purchase flips the row → the report flags it as a clawback", async () => {
+    const acct = "acct_aff_refund";
+    await insertAffiliateCode(tp.pg as unknown as TenantExecutor, {
+      code: "AFFREFUND",
+      discountId: "dsc_apply_refund",
+      affiliateName: "Refund Affiliate",
+      createdBy: "op",
+    });
+    // A discounted one-time purchase (8910¢ charged) redeeming the affiliate's code.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "purchase.completed",
+        sourceEventId: "evt_aff_refund",
+        accountId: acct,
+        amountTotal: 8910,
+        currency: "usd",
+        lineItems: [
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "",
+            chargedAmount: 8910,
+          },
+        ],
+        paymentId: "pay_aff_refund",
+        discountId: "dsc_apply_refund",
+      }),
+    );
+    // Before the refund: payable commission = floor(8910 * 3000 / 10000) = 2673, no clawback.
+    let rep = await readAffiliateReport(tp.pg as unknown as TenantExecutor);
+    let entry = rep.affiliates.find((a) => a.discountId === "dsc_apply_refund");
+    expect(entry?.commissionCents).toBe(2673);
+    expect(entry?.clawbackCents).toBe(0);
+
+    // A whole-transaction refund flips the order row to 'refunded'.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pay_aff_refund", true)),
+    );
+    rep = await readAffiliateReport(tp.pg as unknown as TenantExecutor);
+    entry = rep.affiliates.find((a) => a.discountId === "dsc_apply_refund");
+    // Now the sale is a clawback ALERT: payable commission drops to 0, the clawback surfaces 2673.
+    expect(entry?.commissionCents).toBe(0);
+    expect(entry?.clawbackCents).toBe(2673);
+    expect(
+      entry?.orders.find((o) => o.orderId === "pay_aff_refund")?.clawback,
+    ).toBe(true);
   });
 });

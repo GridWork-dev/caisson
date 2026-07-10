@@ -35,6 +35,7 @@ import {
 import {
   ORDER_RECORD_SCHEMA_SQL,
   ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
+  ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "./subscription-history-store.ts";
 import { handleBillingWebhook } from "./webhook.ts";
@@ -57,6 +58,7 @@ beforeAll(async () => {
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
+  await tp.exec(ORDER_RECORD_DISCOUNT_MIGRATION_SQL); // ADR-0315 affiliate-attribution column
   // The outer webhook-event dedup table (ADR-0229 rows 50+51) — handleBillingWebhook now claims the
   // event via processEvent before granting, so a re-delivery grants + pushes once.
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
