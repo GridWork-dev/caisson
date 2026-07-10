@@ -5,18 +5,20 @@ import { buildMetadata } from "@/lib/metadata";
 export const metadata = buildMetadata({
   title: "Design partners",
   description:
-    "A limited first-cohort design-partner program: discounted access to Caisson in exchange for a citable case study and a direct feedback loop. Apply by email — a reference partnership, not a waitlist.",
+    "The first five Caisson design partners get 40% off their initial purchase in exchange for a citable case study (only if Caisson earns it) and a direct feedback loop. Apply by email — a reference partnership, not a waitlist.",
   path: "/partners",
 });
 
-// A quiet application surface (ADR-0273), mirroring /affiliates. Deliberately NO numbers — cohort
-// size and discount level stay operator-owned at flip time (write "limited", never "5 slots"). No
-// countdown, no roadmap framing (ADR-0237). Apply by email, the /affiliates pattern.
+// The quiet application surface (ADR-0273), mirroring /affiliates. The terms are LOCKED and
+// published (ADR-0297, stated on-page per the 2026-07-10 Kickoff-J picker): 5 partners · 40% off
+// the initial purchase · partner pricing reverts to list after 12 months on renewal/subscription
+// surfaces · case-study rights contingent on conversion. The cohort cap is a real term, not
+// manufactured scarcity — still no countdown, no roadmap framing (ADR-0237).
 const WHAT_YOU_GET = [
   {
     icon: "wallet" as const,
-    label: "Discounted access",
-    body: "A materially discounted license to the bundle or modules you'll build on — the specific terms agreed with you directly. You own the source the same way every buyer does.",
+    label: "40% off your initial purchase",
+    body: "Any bundle or module set, 40% off list at purchase time. You own the source perpetually, the same way every buyer does — 12 months of updates and security patches included as standard.",
   },
   {
     icon: "users" as const,
@@ -26,15 +28,15 @@ const WHAT_YOU_GET = [
   {
     icon: "git-branch" as const,
     label: "A real say in priorities",
-    body: "Your integration is a live deployment the engineer works against directly — a real use case with real attention, not a hypothetical in a backlog.",
+    body: "Your integration is a live deployment the engineer works against directly — a real use case with real attention, not a hypothetical in a backlog. Partner pricing also holds on any renewal or subscription surface for your first 12 months, then reverts to list.",
   },
 ] as const;
 
 const WHAT_WE_ASK = [
   {
     icon: "file-check" as const,
-    label: "A citable case study",
-    body: "A short, reviewed write-up — with your logo — that a future buyer's security team can read. Nothing is published without your sign-off; claims are scraped and dated, never invented.",
+    label: "A case study — only if Caisson earns it",
+    body: "If you continue at standard terms after your first year, you grant a short, reviewed case study with your logo. Nothing is published without your sign-off; claims are scraped and dated, never invented. If you walk away instead, you owe nothing.",
   },
   {
     icon: "check" as const,
@@ -47,17 +49,17 @@ const FAQ = [
   {
     question: "What is the Caisson design-partner program?",
     answer:
-      "A limited first cohort of reference customers who get discounted access to Caisson in exchange for a citable case study and a direct feedback loop. It's a reference partnership, not a waitlist and not a discount code — we agree the terms with each partner directly.",
+      "The first five reference customers get 40% off their initial purchase in exchange for a citable case study — owed only if Caisson earns your continued business — and a direct feedback loop with the engineer who builds it. A reference partnership, not a waitlist and not a discount code.",
   },
   {
-    question: "How many partners are you taking?",
+    question: "How many partners are you taking, and what are the terms?",
     answer:
-      "A limited first cohort. We keep it small on purpose so each partner gets real engineering attention. Apply by email and we'll tell you where things stand.",
+      "Five, first come. 40% off your initial purchase (any bundle or module set); partner pricing holds on renewal or subscription surfaces for 12 months from purchase, then reverts to list. We keep the cohort small on purpose so each partner gets real engineering attention. Apply by email and we'll tell you how many slots remain.",
   },
   {
     question: "What do I have to commit to?",
     answer:
-      "Two things: a short case study with your logo that we publish only after you sign off, and a regular feedback conversation. You build on Caisson the way any buyer would; the partnership is the reference and the feedback, not extra integration work.",
+      "Two things. First, a case study with your logo — owed only if you continue at standard terms after your first year; if Caisson doesn't earn that, you owe nothing. It's published only after you approve the exact wording. Second, a candid feedback conversation, roughly monthly or async as agreed. You build on Caisson the way any buyer would; the partnership is the reference and the feedback, not extra integration work.",
   },
   {
     question: "Is my case study published without my approval?",
@@ -94,8 +96,8 @@ export default function PartnersPage() {
         flush
         as="h1"
         eyebrow="Design partners"
-        title="Build on Caisson. Be one of the first references."
-        lede="A limited first cohort of reference partners: discounted access to Caisson in exchange for a citable case study and a direct feedback loop with the engineer who builds it. A reference partnership — not a waitlist."
+        title="Build on Caisson. Be one of the first five references."
+        lede="Five design partners, 40% off the initial purchase, in exchange for a citable case study — owed only if Caisson earns your continued business — and a direct feedback loop with the engineer who builds it. A reference partnership — not a waitlist."
       />
 
       {/* ===== What you get ===== */}

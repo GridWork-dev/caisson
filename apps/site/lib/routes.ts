@@ -62,6 +62,7 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/affiliates", label: "Affiliates", priority: 0.5, changeFrequency: "monthly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/partners", label: "Design partners", priority: 0.5, changeFrequency: "monthly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/frameworks/eu-ai-act", label: "EU AI Act", priority: 0.75, changeFrequency: "weekly", group: "framework" }, // prettier-ignore
+  { path: "/frameworks/eu-ai-act/article-50", label: "EU AI Act Article 50", priority: 0.7, changeFrequency: "weekly", group: "framework" }, // prettier-ignore
   { path: "/legal/privacy", label: "Privacy policy", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore
   { path: "/legal/terms", label: "Terms of service", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore
   { path: "/legal/license", label: "License", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore

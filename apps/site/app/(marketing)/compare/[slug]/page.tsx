@@ -156,7 +156,7 @@ export default async function ComparePage(props: Params) {
         credentials={
           <StatusChip
             tone="muted"
-            label={`${c.competitor} facts verified ${ACCESSED}`}
+            label={`${c.competitor} facts verified ${c.accessed ?? ACCESSED}`}
             dot
           />
         }
@@ -181,7 +181,7 @@ export default async function ComparePage(props: Params) {
               <a href={c.competitorUrl} rel="noreferrer">
                 {c.competitorUrl.replace(/^https?:\/\//, "")}
               </a>{" "}
-              on {ACCESSED}.
+              on {c.accessed ?? ACCESSED}.
             </>
           }
         >

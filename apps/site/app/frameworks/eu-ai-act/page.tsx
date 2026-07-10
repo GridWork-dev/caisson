@@ -388,12 +388,12 @@ export default function EuAiActPage() {
         </div>
       </Section>
 
-      {/* ===== Evidence bundle (Compliance edition) ===== */}
+      {/* ===== Evidence bundle (Compliance bundle) ===== */}
       <Reveal>
         <Section
           eyebrow="Evidence artifacts"
           title="Auditor-readable output from live controls."
-          lede="The Compliance edition collects the RLS policies, audit-chain proof, and field-encryption config from the system that enforces them, maps each to an Annex IV section, and packages them as a dated, replayable bundle."
+          lede="The Compliance bundle collects the RLS policies, audit-chain proof, and field-encryption config from the system that enforces them, maps each to an Annex IV section, and packages them as a dated, replayable bundle."
           band="surface"
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
@@ -421,7 +421,7 @@ export default function EuAiActPage() {
           </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
             The EU AI Act-ready evidence bundle ships with the Compliance
-            edition, available to buyers anywhere.
+            bundle, available to buyers anywhere.
           </p>
         </Section>
       </Reveal>
@@ -455,13 +455,50 @@ export default function EuAiActPage() {
         </Section>
       </Reveal>
 
+      {/* ===== Article 50 enforcement date (factual, dated — reads correctly before and after) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Article 50 · transparency"
+          title="Article 50 becomes enforceable August 2, 2026."
+          band="tint"
+        >
+          <p className="cs-lede" style={{ maxWidth: "72ch" }}>
+            The EU AI Act&rsquo;s transparency obligations (Regulation (EU)
+            2024/1689, Article 50) apply from August 2, 2026 — confirmed unmoved
+            by the Digital Omnibus amendment (independent reporting through
+            2026-07-07). They cover AI systems that interact with people
+            regardless of risk class: users must be told they are interacting
+            with AI, and generated content must carry machine-readable marking.
+          </p>
+          <p
+            className="cs-muted"
+            style={{ marginTop: "var(--cs-space-4)", maxWidth: "72ch" }}
+          >
+            The disclosure surface itself is your product&rsquo;s UI. What
+            Caisson supplies is the evidence discipline behind it: disclosure
+            events logged to the tamper-evident audit chain, configuration
+            versioned in your repo, and the dated evidence bundle that shows the
+            obligation was met — the same record-keeping spine the Annex IV map
+            above uses.
+          </p>
+          <div
+            className="cs-cta-row"
+            style={{ marginTop: "var(--cs-space-6)" }}
+          >
+            <Button href="/frameworks/eu-ai-act/article-50" variant="ghost">
+              What Article 50 requires, in detail
+            </Button>
+          </div>
+        </Section>
+      </Reveal>
+
       {/* ===== Get started ===== */}
       <Section eyebrow="Get started" id="get-started">
         <h2 className="cs-section-title">
           Ship with the evidence already in the repo.
         </h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-          The Compliance edition ships the audit chain, RLS policies, and
+          The Compliance bundle ships the audit chain, RLS policies, and
           field-encryption wired and testable from day one, ready well before
           your first notified-body assessment.
         </p>

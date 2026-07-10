@@ -194,6 +194,11 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     ],
     faq: [
       {
+        question: "How many developers does the license cover?",
+        answer:
+          "Everyone at your organization. The license is per purchasing entity — any personnel you authorize can work with the source. No per-seat pricing, no seat counting. For contrast: a similarly priced competitor tier caps at 5 developer seats (Supastarter Startup, $799, verified 2026-07-10).",
+      },
+      {
         question: "What does token metering actually prevent?",
         answer:
           "A runaway loop, a misconfigured agent, or a single burst of traffic can multiply your API invoice by 10x before you see it. Usage writes in the same Postgres transaction as the result (an atomic increment), so concurrent calls can never double-count or drop a charge. Crossing the cap opens the circuit breaker and returns HTTP 402 before the next model call fires.",
@@ -266,6 +271,11 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       },
     ],
     faq: [
+      {
+        question: "How many developers does the license cover?",
+        answer:
+          "Everyone at your organization. The license is per purchasing entity — any personnel you authorize can work with the source. No per-seat pricing, no seat counting. For contrast: a similarly priced competitor tier caps at 5 developer seats (Supastarter Startup, $799, verified 2026-07-10).",
+      },
       {
         question: 'Does "own the source" rule out hosted inference?',
         answer:
