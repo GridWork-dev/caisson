@@ -12,12 +12,17 @@
 // headless service needs the same Pool→Transactor adapter.
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { Pool, type PoolClient } from "pg";
+import {
+  loadAbandonedCheckoutScheduleConfig,
+  startAbandonedCheckoutScheduler,
+} from "./abandoned-checkout-scheduler.ts";
 import { createJobAlertingDeps, loadOpsAlertChannels } from "./alerting.ts";
 import {
   loadCreditExpiryScheduleConfig,
   startCreditExpiryScheduler,
 } from "./credit-expiry-scheduler.ts";
 import { recipientFor, resolveEmailer } from "./email-notify.ts";
+import { loadPostHogCaptureConfig } from "./posthog-capture.ts";
 import { startServer } from "./server.ts";
 
 function nodePgExecutor(client: PoolClient): TenantExecutor {
@@ -92,6 +97,18 @@ if (import.meta.main) {
     // Alerts on a sweep/notice/tick task failure or a pg-boss infra error. Empty when
     // DISCORD_OPS_WEBHOOK_URL is unset — the same fail-safe-absent posture as every other env-gated
     // notifier in this file.
+    alerting: createJobAlertingDeps(loadOpsAlertChannels()),
+  });
+
+  // Abandoned-checkout email (SPEC-abandoned-checkout-email.md, 2026-07-10 lock): inert until
+  // armed — ABANDONED_CHECKOUT_SCHEDULE unset resolves immediately with zero pg-boss connection
+  // ever opened. Fire-and-forget, same posture as the credit-expiry scheduler above.
+  void startAbandonedCheckoutScheduler({
+    db,
+    connectionString: url,
+    schedule: loadAbandonedCheckoutScheduleConfig(),
+    emailer: resolveEmailer(),
+    posthog: loadPostHogCaptureConfig(),
     alerting: createJobAlertingDeps(loadOpsAlertChannels()),
   });
 }

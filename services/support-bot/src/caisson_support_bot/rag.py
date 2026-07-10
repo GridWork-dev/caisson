@@ -1,17 +1,19 @@
 """The RAG pipeline (ADR-0009 binding: answer ONLY from the codebase/docs; never guess).
 
-retrieve → ground → generate → decide. Grounding instructs the model to answer strictly from the
-retrieved chunks and to emit an explicit ``INSUFFICIENT_CONTEXT`` sentinel rather than hallucinate.
-Three paths lead to escalation (``resolved = False`` + a ``Brief``): retrieval is empty, retrieval
-fails, or the model returns the sentinel. Everything else is a grounded answer carrying the source
-paths of the chunks it was given as citations.
+retrieve → ground → generate → decide → grade. Grounding instructs the model to answer strictly
+from the retrieved chunks and to emit an explicit ``INSUFFICIENT_CONTEXT`` sentinel rather than
+hallucinate. Four paths lead to escalation (``resolved = False`` + a ``Brief``): retrieval is empty,
+retrieval fails, the model returns the sentinel, or (2026-07-10 picker) the model's own graded
+confidence self-assessment falls below the LOW threshold — including a missing/unparseable signal,
+fail-closed. Everything else is a grounded answer carrying the source paths of the chunks it was
+given as citations, tagged HIGH or MEDIUM (``ConfidenceTier``) for the answer-shaping in ``bot.py``.
 """
 
 from __future__ import annotations
 
 import re
 
-from .contracts import AnswerResult, Brief, ScoredChunk
+from .contracts import AnswerResult, Brief, ConfidenceTier, ScoredChunk
 from .docs_client import DocsUnavailableError, Retriever
 from .inference import Inference, InferenceError
 
@@ -44,7 +46,12 @@ SYSTEM_PROMPT = (
     "outside knowledge. Cite the sources you rely on inline by their path in square brackets, e.g. "
     "[packages/billing/README.md]. If the context does not contain enough information to answer "
     f"correctly, reply with EXACTLY the token {SENTINEL} and nothing else — do not guess. Be concise "
-    "and accurate; a wrong answer is worse than an escalation."
+    "and accurate; a wrong answer is worse than an escalation. When you DO answer (you are not "
+    "replying with the sentinel), end your reply with one final line, on its own, in EXACTLY this "
+    "format: CONFIDENCE: 0.NN — a number from 0.00 to 1.00 stating how confident you are that the "
+    "answer is complete and directly supported by the numbered sources. Use a high value only when "
+    "the sources state the answer directly and unambiguously; use a lower value when you had to "
+    "infer, combine partial information, or the sources only partly cover the question."
 )
 
 # Cheap, LLM-free output guard (defense in depth — the structural fence is the real control). A reply
@@ -62,6 +69,50 @@ _LEAK_FINGERPRINTS = (
 
 # Cap the context fed to the model so a pathological corpus can't blow the token budget.
 _MAX_CONTEXT_CHARS = 12_000
+
+# The trailing self-assessment line the SYSTEM_PROMPT instructs the model to append to a real
+# answer (never the sentinel). Matched only against the LAST line of the reply — a deliberate,
+# narrow anchor rather than a bare substring search anywhere in the text.
+_CONFIDENCE_LINE = re.compile(r"(?i)^CONFIDENCE:\s*([0-9]*\.?[0-9]+)\s*$")
+
+
+def _extract_confidence(raw: str) -> tuple[str, float | None]:
+    """Split the trailing ``CONFIDENCE: 0.NN`` self-assessment line off the model's reply.
+
+    Returns ``(answer_text, confidence)``. ``confidence`` is ``None`` when the trailer is missing,
+    unparseable, or outside ``[0, 1]`` — fail-closed: a malformed signal is never coerced into a
+    guessed value, it is simply treated as absent (``grade_confidence`` then grades it LOW).
+    """
+    text = raw.strip()
+    lines = text.splitlines()
+    if not lines:
+        return text, None
+    match = _CONFIDENCE_LINE.match(lines[-1].strip())
+    if match is None:
+        return text, None
+    body = "\n".join(lines[:-1]).strip()
+    try:
+        value = float(match.group(1))
+    except ValueError:
+        return body, None
+    if not (0.0 <= value <= 1.0):
+        return body, None
+    return body, value
+
+
+def grade_confidence(confidence: float | None, *, high: float, low: float) -> ConfidenceTier:
+    """Signals in, tier out — the whole 3-tier decision, pure and independently unit-testable.
+
+    Fail-closed (2026-07-10 picker, binding): a missing/unparseable confidence signal (``None``)
+    always grades LOW, never HIGH/MEDIUM — never fail open to a confident answer.
+    """
+    if confidence is None:
+        return ConfidenceTier.low
+    if confidence >= high:
+        return ConfidenceTier.high
+    if confidence >= low:
+        return ConfidenceTier.medium
+    return ConfidenceTier.low
 
 
 def _build_context(chunks: list[ScoredChunk]) -> str:
@@ -113,10 +164,22 @@ def _brief(question: str, chunks: list[ScoredChunk], reason: str) -> Brief:
 class RagPipeline:
     """Orchestrates retrieval + grounded generation for one question."""
 
-    def __init__(self, *, docs: Retriever, inference: Inference, k: int = 6) -> None:
+    def __init__(
+        self,
+        *,
+        docs: Retriever,
+        inference: Inference,
+        k: int = 6,
+        confidence_high: float = 0.85,
+        confidence_low: float = 0.55,
+    ) -> None:
         self._docs = docs
         self._inference = inference
         self._k = k
+        # Conservative defaults (2026-07-10 picker): the gate was parked until thresholds could be
+        # tuned on real traffic; `config.Settings` wires the env-tunable values in production.
+        self._confidence_high = confidence_high
+        self._confidence_low = confidence_low
 
     async def answer(self, question: str) -> AnswerResult:
         # 1. retrieve — a retrieval failure escalates rather than answering ungrounded.
@@ -173,8 +236,30 @@ class RagPipeline:
                 ),
             )
 
+        # 6. grade — the 2026-07-10 picker's 3-tier confidence gate. HIGH answers plainly (unchanged
+        # behavior); MEDIUM answers hedged with an escalation hint (bot.py's answer-shaping); a LOW
+        # grade — including a missing/unparseable signal — discards the draft entirely and escalates
+        # instead of ever returning an under-confident answer (fail-closed, never fail-open).
+        body, confidence = _extract_confidence(raw)
+        tier = grade_confidence(confidence, high=self._confidence_high, low=self._confidence_low)
+        if tier is ConfidenceTier.low:
+            reason = (
+                (
+                    f"Retrieved {len(chunks)} source(s) and the model answered, but its confidence "
+                    "self-assessment was missing or unparseable; escalating rather than guessing "
+                    "(fail-closed)."
+                )
+                if confidence is None
+                else (
+                    f"Retrieved {len(chunks)} source(s) and the model answered, but its "
+                    f"self-assessed confidence ({confidence:.2f}) was below the escalation threshold."
+                )
+            )
+            return AnswerResult(resolved=False, brief=_brief(question, chunks, reason))
+
         return AnswerResult(
             resolved=True,
-            answer=raw,
+            answer=body,
             citations=[c.source for c in chunks],
+            tier=tier,
         )

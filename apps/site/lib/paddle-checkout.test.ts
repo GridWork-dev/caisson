@@ -56,6 +56,32 @@ describe("G6 — an init failure does not poison checkout for the rest of the se
   });
 });
 
+describe("abandoned-checkout discount fork (SPEC-abandoned-checkout-email.md, 2026-07-10 lock)", () => {
+  test("a discount code is threaded into Checkout.open's discountCode option", async () => {
+    const { openCartCheckout } = await import("./paddle-checkout.ts");
+    fakeCheckoutOpen.mockClear();
+
+    await openCartCheckout([{ priceId: "pri_x" }], "acct_1", "SAVE10");
+
+    expect(fakeCheckoutOpen).toHaveBeenCalledTimes(1);
+    const openArgs = fakeCheckoutOpen.mock.calls[0]?.[0] as
+      { discountCode?: string } | undefined;
+    expect(openArgs?.discountCode).toBe("SAVE10");
+  });
+
+  test("an omitted discount code is never passed as an explicit key", async () => {
+    const { openCartCheckout } = await import("./paddle-checkout.ts");
+    fakeCheckoutOpen.mockClear();
+
+    await openCartCheckout([{ priceId: "pri_x" }], "acct_1");
+
+    const openArgs = fakeCheckoutOpen.mock.calls[0]?.[0] as
+      Record<string, unknown> | undefined;
+    expect(openArgs).toBeDefined();
+    expect("discountCode" in (openArgs ?? {})).toBe(false);
+  });
+});
+
 describe("G35 — the cart clears on checkout.completed, not on overlay-open", () => {
   test("onCheckoutCompleted fires only for the checkout.completed event, until unregistered", async () => {
     const { onCheckoutCompleted } = await import("./paddle-checkout.ts");

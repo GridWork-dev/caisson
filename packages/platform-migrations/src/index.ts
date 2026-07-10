@@ -36,6 +36,8 @@ import {
   runMigrations,
 } from "@caisson/migrate";
 import {
+  CHECKOUT_ABANDONMENT_NOTICE_SCHEMA_SQL,
+  CHECKOUT_ABANDONMENT_SCHEMA_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
@@ -158,6 +160,12 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
     name: "0023_order_record_subscription_link.sql",
     sql: ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
   },
+  // The abandoned-checkout email feature (2026-07-10 lock) — the first append since 0023, landing
+  // at 0024 per this module's own convention for a caller with no historical slot to preserve.
+  {
+    name: "0024_checkout_abandonment.sql",
+    sql: `${CHECKOUT_ABANDONMENT_SCHEMA_SQL}\n${CHECKOUT_ABANDONMENT_NOTICE_SCHEMA_SQL}`,
+  },
 ];
 
 /**
@@ -166,13 +174,13 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
  * together by filename — same slug, same shape, as the pre-extraction `platformPackage()`.
  *
  * `extra` entries' `name`s must NOT collide with the shared chain's own names above (`0001`–`0019`
- * plus `0023`) — a duplicate name is two migrations racing for the same renumbered slot, not a
- * merge. Effective apply order is `assembleMigrations`'s sort-by-filename over the COMBINED array,
- * not this function's array-position: an `extra` entry's numeric prefix decides where it lands, not
- * where it sits in the array you pass in (apps/site/lib/deploy-migrate.ts deliberately uses
- * `0011`/`0012` to reproduce their pre-extraction slot — see its own module doc). apps/site's
+ * plus `0023`–`0024`) — a duplicate name is two migrations racing for the same renumbered slot, not
+ * a merge. Effective apply order is `assembleMigrations`'s sort-by-filename over the COMBINED
+ * array, not this function's array-position: an `extra` entry's numeric prefix decides where it
+ * lands, not where it sits in the array you pass in (apps/site/lib/deploy-migrate.ts deliberately
+ * uses `0011`/`0012` to reproduce their pre-extraction slot — see its own module doc). apps/site's
  * extras have since claimed `0020`–`0022`; a caller with no historical slot to preserve should use
- * `0024_*.sql` and up, landing after the shared chain's `0023_order_record_subscription_link.sql`.
+ * `0025_*.sql` and up, landing after the shared chain's `0024_checkout_abandonment.sql`.
  */
 export function platformMigrationsPackage(
   extra: readonly MigrationFile[] = [],

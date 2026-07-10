@@ -291,7 +291,7 @@ source LOC. Counts are the disk truth on `main`, not a quality judgement.
 | `ui`            | 15 / 7 / 915      | **built**           | token floor (`ADR-0042`/`0078`) + the component kit + table-stakes backfill (data-table sort/filter/pagination, dialog/drawer, confirm, toast, select, copy-field, pagination, detail-list)                                                                 |
 | `demo-registry` | 3 / 1 / 130       | **built (private)** | Zod-validated component demo registry (`ADR-0284`) — 50 entries (ui/ui-pro/per-package `./ui`) feeding the admin `/catalog/components` surface; private, absent from the registry index                                                                     |
 | `jobs`          | 6 / 7 / 1058      | **built (thin)**    | job seam (`ADR-0018`) + a BullMQ/Redis driver alongside Trigger.dev/pg-boss/in-memory (`ADR-0287`)                                                                                                                                                          |
-| `email`         | 7 / 6 / 704       | **built (thin)**    | email seam (`ADR-0018`) + transactional templates (`credits-expiring` `ADR-0252`, `purchase-confirmation`, `subscription-payment-received` `CAISSON-27`, `renewal-confirmation`)                                                                            |
+| `email`         | 7 / 6 / 774       | **built (thin)**    | email seam (`ADR-0018`) + transactional templates (`credits-expiring` `ADR-0252`, `purchase-confirmation`, `subscription-payment-received` `CAISSON-27`, `renewal-confirmation`)                                                                            |
 | `analytics`     | 5 / 2 / 318       | **built (thin)**    | server-side `AnalyticsProvider` port: capture (test) driver + Plausible/PostHog/GA4 production drivers, fail-open by design (`ADR-0287`)                                                                                                                    |
 
 ### Wave-0 substrate (shipped)
@@ -317,7 +317,7 @@ and never carried a counts row; detail stays in the rich table below / their own
 | --------------------- | ----------------- |
 | `rate-limit`          | 4 / 3 / 432       |
 | `platform-reads`      | 1 / 1 / 137       |
-| `platform-migrations` | 2 / 1 / 252       |
+| `platform-migrations` | 2 / 1 / 260       |
 | `observability`       | 4 / 3 / 309       |
 | `agent-runner`        | 4 / 2 / 635       |
 | `audit-harness`       | 9 / 8 / 1165      |

@@ -6,7 +6,7 @@ import { BUNDLE_PRICES, formatUsd } from "@/lib/pricing";
 export const metadata = buildMetadata({
   title: "Affiliate program",
   description:
-    "Refer Caisson and earn 30% of every sale, rising to 50% for top-tier partners. Apply by email, get paid through Paddle, with plain refund-clawback terms.",
+    "Refer Caisson and earn 30% of every sale, rising to 50% for top-tier partners. Apply by email, get paid directly once a sale clears its refund window, with plain refund-clawback terms.",
   path: "/affiliates",
 });
 
@@ -39,8 +39,8 @@ const HOW_IT_WORKS = [
   },
   {
     icon: "check" as const,
-    label: "Get paid through Paddle",
-    body: "Commissions are paid out through Paddle, our merchant of record, once a referred sale clears its 14-day refund window.",
+    label: "Get paid directly",
+    body: "Referred sales are processed by Paddle, our merchant of record. Caisson pays your commission to you directly once a referred sale clears its 14-day refund window.",
   },
 ] as const;
 
@@ -70,7 +70,7 @@ const FAQ_ITEMS = [
   {
     question: "How are commissions paid?",
     answer:
-      "Through Paddle, our merchant of record. Payouts follow Paddle's standard payout schedule once a referred sale has cleared its refund window.",
+      "Directly by Caisson. Paddle, our merchant of record, bills and collects the referred sale; once it clears its 14-day refund window, we pay your commission to you on the payout details agreed when you're set up.",
   },
   {
     question: "What happens if a referred sale is refunded?",
@@ -176,7 +176,7 @@ export default function AffiliatesPage() {
           Email{" "}
           <a
             href="mailto:admin@caisson.sh?subject=Caisson%20affiliate%20application"
-            style={{ color: "var(--cs-link)" }}
+            className="cs-link"
           >
             admin@caisson.sh
           </a>{" "}
@@ -185,8 +185,9 @@ export default function AffiliatesPage() {
           set you up directly.
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
-          Payouts run through Paddle, our merchant of record — the same party
-          that bills and collects every Caisson order.
+          Referred orders are billed and collected by Paddle, our merchant of
+          record; Caisson pays your commission to you directly once the sale
+          clears its refund window.
         </p>
         <div style={{ marginTop: "var(--cs-space-6)" }}>
           <Button
@@ -230,7 +231,7 @@ export default function AffiliatesPage() {
       <Section band="surface" eyebrow="Get started">
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-5)" }}>
           Ready to refer Caisson? Email{" "}
-          <a href="mailto:admin@caisson.sh" style={{ color: "var(--cs-link)" }}>
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>{" "}
           to apply, or browse the catalog to see what you&rsquo;d be referring.

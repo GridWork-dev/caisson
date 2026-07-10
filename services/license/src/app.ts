@@ -114,6 +114,15 @@ export interface IssueAppDeps {
    */
   posthogCapture: ((capture: PurchaseCapture) => Promise<void>) | null;
   /**
+   * Abandoned-checkout conversion capture (SPEC outputs/specs/deferred-respec/
+   * SPEC-abandoned-checkout-email.md §e, 2026-07-10 lock). Optional and `null`-able like
+   * `posthogCapture` (absent when POSTHOG_CAPTURE_KEY is unset) — the injected implementation
+   * itself checks whether this account has a recent abandoned-checkout notice
+   * (`hasRecentAbandonedCheckoutNotice`) before firing anything, so this gate here is only "did a
+   * real, granting purchase land," same as `posthogCapture`'s own gate.
+   */
+  abandonedCheckoutConverted?: ((accountId: string) => Promise<void>) | null;
+  /**
    * The post-grant purchase-confirmation email. Unlike `discordNotify`/`posthogCapture` this is
    * never `null` — `server.ts` always wires `email-notify.ts#resolveEmailer()` (Resend or the
    * capture driver), so email is always "sent" somewhere. Same detached, never-throw contract as
@@ -958,6 +967,30 @@ export function createApp(
         } catch {
           process.stderr.write(
             "[service-license] posthog capture threw (ignored)\n",
+          );
+        }
+      }
+      // Post-commit abandoned-checkout conversion capture (SPEC-abandoned-checkout-email.md §e,
+      // 2026-07-10 lock): same detached contract as the PostHog purchase capture above, gated
+      // identically (a granting, non-re-delivery event only) — the injected implementation itself
+      // decides whether this account actually has a recent abandoned-checkout notice before
+      // firing anything.
+      if (
+        deps.abandonedCheckoutConverted !== undefined &&
+        deps.abandonedCheckoutConverted !== null &&
+        result.event !== null &&
+        result.grantedEntitlements.length > 0
+      ) {
+        const accountId = result.event.accountId;
+        try {
+          void deps.abandonedCheckoutConverted(accountId).catch(() => {
+            process.stderr.write(
+              "[service-license] abandoned checkout converted capture rejected (ignored)\n",
+            );
+          });
+        } catch {
+          process.stderr.write(
+            "[service-license] abandoned checkout converted capture threw (ignored)\n",
           );
         }
       }

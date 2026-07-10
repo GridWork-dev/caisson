@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+// The /fetch subpath is the client-safe cut of the kernel (fetch.ts is pure, no server-only
+// imports) — mirrors `discord-connect.tsx`'s own client-side fetchWithTimeout usage.
+import { fetchWithTimeout } from "@caisson/kernel/fetch";
 import { Button } from "@caisson/ui/components";
 
 import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
@@ -17,6 +20,9 @@ export interface CartCheckoutPanelProps {
   /** The buyer's account id, resolved server-side from the session cookie
    *  (`requireDashboardSession` — never trusted from the client, security floor). */
   accountId: string;
+  /** The validated `?promo=` search param (server-validated shape, `dashboard/cart/page.tsx`) —
+   *  threaded straight into `Paddle.Checkout.open({ discountCode })` when present. */
+  promoCode?: string;
 }
 
 /**
@@ -25,7 +31,10 @@ export interface CartCheckoutPanelProps {
  * `custom_data.account_id` — the same key the webhook's `parsePaddleEvent` already reads to
  * resolve the tenant (ADR-0116).
  */
-export function CartCheckoutPanel({ accountId }: CartCheckoutPanelProps) {
+export function CartCheckoutPanel({
+  accountId,
+  promoCode,
+}: CartCheckoutPanelProps) {
   const { items, subtotal, clear } = useCart();
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,9 +49,27 @@ export function CartCheckoutPanel({ accountId }: CartCheckoutPanelProps) {
     setOpening(true);
     setError(null);
     try {
+      // Abandoned-checkout capture (SPEC-abandoned-checkout-email.md §(a)): fire-and-forget, NEVER
+      // awaited into the checkout path — a slow or failed capture must not delay or block
+      // `Paddle.Checkout.open` below.
+      void fetchWithTimeout(
+        "/api/checkout/started",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            items: items.map((item) => ({ id: item.id, label: item.label })),
+          }),
+        },
+        { timeoutMs: 5_000 },
+      ).catch(() => {
+        // Best-effort capture — a missed nudge email is not worth surfacing to the buyer.
+      });
+
       const opened = await openCartCheckout(
         items.map((item) => ({ priceId: item.priceId })),
         accountId,
+        promoCode,
       );
       // The Paddle overlay owns the rest of the flow once it opens — the cart clears on the
       // `checkout.completed` event (the useEffect above), not here.

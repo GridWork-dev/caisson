@@ -51,6 +51,11 @@ const SAMPLE: { [K in EmailTemplateId]: TemplateDataMap[K] } = {
   },
   "waitlist-welcome": { email: "founder@acme.com", bundle: "Compliance" },
   "nurture-follow-up": { email: "cto@acme.com", bundle: "Compliance" },
+  "abandoned-checkout": {
+    buyerName: "Ada",
+    lines: [{ label: "Compliance bundle" }],
+    url: URL,
+  },
 };
 
 describe("renderEmailTemplate", () => {
@@ -254,6 +259,41 @@ describe("renderEmailTemplate", () => {
     expect(rendered.html).toContain("fail-closed");
   });
 
+  test("abandoned-checkout: flat statement, line items, cart CTA — no urgency copy", async () => {
+    const rendered = await renderEmailTemplate("abandoned-checkout", {
+      buyerName: "Ada",
+      lines: [{ label: "Compliance bundle" }],
+      url: URL,
+    });
+    expect(rendered.subject).toBe("Your cart is still here");
+    expect(rendered.html).toContain("Compliance bundle");
+    expect(rendered.html).toContain("Return to cart");
+    for (const urgent of ["act now", "hurry", "expires soon", "countdown"]) {
+      expect(rendered.html.toLowerCase()).not.toContain(urgent);
+    }
+  });
+
+  test("abandoned-checkout: an omitted discount pair renders no discount sentence", async () => {
+    const rendered = await renderEmailTemplate("abandoned-checkout", {
+      buyerName: "Ada",
+      lines: [{ label: "Compliance bundle" }],
+      url: URL,
+    });
+    expect(rendered.html).not.toContain("promo=");
+  });
+
+  test("abandoned-checkout: a configured discount renders the label + promo link", async () => {
+    const rendered = await renderEmailTemplate("abandoned-checkout", {
+      buyerName: "Ada",
+      lines: [{ label: "Compliance bundle" }],
+      url: URL,
+      discountLabel: "10% off",
+      discountUrl: `${URL}?promo=SAVE10`,
+    });
+    expect(rendered.html).toContain("10% off");
+    expect(rendered.html).toContain("promo=SAVE10");
+  });
+
   // Guards the security-floor fix an earlier standalone-HTML version of these two templates
   // needed (a buyer-supplied email reaching raw HTML unescaped): react-email/JSX auto-escapes
   // every text child, so a script-shaped email must render as inert text, never live markup.
@@ -337,5 +377,28 @@ describe("tryRenderEmailTemplate", () => {
         dashboardUrl: URL,
       }),
     ).toBe(null);
+  });
+
+  test("abandoned-checkout: a half-set discount pair (label with no url, or vice versa) fails closed", async () => {
+    const base = {
+      buyerName: "Ada",
+      lines: [{ label: "Compliance bundle" }],
+      url: URL,
+    };
+    expect(
+      await tryRenderEmailTemplate("abandoned-checkout", {
+        ...base,
+        discountLabel: "10% off",
+      }),
+    ).toBe(null);
+    expect(
+      await tryRenderEmailTemplate("abandoned-checkout", {
+        ...base,
+        discountUrl: `${URL}?promo=SAVE10`,
+      }),
+    ).toBe(null);
+    expect(await tryRenderEmailTemplate("abandoned-checkout", base)).not.toBe(
+      null,
+    );
   });
 });

@@ -6,6 +6,12 @@
 // keyed by a `TemplateDataMap` rather than one shared prop type.
 import { render } from "@react-email/render";
 import {
+  AbandonedCheckoutEmail,
+  ABANDONED_CHECKOUT_SUBJECT,
+  type AbandonedCheckoutData,
+  type AbandonedCheckoutLine,
+} from "./abandoned-checkout.tsx";
+import {
   AccessRevokedEmail,
   accessRevokedSubject,
   type AccessRevokedData,
@@ -64,13 +70,16 @@ export type EmailTemplateId =
   | "renewal-confirmation"
   | "access-revoked"
   | "waitlist-welcome"
-  | "nurture-follow-up";
+  | "nurture-follow-up"
+  | "abandoned-checkout";
 
 export interface EmailTemplateData {
   url: string;
 }
 
 export type {
+  AbandonedCheckoutData,
+  AbandonedCheckoutLine,
   AccessRevokedData,
   CreditsExpiringData,
   NurtureFollowUpData,
@@ -97,6 +106,7 @@ export interface TemplateDataMap {
   "access-revoked": AccessRevokedData;
   "waitlist-welcome": WaitlistWelcomeData;
   "nurture-follow-up": NurtureFollowUpData;
+  "abandoned-checkout": AbandonedCheckoutData;
 }
 
 export interface RenderedEmail {
@@ -223,6 +233,51 @@ function coercePurchaseConfirmation(
   };
 }
 
+function coerceAbandonedCheckoutLine(
+  line: unknown,
+): AbandonedCheckoutLine | null {
+  if (typeof line !== "object" || line === null) return null;
+  const { label } = line as Record<string, unknown>;
+  return typeof label === "string" ? { label } : null;
+}
+
+/** The abandoned-checkout coercer. `discountLabel`/`discountUrl` are optional and must arrive
+ *  together (BOTH present or BOTH absent) — a half-set discount pair fails closed rather than
+ *  rendering a label with no link or a link with no label. */
+function coerceAbandonedCheckout(
+  data: Record<string, unknown>,
+): AbandonedCheckoutData | null {
+  if (
+    typeof data.buyerName !== "string" ||
+    typeof data.url !== "string" ||
+    !Array.isArray(data.lines)
+  ) {
+    return null;
+  }
+  const { discountLabel, discountUrl } = data;
+  if (
+    (discountLabel === undefined) !== (discountUrl === undefined) ||
+    (discountLabel !== undefined && typeof discountLabel !== "string") ||
+    (discountUrl !== undefined && typeof discountUrl !== "string")
+  ) {
+    return null;
+  }
+  const lines: AbandonedCheckoutLine[] = [];
+  for (const raw of data.lines) {
+    const line = coerceAbandonedCheckoutLine(raw);
+    if (line === null) return null;
+    lines.push(line);
+  }
+  return {
+    buyerName: data.buyerName,
+    url: data.url,
+    lines,
+    ...(discountLabel !== undefined && discountUrl !== undefined
+      ? { discountLabel, discountUrl }
+      : {}),
+  };
+}
+
 /** G27 — the revoke/refund notice coercer. `reason` is a closed two-value enum. */
 function coerceAccessRevoked(
   data: Record<string, unknown>,
@@ -313,6 +368,11 @@ const TEMPLATES: { [K in EmailTemplateId]: TemplateEntry<K> } = {
     Component: NurtureFollowUpEmail,
     coerce: coerceEmailBundle,
   },
+  "abandoned-checkout": {
+    subject: ABANDONED_CHECKOUT_SUBJECT,
+    Component: AbandonedCheckoutEmail,
+    coerce: coerceAbandonedCheckout,
+  },
 };
 
 /** Stable display order for the dev preview route. */
@@ -328,6 +388,7 @@ export const EMAIL_TEMPLATE_IDS: readonly EmailTemplateId[] = [
   "access-revoked",
   "waitlist-welcome",
   "nurture-follow-up",
+  "abandoned-checkout",
 ];
 
 /** Render one template + its plain-text fallback from the SAME element (never drift). */

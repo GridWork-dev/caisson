@@ -9,6 +9,13 @@ name: lighthouse-ci
 # Stays manual-dispatch ONLY — deliberately NOT a required PR check (ADR-0309 rejected the
 # required-gate option: no new flaky gate the week before launch). Dispatch it against prod after
 # a deploy as wave evidence; override `url` to point at any origin.
+#
+# best-practices floor is 0.75, not 0.9 (first error-level run, 2026-07-10): Cloudflare's
+# injected bot-detection script (/cdn-cgi/challenge-platform/scripts/jsd/main.js) fails the
+# `deprecations` and `inspector-issues` audits on every page for every visitor, capping the
+# category at ~0.78 — third-party, not page code. Raise the floor back to 0.9 if the CF
+# JS-detections feature is ever turned off at the zone (same terraform surface as the
+# CAISSON-50 beacon kill).
 on:
   workflow_dispatch:
     inputs:
