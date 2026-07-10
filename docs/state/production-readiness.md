@@ -95,8 +95,10 @@ limit 429-proven live 2026-07-10 (below).
   `buyer-dashboard-flow.live.test.ts` now run for real (the first credentialed run immediately
   caught a real bug: better-auth 403s auth POSTs without an `Origin` header, which the test's own
   sign-in helper never sent — fixed).
-- **P3:** GitHub Action refs are version-pinned by SHA in some workflows and mutable tags in
-  others — supply-chain hygiene sweep opportunity. (tracked as of this sweep)
+- **P3 (corrected 2026-07-10):** GitHub Action refs are ALL SHA-pinned (46/46 verified in the
+  Kickoff-K supply-chain audit) — the earlier "mutable tags in others" claim was wrong. The real
+  residual was Docker base images pinned to tags not digests (K-03), now addressed by enabling
+  Renovate `docker:pinDigests` for the first-party images (buyer scaffolds stay tag-pinned).
 
 ## Commerce — BLOCKED (deliberately)
 
