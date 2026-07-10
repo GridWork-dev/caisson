@@ -2001,3 +2001,30 @@ Agentic-Dev lede — the glossary + MCP-sequence copy were already mechanism-for
 ADR-0305 per-org license line (plans FAQ + cart trust note + the two mid-tier bundle FAQs); the
 12-month pricing-page answer was verified already shipped ("The one question everyone asks",
 /marketplace/plans).
+
+## Closed by the 2026-07-10 perf/mobile picker round (operator-locked → ADR-0310..0313)
+
+Driven by the first error-level lighthouse evidence (ADR-0309, runs 29071930623 → 29072745113 —
+one residual red: `/` perf 0.57 desktop) plus the operator mobile defect report (dead search,
+unclean drawer). Grounded in a four-agent research round: hydration breakdown (opus) · perf
+sweep (opus) · live 390px repro (sonnet+playwright) · nav design directions
+(gw-frontend-designer+refero). Artifact: `outputs/research/perf-mobile-research-2026-07-10.md`.
+
+- **Homepage hydration diet → LOCKED: standard scope (ADR-0310).** RepoArtifact→pure-CSS ·
+  StackBuilder defer-hydrate (poster pattern) · shared Reveal observer + deferred footer
+  form/mobile drawer · NavAccount idle-mount + owned-fetch cookie gate. The MED-HIGH chrome
+  slices (fumadocs search lazy-mount, NavPanels popover defer) PARKED; trigger: `/` still
+  misses 0.9 after this wave + ADR-0313 land.
+- **Perf config wave → LOCKED: everything-measured (ADR-0311).** compress:false (CF brotli) ·
+  theme-init inline · redundant Cache-Control delete · footer prefetch=false · NFT-trace fix ·
+  optimizePackageImports measure-first. The 94KB design-system CSS audit parked as a
+  design-track row.
+- **Mobile nav → LOCKED: Accordion Dropdown (ADR-0312).** Pinned account(+new icon)/cart/CTA
+  top · three native `<details>` sections (Bundles/Marketplace/Resources) with icons, current
+  section open · authored drawer slide-down (the ADR-0307 gap) · the search-stacking defect
+  (fumadocs dialog behind the top-layer drawer) fixed in every direction. Rejected: Sectioned
+  Sheet (designer rec), Card-Row Dropdown — recorded in the research doc.
+- **CF JS-detections → LOCKED: kill it (ADR-0313).** Terraform-pinned off (676ms/page + the
+  best-practices 0.78 cap); pre-launch posture holds (CF-Access on commerce, terraformed edge
+  rate-limits); re-arm trigger = real bot pressure at launch. Lighthouse best-practices floor
+  returns 0.75→0.9 after live verification.

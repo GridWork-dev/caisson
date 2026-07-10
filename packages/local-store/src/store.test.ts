@@ -37,6 +37,38 @@ describe("LocalStore hybrid retrieval (ADR-0067)", () => {
     }
   });
 
+  test("a multi-word query matches docs whose tokens are NOT adjacent (per-token OR, not one phrase)", () => {
+    const store = LocalStore.open({ dim: 3 });
+    try {
+      store.upsert({
+        id: "refunds",
+        text: "every purchase can be refunded under the policy within 14 days",
+      });
+      store.upsert({ id: "unrelated", text: "credit wallet grant and debit" });
+      // The old whole-query phrase sanitization required "refunded ... policy" adjacent in
+      // order, so ANY natural-language multi-word query returned zero FTS rows.
+      const ids = store
+        .hybridSearch({ queryText: "what is the refunded policy?" })
+        .map((h) => h.id);
+      expect(ids).toContain("refunds");
+      expect(ids).not.toContain("unrelated");
+    } finally {
+      store.close();
+    }
+  });
+
+  test("FTS operators in caller text stay inert (per-token quoting)", () => {
+    const store = LocalStore.open({ dim: 3 });
+    try {
+      seed(store);
+      // NOT/AND/parens are FTS5 operators; quoted per-token they are just literal words.
+      const hits = store.hybridSearch({ queryText: 'fox NOT "quick" (AND' });
+      expect(hits.map((h) => h.id)).toContain("fox");
+    } finally {
+      store.close();
+    }
+  });
+
   test("the FTS5 floor is available for docs indexed without an embedding", () => {
     const store = LocalStore.open({ dim: 3 });
     try {

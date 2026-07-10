@@ -42,6 +42,23 @@
   }
 }
 
+/* Card panels (A1, ADR-0310): all four render server-side; only the one whose radio is :checked
+ * shows. `display: none` on the rest drops them from layout entirely, so the visible panel alone
+ * sets the box height — same as the single-CodeBlock markup this replaces. One explicit rule per
+ * codeId (bounded set, `CODE` in repo-artifact.tsx) rather than a generated loop. */
+.cardPanel {
+  display: none;
+}
+
+.grid:has(#repo-artifact-tab-rls:checked) .cardPanel[data-card-id="rls"],
+.grid:has(#repo-artifact-tab-kernel:checked) .cardPanel[data-card-id="kernel"],
+.grid:has(#repo-artifact-tab-audit-worm:checked)
+  .cardPanel[data-card-id="audit-worm"],
+.grid:has(#repo-artifact-tab-field-crypto:checked)
+  .cardPanel[data-card-id="field-crypto"] {
+  display: block;
+}
+
 /* ===== Tree ===== */
 .list {
   list-style: none;
@@ -121,8 +138,9 @@
   opacity: 0.85;
 }
 
-/* ===== Clickable code nodes ===== */
+/* ===== Clickable code nodes (now a <label> wrapping a visually-hidden radio, A1) ===== */
 .clickable {
+  position: relative; /* containing block for the absolutely-clipped .radioInput below */
   cursor: pointer;
   transition:
     background var(--cs-duration-fast) var(--cs-ease-out),
@@ -138,14 +156,32 @@
   background: var(--cs-surface-2);
 }
 
-.clickable:focus-visible {
+/* The radio itself receives focus (it's the sr-only focusable control); the ring reads on the
+ * label — its visible row — via :has(), so keyboard nav still shows a focus rect on the row. */
+.clickable:has(:focus-visible) {
   outline: 2px solid var(--cs-accent);
   outline-offset: 1px;
 }
 
-.active {
+/* Was a JS-toggled .active class on the button; now the row styles itself off its own radio's
+ * :checked state — no active/inactive prop plumbing needed. */
+.clickable:has(input:checked) {
   background: color-mix(in oklab, var(--area) 16%, transparent);
   box-shadow: inset 2px 0 0 var(--area);
+}
+
+/* Visually-hidden but focusable/clickable (the standard sr-only clip — NOT display:none / the
+ * `hidden` attribute, both of which drop the control from the tab order). */
+.radioInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .peek {
@@ -158,6 +194,6 @@
 }
 
 .clickable:hover .peek,
-.active .peek {
+.clickable:has(input:checked) .peek {
   opacity: 1;
 }

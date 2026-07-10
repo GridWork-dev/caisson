@@ -33,6 +33,107 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-10 — EXECUTED: Kickoff-I perf/mobile wave deployed — `/` perf 0.57→0.95, all lighthouse floors green
+
+**What deployed:** `caisson-site` redeployed from `main`@`418b26f7` (`railway up -y --service
+caisson-site --ci` → `Deploy complete`, image `sha256:635fa583dca8…`). The three merged waves:
+ADR-0310 hydration diet (RepoArtifact→CSS, StackBuilder/waitlist defer, shared Reveal observer,
+NavAccount idle-mount) · ADR-0311 config (compress:false for CF brotli, theme-init inlined,
+header cleanup, NFT excludes) · ADR-0312 mobile-nav accordion (pinned account/cart/CTA block,
+three `<details>` sections derived from the desktop panel spec, authored slide-down, the
+dead-mobile-search P0 fixed). SHIP-audit fixes rode in `11396d6b` (owned-items fetch restored —
+the HttpOnly gate was a double-pay vector; the invalid `::details-content > *` selector that
+500'd dev and killed the prod section-slide).
+
+**Live-verify (pasted):** homepage HTML after deploy —
+
+```
+$ curl -s https://caisson.sh/ -w "%{http_code}"   → 200
+grep -c "theme-init.js"        → 0   (inlined, blocking request gone)
+grep -c "challenge-platform"   → 0   (ADR-0313 jsd kill holding)
+grep -c "cs-nav-toggle"        → 1   (drawer shell present)
+$ curl -sI -H "Accept-Encoding: br" https://caisson.sh/_next/static/chunks/0ghtei8evo-qs.js
+content-encoding: br            (CF brotli live — origin no longer pre-gzips)
+cache-control: public, max-age=31536000, immutable
+```
+
+**Lighthouse evidence (run `29106799203`, dispatch vs the live origin, error-level assertions):
+conclusion SUCCESS.** Median desktop scores:
+
+```
+https://caisson.sh/            performance=0.95 accessibility=1.00 best-practices=0.96 seo=1.00  TBT 70ms  LCP 1.4s
+https://caisson.sh/marketplace performance=0.90 accessibility=0.96 best-practices=0.96 seo=1.00  TBT 30ms  LCP 2.0s
+```
+
+The homepage residual red is CLOSED: `/` perf 0.57 → 0.95 (TBT ~1.36s → 70ms; the ADR-0313 jsd
+kill + the ADR-0310 diet in combination), best-practices 0.78 → 0.96 with the floor restored to
+0.9 and passing. Follow-ups filed: CAISSON-81 (session-hint cookie to land the slice-b signed-out
+skip), CAISSON-82 (NFT trace diagnostic in services/license).
+
+## 2026-07-10 — EXECUTED: support-bot listener armed + affiliate delivery proof + Loki rule (Kickoff-J later sitting)
+
+**Support-bot `#ask-ai` listener armed.** The operator toggled the privileged intents in the
+Developer Portal (verified over the Discord API: app flags carry MESSAGE_CONTENT-limited +
+GUILD_MEMBERS-limited — the enabled form for an unverified bot) and the token was confirmed
+rotated-and-consistent (railway `DISCORD_TOKEN` sha12 `ef2344d8e9c3` == local env; `users/@me`
+→ HTTP 200). The missing wiring was env: `SUPPORT_CHANNEL_ID` was UNSET, so the channel
+listener + the reply-`escalate` handler were dormant (code only requests message_content when
+the channel is configured). Set `SUPPORT_CHANNEL_ID=1521528418930524270` (`#ask-ai`) +
+`railway redeploy` — fresh container up clean:
+
+```
+SUPPORT_CHANNEL_ID=1521528418930524270
+Starting Container
+[telemetry] OTLP export enabled (service=service-support-bot)
+```
+
+Global slash commands verified over the API: `['ask', 'kick', 'ban', 'timeout', 'role-add',
+'role-remove', 'grant-role', 'post-roles']`.
+
+**Affiliate attribution delivery proof (sandbox):** pricing-preview with `CAISSONAFF1` on
+`pri_01kwwqa266p6smw4yaanxg1n5j` → `subtotal=9900 discount=990 total=8910` (exactly 10%);
+`transaction.completed` sim `ntfsim_01kx6822kdnaxzzxma3m8mf1q2` with `discount_id` delivered
+to `https://license.caisson.sh/webhook`:
+
+```
+event: transaction.completed | status: success
+  delivered discount_id: dsc_01kx5b0f9majy4wbgq5cjgdm7y
+  delivered subscription_id: None
+  delivered txn id: txn_01simaffproof0710aaaaaaaaa
+  endpoint response code: 200
+  endpoint response body: {"ok":true}
+```
+
+**OTLP logs fix landed on main (`0dd715ae`), fleet redeploy PENDING (operator-gated):**
+`@caisson/observability` now ships the logs pipeline + stdout/stderr bridge; the
+`caisson-log-error-burst` Loki rule is provisioned via the API (201, NoData=OK) and arms
+itself when site/admin/license/docs redeploy. The pipeline itself is LIVE-PROVEN against the
+real Grafana Cloud gateway — a local probe process booted the new package with the fleet's
+OTLP endpoint/headers and its lines landed in Loki:
+
+```
+streams: 2
+labels: {'detected_level': 'warn', 'service_name': 'caisson-logs-probe'}
+  line: [observability] OTel SDK started (service=caisson-logs-probe)
+  line: caisson-logs-probe: OTLP logs pipeline live proof 2026-07-10T14:58:40.719Z
+```
+
+Loki is no longer zero-streams; per-service streams appear at the fleet redeploy.
+
+---
+
+## 2026-07-10 — EXECUTED: ADR-0313 zone bot-management kill (terraform apply, operator-run)
+
+**Operator-locked at the perf/mobile picker, applied via `terraform apply bm.plan`.** One
+in-place update on `cloudflare_bot_management.caisson` (resource imported first):
+`fight_mode true→false` · `enable_js true→false` · `ai_bots_protection block→"disabled"`
+(the block value was a FOUND misalignment — the zone was blocking AI crawlers against the
+ADR-0303 public-for-AI-indexing posture). Live-verify pasted: API readback
+`fight_mode=False enable_js=False ai_bots_protection=disabled`; fresh fetches of `/`,
+`/marketplace`, `/compare` each `grep -c challenge-platform` → `0` (first probe seconds after
+apply still showed 1 — propagation lag, gone on re-fetch). Lighthouse best-practices floor
+returned 0.75→0.9 (`db8a3ba4`). Re-arm trigger: real bot pressure at launch (ADR-0313).
+
 ## 2026-07-10 — EXECUTED: Kickoff-J tail wave — migration 0024 + abandoned-checkout arm + EULA clause live + alerting floor
 
 **Operator-ordered ("want you to do the full deploy sequence").** Ships the `5ece1d43` wave

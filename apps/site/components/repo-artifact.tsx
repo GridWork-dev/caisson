@@ -1,7 +1,3 @@
-"use client";
-
-import { useState } from "react";
-
 import { CodeBlock, StatusChip } from "@/components";
 import { MODULE_PAGES } from "@/lib/module-pages";
 
@@ -13,6 +9,12 @@ import styles from "./repo-artifact.module.css";
 // file its header names (the honest-artifact floor, ADR-0082; no screenshots, no mockups). Two
 // snippets (kernel, tenancy-rls) are base packages with no module record and are inlined verbatim;
 // two (audit-worm, field-crypto) reuse the single-sourced depth-page artifact so they can't drift.
+//
+// A1 (ADR-0310): pure-CSS radio reveal — no "use client", no island. All four code cards are
+// server-rendered; a native <input type=radio> per card + `:has()` sibling rules (already the
+// codebase's checkbox-tab convention, see marketplace.module.css `.pickerRow:has(input:checked)`)
+// swap which one shows. One tab stop (the radio group) + arrow-key selection, which is MORE
+// standard keyboard behaviour than the four individually-tabbable buttons this replaces.
 
 type Area = "app" | "pkg" | "tooling" | "svc" | "reg";
 
@@ -98,6 +100,14 @@ const CODE: Record<string, CodeCard> = {
   },
 };
 
+// The radio group's initial pick — was `useState("rls")`, now the lone `defaultChecked`.
+const DEFAULT_CODE_ID = "rls";
+const RADIO_GROUP = "repo-artifact-card";
+
+function tabId(codeId: string): string {
+  return `repo-artifact-tab-${codeId}`;
+}
+
 const TREE: readonly TreeNode[] = [
   {
     name: "apps",
@@ -168,18 +178,9 @@ const TREE: readonly TreeNode[] = [
   },
 ];
 
-function TreeRow({
-  node,
-  activeId,
-  onSelect,
-}: {
-  node: TreeNode;
-  activeId: string;
-  onSelect: (id: string) => void;
-}) {
+function TreeRow({ node }: { node: TreeNode }) {
   const isDir = node.children !== undefined;
   const clickable = node.codeId !== undefined;
-  const active = clickable && node.codeId === activeId;
 
   const inner = (
     <>
@@ -195,14 +196,17 @@ function TreeRow({
   return (
     <li className={styles.item} data-area={node.area}>
       {clickable ? (
-        <button
-          type="button"
-          className={`${styles.row} ${styles.clickable} ${active ? styles.active : ""}`}
-          aria-pressed={active}
-          onClick={() => onSelect(node.codeId!)}
-        >
+        <label className={`${styles.row} ${styles.clickable}`}>
+          <input
+            type="radio"
+            name={RADIO_GROUP}
+            id={tabId(node.codeId!)}
+            value={node.codeId}
+            defaultChecked={node.codeId === DEFAULT_CODE_ID}
+            className={styles.radioInput}
+          />
           {inner}
-        </button>
+        </label>
       ) : (
         <span className={`${styles.row} ${isDir ? styles.dir : ""}`}>
           {inner}
@@ -211,12 +215,7 @@ function TreeRow({
       {isDir && node.children && node.children.length > 0 ? (
         <ul className={styles.list}>
           {node.children.map((child) => (
-            <TreeRow
-              key={child.name}
-              node={child}
-              activeId={activeId}
-              onSelect={onSelect}
-            />
+            <TreeRow key={child.name} node={child} />
           ))}
         </ul>
       ) : null}
@@ -225,9 +224,6 @@ function TreeRow({
 }
 
 export function RepoArtifact() {
-  const [activeId, setActiveId] = useState("rls");
-  const card = CODE[activeId] ?? CODE.rls!;
-
   return (
     <div className={styles.grid}>
       <div className={styles.treeCard}>
@@ -237,30 +233,35 @@ export function RepoArtifact() {
         </p>
         <ul className={styles.list} aria-label="Caisson monorepo structure">
           {TREE.map((node) => (
-            <TreeRow
-              key={node.name}
-              node={node}
-              activeId={activeId}
-              onSelect={setActiveId}
-            />
+            <TreeRow key={node.name} node={node} />
           ))}
         </ul>
       </div>
 
       {/* min-width:0 on the grid track (styles.grid) lets the code body scroll INSIDE its own frame
-          instead of blowing the column out (ADR-0285 §4 overflow fix). */}
+          instead of blowing the column out (ADR-0285 §4 overflow fix). All four cards render; CSS
+          shows the one whose radio is :checked (styles.cardPanel rules below) and hides the rest. */}
       <div className={styles.codeCard}>
-        {/* The chrome-bar header is the file path alone — a clean editor-tab identifier. The human
-            descriptor (`card.label`) was joined on with a colon, making an over-long header pill;
-            it already reads in the selected tree row's note, so the path carries the header. */}
-        <CodeBlock
-          frame
-          label={card.file}
-          status={
-            <StatusChip tone={card.statusTone} dot label={card.statusLabel} />
-          }
-          code={card.code}
-        />
+        {Object.entries(CODE).map(([id, card]) => (
+          <div key={id} className={styles.cardPanel} data-card-id={id}>
+            {/* The chrome-bar header is the file path alone — a clean editor-tab identifier. The
+                human descriptor (`card.label`) was joined on with a colon, making an over-long
+                header pill; it already reads in the selected tree row's note, so the path carries
+                the header. */}
+            <CodeBlock
+              frame
+              label={card.file}
+              status={
+                <StatusChip
+                  tone={card.statusTone}
+                  dot
+                  label={card.statusLabel}
+                />
+              }
+              code={card.code}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

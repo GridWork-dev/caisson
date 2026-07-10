@@ -65,6 +65,22 @@ function embedCachePath(): string | undefined {
   return undefined;
 }
 
+/** Optional `DOCS_EMBED_PHASE_DEADLINE_MS` override — the 180s default plus a cold cache covers
+ *  only ~80 of the corpus's chunks per boot (2026-07-10 prod finding: 77/489 embedded, the vec
+ *  leg stuck on the alphabetically-first chunks). Bounded 1s..30min; junk falls back to default. */
+function embedPhaseDeadlineMs(): number | undefined {
+  const raw = process.env.DOCS_EMBED_PHASE_DEADLINE_MS ?? "";
+  if (raw.length === 0) return undefined;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 1_000 || parsed > 1_800_000) {
+    process.stderr.write(
+      `[service-docs] ignoring invalid DOCS_EMBED_PHASE_DEADLINE_MS: ${raw}\n`,
+    );
+    return undefined;
+  }
+  return parsed;
+}
+
 async function buildIndex(chunks: DocChunk[]): Promise<DocsIndex> {
   const key = process.env.OPENROUTER_API_KEY ?? "";
   if (key.length === 0) {
@@ -88,7 +104,12 @@ async function buildIndex(chunks: DocChunk[]): Promise<DocsIndex> {
             OPENROUTER_EMBED_MODEL,
           )
         : createOpenRouterEmbedder({ apiKey: key });
-    const index = await DocsIndex.build(chunks, embedder);
+    const deadline = embedPhaseDeadlineMs();
+    const index = await DocsIndex.build(
+      chunks,
+      embedder,
+      deadline !== undefined ? { embedPhaseDeadlineMs: deadline } : undefined,
+    );
     if (embedder instanceof CachedEmbedder) {
       // save() is internally fail-soft, but guard here too: a cache-persist problem must never
       // send an already-successfully-built semantic index down the FTS-floor catch below.

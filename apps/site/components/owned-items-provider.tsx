@@ -16,6 +16,12 @@ import {
  * failure — offline, the route erroring — leaves it empty rather than blocking the page, since
  * the worst case is a buyer sees an un-disabled Buy button for something they already own, not a
  * broken cart.
+ *
+ * The fetch is deliberately UNCONDITIONAL: the better-auth session cookie is HttpOnly
+ * (identity/security.md), so no client-side check can distinguish signed-in from signed-out — and
+ * the owned-items disable this feeds is the only guard against a signed-in owner re-paying for
+ * something they already own (add-to-cart-button.tsx). Skipping the signed-out round trip
+ * (ADR-0310 slice b) needs a server-minted non-HttpOnly session-hint cookie first.
  */
 const OwnedItemsContext = createContext<ReadonlySet<string>>(new Set());
 

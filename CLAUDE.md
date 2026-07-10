@@ -67,8 +67,12 @@ edited — supersede with a later ADR).
    the Kickoff-I scope-lock fork round 2026-07-09 — signature ambient depth-fog lattice field
    with poster-first idle-hydrate + ≤130KB three.js-core budget, amends 0104 · sitewide
    authored-motion pass executing 0078 §6 · marketplace media full-depth pass refining 0290,
-   F2 closes · lighthouse warn→error + wave evidence + ride-alongs; 0314 = the Kickoff-K
-   repo-local four-layer security-tooling stack + Strix harness retirement, 2026-07-10).
+   F2 closes · lighthouse warn→error + wave evidence + ride-alongs; 0310-0313 = the
+   perf/mobile picker 2026-07-10 off the first error-level lighthouse evidence — homepage
+   hydration diet standard scope · perf config wave everything-measured · mobile nav
+   accordion + the search-stacking defect fix · CF JS-detections kill, terraform-pinned;
+   0314 = the Kickoff-K repo-local four-layer security-tooling stack + Strix harness
+   retirement, 2026-07-10).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec

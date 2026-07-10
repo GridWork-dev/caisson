@@ -94,6 +94,14 @@ class AnswerResult(BaseModel):
         "default keeps every pre-existing escalation construction site (tier is irrelevant when "
         "resolved is False) unchanged.",
     )
+    confidence: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="The raw self-assessed confidence the grade was computed from (2026-07-10 "
+        "telemetry). None on paths that never reached grading (empty retrieval, sentinel, leak) "
+        "or when the trailer was missing/unparseable — the fail-closed LOW signal.",
+    )
     brief: Brief | None = Field(
         default=None, description="Present iff resolved is False (escalation)."
     )

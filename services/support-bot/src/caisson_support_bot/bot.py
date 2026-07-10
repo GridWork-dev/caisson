@@ -8,13 +8,14 @@ them. The live gateway, the real OpenRouter key, and Postgres are the operator-g
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 
 import discord
 import httpx
 from discord import app_commands
 from discord.ext import commands
 
+from .analytics import AnswerAnalytics
 from .chat_slack import SlackThreadOpener
 from .config import Settings
 from .contracts import AnswerResult, Brief, ConfidenceTier
@@ -76,17 +77,22 @@ async def handle_question(
     pipeline: RagPipeline,
     escalator_factory: Callable[[], Escalator],
     max_chars: int = 2000,
+    on_result: Callable[[str, AnswerResult], Awaitable[None]] | None = None,
 ) -> str:
     """Answer a question, escalating (thread + ticket) when it can't be grounded. Returns user-facing text.
 
     Pure over its ports — the caller binds ``escalator_factory`` to the right channel. This is the unit
     the handler tests exercise; the discord callbacks below just collect the question and send the text.
+    ``on_result`` (2026-07-10 telemetry) observes every pipeline verdict — (cleaned_question, result) —
+    before answer-shaping; the analytics sink is fail-soft internally, so it is awaited inline.
     """
     cleaned = question.strip()[:max_chars]
     if not cleaned:
         return "Ask me a question about Caisson and I'll answer from the docs."
 
     result = await pipeline.answer(cleaned)
+    if on_result is not None:
+        await on_result(cleaned, result)
     if result.resolved:
         return format_answer(result)
 
@@ -266,14 +272,32 @@ def make_bot(
     pipeline: RagPipeline,
     store: TicketStore | None = None,
     http_client: httpx.AsyncClient | None = None,
+    analytics: AnswerAnalytics | None = None,
 ) -> commands.Bot:
     """Construct the discord.py bot. The listener intent is only requested if a channel is configured.
 
     ``http_client`` is the bot's already-pooled outbound client (see ``__main__.py``); passing it
     enables the Linear triage sink when its three settings are also configured (ADR-0206). Tests
-    that omit it simply never construct the Linear sink.
+    that omit it simply never construct the Linear sink. ``analytics`` (2026-07-10) is the
+    env-gated per-answer telemetry sink — None means no capture code runs at all.
     """
     issue_tracker = linear_issue_tracker(settings, http_client)
+
+    def observe(
+        surface: str, user_id: str
+    ) -> Callable[[str, AnswerResult], Awaitable[None]] | None:
+        """Bind the telemetry callback for one interaction, or None when analytics is off."""
+        if analytics is None:
+            return None
+        sink = analytics  # local binding so the closure sees a non-None type
+
+        async def on_result(question: str, result: AnswerResult) -> None:
+            await sink.capture_answer(
+                question=question, result=result, surface=surface, user_id=user_id
+            )
+
+        return on_result
+
     intents = discord.Intents.default()
     if settings.support_channel_id is not None:
         intents.message_content = True  # required to read #ask-ai messages.
@@ -314,6 +338,7 @@ def make_bot(
                 http_client=http_client,
             ),
             max_chars=settings.max_question_chars,
+            on_result=observe("ask", str(interaction.user.id)),
         )
         await interaction.followup.send(reply)
 
@@ -343,6 +368,11 @@ def make_bot(
             ),
         )
         if escalate_reply is not None:
+            if analytics is not None:
+                await analytics.capture_escalate_reply(
+                    user_id=str(message.author.id),
+                    referenced_answer=ref.content if isinstance(ref, discord.Message) else None,
+                )
             await message.reply(escalate_reply)
             return
 
@@ -359,6 +389,7 @@ def make_bot(
                     http_client=http_client,
                 ),
                 max_chars=settings.max_question_chars,
+                on_result=observe("channel", str(message.author.id)),
             )
         await message.reply(reply)
 

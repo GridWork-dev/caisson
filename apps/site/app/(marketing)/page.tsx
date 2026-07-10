@@ -15,7 +15,7 @@ import {
   LifecycleDiagram,
 } from "@/components/isolation-diagrams";
 import { RepoArtifact } from "@/components/repo-artifact";
-import { StackBuilder } from "@/components/stack-builder";
+import { StackBuilderLazy } from "@/components/stack-builder-lazy";
 import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
@@ -481,7 +481,7 @@ export default function HomePage() {
           lede="Pick the modules you need and see the total. When your picks total more than a bundle covers, the builder points at the cheaper path — the arithmetic, not a fabricated discount. Every figure reads from the committed catalog."
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
-            <StackBuilder />
+            <StackBuilderLazy />
           </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
             <Link href="/marketplace" className="cs-link">
