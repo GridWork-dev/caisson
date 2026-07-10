@@ -280,8 +280,52 @@ export function PreviewDialog({
           color: var(--cs-fg);
           box-shadow: var(--cs-shadow-lg);
           overflow: hidden;
+          /* Authored open/close (ADR-0078 §6). @starting-style + allow-discrete animate a top-layer
+             <dialog> across display; transform/opacity only. This base rule's timing is the EXIT
+             (closing settles back to it) — a token faster than the enter on [open] below. Reduced
+             motion: base.css zeroes every transition-duration !important, so this collapses to an
+             instant swap with the element never stuck hidden ([open] sets opacity:1 regardless). */
+          opacity: 0;
+          transform: scale(0.98) translateY(4px);
+          transition:
+            opacity var(--cs-duration-fast) var(--cs-ease-out),
+            transform var(--cs-duration-fast) var(--cs-ease-out),
+            overlay var(--cs-duration-fast) allow-discrete,
+            display var(--cs-duration-fast) allow-discrete;
         }
-        .cs-preview-dialog::backdrop { background: var(--cs-scrim); }
+        .cs-preview-dialog[open] {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+          transition:
+            opacity var(--cs-duration-base) var(--cs-ease-out),
+            transform var(--cs-duration-base) var(--cs-ease-out),
+            overlay var(--cs-duration-base) allow-discrete,
+            display var(--cs-duration-base) allow-discrete;
+        }
+        @starting-style {
+          .cs-preview-dialog[open] {
+            opacity: 0;
+            transform: scale(0.98) translateY(4px);
+          }
+        }
+        .cs-preview-dialog::backdrop {
+          background: var(--cs-scrim);
+          opacity: 0;
+          transition:
+            opacity var(--cs-duration-fast) var(--cs-ease-out),
+            overlay var(--cs-duration-fast) allow-discrete,
+            display var(--cs-duration-fast) allow-discrete;
+        }
+        .cs-preview-dialog[open]::backdrop {
+          opacity: 1;
+          transition:
+            opacity var(--cs-duration-base) var(--cs-ease-out),
+            overlay var(--cs-duration-base) allow-discrete,
+            display var(--cs-duration-base) allow-discrete;
+        }
+        @starting-style {
+          .cs-preview-dialog[open]::backdrop { opacity: 0; }
+        }
         .cs-preview-shell { max-height: inherit; display: flex; flex-direction: column; }
         .cs-preview-head {
           display: flex; align-items: flex-start; justify-content: space-between;
