@@ -33,6 +33,32 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-10 — EXECUTED: Kickoff-J verification fleet redeploy — OTLP logs live fleet-wide, docs retrieval stack armed + warm
+
+**What deployed:** all 5 Railway services redeployed from `main`@`50910bbb` via `railway up`
+(every deploy SUCCESS). The consumed diff: `@caisson/observability` OTLP logs pipeline +
+stdout/stderr bridge (minor), the `@caisson/local-store` FTS5 per-token sanitization fix
+(`329150a8` — multi-word queries matched zero rows before this), the docs-service embed knobs
+(`DOCS_EMBED_PHASE_DEADLINE_MS=1200000`, `healthcheckTimeout` 300→1500), support-bot per-answer
+confidence telemetry (`546d5b9f`), and the two main-red fixes that rode along (`4930368d`
+support-bot ruff format, `50910bbb` nav-account import cycle).
+
+**Live-verify evidence (session-captured):** site 200 · license 200 · docs health
+`{"ok":true,"chunks":489}`. Docs boot log: all 489 chunks embedded, semantic index built
+(1024-dim) — the first full-corpus embed (previously ~77/489 under the 3-min deadline). The
+embed-cache persistence question RESOLVED: this boot reported **244 hits / 245 misses**
+(previously `1 hits/84 misses` every boot) — the `/data` volume cache persists and the next boot
+warms near-instantly. Loki now carries per-service streams for `admin`, `service-docs`,
+`service-license`, `site` (the `caisson-log-error-burst` rule armed itself, NoData=OK).
+Support-bot booted clean with `[telemetry] OTLP export enabled` and the `#ask-ai` listener active.
+
+**Residual (spec-parked):** live hybrid ranking quality is UNVERIFIED — the golden suite runs on
+the FTS floor only, and the first live probe ("how do I install a bundle", k=3) ranked
+bundle pages above `getting-started.mdx`. The battery-v2 re-run owns the verdict:
+`outputs/specs/close-out-triage/SPEC-retrieval-quality-battery-v2.md`.
+
+---
+
 ## 2026-07-10 — EXECUTED: Kickoff-I perf/mobile wave deployed — `/` perf 0.57→0.95, all lighthouse floors green
 
 **What deployed:** `caisson-site` redeployed from `main`@`418b26f7` (`railway up -y --service

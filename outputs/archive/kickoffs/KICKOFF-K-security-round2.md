@@ -1,6 +1,6 @@
 # Kickoff K — Security round-2 + hardening
 
-**Status: READY (operator-selected 2026-07-10) — BLOCKED on 3 operator cred acts before scan.**
+**Status: EXECUTED 2026-07-10 — the four-layer stack built + merged as PR #200 (ADR-0314, renumbered from 0310 at merge per ADR-0088). The operator cred acts moved to `docs/state/outstanding-work.md` §1 (security-stack operator setup row); findings triage specced at `outputs/specs/close-out-triage/SPEC-security-scan-findings-triage.md`.**
 Security-tagged. Owns the security surfaces: `.github/`, `infra/`, `apps/admin`,
 `registry/worker/`, `services/*`, and any confirmed-finding fixes in the packages they touch.
 
