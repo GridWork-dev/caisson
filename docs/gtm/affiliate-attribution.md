@@ -35,6 +35,19 @@ or in-house). Two consequences:
   (`CAISSONCART10` + the cart's `?promo=` → `Paddle.Checkout.open({ discountCode })` plumbing),
   so the checkout-side redemption path is already proven code, not design.
 
+### End-to-end delivery proof (2026-07-10, later sitting)
+
+- **Discount math:** `POST /pricing-preview` with `CAISSONAFF1`'s id on the billing-orchestration
+  module (`pri_01kwwqa266p6smw4yaanxg1n5j`, $99.00) → subtotal `9900`, discount `990`, total
+  `8910` — exactly 10%.
+- **Webhook attribution:** a `transaction.completed` simulation (`ntfsim_01kx6822kdnaxzzxma3m8mf1q2`,
+  txn `txn_01simaffproof0710aaaaaaaaa`) carrying `discount_id` was delivered to the live
+  `https://license.caisson.sh/webhook` destination → **200 `{"ok":true}`**, `discount_id` intact in
+  the delivered payload, `subscription_id` explicitly null (one-time routing). A discounted
+  transaction fulfills cleanly today; the id is joinable the moment `parsePaddleEvent` captures it.
+- Test grant landed on the 07-04 proof account (`dBlFuTeHu9TTwl7DXZTxpQa7Nq7B8VTQ`) — revoke via
+  admin alongside the earlier one when convenient.
+
 ## The gap to close at production flip (the whole remaining build)
 
 - **`discount_id` is dropped today.** `parsePaddleEvent` (`packages/billing/src/events.ts`)
