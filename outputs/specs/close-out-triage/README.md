@@ -13,7 +13,7 @@ re-specced here).
 | `SPEC-affiliate-production-flip.md`     | `parsePaddleEvent` `discount_id` capture, per-affiliate code minting, commission/clawback report                                                           | J             |
 | `SPEC-retrieval-quality-battery-v2.md`  | Battery-v2 re-run on the fixed retrieval stack, k=5 live probes, live-hybrid golden variant, refund-policy corpus page                                     | J             |
 | `SPEC-perf-followups.md`                | CAISSON-81 server-minted session-hint cookie (the reverted owned-fetch skip), CAISSON-82 NFT trace residual                                                | I             |
-| `SPEC-admin-dashboard-buildout.md`      | Admin cockpit views + telemetry federation (logs/commerce/product/fleet/support/intel-triage waves) — DRAFT, its own picker pending                        | follow-up     |
+| `SPEC-admin-dashboard-buildout.md`      | Admin cockpit views + telemetry federation (logs/commerce/product/fleet/support/intel-triage waves) — LOCKED (ADR-0316) — full six-wave buildout           | follow-up     |
 
 Dispositioned WITHOUT a spec (recorded in the close-out report):
 

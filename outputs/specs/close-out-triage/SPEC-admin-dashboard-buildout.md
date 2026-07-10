@@ -1,6 +1,6 @@
 # SPEC — Admin dashboard buildout: views + telemetry federation (one operator cockpit)
 
-**Status: DRAFT — operator lock required; this SPEC does NOT authorize building.** Requested at
+**Status: LOCKED (ADR-0316, 2026-07-10) — armed for execution: full six-wave buildout (W-PRODUCT via the F3 federate-now lock, W-INTEL-TRIAGE via the riders), in-admin Loki panel, PostHog federation now with honest empty states, all three riders.** Requested at
 the 2026-07-10 close-out follow-up. Grounded in a full surface map of `apps/admin` (routes, data
 seams, conventions) — the platform now emits far more telemetry than the cockpit surfaces, and
 the "one operator cockpit" pitch on the overview page is honest only for Postgres reads + Tempo
