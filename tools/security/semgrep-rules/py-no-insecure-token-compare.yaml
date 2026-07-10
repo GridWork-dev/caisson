@@ -1,0 +1,34 @@
+rules:
+  - id: py-no-insecure-token-compare
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Compare tokens/secrets with hmac.compare_digest(), never ==/!= (timing side channel).
+      See services/support-bot billing_grant.py bearer_ok(). (identity/security.md.)
+    metadata:
+      category: security
+      cwe: "CWE-208: Observable Timing Discrepancy"
+      references:
+        - services/support-bot/src/caisson_support_bot/billing_grant.py
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: $A == $B
+                  - pattern: $A != $B
+              - metavariable-regex:
+                  metavariable: $A
+                  regex: (?i).*(token|secret|password|passwd|apikey|api_key|hmac|signature|bearer)$
+          - patterns:
+              - pattern-either:
+                  - pattern: $A == $B
+                  - pattern: $A != $B
+              - metavariable-regex:
+                  metavariable: $B
+                  regex: (?i).*(token|secret|password|passwd|apikey|api_key|hmac|signature|bearer)$
+      - pattern-not: $A == None
+      - pattern-not: $A != None
+    paths:
+      exclude:
+        - "**/tests/**"
+        - "**/*_test.py"

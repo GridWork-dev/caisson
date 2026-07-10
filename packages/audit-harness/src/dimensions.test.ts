@@ -75,9 +75,9 @@ describe("applicableDimensions — the sparse class → lens matrix", () => {
     expect(applicableDimensions("internal-only", "workflows")).not.toContain(
       "D5",
     );
-    expect(applicableDimensions("internal-only", "tools/strix")).not.toContain(
-      "D5",
-    );
+    expect(
+      applicableDimensions("internal-only", "tools/security"),
+    ).not.toContain("D5");
     expect(applicableDimensions("internal-only", "root-docs")).not.toContain(
       "D5",
     );

@@ -20,7 +20,9 @@ export interface AppDeps {
 }
 
 /** POST /query body. `.strict()` rejects unknown fields; query + k are bounded (no unbounded compute). */
-const QuerySchema = z
+// Exported so tools/security/emit-openapi.ts can generate a true-to-code OpenAPI spec for schema
+// fuzzing (Schemathesis) without re-declaring the shape.
+export const QuerySchema = z
   .object({
     query: z.string().trim().min(1).max(2000),
     k: z.number().int().min(1).max(20).optional(),

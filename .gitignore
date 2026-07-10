@@ -50,3 +50,9 @@ registry/.tarball-staging/
 # ADR-0275 CI build-evidence pack output (assembled fresh each run, uploaded as an artifact)
 evidence-pack/
 outputs/w3-proof/
+
+# security tooling (tools/security/*) — local scan artifacts + throwaway admin-harness state +
+# OpenAPI specs regenerated fresh from Zod on every schemathesis run (never a stale committed copy)
+.security-out/
+apps/admin/.harness/
+tools/security/openapi/

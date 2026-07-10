@@ -1,0 +1,26 @@
+rules:
+  - id: no-execsync-interpolation
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Never execSync()/exec() with a template literal or string concatenation containing
+      a non-constant value — command injection. Use execFileSync(cmd, [args]) with an
+      argument array. (identity/security.md Shell execution.)
+    metadata:
+      category: security
+      cwe: "CWE-78: OS Command Injection"
+      references:
+        - identity/security.md
+        - packages/tool-exec/src/tool-exec.ts
+    patterns:
+      - pattern-either:
+          - pattern: execSync(`...${$X}...`, ...)
+          - pattern: execSync($A + $B, ...)
+          - pattern: exec(`...${$X}...`, ...)
+          - pattern: exec($A + $B, ...)
+          - pattern: execSync(`...${$X}...`)
+          - pattern: exec(`...${$X}...`)
+    paths:
+      exclude:
+        - "**/*.test.ts"
+        - "**/*.spec.ts"

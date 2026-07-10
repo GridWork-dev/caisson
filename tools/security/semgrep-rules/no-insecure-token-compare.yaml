@@ -1,0 +1,66 @@
+rules:
+  - id: no-insecure-token-compare
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Non-constant-time comparison of a token/credential/signature. Use crypto.timingSafeEqual()
+      (fixed-length: length-guard then compare) or hash-both-sides-then-timingSafeEqual
+      (variable-length) — never ===/==/!=/!== on a token, key, password hash, or HMAC
+      signature. See packages/kernel/src/crypto.ts and identity/security.md.
+    metadata:
+      category: security
+      cwe: "CWE-208: Observable Timing Discrepancy"
+      references:
+        - packages/kernel/src/crypto.ts
+        - identity/security.md
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: $A === $B
+                  - pattern: $A == $B
+                  - pattern: $A !== $B
+                  - pattern: $A != $B
+              - metavariable-regex:
+                  metavariable: $A
+                  regex: (?i).*(token|secret|password|passwd|apikey|api_key|hmac|signature|bearer)$
+          - patterns:
+              - pattern-either:
+                  - pattern: $A === $B
+                  - pattern: $A == $B
+                  - pattern: $A !== $B
+                  - pattern: $A != $B
+              - metavariable-regex:
+                  metavariable: $B
+                  regex: (?i).*(token|secret|password|passwd|apikey|api_key|hmac|signature|bearer)$
+      # Existence / blank guards are not credential comparisons.
+      - pattern-not: $A === null
+      - pattern-not: $A !== null
+      - pattern-not: $A == null
+      - pattern-not: $A != null
+      - pattern-not: $A === undefined
+      - pattern-not: $A !== undefined
+      - pattern-not: $A === ""
+      - pattern-not: $A !== ""
+      # Length-guards (the correct fixed-length pre-check before timingSafeEqual).
+      - pattern-not: $X.length === $N
+      - pattern-not: $X.length !== $N
+      - pattern-not: $X.length == $N
+      - pattern-not: $X.length != $N
+      # typeof comparisons (`typeof x.token === "string"`) are type guards, never compares.
+      - pattern-not: typeof $X === $Y
+      - pattern-not: typeof $X !== $Y
+      - pattern-not: typeof $X == $Y
+      - pattern-not: typeof $X != $Y
+      - pattern-not: $Y === typeof $X
+      - pattern-not: $Y !== typeof $X
+    paths:
+      exclude:
+        - "**/*.test.ts"
+        - "**/*.spec.ts"
+        - "**/*.test.tsx"
+        # Build tooling (AST enums like SyntaxKind.EndOfFileToken) + illustrative demos are
+        # not runtime credential surfaces.
+        - "**/tooling/**"
+        - "**/demo/**"
+        - "**/demos/**"

@@ -191,7 +191,9 @@ export interface EvalAppDeps {
  * boundary; there is no independent purchase→tier check here by design — downstream feature access gates
  * on the server-resolved `entitlements` list, not the `tier` label.
  */
-const IssueBody = z
+// Exported so tools/security/emit-openapi.ts can generate a true-to-code OpenAPI spec for schema
+// fuzzing (Schemathesis) without re-declaring the shape — the emit is the fuzz contract's source.
+export const IssueBody = z
   .object({
     accountId: z.string().trim().min(1).max(256),
     tier: licenseTierSchema,
@@ -212,7 +214,7 @@ const IssueBody = z
  * caller). `entitlements` is the purchased-id scope to evaluate (validated against the registry
  * index at /eval/issue). `accountId` is the buyer account (from a verified session upstream).
  */
-const EvalApplyBody = z
+export const EvalApplyBody = z
   .object({
     accountId: z.string().trim().min(1).max(256),
     email: z.string().trim().email().max(320),
@@ -221,7 +223,7 @@ const EvalApplyBody = z
   .strict();
 
 /** POST /eval/issue body. `.strict()`. `evalId` is the application id; `major` the license major. */
-const EvalIssueBody = z
+export const EvalIssueBody = z
   .object({
     evalId: z.string().uuid(),
     major: z.number().int().nonnegative(),
