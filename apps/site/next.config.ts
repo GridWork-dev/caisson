@@ -112,6 +112,14 @@ const config: NextConfig = {
   // (and the waitlist form) from day one; the server-side siteverify runs on the Node server, not the
   // browser, so no extra connect origin is needed for it. Landed in the same commit as the widget per
   // the identity/security-surfaces.md same-commit invariant for a new third-party surface.
+  //
+  // us.i.posthog.com / us-assets.i.posthog.com is the PostHog US-Cloud surface (dashboard-only:
+  // posthog-init.tsx is mounted from the dashboard layout, never marketing — but the CSP is global,
+  // so the origins are allowed here). us.i.posthog.com takes every capture/identify/flags XHR
+  // (connect-src); us-assets.i.posthog.com serves lazily-loaded extension scripts, e.g. the session
+  // recorder (script-src + connect-src). Landed in the same commit that bakes NEXT_PUBLIC_POSTHOG_KEY
+  // into the client bundle — without these the armed key's every request is CSP-blocked and the
+  // dashboard just logs console errors (same-commit third-party-surface invariant again).
   async headers() {
     return [
       {
@@ -136,7 +144,7 @@ const config: NextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https://*.paddle.com; font-src 'self'; style-src 'self' 'unsafe-inline' https://*.paddle.com; script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com https://challenges.cloudflare.com; frame-src https://*.paddle.com https://challenges.cloudflare.com; connect-src 'self' https://plausible.io https://*.paddle.com https://challenges.cloudflare.com",
+              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https://*.paddle.com; font-src 'self'; style-src 'self' 'unsafe-inline' https://*.paddle.com; script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com https://challenges.cloudflare.com https://us-assets.i.posthog.com; frame-src https://*.paddle.com https://challenges.cloudflare.com; connect-src 'self' https://plausible.io https://*.paddle.com https://challenges.cloudflare.com https://us.i.posthog.com https://us-assets.i.posthog.com",
           },
         ],
       },

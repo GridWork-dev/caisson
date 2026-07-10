@@ -60,34 +60,10 @@ const ROUTES: readonly ProdRoute[] = [
   ...MODULE_SAMPLE,
 ];
 
-// A known, root-caused CSP gap — NOT a harness bug (2026-07-07 first live run, root-caused
-// 2026-07-08, CAISSON-51/CAISSON-50). Cloudflare auto-injects a Web Analytics ("Insights") beacon
-// from `static.cloudflareinsights.com` at the zone level on a SAMPLED subset of real-browser
-// requests (confirmed live: present on one `/login` fetch, absent on a same-session `/` fetch with
-// identical browser-realistic headers — it is not deterministic per route). The site's own CSP
-// `script-src` (next.config.ts) does not allow that origin, so Chromium logs the block as a
-// console error on EVERY page it lands on. Filtered narrowly by domain (not a blanket CSP
-// exception) so the sweep can still catch a real per-route regression instead of drowning in this
-// one already-known, site-wide signal.
-//
-// This SAME injected `<script>` — appended as the literal last child of `<body>`, outside React's
-// own rendered tree — is also the confirmed root cause of CAISSON-50 (the `/login` minified React
-// error #418 this harness caught): React's hydration walk over `document` finds the unexpected
-// extra node and throws. It reproduced live twice and never reproduced locally with Cloudflare out
-// of the path (dev / `next start` / the real standalone `server.js`, 8-iteration loop), which is
-// what pins the cause on the edge injection rather than `/login`'s own code.
-//
-// Fix prepared, NOT yet applied: `infra/terraform/web-analytics.tf` adopts the existing
-// dashboard-created Web Analytics site and disables auto-injection (`auto_install = false`).
-// `terraform apply` is an operator DEPLOY act — until it lands, `/login` (and, rarely, other
-// routes on an unlucky sample) may still intermittently fail this sweep with error #418; that is
-// the known, tracked, pre-apply state, not a regression. Once applied, remove this KNOWN_NOISE
-// entry — the beacon will no longer exist to filter.
-const KNOWN_NOISE: readonly RegExp[] = [/static\.cloudflareinsights\.com/];
-
-function isKnownNoise(message: string): boolean {
-  return KNOWN_NOISE.some((re) => re.test(message));
-}
+// The Cloudflare Web Analytics beacon injection (CAISSON-50/51) was disabled at the zone
+// 2026-07-09 (infra/terraform/web-analytics.tf) — the KNOWN_NOISE filter that tolerated its CSP
+// console error came out with it. Any `static.cloudflareinsights.com` (or hydration #418) signal
+// this sweep sees now IS a regression: the injection ruleset has been re-enabled.
 
 let browser: Browser | null = null;
 let context: BrowserContext | null = null;
@@ -143,10 +119,10 @@ async function assertRoute(
       .waitFor({ state: "visible", timeout: 10_000 });
 
     await page.waitForTimeout(500); // let deferred scripts (analytics init, etc.) settle
-    const realErrors = [...consoleErrors, ...pageErrors].filter(
-      (m) => !isKnownNoise(m),
-    );
-    expect(realErrors, `${route.path}: browser errors`).toEqual([]);
+    expect(
+      [...consoleErrors, ...pageErrors],
+      `${route.path}: browser errors`,
+    ).toEqual([]);
   } finally {
     await page.close();
   }
