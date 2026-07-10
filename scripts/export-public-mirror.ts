@@ -795,11 +795,13 @@ function main(): void {
     ].join("\n"),
   );
 
-  // GTM assets (README / CONTRIBUTING / mirror CI / mirror publish), authored under
-  // scripts/mirror-assets/.
+  // GTM assets (README / CONTRIBUTING / TRADEMARK / mirror CI / mirror publish), authored
+  // under scripts/mirror-assets/. TRADEMARK.md must ship before the mirror goes public
+  // (ADR-0319 — Apache-2.0 §6 grants no trademark rights; the policy closes the gap).
   const assets = join(repoRoot, "scripts/mirror-assets");
   cpSync(join(assets, "README.md"), join(outDir, "README.md"));
   cpSync(join(assets, "CONTRIBUTING.md"), join(outDir, "CONTRIBUTING.md"));
+  cpSync(join(assets, "TRADEMARK.md"), join(outDir, "TRADEMARK.md"));
   mkdirSync(join(outDir, ".github/workflows"), { recursive: true });
   cpSync(join(assets, "ci.yml"), join(outDir, ".github/workflows/ci.yml"));
   cpSync(

@@ -59,15 +59,17 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
           # SARIF lands in $RUNNER_TEMP (OUT of the scanned tree) so `trivy fs .` never re-scans
           # semgrep's freshly-written SARIF. Set at step scope: the `runner` context is unavailable
-          # in a job-level `env:`, and $RUNNER_TEMP is the shell form of it inside a step.
-          export SECURITY_OUT_DIR="$RUNNER_TEMP/.security-out"
+          # in a job-level `env:`, and $RUNNER_TEMP is the shell form of it inside a step. The dir is
+          # deliberately NON-hidden: actions/upload-artifact@v4 (>=4.4) excludes hidden files/dirs by
+          # default, so a dot-dir uploaded empty ("No files were found") — the SARIF set evaporated.
+          export SECURITY_OUT_DIR="$RUNNER_TEMP/security-out"
           bash tools/security/scan.sh --layer ci
       - name: upload SARIF artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: security-sarif-${{ github.sha }}
-          path: ${{ runner.temp }}/.security-out
+          path: ${{ runner.temp }}/security-out
           if-no-files-found: warn
           retention-days: 30
 

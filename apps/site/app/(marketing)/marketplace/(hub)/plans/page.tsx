@@ -188,7 +188,10 @@ export default function MarketplacePlansPage() {
               ) : (
                 <>a fraction of the list price</>
               )}
-              . Skip it and you keep every version already delivered.
+              . Skip it and you keep every version already delivered. Higher
+              than a classic 15&ndash;20% maintenance contract because it buys a
+              different thing: not a support retainer, but the product itself
+              &mdash; every release your entitlement shipped that year.
             </p>
           </Card>
         </Reveal>

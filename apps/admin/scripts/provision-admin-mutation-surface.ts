@@ -33,11 +33,24 @@ const ADMIN_READ_TABLES = [
   "entitlement_grant",
   "license_grant",
   "account_member",
+  "order_record", // ADR-0316 W-COMMERCE ledger + ADR-0320 affiliate commission report
+  "subscription_status", // ADR-0316 W-COMMERCE subscription timeline
+  "grant_consumption", // ADR-0316 W-COMMERCE expiring-soon panel
 ] as const;
 
 /** better-auth's own "user" table carries no RLS — a plain GRANT, not a policy (G29 email lookup;
  *  the table itself is created by better-auth's own migrator, already live on this Postgres). */
 const USER_ADMIN_READ_GRANT_SQL = `GRANT SELECT ON "user" TO admin;`;
+
+/** support_ticket (ADR-0316 W-SUPPORT) also carries no RLS — a plain GRANT. The table is created
+ *  by the support-bot's own ensure_schema (escalation.py), which may not have run yet on a fresh
+ *  DB — guard on existence so provisioning stays order-independent and re-runnable. */
+const SUPPORT_TICKET_ADMIN_READ_GRANT_SQL = `
+DO $$ BEGIN
+  IF to_regclass('public.support_ticket') IS NOT NULL THEN
+    GRANT SELECT ON support_ticket TO admin;
+  END IF;
+END $$;`;
 
 /**
  * The Postgres unquoted-identifier shape — the only role-name shape this script ever legitimately
@@ -97,6 +110,10 @@ async function main(): Promise<void> {
       buildAdminReadPolicySql(t),
     ]),
     ["admin read grant: user (G29)", USER_ADMIN_READ_GRANT_SQL],
+    [
+      "admin read grant: support_ticket (ADR-0316, existence-guarded)",
+      SUPPORT_TICKET_ADMIN_READ_GRANT_SQL,
+    ],
     [
       "entitlement admin_comp CHECK widening",
       ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,

@@ -19,6 +19,9 @@ const ADMIN_READ_TABLES = [
   "entitlement_grant",
   "license_grant",
   "account_member",
+  "order_record",
+  "subscription_status",
+  "grant_consumption",
 ] as const;
 
 interface ColumnRow {

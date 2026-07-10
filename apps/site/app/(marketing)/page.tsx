@@ -238,7 +238,7 @@ export default function HomePage() {
       <Section
         eyebrow="How to buy"
         title="Module, bundle, or plan — same catalog, three shapes."
-        lede="Every price on this site now carries one of three labels. Pick the shape that fits and open the marketplace to browse the rest."
+        lede="Every price on this site now carries one of three labels. Pick the shape that fits and open the marketplace to browse the rest. Whatever the shape, support is included — a real person on email and Discord, business-days response, with every license."
       >
         <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
           <Card>
@@ -545,7 +545,7 @@ export default function HomePage() {
       <Section
         eyebrow="Built in the open"
         title="No logo wall yet. Here's what you can check instead."
-        lede="We're early — no logo wall to point at yet, and we'd rather say that than fake one. Here's what you can verify instead: the base is open source you can read, the changelog is public, and the source ships to you to audit."
+        lede="We're early — no logo wall to point at yet, and we'd rather say that than fake one. Here's what you can verify instead: the base is open source you can read, the changelog is public, the source ships to you to audit — and every UI module card in the marketplace renders its real component, live."
         band="surface"
       >
         <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">

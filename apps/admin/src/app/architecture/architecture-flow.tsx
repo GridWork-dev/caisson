@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import {
   Background,
@@ -25,6 +25,7 @@ import type {
   BoundaryId,
   NodeKind,
 } from "@/lib/architecture-annotations";
+import type { FleetSnapshot, NodeOverlay } from "@/lib/fleet-reads";
 
 // The React Flow render of the ADR-0143 hybrid graph. Type-only import of the graph shapes keeps the
 // node:fs topology deriver out of the client bundle. All data-flow reasoning lives in
@@ -64,7 +65,22 @@ const NODE_W = 232;
 const HEADER_H = 52;
 const PAD = 24;
 
-type ServiceNodeData = { label: string; kind: NodeKind; healthcheck?: string };
+type ServiceNodeData = {
+  label: string;
+  kind: NodeKind;
+  healthcheck?: string;
+  /** ADR-0316 W-FLEET: live Railway deploy status / CF worker metrics, merged in client-side. */
+  live?: NodeOverlay;
+};
+
+// Railway deploy-status → dot color. SUCCESS is healthy; CRASHED/FAILED are alarming; anything
+// in-flight (BUILDING/DEPLOYING/SLEEPING/…) is attention-amber.
+function liveStatusColor(status: string): string {
+  const s = status.toUpperCase();
+  if (s === "SUCCESS") return "#22c39a";
+  if (s === "CRASHED" || s === "FAILED") return "#ff6b8b";
+  return "#f4a13c";
+}
 type BoundaryNodeData = {
   label: string;
   intent: string;
@@ -109,6 +125,41 @@ function ServiceNodeView({ data }: NodeProps) {
         {KIND_LABEL[d.kind]}
         {d.healthcheck ? ` · ${d.healthcheck}` : ""}
       </div>
+      {d.live?.status ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            marginTop: 6,
+          }}
+        >
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: 999,
+              background: liveStatusColor(d.live.status),
+              flex: "0 0 auto",
+            }}
+          />
+          <span
+            className="mono"
+            style={{ fontSize: 11, color: "var(--cs-fg-muted)" }}
+          >
+            {d.live.status.toLowerCase()}
+          </span>
+        </div>
+      ) : null}
+      {d.live?.requests !== undefined ? (
+        <div
+          className="mono"
+          style={{ marginTop: 6, fontSize: 11, color: "var(--cs-fg-muted)" }}
+        >
+          {d.live.requests.toLocaleString()} req · {d.live.errors ?? 0} err
+          (24h)
+        </div>
+      ) : null}
       <Handle type="source" position={Position.Right} style={handleStyle} />
     </div>
   );
@@ -223,8 +274,35 @@ function layout(graph: ArchitectureGraph): { nodes: Node[]; edges: Edge[] } {
 
 export function ArchitectureFlow({ graph }: { graph: ArchitectureGraph }) {
   const initial = useMemo(() => layout(graph), [graph]);
-  const [nodes, , onNodesChange] = useNodesState(initial.nodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
   const [edges, , onEdgesChange] = useEdgesState(initial.edges);
+
+  // ADR-0316 W-FLEET — decorate the static diagram with live fleet data at RUNTIME (the page itself
+  // is force-static, baked without a repo tree; this client fetch is the only live seam). Dormant /
+  // unconfigured / any error ⇒ the diagram renders unchanged. Cached 60s in the route, so a remount
+  // never hammers the vendor APIs.
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/admin/fleet")
+      .then((r) => (r.ok ? (r.json() as Promise<FleetSnapshot>) : null))
+      .then((snap) => {
+        if (cancelled || snap === null || !snap.configured) return;
+        setNodes((ns) =>
+          ns.map((n) => {
+            const overlay = snap.nodes[n.id];
+            return overlay === undefined
+              ? n
+              : { ...n, data: { ...n.data, live: overlay } };
+          }),
+        );
+      })
+      .catch(() => {
+        /* overlay is decorative — a failure leaves the static diagram intact */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [setNodes]);
 
   if (graph.nodes.length === 0) {
     // Only reachable if the diagram was built with no repo tree in reach (topology found nothing).

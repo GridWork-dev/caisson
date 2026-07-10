@@ -230,10 +230,11 @@ export default function CompliancePage() {
             items={[
               "SOC 2 CC6.1",
               "HIPAA §164.312",
+              "PCI DSS · GDPR crosswalks",
               "WORM evidence",
               "Append-only audit",
             ]}
-            note="Caisson generates the evidence — the certification is your auditor's call, not ours."
+            note="Caisson generates the evidence — the certification is your auditor's call, not ours. Support is included with every license: a real person on email and Discord, business-days response."
           />
         }
         artifact={heroArtifact}
@@ -243,7 +244,7 @@ export default function CompliancePage() {
       <Reveal>
         <Section
           eyebrow="What it composes"
-          lede="The Compliance bundle is a real runtime composition of ten @caisson/* packages, not a bundle of marketing copy: kernel (typed config, the SHA-256 chain primitive, append-only versioning), tenancy-rls (the fail-closed RLS guard), field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption), audit-worm (the append-only audit chain plus the S3 Object-Lock WORM adapter), migrate (the one migration assembler and runner, forward-only and checksum-drift-safe), alerting plus retention-runner (deduped alert delivery and policy-driven data retention), and the three carves — compliance-core (the evidence engine), frameworks-pack (the control mappings with OSCAL export), and signing-primitive (detached Ed25519 + RFC-3161 signing). alerting and retention-runner are wired in as real workspace dependencies and re-exported through the bundle's own index, not asserted in a manifest and left uncomposed."
+          lede="The Compliance bundle is a real runtime composition of ten @caisson/* packages, not a bundle of marketing copy: kernel (typed config, the SHA-256 chain primitive, append-only versioning), tenancy-rls (the fail-closed RLS guard), field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption), audit-worm (the append-only audit chain plus the S3 Object-Lock WORM adapter), migrate (the one migration assembler and runner, forward-only and checksum-drift-safe), alerting plus retention-runner (deduped alert delivery and policy-driven data retention), and the three carves — compliance-core (the evidence engine), frameworks-pack (the SOC 2 and HIPAA control mappings, PCI DSS and GDPR crosswalk exports, and OSCAL export), and signing-primitive (detached Ed25519 + RFC-3161 signing). alerting and retention-runner are wired in as real workspace dependencies and re-exported through the bundle's own index, not asserted in a manifest and left uncomposed."
         />
       </Reveal>
 

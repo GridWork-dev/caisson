@@ -76,17 +76,42 @@ CREATE TABLE IF NOT EXISTS "user" (
  *  `USING (true)` permissive-policy dance `buildAdminReadPolicySql` applies to RLS-forced tables. */
 const USER_ADMIN_READ_GRANT_SQL = `GRANT SELECT ON "user" TO admin;`;
 
+/** DEV/TEST DOUBLE ONLY — byte-mirror of the support-bot's SUPPORT_TICKET_SCHEMA
+ *  (services/support-bot escalation.py owns the real CREATE TABLE via ensure_schema). Lets the
+ *  /support escalation list render real rows against the PGlite double; live provisioning is the
+ *  operator-gated `GRANT SELECT ON support_ticket TO admin` DEPLOY step (ADR-0316 W-SUPPORT). */
+const SUPPORT_TICKET_DOUBLE_SQL = `
+CREATE TABLE IF NOT EXISTS support_ticket (
+    id                text        PRIMARY KEY,
+    question          text        NOT NULL,
+    ai_brief          jsonb       NOT NULL,
+    status            text        NOT NULL DEFAULT 'open',
+    discord_thread_id bigint,
+    created_at        timestamptz NOT NULL DEFAULT now(),
+    priority          boolean     NOT NULL DEFAULT false
+);
+`;
+
+/** Like the "user" table: support_ticket carries no account_id and no RLS — a plain GRANT. */
+const SUPPORT_TICKET_ADMIN_READ_GRANT_SQL = `GRANT SELECT ON support_ticket TO admin;`;
+
 /** The tenant tables the operator cockpit reads cross-tenant (ADR-0141 read-only surface).
  *  `credit_event` was added (ADR-0225): the paid-revoke impact preview reuses `@caisson/credits`'
  *  `creditsGrantedBySource`/`creditsClawedForSource`, which read the per-event ledger, so the `admin`
  *  role needs a cross-tenant SELECT policy on it to compute the exact claw preview. `account_member`
- *  was added (G29): the tenants view's email-lookup join needs cross-tenant SELECT on it too. */
+ *  was added (G29): the tenants view's email-lookup join needs cross-tenant SELECT on it too.
+ *  `order_record`/`subscription_status`/`grant_consumption` were added (ADR-0316 W-COMMERCE +
+ *  ADR-0320): the /business/ledger money timeline and the /business/affiliates commission report
+ *  read them cross-tenant. */
 const ADMIN_READ_TABLES = [
   "credit_wallet",
   "credit_event",
   "entitlement_grant",
   "license_grant",
   "account_member",
+  "order_record",
+  "subscription_status",
+  "grant_consumption",
 ] as const;
 
 function nodePgExecutor(client: PoolClient): TenantExecutor {
@@ -143,6 +168,9 @@ async function bootstrapPglite(): Promise<PGlite> {
   // G29: the better-auth "user" table double + the tenants view's email-enrichment join.
   await pg.exec(BETTER_AUTH_USER_DOUBLE_SQL);
   await pg.exec(USER_ADMIN_READ_GRANT_SQL);
+  // ADR-0316 W-SUPPORT: the support-bot's ticket table double + the /support escalation read.
+  await pg.exec(SUPPORT_TICKET_DOUBLE_SQL);
+  await pg.exec(SUPPORT_TICKET_ADMIN_READ_GRANT_SQL);
   for (const table of ADMIN_READ_TABLES) {
     await pg.exec(buildAdminReadPolicySql(table));
   }
