@@ -49,7 +49,7 @@ export type DiagramKey =
   | "runner-env-scrub"
   | "retention-erasure";
 
-/** The live-rendered kit components wired into a media slide (ADR-0306 full-depth, extending
+/** The live-rendered kit components wired into a media slide (ADR-0308 full-depth, extending
  *  ADR-0290). A catalog module earns a `component` slide only when it genuinely ships a showable
  *  `@caisson/ui`-rendered surface (the honest floor, ADR-0082 — every slide depicts SHIPPED
  *  behaviour, and the source is nameable):
@@ -196,7 +196,7 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
   "retention-erasure": new Set(["module:retention-runner"]),
 };
 
-/** Which modules carry a live-component slide, and the honest one-line caption for each (ADR-0306
+/** Which modules carry a live-component slide, and the honest one-line caption for each (ADR-0308
  *  full-depth). The `component` is the live surface the carousel renders; the caption is the visible
  *  narration + a11y label. Keyed by module id — a module absent here has no showable UI surface and
  *  legitimately stays diagram(+code-artifact)-only. Preference order (ADR-0290): the component slide
@@ -261,7 +261,7 @@ export interface MediaSlidesOptions {
   omitCodeArtifact?: boolean;
 }
 
-/** The ordered media slides for one entry (ADR-0290 / ADR-0306). Preference order: a bundle leads
+/** The ordered media slides for one entry (ADR-0290 / ADR-0308). Preference order: a bundle leads
  *  with its composition slide; a module leads with its live component (MODULE_COMPONENTS — the
  *  modules that ship a showable @caisson/ui surface), then its real code artifact (module-pages.ts),
  *  then any authored mechanism diagrams that target it — so a full-depth module carries all three

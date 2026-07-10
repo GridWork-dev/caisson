@@ -1,4 +1,4 @@
-# ADR-0307 — Lighthouse assertions promoted to error-level; Kickoff-I wave evidence + ride-alongs
+# ADR-0309 — Lighthouse assertions promoted to error-level; Kickoff-I wave evidence + ride-alongs
 
 **Status:** accepted · 2026-07-09 (operator-locked, Kickoff-I scope-lock fork round, questions
 6–7 of 7). **Tags:** `ui`, `infra`. Hardens the ADR-0079 CWV posture's enforcement; records the
@@ -9,7 +9,7 @@ sitting's ride-along scope.
 `apps/site/lighthouserc.json` carries real budgets (LCP < 2500ms · TBT < 300ms · CLS < 0.1 ·
 FCP < 1800ms · perf ≥ 0.9) but every assertion is `warn` and the workflow is
 `workflow_dispatch`-only with `continue-on-error` — informational, never red. No bundle-size
-gate exists anywhere in CI. A homepage WebGL piece (ADR-0304) lands into that vacuum. Offered:
+gate exists anywhere in CI. A homepage WebGL piece (ADR-0306) lands into that vacuum. Offered:
 evidence-only · promote assertions to error · wire a required CI gate. The operator locked the
 middle option, plus the ride-along question's widest answer.
 

@@ -1,5 +1,5 @@
 /**
- * Homepage signature piece — the ambient depth-fog lattice FIELD (ADR-0304, executes ADR-0078 §6).
+ * Homepage signature piece — the ambient depth-fog lattice FIELD (ADR-0306, executes ADR-0078 §6).
  *
  * This is the imperative three.js scene: a barely-there instanced grid of thin structural columns
  * receding into depth fog behind the hero, with a slow accent scan-line sweep (the health-check
@@ -8,9 +8,9 @@
  * accent only as a small travelling indicator").
  *
  * Loaded ONLY via a dynamic import() from `hero-field-canvas.tsx` after the idle/lg/no-reduced-motion
- * gate passes — so it is the home-route-only lazy chunk ADR-0304 §3 budgets at ≤130KB gzip, and it
+ * gate passes — so it is the home-route-only lazy chunk ADR-0306 §3 budgets at ≤130KB gzip, and it
  * NEVER downloads on mobile. Named imports from "three" only, so the core tree-shakes (no R3F, no
- * drei, no postprocessing — all banned by ADR-0304).
+ * drei, no postprocessing — all banned by ADR-0306).
  *
  * Colours are the sRGB conversions of the ADR-0042/0078 palette-A OKLCH tokens (three can't read the
  * `--cs-*` CSS vars) — computed once with culori, NOT eyeballed. Source OKLCH is noted at each value.
@@ -139,7 +139,7 @@ const FRAGMENT = /* glsl */ `
 
 /**
  * Mount the field onto `canvas`. Returns a handle (pause/resume/dispose) or null when a WebGL
- * context can't be created — the caller keeps the poster in that case (ADR-0304 resilience).
+ * context can't be created — the caller keeps the poster in that case (ADR-0306 resilience).
  */
 export function mountDepthField(
   canvas: HTMLCanvasElement,
@@ -159,7 +159,7 @@ export function mountDepthField(
     return null;
   }
   renderer.setClearAlpha(0);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // ADR-0304: dpr capped at 2
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // ADR-0306: dpr capped at 2
 
   const scene = new Scene();
   const camera = new PerspectiveCamera(52, 1, 0.1, 120);

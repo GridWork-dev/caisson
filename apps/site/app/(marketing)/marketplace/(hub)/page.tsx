@@ -98,7 +98,7 @@ export default function MarketplacePage() {
         lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license — source you own — but the base was always yours."
         band="surface"
       >
-        {/* Static header, base-capability cards cascade in (ADR-0305). */}
+        {/* Static header, base-capability cards cascade in (ADR-0307). */}
         <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
           {BASE_CAPABILITIES.map((c) => (
             <Card key={c.title}>

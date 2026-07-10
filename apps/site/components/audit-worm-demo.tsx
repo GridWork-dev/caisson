@@ -1,6 +1,6 @@
 "use client";
 
-// The audit-worm module's `component` media slide (ADR-0306 full-depth) — the module's own shipped
+// The audit-worm module's `component` media slide (ADR-0308 full-depth) — the module's own shipped
 // surface `@caisson/audit-worm/ui` <ChainViewer>, rendered live over a REAL hash chain. The entries
 // below were computed once by @caisson/kernel `buildChain` (each hash is SHA-256 over
 // [prevHash, canonical(payload)]) and `verifyChain` (the verdict), then baked as static data — the

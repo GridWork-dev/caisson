@@ -1,4 +1,4 @@
-# ADR-0304 — Homepage signature piece: ambient depth-fog lattice field (three.js core, poster-first)
+# ADR-0306 — Homepage signature piece: ambient depth-fog lattice field (three.js core, poster-first)
 
 **Status:** accepted · 2026-07-09 (operator-locked, Kickoff-I scope-lock fork round, question 1
 of 7 — concept + fallback + budget locked in the same sitting). **Tags:** `ui`, `frontend`.
@@ -38,7 +38,7 @@ three.tools / HashiCorp / Max Yinger / Trunk / Active Theory references.
    admitted to `apps/site` — **no** `@react-three/fiber`, **no** `drei`. One imperative client
    component behind `next/dynamic` `ssr:false`, emitted as a home-route-only lazy chunk;
    non-home routes must not grow. The ceiling is asserted from `next build` output in the wave
-   verify (no CI bundle gate exists — see ADR-0307 for the evidence posture).
+   verify (no CI bundle gate exists — see ADR-0309 for the evidence posture).
 
 ## Consequences
 

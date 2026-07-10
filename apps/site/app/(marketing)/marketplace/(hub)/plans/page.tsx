@@ -140,7 +140,7 @@ export default function MarketplacePlansPage() {
         title="What happens after 12 months?"
         lede="The honest answer, up front: the source is yours forever, and only new updates are optional after the first year. Nothing you already own expires, breaks, or gets held hostage to a renewal."
       >
-        {/* Static header, the three continuity cards cascade in (ADR-0305). */}
+        {/* Static header, the three continuity cards cascade in (ADR-0307). */}
         <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
           <Card>
             <div className="cs-status">

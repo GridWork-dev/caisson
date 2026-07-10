@@ -40,7 +40,7 @@ export function generateStaticParams() {
 }
 
 // Canonical/OG/Twitter via the shared helper (ADR-0079 §4) — docs pages were the one tree
-// skipping it (AEO audit 2026-07-09; ADR-0307 board-sweep ride-along).
+// skipping it (AEO audit 2026-07-09; ADR-0309 board-sweep ride-along).
 export async function generateMetadata(props: Params): Promise<Metadata> {
   const params = await props.params;
   const page = source.getPage(params.slug);

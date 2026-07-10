@@ -1,4 +1,4 @@
-/* Homepage signature piece — the ambient depth-fog lattice field (ADR-0304). A poster-first
+/* Homepage signature piece — the ambient depth-fog lattice field (ADR-0306). A poster-first
  * background layer that sits BEHIND the hero content: the server always renders the static poster
  * (CSS depth gradients + an inline-SVG lattice suggestion + a waterline hairline); the client canvas
  * fades in over it only after the idle/lg/no-reduced-motion gate. Theme-aware by --cs-* cascade, so

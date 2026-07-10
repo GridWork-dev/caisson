@@ -1,4 +1,4 @@
-# ADR-0305 — Sitewide authored-motion pass (hero field · card-viewer · sections · micro-interactions)
+# ADR-0307 — Sitewide authored-motion pass (hero field · card-viewer · sections · micro-interactions)
 
 **Status:** accepted · 2026-07-09 (operator-locked, Kickoff-I scope-lock fork round, question 4
 of 7 — the widest of the three offered scopes). **Tags:** `ui`, `frontend`. Executes ADR-0078 §6
@@ -35,5 +35,5 @@ lockfile's transitive framer-motion stays unused):
 - Motion stops being one primitive stretched sitewide; the ADR-0078 §6 language finally exists
   in shipped form on every marketing route.
 - Largest regression surface of the offered scopes — accepted; the visual harness delta over
-  all touched routes is the named verify artifact (ADR-0307).
+  all touched routes is the named verify artifact (ADR-0309).
 - CSS-only keeps the pass dependency-free and individually revertible per surface.

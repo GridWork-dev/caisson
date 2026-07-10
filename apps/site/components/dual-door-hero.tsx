@@ -21,7 +21,7 @@ const MODULE_COUNT = MODULE_PRICES.length;
 export function DualDoorHero() {
   return (
     <section className={`cs-section ${styles.heroShell}`} data-flush="">
-      {/* Ambient depth-fog lattice field (ADR-0304) — additive layer BEHIND the content; the h1/LCP
+      {/* Ambient depth-fog lattice field (ADR-0306) — additive layer BEHIND the content; the h1/LCP
           contract below is untouched. */}
       <HeroField />
       <div className="cs-container">

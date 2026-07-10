@@ -1,4 +1,4 @@
-# ADR-0306 — Marketplace media full-depth pass (every module carries all applicable slide kinds)
+# ADR-0308 — Marketplace media full-depth pass (every module carries all applicable slide kinds)
 
 **Status:** accepted · 2026-07-09 (operator-locked, Kickoff-I scope-lock fork round, question 5
 of 7 — the largest of the three offered batch shapes). **Tags:** `ui`, `frontend`. Refines
