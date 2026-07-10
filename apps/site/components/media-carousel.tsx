@@ -1,22 +1,47 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
 
 import { CodeBlock, Icon } from "@/components";
 import { BundleCompositionSlide } from "@/components/marketplace-hero-artifact";
 import { MarketplaceDiagram } from "@/components/marketplace-diagrams";
 import { MediaPlaceholder } from "@/components/media-placeholder";
-import type { MediaSlide } from "@/lib/media-manifest";
+import type { ComponentKey, MediaSlide } from "@/lib/media-manifest";
 
 import styles from "./media-carousel.module.css";
 
-// The ui-pro `component` slide — client-only (ssr: false) so the commercial-tier tree never bloats
-// the shared bundle, and lazy so nothing loads until that slide renders.
-const UiProSlide = dynamic(() => import("./ui-pro-demo"), {
-  ssr: false,
-  loading: () => <MediaPlaceholder icon="boxes" />,
-});
+// The `component` slides (ADR-0306 full-depth) — each a real kit/module surface rendered live. All
+// are client-only (ssr: false) so the commercial-tier trees never bloat the shared bundle, and lazy
+// so nothing loads until its slide renders. Keyed by ComponentKey so the manifest stays the single
+// source of which module shows which surface.
+const COMPONENT_SLIDES: Record<ComponentKey, ComponentType> = {
+  "ui-pro": dynamic(() => import("./ui-pro-demo"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "audit-worm": dynamic(() => import("./audit-worm-demo"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "ai-meter": dynamic(() => import("./ai-meter-demo"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "prompt-registry": dynamic(() => import("./prompt-registry-demo"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "local-store": dynamic(() => import("./local-store-demo"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  credits: dynamic(() => import("./credits-demo"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+};
 
 function Slide({ slide }: { slide: MediaSlide }) {
   switch (slide.kind) {
@@ -25,8 +50,11 @@ function Slide({ slide }: { slide: MediaSlide }) {
         return <BundleCompositionSlide bundleId={slide.compositionBundle} />;
       }
       return slide.diagram ? <MarketplaceDiagram name={slide.diagram} /> : null;
-    case "component":
-      return slide.component === "ui-pro" ? <UiProSlide /> : null;
+    case "component": {
+      if (!slide.component) return null;
+      const ComponentSlide = COMPONENT_SLIDES[slide.component];
+      return <ComponentSlide />;
+    }
     case "code-artifact":
       return slide.artifact ? (
         <CodeBlock
