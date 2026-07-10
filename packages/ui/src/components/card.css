@@ -15,13 +15,16 @@
   background: var(--cs-accent-tint);
 }
 
-/* Interactive card — tonal hover (border brighten + surface step + lift), motion-tokened. */
+/* Interactive card — tonal hover (border brighten + surface step + lift), motion-tokened. The
+ * opacity entry lets a staggered scroll reveal (Reveal `stagger`) fade the card in smoothly — its
+ * own transition wins the `:where()`-zeroed reveal rule, so opacity must be listed here too. */
 .cs-card[data-interactive] {
   transition:
     border-color var(--cs-duration-fast) var(--cs-ease-out),
     background var(--cs-duration-fast) var(--cs-ease-out),
     box-shadow var(--cs-duration-base) var(--cs-ease-out),
-    transform var(--cs-duration-base) var(--cs-ease-out);
+    transform var(--cs-duration-base) var(--cs-ease-out),
+    opacity var(--cs-duration-slow) var(--cs-ease-reveal);
   will-change: transform;
 }
 
@@ -30,6 +33,14 @@
   background: var(--cs-surface-2);
   box-shadow: var(--cs-shadow-md);
   transform: translateY(-2px);
+}
+
+/* Press — settle the lift back down on activation (works via the stretched-link overlay too,
+   since :active matches the pressed descendant's ancestors). A quick, tactile confirm. */
+.cs-card[data-interactive]:active {
+  transform: translateY(0);
+  box-shadow: var(--cs-shadow-sm);
+  transition-duration: var(--cs-duration-fast);
 }
 
 /* Card title — used by composing screens inside a card. */

@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-09
 status: live
-adr_ceiling: 0303
+adr_ceiling: 0309
 ---
 
 # Decisions & Forks — live board
@@ -1891,3 +1891,81 @@ before build. The same sitting root-fixed CAISSON-50/51 at the Cloudflare zone (
 injection ruleset's `enabled=false` — `auto_install=false` alone was proven insufficient;
 terraform pins both, PR #195) and armed the prod client env for Turnstile + dashboard PostHog
 (build ARGs + PostHog CSP origins, PR #195).
+
+## Closed by the 2026-07-09 Kickoff-I scope-lock fork round (operator-locked → ADR-0306..0309)
+
+Kickoff I opened with the mandated scope-lock sitting: seven questions in two AskUserQuestion
+rounds over the candidate scope, grounded in a five-reader recon (residual board · governing
+ADRs · live site/catalog state · refero references · perf posture). Mid-round the operator
+redirected the concept class itself — **not an authored object/diagram scene, an ambient
+reactive background field**. All seven answers locked:
+
+- **Concept → depth-fog lattice field** (ambient instanced grid receding into fog, scan-line
+  sweep, pointer parallax — **ADR-0306**, amends ADR-0104's authored-scene preference).
+- **Fallback → poster-first, idle hydrate** (SSR poster always; canvas only ≥1024px + no
+  reduced-motion + post-LCP idle; mobile never downloads — ADR-0306).
+- **Budget → ≤130KB gzip, three.js core only** (no R3F/drei; home-route-only lazy chunk;
+  `three` admitted as the repo's first heavy visual dep — ADR-0306).
+- **Motion scope → sitewide pass** (card-viewer `<dialog>` open/close + Reveal section
+  variants + micro-interactions, CSS-only — **ADR-0307**).
+- **Media batch → full-depth pass** (recon measured the F2 placeholder gap at ZERO — 21/22
+  modules already carry authored diagrams; the batch becomes: every module carries all
+  applicable ADR-0290 slide kinds, honest-artifact floor governing — **ADR-0308**, F2 closes).
+- **Perf gate → lighthouse assertions warn→error**, workflow stays manual-dispatch; wave
+  evidence = chunk ceiling + lighthouse dispatch + visual-harness delta (**ADR-0309**).
+- **Ride-alongs → compare mobile-table P3 + a fresh board sweep**; every surviving design row
+  ships or re-parks with a named trigger (ADR-0309).
+
+(Drafted as ADR-0304..0307 at the sitting; renumbered to 0306..0309 at merge per ADR-0088 —
+Kickoff-J's pricing picker claimed 0304/0305 on main first.)
+
+## Closed by the 2026-07-10 Kickoff-J pricing picker (operator-locked → ADR-0304/0305)
+
+The D2/D3 pricing picker ran per the Kickoff-J charter on qual(final) + frame test + ladder —
+the off-ICP quant panel can never validate the anchor, so waiting for 60/60 bought precision on
+the wrong population. `gw-pricing-analyst` produced the WTP memo
+(`outputs/research/wtp-memo-2026-07-10.md`; never sets a price); the seat-band comparables were
+re-verified live mid-sitting (Supastarter $349/1-seat · $799/5-seat · $1,499/10-seat current;
+MakerKit's stale "$599 Team" figure corrected to a $349-headline + Teams-tier shape).
+
+- **D3 anchor level → HOLD Compliance $1,049 / Everything $2,059** → **ADR-0304**. A
+  "don't-touch-on-this-evidence" lock, not a proven-number lock. Named reopeners: real-ICP
+  anchor reactions (study `019f4a11` / design partners) · live checkout-funnel data · a
+  code-ownership competitor at parity.
+- **D2 seat posture → premise CORRECTED, then closed** → **ADR-0305**. The shipped EULA is
+  already per-org/unlimited-authorized-personnel — no seat concept exists in Caisson's license;
+  SYNTHESIS §2's "single-seat bundles" described display silence, not terms. Seat allowance is
+  void (the license already exceeds a 5-seat grant); one advantage-copy line ("licensed per
+  organization — your whole team, no per-seat pricing") rides the CAISSON-75/77 copy pass.
+- **F3 (à-la-carte price-high-steer-to-bundle) and F4 (40%/X9 renewal + $499/yr Developer)**
+  re-affirmed unchanged on the memo's convergence table — no new ADR; existing locks stand.
+  F4 is the memo's strongest qual×quant convergence; residual work is 12-month-cliff copy only.
+- **VW-recruit reallocation fork → RESOLVED: let 445432 fill** (all 60 completes were already
+  bought — sunk and API-irreducible) **+ a NEW real-ICP live-interview study LAUNCHED**: Cookiy
+  study `019f4a11-8029-7726-ab71-aef06ac4dcae`, 12 qualitative recruits at $119.88 (Stripe
+  off-session auto top-up $111.83, operator-approved), 4-gate screener (producer-only · buying
+  influence · regulated surface · TS/Node), discovery hard-capped at 4 min, pricing section
+  mandatory — the instrument that closes the "no real ICP buyer has ever seen the price" gap.
+  Frame-test recruit 776545 lets fill (the within-subject leg works as designed; 39/60).
+- **Market-intel triage (5 tickets):** CAISSON-75 Delve copy (accepted, →High, scoped
+  copywriter brief) · CAISSON-79 EU-AI-Act hook (accepted, due 2026-08-02, closing window) ·
+  CAISSON-77 MCP reframe (accepted, scoped brief) · CAISSON-76 AuditKit parity (accepted,
+  analysis lane) · CAISSON-78 Microsoft watch (deferred, trigger-parked). Copy builds ride the
+  next site sitting.
+- **Design-partner execution (ADR-0297):** partner-facing terms one-pager + ranked outreach
+  shortlist landed (`docs/gtm/design-partner-program.md` · `docs/gtm/design-partner-outreach.md`
+  over the 30-row research `outputs/research/design-partner-candidates-2026-07-10.md`); the
+  outreach itself stays an operator GTM act.
+
+**Operator residue from the round:** the live study's guide retains a stale "single-seat"
+phrase in two spots (the terms-section script + one question) — the Cookiy MCP guide-patch API
+rejected every edit shape tried. 2-minute hand-edit in the console
+(`s.cookiy.ai/console/study/019f4a11-8029-7726-ab71-aef06ac4dcae?tab=study`): replace the
+script bullet "Some mid-tier bundles are priced $629–$739 as single-seat licenses" with "Every
+bundle is licensed per organization — everyone the company authorizes can work with the code;
+competitors at similar prices sell 5-seat licenses", and the question "How do you react to
+$629–$739 bundles being single-seat licenses?" with "Mid-tier bundles at $629–$739 are licensed
+per organization — your whole team can work with the code — while competitors at similar prices
+sell 5-seat licenses. How does that land for you?"; also bump interview duration 15→30 min if
+the console exposes it. One in-flight interview may carry the stale premise — discount its seat
+answer at synthesis.

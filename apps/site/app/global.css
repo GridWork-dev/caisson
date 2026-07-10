@@ -203,13 +203,34 @@ kbd,
 }
 
 .cs-nav-links a {
+  position: relative;
   color: var(--cs-fg-muted);
   transition: color var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+/* Wipe-in underline — foreground (not accent, to protect the ≤10% accent budget, ADR-0078 §8),
+   transform-only so it composites. Persists on the current page as a wayfinding cue. */
+.cs-nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.35rem;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--cs-duration-base) var(--cs-ease-out);
 }
 
 .cs-nav-links a:hover,
 .cs-nav-links a[aria-current="page"] {
   color: var(--cs-fg);
+}
+
+.cs-nav-links a:hover::after,
+.cs-nav-links a[aria-current="page"]::after {
+  transform: scaleX(1);
 }
 
 .cs-brand {
@@ -398,9 +419,12 @@ kbd,
     transform var(--cs-duration-slow) var(--cs-ease-reveal);
 }
 
+/* Offset rides --cs-reveal-x/y (set inline by the Reveal component from its direction/distance
+   props); fallbacks reproduce the legacy fade-up-12. Mirror of the kit's reveal.css — this copy
+   is authoritative at runtime (loaded after the Tailwind/Fumadocs imports). */
 .cs-js .cs-reveal:not(.is-visible) {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translate(var(--cs-reveal-x, 0px), var(--cs-reveal-y, 12px));
 }
 
 /* ===== Print (X10) — hide chrome, flatten framed surfaces ===== */
@@ -427,11 +451,52 @@ kbd,
   }
 }
 
+/* Staggered children (data-stagger) — mirror of the kit's reveal.css: the wrapper cascades its
+   DIRECT children (kept as grid items, spans intact) rather than hiding itself. Children inherit
+   --cs-reveal-x/y from the wrapper and are delayed by index × --cs-reveal-stagger. */
+.cs-js .cs-reveal[data-stagger]:not(.is-visible) {
+  opacity: 1;
+  transform: none;
+}
+/* :where() zeroes specificity so an interactive child keeps its own hover transition; a plain
+   child inherits the reveal ease. Mirror of the kit reveal.css. */
+:where(.cs-reveal[data-stagger]) > * {
+  transition:
+    opacity var(--cs-duration-slow) var(--cs-ease-reveal),
+    transform var(--cs-duration-slow) var(--cs-ease-reveal);
+}
+.cs-js .cs-reveal[data-stagger]:not(.is-visible) > * {
+  opacity: 0;
+  transform: translate(var(--cs-reveal-x, 0px), var(--cs-reveal-y, 12px));
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(2) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 1);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(3) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 2);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(4) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 3);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(5) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 4);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(6) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 5);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(n + 7) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 6);
+}
+
 /* ===== Reduced motion — the site Reveal never stuck at opacity:0 (ADR-0078 §6). base.css carries
  * the global transition kill; this re-asserts the reveal un-hide after the Tailwind/Fumadocs imports. ===== */
 @media (prefers-reduced-motion: reduce) {
-  .cs-js .cs-reveal:not(.is-visible) {
+  .cs-js .cs-reveal:not(.is-visible),
+  .cs-js .cs-reveal[data-stagger]:not(.is-visible) > * {
     opacity: 1;
     transform: none;
+  }
+  .cs-reveal[data-stagger].is-visible > * {
+    transition-delay: 0ms !important;
   }
 }

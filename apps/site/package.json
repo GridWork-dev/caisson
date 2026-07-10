@@ -16,6 +16,7 @@
   "dependencies": {
     "@caisson/ai-kit": "workspace:*",
     "@caisson/ai-meter": "workspace:*",
+    "@caisson/audit-worm": "workspace:*",
     "@caisson/auth": "workspace:*",
     "@caisson/billing": "workspace:*",
     "@caisson/brand": "workspace:*",
@@ -24,12 +25,14 @@
     "@caisson/email": "workspace:*",
     "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/local-store": "workspace:*",
     "@caisson/migrate": "workspace:*",
     "@caisson/observability": "workspace:*",
     "@caisson/org-controls": "workspace:*",
     "@caisson/platform-migrations": "workspace:*",
     "@caisson/platform-reads": "workspace:*",
     "@caisson/pricebook": "workspace:*",
+    "@caisson/prompt-registry": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@caisson/service-license": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
@@ -51,6 +54,7 @@
     "posthog-js": "^1.396.3",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "three": "^0.185.1",
     "zod": "catalog:zod4"
   },
   "devDependencies": {
@@ -65,6 +69,7 @@
     "@types/pg": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@types/three": "^0.185.1",
     "eslint": "catalog:",
     "playwright": "^1.61.1",
     "remotion": "^4.0.485",

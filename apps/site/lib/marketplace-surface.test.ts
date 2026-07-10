@@ -102,16 +102,42 @@ describe("media manifest", () => {
   });
 
   test("code-artifact slides render a real depth-page artifact and count toward the MEDIA facet", () => {
-    // prompt-registry leads with its module-pages.ts artifact, then its mechanism diagram.
+    // prompt-registry now leads with its live component (ADR-0308), then its module-pages.ts
+    // artifact, then its mechanism diagram — all three kinds present.
     const slides = mediaSlides("module", "prompt-registry");
-    expect(slides.length).toBe(2);
-    expect(slides[0]?.kind).toBe("code-artifact");
-    expect(slides[0]?.artifact?.file).toBe(
-      "packages/prompt-registry/src/render.ts",
-    );
-    expect(slides[1]?.kind).toBe("diagram");
-    expect(slides[1]?.diagram).toBe("prompt-render-boundary");
+    expect(slides.length).toBe(3);
+    expect(slides.map((s) => s.kind)).toEqual([
+      "component",
+      "code-artifact",
+      "diagram",
+    ]);
+    const code = slides.find((s) => s.kind === "code-artifact");
+    expect(code?.artifact?.file).toBe("packages/prompt-registry/src/render.ts");
+    const diagram = slides.find((s) => s.kind === "diagram");
+    expect(diagram?.diagram).toBe("prompt-render-boundary");
     expect(entryHasMedia("module", "prompt-registry")).toBe(true);
+  });
+
+  test("ADR-0308 full-depth: each module that ships a showable @caisson/ui surface leads with its component slide", () => {
+    const expected: Record<string, string> = {
+      "ui-pro": "ui-pro",
+      "audit-worm": "audit-worm",
+      "ai-meter": "ai-meter",
+      "prompt-registry": "prompt-registry",
+      "local-store": "local-store",
+      credits: "credits",
+    };
+    for (const [id, key] of Object.entries(expected)) {
+      const slides = mediaSlides("module", id);
+      expect(
+        slides[0]?.kind === "component" && slides[0]?.component === key,
+        `module:${id} must lead with its ${key} component slide`,
+      ).toBe(true);
+    }
+    // A backend-only module (no showable surface) legitimately carries no component slide.
+    expect(
+      mediaSlides("module", "field-crypto").some((s) => s.kind === "component"),
+    ).toBe(false);
   });
 
   test("every bundle leads with a real composition slide naming its own member modules", () => {
