@@ -49,10 +49,25 @@ export type DiagramKey =
   | "runner-env-scrub"
   | "retention-erasure";
 
-/** The one live-rendered kit component wired into a media slide today (ADR-0290) — ui-pro is the
- *  only catalog item whose product IS a set of UI components; every other item is a backend/library
- *  package with no showable UI surface of its own. */
-export type ComponentKey = "ui-pro";
+/** The live-rendered kit components wired into a media slide (ADR-0308 full-depth, extending
+ *  ADR-0290). A catalog module earns a `component` slide only when it genuinely ships a showable
+ *  `@caisson/ui`-rendered surface (the honest floor, ADR-0082 — every slide depicts SHIPPED
+ *  behaviour, and the source is nameable):
+ *    - `ui-pro` — the product IS a set of UI components (`@caisson/ui-pro`).
+ *    - `audit-worm` · `ai-meter` · `prompt-registry` · `local-store` — each ships its OWN embeddable
+ *      `@caisson/<mod>/ui` surface (ADR-0250 G2c/G2d): ChainViewer · UsageChart · PromptBrowser ·
+ *      StoreSearch, presentational + headless-data-in.
+ *    - `credits` — the real buyer-dashboard ledger surface (`@caisson/ui` LedgerList/MetricStat,
+ *      apps/site/app/dashboard/credits): what the buyer sees when they hold credits.
+ *  Every other catalog module is a backend/library package with no showable UI of its own and
+ *  legitimately stays diagram(+code-artifact)-only. */
+export type ComponentKey =
+  | "ui-pro"
+  | "audit-worm"
+  | "ai-meter"
+  | "prompt-registry"
+  | "local-store"
+  | "credits";
 
 export interface MediaSlide {
   kind: SlideKind;
@@ -181,6 +196,46 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
   "retention-erasure": new Set(["module:retention-runner"]),
 };
 
+/** Which modules carry a live-component slide, and the honest one-line caption for each (ADR-0308
+ *  full-depth). The `component` is the live surface the carousel renders; the caption is the visible
+ *  narration + a11y label. Keyed by module id — a module absent here has no showable UI surface and
+ *  legitimately stays diagram(+code-artifact)-only. Preference order (ADR-0290): the component slide
+ *  leads the module's carousel, ahead of any code-artifact or diagram. */
+const MODULE_COMPONENTS: Readonly<
+  Record<string, { component: ComponentKey; caption: string }>
+> = {
+  "ui-pro": {
+    component: "ui-pro",
+    caption:
+      "The premium component layer on the open base, rendered live: the advanced data grid and the hash-chained audit timeline.",
+  },
+  "audit-worm": {
+    component: "audit-worm",
+    caption:
+      "The module's own embeddable chain viewer, rendered live over a real kernel-built hash chain — the integrity verdict is computed, not asserted.",
+  },
+  "ai-meter": {
+    component: "ai-meter",
+    caption:
+      "The module's own metered-usage surface, rendered live: per-model credit and cost rollups over usage events, integer units end to end.",
+  },
+  "prompt-registry": {
+    component: "prompt-registry",
+    caption:
+      "The module's own registry browser, rendered live: one row per name@version with its role shape, variable count, and preview — append-only.",
+  },
+  "local-store": {
+    component: "local-store",
+    caption:
+      "The module's own search surface, rendered live: a controlled query box over the tenant hybrid store with Reciprocal-Rank-Fusion-ranked hits.",
+  },
+  credits: {
+    component: "credits",
+    caption:
+      "The buyer's dashboard credits surface, rendered live: the balance tile and the append-only ledger, every delta an integer credit unit.",
+  },
+};
+
 /** The entry's mark, for the placeholder slide and the card glyph. */
 function entryMark(kind: "bundle" | "module", id: string): IconName {
   if (kind === "bundle") {
@@ -206,10 +261,11 @@ export interface MediaSlidesOptions {
   omitCodeArtifact?: boolean;
 }
 
-/** The ordered media slides for one entry (ADR-0290). Preference order: a bundle leads with its
- *  composition slide; a module leads with its live component (ui-pro only) or its real code
- *  artifact (module-pages.ts), then any authored mechanism diagrams that target it — and if none of
- *  those apply, the brand placeholder as slide 1 so every entry has at least one slide. */
+/** The ordered media slides for one entry (ADR-0290 / ADR-0308). Preference order: a bundle leads
+ *  with its composition slide; a module leads with its live component (MODULE_COMPONENTS — the
+ *  modules that ship a showable @caisson/ui surface), then its real code artifact (module-pages.ts),
+ *  then any authored mechanism diagrams that target it — so a full-depth module carries all three
+ *  kinds. If none apply, the brand placeholder is slide 1 so every entry has at least one slide. */
 export function mediaSlides(
   kind: "bundle" | "module",
   id: string,
@@ -226,13 +282,15 @@ export function mediaSlides(
     });
   }
 
-  if (kind === "module" && id === "ui-pro") {
-    slides.push({
-      kind: "component",
-      component: "ui-pro",
-      caption:
-        "The premium component layer on the open base, rendered live: the advanced data grid and the hash-chained audit timeline.",
-    });
+  if (kind === "module") {
+    const comp = MODULE_COMPONENTS[id];
+    if (comp) {
+      slides.push({
+        kind: "component",
+        component: comp.component,
+        caption: comp.caption,
+      });
+    }
   }
 
   if (kind === "module" && !options?.omitCodeArtifact) {

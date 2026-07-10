@@ -3,7 +3,6 @@ import {
   Card,
   CodeBlock,
   BundleCard,
-  FeatureGrid,
   Icon,
   Reveal,
   Section,
@@ -120,54 +119,54 @@ export default function HomePage() {
         />
       </Reveal>
 
-      {/* ===== Evidence row — three controls, each with its receipt ===== */}
-      <Reveal>
-        <Section
-          eyebrow="What ships in the box"
-          title="Prevention at the application layer — with the receipts."
-          lede="Each control ships with a live artifact you can read, run, and hand to an auditor. No diagrams standing in for behaviour."
-        >
-          <FeatureGrid cols={3}>
-            {EVIDENCE.map((e) => (
-              <Card key={e.label}>
-                <div className="cs-status">
-                  <Icon name={e.icon} size="lg" aria-label={e.label} />
-                  {e.label}
-                </div>
-                <p
-                  className="cs-muted"
-                  style={{ marginTop: "var(--cs-space-3)" }}
-                >
-                  {e.body}
-                </p>
-                <code
-                  className="mono"
-                  style={{
-                    display: "block",
-                    marginTop: "var(--cs-space-5)",
-                    paddingTop: "var(--cs-space-4)",
-                    borderTop: "1px solid var(--cs-border)",
-                    fontSize: "var(--cs-text-xs)",
-                    color: "var(--cs-fg-muted)",
-                    overflowWrap: "anywhere",
-                  }}
-                >
-                  {e.proof}
-                </code>
-                <p
-                  className="cs-footnote"
-                  style={{ marginTop: "var(--cs-space-3)" }}
-                >
-                  {e.maps}
-                </p>
-              </Card>
-            ))}
-          </FeatureGrid>
-        </Section>
-      </Reveal>
+      {/* ===== Evidence row — three controls, each with its receipt. Static header, cards cascade
+          in (stagger) — the first "showcase" beat of the authored rhythm (ADR-0307). ===== */}
+      <Section
+        eyebrow="What ships in the box"
+        title="Prevention at the application layer — with the receipts."
+        lede="Each control ships with a live artifact you can read, run, and hand to an auditor. No diagrams standing in for behaviour."
+      >
+        <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
+          {EVIDENCE.map((e) => (
+            <Card key={e.label}>
+              <div className="cs-status">
+                <Icon name={e.icon} size="lg" aria-label={e.label} />
+                {e.label}
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                {e.body}
+              </p>
+              <code
+                className="mono"
+                style={{
+                  display: "block",
+                  marginTop: "var(--cs-space-5)",
+                  paddingTop: "var(--cs-space-4)",
+                  borderTop: "1px solid var(--cs-border)",
+                  fontSize: "var(--cs-text-xs)",
+                  color: "var(--cs-fg-muted)",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {e.proof}
+              </code>
+              <p
+                className="cs-footnote"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                {e.maps}
+              </p>
+            </Card>
+          ))}
+        </Reveal>
+      </Section>
 
-      {/* ===== Honest-artifact bento (D4a) — the repo IS the artifact: real paths + real code ===== */}
-      <Reveal>
+      {/* ===== Honest-artifact bento (D4a) — the repo IS the artifact: real paths + real code. A
+          taller rise (distance 18) marks the big artifact block as its own beat (ADR-0307). ===== */}
+      <Reveal distance={18}>
         <Section
           eyebrow="The repository is the artifact"
           title="Real paths. Real code. No screenshots."
@@ -177,15 +176,20 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Architecture-isolation + data-lifecycle diagram pair (D4b) — drawn to real behaviour ===== */}
-      <Reveal>
+      {/* ===== Architecture-isolation + data-lifecycle diagram pair (D4b) — drawn to real behaviour.
+          Header fades; the two diagram blocks slide in laterally, staggered — a sideways beat that
+          sets "how it works" apart from the vertical rises around it (ADR-0307). ===== */}
+      <Reveal direction="none">
         <Section
           eyebrow="How the guarantees hold"
           title="The boundary and the evidence trail, drawn to real behaviour."
           lede="Two diagrams of shipped behaviour — the fail-closed isolation boundary and the write-to-verify evidence lifecycle. Nothing aspirational: this is what the RLS, audit-chain, and WORM modules already do."
           band="surface"
         >
-          <div
+          <Reveal
+            as="div"
+            stagger={120}
+            direction="left"
             style={{
               display: "flex",
               flexDirection: "column",
@@ -225,241 +229,227 @@ export default function HomePage() {
                 <LifecycleDiagram />
               </div>
             </div>
-          </div>
+          </Reveal>
         </Section>
       </Reveal>
 
       {/* ===== How to buy — the Module/Bundle/Plan type-chip vocabulary, defined once before
           the Bundles cards below reuse it (ADR-0237 F5) ===== */}
-      <Reveal>
-        <Section
-          eyebrow="How to buy"
-          title="Module, bundle, or plan — same catalog, three shapes."
-          lede="Every price on this site now carries one of three labels. Pick the shape that fits and open the marketplace to browse the rest."
-        >
-          <FeatureGrid cols={3}>
-            <Card>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: "var(--cs-space-3)",
-                }}
-              >
-                <span className="cs-card-title">
-                  One capability, standalone
-                </span>
-                <StatusChip label="Module" />
-              </div>
-              <p
-                className="cs-num"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-2xl)",
-                  fontFamily: "var(--cs-font-mono)",
-                }}
-              >
-                {HOW_TO_BUY_MODULE_PRICE}
-              </p>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                A single package sold on its own — field encryption, the eval
-                harness, the agent runner. Every module, priced à la carte.
-              </p>
-              <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="/marketplace?type=modules" variant="ghost">
-                  Browse modules
-                </Button>
-              </div>
-            </Card>
-            <Card>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: "var(--cs-space-3)",
-                }}
-              >
-                <span className="cs-card-title">
-                  A composed stack for one job
-                </span>
-                <StatusChip label="Bundle" />
-              </div>
-              <p
-                className="cs-num"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-2xl)",
-                  fontFamily: "var(--cs-font-mono)",
-                }}
-              >
-                {HOW_TO_BUY_BUNDLE_RANGE}
-              </p>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                Compliance, AI-Production, Local-first, Agentic-Dev, or
-                Provenance — each composes the same audited base, never a fork.
-                Everything takes the whole catalog at{" "}
-                {bundlePrice("everything")}.
-              </p>
-              <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="/marketplace" variant="ghost">
-                  Browse bundles
-                </Button>
-              </div>
-            </Card>
-            <Card>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: "var(--cs-space-3)",
-                }}
-              >
-                <span className="cs-card-title">
-                  A subscription, not a one-time buy
-                </span>
-                <StatusChip label="Plan" />
-              </div>
-              <p
-                className="cs-num"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-2xl)",
-                  fontFamily: "var(--cs-font-mono)",
-                }}
-              >
-                {HOW_TO_BUY_PLAN_RANGE}
-              </p>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                Compliance Updates keeps control mappings and evidence packs
-                current. Developer adds credits and private-registry pulls.
-              </p>
-              <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="/marketplace/plans" variant="ghost">
-                  Browse plans
-                </Button>
-              </div>
-            </Card>
-          </FeatureGrid>
-        </Section>
-      </Reveal>
+      <Section
+        eyebrow="How to buy"
+        title="Module, bundle, or plan — same catalog, three shapes."
+        lede="Every price on this site now carries one of three labels. Pick the shape that fits and open the marketplace to browse the rest."
+      >
+        <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
+          <Card>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                gap: "var(--cs-space-3)",
+              }}
+            >
+              <span className="cs-card-title">One capability, standalone</span>
+              <StatusChip label="Module" />
+            </div>
+            <p
+              className="cs-num"
+              style={{
+                marginTop: "var(--cs-space-3)",
+                fontSize: "var(--cs-text-2xl)",
+                fontFamily: "var(--cs-font-mono)",
+              }}
+            >
+              {HOW_TO_BUY_MODULE_PRICE}
+            </p>
+            <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+              A single package sold on its own — field encryption, the eval
+              harness, the agent runner. Every module, priced à la carte.
+            </p>
+            <div style={{ marginTop: "var(--cs-space-6)" }}>
+              <Button href="/marketplace?type=modules" variant="ghost">
+                Browse modules
+              </Button>
+            </div>
+          </Card>
+          <Card>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                gap: "var(--cs-space-3)",
+              }}
+            >
+              <span className="cs-card-title">
+                A composed stack for one job
+              </span>
+              <StatusChip label="Bundle" />
+            </div>
+            <p
+              className="cs-num"
+              style={{
+                marginTop: "var(--cs-space-3)",
+                fontSize: "var(--cs-text-2xl)",
+                fontFamily: "var(--cs-font-mono)",
+              }}
+            >
+              {HOW_TO_BUY_BUNDLE_RANGE}
+            </p>
+            <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+              Compliance, AI-Production, Local-first, Agentic-Dev, or Provenance
+              — each composes the same audited base, never a fork. Everything
+              takes the whole catalog at {bundlePrice("everything")}.
+            </p>
+            <div style={{ marginTop: "var(--cs-space-6)" }}>
+              <Button href="/marketplace" variant="ghost">
+                Browse bundles
+              </Button>
+            </div>
+          </Card>
+          <Card>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                gap: "var(--cs-space-3)",
+              }}
+            >
+              <span className="cs-card-title">
+                A subscription, not a one-time buy
+              </span>
+              <StatusChip label="Plan" />
+            </div>
+            <p
+              className="cs-num"
+              style={{
+                marginTop: "var(--cs-space-3)",
+                fontSize: "var(--cs-text-2xl)",
+                fontFamily: "var(--cs-font-mono)",
+              }}
+            >
+              {HOW_TO_BUY_PLAN_RANGE}
+            </p>
+            <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+              Compliance Updates keeps control mappings and evidence packs
+              current. Developer adds credits and private-registry pulls.
+            </p>
+            <div style={{ marginTop: "var(--cs-space-6)" }}>
+              <Button href="/marketplace/plans" variant="ghost">
+                Browse plans
+              </Button>
+            </div>
+          </Card>
+        </Reveal>
+      </Section>
 
       {/* ===== Bundles — featured-lead hierarchy, one accent. id="bundles" is the production
-          door's target from the dual-door hero (D1). ===== */}
-      <Reveal>
-        <Section
-          id="bundles"
-          eyebrow="Bundles"
-          title="Six bundles, one audited base."
-          lede="Compliance leads; every bundle — Provenance and the whole-catalog Everything included — draws from the same audited base, never a fork."
-          band="surface"
+          door's target from the dual-door hero (D1). Six cards cascade in — the signature beat
+          of the authored rhythm (ADR-0307). ===== */}
+      <Section
+        id="bundles"
+        eyebrow="Bundles"
+        title="Six bundles, one audited base."
+        lede="Compliance leads; every bundle — Provenance and the whole-catalog Everything included — draws from the same audited base, never a fork."
+        band="surface"
+      >
+        <Reveal
+          stagger={70}
+          className="cs-editions"
+          style={{ marginTop: "var(--cs-space-8)" }}
         >
-          <div
-            className="cs-editions"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
-            <BundleCard
-              lead
-              href="/compliance"
-              name="Compliance"
-              icon="fail-closed"
-              status={
-                <StatusChip
-                  tone="accent"
-                  dot
-                  label={`${bundlePrice("compliance")} · ${modulesByBundle("compliance").length} modules`}
-                />
-              }
-              line="Fail-closed RLS, S3 WORM, append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator."
-              proof="ALTER TABLE evidence FORCE ROW LEVEL SECURITY;"
-            />
-            <BundleCard
-              href="/ai-kit"
-              name="AI-Production"
-              icon="gauge"
-              status={
-                <StatusChip
-                  tone="muted"
-                  dot
-                  label={`${bundlePrice("ai-production")} · ${modulesByBundle("ai-production").length} modules`}
-                />
-              }
-              line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, versioned prompts, and guardrails."
-              proof="breaker open: tenant spend cap hit"
-            />
-            <BundleCard
-              href="/local-first"
-              name="Local-first AI"
-              icon="cpu"
-              status={
-                <StatusChip
-                  tone="muted"
-                  dot
-                  label={`${bundlePrice("local-first")} · ${modulesByBundle("local-first").length} modules`}
-                />
-              }
-              line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Own the source."
-              proof="egress: blocked at the privacy gate"
-            />
-            <BundleCard
-              href="/agentic-dev"
-              name="Agentic-Dev"
-              icon="git-branch"
-              status={
-                <StatusChip
-                  tone="muted"
-                  dot
-                  label={`${bundlePrice("agentic-dev")} · ${modulesByBundle("agentic-dev").length} modules`}
-                />
-              }
-              line="The governed-agent kernel: typed agent/skill/rule schema, a lifecycle state machine, and a hooks dispatcher."
-              proof="agent · skill · rule — typed, validated, hooked"
-            />
-            <BundleCard
-              href="/provenance"
-              name="Provenance"
-              icon="audit-chain"
-              status={
-                <StatusChip
-                  tone="muted"
-                  dot
-                  label={`${bundlePrice("provenance")} · ${modulesByBundle("provenance").length} modules`}
-                />
-              }
-              line="Detached Ed25519 + RFC-3161 signing, an append-only audit chain where one altered row breaks every link after it, and per-tenant field encryption."
-              proof="caisson evidence verify pack.json  →  sig ✓ · tsa ✓ · root 2c9f…b7"
-            />
-            <BundleCard
-              // Whole-catalog closer spans the row like the Compliance lead, but stays a
-              // neutral surface — `lead`'s accent identity belongs to the hero card alone.
-              style={{ gridColumn: "1 / -1" }}
-              href="/marketplace?view=bundle:everything"
-              name="Everything"
-              icon="bundle"
-              status={
-                <StatusChip
-                  tone="muted"
-                  dot
-                  label={`${bundlePrice("everything")} · all ${MODULE_PRICES.length} modules`}
-                />
-              }
-              line="Every bundle and every module, including the platform capabilities no persona bundle carries — one purchase, the whole library."
-              proof={`save ${formatUsd(everythingSavings())} vs ${formatUsd(moduleCatalogSubtotal())} à la carte`}
-            />
-          </div>
-        </Section>
-      </Reveal>
+          <BundleCard
+            lead
+            href="/compliance"
+            name="Compliance"
+            icon="fail-closed"
+            status={
+              <StatusChip
+                tone="accent"
+                dot
+                label={`${bundlePrice("compliance")} · ${modulesByBundle("compliance").length} modules`}
+              />
+            }
+            line="Fail-closed RLS, S3 WORM, append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator."
+            proof="ALTER TABLE evidence FORCE ROW LEVEL SECURITY;"
+          />
+          <BundleCard
+            href="/ai-kit"
+            name="AI-Production"
+            icon="gauge"
+            status={
+              <StatusChip
+                tone="muted"
+                dot
+                label={`${bundlePrice("ai-production")} · ${modulesByBundle("ai-production").length} modules`}
+              />
+            }
+            line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, versioned prompts, and guardrails."
+            proof="breaker open: tenant spend cap hit"
+          />
+          <BundleCard
+            href="/local-first"
+            name="Local-first AI"
+            icon="cpu"
+            status={
+              <StatusChip
+                tone="muted"
+                dot
+                label={`${bundlePrice("local-first")} · ${modulesByBundle("local-first").length} modules`}
+              />
+            }
+            line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Own the source."
+            proof="egress: blocked at the privacy gate"
+          />
+          <BundleCard
+            href="/agentic-dev"
+            name="Agentic-Dev"
+            icon="git-branch"
+            status={
+              <StatusChip
+                tone="muted"
+                dot
+                label={`${bundlePrice("agentic-dev")} · ${modulesByBundle("agentic-dev").length} modules`}
+              />
+            }
+            line="The governed-agent kernel: typed agent/skill/rule schema, a lifecycle state machine, and a hooks dispatcher."
+            proof="agent · skill · rule — typed, validated, hooked"
+          />
+          <BundleCard
+            href="/provenance"
+            name="Provenance"
+            icon="audit-chain"
+            status={
+              <StatusChip
+                tone="muted"
+                dot
+                label={`${bundlePrice("provenance")} · ${modulesByBundle("provenance").length} modules`}
+              />
+            }
+            line="Detached Ed25519 + RFC-3161 signing, an append-only audit chain where one altered row breaks every link after it, and per-tenant field encryption."
+            proof="caisson evidence verify pack.json  →  sig ✓ · tsa ✓ · root 2c9f…b7"
+          />
+          <BundleCard
+            // Whole-catalog closer spans the row like the Compliance lead, but stays a
+            // neutral surface — `lead`'s accent identity belongs to the hero card alone.
+            style={{ gridColumn: "1 / -1" }}
+            href="/marketplace?view=bundle:everything"
+            name="Everything"
+            icon="bundle"
+            status={
+              <StatusChip
+                tone="muted"
+                dot
+                label={`${bundlePrice("everything")} · all ${MODULE_PRICES.length} modules`}
+              />
+            }
+            line="Every bundle and every module, including the platform capabilities no persona bundle carries — one purchase, the whole library."
+            proof={`save ${formatUsd(everythingSavings())} vs ${formatUsd(moduleCatalogSubtotal())} à la carte`}
+          />
+        </Reveal>
+      </Section>
 
       {/* ===== SKU matrix — bundles × modules + committed price row ===== */}
       <Reveal>
@@ -520,8 +510,9 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Named-engineer note — a real human supports it (ADR-0080 §2) ===== */}
-      <Reveal>
+      {/* ===== Named-engineer note — a real human supports it (ADR-0080 §2). A quiet fade, no rise
+          — the trust beat settles into focus rather than moving (ADR-0307). ===== */}
+      <Reveal direction="none">
         <Section eyebrow="Who&rsquo;s behind it">
           <Card accent>
             <p
@@ -549,82 +540,72 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Built in the open — the interim social-proof answer (ADR-0272 §4 / ADR-0273) ===== */}
-      <Reveal>
-        <Section
-          eyebrow="Built in the open"
-          title="No logo wall yet. Here's what you can check instead."
-          lede="We're early — no logo wall to point at yet, and we'd rather say that than fake one. Here's what you can verify instead: the base is open source you can read, the changelog is public, and the source ships to you to audit."
-          band="surface"
-        >
-          <FeatureGrid cols={3}>
-            <Card>
-              <div className="cs-status">
-                <Icon name="check" size="lg" />
-                Open Apache-2.0 Base
-              </div>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                15 base packages — the kernel, auth, tenant isolation, billing,
-                and the generator tooling — ship under Apache-2.0. Read them,
-                audit them, and share them: the base is peer-reviewable by the
-                license every buyer receives it under.
-              </p>
-              <div style={{ marginTop: "var(--cs-space-5)" }}>
-                <Button href="/legal/license" variant="ghost">
-                  What&rsquo;s open
-                </Button>
-              </div>
-            </Card>
-            <Card>
-              <div className="cs-status">
-                <Icon name="git-branch" size="lg" />A public changelog
-              </div>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                Every release is logged in the open, in plain English — what
-                shipped, release by release. No private roadmap you have to take
-                on faith, and the buyer dashboard shows your own live
-                updates-window.
-              </p>
-              <div style={{ marginTop: "var(--cs-space-5)" }}>
-                <Button href="/updates" variant="ghost">
-                  Read the updates
-                </Button>
-              </div>
-            </Card>
-            <Card>
-              <div className="cs-status">
-                <Icon name="users" size="lg" />
-                Be an early reference
-              </div>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                A limited first cohort of design partners gets discounted access
-                in exchange for a citable case study and a direct line to the
-                engineer. A reference partnership — not a waitlist.
-              </p>
-              <div style={{ marginTop: "var(--cs-space-5)" }}>
-                <Button href="/partners" variant="ghost">
-                  Design partners
-                </Button>
-              </div>
-            </Card>
-          </FeatureGrid>
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            Handing this to a security review?{" "}
-            <Link href="/evidence" style={{ color: "var(--cs-link)" }}>
-              See the evidence pack
-            </Link>
-          </p>
-        </Section>
-      </Reveal>
+      {/* ===== Built in the open — the interim social-proof answer (ADR-0272 §4 / ADR-0273).
+          Static header, three check-cards cascade in (ADR-0307). ===== */}
+      <Section
+        eyebrow="Built in the open"
+        title="No logo wall yet. Here's what you can check instead."
+        lede="We're early — no logo wall to point at yet, and we'd rather say that than fake one. Here's what you can verify instead: the base is open source you can read, the changelog is public, and the source ships to you to audit."
+        band="surface"
+      >
+        <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
+          <Card>
+            <div className="cs-status">
+              <Icon name="check" size="lg" />
+              Open Apache-2.0 Base
+            </div>
+            <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+              15 base packages — the kernel, auth, tenant isolation, billing,
+              and the generator tooling — ship under Apache-2.0. Read them,
+              audit them, and share them: the base is peer-reviewable by the
+              license every buyer receives it under.
+            </p>
+            <div style={{ marginTop: "var(--cs-space-5)" }}>
+              <Button href="/legal/license" variant="ghost">
+                What&rsquo;s open
+              </Button>
+            </div>
+          </Card>
+          <Card>
+            <div className="cs-status">
+              <Icon name="git-branch" size="lg" />A public changelog
+            </div>
+            <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+              Every release is logged in the open, in plain English — what
+              shipped, release by release. No private roadmap you have to take
+              on faith, and the buyer dashboard shows your own live
+              updates-window.
+            </p>
+            <div style={{ marginTop: "var(--cs-space-5)" }}>
+              <Button href="/updates" variant="ghost">
+                Read the updates
+              </Button>
+            </div>
+          </Card>
+          <Card>
+            <div className="cs-status">
+              <Icon name="users" size="lg" />
+              Be an early reference
+            </div>
+            <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+              A limited first cohort of design partners gets discounted access
+              in exchange for a citable case study and a direct line to the
+              engineer. A reference partnership — not a waitlist.
+            </p>
+            <div style={{ marginTop: "var(--cs-space-5)" }}>
+              <Button href="/partners" variant="ghost">
+                Design partners
+              </Button>
+            </div>
+          </Card>
+        </Reveal>
+        <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
+          Handing this to a security review?{" "}
+          <Link href="/evidence" style={{ color: "var(--cs-link)" }}>
+            See the evidence pack
+          </Link>
+        </p>
+      </Section>
 
       {/* ===== Get started ===== */}
       <Reveal>

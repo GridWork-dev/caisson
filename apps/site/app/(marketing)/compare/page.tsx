@@ -3,7 +3,7 @@
 // COMPARISONS, so a new comparison shows up here and in the sitemap with no edit to this file.
 import Link from "next/link";
 
-import { Button, Card, FeatureGrid, Hero, Reveal, Section } from "@/components";
+import { Button, Card, Hero, Reveal, Section } from "@/components";
 import { ACCESSED, COMPARISONS } from "@/lib/comparisons";
 import { breadcrumb, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
@@ -39,39 +39,38 @@ export default function CompareHubPage() {
         }
       />
 
-      <Reveal>
-        <Section
-          eyebrow="The honest frame"
-          title="Where each alternative ends and Caisson begins"
-          lede={`Every competitor fact on these pages was read from the vendor's live site on ${ACCESSED} and stamped with that date. What a competitor is genuinely better at stays in — a comparison that overclaims is worse than no page. With the GRC platforms the job is to draw the own-vs-rent line honestly, not to declare a winner.`}
-        >
-          <FeatureGrid cols={2}>
-            {COMPARISONS.map((c) => (
-              <Link
-                key={c.slug}
-                href={`/compare/${c.slug}`}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <Card interactive>
-                  <span className="cs-card-title">{`Caisson vs ${c.competitor}`}</span>
-                  <p
-                    className="cs-muted"
-                    style={{ marginTop: "var(--cs-space-2)" }}
-                  >
-                    {c.category}
-                  </p>
-                  <p
-                    className="cs-muted"
-                    style={{ marginTop: "var(--cs-space-3)" }}
-                  >
-                    {c.whenPickCaisson}
-                  </p>
-                </Card>
-              </Link>
-            ))}
-          </FeatureGrid>
-        </Section>
-      </Reveal>
+      <Section
+        eyebrow="The honest frame"
+        title="Where each alternative ends and Caisson begins"
+        lede={`Every competitor fact on these pages was read from the vendor's live site on ${ACCESSED} and stamped with that date. What a competitor is genuinely better at stays in — a comparison that overclaims is worse than no page. With the GRC platforms the job is to draw the own-vs-rent line honestly, not to declare a winner.`}
+      >
+        {/* Static header, comparison cards cascade in (ADR-0307). */}
+        <Reveal stagger={60} className="cs-grid cs-grid--2 cs-feature-grid">
+          {COMPARISONS.map((c) => (
+            <Link
+              key={c.slug}
+              href={`/compare/${c.slug}`}
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              <Card interactive>
+                <span className="cs-card-title">{`Caisson vs ${c.competitor}`}</span>
+                <p
+                  className="cs-muted"
+                  style={{ marginTop: "var(--cs-space-2)" }}
+                >
+                  {c.category}
+                </p>
+                <p
+                  className="cs-muted"
+                  style={{ marginTop: "var(--cs-space-3)" }}
+                >
+                  {c.whenPickCaisson}
+                </p>
+              </Card>
+            </Link>
+          ))}
+        </Reveal>
+      </Section>
     </>
   );
 }

@@ -133,71 +133,61 @@ export default function MarketplacePlansPage() {
       />
 
       {/* ===== After 12 months — the terms answer the research names as the top objection ===== */}
-      <Reveal>
-        <Section
-          id="after-twelve-months"
-          band="tint"
-          eyebrow="The one question everyone asks"
-          title="What happens after 12 months?"
-          lede="The honest answer, up front: the source is yours forever, and only new updates are optional after the first year. Nothing you already own expires, breaks, or gets held hostage to a renewal."
-        >
-          <FeatureGrid cols={3}>
-            <Card>
-              <div className="cs-status">
-                <Icon name="check" size="lg" />
-                The source is yours, forever
-              </div>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                A one-time license is perpetual. The code you bought does not
-                expire, stop working, or phone home — license checks verify
-                offline, for good. Non-payment can never brick what you already
-                own.
-              </p>
-            </Card>
-            <Card>
-              <div className="cs-status">
-                <Icon name="shield" size="lg" />
-                Your patches keep coming
-              </div>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                The worry is abandonware — a bundle that goes stale after year
-                one. The Developer plan ({planPrice("developer")}) is the
-                answer: security patches and updates keep flowing while it is
-                active. It is continuity insurance, not a gate on code you own.
-              </p>
-            </Card>
-            <Card>
-              <div className="cs-status">
-                <Icon name="plan-tier" size="lg" />
-                Renew one entitlement, or don&rsquo;t
-              </div>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                After the 12 months of included updates, renew a single
-                entitlement for another year at a flat {RENEWAL_RATE_PERCENT}%
-                of list —{" "}
-                {complianceRenewal !== null ? (
-                  <>
-                    the Compliance bundle ({bundlePrice("compliance")}) renews
-                    at {formatUsd(complianceRenewal)}
-                  </>
-                ) : (
-                  <>a fraction of the list price</>
-                )}
-                . Skip it and you keep every version already delivered.
-              </p>
-            </Card>
-          </FeatureGrid>
-        </Section>
-      </Reveal>
+      <Section
+        id="after-twelve-months"
+        band="tint"
+        eyebrow="The one question everyone asks"
+        title="What happens after 12 months?"
+        lede="The honest answer, up front: the source is yours forever, and only new updates are optional after the first year. Nothing you already own expires, breaks, or gets held hostage to a renewal."
+      >
+        {/* Static header, the three continuity cards cascade in (ADR-0307). */}
+        <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
+          <Card>
+            <div className="cs-status">
+              <Icon name="check" size="lg" />
+              The source is yours, forever
+            </div>
+            <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+              A one-time license is perpetual. The code you bought does not
+              expire, stop working, or phone home — license checks verify
+              offline, for good. Non-payment can never brick what you already
+              own.
+            </p>
+          </Card>
+          <Card>
+            <div className="cs-status">
+              <Icon name="shield" size="lg" />
+              Your patches keep coming
+            </div>
+            <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+              The worry is abandonware — a bundle that goes stale after year
+              one. The Developer plan ({planPrice("developer")}) is the answer:
+              security patches and updates keep flowing while it is active. It
+              is continuity insurance, not a gate on code you own.
+            </p>
+          </Card>
+          <Card>
+            <div className="cs-status">
+              <Icon name="plan-tier" size="lg" />
+              Renew one entitlement, or don&rsquo;t
+            </div>
+            <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+              After the 12 months of included updates, renew a single
+              entitlement for another year at a flat {RENEWAL_RATE_PERCENT}% of
+              list —{" "}
+              {complianceRenewal !== null ? (
+                <>
+                  the Compliance bundle ({bundlePrice("compliance")}) renews at{" "}
+                  {formatUsd(complianceRenewal)}
+                </>
+              ) : (
+                <>a fraction of the list price</>
+              )}
+              . Skip it and you keep every version already delivered.
+            </p>
+          </Card>
+        </Reveal>
+      </Section>
 
       {/* ===== Subscription plans ===== */}
       <Section

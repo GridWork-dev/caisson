@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CodeBlock, Faq, Icon, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
@@ -253,15 +253,28 @@ export function PreviewDialog({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const entry = viewId ? entryByViewId(viewId) : undefined;
-  const vm = entry ? buildViewModel(entry) : undefined;
+  // Memoized on viewId so vm (and vm.slides) keeps a stable identity across parent re-renders —
+  // MediaCarousel resets its index on a new `slides` reference, so a fresh array every render
+  // would snap an open carousel back to slide 1 whenever cart/theme context re-renders the tree.
+  const liveVm = useMemo(() => {
+    const entry = viewId ? entryByViewId(viewId) : undefined;
+    return entry ? buildViewModel(entry) : undefined;
+  }, [viewId]);
+
+  // Retain the last-resolved view model through the authored close (ADR-0307): the parent nulls
+  // viewId at close, and unmounting the shell in that same render would leave the exit transition
+  // animating an empty panel. `heldVm` keeps the content mounted until the dialog's exit
+  // transition finishes (cleared on transitionend while closed).
+  const [heldVm, setHeldVm] = useState<ViewModel | undefined>(undefined);
+  if (liveVm && liveVm !== heldVm) setHeldVm(liveVm);
+  const vm = liveVm ?? heldVm;
 
   useEffect(() => {
     const dlg = ref.current;
     if (!dlg) return;
-    if (vm && !dlg.open) dlg.showModal();
-    else if (!vm && dlg.open) dlg.close();
-  }, [vm]);
+    if (liveVm && !dlg.open) dlg.showModal();
+    else if (!liveVm && dlg.open) dlg.close();
+  }, [liveVm]);
 
   return (
     <>
@@ -280,8 +293,52 @@ export function PreviewDialog({
           color: var(--cs-fg);
           box-shadow: var(--cs-shadow-lg);
           overflow: hidden;
+          /* Authored open/close (ADR-0078 §6). @starting-style + allow-discrete animate a top-layer
+             <dialog> across display; transform/opacity only. This base rule's timing is the EXIT
+             (closing settles back to it) — a token faster than the enter on [open] below. Reduced
+             motion: base.css zeroes every transition-duration !important, so this collapses to an
+             instant swap with the element never stuck hidden ([open] sets opacity:1 regardless). */
+          opacity: 0;
+          transform: scale(0.98) translateY(4px);
+          transition:
+            opacity var(--cs-duration-fast) var(--cs-ease-out),
+            transform var(--cs-duration-fast) var(--cs-ease-out),
+            overlay var(--cs-duration-fast) allow-discrete,
+            display var(--cs-duration-fast) allow-discrete;
         }
-        .cs-preview-dialog::backdrop { background: var(--cs-scrim); }
+        .cs-preview-dialog[open] {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+          transition:
+            opacity var(--cs-duration-base) var(--cs-ease-out),
+            transform var(--cs-duration-base) var(--cs-ease-out),
+            overlay var(--cs-duration-base) allow-discrete,
+            display var(--cs-duration-base) allow-discrete;
+        }
+        @starting-style {
+          .cs-preview-dialog[open] {
+            opacity: 0;
+            transform: scale(0.98) translateY(4px);
+          }
+        }
+        .cs-preview-dialog::backdrop {
+          background: var(--cs-scrim);
+          opacity: 0;
+          transition:
+            opacity var(--cs-duration-fast) var(--cs-ease-out),
+            overlay var(--cs-duration-fast) allow-discrete,
+            display var(--cs-duration-fast) allow-discrete;
+        }
+        .cs-preview-dialog[open]::backdrop {
+          opacity: 1;
+          transition:
+            opacity var(--cs-duration-base) var(--cs-ease-out),
+            overlay var(--cs-duration-base) allow-discrete,
+            display var(--cs-duration-base) allow-discrete;
+        }
+        @starting-style {
+          .cs-preview-dialog[open]::backdrop { opacity: 0; }
+        }
         .cs-preview-shell { max-height: inherit; display: flex; flex-direction: column; }
         .cs-preview-head {
           display: flex; align-items: flex-start; justify-content: space-between;
@@ -357,6 +414,13 @@ export function PreviewDialog({
         onClose={onClose}
         onClick={(e) => {
           if (e.target === ref.current) onClose();
+        }}
+        onTransitionEnd={(e) => {
+          // Exit settled while closed → release the held content (never mid-reopen: `open` is
+          // true again by then, so the guard holds and the fresh vm stays mounted).
+          if (e.target === ref.current && !ref.current?.open) {
+            setHeldVm(undefined);
+          }
         }}
       >
         {vm ? (

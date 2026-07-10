@@ -7,15 +7,63 @@
     transform var(--cs-duration-slow) var(--cs-ease-reveal);
 }
 
+/* Pre-reveal offset rides two custom properties the Reveal component sets inline from its
+   `direction`/`distance` props; the fallbacks reproduce the legacy fade-up-12 when unset. */
 .cs-js .cs-reveal:not(.is-visible) {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translate(var(--cs-reveal-x, 0px), var(--cs-reveal-y, 12px));
 }
 
-/* Reduced motion: never animate, never hide — force the pre-reveal state visible. */
+/* Staggered children (data-stagger): the wrapper reveals its DIRECT children in a tight cascade
+   rather than itself, so it drops onto a grid/list without wrapping every card — the children stay
+   grid items, keeping their own grid-column spans. The wrapper is NOT hidden; only children carry
+   the pre-reveal offset (inheriting --cs-reveal-x/y from the wrapper), each delayed by its index. */
+.cs-js .cs-reveal[data-stagger]:not(.is-visible) {
+  opacity: 1;
+  transform: none;
+}
+/* :where() zeroes this rule's specificity so a child that brings its OWN transition (an
+   interactive card's hover easing) keeps it — a plain child with no transition still inherits
+   the reveal ease. The nth-child delays below stay specific so they win over that child shorthand. */
+:where(.cs-reveal[data-stagger]) > * {
+  transition:
+    opacity var(--cs-duration-slow) var(--cs-ease-reveal),
+    transform var(--cs-duration-slow) var(--cs-ease-reveal);
+}
+.cs-js .cs-reveal[data-stagger]:not(.is-visible) > * {
+  opacity: 0;
+  transform: translate(var(--cs-reveal-x, 0px), var(--cs-reveal-y, 12px));
+}
+/* Cascade delays. ponytail: bounded to 6 explicit steps — every current grid is ≤6 cards; the
+   nth-child(n+7) rule catches any overflow at the last step instead of growing the list. */
+.cs-reveal[data-stagger].is-visible > *:nth-child(2) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 1);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(3) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 2);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(4) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 3);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(5) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 4);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(6) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 5);
+}
+.cs-reveal[data-stagger].is-visible > *:nth-child(n + 7) {
+  transition-delay: calc(var(--cs-reveal-stagger, 60ms) * 6);
+}
+
+/* Reduced motion: never animate, never hide — force the pre-reveal state visible, and drop the
+   stagger delays so children appear together, not in a timed sequence. */
 @media (prefers-reduced-motion: reduce) {
-  .cs-js .cs-reveal:not(.is-visible) {
+  .cs-js .cs-reveal:not(.is-visible),
+  .cs-js .cs-reveal[data-stagger]:not(.is-visible) > * {
     opacity: 1;
     transform: none;
+  }
+  .cs-reveal[data-stagger].is-visible > * {
+    transition-delay: 0ms !important;
   }
 }

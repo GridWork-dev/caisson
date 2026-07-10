@@ -1,4 +1,5 @@
 import { Button, CodeBlock, StatusChip, Terminal } from "@/components";
+import { HeroField } from "@/components/hero-field";
 import { ProofChips } from "@/components/proof-chips";
 import { bundlePrice, BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
 
@@ -19,7 +20,10 @@ const MODULE_COUNT = MODULE_PRICES.length;
 
 export function DualDoorHero() {
   return (
-    <section className="cs-section" data-flush="">
+    <section className={`cs-section ${styles.heroShell}`} data-flush="">
+      {/* Ambient depth-fog lattice field (ADR-0306) — additive layer BEHIND the content; the h1/LCP
+          contract below is untouched. */}
+      <HeroField />
       <div className="cs-container">
         <span className="cs-eyebrow">One audited base — two ways in</span>
         <h1 className="cs-display" style={{ marginTop: "var(--cs-space-5)" }}>

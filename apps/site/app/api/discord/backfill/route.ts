@@ -5,6 +5,11 @@
 // and pushes them to the support-bot. Config-gated: an unconfigured bot pair answers
 // `{ pushed: false }` — never an error (role sync is best-effort, the money path is elsewhere).
 // Takes no body — everything derives from the verified session.
+//
+// No owner-gate by design (Kickoff-K, refuted finding): this syncs the CALLER'S OWN Discord roles to
+// reflect the tier the org already paid for — it writes NO shared org state (unlike the owner-gated
+// /api/byok + compliance attestations, ADR-0208), so seat-visibility here is intentional, not the
+// CWE-863 owner/seat class. Adding an owner gate would be a product-policy fork, not a security fix.
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
