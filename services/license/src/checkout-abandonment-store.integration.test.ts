@@ -217,6 +217,43 @@ describe("sweepEligibleAbandonedCheckout (marker idempotency, 30-day guard, conv
     );
     expect(second).toBeNull();
   });
+
+  test("a new cart after the 30-day window IS nudged (the rolling-month guard decides, not the old marked row)", async () => {
+    const acct = "acct_sweep_after_30d";
+    await withTenant(db, acct, (tx) =>
+      recordCheckoutAbandonment(tx, {
+        id: "ca_after_30d_first",
+        accountId: acct,
+        items: [{ id: "x", label: "X" }],
+      }),
+    );
+    await backdate("ca_after_30d_first", DELAY_HOURS + 1);
+    const first = await withTenant(db, acct, (tx) =>
+      sweepEligibleAbandonedCheckout(tx, acct, DELAY_HOURS),
+    );
+    expect(first).not.toBeNull();
+
+    // Age the sent notice past the rolling-month guard; a NEW cart, past the delay window, must
+    // then be nudged — the due query has to advance past the already-marked older row instead of
+    // returning it forever (which would conflict on the marker and suppress every future nudge).
+    await tp.exec(
+      `UPDATE checkout_abandonment_notice SET created_at = now() - interval '31 days' WHERE id = 'ca_after_30d_first'`,
+    );
+    await withTenant(db, acct, (tx) =>
+      recordCheckoutAbandonment(tx, {
+        id: "ca_after_30d_second",
+        accountId: acct,
+        items: [{ id: "y", label: "Y" }],
+      }),
+    );
+    await backdate("ca_after_30d_second", DELAY_HOURS + 1);
+
+    const second = await withTenant(db, acct, (tx) =>
+      sweepEligibleAbandonedCheckout(tx, acct, DELAY_HOURS),
+    );
+    expect(second).not.toBeNull();
+    expect(second?.lines[0]?.label).toBe("Y");
+  });
 });
 
 describe("hasRecentAbandonedCheckoutNotice (posthog abandoned_checkout_converted precondition)", () => {
