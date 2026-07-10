@@ -230,6 +230,14 @@ export default async function BusinessPage({
             <span className="muted">Next &rarr;</span>
           )}
         </div>
+        <p
+          className="muted"
+          style={{ fontSize: "0.85em", marginTop: "var(--cs-space-2)" }}
+        >
+          Drill into one account&apos;s money timeline — credit ledger + Paddle
+          orders &amp; subscriptions →{" "}
+          <a href="/business/ledger">open the ledger</a>
+        </p>
       </Section>
 
       <Section title={`Entitlements & purchases (${entitlements.length})`}>
