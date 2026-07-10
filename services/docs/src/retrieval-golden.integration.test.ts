@@ -16,6 +16,7 @@
 // defeats the test.
 import { afterAll, describe, expect, test } from "bun:test";
 import { buildCorpus } from "./corpus.ts";
+import { GOLDENS } from "./golden-pairs.ts";
 import { DocsIndex } from "./index-store.ts";
 
 const corpus = buildCorpus();
@@ -24,40 +25,6 @@ const index = await DocsIndex.build(corpus.chunks); // no embedder ⇒ determini
 afterAll(() => {
   index.close();
 });
-
-/** question → a source path expected within the top-k (k chosen per pair, verified at authoring). */
-const GOLDENS: { question: string; expected: string; k: number }[] = [
-  {
-    question: "how do I install a bundle",
-    expected: "apps/site/content/docs/getting-started.mdx",
-    k: 3,
-  },
-  {
-    question: "WORM audit storage on S3",
-    expected: "apps/site/content/docs/provenance/audit-worm.mdx",
-    k: 3,
-  },
-  {
-    question: "does caisson require postgres",
-    expected: "apps/site/content/docs/getting-started.mdx",
-    k: 5,
-  },
-  {
-    question: "cancel my subscription",
-    expected: "apps/site/content/docs/base/billing.mdx",
-    k: 5,
-  },
-  {
-    question: "what license is the base substrate under",
-    expected: "apps/site/content/docs/base/index.mdx",
-    k: 3,
-  },
-  {
-    question: "license key stopped working after renewal",
-    expected: "packages/license-verify/README.md",
-    k: 5,
-  },
-];
 
 describe("golden retrieval (FTS floor, real corpus)", () => {
   for (const g of GOLDENS) {
