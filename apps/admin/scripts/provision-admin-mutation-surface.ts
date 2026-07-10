@@ -33,7 +33,7 @@ const ADMIN_READ_TABLES = [
   "entitlement_grant",
   "license_grant",
   "account_member",
-  "order_record", // ADR-0316 W-COMMERCE ledger + ADR-0319 affiliate commission report
+  "order_record", // ADR-0316 W-COMMERCE ledger + ADR-0320 affiliate commission report
   "subscription_status", // ADR-0316 W-COMMERCE subscription timeline
   "grant_consumption", // ADR-0316 W-COMMERCE expiring-soon panel
 ] as const;

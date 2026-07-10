@@ -496,13 +496,13 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
         ],
         // G33: a one-time purchase is never a subscription cycle.
         subscriptionCycle: false,
-        // ADR-0319: no discount redeemed on this fixture -> null annotation.
+        // ADR-0320: no discount redeemed on this fixture -> null annotation.
         discountId: null,
       },
     ]);
   });
 
-  test("a discounted purchase threads discount_id onto the posthog capture (ADR-0319)", async () => {
+  test("a discounted purchase threads discount_id onto the posthog capture (ADR-0320)", async () => {
     const captures: PurchaseCapture[] = [];
     const app = makeApp(
       provider,

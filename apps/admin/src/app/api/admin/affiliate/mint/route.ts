@@ -1,4 +1,4 @@
-// ADR-0315/0319 — mint an affiliate discount code. GitHub-OAuth-gated (ADR-0283), Zod `.strict()`
+// ADR-0315/0320 — mint an affiliate discount code. GitHub-OAuth-gated (ADR-0283), Zod `.strict()`
 // body, dual-logged. The orchestrator (mintAffiliateCodeAdmin) calls the injected mint proxy (which
 // holds PADDLE_API_KEY on the license service — never here) then registers the affiliate_code row +
 // audit log as admin_write.

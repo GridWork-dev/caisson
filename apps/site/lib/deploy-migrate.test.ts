@@ -42,7 +42,7 @@ afterAll(async () => {
 test("platform migrations apply in order then are idempotent", async () => {
   // 24 = the shared chain's abandoned-checkout append (@caisson/platform-migrations, 0024 —
   // numbered past the site-local 0020–0022 by design, following the order-record subscription-
-  // link append at 0023). 25/26 = the ADR-0315/0319 affiliate-flip appends (order_record
+  // link append at 0023). 25/26 = the ADR-0315/0320 affiliate-flip appends (order_record
   // discount_id, then the affiliate_code registry).
   const first = await runPlatformMigrations(pgliteApplier(tp));
   // 22 shared-chain migrations (0001–0019 plus 0023–0026) + the 5 apps/site-local extras

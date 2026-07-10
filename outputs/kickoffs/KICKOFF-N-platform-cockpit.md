@@ -109,4 +109,4 @@ autonomously. Ordered; each step idempotent/re-runnable.
   verify `order_record.discount_id` stamped, the /business/ledger timeline shows it, and
   /business/affiliates reports the commission row (BigInt floor, flags only — no money moves).
 - Then mint the REAL affiliate codes via the /business mint card (10%/3000bps stamped
-  per-row at mint, ADR-0319).
+  per-row at mint, ADR-0320).

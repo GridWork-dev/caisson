@@ -1,4 +1,4 @@
-# ADR-0319 — Affiliate program parameters: fixed 10%/30%, full-scope discount_id capture, copy trued
+# ADR-0320 — Affiliate program parameters: fixed 10%/30%, full-scope discount_id capture, copy trued
 
 **Status:** accepted · 2026-07-10 (Kickoff-N execution picker). **Tags:** `billing`.
 Refines `SPEC-affiliate-production-flip` (ADR-0315) at the two points its lock left unbound.

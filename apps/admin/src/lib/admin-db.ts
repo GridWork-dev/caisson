@@ -101,7 +101,7 @@ const SUPPORT_TICKET_ADMIN_READ_GRANT_SQL = `GRANT SELECT ON support_ticket TO a
  *  role needs a cross-tenant SELECT policy on it to compute the exact claw preview. `account_member`
  *  was added (G29): the tenants view's email-lookup join needs cross-tenant SELECT on it too.
  *  `order_record`/`subscription_status`/`grant_consumption` were added (ADR-0316 W-COMMERCE +
- *  ADR-0319): the /business/ledger money timeline and the /business/affiliates commission report
+ *  ADR-0320): the /business/ledger money timeline and the /business/affiliates commission report
  *  read them cross-tenant. */
 const ADMIN_READ_TABLES = [
   "credit_wallet",

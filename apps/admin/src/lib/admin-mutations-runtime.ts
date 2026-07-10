@@ -92,7 +92,7 @@ async function issueProxy(req: {
   return { token: body.token, licenseId: body.licenseId };
 }
 
-/** Server-side affiliate-mint proxy (ADR-0315/0319) — the exact `issueProxy` shape, pointed at the
+/** Server-side affiliate-mint proxy (ADR-0315/0320) — the exact `issueProxy` shape, pointed at the
  *  license service's `POST /admin/affiliate/mint`. That endpoint holds `PADDLE_API_KEY` and calls
  *  the billing driver's `createDiscount`, so this admin app never carries the Paddle credential.
  *  Reuses the SAME base + admin token the reissue proxy uses (`CAISSON_LICENSE_ISSUE_URL` +

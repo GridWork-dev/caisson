@@ -231,11 +231,11 @@ export const EvalIssueBody = z
   .strict();
 
 /**
- * POST /admin/affiliate/mint body (ADR-0315/0319). `.strict()`. The admin-scoped, server-to-server
+ * POST /admin/affiliate/mint body (ADR-0315/0320). `.strict()`. The admin-scoped, server-to-server
  * affiliate mint: apps/admin's mint proxy sends the redeemable `code` + an internal `description`
  * (the affiliate name); this endpoint holds `PADDLE_API_KEY` and calls the billing driver's
  * `createDiscount` so that credential never enters the admin app. The 10%/30% program parameters are
- * inlined in the driver (operator-locked, ADR-0319) — never taken from this body.
+ * inlined in the driver (operator-locked, ADR-0320) — never taken from this body.
  */
 export const AffiliateMintBody = z
   .object({
@@ -653,7 +653,7 @@ export function createApp(
       return json({ token: outcome.token, licenseId: outcome.licenseId });
     }
 
-    // ADR-0315/0319 — the admin-scoped affiliate discount mint. Server-to-server, bearer-gated (the
+    // ADR-0315/0320 — the admin-scoped affiliate discount mint. Server-to-server, bearer-gated (the
     // apps/admin mint proxy holds the admin token), rate-limited under the same "issue" bucket. This
     // endpoint holds `PADDLE_API_KEY` and calls the billing driver's `createDiscount` so that
     // credential never enters the admin app; it does NOT touch the DB (the affiliate_code
@@ -1018,7 +1018,7 @@ export function createApp(
           subscriptionCycle:
             result.event.type === "invoice.paid" &&
             result.event.billingReason === "subscription_cycle",
-          // ADR-0319: the `amountTotal` narrowing also admits refund/chargeback, which carry
+          // ADR-0320: the `amountTotal` narrowing also admits refund/chargeback, which carry
           // no discountId — the `in` guard keeps this compiling across the whole union.
           discountId:
             "discountId" in result.event

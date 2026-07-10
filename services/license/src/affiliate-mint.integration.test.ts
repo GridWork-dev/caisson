@@ -1,4 +1,4 @@
-// ADR-0315/0319 — the affiliate mint orchestrator (mintAffiliateCodeAdmin), end to end on PGlite.
+// ADR-0315/0320 — the affiliate mint orchestrator (mintAffiliateCodeAdmin), end to end on PGlite.
 // The external Paddle createDiscount is faked (the real one holds PADDLE_API_KEY on the license
 // service, injected as deps.mintDiscount); this exercises the admin_write registration + the
 // queryable admin_action_log row + the WORM-status contract that the proxy split hangs on.
@@ -77,7 +77,7 @@ afterAll(async () => {
   await tp.close();
 });
 
-describe("mintAffiliateCodeAdmin (ADR-0315/0319)", () => {
+describe("mintAffiliateCodeAdmin (ADR-0315/0320)", () => {
   test("mints the Paddle discount, registers the LOCKED-constant row, and dual-logs", async () => {
     const r = await mintAffiliateCodeAdmin(deps(), {
       actorEmail: "admin@caisson.sh",

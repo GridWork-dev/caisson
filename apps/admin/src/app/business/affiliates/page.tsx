@@ -9,7 +9,7 @@ import {
 
 import { adminDbConfigured, readAdmin } from "@/lib/admin-db";
 
-// ADR-0315/0319 — the affiliate commission report. Read-only, cross-tenant through the same
+// ADR-0315/0320 — the affiliate commission report. Read-only, cross-tenant through the same
 // read-only `admin` role every business-admin view uses (ADR-0141): it joins every tenant's
 // attributed `order_record` (discount_id set) to its `affiliate_code`, groups per affiliate, and
 // computes payable commission + a refund clawback ALERT (never moves money — ADR-0294/0302 posture).

@@ -158,7 +158,7 @@ export interface AdminMutationDeps {
    */
   publishDenySet?: ((revokedLicenseIds: string[]) => Promise<void>) | undefined;
   /**
-   * Mint an affiliate Paddle discount code (ADR-0315/0319). OPTIONAL — the affiliate lever is the
+   * Mint an affiliate Paddle discount code (ADR-0315/0320). OPTIONAL — the affiliate lever is the
    * only mutation that needs it, and every existing caller/test omits it. Injected because the
    * actual `POST /discounts` call needs `PADDLE_API_KEY`, which lives on the license service, NOT in
    * the admin blast radius: apps/admin wires this to an HTTP proxy to the license service's
@@ -1240,7 +1240,7 @@ export async function revokePurchaseAdmin(
   };
 }
 
-// --- Affiliate code mint (ADR-0315/0319) --------------------------------------------------------
+// --- Affiliate code mint (ADR-0315/0320) --------------------------------------------------------
 //
 // The affiliate lever mints a fixed 10%-buyer / 30%-commission Paddle discount code and registers
 // it so the commission report can join `order_record.discount_id → affiliate_code.discount_id`. It
@@ -1299,7 +1299,7 @@ export interface MintAffiliateResult {
 }
 
 /**
- * Mint + register an affiliate discount code (ADR-0315/0319). Order: (1) create the Paddle discount
+ * Mint + register an affiliate discount code (ADR-0315/0320). Order: (1) create the Paddle discount
  * via the injected proxy (external effect first — a throw here writes no rows); (2) register the
  * `affiliate_code` row + the queryable `admin_action_log` row atomically as `admin_write`; (3)
  * append the WORM chain entry post-commit. A duplicate code is rejected by Paddle at step 1 (and by

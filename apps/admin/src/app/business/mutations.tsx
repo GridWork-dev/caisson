@@ -610,7 +610,7 @@ function RevokePurchaseCard() {
 }
 
 /**
- * ADR-0315/0319 affiliate mint. Unlike every other card here this is a CREATE, not a per-account
+ * ADR-0315/0320 affiliate mint. Unlike every other card here this is a CREATE, not a per-account
  * destructive action — there is no target account to type-to-confirm, so it uses a plain armed
  * button (valid name + Paddle-format code). The minted `code` is shown once in the result; the
  * program parameters (10% buyer / 30% commission) are LOCKED server-side, never entered here.
@@ -632,7 +632,7 @@ function AffiliateMintCard() {
         <p className="section-title">Mint affiliate code</p>
         <p className="muted" style={{ fontSize: "0.85em" }}>
           Create a Paddle affiliate discount code — fixed 10% buyer discount /
-          30% commission (ADR-0319). The code is shown once below.
+          30% commission (ADR-0320). The code is shown once below.
         </p>
       </div>
       <div className="stack" style={{ gap: "var(--cs-space-2)" }}>
