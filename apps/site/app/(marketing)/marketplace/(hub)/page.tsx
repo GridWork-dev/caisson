@@ -126,7 +126,7 @@ export default function MarketplacePage() {
         </Reveal>
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
           {BASE_PACKAGES.length} packages under Apache-2.0.{" "}
-          <Link href="/legal/license" style={{ color: "var(--cs-link)" }}>
+          <Link href="/legal/license" className="cs-link">
             See the open / commercial split
           </Link>
           .
