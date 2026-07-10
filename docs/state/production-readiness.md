@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-10
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -19,14 +19,14 @@ Six-dimension readiness assessment from the 2026-07-09 whole-repo sweep (16-agen
 
 ## Verdicts
 
-| Dimension        | Verdict     | One-line state                                                                                                            |
-| ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Deploy / infra   | **gaps**    | All 5 Railway services + Worker deployed from current main, live-verified; no undeployed code debt on main                |
-| Security         | **gaps**    | Strix round-1 fully remediated; credential sweep executed 2026-07-08; named debt below                                    |
-| Commerce         | **BLOCKED** | Everything built + sandbox-proven end-to-end; no Paddle production account/catalog, EIN in flight — deliberate pre-launch |
-| Operational      | **gaps**    | Telemetry + intel daemon live; **Railway Postgres backup/PITR never configured** — the one true operational blocker       |
-| Buyer experience | **gaps**    | All 3 P0 + 12 P1 lifecycle-audit gaps verified fixed in code; residue is the operator launch checklist                    |
-| Quality gates    | **gaps**    | 4-check CI gate real and green; "required" is discipline (no branch protection on the private plan)                       |
+| Dimension        | Verdict     | One-line state                                                                                                                                 |
+| ---------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deploy / infra   | **gaps**    | All 5 Railway services + Worker deployed from current main, live-verified; no undeployed code debt on main                                     |
+| Security         | **gaps**    | Strix round-1 remediated; round-2 executed 2026-07-10 (Kickoff K) — 3 DoS/supply-chain fixes, seams clean, Worker 429 proven; named debt below |
+| Commerce         | **BLOCKED** | Everything built + sandbox-proven end-to-end; no Paddle production account/catalog, EIN in flight — deliberate pre-launch                      |
+| Operational      | **gaps**    | Telemetry + intel daemon live; **Railway Postgres backup/PITR never configured** — the one true operational blocker                            |
+| Buyer experience | **gaps**    | All 3 P0 + 12 P1 lifecycle-audit gaps verified fixed in code; residue is the operator launch checklist                                         |
+| Quality gates    | **gaps**    | 4-check CI gate real and green; "required" is discipline (no branch protection on the private plan)                                            |
 
 ## True go-live blockers (consolidated)
 
@@ -69,17 +69,23 @@ SHA; runscaler fleet healthy.
 Strix round-1 (2026-07-01): all 6 findings remediated + regression-tested (PR #45/ADR-0204).
 Credential sweep (2026-07-08): per-service OpenRouter key split + 1Password recovery vault,
 parity exit 0. Admin auth rearchitected to in-app GitHub OAuth with numeric-id allowlist
-(ADR-0283). CF edge rate-limit live and 429-proven on docs-api.
+(ADR-0283). CF edge rate-limit live and 429-proven on docs-api; registry Worker app-level rate
+limit 429-proven live 2026-07-10 (below).
 
 - **P1:** MIRROR_PUSH_TOKEN — the last transcript-leaked credential (ADR-0226) — still unrotated;
   simultaneously live AND broken for its job. (tracked)
-- **P1:** no Strix round-2 despite the admin-auth mechanism the round-1 scan covered having been
-  completely replaced since (ADR-0283); round-1's own coverage-gap list (admin black-box, authed
-  buyer sessions, support-bot, registry Worker, DoS, supply-chain) is untouched. (tracked as of
-  this sweep)
-- **P2:** registry Worker has zero app-level rate limiting (its own
-  `public-surface-minimization.md` rec #4, never built) — enumeration/scraping cost, not data
-  exposure. (tracked as of this sweep)
+- **P1 (executed 2026-07-10, Kickoff K):** Strix round-2 ran against round-1's coverage-gap list.
+  A white-box multi-agent audit (Opus finders + adversarial Fable verdicts on the money/license/
+  crypto seams) landed 3 DoS/supply-chain fixes and cleared the highest-risk seams — admin OAuth +
+  allowlist, registry-Worker license filter, support-bot billing-grant, authed site owner/seat
+  flows — with no money/license/authz bug; registry-Worker 429 proven firing live. **Residual
+  (tracked):** authed-admin black-box needs a one-time session-cookie harness (admin is
+  GitHub-OAuth-only), and the Strix black-box cross-check needs a re-run on a lifecycle-conforming
+  engine (the gpt-5.4 bridge did not drive it). `docs/security/strix-findings-2026-07-10-round2.md`.
+- **P2 (closed 2026-07-10):** registry Worker app-level rate limiting — built (CAISSON-55,
+  `registry/worker/rate-limit.ts`, native CF `simple` limiter, catalog 300/60s) and 429-proven
+  firing live this round with a sanctioned vegeta run (round-1's negative was a load-shape
+  artifact of the per-server-approximate limiter, not a missing binding).
 - **P2:** `license.caisson.sh` is un-proxied by Cloudflare (deliberate, CF-1/ADR-0219) and its
   app-level rate limiter **fails open** on an internal error (`services/license/src/app.ts:544`) —
   the money-critical surface loses rate protection exactly when the store is already unhealthy.
