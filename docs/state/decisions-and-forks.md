@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-10
 status: live
-adr_ceiling: 0319
+adr_ceiling: 0320
 ---
 
 # Decisions & Forks — live board
@@ -13,6 +13,7 @@ operator. Never auto-decide a fork.
 
 | #                                            | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Where                                                                       |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Codex production-browser audit (2026-07-10)  | Repo-specific GPT-5.6 Codex Browser skill; three production rings; dedicated probe-account mutations require mandatory verified reverts; findings stay advisory until operator-approved deterministic graduation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ADR-0320; `outputs/specs/codex-production-browser-audit/SPEC.md`            |
 | op-as-primary-SoT + cred parity (2026-07-10) | 1Password "Caisson Launch" flipped to primary secret SoT (amends ADR-0224 F6); vault 135→147 items, full caisson.env↔Railway↔op name parity, 8 providers live-probed working                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | ADR-0317; `docs/state/provider-key-setup-2026-07-10.md`                     |
 | Admin-buildout picker (2026-07-10)           | Full six-wave admin cockpit buildout armed (logs · commerce · product · fleet · support · intel-triage), in-admin Loki panel, PostHog federated now with honest empty states, riders: platform-reads adoption + intel triage state + support-bot OTLP logs                                                                                                                                                                                                                                                                                                                                                                                                                                                 | ADR-0316; `outputs/specs/close-out-triage/SPEC-admin-dashboard-buildout.md` |
 | Close-out triage picker (2026-07-10)         | All four close-out specs ARMED (battery-v2 · scan-findings triage · affiliate flip · perf follow-ups) + three mechanism locks: JSON-LD shared-helper refactor, Renovate digest pins with strict flip at first pin wave, refund-policy page answerable-with-citation                                                                                                                                                                                                                                                                                                                                                                                                                                        | ADR-0315; `outputs/specs/close-out-triage/`                                 |
@@ -2074,3 +2075,21 @@ sweep (opus) · live 390px repro (sonnet+playwright) · nav design directions
   best-practices 0.78 cap); pre-launch posture holds (CF-Access on commerce, terraformed edge
   rate-limits); re-arm trigger = real bot pressure at launch. Lighthouse best-practices floor
   returns 0.75→0.9 after live verification.
+
+## Closed by the 2026-07-10 Codex production-browser audit picker (operator-locked → ADR-0320)
+
+Grounded Exa-first in current OpenAI Browser/Computer Use guidance, then cross-checked against
+Refero styles/screens/flows, Impeccable, Caisson's existing Playwright visual harness, and the
+design-critic ledger. Three picks:
+
+- **Execution → repo-specific Codex-app playbook.** Build a `.agents/skills` workflow around
+  GPT-5.6 Browser/Computer Use; do not build a second Responses API browser runner. Spark remains
+  text-only support, never the visual verdict model.
+- **Mutation envelope → full dedicated probe-account mutation with mandatory reverts.** Every
+  mutation declares and proves its compensator before the next action; a failed cleanup is P0 and
+  stops the ring. Real purchases, irreversible account/subscription changes, permission changes,
+  real-recipient communication, and non-probe mutations remain forbidden.
+- **Coverage → three rings.** Public marketing/docs/marketplace, authenticated buyer lifecycle,
+  and admin cockpit in a separately authorized operator session. The agent lane stays advisory;
+  cleanly reproduced, operator-approved findings may graduate into separately written
+  deterministic Playwright tests, never automatically.

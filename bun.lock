@@ -1384,6 +1384,16 @@
         "typescript": "catalog:",
       },
     },
+    "tooling/browser-audit": {
+      "name": "@caisson/browser-audit",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "tooling/design-critic": {
       "name": "@caisson/design-critic",
       "version": "0.0.1",
@@ -1639,6 +1649,8 @@
     "@caisson/billing-orchestration": ["@caisson/billing-orchestration@workspace:packages/billing-orchestration"],
 
     "@caisson/brand": ["@caisson/brand@workspace:packages/brand"],
+
+    "@caisson/browser-audit": ["@caisson/browser-audit@workspace:tooling/browser-audit"],
 
     "@caisson/cli": ["@caisson/cli@workspace:packages/cli"],
 
