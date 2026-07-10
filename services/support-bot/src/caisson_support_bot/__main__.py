@@ -16,6 +16,7 @@ import asyncpg
 import httpx
 from pydantic import ValidationError
 
+from .analytics import AnswerAnalytics
 from .billing_grant import serve_http
 from .bot import make_bot
 from .config import Settings
@@ -57,7 +58,22 @@ async def _run(settings: Settings) -> None:
             store = PostgresTicketStore(pool)
             await store.ensure_schema()
 
-        bot = make_bot(settings=settings, pipeline=pipeline, store=store, http_client=http)
+        analytics = (
+            AnswerAnalytics(
+                key=settings.posthog_capture_key,
+                host=settings.posthog_capture_host,
+                client=http,
+            )
+            if settings.posthog_capture_key
+            else None
+        )
+        bot = make_bot(
+            settings=settings,
+            pipeline=pipeline,
+            store=store,
+            http_client=http,
+            analytics=analytics,
+        )
         # One inbound app: /health (liveness, always) + /billing-grant (ADR-0203) + /escalate
         # (apps/site Ask-AI parity), each only when its own token is configured — the config-gated
         # never-crash rule. /escalate shares the SAME ticket store + Linear sink the Discord bot's

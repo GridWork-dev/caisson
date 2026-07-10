@@ -255,11 +255,14 @@ class RagPipeline:
                     f"self-assessed confidence ({confidence:.2f}) was below the escalation threshold."
                 )
             )
-            return AnswerResult(resolved=False, brief=_brief(question, chunks, reason))
+            return AnswerResult(
+                resolved=False, confidence=confidence, brief=_brief(question, chunks, reason)
+            )
 
         return AnswerResult(
             resolved=True,
             answer=body,
             citations=[c.source for c in chunks],
             tier=tier,
+            confidence=confidence,
         )
