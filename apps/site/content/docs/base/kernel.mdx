@@ -253,11 +253,12 @@ function centsToCredits(cents: number, conversion?: CreditConversion): Credits; 
 function centsToCreditsProvenance(
   cents: number,
   conversion?: CreditConversion,
-): { raw: Cents; mode: "down"; result: Credits };
+): RoundedMoney<Cents, Credits>; // { raw: Cents; mode: "up" | "down"; result: Credits }
 ```
 
 `centsToCredits` always rounds down — never over-crediting a buyer. `centsToCreditsProvenance`
-returns the same result plus a `{ raw, mode }` audit record a ledger write can persist.
+returns the same result plus a `{ raw, mode }` audit record a ledger write can persist; for this
+conversion `mode` is always `"down"` at runtime, though the declared type admits both directions.
 
 ## Related
 
