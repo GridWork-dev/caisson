@@ -91,6 +91,19 @@ test("400 on a missing question and on an unknown field (.strict)", async () => 
   ).toBe(400);
 });
 
+test("413 on an oversized body, rejected before parse/Turnstile (CWE-770)", async () => {
+  // >16 KiB raw body — capped before buffering, so a bad body never reaches the Zod parse or the
+  // (paid) Turnstile/generation path. The fail-closed Turnstile dep proves the 413 short-circuits ahead
+  // of it (a 403 would mean the cap ran too late).
+  const oversized = ask({ question: "x".repeat(20_000) });
+  const res = await handleAsk(
+    oversized,
+    deps({ verifyTurnstile: async () => false }),
+  );
+  expect(res.status).toBe(413);
+  expect(await res.json()).toEqual({ error: "payload_too_large" });
+});
+
 // --- Turnstile fail-closed (403) --------------------------------------------------------------------
 
 test("403 when Turnstile verification fails (fail closed), before any paid work", async () => {
