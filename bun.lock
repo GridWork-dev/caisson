@@ -18,6 +18,7 @@
         "typescript": "^5.6.3",
         "typescript-eslint": "^8.10.0",
         "zod": "^3.23.8",
+        "zod-to-json-schema": "^3.24.1",
       },
     },
     "apps/admin": {

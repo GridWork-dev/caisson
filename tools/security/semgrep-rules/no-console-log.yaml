@@ -1,0 +1,30 @@
+rules:
+  - id: no-console-log
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      No console.log/debug/info in product code — use process.stderr.write() (the
+      sanctioned sink, e.g. services/license/src/app.ts) or a structured logger.
+      console.error/console.warn are allowed. (identity/security.md, CLAUDE.md coding standards.)
+    metadata:
+      category: best-practice
+      references:
+        - services/license/src/app.ts
+    patterns:
+      - pattern-either:
+          - pattern: console.log(...)
+          - pattern: console.debug(...)
+          - pattern: console.info(...)
+    paths:
+      # Operator CLIs (infra provisioning, session-artifact probes) print to the terminal by
+      # design — console.log is correct there; the rule targets product/route/service code.
+      exclude:
+        - "**/*.test.ts"
+        - "**/*.spec.ts"
+        - "**/*.test.tsx"
+        - "**/scripts/**"
+        - "**/tooling/**"
+        - "**/tools/**"
+        - "**/infra/**"
+        - "**/outputs/**"
+        - "**/*.stories.tsx"

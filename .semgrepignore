@@ -1,0 +1,24 @@
+# Semgrep scan ignore list.
+# NOTE: creating this file REPLACES semgrep's implicit default ignore list wholesale (it does
+# NOT merge) — so every path the default covered must be re-declared here or it gets scanned.
+.git/
+node_modules/
+.venv/
+.turbo/
+dist/
+build/
+.next/
+out/
+coverage/
+*.min.js
+**/*.tsbuildinfo
+services/support-bot/.venv/
+services/support-bot/.pytest_cache/
+services/support-bot/.ruff_cache/
+
+# Our own Semgrep rule fixtures contain deliberately-flagged code — exclude from real scans.
+# `semgrep test` reads them directly and is unaffected by this file.
+tools/security/semgrep-rules/
+
+# Do NOT blanket-exclude tests/ — money/license/crypto test fixtures are exactly where a bad
+# secret-compare pattern gets copy-pasted from.

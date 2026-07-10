@@ -1,0 +1,31 @@
+rules:
+  - id: require-zod-strict
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      A request-body z.object() at an HTTP boundary should chain .strict() to reject unknown
+      fields (identity/security.md Input validation). Exception: third-party provider webhook
+      envelopes (e.g. Paddle) intentionally stay loose — see packages/billing-orchestration.
+    metadata:
+      category: security
+      references:
+        - identity/security.md
+    patterns:
+      - pattern: z.object($SHAPE)
+      # pattern-not-inside (containment) suppresses the inner z.object() node when it is
+      # chained with .strict()/.passthrough() anywhere up the chain — a plain pattern-not
+      # matches a larger range than the node and never suppresses it.
+      - pattern-not-inside: z.object(...).strict()
+      - pattern-not-inside: z.object(...).passthrough()
+    paths:
+      include:
+        - "**/app/api/**/route.ts"
+        - "**/services/license/src/app.ts"
+        - "**/services/docs/src/app.ts"
+        - "**/registry/worker/npm-routes.ts"
+        # test-fixture path so `semgrep test` fires (real scans exclude this dir via .semgrepignore)
+        - "**/semgrep-rules/require-zod-strict.ts"
+      exclude:
+        - "**/*-events.ts"
+        - "**/billing-orchestration/**"
+        - "**/*.test.ts"
