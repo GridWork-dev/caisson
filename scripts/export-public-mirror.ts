@@ -683,10 +683,19 @@ function main(): void {
     (rel) => !excludedApplied.some((e) => e.file === rel),
   );
   if (missedExcludes.length) {
-    console.error(
-      `FATAL: excluded test file(s) not found (source moved?): ${missedExcludes.join(", ")}`,
-    );
-    process.exit(1);
+    // Rot-guard for HEAD syncs (a renamed test would silently re-enter the mirror). Historical
+    // backfill runs (ADR-0318 F2) legitimately predate some excluded tests — the env bypass
+    // downgrades to a warning there; the per-milestone gate battery still applies.
+    if (process.env.CAISSON_MIRROR_ALLOW_MISSING_EXCLUDES === "1") {
+      console.warn(
+        `WARN: excluded test file(s) not found (historical tree?): ${missedExcludes.join(", ")}`,
+      );
+    } else {
+      console.error(
+        `FATAL: excluded test file(s) not found (source moved?): ${missedExcludes.join(", ")}`,
+      );
+      process.exit(1);
+    }
   }
 
   // root LICENSE (Apache-2.0) — standard for a public repo; per-package LICENSEs remain too.
