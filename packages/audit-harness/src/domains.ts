@@ -152,8 +152,8 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
   }
 
   // tooling/* + infra/* + tools/* — internal-only by construction (never buyer-visible). tools/
-  // is the operator's own engineering scripts (e.g. tools/strix, the pentest harness that sources
-  // ~/.gridwork/env) — a first-class domain, not a silent escape from the old allow-list scan.
+  // is the operator's own engineering scripts (e.g. tools/security, the pentest/scan stack that
+  // sources ~/.gridwork/caisson.env) — a first-class domain, not a silent escape from the old scan.
   for (const container of ["tooling", "infra", "tools"] as const) {
     for (const name of readDirs(join(root, container))) {
       domains.push(unitDomain(container, name, "internal-only"));
