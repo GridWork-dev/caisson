@@ -64,6 +64,21 @@ const ROUTES: readonly ProdRoute[] = [
 // 2026-07-09 (infra/terraform/web-analytics.tf) — the KNOWN_NOISE filter that tolerated its CSP
 // console error came out with it. Any `static.cloudflareinsights.com` (or hydration #418) signal
 // this sweep sees now IS a regression: the injection ruleset has been re-enabled.
+//
+// Turnstile is different. Once its site key baked into the prod bundle, the footer widget arms on
+// every marketing/legal/glossary/docs route — and Cloudflare's challenge platform logs by design
+// in browsers without Private-Access-Token support (this headless Chromium included): its PAT
+// probe 401s (expected — that 401 is how the platform detects PAT absence and falls back), and
+// its challenge script emits styled "%c%d font-size:0;color:transparent NaN" console-error lines.
+// The widget itself renders and solves (live-verified 2026-07-09). Unlike the beacon — our own
+// zone misconfiguration, fixable at the root — this is a third party's documented console
+// behavior on a deliberate product surface, with no our-side root fix. So the sweep drops console
+// errors whose SOURCE frame is the challenge platform, keyed on the console message's origin URL
+// (never on message text, never on our own frames), and stays zero-tolerance for everything else
+// — including page errors, which a Turnstile fault would still surface.
+const THIRD_PARTY_CONSOLE_SOURCES: readonly RegExp[] = [
+  /^https:\/\/challenges\.cloudflare\.com\//,
+];
 
 let browser: Browser | null = null;
 let context: BrowserContext | null = null;
@@ -80,7 +95,10 @@ async function assertRoute(
   const page = await ctx.newPage();
   const consoleErrors: string[] = [];
   page.on("console", (msg) => {
-    if (msg.type() === "error") consoleErrors.push(msg.text());
+    if (msg.type() !== "error") return;
+    const source = msg.location().url;
+    if (THIRD_PARTY_CONSOLE_SOURCES.some((re) => re.test(source))) return;
+    consoleErrors.push(msg.text());
   });
   const pageErrors: string[] = [];
   page.on("pageerror", (err) => {
