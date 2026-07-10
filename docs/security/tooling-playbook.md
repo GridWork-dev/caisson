@@ -33,6 +33,10 @@ gh secret set SEMGREP_APP_TOKEN --repo caisson-sh/caisson    # arms the semgrep-
 Until set, the `semgrep-pro` CI job cleanly no-ops. Setting it turns on interfile/cross-function
 taint + the org policy. **New egress sink** (semgrep.dev) — active only while the token is set.
 
+**Weighing a PAID security tool?** See `docs/security/paid-tooling-roi.md` — a ranked buy/skip memo.
+Short version: the $0 stack already covers SAST/SCA/secrets/DAST/pentest; the only paid dollar worth
+spending is revenue-enabling (a pentest letter, then SOC2 when a deal demands it), not a sixth scanner.
+
 ## The four layers
 
 | #   | Layer                                      | Tools                                                                                                                                               | Driven by                                                      | Gate                                                  |
