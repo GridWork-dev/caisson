@@ -14,6 +14,7 @@ import {
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
   GRANT_CONSUMPTION_MIGRATION_SQL,
+  clawback,
   debit,
   grant,
 } from "@caisson/credits";
@@ -23,8 +24,15 @@ import {
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
+  ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
+  ORDER_RECORD_SCHEMA_SQL,
+  ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
   grantEntitlements,
+  insertOrderRecord,
+  refundOrderRecord,
   storeLicenseGrant,
+  upsertSubscriptionStatus,
 } from "@caisson/service-license";
 import {
   withTenant,
@@ -34,7 +42,11 @@ import {
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { buildAdminReadPolicySql } from "./admin-read.ts";
 import {
+  classifyLedgerKind,
   previewAccountPurchaseRevokes,
+  readAccountCreditTimeline,
+  readAccountOrders,
+  readAccountSubscriptions,
   readTenants,
   type AccountRevokePreview,
 } from "./business-reads.ts";
@@ -145,18 +157,30 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
+  // ADR-0316 W-COMMERCE money-timeline tables: the Paddle order/subscription history + the ADR-0315
+  // discount_id column. `grant_consumption` already exists (its migration ran above) — it just needs
+  // the admin-read policy so `expiringSoon` can be read cross-tenant if a page exercises it.
+  await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
+  await tp.exec(ORDER_RECORD_DISCOUNT_MIGRATION_SQL);
   // G29: account_member (the email-lookup join source) + the better-auth "user" double + its grant.
   await tp.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
   await tp.exec(BETTER_AUTH_USER_DOUBLE_SQL);
   await tp.exec(`GRANT SELECT ON "user" TO admin;`);
-  // The ADR-0141 admin-read policies for every table the preview reads — INCLUDING credit_event
-  // (the ADR-0225 addition the claw preview needs) and credit_wallet (the balance ceiling).
+  // The ADR-0141 admin-read policies for every table the reads touch — INCLUDING credit_event (the
+  // ADR-0225 claw-preview + the ADR-0316 credit timeline) and credit_wallet (the balance), plus the
+  // W-COMMERCE additions order_record / subscription_status / grant_consumption (the DEPLOY-time
+  // accepts on admin-db.ts's ADMIN_READ_TABLES — provisioned here for the self-contained fixture).
   for (const table of [
     "credit_wallet",
     "credit_event",
+    "grant_consumption",
     "entitlement_grant",
     "license_grant",
     "account_member",
+    "order_record",
+    "subscription_status",
   ]) {
     await tp.exec(buildAdminReadPolicySql(table));
   }
@@ -309,5 +333,123 @@ describe("readTenants (G29 email lookup + search + pagination)", () => {
     );
     expect(page2.rows.length).toBe(1);
     expect(page2.total).toBe(3);
+  });
+});
+
+describe("classifyLedgerKind (ADR-0316 timeline buckets)", () => {
+  test("grants, the refund claw, the expiry burn, and spends each map to their bucket", () => {
+    expect(classifyLedgerKind("purchase")).toBe("grant");
+    expect(classifyLedgerKind("sub_allotment")).toBe("grant");
+    expect(classifyLedgerKind("topup")).toBe("grant");
+    expect(classifyLedgerKind("feature_grant")).toBe("grant");
+    expect(classifyLedgerKind("refund_clawback")).toBe("claw");
+    expect(classifyLedgerKind("expiry_debit")).toBe("expiry");
+    expect(classifyLedgerKind("codegen_debit")).toBe("consume");
+    expect(classifyLedgerKind("ai_feature_debit")).toBe("consume");
+  });
+});
+
+describe("readAccountCreditTimeline (ADR-0316 credit money timeline)", () => {
+  test("classifies grant/consume/claw rows and returns the wallet balance", async () => {
+    const acct = `acct_${randomUUID()}`;
+    const pay = `pay_${randomUUID()}`;
+    await seedPurchaseCredits(acct, pay, 1000); // grant +1000
+    await spend(acct, 300); // consume -300 → balance 700
+    await withTenant(db, acct, (tx) =>
+      clawback(tx, {
+        accountId: acct,
+        amount: 200,
+        idempotencyKey: randomUUID(),
+      }),
+    ); // claw -200 → balance 500
+
+    const timeline = await asAdmin((tx) => readAccountCreditTimeline(tx, acct));
+    expect(timeline.balance).toBe(500);
+    const kinds = timeline.rows.map((r) => r.kind).sort();
+    expect(kinds).toEqual(["claw", "consume", "grant"]);
+    const grantRow = timeline.rows.find((r) => r.kind === "grant");
+    expect(grantRow?.amount).toBe(1000);
+    expect(grantRow?.sourceEventId).toBe(pay);
+    expect(timeline.rows.find((r) => r.kind === "claw")?.amount).toBe(-200);
+  });
+
+  test("an account with no ledger returns an empty timeline and a zero balance", async () => {
+    const acct = `acct_${randomUUID()}`;
+    const timeline = await asAdmin((tx) => readAccountCreditTimeline(tx, acct));
+    expect(timeline.rows).toEqual([]);
+    expect(timeline.balance).toBe(0);
+  });
+});
+
+describe("readAccountOrders (ADR-0316 Paddle timeline + discount + refund flag)", () => {
+  async function seedOrder(
+    acct: string,
+    sourceEventId: string,
+    discountId: string | null,
+  ): Promise<void> {
+    await withTenant(db, acct, (tx) =>
+      insertOrderRecord(tx, {
+        accountId: acct,
+        sourceEventId,
+        kind: "purchase",
+        priceId: "pri_test",
+        label: "Compliance bundle",
+        amount: 104900,
+        currency: "usd",
+        ...(discountId === null ? {} : { discountId }),
+      }),
+    );
+  }
+
+  test("returns the account's orders with the discount_id column and the refunded flag; other accounts excluded", async () => {
+    const acct = `acct_${randomUUID()}`;
+    const other = `acct_${randomUUID()}`;
+    const payDiscounted = `pay_${randomUUID()}`;
+    const payRefunded = `pay_${randomUUID()}`;
+    await seedOrder(acct, payDiscounted, "dsc_aff123");
+    await seedOrder(acct, payRefunded, null);
+    await seedOrder(other, `pay_${randomUUID()}`, null);
+    // Flip one order to refunded (ADR-0302).
+    await withTenant(db, acct, (tx) => refundOrderRecord(tx, payRefunded));
+
+    const orders = await asAdmin((tx) => readAccountOrders(tx, acct));
+    expect(orders.length).toBe(2); // never the other account's row (WHERE account_id)
+    const discounted = orders.find((o) => o.sourceEventId === payDiscounted);
+    expect(discounted?.discountId).toBe("dsc_aff123");
+    expect(discounted?.status).toBe("paid");
+    expect(discounted?.amount).toBe(104900);
+    const refunded = orders.find((o) => o.sourceEventId === payRefunded);
+    expect(refunded?.status).toBe("refunded");
+    expect(refunded?.discountId).toBeNull();
+  });
+});
+
+describe("readAccountSubscriptions (ADR-0316 subscription lifecycle)", () => {
+  test("returns the account's subscription rows; other accounts excluded", async () => {
+    const acct = `acct_${randomUUID()}`;
+    const other = `acct_${randomUUID()}`;
+    const sub = `sub_${randomUUID()}`;
+    await withTenant(db, acct, (tx) =>
+      upsertSubscriptionStatus(tx, {
+        accountId: acct,
+        subscriptionId: sub,
+        priceId: "pri_dev",
+        planTag: "developer",
+      }),
+    );
+    await withTenant(db, other, (tx) =>
+      upsertSubscriptionStatus(tx, {
+        accountId: other,
+        subscriptionId: `sub_${randomUUID()}`,
+        priceId: "pri_dev",
+        planTag: "developer",
+      }),
+    );
+
+    const subs = await asAdmin((tx) => readAccountSubscriptions(tx, acct));
+    expect(subs.length).toBe(1);
+    expect(subs[0]?.subscriptionId).toBe(sub);
+    expect(subs[0]?.status).toBe("active");
+    expect(subs[0]?.planTag).toBe("developer");
   });
 });

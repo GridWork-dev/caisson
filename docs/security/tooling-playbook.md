@@ -171,6 +171,36 @@ but never blocks a merge. Two jobs:
 - `semgrep-pro` — dormant until the `SEMGREP_APP_TOKEN` repo secret is set; then runs `semgrep ci`
   (interfile/cross-function taint from the org policy).
 
+## Accepted findings (suppression policy)
+
+Suppressions live in three auto-loaded config files so `scan.sh --layer ci` goes green without a
+scan.sh change; each entry carries a reasoned statement (an accept, never a blanket mute):
+
+- **`osv-scanner.toml`** (repo root) — CVE accepts for the root `bun.lock`.
+- **`services/support-bot/osv-scanner.toml`** — CVE accepts for `services/support-bot/uv.lock`
+  (osv-scanner config does **not** propagate into child dirs, so a nested file is required).
+- **`.trivyignore.yaml`** (path-scoped secret + misconfig accepts) loaded via **`trivy.yaml`**
+  (`ignorefile: .trivyignore.yaml`). Needed because trivy v0.72's default ignore file is
+  `.trivyignore` (line format) — it does **not** auto-discover `.trivyignore.yaml`, and scan.sh
+  passes no `--ignorefile`; `trivy.yaml` is trivy's own default-loaded config, so no scan.sh change.
+
+**Fixed by bump (NOT accepted)** — root `package.json` `overrides`, so both scanners simply stop
+reporting them: `systeminformation` 5.23.8 → `^5.31.6` (CVE-2025-68154 / -2026-26280 / -2026-26318 /
+-2026-44724) and `ws` 8.17.1+8.18.0 → `^8.21.0` (CVE-2026-45736 / -2026-48779).
+
+**Accepted (SPEC-security-scan-findings-triage, ADR-0315):**
+
+| Finding                        | Where (scanner)                                                               | Why accepted                                                                                                                                                                                                                             | Date       |
+| ------------------------------ | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| CVE-2024-47764                 | `cookie` <0.7.0, `bun.lock` (osv)                                             | Transitive under trigger.dev's engine.io; sid-cookie attrs come from static config, never user input. Global override would break engine.io (~0.4.1) / msw (^1.1.1).                                                                     | 2026-07-10 |
+| CVE-2026-41305                 | `postcss` <8.5.10, `bun.lock` (osv)                                           | XSS only when stringifying attacker-submitted CSS; the build processes first-party authored CSS only. Fix 8.5.10 → Renovate.                                                                                                             | 2026-07-10 |
+| CVE-2026-8769                  | `@ai-sdk/provider-utils` 3.0.27/28, `bun.lock` (osv)                          | No fixed version published. Re-evaluate when a fix ships.                                                                                                                                                                                | 2026-07-10 |
+| CVE-2026-54285                 | `@opentelemetry/core` 2.0.1, `bun.lock` (osv)                                 | trigger.dev-nested; main OTel suite already on fixed 2.8.0. Header over-allocation bounded by Node's 16KB header cap; forcing 2.8.0 risks trigger.dev telemetry.                                                                         | 2026-07-10 |
+| CVE-2026-45772, CVE-2026-45773 | `turbo` 2.5.8, `bun.lock` (osv)                                               | ACE only when running turbo in an UNTRUSTED repo with malicious `.yarnrc.yml`; our CI runs the trusted first-party repo only. Fix 2.9.14 → Renovate.                                                                                     | 2026-07-10 |
+| CVE-2025-71176                 | `pytest` 8.4.2, `services/support-bot/uv.lock` (osv)                          | Dev-only test dep, local tmpdir DoS. Only fix is pytest 9 (major), outside the pinned `<9` range + coupled pytest-asyncio bump.                                                                                                          | 2026-07-10 |
+| AVD-DS-0002                    | `services/docs/Dockerfile` (trivy misconfig)                                  | Container must enter as root to chown the root-owned Railway volume mount, then drops to uid 1000 `bun` via setpriv (entrypoint + healthcheck). Effective runtime user is non-root; `USER bun` would break the chown + the setpriv drop. | 2026-07-10 |
+| github-pat, private-key        | `packages/local-store/src/golden.ts` + `__golden__/scrub.json` (trivy secret) | Golden scrub fixtures: deliberately-unsafe fake credentials that are the INPUT to the secret-scrubber's golden-file regression. Security-floor carve-out for test files exercising deliberately unsafe input.                            | 2026-07-10 |
+
 ## Credentials
 
 Nothing is hardcoded; secrets are read at runtime and never printed.
@@ -202,4 +232,8 @@ tools/security/
   semgrep-rules/*.yaml    # custom floor rules (+ paired .ts/.py fixtures)
 apps/admin/scripts/seed-harness-session.ts   # mints the signed admin session cookie
 .github/workflows/security-scan.yml          # non-required CI (deterministic + opt-in Pro)
+trivy.yaml                                   # loads .trivyignore.yaml (trivy won't auto-discover it)
+.trivyignore.yaml                            # path-scoped trivy secret + misconfig accepts
+osv-scanner.toml                             # osv CVE accepts for the root bun.lock
+services/support-bot/osv-scanner.toml        # osv CVE accept for the nested uv.lock
 ```

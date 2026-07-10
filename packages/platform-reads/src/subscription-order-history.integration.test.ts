@@ -9,6 +9,7 @@ import {
   insertOrderRecord,
   ORDER_RECORD_SCHEMA_SQL,
   ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
+  ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   refundOrderRecord,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
   upsertSubscriptionStatus,
@@ -24,6 +25,7 @@ beforeAll(async () => {
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
+  await tp.exec(ORDER_RECORD_DISCOUNT_MIGRATION_SQL); // ADR-0315 affiliate-attribution column
 });
 
 afterAll(async () => {

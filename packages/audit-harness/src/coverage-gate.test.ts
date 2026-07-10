@@ -57,6 +57,13 @@ const IGNORE_GLOBS: readonly string[] = [
   // semgrep scan-scope config (tools/security stack) — a lint-tool ignore list, same class as the
   // other ignore-dotfiles; its own audit lives in the tools/security domain + the security playbook.
   ".semgrepignore",
+  // scanner accept/config files (security-scan triage, ADR-0315): trivy's config + reasoned
+  // CVE-accept ledger and the osv-scanner root config — same class as .semgrepignore; every accept
+  // entry carries its justification inline and the stack's audit lives in docs/security/
+  // tooling-playbook.md + the deterministic CI job.
+  "trivy.yaml",
+  ".trivyignore.yaml",
+  "osv-scanner.toml",
   // repo/CI meta-config — mechanical, no secrets, not a product surface
   ".githooks/**",
   ".gridwork/**",

@@ -15,12 +15,8 @@ import { mediaSlides } from "@/lib/media-manifest";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
 import { bundleLabel, bundlePagePath } from "@/components/marketplace";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
-import {
-  breadcrumb,
-  faqPage,
-  moduleSoftwareApplication,
-  serializeJsonLd,
-} from "@/lib/jsonld";
+import { breadcrumb, faqPage, moduleSoftwareApplication } from "@/lib/jsonld";
+import { JsonLdScript } from "@/lib/jsonld-script";
 import { buildMetadata } from "@/lib/metadata";
 import { MODULE_PAGES, type ModulePageRecord } from "@/lib/module-pages";
 import type { PageSection } from "@/lib/page-sections";
@@ -248,18 +244,9 @@ export default async function ModuleDepthPage(props: Params) {
   return (
     <>
       <TrackView item={`module:${price.id}`} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(appLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqLd) }}
-      />
+      <JsonLdScript data={breadcrumbLd} />
+      <JsonLdScript data={appLd} />
+      <JsonLdScript data={faqLd} />
 
       <Hero
         eyebrow={

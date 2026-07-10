@@ -36,6 +36,14 @@ export function isIntelSource(v: string): v is IntelSource {
   return (INTEL_SOURCES as readonly string[]).includes(v);
 }
 
+/** Triage lifecycle (ADR-0316 F5): a finding is `open` until the operator reviews or dismisses it.
+ *  Matches the CHECK in services/intel/migrations/0002_findings_triage.sql — KEEP IN SYNC. */
+export const INTEL_STATUSES = ["open", "reviewed", "dismissed"] as const;
+export type IntelStatus = (typeof INTEL_STATUSES)[number];
+export function isIntelStatus(v: string): v is IntelStatus {
+  return (INTEL_STATUSES as readonly string[]).includes(v);
+}
+
 /**
  * Byte-mirror of `services/intel/migrations/0001_intel_schema.sql` — DEV/TEST DOUBLE ONLY (same
  * "byte-mirror the sibling service's migration for the PGlite double" pattern `admin-db.ts`
@@ -58,7 +66,12 @@ CREATE TABLE IF NOT EXISTS intel.findings (
   first_seen  timestamptz NOT NULL DEFAULT now(),
   last_seen   timestamptz NOT NULL DEFAULT now(),
   run_id      uuid        NOT NULL,
-  payload     jsonb       NOT NULL DEFAULT '{}'
+  payload     jsonb       NOT NULL DEFAULT '{}',
+  -- ADR-0316 F5 triage columns (real: services/intel/migrations/0002_findings_triage.sql). On the
+  -- fresh dev double they are part of the CREATE; prod ALTERs them onto the daemon's live table.
+  status      text        NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'reviewed', 'dismissed')),
+  triaged_at  timestamptz,
+  triaged_by  text
 );
 
 CREATE INDEX IF NOT EXISTS findings_source_last_seen_idx
@@ -74,6 +87,17 @@ CREATE INDEX IF NOT EXISTS findings_source_last_seen_idx
 export const INTEL_ADMIN_READ_GRANT_SQL = `
 GRANT USAGE ON SCHEMA intel TO admin;
 GRANT SELECT ON intel.findings TO admin;
+-- ADR-0316 F5: the read/write admin_write role UPDATEs findings.status through the triage lever
+-- (apps/admin lib/intel-triage.ts). Dev double only — prod grants this via
+-- services/intel/migrations/0002_findings_triage.sql. No INSERT: the daemon writes findings, the
+-- operator only triages existing ones. GUARDED for role absence so this same constant is safe to
+-- apply in a harness that only provisions the read-only admin role (e.g. intel-read.test.ts).
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'admin_write') THEN
+    GRANT USAGE ON SCHEMA intel TO admin_write;
+    GRANT SELECT, UPDATE ON intel.findings TO admin_write;
+  END IF;
+END $$;
 `;
 
 export interface IntelFindingRow {
@@ -86,11 +110,18 @@ export interface IntelFindingRow {
   seenCount: number;
   firstSeen: string;
   lastSeen: string;
+  /** ADR-0316 F5 triage state. `open` on a fresh finding; the operator reviews/dismisses it. */
+  status: string;
+  /** ISO instant the finding was last triaged, or null (never triaged). */
+  triagedAt: string | null;
+  /** Actor email that last triaged it, or null. */
+  triagedBy: string | null;
 }
 
 export interface IntelFindingFilter {
   severity?: IntelSeverity;
   source?: IntelSource;
+  status?: IntelStatus;
 }
 
 /** Bound every list read — this is an operator dashboard, never an unbounded export. */
@@ -115,6 +146,10 @@ export async function readIntelFindings(
     params.push(filter.source);
     conditions.push(`source = $${String(params.length)}`);
   }
+  if (filter.status !== undefined) {
+    params.push(filter.status);
+    conditions.push(`status = $${String(params.length)}`);
+  }
   const where =
     conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
   const { rows } = await tx.query<{
@@ -127,8 +162,12 @@ export async function readIntelFindings(
     seen_count: number;
     first_seen: unknown;
     last_seen: unknown;
+    status: string;
+    triaged_at: unknown;
+    triaged_by: string | null;
   }>(
-    `SELECT id, source, kind, severity, title, body, seen_count, first_seen, last_seen
+    `SELECT id, source, kind, severity, title, body, seen_count, first_seen, last_seen,
+            status, triaged_at, triaged_by
        FROM intel.findings
        ${where}
       ORDER BY last_seen DESC
@@ -145,5 +184,11 @@ export async function readIntelFindings(
     seenCount: Number(r.seen_count),
     firstSeen: String(r.first_seen),
     lastSeen: String(r.last_seen),
+    status: r.status,
+    triagedAt:
+      r.triaged_at === null || r.triaged_at === undefined
+        ? null
+        : String(r.triaged_at),
+    triagedBy: r.triaged_by ?? null,
   }));
 }

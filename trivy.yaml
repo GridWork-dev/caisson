@@ -1,0 +1,10 @@
+# Trivy config (SPEC-security-scan-findings-triage, ADR-0315). Auto-loaded by trivy from the repo
+# root (trivy's default `--config trivy.yaml`), so tools/security/scan.sh's `trivy fs .` picks it up
+# with no CLI change — both in CI and in a local operator run.
+#
+# WHY THIS FILE EXISTS: trivy v0.72's default ignore file is `.trivyignore` (line format only). It
+# does NOT auto-discover `.trivyignore.yaml` — that requires pointing `--ignorefile` at it, and
+# scan.sh passes no `--ignorefile`. Setting it here makes trivy honor the path-scoped, statement-
+# carrying YAML accepts in .trivyignore.yaml. CLI flags scan.sh does pass (scanners/severity/
+# exit-code/format) still win over this file, so only the ignorefile is affected.
+ignorefile: .trivyignore.yaml

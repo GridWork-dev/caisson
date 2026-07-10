@@ -52,6 +52,8 @@ describe("event mapping", () => {
         },
       ],
       paymentId: "txn_01hvcc93znj3mpqt1tenkjb04y",
+      // ADR-0315: no `discount_id` on this fixture → null (an undiscounted purchase).
+      discountId: null,
     });
   });
 
@@ -314,6 +316,8 @@ describe("event mapping", () => {
       priceId: "price_compliance_updates_annual_PLACEHOLDER",
       billingReason: "subscription_create",
       invoiceId: "txn_sub1",
+      // ADR-0315: no `discount_id` on this fixture → null.
+      discountId: null,
     });
   });
 
@@ -1071,5 +1075,182 @@ describe("createCheckout — Paddle transaction-based hosted checkout", () => {
         cancelUrl: "https://app.test/no",
       }),
     ).rejects.toThrow("Paddle returned no checkout url");
+  });
+});
+
+describe("ADR-0315: affiliate discount_id capture (both one-time + subscription)", () => {
+  // The real sandbox affiliate proof ids: a discounted one-time purchase — 9900 list, 990 discount
+  // (10%), 8910 charged — redeeming the CAISSONAFF1 code's discount dsc_01kx5b0f9majy4wbgq5cjgdm7y.
+  const AFF_TXN = "txn_01simaffproof0710aaaaaaaaa";
+  const AFF_DISCOUNT = "dsc_01kx5b0f9majy4wbgq5cjgdm7y";
+  const AFF_PRICE = "pri_01kwwqa266p6smw4yaanxg1n5j";
+
+  test("a one-time transaction with discount_id → purchase.completed carries discountId", () => {
+    const parsed = parsePaddleEvent({
+      event_id: "evt_aff_onetime",
+      event_type: "transaction.completed",
+      data: {
+        id: AFF_TXN,
+        subscription_id: null,
+        discount_id: AFF_DISCOUNT,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [{ price: { id: AFF_PRICE }, quantity: 1 }],
+        details: {
+          totals: { grand_total: "8910", subtotal: "9900", discount: "990" },
+          line_items: [
+            {
+              id: "txnitm_aff",
+              price_id: AFF_PRICE,
+              totals: { total: "8910" },
+            },
+          ],
+        },
+      },
+    });
+    expect(parsed?.type).toBe("purchase.completed");
+    expect(
+      parsed?.type === "purchase.completed" ? parsed.discountId : "x",
+    ).toBe(AFF_DISCOUNT);
+    // The charged (post-discount) grand total is the commission base.
+    expect(parsed?.type === "purchase.completed" ? parsed.amountTotal : 0).toBe(
+      8910,
+    );
+  });
+
+  test("a one-time transaction WITHOUT discount_id parses with discountId null (regression)", () => {
+    const parsed = parsePaddleEvent({
+      event_id: "evt_no_aff",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_no_aff",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [{ price: { id: "price_credit_pack_PLACEHOLDER" } }],
+        details: { totals: { grand_total: "5000" } },
+      },
+    });
+    expect(parsed?.type).toBe("purchase.completed");
+    expect(
+      parsed?.type === "purchase.completed" ? parsed.discountId : "x",
+    ).toBeNull();
+  });
+
+  test("a subscription-linked transaction with discount_id → invoice.paid carries discountId", () => {
+    const parsed = parsePaddleEvent({
+      event_id: "evt_aff_sub",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_aff_sub",
+        subscription_id: "sub_aff",
+        origin: "web",
+        discount_id: AFF_DISCOUNT,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [{ price: { id: AFF_PRICE } }],
+        details: { totals: { grand_total: "8910" } },
+      },
+    });
+    expect(parsed?.type).toBe("invoice.paid");
+    expect(parsed?.type === "invoice.paid" ? parsed.discountId : "x").toBe(
+      AFF_DISCOUNT,
+    );
+  });
+
+  test("a subscription-linked transaction WITHOUT discount_id → invoice.paid discountId null", () => {
+    const parsed = parsePaddleEvent({
+      event_id: "evt_sub_no_aff",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_sub_no_aff",
+        subscription_id: "sub_x",
+        origin: "subscription_recurring",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [{ price: { id: "price_developer_monthly_PLACEHOLDER" } }],
+        details: { totals: { grand_total: "4900" } },
+      },
+    });
+    expect(parsed?.type).toBe("invoice.paid");
+    expect(
+      parsed?.type === "invoice.paid" ? parsed.discountId : "x",
+    ).toBeNull();
+  });
+});
+
+describe("createDiscount — Paddle affiliate discount mint (ADR-0315)", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  test("posts a fixed 10% recurring percentage discount and returns {discountId, code}", async () => {
+    let url = "";
+    let body = "";
+    globalThis.fetch = (async (reqUrl: unknown, init?: { body?: string }) => {
+      url = String(reqUrl);
+      body = init?.body ?? "";
+      return new Response(
+        JSON.stringify({
+          data: { id: "dsc_01kx5b0f9majy4wbgq5cjgdm7y", code: "CAISSONAFF1" },
+        }),
+        { status: 201 },
+      );
+    }) as unknown as typeof fetch;
+    const billing = createPaddleBilling({
+      webhookSecret: SECRET,
+      apiKey: "pdl_sdbx_test",
+      env: "sandbox",
+    });
+    const result = await billing.createDiscount!({
+      code: "CAISSONAFF1",
+      description: "Affiliate: Jane Doe",
+    });
+    expect(result).toEqual({
+      discountId: "dsc_01kx5b0f9majy4wbgq5cjgdm7y",
+      code: "CAISSONAFF1",
+    });
+    expect(url).toBe("https://sandbox-api.paddle.com/discounts");
+    const parsed = JSON.parse(body) as {
+      type: string;
+      amount: string;
+      enabled_for_checkout: boolean;
+      recur: boolean;
+      code: string;
+      description: string;
+    };
+    expect(parsed.type).toBe("percentage");
+    expect(parsed.amount).toBe("10"); // the operator-locked 10% buyer-facing discount
+    expect(parsed.enabled_for_checkout).toBe(true);
+    expect(parsed.recur).toBe(true); // applies across subscription billing periods
+    expect(parsed.code).toBe("CAISSONAFF1");
+    expect(parsed.description).toBe("Affiliate: Jane Doe");
+  });
+
+  test("throws when Paddle returns no discount id", async () => {
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ data: {} }), {
+        status: 201,
+      })) as unknown as typeof fetch;
+    const billing = createPaddleBilling({
+      webhookSecret: SECRET,
+      apiKey: "pdl_sdbx_test",
+    });
+    await expect(
+      billing.createDiscount!({ code: "X", description: "y" }),
+    ).rejects.toThrow("Paddle returned no discount id");
+  });
+
+  test("throws when Paddle returns a non-2xx", async () => {
+    globalThis.fetch = (async () =>
+      new Response("bad request", { status: 400 })) as unknown as typeof fetch;
+    const billing = createPaddleBilling({
+      webhookSecret: SECRET,
+      apiKey: "pdl_sdbx_test",
+    });
+    await expect(
+      billing.createDiscount!({ code: "X", description: "y" }),
+    ).rejects.toThrow("Paddle discount creation failed");
   });
 });
