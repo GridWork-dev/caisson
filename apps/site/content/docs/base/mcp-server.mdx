@@ -9,9 +9,11 @@ not a side door.
 
 ## The contract
 
-Every tool call is **auth-gated** with the same EdDSA-JWT issued by [`@caisson/auth`](/docs/base/auth),
-and **entitlement-scoped**: an agent can only reach the tools the buyer's entitlements cover. A token
-without an entitlement does not see the tool — scoping happens before dispatch, not inside it.
+Every tool call is **auth-gated** — the Bearer token is checked against the issued buyer-token
+set with a constant-time compare (`tokens: readonly BuyerToken[]` in the server config below) —
+and **entitlement-scoped**: an agent can only reach the tools the buyer's entitlements cover. A
+token without an entitlement does not see the tool — scoping happens before dispatch, not inside
+it.
 
 ```jsonc
 // .mcp.json — the agent connects with the buyer's token.
@@ -33,24 +35,164 @@ A call outside the token's entitlements is refused, not silently downgraded:
   "error": {
     "code": "not_entitled",
     "message": "Not entitled to: field-crypto",
-    "details": { "notEntitled": ["field-crypto"] }
-  }
+    "details": { "notEntitled": ["field-crypto"] },
+  },
 }
 ```
+
+## API reference
+
+### Building the server
+
+`createMcpServer` builds a transport-agnostic core. The same `McpServerOptions` bind to a
+stdio connection or an HTTP handler below — each transport constructs its own core instance
+from those options (`createStdioMcpServer`/`createHttpMcpHandler` both call `createMcpServer`
+internally), so a host runs one or the other from shared config rather than sharing a single
+running instance across both. It owns no database transaction: `onGenerate` is the host's
+hook for the actual credit debit and generation.
+
+```ts
+function createMcpServer(options: McpServerOptions): McpServer;
+
+interface McpServerOptions {
+  tokens: readonly BuyerToken[]; // issued buyer tokens (prod: a DB lookup by token hash)
+  index: RegistryIndex; // the built registry index — generate's allowlist
+  onGenerate: (ctx: GenerateContext) => Promise<{ generationId: string }>;
+  coach?: CoachOptions; // opt-in ai-kit setup-coach tools (see below)
+  checkRateLimit?: (accountId: string) => Promise<void>; // awaited before every dispatch
+}
+
+interface McpServer {
+  authenticate(bearer: string): McpSession;
+  registerTool(registration: ToolRegistration): void;
+  retireTool(entry: RetiredTool): void;
+  listTools(session: McpSession): readonly ToolRegistration[];
+  handleToolCall(
+    session: McpSession,
+    tool: string,
+    args: unknown,
+  ): Promise<unknown>;
+}
+```
+
+`authenticate` compares the bearer against every issued token in constant time before
+deciding — no early return on a match. `listTools` returns only the tools the caller's
+entitlements cover; an edition tool the caller doesn't own is excluded outright, not
+returned-then-blocked. `handleToolCall` re-checks the entitlement per call (timing-safe,
+`safeEqualVariable`) and answers a tool that doesn't exist and a tool the caller isn't
+entitled to with the **same 404** — a non-entitled caller can't distinguish "unknown" from
+"exists but you don't own it."
+
+`registerTool` lets an edition add its own buyer tools through the same seam `generate`
+uses. It validates the declarative manifest (`description`, semver `version`,
+`audit.logArgs`) before the duplicate-name guard, so a bad manifest fails at registration,
+not at first call. `retireTool` marks a name **retired** rather than deleting it: a call to
+a retired tool answers `RetiredToolError` (410, `{ reason, retiredAt }`) instead of the
+generic 404 an unknown name gets, so an integration built against a dropped tool gets an
+actionable signal. Retirement is append-only — no `unretireTool`, and a name is always
+exactly one of active / retired / unknown, never two at once.
+
+### The buyer tool catalog
+
+Three tools are visible to every authenticated buyer (`requiredEntitlement: null`); the
+four setup-coach tools require the `ai-kit` entitlement and are otherwise invisible.
+
+| Tool                 | Entitlement | Args                                                                   | Behavior                                                                                                                                                               |
+| -------------------- | ----------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_modules`       | none        | —                                                                      | Returns the caller's owned entitlement slugs, sorted.                                                                                                                  |
+| `describe_module`    | none        | `{ name }`                                                             | Describes one entitled module. `EntitlementError` (403) if the caller doesn't own `name`.                                                                              |
+| `generate`           | none        | `{ projectName, edition?, modules: {id, version}[], idempotencyKey? }` | Validates every `{id, version}` against the built registry index, expands the caller's entitlements (editions/bundles → member slugs), then delegates to `onGenerate`. |
+| `inspect_env`        | `ai-kit`    | `{ names: string[] }`                                                  | Reports which env-var **names** are set — presence only, never values.                                                                                                 |
+| `propose_ai_config`  | `ai-kit`    | `{ defaultLane, lanes: [...] }`                                        | Turns desired AI lanes into a validated `forge.config` plus the required env-var names.                                                                                |
+| `write_forge_config` | `ai-kit`    | `{ settings, approve? }`                                               | Fail-closed: without `approve: true` it returns a preview and never touches the writer port.                                                                           |
+| `validate_setup`     | `ai-kit`    | `{ settings }`                                                         | Confirms the config parses and every referenced key name is present in the environment.                                                                                |
+
+`generate`'s gate order matters: the registry allowlist check (unknown module or version →
+`ValidationError`, 400) runs **before** the entitlement expansion (`EntitlementError`, 403),
+which runs before any credit debit. A caller-supplied `idempotencyKey` is reused verbatim so
+a genuine retry debits once; an omitted one is minted fresh per call. The `modules` array is
+capped at 100 entries, rejected on raw length before the Zod parse runs — a guard against a
+parse-then-cap ordering that would otherwise walk an oversized array once before rejecting it.
+
+### Transports
+
+The core is transport-agnostic; two bindings ship. Both authenticate before any transport
+object is constructed — an invalid token never reaches `listTools` or `handleToolCall`.
+
+```ts
+// stdio — one connection == one buyer session, authenticated once at connect time.
+function createStdioMcpServer(deps: StdioServerDeps): Server;
+function runStdioServer(
+  deps: StdioServerDeps,
+  transport?: Transport,
+): Promise<Server>;
+interface StdioServerDeps {
+  mcp: McpServerOptions;
+  bearer: string;
+}
+```
+
+```ts
+// HTTP (Streamable) — stateless, re-authenticates the Bearer on every request.
+function createHttpMcpHandler(deps: HttpServerDeps): HttpMcpHandler;
+function runHttpServer(
+  deps: HttpServerDeps,
+  listen: HttpListenOptions,
+): Promise<http.Server>; // the underlying node:http listener, not the MCP-SDK Server —
+// a fresh SDK Server is built and bound per request (see below).
+interface HttpServerDeps {
+  mcp: McpServerOptions;
+  allowedHosts: readonly string[]; // DNS-rebinding protection, required non-empty
+  allowedOrigins: readonly string[]; // never "*", never reflected
+}
+interface HttpListenOptions {
+  port: number;
+  host: string; // no localhost fallback — the caller supplies a real bind address
+}
+```
+
+`createHttpMcpHandler` throws `ConfigError` at construction if either allowlist is empty, or
+if `allowedOrigins` contains a literal `"*"` — a network-reachable listener never starts with
+rebinding protection silently disabled. Each request reads its POST body under a 256 KiB
+ceiling before handing it to the SDK transport, rejecting an oversized body (`ValidationError`, 400) without fully buffering it first. Every response carries `X-Content-Type-Options`,
+`X-Frame-Options`, and `Strict-Transport-Security`.
+
+### The setup-coach ports
+
+`registerCoachTools` wires the four `ai-kit` tools above onto an `McpServer` (or anything
+structurally equal to the minimal `CoachToolRegistrar` slice). It is secrets-safe by
+construction: no tool ever accepts or returns a key value.
+
+```ts
+function registerCoachTools(
+  server: CoachToolRegistrar,
+  options: CoachOptions,
+): void;
+function presenceEnvPort(
+  source?: Record<string, string | undefined>,
+): CoachEnvPort;
+
+interface CoachOptions {
+  env: CoachEnvPort; // presence-only: has(name) => boolean, never reads a value
+  writer: CoachWriterPort; // write(files) — only invoked when a call passes approve: true
+  requiredEntitlement?: string; // default "ai-kit"
+  configPath?: string; // default "forge.config.json"
+  envExamplePath?: string; // default ".env.example"
+}
+```
+
+`presenceEnvPort` adapts a value-bearing source (default `process.env`) down to a boolean
+port — the coach module never holds a secret value, only whether a name is set. An empty
+string counts as unset. `write_forge_config`'s output is names plus config only: a generated
+`.env.example` lists `NAME=` placeholders, never a real key.
 
 ## Related
 
 <Cards>
   <Card title="Auth" href="/docs/base/auth">
-    Issues the EdDSA-JWT every tool call verifies.
+    Sessions and the cross-plane account JWT seam.
   </Card>
   <Card title="AI config" href="/docs/base/ai-config">
     Agent-assisted setup runs through these tools.
   </Card>
 </Cards>
-
-<Callout type="info">
-  This page covers the essentials. The full `@caisson/mcp-server` API reference
-  — the tool catalog, the entitlement model, and the generation flow — is still
-  expanding.
-</Callout>

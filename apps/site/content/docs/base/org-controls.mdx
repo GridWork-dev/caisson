@@ -78,7 +78,10 @@ const members = await listAccountMembers(db, accountId);
 ## Admin-write RLS
 
 ```ts
-import { withAdminWrite, buildAdminWritePolicySql } from "@caisson/org-controls";
+import {
+  withAdminWrite,
+  buildAdminWritePolicySql,
+} from "@caisson/org-controls";
 
 // At DEPLOY, alongside the table's existing tenant-isolation policy:
 const sql = buildAdminWritePolicySql("account");

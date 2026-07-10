@@ -21,8 +21,8 @@ provider sent, not the JSON your framework reconstructed.
 ```ts
 import { verifyStripeWebhook } from "@caisson/billing";
 
-// Raw body — never the parsed JSON. HMAC compared with timingSafeEqual.
-const event = verifyStripeWebhook(rawBody, req.headers["stripe-signature"]);
+// Raw body — never the parsed JSON. Returns void on success; throws AuthnError on a bad signature.
+verifyStripeWebhook(rawBody, req.headers["stripe-signature"], secret);
 ```
 
 Paddle's `Paddle-Signature` header carries a `ts=` timestamp and one or more `h1=` HMAC values; the
@@ -59,12 +59,199 @@ verifyLemonSqueezyWebhook(rawBody, req.headers["x-signature"], secret);
 ```ts
 import { verifyPolarWebhook } from "@caisson/billing";
 
-// Polar uses the Standard Webhooks scheme (id.timestamp.signature); default tolerance is 300s.
-verifyPolarWebhook(rawBody, req.headers["webhook-signature"], secret);
+// Standard Webhooks splits the signature across three headers — join them before verifying.
+// Default tolerance is 300s.
+const signatureHeader = [
+  req.headers["webhook-id"],
+  req.headers["webhook-timestamp"],
+  req.headers["webhook-signature"],
+].join(".");
+verifyPolarWebhook(rawBody, signatureHeader, secret);
 ```
 
 Because billing rides a port, a test driver stands in for any of the four providers under the
 standards gate — suites assert on charge and webhook behavior without a network call.
+
+## API reference
+
+The public surface of `@caisson/billing`: the four raw-body verifiers, the `BillingProvider` port,
+each provider's config contract, and the `DomainBillingEvent` webhook event map. The driver
+factories that construct a live `BillingProvider` (`createStripeBilling` and its siblings) and the
+provider → `DomainBillingEvent` parsers live in the commercial `@caisson/billing-orchestration`;
+this package ships the port, the config types, and the open verify + event-schema seam every driver
+is built on.
+
+### Verification functions
+
+```ts
+function verifyStripeWebhook(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+  options?: VerifyOptions,
+): void;
+function verifyPaddleWebhook(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+  options?: VerifyOptions,
+): void;
+function verifyLemonSqueezyWebhook(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+): void;
+function verifyPolarWebhook(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+  options?: VerifyOptions,
+): void;
+
+interface VerifyOptions {
+  /** Max signature age in seconds. Stripe/Polar default 300; Paddle defaults to 5 (Paddle's own documented SDK default). */
+  toleranceSec?: number;
+  /** Override "now" (unix seconds) — for tests. */
+  now?: number;
+}
+```
+
+All four return `void`: a valid signature simply returns, and every failure — malformed header,
+wrong secret, tampered body, timestamp outside tolerance — throws `AuthnError` (from
+`@caisson/kernel`, HTTP 401), never a boolean or a silently-false result. `verifyLemonSqueezyWebhook`
+takes no `VerifyOptions`: its signature carries no timestamp, so there's no replay window to
+configure. `verifyPolarWebhook` expects one already-joined `signatureHeader` — Standard Webhooks
+splits the signature across three request headers (`webhook-id`, `webhook-timestamp`,
+`webhook-signature`); join them `` `${id}.${timestamp}.${signature}` `` before calling, as shown
+above.
+
+### The provider port
+
+```ts
+interface CheckoutInput {
+  accountId: string;
+  priceId: string;
+  mode: "payment" | "subscription";
+  successUrl: string;
+  cancelUrl: string;
+}
+
+interface BillingProvider {
+  verifyAndParse(
+    rawBody: string,
+    signatureHeader: string,
+    opts?: VerifyOptions,
+  ): DomainBillingEvent | null;
+  createCheckout(input: CheckoutInput): Promise<{ url: string }>;
+}
+```
+
+`BillingProvider` is the interface every driver implements; call sites hold this type, never a
+vendor SDK client, so swapping providers means injecting a different driver behind these same two
+methods. Each provider's config is its own typed contract:
+
+```ts
+interface StripeConfig {
+  webhookSecret: string;
+  apiKey: string;
+}
+
+interface PaddleConfig {
+  webhookSecret: string;
+  apiKey: string;
+  env?: "sandbox" | "production"; // defaults to "production"
+  onWarn?: (message: string) => void; // non-fatal parse anomalies, e.g. a malformed refund line
+}
+
+interface LemonSqueezyConfig {
+  apiKey: string;
+  webhookSecret: string;
+  storeId: string; // required on every checkout's relationships.store
+}
+
+interface PolarConfig {
+  accessToken: string;
+  webhookSecret: string;
+  env?: "sandbox" | "production"; // defaults to "production"
+}
+```
+
+### The webhook event map
+
+`verifyAndParse` maps every provider's payload onto one provider-agnostic union, validated at
+runtime by the exported `DomainBillingEventSchema` — a Zod discriminated union on `type`, every
+member strict, so an unknown field fails closed rather than passing through silently:
+
+```ts
+type DomainBillingEvent =
+  | {
+      type: "purchase.completed";
+      sourceEventId: string;
+      accountId: string;
+      amountTotal: number;
+      currency: string;
+      paymentId: string;
+      lineItems: {
+        priceId: string;
+        quantity: number;
+        itemId: string;
+        chargedAmount: number;
+      }[];
+    }
+  | { type: "subscription.created"; sourceEventId: string; accountId: string }
+  | { type: "subscription.updated"; sourceEventId: string; accountId: string }
+  | {
+      type: "subscription.canceled";
+      sourceEventId: string;
+      accountId: string;
+      subscriptionId: string;
+    }
+  | {
+      type: "refund.completed";
+      sourceEventId: string;
+      accountId: string;
+      paymentId: string;
+      amountRefunded: number;
+      currency: string;
+      fullyRefunded: boolean;
+      adjustmentId: string;
+      items: {
+        itemId: string;
+        amountRefunded: number;
+        fullyRefunded: boolean;
+      }[];
+    }
+  | {
+      type: "chargeback.detected";
+      sourceEventId: string;
+      accountId: string;
+      paymentId: string;
+      amountDisputed: number;
+      currency: string;
+    }
+  | {
+      type: "invoice.paid";
+      sourceEventId: string;
+      accountId: string;
+      amountTotal: number;
+      currency: string;
+      subscriptionId: string;
+      priceId: string;
+      billingReason: string;
+      invoiceId: string;
+    };
+```
+
+`sourceEventId` is the provider's own event id on every member — it flows straight into the credit
+wallet's idempotency key, so a redelivered webhook grants exactly once. `lineItems` on
+`purchase.completed` is every paid line of the transaction, not just the first: a multi-item cart is
+one provider transaction carrying several lines, and each one is fulfilled. `refund.completed`
+splits the same way — `fullyRefunded: true` means revoke everything keyed by `paymentId`;
+`fullyRefunded: false` means act per line on `items[]`, keyed by
+`` `${adjustmentId}:${itemId}` ``. `chargeback.detected` is alert-only: nothing in
+`@caisson/billing` grants, revokes, or claws back credits from it — a chargeback is the provider
+absorbing the dispute, and any account action is a manual operator review. `invoice.paid` carries
+`billingReason` so a non-cycle invoice grants nothing, regardless of caller logic upstream.
 
 ## Related
 
@@ -78,9 +265,3 @@ standards gate — suites assert on charge and webhook behavior without a networ
     handler.
   </Card>
 </Cards>
-
-<Callout type="info">
-  This page covers the essentials. The full `@caisson/billing` API reference —
-  the `BillingProvider` port, all four drivers (Stripe, Paddle, LemonSqueezy,
-  Polar), and the webhook event map — is still expanding.
-</Callout>

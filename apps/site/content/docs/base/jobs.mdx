@@ -14,14 +14,174 @@ returns fast, and the money-moving work runs as a job — so a dropped connectio
 leaves a half-applied charge or a half-granted credit.
 
 ```ts
-import { enqueue } from "@caisson/jobs";
+import { createInMemoryQueue, defineTask } from "@caisson/jobs";
+
+const queue = createInMemoryQueue([
+  defineTask("grant-credits", grantCreditsPayload, async (payload) => {
+    /* credit ledger write */
+  }),
+]);
 
 // The webhook handler returns immediately; the credit grant runs as a job.
-await enqueue("grant-credits", { accountId, sourceEventId });
+await queue.enqueue("grant-credits", { accountId, sourceEventId });
 ```
 
-The same `enqueue` call hits the test driver under `bun run check`, so the enqueue contract is
-verified without standing up Trigger.dev.
+The same `queue.enqueue` call runs against the in-memory driver (the test driver) under
+`bun run check`, so the enqueue contract is verified without standing up Trigger.dev.
+
+## API reference
+
+### The job port
+
+Every driver — in-memory, Trigger.dev, pg-boss, BullMQ — implements the same one-method
+contract. The credit and billing side-effects depend only on this port, so swapping the driver
+never touches a call site.
+
+```ts
+interface JobQueue {
+  enqueue(
+    name: string,
+    payload: unknown,
+    options?: EnqueueOptions,
+  ): Promise<void>;
+}
+
+interface EnqueueOptions {
+  idempotencyKey?: string;
+  singletonKey?: string;
+}
+```
+
+`idempotencyKey` dedupes a _retry_ of the same logical job — each driver has its own mechanism
+(an in-memory `Set`, a derived pg-boss/BullMQ job id, Trigger.dev's native option). `singletonKey`
+suppresses _overlap_ instead: at most one job with that key queued or active at once, the guard
+for a recurring job whose previous run hasn't finished.
+
+```ts
+function defineTask<T>(
+  name: string,
+  schema: ZodType<T>,
+  handler: (payload: T) => Promise<void>,
+): TaskDefinition<unknown>;
+```
+
+Defines a typed task. `T` is inferred from `schema`, so a handler/schema mismatch is a compile
+error. Every driver validates an incoming payload against this same `.strict()` schema before the
+handler runs — a bad payload throws `ValidationError`, never a silent pass-through.
+
+```ts
+interface TaskDefinition<T> {
+  name: string;
+  schema: ZodType<T>;
+  handler: (payload: T) => Promise<void>;
+}
+```
+
+`defineTask`'s return type — the registry entry every driver (`createInMemoryQueue`,
+`createTriggerJobQueue`, and the rest) takes an array of.
+
+```ts
+interface JobConsumer {
+  work(name: string): Promise<WorkHandle>;
+}
+
+interface WorkHandle {
+  stop(): Promise<void>;
+}
+
+interface JobLedger {
+  getQueueState(name: string): Promise<QueueState>;
+}
+
+interface QueueState {
+  queuedCount: number;
+  activeCount: number;
+  failedCount: number;
+}
+```
+
+`work(name)` is the claim side of the port, resolved against the same task registry `enqueue`
+uses — it throws `NotFoundError` for an unregistered name. `JobLedger` is an optional visibility
+read: a driver only implements it if it can answer truthfully. Not every driver consumes for real
+or reports state — see below.
+
+### The test driver
+
+```ts
+function createInMemoryQueue(
+  tasks: readonly TaskDefinition<unknown>[],
+): JobQueue & JobConsumer & JobLedger;
+```
+
+The driver `bun run check` runs against. `enqueue` looks up the task by name (`NotFoundError` if
+unregistered), validates the payload, then **awaits the handler synchronously** — no queue, no
+network, no timing race — so a test asserts "this event enqueued that task with that payload" in
+a plain `await`. `idempotencyKey` dedupe is a `Set` keyed on `name\0key`; `singletonKey` overlap
+suppression is a second `Set` tracking in-flight keys, released only once the handler settles. A
+handler that throws increments a per-name failure counter read back through `getQueueState` —
+`queuedCount` and `activeCount` are always `0` (an honest zero, not a faked pending count: there's
+no backlog to poll in-memory). `work(name)` resolves a `WorkHandle` for port symmetry only; its
+`stop()` is a no-op.
+
+### The Trigger.dev driver
+
+```ts
+function createTriggerJobQueue(
+  tasks: readonly TaskDefinition<unknown>[],
+  config: TriggerJobQueueConfig,
+): JobQueue & JobConsumer;
+
+interface TriggerJobQueueConfig {
+  secretKey?: string; // TRIGGER_SECRET_KEY
+  apiUrl?: string; // TRIGGER_API_URL
+  client?: TriggerClient; // injected in tests instead of secretKey
+}
+
+interface TriggerClient {
+  trigger(
+    taskId: string,
+    payload: unknown,
+    options?: { idempotencyKey?: string },
+  ): Promise<unknown>;
+}
+```
+
+The production driver. Registering `tasks` also registers each one as a real Trigger.dev `task()`
+— `name` becomes the task id and `handler` becomes its `run`, validated against the identical
+schema the in-memory driver uses. Trigger.dev's hosted platform is the actual consumer; there's no
+local "start consuming" call in the SDK, so `work()` exists only for port symmetry and its
+`stop()` is a no-op.
+
+`enqueue` validates locally first — a bad payload throws `ValidationError` before anything leaves
+the process — then calls `tasks.trigger()`. `idempotencyKey` passes straight through as
+Trigger.dev's native option. `singletonKey` is **not** mapped: Trigger.dev's hosted scheduler owns
+overlap for scheduled tasks, and faking client-side suppression would be a lie the driver refuses
+to tell. Construction is fail-closed — calling `createTriggerJobQueue` without a `secretKey` and
+without an injected `client` throws `ConfigError` immediately, not on the first `enqueue`. This
+driver implements no `JobLedger`: Trigger.dev exposes no local queue-state read.
+
+### Producer-side dedup
+
+```ts
+function withAdvisoryXactLock<T>(
+  tx: TenantExecutor,
+  key: string,
+  fn: () => Promise<T>,
+): Promise<T>;
+```
+
+A Postgres transaction-scoped advisory lock for a check-then-enqueue critical section —
+"enqueue a digest only if none is pending and the last one fired over an hour ago" is a
+read-then-write race two workers can both pass. `withAdvisoryXactLock` issues
+`pg_advisory_xact_lock` before running `fn`, keyed by a stable id derived internally from
+`sha256(key)`; the lock auto-releases at transaction end, so a throw inside `fn` never leaks it.
+
+### Other drivers
+
+`createPgBossJobQueue` (Postgres, `SKIP LOCKED`) and `createBullMqJobQueue` (Redis) implement the
+same port with real local dequeue and a truthful `JobLedger`, for teams consuming without
+Trigger.dev's hosted platform. Both are fail-closed at construction the same way as the
+Trigger.dev driver: no connection and no injected client throws `ConfigError`.
 
 ## Related
 
@@ -33,8 +193,3 @@ verified without standing up Trigger.dev.
     Webhook handlers enqueue rather than charge inline.
   </Card>
 </Cards>
-
-<Callout type="info">
-  This page covers the essentials. The full `@caisson/jobs` API reference — the
-  job port, the Trigger.dev driver, and the test driver — is still expanding.
-</Callout>

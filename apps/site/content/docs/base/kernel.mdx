@@ -33,8 +33,8 @@ The `402` carries a stable, machine-readable body so an agent can react to it:
   "error": {
     "code": "insufficient_credits",
     "message": "Insufficient credits",
-    "details": { "required": 1, "balance": 0 }
-  }
+    "details": { "required": 1, "balance": 0 },
+  },
 }
 ```
 
@@ -43,6 +43,222 @@ A package becomes part of the base only by passing the one gate:
 ```bash
 $ bun run check   # build · lint · test — every package, one gate
 ```
+
+## API reference
+
+The rest of `@caisson/kernel`'s exports, grouped by concern — pure functions, typed errors,
+and Zod schemas; none of it touches the network or a database on its own.
+
+### Errors
+
+`CaissonError` is the abstract base every subclass extends — a stable `code`, a mapped
+`httpStatus`, and `details` allowlisted per subclass, never a raw stack or SQL string.
+
+| Class                      | HTTP | `code`                 |
+| -------------------------- | ---- | ---------------------- |
+| `ValidationError`          | 400  | `validation_error`     |
+| `AuthnError`               | 401  | `unauthenticated`      |
+| `AuthzError`               | 403  | `forbidden`            |
+| `EntitlementError`         | 403  | `not_entitled`         |
+| `InsufficientCreditsError` | 402  | `insufficient_credits` |
+| `NotFoundError`            | 404  | `not_found`            |
+| `TenancyError`             | 404  | `not_found`            |
+| `ConflictError`            | 409  | `conflict`             |
+| `GuardrailError`           | 422  | `guardrail_blocked`    |
+| `RateLimitError`           | 429  | `rate_limited`         |
+| `ConfigError`              | 500  | `config_error`         |
+| `InternalError`            | 500  | `internal_error`       |
+
+`GuardrailError` carries `{ stage, category }` metadata only. `ConflictError` is what a
+Postgres unique-constraint violation (`23505`) maps to.
+
+```ts
+function isCaissonError(err: unknown): err is CaissonError;
+function isUniqueViolation(err: unknown): boolean; // Postgres SQLSTATE 23505
+function toErrorResponse(err: unknown): { status: number; body: ErrorEnvelope }; // any thrown value → a client-safe response
+```
+
+### Security & redaction
+
+```ts
+function safeEqualFixed(a: string, b: string): boolean; // fixed-length secrets (tokens, HMACs)
+function safeEqualVariable(a: string, b: string): boolean; // variable-length — hashed before compare
+function verifyAllowlisted(
+  candidate: string,
+  allowed: readonly string[],
+  normalize?: (s: string) => string,
+): boolean;
+function verifyBearer(
+  authorizationHeader: string | null | undefined,
+  expected: string,
+): void; // throws AuthnError
+```
+
+Never `===` on a secret. `safeEqualVariable` hashes both sides to 32 bytes first — a raw
+variable-length `timingSafeEqual` throws on a length mismatch, itself a timing leak.
+`verifyBearer` fails closed on a blank `expected` secret.
+
+```ts
+function isPrivateAddress(hostname: string): boolean;
+function assertSafePublicUrl(raw: string): URL; // sync: https-only, no credentials, literal-host check
+function assertResolvedHostPublic(hostname: string): Promise<void>; // async DNS re-check
+function assertSafePublicUrlResolved(raw: string): Promise<void>; // both checks, in order
+const ssrfGuardedFetch: (
+  input: string | URL | Request,
+  init?: RequestInit,
+  timeout?: FetchTimeoutOptions,
+) => Promise<Response>;
+```
+
+A public hostname that _resolves_ to a private/link-local/metadata address is rejected, not
+just a literal private IP. The other four throw `ValidationError` on a violation
+(`isPrivateAddress` is a plain boolean predicate, never throws); `ssrfGuardedFetch`
+fetches with `redirect: "error"` so a 3xx can't bypass the check post-verification.
+
+```ts
+function scrubForEgress(text: string): string; // redacts credential-shaped spans
+function looksLikeSecret(text: string): boolean;
+function scrubDeep(value: unknown): unknown; // recursive — drops whole subtrees by KEY name
+type SystemMode = "active" | "read_only";
+function assertNotReadOnly(mode: SystemMode, action?: string): void; // throws ConflictError (409)
+```
+
+`scrubForEgress` catches PEM blocks, URL userinfo passwords, `key: value` secret assignments,
+and bare AWS/GitHub/OpenAI/JWT token shapes. `scrubDeep` drops any subtree whose key names a
+PHI/PII field or a secret. `assertNotReadOnly` is a no-op unless `mode` is `"read_only"`.
+
+### Config, validation, fetch
+
+```ts
+function loadConfig<T extends z.ZodTypeAny>(
+  schema: T,
+  source?: EnvSource,
+): z.infer<T>; // throws ConfigError
+function strictObject<T extends z.ZodRawShape>(
+  shape: T,
+): z.ZodObject<T, "strict">;
+function parseStrict<T extends z.ZodTypeAny>(
+  schema: T,
+  input: unknown,
+): z.infer<T>; // throws ValidationError
+function fetchWithTimeout(
+  input: string | URL | Request,
+  init?: RequestInit,
+  opts?: { timeoutMs?: number },
+): Promise<Response>; // default 10s; also at "@caisson/kernel/fetch"
+```
+
+`loadConfig` validates `process.env` at boot, naming the failing keys, never their values.
+`fetchWithTimeout` merges any caller `signal` rather than replacing it, so a
+stream-cancellation abort still tears down the connection.
+
+### Audit chain & versioning
+
+```ts
+function canonicalize(value: JsonValue): string; // deterministic: sorted keys
+function contentHash(value: JsonValue): string; // sha256 hex of canonicalize(value)
+function hashChainLink(prevHash: string | null, payload: JsonValue): string;
+function chainEntry(
+  prev: AuditChainEntry | null,
+  payload: JsonValue,
+): AuditChainEntry;
+function buildChain(payloads: readonly JsonValue[]): AuditChainEntry[];
+function verifyChain(
+  entries: readonly AuditChainEntry[],
+  anchor?: AuditChainAnchor,
+): { valid: boolean; brokenAt: number | null };
+function anchorChain(entries: readonly AuditChainEntry[]): AuditChainAnchor;
+```
+
+An append-only, tamper-evident hash chain. `verifyChain` returns the first broken index on
+tamper, insert, reorder, or a middle drop; without an `anchor` a tail truncation or wholesale
+rewrite still verifies clean, so pass the `{ length, tipHash }` `anchorChain` mints.
+
+```ts
+function validateVersionSet(versions: readonly VersionRecord[]): {
+  byId: Map<string, VersionRecord>;
+  successorOf: Map<string, string>;
+};
+function isCurrent(versions: readonly VersionRecord[], id: string): boolean;
+function currentVersions(versions: readonly VersionRecord[]): VersionRecord[];
+function versionChain(
+  versions: readonly VersionRecord[],
+  id: string,
+): VersionRecord[];
+```
+
+A version (`{ id, supersedesId }`) is current iff nothing supersedes it. All four throw a
+plain `Error` on a malformed set: a duplicate id, a dangling `supersedesId`, a fork, or a cycle.
+
+### Event sink & observability schemas
+
+```ts
+interface EventSink {
+  emit(event: OpsEvent): void | Promise<void>;
+}
+function redactEvent(event: OpsEvent): OpsEvent;
+class InMemoryEventSink implements EventSink {
+  get events(): readonly OpsEvent[];
+  clear(): void;
+}
+class NoopEventSink implements EventSink {} // drops everything — the fail-open default
+class OtelPostgresEventSink implements EventSink {
+  constructor(opts: { endpoint: string; timeoutMs?: number; send?: OtlpSend });
+}
+```
+
+`redactEvent` strips secrets, SQL statements, and stack traces from `attributes`, applied once
+at the sink. `OtelPostgresEventSink` posts one OTLP/HTTP log record per event and throws
+`InternalError` on a non-OK response. Five `.strict()` schemas the buyer dashboard reads:
+
+| Schema                 | Shape                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `opsEventSchema`       | boundary schema for an externally-supplied `OpsEvent`                           |
+| `evidencePackSchema`   | a WORM-anchored compliance evidence bundle                                      |
+| `usageMeteringSchema`  | one metered unit against a feature tag                                          |
+| `evalResultSchema`     | one eval-suite run outcome                                                      |
+| `guardrailBlockSchema` | one guardrail block — `stage`/`category`/policy only, never the flagged content |
+
+### Migration assembly
+
+```ts
+function assembleMigrations(
+  packages: readonly PackageMigrations[],
+): MigrationAssembly;
+```
+
+Pure and deterministic: orders packages by declared `dependsOn`, renumbers every migration
+into one global `NNNN_*.sql` sequence, and folds a `schemaVersion` checksum over the merged
+ledger. Throws on a duplicate slug, a dependency cycle, or a bad filename.
+
+### Money & credits
+
+```ts
+function asCents(value: number): Cents; // non-negative integer, else ValidationError
+function asCredits(value: number): Credits;
+function asMicroUsd(value: number): MicroUsd;
+function asMicroUsdPerCredit(value: number): MicroUsdPerCredit; // must be a positive integer
+function unwrapMoney(
+  value: Cents | Credits | MicroUsd | MicroUsdPerCredit,
+): number;
+```
+
+Branded `number` types, zero runtime cost — a cents value can no longer pass silently where
+credits are expected. `unwrapMoney` is an identity no-op marking where a value exits to SQL.
+
+```ts
+const CREDIT_CONVERSION: CreditConversion; // 1 credit = 1000 micro-USD = $0.001
+function parseCreditConversion(input: unknown): CreditConversion;
+function centsToCredits(cents: number, conversion?: CreditConversion): Credits; // throws ValidationError
+function centsToCreditsProvenance(
+  cents: number,
+  conversion?: CreditConversion,
+): RoundedMoney<Cents, Credits>; // { raw: Cents; mode: "up" | "down"; result: Credits }
+```
+
+`centsToCredits` always rounds down — never over-crediting a buyer. `centsToCreditsProvenance`
+returns the same result plus a `{ raw, mode }` audit record a ledger write can persist; for this
+conversion `mode` is always `"down"` at runtime, though the declared type admits both directions.
 
 ## Related
 
@@ -54,9 +270,3 @@ $ bun run check   # build · lint · test — every package, one gate
     Denials surface as the `404` with no existence leak.
   </Card>
 </Cards>
-
-<Callout type="info">
-  This page covers the essentials. The full `@caisson/kernel` API reference —
-  the complete CaissonError hierarchy and the conformance-gate rules — is still
-  expanding.
-</Callout>

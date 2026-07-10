@@ -58,13 +58,15 @@ function Note({
 
 function Frame({
   title,
+  bar,
   children,
 }: {
   title: string;
+  bar: string;
   children: React.ReactNode;
 }) {
   return (
-    <MediaFrame label={title} decorative>
+    <MediaFrame label={bar} ariaLabel={title} decorative>
       <div className={styles.svgFrame}>
         <svg
           className={styles.svg}
@@ -179,7 +181,10 @@ function RlsDeny() {
     { head: "0 rows", sub: "denied", tone: "danger" },
   ];
   return (
-    <Frame title="Per-tenant RLS isolation, fail-closed: with tenant context set a query returns only that tenant's rows; with no context set it returns zero rows.">
+    <Frame
+      title="Per-tenant RLS isolation, fail-closed: with tenant context set a query returns only that tenant's rows; with no context set it returns zero rows."
+      bar="rls-deny.svg"
+    >
       {lanes.map((l, i) => (
         <g key={l.head}>
           <Node x={l.x} y={10} w={96} h={34} head={l.head} sub={l.sub} />
@@ -236,7 +241,10 @@ function AuditChain() {
     { x: 260, n: "#44", tampered: false },
   ];
   return (
-    <Frame title="Append-only hash chain: each entry commits SHA-256 over the previous hash plus its payload — editing one row breaks every link after it.">
+    <Frame
+      title="Append-only hash chain: each entry commits SHA-256 over the previous hash plus its payload — editing one row breaks every link after it."
+      bar="audit-chain.svg"
+    >
       <Arrowheads />
       {/* Chain links: the link INTO and AFTER the tampered block read as broken. */}
       {blocks.slice(0, -1).map((b, i) => {
@@ -296,7 +304,10 @@ function WormLifecycle() {
     { x: 260, head: "4 · verify", sub: "→ export", tone: "success" },
   ];
   return (
-    <Frame title="Evidence lifecycle: a privileged write joins the append-only chain, anchors to WORM under S3 Object-Lock, then verifies and exports as an evidence pack.">
+    <Frame
+      title="Evidence lifecycle: a privileged write joins the append-only chain, anchors to WORM under S3 Object-Lock, then verifies and exports as an evidence pack."
+      bar="worm-lifecycle.svg"
+    >
       <Arrowheads />
       {stages.slice(0, -1).map((s) => (
         <path
@@ -343,10 +354,12 @@ interface Stage {
  *  instead of a bespoke layout. */
 function StageFlow({
   title,
+  bar,
   stages,
   note,
 }: {
   title: string;
+  bar: string;
   stages: readonly Stage[];
   note?: string;
 }) {
@@ -357,7 +370,7 @@ function StageFlow({
   const h = 40;
   const xs = stages.map((_s, i) => gap + i * (w + gap));
   return (
-    <Frame title={title}>
+    <Frame title={title} bar={bar}>
       <Arrowheads />
       {xs.slice(0, -1).map((x, i) => {
         const danger =
@@ -401,6 +414,7 @@ function CreditsLedger() {
   return (
     <StageFlow
       title="Credit ledger: grant, then FIFO-spend, fail-closed at zero — a PG-atomic mutation, one integer denomination, never a float."
+      bar="credits-ledger.svg"
       stages={[
         { head: "grant", sub: "credit added" },
         { head: "spend", sub: "FIFO debit" },
@@ -415,6 +429,7 @@ function LocalSyncMerge() {
   return (
     <StageFlow
       title="Two-way offline sync: each device's changesets reconcile through a logical clock to one converged state, no server round-trip."
+      bar="local-sync-merge.svg"
       stages={[
         { head: "device A", sub: "changeset" },
         { head: "reconcile", sub: "logical clock", tone: "accent" },
@@ -429,6 +444,7 @@ function LocalInferenceEgress() {
   return (
     <StageFlow
       title="A prompt runs against an on-device ONNX model — inference stays on the box unless a hosted provider is opted into."
+      bar="local-inference-egress.svg"
       stages={[
         { head: "prompt", sub: "on-device" },
         { head: "ONNX model", sub: "transformers.js", tone: "accent" },
@@ -443,6 +459,7 @@ function PrivacyGate() {
   return (
     <StageFlow
       title="Every outbound payload crosses a default-deny egress gate: no host is reachable unless a typed allowlist names it."
+      bar="privacy-gate.svg"
       stages={[
         { head: "payload", sub: "outbound" },
         { head: "egress gate", sub: "default-deny", tone: "accent" },
@@ -457,6 +474,7 @@ function ToolExecGate() {
   return (
     <StageFlow
       title="An agent's command crosses a default-deny allowlist over Zod-strict argv before execFile runs it — never a shell."
+      bar="tool-exec-gate.svg"
       stages={[
         { head: "agent call", sub: "argv request" },
         { head: "allowlist", sub: "zod-strict argv", tone: "accent" },
@@ -471,6 +489,7 @@ function OrgControlsMutation() {
   return (
     <StageFlow
       title="An owner-gated mutation crosses the admin-write RLS layer and lands two log rows: the mutation and its audit entry."
+      bar="org-controls-mutation.svg"
       stages={[
         { head: "owner action", sub: "scoped write" },
         { head: "admin-write RLS", sub: "owner-gated", tone: "accent" },
@@ -485,6 +504,7 @@ function BillingProviderPort() {
   return (
     <StageFlow
       title="Four billing providers behind one port: a webhook fulfills exactly once, however many times it's redelivered."
+      bar="billing-provider-port.svg"
       stages={[
         { head: "webhook in", sub: "4 providers" },
         { head: "one port", sub: "BillingProvider", tone: "accent" },
@@ -499,6 +519,7 @@ function FrameworksOscal() {
   return (
     <StageFlow
       title="Named framework clauses map to controls, then export as an OSCAL v1.2.2 catalog the evidence packs render against."
+      bar="frameworks-oscal.svg"
       stages={[
         { head: "frameworks", sub: "SOC 2 · HIPAA" },
         { head: "mapping", sub: "clause → control", tone: "accent" },
@@ -525,7 +546,10 @@ function AlertPipeline() {
     { x: 258, head: "deliver", sub: "4 channel ports", tone: "success" },
   ];
   return (
-    <Frame title="Five-stage alert pipeline: dedup, rate-cap with digest fallback, timezone-aware quiet hours, then multi-channel delivery — every outcome writes an audit row.">
+    <Frame
+      title="Five-stage alert pipeline: dedup, rate-cap with digest fallback, timezone-aware quiet hours, then multi-channel delivery — every outcome writes an audit row."
+      bar="alert-pipeline.svg"
+    >
       <Arrowheads />
       {gates.slice(0, -1).map((g) => (
         <path
@@ -579,7 +603,10 @@ function AlertPipeline() {
  *  usage; a crossed hard cap trips the breaker so the next reserve 402s. */
 function MeterReserveReconcile() {
   return (
-    <Frame title="Estimate, reserve, reconcile: credits debit before the provider call and true up to the provider's actual usage — a crossed hard cap trips the breaker, fail-closed.">
+    <Frame
+      title="Estimate, reserve, reconcile: credits debit before the provider call and true up to the provider's actual usage — a crossed hard cap trips the breaker, fail-closed."
+      bar="meter-reserve-reconcile.svg"
+    >
       <Arrowheads />
       <path
         d={`M 108 47 L 120 47`}
@@ -654,6 +681,7 @@ function EvalBaselineGate() {
   return (
     <StageFlow
       title="Every eval run gates against a committed JSON baseline: a score drop past tolerance fails the build — re-blessing is a deliberate act, never a silent pass."
+      bar="eval-baseline-gate.svg"
       stages={[
         { head: "eval run", sub: "scored cases" },
         { head: "compare", sub: "vs baseline", tone: "accent" },
@@ -683,7 +711,10 @@ function GuardFailClosed() {
     { head: "blocked", sub: "fail-closed", tone: "danger" },
   ];
   return (
-    <Frame title="A flagged input, a credential-shaped string, or a moderator outage blocks the call — fail-closed by default, a typed 422, never a silent pass-through.">
+    <Frame
+      title="A flagged input, a credential-shaped string, or a moderator outage blocks the call — fail-closed by default, a typed 422, never a silent pass-through."
+      bar="guard-fail-closed.svg"
+    >
       <Arrowheads />
       {lanes.map((l, i) => (
         <g key={l.head}>
@@ -736,6 +767,7 @@ function PromptRenderBoundary() {
   return (
     <StageFlow
       title="Injection-safe rendering: variables validate against the version's strict schema, then fill placeholders in one escaped pass — a value can never forge a role."
+      bar="prompt-render-boundary.svg"
       stages={[
         { head: "name@prod", sub: "alias resolve" },
         { head: "strict schema", sub: "vars validated", tone: "accent" },
@@ -750,7 +782,10 @@ function PromptRenderBoundary() {
  *  keyword leg rank independently, then fuse by Reciprocal Rank Fusion (RRF_K = 60). */
 function LocalHybridRrf() {
   return (
-    <Frame title="Hybrid retrieval: a vec0 vector leg and an FTS5 keyword leg rank independently, then fuse by Reciprocal Rank Fusion — with no query vector it degrades to keyword-only.">
+    <Frame
+      title="Hybrid retrieval: a vec0 vector leg and an FTS5 keyword leg rank independently, then fuse by Reciprocal Rank Fusion — with no query vector it degrades to keyword-only."
+      bar="local-hybrid-rrf.svg"
+    >
       <Arrowheads />
       <Node x={10} y={28} w={88} h={36} head="vec0 KNN" sub="vector leg" />
       <Node x={10} y={108} w={88} h={36} head="FTS5" sub="keyword leg" />
@@ -802,7 +837,10 @@ function AgentLifecycleFsm() {
   const step = 47;
   const y = 62;
   return (
-    <Frame title="The seven-act lifecycle FSM: only legal transitions advance — a failed verify re-opens plan, and an illegal skip throws a typed error, never a silent pass.">
+    <Frame
+      title="The seven-act lifecycle FSM: only legal transitions advance — a failed verify re-opens plan, and an illegal skip throws a typed error, never a silent pass."
+      bar="agent-lifecycle-fsm.svg"
+    >
       <Arrowheads />
       {acts.map((a, i) => {
         const x = 6 + i * step;
@@ -863,7 +901,10 @@ function AgentLifecycleFsm() {
  *  the target provider's key — and the run streams to an auditable .jsonl transcript. */
 function RunnerEnvScrub() {
   return (
-    <Frame title="The child env is built from scratch: a fixed non-secret allowlist plus only the target provider's key crosses — the run streams to an auditable .jsonl transcript.">
+    <Frame
+      title="The child env is built from scratch: a fixed non-secret allowlist plus only the target provider's key crosses — the run streams to an auditable .jsonl transcript."
+      bar="runner-env-scrub.svg"
+    >
       <Arrowheads />
       <path
         d={`M 104 55 L 118 55`}
@@ -914,7 +955,10 @@ function RunnerEnvScrub() {
  *  writes exactly one reason-tagged audit row. */
 function RetentionErasure() {
   return (
-    <Frame title="One validated erasure request fans out to every registered target with per-target error isolation — a failing store lands in its own result, never aborting the others — then exactly one reason-tagged audit row is written.">
+    <Frame
+      title="One validated erasure request fans out to every registered target with per-target error isolation — a failing store lands in its own result, never aborting the others — then exactly one reason-tagged audit row is written."
+      bar="retention-erasure.svg"
+    >
       <Arrowheads />
       <Node
         x={10}

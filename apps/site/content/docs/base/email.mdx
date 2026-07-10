@@ -4,33 +4,202 @@ description: A Resend email port with a test driver.
 ---
 
 `@caisson/email` is the transactional-email port. [Resend](https://resend.com) is the default
-driver, and it sits behind the port like every other vendor in the base — call sites depend on the
-port, not the SDK.
+driver — Postmark, SMTP, and SES ship alongside it — and every driver sits behind the port like
+every other vendor in the base: call sites depend on the port, not the SDK.
 
 ## The contract
 
-A **test driver** captures sends in memory, so a suite asserts on what would have been emailed —
-recipient, template, payload — without a network call or a live key.
+A **capture driver** records sends in memory, so a suite asserts on what would have been
+emailed — recipient, template, payload — without a network call or a live key.
 
 ```ts
-import { sendEmail } from "@caisson/email";
+import { createResendEmailer } from "@caisson/email";
 
-await sendEmail({
+const email = createResendEmailer({
+  apiKey: env.RESEND_API_KEY,
+  from: "noreply@caisson.sh",
+});
+
+await email.send({
   to: user.email,
   template: "verify-email",
   data: { url },
 });
 ```
 
-Under the standards gate the same call resolves to the test driver, so email behavior is verified
-deterministically:
+Under the standards gate, tests wire the capture driver instead and assert on what was sent —
+never a network call, never a live key:
 
 ```ts
-import { testEmail } from "@caisson/email/testing";
+import { createCaptureEmailer } from "@caisson/email";
+
+const email = createCaptureEmailer();
+await email.send({ to: user.email, template: "verify-email", data: { url } });
 
 // The send is captured, not transmitted.
-expect(testEmail.outbox).toHaveLength(1);
+expect(email.sent).toHaveLength(1);
 ```
+
+## API reference
+
+### The port
+
+```ts
+interface EmailMessage {
+  to: string;
+  template: string;
+  data: Record<string, unknown>;
+}
+
+interface Emailer {
+  send(msg: EmailMessage): Promise<void>;
+}
+```
+
+One method, provider-agnostic — every driver below implements it. `template` is free-form on
+the port itself: a caller can pass one of the branded template ids (rendered below) or an
+arbitrary name — [`@caisson/alerting`](/docs/compliance/alerting) sends operator alerts through
+this same port with its own `alert.*` namespace, and every driver falls back to a generic
+subject/text mapping when `template` isn't a known id.
+
+### Drivers
+
+```ts
+function createCaptureEmailer(): CaptureEmailer;
+
+interface CaptureEmailer extends Emailer {
+  readonly sent: readonly EmailMessage[];
+}
+```
+
+In-memory driver for tests. `send` pushes onto a private array exposed read-only via `sent`
+(preserving order) and never touches the network — the framework-agnostic reference
+implementation of the port.
+
+```ts
+function createResendEmailer(config: ResendConfig): Emailer;
+interface ResendConfig {
+  apiKey: string;
+  from: string;
+}
+```
+
+Production driver backed by [Resend](https://resend.com). `apiKey` is injected config, never a
+module-level constant. `send` renders the branded template when `template` matches a known id,
+then POSTs through `fetchWithTimeout`. A non-`ok` response throws `InternalError` — the response
+body is never included in the thrown error, since a Resend error can echo the recipient or a key
+fragment back.
+
+```ts
+function createPostmarkEmailer(config: PostmarkConfig): Emailer;
+interface PostmarkConfig {
+  serverToken: string;
+  from: string;
+}
+```
+
+Production driver backed by Postmark. Same shape as the Resend driver — `fetchWithTimeout`,
+`InternalError` on a non-`ok` response, and the response body withheld for the same reason.
+
+```ts
+function createSmtpEmailer(config: SmtpConfig): Emailer;
+interface SmtpConfig {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  from: string;
+  secure?: boolean; // TLS-on-connect (port 465); defaults false (STARTTLS on 587/25)
+  transport?: SmtpTransport; // inject a fake to test without a real SMTP connection
+}
+```
+
+Production driver backed by `nodemailer`. Renders through the same template registry as the
+REST drivers, falling back to the generic subject/text mapping for a free-form template.
+
+```ts
+function createSesEmailer(config: SesConfig): Emailer;
+function sesSmtpConfig(config: SesConfig): SmtpConfig;
+interface SesConfig {
+  region: string;
+  smtpUser: string;
+  smtpPass: string;
+  from: string;
+  transport?: SmtpTransport;
+}
+```
+
+AWS SES driver. SES exposes an SMTP interface, so `createSesEmailer` is `createSmtpEmailer`
+pointed at SES's regional endpoint (`email-smtp.<region>.amazonaws.com:587`, STARTTLS) — there
+is no separate `aws-sdk` dependency. `sesSmtpConfig` is the pure config mapper underneath it,
+exposed as the testable seam.
+
+### Templates
+
+Every driver renders through one React-Email registry, so the HTML body and the plain-text
+fallback are generated from the same component and can never drift apart.
+
+```ts
+const EMAIL_TEMPLATE_IDS: readonly EmailTemplateId[];
+
+type EmailTemplateId =
+  | "magic-link"
+  | "password-reset"
+  | "verify-email"
+  | "credits-expiring"
+  | "updates-window-expiring"
+  | "purchase-confirmation"
+  | "subscription-payment-received"
+  | "renewal-confirmation"
+  | "access-revoked"
+  | "waitlist-welcome"
+  | "nurture-follow-up";
+
+function isEmailTemplateId(template: string): template is EmailTemplateId;
+```
+
+`EMAIL_TEMPLATE_IDS` is the stable display order the admin catalog preview walks.
+`isEmailTemplateId` is the runtime membership check — a request-supplied string is never trusted
+without it.
+
+```ts
+function renderEmailTemplate<K extends EmailTemplateId>(
+  template: K,
+  data: TemplateDataMap[K],
+): Promise<RenderedEmail>;
+
+interface RenderedEmail {
+  subject: string;
+  html: string;
+  text: string;
+}
+```
+
+Renders one branded template against its typed prop shape (`TemplateDataMap` keys each id to
+its own data type — a purchase receipt's line items are not a magic-link's `url`). Throws if
+the template id isn't in the registry; callers with an unchecked `template` string use
+`tryRenderEmailTemplate` instead.
+
+```ts
+function tryRenderEmailTemplate(
+  template: string,
+  data: Record<string, unknown>,
+): Promise<RenderedEmail | null>;
+```
+
+The driver-facing entry point. Returns `null` — never throws — when `template` isn't a known
+branded id, or when `data` doesn't structurally match that template's shape, so a free-form
+alert or a malformed payload falls back to the generic subject/text mapping instead of breaking
+the send. Every production driver's `send` calls this first — the capture driver records the
+raw message without rendering.
+
+```ts
+const EMAIL_SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] };
+```
+
+One realistic payload per template id, shared by the admin catalog preview, the admin
+send-test route, and the visual harness — so a preview, a test send, and a
+screenshot always render off the same data.
 
 ## Related
 
@@ -42,8 +211,3 @@ expect(testEmail.outbox).toHaveLength(1);
     Verification and reset mail ride this port.
   </Card>
 </Cards>
-
-<Callout type="info">
-  This page covers the essentials. The full `@caisson/email` API reference — the
-  email port, the Resend driver, and the template contract — is still expanding.
-</Callout>
