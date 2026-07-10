@@ -110,7 +110,17 @@ and enforced — no re-tune needed.**
 A bounded Strix run (`run-strix-chatgpt.sh -m standard -n`, `gpt-5.4`, read-only) was launched across
 all 7 live surfaces (source tree + site + license + docs + admin + registry Worker + support-bot;
 `_common.sh` extended this round to add the last three). It is a supplementary external-attacker
-cross-check; the white-box audit above is the authoritative result. Outcome appended on completion.
+cross-check; the white-box audit above is the authoritative result.
+
+**Outcome: inconclusive — engine mismatch, no findings.** The ChatGPT bridge only exposes the
+`gpt-5.4` line, not the `gpt-5.5`/`gpt-5.6` round-1 used. `gpt-5.4` does not conform to Strix's
+agent-lifecycle protocol: the run produced **312 `non-lifecycle final output` warnings** and stayed
+stuck on turn 1 with **zero vulnerabilities filed** after ~40 min, so it was stopped to conserve the
+ChatGPT-sub quota rather than churn. This is a runner/engine limitation, not a clean-scan result — it
+neither confirms nor clears any surface on its own. **Re-run guidance:** use an engine that drives
+Strix's lifecycle (the original OpenRouter `gpt-5.5` per-token path, or wait for the bridge to expose
+`gpt-5.6`); GLM-5.2 (`run-strix-zai.sh`) is the cheaper alternative floor. The white-box audit stands
+as the round-2 result regardless.
 
 ## Exit criteria
 
