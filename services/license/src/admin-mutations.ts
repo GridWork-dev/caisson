@@ -35,6 +35,7 @@ import {
 import {
   asCredits,
   assertNotReadOnly,
+  ConflictError,
   NotFoundError,
   ValidationError,
   type JsonValue,
@@ -1272,6 +1273,16 @@ export const MintAffiliateCodeBody = z
         /^[A-Za-z0-9]+$/,
         "code must be letters and digits only (Paddle discount-code format)",
       ),
+    // RECOVERY input (SHIP-audit): registers an ALREADY-minted Paddle discount instead of creating
+    // one. When a prior mint created the discount but died before registration (the orphan case —
+    // the code is burned at Paddle so a plain retry can never succeed), the 409 names this field;
+    // re-submitting with the orphaned `dsc_…` id completes registration + both audit logs without
+    // touching Paddle.
+    discountId: z
+      .string()
+      .trim()
+      .regex(/^dsc_[a-z0-9]+$/i, "must be a Paddle discount id (dsc_…)")
+      .optional(),
   })
   .strict();
 
@@ -1299,34 +1310,56 @@ export async function mintAffiliateCodeAdmin(
   input: MintAffiliateCodeInput,
 ): Promise<MintAffiliateResult> {
   await assertSystemModeActive(deps.db, "mint affiliate code");
-  if (deps.mintDiscount === undefined) {
-    throw new ValidationError(
-      "affiliate minting is not configured (no discount proxy wired)",
-    );
-  }
-  const minted = await deps.mintDiscount({
-    code: input.code,
-    description: input.affiliateName,
-  });
-  await withAdminWrite(deps.db, async (tx) => {
-    await insertAffiliateCode(tx, {
-      code: minted.code,
-      discountId: minted.discountId,
-      affiliateName: input.affiliateName,
-      createdBy: input.actorEmail,
+  // Recovery path (SHIP-audit): an explicit discountId means the Paddle discount ALREADY exists
+  // (a prior mint's registration died) — skip the external create and just register it. Paddle
+  // uppercases codes at mint, so mirror that here to keep the registered code redeem-accurate.
+  let minted: { code: string; discountId: string };
+  if (input.discountId !== undefined) {
+    minted = { code: input.code.toUpperCase(), discountId: input.discountId };
+  } else {
+    if (deps.mintDiscount === undefined) {
+      throw new ValidationError(
+        "affiliate minting is not configured (no discount proxy wired)",
+      );
+    }
+    minted = await deps.mintDiscount({
+      code: input.code,
+      description: input.affiliateName,
     });
-    await insertAdminActionLog(tx, {
-      actorEmail: input.actorEmail,
-      targetAccountId: AFFILIATE_MINT_TARGET,
-      action: "affiliate_mint",
-      before: null,
-      after: {
+  }
+  try {
+    await withAdminWrite(deps.db, async (tx) => {
+      await insertAffiliateCode(tx, {
         code: minted.code,
         discountId: minted.discountId,
         affiliateName: input.affiliateName,
-      },
+        createdBy: input.actorEmail,
+      });
+      await insertAdminActionLog(tx, {
+        actorEmail: input.actorEmail,
+        targetAccountId: AFFILIATE_MINT_TARGET,
+        action: "affiliate_mint",
+        before: null,
+        after: {
+          code: minted.code,
+          discountId: minted.discountId,
+          affiliateName: input.affiliateName,
+        },
+      });
     });
-  });
+  } catch (err) {
+    // The orphan case: the discount is LIVE at Paddle but no registry/audit row committed, and the
+    // code is burned there (a plain retry dies on Paddle's duplicate rejection before reaching
+    // this tx). Surface the exact recovery so nothing is silently lost — one stderr line for the
+    // log stream, and a 409 whose message carries the orphaned id + the recovery input.
+    process.stderr.write(
+      `[service-license] affiliate mint ORPHANED: discount ${minted.discountId} (code ${minted.code}) is live at Paddle but unregistered — re-submit the mint with discountId=${minted.discountId} to complete registration\n`,
+    );
+    throw new ConflictError(
+      `registration failed after the Paddle discount was created: discount ${minted.discountId} (code ${minted.code}) is live but unregistered — re-submit the mint with discountId "${minted.discountId}" to complete registration without re-minting`,
+      { cause: err instanceof Error ? err.message : String(err) },
+    );
+  }
   const worm = await appendWorm(
     deps,
     AFFILIATE_MINT_TARGET,

@@ -53,6 +53,12 @@ async function ground<T = Record<string, unknown>>(
   return tp.query<T>(sql, params);
 }
 
+/** Read `lastMintInput` through a call so a preceding `lastMintInput = null` reset doesn't pin the
+ *  read to TS's flow-narrowed `null` (the stub mutates it out of band). */
+function seenMintInput(): { code: string; description: string } | null {
+  return lastMintInput;
+}
+
 beforeAll(async () => {
   tp = await newTestPg();
   db = tp.pg as unknown as Transactor;
@@ -138,5 +144,48 @@ describe("mintAffiliateCodeAdmin (ADR-0315/0319)", () => {
         code: "GAMMAAFF",
       }),
     ).rejects.toThrow(/not configured/);
+  });
+});
+
+describe("mint orphan recovery (SHIP-audit)", () => {
+  test("a registration failure AFTER the Paddle create surfaces a 409 naming the orphaned discount id", async () => {
+    // Pre-register the code directly so the mint's INSERT collides — the simplest stand-in for any
+    // registration-tx failure that lands after the external create succeeded.
+    await tp.exec(
+      `INSERT INTO affiliate_code (id, code, discount_id, affiliate_name, commission_bps, discount_pct, created_by)
+       VALUES ('pre-1', 'EPSAFF', 'dsc_preexisting', 'Pre', 3000, 10, 'op')`,
+    );
+    lastMintInput = null;
+    await expect(
+      mintAffiliateCodeAdmin(deps(), {
+        actorEmail: "admin@caisson.sh",
+        affiliateName: "Eps",
+        code: "EPSAFF",
+      }),
+    ).rejects.toThrow(/dsc_epsaff.*live but unregistered/);
+    // The external mint DID run — the orphan exists at Paddle; the 409 is what makes it recoverable.
+    // (read via a function: TS flow analysis pins the variable to `null` after the reset above)
+    expect(seenMintInput()).toEqual({ code: "EPSAFF", description: "Eps" });
+  });
+
+  test("the discountId recovery input registers an ALREADY-minted discount without touching Paddle", async () => {
+    lastMintInput = null;
+    const r = await mintAffiliateCodeAdmin(deps(), {
+      actorEmail: "admin@caisson.sh",
+      affiliateName: "Zeta",
+      code: "zetaaff", // lower-case in — registered upper-cased, mirroring Paddle's normalization
+      discountId: "dsc_zeta_orphan",
+    });
+    expect(seenMintInput()).toBeNull(); // the proxy was never called — no second live discount
+    expect(r.discountId).toBe("dsc_zeta_orphan");
+    expect(r.code).toBe("ZETAAFF");
+    const rows = await ground<{ affiliate_name: string }>(
+      `SELECT affiliate_name FROM affiliate_code WHERE discount_id = 'dsc_zeta_orphan' AND code = 'ZETAAFF'`,
+    );
+    expect(rows).toHaveLength(1);
+    const log = await ground(
+      `SELECT 1 FROM admin_action_log WHERE action = 'affiliate_mint' AND payload_after::text LIKE '%dsc_zeta_orphan%'`,
+    );
+    expect(log).toHaveLength(1);
   });
 });

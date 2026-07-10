@@ -149,7 +149,13 @@ function OrdersTable({ orders }: { orders: AffiliateReportOrder[] }) {
         o.orderId,
         o.accountId,
         `${usd(o.amountCents)} ${o.currency.toUpperCase()}`,
-        o.clawback ? "refunded (clawback)" : o.status,
+        // partialRefund (SHIP-audit): still-'paid' but a line grant was revoked (per-line refund /
+        // admin revoke) — commission stays in the payable sum; review the order before paying out.
+        o.clawback
+          ? "refunded (clawback)"
+          : o.partialRefund
+            ? "paid (partial refund — review)"
+            : o.status,
         fmtDate(o.createdAt),
       ])}
     />

@@ -1362,6 +1362,65 @@ describe("applyBillingEvent — Paddle per-line partial refund (ADR-0218)", () =
     ).toEqual([]);
   });
 
+  test("per-line refunds that empty the purchase flip order_record to 'refunded' (SHIP-audit)", async () => {
+    const acct = "acct_pl_orderflip";
+    const orderStatus = async (): Promise<string | undefined> => {
+      const rows = await withTenant(tp.pg, acct, async (tx) => {
+        const r = await tx.query<{ status: string }>(
+          `SELECT status FROM order_record WHERE source_event_id = 'txn_of' AND kind = 'purchase'`,
+        );
+        return r.rows;
+      });
+      return rows[0]?.status;
+    };
+    // Two edition lines (0 credits) — Paddle types a line-by-line full refund as 'partial', so
+    // without the flip this order would stay 'paid' forever and the affiliate report would keep
+    // paying full commission on it.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "txn_of", [
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "txnitm_c",
+            chargedAmount: 74900,
+          },
+          {
+            priceId: CREDIT_PACK_ID,
+            quantity: 1,
+            itemId: "txnitm_d",
+            chargedAmount: 5000,
+          },
+        ]),
+      ),
+    );
+    expect(await orderStatus()).toBe("paid");
+    // Refund the edition line only: a grant remains active on the pack? No — the pack grants
+    // CREDITS, not an entitlement; but its credits are still un-clawed, so the purchase is NOT
+    // verifiably empty and the order must stay 'paid' (the report's partialRefund flag owns it).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_of", "adj_of_1", [
+          { itemId: "txnitm_c", amountRefunded: 74900, fullyRefunded: true },
+        ]),
+      ),
+    );
+    expect(await orderStatus()).toBe("paid");
+    // Refund the pack line too — no active grants, no un-clawed credits: the purchase is empty
+    // and the order flips, matching what a whole-transaction refund would have done.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_of", "adj_of_2", [
+          { itemId: "txnitm_d", amountRefunded: 5000, fullyRefunded: true },
+        ]),
+      ),
+    );
+    expect(await orderStatus()).toBe("refunded");
+  });
+
   test("a dollar-PARTIAL refund claws PROPORTIONAL credits (floor) with provenance; entitlement intact (fork A-1)", async () => {
     const acct = "acct_pl_partial";
     // A pack line: 5000 credits, charged 3000 minor units — and an edition line (0 credits).

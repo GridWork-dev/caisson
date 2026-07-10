@@ -33,6 +33,7 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
 import type { ChargebackAlert } from "./chargeback-notify.ts";
 import {
   acquireAccountBillingLock,
+  countActivePurchaseGrants,
   computeUpdatesWindows,
   extendUpdatesWindow,
   grantEntitlements,
@@ -680,6 +681,22 @@ export async function applyBillingEvent(
           purchaseId: ev.paymentId,
           lineItemIds: fullyRefundedItemIds,
         });
+      }
+      // SHIP-audit: Paddle types a line-by-line full refund as 'partial', so a purchase whose
+      // every line is refunded through THIS branch previously kept `order_record.status='paid'`
+      // — the affiliate report showed full payable commission with zero clawback flag (the
+      // whole-transaction branch flips it; this one didn't). Flip when this adjustment fully
+      // refunded a line (a credits-only line revokes no grant, so `revokedLines` is the wrong
+      // trigger) AND the purchase is left verifiably empty: no active grants, no un-clawed
+      // credits. Conservative on purpose — a mixed cart with a live line, or spent credits that
+      // bounded the claw, stays 'paid' and the report's revoked-grants `partialRefund` alert
+      // owns the review instead.
+      if (
+        fullyRefundedItemIds.length > 0 &&
+        purchaseRemaining <= 0 &&
+        (await countActivePurchaseGrants(tx, ev.accountId, ev.paymentId)) === 0
+      ) {
+        await refundOrderRecord(tx, ev.paymentId);
       }
       // G27: only when a line's grant was ACTUALLY revoked this call (a dollar-partial claw with
       // no entitlement loss, or a redelivered/idempotent line revoke, stays silent).

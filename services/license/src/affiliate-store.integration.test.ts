@@ -23,6 +23,7 @@ import {
   readAffiliateCodes,
   readAffiliateReport,
 } from "./affiliate-store.ts";
+import { ENTITLEMENT_SCHEMA_SQL } from "./entitlement-store.ts";
 
 let tp: TestPg;
 
@@ -31,6 +32,8 @@ beforeAll(async () => {
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL);
   await tp.exec(ORDER_RECORD_DISCOUNT_MIGRATION_SQL);
+  // The report's partial-refund alert reads entitlement_grant (SHIP-audit fix below).
+  await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   // The admin roles do not exist in this harness — the schema's role-guarded grants no-op cleanly,
   // proving the DDL is safe in the platform migration chain before admin provisioning.
   await tp.exec(AFFILIATE_CODE_SCHEMA_SQL);
@@ -166,5 +169,35 @@ describe("readAffiliateReport — join, commission math, clawback, unattributed"
     for (const a of rep.affiliates) {
       expect(a.orders.some((o) => o.orderId === "pay_none")).toBe(false);
     }
+  });
+});
+
+describe("partial-refund alert (SHIP-audit)", () => {
+  test("a still-'paid' order with a REVOKED line grant is flagged partialRefund; commission stays payable", async () => {
+    await insertAffiliateCode(tp.pg as unknown as TenantExecutor, {
+      code: "AFFEVE",
+      discountId: "dsc_eve",
+      affiliateName: "Eve",
+      createdBy: "op",
+    });
+    await seedOrder("acct_buyer_7", "pay_e1", 8910, "dsc_eve"); // gets a revoked grant below
+    await seedOrder("acct_buyer_8", "pay_e2", 8910, "dsc_eve"); // control: active grant only
+    // The per-line refund shape: the order stays 'paid' but one of its line grants is revoked.
+    await tp.exec(
+      `INSERT INTO entitlement_grant (id, account_id, entitlement_id, source_kind, purchase_id, source_event_id, status, revoked_at)
+       VALUES ('g-e1', 'acct_buyer_7', 'compliance', 'one_time', 'pay_e1', 'pay_e1', 'revoked', now()),
+              ('g-e2', 'acct_buyer_8', 'compliance', 'one_time', 'pay_e2', 'pay_e2', 'active', NULL)`,
+    );
+
+    const rep = await report();
+    const eve = rep.affiliates.find((a) => a.discountId === "dsc_eve");
+    const flagged = eve?.orders.find((o) => o.orderId === "pay_e1");
+    const clean = eve?.orders.find((o) => o.orderId === "pay_e2");
+    expect(flagged?.partialRefund).toBe(true);
+    expect(flagged?.clawback).toBe(false); // not a whole-order refund — a review flag, not a claw
+    expect(clean?.partialRefund).toBe(false);
+    // ALERT-ONLY: the flagged order's commission is still in the payable sum (never auto-netted).
+    expect(eve?.grossCents).toBe(17820);
+    expect(eve?.commissionCents).toBe(5346);
   });
 });

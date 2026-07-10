@@ -155,6 +155,11 @@ export interface AffiliateReportOrder {
   /** ALERT-ONLY flag (ADR-0294/0302): true = this order was refunded, so its commission is a
    *  clawback the operator reviews — the report FLAGS, it never moves money. */
   clawback: boolean;
+  /** ALERT-ONLY flag (SHIP-audit): the order still reads 'paid' but at least one of its line
+   *  grants has been REVOKED — a per-line (dollar/item) refund or an admin revoke. Its commission
+   *  stays in the payable sum (the report never moves money), flagged so the operator reviews the
+   *  order before paying out. Whole-order refunds flip `status` instead and never set this. */
+  partialRefund: boolean;
 }
 
 /** One affiliate's rollup in the commission report. */
@@ -203,9 +208,22 @@ export async function readAffiliateReport(
     code: string | null;
     commission_bps: number | null;
     discount_pct: number | null;
+    partial_refund: boolean;
   }>(
+    // partial_refund (SHIP-audit): a per-line refund revokes that line's grants but leaves the
+    // order 'paid' (only a WHOLE-transaction refund flips status), so without this flag the
+    // report would show full payable commission on a partially — or, when credits were already
+    // spent, even fully — refunded order with zero signal. Any revoked one-time grant backed by
+    // this purchase marks the row for operator review; kind='purchase' only (subscription
+    // invoice refunds flip status on the whole-transaction path).
     `SELECT o.source_event_id, o.account_id, o.amount, o.currency, o.status, o.created_at,
-            o.discount_id, a.affiliate_name, a.code, a.commission_bps, a.discount_pct
+            o.discount_id, a.affiliate_name, a.code, a.commission_bps, a.discount_pct,
+            (o.kind = 'purchase' AND o.status = 'paid' AND EXISTS (
+              SELECT 1 FROM entitlement_grant g
+               WHERE g.account_id = o.account_id
+                 AND g.source_kind = 'one_time'
+                 AND g.purchase_id = o.source_event_id
+                 AND g.status = 'revoked')) AS partial_refund
        FROM order_record o
        LEFT JOIN affiliate_code a ON a.discount_id = o.discount_id
       WHERE o.discount_id IS NOT NULL
@@ -224,6 +242,7 @@ export async function readAffiliateReport(
       status: row.status,
       createdAt: toIso(row.created_at),
       clawback: row.status === "refunded",
+      partialRefund: row.partial_refund,
     };
     // A discount id with no matching affiliate_code row (LEFT JOIN → null) — honest display, not a drop.
     if (row.affiliate_name === null || row.commission_bps === null) {
