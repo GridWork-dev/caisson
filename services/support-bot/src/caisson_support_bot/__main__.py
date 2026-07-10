@@ -42,7 +42,13 @@ async def _run(settings: Settings) -> None:
             client=http,
             referer=settings.openrouter_referer,
         )
-        pipeline = RagPipeline(docs=docs, inference=inference, k=settings.retrieval_k)
+        pipeline = RagPipeline(
+            docs=docs,
+            inference=inference,
+            k=settings.retrieval_k,
+            confidence_high=settings.support_confidence_high,
+            confidence_low=settings.support_confidence_low,
+        )
 
         pool: asyncpg.Pool | None = None
         store: PostgresTicketStore | None = None
