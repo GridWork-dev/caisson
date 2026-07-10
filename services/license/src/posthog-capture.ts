@@ -137,3 +137,73 @@ export async function capturePostHogPurchase(
     process.stderr.write("[service-license] posthog capture failed\n");
   }
 }
+
+// --- Abandoned-checkout email events (spec §e, operator-locked 2026-07-10) --------------------
+
+/** Shared POST to PostHog's capture endpoint for the two abandoned-checkout events below — same
+ *  never-throw, config-gated, `distinct_id = accountId` posture as `capturePostHogPurchase`,
+ *  factored once since both events share the exact same request shape (only `event`/`properties`
+ *  differ). */
+async function captureAbandonedCheckoutEvent(
+  config: PostHogCaptureConfig,
+  event: "abandoned_checkout_email_sent" | "abandoned_checkout_converted",
+  accountId: string,
+  properties: Record<string, unknown>,
+  fetchImpl: typeof fetchWithTimeout,
+): Promise<void> {
+  try {
+    const res = await fetchImpl(
+      `${config.host}/capture/`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          api_key: config.key,
+          event,
+          distinct_id: accountId,
+          properties,
+        }),
+      },
+      { timeoutMs: 10_000 },
+    );
+    if (!res.ok) {
+      process.stderr.write(
+        `[service-license] posthog capture non-2xx: ${String(res.status)}\n`,
+      );
+    }
+  } catch {
+    process.stderr.write("[service-license] posthog capture failed\n");
+  }
+}
+
+/** Fired once per sent abandoned-checkout notice (the scheduler's per-account notice task). */
+export async function capturePostHogAbandonedCheckoutEmailSent(
+  config: PostHogCaptureConfig,
+  capture: { accountId: string; itemCount: number },
+  fetchImpl: typeof fetchWithTimeout = fetchWithTimeout,
+): Promise<void> {
+  await captureAbandonedCheckoutEvent(
+    config,
+    "abandoned_checkout_email_sent",
+    capture.accountId,
+    { item_count: capture.itemCount },
+    fetchImpl,
+  );
+}
+
+/** Fired when a purchase.completed lands for an account with a prior sent notice inside the
+ *  bounded lookback window (`hasRecentAbandonedCheckoutNotice`, checked by the caller BEFORE this
+ *  is invoked — this function itself fires unconditionally once called). */
+export async function capturePostHogAbandonedCheckoutConverted(
+  config: PostHogCaptureConfig,
+  capture: { accountId: string },
+  fetchImpl: typeof fetchWithTimeout = fetchWithTimeout,
+): Promise<void> {
+  await captureAbandonedCheckoutEvent(
+    config,
+    "abandoned_checkout_converted",
+    capture.accountId,
+    {},
+    fetchImpl,
+  );
+}

@@ -12,10 +12,34 @@ import { requireDashboardSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Cart checkout" };
 
-export default async function DashboardCartPage() {
+// The abandoned-checkout email's `?promo=<code>` link (SPEC-abandoned-checkout-email.md, discount
+// fork, 2026-07-10 lock) — bounded + shape-checked server-side before it ever reaches Paddle.js.
+const PROMO_CODE_RE = /^[A-Za-z0-9_-]+$/;
+
+function parsePromoCode(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  const trimmed = raw.trim();
+  if (trimmed.length === 0 || trimmed.length > 64) return undefined;
+  return PROMO_CODE_RE.test(trimmed) ? trimmed : undefined;
+}
+
+export default async function DashboardCartPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ promo?: string }>;
+}) {
   const session = await requireDashboardSession("/dashboard/cart");
+  const { promo } = await searchParams;
+  const promoCode = parsePromoCode(promo);
 
   // The cart context is provided by the root layout (app/layout.tsx) and reads the SAME
   // localStorage the public /pricing page wrote to — so the buyer's cart follows them here.
-  return <CartCheckoutPanel accountId={session.accountId} />;
+  // `exactOptionalPropertyTypes`-safe: spread the prop in only when set, never pass an explicit
+  // `undefined` for an optional string prop.
+  return (
+    <CartCheckoutPanel
+      accountId={session.accountId}
+      {...(promoCode !== undefined ? { promoCode } : {})}
+    />
+  );
 }

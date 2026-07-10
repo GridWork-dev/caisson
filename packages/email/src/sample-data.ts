@@ -61,4 +61,11 @@ export const EMAIL_SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] } =
       email: "sample-buyer@example.com",
       bundle: "Compliance",
     },
+    "abandoned-checkout": {
+      buyerName: "Sample Buyer",
+      lines: [{ label: "Compliance bundle" }],
+      url: "https://caisson.sh/dashboard/cart",
+      discountLabel: "10% off",
+      discountUrl: "https://caisson.sh/dashboard/cart?promo=SAMPLE10",
+    },
   };

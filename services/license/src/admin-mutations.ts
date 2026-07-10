@@ -99,6 +99,11 @@ export const ADMIN_MUTATION_PROVISION_SQL = [
   // the role needs SELECT on the log it already INSERTs into. Read-back of an operator-owned,
   // cross-tenant log by the operator-write role adds no new exposure.
   `GRANT SELECT ON admin_action_log TO admin_write;`,
+  // The abandoned-checkout email scheduler's daily tick (abandoned-checkout-scheduler.ts) has no
+  // account context yet — it needs cross-tenant SELECT to enumerate notice-eligible accounts. It
+  // NEVER writes checkout_abandonment (apps/site writes it, tenant-scoped, on checkout start), so
+  // this is the SELECT-only variant, same rationale as license_grant above.
+  buildAdminSelectPolicySql("checkout_abandonment"),
 ].join("\n");
 
 /** The re-served token an injected `/issue` proxy returns (Fork AM-5); never carries the bearer. */

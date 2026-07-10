@@ -77,6 +77,7 @@ import {
   wormAnchorAccount,
 } from "./admin-mutations.ts";
 import { applyBillingEvent } from "./apply-billing-event.ts";
+import { CHECKOUT_ABANDONMENT_SCHEMA_SQL } from "./checkout-abandonment-store.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
@@ -225,6 +226,9 @@ beforeAll(async () => {
   // created BEFORE ADMIN_MUTATION_PROVISION_SQL (its new license_grant SELECT policy references it).
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   await tp.exec(LICENSE_REVOCATION_SCHEMA_SQL);
+  // Abandoned-checkout: the scheduler's daily tick SELECT policy references this table too, same
+  // "created before ADMIN_MUTATION_PROVISION_SQL" ordering as license_grant above.
+  await tp.exec(CHECKOUT_ABANDONMENT_SCHEMA_SQL);
   const { ADMIN_ACTION_LOG_SCHEMA_SQL, ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL } =
     await import("./admin-audit-log.ts");
   await tp.exec(ADMIN_ACTION_LOG_SCHEMA_SQL);
