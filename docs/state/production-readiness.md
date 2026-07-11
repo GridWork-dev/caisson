@@ -217,7 +217,7 @@ mirror; the post-merge redeploy carries it live together with the reply-to code.
 caisson-site/caisson-license/caisson-admin carried env + code live — all three services report
 `RESEND_FROM=Caisson <no-reply@caisson.sh>`, live route suite 13 pass / 0 fail
 (`docs/deploy/STATE.md` 2026-07-11 email-wave entry). Remaining: the 1Password vault
-`RESEND_FROM` item value update (op session stale at close; queued for the next authed pass) +
+`RESEND_FROM` item value update — DONE 2026-07-11 (fresh op session, field verified `Caisson <no-reply@caisson.sh>`) — +
 the operator Proton send-as alias.
 
 ## What this sweep already fixed
