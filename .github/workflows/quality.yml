@@ -25,7 +25,7 @@ jobs:
   # list via the GitHub REST API); for push it falls back to git against the pre-push commit, which
   # works against the default shallow checkout below (the action fetches additional history itself).
   changes:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 5
     permissions:
       contents: read
@@ -68,7 +68,7 @@ jobs:
   eval:
     needs: changes
     if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.eval == 'true') }}
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -95,7 +95,7 @@ jobs:
   token-drift:
     needs: changes
     if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.ui == 'true') }}
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -120,7 +120,7 @@ jobs:
   # Repo-wide (not path-filtered): knip's cross-workspace unused-export analysis needs the whole
   # tree regardless of which package changed.
   knip:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -162,7 +162,7 @@ jobs:
       matrix:
         include:
           - platform: linux
-            runs-on: caisson-amd64
+            runs-on: blacksmith-4vcpu-ubuntu-2404
           - platform: macos
             runs-on: [self-hosted, gw-macos-arm64]
     runs-on: ${{ matrix.runs-on }}
@@ -206,7 +206,7 @@ jobs:
   site-e2e:
     needs: changes
     if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.site == 'true') }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -234,7 +234,7 @@ jobs:
   # enforced branch protection). The heavy proofs (the full turbo suite, the Java oscal-cli NIST
   # validation) are their own jobs at this same SHA and are REFERENCED by the manifest, not re-run.
   evidence-pack:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5

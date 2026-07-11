@@ -28,7 +28,7 @@ jobs:
   # trivy, osv-scanner, trufflehog (verified-only), Dockerfile digest gate (advisory). SEMGREP_JOBS=1
   # dodges the semgrep-core io_uring crash the fleet box can hit under parallelism.
   deterministic:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     env:
       SEMGREP_JOBS: "1"
@@ -80,7 +80,7 @@ jobs:
   # self-authenticates from the token and pulls the org policy rules. SEMGREP_APP_TOKEN and
   # SEMGREP_RULES are mutually exclusive — never set both.
   semgrep-pro:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     env:
       SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
