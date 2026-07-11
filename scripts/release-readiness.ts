@@ -9,8 +9,9 @@
  * Checks (R3, locked; #0 added by ADR-0325):
  *   0. Release SHA on main — the tag targets a commit that is an ancestor of origin/main (the
  *      merged version-PR commit; a tag cut on a stray branch must never train).
- *   1. CI green on the release SHA — the four required checks (check, standards-gate,
- *      registry-index, oscal-conformance) completed successfully.
+ *   1. CI green on the release SHA — the five required checks (check, standards-gate,
+ *      registry-index, oscal-conformance, deterministic — the last per the ADR-0327 scan-gate
+ *      flip) completed successfully.
  *   2. Changesets drained — no pending .changeset/*.md (the version PR consumed them —
  *      version-pr.yml, ADR-0325; never a feature-branch or tag-path act).
  *   3. CHANGELOGs written — every non-private workspace package's CHANGELOG.md leads with its
@@ -36,6 +37,9 @@ const REQUIRED_CHECKS = [
   "standards-gate",
   "registry-index",
   "oscal-conformance",
+  // ADR-0327 scan-gate flip (CAISSON-95): the deterministic security layer joins the required
+  // set once its installers are pinned — which landed in the same change as this line.
+  "deterministic",
 ] as const;
 
 interface Args {
