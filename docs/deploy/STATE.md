@@ -33,6 +33,60 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-11 — EXECUTED: Kickoff-N cockpit + affiliate + Kickoff-M OSS-launch — full fleet redeploy from post-M `main`
+
+**What deployed:** the 4 Railway app/service deploys from `main`@`cbffbadc` (every deploy SUCCESS) —
+`caisson-license`, `caisson-site`, `caisson-admin`, `caisson-support-bot` (`railway up -y --service
+<name> --ci` per service from repo root). The registry Worker was **not** redeployed — the index/
+ledger republish rides the ADR-0318 W4 gated release train (ADR-0321), and an index-only republish
+now widens the CAISSON-85/86 drift. Consumed diff: Kickoff-N (PR #202) admin cockpit six waves +
+PostHog federation + affiliate `discount_id` capture (ADR-0316/0320); Kickoff-M (PR #204) OSS-launch
+program — append-only mirror history, W4 dormant release train, entity restamp to Caisson Software
+LLC (ADR-0321). **No in-branch version cut** — the ~132 changesets stay UNCONSUMED for the
+operator-gated CI publish run (ADR-0069/0223/0321).
+
+**Order (locked):** license (its `preDeployCommand` migrates the platform DB) → site + admin +
+support-bot in parallel → verify.
+
+**Database (platform Postgres):** `caisson-license` `preDeployCommand`
+(`bun apps/site/lib/deploy-migrate.ts`) applied the shared `@caisson/platform-migrations` chain incl.
+`0025_order_record_discount` + `0026_affiliate_code`. Verified live: `order_record.discount_id`
+PRESENT, `affiliate_code` table PRESENT. Admin mutation surface re-provisioned idempotently
+(`provision-admin-mutation-surface.ts admin_app` — new read policies + grants + widened action CHECK).
+
+**Live-verify (pasted `curl -w "%{http_code}"` from the repo box, 2026-07-11):**
+
+```
+https://caisson.sh/                          200
+https://caisson.sh/docs                       200
+https://caisson.sh/llms.txt                   200   # public for AI-indexing (ADR-0303)
+https://caisson.sh/dashboard                  302 -> gridworkdev.cloudflareaccess.com/.../login/caisson.sh   # commerce CF-Access gated
+https://admin.caisson.sh/ops                  307 -> admin.caisson.sh/login?next=%2Fops   # in-app GitHub OAuth (ADR-0283)
+https://admin.caisson.sh/product              307
+https://admin.caisson.sh/support              307
+https://admin.caisson.sh/architecture         307
+https://admin.caisson.sh/intel                307
+https://license.caisson.sh/health             200
+https://registry.caisson.sh/                  200   # Worker untouched, still live
+https://registry.caisson.sh/index.json        200
+https://registry.caisson.sh/@caisson/kernel   200
+POST https://license.caisson.sh/webhook  (unsigned)       -> 401   # affiliate webhook handler live + fail-closed
+POST https://license.caisson.sh/webhook  (bad Paddle-Sig) -> 401
+```
+
+**Deferred to Gate 2 (commerce readiness — pre-flip sequence item 8):** the full end-to-end
+affiliate sandbox sim (fire a Paddle sandbox `transaction.completed` with `discount_id` + a real
+`account_id` → assert `order_record.discount_id` stamped) and minting the REAL affiliate codes both
+write production rows and are operator-gated commerce acts — NOT deploy-time smoke. Proven at deploy
+time instead: the mint leg is live (prior session, `dsc_01kx6z3yd4bqdhdbbmv5btkf0c`), the webhook
+handler is live + signature-gated (401 above), the stamping code is deployed + unit-tested, the DB
+column exists.
+
+**Follow-up (not the Railway fleet):** `services/intel/migrations/0002_findings_triage.sql` applies
+on the LOCAL intel daemon's next boot (`INTEL_MIGRATE_ON_BOOT`), separate from this redeploy.
+
+---
+
 ## 2026-07-10 — EXECUTED: Kickoff-J verification fleet redeploy — OTLP logs live fleet-wide, docs retrieval stack armed + warm
 
 **What deployed:** all 5 Railway services redeployed from `main`@`50910bbb` via `railway up`
