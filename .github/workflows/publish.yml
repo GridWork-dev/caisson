@@ -58,7 +58,7 @@ jobs:
     # Write/publish privilege belongs on a clean hosted runner, not the fleet (mirrors gridwork-core
     # keeping its egress/write jobs hosted). Main-only + dry-run-by-default, so it runs rarely and
     # gains nothing from fleet compute. `aws` CLI is preinstalled on ubuntu-latest (R2 S3 API upload).
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write

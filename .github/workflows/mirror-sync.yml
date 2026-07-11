@@ -33,7 +33,7 @@ jobs:
   mirror-sync:
     # STAYS GitHub-hosted: holds a cross-repo push token (MIRROR_PUSH_TOKEN) → a write cred to
     # an external repo stays off the fleet, same posture as deploy-railway.yml's RAILWAY_TOKEN.
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       # Inert-until-armed guard (mirrors deploy-railway.yml): `secrets` can't be read in a job/step
