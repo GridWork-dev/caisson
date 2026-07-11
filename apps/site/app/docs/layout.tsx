@@ -14,7 +14,14 @@ export default function Layout({ children }: { children: ReactNode }) {
       sidebar={{ banner: <DocsAskAi /> }}
       {...baseOptions()}
     >
-      {children}
+      {/* fumadocs' DocsLayout renders no <main>/role=main of its own — the root skip link's
+          `href="#main-content"` (apps/site/app/layout.tsx) had no target and no landmark on the
+          docs subtree, unlike every other app-subtree layout (P1-002). `tabIndex={-1}` makes the
+          landmark itself the fragment-navigation focus target, so activating the skip link both
+          scrolls AND moves focus — not just a hash change. */}
+      <main id="main-content" tabIndex={-1}>
+        {children}
+      </main>
     </DocsLayout>
   );
 }

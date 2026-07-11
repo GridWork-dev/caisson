@@ -20,11 +20,13 @@
 import {
   BoxGeometry,
   Clock,
+  getConsoleFunction,
   InstancedMesh,
   Matrix4,
   PerspectiveCamera,
   Quaternion,
   Scene,
+  setConsoleFunction,
   ShaderMaterial,
   Vector2,
   Vector3,
@@ -147,16 +149,41 @@ export function mountDepthField(
 ): FieldHandle | null {
   const pal = dark ? DARK : LIGHT;
 
-  let renderer: WebGLRenderer;
+  // Capability probe BEFORE touching three.js at all (browser-audit P2-007): when Chrome can't
+  // allocate a context, `new THREE.WebGLRenderer()` doesn't just throw once and stop — its
+  // constructor calls three's own `error()` (→ console.error) on the way to re-throwing, so a
+  // guarded `new WebGLRenderer()` still leaves a logged error every time this mounts. The probe
+  // must carry the REAL context attributes: a canvas hands back its already-created context on
+  // every later `getContext` call and silently ignores the second attribute dict, so attributes
+  // passed only to the WebGLRenderer constructor would never apply. Probe with them and hand the
+  // context to three below — that keeps `powerPreference: "low-power"` honest (an ambient bg must
+  // not wake the discrete GPU).
+  let gl: WebGL2RenderingContext | null;
   try {
-    renderer = new WebGLRenderer({
-      canvas,
-      antialias: true,
+    gl = canvas.getContext("webgl2", {
       alpha: true,
-      powerPreference: "low-power", // an ambient bg must not wake the discrete GPU
+      antialias: true,
+      powerPreference: "low-power",
     });
   } catch {
     return null;
+  }
+  if (!gl) return null;
+
+  let renderer: WebGLRenderer;
+  const prevConsoleFn = getConsoleFunction();
+  // Belt-and-suspenders for the narrower mid-init failure (bare probe succeeds, but the renderer's
+  // OWN context-attribute request fails) — silence three.js's own console hook for just this one
+  // attempt via its documented interception API, not a global console.error patch. Always restored,
+  // success or failure, so any later legitimate three.js error still surfaces normally.
+  setConsoleFunction(() => {});
+  try {
+    // Attributes already live on the probed context above — three reuses it verbatim.
+    renderer = new WebGLRenderer({ canvas, context: gl });
+  } catch {
+    return null;
+  } finally {
+    setConsoleFunction(prevConsoleFn);
   }
   // Software rasterizers (SwiftShader/llvmpipe — GPU-less VMs, remote desktops, CI) burn whole
   // CPU cores per frame on this scene; the poster is the designed experience there, same as

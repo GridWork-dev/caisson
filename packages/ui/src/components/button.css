@@ -1,5 +1,6 @@
 /* Button — recipe reference (ADR-0099). Co-located; variants via [data-*]; values via --cs-* only. */
 .cs-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -19,6 +20,18 @@
     color var(--cs-duration-fast) var(--cs-ease-out),
     box-shadow var(--cs-duration-fast) var(--cs-ease-out),
     transform var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+/* 40px visual, 44px hit area (browser-audit P2-006) — the default padding computes to ~40px
+ * tall. A full-width, vertically-centered invisible pseudo-element grows only the vertical
+ * catchment (width already clears 44px on every text-bearing CTA) without changing the pill's
+ * visible height — the same pattern as the rest of the sweep. */
+.cs-button::before {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: 2.75rem;
+  transform: translateY(-50%);
 }
 
 /* Tactile press — a 1px settle on POINTER activation only. `:not(:focus-visible)` excludes

@@ -1,0 +1,12 @@
+/* CartTrigger — the nav's cart icon button renders at 2.25rem (36px, browser-audit P2-006), under
+ * the Caisson 44px touch target. The button itself already sets `position: relative` inline (for
+ * the count badge); this pseudo-element centers an invisible 44x44 hit area over it without
+ * changing the visible chip size. */
+.hitArea::before {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
+}

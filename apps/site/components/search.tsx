@@ -15,7 +15,7 @@ import {
   type SharedProps,
 } from "fumadocs-ui/components/dialog/search";
 import { Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AskAiPanel } from "./ask-ai/ask-ai-panel";
 import styles from "./search.module.css";
@@ -35,6 +35,23 @@ export default function DefaultSearchDialog(props: SharedProps) {
   });
   const [tab, setTab] = useState<Tab>("search");
 
+  // P1-004 (browser audit): every trigger that opens this dialog (the marketing nav's
+  // NavSearchTrigger, fumadocs' own sidebar SearchTrigger, the mobile drawer) calls the shared
+  // `setOpenSearch(true)` directly instead of rendering Radix's `<Dialog.Trigger>` — so Radix's
+  // built-in "return focus to the trigger on close" never fires (its internal `triggerRef` stays
+  // null). Track whatever element was focused when the dialog opened and restore it ourselves on
+  // every dismissal path (Escape, the close button, backdrop click all funnel through Radix's
+  // `onCloseAutoFocus`).
+  const triggerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (props.open) {
+      triggerRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+    }
+  }, [props.open]);
+
   const openAsk = (): void => {
     setTab("ask");
     if (typeof window !== "undefined") {
@@ -50,7 +67,12 @@ export default function DefaultSearchDialog(props: SharedProps) {
       {...props}
     >
       <SearchDialogOverlay />
-      <SearchDialogContent>
+      <SearchDialogContent
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          triggerRef.current?.focus();
+        }}
+      >
         <div
           className={styles.tabs}
           role="tablist"
