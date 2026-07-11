@@ -6,8 +6,9 @@ post-wave `main`, PRs #205–#207 merged + site redeployed). Runs as its own ses
 with nothing — main session closed out at handoff; no tree contention.
 
 **Owns:** ADR-0323 D2 (Playwright graduation, CAISSON-93) · ADR-0324 D4 (the email wave,
-CAISSON-92) · Linear CAISSON-73 · CAISSON-55 · CAISSON-63 · CAISSON-62 (all Todo, routed this
-sitting).
+CAISSON-92) · Linear CAISSON-73. (CAISSON-55/63/62 were routed here at triage, then the
+close-out verify proved all three ALREADY SHIPPED by Kickoff-H PR #198 / Kickoff-K — closed
+Done with evidence 2026-07-11; they are NOT in scope.)
 
 ## Scope (ordered)
 
@@ -34,13 +35,11 @@ sitting).
    (`docs/state/production-readiness.md` §email + public-surface map if it lists contacts).
 3. **CAISSON-73** — `/login` production hydration mismatch (React #418), caught by
    `apps/site/live/prod-routes.live.test.ts`; fix so the all-seams live run goes green.
-4. **CAISSON-55** — registry Worker app-level rate limit on anon catalog + tarball routes
-   (ADR-0112 token-bucket shape adapted to Workers, DO- or KV-backed).
-5. **CAISSON-63** — registry free-floor audit: Worker anon response vs the ADR-0136 open set
-   for the 2026-07-06 carve SKUs + ui-pro; add the regression test pinning the anon floor list.
-6. **CAISSON-62** — GH Actions SHA-pin sweep: pin the remaining mutable-tag third-party
-   actions (checkout@v5, cache@v4, upload-artifact@v4, setup-java@v4) by SHA across the 8
-   workflows.
+   (Former items 4–6 — CAISSON-55 Worker rate limit, CAISSON-63 free-floor audit, CAISSON-62
+   SHA-pin sweep — dropped at close-out verify: all three shipped via Kickoff-H W1
+   (`registry/worker/rate-limit.ts` 429-proven live, `registry/worker/free-floor.test.ts`) and
+   Kickoff-K (46/46 action refs SHA-pinned, re-verified 0 unpinned). The sweep-filed Linear
+   issues predated those merges by hours and are now Done.)
 
 ## Binding rules
 
