@@ -20,11 +20,13 @@
 import {
   BoxGeometry,
   Clock,
+  getConsoleFunction,
   InstancedMesh,
   Matrix4,
   PerspectiveCamera,
   Quaternion,
   Scene,
+  setConsoleFunction,
   ShaderMaterial,
   Vector2,
   Vector3,
@@ -147,7 +149,26 @@ export function mountDepthField(
 ): FieldHandle | null {
   const pal = dark ? DARK : LIGHT;
 
+  // Capability probe BEFORE touching three.js at all (browser-audit P2-007): when Chrome can't
+  // allocate a context, `new THREE.WebGLRenderer()` doesn't just throw once and stop — its
+  // constructor calls three's own `error()` (→ console.error) on the way to re-throwing, so a
+  // guarded `new WebGLRenderer()` still leaves a logged error every time this mounts. A plain
+  // `getContext()` probe here — the same context type three.js requests internally ('webgl2'), so
+  // it returns the already-created context rather than a conflicting null on the real construction
+  // below — catches the true-negative case with zero three.js code ever running.
+  try {
+    if (!canvas.getContext("webgl2")) return null;
+  } catch {
+    return null;
+  }
+
   let renderer: WebGLRenderer;
+  const prevConsoleFn = getConsoleFunction();
+  // Belt-and-suspenders for the narrower mid-init failure (bare probe succeeds, but the renderer's
+  // OWN context-attribute request fails) — silence three.js's own console hook for just this one
+  // attempt via its documented interception API, not a global console.error patch. Always restored,
+  // success or failure, so any later legitimate three.js error still surfaces normally.
+  setConsoleFunction(() => {});
   try {
     renderer = new WebGLRenderer({
       canvas,
@@ -157,6 +178,8 @@ export function mountDepthField(
     });
   } catch {
     return null;
+  } finally {
+    setConsoleFunction(prevConsoleFn);
   }
   // Software rasterizers (SwiftShader/llvmpipe — GPU-less VMs, remote desktops, CI) burn whole
   // CPU cores per frame on this scene; the poster is the designed experience there, same as
