@@ -29,7 +29,6 @@ import {
   checkDocFreshness,
   checkDocsSurface,
   checkFrontmatterFreshness,
-  checkLiveDocArchiveLink,
   checkPackageCountParity,
   computeBranchHygiene,
   computePackageCounts,
@@ -335,32 +334,6 @@ describe("check #2 — frontmatter freshness", () => {
 // ============================================================================================
 
 describe("check #3 — archive integrity", () => {
-  test("3a fires: a status:live doc linking docs/archive/ directly", () => {
-    const doc: FrontmatterDoc = {
-      path: "docs/state/foo.md",
-      text: "---\nupdated: 2026-07-05\nstatus: live\n---\nSee [old](../archive/foo.md).\n",
-    };
-    expect(checkLiveDocArchiveLink(doc)).toEqual([
-      "docs/state/foo.md: status: live but links docs/archive/ directly — link the docs/state/ tombstone instead",
-    ]);
-  });
-
-  test("3a green: a status:live doc with no archive link", () => {
-    const doc: FrontmatterDoc = {
-      path: "docs/state/foo.md",
-      text: "---\nupdated: 2026-07-05\nstatus: live\n---\nNo archive links here.\n",
-    };
-    expect(checkLiveDocArchiveLink(doc)).toEqual([]);
-  });
-
-  test("3a does not fire for a tombstone (status: archived) that links the archive", () => {
-    const doc: FrontmatterDoc = {
-      path: "docs/state/foo.md",
-      text: "---\nupdated: 2026-07-05\nstatus: archived\n---\nSee [old](../archive/foo.md).\n",
-    };
-    expect(checkLiveDocArchiveLink(doc)).toEqual([]);
-  });
-
   test("3b fires: an archived doc committed again after its own updated: date", () => {
     withTempDir((dir) => {
       commitFile(
@@ -439,19 +412,24 @@ describe("check #3 — archive integrity", () => {
     });
   });
 
-  test("aggregate checkArchiveIntegrity combines (a) and (b) into one CheckResult", () => {
-    const liveDoc: FrontmatterDoc = {
-      path: "docs/state/foo.md",
-      text: "---\nupdated: 2026-07-05\nstatus: live\n---\nSee [old](../archive/foo.md).\n",
+  test("aggregate checkArchiveIntegrity flags a modified archived doc", () => {
+    const archivedDoc: FrontmatterDoc = {
+      path: "docs/archive/foo.md",
+      text: "---\nupdated: 2026-01-01\nstatus: archived\n---\nv1\n",
     };
     const result = checkArchiveIntegrity(
-      [liveDoc],
-      [],
-      () => false,
+      [archivedDoc],
+      () => true,
       () => null,
     );
     expect(result.status).toBe("drift");
     expect(result.id).toBe("archive-integrity");
+    const green = checkArchiveIntegrity(
+      [archivedDoc],
+      () => false,
+      () => null,
+    );
+    expect(green.status).toBe("green");
   });
 });
 
@@ -820,6 +798,7 @@ describe("check #8 — docs-surface", () => {
   test("green: allowlisted root markdown + intact AGENTS.md symlink", () => {
     const result = checkDocsSurface({
       rootMdFiles: ["AGENTS.md", "CLAUDE.md", "README.md"],
+      stateMdFiles: ["outstanding-work.md", "decisions-and-forks.md"],
       agentsMdLinkTarget: "CLAUDE.md",
     });
     expect(result.status).toBe("green");
@@ -828,15 +807,27 @@ describe("check #8 — docs-surface", () => {
   test("drift: stray root markdown outside the allowlist", () => {
     const result = checkDocsSurface({
       rootMdFiles: ["CLAUDE.md", "README.md", "AGENTS.md", "plan.md"],
+      stateMdFiles: [],
       agentsMdLinkTarget: "CLAUDE.md",
     });
     expect(result.status).toBe("drift");
     expect(result.details[0]).toContain("plan.md");
   });
 
+  test("drift: a non-board file lands in docs/state/", () => {
+    const result = checkDocsSurface({
+      rootMdFiles: ["AGENTS.md", "CLAUDE.md", "README.md"],
+      stateMdFiles: ["outstanding-work.md", "some-runbook-2026-08-01.md"],
+      agentsMdLinkTarget: "CLAUDE.md",
+    });
+    expect(result.status).toBe("drift");
+    expect(result.details[0]).toContain("some-runbook-2026-08-01.md");
+  });
+
   test("drift: AGENTS.md missing or not a symlink", () => {
     const result = checkDocsSurface({
       rootMdFiles: ["AGENTS.md", "CLAUDE.md", "README.md"],
+      stateMdFiles: [],
       agentsMdLinkTarget: null,
     });
     expect(result.status).toBe("drift");
@@ -846,6 +837,7 @@ describe("check #8 — docs-surface", () => {
   test("drift: AGENTS.md symlink pointing at the wrong file", () => {
     const result = checkDocsSurface({
       rootMdFiles: ["AGENTS.md", "CLAUDE.md", "README.md"],
+      stateMdFiles: [],
       agentsMdLinkTarget: "docs/product.md",
     });
     expect(result.status).toBe("drift");

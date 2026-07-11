@@ -63,7 +63,7 @@ reconciled yet — set it rather than letting a reader trust drifted prose.
 ## Cross-links
 
 Sibling files are referenced by bare filename (`pricing-packaging.md`), out-of-directory files by
-repo-root-relative path in backticks (`docs/state/launch-runbook.md`) or a `../` relative link.
+repo-root-relative path in backticks (`docs/ops/launch-runbook.md`) or a `../` relative link.
 The **catalog-doctrine fork** (whether editions become bundle options over an individually-
 sellable package catalog) CLOSED 2026-07-06 — ADR-0257 (vocabulary: six bundles) / ADR-0258
 (numbers), live in Paddle SANDBOX. Files that touch packaging structure now state the six-bundle

@@ -8,7 +8,7 @@ owner: operator (business/legal track)
 
 The business/legal side of the commerce flip. This doc is the SOT for entity facts and the
 formation → banking → Paddle-production order of operations. Product/launch mechanics stay in
-`docs/state/launch-runbook.md` (this doc feeds its §2 Paddle-production prerequisite).
+`docs/ops/launch-runbook.md` (this doc feeds its §2 Paddle-production prerequisite).
 Personal details (member identity documents, SSN, home address) live OUTSIDE the repo — never
 here.
 

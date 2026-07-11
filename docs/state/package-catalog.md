@@ -63,7 +63,7 @@ from sale — see the dedicated section below.
 
 **† = one of the 8 pre-rework commercial modules that the registry Worker previously over-served FREE.**
 License-keyed gating (ADR-0136) shipped to production and was independently **VERIFIED live 2026-07-05**
-(`docs/state/public-surface-minimization.md`) — an anonymous fetch of `GET /index.json` and
+(`docs/archive/public-surface-minimization.md`) — an anonymous fetch of `GET /index.json` and
 `GET /modules/:id` for all 8 now 404s fail-closed; see §3 note. The marker is historical
 (pre-catalog-rework) and is not extended to the new carve/platform SKUs below — their Worker-gating
 status is untracked by this note (out of scope for this pass). Full build-status prose for any row:
@@ -344,7 +344,7 @@ if the open set changes). Commercial → open is always allowed; open → commer
 (`field-crypto`, `ai-meter`, `audit-worm`, `ai-evals`, `guardrails`, `prompt-registry`, `local-store`,
 `agent-kernel`) for free. ADR-0136 re-keys the floor on `license === "Apache-2.0"` (built on this
 branch), closing that leak; the live deployed Worker shipped the re-keyed floor and was independently
-**VERIFIED against production 2026-07-05** (`docs/state/public-surface-minimization.md`) — all 8 now
+**VERIFIED against production 2026-07-05** (`docs/archive/public-surface-minimization.md`) — all 8 now
 404 fail-closed for anonymous callers. ADR-0136 also flips `cli`,
 `migrate`, and `license-verify` to Apache-2.0, so they are now legitimately open — leaving `pricebook`
 as the only commercial base-kind package intentionally served free (never had a standalone price to
@@ -389,4 +389,4 @@ of scope for this pass — flagged, not resolved).
 - **As-if-built storefront availability** (why every SKU shows regardless of code-completeness): `knowledge/decisions/ADR-0130-storefront-as-if-built-availability.md`
 - **Open-core license split**: `knowledge/decisions/ADR-0094-open-core-base-apache2.md`, `knowledge/decisions/ADR-0097-registry-schema-service-split.md`
 - **Registry Worker entitlement filtering**: `knowledge/decisions/ADR-0047-registry-readpath-worker-seam.md`
-- **Sibling docs from this session**: `docs/state/refactor-split-opportunities.md` (package-split candidates), `docs/state/public-surface-minimization.md` (public-surface reduction)
+- **Sibling docs from this session**: `docs/archive/refactor-split-opportunities.md` (package-split candidates), `docs/archive/public-surface-minimization.md` (public-surface reduction)

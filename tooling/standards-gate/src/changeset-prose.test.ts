@@ -94,7 +94,7 @@ describe("checkChangesetProse", () => {
   test("an internal repo path in the body fails", () => {
     write(
       "leak-path.md",
-      '---\n"@caisson/audit-harness": patch\n---\n\nSee docs/state/harvest-program.md for the full list.\n',
+      '---\n"@caisson/audit-harness": patch\n---\n\nSee docs/archive/harvest-program.md for the full list.\n',
     );
     const f = checkChangesetProse(root);
     expect(f).toHaveLength(1);

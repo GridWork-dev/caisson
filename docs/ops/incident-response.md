@@ -17,11 +17,11 @@ SWEEP→SHIP loop.
 
 ## Severity levels
 
-| Level                   | Definition                                                                                                  | Example                                                                                                                                                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **SEV1 — service down** | A production surface is unreachable or returning errors for all/most requests. Revenue- or trust-affecting. | `caisson.sh` 5xx-ing site-wide; the license issuer down (buyers can't activate purchases); the Paddle webhook 5xx-ing (grants silently stop landing).                    |
-| **SEV2 — degraded**     | The service is reachable but a real feature is broken or materially slow for a subset of requests/users.    | The dashboard's updates-window read is stale/wrong; one Railway service crash-looping while its siblings are fine; a job queue (pg-boss) backing up.                     |
-| **SEV3 — minor**        | Cosmetic, isolated, or self-healing. No buyer-facing functional loss.                                       | A single transient 502 on cold start (see `docs/state/429-root-cause-2026-07-09.md`'s "Not the same issue" section for a worked example); a stale admin dashboard chart. |
+| Level                   | Definition                                                                                                  | Example                                                                                                                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SEV1 — service down** | A production surface is unreachable or returning errors for all/most requests. Revenue- or trust-affecting. | `caisson.sh` 5xx-ing site-wide; the license issuer down (buyers can't activate purchases); the Paddle webhook 5xx-ing (grants silently stop landing).                      |
+| **SEV2 — degraded**     | The service is reachable but a real feature is broken or materially slow for a subset of requests/users.    | The dashboard's updates-window read is stale/wrong; one Railway service crash-looping while its siblings are fine; a job queue (pg-boss) backing up.                       |
+| **SEV3 — minor**        | Cosmetic, isolated, or self-healing. No buyer-facing functional loss.                                       | A single transient 502 on cold start (see `docs/archive/429-root-cause-2026-07-09.md`'s "Not the same issue" section for a worked example); a stale admin dashboard chart. |
 
 Severity can escalate — reassess if a SEV2/3 doesn't resolve within its expected window (a
 crash-looping service that doesn't recover after 2-3 restart cycles is a SEV1, not a persistent

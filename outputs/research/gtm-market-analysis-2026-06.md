@@ -140,4 +140,4 @@ re-commit + a grandfathering decision, not a silent edit.)
 | **Free EU-AI-Act eval module (C3/G2)?**                                | Lean yes — ship a free sample as the funnel evaluation aid                     | Medium                           |
 
 _All other items (G1/G3/G5/G6/G7, I1–I7) are additive backlog or doc-only — no operator fork; they
-land in the P6/GTM content plan + `docs/state/readiness-and-backlog.md`._
+land in the P6/GTM content plan + `docs/archive/readiness-and-backlog.md`._

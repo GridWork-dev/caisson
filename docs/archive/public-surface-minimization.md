@@ -1,6 +1,6 @@
 ---
-updated: 2026-07-05
-status: live
+updated: 2026-07-11
+status: archived
 ---
 
 # Public-surface minimization

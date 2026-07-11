@@ -1,6 +1,6 @@
 ---
-updated: 2026-07-10
-status: live
+updated: 2026-07-11
+status: archived
 grounds:
   - docs/state/providers.md
   - knowledge/decisions/ADR-0224-live-harness-fork-locks.md

@@ -58,7 +58,7 @@ framing is stale for these rows:
 - Still genuinely open beyond the above (2026-07-06 snapshot; see the 2026-07-07 reconcile above
   for what since shipped): GCS/Azure Blob (now locked via ADR-0267 for GCS), BullMQ/Inngest,
   Clerk/Auth0, Azure KV/Vault KMS, Slack/Telegram chat, analytics port (1D scope).
-- Launch gating for every transport row now lives in `docs/state/live-transport-checklist.md`
+- Launch gating for every transport row now lives in `docs/ops/live-transport-checklist.md`
   (ADR-0265, enterprise-ready sweep).
 
 **Kickoff-F build wave LANDED (2026-07-06, same day, post-reconcile):**

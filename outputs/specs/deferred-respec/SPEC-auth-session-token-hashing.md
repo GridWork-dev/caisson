@@ -163,7 +163,7 @@ left **intact** by Path A; ADR-0176 (`account_member`) is **unaffected** — acc
 after session resolution and does not touch the token; ADR-0005 (fail-closed RLS) is **reinforced** by
 the construction-time throw on a missing HMAC key; ADR-0014 (numbered migrations) is **realized** by
 the column addition; ADR-0133 (harvest program) is **realized** — this flips lift-sweep #9 from
-DEFERRED to built (`docs/state/harvest-program.md:219`).
+DEFERRED to built (`docs/archive/harvest-program.md:219`).
 
 ## Tasks
 

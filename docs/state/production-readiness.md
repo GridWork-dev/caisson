@@ -3,9 +3,9 @@ updated: 2026-07-11
 status: live
 grounds:
   - docs/state/outstanding-work.md
-  - docs/state/launch-runbook.md
+  - docs/ops/launch-runbook.md
   - docs/deploy/STATE.md
-  - docs/state/live-transport-checklist.md
+  - docs/ops/live-transport-checklist.md
 ---
 
 # Production readiness — Caisson
@@ -14,7 +14,7 @@ Six-dimension readiness assessment from the 2026-07-09 whole-repo sweep (16-agen
 2-agent re-run, every claim evidence-cited at assessment time). Verdicts use three grades:
 **ready** (no blocking gaps) · **gaps** (launchable posture with named debt) · **blocked**
 (cannot take real money / go public until fixed). The launch-day execution order lives in
-`docs/state/launch-runbook.md`; this doc is the _state_, not the runbook. Items marked
+`docs/ops/launch-runbook.md`; this doc is the _state_, not the runbook. Items marked
 **(tracked)** have a row in `docs/state/outstanding-work.md`.
 
 ## Verdicts

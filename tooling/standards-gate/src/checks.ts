@@ -1302,7 +1302,7 @@ const CHANGESET_LEAK_RULES: { rule: string; re: RegExp; label: string }[] = [
   },
   {
     rule: "changeset-prose-path",
-    re: /\b(?:docs\/state|outputs|knowledge)\//g,
+    re: /\b(?:docs\/(?:state|archive|ops)|outputs|knowledge)\//g,
     label: "internal repo path",
   },
   {

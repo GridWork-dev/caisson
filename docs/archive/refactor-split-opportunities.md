@@ -1,6 +1,6 @@
 ---
-updated: 2026-07-09
-status: live
+updated: 2026-07-11
+status: archived
 ---
 
 # Refactor / split opportunities — ranked, repo-grounded

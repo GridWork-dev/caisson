@@ -378,7 +378,7 @@ the board rather than as new ADRs.
 ### Harvest grill session (0133-0135, 2026-06-30) - status `accepted`
 
 Document-only locks — no code lands under any of these three. Consolidated ranked tracking doc:
-`docs/state/harvest-program.md`. Sequenced strictly post-go-live, after the pricing/store-rework set
+`docs/archive/harvest-program.md`. Sequenced strictly post-go-live, after the pricing/store-rework set
 above and the Railway cutover.
 
 | #                                                                                    | Title                                                                            | Domain             | Status   | Relations                                          |

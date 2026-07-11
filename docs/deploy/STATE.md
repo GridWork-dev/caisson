@@ -3,7 +3,7 @@ updated: 2026-07-11
 status: live
 grounds:
   - docs/build-state.md
-  - docs/state/launch-runbook.md
+  - docs/ops/launch-runbook.md
 ---
 
 # Deploy log
@@ -18,8 +18,8 @@ entry except to fix a factual error — new truth is a new entry, per the frontm
 convention (`outputs/archive/specs/sot-expansion/SPEC.md` §1.4).
 
 **Seed note:** the entries below (2026-07-01 through 2026-07-05) are seeded RETROACTIVELY from
-`docs/build-state.md` banners, `docs/state/decisions-and-forks.md`, `docs/state/launch-runbook.md`,
-and `docs/state/opportunity-backlog.md`. None of the seed entries carry raw pasted terminal output —
+`docs/build-state.md` banners, `docs/state/decisions-and-forks.md`, `docs/ops/launch-runbook.md`,
+and `docs/archive/opportunity-backlog.md`. None of the seed entries carry raw pasted terminal output —
 none survived in the source docs verbatim. Where a source recorded a concrete result (an HTTP status,
 a fingerprint, a row count) that value is quoted; where it only recorded a verification claim in
 prose, this entry cites the doc/section that made the claim instead of fabricating a transcript.
@@ -764,7 +764,7 @@ edition grant rows remain` (0 migrated, 0 duplicates across all four legacy→ca
 
 **Not done (by design, this act):** R2 tarball publish stays behind `confirm=publish` dispatch;
 ui-pro first-publish HELD for the hardening + gallery wave (operator picker); CF-Access flip and
-Paddle production remain launch-gate acts per `docs/state/launch-runbook.md`.
+Paddle production remain launch-gate acts per `docs/ops/launch-runbook.md`.
 
 ## 2026-07-07 — staged #131+#132 redeploy EXECUTED: Worker + license + site + admin, expiry scheduler armed, admin re-provision
 
@@ -810,7 +810,7 @@ admin_app` · `roles: admin, admin_write, app`.
 
 **Not done (by design, this act):** R2 tarball upload for the 29 new sidecar rows stays behind its
 own gated `confirm=publish` dispatch; CF-Access flip, Paddle production — all remain operator-gated
-launch acts per `docs/state/launch-runbook.md`.
+launch acts per `docs/ops/launch-runbook.md`.
 
 ## 2026-07-06/07 — triple-merge deploy: six-bundle catalog live (gated), Worker-first claims rollout
 
@@ -853,7 +853,7 @@ drivers; `services/docs` regenerates its pricing corpus from the new bundle SOT.
 
 **Not done (by design, this act):** CF-Access flip, Paddle production credentials/catalog, Worker
 npm-delivery R2 activation (`CAISSON_PUBLISH_DRY_RUN` untouched) — all remain operator-gated
-launch acts per `docs/state/launch-runbook.md`.
+launch acts per `docs/ops/launch-runbook.md`.
 
 ---
 
@@ -884,9 +884,9 @@ to armed.
 - Active issuer fingerprint **`a170f7a0ab89bab0`** confirmed baked into `caisson-license` +
   the registry Worker post-redeploy; old fingerprints `0ae7d2abb886ca3d` / `c0bfb8277a840d2e` retired
   (`infra/license-issuer/ISSUER_PUBLIC_KEY.md` retired-keys table, cited by
-  `docs/state/launch-runbook.md` §0).
+  `docs/ops/launch-runbook.md` §0).
 - Edge deny-set: "a revoke now republishes to the edge and `edgePublish` reports `ok`/`failed`, no
-  longer `skipped`" (`docs/state/launch-runbook.md` §7, "Operator-gated DEPLOY — EXECUTED
+  longer `skipped`" (`docs/ops/launch-runbook.md` §7, "Operator-gated DEPLOY — EXECUTED
   2026-07-05" paragraph).
 - Visual-audit ledger reconciled against **fresh 48-route × 4-variant captures**: 82 closed · 125
   open · 14 accepted, 221/221 findings re-verified (`docs/state/decisions-and-forks.md`, "State
@@ -895,7 +895,7 @@ to armed.
 
 **Not yet done (flagged, not silently dropped):** `OPENROUTER_API_KEY` / `DISCORD_TOKEN` /
 `MIRROR_PUSH_TOKEN` rotations remain operator-owed and block the `caisson-oss` public flip
-(`docs/state/launch-runbook.md` §1.1 sequencing gate; `docs/state/opportunity-backlog.md` residue
+(`docs/ops/launch-runbook.md` §1.1 sequencing gate; `docs/archive/opportunity-backlog.md` residue
 item 3).
 
 ---
@@ -922,16 +922,16 @@ bumps) — fixed in the same window (#105/#106) before the install-proof could g
 **Live-verify evidence (as recorded in source docs):**
 
 - "4 Railway services redeployed (site/license/docs/support-bot — ask-AI + Turnstile env, PostHog
-  purchase capture, expanded docs corpus re-embedded)" (`docs/state/opportunity-backlog.md`, snapshot
+  purchase capture, expanded docs corpus re-embedded)" (`docs/archive/opportunity-backlog.md`, snapshot
   paragraph, lines 17–19).
 - "the registry Worker redeployed with `registry.caisson.sh` custom domain + TARBALLS + REVOCATIONS
   R2 bindings, the Paddle SANDBOX catalog verified reconciled (4 dropped products archived, 19 prices
   match), and the first live changeset consume run" (same doc, lines 20–23).
 - Residue item (1) marked **DONE 2026-07-03/04** — "live `bun install` proof + first live consume
-  ran (two pipeline bugs fixed en route, PRs #105/#106)" (`docs/state/opportunity-backlog.md` line
+  ran (two pipeline bugs fixed en route, PRs #105/#106)" (`docs/archive/opportunity-backlog.md` line
   26).
 - Mac-mini CI runner (org-transfer orphan) resolved same window — "scale set re-registered,
-  `native-ext (macos)` green" (`docs/state/opportunity-backlog.md` line 36, residue item 6).
+  `native-ext (macos)` green" (`docs/archive/opportunity-backlog.md` line 36, residue item 6).
 
 ---
 
@@ -960,7 +960,7 @@ WORM store pointed at the real `caisson-worm` S3 Object-Lock bucket.
 - **CAISSON-16** — "migration checksum drift at v3 (PR #69 edited a pinned `*_SCHEMA_SQL` in place)
   reconciled read-only, blessed as the sole drift, then migrations `0006`–`0009` applied to the live
   Railway PG (the ledger was at v1–v5 — `0006 account_member` had never reached prod)"
-  (`docs/state/launch-runbook.md` §7 executed-banner).
+  (`docs/ops/launch-runbook.md` §7 executed-banner).
 - **CAISSON-17** — admin mutation surface provisioned; "grantee gotcha — the first run granted
   `admin/admin_write/app` to `postgres` (CURRENT_USER default), not `admin_app`; fixed with an
   explicit grant, then a live grant→revoke round-trip PASSED (dual log rows + WORM anchors, typo'd

@@ -74,7 +74,7 @@ These BLOCK a real sale and are **operator-owned** (I can't do them from the box
    `SUPPORT_CHANNEL_ID`/`MEMBER_ROLE_ID` on the box, scope the bot role down from Administrator.
 4. **Rotate the leaked Discord/OpenRouter creds** — **DONE 2026-07-08** (`OPENROUTER_API_KEY` split
    into six per-service keys, `DISCORD_TOKEN` regenerated; see
-   `docs/state/operator-runbook-2026-07-08.md` Phase 1.1/1.2 and `docs/deploy/STATE.md`'s
+   `docs/archive/operator-runbook-2026-07-08.md` Phase 1.1/1.2 and `docs/deploy/STATE.md`'s
    2026-07-08 entry). Only `MIRROR_PUSH_TOKEN` rotation is still open (runbook Phase 1.3).
 5. Legal stack (above) live on the site + the Paddle attribution line.
 

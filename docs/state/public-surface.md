@@ -9,7 +9,7 @@ Dated **2026-07-02**, §2 refreshed **2026-07-06** for the six-bundle catalog re
 (ADR-0257/0258 — supersedes the edition-era §2 below). This file OWNS the **npm-distribution-reality** view: for every
 `packages/*` module — is it Apache-2.0 or `LicenseRef-Caisson-Commercial`, and where does the
 code actually land today versus where the plan says it lands. `docs/state/package-catalog.md`
-owns the license/price/sold-as catalog and `docs/state/public-surface-minimization.md` owns the
+owns the license/price/sold-as catalog and `docs/archive/public-surface-minimization.md` owns the
 registry-Worker free-floor leak analysis (ADR-0136) — this file cites both, it does not restate
 their tables. What is new here and lives nowhere else: the npm-scope + public-mirror-repo
 distribution reality (§3–4, forks CLOSED by ADR-0222/0223 on 2026-07-02).

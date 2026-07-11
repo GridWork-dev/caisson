@@ -8,14 +8,14 @@ grounds:
   - knowledge/decisions/ADR-0254-measurement-pair-citation-loop-docs-funnel.md
   - outputs/research/support-strategy.md
   - docs/state/linear-integration.md
-  - docs/state/launch-runbook.md
+  - docs/ops/launch-runbook.md
   - outputs/research/monorepo-bigpicture-2026-07.md
 ---
 
 # Channels and launch
 
 Distribution bets, the support surface, and the business-level shape of go-live. Runbook mechanics
-(Terraform, Paddle catalog swap, credential rotation) stay in `docs/state/launch-runbook.md` — this
+(Terraform, Paddle catalog swap, credential rotation) stay in `docs/ops/launch-runbook.md` — this
 page covers what channel and sequencing decisions are locked, not how to execute them.
 
 ## Channel bets
@@ -83,7 +83,7 @@ threshold needs live traffic to calibrate against.
 ## Launch sequence — the business view
 
 The mechanical flip (Paddle production catalog, Cloudflare Access gate removal, credential
-rotation) is fully specified in `docs/state/launch-runbook.md` — read that file to execute it.
+rotation) is fully specified in `docs/ops/launch-runbook.md` — read that file to execute it.
 At the business level, three things must land before or at that flip:
 
 1. **Commerce policy locked today must reach the buyer-facing surfaces before the flip.**
@@ -102,7 +102,7 @@ At the business level, three things must land before or at that flip:
    `pricing-packaging.md` for the current six-bundle matrix.
 
 Launch itself is DEPLOY-class and operator-executed, never part of the autonomous build loop
-(`docs/state/launch-runbook.md` header) — this page tracks the channel/business readiness inputs
+(`docs/ops/launch-runbook.md` header) — this page tracks the channel/business readiness inputs
 into that act, not the act itself.
 
 ## Named unbuilt items

@@ -1,6 +1,6 @@
 ---
 updated: 2026-07-11
-status: live
+status: archived
 grounds:
   - docs/state/outstanding-work.md
   - docs/state/launch-runbook.md

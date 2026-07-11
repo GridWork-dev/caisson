@@ -8,7 +8,7 @@
 // STRICT FAIL-OPEN is the binding invariant: a deny-set fetch/parse failure must NEVER break installs.
 // Any transport or validation error keeps the PRIOR set (empty on first failure = nothing denied), so a
 // missing binding / network blip / malformed artifact degrades to "nobody revoked", never a 500 and
-// never a blocked buyer. The staleness cost of that choice is documented in docs/state/launch-runbook.md.
+// never a blocked buyer. The staleness cost of that choice is documented in docs/ops/launch-runbook.md.
 import { z } from "zod";
 
 /**
