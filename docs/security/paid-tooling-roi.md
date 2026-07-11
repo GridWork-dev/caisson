@@ -26,14 +26,11 @@ center).
 
 The free stack has exactly three real gaps; all close for **$0** on a single private repo:
 
-1. **Flip Semgrep CE → Team edition** (free under 10 contributors — you're 1). Unlocks
-   **reachability-scored Supply-Chain SCA** in the dashboard you already run: it deprioritizes CVEs
-   in code paths you never call, killing the alert-fatigue a solo founder can't triage. **#1 move.**
-2. **Wire Socket.dev free tier** (1,000 scans/mo). **Behavioral malicious-package detection at
-   publish time** — the one class Trivy/osv/TruffleHog structurally miss (they match _known_ CVEs; a
-   brand-new malicious npm package has no CVE yet — the 2026 supply-chain attack pattern).
-3. **(Optional) Arnica free tier** — git-identity / permission hardening (stale PATs, over-privileged
-   committers, branch-protection drift). A detection class none of the current tools touch.
+1. **DONE — Semgrep flipped to Team edition** (free under 10 contributors) and **Socket.dev wired**
+   (`socket-security` GitHub App, live in CI — verified 2026-07-11 org API read,
+   `docs/state/production-readiness.md`).
+2. **(Optional) Arnica** — signed up, GitHub App install still pending. Free tier;
+   git-identity/permission hardening class none of the current tools touch.
 
 ## Ranked
 

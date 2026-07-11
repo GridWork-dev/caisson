@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-10
+updated: 2026-07-11
 status: live
 grounds:
   - docs/business/caisson-software-llc.md
@@ -210,7 +210,7 @@ require it.
 
 - **Engage now.** OA final + IP instrument wanted **before first sale**, not before the Paddle
   application.
-- **Paddle production application: SUBMITTED NOW** (operator lock 2026-07-10). Business
+- **Paddle production application — OPERATOR-LOCKED TO SUBMIT** (2026-07-10 picker decision). Business
   verification wants formation docs + a member/ownership document — the draft OA suffices;
   Paddle explicitly does not take EIN/tax paperwork. Feed any verification objections to the
   lawyer as addenda; do not hold the engagement for them.

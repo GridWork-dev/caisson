@@ -89,17 +89,10 @@ status is untracked by this note (out of scope for this pass). Full build-status
 | `license-verify`  | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | substantial           | offline Ed25519 license verification (Apache-2.0 per ADR-0136)                                                                                                                               |
 | `rate-limit`      | Apache-2.0 | free                                                          | Base (open) | built                 | per-IP token-bucket limiter + per-account store, extracted from services/docs + services/license (R1+R2, PR #119)                                                                            |
 
-**Note on `observability`:** enforced open by the standards-gate's `OPEN_BASE_NAMES` allowlist, citing
-ADR-0117 inline ("base substrate every buyer gets, never edition-gated") — this makes it a **12th**
-enforced open package, one more than the 11 named explicitly in ADR-0094 (10) + ADR-0097 (+1
-`registry-schema`). ADR-0117's own text never states the license binding; the gate comment is the actual
-source of record. Not a defect — the gate is correctly enforcing it and its only workspace dep
-(`@caisson/kernel`) is itself open — but a future ADR should fold this into ADR-0094/0097's binding list
-for literal accuracy. `cli`, `migrate`, and `license-verify` join the open set on top of that (ADR-0136,
-commercial→Apache-2.0), and `rate-limit` joined later (PR #119), bringing the enforced-open total to
-**15**. **`credits` is NOT in this set** — it flipped open→commercial by operator override
-(ADR-0249 G5, decoupled from the `cli` codegen-debit gate first) and is priced/sold commercial below; a
-prior revision of this table mistakenly carried it here as a 16th "open" row — corrected.
+**Note:** `observability`, `cli`, `migrate`, `license-verify`, and `rate-limit` join the ADR-0094/0097
+base-11 to bring the enforced-open total to **15** (`tooling/standards-gate/src/checks.ts`
+`OPEN_BASE_NAMES`). **`credits` is NOT in this set** — flipped open→commercial by operator override
+(ADR-0249 G5) and priced under AI-Production below.
 
 ### Commercial — Compliance bundle ($1,049) + members
 
@@ -114,12 +107,8 @@ prior revision of this table mistakenly carried it here as a 16th "open" row —
 | `alerting`          | Commercial | à la carte $149                                                                                     | Compliance                                         | built (Stage-2, ADR-0150)             | SOC2 CC7.2 alert pipeline (dedup → rate-cap → quiet-hours → deliver → audit)                                                            |
 | `retention-runner`  | Commercial | à la carte $199                                                                                     | Compliance                                         | built (Stage-2, ADR-0151)             | CCPA/GDPR erasure runner (purge → cascade-delete → orphan-sweep → audit)                                                                |
 
-**Closed gap (2026-07-06, CAISSON-24 — the hygiene-package-standards session):**
-`packages/compliance/manifest.ts` was the last bundle still declaring `kind: "edition"` +
-`priceCents: 79900`. It now declares `kind: "bundle"` at the locked **104900** and republishes as a
-first-class bundle entry in the same wave (ledger append + index rebuild; historical `kind:"edition"`
-ledger entries stay valid forever per ADR-0257 §1 — no ledger rewrite, a NEW appended version). The
-standards-gate `PRICE_AUTHORITY` row moved 79900/ADR-0227 → 104900/ADR-0258 in the same commit.
+`@caisson/compliance`'s manifest republished `kind:"bundle"` at $1,049 (CAISSON-24, 2026-07-06) —
+historical `kind:"edition"` ledger entries stay valid forever per ADR-0257 §1 (no ledger rewrite).
 
 ### Commercial — AI-Production bundle ($739) + members
 
@@ -225,15 +214,15 @@ open Base substrate (§1's first table). Remaining bundle-only commercial rows:
 
 ### Apps (not sold — storefront/reference/internal)
 
-| Path              | License            | Sold as                                                             | Build status                                                                       | Owns                                              |
-| ----------------- | ------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `apps/site`       | (unset, `private`) | app — the marketing site + docs + buyer dashboard/storefront itself | shipped (static, CF Pages) · unified Railway dashboard app **built, not deployed** | the delivery vehicle, not a product SKU           |
-| `apps/admin`      | (unset, `private`) | app — operator control-plane (absorbed `apps/studio`, ADR-0140)     | shipped (live at admin.caisson.sh)                                                 | not distributed to buyers                         |
-| `apps/base`       | (unset, `private`) | app — P1 reference wiring                                           | shipped                                                                            | reference/demo, not part of the buyer deliverable |
-| `apps/compliance` | (unset, `private`) | app — P2 reference app                                              | partial                                                                            | reference/demo                                    |
-| `apps/ai-kit`     | (unset, `private`) | app — P3 reference app                                              | partial                                                                            | reference/demo                                    |
-| `apps/local-ai`   | (unset, `private`) | app — P4a reference app                                             | partial                                                                            | reference/demo                                    |
-| `apps/agent-dev`  | (unset, `private`) | app — P4b reference app                                             | partial                                                                            | reference/demo                                    |
+| Path              | License            | Sold as                                                             | Build status                                                                                                                                                                              | Owns                                              |
+| ----------------- | ------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `apps/site`       | (unset, `private`) | app — the marketing site + docs + buyer dashboard/storefront itself | shipped · **DEPLOYED** — unified Railway app (Node `standalone`), marketing + docs + buyer dashboard; Cloudflare Pages torn down (`docs/build-state.md` "apps/site … shipped · DEPLOYED") | the delivery vehicle, not a product SKU           |
+| `apps/admin`      | (unset, `private`) | app — operator control-plane (absorbed `apps/studio`, ADR-0140)     | shipped (live at admin.caisson.sh)                                                                                                                                                        | not distributed to buyers                         |
+| `apps/base`       | (unset, `private`) | app — P1 reference wiring                                           | shipped                                                                                                                                                                                   | reference/demo, not part of the buyer deliverable |
+| `apps/compliance` | (unset, `private`) | app — P2 reference app                                              | partial                                                                                                                                                                                   | reference/demo                                    |
+| `apps/ai-kit`     | (unset, `private`) | app — P3 reference app                                              | partial                                                                                                                                                                                   | reference/demo                                    |
+| `apps/local-ai`   | (unset, `private`) | app — P4a reference app                                             | partial                                                                                                                                                                                   | reference/demo                                    |
+| `apps/agent-dev`  | (unset, `private`) | app — P4b reference app                                             | partial                                                                                                                                                                                   | reference/demo                                    |
 
 ### Tooling (never sold — internal dev-time infra)
 

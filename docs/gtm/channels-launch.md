@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-11
 status: live
 grounds:
   - knowledge/decisions/ADR-0079-seo-strategy.md
@@ -29,7 +29,7 @@ maps to the actual Caisson code that satisfies it), so uniqueness is structural,
 (ADR-0079 §2). Docs themselves are the SEO surface — no separate content team, the existing
 Fumadocs tree is the asset (ADR-0079 §3). AI crawlers stay allow-all (blocking measured −73%
 ChatGPT citations for zero Googlebot gain) with Cloudflare Content-Signals as the sanctioned
-middle ground (ADR-0079 §5) — see the unbuilt-items note below. **The measurement side of this
+middle ground (ADR-0079 §5). **The measurement side of this
 bet is now wired** (gap #9, ADR-0254, 2026-07-06): a pay-as-you-go probe loop runs the 18-question
 canonical set through OpenRouter monthly and appends dated citation snapshots — see
 `docs/gtm/aeo-citation-tracking.md`.
@@ -87,10 +87,7 @@ rotation) is fully specified in `docs/ops/launch-runbook.md` — read that file 
 At the business level, three things must land before or at that flip:
 
 1. **Commerce policy locked today must reach the buyer-facing surfaces before the flip.**
-   ADR-0244 (perpetual = 12 months included updates, ~40% renewal for continued updates after) and
-   ADR-0245 (credits: pooled rollover, 12-month grant expiry, FIFO burn, $49 top-up per ADR-0222)
-   are both accepted but not yet reflected in checkout copy or the EULA — that's a checkout/EULA
-   content task gating the same flip window the runbook's §3 pricing-confirm step covers.
+   ADR-0244 (perpetual = 12 months included updates, ~40% renewal for continued updates after) and ADR-0245 (credits: pooled rollover, 12-month grant expiry, FIFO burn, $49 top-up per ADR-0222) now render in checkout copy and the EULA (`apps/site/app/legal/eula/page.tsx` §§ on the updates window and pooled credit expiry, landed 2026-07-09/07-10) — this item is closed, not gating the flip.
 2. **Legal content is a hard gate, not a nicety** — Paddle's MoR attribution line and refund policy
    must render on `/legal/terms` before the site goes public (launch-runbook §1 P2, §6 DO-NOT
    list) — verified 2026-07-05.
@@ -104,24 +101,3 @@ At the business level, three things must land before or at that flip:
 Launch itself is DEPLOY-class and operator-executed, never part of the autonomous build loop
 (`docs/ops/launch-runbook.md` header) — this page tracks the channel/business readiness inputs
 into that act, not the act itself.
-
-## Named unbuilt items
-
-Two ADR-0079-locked channel items are specced but not shipped, per the ranked gap table in
-`outputs/research/monorepo-bigpicture-2026-07.md` §2 (full evidence there; live disposition in
-`gaps-and-plays.md`):
-
-- **`build-vs-buy` comparison page** (gap #5) — ADR-0079 explicitly bets on this pattern over
-  head-to-head "Vanta alternative" pages (which the ADR's Rejected section rules out as violating
-  the honesty-boundary firewall). Company-owned build-vs-buy content wins roughly 51% of B2B-SaaS
-  AI citations, more than user-generated and editorial content combined — this is the single
-  largest unclaimed AI-citation slot for the category, and the pattern is already designed, just
-  not built. Queued for the Kickoff-B hygiene wave.
-- **Cloudflare Content-Signals response header** (gap #6) — ADR-0079 §5 locked the
-  `search=yes, ai-input=yes` posture as the sanctioned middle ground between full AI-crawler block
-  and unsignaled allow-all; the header was never added to `next.config`/response headers. `robots.ts`
-  itself is already correct (allow-all except `/dashboard`) — this is the one remaining piece.
-  Queued for the Kickoff-B hygiene wave.
-
-Both are small (one page, one header) against work already specced by a locked ADR — they were
-found, not re-litigated, by the 2026-07 research sweep.

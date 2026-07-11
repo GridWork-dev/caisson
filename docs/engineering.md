@@ -157,12 +157,12 @@ never blocks a required check forever. Full per-workflow detail (8 workflows tot
 retirement, the review-gate posture): `docs/operations.md` §7 - this section is not the canonical
 CI map, do not extend it here.
 
-| Job                 | Does                                                                                                    | Notes                                                                                                              |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `standards-gate`    | gate run pre-install (fs-only) + post-install, then `eslint .`, then `depcruise packages apps tooling`  | the only registry ingress; all three layers block merge                                                            |
-| `check`             | `prettier --check`, then `turbo run build lint test --concurrency=50%` + `bun run gate`                 | golden fixtures compared with BLESS unset; `--concurrency=50%` avoids PGlite hook-timeout starvation on the runner |
-| `registry-index`    | registry tests + rebuild `index.json` from ledger, `git diff --exit-code`                               | provenance proof the index is CI-built, not hand-appended                                                          |
-| `oscal-conformance` | NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180), JSON->XML->schema-validate round-trip via oscal-cli | hosted (needs a JDK); the fleet `check` job skips oscal-cli entirely                                               |
+| Job                 | Does                                                                                                    | Notes                                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `standards-gate`    | gate run pre-install (fs-only) + post-install, then `eslint .`, then `depcruise packages apps tooling`  | the only registry ingress; all three layers block merge                                                                                         |
+| `check`             | `prettier --check`, then `turbo run build lint test --concurrency=50%` + `bun run gate`                 | golden fixtures compared with BLESS unset; `--concurrency=50%` avoids PGlite hook-timeout starvation on the runner                              |
+| `registry-index`    | registry tests + rebuild `index.json` from ledger, `git diff --exit-code`                               | provenance proof the index is CI-built, not hand-appended                                                                                       |
+| `oscal-conformance` | NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180), JSON->XML->schema-validate round-trip via oscal-cli | installs its own JDK + oscal-cli per-run; the `check` job (same Blacksmith runner class, ADR-0326) skips that install and doesn't run oscal-cli |
 
 Separate workflows: `quality.yml` (eval/native-ext/token-drift/knip/evidence-pack),
 `publish.yml` (registry publish, ADR-0223), `.github/workflows/deploy-railway.yml` (`apps/site`

@@ -71,15 +71,13 @@ That doc (authored 2026-06-30) is the internal driver-expansion **roadmap**; sev
 "planned"/"throws" have since shipped in the 2026-07-01/02 build waves and are now **live**, per
 this file's own recon:
 
-| Row in `adapter-expansion.md`         | Marked as                         | Actual state (2026-07-06)                                          |
-| ------------------------------------- | --------------------------------- | ------------------------------------------------------------------ |
-| AI inference: Bedrock/Azure/Ollama    | "Add" (Tier 2C, not built)        | **Live** — `ai-kit/src/providers.ts` + `ai-config/src/config.ts`   |
-| `SessionProvider`: WorkOS SSO         | "Add" (Tier 1C)                   | **Live** — `packages/org-controls/src/workos.ts`                   |
-| `KmsClient`: AWS KMS                  | "`awsKmsClient` throws" (Tier 1B) | **Live-proven** — 2026-07-02 real-CMK proof, `docs/build-state.md` |
-| `BillingProvider`: LemonSqueezy/Polar | "Add" (Tier 3)                    | **Already coded** — `packages/billing/src/{lemonsquery,polar}.ts`* |
-| MCP transport: HTTP/SSE               | "stdio only" (Tier 3)             | **Both exist** — `mcp-server/src/{stdio,http}.ts` (ADR-0161)       |
-
-_\*filename per repo convention; verify exact name before citing in a PR._
+| Row in `adapter-expansion.md`         | Marked as                         | Actual state (2026-07-06)                                                          |
+| ------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------- |
+| AI inference: Bedrock/Azure/Ollama    | "Add" (Tier 2C, not built)        | **Live** — `ai-kit/src/providers.ts` + `ai-config/src/config.ts`                   |
+| `SessionProvider`: WorkOS SSO         | "Add" (Tier 1C)                   | **Live** — `packages/org-controls/src/workos.ts`                                   |
+| `KmsClient`: AWS KMS                  | "`awsKmsClient` throws" (Tier 1B) | **Live-proven** — 2026-07-02 real-CMK proof, `docs/build-state.md`                 |
+| `BillingProvider`: LemonSqueezy/Polar | "Add" (Tier 3)                    | **Already coded** — `packages/billing/src/{lemonsqueezy-webhook,polar-webhook}.ts` |
+| MCP transport: HTTP/SSE               | "stdio only" (Tier 3)             | **Both exist** — `mcp-server/src/{stdio,http}.ts` (ADR-0161)                       |
 
 Still genuinely open after the 2026-07-06 Kickoff-F wave (which shipped GCS/R2 storage, GCP KMS,
 Drizzle/Prisma bridges, groq/mistral/together lanes, 3 emitter targets, deploy templates): Azure

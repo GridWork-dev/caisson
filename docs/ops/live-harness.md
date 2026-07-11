@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-11
 status: live
 ---
 
@@ -14,8 +14,9 @@ launch credentials actually work end-to-end.** Every proof self-skips without it
 
 ## The loop: rotate → run → read the red seam
 
-1. **Rotate** the scoped launch key(s) and mirror them into `~/.gridwork/caisson.env` (the launch
-   credential SOT — ADR-0224 F6=A; source-chained from `~/.gridwork/env`, no 1Password at runtime).
+1. **Rotate** the scoped launch key(s) in 1Password `Caisson Launch` FIRST (the primary secret SoT
+   since ADR-0317, amending ADR-0224 F6), then propagate to `~/.gridwork/caisson.env` for local test
+   runs.
 2. **Run** the whole suite (source the env first so every seam's creds are present):
 
    ```bash
@@ -69,14 +70,9 @@ Run-time notes for the two legs that need more than env vars:
   `packages/billing-orchestration`, and `tailscale funnel --https=443 off` when done. Paddle
   API drift fixed in the leg itself: a notification setting must opt in with
   `traffic_source: "simulation"` or simulation runs abort against it.
-- **Seam-2 TS leg (license→bot) cannot pass from the box:** `SUPPORT_BOT_URL` is the
-  Railway-internal domain and the deployed bot has **no public domain**, so the armed leg runs
-  red locally (0 pushes recorded — the connection error is swallowed by design). That red is
-  environmental, not a credential failure. Open fork (operator): give the bot a public Railway
-  domain (its `/billing-grant` is Bearer fail-closed) so the leg is runnable from the box, or
-  accept the Python leg + unit coverage as seam-2's proof. Also: the webhook-grant leg needs
-  `DATABASE_URL="$DATABASE_PUBLIC_URL"` exported for local runs — the env default is the
-  railway-internal host.
+- **Seam-2 TS leg (license→bot): RESOLVED 2026-07-10.** The bot now has a public Railway domain
+  (`caisson-support-bot-production.up.railway.app`, `/health` 200); `discord-grant.live.test.ts` runs
+  green from the box (1 pass / 0 fail) — the ADR-0224 matrix is fully closed.
 
 ### Seam-5 note — analytics ingestion stays dashboard-verified
 
@@ -118,4 +114,6 @@ leaks in and misroutes the mapper. Evidence:
 - **Production mutation is contained + self-cleaning.** Seam 1 uses the reserved proof tenant
   (`00000000-0000-4000-8000-00000000c0de`) with a per-run UUID and a teardown; seam 2 grants+removes a
   throwaway role on a reserved member; seam 3 archives its issue; seams 4–5 are read-only / build-only.
-- **One credential SOT.** All creds come from `~/.gridwork/caisson.env` at run time (F6=A).
+- **One credential SOT for local test runs.** `~/.gridwork/caisson.env` is sourced at run time; the
+  values themselves are derived from 1Password `Caisson Launch`, the primary SoT since ADR-0317
+  (amends F6=A).

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-11
 status: live
 grounds:
   - knowledge/decisions/ADR-0259-ui-pro-spec-locks.md
@@ -129,15 +129,7 @@ rule, now formalized at the catalog rework as the flat **0.75 × priced-member-s
 Below-sum ✓ verified on all six bundles at lock; the Stage-2/Stage-3 sections above carry each live
 bundle's member-sum basis.
 
-**Historical — pre-rework per-edition discount depth (ADR-0137, superseded 2026-07-06):**
-
-- Compliance: $846 member-sum → $799 (5.6% off — the thinnest margin of the four; ADR-0227
-  reopened this specific number after a module-sum recount pushed the old $749 to ~11.5% off,
-  deeper than the operator wanted).
-- AI Production Kit: $795 sum → $599 (~25% off).
-- Agentic-Dev: $298 sum → $249 (~16% off).
-- Local-first AI: $398 sum → $349 (~12% off).
-- Everything Bundle: $1,946 edition-sum → $1,499 (~23% off, $447 saved).
+**Historical (ADR-0137, superseded 2026-07-06 by the flat 0.75× formula):** the old 4-edition matrix discounted 5.6-25% off member-sum per edition, ad hoc per SKU — fully superseded, numbers in the table above.
 
 **Any future change to a module's price or a bundle's member list that pushes a bundle's price
 above its own member-sum re-opens that bundle's number** — this is a standing check, not a
@@ -220,8 +212,7 @@ The board note carried since ADR-0095/0106 stands: **exact price numbers stay si
 operator-adjustable until checkout goes live** — the site no longer _says_ prices are indicative
 (ADR-0082 committed-prices posture), so a pre-flip change is a quiet edit + ADR, not a displayed
 disclaimer. Confidence on every number above is **MEDIUM** — research-anchored (competitor
-comparables in ADR-0129, the two GTM reports behind ADR-0106) but not WTP-validated: no ICP
-interviews, no paid WTP pilots, no live purchase data yet. Each pricing ADR names itself as
+comparables in ADR-0129, the two GTM reports behind ADR-0106) and only partially WTP-tested: two Cookiy quant surveys + 45 qual transcripts ran 2026-07-09/10 (`outputs/research/wtp-memo-2026-07-10.md`) but stayed 62-68% off-ICP, so no real-ICP buyer has yet reacted to a price (ADR-0304's own caveat) — still no live purchase data. Each pricing ADR names itself as
 revisit-after-launch via a superseding ADR once real data exists.
 
 Sandbox-only detail: the full six-bundle + 22-module Paddle products/prices were created in
@@ -241,10 +232,7 @@ R3 is thereby closed (the carve exists and is priced).
 
 **Still open after Stage 2 — ALL CLOSED at Stage 3 (ADR-0257/0258, see the amendments section
 at the top):** Local-first → full 3-way carve, $629 · credits-in-AI → joined, recompute $739 ·
-auth-sso shape → ONE merged `org-controls` $249. **Still open after Stage 3:** optional WTP
-validation only (Cookiy Van Westendorp survey 374111 is live/unanswered; ~$20 recruitment needs
-live operator approval — validates, never blocks; now also covers the three local-ai carve
-bands, which are catalog-ladder-grounded rather than comps-researched).
+auth-sso shape → ONE merged `org-controls` $249. **Still open after Stage 3:** **Closed 2026-07-10 (Kickoff-J, ADR-0304/0305):** the WTP validation ran — qual (45 Cookiy transcripts) + quant (VW ladder 445432, frame test 776545), synthesized in `outputs/research/wtp-memo-2026-07-10.md`. Result: Compliance $1,049 / Everything $2,059 HOLD, no change (ADR-0304); the local-ai carve bands and the D2 "seat allowance" fork closed VOID — licensing is already per-org/no-seat via the EULA, now surfaced as advantage copy (ADR-0305).
 
 ## Contradictions found while distilling
 

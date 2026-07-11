@@ -90,14 +90,17 @@ untouched the whole time, which is strictly safer than any manual approach.
 `packages/kernel/src/read-only.ts` ships `assertNotReadOnly(mode, action)` — a fail-closed gate a
 mutation entrypoint calls FIRST, before touching the DB, so flipping a system mode to
 `read_only` freezes every write the gate guards without taking the service down (reads keep
-working). **As of this writing, the gate is built + tested but has zero live mode sources wired**
-(no admin toggle, no dunning-state trigger yet — tracked as Kickoff-H W3 work). Once a live source
-lands, this is the fastest containment lever for "something is actively corrupting data and I need
-to stop writes NOW while I figure out the restore target" — faster than a full service takedown,
-and it keeps the site up in read-only mode for buyers browsing/checking status. Until W3 wires a
-source, the only equivalent containment is pulling the affected service's traffic at the Railway/
-Cloudflare level (effectively a SEV1-grade action — treat it as a last resort, not a first
-response).
+working). **LIVE since 2026-07-09 (ADR-0300, Kickoff-H W3):** wired to an admin-flipped mode
+source (the latest `admin_action_log` `system_mode` row, `active` by default) via
+`apps/admin/src/app/api/admin/system-mode/route.ts`. Flipping to `read_only` freezes every gated
+write while reads keep working; the un-arming flip stays ungated so it can't brick itself.
+Deliberately does NOT freeze on `subscription.past_due` (won't-fix per ADR-0300). This is the
+fastest containment lever for "something is actively corrupting data and I need to stop writes NOW
+while I figure out the restore target" — faster than a full service takedown, and it keeps the
+site up in read-only mode for buyers browsing/checking status. The fallback containment (e.g. a
+dunning-state trigger not covered by the admin flip) is pulling the affected service's traffic at
+the Railway/Cloudflare level (effectively a SEV1-grade action — treat it as a last resort, not a
+first response).
 
 ## After the incident
 

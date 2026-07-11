@@ -112,10 +112,5 @@ and the service redeployed. Linear Asks (email/web) remains the no-code alternat
 
 ## Setup checklist
 
-**Done (2026-07-01, via MCP):** team `Caisson` · 4 area projects · seed issues CAISSON-1/2/3.
-**Done (operator UI, phase-2 2026-07-11):** Business active · triage + agent automation · agent
-guidance · GitHub Code Intelligence on `caisson-sh` · cycles — see the CONFIGURED section above.
-**Code (DONE 2026-07-02, ADR-0206):** support-bot → Triage wiring (CAISSON-3) — merged in PR #46,
-env vars set + service redeployed the same day (live).
 **Remaining (operator, optional):** create the `Launch` initiative in-UI (no MCP creator);
 consider Triage Intelligence if inbound volume ever outgrows the Agent first-pass.

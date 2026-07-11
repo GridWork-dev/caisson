@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-10
+updated: 2026-07-11
 status: live
 grounds:
   - infra/terraform/
@@ -62,19 +62,16 @@ current volume ($0).
 Provider-optimization forks — see [`decisions-and-forks.md` → Provider-optimization forks](decisions-and-forks.md).
 **Resolved 2026-07-01 — all closed, none open:** PF-1 **DROP self-hosted SigNoz → Grafana Cloud as sole OTLP**
 (reverses the earlier "keep"; −$45-70/mo), PF-2 PostHog **added + live**, PF-3 Linear **added + connected**,
-PF-4 **keep Greptile+TREX only** (no 2nd reviewer), PF-5 Cookiy **added + connected**, PF-6 **skip Firecrawl**,
+PF-4 **kept Greptile+TREX only at the time — Greptile itself later RETIRED 2026-07-06** (see the Live-stack row above; review is now the in-session SHIP audit lane), PF-5 Cookiy **added + connected**, PF-6 **skip Firecrawl**,
 PF-7 hosting stays LOCKED Railway (no change), and **Edition members-fold → FOLD into bundles (ADR-0178)**.
 
 ## SigNoz → Grafana cutover — DONE (2026-07-01, ADR-0177)
 
 Grafana Cloud (`caisson.grafana.net`, US-West `prod-us-west-0`) is now the **sole** OTLP sink; self-hosted
-SigNoz is **removed**. Cutover executed: (1) `OTEL_EXPORTER_OTLP_ENDPOINT` (`https://otlp-gateway-prod-us-west-0.grafana.net/otlp`)
-
-- `OTEL_EXPORTER_OTLP_HEADERS` (`Authorization=Basic <base64(1709803:glc_…)>`) set on all 5 services →
-  redeployed; (2) pipeline **verified** — a manual probe span landed in Tempo (datasource-proxy TraceQL search);
-  (3) the **5 SigNoz Railway services deleted** + the SigNoz UI URL dropped. Ingestion authed with a **Cloud
-  Access Policy token** (`glc_`, write scopes) — the `glsa_` service-account token only manages the instance
-  (`grafanactl` + query proxy), it can't auth the OTLP gateway (probe: 401). Operator UI tail: `grafana-setup-runbook.md`.
+SigNoz is **removed**. Cutover DONE 2026-07-01 (ADR-0177): all 5 services export via a `glc_` Cloud
+Access Policy token — the `glsa_` service-account token can't auth the OTLP gateway (401), it only
+manages the instance. SigNoz fully removed; setup detail (archived, task complete):
+`docs/archive/grafana-setup-runbook.md`.
 
 > **Known instrumentation gap (finding, 2026-07-01).** `@caisson/observability` registers OTel's
 > `HttpInstrumentation` + `UndiciInstrumentation` + `PgInstrumentation`, all of which patch **Node**
@@ -90,12 +87,6 @@ SigNoz is **removed**. Cutover executed: (1) `OTEL_EXPORTER_OTLP_ENDPOINT` (`htt
 > redeployed from `main` @ `84052aa` (both `/health` 200), so manual request spans now fire on the Bun
 > handlers and export to the Grafana OTLP sink. No auto child-spans for DB/fetch (named ceiling, ADR-0185);
 > Bun-native auto-instrumentation remains the future upgrade path if/when it exists.
->
-> **Cleanup still pending (operator action):** 3 detached SigNoz volumes remain in `caisson-prod`
-> (`signoz-telemetrystore-clickhouse-volume`, `signoz-telemetrykeeper-clickhousekeeper-volume`,
-> `signoz-signoz-volume`; ~1 GB each, `Attached: N/A`). `railway volume delete -y -v <name>` is
-> **agent-blocked** (mass prod-storage delete guardrail) — the operator deletes them (CLI or Railway
-> dashboard). Negligible storage cost; purely housekeeping.
 
 ---
 
@@ -153,14 +144,3 @@ OpenRouter / Plausible / SigNoz / Exa / Discord have **no standalone CLI** — d
 - **Linear** — MCP `LINEAR_API_KEY` (`lin_api_…`, connected). **State: ✅ connected + full MCP surface** (issues/projects/cycles/docs). **Business plan** ($16/mo, the agent-automations tier) is an operator billing action in Linear → Settings → Plans; the MCP works today on any plan for issue/project CRUD. Separate from this operator MCP credential: `caisson-support-bot` now posts inbound escalations to Linear Triage as a third best-effort sink (`ADR-0206`, CAISSON-3) via its own `LINEAR_API_KEY`/`LINEAR_TEAM_ID`/`LINEAR_TRIAGE_STATE_ID`. **State: ACTIVE 2026-07-02** — all three vars set on `caisson-support-bot` + redeployed (bot recovering from a transient Discord CF-1015 egress-IP ban at first boot; the sink itself is env-live). Detail: `docs/state/linear-integration.md`.
 - **Cookiy** — MCP `COOKIY_API_KEY` (`cky_…`, connected; headless Bearer, not OAuth). Scope: positioning research, **no customer PII**. **State: ✅ connected**.
 - **Grafana Cloud** — `caisson.grafana.net`, US-West `prod-us-west-0`. `grafanactl` **connected** (Grafana 13.2, dashboard/stack mgmt via `GRAFANA_SERVER`+`GRAFANA_TOKEN`). **State: ✅ live, sole OTLP sink** — a `glc_` Cloud Access Policy token was obtained (the `glsa_` service-account token only manages the instance, can't auth the OTLP gateway); all 5 services redeployed with the OTLP env, pipeline verified receiving data, SigNoz retired. **New (2026-07-02, `ADR-0207`):** `apps/admin`'s `/ops` cockpit reads Grafana Cloud's Tempo query API (TraceQL via datasource-proxy) in place of the deleted SigNoz client. **State: ACTIVE 2026-07-02** — `GRAFANA_URL`+`GRAFANA_QUERY_TOKEN`+`GRAFANA_TEMPO_DATASOURCE_UID` set on `caisson-admin` (existing `glsa_` token reused per the operator lock; Tempo datasource uid `grafanacloud-traces`) + redeployed.
-
-## Config audit — closeout (2026-07-01)
-
-1. ✅ **MCPs connected** — linear + posthog + cookiy live (keys probe-verified).
-2. ✅ **PostHog site analytics** — `NEXT_PUBLIC_POSTHOG_KEY` set on `caisson-site` + rebuilt.
-3. ✅ **Plausible** — confirmed active on the $9 plan and collecting.
-4. ✅ **grafanactl** — connected to `caisson.grafana.net` (dashboard/stack mgmt).
-5. ✅ **Greptile pre-push hook removed** — then the vendor itself RETIRED 2026-07-06 (see its row above).
-6. ✅ **Grafana OTLP credential** — `glc_` Cloud Access Policy token obtained; SigNoz→Grafana cutover + SigNoz teardown are DONE.
-7. ⚠ **Paddle production** — live account + prices (go-live gate).
-8. ○ **Linear Business plan** — $16/mo for agent automations (issue/project CRUD already works).

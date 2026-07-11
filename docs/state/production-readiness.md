@@ -48,23 +48,22 @@ mostly operator-owed — none are silent breakage:
 5. **`RESEND_API_KEY` on `caisson-license`** — CLOSED 2026-07-11: `RESEND_API_KEY` +
    `RESEND_FROM` both present on the running service (railway key-scan; tracker row DONE
    2026-07-10, re-verified after the ADR-0324 email-wave redeploy).
-6. **npm publish ↔ gate-flip sequencing** — every marketing/docs page shows
-   `bunx @caisson-sh/cli@latest`, which 404s until the `confirm=publish` npm dispatch fires; the
-   publish is itself held on the MIRROR_PUSH_TOKEN rotation. Ordering (publish BEFORE the CF flip)
-   is enforced only by runbook discipline — no code guard. (tracked; the rotation is the last one
-   from the ADR-0226 sweep)
+6. **npm publish ↔ gate-flip sequencing** — dormant until the ADR-0325 commit-addressable
+   release-train rework lands (CAISSON-94, tracked as release-train dormant); the marketed
+   `bunx @caisson-sh/cli@latest` 404s until publish runs. (tracked)
 
 ## Deploy / infra — gaps
 
 Verified live 2026-07-09: all 5 Railway services RUNNING on fresh 2026-07-08 deploys from main
 HEAD; registry Worker current (46-entry index, anon floor 16, digest matching license + admin's
 independently-baked copies); TLS valid on all hostnames; required CI checks green on the deployed
-SHA; runscaler fleet healthy.
+SHA; CI hot path now on Blacksmith VM-per-job runners (ADR-0326).
 
 - **P1 (fixed in this sweep):** no documented rollback for an ordinary bad `railway up` outside
   the launch-flip act — a rollback section now lives in `docs/operations.md` §7.1.
-- **P2:** `mirror-sync` red on every main push since 2026-07-04 (MIRROR_PUSH_TOKEN lacks the
-  Workflows scope — same token as blocker 6). (tracked)
+- **P2 (closed 2026-07-10):** `mirror-sync` fixed — the rotated MIRROR_PUSH_TOKEN (Workflows
+  scope) proved green on run `29117126038`; the workflow was re-enabled and a follow-up dispatch
+  verified appending (`8253e76` on `905e3070`).
 - **P3:** `deploy-railway.yml` auto-deploy correctly inert (`RAILWAY_TOKEN` not a repo secret).
 
 ## Security — gaps
@@ -75,16 +74,11 @@ parity exit 0. Admin auth rearchitected to in-app GitHub OAuth with numeric-id a
 (ADR-0283). CF edge rate-limit live and 429-proven on docs-api; registry Worker app-level rate
 limit 429-proven live 2026-07-10 (below).
 
-- **P1:** MIRROR_PUSH_TOKEN — the last transcript-leaked credential (ADR-0226) — still unrotated;
-  simultaneously live AND broken for its job. (tracked)
-- **P1 (executed 2026-07-10, Kickoff K):** Strix round-2 ran against round-1's coverage-gap list.
-  A white-box multi-agent audit (Opus finders + adversarial Fable verdicts on the money/license/
-  crypto seams) landed 3 DoS/supply-chain fixes and cleared the highest-risk seams — admin OAuth +
-  allowlist, registry-Worker license filter, support-bot billing-grant, authed site owner/seat
-  flows — with no money/license/authz bug; registry-Worker 429 proven firing live. **Residual
-  (tracked):** authed-admin black-box needs a one-time session-cookie harness (admin is
-  GitHub-OAuth-only), and the Strix black-box cross-check needs a re-run on a lifecycle-conforming
-  engine (the gpt-5.4 bridge did not drive it). `docs/security/strix-findings-2026-07-10-round2.md`.
+- **P1 (closed 2026-07-10):** MIRROR_PUSH_TOKEN rotated (fresh fine-grained PAT, Contents +
+  Workflows scope) and verified working — `mirror-sync` run `29117126038` SUCCEEDED.
+- **Residual (tracked):** authed-admin black-box needs a one-time session-cookie harness (admin is
+  GitHub-OAuth-only); the Strix black-box cross-check needs a re-run on a lifecycle-conforming
+  engine. `docs/security/strix-findings-2026-07-10-round2.md`.
 - **P2 (closed 2026-07-10):** registry Worker app-level rate limiting — built (CAISSON-55,
   `registry/worker/rate-limit.ts`, native CF `simple` limiter, catalog 300/60s) and 429-proven
   firing live this round with a sanctioned vegeta run (round-1's negative was a load-shape
@@ -98,10 +92,9 @@ limit 429-proven live 2026-07-10 (below).
   `buyer-dashboard-flow.live.test.ts` now run for real (the first credentialed run immediately
   caught a real bug: better-auth 403s auth POSTs without an `Origin` header, which the test's own
   sign-in helper never sent — fixed).
-- **P3 (corrected 2026-07-10):** GitHub Action refs are ALL SHA-pinned (46/46 verified in the
-  Kickoff-K supply-chain audit) — the earlier "mutable tags in others" claim was wrong. The real
-  residual was Docker base images pinned to tags not digests (K-03), now addressed by enabling
-  Renovate `docker:pinDigests` for the first-party images (buyer scaffolds stay tag-pinned).
+- **P3:** GitHub Action refs are SHA-pinned (46/46, Kickoff-K supply-chain audit); Docker base
+  images are pinned to tags not digests — Renovate `docker:pinDigests` enabled for first-party
+  images (buyer scaffolds stay tag-pinned).
 
 ## Commerce — BLOCKED (deliberately)
 
@@ -129,17 +122,19 @@ daemon (ADR-0286) healthy with its scheduler bug fixed; pg-boss crons armed and 
 
 - **P0 (closed 2026-07-11):** Railway Postgres backup/PITR — daily snapshots + proven
   rehearsed restore; see consolidated blocker 3 and `docs/operations.md` §9.
-- **P1:** no confirmed Grafana alert rules or contact point (the archived setup runbook's 4-rule
-  list was suggested, never confirmed executed) — no "service down" page reaches the operator.
-  (tracked as of this sweep)
+- **P2 (closed 2026-07-10):** Grafana alerting armed via the provisioning API — `caisson-ops`
+  contact point → Discord #ops-alerts (delivery proven) + root policy + 3 rules on real metrics
+  (heartbeat-lost, 5xx-rate, p95>2s); the 4 stale console-suggested rules were deleted as provably
+  dead.
 - **P2 (closed 2026-07-11):** external uptime monitor live — Better Stack (free tier):
   caisson.sh (2xx) + license.caisson.sh/health (200), 3-min checks / 30s confirmation,
   email alerting to admin@ on open + recovery (Discord webhook is paid-tier; skipped).
   CAISSON-53 Done.
-- **P2:** no written incident-response runbook — every past outage was handled ad hoc and
-  recorded post-hoc in deploy-log entries. (tracked as of this sweep)
-- **P2:** pg-boss cron failures (credit expiry, updates-window expiry, intel watchers) have no
-  failure alerting. (tracked as of this sweep)
+- **P2 (closed 2026-07-09/10, Kickoff-H W2):** incident-response + DB-restore runbooks written —
+  `docs/ops/incident-response.md`.
+- **P2 (closed 2026-07-09/10, Kickoff-H W2):** pg-boss cron failures (credit expiry,
+  updates-window expiry, intel watchers) now alert via `@caisson/alerting`'s Discord channel on
+  license/jobs/intel.
 - **P3:** WORM bucket has immutability, not DR (single-region, no replication) — acceptable
   pre-launch; revisit with real evidence volume.
 
@@ -166,9 +161,9 @@ every recent main push/PR, and this sweep made the 3 path-filtered quality jobs 
 token-drift · native-ext) unconditional on main pushes. The PGlite flake class was killed
 structurally (PRs #168/#174). All 14 CI-mirror gates pass locally on this branch.
 
-- **P1:** no GitHub branch protection (private repo, free plan) — "required" checks are
-  discipline; nothing stops a direct push to main. Operator options: GitHub Pro, or make the repo
-  public at the oss flip. (tracked as of this sweep)
+- **P1 (closed, ADR-0327):** no GitHub branch protection (private repo, free plan) — locked as
+  discipline-only; revisited only on a real bypass incident or a launch-posture change.
+  `caisson-oss` gets native protection free at the public flip (ADR-0318 W3).
 - **P2:** live-verification harness (ADR-0224) run once end-to-end (Paddle seam, 2026-07-04);
   the 2026-07-08 credential rotation has no recorded harness re-run across the other four seams.
   (tracked as of this sweep)
@@ -176,7 +171,7 @@ structurally (PRs #168/#174). All 14 CI-mirror gates pass locally on this branch
   shipped — regression protection is nominal. (tracked as of this sweep)
 - **P3:** `bun run sot` never runs in CI (advisory by design; a scheduled advisory run is cheap).
   (tracked as of this sweep)
-- **P3:** 92 pending changesets since the last version cut (PR #131) — a deliberate release-cut
+- **P3:** 140 pending changesets since the last version cut (PR #131) — a deliberate release-cut
   decision, not drift; flagged so the next cut is a chosen act. (tracked as of this sweep)
 
 ## GitHub org apps + CI wiring (verified live 2026-07-11, org API read)
@@ -194,7 +189,9 @@ anywhere is stale:
 `SEMGREP_APP_TOKEN` secret, free-tier Pro interfile), alongside `deterministic` (gitleaks/osv/
 zizmor class), `evidence-pack`, `knip`, `token-drift`, `eval`, `native-ext`, and the 4-check
 required set (`check` · `standards-gate` · `registry-index` · `oscal-conformance`). Runner:
-`caisson-amd64` runscaler scale set; `oscal-conformance` + `deploy-railway` stay hosted. No
+CI hot path migrated to Blacksmith VM-per-job runners (ADR-0326); `caisson-amd64` scale set
+retiring. Credential jobs (`publish`/`deploy-railway`/`mirror-sync`/`release-train`) stay
+`ubuntu-latest`; mac leg self-hosted `gw-macos-arm64`. No
 Arnica or other posture app is installed — the playbook's Layer 1-4 local stack covers that
 ground (`docs/security/tooling-playbook.md`).
 
@@ -228,9 +225,5 @@ the operator Proton send-as alias.
 
 ## What this sweep already fixed
 
-Local gate failures (prettier/eslint over git-ignored `.venv` artifacts — ignore entries),
-`knip.json` missing `services/intel`, the 3 skipping quality jobs on main, the stale
-`feat/comparison-pages` branch (verified fact merged, branch deleted), ~196 completed artifacts
-archived (`outputs/archive/` + `docs/archive/harvest-program.md`) with live-doc links repointed,
-23 stale docs corrected, and the visual harness extended to a categorized full-surface prod
-sweep (pages · pop-outs · emails · interactions · dashboard) at mobile/desktop × light/dark.
+Local gate/config hygiene, stale-branch cleanup, and ~196 completed-artifact archival — resolved;
+detail is in git history for this sweep, not restated here.

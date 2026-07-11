@@ -165,8 +165,8 @@ jobs:
 
   oscal-conformance:
     # NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180): the JSON→XML→schema-validate round-trip via
-    # oscal-cli (Java). Hosted + self-contained (installs a JDK + oscal-cli from Maven Central) — the
-    # fleet `check` job SKIPS these tests (oscal-cli isn't on the runner), so this is where the
+    # oscal-cli (Java). Self-contained (installs a JDK + oscal-cli from Maven Central per run) — the
+    # `check` job SKIPS these tests (oscal-cli is not installed there), so this is where the
     # ground-truth NIST schema validation actually runs. Validation is schema-only
     # (--disable-constraint-validation): constraint checks resolve the published import-ap URL, a
     # deploy-time concern, not export well-formedness.

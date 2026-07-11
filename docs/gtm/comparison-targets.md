@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-07
+updated: 2026-07-11
 status: live
 grounds:
   - outputs/research/prelaunch-fanout-2026-07/SYNTHESIS.md
@@ -17,11 +17,7 @@ verified target list. Every product below was confirmed real and current via web
 (2026-07); the honesty rule (ADR-0080) is binding — a comparison page that overclaims
 against a real competitor is worse than no page.
 
-**Build discipline:** `gw-gtm-copywriter` drafts each page (claims scraped + dated,
-PAL-challenged) and stops at a committed branch; the operator publishes. Do not invent a
-number a competitor doesn't publish. Where Caisson and the competitor solve different
-problems (the compliance platforms), the page's job is to draw the honest line, not to
-declare a winner.
+**Status: all 21 pages shipped** (`apps/site/lib/comparisons.ts` carries all 21 slugs live, PR #134 "20-page compare family" + the Kickoff-J AuditKit/Delve additions, 2026-07-10). **Build discipline (for any future addition):** `gw-gtm-copywriter` drafts each page (claims scraped + dated, PAL-challenged) and stops at a committed branch; the operator publishes. Do not invent a number a competitor doesn't publish. Where Caisson and the competitor solve different problems (the compliance platforms), the page's job is to draw the honest line, not to declare a winner.
 
 ## Group A — SaaS boilerplates / starter kits (position: the compliance-first alternative)
 

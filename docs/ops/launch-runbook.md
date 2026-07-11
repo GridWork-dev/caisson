@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-07
+updated: 2026-07-11
 status: live
 ---
 
@@ -80,8 +80,8 @@ These are **operator-owned, not box-drivable**, and are cited gaps this session 
 | P1  | **Paddle production account** does not exist yet — only Sandbox is configured. `PADDLE_API_KEY` on `caisson-license` today is `pdl_sdbx_*`-shaped.                                                                                                                                                                                                                                                                                                                                                           | `docs/state/go-live-legal-and-entity.md` line 61: "Paddle SANDBOX → production … Hard blocker."                                   | **OPERATOR TO DO** — §2 walks it.                                                                                                                                                                                                                                                                                                        |
 | P2  | **Paddle MoR attribution line + refund policy** — RESOLVED 2026-07-03. The MoR attribution (Paddle's verbatim required text) + a refund section landed via PR #61 (commit `89a1a87`, after this row's grep ran); the refund policy was then rewritten to match Paddle's buyer terms / Refund Policy (14-day EU/UK statutory withdrawal + digital-delivery waiver + per-line refunds per ADR-0218/0200) — the paddle-legal copy PR. Residual: none; re-verify the pages render before flipping §3.            | `apps/site/app/legal/terms/page.tsx` ("Payment processing — Paddle (Merchant of Record)" + "Refund policy" sections).             | **VERIFIED 2026-07-05** — `bun run build` + the standalone server (`.next/standalone`, the same `bun apps/site/server.js` entry point the Dockerfile runs) served `/legal/terms`, `/legal/privacy`, and `/legal/eula` locally: all three 200, and the "Paddle (Merchant of Record)" attribution line renders verbatim on `/legal/terms`. |
 | P3  | **Per-module production price ids don't exist yet** — the 11 standalone module SKUs (ADR-0238 dropped the four edition-core rows; ADR-0227's sweep minted the SANDBOX products) carry real SANDBOX `pri_…` ids in `packages/pricebook/src/purchases.ts` + `apps/site/lib/catalog.ts` (`MODULE_PRICE_IDS`), so per-module checkout IS wired against sandbox. Paddle Production mints entirely new ids — same posture as the editions/bundle/subscriptions in §2.2–2.3.                                        | `apps/site/lib/catalog.ts` (`MODULE_PRICE_IDS`); `packages/pricebook/src/purchases.ts` (REAL module rows, 2026-07-02).            | **FOLDED INTO §2.2/§2.3** — mint the 11 module Products/Prices in production and fill both books in the same commit as the edition/bundle ids. No separate operator fork remains (the old wire-or-hide choice is obsolete: sandbox wiring shipped 2026-07-02).                                                                           |
-| P4  | **Discord privileged intents + role/channel env** — `SUPPORT_CHANNEL_ID` / `MEMBER_ROLE_ID` and the Developer Portal's Server Members + Message Content intents were the last-known-pending item (2026-07-01). May already be resolved — **verify, don't assume.**                                                                                                                                                                                                                                           | `docs/archive/p6-deploy-runbook.md` lines 37–45; `docs/state/go-live-legal-and-entity.md` line 66.                                | **VERIFY** — §4 has the check.                                                                                                                                                                                                                                                                                                           |
-| P5  | **Rotate the three transited credentials** — `OPENROUTER_API_KEY`, `DISCORD_TOKEN`, `MIRROR_PUSH_TOKEN` all transited a chat session/transcript and are an ADR-0226 Fork-4 _incident_ (rotation mandated, not optional). Full per-credential runbook: §1.1 below. The issuer-keypair half of the sitting is DONE: the fresh launch Ed25519 keypair + `LICENSE_ISSUE_TOKEN` rotated 2026-07-05 (×2, PRs #117/#118 — §1.1 step 1).                                                                             | ADR-0226; `outputs/archive/specs/audit-v2-remediation/p0-license-token-cred-incident/SPEC.md` (findings `4460dfca` / `47b2f472`). | **Issuer keypair + `LICENSE_ISSUE_TOKEN`: ROTATED 2026-07-05.** The three web-minted values (`OPENROUTER_API_KEY` / `DISCORD_TOKEN` / `MIRROR_PUSH_TOKEN`) remain **OPERATOR TO DO — block the caisson-oss public flip** (§1.1 sequencing gate).                                                                                         |
+| P4  | **Discord privileged intents + role/channel env** — `SUPPORT_CHANNEL_ID` / `MEMBER_ROLE_ID` and the Developer Portal's Server Members + Message Content intents were DONE 2026-07-11 — verified via Discord API (`GET /applications/@me`): GUILD_MEMBERS_LIMITED + MESSAGE_CONTENT_LIMITED both ON; `SUPPORT_CHANNEL_ID`/`SUPPORT_HUMAN_ROLE_ID` present in `~/.gridwork/caisson.env` (docs/state/outstanding-work.md).                                                                                      | `docs/archive/p6-deploy-runbook.md` lines 37–45; `docs/state/go-live-legal-and-entity.md` line 66.                                | **DONE** 2026-07-11 — API-verified.                                                                                                                                                                                                                                                                                                      |
+| P5  | **Rotate the three transited credentials** — `OPENROUTER_API_KEY`, `DISCORD_TOKEN`, `MIRROR_PUSH_TOKEN` all transited a chat session/transcript and are an ADR-0226 Fork-4 _incident_ (rotation mandated, not optional). Full per-credential runbook: §1.1 below. The issuer-keypair half of the sitting is DONE: the fresh launch Ed25519 keypair + `LICENSE_ISSUE_TOKEN` rotated 2026-07-05 (×2, PRs #117/#118 — §1.1 step 1).                                                                             | ADR-0226; `outputs/archive/specs/audit-v2-remediation/p0-license-token-cred-incident/SPEC.md` (findings `4460dfca` / `47b2f472`). | **Issuer keypair + `LICENSE_ISSUE_TOKEN`: ROTATED 2026-07-05.** `MIRROR_PUSH_TOKEN` rotation is DONE 2026-07-10 (fine-grained PAT, Contents+Workflows scope; mirror-sync run 29117126038 succeeded). Re-verify `OPENROUTER_API_KEY`/`DISCORD_TOKEN` against docs/state/outstanding-work.md before assuming still-pending.                |
 | P6  | **Business entity** — SUPERSEDED 2026-07-06: the operator formed **Caisson Software LLC** (Georgia, single-member), overtaking the earlier sole-proprietor-until-first-sale posture. Paddle production proceeds as business type Private (entity) with formation docs, not the Individual gov-ID path (single-member disregarded LLC: owner's SSN/EIN on the W-9). Site-side seller naming verified live 2026-07-07 (PR #133 restored Caisson Software LLC after a mid-wave mislabel). Not a blocker for §2. | `docs/state/go-live-legal-and-entity.md` lines 26–33; `docs/business/caisson-software-llc.md`.                                    | **DONE** — entity formed, site matches; use the entity details at Paddle verification.                                                                                                                                                                                                                                                   |
 | P7  | **WORM retention-mode flip GOVERNANCE → COMPLIANCE (ADR-0230)** — the live `caisson-worm` default stays GOVERNANCE pre-launch; at the commerce flip, escalate launch-forward anchors to COMPLIANCE via the ADR-0202 gated extend-only escalation (explicit operator DEPLOY act, never autonomous). Pre-launch GOVERNANCE-era anchors are not retro-escalated by default.                                                                                                                                     | ADR-0230; §7's DEPLOY block landed the live anchors under GOVERNANCE (Mode GOVERNANCE, RetainUntilDate 2033).                     | **LAUNCH GATE** — execute alongside the §2 Paddle production flip.                                                                                                                                                                                                                                                                       |
 
@@ -91,8 +91,9 @@ These are **operator-owned, not box-drivable**, and are cited gaps this session 
 
 Executes ADR-0226 Fork 1 + Fork 4 for the P0 audit incident
 (`outputs/archive/specs/audit-v2-remediation/p0-license-token-cred-incident/SPEC.md`). Batch all four in
-one sitting; mirror every new value into the `Caisson Launch` 1Password vault (title === env var
-name, ADR-0226 Fork 3) and `~/.gridwork/caisson.env`.
+one sitting; mint each value into the `Caisson Launch` 1Password vault FIRST (title === env var
+name — 1Password is now the primary secret SoT, ADR-0317 amends ADR-0226 Fork 3), then propagate to
+`~/.gridwork/caisson.env` and the owning Railway service.
 
 1. **Ed25519 issuer keypair + `LICENSE_ISSUE_TOKEN`** — **DONE 2026-07-05 (rotated ×2)**: the
    agent-side bake landed as PR #117 (injectable verifier + runtime dev-key fixtures + negative bake
@@ -602,9 +603,10 @@ Paddle traffic, since that endpoint was never behind Access in the first place (
   P2 is a Paddle policy requirement, not just a nicety. P3 left as-is (option (b), hide the buttons) is
   fine to launch with — P3 left as-is with the buttons still visible is not.
 - **Do NOT force-push or hand-edit `main` for the §2.3 pricebook change.** It goes through the normal
-  PR + `greptile-gate` (billing/credits are security-critical paths) + merge flow like any other code
-  change — this runbook is DEPLOY-class for the _credential and DNS/Access_ acts, not a license to skip
-  the standards gate on the code change that feeds them.
+  PR + the in-session SHIP audit lane (`gw-code-reviewer` + `gw-security-auditor` on fable for this
+  money/license seam, per CLAUDE.md's PR review gate) + merge flow like any other code change — this
+  runbook is DEPLOY-class for the _credential and DNS/Access_ acts, not a license to skip the standards
+  gate on the code change that feeds them.
 - **Do NOT assume the Discord privileged-intents / rotate-creds items (P4/P5) are already done** — this
   session found them flagged-but-unconfirmed in `docs/state/go-live-legal-and-entity.md`. Verify, don't
   trust the doc's age.
@@ -675,19 +677,11 @@ apply`, then **probe for a `429`**: hammer the proxied docs-api path past the Fr
    grey-cloud/un-proxied — the rate-limit is docs-api-proxied only, the app-level limiters (ADR-0204)
    stay in place underneath.
 
-### Transfer aftermath (repo moved to `caisson-sh/caisson`, 2026-07-02)
+### Transfer aftermath (repo moved to `caisson-sh/caisson`, 2026-07-02 — historical)
 
-The monorepo transferred into the **`caisson-sh`** GitHub org (repo home is now
-`github.com/caisson-sh/caisson`; the old `GridWork-dev/caisson` URL auto-redirects). One operational
-gotcha this move surfaced, worth memorizing:
-
-- **If CI jobs ever queue with ZERO runners after an org/repo move**, the runscaler **scale set must
-  be deleted and recreated** — a stale scale set keeps pointing at the old repo/org URL and silently
-  registers no runners. The fix: correct the scale-set URL, then **`systemctl stop` → `systemctl
-start`** the runscaler unit cleanly (not a hot reload), and **cancel + re-run** any jobs that were
-  queued against the dead set — they do not auto-recover onto the new runners. (This is exactly what
-  happened at the transfer: the old scale set had to be torn down and recreated on both the box and
-  the Mac mini, and the Greptile app was reinstalled on the new org.)
+Repo home is `github.com/caisson-sh/caisson` (old `GridWork-dev/caisson` URL auto-redirects). The
+org-move runscaler-scale-set gotcha this surfaced is now moot: the amd64 hot path runs on Blacksmith
+VMs (ADR-0326), not the scale set that needed the delete/recreate dance.
 
 ## 8. Edge license-revocation deny-set (ADR-0225 R-4=B)
 

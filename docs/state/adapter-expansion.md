@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-11
 status: live
 ---
 
@@ -12,69 +12,18 @@ inventory. This is a roadmap doc (under `docs/state/`); each port-family expansi
 numbers penciled below were **never used** — the actual locks landed under other numbers
 (see the reconcile block).
 
-## 2026-07-07 reconcile (ADR-0287 S-effort driver batch — read this before quoting a row it touches)
+**2026-07-07 (ADR-0287):** analytics port, Clerk auth, BullMQ jobs, and the Slack `ChatPlatform`
+driver all shipped — folded into the inventory table below. Current ship state for every port:
+`docs/state/compatibility-matrix.md`.
 
-Four rows below flip to SHIPPED same-day, closing out most of what the 2026-07-06 reconcile still
-listed "genuinely open":
+**2026-07-06 (ADR-0265 doc-correction pass):** most Tier 1/2 rows below shipped in the
+2026-06-30/07-01 Stage-2 wave, same day this doc was authored. The `ArtifactStore` R2 "~trivial
+S3-compat reuse" premise below is WRONG (R2 has no S3 Object Lock) — corrected by ADR-0267 (GCS
+Bucket Lock + R2 bucket-locks API). Launch gating per transport: `docs/ops/live-transport-checklist.md`.
 
-- **Analytics port (§1D) → SHIPPED** (`packages/analytics`, ADR-0287): the port this row's
-  original scope called for — `AnalyticsProvider.capture(event)` with a capture (test) driver plus
-  Plausible / PostHog / GA4 production drivers, fail-open by design. `apps/site`'s own
-  client-side Plausible/PostHog page-tracking init is unrelated and unchanged (this is a
-  server-side event-capture port, not a browser snippet).
-- **`SessionProvider` Clerk (§1C) → SHIPPED** (`packages/org-controls/src/clerk.ts`, ADR-0287):
-  verifies a Clerk session JWT (v2) against Clerk's JWKS, networkless when a public key is
-  configured, then maps the claims onto the kernel's session shape — stateless, alongside the
-  existing WorkOS SSO transport. Auth0/Okta still open.
-- **`JobQueue` BullMQ (§2B) → SHIPPED** (`packages/jobs/src/bullmq.ts`, ADR-0287): a Redis-backed
-  driver joining Trigger.dev + pg-boss + in-memory behind the same port. Inngest still open.
-- **Chat Slack (Tier 3) → SHIPPED** (`services/support-bot/src/caisson_support_bot/chat_slack.py`,
-  ADR-0287): the `ChatPlatform` port this row called for (renamed from `ThreadOpener`, a same-file
-  2-line rename with zero blast radius) plus a Slack Web API driver, config-selected
-  (`chat_platform=discord|slack`). Scope is the escalation-notify seam only — the bot's `/ask`
-  slash command + `#ask-ai` listener stay Discord-native. Telegram still open.
-
-## 2026-07-06 reconcile (ADR-0265 doc-correction pass — read this before quoting any row)
-
-Much of Tier 1/2 shipped in the 2026-06-30/07-01 Stage-2 Stream-D wave, same day this doc was
-authored; the tier sections below are kept for their design detail but their "Add"/"planned"
-framing is stale for these rows:
-
-- **Emailer → SHIPPED** (ADR-0170): SMTP-generic + SES + Postmark beside Resend/Capture.
-- **KmsClient AWS → SHIPPED + live-proven** (ADR-0171, real-CMK proof 2026-07-02); **GCP KMS
-  locked into the Kickoff-F wave** (no new ADR needed per ADR-0171's own binding); Azure
-  KV/Vault still open.
-- **SessionProvider WorkOS → SHIPPED** (ADR-0172); Clerk/Auth0 still open.
-- **JobQueue pg-boss → SHIPPED** (ADR-0173; + in-service scheduler ADR-0256); BullMQ/Inngest
-  still open.
-- **AI inference Bedrock/Azure/Ollama → SHIPPED** (Stage-2 Stream C, ADR-0160-0162 wave).
-- **BillingProvider LemonSqueezy/Polar → CODED** (ADR-0175; live-proof pending per ADR-0265).
-- **MCP HTTP transport → SHIPPED** (ADR-0161).
-- **ArtifactStore R2: the "~trivial S3-compat reuse" premise below is WRONG** — R2 does not
-  support S3 Object Lock, and `ArtifactStore` is a WORM-contract port (`retainUntil`
-  mandatory). The corrected lock is **ADR-0267**: GCS Bucket Lock + an R2 driver on
-  Cloudflare's bucket-locks API, fail-closed when the bucket rule can't satisfy the requested
-  retention.
-- Still genuinely open beyond the above (2026-07-06 snapshot; see the 2026-07-07 reconcile above
-  for what since shipped): GCS/Azure Blob (now locked via ADR-0267 for GCS), BullMQ/Inngest,
-  Clerk/Auth0, Azure KV/Vault KMS, Slack/Telegram chat, analytics port (1D scope).
-- Launch gating for every transport row now lives in `docs/ops/live-transport-checklist.md`
-  (ADR-0265, enterprise-ready sweep).
-
-**Kickoff-F build wave LANDED (2026-07-06, same day, post-reconcile):**
-
-- **ArtifactStore GCS + R2 → SHIPPED** (`audit-worm/src/store.{gcs,r2}.ts`, ADR-0267). Build
-  correction inside the ADR's bound: GCS uses per-object **Object Retention Lock** (bucket-level
-  Bucket Lock is a single fixed duration and can't honor per-put `retainUntil`). R2's
-  `extendRetention` succeeds only under an `Indefinite` rule — real capability gap vs S3/GCS.
-- **KmsClient GCP → SHIPPED** (`field-crypto/src/kms-gcp.ts`, ADR-0171 binding): official SDK,
-  BYO-DEK envelope (GCP has no GenerateDataKey), AAD scope-binding, version-scoped shred.
-- **ORM bridges → SHIPPED** (`tenancy-rls/src/{drizzle,prisma}.ts`, ADR-0266): structural
-  typing, zero runtime ORM deps; raw-SQL migrations stay canonical for RLS DDL.
-- **AI lanes groq/mistral/together → SHIPPED** (ai-config + ai-kit, fail-closed on missing key).
-- **Emitter targets Devin (+Windsurf mirror)/Copilot/Cline → SHIPPED** (ADR-0264, with the
-  IR activation extension + fidelity warnings; Cursor `alwaysApply` degrade fixed).
-- **Deploy templates railway/fly/vercel → SHIPPED** (`cli/templates/deploy/`, ADR-0268).
+**Kickoff-F wave (2026-07-06)** shipped ArtifactStore GCS+R2 (ADR-0267), GCP KMS (ADR-0171),
+Drizzle/Prisma bridges (ADR-0266), groq/mistral/together AI lanes, 3 emitter targets, and deploy
+templates (ADR-0268) — folded into the inventory table below.
 
 ## Why
 
@@ -122,9 +71,8 @@ pattern) — never a fork of the port contract.
 
 ### 1A. Email multi-driver — `Emailer` → **ADR-0119**
 
-_(2026-07-06: this `0119` pencil was never filed — the real lock shipped as **ADR-0170**; see
-the reconcile block at the top of this doc and `docs/state/decisions-and-forks.md`'s ADR-0119
-clarification note for the unrelated, still-unfiled board placeholder that also used this number.)_
+_(Real lock: **ADR-0170**, not the `0119` pencil in this heading — see
+`docs/state/decisions-and-forks.md`'s ADR-0119 clarification note for the unrelated board placeholder.)_
 
 - Add **SMTP-generic** (nodemailer-style, universal catch-all — any buyer mail host) + **AWS SES**
   (cheap enterprise scale) + Postmark (transactional reliability).

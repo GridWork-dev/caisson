@@ -53,7 +53,7 @@ editions dissolved into six commercial **bundles** 2026-07-06 (`ADR-0257`/`0258`
 carve package has real, tested code behind it. Do not restate package counts or GA status here --
 read `docs/build-state.md`.
 
-Canonical build plan: [`plan.md`](../plan.md) (P0->P7). Historical edition truth-to-built rule:
+Canonical build plan: [`plan.md`](archive/plan.md) (P0->P7, archived history). Historical edition truth-to-built rule:
 [`knowledge/decisions/ADR-0082-go-live-site-posture.md`](../knowledge/decisions/ADR-0082-go-live-site-posture.md)
 (superseded on this view by `ADR-0257`/`0258`; still binding on the site-copy honesty question it decided).
 
@@ -66,13 +66,14 @@ Releases are **changesets-driven** (ADR-0001 / ADR-0069). No hand-edited version
 - Config: [`.changeset/config.json`](../.changeset/config.json) -- `access: "restricted"`,
   `baseBranch: "main"`, `commit: false`. `@changesets/cli ^2.27.9` is a root devDep.
 - **Per-module independent semver** (a-la-carte commerce, ADR-0003). Editions depend on base
-  packages by `^` range with `updateInternalDependencies: false` -- a base **patch** does NOT
-  cascade a republish through every edition (ADR-0021).
-- A source change to a package requires a changeset; CI gates on `changeset status --since`
-  presence. **Status: the presence gate is designed, not yet wired** -- it lands with the P6 publish job (deferred publishability flip; the
-  `# Changeset presence is a PUBLISH-time gate` note in `ci.yml`). Pre-publish
-  every package is `0.0.0`/private, so there is nothing to release-gate yet.
-- No pending `.changeset/*.md` files and no root `release`/`publish` script exist today (verified).
+  packages by `^` range; `.changeset/config.json` sets `updateInternalDependencies: "patch"` (the
+  changesets default -- a base patch DOES bump dependents' patch versions on the next release cut,
+  not the `false`/no-cascade behavior this line used to describe).
+- A source change to a public package requires a changeset; CI now enforces it -- `standards-gate`
+  in `ci.yml` runs `bunx changeset status --since=origin/main` and fails if one's missing
+  (packages are PUBLIC and versioned past `0.0.0`, not pre-publish).
+- 140 changesets are pending (unconsumed since the 2026-07-06 version cut), awaiting a deliberate
+  `changeset version` release act -- see `docs/state/outstanding-work.md`.
 
 Author a changeset locally with `bunx changeset` `(unverified -- no wrapper script; standard changesets CLI)`.
 
@@ -182,7 +183,9 @@ second operator or a CI-driven apply. Detail:
 
 ## 7. CI workflows
 
-**Eight workflows** under [`.github/workflows/`](../.github/workflows/): `ci.yml`, `quality.yml`,
+**Ten workflows** under `.github/workflows/`: the eight listed here plus `security-scan.yml`
+(Semgrep/Socket security gates, ADR-0314) and `release-train.yml` (the ADR-0318/0325 release
+train, dormant until armed — CAISSON-94): `ci.yml`, `quality.yml`,
 `publish.yml`, `deploy-railway.yml`, `lighthouse.yml`, `mirror-sync.yml`, `aeo-probe.yml`,
 `support-bot.yml`. All Bun + Turbo (except the Python-only `support-bot.yml`),
 `--frozen-lockfile`, bun pinned to `1.3.14` (the `packageManager` line — no `latest` floats).
@@ -246,13 +249,16 @@ exercises eval, token-drift, and native-ext.
 | `native-ext`    | linux → **Blacksmith** 4vcpu VM; macos → **fleet** `[self-hosted, gw-macos-arm64]` (20m) | `bun test packages/local-store/src` -- exercises the platform-specific sqlite-vec `.so`/`.dylib` on both OSes, `fail-fast: false`                                                                                      |
 | `evidence-pack` | **Blacksmith** 4vcpu VM (15m)                                                            | Assembles the CI build-provenance evidence pack (ADR-0275) from the standards-gate + registry-index outputs into one manifest'd artifact for a security reviewer. Unconditional (no path-filter); NOT a required check |
 
-### `publish.yml` (main-only, ADR-0021 ordering)
+### `publish.yml` — now release-train-triggered, not on every `main` push (ADR-0325)
+
+As of the ADR-0318/0325 release train, `publish.yml` no longer fires on every push to `main` — it
+runs via `release-train.yml`'s propagation leg (on a published GitHub Release) or manual
+`workflow_dispatch`; both stay dormant until `RELEASE_TRAIN_ARMED` is set (CAISSON-94). The
+per-package pack→hash→R2 mechanics below are otherwise still accurate.
 
 Renamed from `ci.yml`'s old `publish-and-index` job. Its `needs:` on the 4 `ci.yml` checks was
-dropped when it moved to its own file (GitHub Actions `needs:` cannot cross workflow files) —
-ordering is now enforced structurally: this workflow triggers on `push: branches: [main]`, which
-only fires after a PR has already merged, which only happens after `ci.yml`'s checks passed on
-that PR. **Buyer delivery is now a self-hosted npm registry** (`registry.caisson.sh`, ADR-0223) —
+dropped when it moved to its own file (GitHub Actions `needs:` cannot cross workflow files).
+**Buyer delivery is now a self-hosted npm registry** (`registry.caisson.sh`, ADR-0223) —
 the GitHub-Packages leg is retired. Per changed non-private package: `bun pm pack` → hash → record
 into `registry/tarballs.json` → upload the tarball to R2, plus the `changeset version` bump +
 ledger/index rebuild, committed back to `main`. Guarded by `CAISSON_PUBLISH_DRY_RUN` (default
@@ -262,11 +268,10 @@ ledger/index rebuild, committed back to `main`. Guarded by `CAISSON_PUBLISH_DRY_
 
 - **`mirror-sync.yml`** — snapshot-syncs the open (Apache-2.0) base into the public mirror repo
   `caisson-sh/caisson-oss` (force-pushed as one fresh commit per sync, no mirror-side history).
-  Triggers on `workflow_dispatch` + `push: main` path-filtered to the open packages. **Stays inert
-  until armed:** `MIRROR_PUSH_TOKEN` (a fine-grained PAT scoped to `contents:write` on the mirror
-  repo) is not yet a valid repo secret — the current token lacks the Workflows scope the sync
-  needs, so this workflow has been failing on every `main` push since 2026-07-04
-  (`docs/state/outstanding-work.md` §1, the one credential rotation left from the 2026-07-08 sweep).
+  No longer triggers on `push: main` — that trigger retired under the ADR-0318/0325 release
+  train (mirror-sync now fires via the train's propagation leg or manual `workflow_dispatch`).
+  `MIRROR_PUSH_TOKEN` is FIXED (rotated 2026-07-10 with Contents+Workflows scope; `mirror-sync`
+  run 29117126038 succeeded) — the "failing since 2026-07-04" state is resolved.
 - **`aeo-probe.yml`** — the monthly AI-citation probe loop (ADR-0254): runs
   `tooling/scripts/aeo-probe.ts` against 18 canonical questions × 3 OpenRouter-routed engines,
   commits the dated snapshot into `docs/gtm/aeo-citation-tracking.md`. `schedule` (1st of month) +
@@ -376,5 +381,5 @@ posture (CAISSON-52, configured + proven 2026-07-11):
 | ADR renumber map (GTM 0045-0048 -> 0084-0087)                                   | [`knowledge/decisions/ADR-0088-adr-number-collision-renumber.md`](../knowledge/decisions/ADR-0088-adr-number-collision-renumber.md)       |
 | Architecture                                                                    | [`specs/01-architecture.md`](../specs/01-architecture.md)                                                                                 |
 | Live decision board                                                             | [`docs/state/decisions-and-forks.md`](state/decisions-and-forks.md)                                                                       |
-| Build plan (P0-P7)                                                              | [`plan.md`](../plan.md)                                                                                                                   |
+| Build plan (P0-P7)                                                              | [`plan.md`](archive/plan.md)                                                                                                              |
 | Deploy (canonical)                                                              | [`infra/terraform/README.md`](../infra/terraform/README.md)                                                                               |

@@ -1,36 +1,23 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-11
 status: live
 ---
 
 # Go-live: legal, entity & launch-blocker checklist
 
 Operator-actionable prep for taking Caisson from "deployed but gated" to "can take a real
-payment." Companion to `readiness-and-backlog.md` (build/deploy state) — this file owns the
+payment." Companion to `docs/state/production-readiness.md` (build/deploy state) — this file owns the
 **business/legal + launch-flip** surface. **Not legal/tax advice; confirm specifics with a
 GA CPA + the GA SOS before filing.** Operator is **Atlanta, Georgia** (not CA — the CA
 $800 franchise-tax math does NOT apply).
 
-## Entity — Georgia (verified 2026-07-01, GA SOS + multiple 2026 guides)
+## Entity — Georgia
 
-|                   | Sole proprietor (now)                            | **Georgia LLC**                                                                            |
-| ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Setup             | $0, start today                                  | **$100 online** (eCorp / ecorp.sos.ga.gov), ~7 biz days (+$100 → 2 days, +$250 → same-day) |
-| Recurring         | $0                                               | **$60/yr** annual registration (Jan 1–Apr 1; first one due the _year after_ formation)     |
-| **Franchise tax** | —                                                | **NONE** (GA net-worth tax hits only LLCs taxed as C-corp; pass-through LLC owes $0)       |
-| Liability         | personal assets exposed                          | shielded from business debts/suits                                                         |
-| Paddle            | works as Individual (gov ID + W-9 + payout acct) | works as entity (provide formation docs)                                                   |
-| Tax               | Schedule C on personal return                    | pass-through (same), cleaner separation; GA income tax flat ~5.19% → 4.99% glide           |
-| Registered agent  | n/a                                              | GA street address required — **operator can self-serve** (Atlanta address), $0             |
-
-**SUPERSEDED (operator action, 2026-07-06):** the 2026-07-01 "sole-proprietor first, form at
-first sale" lock is overtaken — the operator formed **Caisson Software LLC** (GA, member-managed,
-single member, Northwest Registered Agent; membership omitted from the state filing) on
-2026-07-06, ahead of first sale, to carry the under-18 ownership structure. The entity SOT —
-facts, EIN cheat sheet, operating-agreement lawyer brief (transfer-at-18 + minor-IP-assignment
-clauses), and the approval → EIN → OA → Mercury → Paddle-production order of operations — is
-**`docs/business/caisson-software-llc.md`**. Paddle production proceeds as business type
-**Private** (entity), not Individual. The table above stays as the decision-time record.
+**Caisson Software LLC** (GA, member-managed, single member, Northwest Registered Agent;
+membership omitted from the state filing) formed 2026-07-06, ahead of first sale. Facts, EIN
+cheat sheet, operating-agreement brief, and the approval → EIN → OA → Mercury →
+Paddle-production order of operations: `docs/business/caisson-software-llc.md`. Paddle
+production proceeds as business type **Private** (entity).
 
 ## Legal docs — minimal launch stack (Paddle MoR + CalOPPA/GDPR reality)
 
@@ -70,8 +57,9 @@ These BLOCK a real sale and are **operator-owned** (I can't do them from the box
    grants nothing until this + the (already-built) webhook route run against live creds.
 2. **Cloudflare Access flip** off `caisson.sh`/`www` (ADR-0107) — the deliberate launch act; do only
    after checkout works + Compliance is buyable.
-3. **Discord** — enable GUILD_MEMBERS + MESSAGE_CONTENT privileged intents (Dev Portal), set
-   `SUPPORT_CHANNEL_ID`/`MEMBER_ROLE_ID` on the box, scope the bot role down from Administrator.
+3. ~~**Discord** — enable GUILD_MEMBERS + MESSAGE_CONTENT privileged intents~~ **DONE 2026-07-11**
+   (verified). Residual: confirm `SUPPORT_CHANNEL_ID`/`MEMBER_ROLE_ID` and the bot-role scope-down
+   at launch.
 4. **Rotate the leaked Discord/OpenRouter creds** — **DONE 2026-07-08** (`OPENROUTER_API_KEY` split
    into six per-service keys, `DISCORD_TOKEN` regenerated; see
    `docs/archive/operator-runbook-2026-07-08.md` Phase 1.1/1.2 and `docs/deploy/STATE.md`'s

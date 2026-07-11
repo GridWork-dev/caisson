@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-11
 status: live
 grounds:
   - docs/state/providers.md
@@ -25,8 +25,7 @@ looks like per sale.
 | Plausible | Cookieless web analytics (no consent banner)                                                | $9/mo Starter (no free hosted tier)                                                                                                              | ADR-0118                          |
 | Linear    | Issue tracking + agent automations                                                          | $16/mo Business plan (issue/project CRUD works free; the $16 buys the agent-automation tier) — **not yet turned on**, an operator billing action | providers.md §Config-audit item 8 |
 
-**Flat floor today: ≈$30–50/mo** (Railway + Plausible; Linear Business is optional/variable on
-top). This is a **big drop from the 2026-06 baseline** — self-hosted SigNoz (~$45–70/mo) was
+**Flat floor today: ≈$46-66/mo** (Railway + Plausible + Linear Business, now active) + ~$25-50/mo for Blacksmith CI (ADR-0326) = **≈$71-116/mo all-in**. Linear Business ($16/mo) was turned on 2026-07-11 (`docs/state/linear-integration.md` "Business-tier automations — CONFIGURED") — no longer optional/pending. This is a **big drop from the 2026-06 baseline** — self-hosted SigNoz (~$45–70/mo) was
 removed 2026-07-01 and replaced by Grafana Cloud's free tier (see below); **Greptile + TREX
 dropped entirely 2026-07-06** (vendor retired after the Starter plan's monthly review limit hit
 mid-PR-#128 — no replacement external reviewer, review gate is now the in-session SHIP audit lane
@@ -57,10 +56,12 @@ per `CLAUDE.md` §PR review gate), removing what had been a variable per-run lin
 - Registry self-hosted npm delivery (ADR-0223) — built, **dormant** behind
   `CAISSON_PUBLISH_DRY_RUN=true`; going live adds a Worker route + R2 bucket, still R2-usage-priced
   (see above), not a new flat fee.
-- CI runners — the `caisson-amd64` runscaler scale set (self-hosted fleet on the operator's own
-  hardware) plus two hosted jobs that stay off the self-hosted fleet: `oscal-conformance` (Maven)
-  and `deploy-railway` (needs the prod token). No separate SaaS line for CI compute — the box is
-  the runner.
+- CI runners — the caisson hot path (quality/ci/security-scan) migrated off the self-hosted
+  `caisson-amd64` box to Blacksmith VM-per-job runners (Firecracker microVM per job, ADR-0326,
+  2026-07-11) at ~$25-50/mo after the 3,000 free min/mo — the first CI compute line with a real
+  SaaS cost. Credential-bearing jobs (publish, deploy-railway, mirror-sync, release-train) stay
+  GitHub-hosted (ubuntu-latest); the Mac ARM leg stays self-hosted (`gw-macos-arm64`) at $0. The
+  `caisson-amd64` scale set is retired.
 
 ## The COGS floor per sale
 

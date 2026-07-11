@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-06
+updated: 2026-07-11
 status: live
 grounds:
   - knowledge/decisions/ADR-0254-measurement-pair-citation-loop-docs-funnel.md
@@ -31,7 +31,7 @@ Copied verbatim from `outputs/research/kickoff-e-research-2026-07/w4-ai-citation
 5. "How do I get fail-closed row-level security plus a SOC2 evidence pack without hiring a compliance team?"
 6. "What's the best compliance-for-developers framework in 2026?"
 
-**AI Production Kit (#2 edition) — 3:**
+**AI-Production bundle — 3:**
 
 7. "What's a production-grade LLM cost-control / token-metering framework for a Bun/TypeScript app?"
 8. "What tools give AI agent spend caps and circuit breakers out of the box?"

@@ -132,6 +132,6 @@ against EACH service, since PITR/restore is scoped per-service either way.
 - **Code-level rollback** (a bad deploy, not a bad write) — `docs/ops/incident-response.md`
   §"Generic Railway rollback". A restore undoes DATA; a rollback undoes CODE — an incident may need
   either or both.
-- **Read-only containment** — `packages/kernel/src/read-only.ts`'s `assertNotReadOnly` gate (not
-  yet wired to a live mode source as of this writing) can freeze writes while a restore target is
-  being decided, once W3 lands a source.
+- **Read-only containment** — `packages/kernel/src/read-only.ts`'s `assertNotReadOnly` gate has
+  been LIVE since ADR-0300 (2026-07-09, Kickoff-H W3, an admin-flipped `system_mode` source). Can
+  freeze writes while a restore target is being decided — see `docs/ops/incident-response.md`.

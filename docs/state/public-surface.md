@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-06
+updated: 2026-07-11
 status: live
 ---
 
@@ -16,7 +16,7 @@ distribution reality (§3–4, forks CLOSED by ADR-0222/0223 on 2026-07-02).
 
 **Method:** every `packages/*/package.json` `license`/`private`/`publishConfig` field read
 directly off disk, cross-checked against `tooling/standards-gate/src/checks.ts`
-(`OPEN_BASE_NAMES`), `registry/index.json` (33 modules, schema v1), `.github/workflows/publish.yml`,
+(`OPEN_BASE_NAMES`), `registry/index.json` (46 modules, schema v1, current as of 2026-07-11), `.github/workflows/publish.yml`,
 and ADR-0094 (open-core split), ADR-0097 (registry-schema split), ADR-0136 (license-keyed gate +
 tooling-open), ADR-0111 (publish-readiness split plan), ADR-0069 (publish credential).
 
@@ -142,14 +142,12 @@ then locked:
   npmjs but no npmjs auth exists in CI" gap is resolved by moving npmjs publishing off the monorepo
   entirely; the packages' `publishConfig.registry` fields are consumed by the mirror's publish job,
   not the monorepo's.
-- **Commercial buyer channel — `registry.caisson.sh` (ADR-0223, build pending).** The
-  `@caisson-sh/*` npmjs mirror is the PUBLIC-DISCOVERY surface only. Buyers install COMMERCIAL
-  modules from **`registry.caisson.sh`** — a real npm registry (packuments + tarballs, authenticated
-  by the license token they hold) — which **supersedes** the structurally-dead GitHub-Packages buyer
-  channel baked into `packages/cli/src/generate.ts` (the `npm.pkg.github.com` emit) +
-  `packages/cli/templates/base/.npmrc`. That generator + docs flip lands in the build that
-  implements the ADR-0223 SPEC — **not yet built**; the generator's `npm.pkg.github.com` emit
-  correctly stays un-flipped until then.
+- **Commercial buyer channel — `registry.caisson.sh` (ADR-0223, BUILT 2026-07-02, dormant pending
+  operator DEPLOY).** Buyers install COMMERCIAL modules from **`registry.caisson.sh`** — a real npm
+  registry (packuments + tarballs, license-token-authed) — superseding the dead GitHub-Packages
+  buyer channel baked into `packages/cli/src/generate.ts` + `packages/cli/templates/base/.npmrc`.
+  It runs behind `CAISSON_PUBLISH_DRY_RUN=true`; the wrangler route + R2 bucket DEPLOY is the
+  remaining operator act (`docs/state/decisions-and-forks.md` "Private registry host" row).
 
 **Still true:** nothing is published on public npmjs yet. The pipelines are armed (see §4) but
 publishing is gated on a manual dispatch — armed, not auto-firing.

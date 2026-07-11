@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-07
+updated: 2026-07-11
 status: live
 grounds:
   - knowledge/decisions/ADR-0079-seo-strategy.md
@@ -18,14 +18,11 @@ client-only content, an over-broad robots block, or a missing sitemap. This is t
 code-level audit of `apps/site`, one row per check with a pass/fail verdict, plus the
 one launch blocker no code change can clear.
 
-**Scope note — the CF-Access gate:** production (`caisson.sh`) currently sits behind a
-Cloudflare Access pre-launch gate. **Every crawler — Googlebot, GPTBot, ClaudeBot,
-PerplexityBot — hits the Access login wall and sees nothing.** No amount of on-page SEO
-is visible until that gate drops. This audit therefore certifies the _code_ is
-crawl-ready; the launch runbook must drop CF-Access (or scope it off the public
-marketing, docs, and glossary routes) before any of it reaches an index. Until then,
-verification is against the built output / component structure, not a live fetch. This
-is the single gating item — tracked as the top row of §Blocking.
+**Scope note — the CF-Access gate (RESOLVED 2026-07-10, ADR-0303):** the gate no longer
+covers the whole apex. It now scopes to `/dashboard*` + `/cart*` only — marketing, docs,
+glossary, and llms.txt serve public and are crawlable today. Full gate removal (the last
+blocker) rides the launch-runbook Step 3, tracked in `docs/state/outstanding-work.md`,
+not this audit.
 
 ## Checks
 
@@ -53,13 +50,12 @@ is the single gating item — tracked as the top row of §Blocking.
 2. **`app/(marketing)/agentic-dev/page.tsx`** — added `faqPage(FAQS)` JSON-LD (check #12), closing the one bundle that had a visible FAQ but no schema.
 3. **`lib/glossary.ts`** — three long-tail explainer terms (check #13, deliverable 4), each auto-covered by the existing sitemap + llms.txt + JSON-LD surfaces.
 
-## Blocking (must clear before launch — not a code fix)
+## Blocking (historical — CLEARED 2026-07-10)
 
-- **CF-Access pre-launch gate.** Production is gated by Cloudflare Access; crawlers see a
-  login wall, so nothing above is indexable yet. **The launch runbook must drop or
-  scope-off the gate for the public marketing, docs, and glossary routes before AEO has
-  any effect.** This is the top of the crawlability critical path — every other check is
-  green and inert until it clears.
+- **CF-Access pre-launch gate — RESOLVED by ADR-0303.** Marketing/docs/glossary/llms.txt
+  now serve public; only `/dashboard*` and `/cart*` remain gated. All checks above are
+  now live and indexable. Full gate removal (post-checkout-live) is a separate
+  launch-runbook step, not a crawlability gap.
 
 ## Not in scope / deliberately deferred
 

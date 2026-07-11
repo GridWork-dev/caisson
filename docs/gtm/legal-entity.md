@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-11
 status: live
 grounds:
   - docs/state/go-live-legal-and-entity.md
@@ -19,7 +19,8 @@ checklist) plus the ADRs and live site copy cited inline. **Not legal/tax advice
 **Caisson Software LLC** — Georgia member-managed single-member LLC, formed 2026-07-06 via
 Northwest Registered Agent (operator action superseding the 2026-07-01 defer-to-first-sale
 lock; the entity carries the under-18 ownership structure, so it formed ahead of revenue).
-EIN in flight (est. 2026-07-15). The entity SOT — facts, EIN cheat sheet, the
+EIN ISSUED 2026-07-10 (CP-575 in hand, ahead of the 2026-07-15 estimate — see
+`docs/business/caisson-software-llc.md` §1). The entity SOT — facts, EIN cheat sheet, the
 operating-agreement lawyer brief (transfer-at-18 + minor-IP-assignment clauses), and the
 approval → EIN → OA → Mercury → Paddle-production order of operations — is
 **`docs/business/caisson-software-llc.md`**; this section is the GTM-layer summary only.
@@ -134,20 +135,6 @@ answered|escalated}` — no IP, no user id, no answer text, no Turnstile token; 
 | Credit rollover/12-month-expiry/FIFO clause (ADR-0245)                               | Operator/build — same flip gate; dashboard credit-balance copy done, EULA text still doesn't state it                                                                             |
 | Real counsel pass on the EULA                                                        | Operator — page itself is marked pending review before first sale                                                                                                                 |
 | DPA (Data Processing Agreement) template                                             | Operator — not legally forced for early B2C, but Caisson's buyer profile (audit-focused technical founder) makes it a near-certain early ask; have one ready at launch, not built |
-| GA LLC formation                                                                     | Operator — triggers at first meaningful revenue or first enterprise prospect, not before                                                                                          |
+| GA LLC formation                                                                     | **CLOSED** — formed 2026-07-06 (operator superseded the defer-to-first-sale lock; see §1)                                                                                         |
 | Rotate leaked Discord/OpenRouter creds                                               | **CLOSED** — credential sweep executed 2026-07-08 (per-service OpenRouter key split, `DISCORD_TOKEN` rotated); `MIRROR_PUSH_TOKEN` rotation still owed, unrelated to this leak    |
 | MSA/enterprise contract, SOC 2 report (~$10–30k, 3–6 mo), Delaware C-corp conversion | Deferred by design, not gaps — MSA waits for a buyer wanting custom terms; SOC 2 is a post-v1 enterprise-procurement item; C-corp conversion only applies if raising VC           |
-
-## Contradictions found while distilling
-
-- **EULA copy vs. ADR-0244 — RESOLVED:** at the time this file was originally distilled, the live
-  EULA text read as an unbounded perpetual-updates commitment gated only by an optional separate
-  subscription — closer to the failure mode ADR-0244 was locked to close than to the policy it
-  actually locks (perpetual-use _plus a 12-month included-updates window_, then optional paid
-  renewal at 40%). The EULA has since been updated (§5 Fees and payment) to state both the window
-  and the rate — see §3 above. The credit-clause half of the same gap (ADR-0245) remains open.
-- **A prior draft of this file (found at `~/lab/caisson/docs/gtm/legal-entity.md`, a different
-  checkout) described the Stripe driver as "retired code."** ADR-0116 is explicit that it is not:
-  Stripe stays a live, tested, buyer-selectable driver inside `@caisson/billing` for buyers'
-  _own_ products — only dormant on Caisson's own platform webhook mount (ADR-0200). Corrected in
-  §2 above.

@@ -163,8 +163,8 @@ These resolve from sibling workspaces (`workspaces: tooling/*, registry, service
 | `tooling/standards-gate`                                       | Bun standards-gate runner + dependency-cruiser boundary enforcement.                                                               | 0022, 0016                                                                           |
 | `registry/` (`@caisson/registry`)                              | Static CI-built `index.json` source-of-truth + allowlist; thin Cloudflare Worker read seam; publish ledger.                        | 0021, [0047](../knowledge/decisions/ADR-0047-registry-readpath-worker-seam.md), 0071 |
 
-`apps/*` (7: admin, agent-dev, ai-kit, base, compliance, local-ai, site) and `services/*` (3: docs,
-license, support-bot) are out of scope for this catalog; see [`specs/01-architecture.md`](../specs/01-architecture.md).
+`apps/*` (7: admin, agent-dev, ai-kit, base, compliance, local-ai, site) and `services/*` (5: betterstack-adapter, docs,
+intel, license, support-bot) are out of scope for this catalog; see [`specs/01-architecture.md`](../specs/01-architecture.md).
 
 ## Build-status rollup (STALE — see banner at top of file)
 
