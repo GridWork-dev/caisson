@@ -215,26 +215,14 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     class: "internal-only",
   });
 
-  // Root-level product/process docs. The repo is private (the oss MIRROR ships its own README via
-  // the exporter, Fork D / the oss-mirror domain), so these are never buyer-visible — internal-only.
+  // Root-level process docs — the sot-check docs-surface allowlist (root slimmed 2026-07-11:
+  // PRODUCT/DESIGN/plan/SUMMARY moved under docs/, AGENTS.md is a symlink to CLAUDE.md). The repo
+  // is private (the oss MIRROR ships its own README via the exporter, Fork D / the oss-mirror
+  // domain), so these are never buyer-visible — internal-only.
   domains.push({
     id: "root-docs",
-    roots: [
-      "README.md",
-      "PRODUCT.md",
-      "DESIGN.md",
-      "CLAUDE.md",
-      "SUMMARY.md",
-      "plan.md",
-    ],
-    globs: [
-      "README.md",
-      "PRODUCT.md",
-      "DESIGN.md",
-      "CLAUDE.md",
-      "SUMMARY.md",
-      "plan.md",
-    ],
+    roots: ["README.md", "CLAUDE.md", "AGENTS.md"],
+    globs: ["README.md", "CLAUDE.md", "AGENTS.md"],
     class: "internal-only",
   });
 
