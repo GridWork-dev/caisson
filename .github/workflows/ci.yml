@@ -43,7 +43,7 @@ permissions:
 jobs:
   # The standards gate (ADR-0021/0022) — the only registry ingress. Three layers, all block merge.
   standards-gate:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -95,7 +95,7 @@ jobs:
           bunx changeset status --since=origin/main
 
   check:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     # The heaviest job (38-pkg turbo tree incl. 5 Next.js builds + many in-process PGlite instances);
     # generous ceiling so a hung PGlite hook frees the runner rather than holding it to the 6h default.
     timeout-minutes: 30
@@ -142,7 +142,7 @@ jobs:
   # (blocking the merge) needs this job marked a required check + CODEOWNERS on a real handle +
   # branch protection (operator GitHub settings; forks board). The ledger APPEND step is publish.yml.
   registry-index:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -175,7 +175,7 @@ jobs:
     # ground-truth NIST schema validation actually runs. Validation is schema-only
     # (--disable-constraint-validation): constraint checks resolve the published import-ap URL, a
     # deploy-time concern, not export well-formedness.
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5

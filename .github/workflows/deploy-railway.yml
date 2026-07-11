@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # holds the prod Railway token → hosted (a prod deploy cred stays off the fleet)
+    runs-on: blacksmith-4vcpu-ubuntu-2404 # holds the prod Railway token → hosted (a prod deploy cred stays off the fleet)
     timeout-minutes: 25
     steps:
       # Inert-until-armed guard: `secrets` can't be referenced in a job/step `if:`, so map RAILWAY_TOKEN

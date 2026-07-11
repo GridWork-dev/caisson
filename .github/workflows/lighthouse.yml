@@ -28,7 +28,7 @@ jobs:
   lighthouse:
     # STAYS GitHub-hosted by design: needs a headless Chrome (the fleet runner image ships no
     # browser). Collection hits the live origin, so no site build is needed here.
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
