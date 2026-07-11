@@ -7,10 +7,16 @@ name: quality
 # a docs-only commit still exercises eval, token-drift, and native-ext. The `!cancelled()` in
 # each job's `if` replaces the implicit success() gate so a failed/flaky `changes` job cannot
 # skip the push path — on PRs a failed `changes` still skips (its outputs read empty).
+#
+# DRAFT PRs run nothing (CAISSON-96): the guard sits on `changes` + the two unconditioned jobs
+# (knip, evidence-pack); the path-conditioned jobs inherit it — a skipped `changes` leaves their
+# outputs empty, and `github.event_name == 'push'` is false on a PR, so their `if` reads false.
 on:
   push:
     branches: [main]
   pull_request:
+    # Defaults plus ready_for_review — flipping a draft to ready fires the full run (CAISSON-96).
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: "quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
@@ -25,6 +31,8 @@ jobs:
   # list via the GitHub REST API); for push it falls back to git against the pre-push commit, which
   # works against the default shallow checkout below (the action fetches additional history itself).
   changes:
+    # CAISSON-96 draft guard (header comment) — skipping this job also skips every path-conditioned job.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 5
     permissions:
@@ -120,6 +128,8 @@ jobs:
   # Repo-wide (not path-filtered): knip's cross-workspace unused-export analysis needs the whole
   # tree regardless of which package changed.
   knip:
+    # CAISSON-96 draft guard — unconditioned job, needs its own (header comment).
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
@@ -234,6 +244,9 @@ jobs:
   # enforced branch protection). The heavy proofs (the full turbo suite, the Java oscal-cli NIST
   # validation) are their own jobs at this same SHA and are REFERENCED by the manifest, not re-run.
   evidence-pack:
+    # CAISSON-96 draft guard — "every push and pull request" above means every NON-DRAFT one; the
+    # ready_for_review run assembles the pack before a merge is possible.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
