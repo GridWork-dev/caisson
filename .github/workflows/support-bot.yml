@@ -2,8 +2,8 @@ name: support-bot
 
 # Python gate for services/support-bot (the repo's only Python surface — ADR-0105). Path-scoped so it
 # runs ONLY when the bot changes; deliberately NOT one of the ADR-0016 required checks (advisory until
-# the lane is proven on the fleet). Runs on the same caisson-amd64 runscaler scale set as the TS gates
-# (docs/operations.md); setup-uv installs uv and uv fetches Python 3.12 + the locked deps inside the
+# the lane is proven). Runs on the same Blacksmith VM-per-job lane as the TS gates (ADR-0326,
+# docs/operations.md); setup-uv installs uv and uv fetches Python 3.12 + the locked deps inside the
 # throwaway container, so no interpreter needs to pre-exist on the runner.
 on:
   push:

@@ -3,7 +3,7 @@ name: aeo-probe
 # The monthly AI-citation probe loop (ADR-0254, gap #9). Runs tooling/scripts/aeo-probe.ts
 # against 18 canonical questions x 3 OpenRouter-routed engines (~$1.20/run in tokens), then
 # commits the resulting dated snapshot section in docs/gtm/aeo-citation-tracking.md back to
-# main. Self-hosted (caisson-amd64) — this job's write scope is one docs file via the
+# main. Blacksmith VM-per-job (ADR-0326) — this job's write scope is one docs file via the
 # built-in ephemeral GITHUB_TOKEN, not a cross-repo/prod credential (contrast
 # publish.yml/mirror-sync.yml, which stay hosted because they hold R2/cross-repo-PAT creds).
 #
