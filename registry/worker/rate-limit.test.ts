@@ -102,6 +102,8 @@ describe("rateLimitedResponse (catalog-class 429)", () => {
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
     expect(res.headers.get("x-frame-options")).toBe("DENY");
     expect(res.headers.get("cache-control")).toBe("private, no-store");
+    // CAISSON-87: clients back off on Retry-After; 60 = the wrangler.toml [[ratelimits]] period.
+    expect(res.headers.get("retry-after")).toBe("60");
     expect(await res.json()).toEqual({ error: "rate_limited" });
   });
 });

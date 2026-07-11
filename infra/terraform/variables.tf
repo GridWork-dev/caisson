@@ -45,6 +45,6 @@ variable "docs_api_railway_verify_txt" {
 
 variable "rate_limit_requests_per_period" {
   type        = number
-  default     = 60
-  description = "Requests allowed per counting window before the expensive-path rate-limit rule blocks (Free tier: window is fixed at 10s, see waf.tf)."
+  default     = 150
+  description = "Requests allowed per counting window before the expensive-path rate-limit rule blocks (Free tier: window is fixed at 10s, see waf.tf). Sized for the largest legitimate burst: a full everything-bundle install is ~46 packages x (packument + tarball) = ~92 concurrent registry requests from one IP (bun's default network concurrency is 48, so they land inside one window), plus retry headroom (CAISSON-87). Known caveat: the key is (colo, ip.src), so multiple buyers behind one corporate/VPN egress IP share the counter — two simultaneous everything installs (~184) would trip it, degrading to a retried install (429 plus Retry-After), never a hard fail; raise toward 200-250 if telemetry shows NAT'd buyers hitting it. Raising this also loosens /query and /api/auth/* — the one Free rule shares its threshold across all matched paths."
 }

@@ -145,6 +145,9 @@ function errorJson(status: number, error: string): Response {
     "content-type": "application/json; charset=utf-8",
   };
   if (status === 401) extra["www-authenticate"] = "Bearer";
+  // CAISSON-87: 429 carries Retry-After so npm/bun back off instead of treating the deny as
+  // forbidden. 60 = the [[ratelimits]] `period` in wrangler.toml (same value as rate-limit.ts).
+  if (status === 429) extra["retry-after"] = "60";
   return new Response(JSON.stringify({ error }), {
     status,
     headers: gatedHeaders(extra),

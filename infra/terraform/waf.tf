@@ -2,17 +2,21 @@
 #
 # Scope: these rulesets are ZONE-level (kind = "zone"), so Cloudflare only ever evaluates them
 # for a request that already reached its edge — i.e. only for the PROXIED hosts (caisson.sh,
-# www.caisson.sh, admin.caisson.sh, docs-api.caisson.sh — main.tf). `license.caisson.sh` stays
-# `proxied = false` (grey/DNS-only, main.tf) precisely so its traffic — including Paddle's
-# webhook POSTs to `/webhook` — never reaches Cloudflare's edge and therefore can NEVER be
-# matched, rate-limited, or challenged by anything in this file. No rule expression below
-# references `/webhook` or the license host; that omission is deliberate and load-bearing, not
-# an oversight — do not add one without a new ADR (see main.tf's license resource comment).
+# www.caisson.sh, admin.caisson.sh, docs-api.caisson.sh — main.tf — PLUS registry.caisson.sh,
+# the registry Worker's custom domain, attached via registry/worker/wrangler.toml `routes`, not
+# main.tf). `license.caisson.sh` stays `proxied = false` (grey/DNS-only, main.tf) precisely so
+# its traffic — including Paddle's webhook POSTs to `/webhook` — never reaches Cloudflare's edge
+# and therefore can NEVER be matched, rate-limited, or challenged by anything in this file. No
+# rule expression below references `/webhook` or the license host; that omission is deliberate
+# and load-bearing, not an oversight — do not add one without a new ADR (see main.tf's license
+# resource comment).
 #
 # Free plan constraints driving both rulesets (SPEC-cloudflare-front-rate-limit.md §1, verified
-# live 2026-07-02): 1 rate-limit rule per zone, no `http.host` match field (path-only — safe here
-# because /query and /api/auth/* are zone-unique paths today), fixed 10s counting window, and the
-# Free Managed Ruleset only (not the full Cloudflare Managed Ruleset — that needs Pro+).
+# live 2026-07-02): 1 rate-limit rule per zone, no `http.host` match field (path-only — matched
+# paths must stay zone-unique across ALL FIVE proxied hosts: a future site/admin/docs route under
+# /query, /api/auth, /@caisson, or /-/ would be silently rate-limited by the rule below), fixed
+# 10s counting window, and the Free Managed Ruleset only (not the full Cloudflare Managed
+# Ruleset — that needs Pro+).
 #
 # Both resources require CLOUDFLARE_API_TOKEN to carry Zone:WAF:Edit (versions.tf) — absent that
 # scope, `apply` 403s. AUTHORING ONLY here: `terraform apply` is a separate operator DEPLOY act.
@@ -44,24 +48,35 @@ resource "cloudflare_ruleset" "waf_free_managed" {
 }
 
 # --- Rate limit: the single Free-tier expensive-path rule ---
-# Free allows exactly one http_ratelimit rule per zone with no host-field disambiguation, so both
-# origin-$/abuse targets from the SPEC's Design §3 "Expensive-path rule" share one rule/threshold:
-#   - /query          (services/docs  — OpenRouter embedding spend, docs-api.caisson.sh)
-#   - /api/auth/*     (apps/site      — better-auth login, currently zero rate limiting anywhere)
-# Zero-headroom note (SPEC Risk 1): a future service reusing either path on another proxied host
-# would silently widen this rule's blast radius — there is no 2nd Free rule to isolate it, and no
-# `http.host` field to scope this one. Re-evaluate at Fork B (Pro) if that happens.
+# Free allows exactly one http_ratelimit rule per zone with no host-field disambiguation, so every
+# origin-$/abuse target shares one rule/threshold. Matched paths (all zone-unique today):
+#   - /query          (services/docs — OpenRouter embedding spend, docs-api.caisson.sh; ALSO the
+#                      registry Worker's catalog endpoint — path-only matching covers both hosts)
+#   - /api/auth/*     (apps/site — better-auth login; the fine brute-force layer is better-auth's
+#                      built-in production rate limiter — on by default, 60s/100 global plus its
+#                      own /sign-in/email rule of 3 per 10s — this edge rule is the coarse layer)
+#   - /@caisson*      (registry Worker — npm packuments + tarballs, CAISSON-87; covers the
+#                      URL-encoded /@caisson%2f<name> form too)
+#   - /-/*            (registry Worker — npm ping/audit surface, CAISSON-87)
+# CAISSON-87 blocks answer 429 + Retry-After (the http_ratelimit block action's default response),
+# NOT 403 — npm/bun back off instead of hard-failing an install. The Worker's own [[ratelimits]]
+# bindings (wrangler.toml) stay the fine-grained per-route-class layer under this rule.
+# Zero-headroom note (SPEC Risk 1): this rule now deliberately spans hosts (docs-api + site +
+# registry) because Free has no 2nd rule and no `http.host` field — the shared threshold is sized
+# for the LARGEST legitimate burst (a full everything-bundle install, see variables.tf), which
+# loosens the /query + /api/auth/* budget as a side effect. Re-evaluate at Fork B (Pro): split
+# into per-host rules with per-path thresholds.
 resource "cloudflare_ruleset" "rate_limit" {
   zone_id     = var.cloudflare_zone_id
   name        = "Caisson zone rate limiting — expensive paths (Free tier)"
-  description = "Edge-side complement to the in-process X-Real-IP limiters (ADR-0204); the only layer that stays correct across a multi-replica deploy. ADR-0219 CF-2."
+  description = "Edge-side complement to the in-process X-Real-IP limiters (ADR-0204); the only layer that stays correct across a multi-replica deploy. ADR-0219 CF-2 + CAISSON-87 registry paths."
   kind        = "zone"
   phase       = "http_ratelimit"
 
   rules = [{
     ref         = "rl_expensive_paths"
-    description = "Rate limit /query (docs embedding spend) and /api/auth/* (site login) by source IP"
-    expression  = "(http.request.uri.path eq \"/query\") or (http.request.uri.path wildcard \"/api/auth/*\")"
+    description = "Rate limit /query (docs embedding spend), /api/auth/* (site login), and the registry npm surface (/@caisson*, /-/*) by source IP"
+    expression  = "(http.request.uri.path eq \"/query\") or (http.request.uri.path wildcard \"/api/auth/*\") or (http.request.uri.path wildcard \"/@caisson*\") or (http.request.uri.path wildcard \"/-/*\")"
     action      = "block"
     ratelimit = {
       characteristics = ["cf.colo.id", "ip.src"]
