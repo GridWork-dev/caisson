@@ -17,19 +17,14 @@ on:
 # its own workflow file (quality.yml / publish.yml / deploy-railway.yml) where path-filtering and
 # main-only gating are safe because those jobs are not required checks.
 #
-# SELF-HOSTED FLEET (2026-07-02, runscaler scale sets): the pure-compute gate jobs run on the
-# GridWork-dev ephemeral runner fleet via runscaler (canonical config: gridwork-core
-# system/ci/runscaler.toml; caisson posture doc: docs/operations.md). Scale-set runners are
-# label-LESS — a job targets the set by BARE NAME (`runs-on: caisson-amd64`; any extra label,
-# incl. `self-hosted`, prevents the match). The amd64 lane (<host>) runs each job in a
-# throwaway container, so operator secrets are unreachable (proven by gridwork-core's
-# runner-isolation-probe). Nothing persists on-box between jobs, so any cache below is
-# network-backed (actions/cache), never local-disk.
-#
-# Posture = DEDICATED LANES, no auto-fallback: GitHub has no self-hosted-first preference, so a
-# DOWN host QUEUES the job (it does NOT fall back to hosted). MANUAL fallback if a fleet host is
-# down for maintenance: flip the affected job's `runs-on: caisson-amd64` back to
-# `runs-on: ubuntu-latest` (one line).
+# BLACKSMITH RUNNERS (2026-07-11, ADR-0326): the pure-compute gate jobs run on Blacksmith
+# Firecracker microVMs (`runs-on: blacksmith-4vcpu-ubuntu-2404`) — one throwaway VM per job,
+# so operator/host secrets are architecturally unreachable and nothing persists between jobs
+# (any cache below is network-backed, never local-disk). The quality macos matrix leg stays
+# on the Mac mini (`[self-hosted, <host>]`, $0). Credential-bearing jobs
+# (publish/deploy-railway/mirror-sync/release-train) stay `ubuntu-latest` — prod tokens never
+# ride third-party runners. MANUAL fallback if Blacksmith is down: flip the affected job's
+# `runs-on` back to `ubuntu-latest` (one line). Posture doc: docs/operations.md.
 
 concurrency:
   # One in-flight run per PR / ref; a new push cancels the prior run so the limited fleet is not
@@ -43,7 +38,7 @@ permissions:
 jobs:
   # The standards gate (ADR-0021/0022) — the only registry ingress. Three layers, all block merge.
   standards-gate:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -95,7 +90,7 @@ jobs:
           bunx changeset status --since=origin/main
 
   check:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     # The heaviest job (38-pkg turbo tree incl. 5 Next.js builds + many in-process PGlite instances);
     # generous ceiling so a hung PGlite hook frees the runner rather than holding it to the 6h default.
     timeout-minutes: 30
@@ -142,7 +137,7 @@ jobs:
   # (blocking the merge) needs this job marked a required check + CODEOWNERS on a real handle +
   # branch protection (operator GitHub settings; forks board). The ledger APPEND step is publish.yml.
   registry-index:
-    runs-on: caisson-amd64
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -175,7 +170,7 @@ jobs:
     # ground-truth NIST schema validation actually runs. Validation is schema-only
     # (--disable-constraint-validation): constraint checks resolve the published import-ap URL, a
     # deploy-time concern, not export well-formedness.
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
