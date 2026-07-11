@@ -1,52 +1,48 @@
 name: publish
-# publish-and-index: previously declared `needs: [check, standards-gate, registry-index]` inside
-# ci.yml. GitHub Actions' `needs:` only resolves job IDs within the SAME workflow run — it cannot
-# reference a job defined in another file (an unresolvable `needs:` fails the whole workflow at
-# parse time: "Job depends on unknown job"). Now that those three jobs live in ci.yml and this job
-# lives here, the `needs:` is intentionally DROPPED; the ordering is enforced structurally instead —
-# this workflow only runs via workflow_dispatch on main (the release train's leg 1, or a manual
-# operator dispatch), and the train's readiness job has already verified ci.yml's required checks
-# green on the release SHA before dispatching. Main-only (ADR-0021).
+# The ADR-0325 zero-mutation publish leg: checkout EXACTLY the release tag, verify the tagged
+# tree already IS the release (every workspace version ledgered + sidecar'd, index.json a
+# byte-identical rebuild), re-pack every tarball and require byte-equality with the hashes the
+# version PR recorded, then upload to R2 — skipping any object that already exists (rerun-safe,
+# never overwrite a version-keyed object). NO step on this path mutates source: `changeset
+# version`, the ledger append, the index rebuild, and the commit-back all moved to
+# version-pr.yml (the automation-authored version PR, ADR-0325 point 1). One SHA — the tagged
+# version commit — anchors source, ledger, tarballs, and evidence.
 #
-# Buyer delivery = self-hosted npm registry (registry.caisson.sh, ADR-0223). The dead GitHub-Packages
-# leg (`changeset publish` + the ~/.npmrc `_authToken` write) is RETIRED here: buyers install commercial
-# tarballs from R2 via the CF Worker, not from GH Packages. This job now, per changed non-private
-# package: `bun pm pack` → hash (SHA-1 shasum + sha512 SRI integrity) → record a sidecar row into
-# registry/tarballs.json → upload the tarball to R2. It also closes the latent version-commit gap:
-# `changeset version` bumps package.json/CHANGELOG.md + consumes .changeset/*.md, and the commit step
-# now stages all of that alongside ledger.jsonl + index.json + tarballs.json.
+# ORDERING (structural, not `needs:` — GitHub Actions `needs:` cannot cross workflow files):
+# this workflow only runs via workflow_dispatch (the release train's leg 1, or a manual operator
+# dispatch), and the train's readiness job has already verified ci.yml's required checks green
+# on the release SHA before dispatching. Main-only (ADR-0021); the tag must be an ancestor of
+# origin/main (verified below).
 #
-# Auth: built-in GITHUB_TOKEN ephemeral for the commit-back to main (NO stored PAT — ADR-0069). R2
-# writes use S3-compatible scoped R2 access keys (Fork 2.1: R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY /
-# R2_ACCOUNT_ID repo secrets, bucket caisson-registry-tarballs). Everything is guarded by
-# CAISSON_PUBLISH_DRY_RUN (default "true"): dry-run logs the pack/hash/key/upload plan and writes
-# NOTHING (no bumps, no R2 upload, no commit). Set it "false" operator-side to go live.
+# Buyer delivery = self-hosted npm registry (registry.caisson.sh, ADR-0223). Auth: R2 writes use
+# S3-compatible scoped R2 access keys (R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ACCOUNT_ID
+# repo secrets, bucket caisson-registry-tarballs). contents:write is GONE — this job pushes
+# nothing anywhere (the old commit-back was the ADR-0325 provenance defect).
+#
+# Everything is guarded by CAISSON_PUBLISH_DRY_RUN (default "true"): dry-run verifies the
+# ledger/sidecar/index consistency at the tag and logs the upload plan, writing NOTHING to R2.
+# Dispatch with dry_run=false (the train passes it) for a live publish.
 #
 # P5-25: GHEC provenance attestation = DECLINED. Lightweight provenance is already embedded in
-#        each LedgerEntry's gateAttestation field ("<run-id>@<commit-sha>"); a full SLSA/GHEC
-#        attestation blob is deferred to a post-P5 hardening pass.
-# TRIGGER: the release train (ADR-0318 R1/R2 — release-train.yml dispatches this as leg 1 with
-# dry_run=false) or a manual dispatch. The per-main-push trigger is RETIRED (Kickoff M, W4): every
-# push run was a dry-run no-op by construction, and the metadata-vs-tarball drift it papered over
-# (index republished in-repo, tarballs never uploaded) is exactly what the release train closes.
+#        each LedgerEntry's gateAttestation field; a full SLSA/GHEC attestation blob is deferred
+#        (re-raised by the 2026-07-11 Codex audit as a possible rider — still deferred, the
+#        version-PR + tag-anchored flow closes the gap it targeted).
 on:
-  # One-shot operator lever: a manual dispatch with dry_run=false runs ONE live consume
-  # (changeset version + ledger/index + R2 tarball upload + commit-back). Dispatches without the
-  # input stay dry-run — the hardcoded-default below only flips per-dispatch, never latches.
   workflow_dispatch:
     inputs:
+      tag:
+        description: "The release tag to publish (checked out, verified, and published byte-exact)"
+        required: true
       dry_run:
-        description: "Set to 'false' to run a LIVE publish (version bumps + R2 upload + commit to main)"
+        description: "Set to 'false' to run a LIVE publish (verify at the tag + upload missing tarballs to R2)"
         required: false
         default: "true"
 
 permissions:
   contents: read
 
-# The shared ci.yml concurrency group used to serialize this job against rapid main pushes; now
-# that it's split out, give it its own group. cancel-in-progress: false (not true) — this job
-# uploads tarballs and pushes a registry commit back to main, so an in-flight run must finish
-# rather than be killed mid-step; a second rapid push just queues behind it.
+# cancel-in-progress: false (not true) — an in-flight run uploads tarballs, so it must finish
+# rather than be killed mid-step; a second dispatch queues behind it.
 concurrency:
   group: publish-and-index
   cancel-in-progress: false
@@ -54,25 +50,33 @@ concurrency:
 jobs:
   publish-and-index:
     if: github.ref == 'refs/heads/main'
-    # STAYS GitHub-hosted: this job holds contents:write, uploads to R2, and pushes commits to main.
-    # Write/publish privilege belongs on a clean hosted runner, not the fleet (mirrors gridwork-core
-    # keeping its egress/write jobs hosted). Main-only + dry-run-by-default, so it runs rarely and
-    # gains nothing from fleet compute. `aws` CLI is preinstalled on ubuntu-latest (R2 S3 API upload).
+    # STAYS GitHub-hosted: this job holds R2 write credentials. Write/publish privilege belongs
+    # on a clean hosted runner, not third-party compute (ADR-0326). `aws` CLI is preinstalled.
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
-      contents: write
+    environment: release # ADR-0327 rider 2 (definition-first; free-plan protection rules can't enforce yet)
     env:
-      # Operator publish gate (ADR-0069/0223). Default is dry-run; a workflow_dispatch with
-      # dry_run=false runs one live consume. Push events have no inputs → falls back to "true".
+      # Operator publish gate (ADR-0069/0223). Default is dry-run; the release train dispatches
+      # with dry_run=false.
       CAISSON_PUBLISH_DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+      RELEASE_TAG: ${{ github.event.inputs.tag }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          # Full history so changesets can read tags; built-in GITHUB_TOKEN for commit-back
-          # (not a stored PAT — the ephemeral token does not trigger downstream CI runs).
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Checkout EXACTLY the tagged bytes (ADR-0325 point 4). Full history so the
+          # tag-on-main ancestry check below can resolve origin/main.
+          ref: ${{ github.event.inputs.tag }}
           fetch-depth: 0
+      # A tag not on main must never publish — the readiness gate checks this too, but a manual
+      # dispatch can reach this workflow without the train.
+      - name: verify the tag is an ancestor of origin/main
+        run: |
+          git fetch origin main --quiet
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::tag ${RELEASE_TAG} ($(git rev-parse --short HEAD)) is not an ancestor of origin/main — refusing to publish"
+            exit 1
+          fi
+          echo "[publish-and-index] tag ${RELEASE_TAG} -> $(git rev-parse HEAD) (on main)"
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: "1.3.14"
@@ -83,79 +87,63 @@ jobs:
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
-      # Bump package.json / CHANGELOG.md + consume .changeset/*.md (live only). The commit step
-      # below stages what this produces — closing the latent version-commit gap (config `commit:false`,
-      # no changesets/action, so this job is the only place the bumps can land). Dry-run skips it so
-      # the working tree stays clean and no commit is pushed to main.
-      - name: changeset version (live only — set CAISSON_PUBLISH_DRY_RUN=false to go live)
-        run: |
-          if [ "${CAISSON_PUBLISH_DRY_RUN}" != "false" ]; then
-            echo "[publish-and-index] dry-run: changeset version skipped (CAISSON_PUBLISH_DRY_RUN=${CAISSON_PUBLISH_DRY_RUN})"
-          else
-            bunx changeset version
-          fi
-      # Scan workspace manifest.ts → append newly-published versions to the ledger → rebuild
-      # registry/index.json → (live) pack each non-private package (`bun pm pack`), hash it
-      # (SHA-1 shasum + sha512 SRI integrity), record a row into registry/tarballs.json, and stage
-      # the tarball at registry/.tarball-staging/<slug>/<slug>-<version>.tgz for the R2 upload step.
-      # Dry-run reports the planned set and writes nothing.
-      - name: append ledger + rebuild index + pack/record tarball sidecar
+      # Zero-mutation verify + stage (ADR-0325): every workspace version must be ledgered +
+      # sidecar'd, index.json must be a byte-identical ledger rebuild, and every re-packed
+      # tarball must hash to EXACTLY the sidecar row the version PR recorded. Any violation
+      # fails here, before the R2 step. Dry-run verifies metadata and skips packing.
+      - name: verify tagged bytes + stage tarballs (publish mode)
         run: |
           bun registry/scripts/ci-publish-step.ts \
+            --mode publish \
             --run-id "${{ github.run_id }}" \
-            --sha "${{ github.sha }}" \
+            --sha "$(git rev-parse HEAD)" \
             --published-at "$(date -u '+%Y-%m-%dT%H:%M:%S.000Z')" \
             --dry-run "${CAISSON_PUBLISH_DRY_RUN}"
-      # Upload the staged tarballs to R2 (Fork 2.1: S3-compatible scoped access keys). The R2 write is
-      # gated by CAISSON_PUBLISH_DRY_RUN — dry-run stages nothing (the step above skips packing) so
-      # this logs the plan and uploads nothing. Keys are preserved from the staging tree:
-      # registry/.tarball-staging/<slug>/<slug>-<version>.tgz -> s3://<bucket>/<slug>/<slug>-<version>.tgz.
-      - name: upload tarballs to R2 (live only)
+      # Upload staged tarballs to R2 — per-object head-object first: an existing version-keyed
+      # object is NEVER overwritten (ADR-0325 point 5); reruns upload only what is missing.
+      - name: upload missing tarballs to R2 (live only, never overwrite)
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_BUCKET: caisson-registry-tarballs
         run: |
+          set -euo pipefail
           STAGING="registry/.tarball-staging"
-          if [ "${CAISSON_PUBLISH_DRY_RUN}" = "false" ]; then
-            if [ -d "$STAGING" ] && [ -n "$(ls -A "$STAGING" 2>/dev/null)" ]; then
-              # ponytail: aws s3 sync (preinstalled). If R2 rejects the default integrity headers,
-              # export AWS_REQUEST_CHECKSUM_CALCULATION=when_required — a Task-5 deploy-time tune.
-              aws s3 sync "$STAGING" "s3://${R2_BUCKET}/" \
-                --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
-                --no-progress
-              echo "[publish-and-index] uploaded staged tarballs to R2 bucket ${R2_BUCKET}"
-            else
-              echo "[publish-and-index] no staged tarballs to upload"
-            fi
-          else
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          if [ "${CAISSON_PUBLISH_DRY_RUN}" != "false" ]; then
             echo "[publish-and-index] dry-run: R2 upload skipped (CAISSON_PUBLISH_DRY_RUN=${CAISSON_PUBLISH_DRY_RUN})"
+            exit 0
           fi
-      # Commit what `changeset version` produced (bumped package.json + written CHANGELOG.md + consumed
-      # .changeset deletions) alongside the registry outputs (ledger.jsonl + index.json + tarballs.json)
-      # back to main. Pathspecs cover EVERY workspace (apps/services/registry/tooling get dependent
-      # bumps too — the first live run proved `packages/*` alone leaves ~40 files unstaged and the
-      # rebase dies on them); registry/.tarball-staging/ is untracked and never staged, so packed
-      # tarballs never enter git. A loud leftovers check runs before the rebase so a future new
-      # write-site fails with filenames instead of a bare git error. In dry-run the tree is clean →
-      # nothing staged → no commit. git pull --rebase guards concurrent writes.
-      - name: commit version bumps + registry files to main
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A -- \
-            ':(glob)**/package.json' ':(glob)**/CHANGELOG.md' '.changeset' \
-            registry/ledger.jsonl registry/index.json registry/tarballs.json
-          if git diff --cached --quiet; then
-            echo "[publish-and-index] nothing to commit"
-          else
-            if ! git diff --quiet; then
-              echo "[publish-and-index] FATAL: tracked changes left unstaged after the pathspec add:"
-              git status --short
+          # A live publish with no R2 credentials fails LOUD and self-describing — never a green
+          # no-op (that would mark a release done while buyers 404 on the tarballs).
+          if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${R2_ACCOUNT_ID}" ]; then
+            echo "::error::live publish but R2 credentials are not set (R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY/R2_ACCOUNT_ID repo secrets) — arm R2 before a live dispatch"
+            exit 1
+          fi
+          if [ ! -d "$STAGING" ] || [ -z "$(ls -A "$STAGING" 2>/dev/null)" ]; then
+            echo "[publish-and-index] no staged tarballs to upload"
+            exit 0
+          fi
+          uploaded=0; skipped=0
+          while IFS= read -r -d '' f; do
+            key="${f#"$STAGING"/}"
+            # Only a definite 404 may fall through to upload — any OTHER head-object failure
+            # (403, throttle, network) fails the step, since "assume absent" would turn a
+            # transient error into a PUT against a possibly-existing version-keyed object.
+            if head_out="$(aws s3api head-object --bucket "$R2_BUCKET" --key "$key" \
+                 --endpoint-url "$ENDPOINT" 2>&1)"; then
+              echo "[publish-and-index] exists, skipping (never overwrite): $key"
+              skipped=$((skipped + 1))
+            elif echo "$head_out" | grep -qE '\(404\)|Not Found'; then
+              # ponytail: aws s3 cp (preinstalled). If R2 rejects the default integrity headers,
+              # export AWS_REQUEST_CHECKSUM_CALCULATION=when_required — a deploy-time tune.
+              aws s3 cp "$f" "s3://${R2_BUCKET}/${key}" \
+                --endpoint-url "$ENDPOINT" --no-progress
+              uploaded=$((uploaded + 1))
+            else
+              echo "::error::head-object failed for ${key} with a non-404 error — refusing to assume absent: ${head_out}"
               exit 1
             fi
-            git commit -m "chore(registry): publish tarballs + append ledger + version bump [ci-publish]"
-            git pull --rebase origin main
-            git push
-          fi
+          done < <(find "$STAGING" -type f -name '*.tgz' -print0)
+          echo "[publish-and-index] R2 upload complete: ${uploaded} uploaded, ${skipped} already present (tag ${RELEASE_TAG})"

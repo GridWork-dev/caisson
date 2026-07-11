@@ -6,10 +6,13 @@
  *
  *   bun scripts/release-readiness.ts --tag v2026.07.30 [--sha <sha>] [--local]
  *
- * Checks (R3, locked):
+ * Checks (R3, locked; #0 added by ADR-0325):
+ *   0. Release SHA on main — the tag targets a commit that is an ancestor of origin/main (the
+ *      merged version-PR commit; a tag cut on a stray branch must never train).
  *   1. CI green on the release SHA — the four required checks (check, standards-gate,
  *      registry-index, oscal-conformance) completed successfully.
- *   2. Changesets drained — no pending .changeset/*.md (the version cut consumed them).
+ *   2. Changesets drained — no pending .changeset/*.md (the version PR consumed them —
+ *      version-pr.yml, ADR-0325; never a feature-branch or tag-path act).
  *   3. CHANGELOGs written — every non-private workspace package's CHANGELOG.md leads with its
  *      package.json version.
  *   4. `bun run sot` green — the SoT drift tool (ADR-ceiling parity, frontmatter/docs freshness,
@@ -77,6 +80,31 @@ function run(cmd: string, args: readonly string[], cwd = REPO): string {
   })
     .toString()
     .trim();
+}
+
+// --- 0. release SHA on main (ADR-0325) -----------------------------------------------------------
+function checkTagOnMain(sha: string): void {
+  try {
+    // In CI the checkout is at the tag with full history; locally origin/main may be stale —
+    // refresh it quietly, tolerating offline runs (merge-base still answers from local refs).
+    try {
+      run("git", ["fetch", "origin", "main", "--quiet"]);
+    } catch {
+      /* offline — check against the local origin/main ref */
+    }
+    run("git", ["merge-base", "--is-ancestor", sha, "origin/main"]);
+    record(
+      "release SHA on main",
+      true,
+      `${sha.slice(0, 8)} is an ancestor of origin/main`,
+    );
+  } catch {
+    record(
+      "release SHA on main",
+      false,
+      `${sha.slice(0, 8)} is NOT on origin/main — the tag must target the merged version-PR commit`,
+    );
+  }
 }
 
 // --- 1. CI green on the release SHA -------------------------------------------------------------
@@ -260,6 +288,7 @@ const { tag, sha, local } = parseArgs(Bun.argv.slice(2));
 console.log(
   `release-readiness — tag ${tag}, sha ${sha.slice(0, 12)}${local ? ", local" : ""}\n`,
 );
+checkTagOnMain(sha);
 checkCi(sha);
 checkChangesetsDrained();
 checkChangelogs();
