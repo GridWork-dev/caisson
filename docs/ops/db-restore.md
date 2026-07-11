@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-11
 status: live
 grounds:
   - docs/deploy/STATE.md
@@ -7,6 +7,14 @@ grounds:
 ---
 
 # Database restore procedure (CAISSON-52, doc half)
+
+> **2026-07-11 status:** the operative, REHEARSED restore path is now the logical
+> pg_dump/pg_restore procedure in `docs/operations.md` §9 — proven end-to-end with full
+> row-count parity on all schemas, including the roles-before-restore caveat (recreate
+> admin/admin_write/admin_app BEFORE pg_restore or every RLS CREATE POLICY fails). Railway
+> native PITR was DECLINED at the 07-11 backup picker (daily snapshots + rehearsed logical
+> restore instead), and Railway's native restore is an IN-PLACE staged volume swap — never
+> a rehearsal path. The PITR mechanics below are kept as reference for if that fork reopens.
 
 Written against **Railway native Postgres PITR** (point-in-time recovery), confirmed against
 Railway's own docs (`docs.railway.com/volumes/point-in-time-recovery`, fetched 2026-07-09 — do
