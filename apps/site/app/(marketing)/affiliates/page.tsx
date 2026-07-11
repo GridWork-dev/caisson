@@ -50,7 +50,7 @@ const FAQ_ITEMS = [
   {
     question: "How do I join the Caisson affiliate program?",
     answer:
-      "Apply by email. Send admin@caisson.sh your name, the audience or channel you'll refer through, and how you plan to promote Caisson. We review every application and set you up directly.",
+      "Apply by email. Send support@caisson.sh your name, the audience or channel you'll refer through, and how you plan to promote Caisson. We review every application and set you up directly.",
   },
   {
     question: "How much do affiliates earn?",
@@ -174,10 +174,10 @@ export default function AffiliatesPage() {
         <p className="cs-lede">
           Email{" "}
           <a
-            href="mailto:admin@caisson.sh?subject=Caisson%20affiliate%20application"
+            href="mailto:support@caisson.sh?subject=Caisson%20affiliate%20application"
             className="cs-link"
           >
-            admin@caisson.sh
+            support@caisson.sh
           </a>{" "}
           with your name, the audience or channel you&rsquo;ll refer through,
           and how you plan to promote Caisson. We review every application and
@@ -190,7 +190,7 @@ export default function AffiliatesPage() {
         </p>
         <div style={{ marginTop: "var(--cs-space-6)" }}>
           <Button
-            href="mailto:admin@caisson.sh?subject=Caisson%20affiliate%20application"
+            href="mailto:support@caisson.sh?subject=Caisson%20affiliate%20application"
             external
             variant="primary"
           >
@@ -230,8 +230,8 @@ export default function AffiliatesPage() {
       <Section band="surface" eyebrow="Get started">
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-5)" }}>
           Ready to refer Caisson? Email{" "}
-          <a href="mailto:admin@caisson.sh" className="cs-link">
-            admin@caisson.sh
+          <a href="mailto:support@caisson.sh" className="cs-link">
+            support@caisson.sh
           </a>{" "}
           to apply, or browse the catalog to see what you&rsquo;d be referring.
         </p>
@@ -243,7 +243,7 @@ export default function AffiliatesPage() {
           }}
         >
           <Button
-            href="mailto:admin@caisson.sh?subject=Caisson%20affiliate%20application"
+            href="mailto:support@caisson.sh?subject=Caisson%20affiliate%20application"
             external
             variant="primary"
           >

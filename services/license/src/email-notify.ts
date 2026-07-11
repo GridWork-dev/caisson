@@ -40,6 +40,7 @@ export function resolveEmailer(
     return createResendEmailer({
       apiKey,
       from: env.RESEND_FROM?.trim() || "Caisson <no-reply@caisson.sh>",
+      replyTo: "support@caisson.sh",
     });
   }
   return createCaptureEmailer();

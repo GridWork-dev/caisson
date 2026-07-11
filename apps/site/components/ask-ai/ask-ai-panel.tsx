@@ -343,7 +343,7 @@ function Escalation({ reason }: { reason: EscalationReason }) {
             already filed as a support ticket (best-effort), so this is a direct human channel, not
             a dead end. */}
         <Link
-          href="mailto:admin@caisson.sh?subject=Ask%20AI%20question"
+          href="mailto:support@caisson.sh?subject=Ask%20AI%20question"
           className={styles.cta}
         >
           Talk to the team
@@ -371,7 +371,7 @@ function ErrorState({ kind }: { kind: ErrorKind }) {
             already filed as a support ticket (best-effort), so this is a direct human channel, not
             a dead end. */}
         <Link
-          href="mailto:admin@caisson.sh?subject=Ask%20AI%20question"
+          href="mailto:support@caisson.sh?subject=Ask%20AI%20question"
           className={styles.cta}
         >
           Talk to the team
