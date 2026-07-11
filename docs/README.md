@@ -33,6 +33,7 @@ the source-of-truth hierarchy in `CLAUDE.md` wins (board > ADRs > specs > `docs/
 | What is locked vs open; any open fork awaiting an operator lock                                                                                                           | `docs/state/decisions-and-forks.md`                                                                          |
 | The live work tracker: operator-owed / build-gated / trigger-parked / recently closed                                                                                     | `docs/state/outstanding-work.md`                                                                             |
 | Deploy log: what was redeployed, why, and the pasted live-verify evidence                                                                                                 | `docs/deploy/STATE.md`                                                                                       |
+| Operational procedures: launch runbook, live-verification harness, live-transport checklist, incident response, DB restore                                                | `docs/ops/`                                                                                                  |
 
 **Routing rules (mirrors `identity/index.md`):** each topic resolves to exactly one owning
 file; a dead pointer is a bug. The per-aspect files own the _synthesized view_; the
@@ -58,8 +59,8 @@ how-we-got-here) → `docs/archive/`.
 
 ## Docs-surface conventions (enforced by `bun run sot`, check #8)
 
-The 2026-07-11 docs-surface phase locked these rules; the `docs-surface` check in
-`tooling/scripts/sot-check.ts` flags drift on the first two:
+The 2026-07-11 docs-surface phase (root slim + state-folder reorg) locked these rules; the
+`docs-surface` check in `tooling/scripts/sot-check.ts` flags drift on 1, 2, and 3:
 
 1. **Root markdown allowlist.** The repo root carries exactly three `*.md` files:
    `CLAUDE.md`, `README.md`, and `AGENTS.md`. Anything else lands in `docs/` (live) or
@@ -67,11 +68,18 @@ The 2026-07-11 docs-surface phase locked these rules; the `docs-surface` check i
 2. **`AGENTS.md` is a symlink to `CLAUDE.md`** — the zero-drift mirror that gives Codex and
    other agents the same project instructions. Never fork it into a real file; edit
    `CLAUDE.md` and the mirror follows.
-3. **Live vs archive.** A doc that stops being true moves to `docs/archive/` whole (git mv,
-   history preserved) or is replaced by a short **tombstone stub** pointing at its successor
-   (the `docs/editions.md` pattern). Archived docs are immutable after the move — the
-   `archive-integrity` check flags edits.
-4. **Evidence artifacts don't live in the tree.** Bulk untracked evidence (screenshots,
+3. **`docs/state/` is boards and ledgers ONLY** (the `STATE_MD_ALLOWLIST` in sot-check):
+   decisions-and-forks, outstanding-work, production-readiness, package-catalog, providers,
+   compatibility-matrix, public-surface, adapter-expansion, go-live-legal-and-entity,
+   linear-integration. Procedures/runbooks live in `docs/ops/`; dated one-offs (RCAs,
+   executed session runbooks, superseded analyses) move to `docs/archive/`. A new board is
+   added to the allowlist in the same commit that creates it.
+4. **Live vs archive.** A doc that stops being true moves to `docs/archive/` whole (git mv,
+   history preserved; flip `status: archived`, bump `updated:` to the move date). Archived
+   docs are immutable after the move — the `archive-integrity` check flags edits. Live docs
+   link `docs/archive/` paths directly; the old tombstone-stub indirection is retired — the
+   historical stubs sit in `docs/archive/tombstones/`.
+5. **Evidence artifacts don't live in the tree.** Bulk untracked evidence (screenshots,
    audit run output, scan artifacts) is tarred to `~/lab/archive/<slug>-<yyyy-mm>.tar.zst`
    and removed; tracked long-term proof bundles go under `outputs/archive/`. `.gitignore`
    already excludes the visual/browser-audit evidence classes.

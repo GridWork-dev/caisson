@@ -376,7 +376,7 @@ async function shootOne(
     ...(opts.storageState ? { storageState: opts.storageState } : {}),
   });
   // CAISSON-71: 4 concurrent workers × NavAccount's per-page GET /api/auth/get-session trip the
-  // CF 60-req/10s /api/auth/* rate limit from one egress IP (docs/state/429-root-cause-2026-07-09.md).
+  // CF 60-req/10s /api/auth/* rate limit from one egress IP (docs/archive/429-root-cause-2026-07-09.md).
   // Signed-out shots don't need the real call — fulfill better-auth's signed-out response (JSON
   // null, renders the same "Sign in" pill) so a sweep sends zero /api/auth/* traffic. Auth shots
   // keep real session traffic; they're few enough to stay under the limit.

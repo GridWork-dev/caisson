@@ -363,20 +363,9 @@ export function buildFreshnessEditSuggestions(
 
 // Matches a link/path pointing at the archive dir regardless of vantage point: `docs/archive/`
 // (repo-root-relative mentions) or `../archive/` / `./archive/` (relative from inside docs/).
-const ARCHIVE_LINK_RE = /(?:^|[(\s'"])(?:\.\.?\/)*(?:docs\/)?archive\//m;
-
-/** (a) a status:live doc must not link a docs/archive/ path directly — it must route
- *  through its docs/state/ tombstone instead. */
-export function checkLiveDocArchiveLink(doc: FrontmatterDoc): string[] {
-  const fm = parseFrontmatter(doc.text);
-  if (!fm || fm.raw.status !== "live") return [];
-  if (ARCHIVE_LINK_RE.test(doc.text)) {
-    return [
-      `${doc.path}: status: live but links docs/archive/ directly — link the docs/state/ tombstone instead`,
-    ];
-  }
-  return [];
-}
+// (a) RETIRED 2026-07-11 (state-folder reorg): live docs now link docs/archive/ directly.
+// The tombstone-indirection rule died when the stubs moved to docs/archive/tombstones/ —
+// checkLiveDocArchiveLink removed; (b) archived-doc immutability below is unchanged.
 
 /** (b) a file under docs/archive/ is immutable: no uncommitted modification, and no
  *  commit newer than its own frontmatter updated: date. */
@@ -402,14 +391,12 @@ export function checkArchivedDocImmutable(
 }
 
 export function checkArchiveIntegrity(
-  liveDocs: readonly FrontmatterDoc[],
   archivedDocs: readonly FrontmatterDoc[],
   hasUncommittedChanges: (relPath: string) => boolean,
   lastCommitDate: (relPath: string) => string | null,
 ): CheckResult {
   const id = "archive-integrity";
   const details: string[] = [];
-  for (const doc of liveDocs) details.push(...checkLiveDocArchiveLink(doc));
   for (const doc of archivedDocs) {
     details.push(
       ...checkArchivedDocImmutable(doc, hasUncommittedChanges, lastCommitDate),
@@ -419,7 +406,7 @@ export function checkArchiveIntegrity(
     return {
       id,
       status: "green",
-      details: ["no live->archive direct links; archived docs unmodified"],
+      details: ["archived docs unmodified"],
     };
   }
   return { id, status: "drift", details };
@@ -787,8 +774,25 @@ export function buildPackageCountEditSuggestions(
 
 export const ROOT_MD_ALLOWLIST = ["AGENTS.md", "CLAUDE.md", "README.md"];
 
+// docs/state/ = live boards/ledgers ONLY (state-folder reorg 2026-07-11): procedures live
+// in docs/ops/, dated one-offs + tombstone stubs in docs/archive/. A new board lands here
+// deliberately - add it to this list in the same commit.
+export const STATE_MD_ALLOWLIST = [
+  "adapter-expansion.md",
+  "compatibility-matrix.md",
+  "decisions-and-forks.md",
+  "go-live-legal-and-entity.md",
+  "linear-integration.md",
+  "outstanding-work.md",
+  "package-catalog.md",
+  "production-readiness.md",
+  "providers.md",
+  "public-surface.md",
+];
+
 export interface DocsSurfaceInput {
   rootMdFiles: readonly string[];
+  stateMdFiles: readonly string[];
   // readlink of AGENTS.md; null = missing or not a symlink
   agentsMdLinkTarget: string | null;
 }
@@ -805,6 +809,15 @@ export function checkDocsSurface(input: DocsSurfaceInput): CheckResult {
         `${strays.join(", ")} - move into docs/ or docs/archive/ per docs/README.md conventions`,
     );
   }
+  const stateStrays = input.stateMdFiles
+    .filter((f) => !STATE_MD_ALLOWLIST.includes(f))
+    .sort();
+  if (stateStrays.length > 0) {
+    details.push(
+      `docs/state/ files outside the boards allowlist: ${stateStrays.join(", ")} - ` +
+        `procedures go to docs/ops/, dated/executed docs to docs/archive/, or extend STATE_MD_ALLOWLIST deliberately`,
+    );
+  }
   if (input.agentsMdLinkTarget !== "CLAUDE.md") {
     details.push(
       input.agentsMdLinkTarget === null
@@ -817,7 +830,7 @@ export function checkDocsSurface(input: DocsSurfaceInput): CheckResult {
       id,
       status: "green",
       details: [
-        "root markdown within allowlist; AGENTS.md -> CLAUDE.md symlink intact",
+        "root + docs/state/ markdown within allowlists; AGENTS.md -> CLAUDE.md symlink intact",
       ],
     };
   }
@@ -911,7 +924,10 @@ const FRESHNESS_EXTRA_PATHS = ["docs/architecture.md", "docs/deploy/STATE.md"];
 
 function gatherFreshnessDocs(): FrontmatterDoc[] {
   const stateGlob = globRepoFiles("docs/state/*.md");
-  const paths = [...new Set([...stateGlob, ...FRESHNESS_EXTRA_PATHS])];
+  const opsGlob = globRepoFiles("docs/ops/*.md");
+  const paths = [
+    ...new Set([...stateGlob, ...opsGlob, ...FRESHNESS_EXTRA_PATHS]),
+  ];
   return readFrontmatterDocs(paths);
 }
 
@@ -931,14 +947,9 @@ function gatherFreshnessCheck(): {
 }
 
 function gatherArchiveIntegrityCheck(): CheckResult {
-  const allDocPaths = globRepoFiles("docs/**/*.md").filter(
-    (p) => !p.startsWith("docs/archive/"),
-  );
   const archivePaths = globRepoFiles("docs/archive/**/*.md");
-  const liveDocs = readFrontmatterDocs(allDocPaths);
   const archivedDocs = readFrontmatterDocs(archivePaths);
   return checkArchiveIntegrity(
-    liveDocs,
     archivedDocs,
     hasUncommittedChanges,
     lastCommitDate,
@@ -1146,13 +1157,16 @@ function gatherPackageCountCheck(): {
 
 function gatherDocsSurfaceCheck(): CheckResult {
   const rootMdFiles = readdirSync(REPO_ROOT).filter((f) => f.endsWith(".md"));
+  const stateMdFiles = readdirSync(join(REPO_ROOT, "docs", "state")).filter(
+    (f) => f.endsWith(".md"),
+  );
   let agentsMdLinkTarget: string | null = null;
   try {
     agentsMdLinkTarget = readlinkSync(join(REPO_ROOT, "AGENTS.md"));
   } catch {
     agentsMdLinkTarget = null;
   }
-  return checkDocsSurface({ rootMdFiles, agentsMdLinkTarget });
+  return checkDocsSurface({ rootMdFiles, stateMdFiles, agentsMdLinkTarget });
 }
 
 function gatherChangesetCheck(): CheckResult {

@@ -144,7 +144,7 @@ CF-1015 egress-IP ban at first boot), the registry Worker redeployed (0.2.0 inde
 drift), `caisson-admin`'s CF-Access + Grafana env and `caisson-support-bot`'s Linear env set, and
 the 3 orphaned SigNoz volumes deleted (Railway soft-delete, purge 2026-07-04). **PR #47
 lift-harvest slice-2** then merged same-day — the harvest program driven to **terminal state**
-(`docs/state/harvest-program.md`): net-new `@caisson/agent-runner` (ADR-0186), a 10-package
+(`docs/archive/harvest-program.md`): net-new `@caisson/agent-runner` (ADR-0186), a 10-package
 hardening wave, and kernel branded-money (ADR-0210–0217, drafted 0204–0211 and renumbered at merge
 per ADR-0088; the canonical ADR ceiling now lives in the SoT-hierarchy header above — **0224**, not 0217). **PR #51** also landed the CI/credit rework: Greptile
 auto-review replaced by the path-scoped `greptile-gate` required check (see the PR review gate
@@ -171,7 +171,7 @@ catalog).
 
 **2026-07-02-LATE (execution wave + DEPLOY block):** the locked backlog EXECUTED as parallel
 worktree workflows and merged serially: **PRs #75–#83 all merged** (#75 third-round locks + the
-`docs/state/opportunity-backlog.md` ledger · #76 compliance reprice display · #77 cred-sweep prep
+`docs/archive/opportunity-backlog.md` ledger · #76 compliance reprice display · #77 cred-sweep prep
 (vault-parity tool + KMS policy fix) · #78 mutation-route error mapping · #79 WORM S3 gate +
 provisioning script · #80 members-fold republish **ADR-0228** · #81 live-verification harness
 (ADR-0224 F1–F6) · #82 infra DNS truth · #83 registry self-hosted npm delivery build, ADR-0223)

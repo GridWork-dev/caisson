@@ -174,7 +174,7 @@ export function serializePublish(fn: () => Promise<void>): Promise<void> {
  * OPERATOR-GATED: returns `undefined` (→ the mutation reports `edgePublish: "skipped"`, the DB
  * `license_revocation` table stays the truth, the Worker fails OPEN) until `CAISSON_REVOCATIONS_PUT_URL`
  * is set on `caisson-admin` to an authorized PUT target for that object. The real R2 bucket/binding is
- * provisioned at DEPLOY, not here (docs/state/launch-runbook.md §8).
+ * provisioned at DEPLOY, not here (docs/ops/launch-runbook.md §8).
  *
  * // ponytail: a `fetchWithTimeout` PUT to an operator-provided URL — a pre-signed R2 URL or a small
  * // authed shim in front of the bucket. Keeps aws-sdk / SigV4 OUT of the admin blast radius; swap for
