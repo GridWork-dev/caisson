@@ -111,7 +111,10 @@ versions -> that version's manifest. A module enters ONLY through the standards 
 golden-file harness. Full flow (ADR-0021):
 
 ```
-changeset -> version bump -> STANDARDS GATE -> publish (CI) -> append ledger.jsonl -> rebuild index.json (CI)
+changeset -> VERSION PR (version-pr.yml: bump + ledger append + index rebuild + tarball hashes)
+          -> STANDARDS GATE + required checks green on the merge commit
+          -> tag/Release on EXACTLY that commit
+          -> publish (CI, zero mutation): verify tagged bytes + upload missing tarballs (ADR-0325)
                                |- boundary lint (ADR-0022)
                                |- manifest validation (ADR-0020)
                                |- golden-file regression (ADR-0013 harness)
@@ -121,10 +124,12 @@ changeset -> version bump -> STANDARDS GATE -> publish (CI) -> append ledger.jso
 rebuilt from it by `registry/scripts/build-index.ts` (CI only, never hand-edited). The CI
 `registry-index` job re-runs the build and fails on any drift (`git diff --exit-code`), so
 the index is provably CI-built. The index IS the allowlist - every generation validates a
-caller's module id + version against it before any path/subprocess. The gated-publish job
-(`publish-and-index`, now its own `.github/workflows/publish.yml`, ADR-0223) is wired and
-active, publishing to the self-hosted `registry.caisson.sh` npm registry — it stays
-**dry-run by default** (`CAISSON_PUBLISH_DRY_RUN=true`; `docs/operations.md` §7). Publishing
+caller's module id + version against it before any path/subprocess. Ledger append + index
+rebuild + tarball hashing happen in the **version PR** (`version-pr.yml`, ADR-0325); the
+publish leg (`publish-and-index` in `.github/workflows/publish.yml`, ADR-0223) checks out the
+release tag, **verifies** those recorded bytes, and uploads to the self-hosted
+`registry.caisson.sh` npm registry with zero source mutation — it stays **dry-run by default**
+(`CAISSON_PUBLISH_DRY_RUN=true`; `docs/operations.md` §7). Publishing
 is no longer all-or-nothing: several packages (base substrate, `cli`, `ui-pro`, the Stage-2
 and catalog-rework carve packages) have real published versions today — see
 `docs/state/package-catalog.md` for the current per-package sold-as/license view.

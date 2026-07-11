@@ -21,6 +21,13 @@ name: mirror-sync
 # RELEASE instead.
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        # ADR-0325: the release train passes the release tag so the mirror export is anchored to
+        # the SAME SHA as the tarballs/ledger. Empty (a manual dispatch) = default branch tip.
+        description: "Tag or SHA to export from (the release train passes the release tag)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -53,6 +60,9 @@ jobs:
           fi
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         if: steps.guard.outputs.armed == 'true'
+        with:
+          # Empty ref = the checkout action's default (the dispatching branch tip).
+          ref: ${{ github.event.inputs.ref }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         if: steps.guard.outputs.armed == 'true'
         with:

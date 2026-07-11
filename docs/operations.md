@@ -183,12 +183,12 @@ second operator or a CI-driven apply. Detail:
 
 ## 7. CI workflows
 
-**Ten workflows** under `.github/workflows/`: the eight listed here plus `security-scan.yml`
-(Semgrep/Socket security gates, ADR-0314) and `release-train.yml` (the ADR-0318/0325 release
-train, dormant until armed — CAISSON-94): `ci.yml`, `quality.yml`,
-`publish.yml`, `deploy-railway.yml`, `lighthouse.yml`, `mirror-sync.yml`, `aeo-probe.yml`,
-`support-bot.yml`. All Bun + Turbo (except the Python-only `support-bot.yml`),
-`--frozen-lockfile`, bun pinned to `1.3.14` (the `packageManager` line — no `latest` floats).
+**Eleven workflows** under [`.github/workflows/`](../.github/workflows/): `ci.yml`, `quality.yml`,
+`security-scan.yml` (Semgrep/Socket security gates, ADR-0314), `publish.yml`, `version-pr.yml`,
+`release-train.yml` (the ADR-0318/0325 release train, dormant until armed — CAISSON-94),
+`deploy-railway.yml`, `lighthouse.yml`, `mirror-sync.yml`, `aeo-probe.yml`, `support-bot.yml`.
+All Bun + Turbo (except the Python-only `support-bot.yml`), `--frozen-lockfile`, bun pinned to
+`1.3.14` (the `packageManager` line — no `latest` floats).
 
 **Review gate: Greptile RETIRED 2026-07-06.** The `greptile-gate` path-scoped required check
 mentioned in older revisions of this doc no longer exists — `.github/workflows/greptile-gate.yml`
@@ -249,20 +249,29 @@ exercises eval, token-drift, and native-ext.
 | `native-ext`    | linux → **Blacksmith** 4vcpu VM; macos → **fleet** `[self-hosted, gw-macos-arm64]` (20m) | `bun test packages/local-store/src` -- exercises the platform-specific sqlite-vec `.so`/`.dylib` on both OSes, `fail-fast: false`                                                                                      |
 | `evidence-pack` | **Blacksmith** 4vcpu VM (15m)                                                            | Assembles the CI build-provenance evidence pack (ADR-0275) from the standards-gate + registry-index outputs into one manifest'd artifact for a security reviewer. Unconditional (no path-filter); NOT a required check |
 
-### `publish.yml` — now release-train-triggered, not on every `main` push (ADR-0325)
+### `version-pr.yml` + `publish.yml` — the ADR-0325 commit-addressable release pair
 
-As of the ADR-0318/0325 release train, `publish.yml` no longer fires on every push to `main` — it
-runs via `release-train.yml`'s propagation leg (on a published GitHub Release) or manual
-`workflow_dispatch`; both stay dormant until `RELEASE_TRAIN_ARMED` is set (CAISSON-94). The
-per-package pack→hash→R2 mechanics below are otherwise still accurate.
+Both run via `release-train.yml`'s propagation legs (on a published GitHub Release) or manual
+`workflow_dispatch`; the train stays dormant until `RELEASE_TRAIN_ARMED` is set (CAISSON-94).
 
-Renamed from `ci.yml`'s old `publish-and-index` job. Its `needs:` on the 4 `ci.yml` checks was
-dropped when it moved to its own file (GitHub Actions `needs:` cannot cross workflow files).
-**Buyer delivery is now a self-hosted npm registry** (`registry.caisson.sh`, ADR-0223) —
-the GitHub-Packages leg is retired. Per changed non-private package: `bun pm pack` → hash → record
-into `registry/tarballs.json` → upload the tarball to R2, plus the `changeset version` bump +
-ledger/index rebuild, committed back to `main`. Guarded by `CAISSON_PUBLISH_DRY_RUN` (default
-`true`) — dry-run logs the plan and writes nothing.
+**`version-pr.yml`** (operator-dispatched) is the ONLY place changesets are consumed: it runs
+`changeset version`, refreshes `bun.lock`, appends the registry ledger, rebuilds `index.json`,
+packs + hashes every non-private package into `registry/tarballs.json`, and opens an
+automation-authored **version PR** carrying the whole release source truth as one reviewable
+commit. The operator merges it (push-to-main CI proves the 4 required checks on the merge
+commit), then publishes a GitHub Release whose tag targets EXACTLY that commit.
+
+**`publish.yml`** (dispatched by the release train's leg 1, or manually, with a required `tag`
+input) is the **zero-mutation** publish leg: checkout at the tag SHA, verify the tag is an
+ancestor of `main`, verify ledger/sidecar/index consistency, re-pack every tarball and require
+byte-equality with the recorded hashes (`bun pm pack` is byte-deterministic), then upload to R2
+skipping any object that already exists (rerun-safe, never overwrite). It holds `contents: read`
+only — the old `changeset version` + commit-back on the publish path was the provenance defect
+ADR-0325 closed. **Buyer delivery is a self-hosted npm registry** (`registry.caisson.sh`,
+ADR-0223) — the GitHub-Packages leg is retired. Guarded by `CAISSON_PUBLISH_DRY_RUN` (default
+`true`) — dry-run verifies consistency at the tag and uploads nothing. Both jobs (plus the
+train's `propagate` and `mirror-sync`) declare `environment: release` (ADR-0327 rider 2 —
+definition-first; the free plan can't enforce protection rules on it yet).
 
 ### `mirror-sync.yml` / `aeo-probe.yml` / `support-bot.yml`
 

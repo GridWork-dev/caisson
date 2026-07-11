@@ -1,9 +1,13 @@
 name: release-train
-# The ADR-0318 release train (R1–R4). Publishing a GitHub Release is THE trigger (R1); everything
-# rides it (R2): registry tarball publish → public-mirror sync → mirror npm publish → site
-# redeploy, in that order, each leg a dispatch of the existing workflow that already owns the
-# capability (no duplicated publish logic). The readiness job (R3, scripts/release-readiness.ts)
-# runs first and any red check stops the train before it touches an external surface.
+# The ADR-0318 release train (R1–R4), reworked commit-addressable by ADR-0325. Publishing a
+# GitHub Release is THE trigger (R1) — its tag MUST target the merged version-PR commit
+# (version-pr.yml authored it; push-to-main CI proved it green). Everything rides it (R2):
+# registry tarball publish → public-mirror sync → mirror npm publish → site redeploy, in that
+# order, each leg a dispatch of the existing workflow that already owns the capability (no
+# duplicated publish logic). Legs 1 and 2 receive the release tag so they act on EXACTLY the
+# tagged bytes — one SHA anchors source, ledger, tarballs, mirror, and evidence. The readiness
+# job (R3, scripts/release-readiness.ts) runs first and any red check — including tag-not-on-main
+# — stops the train before it touches an external surface.
 #
 # STAYS DORMANT UNTIL ARMED: the propagation job runs only when the repo VARIABLE
 # RELEASE_TRAIN_ARMED is "true" (a variable, not a secret, so it can gate a job-level `if:`
@@ -54,6 +58,7 @@ jobs:
     if: vars.RELEASE_TRAIN_ARMED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    environment: release # ADR-0327 rider 2 (definition-first; free-plan protection rules can't enforce yet)
     permissions:
       contents: read
       actions: write # dispatch same-repo workflows (publish.yml, mirror-sync.yml, deploy-railway.yml)
@@ -82,14 +87,18 @@ jobs:
           gh run watch "$run_id" -R "$repo" --exit-status --interval 30
           EOF
           chmod +x /tmp/dispatch-and-wait.sh
-      - name: leg 1 — registry publish (tarballs + ledger + index, LIVE)
+      - name: leg 1 — registry publish (verify + upload EXACTLY the tagged bytes, LIVE)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: /tmp/dispatch-and-wait.sh "${{ github.repository }}" publish.yml -f dry_run=false
-      - name: leg 2 — public mirror sync
+        run: |
+          /tmp/dispatch-and-wait.sh "${{ github.repository }}" publish.yml \
+            -f dry_run=false -f tag="${{ github.event.release.tag_name }}"
+      - name: leg 2 — public mirror sync (exported at the release tag)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: /tmp/dispatch-and-wait.sh "${{ github.repository }}" mirror-sync.yml
+        run: |
+          /tmp/dispatch-and-wait.sh "${{ github.repository }}" mirror-sync.yml \
+            -f ref="${{ github.event.release.tag_name }}"
       - name: leg 3 — mirror npm publish (caisson-sh/caisson-oss)
         env:
           # MIRROR_PUSH_TOKEN is the fine-grained PAT on caisson-sh/caisson-oss (contents +
