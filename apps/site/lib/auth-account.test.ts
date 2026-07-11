@@ -5,6 +5,7 @@
 // account_member table (lib/db.ts). A separate file from auth.test.ts because the auth-server mock
 // here is the opposite of that file's "unavailable runtime" setup.
 import { expect, mock, test } from "bun:test";
+import * as realAuthServer from "./auth-server.ts";
 
 const USER_ID = "user_d4_test";
 
@@ -22,8 +23,14 @@ mock.module("next/headers", () => ({
   }),
 }));
 
+// `mock.module` is process-wide and never torn down, so this factory MUST return the module's
+// full export surface — a partial `{ SESSION_COOKIE_NAME, getAuth }` object gutted `createAuth`/
+// `SESSION_HINT_COOKIE_NAME` for every later-loaded file (auth-server.test.ts's static import
+// then throws "Export named ... not found"; file order is machine-dependent, so it only broke on
+// CI). Spread the real module and override only `getAuth`. If a sibling's mock loaded first,
+// `realAuthServer` IS that mock — safe, because every mocker of this module spreads the same way.
 mock.module("./auth-server.ts", () => ({
-  SESSION_COOKIE_NAME: "caisson_session",
+  ...realAuthServer,
   getAuth: () => ({
     api: {
       getSession: async (): Promise<{ user: { id: string } }> => ({
