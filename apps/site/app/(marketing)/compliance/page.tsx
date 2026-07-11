@@ -303,6 +303,36 @@ export default function CompliancePage() {
               it is just how the schema is built.
             </p>
           </Card>
+          {/* CAISSON-99: the retrofit-cost card's reactive sibling — the unplanned crisis-sprint
+              cost. Scene drawn from the interviewed leads' own accounts (Cookiy 45-transcript
+              compliance buying-journey study); interview-attributed, never a case study
+              (ADR-0319 R5 — no customer stories until design-partner conversions exist). */}
+          <Card style={{ marginTop: "var(--cs-space-5)" }}>
+            <p
+              style={{
+                fontSize: "var(--cs-text-lg)",
+                lineHeight: "var(--cs-leading-relaxed)",
+                letterSpacing: "var(--cs-tracking-tight)",
+                maxWidth: "60ch",
+              }}
+            >
+              The unplanned version of that bill: across our interviews,
+              prospect and partner reviews kept triggering the same reactive
+              sprint. One engineering lead&rsquo;s week — an enterprise prospect
+              asks for a 90-day audit export, the logs are missing admin
+              actions, and the roadmap loses a{" "}
+              <span className="cs-num">war-room week</span> with the deal on the
+              line.
+            </p>
+            <p
+              className="cs-muted"
+              style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
+            >
+              Those reviews ask for what this bundle ships — the audit chain,
+              immutable logs, the evidence export. Install the controls before
+              the deal that demands them.
+            </p>
+          </Card>
         </Section>
       </Reveal>
 
@@ -511,6 +541,14 @@ export default function CompliancePage() {
               </Button>
             </div>
           </Card>
+          {/* CAISSON-98: the buyers'-own-estimate ROI frame beside the price (Cookiy study
+              019f4a11) — attributed to the interviews, never asserted as a benchmark. */}
+          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
+            Buyers we interviewed put building these foundations in-house at
+            four to eight engineering-weeks — the translation most sign-offs
+            actually run on. The license price is a one-time number against that
+            build.
+          </p>
         </Section>
       </Reveal>
 
