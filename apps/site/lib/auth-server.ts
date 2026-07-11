@@ -96,7 +96,7 @@ const sessionHintCookieHook = createAuthMiddleware(async (ctx) => {
  * Resolve the magic-link transport: the Resend driver when `RESEND_API_KEY` is configured, an
  * in-memory capture driver otherwise (so a dev/CI instance never hits the network and tests can
  * assert the sent link). The `from` address is env-driven (`RESEND_FROM`) with a safe default —
- * never a hardcoded secret.
+ * never a hardcoded secret. Replies to the no-reply sender land in the support inbox.
  */
 function resolveEmailer(): Emailer | CaptureEmailer {
   const apiKey = process.env.RESEND_API_KEY?.trim();
@@ -104,6 +104,7 @@ function resolveEmailer(): Emailer | CaptureEmailer {
     return createResendEmailer({
       apiKey,
       from: process.env.RESEND_FROM?.trim() ?? "Caisson <no-reply@caisson.sh>",
+      replyTo: "support@caisson.sh",
     });
   }
   return createCaptureEmailer();

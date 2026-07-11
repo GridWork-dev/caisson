@@ -81,7 +81,7 @@ on Caisson; the partnership is the reference and the feedback, not extra integra
 
 ## How to apply
 
-Email **[admin@caisson.sh](mailto:admin@caisson.sh?subject=Caisson%20design-partner%20application)**
+Email **[support@caisson.sh](mailto:support@caisson.sh?subject=Caisson%20design-partner%20application)**
 (subject: _Caisson design-partner application_) with three things: what you're building, the
 stack you're on, and the bundle or modules you'd use. Every application gets a direct reply.
 

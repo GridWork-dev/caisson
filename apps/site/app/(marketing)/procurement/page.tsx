@@ -60,7 +60,7 @@ const FAQ_ITEMS = [
   {
     question: "What's the refund policy?",
     answer:
-      "Every purchase comes with an unconditional 14-day money-back guarantee. Request a refund within 14 days for any reason — whether or not you've downloaded or used the software, and regardless of location or consumer/business status — and you get a full refund. Email admin@caisson.sh with your order number, or contact Paddle directly at paddle.net. Paddle, as merchant of record, returns the payment to your original method. An approved refund revokes the entitlement it granted and returns unused credits; a multi-item order can be refunded line by line.",
+      "Every purchase comes with an unconditional 14-day money-back guarantee. Request a refund within 14 days for any reason — whether or not you've downloaded or used the software, and regardless of location or consumer/business status — and you get a full refund. Email support@caisson.sh with your order number, or contact Paddle directly at paddle.net. Paddle, as merchant of record, returns the payment to your original method. An approved refund revokes the entitlement it granted and returns unused credits; a multi-item order can be refunded line by line.",
   },
   {
     question: "How do I request security documentation?",
@@ -71,7 +71,7 @@ const FAQ_ITEMS = [
     question:
       "Can you provide a W-9 or entity documentation for our vendor file?",
     answer:
-      "Yes. Email admin@caisson.sh with your organization name and we'll send a completed W-9 and Caisson Software LLC's entity details.",
+      "Yes. Email support@caisson.sh with your organization name and we'll send a completed W-9 and Caisson Software LLC's entity details.",
   },
   {
     question: "How do I report a vulnerability?",
@@ -293,7 +293,7 @@ export default function ProcurementPage() {
             },
             {
               label: "W-9 and entity documents",
-              body: "Email admin@caisson.sh with your organization name and we'll send a completed W-9 and Caisson Software LLC's entity details for your vendor file.",
+              body: "Email support@caisson.sh with your organization name and we'll send a completed W-9 and Caisson Software LLC's entity details for your vendor file.",
             },
             {
               label: "Vulnerability reporting",
@@ -355,8 +355,8 @@ export default function ProcurementPage() {
             security@caisson.sh
           </a>{" "}
           (security/technical) or{" "}
-          <a href="mailto:admin@caisson.sh" className="cs-link">
-            admin@caisson.sh
+          <a href="mailto:support@caisson.sh" className="cs-link">
+            support@caisson.sh
           </a>{" "}
           (contracts, tax, entity). Ready to purchase or evaluate? See pricing.
         </p>

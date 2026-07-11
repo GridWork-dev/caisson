@@ -90,6 +90,45 @@ describe("capture emailer", () => {
     expect(capturedBody?.html).toBeUndefined();
   });
 
+  test("createResendEmailer sends reply_to when replyTo is configured, omits it when not", async () => {
+    const realFetch = globalThis.fetch;
+    const bodies: Record<string, unknown>[] = [];
+    globalThis.fetch = (async (
+      _url: string | URL,
+      init?: RequestInit,
+    ): Promise<Response> => {
+      bodies.push(JSON.parse(init?.body as string) as Record<string, unknown>);
+      return new Response(null, { status: 200 });
+    }) as unknown as typeof fetch;
+
+    try {
+      const withReplyTo = createResendEmailer({
+        apiKey: "x",
+        from: "no-reply@b.c",
+        replyTo: "support@b.c",
+      });
+      await withReplyTo.send({
+        to: "user@example.com",
+        template: "magic-link",
+        data: { url: "https://caisson.sh/verify?token=abc" },
+      });
+      const without = createResendEmailer({
+        apiKey: "x",
+        from: "no-reply@b.c",
+      });
+      await without.send({
+        to: "user@example.com",
+        template: "magic-link",
+        data: { url: "https://caisson.sh/verify?token=abc" },
+      });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+
+    expect(bodies[0]?.reply_to).toBe("support@b.c");
+    expect(bodies[1]).not.toContainKey("reply_to");
+  });
+
   test("createResendEmailer POSTs the rendered subject/html/text for a real template", async () => {
     const realFetch = globalThis.fetch;
     let capturedBody: Record<string, unknown> | undefined;

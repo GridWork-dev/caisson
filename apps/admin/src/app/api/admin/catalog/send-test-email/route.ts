@@ -29,6 +29,7 @@ function resolveEmailer(): Emailer | CaptureEmailer {
     return createResendEmailer({
       apiKey,
       from: process.env.RESEND_FROM?.trim() || "Caisson <no-reply@caisson.sh>",
+      replyTo: "support@caisson.sh",
     });
   }
   return createCaptureEmailer();

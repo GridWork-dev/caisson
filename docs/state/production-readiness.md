@@ -195,11 +195,24 @@ ground (`docs/security/tooling-playbook.md`).
 ## Email architecture (locked 2026-07-11, ADR-0324 — execution rides Kickoff O)
 
 Inbound: Proton MX catch-all (SPF/DKIM/DMARC-quarantine all present) into the operator's
-primary account; the disabled Cloudflare Email Routing artifact is slated for deletion. Roles:
-`admin@` accounts/billing/legal (legal pages only) · `support@` user-facing contact everywhere
-else · `security@` disclosure/evidence · `no-reply@` transactional sender (Resend, Reply-To
-`support@`) · `hello@` RETIRED (was the live `RESEND_FROM` — the env flip is the kill).
-Operator act: Proton send-as alias for `support@`.
+primary account. Roles: `admin@` accounts/billing/legal (legal pages only) · `support@`
+user-facing contact everywhere else · `security@` disclosure/evidence · `no-reply@`
+transactional sender (Resend, Reply-To `support@`) · `hello@` RETIRED (was the live
+`RESEND_FROM` — the env flip is the kill). Operator act: Proton send-as alias for `support@`.
+
+Execution state (Kickoff O email wave): the code half is DONE — `reply_to: support@caisson.sh`
+on all three Resend sends (one shared seam, `packages/email` `ResendConfig.replyTo`, opted in by
+site magic-links, license lifecycle, admin test-send) and the support@ copy pass across
+refunds/procurement/partners/affiliates/ask-AI (legal pages keep `admin@`, `security@`
+untouched). The CF routing cleanup EXECUTED 2026-07-11 (operator-approved): Cloudflare's API
+treats the catch-all as an undeletable singleton, so the stale rule is neutralized instead —
+`enabled: false`, action `drop`, no forward target (zone routing itself stays
+disabled/unconfigured; Proton MX is the inbound truth). **ADR-0324 D3 deviation, deliberate:**
+the account-level destination address `admin@gridwork.dev` is KEPT, because it is shared
+plumbing: gettelesis.com, gettessera.xyz, telesis.health, and throughframe.com all have live
+Email Routing forwarding to it, and deleting the address would break their inbound mail. The
+`RESEND_FROM` env flip is staged on all three Railway services (skip-deploys) + the local env
+mirror; the post-merge redeploy carries it live together with the reply-to code.
 
 ## What this sweep already fixed
 
