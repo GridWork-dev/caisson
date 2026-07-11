@@ -709,20 +709,17 @@ describe("applyBillingEvent — one-time purchase grant (ADR-0113)", () => {
   // guard and updates 0 rows — the row is never resurrected (verified 2026-07-06, predates this
   // ticket). This pins that guard against the EXACT out-of-order-delivery shape CAISSON-25 names.
   //
-  // OPEN RESIDUAL (not closed by this test, not closed in this change): a subscription's FIRST-EVER
-  // invoice.paid delayed past an immediate cancel has no PRE-EXISTING entitlement_grant row for
-  // `revokeSubscriptionGrants` to have flipped, so the ON CONFLICT guard above never triggers — the
-  // late first invoice would INSERT a fresh 'active' row with nothing left to revoke it. Verified via
-  // Paddle's own docs that a canceled subscription is TERMINAL (buyers "must sign up again" on a
-  // fresh subscription id — https://developer.paddle.com/build/subscriptions/cancel-subscriptions),
-  // so this narrow first-cycle gap is real but requires a genuine tombstone-before-any-row-exists
-  // mechanism (a schema addition) — the Linear ticket itself leaves the exact fix shape ("a
-  // subscription-liveness check at grant time" vs "a cancel tombstone per subscription id") as an
-  // open fork for the operator to pick, so it is documented here rather than auto-decided.
-  // IN-02 (PR #182 review): there is NO automatic recovery for this residual — no subscription-
-  // liveness reconcile job exists anywhere in this codebase. The stray active grant persists until
-  // an operator notices and acts through the existing admin `purchase_revoke`/`revokeEntitlementAdmin`
-  // lever; it does not self-heal on its own.
+  // The FIRST-CYCLE variant this comment once tracked as an open residual (a subscription's
+  // FIRST-EVER invoice.paid delayed past an immediate cancel — no pre-existing grant row for the
+  // guard above to catch) was CLOSED by Kickoff-H W3 (ADR-0302, migration 0023):
+  // `cancelSubscriptionStatus` (subscription-history-store.ts) writes a 'canceled'
+  // subscription_status tombstone even when no grant rows exist yet, and invoice.paid's grant-time
+  // liveness check (`readSubscriptionStatus` in apply-billing-event.ts) refuses entitlement +
+  // coverage-mirror grants for a canceled subscription — credits still grant (a bounded, paid-for
+  // allotment, clawed by a refund of the same invoice). Both fork shapes the Linear ticket left
+  // open shipped as that one mechanism. The only CAISSON-25 residual is the operator
+  // launch-runbook check that Paddle dunning CANCELS (never pauses) after the final retry — a
+  // pause emits no subscription.canceled at all (docs/state/production-readiness.md).
   test("CAISSON-25: a late (out-of-order) renewal-cycle invoice.paid for an ALREADY-canceled subscription never resurrects the revoked entitlement", async () => {
     const acct = "acct_late_invoice_after_cancel";
     // Cycle 1 grants the plan's entitlement under subscription "sub_1" (the invoicePaid() fixture).

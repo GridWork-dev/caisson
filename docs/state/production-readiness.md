@@ -103,9 +103,11 @@ Checkout, webhook verify → grant, license mint, entitlement resolution, subscr
 proven end-to-end against Paddle SANDBOX — including a real signed simulator purchase that drove
 a real grant row (2026-07-04, which also caught the `.strict()`-envelope P0 before launch).
 Real money cannot move until the consolidated blockers 1/2/4 above close (5 closed 2026-07-11). Additional named
-debt: `adjustment.created` never live-subscribed even in sandbox (tracked); the credit
-rollover/12-month-expiry/FIFO policy shows in the dashboard but not in the EULA text (tracked);
-the first-cycle credit race stays open-by-choice (CAISSON-25 disposition pending).
+debt: `adjustment.created` never live-subscribed even in sandbox (tracked). The credit
+rollover/12-month-expiry/FIFO EULA clause SHIPPED 2026-07-09 (PR #190, CAISSON-61 —
+`apps/site/app/legal/eula/page.tsx` §5 Credits, matching ADR-0245/0252 and the built ledger); the
+first-cycle credit race code residuals were CLOSED by Kickoff-H W3 (ADR-0302 cancel tombstone +
+liveness check) — only the operator Paddle dunning-cancel dashboard check below remains.
 
 - **Launch-runbook check (CAISSON-25 item 1):** verify in the Paddle dashboard that the
   failed-payment (dunning) setting **cancels** the subscription after the final retry — never
