@@ -32,7 +32,7 @@ export function baseOptions(): BaseLayoutProps {
       {
         type: "icon",
         url: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
-        text: "Github",
+        text: "GitHub",
         label: "GitHub",
         icon: <GitHubMark />,
         external: true,
