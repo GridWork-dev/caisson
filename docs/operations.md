@@ -350,6 +350,36 @@ SPEC->...->SHIP loop. Doctrine: `identity/doctrine.md` (Autonomy line + DEPLOY, 
 
 ---
 
+## 9. Database backup + restore (Railway Postgres)
+
+One Railway Postgres instance carries three databases: `railway` (platform), `admin_auth`
+(admin better-auth — its OWN database, same instance), `postgres` (default, unused). Backup
+posture (CAISSON-52, configured + proven 2026-07-11):
+
+- **Daily volume snapshots** on the Postgres service: every 24h, 6-day retention (the max
+  paired with the Daily tier on the current plan). PITR deliberately not enabled (07-11 picker);
+  re-open when real commerce data raises the recovery-point bar.
+- **Native snapshot restore is IN-PLACE**: it stages a volume swap on the live service (old
+  volume preserved but detached at deploy). Never "test" it against production — it is the
+  incident path, not a rehearsal path.
+- **Rehearsed logical restore procedure** (proven 2026-07-11 — full row-count match on all
+  schemas incl. `intel` + `pgboss`):
+  1. Create a scratch Postgres service in the Railway project (`railway add --database postgres`).
+  2. `pg_dump -Fc` the live `DATABASE_PUBLIC_URL` **and** the `admin_auth` database (same
+     instance, swap the URL's path segment).
+  3. **Recreate the app roles FIRST on the target** (`admin`, `admin_write`, `admin_app`, `app`)
+     or every RLS `CREATE POLICY ... TO <role>` in the dump fails and the restore comes up
+     without its policies (fail-closed RLS locks reads out rather than exposing data — but the
+     restore is still broken). `pg_dumpall --globals-only` on the source captures them.
+  4. `pg_restore --no-owner --no-acl -d <target>` per database; verify per-table row counts
+     against the source before trusting it; re-grant per the migration `GRANT` set (the
+     CAISSON-17/18 grantee lesson: grants target `admin_app`, not `CURRENT_USER`).
+  5. Delete the scratch service when done — it holds a full production-data copy.
+- Rollback for a bad `railway up` is a service-level act (redeploy the prior image), not a DB
+  restore — do not reach for snapshots to undo a deploy.
+
+---
+
 ## ADR / spec routing
 
 | For                                                                             | See                                                                                                                                       |

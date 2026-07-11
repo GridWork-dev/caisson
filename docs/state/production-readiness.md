@@ -24,7 +24,7 @@ Six-dimension readiness assessment from the 2026-07-09 whole-repo sweep (16-agen
 | Deploy / infra   | **gaps**    | All 5 Railway services + Worker deployed from current main, live-verified; no undeployed code debt on main                                     |
 | Security         | **gaps**    | Strix round-1 remediated; round-2 executed 2026-07-10 (Kickoff K) — 3 DoS/supply-chain fixes, seams clean, Worker 429 proven; named debt below |
 | Commerce         | **BLOCKED** | Everything built + sandbox-proven end-to-end; no Paddle production account/catalog, EIN in flight — deliberate pre-launch                      |
-| Operational      | **gaps**    | Telemetry + intel daemon live; **Railway Postgres backup/PITR never configured** — the one true operational blocker                            |
+| Operational      | **gaps**    | Telemetry + intel daemon live; daily backups + rehearsed restore PROVEN 2026-07-11; external uptime monitor live (Better Stack)                |
 | Buyer experience | **gaps**    | All 3 P0 + 12 P1 lifecycle-audit gaps verified fixed in code; residue is the operator launch checklist                                         |
 | Quality gates    | **gaps**    | 4-check CI gate real and green; "required" is discipline (no branch protection on the private plan)                                            |
 
@@ -38,9 +38,11 @@ mostly operator-owed — none are silent breakage:
    operator-gated). EIN est. 2026-07-15. (tracked, runbook §1–§2)
 2. **CF-Access `site_gate` flip** — public checkout is unreachable until the terraform flip; the
    flip is sequenced AFTER the live-purchase verify. (tracked, runbook §3)
-3. **Railway Postgres backup/PITR** — named as an operator obligation in ADR-0115 the day Railway
-   became the platform DB (2026-06-30) and never configured or tracked since. Going live on real
-   commerce data without a proven backup is the sweep's only new P0. (tracked as of this sweep)
+3. **Railway Postgres backup/PITR** — CLOSED 2026-07-11: daily snapshots enabled (24h/6-day
+   retention) + manual backup proven (1.12 GB) + a rehearsed logical restore into a scratch
+   Postgres verified full row-count parity on ALL schemas (public + intel + pgboss +
+   admin_auth). Procedure: `docs/operations.md` §9 (roles-before-restore caveat included).
+   PITR deliberately deferred (07-11 picker).
 4. **EULA final legal review** — the live EULA self-labels "being finalized with legal counsel";
    five polish edits to the continuity clause await operator sign-off. (tracked)
 5. **`RESEND_API_KEY` on `caisson-license`** — CLOSED 2026-07-11: `RESEND_API_KEY` +
@@ -125,12 +127,15 @@ the first-cycle credit race stays open-by-choice (CAISSON-25 disposition pending
 SigNoz + Grafana OTLP pipeline live; docs/support-bot edge hardening live-verified; admin intel
 daemon (ADR-0286) healthy with its scheduler bug fixed; pg-boss crons armed and DB-verified.
 
-- **P0:** Railway Postgres backup/PITR — see consolidated blocker 3.
+- **P0 (closed 2026-07-11):** Railway Postgres backup/PITR — daily snapshots + proven
+  rehearsed restore; see consolidated blocker 3 and `docs/operations.md` §9.
 - **P1:** no confirmed Grafana alert rules or contact point (the archived setup runbook's 4-rule
   list was suggested, never confirmed executed) — no "service down" page reaches the operator.
   (tracked as of this sweep)
-- **P2:** no external uptime/synthetic monitor (Railway restarts crashed containers but notifies
-  no one). (tracked as of this sweep)
+- **P2 (closed 2026-07-11):** external uptime monitor live — Better Stack (free tier):
+  caisson.sh (2xx) + license.caisson.sh/health (200), 3-min checks / 30s confirmation,
+  email alerting to admin@ on open + recovery (Discord webhook is paid-tier; skipped).
+  CAISSON-53 Done.
 - **P2:** no written incident-response runbook — every past outage was handled ad hoc and
   recorded post-hoc in deploy-log entries. (tracked as of this sweep)
 - **P2:** pg-boss cron failures (credit expiry, updates-window expiry, intel watchers) have no
