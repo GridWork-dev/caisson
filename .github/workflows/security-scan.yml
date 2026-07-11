@@ -15,6 +15,8 @@ on:
   push:
     branches: [main]
   pull_request:
+    # Defaults plus ready_for_review — flipping a draft to ready fires the full run (CAISSON-96).
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: "security-scan-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
@@ -28,6 +30,8 @@ jobs:
   # trivy, osv-scanner, trufflehog (verified-only), Dockerfile digest gate (advisory). SEMGREP_JOBS=1
   # dodges the semgrep-core io_uring crash the fleet box can hit under parallelism.
   deterministic:
+    # CAISSON-96 draft guard — drafts skip; the ready_for_review trigger runs the full scan.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     env:
@@ -80,6 +84,8 @@ jobs:
   # self-authenticates from the token and pulls the org policy rules. SEMGREP_APP_TOKEN and
   # SEMGREP_RULES are mutually exclusive — never set both.
   semgrep-pro:
+    # CAISSON-96 draft guard — drafts skip; the ready_for_review trigger runs the full scan.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     env:
