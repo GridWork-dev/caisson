@@ -2,7 +2,8 @@
 "@caisson/site": patch
 ---
 
-Deterministic browser-audit graduation suite (ADR-0323 D2, CAISSON-93): the four P1 clean
-replays pinned as local Playwright tests (`apps/site/e2e/`, `test:e2e` turbo task, path-filtered
-`site-e2e` quality job) plus the fumadocs `size-4.5` hit-area canary and the nav-utils /
-media-carousel hit-area overhang pass.
+Add a deterministic browser end-to-end suite that runs against a local production build in CI:
+it pins the homepage code viewer's visibility and selection swap, the docs main landmark and
+skip-link focus behavior, the marketplace compare control's enlarged tap target and stacking
+above the card preview action, docs-search focus return on dismissal, and the 44px hit-area
+overlays on the docs chrome, nav cluster, and media-carousel arrows at mobile width.
