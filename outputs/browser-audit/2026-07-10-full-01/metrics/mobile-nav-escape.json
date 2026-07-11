@@ -1,0 +1,8 @@
+{
+  "active": "Open menu",
+  "dialogs": [
+    { "open": false, "role": null },
+    { "open": false, "role": null }
+  ],
+  "bodyOverflow": "visible"
+}

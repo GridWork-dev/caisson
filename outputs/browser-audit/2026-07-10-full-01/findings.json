@@ -1,0 +1,198 @@
+{
+  "advisory": true,
+  "runId": "2026-07-10-full-01",
+  "rootDir": "outputs/browser-audit/2026-07-10-full-01",
+  "classes": {
+    "CAISSON-PBA-001": "new",
+    "CAISSON-PBA-002": "new",
+    "CAISSON-PBA-003": "new",
+    "CAISSON-PBA-004": "new",
+    "CAISSON-PBA-005": "new",
+    "CAISSON-PBA-006": "new",
+    "CAISSON-PBA-007": "new"
+  },
+  "findings": [
+    {
+      "id": "CAISSON-PBA-001",
+      "title": "Homepage real-code viewer is present but zero-height",
+      "category": "behavior",
+      "severity": "P1",
+      "confidence": "high",
+      "ring": "public",
+      "journey": "public-evidence-discovery",
+      "url": "https://caisson.sh/",
+      "viewport": "1440x900",
+      "theme": "dark",
+      "authState": "public",
+      "steps": [
+        "Open the homepage",
+        "Scroll to Real paths. Real code. No screenshots.",
+        "Select a highlighted package"
+      ],
+      "observed": "The code card contains real code but computes to height 0 at desktop and mobile, so no selected code is visible.",
+      "expected": "The selected real-code artifact remains visible and updates after package selection.",
+      "evidence": [
+        "screenshots/public/repo-codecard-before.png",
+        "screenshots/public/repo-codecard-after-kernel.png",
+        "metrics/repo-codecard-clean-replay.json"
+      ],
+      "ruleSource": "Caisson DESIGN.md artifact-is-the-headline rule; Refero Oxide/Warp reference lock; behavior rubric observable transition",
+      "replay": { "cleanSession": true, "attempts": 1, "reproduced": true }
+    },
+    {
+      "id": "CAISSON-PBA-002",
+      "title": "Docs skip link has no target and document has no main landmark",
+      "category": "accessibility",
+      "severity": "P1",
+      "confidence": "high",
+      "ring": "public",
+      "journey": "public-docs-keyboard-navigation",
+      "url": "https://caisson.sh/docs",
+      "viewport": "1440x900",
+      "theme": "dark",
+      "authState": "public",
+      "steps": [
+        "Open docs in a clean session",
+        "Press Tab to focus Skip to content",
+        "Press Enter"
+      ],
+      "observed": "The hash changes to #main-content, but no target or main landmark exists and focus/scroll do not bypass the docs chrome.",
+      "expected": "A single main landmark owns #main-content and receives the skip-link transition.",
+      "evidence": [
+        "metrics/docs-skip-link-action.json",
+        "metrics/docs-skip-link-clean-replay.json",
+        "lighthouse/docs-mobile/report.json",
+        "lighthouse/docs-desktop/report.json"
+      ],
+      "ruleSource": "WCAG 2.2 1.3.1 and 2.4.1; Impeccable accessibility; Caisson AA floor",
+      "replay": { "cleanSession": true, "attempts": 1, "reproduced": true }
+    },
+    {
+      "id": "CAISSON-PBA-003",
+      "title": "Marketplace compare controls fail WCAG target size",
+      "category": "accessibility",
+      "severity": "P1",
+      "confidence": "high",
+      "ring": "public",
+      "journey": "public-marketplace-comparison",
+      "url": "https://caisson.sh/marketplace",
+      "viewport": "390x844",
+      "theme": "dark",
+      "authState": "public",
+      "steps": [
+        "Open marketplace on mobile",
+        "Scroll to a bundle card",
+        "Toggle Compare",
+        "Toggle Compare off"
+      ],
+      "observed": "The checkbox is 13x13px and its safe clickable area remains 13px because it overlaps the full-card preview action.",
+      "expected": "Each compare control provides at least a 24x24px safe target and preferably the 44px Caisson touch target.",
+      "evidence": [
+        "lighthouse/marketplace-mobile/report.json",
+        "screenshots/public/marketplace-compare-before.png",
+        "screenshots/public/marketplace-compare-after.png",
+        "screenshots/public/marketplace-compare-revert.png",
+        "metrics/marketplace-compare-clean-replay.json"
+      ],
+      "ruleSource": "WCAG 2.2 2.5.8; Impeccable responsive target-size check",
+      "replay": { "cleanSession": true, "attempts": 1, "reproduced": true }
+    },
+    {
+      "id": "CAISSON-PBA-004",
+      "title": "Docs search loses focus when dismissed",
+      "category": "accessibility",
+      "severity": "P1",
+      "confidence": "high",
+      "ring": "public",
+      "journey": "public-docs-search-recovery",
+      "url": "https://caisson.sh/docs",
+      "viewport": "390x844",
+      "theme": "dark",
+      "authState": "public",
+      "steps": ["Open docs search", "Enter row level security", "Press Escape"],
+      "observed": "The dialog closes and focus moves to BODY instead of the Open Search trigger.",
+      "expected": "Dismissal returns focus to the control that opened the dialog.",
+      "evidence": [
+        "screenshots/public/docs-search-results.png",
+        "metrics/docs-search-focus-return.json",
+        "metrics/docs-search-focus-return-clean-replay.json"
+      ],
+      "ruleSource": "WCAG 2.2 2.4.3; Impeccable product register and behavior rubric focus-return requirement",
+      "replay": { "cleanSession": true, "attempts": 2, "reproduced": true }
+    },
+    {
+      "id": "CAISSON-PBA-005",
+      "title": "Docs GitHub SVG lacks accessible text",
+      "category": "accessibility",
+      "severity": "P2",
+      "confidence": "high",
+      "ring": "public",
+      "journey": "public-docs-navigation",
+      "url": "https://caisson.sh/docs",
+      "viewport": "1440x900",
+      "theme": "dark",
+      "authState": "public",
+      "steps": ["Open docs", "Inspect the docs navigation accessibility tree"],
+      "observed": "A GitHub SVG has role img without title, aria-label, or aria-labelledby.",
+      "expected": "The icon is decorative or has an accessible name consistent with its link.",
+      "evidence": [
+        "lighthouse/docs-desktop/report.json",
+        "accessibility/desktop-light-docs.txt"
+      ],
+      "ruleSource": "WCAG 2.2 1.1.1; Impeccable accessibility names and roles",
+      "replay": { "cleanSession": false, "attempts": 1, "reproduced": true }
+    },
+    {
+      "id": "CAISSON-PBA-006",
+      "title": "Mobile controls systemically miss the 44px Caisson target",
+      "category": "design",
+      "severity": "P2",
+      "confidence": "high",
+      "ring": "public",
+      "journey": "public-responsive-navigation",
+      "url": "https://caisson.sh/",
+      "viewport": "390x844",
+      "theme": "dark",
+      "authState": "public",
+      "steps": [
+        "Sweep all public routes at 390x844",
+        "Measure visible links, buttons, and form controls"
+      ],
+      "observed": "Shell controls are 36px, docs controls 34px, carousel arrows 32px, and many CTAs 40px tall.",
+      "expected": "Interactive hit areas reach the 44px internal target without visually inflating compact controls.",
+      "evidence": [
+        "metrics/mobile-light-home.json",
+        "metrics/mobile-light-docs.json",
+        "metrics/mobile-light-compliance.json",
+        "metrics/mobile-light-provenance.json"
+      ],
+      "ruleSource": "Impeccable responsive audit touch-target rule; Caisson accessibility credibility principle",
+      "replay": { "cleanSession": false, "attempts": 27, "reproduced": true }
+    },
+    {
+      "id": "CAISSON-PBA-007",
+      "title": "WebGL-unavailable fallback logs repeated renderer errors",
+      "category": "performance",
+      "severity": "P2",
+      "confidence": "medium",
+      "ring": "public",
+      "journey": "public-home-first-load",
+      "url": "https://caisson.sh/",
+      "viewport": "1440x900",
+      "theme": "dark",
+      "authState": "public",
+      "steps": [
+        "Open homepage where WebGL context allocation fails",
+        "Inspect rendered poster and console"
+      ],
+      "observed": "Content remains usable, but Three.js logs repeated context creation errors and Lighthouse best-practices falls to 92.",
+      "expected": "Capability detection preserves the poster fallback without repeated renderer errors.",
+      "evidence": [
+        "lighthouse/home-desktop/report.json",
+        "screenshots/public/desktop-dark-home.png"
+      ],
+      "ruleSource": "Caisson poster-first ambient-field contract; Impeccable performance and error-state discipline",
+      "replay": { "cleanSession": false, "attempts": 1, "reproduced": true }
+    }
+  ]
+}

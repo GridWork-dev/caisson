@@ -1,0 +1,29 @@
+{
+  "url": "https://caisson.sh/updates",
+  "title": "Updates · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1440, "h": 2430 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Updates" },
+    {
+      "level": "H2",
+      "text": "Base substrate: RLS, field-crypto, audit chain, create-caisson"
+    },
+    {
+      "level": "H2",
+      "text": "field-crypto: per-tenant AES-256-GCM encryption at the column level"
+    },
+    {
+      "level": "H2",
+      "text": "Kernel, registry runtime, and fail-closed RLS: initial release"
+    }
+  ],
+  "links": 35,
+  "buttons": 10,
+  "inputs": 7,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

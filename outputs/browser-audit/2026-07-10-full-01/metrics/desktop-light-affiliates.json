@@ -1,0 +1,22 @@
+{
+  "url": "https://caisson.sh/affiliates",
+  "title": "Affiliate program · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 4127 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Refer Caisson. Earn 30% to 50%." },
+    { "level": "H2", "text": "Three steps, no forms." },
+    { "level": "H2", "text": "What you earn." },
+    { "level": "H2", "text": "Apply by email." },
+    { "level": "H2", "text": "Commissions follow the sale." },
+    { "level": "H2", "text": "Common questions." }
+  ],
+  "links": 38,
+  "buttons": 9,
+  "inputs": 4,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

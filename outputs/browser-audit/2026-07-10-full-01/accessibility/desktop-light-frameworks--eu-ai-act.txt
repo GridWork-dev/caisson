@@ -1,0 +1,301 @@
+uid=11_0 RootWebArea "EU AI Act-ready · Caisson" url="https://caisson.sh/frameworks/eu-ai-act"
+  uid=11_1 link "Skip to content" url="https://caisson.sh/frameworks/eu-ai-act#main-content"
+    uid=11_2 StaticText "Skip to content"
+  uid=11_3 banner
+    uid=11_4 link "Caisson home" url="https://caisson.sh/"
+      uid=11_5 StaticText "caisson"
+    uid=11_6 button "Marketplace" expandable
+    uid=11_7 button "Resources" expandable
+    uid=11_8 button "Search the docs"
+    uid=11_9 button "Cart"
+    uid=11_10 button "Switch to dark theme" description="Switch to dark theme"
+    uid=11_11 link "Get started" url="https://caisson.sh/docs/getting-started"
+      uid=11_12 StaticText "Get started"
+    uid=11_13 link "Sign in" url="https://caisson.sh/login"
+      uid=11_14 StaticText "Sign in"
+  uid=11_15 main
+    uid=11_16 StaticText "FRAMEWORK · EU AI ACT"
+    uid=11_17 heading "Technical evidence for Annex IV." level="1"
+    uid=11_18 StaticText "Caisson generates the logging, traceability, and data-governance artifacts an EU AI Act Annex IV technical-documentation file requires. The administrative and legal compliance determination stays yours."
+    uid=11_19 link "Get Compliance" url="https://caisson.sh/marketplace"
+      uid=11_20 StaticText "Get Compliance"
+    uid=11_21 link "Read the docs" url="https://caisson.sh/docs"
+      uid=11_22 StaticText "Read the docs"
+    uid=11_23 StaticText "Annex IV §2–6"
+    uid=11_24 StaticText "Art. 10"
+    uid=11_25 StaticText "Art. 12"
+    uid=11_26 StaticText "Art. 14"
+    uid=11_27 StaticText "Evidence artifacts, no certification or legal opinion implied"
+    uid=11_28 StaticText "base substrate · RLS + audit chain"
+    uid=11_29 StaticText "CI-tested"
+    uid=11_30 StaticText "-- RLS cross-tenant denial
+"
+    uid=11_31 StaticText "-- (Art. 10 data governance)
+"
+    uid=11_32 StaticText "> SELECT count(*)
+"
+    uid=11_33 StaticText "  FROM ai_inference_log;
+"
+    uid=11_34 StaticText "  -- no tenant context set
+"
+    uid=11_35 StaticText "ERROR:  unrecognized config
+"
+    uid=11_36 StaticText "  parameter "app.tenant_id"
+"
+    uid=11_37 StaticText "
+"
+    uid=11_38 StaticText "// kernel verifyChain
+"
+    uid=11_39 StaticText "  (Art. 12 record-keeping)
+"
+    uid=11_40 StaticText "const result = await
+"
+    uid=11_41 StaticText "  verifyChain(db, {
+"
+    uid=11_42 StaticText "  table: "ai_inference_log"
+"
+    uid=11_43 StaticText "});
+"
+    uid=11_44 StaticText "// "
+    uid=11_45 StaticText "{ intact: true,
+"
+    uid=11_46 StaticText "  rows: 7043, breaks: 0 }"
+    uid=11_47 StaticText "WHAT THIS IS, AND ISN'T"
+    uid=11_48 StaticText "WHAT CAISSON DOES"
+    uid=11_49 StaticText "Generates the technical evidence Annex IV §2–6 requests"
+    uid=11_50 StaticText "Ships the controls Art. 10 / 12 / 14 require at the code level"
+    uid=11_51 StaticText "Produces a dated, replayable, auditor-readable artifact bundle"
+    uid=11_52 StaticText "Wires the gates before your first deployment, not after your first assessment"
+    uid=11_53 StaticText "WHAT STAYS YOURS"
+    uid=11_54 StaticText "The conformity assessment and legal sign-off"
+    uid=11_55 StaticText "Risk classification (prohibited / high-risk / limited-risk)"
+    uid=11_56 StaticText "Organizational controls: HR, vendor management, incident response"
+    uid=11_57 StaticText "Registration in the EU AI Act database (Art. 49, where required)"
+    uid=11_58 StaticText "Caisson ships technical controls. Whether your system satisfies every EU AI Act obligation depends on deployment context, risk category, and your conformity assessment: that determination belongs to your legal team."
+    uid=11_59 StaticText "ANNEX IV CONTROL MAP"
+    uid=11_60 heading "Five requirements. Five controls. All testable." level="2"
+    uid=11_61 StaticText "Each requirement below maps to a Caisson primitive that produces a verifiable artifact. The output is code you can read, run, and hand to a notified body or an internal assessor."
+    uid=11_62 StaticText "Article 12 · Annex IV §3"
+    uid=11_63 StaticText "Record-keeping"
+    uid=11_64 heading "Every inference hashes into an append-only chain." level="3"
+    uid=11_65 StaticText "Article 12 requires high-risk AI systems to log events at a level sufficient to trace decisions back through time. Caisson's audit chain writes each event with SHA-256 over the previous hash, so tamper, truncation, and reorder each break the chain and surface on verify. What you hand an auditor is that same chain, run live."
+    uid=11_66 StaticText "Evidence artifact: Record-keeping"
+    uid=11_67 StaticText "artifact"
+    uid=11_68 StaticText "// kernel verifyChain — append-only SHA-256 audit chain
+import { verifyChain } from "@caisson/kernel";
+
+const result = await verifyChain(db, { table: "ai_inference_log" });
+// { intact: true, rows: 7043, breaks: 0, root: "9c3a…f1" }
+
+// A tampered row breaks every subsequent link — detectable and provable.
+// The chain is tested in CI on every push (RLS cross-tenant test suite)."
+    uid=11_69 StaticText "Art. 12(1) · Annex IV §3 (logging of operation period)"
+    uid=11_70 StaticText "Article 10 · Annex IV §2(f)"
+    uid=11_71 StaticText "Data governance"
+    uid=11_72 heading "Training and inference data isolated per tenant by construction." level="3"
+    uid=11_73 StaticText "Article 10 requires data-governance practices covering the datasets used to train and operate the system. Fail-closed Postgres RLS ensures no query crosses a tenant boundary without an explicit, policy-enforced grant. A query that never sets the tenant context returns nothing, enforced by the database's own privilege system rather than a checklist an engineer might skip."
+    uid=11_74 StaticText "Evidence artifact: Data governance"
+    uid=11_75 StaticText "artifact"
+    uid=11_76 StaticText "-- RLS forces every query through the data-governance policy.
+ALTER TABLE ai_training_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_training_records FORCE  ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_data_scope ON ai_training_records
+  USING (tenant_id = current_setting('app.tenant_id')::uuid);
+
+-- Cross-tenant access attempt fails closed — no privileged path.
+> SELECT count(*) FROM ai_training_records;  -- no tenant context set
+ERROR:  unrecognized configuration parameter "app.tenant_id""
+    uid=11_77 StaticText "Art. 10(2) · Annex IV §2(f) (data governance measures)"
+    uid=11_78 StaticText "Article 10 · Annex IV §2(f)"
+    uid=11_79 StaticText "Field-level encryption"
+    uid=11_80 heading "Sensitive training data encrypted per tenant at the column level." level="3"
+    uid=11_81 StaticText "Where Article 10 data-governance requirements apply to personally identifiable training data, Caisson encrypts sensitive columns with a key derived per tenant via HKDF-SHA256. A leaked key exposes one tenant's data, not the table. Root key rotation re-derives every tenant key without a re-encrypt scan."
+    uid=11_82 StaticText "Evidence artifact: Field-level encryption"
+    uid=11_83 StaticText "artifact"
+    uid=11_84 StaticText "// Per-tenant DEK scoped by tenant id — one leaked key, one tenant.
+const dek = hkdf("sha256", rootKey, /* salt */ tenantId,
+                 /* info */ "caisson/field-v1", 32);
+
+const sealed = aesgcm.seal(dek, sensitiveTrainingField);
+
+// Tenant A's DEK cannot open tenant B's ciphertext — structurally.
+// Root rotation re-derives; ciphertext stays addressable."
+    uid=11_85 StaticText "Art. 10(5) · Annex IV §2(f) (appropriate security measures for data)"
+    uid=11_86 StaticText "Article 9 · Annex IV §5"
+    uid=11_87 StaticText "Accuracy and robustness testing"
+    uid=11_88 heading "Eval harness gates every pull request against a golden set." level="3"
+    uid=11_89 StaticText "Article 9 risk-management and Annex IV §5 require documented testing for accuracy, robustness, and cybersecurity. Caisson's standalone eval-harness module (ai-evals) ships a golden-file eval harness that gates pull requests on score regression past a declared tolerance, checked into the repo as caisson.ai.toml and enforced the same way on every push."
+    uid=11_90 StaticText "Evidence artifact: Accuracy and robustness testing"
+    uid=11_91 StaticText "artifact"
+    uid=11_92 StaticText "# caisson.ai.toml — eval gate configuration (ai-evals module)
+# Wires CI to fail the PR when accuracy drops past the declared tolerance.
+# The golden set, baseline, and report are repo artifacts an assessor can read.
+[evals]
+gate       = "ci"      # fail the PR on score drop
+tolerance  = 0.02      # max allowed regression before block
+golden_set = "evals/annex-iv-accuracy.jsonl"
+report_dir = "reports/""
+    uid=11_93 StaticText "Art. 9(4)(b) · Annex IV §5 (testing procedures + performance metrics)"
+    uid=11_94 StaticText "Article 14 · Annex IV §4"
+    uid=11_95 StaticText "Human oversight hooks"
+    uid=11_96 heading "Circuit breaker and spend cap surface override control to operators." level="3"
+    uid=11_97 StaticText "Article 14 requires high-risk AI systems to allow natural persons to intervene and override automated outputs. Caisson's circuit breaker opens when a tenant's token spend exceeds a hard cap, returning HTTP 402 and surfacing the event: a structural pause that routes control back to the operator before the next call. Override and reset are explicit, logged operator actions inside the same audit chain the rest of the system writes to."
+    uid=11_98 StaticText "Evidence artifact: Human oversight hooks"
+    uid=11_99 StaticText "artifact"
+    uid=11_100 StaticText "// billing primitives (base substrate) — hard spend cap per tenant
+import { checkCredits, recordUsage } from "@caisson/billing";
+
+const ok = await checkCredits(db, { tenantId, tokens: estimatedTokens });
+if (!ok) {
+  // HTTP 402 surfaces the pause — override is an explicit operator action
+  return Response.json({ error: "token_cap_exceeded" }, { status: 402 });
+}
+// Override and resume are explicit actions, logged to the audit chain.
+// No automatic resumption — the structural pause routes control back to the operator."
+    uid=11_101 StaticText "Art. 14(1)(3) · Annex IV §4 (human oversight measures)"
+    uid=11_102 StaticText "EVIDENCE ARTIFACTS"
+    uid=11_103 heading "Auditor-readable output from live controls." level="2"
+    uid=11_104 StaticText "The Compliance bundle collects the RLS policies, audit-chain proof, and field-encryption config from the system that enforces them, maps each to an Annex IV section, and packages them as a dated, replayable bundle."
+    uid=11_105 StaticText "annex-iv-control-map.json: illustrative artifact structure"
+    uid=11_106 StaticText "Annex IV"
+    uid=11_107 StaticText "{
+  "framework": "eu-ai-act",
+  "generated": "2026-06-27",
+  "controls": [
+    { "article": "Art. 12 · Annex IV §3",  "control": "audit-chain",  "status": "verified" },
+    { "article": "Art. 10 · Annex IV §2f", "control": "rls-policy",   "status": "active"   },
+    { "article": "Art. 10 · Annex IV §2f", "control": "field-crypto", "status": "active"   },
+    { "article": "Art. 14 · Annex IV §4",  "control": "spend-cap",    "status": "configured"}
+  ],
+  "artifacts": [
+    "chain-proof.txt",
+    "rls-policies.sql",
+    "field-crypto-config.json",
+    "annex-iv-control-map.json"
+  ]
+}"
+    uid=11_108 StaticText "The EU AI Act-ready evidence bundle ships with the Compliance bundle, available to buyers anywhere."
+    uid=11_109 StaticText "WHY NOW"
+    uid=11_110 StaticText "Retrofitting a tamper-evident log and per-tenant data isolation into a live AI system costs months. Start with them."
+    uid=11_111 StaticText "Once inference data and audit events are commingled in production, isolating them for Annex IV becomes a migration. On day one, it is a default. The controls are structural, tested in CI before your first customer signs, well ahead of your first notified-body assessment."
+    uid=11_112 StaticText "ARTICLE 50 · TRANSPARENCY"
+    uid=11_113 heading "Article 50 becomes enforceable August 2, 2026." level="2"
+    uid=11_114 StaticText "The EU AI Act’s transparency obligations (Regulation (EU) 2024/1689, Article 50) apply from August 2, 2026 — confirmed unmoved by the Digital Omnibus amendment (independent reporting through 2026-07-07). They cover AI systems that interact with people regardless of risk class: users must be told they are interacting with AI, and generated content must carry machine-readable marking."
+    uid=11_115 StaticText "The disclosure surface itself is your product’s UI. What Caisson supplies is the evidence discipline behind it: disclosure events logged to the tamper-evident audit chain, configuration versioned in your repo, and the dated evidence bundle that shows the obligation was met — the same record-keeping spine the Annex IV map above uses."
+    uid=11_116 link "What Article 50 requires, in detail" url="https://caisson.sh/frameworks/eu-ai-act/article-50"
+      uid=11_117 StaticText "What Article 50 requires, in detail"
+    uid=11_118 StaticText "GET STARTED"
+    uid=11_119 heading "Ship with the evidence already in the repo." level="2"
+    uid=11_120 StaticText "The Compliance bundle ships the audit chain, RLS policies, and field-encryption wired and testable from day one, ready well before your first notified-body assessment."
+    uid=11_121 StaticText "scaffold a Caisson project"
+    uid=11_122 StaticText "bunx @caisson-sh/cli@latest"
+    uid=11_123 link "Get Compliance" url="https://caisson.sh/marketplace"
+      uid=11_124 StaticText "Get Compliance"
+    uid=11_125 link "Read the docs" url="https://caisson.sh/docs"
+      uid=11_126 StaticText "Read the docs"
+    uid=11_127 StaticText "Work email"
+    uid=11_128 textbox "Work email Work email" required
+    uid=11_129 Iframe "Widget containing a Cloudflare security challenge"
+      uid=11_130 RootWebArea "Checking your Browser…" url="https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/g/turnstile/f/av0/rch/hbaea/0x4AAAAAADtpV5Gy0sCgUBEL/auto/fbE/new/flexible?lang=auto"
+        uid=11_131 generic atomic live="polite" relevant="additions text"
+          uid=11_132 alert atomic live="assertive" relevant="additions text"
+            uid=11_133 checkbox "Verify you are human"
+            uid=11_134 StaticText "Verify you are human"
+          uid=11_135 link "Cloudflare" url="https://www.cloudflare.com/products/turnstile/?utm_source=turnstile&utm_campaign=widget"
+            uid=11_136 image "Cloudflare"
+          uid=11_137 link "Privacy" url="https://www.cloudflare.com/privacypolicy/"
+            uid=11_138 StaticText "Privacy"
+          uid=11_139 StaticText "•"
+          uid=11_140 link "Help" url="https://challenges.cloudflare.com/cdn-cgi/challenge-platform/help"
+            uid=11_141 StaticText "Help"
+    uid=11_142 checkbox "I agree to receive product update emails.Privacy policy" invalid="true"
+    uid=11_143 StaticText "I agree to receive product update emails."
+    uid=11_144 link "Privacy policy" url="https://caisson.sh/legal/privacy"
+      uid=11_145 StaticText "Privacy policy"
+    uid=11_146 button "Get product updates" disableable disabled
+    uid=11_147 StaticText "Occasional product updates. Unsubscribe anytime."
+  uid=11_148 contentinfo
+    uid=11_149 StaticText "caisson"
+    uid=11_150 StaticText "compliance-grade infrastructure"
+    uid=11_151 StaticText "Compliance-grade infrastructure for regulated SaaS."
+    uid=11_152 StaticText "© "
+    uid=11_153 StaticText "2026"
+    uid=11_154 StaticText " Caisson Software LLC"
+    uid=11_155 StaticText "Base substrate is"
+    uid=11_156 link "Apache-2.0" url="https://caisson.sh/legal/license"
+      uid=11_157 StaticText "Apache-2.0"
+    uid=11_158 StaticText ", free to use. Bundles and modules are commercial."
+    uid=11_159 StaticText "Product updates"
+    uid=11_160 StaticText "Work email"
+    uid=11_161 textbox "you@company.com" required
+    uid=11_162 checkbox "I agree to receive product update emails. Privacy policy" invalid="true"
+    uid=11_163 StaticText "I agree to receive product update emails."
+    uid=11_164 StaticText " "
+    uid=11_165 link "Privacy policy" url="https://caisson.sh/legal/privacy"
+      uid=11_166 StaticText "Privacy policy"
+    uid=11_167 button "Get product updates" disableable disabled
+    uid=11_168 StaticText "Occasional product updates. Unsubscribe anytime."
+    uid=11_169 navigation "Bundles"
+      uid=11_170 StaticText "Bundles"
+      uid=11_171 link "Compliance" url="https://caisson.sh/compliance"
+        uid=11_172 StaticText "Compliance"
+      uid=11_173 link "AI-Production" url="https://caisson.sh/ai-kit"
+        uid=11_174 StaticText "AI-Production"
+      uid=11_175 link "Local-first" url="https://caisson.sh/local-first"
+        uid=11_176 StaticText "Local-first"
+      uid=11_177 link "Agentic-Dev" url="https://caisson.sh/agentic-dev"
+        uid=11_178 StaticText "Agentic-Dev"
+      uid=11_179 link "Provenance" url="https://caisson.sh/provenance"
+        uid=11_180 StaticText "Provenance"
+    uid=11_181 navigation "Marketplace"
+      uid=11_182 StaticText "Marketplace"
+      uid=11_183 link "Marketplace" url="https://caisson.sh/marketplace"
+        uid=11_184 StaticText "Marketplace"
+      uid=11_185 link "Plans" url="https://caisson.sh/marketplace/plans"
+        uid=11_186 StaticText "Plans"
+      uid=11_187 link "Documentation" url="https://caisson.sh/docs"
+        uid=11_188 StaticText "Documentation"
+      uid=11_189 link "Getting started" url="https://caisson.sh/docs/getting-started"
+        uid=11_190 StaticText "Getting started"
+    uid=11_191 navigation "Resources"
+      uid=11_192 StaticText "Resources"
+      uid=11_193 link "Glossary" url="https://caisson.sh/glossary"
+        uid=11_194 StaticText "Glossary"
+      uid=11_195 link "Comparisons" url="https://caisson.sh/compare"
+        uid=11_196 StaticText "Comparisons"
+      uid=11_197 link "Stack fit" url="https://caisson.sh/stack-fit"
+        uid=11_198 StaticText "Stack fit"
+      uid=11_199 link "UI Pro" url="https://caisson.sh/ui"
+        uid=11_200 StaticText "UI Pro"
+      uid=11_201 link "Security" url="https://caisson.sh/security"
+        uid=11_202 StaticText "Security"
+      uid=11_203 link "Evidence pack" url="https://caisson.sh/evidence"
+        uid=11_204 StaticText "Evidence pack"
+      uid=11_205 link "Updates" url="https://caisson.sh/updates"
+        uid=11_206 StaticText "Updates"
+      uid=11_207 link "Security & procurement" url="https://caisson.sh/procurement"
+        uid=11_208 StaticText "Security & procurement"
+      uid=11_209 link "Affiliates" url="https://caisson.sh/affiliates"
+        uid=11_210 StaticText "Affiliates"
+      uid=11_211 link "Design partners" url="https://caisson.sh/partners"
+        uid=11_212 StaticText "Design partners"
+      uid=11_213 link "llms.txt" url="https://caisson.sh/llms.txt"
+        uid=11_214 StaticText "llms.txt"
+      uid=11_215 link "GitHub" url="https://github.com/caisson-sh/caisson"
+        uid=11_216 StaticText "GitHub"
+      uid=11_217 link "Discord" url="https://discord.gg/e4mw8Zxyav"
+        uid=11_218 StaticText "Discord"
+    uid=11_219 navigation "Legal"
+      uid=11_220 StaticText "Legal"
+      uid=11_221 link "Privacy policy" url="https://caisson.sh/legal/privacy"
+        uid=11_222 StaticText "Privacy policy"
+      uid=11_223 link "Terms of service" url="https://caisson.sh/legal/terms"
+        uid=11_224 StaticText "Terms of service"
+      uid=11_225 link "License" url="https://caisson.sh/legal/license"
+        uid=11_226 StaticText "License"
+      uid=11_227 link "EULA" url="https://caisson.sh/legal/eula"
+        uid=11_228 StaticText "EULA"
+      uid=11_229 link "Security disclosure" url="https://caisson.sh/.well-known/security.txt"
+        uid=11_230 StaticText "Security disclosure"
+  uid=11_231 alert atomic live="assertive" relevant="additions text"

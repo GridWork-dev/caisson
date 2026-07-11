@@ -1,0 +1,53 @@
+{
+  "url": "https://caisson.sh/docs",
+  "title": "Caisson documentation · Caisson",
+  "lang": "en",
+  "viewport": { "w": 390, "h": 844 },
+  "document": { "w": 390, "h": 1791 },
+  "horizontalOverflow": false,
+  "overflowPixels": 0,
+  "headings": [
+    { "level": "H1", "text": "Caisson documentation" },
+    { "level": "H2", "text": "Start here" },
+    { "level": "H2", "text": "What \"fail-closed by construction\" means" },
+    { "level": "H3", "text": "On this page" }
+  ],
+  "links": 13,
+  "buttons": 16,
+  "inputs": 0,
+  "images": [],
+  "main": false,
+  "mainTarget": false,
+  "skipLink": true,
+  "smallTargets": [
+    { "tag": "A", "text": "Skip to content", "w": 179, "h": 38 },
+    { "tag": "A", "text": "caisson / docs", "w": 157, "h": 26 },
+    { "tag": "BUTTON", "text": "Open Search", "w": 34, "h": 34 },
+    { "tag": "BUTTON", "text": "Open Sidebar", "w": 34, "h": 34 },
+    { "tag": "A", "text": "GitHub", "w": 34, "h": 34 },
+    { "tag": "BUTTON", "text": "Toggle Theme", "w": 54, "h": 28 },
+    { "tag": "BUTTON", "text": "Open Sidebar", "w": 34, "h": 34 },
+    { "tag": "A", "text": "Caisson documentation", "w": 299, "h": 40 },
+    { "tag": "A", "text": "Getting started", "w": 299, "h": 40 },
+    { "tag": "BUTTON", "text": "Packages", "w": 299, "h": 40 },
+    { "tag": "BUTTON", "text": "Compliance", "w": 299, "h": 40 },
+    { "tag": "BUTTON", "text": "AI-Production", "w": 299, "h": 40 },
+    { "tag": "BUTTON", "text": "Local-first", "w": 299, "h": 40 },
+    { "tag": "BUTTON", "text": "Agentic-Dev", "w": 299, "h": 40 },
+    { "tag": "BUTTON", "text": "Provenance", "w": 299, "h": 40 },
+    { "tag": "BUTTON", "text": "Everything", "w": 299, "h": 40 },
+    { "tag": "BUTTON", "text": "create-caisson", "w": 299, "h": 40 },
+    {
+      "tag": "BUTTON",
+      "text": "Caisson documentationStart here",
+      "w": 390,
+      "h": 40
+    },
+    { "tag": "A", "text": "Start here", "w": 116, "h": 32 },
+    { "tag": "BUTTON", "text": "Copy Anchor Link", "w": 24, "h": 24 },
+    { "tag": "A", "text": "Getting started", "w": 114, "h": 22 },
+    { "tag": "BUTTON", "text": "Copy Anchor Link", "w": 24, "h": 24 },
+    { "tag": "A", "text": "/llms.txt", "w": 90, "h": 19 },
+    { "tag": "A", "text": "/llms-full.txt", "w": 135, "h": 19 }
+  ]
+}

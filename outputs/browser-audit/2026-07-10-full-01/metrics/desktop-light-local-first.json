@@ -1,0 +1,28 @@
+{
+  "url": "https://caisson.sh/local-first",
+  "title": "Local-first AI · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 9314 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Your data never leaves the device." },
+    { "level": "H2", "text": "On-device by default, hosted by opt-in." },
+    { "level": "H2", "text": "Four composed packages." },
+    { "level": "H2", "text": "Four pieces. All on the device." },
+    { "level": "H2", "text": "The only mode is local-only." },
+    { "level": "H2", "text": "Fail-closed is how the base already behaves." },
+    { "level": "H2", "text": "All local." },
+    { "level": "H2", "text": "Semantic recall that never round-trips." },
+    { "level": "H2", "text": "Own the source. Run it on your machine." },
+    { "level": "H2", "text": "Questions procurement asks first." },
+    { "level": "H2", "text": "Prove fit in week one." },
+    { "level": "H2", "text": "Own the source." }
+  ],
+  "links": 39,
+  "buttons": 11,
+  "inputs": 4,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

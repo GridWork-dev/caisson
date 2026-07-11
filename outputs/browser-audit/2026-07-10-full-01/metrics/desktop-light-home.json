@@ -1,0 +1,51 @@
+{
+  "url": "https://caisson.sh/",
+  "title": "Caisson — Compliance-grade infrastructure for regulated SaaS",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1440, "h": 14533 },
+  "horizontalOverflow": false,
+  "headings": [
+    {
+      "level": "H1",
+      "text": "Audit-ready and production-hard from commit one."
+    },
+    {
+      "level": "H2",
+      "text": "The load-bearing infrastructure cheap boilerplates skip."
+    },
+    {
+      "level": "H2",
+      "text": "Prevention at the application layer — with the receipts."
+    },
+    { "level": "H2", "text": "Real paths. Real code. No screenshots." },
+    {
+      "level": "H2",
+      "text": "The boundary and the evidence trail, drawn to real behaviour."
+    },
+    { "level": "H3", "text": "Per-tenant isolation, fail-closed" },
+    { "level": "H3", "text": "Evidence lifecycle, write to verify" },
+    {
+      "level": "H2",
+      "text": "Module, bundle, or plan — same catalog, three shapes."
+    },
+    { "level": "H2", "text": "Six bundles, one audited base." },
+    { "level": "H2", "text": "Compose, don’t fork." },
+    {
+      "level": "H2",
+      "text": "Build your own stack — watch the running total."
+    },
+    { "level": "H2", "text": "Every claim is a check in CI." },
+    {
+      "level": "H2",
+      "text": "No logo wall yet. Here's what you can check instead."
+    },
+    { "level": "H2", "text": "Start audit-ready." }
+  ],
+  "links": 52,
+  "buttons": 9,
+  "inputs": 30,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

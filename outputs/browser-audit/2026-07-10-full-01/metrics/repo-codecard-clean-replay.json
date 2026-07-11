@@ -1,0 +1,16 @@
+{
+  "text": "packages/tenancy-rls/src/rls.tsFORCEALTER TABLE invoices ENABLE ROW LEVEL SECURITY;\nALTER TABLE invoices FORCE ROW LEVEL SECURITY;\nCREATE POLICY invoices_tenant",
+  "rect": {
+    "x": 538.5,
+    "y": 431.375,
+    "width": 720,
+    "height": 0,
+    "top": 431.375,
+    "right": 1258.5,
+    "bottom": 431.375,
+    "left": 538.5
+  },
+  "display": "block",
+  "overflow": "visible",
+  "gridRows": "919.062px"
+}

@@ -1,0 +1,18 @@
+{
+  "url": "https://caisson.sh/login",
+  "title": "Sign in · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1440, "h": 1942 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Buyer dashboard sign-in" },
+    { "level": "H2", "text": "Continue to your dashboard" }
+  ],
+  "links": 33,
+  "buttons": 11,
+  "inputs": 5,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}
