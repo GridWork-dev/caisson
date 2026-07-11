@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0321** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0322** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -91,7 +91,10 @@ edited — supersede with a later ADR).
    test-license kept forever/never published, the live retrieval-golden leg gated at
    release-readiness not PR CI, and the registry P0s CAISSON-85/86 riding the W4 train;
    no in-branch version cut, changesets are consumed only in the operator-gated publish,
-   executes 0318).
+   executes 0318; 0322 = the Codex production-browser audit lane — GPT-5.6 repo skill,
+   three rings, probe-account mutations with mandatory verified reverts,
+   advisory-to-deterministic graduation boundary; drafted 0320, renumbered at merge per
+   ADR-0088 — Kickoff-N claimed 0320 first).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
