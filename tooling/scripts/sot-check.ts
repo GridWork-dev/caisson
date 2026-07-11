@@ -7,7 +7,8 @@
 // session author fixes). `--update` additionally prints a ready-to-apply edit checklist
 // (file + line + suggested new value) for checks #1/#2/#5/#7 — still never writes.
 //
-// Seven checks (SPEC §2 table + ADR-0253's #7), each a pure function over already-gathered
+// Eight checks (SPEC §2 table + ADR-0253's #7 + the 2026-07-11 docs-surface #8), each a
+// pure function over already-gathered
 // data + an
 // impure gatherer that gets that data from the filesystem/git/gh/bunx. A `gh`- or
 // `bunx`-dependent check that can't reach its tool/network degrades to `skip`, never an
@@ -16,7 +17,7 @@
 // Usage: bun tooling/scripts/sot-check.ts [--update]
 // Exit: 0 = green (or all-skip); 1 = drift on any check.
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, readlinkSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const REPO_ROOT = join(import.meta.dir, "..", "..");
@@ -779,6 +780,51 @@ export function buildPackageCountEditSuggestions(
 }
 
 // ============================================================================================
+// Check #8 — docs-surface (root slim, 2026-07-11): root markdown stays within the allowlist
+// and AGENTS.md remains a symlink to CLAUDE.md (the zero-drift agent mirror).
+// Convention: docs/README.md §Docs-surface conventions.
+// ============================================================================================
+
+export const ROOT_MD_ALLOWLIST = ["AGENTS.md", "CLAUDE.md", "README.md"];
+
+export interface DocsSurfaceInput {
+  rootMdFiles: readonly string[];
+  // readlink of AGENTS.md; null = missing or not a symlink
+  agentsMdLinkTarget: string | null;
+}
+
+export function checkDocsSurface(input: DocsSurfaceInput): CheckResult {
+  const id = "docs-surface";
+  const details: string[] = [];
+  const strays = input.rootMdFiles
+    .filter((f) => !ROOT_MD_ALLOWLIST.includes(f))
+    .sort();
+  if (strays.length > 0) {
+    details.push(
+      `root markdown outside the allowlist (${ROOT_MD_ALLOWLIST.join(", ")}): ` +
+        `${strays.join(", ")} - move into docs/ or docs/archive/ per docs/README.md conventions`,
+    );
+  }
+  if (input.agentsMdLinkTarget !== "CLAUDE.md") {
+    details.push(
+      input.agentsMdLinkTarget === null
+        ? "AGENTS.md missing or not a symlink - must be a symlink to CLAUDE.md"
+        : `AGENTS.md symlink points at ${input.agentsMdLinkTarget}, expected CLAUDE.md`,
+    );
+  }
+  if (details.length === 0) {
+    return {
+      id,
+      status: "green",
+      details: [
+        "root markdown within allowlist; AGENTS.md -> CLAUDE.md symlink intact",
+      ],
+    };
+  }
+  return { id, status: "drift", details };
+}
+
+// ============================================================================================
 // Impure: filesystem/git/gh/bunx gatherers
 // ============================================================================================
 
@@ -1098,6 +1144,17 @@ function gatherPackageCountCheck(): {
   };
 }
 
+function gatherDocsSurfaceCheck(): CheckResult {
+  const rootMdFiles = readdirSync(REPO_ROOT).filter((f) => f.endsWith(".md"));
+  let agentsMdLinkTarget: string | null = null;
+  try {
+    agentsMdLinkTarget = readlinkSync(join(REPO_ROOT, "AGENTS.md"));
+  } catch {
+    agentsMdLinkTarget = null;
+  }
+  return checkDocsSurface({ rootMdFiles, agentsMdLinkTarget });
+}
+
 function gatherChangesetCheck(): CheckResult {
   try {
     // Release-PR exemption — the SAME rule ci.yml's presence gate applies: changesets DELETED
@@ -1196,6 +1253,7 @@ async function main(): Promise<void> {
   const tracker = gatherTrackerCheck();
   const changeset = gatherChangesetCheck();
   const packageCounts = gatherPackageCountCheck();
+  const docsSurface = gatherDocsSurfaceCheck();
 
   const results = [
     ceiling.result,
@@ -1205,6 +1263,7 @@ async function main(): Promise<void> {
     tracker.result,
     changeset,
     packageCounts.result,
+    docsSurface,
   ];
   printResults(results);
 

@@ -24,7 +24,7 @@ stay authoritative:
 - Architecture + package taxonomy: [`specs/01-architecture.md`](../specs/01-architecture.md), [`specs/00-product-spec.md`](../specs/00-product-spec.md)
 - The decision record: [`knowledge/decisions/`](../knowledge/decisions/) (ADR-NNNN, append-only)
 - Live decision board: [`docs/state/decisions-and-forks.md`](state/decisions-and-forks.md) (CLAUDE.md SoT #1)
-- Build plan P0-P7: [`plan.md`](../plan.md)
+- Build plan P0-P7: [`docs/archive/plan.md`](archive/plan.md)
 
 On any conflict, the canonical source wins over this catalog.
 

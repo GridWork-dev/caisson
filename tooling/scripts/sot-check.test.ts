@@ -27,6 +27,7 @@ import {
   checkArchiveIntegrity,
   checkArchivedDocImmutable,
   checkDocFreshness,
+  checkDocsSurface,
   checkFrontmatterFreshness,
   checkLiveDocArchiveLink,
   checkPackageCountParity,
@@ -808,6 +809,47 @@ describe("check #7 — package count parity", () => {
         suggestion: "`ai-evals` row -> 12 / 7 / 1323",
       },
     ]);
+  });
+});
+
+// ============================================================================================
+// Check #8 — docs-surface (pure — fixture root listing + symlink target)
+// ============================================================================================
+
+describe("check #8 — docs-surface", () => {
+  test("green: allowlisted root markdown + intact AGENTS.md symlink", () => {
+    const result = checkDocsSurface({
+      rootMdFiles: ["AGENTS.md", "CLAUDE.md", "README.md"],
+      agentsMdLinkTarget: "CLAUDE.md",
+    });
+    expect(result.status).toBe("green");
+  });
+
+  test("drift: stray root markdown outside the allowlist", () => {
+    const result = checkDocsSurface({
+      rootMdFiles: ["CLAUDE.md", "README.md", "AGENTS.md", "plan.md"],
+      agentsMdLinkTarget: "CLAUDE.md",
+    });
+    expect(result.status).toBe("drift");
+    expect(result.details[0]).toContain("plan.md");
+  });
+
+  test("drift: AGENTS.md missing or not a symlink", () => {
+    const result = checkDocsSurface({
+      rootMdFiles: ["AGENTS.md", "CLAUDE.md", "README.md"],
+      agentsMdLinkTarget: null,
+    });
+    expect(result.status).toBe("drift");
+    expect(result.details[0]).toContain("symlink");
+  });
+
+  test("drift: AGENTS.md symlink pointing at the wrong file", () => {
+    const result = checkDocsSurface({
+      rootMdFiles: ["AGENTS.md", "CLAUDE.md", "README.md"],
+      agentsMdLinkTarget: "docs/product.md",
+    });
+    expect(result.status).toBe("drift");
+    expect(result.details[0]).toContain("docs/product.md");
   });
 });
 

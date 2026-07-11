@@ -13,7 +13,7 @@ product docs ship from `apps/site` (the marketing + Fumadocs surface, ADR-0084) 
 This file is the **routing index** - the always-first entry point. It maps a topic to its
 one owning file and **routes; it does not redefine.** When a fact lives in a spec or an ADR,
 this file points at the exact path; it never copies the canonical prose. On any conflict,
-the source-of-truth hierarchy in `CLAUDE.md` wins (board > ADRs > specs > `plan.md`/`SUMMARY.md`).
+the source-of-truth hierarchy in `CLAUDE.md` wins (board > ADRs > specs > `docs/build-state.md`).
 
 ## For X -> see Y
 
@@ -47,12 +47,34 @@ here that one of those files owns - route to it.
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | `specs/`               | The locked concept specs - WHAT + WHY. `00-product-spec.md` (founding), `01-architecture.md`, `02-core-loop-ux.md`, `03-design-framework.md`, `04-voice-and-brand.md`                                                     | Locked; amend by superseding                               |
 | `knowledge/decisions/` | The ADRs themselves (`ADR-0001..0242`, gaps exist) - every locked decision, e.g. `ADR-0006-worm-audit-chain-field-crypto.md`, `ADR-0023-fully-commercial-licensing-model.md`, `ADR-0088-adr-number-collision-renumber.md` | **Append-only**, never edited - supersede with a later ADR |
-| `plan.md`              | The phased build plan (P0-P7) with exit gates                                                                                                                                                                             | Live                                                       |
+| `archive/plan.md`      | The phased build plan (P0-P7) with exit gates — executed; archived 2026-07-11                                                                                                                                             | Archived history                                           |
 | `outputs/`             | Session artifacts: `kickoffs/`, `research/` (rebuild-clean provenance), `specs/`, `streams/`                                                                                                                              | Append/working                                             |
 
 Root-level SoT also lives outside `docs/`: `CLAUDE.md` (working rules + the source-of-truth
-hierarchy), `README.md` (repo overview), `SUMMARY.md` (how-we-got-here), `PRODUCT.md`,
-`DESIGN.md`.
+hierarchy), `README.md` (repo overview), and `AGENTS.md` (a symlink to `CLAUDE.md` so Codex and
+other agents load the same instructions). Root slimmed 2026-07-11: `PRODUCT.md` → `docs/product.md`,
+`DESIGN.md` → `docs/design.md`, and `plan.md` + `SUMMARY.md` (executed founding plan +
+how-we-got-here) → `docs/archive/`.
+
+## Docs-surface conventions (enforced by `bun run sot`, check #8)
+
+The 2026-07-11 docs-surface phase locked these rules; the `docs-surface` check in
+`tooling/scripts/sot-check.ts` flags drift on the first two:
+
+1. **Root markdown allowlist.** The repo root carries exactly three `*.md` files:
+   `CLAUDE.md`, `README.md`, and `AGENTS.md`. Anything else lands in `docs/` (live) or
+   `docs/archive/` (history) — never accumulates at root.
+2. **`AGENTS.md` is a symlink to `CLAUDE.md`** — the zero-drift mirror that gives Codex and
+   other agents the same project instructions. Never fork it into a real file; edit
+   `CLAUDE.md` and the mirror follows.
+3. **Live vs archive.** A doc that stops being true moves to `docs/archive/` whole (git mv,
+   history preserved) or is replaced by a short **tombstone stub** pointing at its successor
+   (the `docs/editions.md` pattern). Archived docs are immutable after the move — the
+   `archive-integrity` check flags edits.
+4. **Evidence artifacts don't live in the tree.** Bulk untracked evidence (screenshots,
+   audit run output, scan artifacts) is tarred to `~/lab/archive/<slug>-<yyyy-mm>.tar.zst`
+   and removed; tracked long-term proof bundles go under `outputs/archive/`. `.gitignore`
+   already excludes the visual/browser-audit evidence classes.
 
 ## Files in this directory
 

@@ -101,7 +101,7 @@ edited — supersede with a later ADR).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
-4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
+4. `docs/build-state.md` — live per-package build truth (the founding `plan.md` + `SUMMARY.md` are archived history → `docs/archive/`)
 5. `outputs/` — session artifacts (kickoffs, research, syntheses)
 
 On conflict, the higher item wins.
