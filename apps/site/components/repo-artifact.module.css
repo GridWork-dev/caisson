@@ -50,11 +50,19 @@
   display: none;
 }
 
-.grid:has(#repo-artifact-tab-rls:checked) .cardPanel[data-card-id="rls"],
-.grid:has(#repo-artifact-tab-kernel:checked) .cardPanel[data-card-id="kernel"],
-.grid:has(#repo-artifact-tab-audit-worm:checked)
+/* :global() on the id is load-bearing: CSS Modules scopes ANY selector token, including id
+ * selectors, by prefixing it with the module hash — `#repo-artifact-tab-rls` silently became
+ * `#<hash>__repo-artifact-tab-rls`, which never matched the real DOM id (set verbatim by
+ * repo-artifact.tsx's `tabId()`), so the :has() clause never matched and every panel stayed
+ * `display: none` — the zero-height codeCard (P1-001). :global() opts the id token out of the
+ * module's local scoping so it matches the literal id attribute in the DOM. */
+.grid:has(:global(#repo-artifact-tab-rls):checked)
+  .cardPanel[data-card-id="rls"],
+.grid:has(:global(#repo-artifact-tab-kernel):checked)
+  .cardPanel[data-card-id="kernel"],
+.grid:has(:global(#repo-artifact-tab-audit-worm):checked)
   .cardPanel[data-card-id="audit-worm"],
-.grid:has(#repo-artifact-tab-field-crypto:checked)
+.grid:has(:global(#repo-artifact-tab-field-crypto):checked)
   .cardPanel[data-card-id="field-crypto"] {
   display: block;
 }
