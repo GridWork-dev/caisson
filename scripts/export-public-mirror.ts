@@ -168,13 +168,20 @@ interface FoundPkg {
 function parseArgs(argv: readonly string[]): {
   out: string;
   generatedAt: string;
+  allowMissingExcludes: boolean;
 } {
   let out = "./mirror-out";
   let generatedAt = "";
+  // Historical-backfill escape hatch for the missing-excluded-test rot-guard. An EXPLICIT CLI flag,
+  // never an ambient env var: a sticky `CAISSON_MIRROR_ALLOW_MISSING_EXCLUDES=1` in an operator
+  // shell would silently downgrade the FATAL to a warning on a later HEAD/CI sync, letting a renamed
+  // excluded test re-enter the mirror. A flag applies only to the run that passes it.
+  let allowMissingExcludes = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--out") out = argv[++i] ?? out;
     else if (a === "--generated-at") generatedAt = argv[++i] ?? "";
+    else if (a === "--allow-missing-excludes") allowMissingExcludes = true;
   }
   if (!generatedAt) {
     console.error(
@@ -182,7 +189,7 @@ function parseArgs(argv: readonly string[]): {
     );
     process.exit(1);
   }
-  return { out, generatedAt };
+  return { out, generatedAt, allowMissingExcludes };
 }
 
 function readJson(path: string): PkgJson {
@@ -229,11 +236,15 @@ function rewriteImportSpecifiers(code: string): string {
  *  `@caisson/ai-kit`, registry `--module` ids) into `@caisson-sh/*` names that will never exist on
  *  public npm — materially misleading a mirror reader. A commercial mention stays `@caisson/*`,
  *  which is exactly the namespace the commercial registry serves. */
-function rewriteProseMentions(
+export function rewriteProseMentions(
   text: string,
   openSlugs: ReadonlySet<string>,
 ): string {
-  return text.replace(/@caisson\/([\w.-]+)/g, (m, rest: string) =>
+  // Slugs are kebab-case `[\w-]+` (no internal dots — verified across the catalog). A `.` in the
+  // class swallowed a trailing sentence period (`@caisson/kernel.` → rest `kernel.`), missing the
+  // openSlugs allowlist and shipping the mention UN-renamed at `@caisson/*` (third-party on public
+  // npm). Excluding `.` stops the capture at the slug so the period stays as prose punctuation.
+  return text.replace(/@caisson\/([\w-]+)/g, (m, rest: string) =>
     openSlugs.has(rest) ? `${NEW_SCOPE}${rest}` : m,
   );
 }
@@ -545,7 +556,9 @@ function copyPkg(srcDir: string, destDir: string): void {
 
 function main(): void {
   const repoRoot = resolve(import.meta.dir, "..");
-  const { out, generatedAt } = parseArgs(Bun.argv.slice(2));
+  const { out, generatedAt, allowMissingExcludes } = parseArgs(
+    Bun.argv.slice(2),
+  );
   const outDir = resolve(repoRoot, out);
 
   const sourceRootPkg = readJson(join(repoRoot, "package.json")) as PkgJson & {
@@ -684,9 +697,10 @@ function main(): void {
   );
   if (missedExcludes.length) {
     // Rot-guard for HEAD syncs (a renamed test would silently re-enter the mirror). Historical
-    // backfill runs (ADR-0318 F2) legitimately predate some excluded tests — the env bypass
-    // downgrades to a warning there; the per-milestone gate battery still applies.
-    if (process.env.CAISSON_MIRROR_ALLOW_MISSING_EXCLUDES === "1") {
+    // backfill runs (ADR-0318 F2) legitimately predate some excluded tests — the explicit
+    // `--allow-missing-excludes` flag downgrades to a warning there; the per-milestone gate
+    // battery still applies. Flag, not env: it cannot leak in from a sticky operator shell.
+    if (allowMissingExcludes) {
       console.warn(
         `WARN: excluded test file(s) not found (historical tree?): ${missedExcludes.join(", ")}`,
       );
