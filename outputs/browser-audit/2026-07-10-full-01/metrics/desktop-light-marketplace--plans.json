@@ -1,0 +1,30 @@
+{
+  "url": "https://caisson.sh/marketplace/plans",
+  "title": "Marketplace — Plans · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 6857 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Every bundle and module, one surface." },
+    { "level": "H2", "text": "Two different things are for sale here." },
+    { "level": "H2", "text": "What happens after 12 months?" },
+    {
+      "level": "H2",
+      "text": "Own the code once. Subscribe only for what moves."
+    },
+    { "level": "H2", "text": "What's open, what you're paying for." },
+    {
+      "level": "H2",
+      "text": "What the license lets you do — and how support works."
+    },
+    { "level": "H2", "text": "Subscriptions, briefly." },
+    { "level": "H2", "text": "Start building on the audited substrate." }
+  ],
+  "links": 44,
+  "buttons": 10,
+  "inputs": 7,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

@@ -1,0 +1,26 @@
+{
+  "url": "https://caisson.sh/provenance",
+  "title": "Provenance · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 7112 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Prove the record wasn't tampered with." },
+    { "level": "H2", "text": "Three packages, one bundle." },
+    { "level": "H2", "text": "Four primitives, each with its proof." },
+    {
+      "level": "H2",
+      "text": "Teams that have to prove a record, not just store it."
+    },
+    { "level": "H2", "text": "What an auditor asks first." },
+    { "level": "H2", "text": "Prove fit in week one." },
+    { "level": "H2", "text": "Own the source, or take a single primitive." }
+  ],
+  "links": 41,
+  "buttons": 14,
+  "inputs": 4,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

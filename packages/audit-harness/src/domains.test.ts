@@ -26,6 +26,7 @@ describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", (
     const ids = domainIds(REPO_ROOT);
     for (const id of [
       "workflows",
+      "agent-skills",
       "generator-templates",
       "docs-content",
       "scripts",

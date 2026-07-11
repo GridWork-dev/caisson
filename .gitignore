@@ -43,9 +43,14 @@ outputs/screenshots/
 # W1 remediation review/proof screenshots (session-local, never committed)
 outputs/w1-proof/
 outputs/review-g1/
-# Agent-driven Codex Browser audit evidence (screenshots, journals, reports, candidates).
-# Runs are local/advisory and may contain production state; only schemas/rubrics are tracked.
-outputs/browser-audit/
+# Agent-driven Codex Browser audit runs are ignored until they are reviewed and promoted.
+# The 2026-07-10 full run tracks its sanitized evidence bundle, while its 235 MB screenshot
+# matrix remains local to the audit worktree.
+outputs/browser-audit/*
+!outputs/browser-audit/README.md
+!outputs/browser-audit/2026-07-10-full-01/
+!outputs/browser-audit/2026-07-10-full-01/**
+outputs/browser-audit/2026-07-10-full-01/screenshots/
 
 # ADR-0223: CI-only tarball staging for R2 upload (never committed)
 registry/.tarball-staging/

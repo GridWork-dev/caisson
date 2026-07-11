@@ -1,0 +1,9 @@
+{
+  "url": "https://admin.caisson.sh/login?next=%2Fcatalog%2Fcomponents",
+  "title": "Sign in · Caisson Admin",
+  "origin": "https://admin.caisson.sh",
+  "path": "/login",
+  "h1": ["Operator sign-in"],
+  "forms": [],
+  "body": "caisson\n/ admin\nOverview\nOps\nBusiness\nIntel\nArchitecture\nDecisions\nCatalog\nSign out\n\ncaisson · admin\n\nOperator sign-in\n\nGitHub sign-in, restricted to the gridwork-dev operator account.\n\nContinue with GitHub"
+}

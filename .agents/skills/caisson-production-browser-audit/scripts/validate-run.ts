@@ -13,6 +13,7 @@ const replaySchema = z
 const findingSchema = z
   .object({
     id: z.string().trim().min(1),
+    title: z.string().trim().min(1).optional(),
     category: z.enum([
       "design",
       "behavior",
@@ -40,8 +41,12 @@ const findingSchema = z
 
 const runSchema = z
   .object({
+    advisory: z.literal(true).optional(),
     runId: z.string().trim().min(1),
     rootDir: z.string().trim().min(1),
+    classes: z
+      .record(z.enum(["new", "unchanged", "regressed", "closed"]))
+      .optional(),
     findings: z.array(findingSchema),
   })
   .strict();

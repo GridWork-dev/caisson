@@ -1,0 +1,34 @@
+{
+  "url": "https://caisson.sh/ai-kit",
+  "title": "AI Production Kit · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 8218 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "One gateway between your code and the model." },
+    {
+      "level": "H2",
+      "text": "One package, four other Caisson packages behind it."
+    },
+    { "level": "H2", "text": "Four modules behind one chokepoint." },
+    {
+      "level": "H2",
+      "text": "Teams whose one fetch call is about to become a feature."
+    },
+    { "level": "H2", "text": "BYOK included." },
+    {
+      "level": "H2",
+      "text": "Every claim here is a control you can point at."
+    },
+    { "level": "H2", "text": "Own the code, or subscribe." },
+    { "level": "H2", "text": "Prove fit in week one." },
+    { "level": "H2", "text": "Ship the feature with the brakes on." }
+  ],
+  "links": 44,
+  "buttons": 11,
+  "inputs": 4,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

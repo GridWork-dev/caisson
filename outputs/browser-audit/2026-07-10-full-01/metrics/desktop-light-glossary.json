@@ -1,0 +1,21 @@
+{
+  "url": "https://caisson.sh/glossary",
+  "title": "Glossary · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1440, "h": 2952 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "The Caisson glossary." },
+    { "level": "H2", "text": "Compliance & audit (14)" },
+    { "level": "H2", "text": "Multi-tenancy & security (9)" },
+    { "level": "H2", "text": "Licensing & commerce (5)" },
+    { "level": "H2", "text": "AI & agent infrastructure (8)" }
+  ],
+  "links": 69,
+  "buttons": 9,
+  "inputs": 4,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

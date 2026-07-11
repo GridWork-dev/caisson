@@ -1,0 +1,28 @@
+{
+  "url": "https://caisson.sh/build-vs-buy",
+  "title": "Build vs buy compliance infrastructure · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 5828 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Build it, buy it, or own it." },
+    { "level": "H2", "text": "Every regulated team weighs the same three." },
+    { "level": "H3", "text": "Build it yourself" },
+    { "level": "H3", "text": "Buy a hosted platform" },
+    { "level": "H3", "text": "Own the code" },
+    {
+      "level": "H2",
+      "text": "A scanner reports what's missing. It doesn't build it."
+    },
+    { "level": "H2", "text": "Buy the code once. Keep it." },
+    { "level": "H2", "text": "Build vs buy, answered." },
+    { "level": "H2", "text": "Own the controls from day one." }
+  ],
+  "links": 38,
+  "buttons": 10,
+  "inputs": 7,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

@@ -1,0 +1,7 @@
+{
+  "value": "not-an-email",
+  "valid": false,
+  "validationMessage": "Please include an '@' in the email address. 'not-an-email' is missing an '@'.",
+  "active": true,
+  "ariaInvalid": null
+}

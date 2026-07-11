@@ -1,0 +1,23 @@
+{
+  "url": "https://caisson.sh/marketplace",
+  "title": "Marketplace · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 9640 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Every bundle and module, one surface." },
+    { "level": "H2", "text": "Browse the whole library in one place." },
+    {
+      "level": "H2",
+      "text": "Every bundle sits on this. So can you, for free."
+    },
+    { "level": "H2", "text": "Buying, briefly." }
+  ],
+  "links": 36,
+  "buttons": 65,
+  "inputs": 47,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

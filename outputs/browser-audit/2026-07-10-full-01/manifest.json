@@ -1,0 +1,879 @@
+{
+  "runId": "2026-07-10-full-01",
+  "generatedAt": "2026-07-10T23:55:34.204Z",
+  "productionOrigins": {
+    "site": "https://caisson.sh",
+    "admin": "https://admin.caisson.sh"
+  },
+  "surfaces": [
+    {
+      "id": "public:/",
+      "ring": "public",
+      "url": "/",
+      "label": "Home",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/affiliates",
+      "ring": "public",
+      "url": "/affiliates",
+      "label": "Affiliates",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/agentic-dev",
+      "ring": "public",
+      "url": "/agentic-dev",
+      "label": "Agentic-Dev",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/ai-kit",
+      "ring": "public",
+      "url": "/ai-kit",
+      "label": "AI-Production",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/build-vs-buy",
+      "ring": "public",
+      "url": "/build-vs-buy",
+      "label": "Build vs buy",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/compare",
+      "ring": "public",
+      "url": "/compare",
+      "label": "Comparisons",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/compliance",
+      "ring": "public",
+      "url": "/compliance",
+      "label": "Compliance",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/docs",
+      "ring": "public",
+      "url": "/docs",
+      "label": "Docs",
+      "authMode": "public",
+      "source": "apps/site/app"
+    },
+    {
+      "id": "public:/evidence",
+      "ring": "public",
+      "url": "/evidence",
+      "label": "Evidence pack",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/frameworks/eu-ai-act",
+      "ring": "public",
+      "url": "/frameworks/eu-ai-act",
+      "label": "EU AI Act",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/frameworks/eu-ai-act/article-50",
+      "ring": "public",
+      "url": "/frameworks/eu-ai-act/article-50",
+      "label": "EU AI Act Article 50",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/glossary",
+      "ring": "public",
+      "url": "/glossary",
+      "label": "Glossary",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/legal/eula",
+      "ring": "public",
+      "url": "/legal/eula",
+      "label": "EULA",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/legal/license",
+      "ring": "public",
+      "url": "/legal/license",
+      "label": "License",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/legal/privacy",
+      "ring": "public",
+      "url": "/legal/privacy",
+      "label": "Privacy policy",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/legal/terms",
+      "ring": "public",
+      "url": "/legal/terms",
+      "label": "Terms of service",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/local-first",
+      "ring": "public",
+      "url": "/local-first",
+      "label": "Local-first AI",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/login",
+      "ring": "public",
+      "url": "/login",
+      "label": "Buyer login",
+      "authMode": "public",
+      "source": "apps/site/app"
+    },
+    {
+      "id": "public:/marketplace",
+      "ring": "public",
+      "url": "/marketplace",
+      "label": "Marketplace",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/marketplace/plans",
+      "ring": "public",
+      "url": "/marketplace/plans",
+      "label": "Plans",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/partners",
+      "ring": "public",
+      "url": "/partners",
+      "label": "Design partners",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/procurement",
+      "ring": "public",
+      "url": "/procurement",
+      "label": "Security & procurement",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/provenance",
+      "ring": "public",
+      "url": "/provenance",
+      "label": "Provenance",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/security",
+      "ring": "public",
+      "url": "/security",
+      "label": "Security",
+      "authMode": "public",
+      "source": "apps/site/app"
+    },
+    {
+      "id": "public:/stack-fit",
+      "ring": "public",
+      "url": "/stack-fit",
+      "label": "Stack fit",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/ui",
+      "ring": "public",
+      "url": "/ui",
+      "label": "UI Pro showcase",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "public:/updates",
+      "ring": "public",
+      "url": "/updates",
+      "label": "Updates",
+      "authMode": "public",
+      "source": "apps/site/lib/routes.ts"
+    },
+    {
+      "id": "buyer:/dashboard",
+      "ring": "buyer",
+      "url": "/dashboard",
+      "label": "dashboard",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/page.tsx"
+    },
+    {
+      "id": "buyer:/dashboard/activity",
+      "ring": "buyer",
+      "url": "/dashboard/activity",
+      "label": "dashboard / activity",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/activity/page.tsx"
+    },
+    {
+      "id": "buyer:/dashboard/ai-keys",
+      "ring": "buyer",
+      "url": "/dashboard/ai-keys",
+      "label": "dashboard / ai-keys",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/ai-keys/page.tsx"
+    },
+    {
+      "id": "buyer:/dashboard/cart",
+      "ring": "buyer",
+      "url": "/dashboard/cart",
+      "label": "dashboard / cart",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/cart/page.tsx"
+    },
+    {
+      "id": "buyer:/dashboard/compliance",
+      "ring": "buyer",
+      "url": "/dashboard/compliance",
+      "label": "dashboard / compliance",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/compliance/page.tsx"
+    },
+    {
+      "id": "buyer:/dashboard/credits",
+      "ring": "buyer",
+      "url": "/dashboard/credits",
+      "label": "dashboard / credits",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/credits/page.tsx"
+    },
+    {
+      "id": "buyer:/dashboard/invoices",
+      "ring": "buyer",
+      "url": "/dashboard/invoices",
+      "label": "dashboard / invoices",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/invoices/page.tsx"
+    },
+    {
+      "id": "buyer:/dashboard/license",
+      "ring": "buyer",
+      "url": "/dashboard/license",
+      "label": "dashboard / license",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/license/page.tsx"
+    },
+    {
+      "id": "buyer:/dashboard/members",
+      "ring": "buyer",
+      "url": "/dashboard/members",
+      "label": "dashboard / members",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/members/page.tsx"
+    },
+    {
+      "id": "buyer:/dashboard/plan",
+      "ring": "buyer",
+      "url": "/dashboard/plan",
+      "label": "dashboard / plan",
+      "authMode": "probe",
+      "source": "apps/site/app/dashboard/plan/page.tsx"
+    },
+    {
+      "id": "admin:/",
+      "ring": "admin",
+      "url": "/",
+      "label": "admin home",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/page.tsx"
+    },
+    {
+      "id": "admin:/architecture",
+      "ring": "admin",
+      "url": "/architecture",
+      "label": "architecture",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/architecture/page.tsx"
+    },
+    {
+      "id": "admin:/business",
+      "ring": "admin",
+      "url": "/business",
+      "label": "business",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/business/page.tsx"
+    },
+    {
+      "id": "admin:/business/audit",
+      "ring": "admin",
+      "url": "/business/audit",
+      "label": "business / audit",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/business/audit/page.tsx"
+    },
+    {
+      "id": "admin:/catalog",
+      "ring": "admin",
+      "url": "/catalog",
+      "label": "catalog",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/catalog/page.tsx"
+    },
+    {
+      "id": "admin:/catalog/components",
+      "ring": "admin",
+      "url": "/catalog/components",
+      "label": "catalog / components",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/catalog/components/page.tsx"
+    },
+    {
+      "id": "admin:/catalog/emails",
+      "ring": "admin",
+      "url": "/catalog/emails",
+      "label": "catalog / emails",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/catalog/emails/page.tsx"
+    },
+    {
+      "id": "admin:/catalog/foundations",
+      "ring": "admin",
+      "url": "/catalog/foundations",
+      "label": "catalog / foundations",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/catalog/foundations/page.tsx"
+    },
+    {
+      "id": "admin:/catalog/signature",
+      "ring": "admin",
+      "url": "/catalog/signature",
+      "label": "catalog / signature",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/catalog/signature/page.tsx"
+    },
+    {
+      "id": "admin:/catalog/typography",
+      "ring": "admin",
+      "url": "/catalog/typography",
+      "label": "catalog / typography",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/catalog/typography/page.tsx"
+    },
+    {
+      "id": "admin:/catalog/wordmark",
+      "ring": "admin",
+      "url": "/catalog/wordmark",
+      "label": "catalog / wordmark",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/catalog/wordmark/page.tsx"
+    },
+    {
+      "id": "admin:/decisions",
+      "ring": "admin",
+      "url": "/decisions",
+      "label": "decisions",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/decisions/page.tsx"
+    },
+    {
+      "id": "admin:/intel",
+      "ring": "admin",
+      "url": "/intel",
+      "label": "intel",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/intel/page.tsx"
+    },
+    {
+      "id": "admin:/ops",
+      "ring": "admin",
+      "url": "/ops",
+      "label": "ops",
+      "authMode": "operator",
+      "source": "apps/admin/src/app/ops/page.tsx"
+    }
+  ],
+  "journeys": [
+    {
+      "id": "public-home",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Home",
+      "surfaceIds": ["public:/"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-affiliates",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Affiliates",
+      "surfaceIds": ["public:/affiliates"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-agentic-dev",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Agentic-Dev",
+      "surfaceIds": ["public:/agentic-dev"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-ai-kit",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by AI-Production",
+      "surfaceIds": ["public:/ai-kit"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-build-vs-buy",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Build vs buy",
+      "surfaceIds": ["public:/build-vs-buy"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-compare",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Comparisons",
+      "surfaceIds": ["public:/compare"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-compliance",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Compliance",
+      "surfaceIds": ["public:/compliance"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-docs",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Docs",
+      "surfaceIds": ["public:/docs"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-evidence",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Evidence pack",
+      "surfaceIds": ["public:/evidence"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-frameworks-eu-ai-act",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by EU AI Act",
+      "surfaceIds": ["public:/frameworks/eu-ai-act"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-frameworks-eu-ai-act-article-50",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by EU AI Act Article 50",
+      "surfaceIds": ["public:/frameworks/eu-ai-act/article-50"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-glossary",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Glossary",
+      "surfaceIds": ["public:/glossary"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-legal-eula",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by EULA",
+      "surfaceIds": ["public:/legal/eula"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-legal-license",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by License",
+      "surfaceIds": ["public:/legal/license"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-legal-privacy",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Privacy policy",
+      "surfaceIds": ["public:/legal/privacy"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-legal-terms",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Terms of service",
+      "surfaceIds": ["public:/legal/terms"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-local-first",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Local-first AI",
+      "surfaceIds": ["public:/local-first"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-login",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Buyer login",
+      "surfaceIds": ["public:/login"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-marketplace",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Marketplace",
+      "surfaceIds": ["public:/marketplace"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-marketplace-plans",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Plans",
+      "surfaceIds": ["public:/marketplace/plans"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-partners",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Design partners",
+      "surfaceIds": ["public:/partners"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-procurement",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Security & procurement",
+      "surfaceIds": ["public:/procurement"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-provenance",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Provenance",
+      "surfaceIds": ["public:/provenance"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-security",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Security",
+      "surfaceIds": ["public:/security"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-stack-fit",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Stack fit",
+      "surfaceIds": ["public:/stack-fit"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-ui",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by UI Pro showcase",
+      "surfaceIds": ["public:/ui"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "public-updates",
+      "ring": "public",
+      "actor": "visitor",
+      "goal": "Complete the user goal exposed by Updates",
+      "surfaceIds": ["public:/updates"],
+      "prerequisites": [],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard",
+      "surfaceIds": ["buyer:/dashboard"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard-activity",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard / activity",
+      "surfaceIds": ["buyer:/dashboard/activity"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard-ai-keys",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard / ai-keys",
+      "surfaceIds": ["buyer:/dashboard/ai-keys"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard-cart",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard / cart",
+      "surfaceIds": ["buyer:/dashboard/cart"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard-compliance",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard / compliance",
+      "surfaceIds": ["buyer:/dashboard/compliance"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard-credits",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard / credits",
+      "surfaceIds": ["buyer:/dashboard/credits"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard-invoices",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard / invoices",
+      "surfaceIds": ["buyer:/dashboard/invoices"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard-license",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard / license",
+      "surfaceIds": ["buyer:/dashboard/license"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard-members",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard / members",
+      "surfaceIds": ["buyer:/dashboard/members"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "buyer-dashboard-plan",
+      "ring": "buyer",
+      "actor": "buyer-probe",
+      "goal": "Complete the user goal exposed by dashboard / plan",
+      "surfaceIds": ["buyer:/dashboard/plan"],
+      "prerequisites": ["authorized probe session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-home",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by admin home",
+      "surfaceIds": ["admin:/"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-architecture",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by architecture",
+      "surfaceIds": ["admin:/architecture"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-business",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by business",
+      "surfaceIds": ["admin:/business"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-business-audit",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by business / audit",
+      "surfaceIds": ["admin:/business/audit"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-catalog",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by catalog",
+      "surfaceIds": ["admin:/catalog"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-catalog-components",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by catalog / components",
+      "surfaceIds": ["admin:/catalog/components"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-catalog-emails",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by catalog / emails",
+      "surfaceIds": ["admin:/catalog/emails"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-catalog-foundations",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by catalog / foundations",
+      "surfaceIds": ["admin:/catalog/foundations"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-catalog-signature",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by catalog / signature",
+      "surfaceIds": ["admin:/catalog/signature"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-catalog-typography",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by catalog / typography",
+      "surfaceIds": ["admin:/catalog/typography"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-catalog-wordmark",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by catalog / wordmark",
+      "surfaceIds": ["admin:/catalog/wordmark"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-decisions",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by decisions",
+      "surfaceIds": ["admin:/decisions"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-intel",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by intel",
+      "surfaceIds": ["admin:/intel"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    },
+    {
+      "id": "admin-ops",
+      "ring": "admin",
+      "actor": "admin-operator",
+      "goal": "Complete the user goal exposed by ops",
+      "surfaceIds": ["admin:/ops"],
+      "prerequisites": ["authorized operator session"],
+      "evidence": ["before", "action", "after", "accessibility"]
+    }
+  ]
+}

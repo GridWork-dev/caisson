@@ -32,6 +32,22 @@ describe("run evidence validation", () => {
     expect(validateRun(validRun).findings).toHaveLength(1);
   });
 
+  test("accepts the finalized reconciliation envelope", () => {
+    expect(
+      validateRun({
+        ...validRun,
+        advisory: true,
+        classes: { "finding-1": "new" },
+        findings: [
+          {
+            ...validRun.findings[0]!,
+            title: "Buyer plan dialog loses focus",
+          },
+        ],
+      }).classes,
+    ).toEqual({ "finding-1": "new" });
+  });
+
   test("rejects escaping evidence paths", () => {
     expect(() =>
       validateRun({

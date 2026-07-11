@@ -1,0 +1,37 @@
+{
+  "url": "https://caisson.sh/legal/terms",
+  "title": "Terms of Use · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1440, "h": 8838 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Terms of Use" },
+    { "level": "H2", "text": "Acceptance of terms" },
+    { "level": "H2", "text": "The site and software licenses" },
+    { "level": "H3", "text": "Commercial product" },
+    { "level": "H3", "text": "Documentation and site content" },
+    { "level": "H3", "text": "Product-update communications" },
+    { "level": "H2", "text": "Acceptable use" },
+    { "level": "H2", "text": "Intellectual property" },
+    { "level": "H2", "text": "Payment processing and third-party services" },
+    {
+      "level": "H3",
+      "text": "Payment processing — Paddle (Merchant of Record)"
+    },
+    { "level": "H3", "text": "Refund policy" },
+    { "level": "H3", "text": "Buyer support" },
+    { "level": "H3", "text": "Other third-party services" },
+    { "level": "H2", "text": "Disclaimer of warranties" },
+    { "level": "H2", "text": "Limitation of liability" },
+    { "level": "H2", "text": "Governing law and disputes" },
+    { "level": "H2", "text": "Changes to these terms" },
+    { "level": "H2", "text": "Questions" }
+  ],
+  "links": 43,
+  "buttons": 9,
+  "inputs": 4,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

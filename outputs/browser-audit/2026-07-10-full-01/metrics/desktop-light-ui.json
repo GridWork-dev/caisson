@@ -1,0 +1,28 @@
+{
+  "url": "https://caisson.sh/ui",
+  "title": "UI Pro component gallery · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 6350 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "UI Pro — premium data-ops components" },
+    { "level": "H3", "text": "AuditTimeline" },
+    { "level": "H3", "text": "Charts (Line / Area / Bar / Sparkline)" },
+    { "level": "H3", "text": "CommandPalette" },
+    { "level": "H3", "text": "DataTablePro" },
+    { "level": "H3", "text": "DateRangePicker" },
+    { "level": "H3", "text": "DiffViewer" },
+    { "level": "H3", "text": "KanbanBoard" },
+    { "level": "H3", "text": "OpsMatrix" },
+    { "level": "H3", "text": "PayloadViewer" },
+    { "level": "H3", "text": "TreePro" },
+    { "level": "H3", "text": "TypeToConfirm" }
+  ],
+  "links": 33,
+  "buttons": 49,
+  "inputs": 16,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

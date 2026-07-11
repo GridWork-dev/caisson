@@ -1,0 +1,31 @@
+{
+  "url": "https://caisson.sh/compliance",
+  "title": "Compliance · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 10232 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "Audit-ready from the first commit." },
+    { "level": "H2", "text": "Ten packages, one bundle." },
+    {
+      "level": "H2",
+      "text": "Teams that need the controls before the first customer, not after."
+    },
+    { "level": "H2", "text": "Five technical controls, each with its proof." },
+    {
+      "level": "H2",
+      "text": "Caisson ships the controls. Your auditor signs the certificate."
+    },
+    { "level": "H2", "text": "What a security review asks first." },
+    { "level": "H2", "text": "Own the source, or track the frameworks." },
+    { "level": "H2", "text": "Prove fit in week one." },
+    { "level": "H2", "text": "Start fail-closed." }
+  ],
+  "links": 43,
+  "buttons": 18,
+  "inputs": 4,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

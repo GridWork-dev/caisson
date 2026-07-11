@@ -1,0 +1,110 @@
+{
+  "url": "https://caisson.sh/",
+  "title": "Caisson — Compliance-grade infrastructure for regulated SaaS",
+  "lang": "en",
+  "viewport": { "w": 390, "h": 844 },
+  "document": { "w": 390, "h": 22702 },
+  "horizontalOverflow": false,
+  "overflowPixels": 0,
+  "headings": [
+    {
+      "level": "H1",
+      "text": "Audit-ready and production-hard from commit one."
+    },
+    {
+      "level": "H2",
+      "text": "The load-bearing infrastructure cheap boilerplates skip."
+    },
+    {
+      "level": "H2",
+      "text": "Prevention at the application layer — with the receipts."
+    },
+    { "level": "H2", "text": "Real paths. Real code. No screenshots." },
+    {
+      "level": "H2",
+      "text": "The boundary and the evidence trail, drawn to real behaviour."
+    },
+    { "level": "H3", "text": "Per-tenant isolation, fail-closed" },
+    { "level": "H3", "text": "Evidence lifecycle, write to verify" },
+    {
+      "level": "H2",
+      "text": "Module, bundle, or plan — same catalog, three shapes."
+    },
+    { "level": "H2", "text": "Six bundles, one audited base." },
+    { "level": "H2", "text": "Compose, don’t fork." },
+    {
+      "level": "H2",
+      "text": "Build your own stack — watch the running total."
+    },
+    { "level": "H2", "text": "Every claim is a check in CI." },
+    {
+      "level": "H2",
+      "text": "No logo wall yet. Here's what you can check instead."
+    },
+    { "level": "H2", "text": "Start audit-ready." }
+  ],
+  "links": 71,
+  "buttons": 11,
+  "inputs": 30,
+  "images": [],
+  "main": true,
+  "mainTarget": true,
+  "skipLink": true,
+  "smallTargets": [
+    { "tag": "A", "text": "Skip to content", "w": 179, "h": 38 },
+    { "tag": "A", "text": "Caisson home", "w": 104, "h": 26 },
+    { "tag": "BUTTON", "text": "Cart", "w": 36, "h": 36 },
+    { "tag": "BUTTON", "text": "Open menu", "w": 36, "h": 36 },
+    { "tag": "A", "text": "Open the Compliance bundle", "w": 233, "h": 40 },
+    { "tag": "A", "text": "Explore the six bundles", "w": 193, "h": 40 },
+    { "tag": "INPUT", "text": "", "w": 1, "h": 1 },
+    { "tag": "INPUT", "text": "", "w": 1, "h": 1 },
+    { "tag": "INPUT", "text": "", "w": 1, "h": 1 },
+    { "tag": "INPUT", "text": "", "w": 1, "h": 1 },
+    { "tag": "A", "text": "Browse modules", "w": 152, "h": 40 },
+    { "tag": "A", "text": "Browse bundles", "w": 147, "h": 40 },
+    { "tag": "A", "text": "Browse plans", "w": 130, "h": 40 },
+    { "tag": "A", "text": "Browse the full marketplace", "w": 328, "h": 41 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    { "tag": "INPUT", "text": "", "w": 18, "h": 18 },
+    {
+      "tag": "A",
+      "text": "Build your stack on the full marketplace",
+      "w": 249,
+      "h": 19
+    },
+    { "tag": "A", "text": "What’s open", "w": 124, "h": 40 },
+    { "tag": "A", "text": "Read the updates", "w": 159, "h": 40 },
+    { "tag": "A", "text": "Design partners", "w": 147, "h": 40 },
+    { "tag": "A", "text": "See the evidence pack", "w": 325, "h": 41 },
+    { "tag": "A", "text": "Get Compliance", "w": 149, "h": 40 },
+    { "tag": "A", "text": "Read the docs", "w": 136, "h": 40 },
+    { "tag": "A", "text": "Apache-2.0", "w": 76, "h": 19 },
+    { "tag": "INPUT", "text": "", "w": 13, "h": 13 },
+    { "tag": "A", "text": "Privacy policy", "w": 76, "h": 17 },
+    { "tag": "BUTTON", "text": "Get product updates", "w": 178, "h": 40 },
+    { "tag": "A", "text": "Compliance", "w": 78, "h": 19 },
+    { "tag": "A", "text": "AI-Production", "w": 92, "h": 19 },
+    { "tag": "A", "text": "Local-first", "w": 64, "h": 19 }
+  ]
+}

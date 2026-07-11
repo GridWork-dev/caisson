@@ -1,0 +1,23 @@
+{
+  "url": "https://caisson.sh/evidence",
+  "title": "Evidence pack · Caisson",
+  "lang": "en",
+  "viewport": { "w": 1440, "h": 900 },
+  "document": { "w": 1425, "h": 5199 },
+  "horizontalOverflow": false,
+  "headings": [
+    { "level": "H1", "text": "The evidence, before you ask for it." },
+    { "level": "H2", "text": "Six proof artifacts, each running today." },
+    {
+      "level": "H2",
+      "text": "You own the source, so the evidence comes with it."
+    },
+    { "level": "H2", "text": "Straight answers about the evidence." }
+  ],
+  "links": 40,
+  "buttons": 9,
+  "inputs": 4,
+  "images": [],
+  "main": true,
+  "skipLink": true
+}

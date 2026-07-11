@@ -182,6 +182,14 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     class: "internal-only",
   });
 
+  // Repo-local Codex skills are executable governance and validation code, not process exhaust.
+  domains.push({
+    id: "agent-skills",
+    roots: [".agents/skills"],
+    globs: [".agents/skills/**"],
+    class: "internal-only",
+  });
+
   // create-caisson EMITTED buyer output — distinct from the cli source; the buyer reads it.
   domains.push({
     id: "generator-templates",
