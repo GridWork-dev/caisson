@@ -12,7 +12,8 @@ mapfile -d '' staged < <(git diff --cached --name-only --diff-filter=ACM -z)
 fmt=()
 for f in "${staged[@]}"; do
   case "$f" in *.ts | *.tsx | *.js | *.mjs | *.json | *.md | *.css)
-    [ -f "$f" ] && fmt+=("$f") ;;
+    # skip symlinks (AGENTS.md -> CLAUDE.md): prettier errors on them
+    [ -f "$f" ] && [ ! -L "$f" ] && fmt+=("$f") ;;
   esac
 done
 if [ ${#fmt[@]} -gt 0 ] && command -v bunx >/dev/null 2>&1; then

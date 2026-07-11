@@ -57,7 +57,7 @@ conflict, the ADR file and the board win over this index.
   - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks + the dashboard host/DB picker round + the billing-scope/observability/analytics picker round + the pricing/store-rework and harvest grill sessions + the store-rework build wave (0040-0137).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
-Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
+Product framing: `specs/00-product-spec.md`. Build plan: `docs/archive/plan.md` (archived).
 
 ---
 

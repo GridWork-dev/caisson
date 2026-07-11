@@ -17,7 +17,7 @@ How Linear (Business tier) plugs into the Caisson build workflow. **Locked desig
 | -------------------------------------------------------------- | ----------------------------------------------------------- |
 | Issues, tasks, bugs, cycles, project/initiative roadmap status | ADRs (`knowledge/decisions/`) — append-only decision record |
 | Inbound triage (support-bot escalations, requests)             | `docs/state/decisions-and-forks.md` — the live fork board   |
-| Agent delegation + first-pass triage                           | `specs/`, `plan.md` — spec + build plan                     |
+| Agent delegation + first-pass triage                           | `specs/`, `docs/build-state.md` — spec + build truth        |
 | PR/branch/deploy linkage (Code Intelligence)                   | Commits (conventional, atomic)                              |
 
 Never move a decision INTO Linear. A Linear issue may _reference_ an ADR (`ADR-0177`) or a fork, but the

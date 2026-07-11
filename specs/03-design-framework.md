@@ -57,7 +57,7 @@ No longer deferred. The ADR-0042 token **center** (palette A + Structural type) 
 illustration motif, an **expressive tokenized motion language** (new pillar), and an **elevation + glow scale**
 that **supersedes the prior "depth = tone + hairline, never shadows" rule** (§1–2). The full visual system
 (hero, component inventory, responsive, code-block + docs treatment) + the implementation backlog live in
-`outputs/specs/design-brand-site-seo/SPEC.md`; the brand book is `DESIGN.md` (authored in the build session).
+`outputs/specs/design-brand-site-seo/SPEC.md`; the brand book is `docs/design.md` (authored in the build session).
 SEO strategy → ADR-0079, copy/messaging → ADR-0080, pricing display → ADR-0081 (supersedes ADR-0087). The
 148-fork research board: `outputs/specs/design-brand-site-seo/FORK-BOARD.md`. This spec fixes the design
 _center_; ADR-0078 + the SPEC fix the _system_ — the pixels are no longer deferred.

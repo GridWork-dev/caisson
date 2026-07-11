@@ -22,7 +22,7 @@ Follow this order without skipping or averaging the references:
 1. Query Exa for current category, browser-testing, and product-pattern evidence.
 2. Research Refero styles first, then concrete screens, then flows.
 3. Write a reference lock and decision ledger naming what is adopted, adapted, or rejected.
-4. Apply `PRODUCT.md`, `DESIGN.md`, and the matching Impeccable register.
+4. Apply `docs/product.md`, `docs/design.md`, and the matching Impeccable register.
 5. Audit the rendered production state. Do not infer a pass from repository code.
 
 Read [design-rubric.md](references/design-rubric.md) and [behavior-rubric.md](references/behavior-rubric.md) before interacting.

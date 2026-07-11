@@ -57,4 +57,4 @@ Verified 2026-06-28 against the filesystem. Canonical read: [ADR-0082 section 3]
 - Concept specs: [specs/00-product-spec.md](../specs/00-product-spec.md), [specs/01-architecture.md](../specs/01-architecture.md), [specs/02-core-loop-ux.md](../specs/02-core-loop-ux.md), [specs/03-design-framework.md](../specs/03-design-framework.md), [specs/04-voice-and-brand.md](../specs/04-voice-and-brand.md)
 - Decisions: `knowledge/decisions/ADR-NNNN-*.md` (append-only; supersede, never edit)
 - Live state: [docs/state/decisions-and-forks.md](state/decisions-and-forks.md) (locked + open forks)
-- Build plan: [plan.md](../plan.md) (P0-P7)
+- Build plan: [archive/plan.md](archive/plan.md) (P0-P7 — executed, archived)

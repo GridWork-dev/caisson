@@ -21,9 +21,9 @@ the two, `build-state.md` wins on **build status**; this file wins on **license/
 
 Per root `CLAUDE.md`: **1)** `docs/state/decisions-and-forks.md` — the live open/locked fork board
 (wins on any open decision) → **2)** `knowledge/decisions/` ADRs (append-only, the locked record) →
-**3)** `specs/` (locked concept docs) → **4)** `plan.md`/`SUMMARY.md` → **5)** `outputs/` (session
+**3)** `specs/` (locked concept docs) → **4)** `docs/build-state.md` (the founding `plan.md`/`SUMMARY.md` → `docs/archive/`) → **5)** `outputs/` (session
 artifacts). This file and `docs/build-state.md` are both **catalog views derived from that hierarchy**,
-not primary sources — they sit alongside `plan.md`/`SUMMARY.md` in the reading order, synthesizing #1/#2
+not primary sources — they sit alongside the archived plan/SUMMARY (`docs/archive/`) in the reading order, synthesizing #1/#2
 into a table. Two older root-level docs, [`docs/packages.md`](../packages.md) and
 [`docs/editions.md`](../editions.md), predate open-core (ADR-0094/0097), the P6 commerce build, and the
 ADR-0129/0130 pricing round — they are **stale on license and price** (still show all-commercial + the

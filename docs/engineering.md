@@ -10,7 +10,7 @@ pointer. On any conflict, the ADR wins.
 Routing: working rules `CLAUDE.md` - live decision board `docs/state/decisions-and-forks.md`
 
 - concept specs `specs/00-product-spec.md` .. `specs/04-voice-and-brand.md` - build plan
-  `plan.md` - consolidated state `SUMMARY.md`.
+  `docs/archive/plan.md` (executed, archived) - consolidated history `docs/archive/SUMMARY.md`.
 
 > ADR catalog: the canonical index is `docs/adr-index.md` (number -> title -> domain ->
 > status -> supersession chains + the GTM renumber map). Individual ADRs live in
