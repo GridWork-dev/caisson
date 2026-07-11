@@ -1,8 +1,16 @@
 // Gate behaviour: an unauthenticated dashboard access redirects to /login. `next/navigation`'s
-// `redirect` and `next/headers`'s `headers` are stubbed (this runs outside a Next request scope);
-// with no DB/secret configured the better-auth runtime is unavailable, so `getSession` fails
-// closed to null and the guard redirects — the same path a real request with no session cookie
-// takes.
+// `redirect` and `next/headers`'s `headers` are stubbed (this runs outside a Next request scope),
+// and `./auth-server.ts` is mocked so `getAuth()` returns null (the "sign-in runtime unavailable"
+// state, i.e. no DB/secret configured), so `getSession` fails closed to null and the guard
+// redirects, the same path a real request with no session cookie takes.
+//
+// Pinning `getAuth` here is REQUIRED for isolation, not a convenience. Bun's `mock.module` registers
+// process-wide and is never torn down, so the sibling `auth-account.test.ts` (which mocks this same
+// module to a fixed signed-in session) leaks into this file whenever Bun loads it first, and test
+// file discovery order is NOT stable across machines. That is exactly what broke under the runner
+// migration: the old runner happened to load this file first, the new one loads it second. Mocking
+// `getAuth` in this file makes its "no session" contract deterministic regardless of file order,
+// instead of depending on the real unconfigured-runtime path surviving that leak.
 import { expect, mock, test } from "bun:test";
 import * as realNavigation from "next/navigation";
 
@@ -31,6 +39,15 @@ mock.module("next/headers", () => ({
   cookies: async () => ({ get: () => undefined }),
 }));
 
+// Pin the sign-in runtime to "unavailable" (see the header note): `getAuth()` returns null, so
+// `getSession()` fails closed without ever touching a DB. This must be declared here so it wins over
+// `auth-account.test.ts`'s process-wide `./auth-server.ts` mock no matter which file Bun loads first.
+// `lib/auth.ts` re-exports `SESSION_COOKIE_NAME` from this module, so the mock must still provide it.
+mock.module("./auth-server.ts", () => ({
+  SESSION_COOKIE_NAME: "caisson.session_token",
+  getAuth: (): null => null,
+}));
+
 // Owner-only write gate (ADR-0208 #1): owner passes, seat is denied. Unauthenticated is
 // the existing null-session case below (the BYOK route 401s / the dashboard redirects before the
 // role check is ever reached). Roles today are only owner | seat.
@@ -42,9 +59,8 @@ test("isOwner: owner passes, seat denied", async () => {
 });
 
 test("no session → getSession is null, requireDashboardSession redirects to /login", async () => {
-  delete process.env.DATABASE_URL;
-  delete process.env.BETTER_AUTH_SECRET;
-
+  // `getAuth` is mocked to null at the top of this file (the unavailable-runtime state), so this
+  // no longer depends on `DATABASE_URL`/`BETTER_AUTH_SECRET` being unset in the process env.
   const { getSession, requireDashboardSession } = await import("./auth.ts");
 
   expect(await getSession()).toBeNull();
