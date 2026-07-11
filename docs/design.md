@@ -132,7 +132,7 @@ cross-surface signature is **"Fail-closed by construction."**
 
 _Tokens: `packages/ui/src/tokens` (candidate A/B/C record lives in `candidates.ts`, append-only — the
 lock is the `SELECTED_*` pointer in `theme.ts`). Primitives: `packages/ui/src/components` (`Hero`,
-`Section`, `Card`, `CodeBlock`/`Terminal`, `StatusChip`, `CredentialStrip`, `EditionCard`,
+`Section`, `Card`, `CodeBlock`/`Terminal`, `StatusChip`, `CredentialStrip`, `BundleCard`,
 `SkuMatrix`, `Icon`, `Wordmark`, `Reveal`, `MobileNav`, `Button`, `Faq`, `FeatureGrid`,
 `ThemeToggle`, `AppShell`, `DataTable`, `MetricStat`, `MoneyCell`, `LedgerList`, `StatusPill`,
 `EmptyState`, `ErrorState`, `LoadingState`, `Glyph`). SEO → ADR-0079, copy → ADR-0080, pricing →
