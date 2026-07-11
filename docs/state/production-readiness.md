@@ -213,6 +213,12 @@ plumbing: gettelesis.com, gettessera.xyz, telesis.health, and throughframe.com a
 Email Routing forwarding to it, and deleting the address would break their inbound mail. The
 `RESEND_FROM` env flip is staged on all three Railway services (skip-deploys) + the local env
 mirror; the post-merge redeploy carries it live together with the reply-to code.
+**EXECUTED 2026-07-11:** PR #209 merged (`4036574e`) and the operator-approved full redeploy of
+caisson-site/caisson-license/caisson-admin carried env + code live — all three services report
+`RESEND_FROM=Caisson <no-reply@caisson.sh>`, live route suite 13 pass / 0 fail
+(`docs/deploy/STATE.md` 2026-07-11 email-wave entry). Remaining: the 1Password vault
+`RESEND_FROM` item value update (op session stale at close; queued for the next authed pass) +
+the operator Proton send-as alias.
 
 ## What this sweep already fixed
 

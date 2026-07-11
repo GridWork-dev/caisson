@@ -33,6 +33,43 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-11 — EXECUTED: Kickoff-O email wave (ADR-0324) — site + license + admin redeploy from post-#209 `main`
+
+**What deployed:** `caisson-site`, `caisson-license`, `caisson-admin` from `main`@`4036574e`
+(`railway up --service <name> --detach` per service from repo root; all three deployments
+reached SUCCESS). Operator approval: the Kickoff-O deploy gate — "full redeploy approved"
+(one ask, per the kickoff's binding rule).
+
+**WHY:** PR #209 (email wave, CAISSON-92 / ADR-0324) — `reply_to: support@caisson.sh` on all
+three Resend call-sites via the new `@caisson/email` `ResendConfig.replyTo` field, plus the
+support@ copy pass (refunds/procurement/partners/affiliates/ask-AI; legal pages keep admin@) —
+AND the staged `RESEND_FROM="Caisson <no-reply@caisson.sh>"` env flip set `--skip-deploys` on
+the same three services (this redeploy is what carried it live; hello@ sender retired). PR #208
+(the Playwright-graduation e2e suite, CAISSON-93) rode the same `main` but is test-only — no
+runtime diff. Pre-merge operator acts in the same wave: CF Email Routing catch-all on caisson.sh
+NEUTRALIZED via API (undeletable singleton → `enabled: false` + action `drop`); the
+`admin@gridwork.dev` destination address KEPT (ADR-0324 D3 deviation — shared plumbing for 4
+other live zones); `~/.gridwork/caisson.env` flipped (backup `caisson.env.bak-adr0324`). No
+Worker republish, no schema widening, no migrations in the diff.
+
+**Live verify (pasted):**
+
+```
+RESEND_FROM=Caisson <no-reply@caisson.sh>   (caisson-site)
+RESEND_FROM=Caisson <no-reply@caisson.sh>   (caisson-license)
+RESEND_FROM=Caisson <no-reply@caisson.sh>   (caisson-admin)
+{"ok":true,"indexDigest":"864c83b1a203","indexEntries":46}
+site:200 docs:200 marketplace:200 login:200
+
+bun test apps/site/live/prod-routes.live.test.ts
+ 13 pass
+ 0 fail
+ 52 expect() calls
+```
+
+**Residuals:** 1Password vault `RESEND_FROM` item value update (op session stale at close —
+next authed pass) · Proton send-as alias for support@ (operator act, tracker §1).
+
 ## 2026-07-11 — EXECUTED: browser-audit remediation wave — caisson-site redeploy from post-#207 `main`
 
 **What deployed:** `caisson-site` only, from `main`@`bae8ae7b` (`railway up -y --service
