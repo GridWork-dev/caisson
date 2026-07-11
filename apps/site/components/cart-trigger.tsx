@@ -3,6 +3,7 @@
 import { Icon } from "@caisson/ui/components";
 
 import { useCart } from "./cart-provider";
+import styles from "./cart-trigger.module.css";
 
 /** The always-visible nav cart button — toggles the drawer, shows the line count as a badge once
  *  non-zero. Sits outside the desktop-only `.navCtas` group and the mobile drawer so it stays
@@ -18,6 +19,7 @@ export function CartTrigger() {
       aria-label={
         count > 0 ? `Cart, ${count} item${count === 1 ? "" : "s"}` : "Cart"
       }
+      className={styles.hitArea}
       style={{
         position: "relative",
         display: "inline-flex",
