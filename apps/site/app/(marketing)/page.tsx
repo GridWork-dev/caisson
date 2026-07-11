@@ -361,9 +361,9 @@ export default function HomePage() {
           </Card>
         </Reveal>
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-          Every shape above is the same license underneath: perpetual, no
-          phone-home, no kill switch. Even if Caisson the company stopped
-          operating, your code keeps working — read the{" "}
+          Whatever you buy, the code you own is perpetual — no phone-home, no
+          kill switch. Even if Caisson the company stopped operating, the
+          versions you hold keep working — read the{" "}
           <Link href="/legal/eula#vendor-continuity" className="cs-link">
             continuity terms
           </Link>

@@ -12,7 +12,7 @@ export function ArchitectureFitDiagram() {
     <div
       className={styles.arch}
       role="group"
-      aria-label="How Caisson lands in an existing stack: your app calls the Caisson module layer, which runs as ordinary packages on the Postgres database you already operate with row-level security. Off to the side, two things attach without a rewrite: the license check, which verifies offline with zero network call, and observability, which exports traces and logs to whatever collector you already run."
+      aria-label="How Caisson lands in an existing stack"
     >
       <div className={styles.stack}>
         <div className={styles.layer} data-layer="app">
