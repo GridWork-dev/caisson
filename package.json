@@ -45,6 +45,7 @@
     "build": "turbo run build --no-daemon",
     "lint": "turbo run lint --no-daemon",
     "test": "turbo run test --no-daemon",
+    "test:e2e": "turbo run test:e2e --no-daemon",
     "test:live": "turbo run test:live --no-daemon --env-mode=loose",
     "test:live:all": "turbo run test:live --no-daemon --env-mode=loose",
     "eval": "turbo run eval --no-daemon",
