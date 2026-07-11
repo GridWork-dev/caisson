@@ -8,8 +8,14 @@ verification steps after the train runs; they are deliberately not checkboxes.
 
 ## Pre-flight (all boxes checked before publishing the Release)
 
-- [ ] Version cut merged to main: `.changeset/` drained, package versions bumped, CHANGELOGs written
-- [ ] CI green on the release SHA (check · standards-gate · registry-index · oscal-conformance)
+- [ ] Version PR merged to main (dispatch `version-pr.yml` → review → merge; ADR-0325):
+      `.changeset/` drained, versions bumped, CHANGELOGs written, `bun.lock` refreshed, AND
+      `registry/{ledger.jsonl,index.json,tarballs.json}` updated in the SAME commit
+- [ ] The draft GitHub Release's tag targets EXACTLY the version-PR merge commit (publish.yml
+      re-verifies ancestry and byte-reproduces every tarball hash at the tag — a mismatch stops
+      the train)
+- [ ] CI green on the release SHA (check · standards-gate · registry-index · oscal-conformance —
+      the push-to-main run on the version-PR merge commit)
 - [ ] `bun run sot` green
 - [ ] R4 fresh full audit of the cumulative diff since the last release tag, on file at
       `outputs/audit/release-audit-<tag>.md` (SHIP-audit lane: gw-code-reviewer +

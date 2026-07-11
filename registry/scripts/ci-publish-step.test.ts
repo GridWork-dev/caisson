@@ -9,15 +9,21 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { ModuleManifest } from "../schema/module-manifest";
-import { INDEX_PATH, LEDGER_PATH } from "./build-index";
+import {
+  INDEX_PATH,
+  LEDGER_PATH,
+  buildIndexFromLedgerFile,
+} from "./build-index";
 import {
   computeTarballDist,
+  defaultPack,
   findManifestPaths,
   isPrivatePackage,
   readSidecar,
@@ -553,6 +559,238 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       expect(readSidecar(sidecarPath).tarballs["@caisson/demo@1.0.0"]).toEqual(
         computeTarballDist(Buffer.from("demo-bytes"), "demo", "1.0.0"),
       );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Publish mode (ADR-0325): zero-mutation verify + stage at the release tag
+// ---------------------------------------------------------------------------
+
+describe("publish mode (ADR-0325)", () => {
+  type Fixture = {
+    dir: string;
+    pkgDir: string;
+    ledgerPath: string;
+    indexPath: string;
+    sidecarPath: string;
+  };
+
+  /**
+   * A tagged-tree fixture in its version-PR-complete state: one workspace package whose version
+   * is ledgered, whose tarball row is recorded (hash of the bytes "demo-bytes"), and whose
+   * index.json is a byte-identical rebuild of the ledger. Individual tests then break exactly
+   * one invariant to prove the corresponding failure is caught.
+   */
+  function mkFixture(label: string): Fixture {
+    const dir = tmpDir(`publish-${label}`);
+    const pkgDir = join(dir, "packages");
+    const demo = join(pkgDir, "demo");
+    mkdirSync(demo, { recursive: true });
+    writeFileSync(
+      join(demo, "package.json"),
+      JSON.stringify({ name: "@caisson/demo", version: "1.0.0" }),
+    );
+    writeFileSync(
+      join(demo, "manifest.ts"),
+      'export default { id: "@caisson/demo", version: "1.0.0" };\n',
+    );
+    const ledgerPath = join(dir, "ledger.jsonl");
+    const indexPath = join(dir, "index.json");
+    const sidecarPath = join(dir, "tarballs.json");
+    const ledgerEntry = {
+      id: "@caisson/demo",
+      version: "1.0.0",
+      manifest: mkManifest("@caisson/demo", "1.0.0"),
+      publishedAt: "2026-01-01T00:00:00.000Z",
+      gateAttestation: "version-pr-1@deadbee",
+    };
+    writeFileSync(ledgerPath, `${JSON.stringify(ledgerEntry)}\n`);
+    writeFileSync(indexPath, buildIndexFromLedgerFile(ledgerPath));
+    writeSidecar(
+      {
+        tarballs: {
+          "@caisson/demo@1.0.0": computeTarballDist(
+            Buffer.from("demo-bytes"),
+            "demo",
+            "1.0.0",
+          ),
+        },
+      },
+      sidecarPath,
+    );
+    return { dir, pkgDir, ledgerPath, indexPath, sidecarPath };
+  }
+
+  function publishOpts(f: Fixture) {
+    return {
+      runId: "pub-test",
+      sha: "cafe1234cafe1234",
+      publishedAt: "2026-02-01T00:00:00.000Z",
+      mode: "publish" as const,
+      ledgerPath: f.ledgerPath,
+      indexPath: f.indexPath,
+      packagesDir: f.pkgDir,
+      sidecarPath: f.sidecarPath,
+      stagingDir: f.dir,
+    };
+  }
+
+  test("happy path: verifies + stages when bytes reproduce, and writes NOTHING", async () => {
+    const f = mkFixture("happy");
+    try {
+      const ledgerBefore = readFileSync(f.ledgerPath, "utf8");
+      const indexBefore = readFileSync(f.indexPath);
+      const sidecarBefore = readFileSync(f.sidecarPath, "utf8");
+
+      const result = await runPublishStep({
+        ...publishOpts(f),
+        dryRun: false,
+        packFn: () => Buffer.from("demo-bytes"),
+      });
+
+      expect(result.verifiedStaged).toBe(1);
+      expect(result.appended).toBe(0);
+      expect(result.tarballsRecorded).toBe(0);
+      // Zero mutation: all three tracked files byte-identical after a live publish pass.
+      expect(readFileSync(f.ledgerPath, "utf8")).toBe(ledgerBefore);
+      expect(readFileSync(f.indexPath).equals(indexBefore)).toBe(true);
+      expect(readFileSync(f.sidecarPath, "utf8")).toBe(sidecarBefore);
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("a workspace version missing from the ledger fails (tag cut before its version PR)", async () => {
+    const f = mkFixture("no-ledger");
+    try {
+      writeFileSync(f.ledgerPath, "");
+      writeFileSync(f.indexPath, buildIndexFromLedgerFile(f.ledgerPath));
+      await expect(
+        runPublishStep({
+          ...publishOpts(f),
+          dryRun: false,
+          packFn: () => Buffer.from("demo-bytes"),
+        }),
+      ).rejects.toThrow(/not in the ledger/);
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("a workspace version missing its sidecar row fails", async () => {
+    const f = mkFixture("no-sidecar");
+    try {
+      writeSidecar({ tarballs: {} }, f.sidecarPath);
+      await expect(
+        runPublishStep({
+          ...publishOpts(f),
+          dryRun: false,
+          packFn: () => Buffer.from("demo-bytes"),
+        }),
+      ).rejects.toThrow(/no tarballs\.json row/);
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("a stale index.json (not a byte-identical ledger rebuild) fails", async () => {
+    const f = mkFixture("stale-index");
+    try {
+      writeFileSync(f.indexPath, "{}\n");
+      await expect(
+        runPublishStep({
+          ...publishOpts(f),
+          dryRun: false,
+          packFn: () => Buffer.from("demo-bytes"),
+        }),
+      ).rejects.toThrow(/byte-identical rebuild/);
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("re-packed bytes that do not reproduce the recorded hash fail before any upload staging succeeds", async () => {
+    const f = mkFixture("tampered");
+    try {
+      await expect(
+        runPublishStep({
+          ...publishOpts(f),
+          dryRun: false,
+          packFn: () => Buffer.from("tampered-bytes"),
+        }),
+      ).rejects.toThrow(/does not reproduce the recorded bytes/);
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("dry-run: metadata verified, packer never invoked, nothing staged", async () => {
+    const f = mkFixture("dry");
+    try {
+      let packed = 0;
+      const result = await runPublishStep({
+        ...publishOpts(f),
+        dryRun: true,
+        packFn: () => {
+          packed++;
+          return Buffer.from("never");
+        },
+      });
+      expect(packed).toBe(0);
+      expect(result.verifiedStaged).toBe(0);
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("dry-run still catches metadata inconsistency (missing sidecar row)", async () => {
+    const f = mkFixture("dry-broken");
+    try {
+      writeSidecar({ tarballs: {} }, f.sidecarPath);
+      await expect(
+        runPublishStep({ ...publishOpts(f), dryRun: true }),
+      ).rejects.toThrow(/no tarballs\.json row/);
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("bun pm pack byte-determinism (the ADR-0325 load-bearing assumption)", () => {
+  // The publish gate rests on this: the version PR records tarball hashes, publish re-packs at
+  // the tag and requires byte-equality. If a bun bump ever changes the pack format, THIS test
+  // reddens first — before the first live release trips over it.
+  test("packing the same source twice, across an mtime change, yields identical bytes", () => {
+    const dir = tmpDir("pack-det");
+    const pkgDir = join(dir, "pkg");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      join(pkgDir, "package.json"),
+      JSON.stringify({
+        name: "@caisson/pack-det-fixture",
+        version: "0.0.1",
+        main: "index.js",
+      }),
+    );
+    writeFileSync(join(pkgDir, "index.js"), "module.exports = 1;\n");
+    try {
+      const first = defaultPack(pkgDir, "pack-det-fixture", "0.0.1", dir);
+      // Shift every file's mtime by an hour — pack output must not depend on it.
+      const later = new Date(Date.now() + 3600_000);
+      utimesSync(join(pkgDir, "package.json"), later, later);
+      utimesSync(join(pkgDir, "index.js"), later, later);
+      const secondStaging = join(dir, "second");
+      const second = defaultPack(
+        pkgDir,
+        "pack-det-fixture",
+        "0.0.1",
+        secondStaging,
+      );
+      expect(first.length).toBeGreaterThan(0);
+      expect(Buffer.from(first).equals(Buffer.from(second))).toBe(true);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

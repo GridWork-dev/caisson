@@ -1,7 +1,21 @@
 // registry/scripts/ci-publish-step.ts
-// CI ledger-append + index-rebuild step (ADR-0021/0069). Called from the publish-and-index
-// job after changesets publish. Scans all workspace package manifest.ts files, identifies
-// versions not yet in the ledger, and (in live mode) appends them + rebuilds index.json.
+// CI ledger-append / index-rebuild / tarball-verify step (ADR-0021/0069, reworked by ADR-0325).
+// Two modes, matching the commit-addressable release flow:
+//
+//   --mode version  (version-pr.yml) — runs AFTER `changeset version` on the version-PR branch:
+//     appends new (id, version) pairs to the ledger, rebuilds index.json, packs each non-private
+//     package and records its hash row into tarballs.json. All of it lands IN the version PR, so
+//     the source truth (bumps + CHANGELOGs + ledger + index + sidecar) ships as ONE commit that
+//     the release tag is later cut on.
+//
+//   --mode publish  (publish.yml, checked out at the release tag) — ZERO source mutation:
+//     verifies every workspace version is ledgered + sidecar'd and index.json is a byte-identical
+//     rebuild, then re-packs each tarball and requires its bytes to hash to EXACTLY the sidecar
+//     row the version PR recorded (`bun pm pack` is byte-deterministic for identical source
+//     bytes — a mismatch means the tag does not match the version PR's source, and the release
+//     stops before any external write). Packing stages tarballs for the R2 upload step; no
+//     tracked file is written.
+//
 // In dry-run mode (default, CAISSON_PUBLISH_DRY_RUN=true), reports planned actions without
 // writing any files. publishedAt comes from the CI clock via --published-at — never derived
 // internally (determinism: no Date.now(), no new Date() here).
@@ -200,8 +214,9 @@ export type PackFn = (
 
 /** Default pack: `bun pm pack` (execFile arg-array, no shell). Scope dropped via an explicit
  * --filename, passed as the FULL staged path — bun rejects --filename combined with
- * --destination ("cannot use both filename and destination"), so the path carries the dir. */
-const defaultPack: PackFn = (packageDir, slug, version, stagingDir) => {
+ * --destination ("cannot use both filename and destination"), so the path carries the dir.
+ * Exported so the test suite can prove the byte-determinism the publish gate rests on. */
+export const defaultPack: PackFn = (packageDir, slug, version, stagingDir) => {
   const outDir = join(stagingDir, slug);
   mkdirSync(outDir, { recursive: true });
   const filename = `${slug}-${version}.tgz`;
@@ -290,12 +305,25 @@ export function recordTarballs(
 export type PublishStepOpts = {
   /** CI run identifier (e.g. github.run_id). Used in the gateAttestation. */
   runId: string;
-  /** Full commit SHA of the run. Used in the gateAttestation ("<run-id>@<sha>"). */
+  /**
+   * Full commit SHA of the run. In version mode: the main SHA the version PR was cut FROM,
+   * recorded in the gateAttestation ("<run-id>@<sha>") — the final version-commit SHA cannot
+   * be known while authoring its own content; the release tag anchors that (ADR-0325). In
+   * publish mode: the tag SHA (logging only; publish never writes an attestation).
+   */
   sha: string;
   /** ISO 8601 UTC timestamp from the CI clock — NEVER derived inside this function. */
   publishedAt: string;
   /** When true (default), reports what would happen without writing any files. */
   dryRun: boolean;
+  /**
+   * ADR-0325 flow position. "version" (default): append ledger + rebuild index + pack/record
+   * sidecar rows — the version-PR writer. "publish": zero-mutation verify + stage at the
+   * release tag — every workspace version must already be ledgered + sidecar'd, index.json
+   * must be a byte-identical rebuild, and every re-packed tarball must hash to its recorded
+   * sidecar row. Any violation throws before the R2 upload step can run.
+   */
+  mode?: "version" | "publish" | undefined;
   /** Override for isolated testing; defaults to the on-disk registry/ledger.jsonl. */
   ledgerPath?: string | undefined;
   /** Override for isolated testing; defaults to the on-disk registry/index.json. */
@@ -326,6 +354,11 @@ export type PublishStepResult = {
   wouldAppend: number;
   /** Tarball sidecar rows recorded (packed + hashed → tarballs.json; always 0 in dry-run). */
   tarballsRecorded: number;
+  /**
+   * Publish mode only: workspace versions whose re-packed bytes hash-matched their sidecar row
+   * and are staged for the R2 upload step. Always 0 in version mode and in publish dry-run.
+   */
+  verifiedStaged: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -390,13 +423,149 @@ export async function loadManifest(path: string): Promise<ModuleManifest> {
 }
 
 // ---------------------------------------------------------------------------
+// Publish-mode verification (ADR-0325) — the zero-mutation release-tag path
+// ---------------------------------------------------------------------------
+
+type VerifyForPublishOpts = {
+  loaded: { manifest: ModuleManifest; packageDir: string }[];
+  alreadyPublished: Set<string>;
+  skippedDelisted: number;
+  dryRun: boolean;
+  ledgerPath: string;
+  indexPath: string;
+  sidecarPath?: string | undefined;
+  stagingDir?: string | undefined;
+  packFn?: PackFn | undefined;
+};
+
+/**
+ * ADR-0325 publish mode: the checked-out (tagged) tree must already BE the release. Verifies
+ * every non-private workspace version is ledgered + sidecar'd and index.json is a byte-identical
+ * ledger rebuild, then (live) re-packs each tarball and requires its bytes to hash to EXACTLY
+ * the sidecar row the version PR recorded. Packing stages tarballs under stagingDir for the R2
+ * upload step; NO tracked file is written on any path through this function. Failures are
+ * collected so one run reports every problem, then thrown — the workflow stops before any
+ * external write.
+ */
+function verifyForPublish(opts: VerifyForPublishOpts): PublishStepResult {
+  const {
+    loaded,
+    alreadyPublished,
+    skippedDelisted,
+    dryRun,
+    ledgerPath,
+    indexPath,
+    sidecarPath = SIDECAR_PATH,
+    stagingDir = STAGING_DIR,
+    packFn = defaultPack,
+  } = opts;
+  const problems: string[] = [];
+  const sidecar = readSidecar(sidecarPath);
+
+  // 1) Every workspace version must already be ledgered AND sidecar'd — that was the version
+  //    PR's job; a miss means the tag was cut on a commit without (or before) the version PR.
+  for (const { manifest } of loaded) {
+    const key = `${manifest.id}@${manifest.version}`;
+    if (!alreadyPublished.has(key)) {
+      problems.push(
+        `${key}: not in the ledger — the tagged commit does not include its version PR`,
+      );
+    }
+    if (sidecar.tarballs[key] === undefined) {
+      problems.push(
+        `${key}: no tarballs.json row — the version PR did not record it`,
+      );
+    }
+  }
+
+  // 2) index.json must be a byte-identical rebuild of the ledger. Same proof as ci.yml's
+  //    registry-index check (already green on the version commit) — re-run here so a manual
+  //    publish dispatch is self-contained rather than trusting run ordering.
+  const rebuilt = Buffer.from(buildIndexFromLedgerFile(ledgerPath));
+  const onDisk = existsSync(indexPath)
+    ? readFileSync(indexPath)
+    : Buffer.alloc(0);
+  if (!rebuilt.equals(onDisk)) {
+    problems.push(
+      `index.json is not a byte-identical rebuild of the ledger at ${ledgerPath}`,
+    );
+  }
+
+  if (problems.length > 0) {
+    throw new Error(
+      `publish-mode verification failed (fix: merge a fresh version PR and cut the tag on its merge commit):\n  - ${problems.join("\n  - ")}`,
+    );
+  }
+
+  if (dryRun) {
+    process.stdout.write(
+      `registry/ci-publish-step: publish dry-run — ledger/sidecar/index consistent; would re-pack + hash-verify + stage ${loaded.length} tarball(s)\n`,
+    );
+    return {
+      appended: 0,
+      skippedExisting: 0,
+      skippedDelisted,
+      wouldAppend: 0,
+      tarballsRecorded: 0,
+      verifiedStaged: 0,
+    };
+  }
+
+  // 3) Re-pack at the tagged source and require byte-equality with the recorded row. `bun pm
+  //    pack` is byte-deterministic for identical source bytes (mtimes are normalized), so a
+  //    mismatch means the tagged tree is NOT the source the version PR hashed — stop before any
+  //    external write. The R2 upload step then skips objects that already exist, so re-verified
+  //    old versions are never re-uploaded (rerun-safe, never-overwrite — ADR-0325 point 5).
+  // ponytail: rows are verified against a re-pack under the PINNED bun (1.3.14 everywhere). If a
+  // future bun bump changes the pack byte format, old unchanged versions will fail loudly here;
+  // the upgrade path is a one-off operator re-record of affected rows, not a silent skip.
+  const mismatches: string[] = [];
+  let staged = 0;
+  for (const { manifest, packageDir } of loaded) {
+    const key = `${manifest.id}@${manifest.version}`;
+    const row = sidecar.tarballs[key] as TarballDist; // presence proven in (1)
+    const slug = manifest.id.slice("@caisson/".length);
+    const bytes = packFn(packageDir, slug, manifest.version, stagingDir);
+    const dist = computeTarballDist(bytes, slug, manifest.version);
+    if (
+      dist.shasum !== row.shasum ||
+      dist.integrity !== row.integrity ||
+      dist.size !== row.size
+    ) {
+      mismatches.push(
+        `${key}: packed ${dist.shasum} (${dist.size}B) != recorded ${row.shasum} (${row.size}B)`,
+      );
+      continue;
+    }
+    staged++;
+    process.stdout.write(
+      `registry/ci-publish-step: verified ${key} — packed bytes match the recorded row; staged ${row.key}\n`,
+    );
+  }
+  if (mismatches.length > 0) {
+    throw new Error(
+      `publish-mode tarball verification failed — the tagged tree does not reproduce the recorded bytes (fix: merge a fresh version PR and cut the tag on its merge commit):\n  - ${mismatches.join("\n  - ")}`,
+    );
+  }
+  return {
+    appended: 0,
+    skippedExisting: 0,
+    skippedDelisted,
+    wouldAppend: 0,
+    tarballsRecorded: 0,
+    verifiedStaged: staged,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Core step logic
 // ---------------------------------------------------------------------------
 
 /**
- * Scan workspace manifests, compare against the on-disk ledger, and — in live mode — append
- * new (id, version) pairs + rebuild index.json. In dry-run mode reports planned actions only;
- * no file is written.
+ * Scan workspace manifests, compare against the on-disk ledger, and — in version mode (default,
+ * live) — append new (id, version) pairs + rebuild index.json + pack/record sidecar rows. In
+ * publish mode (ADR-0325), verify + stage only (see verifyForPublish). In dry-run mode reports
+ * planned actions only; no file is written.
  */
 export async function runPublishStep(
   opts: PublishStepOpts,
@@ -406,6 +575,7 @@ export async function runPublishStep(
     sha,
     publishedAt,
     dryRun,
+    mode = "version",
     ledgerPath = LEDGER_PATH,
     indexPath = INDEX_PATH,
     packagesDir = DEFAULT_PACKAGES_DIR,
@@ -416,7 +586,7 @@ export async function runPublishStep(
 
   const label = dryRun ? "[dry-run]" : "[live]";
   process.stdout.write(
-    `registry/ci-publish-step: ${label} run=${runId || "??"} sha=${sha.slice(0, 7) || "??"} at=${publishedAt || "??"}\n`,
+    `registry/ci-publish-step: ${label} mode=${mode} run=${runId || "??"} sha=${sha.slice(0, 7) || "??"} at=${publishedAt || "??"}\n`,
   );
 
   // Parse the existing ledger to identify already-recorded (id@version) pairs and the delisted ids
@@ -480,6 +650,22 @@ export async function runPublishStep(
     }
   }
 
+  // ADR-0325 publish mode: the tagged tree must already BE the release — verify + stage,
+  // never write. Handles its own dry-run (metadata checks run; packing is skipped).
+  if (mode === "publish") {
+    return verifyForPublish({
+      loaded,
+      alreadyPublished,
+      skippedDelisted,
+      dryRun,
+      ledgerPath,
+      indexPath,
+      sidecarPath,
+      stagingDir,
+      packFn,
+    });
+  }
+
   if (dryRun) {
     process.stdout.write(
       toAppend.length > 0
@@ -495,6 +681,7 @@ export async function runPublishStep(
       skippedDelisted,
       wouldAppend: toAppend.length,
       tarballsRecorded: 0,
+      verifiedStaged: 0,
     };
   }
 
@@ -502,6 +689,8 @@ export async function runPublishStep(
   // new; a steady-state run leaves ledger/index byte-identical). fail-closed: appendLedger throws
   // before any write on an invalid manifest.
   if (toAppend.length > 0) {
+    // "<run-id>@<base-sha>" — the SHA the version PR was cut FROM, not the release SHA (a commit
+    // cannot contain its own hash; the release tag anchors the final state). See PublishStepOpts.sha.
     const gateAttestation = `${runId}@${sha}`;
     for (const { manifest } of toAppend) {
       appendLedger({ manifest, publishedAt, gateAttestation, ledgerPath });
@@ -536,6 +725,7 @@ export async function runPublishStep(
     skippedDelisted,
     wouldAppend: 0,
     tarballsRecorded,
+    verifiedStaged: 0,
   };
 }
 
@@ -552,6 +742,7 @@ function parseCliArgs(): Omit<
   let sha = "";
   let publishedAt = "";
   let dryRun = true; // safe default: never publish unless the caller explicitly says "false"
+  let mode: "version" | "publish" = "version";
 
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
@@ -569,10 +760,19 @@ function parseCliArgs(): Omit<
     } else if (flag === "--dry-run" && val !== undefined) {
       dryRun = val !== "false";
       i++;
+    } else if (flag === "--mode" && val !== undefined) {
+      if (val !== "version" && val !== "publish") {
+        process.stderr.write(
+          `registry/ci-publish-step: fatal: --mode must be "version" or "publish", got "${val}"\n`,
+        );
+        process.exit(1);
+      }
+      mode = val;
+      i++;
     }
   }
 
-  return { runId, sha, publishedAt, dryRun };
+  return { runId, sha, publishedAt, dryRun, mode };
 }
 
 if (import.meta.main) {
