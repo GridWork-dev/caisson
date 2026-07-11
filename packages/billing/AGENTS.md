@@ -5,12 +5,12 @@ The OPEN billing seam (Apache-2.0): raw-body HMAC webhook signature verification
 hand-rolled), the provider-agnostic `BillingProvider` port + every provider's config TYPE, and the typed
 `DomainBillingEvent` schema. The checkout-driver FACTORIES (`createStripeBilling` / `createPaddleBilling`
 / `createLemonSqueezyBilling` / `createPolarBilling`), the provider→`DomainBillingEvent` parsers, and the
-webhook idempotency live in the commercial `@caisson/billing-orchestration` (carve, ADR-0249 G3).
+webhook idempotency live in the commercial `@caisson/billing-orchestration` (carve).
 
 ## Key surface
 
 - Webhook handlers MUST pass the raw request body (not parsed JSON) to the HMAC verifier.
-- The `BillingProvider` interface is the only surface editions touch; no provider-specific type
+- The `BillingProvider` interface is the only surface bundles touch; no provider-specific type
   escapes the seam — every driver maps onto the same `DomainBillingEvent` union.
 - The port + config types + `DomainBillingEvent` are OPEN contracts so the free-floor demo (apps/base)
   typechecks against open code only; the drivers that construct them are commercial.

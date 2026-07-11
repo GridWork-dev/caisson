@@ -75,6 +75,22 @@ const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
     "packages/cli/src/meter.integration.test.ts",
     "exercises the debit-before-spend seam against the real COMMERCIAL @caisson/credits ledger (a dev-only fixture behind the DebitFn injection port); credits is excluded from the open mirror",
   ],
+  [
+    "packages/registry-schema/src/entitlement-expansion.test.ts",
+    "reads the repo-root registry/index.json fixture, which does not ship in the mirror (W1 sandbox finding L-A1: ENOENT failed the mirror's own `bun run test`)",
+  ],
+  [
+    "packages/registry-schema/src/bundle-manifests.test.ts",
+    "dynamically imports the COMMERCIAL bundle packages' manifest.ts files (provenance, ai-production, local-first, agentic-dev, everything) — none exist in the open mirror (W1 sandbox finding L-A2)",
+  ],
+  [
+    "packages/cli/src/cli.test.ts",
+    "its end-to-end describe block loads the repo-root registry/index.json (the CI-built private-monorepo artifact), which does not ship in the mirror — three e2e tests ENOENT/exit-1 there (W1 sandbox re-validation). The argv/TTY/sample coverage stays enforced in the private repo on every commit.",
+  ],
+  [
+    "packages/cli/src/framework-next.compose.test.ts",
+    "the exit gate typechecks the generated Next tree against @caisson/* base packages resolved from cli's node_modules — the mirror installs those under the renamed @caisson-sh/* scope, so resolution fails by construction (the generated tree's @caisson/* imports are buyer-registry namespace, correctly left unrenamed). Enforced in the private repo (W1 sandbox re-validation).",
+  ],
 ]);
 
 /** Commercial devDependencies stripped from a mirrored package.json (keyed by ORIGINAL @caisson
@@ -152,13 +168,20 @@ interface FoundPkg {
 function parseArgs(argv: readonly string[]): {
   out: string;
   generatedAt: string;
+  allowMissingExcludes: boolean;
 } {
   let out = "./mirror-out";
   let generatedAt = "";
+  // Historical-backfill escape hatch for the missing-excluded-test rot-guard. An EXPLICIT CLI flag,
+  // never an ambient env var: a sticky `CAISSON_MIRROR_ALLOW_MISSING_EXCLUDES=1` in an operator
+  // shell would silently downgrade the FATAL to a warning on a later HEAD/CI sync, letting a renamed
+  // excluded test re-enter the mirror. A flag applies only to the run that passes it.
+  let allowMissingExcludes = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--out") out = argv[++i] ?? out;
     else if (a === "--generated-at") generatedAt = argv[++i] ?? "";
+    else if (a === "--allow-missing-excludes") allowMissingExcludes = true;
   }
   if (!generatedAt) {
     console.error(
@@ -166,7 +189,7 @@ function parseArgs(argv: readonly string[]): {
     );
     process.exit(1);
   }
-  return { out, generatedAt };
+  return { out, generatedAt, allowMissingExcludes };
 }
 
 function readJson(path: string): PkgJson {
@@ -205,14 +228,24 @@ function rewriteImportSpecifiers(code: string): string {
   );
 }
 
-/** Rewrite EVERY bare `@caisson/<slug>` mention → `@caisson-sh/<slug>`, regardless of surrounding
- *  syntax — broader than `rewriteImportSpecifiers`'s import/require-keyword guard. Used for doc
- *  prose (README/CHANGELOG/AGENTS.md bodies, task 3.1) where a scope mention is never in import
- *  position (a CHANGELOG "Updated dependencies" line, a README title/code-fence comment). */
-function rewriteProseMentions(text: string): string {
-  return text.replace(
-    /@caisson\/([\w.-]+)/g,
-    (_m, rest) => `${NEW_SCOPE}${rest}`,
+/** Rewrite bare `@caisson/<slug>` mentions → `@caisson-sh/<slug>` — but ONLY for slugs in the
+ *  exported open set. Broader than `rewriteImportSpecifiers`'s import/require-keyword guard; used
+ *  for doc prose (README/CHANGELOG/AGENTS.md bodies, task 3.1) where a scope mention is never in
+ *  import position. Scope-aware since the W1 sandbox docs audit (2026-07-10): the old blanket
+ *  rename also converted COMMERCIAL product mentions (`@caisson/compliance`, `@caisson/credits`,
+ *  `@caisson/ai-kit`, registry `--module` ids) into `@caisson-sh/*` names that will never exist on
+ *  public npm — materially misleading a mirror reader. A commercial mention stays `@caisson/*`,
+ *  which is exactly the namespace the commercial registry serves. */
+export function rewriteProseMentions(
+  text: string,
+  openSlugs: ReadonlySet<string>,
+): string {
+  // Slugs are kebab-case `[\w-]+` (no internal dots — verified across the catalog). A `.` in the
+  // class swallowed a trailing sentence period (`@caisson/kernel.` → rest `kernel.`), missing the
+  // openSlugs allowlist and shipping the mention UN-renamed at `@caisson/*` (third-party on public
+  // npm). Excluding `.` stops the capture at the slug so the period stays as prose punctuation.
+  return text.replace(/@caisson\/([\w-]+)/g, (m, rest: string) =>
+    openSlugs.has(rest) ? `${NEW_SCOPE}${rest}` : m,
   );
 }
 
@@ -394,12 +427,15 @@ export function sanitizeSourceComments(code: string): string {
   );
 }
 
-function rewriteProseFiles(destDir: string): void {
+function rewriteProseFiles(
+  destDir: string,
+  openSlugs: ReadonlySet<string>,
+): void {
   for (const name of PACKAGE_PROSE_FILES) {
     const abs = join(destDir, name);
     if (!existsSync(abs)) continue;
     const before = readFileSync(abs, "utf8");
-    const after = sanitizeAdrCitations(rewriteProseMentions(before));
+    const after = sanitizeAdrCitations(rewriteProseMentions(before, openSlugs));
     if (after !== before) writeFileSync(abs, after);
   }
 }
@@ -416,21 +452,27 @@ function rewriteProseFiles(destDir: string): void {
  *  dependency, and doc/comment prose) is the npm scope, so a blanket rewrite is correct here. The
  *  `"name": "{{projectName}}"` template placeholder never matches the scope pattern, so it needs
  *  no special-casing. */
-function rewriteCliTemplates(outDir: string): void {
+function rewriteCliTemplates(
+  outDir: string,
+  openSlugs: ReadonlySet<string>,
+): void {
   const sampleDir = join(outDir, "packages/cli/templates/eu-ai-act-sample");
   if (!existsSync(sampleDir)) return;
-  rewriteTreeBlanket(sampleDir);
+  rewriteTreeBlanket(sampleDir, openSlugs);
 }
 
-function rewriteTreeBlanket(dir: string): void {
+function rewriteTreeBlanket(dir: string, openSlugs: ReadonlySet<string>): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const abs = join(dir, entry.name);
     if (entry.isDirectory()) {
-      rewriteTreeBlanket(abs);
+      rewriteTreeBlanket(abs, openSlugs);
       continue;
     }
     const before = readFileSync(abs, "utf8");
-    const after = rewriteProseMentions(rewriteImportSpecifiers(before));
+    const after = rewriteProseMentions(
+      rewriteImportSpecifiers(before),
+      openSlugs,
+    );
     if (after !== before) writeFileSync(abs, after);
   }
 }
@@ -514,7 +556,9 @@ function copyPkg(srcDir: string, destDir: string): void {
 
 function main(): void {
   const repoRoot = resolve(import.meta.dir, "..");
-  const { out, generatedAt } = parseArgs(Bun.argv.slice(2));
+  const { out, generatedAt, allowMissingExcludes } = parseArgs(
+    Bun.argv.slice(2),
+  );
   const outDir = resolve(repoRoot, out);
 
   const sourceRootPkg = readJson(join(repoRoot, "package.json")) as PkgJson & {
@@ -551,6 +595,10 @@ function main(): void {
   }
   const selected = [...apachePkgs, ...supportPkgs];
   const exported = new Set(selected.map((p) => p.json.name)); // ORIGINAL @caisson names
+  // Bare slugs of the open set — the prose rename's allowlist (commercial mentions stay @caisson/*).
+  const openSlugs = new Set(
+    [...exported].map((n) => n.slice(OLD_SCOPE.length)),
+  );
 
   // --- self-containment gate: no selected package may depend on a commercial package ---
   const violations: string[] = [];
@@ -618,8 +666,8 @@ function main(): void {
     // scope-rename: import specifiers in the package's own source, tsconfig extends, root package.json
     rewriteImportsInTree(destDir);
     rewriteTsconfigRefs(destDir);
-    rewriteProseFiles(destDir);
-    if (p.json.name === "@caisson/cli") rewriteCliTemplates(outDir);
+    rewriteProseFiles(destDir, openSlugs);
+    if (p.json.name === "@caisson/cli") rewriteCliTemplates(outDir, openSlugs);
     const restamp = BUILD_SUPPORT.has(p.json.name);
     writeFileSync(
       join(destDir, "package.json"),
@@ -648,10 +696,20 @@ function main(): void {
     (rel) => !excludedApplied.some((e) => e.file === rel),
   );
   if (missedExcludes.length) {
-    console.error(
-      `FATAL: excluded test file(s) not found (source moved?): ${missedExcludes.join(", ")}`,
-    );
-    process.exit(1);
+    // Rot-guard for HEAD syncs (a renamed test would silently re-enter the mirror). Historical
+    // backfill runs (ADR-0318 F2) legitimately predate some excluded tests — the explicit
+    // `--allow-missing-excludes` flag downgrades to a warning there; the per-milestone gate
+    // battery still applies. Flag, not env: it cannot leak in from a sticky operator shell.
+    if (allowMissingExcludes) {
+      console.warn(
+        `WARN: excluded test file(s) not found (historical tree?): ${missedExcludes.join(", ")}`,
+      );
+    } else {
+      console.error(
+        `FATAL: excluded test file(s) not found (source moved?): ${missedExcludes.join(", ")}`,
+      );
+      process.exit(1);
+    }
   }
 
   // root LICENSE (Apache-2.0) — standard for a public repo; per-package LICENSEs remain too.
@@ -717,6 +775,20 @@ function main(): void {
     ["node_modules/", "dist/", ".turbo/", "bun.lock", "*.tsbuildinfo", ""].join(
       "\n",
     ),
+  );
+
+  // Root bunfig.toml — same dist-ignore as the source repo (CAISSON-12): a bare `bun test` from
+  // the mirror root must not discover stale compiled dist/**.test.js alongside src/. The
+  // tooling/testing dist-test-shadow test asserts this file exists here too (W1 re-validation).
+  writeFileSync(
+    join(outDir, "bunfig.toml"),
+    [
+      "[test]",
+      "# A bare `bun test` recursively discovers every *.test.ts/js under cwd, including stale",
+      "# compiled dist/ output left by a prior `bun run build` — keep discovery on src/.",
+      'pathIgnorePatterns = ["**/dist/**"]',
+      "",
+    ].join("\n"),
   );
 
   // bun.lock-free install note.

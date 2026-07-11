@@ -79,7 +79,7 @@ describe("eu-ai-act-sample (ADR-0095 W3) — free Apache-2.0 evidence-path sampl
     );
   });
 
-  test("package.json is Apache-2.0, names the project, and depends on NO commercial package", () => {
+  test("package.json is Apache-2.0, names the project, and depends on NO commercial package", async () => {
     const files = materializeSample("eu-ai-act-sample", "acme-eval");
     const pkg = files.find((f) => f.path === "package.json");
     const parsed = JSON.parse(pkg?.content ?? "{}") as {
@@ -94,7 +94,22 @@ describe("eu-ai-act-sample (ADR-0095 W3) — free Apache-2.0 evidence-path sampl
     // export-public-mirror.ts rewriteCliTemplates step rewrites the ON-DISK copy of this same
     // template to @caisson-sh/kernel for buyers installing from public npm; the source template
     // itself stays @caisson/kernel, so this expectation is unaffected by that rewrite.
-    expect(parsed.dependencies).toEqual({ "@caisson/kernel": "^0.1.0" });
+    //
+    // The pin must track the REAL workspace kernel version (W1 sandbox finding L-C4, 2026-07-10:
+    // the template shipped a hardcoded ^0.1.0 against kernel 0.4.2 — an unsatisfiable range that
+    // broke the flagship no-license sample's `bun install`). Reading the version here makes
+    // staleness LOUD: any kernel version bump (including a changeset version cut) fails this test
+    // until the template pin rides along in the same change.
+    const kernelVersion = (
+      JSON.parse(
+        await Bun.file(
+          join(import.meta.dir, "../../kernel/package.json"),
+        ).text(),
+      ) as { version: string }
+    ).version;
+    expect(parsed.dependencies).toEqual({
+      "@caisson/kernel": `^${kernelVersion}`,
+    });
   });
 
   test("the LICENSE file is the Apache-2.0 text", () => {

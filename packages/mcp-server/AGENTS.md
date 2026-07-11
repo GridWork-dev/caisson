@@ -1,6 +1,6 @@
 # @caisson/mcp-server — setup-coach fallback (coach-by-docs)
 
-The buyer MCP ships an **agent-assisted setup coach** (ADR-0076 seam + ADR-0011): four
+The buyer MCP ships an **agent-assisted setup coach**: four
 entitlement-gated, secrets-safe tools that walk an `ai-kit` buyer from "no AI config" to a
 validated `forge.config`. When a buyer has **no MCP agent** wired (no Claude Code / no MCP
 client), this document is the manual fallback: the same flow, done by hand.

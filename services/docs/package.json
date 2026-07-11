@@ -16,6 +16,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
     "test": "bun test ./src",
+    "test:live": "bun test ./live",
     "start": "bun run src/server.ts"
   },
   "dependencies": {

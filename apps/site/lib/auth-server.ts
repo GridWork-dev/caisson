@@ -21,6 +21,7 @@
 // SESSION cookie is pinned to Strict.
 import { Pool } from "pg";
 import { betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { magicLink } from "better-auth/plugins";
 import {
   type CaptureEmailer,
@@ -29,9 +30,67 @@ import {
   createResendEmailer,
 } from "@caisson/email";
 import { resolveSocialProviders } from "./auth-config.ts";
+import { SESSION_HINT_COOKIE_NAME } from "./session-hint-cookie.ts";
+
+export { SESSION_HINT_COOKIE_NAME } from "./session-hint-cookie.ts";
 
 /** The prefixed session cookie name the security floor pins (`${cookiePrefix}.session_token`). */
 export const SESSION_COOKIE_NAME = "caisson.session_token";
+
+/**
+ * `SESSION_HINT_COOKIE_NAME` (CAISSON-81, ADR-0315) is the server-minted session-HINT cookie.
+ * `SESSION_COOKIE_NAME` above is `HttpOnly` (by design — no client JS should ever read the real
+ * session token), which means the owned-items provider (`components/owned-items-provider.tsx`)
+ * can never use it to skip its fetch for signed-out visitors: `document.cookie` reads it as
+ * absent for EVERYONE, signed-in or not. This cookie carries no session material (just `"1"`) and
+ * is deliberately NOT HttpOnly so client JS can read its presence — Secure + SameSite=Strict still
+ * apply since it's still a same-origin auth signal worth protecting from cross-site reuse. It is a
+ * fail-open HINT, not a trust boundary: every server route still resolves the real session via
+ * `getSession()`.
+ *
+ * Wired as a top-level `hooks.after` (NOT `databaseHooks.session.*`, which was tried first and
+ * discarded — its `context` is scoped to the internal adapter-write's OWN endpoint context, which
+ * measurably does NOT survive into the final HTTP response: verified by driving a real sign-in
+ * through `createAuth()` and inspecting the response's Set-Cookie headers). `hooks.after` runs on
+ * EVERY request with the actual outer endpoint's `ctx`, whose `ctx.setCookie` mutations DO land in
+ * the final response. `ctx.context.newSession` is better-auth's own per-request signal (set by
+ * `setSessionCookie`, `cookies/index.mjs`) that a session cookie was just (re-)established THIS
+ * request — true for every sign-in method (magic link, password, OAuth) AND for better-auth's own
+ * updateAge-triggered session refresh (`api/routes/session.mjs`). Riding the refresh case means a
+ * session that predates this cookie (an already-signed-in buyer who never re-authenticates) still
+ * picks up the hint on its next natural refresh — normally within `session.updateAge` (default 1
+ * day) of any authed request — without forcing a re-sign-in. Mint always uses
+ * `newSession.session.expiresAt`, so the hint's expiry can never drift from the real cookie's.
+ * Sign-out (`POST /sign-out`, `api/routes/sign-out.ts`) deletes the session but does NOT go
+ * through `setSessionCookie`, so it's matched by path instead, clearing the hint alongside the
+ * real session cookie it deletes.
+ */
+const sessionHintCookieHook = createAuthMiddleware(async (ctx) => {
+  if (ctx.context.newSession) {
+    // Unconditionally Secure (unlike the real session cookie, which only forces it in production —
+    // see `advanced.cookies.session_token` below): this cookie carries no secret, so there's no
+    // production/dev split to preserve, and modern browsers exempt `localhost` from the
+    // https-only restriction on Secure cookies, so local dev keeps working.
+    ctx.setCookie(SESSION_HINT_COOKIE_NAME, "1", {
+      secure: true,
+      sameSite: "strict",
+      httpOnly: false,
+      path: "/",
+      expires: ctx.context.newSession.session.expiresAt,
+    });
+  } else if (ctx.path === "/sign-out") {
+    // Fail-open in the other direction: a stray hint cookie left behind by a client that ignored
+    // this Set-Cookie just costs one wasted `/api/cart/owned` fetch (the provider's own fail-open
+    // contract), never a false "owned" marking.
+    ctx.setCookie(SESSION_HINT_COOKIE_NAME, "", {
+      secure: true,
+      sameSite: "strict",
+      httpOnly: false,
+      path: "/",
+      maxAge: 0,
+    });
+  }
+});
 
 /**
  * Resolve the magic-link transport: the Resend driver when `RESEND_API_KEY` is configured, an
@@ -106,6 +165,9 @@ export function createAuth(params: {
       autoSignInAfterVerification: true,
     },
     socialProviders: resolveSocialProviders(process.env),
+    // CAISSON-81 (ADR-0315): mint/refresh the non-HttpOnly hint cookie alongside every real
+    // session create/refresh, clear it on sign-out. See `sessionHintCookieHook` above.
+    hooks: { after: sessionHintCookieHook },
     advanced: {
       cookiePrefix: "caisson",
       cookies: {

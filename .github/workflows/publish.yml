@@ -4,9 +4,9 @@ name: publish
 # reference a job defined in another file (an unresolvable `needs:` fails the whole workflow at
 # parse time: "Job depends on unknown job"). Now that those three jobs live in ci.yml and this job
 # lives here, the `needs:` is intentionally DROPPED; the ordering is enforced structurally instead —
-# this workflow triggers on `push: branches: [main]`, which only fires after a PR has already merged
-# to main, which only happens after ci.yml's three required checks passed on that PR. Main-only
-# (ADR-0021).
+# this workflow only runs via workflow_dispatch on main (the release train's leg 1, or a manual
+# operator dispatch), and the train's readiness job has already verified ci.yml's required checks
+# green on the release SHA before dispatching. Main-only (ADR-0021).
 #
 # Buyer delivery = self-hosted npm registry (registry.caisson.sh, ADR-0223). The dead GitHub-Packages
 # leg (`changeset publish` + the ~/.npmrc `_authToken` write) is RETIRED here: buyers install commercial
@@ -25,12 +25,14 @@ name: publish
 # P5-25: GHEC provenance attestation = DECLINED. Lightweight provenance is already embedded in
 #        each LedgerEntry's gateAttestation field ("<run-id>@<commit-sha>"); a full SLSA/GHEC
 #        attestation blob is deferred to a post-P5 hardening pass.
+# TRIGGER: the release train (ADR-0318 R1/R2 — release-train.yml dispatches this as leg 1 with
+# dry_run=false) or a manual dispatch. The per-main-push trigger is RETIRED (Kickoff M, W4): every
+# push run was a dry-run no-op by construction, and the metadata-vs-tarball drift it papered over
+# (index republished in-repo, tarballs never uploaded) is exactly what the release train closes.
 on:
-  push:
-    branches: [main]
   # One-shot operator lever: a manual dispatch with dry_run=false runs ONE live consume
-  # (changeset version + ledger/index + R2 tarball upload + commit-back). Push-triggered runs
-  # stay dry-run — the hardcoded-default below only flips per-dispatch, never latches.
+  # (changeset version + ledger/index + R2 tarball upload + commit-back). Dispatches without the
+  # input stay dry-run — the hardcoded-default below only flips per-dispatch, never latches.
   workflow_dispatch:
     inputs:
       dry_run:

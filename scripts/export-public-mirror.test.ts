@@ -1,9 +1,42 @@
 import { describe, expect, test } from "bun:test";
 import {
   resolveCatalogSpec,
+  rewriteProseMentions,
   sanitizeAdrCitations,
   sanitizeSourceComments,
 } from "./export-public-mirror.ts";
+
+describe("rewriteProseMentions", () => {
+  const open = new Set(["kernel", "ai-config", "license-verify"]);
+
+  test("renames an open mention mid-sentence", () => {
+    expect(rewriteProseMentions("use @caisson/kernel here", open)).toBe(
+      "use @caisson-sh/kernel here",
+    );
+  });
+
+  test("renames a sentence-final open mention WITHOUT swallowing the period", () => {
+    // The bug: `[\w.-]+` captured `kernel.`, missed the allowlist, shipped @caisson/kernel. as-is.
+    expect(rewriteProseMentions("built on @caisson/kernel.", open)).toBe(
+      "built on @caisson-sh/kernel.",
+    );
+    expect(rewriteProseMentions("see @caisson/license-verify.", open)).toBe(
+      "see @caisson-sh/license-verify.",
+    );
+  });
+
+  test("leaves a commercial (non-open) mention at @caisson/*", () => {
+    expect(rewriteProseMentions("needs @caisson/compliance.", open)).toBe(
+      "needs @caisson/compliance.",
+    );
+  });
+
+  test("preserves the hyphen inside a kebab slug", () => {
+    expect(rewriteProseMentions("@caisson/ai-config, then done", open)).toBe(
+      "@caisson-sh/ai-config, then done",
+    );
+  });
+});
 
 describe("sanitizeAdrCitations", () => {
   test("strips a single bare ADR-id parenthetical", () => {

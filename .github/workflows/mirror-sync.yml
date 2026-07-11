@@ -1,44 +1,26 @@
 name: mirror-sync
-# Snapshot-syncs the open (Apache-2.0) base into the public mirror repo caisson-sh/caisson-oss.
+# Append-syncs the open (Apache-2.0) base into the public mirror repo caisson-sh/caisson-oss.
 # Runs scripts/export-public-mirror.ts (the exporter — package selection, @caisson-sh/* scope
-# rename, self-containment gate) then force-pushes the generated mirror-out/ tree as a SINGLE
-# commit to the mirror's main branch.
+# rename, self-containment gate), then clones the mirror, replaces its working tree with the
+# fresh export, and pushes ONE new commit ("chore: mirror sync from <source sha>") on top.
 #
-# SNAPSHOT MODEL (deliberate): the mirror carries no commit history of its own — each sync
-# replaces main with one fresh commit ("chore: mirror sync from <source sha>"). History,
-# blame, and PRs live in THIS (private) repo; the mirror is a generated read-only artifact
-# (see scripts/mirror-assets/CONTRIBUTING.md). A force-push is therefore correct, not sloppy —
-# a real multi-commit history on the mirror would imply a development surface it isn't.
+# APPEND-ONLY MODEL (ADR-0318 F2/F3 — supersedes the original force-push snapshot model): the
+# mirror's history was backfilled once at the 2026-07-10 cut-over (gate-passing exporter runs at
+# real historical SHAs, committed at cut-over — NEVER backdated; the real milestone date lives in
+# the commit message only) and every sync since APPENDS. Never force-push here again — a rewrite
+# would break clones/stars and violate the append-only lock. Development, blame, and PRs still
+# live in THIS (private) repo; the mirror remains a generated read-only artifact (see
+# scripts/mirror-assets/CONTRIBUTING.md).
 #
 # STAYS INERT UNTIL ARMED: MIRROR_PUSH_TOKEN (a fine-grained PAT scoped to contents:write on
-# caisson-sh/caisson-oss ONLY) is not yet a repo secret. The guard step reads it and skips every
-# real step when absent, so the job runs as a GREEN no-op — the mirror repo may not exist yet.
-# It self-enables once the operator adds the secret (same posture as deploy-railway.yml).
+# caisson-sh/caisson-oss ONLY) gates every real step via the guard below — absent token, the job
+# runs as a GREEN no-op (same posture as deploy-railway.yml).
+# TRIGGER: the release train (ADR-0318 R1/R2 — release-train.yml dispatches this as leg 2) or a
+# manual dispatch. The per-main-push trigger is RETIRED (Kickoff M, W4): under the append-only
+# mirror model a sync per push would mint a mirror commit per merge; the mirror advances per
+# RELEASE instead.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "packages/ai-config/**"
-      - "packages/auth/**"
-      - "packages/billing/**"
-      - "packages/cli/**"
-      - "packages/credits/**"
-      - "packages/email/**"
-      - "packages/jobs/**"
-      - "packages/kernel/**"
-      - "packages/license-verify/**"
-      - "packages/mcp-server/**"
-      - "packages/migrate/**"
-      - "packages/observability/**"
-      - "packages/registry-schema/**"
-      - "packages/tenancy-rls/**"
-      - "packages/ui/**"
-      - "packages/testing/**"
-      - "tooling/tsconfig/**"
-      - "tooling/eslint-config/**"
-      - "scripts/export-public-mirror.ts"
-      - "scripts/mirror-assets/**"
 
 permissions:
   contents: read
@@ -84,17 +66,26 @@ jobs:
           bun scripts/export-public-mirror.ts \
             --out mirror-out \
             --generated-at "$(git log -1 --format=%cs)"
-      - name: push snapshot to caisson-sh/caisson-oss (force, single commit)
+      - name: append sync commit to caisson-sh/caisson-oss (never force)
         if: steps.guard.outputs.armed == 'true'
         env:
           MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
         run: |
           set -e
           SOURCE_SHA="$(git rev-parse --short HEAD)"
-          cd mirror-out
-          git init -q -b main
+          git clone --depth 1 --branch main -q \
+            "https://x-access-token:${MIRROR_PUSH_TOKEN}@github.com/caisson-sh/caisson-oss.git" mirror-clone
+          # Replace the clone's working tree with the fresh export; .git stays, so the new
+          # tree lands as ONE appended commit on the existing history (ADR-0318 append-only).
+          find mirror-clone -mindepth 1 -maxdepth 1 -not -name .git -exec rm -rf {} +
+          cp -r mirror-out/. mirror-clone/
+          cd mirror-clone
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -q -m "chore: mirror sync from ${SOURCE_SHA}"
-          git push --force "https://x-access-token:${MIRROR_PUSH_TOKEN}@github.com/caisson-sh/caisson-oss.git" HEAD:main
+          if git diff --cached --quiet; then
+            echo "mirror already current — nothing to sync"
+          else
+            git commit -q -m "chore: mirror sync from ${SOURCE_SHA}"
+            git push origin HEAD:main
+          fi
