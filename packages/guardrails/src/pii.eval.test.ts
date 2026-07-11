@@ -7,17 +7,19 @@
 // `expected` is a `.strict()` Zod shape per grader, so a "must match" case and a "must not contain"
 // case can't share one dataset with two scorers pointed at the same `expected` object.
 //
-//   - pii-catches   (regexGrader)    — PII that MUST get redacted: an obvious multi-kind case (one
-//                                      shot at all four detector classes) + a code-fenced email (a
-//                                      real risk shape — users paste logs/snippets into a compliance
-//                                      assistant).
-//   - pii-preserves (injectionGrader, repurposed as a generic "output must not contain" check) — PII
-//                                      that must NOT get redacted: clean prose (no false positive), a
-//                                      Luhn-invalid card-shaped number (pins the Luhn validation
-//                                      branch), and a Unicode-homoglyph-obfuscated email (pins the
-//                                      detector's CURRENT miss on non-ASCII obfuscation — a known
-//                                      limitation, not a guarantee; closing that gap later is a
-//                                      deliberate baseline update, not a silent regression).
+//   - pii-catches   (regexGrader)    — PII that MUST get redacted: a multi-kind case (one shot at
+//                                      all four detector classes), a code-fenced email (users paste
+//                                      logs/snippets into a compliance assistant), and per-class
+//                                      format variants that pin each detector's shape coverage
+//                                      (parenthesized/country-code phones, dash-separated and
+//                                      15-digit Luhn-valid cards, plus-tagged subdomain email).
+//   - pii-preserves (injectionGrader, repurposed as a generic "output must not contain" check) —
+//                                      shapes that must NOT get redacted: clean prose (no false
+//                                      positive), Luhn-invalid card-shaped numbers (pins the Luhn
+//                                      branch), a TLD-less email shape, and two KNOWN GAPS pinned as
+//                                      current behavior, not guarantees (Unicode-homoglyph email,
+//                                      separator-less 10-digit phone) — closing either later is a
+//                                      deliberate baseline update, not a silent regression.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";

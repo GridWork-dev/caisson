@@ -5,7 +5,7 @@
       "promptVersionId": "00000000-0000-4000-8000-000000000002",
       "promptRef": "guardrails/pii@offline",
       "threshold": 1,
-      "cases": 2,
+      "cases": 8,
       "score": 1,
       "scorers": {
         "catches-pii": 1
@@ -15,7 +15,7 @@
       "promptVersionId": "00000000-0000-4000-8000-000000000002",
       "promptRef": "guardrails/pii@offline",
       "threshold": 1,
-      "cases": 3,
+      "cases": 6,
       "score": 1,
       "scorers": {
         "preserves-clean": 1
