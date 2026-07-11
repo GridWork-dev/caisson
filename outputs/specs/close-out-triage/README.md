@@ -1,6 +1,15 @@
 # Close-out triage specs — 2026-07-10 (I/J/K three-stream close-out)
 
-**Status: LOCKED set (ADR-0315, 2026-07-10) — the picker armed all four; fork outcomes recorded per spec.** Written at the 2026-07-10
+**Status: EXECUTED — set closed 2026-07-11.** All five specs shipped: security-scan triage +
+affiliate production flip + admin cockpit six waves via **Kickoff N** (PR #202, ADR-0316/0320);
+retrieval battery v2 (verdict `outputs/audit/retrieval-battery-v2-2026-07-10.md`, live leg gated
+at release-readiness per ADR-0321) + perf follow-ups (CAISSON-81 session-hint cookie in
+`apps/site/lib/auth-server.ts`, CAISSON-82 NFT excludes in `next.config.ts`) via **Kickoff M**
+(PR #204). The spec files moved to
+[`outputs/archive/specs/close-out-triage/`](../../archive/specs/close-out-triage/) (same
+filenames); this README stays as the set's index.
+
+**Original lock: LOCKED set (ADR-0315, 2026-07-10) — the picker armed all four; fork outcomes recorded per spec.** Written at the 2026-07-10
 three-stream close-out (Kickoff-I perf/mobile · Kickoff-J pricing-gtm verification · Kickoff-K
 security round-2 / PR #200). Every deferred item, non-essential-CI finding, and interrupted
 follow-up from the three streams is triaged into exactly one spec below (or dispositioned in the

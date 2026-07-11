@@ -139,7 +139,7 @@ manual step is the signin.
 ## Phase 5 — In-session decisions (no login, operator judgment)
 
 - [ ] **5.1 EULA polish approval** — the five proposed edits in
-      `outputs/specs/research-response/eula-continuity-polish-2026-07-08.md` (§365(n)
+      `outputs/archive/specs/research-response/eula-continuity-polish-2026-07-08.md` (§365(n)
       successor language the highest-value). Approve/mark up → the clause ships with the
       pricing-terms rework.
 - [ ] **5.2 `feat/comparison-pages` review** — one file, one verified fact; merge or discard.

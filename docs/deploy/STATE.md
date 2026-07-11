@@ -109,7 +109,7 @@ Support-bot booted clean with `[telemetry] OTLP export enabled` and the `#ask-ai
 **Residual (spec-parked):** live hybrid ranking quality is UNVERIFIED — the golden suite runs on
 the FTS floor only, and the first live probe ("how do I install a bundle", k=3) ranked
 bundle pages above `getting-started.mdx`. The battery-v2 re-run owns the verdict:
-`outputs/specs/close-out-triage/SPEC-retrieval-quality-battery-v2.md`.
+`outputs/archive/specs/close-out-triage/SPEC-retrieval-quality-battery-v2.md`.
 
 ---
 
