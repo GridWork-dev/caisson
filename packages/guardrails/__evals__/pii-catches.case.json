@@ -19,7 +19,63 @@
       "input": {
         "text": "Debug log:\n```\nconst contact = \"bob.dev@example.org\";\n```\nPlease check the config above."
       },
-      "expected": { "matches": "\\[EMAIL\\]" }
+      "expected": {
+        "matches": "\\[EMAIL\\]"
+      }
+    },
+    {
+      "id": "phone-parenthesized-area-code",
+      "input": {
+        "text": "Call the auditor at (404) 555-0100 before Friday to schedule the walkthrough."
+      },
+      "expected": {
+        "matches": "\\[PHONE\\]"
+      }
+    },
+    {
+      "id": "phone-country-code-dot-separators",
+      "input": {
+        "text": "Reach the compliance desk at +1 404.555.0100 during business hours."
+      },
+      "expected": {
+        "matches": "\\[PHONE\\]"
+      }
+    },
+    {
+      "id": "ssn-in-prose",
+      "input": {
+        "text": "Employee record shows SSN 078-05-1120 and must be sealed before export."
+      },
+      "expected": {
+        "matches": "\\[SSN\\]"
+      }
+    },
+    {
+      "id": "card-dash-separated-luhn-valid",
+      "input": {
+        "text": "The test charge went to card 4111-1111-1111-1111 as documented in the runbook."
+      },
+      "expected": {
+        "matches": "\\[CREDIT_CARD\\]"
+      }
+    },
+    {
+      "id": "card-amex-15-digit-no-separators",
+      "input": {
+        "text": "Charge posted to 378282246310005 under the corporate account."
+      },
+      "expected": {
+        "matches": "\\[CREDIT_CARD\\]"
+      }
+    },
+    {
+      "id": "email-plus-tag-subdomain",
+      "input": {
+        "text": "Forward all invoices to billing+q3@finance.example.co for reconciliation."
+      },
+      "expected": {
+        "matches": "\\[EMAIL\\]"
+      }
     }
   ]
 }

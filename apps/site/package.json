@@ -10,6 +10,7 @@
     "start": "next start -p 3030",
     "lint": "eslint .",
     "test": "bun test ./lib ./emails ./components",
+    "eval": "bun test ./lib/ask-ai/grounding.eval.test.ts",
     "test:e2e": "bun test ./e2e",
     "test:live": "bun test ./live",
     "remotion:render": "node node_modules/.bin/remotion render remotion/index.ts AuditWormDemo public/videos/audit-worm-demo.mp4 --codec=h264"
