@@ -50,8 +50,10 @@ fi
 # 4 — osv-scanner (pinned + digest-verified) -----------------------------------------------------
 if have osv-scanner; then info "osv-scanner present"; else
   info "installing osv-scanner v$OSV_SCANNER_VERSION (sha256-verified)"
-  fetch_verified "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64" "$OSV_SCANNER_SHA256" "$BIN/osv-scanner" \
-    && chmod +x "$BIN/osv-scanner" || { rm -f "$BIN/osv-scanner"; info "osv-scanner install FAILED (digest mismatch or download error)"; }
+  tmp="$(mktemp -d)"
+  fetch_verified "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64" "$OSV_SCANNER_SHA256" "$tmp/osv-scanner" \
+    && install -m755 "$tmp/osv-scanner" "$BIN/osv-scanner" || info "osv-scanner install FAILED (digest mismatch or download error)"
+  rm -rf "$tmp"
 fi
 
 # 5 — Nuclei (latest release zip) ---------------------------------------------------------------
