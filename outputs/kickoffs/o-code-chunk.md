@@ -46,7 +46,7 @@ Done with evidence 2026-07-11; they are NOT in scope.)
 - Playwright graduation is its own PR (ADR-0323 D2 wording: "separately authored and
   reviewed"). Other items group into sensible atomic PRs; each gets the in-session SHIP-audit
   lane before opening (gw-code-reviewer opus; fable only if a money/license seam is touched —
-  the Worker entitlement code in items 4/5 qualifies).
+  none of the three items should need it; the license-service email file is send-path only).
 - Move the Linear issue (In Progress → In Review → Done) as each item ships; branch names from
   the issue's `gitBranchName` where one exists.
 - **DEPLOY stays operator-gated:** after the email-wave merge, ask once for the three-service
