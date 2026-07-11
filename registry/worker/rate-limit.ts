@@ -56,6 +56,9 @@ const RATE_LIMIT_HEADERS: Record<string, string> = {
   "x-frame-options": "DENY",
   "strict-transport-security": "max-age=31536000; includeSubDomains",
   "cache-control": "private, no-store",
+  // CAISSON-87: npm/bun back off on 429 + Retry-After (a bare 4xx reads as forbidden, not
+  // throttled). 60 = the [[ratelimits]] `period` in wrangler.toml — the bucket refills within it.
+  "retry-after": "60",
 };
 
 /** The 429 response for a denied catalog request (handler.ts's own `json()` helper is private to that

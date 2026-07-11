@@ -550,6 +550,8 @@ describe("npm route-class rate limits (CAISSON-55)", () => {
       RATE_LIMIT_NPM_PACKUMENT: deny,
     });
     expect(res.status).toBe(429);
+    // CAISSON-87: npm/bun back off on Retry-After instead of treating the deny as forbidden.
+    expect(res.headers.get("retry-after")).toBe("60");
     expect(await res.json()).toEqual({ error: "rate_limited" });
   });
 
@@ -559,6 +561,7 @@ describe("npm route-class rate limits (CAISSON-55)", () => {
       RATE_LIMIT_TARBALL: deny,
     });
     expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("60");
     expect(await res.json()).toEqual({ error: "rate_limited" });
   });
 
