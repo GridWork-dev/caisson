@@ -1,0 +1,73 @@
+import styles from "./architecture-fit-diagram.module.css";
+
+// Architecture-fit integration diagram (ADR-0323 Cookiy-response — buyers want to see fit before
+// booking anything). Server component, static, theme-aware by --cs-* token cascade (matches the
+// isolation-diagrams.tsx pattern: hand-authored CSS, no charting/graph dependency, real <div>/text
+// labels — no image-of-text). Depicts SHIPPED behaviour only (ADR-0080): the module layer installs
+// as ordinary packages on the Postgres database you already run, license checks verify with zero
+// network (packages/license-verify), and telemetry is OTLP/HTTP to whatever collector you already
+// run (packages/observability) — never a hosted Caisson dashboard you're locked into.
+export function ArchitectureFitDiagram() {
+  return (
+    <div
+      className={styles.arch}
+      role="group"
+      aria-label="How Caisson lands in an existing stack: your app calls the Caisson module layer, which runs as ordinary packages on the Postgres database you already operate with row-level security. Off to the side, two things attach without a rewrite: the license check, which verifies offline with zero network call, and observability, which exports traces and logs to whatever collector you already run."
+    >
+      <div className={styles.stack}>
+        <div className={styles.layer} data-layer="app">
+          <div className={styles.layerHead}>Your app</div>
+          <div className={styles.layerSub}>
+            Next.js or any Node runtime — your routes, your UI, your domain
+            logic
+          </div>
+        </div>
+        <div className={styles.down} aria-hidden="true">
+          ↓ imports
+        </div>
+        <div className={styles.layer} data-layer="modules">
+          <div className={styles.layerHead}>Caisson module layer</div>
+          <div className={styles.layerSub}>
+            fail-closed RLS, audit-chain, field-crypto, billing, and the rest of
+            the catalog — installed packages, composed into your app, never a
+            fork you maintain
+          </div>
+        </div>
+        <div className={styles.down} aria-hidden="true">
+          ↓ runs on
+        </div>
+        <div className={styles.layer} data-layer="db">
+          <div className={styles.layerHead}>Postgres, with RLS</div>
+          <div className={styles.layerSub}>
+            the database you already run — FORCE ROW LEVEL SECURITY on your
+            existing instance, not a new datastore to stand up
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className={styles.sideLabel}>
+          Two things attach to that stack without a rewrite:
+        </p>
+        <div className={styles.side}>
+          <div className={styles.sideCard}>
+            <div className={styles.sideHead}>License — offline</div>
+            <div className={styles.sideSub}>
+              Ed25519 signature check against a baked-in public key, zero
+              network call at runtime. An unlicensed or expired install fails
+              safe to the free community tier — it never breaks your build.
+            </div>
+          </div>
+          <div className={styles.sideCard}>
+            <div className={styles.sideHead}>Observability — out</div>
+            <div className={styles.sideSub}>
+              OpenTelemetry traces and logs export over OTLP/HTTP to the
+              collector you already run — Grafana, Datadog, whatever it is. No
+              hosted Caisson dashboard to get locked into.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
