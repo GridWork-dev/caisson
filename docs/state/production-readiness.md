@@ -173,7 +173,7 @@ structurally (PRs #168/#174). All 14 CI-mirror gates pass locally on this branch
   shipped — regression protection is nominal. (tracked as of this sweep)
 - **P3:** `bun run sot` never runs in CI (advisory by design; a scheduled advisory run is cheap).
   (tracked as of this sweep)
-- **P3:** 140 pending changesets since the last version cut (PR #131) — a deliberate release-cut
+- **P3:** 147 pending changesets since the last version cut (PR #131) — a deliberate release-cut
   decision, not drift; flagged so the next cut is a chosen act. (tracked as of this sweep)
 
 ## GitHub org apps + CI wiring (verified live 2026-07-11, org API read)
