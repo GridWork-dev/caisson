@@ -36,6 +36,7 @@ import {
   chromium,
   type Browser,
   type BrowserContext,
+  type Locator,
   type Page,
 } from "playwright";
 
@@ -70,6 +71,22 @@ async function goto(page: Page, path: string): Promise<void> {
   });
   if (res === null) throw new Error(`${path}: no navigation response`);
   expect(res.status(), `${path}: HTTP ${res.status()}`).toBeLessThan(400);
+}
+
+/** scrollIntoViewIfNeeded with a detach retry: client surfaces (marketplace grid, homepage)
+ *  re-render as React hydrates, and on a slow runner a locator resolved pre-hydration can
+ *  detach before the scroll lands — Playwright throws "Element is not attached to the DOM"
+ *  instead of re-resolving. Retrying re-resolves the locator against the hydrated tree. */
+async function scrollWhenStable(target: Locator): Promise<void> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await target.scrollIntoViewIfNeeded({ timeout: 5_000 });
+      return;
+    } catch (err) {
+      if (attempt >= 4) throw err;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
 }
 
 describe("browser-audit P1 graduation — deterministic Playwright over a local next start (ADR-0323 D2)", () => {
@@ -137,7 +154,7 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
         // selection change is an observable state swap: click the kernel tree row, the kernel
         // panel replaces the rls panel (the `:has(:global(#id):checked)` reveal chain).
         const kernelRow = page.locator("label:has(#repo-artifact-tab-kernel)");
-        await kernelRow.scrollIntoViewIfNeeded();
+        await scrollWhenStable(kernelRow);
         await kernelRow.click();
         const kernel = page.locator('[data-card-id="kernel"]');
         await kernel.waitFor({ state: "visible", timeout: 5_000 });
@@ -163,7 +180,7 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
       try {
         await goto(page, "/");
         const rls = page.locator('[data-card-id="rls"]');
-        await rls.scrollIntoViewIfNeeded();
+        await scrollWhenStable(rls);
         await rls.waitFor({ state: "visible", timeout: 10_000 });
         expect(
           (await rls.boundingBox())?.height ?? 0,
@@ -225,7 +242,7 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
         await goto(page, "/marketplace");
         const checkbox = page.getByLabel(/^Compare /).first();
         const label = checkbox.locator("xpath=ancestor::label").first();
-        await label.scrollIntoViewIfNeeded();
+        await scrollWhenStable(label);
 
         // the shipped contract: a centered 44x44 ::before hit area (>= the 24px WCAG 2.2 AA
         // floor) and z-index 1 lifting it above the card's inset:0 preview overlay button.
@@ -461,7 +478,7 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
         const preview = page
           .getByRole("button", { name: /^Preview Compliance/ })
           .first();
-        await preview.scrollIntoViewIfNeeded();
+        await scrollWhenStable(preview);
         await preview.focus();
         await preview.press("Enter");
         // precondition, asserted loudly: if the catalog/media manifest ever trims Compliance to
