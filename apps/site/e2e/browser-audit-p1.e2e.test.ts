@@ -23,6 +23,12 @@
 // Access, no network beyond localhost — so it runs deterministically on any PR. How to run:
 // `bunx turbo run test:e2e --filter=@caisson/site` (builds first via the task's dependsOn), or
 // `bun run build && bun run test:e2e` from apps/site.
+//
+// Third-party coupling, named: besides the size-4.5 canary (deliberate), P1-004 rides two
+// fumadocs surfaces — the `data-search-full` attribute on the expanded-sidebar search toggle and
+// the "Close Search" accessible name on the dialog's close control. A fumadocs bump that renames
+// either breaks that test with a locator timeout, not a product regression; re-anchor there.
+import { fetchWithTimeout } from "@caisson/kernel";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -75,8 +81,11 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
           "(the test:e2e turbo task does this via dependsOn)",
       );
     }
+    // spawn the next bin directly under bun (no bunx wrapper) so afterAll's kill() reaches the
+    // real server process instead of orphaning it on port 3947 after a local re-run.
+    const nextBin = Bun.resolveSync("next/dist/bin/next", SITE_DIR);
     server = Bun.spawn({
-      cmd: ["bunx", "next", "start", "-p", String(PORT)],
+      cmd: ["bun", nextBin, "start", "-p", String(PORT)],
       cwd: SITE_DIR,
       stdout: "ignore",
       stderr: "ignore",
@@ -85,9 +94,11 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
     const deadline = Date.now() + 30_000;
     for (;;) {
       try {
-        const res = await fetch(`${BASE_URL}/`, {
-          signal: AbortSignal.timeout(2_000),
-        });
+        const res = await fetchWithTimeout(
+          `${BASE_URL}/`,
+          {},
+          { timeoutMs: 2_000 },
+        );
         if (res.ok) break;
       } catch {
         /* not up yet */
@@ -403,18 +414,30 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
             `${viewport.width}px header controls whose center a neighbor's hit area steals`,
           ).toEqual([]);
 
-          // the two known 44px overlays in the compact cluster keep their contract
+          // the two known 44px overlays in the compact cluster keep their contract. Assert on
+          // the VISIBLE instance only — the desktop navUtils cluster keeps a display:none twin
+          // of the cart in the DOM at this width, and computed pseudo styles resolve on hidden
+          // nodes too, so an unscoped .first() would pin the wrong control.
           if (viewport.width === MOBILE.width) {
             for (const name of ["Cart", "Open menu"]) {
-              const dims = await page
+              const instances = await page
                 .getByLabel(name, { exact: true })
-                .first()
-                .evaluate((el) => {
+                .all();
+              let visibleChecked = 0;
+              for (const instance of instances) {
+                if ((await instance.boundingBox()) === null) continue;
+                const dims = await instance.evaluate((el) => {
                   const before = getComputedStyle(el, "::before");
                   return { w: before.width, h: before.height };
                 });
-              expect(dims.w, `${name} 44px overlay width`).toBe("44px");
-              expect(dims.h, `${name} 44px overlay height`).toBe("44px");
+                expect(dims.w, `${name} 44px overlay width`).toBe("44px");
+                expect(dims.h, `${name} 44px overlay height`).toBe("44px");
+                visibleChecked += 1;
+              }
+              expect(
+                visibleChecked,
+                `no visible "${name}" control found in the compact cluster`,
+              ).toBeGreaterThan(0);
             }
           }
         } finally {
@@ -431,10 +454,29 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
       const { ctx, page } = await newPage(MOBILE);
       try {
         await goto(page, "/marketplace");
-        // the carousel lives inside the card preview viewer — open the first card's preview
-        const preview = page.getByRole("button", { name: /^Preview / }).first();
+        // the carousel lives inside the card preview viewer. Open the Compliance bundle's
+        // preview — its media manifest carries a composition diagram + targeted diagrams, so it
+        // is deterministically multi-slide (arrows only render past one slide). Enter-activate
+        // the stretched overlay button: no click geometry to go stale under a card redesign.
+        const preview = page
+          .getByRole("button", { name: /^Preview Compliance/ })
+          .first();
         await preview.scrollIntoViewIfNeeded();
-        await preview.click({ position: { x: 8, y: 8 } });
+        await preview.focus();
+        await preview.press("Enter");
+        // precondition, asserted loudly: if the catalog/media manifest ever trims Compliance to
+        // a single slide, fail with THIS message instead of an opaque arrow-locator timeout —
+        // the fix is to point the test at another multi-slide entry.
+        await page
+          .locator('[role="group"]')
+          .first()
+          .waitFor({ state: "visible", timeout: 10_000 })
+          .catch(() => {
+            throw new Error(
+              "the Compliance preview no longer renders a multi-slide carousel — " +
+                "re-point this test at a multi-slide catalog entry",
+            );
+          });
         for (const name of ["Previous slide", "Next slide"]) {
           const arrow = page.getByLabel(name, { exact: true }).first();
           await arrow.waitFor({ state: "visible", timeout: 10_000 });
