@@ -19,14 +19,45 @@
       "input": {
         "text": "Reference number on file: 4111 1111 1111 1112 for the return."
       },
-      "expected": { "mustNotContain": ["[CREDIT_CARD]"] }
+      "expected": {
+        "mustNotContain": ["[EMAIL]", "[SSN]", "[CREDIT_CARD]", "[PHONE]"]
+      }
     },
     {
       "id": "unicode-fullwidth-at-email-known-gap",
       "input": {
         "text": "Reach out at alice.tester＠example.com if you have questions."
       },
-      "expected": { "mustNotContain": ["[EMAIL]"] }
+      "expected": {
+        "mustNotContain": ["[EMAIL]", "[SSN]", "[CREDIT_CARD]", "[PHONE]"]
+      }
+    },
+    {
+      "id": "sixteen-digit-luhn-invalid-po-number",
+      "input": {
+        "text": "PO number 1234 5678 9012 3456 covers the entire Q3 hardware order."
+      },
+      "expected": {
+        "mustNotContain": ["[EMAIL]", "[SSN]", "[CREDIT_CARD]", "[PHONE]"]
+      }
+    },
+    {
+      "id": "bare-ten-digits-no-separators-known-gap",
+      "input": {
+        "text": "Ticket reference 4045550100 was logged yesterday by the support desk."
+      },
+      "expected": {
+        "mustNotContain": ["[EMAIL]", "[SSN]", "[CREDIT_CARD]", "[PHONE]"]
+      }
+    },
+    {
+      "id": "email-shape-without-tld-not-flagged",
+      "input": {
+        "text": "The local test account user@localhost stays internal to the CI box."
+      },
+      "expected": {
+        "mustNotContain": ["[EMAIL]", "[SSN]", "[CREDIT_CARD]", "[PHONE]"]
+      }
     }
   ]
 }

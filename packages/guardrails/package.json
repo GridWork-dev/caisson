@@ -18,7 +18,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src"
+    "test": "bun test ./src",
+    "eval": "bun test ./src/pii.eval.test.ts"
   },
   "dependencies": {
     "@caisson/field-crypto": "workspace:*",
