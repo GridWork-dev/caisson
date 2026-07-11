@@ -9,6 +9,7 @@ import {
   SkuMatrix,
   StatusChip,
 } from "@/components";
+import { ArchitectureFitDiagram } from "@/components/architecture-fit-diagram";
 import { DualDoorHero } from "@/components/dual-door-hero";
 import {
   IsolationDiagram,
@@ -233,6 +234,22 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
+      {/* ===== Architecture fit — how the modules land in a stack you already run (ADR-0323
+          Cookiy-response: buyers want to see fit before booking anything). Placed right before
+          the buy CTAs, after "how the guarantees hold" has already earned the technical trust. ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Where it lands"
+          title="It installs into the stack you already have."
+          lede="Not a hosted platform, not a new service to stand up. The module layer is packages on your Postgres, license checks verify with zero network, and telemetry exports to the collector you already run."
+          band="surface"
+        >
+          <div style={{ marginTop: "var(--cs-space-8)" }}>
+            <ArchitectureFitDiagram />
+          </div>
+        </Section>
+      </Reveal>
+
       {/* ===== How to buy — the Module/Bundle/Plan type-chip vocabulary, defined once before
           the Bundles cards below reuse it (ADR-0237 F5) ===== */}
       <Section
@@ -343,6 +360,15 @@ export default function HomePage() {
             </div>
           </Card>
         </Reveal>
+        <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
+          Whatever you buy, the code you own is perpetual — no phone-home, no
+          kill switch. Even if Caisson the company stopped operating, the
+          versions you hold keep working — read the{" "}
+          <Link href="/legal/eula#vendor-continuity" className="cs-link">
+            continuity terms
+          </Link>
+          .
+        </p>
       </Section>
 
       {/* ===== Bundles — featured-lead hierarchy, one accent. id="bundles" is the production

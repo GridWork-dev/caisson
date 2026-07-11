@@ -275,8 +275,11 @@ export default function EulaPage() {
         </p>
       </Section>
 
-      {/* 6a. Vendor continuity & self-maintenance (ADR-0276/0282; polish pass approved 2026-07-10) */}
+      {/* 6a. Vendor continuity & self-maintenance (ADR-0276/0282; polish pass approved 2026-07-10).
+          id gives the marketing surface (hero footnote, plans page) an honest deep link into the
+          actual clause instead of just the page (ADR-0323 Cookiy-response, item 3). */}
       <Section
+        id="vendor-continuity"
         eyebrow="Continuity"
         title="Vendor continuity and self-maintenance"
       >

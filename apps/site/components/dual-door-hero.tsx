@@ -122,7 +122,7 @@ export function DualDoorHero() {
                 items={[
                   "Apache-2.0 base",
                   "Postgres + RLS",
-                  "One-time license",
+                  "Perpetual — no phone-home",
                 ]}
               />
             </div>
