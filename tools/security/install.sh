@@ -7,36 +7,51 @@
 set -uo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 BIN="$HOME/.local/bin"; mkdir -p "$BIN"
-TRIVY_V="v0.72.0"; TRUFFLEHOG_V="v3.95.9"; PTAI_V="0.17.2"
+# Scanner versions + digests come from the shared pin file (CAISSON-95) — CI
+# (.github/workflows/security-scan.yml) sources the SAME file, so box and CI never drift.
+# shellcheck source=versions.env
+source "$(dirname "${BASH_SOURCE[0]}")/versions.env"
+PTAI_V="0.17.2"
 HEXSTRIKE_DIR="${HEXSTRIKE_DIR:-$HOME/lab/tools/hexstrike-ai}"
 
 info() { printf '\033[1m» %s\033[0m\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
 gh_latest_tag() { curl -fsSL "https://api.github.com/repos/$1/releases/latest" | grep -oP '"tag_name":\s*"\K[^"]+'; }
+# Download a release artifact, verify it against the pinned sha256, then hand it back.
+fetch_verified() { # url sha256 outfile
+  curl -sSfL -o "$3" "$1" && echo "$2  $3" | sha256sum -c - >/dev/null
+}
 
 # 1 — uv-managed Python CLIs (semgrep, schemathesis, ruff, ptai) --------------------------------
 have uv || { echo "uv required (https://docs.astral.sh/uv) — install it first"; exit 1; }
-for pkg in semgrep schemathesis ruff; do
-  have "$pkg" && { info "$pkg present ($($pkg --version 2>&1 | head -1))"; } || { info "installing $pkg"; uv tool install "$pkg"; }
-done
+have semgrep && info "semgrep present ($(semgrep --version 2>&1 | head -1))" || { info "installing semgrep==$SEMGREP_VERSION"; uv tool install "semgrep==$SEMGREP_VERSION"; }
+have ruff && info "ruff present ($(ruff --version 2>&1 | head -1))" || { info "installing ruff==$RUFF_VERSION"; uv tool install "ruff==$RUFF_VERSION"; }
+have schemathesis && info "schemathesis present" || { info "installing schemathesis"; uv tool install schemathesis; }
 have ptai && info "ptai present" || { info "installing ptai==$PTAI_V"; uv tool install "ptai==$PTAI_V" || uv tool install ptai; }
 
-# 2 — Trivy (PINNED — supply-chain incident) ----------------------------------------------------
+# 2 — Trivy (pinned + digest-verified — the 2026-03 GHSA-69fq-xp46-6x23 wave is why) -------------
 if have trivy; then info "trivy present ($(trivy --version 2>/dev/null | head -1))"; else
-  info "installing trivy $TRIVY_V"
-  curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b "$BIN" "$TRIVY_V"
+  info "installing trivy v$TRIVY_VERSION (sha256-verified)"
+  tmp="$(mktemp -d)"
+  fetch_verified "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" "$TRIVY_SHA256" "$tmp/trivy.tgz" \
+    && tar -C "$tmp" -xzf "$tmp/trivy.tgz" trivy && install -m755 "$tmp/trivy" "$BIN/trivy" || info "trivy install FAILED (digest mismatch or download error)"
+  rm -rf "$tmp"
 fi
 
-# 3 — TruffleHog (pinned) -----------------------------------------------------------------------
+# 3 — TruffleHog (pinned + digest-verified) ------------------------------------------------------
 if have trufflehog; then info "trufflehog present ($(trufflehog --version 2>&1 | head -1))"; else
-  info "installing trufflehog $TRUFFLEHOG_V"
-  curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b "$BIN" "$TRUFFLEHOG_V"
+  info "installing trufflehog v$TRUFFLEHOG_VERSION (sha256-verified)"
+  tmp="$(mktemp -d)"
+  fetch_verified "https://github.com/trufflesecurity/trufflehog/releases/download/v${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION}_linux_amd64.tar.gz" "$TRUFFLEHOG_SHA256" "$tmp/trufflehog.tgz" \
+    && tar -C "$tmp" -xzf "$tmp/trufflehog.tgz" trufflehog && install -m755 "$tmp/trufflehog" "$BIN/trufflehog" || info "trufflehog install FAILED (digest mismatch or download error)"
+  rm -rf "$tmp"
 fi
 
-# 4 — osv-scanner (latest binary) ---------------------------------------------------------------
+# 4 — osv-scanner (pinned + digest-verified) -----------------------------------------------------
 if have osv-scanner; then info "osv-scanner present"; else
-  info "installing osv-scanner"
-  curl -sSL -o "$BIN/osv-scanner" "https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64" && chmod +x "$BIN/osv-scanner"
+  info "installing osv-scanner v$OSV_SCANNER_VERSION (sha256-verified)"
+  fetch_verified "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64" "$OSV_SCANNER_SHA256" "$BIN/osv-scanner" \
+    && chmod +x "$BIN/osv-scanner" || { rm -f "$BIN/osv-scanner"; info "osv-scanner install FAILED (digest mismatch or download error)"; }
 fi
 
 # 5 — Nuclei (latest release zip) ---------------------------------------------------------------

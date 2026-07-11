@@ -14,8 +14,8 @@ verification steps after the train runs; they are deliberately not checkboxes.
 - [ ] The draft GitHub Release's tag targets EXACTLY the version-PR merge commit (publish.yml
       re-verifies ancestry and byte-reproduces every tarball hash at the tag — a mismatch stops
       the train)
-- [ ] CI green on the release SHA (check · standards-gate · registry-index · oscal-conformance —
-      the push-to-main run on the version-PR merge commit)
+- [ ] CI green on the release SHA (check · standards-gate · registry-index · oscal-conformance ·
+      deterministic — the push-to-main run on the version-PR merge commit)
 - [ ] `bun run sot` green
 - [ ] R4 fresh full audit of the cumulative diff since the last release tag, on file at
       `outputs/audit/release-audit-<tag>.md` (SHIP-audit lane: gw-code-reviewer +

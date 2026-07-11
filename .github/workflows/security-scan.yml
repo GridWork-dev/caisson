@@ -1,10 +1,16 @@
 name: security-scan
 # The deterministic security layer (SAST + supply-chain), split into its own workflow per the
-# ci.yml convention: NON-required (branch protection only watches standards-gate/check/
-# registry-index/oscal-conformance), so it may go red on a finding to signal it, but never blocks
-# a merge. Runs the repo-local tools/security/scan.sh — the same driver the operator runs locally.
+# ci.yml convention. REQUIRED since the ADR-0327 scan-gate flip (sequenced after the CAISSON-95
+# pinning in this same change): `deterministic` joins the required-check set — check ·
+# standards-gate · registry-index · oscal-conformance · deterministic. As with the other four,
+# "required" is discipline on this free-plan private repo (no enforced branch protection): the
+# convention is enforced by scripts/release-readiness.ts (REQUIRED_CHECKS) and review practice,
+# not a GitHub gate. `semgrep-pro` stays advisory (dormant until its token is provisioned).
+# Runs the repo-local tools/security/scan.sh — the same driver the operator runs locally.
 #
-# No third-party marketplace actions (nothing extra to SHA-pin): tools install inline. No SARIF
+# Scanner installs are version-pinned + digest-verified against tools/security/versions.env
+# (CAISSON-95) — no curl|sh from a moving main branch, no floating `latest`. The only third-party
+# marketplace action is the SHA-pinned astral-sh/setup-uv (same pin as support-bot.yml). No SARIF
 # upload to the GitHub Security tab — that needs Advanced Security, which this private free-plan
 # repo doesn't have; the SARIF set is saved as a downloadable artifact instead.
 #
@@ -37,19 +43,36 @@ jobs:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0 # trufflehog git-history scan needs full history
-      - name: install scanners (uv tools + pinned binaries → ~/.local/bin)
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          version: "0.11.18" # pinned (same pin as support-bot.yml; no drift)
+      - name: install scanners (pinned versions, sha256-verified release artifacts)
         run: |
-          # pipefail is mandatory: a `curl … | sh` install whose curl fails would otherwise leave
-          # `sh` reading empty stdin, exit 0, and silently drop the tool — then scan.sh self-skips
-          # it and the job passes green with a whole layer never run.
+          # CAISSON-95: every scanner is version-pinned and digest-verified against
+          # tools/security/versions.env — the old `curl | sh` installers fetched their script from
+          # each project's MOVING main branch (an unauditable execution path), and the
+          # `command -v || install` guards would have silently accepted ANY preinstalled version.
+          # Installs are now unconditional (deterministic on a throwaway VM) and fail loud:
+          # pipefail + sha256sum -c mean a bad download or tampered artifact reddens the job.
           set -eo pipefail
+          source tools/security/versions.env
           export PATH="$HOME/.local/bin:$PATH"
-          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
-          export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-          for t in semgrep ruff; do command -v $t >/dev/null || uv tool install $t; done
-          command -v trivy >/dev/null || curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b "$HOME/.local/bin" v0.72.0
-          command -v trufflehog >/dev/null || curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b "$HOME/.local/bin" v3.95.9
-          command -v osv-scanner >/dev/null || { curl -sSL -o "$HOME/.local/bin/osv-scanner" https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 && chmod +x "$HOME/.local/bin/osv-scanner"; }
+          mkdir -p "$HOME/.local/bin"
+          uv tool install "semgrep==${SEMGREP_VERSION}"
+          uv tool install "ruff==${RUFF_VERSION}"
+          tmp="$(mktemp -d)"
+          curl -sSfL -o "$tmp/trivy.tgz" "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  $tmp/trivy.tgz" | sha256sum -c -
+          tar -C "$tmp" -xzf "$tmp/trivy.tgz" trivy
+          install -m755 "$tmp/trivy" "$HOME/.local/bin/trivy"
+          curl -sSfL -o "$tmp/trufflehog.tgz" "https://github.com/trufflesecurity/trufflehog/releases/download/v${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION}_linux_amd64.tar.gz"
+          echo "${TRUFFLEHOG_SHA256}  $tmp/trufflehog.tgz" | sha256sum -c -
+          tar -C "$tmp" -xzf "$tmp/trufflehog.tgz" trufflehog
+          install -m755 "$tmp/trufflehog" "$HOME/.local/bin/trufflehog"
+          curl -sSfL -o "$tmp/osv-scanner" "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          echo "${OSV_SCANNER_SHA256}  $tmp/osv-scanner" | sha256sum -c -
+          install -m755 "$tmp/osv-scanner" "$HOME/.local/bin/osv-scanner"
+          rm -rf "$tmp"
           # Re-assert every tool resolved — a missing tool must hard-fail the job, never silent-skip.
           for t in semgrep ruff trivy trufflehog osv-scanner; do
             command -v "$t" >/dev/null || { echo "::error::$t missing after install — scan layer would silently skip"; exit 1; }
@@ -87,10 +110,14 @@ jobs:
       SEMGREP_JOBS: "1"
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          version: "0.11.18" # pinned (same pin as support-bot.yml; no drift)
       # One guarded step: skip cleanly (installing nothing) when the token is absent; otherwise
-      # install semgrep and run the Pro platform-policy scan (interfile/cross-function taint). The
-      # custom floor rules run in the `deterministic` job (pattern rules need no Pro engine); add
-      # them to the Semgrep policy to have them Pro-analyzed too.
+      # install the PINNED semgrep (CAISSON-95, tools/security/versions.env) and run the Pro
+      # platform-policy scan (interfile/cross-function taint). The custom floor rules run in the
+      # `deterministic` job (pattern rules need no Pro engine); add them to the Semgrep policy to
+      # have them Pro-analyzed too.
       - name: semgrep ci (Pro cross-file taint) — dormant until SEMGREP_APP_TOKEN is set
         run: |
           if [ -z "${SEMGREP_APP_TOKEN:-}" ]; then
@@ -98,7 +125,7 @@ jobs:
             exit 0
           fi
           set -eo pipefail
-          export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-          command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
-          command -v semgrep >/dev/null || uv tool install semgrep
+          source tools/security/versions.env
+          export PATH="$HOME/.local/bin:$PATH"
+          uv tool install "semgrep==${SEMGREP_VERSION}"
           semgrep ci -j 1

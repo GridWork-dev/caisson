@@ -155,10 +155,11 @@ and catalog-rework carve packages) have real published versions today — see
 
 ## CI required jobs
 
-`.github/workflows/ci.yml` (on push to `main` + every PR) carries exactly the 4 required status
-checks and nothing else — `eval`/`native-ext`/`token-drift`/`knip` live in the separate
-`quality.yml` (non-required, path-filtered on PRs, unconditional on `main` pushes) so a path-skip
-never blocks a required check forever. Full per-workflow detail (8 workflows total, the Greptile
+`.github/workflows/ci.yml` (on push to `main` + every PR) carries 4 of the 5 required status
+checks and nothing else — the fifth, `deterministic`, is the pinned security-scan layer in
+`security-scan.yml` (required since the ADR-0327 scan-gate flip); `eval`/`native-ext`/
+`token-drift`/`knip` live in the separate `quality.yml` (non-required, path-filtered on PRs,
+unconditional on `main` pushes) so a path-skip never blocks a required check forever. Full per-workflow detail (8 workflows total, the Greptile
 retirement, the review-gate posture): `docs/operations.md` §7 - this section is not the canonical
 CI map, do not extend it here.
 
