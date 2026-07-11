@@ -214,8 +214,9 @@ export type PackFn = (
 
 /** Default pack: `bun pm pack` (execFile arg-array, no shell). Scope dropped via an explicit
  * --filename, passed as the FULL staged path — bun rejects --filename combined with
- * --destination ("cannot use both filename and destination"), so the path carries the dir. */
-const defaultPack: PackFn = (packageDir, slug, version, stagingDir) => {
+ * --destination ("cannot use both filename and destination"), so the path carries the dir.
+ * Exported so the test suite can prove the byte-determinism the publish gate rests on. */
+export const defaultPack: PackFn = (packageDir, slug, version, stagingDir) => {
   const outDir = join(stagingDir, slug);
   mkdirSync(outDir, { recursive: true });
   const filename = `${slug}-${version}.tgz`;
@@ -688,6 +689,8 @@ export async function runPublishStep(
   // new; a steady-state run leaves ledger/index byte-identical). fail-closed: appendLedger throws
   // before any write on an invalid manifest.
   if (toAppend.length > 0) {
+    // "<run-id>@<base-sha>" — the SHA the version PR was cut FROM, not the release SHA (a commit
+    // cannot contain its own hash; the release tag anchors the final state). See PublishStepOpts.sha.
     const gateAttestation = `${runId}@${sha}`;
     for (const { manifest } of toAppend) {
       appendLedger({ manifest, publishedAt, gateAttestation, ledgerPath });

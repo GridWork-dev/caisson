@@ -9,6 +9,7 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -22,6 +23,7 @@ import {
 } from "./build-index";
 import {
   computeTarballDist,
+  defaultPack,
   findManifestPaths,
   isPrivatePackage,
   readSidecar,
@@ -753,6 +755,44 @@ describe("publish mode (ADR-0325)", () => {
       ).rejects.toThrow(/no tarballs\.json row/);
     } finally {
       rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("bun pm pack byte-determinism (the ADR-0325 load-bearing assumption)", () => {
+  // The publish gate rests on this: the version PR records tarball hashes, publish re-packs at
+  // the tag and requires byte-equality. If a bun bump ever changes the pack format, THIS test
+  // reddens first — before the first live release trips over it.
+  test("packing the same source twice, across an mtime change, yields identical bytes", () => {
+    const dir = tmpDir("pack-det");
+    const pkgDir = join(dir, "pkg");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      join(pkgDir, "package.json"),
+      JSON.stringify({
+        name: "@caisson/pack-det-fixture",
+        version: "0.0.1",
+        main: "index.js",
+      }),
+    );
+    writeFileSync(join(pkgDir, "index.js"), "module.exports = 1;\n");
+    try {
+      const first = defaultPack(pkgDir, "pack-det-fixture", "0.0.1", dir);
+      // Shift every file's mtime by an hour — pack output must not depend on it.
+      const later = new Date(Date.now() + 3600_000);
+      utimesSync(join(pkgDir, "package.json"), later, later);
+      utimesSync(join(pkgDir, "index.js"), later, later);
+      const secondStaging = join(dir, "second");
+      const second = defaultPack(
+        pkgDir,
+        "pack-det-fixture",
+        "0.0.1",
+        secondStaging,
+      );
+      expect(first.length).toBeGreaterThan(0);
+      expect(Buffer.from(first).equals(Buffer.from(second))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });

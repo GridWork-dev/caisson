@@ -12,9 +12,11 @@ name: release-train
 # STAYS DORMANT UNTIL ARMED: the propagation job runs only when the repo VARIABLE
 # RELEASE_TRAIN_ARMED is "true" (a variable, not a secret, so it can gate a job-level `if:`
 # directly — no guard-step dance needed). Until the operator sets it, a published release runs
-# readiness (useful signal) and skips propagation. The individual legs additionally keep their
-# own inert-until-armed guards (MIRROR_PUSH_TOKEN, RAILWAY_TOKEN, R2 keys), so arming the train
-# without arming a leg still no-ops that leg green.
+# readiness (useful signal) and skips propagation. The mirror + deploy legs additionally keep
+# their own inert-until-armed guards (MIRROR_PUSH_TOKEN, RAILWAY_TOKEN), so arming the train
+# without arming those legs still no-ops them green. Leg 1 (registry publish) deliberately does
+# NOT no-op: with R2 keys unset it fails loud (a silent green "publish" would mark a release
+# done while buyers 404 on the tarballs).
 #
 # The retired per-push triggers: publish.yml (dry-run on every main push) and mirror-sync.yml
 # (snapshot per main push) no longer fire on push — the train is their scheduler now; both keep
@@ -45,10 +47,14 @@ jobs:
       - name: release readiness (R3)
         env:
           GH_TOKEN: ${{ github.token }}
+          # env-indirect, never inlined in run: — a tag name may legally contain `$();|&`
+          # (github.sha is hex-safe but rides along for consistency).
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_SHA: ${{ github.sha }}
         run: |
           bun scripts/release-readiness.ts \
-            --tag "${{ github.event.release.tag_name }}" \
-            --sha "${{ github.sha }}"
+            --tag "$RELEASE_TAG" \
+            --sha "$RELEASE_SHA"
 
   propagate:
     needs: readiness
@@ -90,15 +96,17 @@ jobs:
       - name: leg 1 — registry publish (verify + upload EXACTLY the tagged bytes, LIVE)
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }} # env-indirect, never inlined in run:
         run: |
           /tmp/dispatch-and-wait.sh "${{ github.repository }}" publish.yml \
-            -f dry_run=false -f tag="${{ github.event.release.tag_name }}"
+            -f dry_run=false -f tag="$RELEASE_TAG"
       - name: leg 2 — public mirror sync (exported at the release tag)
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }} # env-indirect, never inlined in run:
         run: |
           /tmp/dispatch-and-wait.sh "${{ github.repository }}" mirror-sync.yml \
-            -f ref="${{ github.event.release.tag_name }}"
+            -f ref="$RELEASE_TAG"
       - name: leg 3 — mirror npm publish (caisson-sh/caisson-oss)
         env:
           # MIRROR_PUSH_TOKEN is the fine-grained PAT on caisson-sh/caisson-oss (contents +

@@ -42,6 +42,7 @@ jobs:
     # an external repo stays off the fleet, same posture as deploy-railway.yml's RAILWAY_TOKEN.
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment: release # ADR-0327 rider 2 parity — this job reads MIRROR_PUSH_TOKEN (a release-propagation leg)
     steps:
       # Inert-until-armed guard (mirrors deploy-railway.yml): `secrets` can't be read in a job/step
       # `if:`, so map it to an env here and publish an `armed` output. Absent token → every step

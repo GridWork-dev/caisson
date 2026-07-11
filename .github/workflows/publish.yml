@@ -115,6 +115,12 @@ jobs:
             echo "[publish-and-index] dry-run: R2 upload skipped (CAISSON_PUBLISH_DRY_RUN=${CAISSON_PUBLISH_DRY_RUN})"
             exit 0
           fi
+          # A live publish with no R2 credentials fails LOUD and self-describing — never a green
+          # no-op (that would mark a release done while buyers 404 on the tarballs).
+          if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${R2_ACCOUNT_ID}" ]; then
+            echo "::error::live publish but R2 credentials are not set (R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY/R2_ACCOUNT_ID repo secrets) — arm R2 before a live dispatch"
+            exit 1
+          fi
           if [ ! -d "$STAGING" ] || [ -z "$(ls -A "$STAGING" 2>/dev/null)" ]; then
             echo "[publish-and-index] no staged tarballs to upload"
             exit 0
@@ -122,16 +128,22 @@ jobs:
           uploaded=0; skipped=0
           while IFS= read -r -d '' f; do
             key="${f#"$STAGING"/}"
-            if aws s3api head-object --bucket "$R2_BUCKET" --key "$key" \
-                 --endpoint-url "$ENDPOINT" >/dev/null 2>&1; then
+            # Only a definite 404 may fall through to upload — any OTHER head-object failure
+            # (403, throttle, network) fails the step, since "assume absent" would turn a
+            # transient error into a PUT against a possibly-existing version-keyed object.
+            if head_out="$(aws s3api head-object --bucket "$R2_BUCKET" --key "$key" \
+                 --endpoint-url "$ENDPOINT" 2>&1)"; then
               echo "[publish-and-index] exists, skipping (never overwrite): $key"
               skipped=$((skipped + 1))
-            else
+            elif echo "$head_out" | grep -qE '\(404\)|Not Found'; then
               # ponytail: aws s3 cp (preinstalled). If R2 rejects the default integrity headers,
               # export AWS_REQUEST_CHECKSUM_CALCULATION=when_required — a deploy-time tune.
               aws s3 cp "$f" "s3://${R2_BUCKET}/${key}" \
                 --endpoint-url "$ENDPOINT" --no-progress
               uploaded=$((uploaded + 1))
+            else
+              echo "::error::head-object failed for ${key} with a non-404 error — refusing to assume absent: ${head_out}"
+              exit 1
             fi
           done < <(find "$STAGING" -type f -name '*.tgz' -print0)
           echo "[publish-and-index] R2 upload complete: ${uploaded} uploaded, ${skipped} already present (tag ${RELEASE_TAG})"
