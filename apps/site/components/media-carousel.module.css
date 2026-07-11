@@ -56,6 +56,18 @@
   outline-offset: 2px;
 }
 
+/* 32px visual, 44px hit area (browser-audit P2-006). `.nav` is already `position: absolute`, a
+ * valid containing block for the pseudo-element — the same invisible centered pattern used
+ * across the sweep (marketplace compare, cart trigger, mobile-nav toggle). */
+.nav::before {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
+}
+
 .nav svg {
   width: 1rem;
   height: 1rem;

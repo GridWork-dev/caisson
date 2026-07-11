@@ -97,6 +97,25 @@
   font-style: var(--shiki-dark-font-style);
 }
 
+/* ===== Docs chrome 44px hit-area pass (browser-audit P2-006). fumadocs' "icon-sm" button recipe
+ * (search trigger, sidebar toggle, the GitHub link) renders at 34x34 — its own compiled
+ * `dist/components/ui/button.js` hardcodes the size via `[&_svg]:size-4.5`, which survives as a
+ * literal Tailwind class token in the DOM and is the only stable hook available without forking
+ * the library (no `className`/size prop reaches this deep). Same invisible centered pseudo-element
+ * pattern as the rest of the sweep — visual size is untouched, only the click/tap catchment grows. */
+[class*="size-4.5"] {
+  position: relative;
+}
+
+[class*="size-4.5"]::before {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
+}
+
 /* ===== Reset re-assert — base.css already sets these, but it loads BEFORE the Tailwind/Fumadocs
  * @imports above; re-declaring here (after preflight) keeps Caisson's reset authoritative. ===== */
 *,
@@ -360,6 +379,7 @@ kbd,
 
 /* ===== Mobile nav (V27) ===== */
 .cs-nav-toggle {
+  position: relative;
   display: none;
   align-items: center;
   justify-content: center;
@@ -370,6 +390,17 @@ kbd,
   background: transparent;
   color: var(--cs-fg);
   cursor: pointer;
+}
+
+/* 36px visual, 44px hit area (browser-audit P2-006) — the same invisible centered pseudo-element
+ * pattern used across the sweep (marketplace compare, cart trigger, carousel arrows). */
+.cs-nav-toggle::before {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
 }
 
 /* The panel chrome (position/background/shadow/scrim/z-index/enter-exit motion) is `@caisson/ui`'s
