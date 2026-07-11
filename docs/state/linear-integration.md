@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-01
+updated: 2026-07-11
 status: live
 ---
 
@@ -56,17 +56,38 @@ Linear tracks execution alongside the git-native 7-act lifecycle — it does not
    stays the owner. Claude Code (main engine) still does the real build in-repo — Linear tracks it.
 5. Keep issue titles action-shaped; put the runbook/context in the description; link `path:line` or the ADR.
 
-## Business-tier automations (operator UI setup — not MCP-scriptable)
+## Business-tier automations — CONFIGURED (phase-2 pass, 2026-07-11)
 
-These need the **Business plan active** and are configured in the Linear UI:
+All four legs are live (operator UI session 2026-07-11, verified same day via the `linear` MCP —
+the static `lin_api_` key answers; team/board/issue calls all round-trip):
 
-- [ ] **Triage rules** (Settings → Team → Triage) — route inbound by label/team; optionally delegate to the
-      Linear Agent on entry. Chosen automation depth: _triage rules + Agent first-pass_.
-- [ ] **Agent guidance** (Settings → Agents) — standing instructions agents receive: reference issues in
-      commits/PRs, which repo (`caisson-sh/caisson`), the review process. Workspace + per-team.
-- [ ] **Code Intelligence** (Business) — connect the GitHub integration so branch/PR/deploy status syncs to
-      issues. Linear already emits `gitBranchName` per issue (e.g. `admin/caisson-1-…`).
-- [ ] **Cycles** — enable weekly cycles on the Caisson team.
+- [x] **Triage** — ON ("issues added by outside members go to the triage inbox first"); triage
+      responsibility = "No action". Two routing rules: `Support` label → Support & Docs project;
+      `Bug` label → Platform & Infra + delegate to Linear Agent + High priority. NOTE: Linear's
+      rule engine can only route issues already IN Triage — there is no "move into Triage"
+      action; the master toggle is what lands outside-member/integration issues there.
+- [x] **Agent first-pass automation** — "Linear Agent first-pass triage scoping" fires on "Any
+      issue enters triage": scope/summarize only (restate request, note area, flag
+      duplicates/missing info); explicitly forbidden from changing status/project/priority/
+      assignee or closing/merging/deleting. Human stays owner.
+- [x] **Agent guidance (workspace)** — verbatim: "Repo: caisson-sh/caisson. Reference the issue
+      ID in every branch, commit, and PR. Branches follow the issue's gitBranchName. Decisions
+      are never made in Linear — ADRs in the git repo own decisions; link the ADR/PR instead.
+      Do a first-pass scope/triage only; the human owner and Claude Code do the build." (Team-
+      level guidance: none — no team-level agents installed.)
+- [x] **GitHub Code Intelligence** — the `caisson-sh` org is now a connected organization
+      (alongside `GridWork-dev`); Code Intelligence = Enabled, "All repositories". Team PR
+      automations live: PR open → In Progress, PR review → In Review, PR merge → Done. Proven
+      in anger 2026-07-11: PR #205's "Closes CAISSON-89/90/91" lines auto-moved all three to
+      Done at merge, PR attached to the issue.
+- [x] **Cycles** — 1-week, Monday start, no cooldown, auto-create 2 ahead; started + completed
+      issues auto-added. (No separate carry-over toggle exists — incomplete issues rolling
+      forward is inherent.)
+
+Pre-existing housekeeping automations (untouched): auto-close stale issues after 6 months
+(→ Canceled), auto-archive closed after 6 months, "place issues first" on status progress.
+**Triage Intelligence** (AI duplicate/property inference) is OFF workspace-wide — deliberate;
+the Agent automation above covers the first pass.
 
 ## Inbound wiring (CAISSON-3)
 
@@ -91,8 +112,10 @@ and the service redeployed. Linear Asks (email/web) remains the no-code alternat
 
 ## Setup checklist
 
-**Done (this session, via MCP):** team `Caisson` · 4 area projects · seed issues CAISSON-1/2/3.
-**Operator (UI / billing):** activate **Business** ($16/mo) · triage rules · agent guidance · GitHub Code
-Intelligence · enable cycles · create the `Launch` initiative.
+**Done (2026-07-01, via MCP):** team `Caisson` · 4 area projects · seed issues CAISSON-1/2/3.
+**Done (operator UI, phase-2 2026-07-11):** Business active · triage + agent automation · agent
+guidance · GitHub Code Intelligence on `caisson-sh` · cycles — see the CONFIGURED section above.
 **Code (DONE 2026-07-02, ADR-0206):** support-bot → Triage wiring (CAISSON-3) — merged in PR #46,
 env vars set + service redeployed the same day (live).
+**Remaining (operator, optional):** create the `Launch` initiative in-UI (no MCP creator);
+consider Triage Intelligence if inbound volume ever outgrows the Agent first-pass.

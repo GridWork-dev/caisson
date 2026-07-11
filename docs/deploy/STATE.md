@@ -33,6 +33,31 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-11 — EXECUTED: browser-audit remediation wave — caisson-site redeploy from post-#207 `main`
+
+**What deployed:** `caisson-site` only, from `main`@`bae8ae7b` (`railway up -y --service
+caisson-site --ci` from repo root; build + image push + "Deploy complete"). Operator approval:
+the ADR-0323 picker pre-approved the redeploy riding this session; re-confirmed in the split-flow
+picker ("This session").
+
+**WHY:** PRs #205–#207 merged serially — #205 the full 7-finding browser-audit remediation
+(homepage codecard `:global()` id-scope fix, docs `<main id="main-content">` landmark, marketplace
+compare 44px target, docs-search focus return, systemic 44px hit areas, GitHub icon aria-label,
+WebGL probe-first poster fallback + the review-P2 probe-attrs low-power fix) · #206 the Cookiy
+trust/copy wave + architecture-fit diagram · #207 docs-only spec draft (no runtime change). Only
+the site app consumed the diff — no other service, no Worker, no schema widening.
+
+**Live verify (pasted):**
+
+```
+/ 200 /docs 200 /marketplace 200
+```
+
+(`curl -s -o /dev/null -w "/$p %{http_code}" -L https://caisson.sh/...` right after "Deploy
+complete"; `/plans` 404 in the same probe was a wrong probe path — the route is
+`/marketplace/plans`.) Deterministic replay of the four P1 fixes graduates to Playwright in
+Kickoff O (ADR-0323 D2) rather than ad-hoc re-probing here.
+
 ## 2026-07-11 — EXECUTED: Kickoff-N cockpit + affiliate + Kickoff-M OSS-launch — full fleet redeploy from post-M `main`
 
 **What deployed:** the 4 Railway app/service deploys from `main`@`cbffbadc` (every deploy SUCCESS) —

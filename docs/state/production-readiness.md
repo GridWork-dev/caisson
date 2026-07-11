@@ -173,6 +173,34 @@ structurally (PRs #168/#174). All 14 CI-mirror gates pass locally on this branch
 - **P3:** 92 pending changesets since the last version cut (PR #131) — a deliberate release-cut
   decision, not drift; flagged so the next cut is a chosen act. (tracked as of this sweep)
 
+## GitHub org apps + CI wiring (verified live 2026-07-11, org API read)
+
+The `caisson-sh` org has exactly **three** GitHub Apps installed — anything else claimed
+anywhere is stale:
+
+| App               | Repos    | Job                                                                                                     | Wiring state                                                                          |
+| ----------------- | -------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `renovate`        | selected | Dependency updates + Dockerfile `pinDigests`                                                            | Live; strict-digests flip parked until the first pin wave lands (ADR-0315)            |
+| `socket-security` | selected | Supply-chain alerts on PRs — posts the "Socket Security: Project Report" + "Pull Request Alerts" checks | Live, green on PR #205 this session                                                   |
+| `linear-code`     | all      | Linear Code Intelligence — branch/PR/deploy sync, magic-word closes                                     | Live, proven: PR #205 "Closes CAISSON-89/90/91" auto-moved all three to Done at merge |
+
+**Not apps** (repo-local, ADR-0314 four-layer stack): `semgrep-pro` is a CI job (armed by the
+`SEMGREP_APP_TOKEN` secret, free-tier Pro interfile), alongside `deterministic` (gitleaks/osv/
+zizmor class), `evidence-pack`, `knip`, `token-drift`, `eval`, `native-ext`, and the 4-check
+required set (`check` · `standards-gate` · `registry-index` · `oscal-conformance`). Runner:
+`caisson-amd64` runscaler scale set; `oscal-conformance` + `deploy-railway` stay hosted. No
+Arnica or other posture app is installed — the playbook's Layer 1-4 local stack covers that
+ground (`docs/security/tooling-playbook.md`).
+
+## Email architecture (locked 2026-07-11, ADR-0324 — execution rides Kickoff O)
+
+Inbound: Proton MX catch-all (SPF/DKIM/DMARC-quarantine all present) into the operator's
+primary account; the disabled Cloudflare Email Routing artifact is slated for deletion. Roles:
+`admin@` accounts/billing/legal (legal pages only) · `support@` user-facing contact everywhere
+else · `security@` disclosure/evidence · `no-reply@` transactional sender (Resend, Reply-To
+`support@`) · `hello@` RETIRED (was the live `RESEND_FROM` — the env flip is the kill).
+Operator act: Proton send-as alias for `support@`.
+
 ## What this sweep already fixed
 
 Local gate failures (prettier/eslint over git-ignored `.venv` artifacts — ignore entries),
