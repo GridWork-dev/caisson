@@ -29,6 +29,13 @@ Enterprise tier. The model exists to fix two gaps the market leaves open: no ven
 compliance-grade modules individually, and one-time-only code products have no recurring floor
 (ADR-0012).
 
+## ROI framing rider (2026-07-11, CAISSON-98)
+
+Cookiy's top platform-ranked recommendation (study 019f4a11), missed by the in-house
+synthesis: surface a "weeks-of-engineering-saved" translation next to the anchor price —
+the finance/exec tier of the two-tier approval needs it, and buyers currently do the math
+themselves. Copy change only (ADR-0080 laws apply); anchors themselves stay ADR-0304-locked.
+
 ## Stage-3 amendments (ADR-0258, 2026-07-06) — three numbers move, two deferred items close
 
 The Stage-3 catalog-rework picker closed ADR-0260's two deferred items and recomputed where the

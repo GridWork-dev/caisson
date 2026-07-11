@@ -34,6 +34,19 @@ Raw evidence and full URL list stay in that file — this page tracks live dispo
 | 12  | No docs discover→quickstart→signup conversion instrumentation                                          | **CLOSED** — ADR-0254 (2026-07-06) | Split assignment (Option C) built: Plausible `docs_cta_click`/`signup_complete` + a quickstart-page CTA; PostHog `account_created` beside the existing `identify()`, `signup_source` stitched from `?ref=`. No PostHog JS on docs (F8 holds). See `docs/gtm/channels-launch.md`.                        |
 | 13  | No affiliate / recurring-commission program                                                            | **PARTIALLY BUILT**                | `/affiliates` terms page shipped 2026-07-07 (merged, Linear CAISSON-30 Done): 30%→50% tiers, apply-by-email, Paddle payout, refund clawback, figures computed from `BUNDLE_PRICES`. Remaining: Paddle-side referral/commission config + any dashboard surface — both ride the production commerce flip. |
 
+## New plays from the Cookiy report residuals (2026-07-11)
+
+Two findings pulled from Cookiy's own platform reports that never made the in-house
+wtp-synthesis R-list (evidence: studies 019f4a11 + 019f3aeb, report pull 2026-07-11):
+
+- **"Weeks-saved" ROI framing near the price** (CAISSON-98, rides Session A): approval is
+  two-tiered — champion picks, finance signs off on a "weeks of engineering time saved"
+  translation. Put the math on the page ("$1,049 ≈ 4-8 engineering-weeks saved", the
+  interviewees' own build-estimate range) on the pricing surface + how-to-buy lede.
+- **"Stop the next war-room sprint" angle** (CAISSON-99): buyers build compliance
+  REACTIVELY in crisis sprints when a prospect demands proof. Nobody markets to that
+  trigger moment. Candidate homes: compliance bundle page, positioning angle inventory.
+
 ## Do not copy (standing anti-decision list)
 
 - **shadcn `registry.json` agent-install channel** — `registry.caisson.sh` (ADR-0223) already

@@ -197,37 +197,19 @@ status checks on `main` reduce to four: `check`, `standards-gate`, `registry-ind
 This repo has no enforced GitHub branch protection (single-owner account — CODEOWNERS documents
 the intent, "required" is discipline, not a platform gate).
 
-### Self-hosted runner fleet (2026-06-29; runscaler scale sets 2026-07-02)
+### CI runners — Blacksmith VM-per-job (ADR-0326, cutover 2026-07-11)
 
-> **Update 2026-07-02 (PR#51):** the fleet moved to **runscaler scale sets** — caisson's jobs now
-> target the set by BARE NAME (`runs-on: caisson-amd64`; scale-set runners are label-LESS, any
-> extra label incl. `self-hosted` prevents the match). Canonical config:
-> `gridwork-core/system/ci/runscaler.toml`. Runners are ephemeral (nothing persists on-box between
-> jobs; caches are network-backed `actions/cache`, never local-disk). The `gw-linux-amd64` /
-> `[self-hosted, …]` labels in the prose + table below are the pre-runscaler names — read them as
-> `caisson-amd64`. The same PR split the workflows into `ci.yml` (the required checks only) +
-> `quality.yml` (eval/native-ext/token-drift/knip/evidence-pack) + `publish.yml` +
-> `deploy-railway.yml`; `mirror-sync.yml`, `aeo-probe.yml`, and `support-bot.yml` were added later
-> (see below). The Greptile `greptile-gate` required check this PR originally added was itself
-> retired 2026-07-06 (see the review-gate note above).
-
-- **Enrollment: DONE.** Caisson has **3 runners registered + ONLINE** (verify:
-  `gh api repos/caisson-sh/caisson/actions/runners`): `gw-linux-amd64` (the gw-ms-a2 box, the
-  primary lane), `gw-linux-arm64` + `gw-macos-arm64` (the Mac mini). **Repo home moved to the
-  `caisson-sh` GitHub org 2026-07-02** — so the old "GridWork-dev is a personal account, no org
-  runner groups, register per-repo" framing no longer holds: `caisson-sh` IS an org, and org-level
-  runner groups / scale sets are now available. In practice the fleet moved to **runscaler scale
-  sets** (see the update note above); the org transfer forced a delete + recreate of the stale scale
-  set (it kept pointing at the old repo URL and registered zero runners until recreated).
-- **Isolation.** The amd64 lane runs each job in a throwaway `docker run --rm` container with no
-  host mounts, so operator secrets on the box are unreachable from job code (proven by
-  gridwork-core's `runner-isolation-probe.yml`). The macOS lane runs native (it tests macOS) under
-  an unprivileged runner user with the admin PAT scrubbed from the job env.
-- **Posture = DEDICATED LANES, no auto-fallback.** GitHub has no self-hosted-first preference: if a
-  fleet host is **down**, jobs targeting it **QUEUE indefinitely — they do NOT fall back to hosted**.
-  MANUAL fallback during host maintenance: flip the affected job's `runs-on: [self-hosted,
-gw-linux-amd64]` → `runs-on: ubuntu-latest` (one line) and re-run. Every job carries a
-  `timeout-minutes` ceiling so a hung job frees the runner rather than holding it to the 6h default.
+The amd64 hot path runs on **Blacksmith** (Firecracker microVM per job,
+`runs-on: blacksmith-4vcpu-ubuntu-2404`) since PR #210 — one throwaway VM per job, so host
+secrets are architecturally unreachable and nothing persists between jobs (caches are
+network-backed `actions/cache`). The **quality macOS matrix leg stays on the Mac mini**
+(`[self-hosted, gw-macos-arm64]`, $0, native because it tests macOS). **Credential-bearing
+jobs stay `ubuntu-latest`** — publish, deploy-railway, mirror-sync, release-train hold prod
+tokens that never ride third-party runners. Fallback when Blacksmith is down: flip the
+affected job's `runs-on` to `ubuntu-latest` (one line) and re-run. The prior `caisson-amd64`
+runscaler scale set on gw-ms-a2 retires at verified cutover (history: PR #51 fleet →
+runscaler 2026-07-02 → Blacksmith ADR-0326; the dind host-socket liability the Codex audit
+flagged dies with it).
 
 ### `ci.yml` (push to `main` + every PR) — the 4 required checks, always unconditional
 
@@ -242,9 +224,9 @@ safe (they are not required checks, so a path-skip never blocks a PR forever).
 
 | Job                 | Runner (timeout)                 | Does                                                                                                                                                                                                                                                                            |
 | ------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `standards-gate`    | **fleet** `caisson-amd64` (15m)  | The sole registry ingress (ADR-0021/0022). Runs `tooling/standards-gate` pre-install (SPDX/AGPL/down-only/declarations) AND post-install (external-AGPL + manifest agreement), then `eslint .` (provider-SDK boundaries) + `depcruise` graph boundaries                         |
-| `check`             | **fleet** `caisson-amd64` (30m)  | `format:check` then `bunx turbo run build lint test --no-daemon --concurrency=50% && bun run gate`. `--concurrency=50%` avoids PGlite `beforeAll` starvation under fan-out. The heaviest job → biggest fleet-compute win                                                        |
-| `registry-index`    | **fleet** `caisson-amd64` (15m)  | Registry schema/builder/worker tests, then rebuilds `registry/index.json` from the ledger and `git diff --exit-code` -- proves the index is CI-built, not hand-edited                                                                                                           |
+| `standards-gate`    | **Blacksmith** 4vcpu VM (15m)    | The sole registry ingress (ADR-0021/0022). Runs `tooling/standards-gate` pre-install (SPDX/AGPL/down-only/declarations) AND post-install (external-AGPL + manifest agreement), then `eslint .` (provider-SDK boundaries) + `depcruise` graph boundaries                         |
+| `check`             | **Blacksmith** 4vcpu VM (30m)    | `format:check` then `bunx turbo run build lint test --no-daemon --concurrency=50% && bun run gate`. `--concurrency=50%` avoids PGlite `beforeAll` starvation under fan-out. The heaviest job → biggest fleet-compute win                                                        |
+| `registry-index`    | **Blacksmith** 4vcpu VM (15m)    | Registry schema/builder/worker tests, then rebuilds `registry/index.json` from the ledger and `git diff --exit-code` -- proves the index is CI-built, not hand-edited                                                                                                           |
 | `oscal-conformance` | **hosted** `ubuntu-latest` (15m) | NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180): the JSON→XML→schema-validate round-trip via `oscal-cli` (installs a JDK + oscal-cli from Maven Central). Hosted because the fleet `check` job skips oscal-cli entirely — this is where NIST schema validation actually runs |
 
 ### `quality.yml` — the non-required quality gates
@@ -255,14 +237,14 @@ validate," never "merge blocked"). **On pushes to `main`, every job runs uncondi
 (operator call, 2026-07-09) — main is the full-truth signal, so even a docs-only commit still
 exercises eval, token-drift, and native-ext.
 
-| Job             | Runner (timeout)                                                                           | Does                                                                                                                                                                                                                   |
-| --------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `changes`       | **fleet** `caisson-amd64` (5m)                                                             | `dorny/paths-filter` detects which package trees changed, feeding the `if:` skip logic below                                                                                                                           |
-| `eval`          | **fleet** `caisson-amd64` (15m)                                                            | `bun run eval` -- regression vs committed baseline, offline cassette replay, BLESS unset (ADR-0062). Monorepo-only; never injected into a buyer repo (ADR-0072)                                                        |
-| `token-drift`   | **fleet** `caisson-amd64` (15m)                                                            | Rebuilds `packages/ui/styles/tokens.css` from the TS token objects and `git diff --exit-code` -- proves the committed sheet is a byte-identical rebuild (ADR-0101 design-quality gate #1)                              |
-| `knip`          | **fleet** `caisson-amd64` (15m)                                                            | Unused-dep / unused-export report (`bun run knip -- --no-exit-code`) — advisory, never blocks; repo-wide, not path-filtered                                                                                            |
-| `native-ext`    | linux → **fleet** `caisson-amd64`; macos → **fleet** `[self-hosted, gw-macos-arm64]` (20m) | `bun test packages/local-store/src` -- exercises the platform-specific sqlite-vec `.so`/`.dylib` on both OSes, `fail-fast: false`                                                                                      |
-| `evidence-pack` | **fleet** `caisson-amd64` (15m)                                                            | Assembles the CI build-provenance evidence pack (ADR-0275) from the standards-gate + registry-index outputs into one manifest'd artifact for a security reviewer. Unconditional (no path-filter); NOT a required check |
+| Job             | Runner (timeout)                                                                         | Does                                                                                                                                                                                                                   |
+| --------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `changes`       | **Blacksmith** 4vcpu VM (5m)                                                             | `dorny/paths-filter` detects which package trees changed, feeding the `if:` skip logic below                                                                                                                           |
+| `eval`          | **Blacksmith** 4vcpu VM (15m)                                                            | `bun run eval` -- regression vs committed baseline, offline cassette replay, BLESS unset (ADR-0062). Monorepo-only; never injected into a buyer repo (ADR-0072)                                                        |
+| `token-drift`   | **Blacksmith** 4vcpu VM (15m)                                                            | Rebuilds `packages/ui/styles/tokens.css` from the TS token objects and `git diff --exit-code` -- proves the committed sheet is a byte-identical rebuild (ADR-0101 design-quality gate #1)                              |
+| `knip`          | **Blacksmith** 4vcpu VM (15m)                                                            | Unused-dep / unused-export report (`bun run knip -- --no-exit-code`) — advisory, never blocks; repo-wide, not path-filtered                                                                                            |
+| `native-ext`    | linux → **Blacksmith** 4vcpu VM; macos → **fleet** `[self-hosted, gw-macos-arm64]` (20m) | `bun test packages/local-store/src` -- exercises the platform-specific sqlite-vec `.so`/`.dylib` on both OSes, `fail-fast: false`                                                                                      |
+| `evidence-pack` | **Blacksmith** 4vcpu VM (15m)                                                            | Assembles the CI build-provenance evidence pack (ADR-0275) from the standards-gate + registry-index outputs into one manifest'd artifact for a security reviewer. Unconditional (no path-filter); NOT a required check |
 
 ### `publish.yml` (main-only, ADR-0021 ordering)
 
