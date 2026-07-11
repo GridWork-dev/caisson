@@ -3,7 +3,7 @@
 "@caisson/ui": patch
 ---
 
-Fixes all 7 findings from the ADR-0322/0323 production browser audit:
+Fixes all 7 findings from the July 2026 production browser audit of the public site:
 
 - The homepage "Real paths. Real code." code viewer was invisible at every breakpoint: CSS Modules
   was silently scoping the `#repo-artifact-tab-*` id selectors that drive the pure-CSS `:has()`
