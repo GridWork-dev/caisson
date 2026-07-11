@@ -13,6 +13,7 @@
 // instead of depending on the real unconfigured-runtime path surviving that leak.
 import { expect, mock, test } from "bun:test";
 import * as realNavigation from "next/navigation";
+import * as realAuthServer from "./auth-server.ts";
 
 // A holder read through a typed getter: the redirect target is written inside the mock callback,
 // which TS control-flow can't observe, so a bare `let` would narrow to `null` at the assertion.
@@ -42,9 +43,12 @@ mock.module("next/headers", () => ({
 // Pin the sign-in runtime to "unavailable" (see the header note): `getAuth()` returns null, so
 // `getSession()` fails closed without ever touching a DB. This must be declared here so it wins over
 // `auth-account.test.ts`'s process-wide `./auth-server.ts` mock no matter which file Bun loads first.
-// `lib/auth.ts` re-exports `SESSION_COOKIE_NAME` from this module, so the mock must still provide it.
+// Same full-surface rule as the `next/navigation` mock above: spread the real module so
+// later-loaded files (auth-server.test.ts statically imports `createAuth` +
+// `SESSION_HINT_COOKIE_NAME`) still see every export — a partial factory is exactly what broke
+// CI, where file order differs from local.
 mock.module("./auth-server.ts", () => ({
-  SESSION_COOKIE_NAME: "caisson.session_token",
+  ...realAuthServer,
   getAuth: (): null => null,
 }));
 
