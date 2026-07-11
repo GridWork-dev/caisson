@@ -369,6 +369,15 @@ export default function HomePage() {
           </Link>
           .
         </p>
+        {/* CAISSON-98: the weeks-saved translation finance sign-off runs on. The 4–8-week range
+            is the interviewed buyers' OWN in-house build estimate (Cookiy study 019f4a11, 12
+            real-ICP interviews) — attributed, never asserted as a Caisson benchmark (ADR-0080). */}
+        <p className="cs-footnote" style={{ marginTop: "var(--cs-space-3)" }}>
+          The sign-off math, in buyers&rsquo; own numbers: buyers we interviewed
+          put the in-house build of the Compliance bundle&rsquo;s foundations at
+          four to eight engineering-weeks. {bundlePrice("compliance")},
+          one-time, against that build.
+        </p>
       </Section>
 
       {/* ===== Bundles — featured-lead hierarchy, one accent. id="bundles" is the production
