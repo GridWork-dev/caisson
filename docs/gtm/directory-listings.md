@@ -1,10 +1,13 @@
 ---
-updated: 2026-07-07
+updated: 2026-07-10
 status: live
 grounds:
   - knowledge/decisions/ADR-0080-copy-messaging-expansion.md
   - knowledge/decisions/ADR-0082-go-live-site-posture.md
+  - knowledge/decisions/ADR-0303-cf-access-commerce-scope.md
+  - knowledge/decisions/ADR-0318-oss-launch-program-locks.md
   - outputs/research/prelaunch-fanout-2026-07/SYNTHESIS.md
+  - outputs/research/oss-launch-gtm-2026-07-10.md
   - docs/state/decisions-and-forks.md
   - docs/gtm/positioning.md
 ---
@@ -62,19 +65,28 @@ deferred until real reviews exist (SYNTHESIS §4.4).
 | 9   | **DEV.to**                                         | dev.to (org profile + a launch/tutorial post)                                                                     | Org profile, a diff-grounded launch post (hand to `gw-devrel-writer`)                                                                                       | Developer community; the post earns a dofollow profile link and doubles as launch content. Pairs with the AEO explainer pages.                                                                                                |
 | 10  | **TheSaaSDir**                                     | thesaasdir.com/submit                                                                                             | Name, URL, category, description, logo                                                                                                                      | SaaS & AI product directory, dofollow on the free tier. Cheap, quick, compounds.                                                                                                                                              |
 | 11  | **Uneed**                                          | uneed.best/submit                                                                                                 | Name, tagline, description, logo, category                                                                                                                  | Curated indie-launch directory, small but high engagement per impression. Free SaaS submission (dofollow/featured is a paid upgrade — free tier still earns the listing).                                                     |
-| 12  | **Product Hunt**                                   | producthunt.com/posts/new — **LAUNCH DAY ONLY**                                                                   | Name, tagline, gallery, first-comment maker story, topics                                                                                                   | The launch-moment surface. Dofollow follows a decent ranking. **Hold until CF-Access drops + checkout is live** — a pre-launch PH post burns the one shot at a gated site (ADR-0082).                                         |
+| 12  | **Product Hunt**                                   | producthunt.com/posts/new — **OPTIONAL, WEEK-2 FOLLOW-UP**                                                        | Name, tagline, gallery, first-comment maker story, topics                                                                                                   | Demoted from "the launch beat" to an optional week-2 follow-up after the Show HN anchor (ADR-0318 F5). Still one-shot: hold until checkout is live — a pre-launch PH post burns it (ADR-0082).                                |
 | 13  | **BuildKits / boilerplate-comparison directories** | buildkits.dev, saasboilerplates.dev, boilerplatehub.com submission forms                                          | Name, price, stack, feature matrix row                                                                                                                      | Niche directories where a buyer is actively comparing SaaS starter kits — the exact "build vs buy a kit" moment Caisson's compliance angle wins. Verify each form; list against ShipFast / Makerkit / Supastarter.            |
 
-## Sequencing
+## Sequencing (re-cut 2026-07-10 to the ADR-0318 F5 window → Show HN motion)
 
-1. **Now (pre-launch, behind the gate):** prep every listing draft from the copy above;
-   submit the always-on directories that publish to an index regardless of a gated live
-   URL only _after_ CF-Access drops — a crawler that 401s on the submitted URL can get the
-   listing rejected or de-indexed.
-2. **At launch (gate dropped, checkout live):** fire the always-on directories (#1–#11, #13)
-   in one batch — SYNTHESIS notes 30–50 directory submissions in week one build a
-   compounding backlink foundation. Then Product Hunt (#12) as the timed launch beat.
-3. **Post-launch:** revisit G2 / Capterra once real customer reviews exist.
+The old crawler-401 blocker is CURED: ADR-0303 scoped CF-Access to `/dashboard*` + `/cart*`
+only, so marketing/docs/llms.txt serve public and a directory crawler gets 200s today. The
+batch still holds — listings reference the GitHub repo and the install path, which don't
+exist publicly until the W3 flip (`caisson-oss` public + first npm publish), and checkout
+must be live so a converted visitor can buy.
+
+1. **Now (staged):** every listing draft preps from the copy above. This doc is the staged
+   batch; the trigger is unchanged (checkout live + the W3 public flip — the §3
+   trigger-parked row in `docs/state/outstanding-work.md`).
+2. **Window open (W3: repo public + first npm publish + checkout live):** fire the always-on
+   directories (#1–#11, #13) AND the Awesome-list PRs (#6) as one batch at the START of the
+   2–4-week pre-launch window — SYNTHESIS notes 30–50 directory submissions in week one build
+   a compounding backlink foundation, and the window (not the launch-day spike) does the
+   compounding (ADR-0318 F5: Show HN star half-life ~24h).
+3. **Show HN anchor (window close):** the timed launch beat. Product Hunt (#12) optional in
+   week 2 after it.
+4. **Post-launch:** revisit G2 / Capterra once real customer reviews exist.
 
 ## Handoff
 

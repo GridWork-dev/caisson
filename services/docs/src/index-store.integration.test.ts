@@ -154,3 +154,33 @@ describe("DocsIndex embed-phase deadline", () => {
     idx.close();
   });
 });
+
+describe("DocsIndex query-embed deadline", () => {
+  // Guards the battery-v2 availability fix (2026-07-10): the per-QUERY embed had no bound, so a
+  // slow (not failing) provider held /query open past every caller's budget — the support-bot's
+  // 20s ceiling turned that into "retrieval unavailable" escalations for real buyers (4/25
+  // battery questions). Past the deadline the query must degrade to the FTS floor and return.
+
+  test("a slow query embed degrades to the FTS floor instead of waiting the provider out", async () => {
+    const SLOW_CALL_MS = 400;
+    const DEADLINE_MS = 20;
+    // One embedder serves boot AND query; the boot deadline is kept generous so all 3 chunks
+    // embed for real, proving the QUERY deadline (not the boot one) is what fires below.
+    const embedder = new SlowCountingEmbedder(SLOW_CALL_MS);
+    const idx = await DocsIndex.build(CHUNKS, embedder, {
+      embedPhaseDeadlineMs: 10_000,
+      queryEmbedDeadlineMs: DEADLINE_MS,
+    });
+    const bootCalls = embedder.calls;
+    expect(bootCalls).toBe(3); // boot embedding completed — vectors are real
+
+    const start = Date.now();
+    const hits = await idx.search("billing webhooks", 3);
+    const elapsed = Date.now() - start;
+
+    expect(embedder.calls).toBe(bootCalls + 1); // the query embed WAS attempted
+    expect(elapsed).toBeLessThan(SLOW_CALL_MS); // ...but not waited on past the deadline
+    expect(hits[0]?.id).toBe("billing-webhook"); // FTS floor still answers
+    idx.close();
+  });
+});

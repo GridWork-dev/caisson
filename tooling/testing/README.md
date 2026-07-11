@@ -14,6 +14,6 @@ Shared test harness + the golden-file regression harness (runs before any compli
 
 The serialized, **deterministic** output a module produces for a fixed input (a generated file
 set, an evidence-pack manifest, a composed config). Committed under the module's `golden` dir
-(ADR-0020 manifest field). The ADR-0013 harness runs each case + diffs against the committed
+(the manifest's `golden` field). The harness runs each case + diffs against the committed
 golden; `bun run gate` blocks publish on a diff until re-blessed. Determinism (no clocks /
 randomness / env) is the author's contract.

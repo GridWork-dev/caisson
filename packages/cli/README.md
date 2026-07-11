@@ -5,7 +5,7 @@ The generator that composes a tailored repo from the versioned registry.
 ## Usage
 
 ```
-bunx @caisson-sh/cli@latest --name my-app --edition compliance --module @caisson/kernel@1.0.0 --out ./my-app
+bunx @caisson-sh/cli@latest --name my-app --edition compliance --module @caisson/kernel@0.4.2 --out ./my-app
 ```
 
 (`npx create-caisson@latest ...` also works as a secondary install path.)

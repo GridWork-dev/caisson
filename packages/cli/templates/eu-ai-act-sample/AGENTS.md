@@ -20,7 +20,7 @@ the agent-facing contract for working in this repo.
 
 ## Boundary
 
-This sample imports NOTHING from `@caisson/compliance` (the commercial Compliance edition) — it
+This sample imports NOTHING from `@caisson/compliance` (the commercial Compliance bundle) — it
 demonstrates the evidence-path _shape_ only: no WORM store, no evidence-pack generator, no control
 catalogue. Extend it, but keep that line if you're evaluating the open vs. commercial split.
 

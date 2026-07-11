@@ -1,6 +1,6 @@
 # @caisson/ui — agent usage note
 
-Provides the typed OKLCH token floor: palette and type-scale token objects that generate `tokens.css` (ADR-0042 design foundation, expanded by ADR-0078).
+Provides the typed OKLCH token floor: palette and type-scale token objects that generate `tokens.css` (the design foundation, later expanded).
 
 ## Key surface
 
