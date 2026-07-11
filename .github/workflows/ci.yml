@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   pull_request:
+    # Explicit types (CAISSON-96): the GitHub defaults plus ready_for_review, so flipping a draft
+    # to ready fires a fresh full run — the draft guard below suppressed the runs while drafting.
+    types: [opened, synchronize, reopened, ready_for_review]
 
 # ADR-0016 required checks. PGlite makes the integration + golden-file checks hermetic, so they
 # run inside `test` on a stock runner (no Docker, no external service) rather than as separate
@@ -11,11 +14,14 @@ on:
 # TEST_DATABASE_URL, never the default.
 #
 # THIS FILE = THE 4 REQUIRED STATUS CHECKS ONLY (branch protection matches the job NAME, not the
-# file): standards-gate · check · registry-index · oscal-conformance. They stay UNCONDITIONAL — no `paths:`, no `if:`
-# that can skip them — a path-skipped required job never reports and the PR blocks forever. Every
-# other job (eval · native-ext · token-drift · publish-and-index · the Railway deploy) has moved to
-# its own workflow file (quality.yml / publish.yml / deploy-railway.yml) where path-filtering and
-# main-only gating are safe because those jobs are not required checks.
+# file): standards-gate · check · registry-index · oscal-conformance. They stay UNCONDITIONAL for
+# every non-draft trigger — no `paths:`, and the ONLY permitted `if:` is the draft guard
+# (CAISSON-96): a path-skipped required job never reports and the PR blocks forever, but a DRAFT
+# PR cannot merge anyway, and marking it ready_for_review (in the types list above) fires the full
+# run before merge is possible. Every other job (eval · native-ext · token-drift ·
+# publish-and-index · the Railway deploy) has moved to its own workflow file
+# (quality.yml / publish.yml / deploy-railway.yml) where path-filtering and main-only gating are
+# safe because those jobs are not required checks.
 #
 # BLACKSMITH RUNNERS (2026-07-11, ADR-0326): the pure-compute gate jobs run on Blacksmith
 # Firecracker microVMs (`runs-on: blacksmith-4vcpu-ubuntu-2404`) — one throwaway VM per job,
@@ -38,6 +44,8 @@ permissions:
 jobs:
   # The standards gate (ADR-0021/0022) — the only registry ingress. Three layers, all block merge.
   standards-gate:
+    # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
@@ -90,6 +98,8 @@ jobs:
           bunx changeset status --since=origin/main
 
   check:
+    # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     # The heaviest job (38-pkg turbo tree incl. 5 Next.js builds + many in-process PGlite instances);
     # generous ceiling so a hung PGlite hook frees the runner rather than holding it to the 6h default.
@@ -137,6 +147,8 @@ jobs:
   # (blocking the merge) needs this job marked a required check + CODEOWNERS on a real handle +
   # branch protection (operator GitHub settings; forks board). The ledger APPEND step is publish.yml.
   registry-index:
+    # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
@@ -170,6 +182,8 @@ jobs:
     # ground-truth NIST schema validation actually runs. Validation is schema-only
     # (--disable-constraint-validation): constraint checks resolve the published import-ap URL, a
     # deploy-time concern, not export well-formedness.
+    # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
