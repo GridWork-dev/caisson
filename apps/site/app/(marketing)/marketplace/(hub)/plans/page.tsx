@@ -17,6 +17,7 @@ import { breadcrumb, faqPage, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
 import { baseSubstrateList, baseToolingList } from "@/lib/base-substrate";
 import {
+  bundleModuleSubtotal,
   bundlePrice,
   formatPrice,
   formatUsd,
@@ -111,6 +112,9 @@ export default function MarketplacePlansPage() {
   const enterprise = PLAN_PRICES.find((p) => p.id === "enterprise");
   // A worked renewal example, computed from the SOT (ADR-0260 §5 40%-X9 ladder) — never a literal.
   const complianceRenewal = renewalAmount("compliance");
+  // The "why the price looks low" sum-of-parts basis (item 4, ADR-0323) — the Compliance bundle's
+  // own member-module à-la-carte total, computed from the catalog, never hand-typed.
+  const complianceModuleSubtotal = bundleModuleSubtotal("compliance");
 
   return (
     <>
@@ -137,6 +141,64 @@ export default function MarketplacePlansPage() {
         }
       />
 
+      {/* ===== Why the price — ROI framing + the too-cheap-to-be-true trust signal (ADR-0323
+          Cookiy-response, items 1+4). Buyers already convert the price to build-weeks themselves;
+          this pre-builds that pitch and answers the "why is this so cheap" objection with real
+          catalog math instead of a defensive essay. ===== */}
+      <Reveal>
+        <Section
+          id="why-the-price"
+          eyebrow="Why the price"
+          title="The math behind the number."
+          lede="Two questions come up before checkout: how do you justify this internally, and why does the number look low for what it replaces. Here's the honest answer to both."
+        >
+          <FeatureGrid cols={2}>
+            <Card>
+              <div className="cs-status">
+                <Icon name="gauge" size="lg" />
+                The build-time you skip
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Fail-closed RLS, WORM evidence storage, an append-only audit
+                chain, and a licensed billing/credits stack are weeks of
+                senior-engineer time before your product ships its first
+                feature. A bundle replaces that build with one price, paid once.
+                Translating it for finance: the number buys the multi-week
+                engineering build you&rsquo;d otherwise staff, not a per-seat
+                SaaS line item.
+              </p>
+            </Card>
+            <Card>
+              <div className="cs-status">
+                <Icon name="wallet" size="lg" />
+                Why the price looks low
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                {bundlePrice("compliance")} for the Compliance bundle reads too
+                cheap to some buyers used to six-figure procurement. It
+                isn&rsquo;t a mispricing: it&rsquo;s per organization, not per
+                seat &mdash; no headcount to negotiate. It&rsquo;s one time, not
+                annual &mdash; no recurring multiplier.{" "}
+                {complianceModuleSubtotal > 0 ? (
+                  <>
+                    It&rsquo;s sum-of-parts math &mdash; the same modules priced
+                    à la carte total {formatUsd(complianceModuleSubtotal)}.{" "}
+                  </>
+                ) : null}
+                And the base substrate is Apache-2.0 &mdash; read it before you
+                buy, instead of taking the price on faith.
+              </p>
+            </Card>
+          </FeatureGrid>
+        </Section>
+      </Reveal>
+
       {/* ===== After 12 months — the terms answer the research names as the top objection ===== */}
       <Section
         id="after-twelve-months"
@@ -156,7 +218,11 @@ export default function MarketplacePlansPage() {
               A one-time license is perpetual. The code you bought does not
               expire, stop working, or phone home — license checks verify
               offline, for good. Non-payment can never brick what you already
-              own.
+              own, and neither can Caisson shutting down: the{" "}
+              <Link href="/legal/eula#vendor-continuity" className="cs-link">
+                continuity terms
+              </Link>{" "}
+              grant you self-maintenance rights on top of the perpetual license.
             </p>
           </Card>
           <Card>
@@ -196,6 +262,53 @@ export default function MarketplacePlansPage() {
           </Card>
         </Reveal>
       </Section>
+
+      {/* ===== Renewal vs. support — one clear surface for a distinction the R6 renewal card
+          doesn't cover (ADR-0323 Cookiy-response, item 2): renewal and support are two different
+          things, and neither gates the other. Extends R6 without repeating its worked-renewal
+          arithmetic. ===== */}
+      <Reveal>
+        <Section
+          id="renewal-vs-support"
+          eyebrow="Two different things"
+          title="Renewal buys releases. Support is separate, and it's already included."
+        >
+          <FeatureGrid cols={2}>
+            <Card>
+              <div className="cs-status">
+                <Icon name="plan-tier" size="lg" />
+                What renewal buys
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Renewing a single entitlement keeps its updates window open
+                &mdash; new releases, security patches, and for Compliance,
+                refreshed framework mappings and evidence-pack regeneration. It
+                doesn&rsquo;t touch code you already have. Skip a renewal and
+                every version already delivered keeps working, forever.
+              </p>
+            </Card>
+            <Card>
+              <div className="cs-status">
+                <Icon name="users" size="lg" />
+                What support is
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Support is a different thing entirely, and it&rsquo;s included
+                with every license from day one &mdash; email and Discord, a
+                real person, business-days response. It&rsquo;s not gated behind
+                a subscription, and it doesn&rsquo;t lapse if you skip a
+                renewal.
+              </p>
+            </Card>
+          </FeatureGrid>
+        </Section>
+      </Reveal>
 
       {/* ===== Subscription plans ===== */}
       <Section
