@@ -114,8 +114,8 @@ compliance primitives -> editions -> app-templates`. Publish only what exists; e
   not-yet-published set.
 - **Status: `publish.yml`'s `publish-and-index` job is WIRED + active but DRY-RUN by default**
   (`CAISSON_PUBLISH_DRY_RUN=true`, ADR-0069). It runs main-only, ordering enforced structurally
-  (`ci.yml`'s 4 required checks must pass before a merge lands on `main`, which is this job's
-  trigger — see §7) and scaffolds the full flow without pushing packages; set the env var `=false`
+  (the required checks — `ci.yml`'s 4 plus `deterministic` in `security-scan.yml` — must pass
+  before a merge lands on `main`, which is this job's trigger — see §7) and scaffolds the full flow without pushing packages; set the env var `=false`
   operator-side to go live. The **publishability flip** already happened incrementally per-package
   as each one shipped (`ui-pro`, the Stage-2 modules, the W1/W7 catalog carves are all published;
   see `docs/state/package-catalog.md` for the current public-vs-commercial view). Today's enforcing
@@ -195,10 +195,12 @@ mentioned in older revisions of this doc no longer exists — `.github/workflows
 and `.greptile/` are deleted (Starter-plan review-limit hit, no replacement vendor). The review
 gate is now the **in-session SHIP audit lane** (`gw-code-reviewer` + `gw-security-auditor`/fable
 run against the branch diff before the PR opens); see root `CLAUDE.md` §PR review gate. **Required
-status checks on `main` reduce to four: `check`, `standards-gate`, `registry-index`,
-`oscal-conformance`** — all four live in `ci.yml` and stay UNCONDITIONAL (no `paths:`, no `if:`).
-This repo has no enforced GitHub branch protection (single-owner account — CODEOWNERS documents
-the intent, "required" is discipline, not a platform gate).
+status checks on `main` are five: `check`, `standards-gate`, `registry-index`,
+`oscal-conformance`** (in `ci.yml`, unconditional — no `paths:`) **plus `deterministic`** (the
+pinned security-scan layer in `security-scan.yml`, required since the ADR-0327 scan-gate flip,
+sequenced after the CAISSON-95 installer pinning). This repo has no enforced GitHub branch
+protection (single-owner account — CODEOWNERS documents the intent, "required" is discipline —
+enforced by `scripts/release-readiness.ts` and review practice, not a platform gate).
 
 ### CI runners — Blacksmith VM-per-job (ADR-0326, cutover 2026-07-11)
 
@@ -214,16 +216,18 @@ runscaler scale set on gw-ms-a2 retires at verified cutover (history: PR #51 fle
 runscaler 2026-07-02 → Blacksmith ADR-0326; the dind host-socket liability the Codex audit
 flagged dies with it).
 
-### `ci.yml` (push to `main` + every PR) — the 4 required checks, always unconditional
+### `ci.yml` (push to `main` + every PR) — 4 of the 5 required checks, always unconditional
 
 Required-check intent: build · lint · test(unit) · test(integration) · standards-gate ·
 golden-file (ADR-0016), plus the registry-index provenance proof and the OSCAL NIST conformance
 gate. PGlite makes integration + golden-file hermetic, so they fold into the `check` job rather
 than separate jobs. A `concurrency` group cancels superseded in-flight runs so the limited fleet
-is not tied up on stale commits. **This file carries exactly the 4 required status checks and
-nothing else** — every other job that used to live here (`eval`, `native-ext`, `token-drift`,
-`publish-and-index`) moved to its own workflow file where path-filtering and main-only gating are
-safe (they are not required checks, so a path-skip never blocks a PR forever).
+is not tied up on stale commits. **This file carries 4 of the 5 required status checks and
+nothing else** (the fifth, `deterministic`, is the pinned security-scan layer in
+`security-scan.yml` — required since the ADR-0327 scan-gate flip) — every other job that used to
+live here (`eval`, `native-ext`, `token-drift`, `publish-and-index`) moved to its own workflow
+file where path-filtering and main-only gating are safe (they are not required checks, so a
+path-skip never blocks a PR forever).
 
 | Job                 | Runner (timeout)                 | Does                                                                                                                                                                                                                                                                            |
 | ------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -258,7 +262,7 @@ Both run via `release-train.yml`'s propagation legs (on a published GitHub Relea
 `changeset version`, refreshes `bun.lock`, appends the registry ledger, rebuilds `index.json`,
 packs + hashes every non-private package into `registry/tarballs.json`, and opens an
 automation-authored **version PR** carrying the whole release source truth as one reviewable
-commit. The operator merges it (push-to-main CI proves the 4 required checks on the merge
+commit. The operator merges it (push-to-main CI proves the 5 required checks on the merge
 commit), then publishes a GitHub Release whose tag targets EXACTLY that commit.
 
 **`publish.yml`** (dispatched by the release train's leg 1, or manually, with a required `tag`
@@ -287,7 +291,7 @@ definition-first; the free plan can't enforce protection rules on it yet).
   `workflow_dispatch`. Self-hosted; write scope is one docs file via the ephemeral `GITHUB_TOKEN`.
 - **`support-bot.yml`** — the Python gate for `services/support-bot` (uv/ruff/pyright/pytest), the
   repo's only Python surface. Path-scoped to `services/support-bot/**`; deliberately NOT one of the
-  4 required checks. Runs on the same `caisson-amd64` fleet as the TS gates.
+  5 required checks. Runs on the same `caisson-amd64` fleet as the TS gates.
 
 **Fleet first-run verification (done on PR#22, the wiring PR).** All `gw-linux-amd64` jobs picked
 up the runner and ran (they SERIALIZE — there is one amd64 runner, one-job-then-reset, so the gate

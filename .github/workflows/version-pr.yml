@@ -8,7 +8,7 @@ name: version-pr
 #
 # Flow (ADR-0325, amends ADR-0318/0223 mechanics):
 #   1. operator dispatches THIS workflow → it opens the version PR
-#   2. operator merges it → push-to-main CI (the 4 required checks) runs on the merge commit
+#   2. operator merges it → push-to-main CI (the 5 required checks) runs on the merge commit
 #   3. operator publishes a GitHub Release whose tag targets EXACTLY that merge commit
 #   4. release-train.yml readiness re-verifies (CI green at the tag SHA, changesets drained,
 #      tag-on-main) → propagation legs publish exactly the tagged bytes, zero source mutation
@@ -119,7 +119,7 @@ jobs:
               "- \`registry/ledger.jsonl\` append + \`registry/index.json\` rebuild + \`registry/tarballs.json\` hash rows" \
               "" \
               "Next steps (release runbook):" \
-              "1. Merge this PR (push-to-main CI runs the 4 required checks on the merge commit; this PR shows no checks because GITHUB_TOKEN pushes never trigger CI — close/reopen to force a pre-merge run)." \
+              "1. Merge this PR (push-to-main CI runs the 5 required checks on the merge commit; this PR shows no checks because GITHUB_TOKEN pushes never trigger CI — close/reopen to force a pre-merge run)." \
               "2. Publish a GitHub Release whose tag targets EXACTLY the merge commit." \
               "3. The release train verifies readiness and publishes the tagged bytes with zero mutation." \
               )"
