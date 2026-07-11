@@ -99,6 +99,18 @@ the evidence.
   scratch: $80k, 6–9 months. RLS + WORM + audit-chain retrofit into a live DB: months more. Both,
   wired on day one." Home page keeps the shorter altitude version ("costs months"); the full
   figures run on `/compliance` (ADR-0080 §4).
+- **War-room line** (the retrofit line's reactive sibling — CAISSON-99, Cookiy 45-transcript
+  buying-journey finding: compliance gets built in unplanned "war-room" sprints when a prospect
+  or partner demands proof mid-deal; nobody markets to that trigger moment): "Install the
+  controls before the deal that demands them." Runs on `/compliance` (Who-it's-for, the card
+  paired with the retrofit-cost card). Always interview-attributed, never a case study —
+  ADR-0319 R5 holds until design-partner conversions exist.
+- **Weeks-saved sign-off line** (CAISSON-98, the Cookiy top platform recommendation: approval is
+  two-tiered — a champion picks, finance signs off on a "weeks of engineering time saved"
+  translation): the 4–8-engineering-week range is the interviewees' OWN in-house build estimate
+  (study 019f4a11) and is always phrased as buyers' numbers, never a Caisson benchmark
+  (ADR-0080 §3/rejected list — no fabricated benchmarks, no salary math). Runs beside the price:
+  home how-to-buy footnote + the `/compliance` pricing-card footnote.
 
 ## Message hierarchy
 
