@@ -95,7 +95,7 @@ backend (production Paddle account is a launch-gate item).
 | `registry-index`    | `.github/workflows/ci.yml`                                                     | `registry/index.json` is a byte-identical rebuild from the git-tracked ledger — proves CI (not a hand-edit) produced it                                                                                                              |
 | `oscal-conformance` | `.github/workflows/ci.yml` (`blacksmith-4vcpu-ubuntu-2404`, ADR-0326)          | NIST OSCAL v1.2.2 JSON→XML→schema round-trip via `oscal-cli` (Maven), for `packages/compliance`                                                                                                                                      |
 
-`standards-gate` + `check` + `registry-index` + `oscal-conformance` are the 4 unconditional required checks (ADR-0016);
+`standards-gate` + `check` + `registry-index` + `oscal-conformance` + `deterministic` (the pinned security-scan gate, ADR-0327) are the 5 unconditional required checks (ADR-0016);
 the `greptile-gate` review check was RETIRED with the vendor (2026-07-06 — review is the
 in-session SHIP audit lane per CLAUDE.md §PR review gate); `oscal-conformance`
 installs its own JDK + oscal-cli per-run, unlike the other Blacksmith CI jobs.
