@@ -52,6 +52,9 @@ export function createCaptureEmailer(): CaptureEmailer {
 export interface ResendConfig {
   apiKey: string;
   from: string;
+  /** Optional Reply-To address — replies to a transactional send land here instead of bouncing
+   *  off the (typically no-reply) sender identity. Omitted from the wire body when unset. */
+  replyTo?: string;
 }
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
@@ -75,6 +78,8 @@ export function createResendEmailer(config: ResendConfig): Emailer {
         body: JSON.stringify({
           from: config.from,
           to: msg.to,
+          // Resend's raw REST field (snake_case) — this driver speaks the HTTP API, not the SDK.
+          ...(config.replyTo !== undefined ? { reply_to: config.replyTo } : {}),
           subject: rendered?.subject ?? msg.template,
           ...(rendered ? { html: rendered.html } : {}),
           text: rendered?.text ?? JSON.stringify(msg.data),

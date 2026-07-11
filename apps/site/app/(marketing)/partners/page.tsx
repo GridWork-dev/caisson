@@ -69,7 +69,7 @@ const FAQ = [
   {
     question: "How do I apply?",
     answer:
-      "Email admin@caisson.sh with what you're building, the stack you're on, and the bundle or modules you'd use. We review every application and follow up directly.",
+      "Email support@caisson.sh with what you're building, the stack you're on, and the bundle or modules you'd use. We review every application and follow up directly.",
   },
 ] as const;
 
@@ -187,10 +187,10 @@ export default function PartnersPage() {
         <p className="cs-lede">
           Email{" "}
           <a
-            href="mailto:admin@caisson.sh?subject=Caisson%20design-partner%20application"
+            href="mailto:support@caisson.sh?subject=Caisson%20design-partner%20application"
             className="cs-link"
           >
-            admin@caisson.sh
+            support@caisson.sh
           </a>{" "}
           with what you&rsquo;re building, the stack you&rsquo;re on, and the
           bundle or modules you&rsquo;d use. We review every application and
@@ -210,7 +210,7 @@ export default function PartnersPage() {
           }}
         >
           <Button
-            href="mailto:admin@caisson.sh?subject=Caisson%20design-partner%20application"
+            href="mailto:support@caisson.sh?subject=Caisson%20design-partner%20application"
             external
             variant="primary"
           >
