@@ -5,9 +5,9 @@ status: live
 
 # Build state & roadmap
 
-## Current state (2026-07-09)
+## Current state (2026-07-11)
 
-**ADR ceiling is now `0297`, PRs merged through `#186`.** Everything below the
+**ADR ceiling is now `0325`, PRs merged through `#209`.** Everything below the
 2026-07-06 triple-merge day (the six-bundle catalog rework) is one more month of shipped
 waves: the four-track wave (#133-136), the AEO + license-seam waves, the research-response
 and triage-window pickers (#138-152), the ninth/tenth-sitting wave + the admin GitHub-OAuth

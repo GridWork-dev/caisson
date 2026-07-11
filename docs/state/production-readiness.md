@@ -43,8 +43,9 @@ mostly operator-owed — none are silent breakage:
    commerce data without a proven backup is the sweep's only new P0. (tracked as of this sweep)
 4. **EULA final legal review** — the live EULA self-labels "being finalized with legal counsel";
    five polish edits to the continuity clause await operator sign-off. (tracked)
-5. **`RESEND_API_KEY` on `caisson-license`** — unverified; purchase-confirmation/license-token
-   emails silently no-op (stderr warning) if unset. One `railway variables` check. (tracked)
+5. **`RESEND_API_KEY` on `caisson-license`** — CLOSED 2026-07-11: `RESEND_API_KEY` +
+   `RESEND_FROM` both present on the running service (railway key-scan; tracker row DONE
+   2026-07-10, re-verified after the ADR-0324 email-wave redeploy).
 6. **npm publish ↔ gate-flip sequencing** — every marketing/docs page shows
    `bunx @caisson-sh/cli@latest`, which 404s until the `confirm=publish` npm dispatch fires; the
    publish is itself held on the MIRROR_PUSH_TOKEN rotation. Ordering (publish BEFORE the CF flip)
@@ -106,7 +107,7 @@ Checkout, webhook verify → grant, license mint, entitlement resolution, subscr
 (ADR-0293), refunds/clawback, chargeback alerting (ADR-0294) are all built, SHIP-audited, and
 proven end-to-end against Paddle SANDBOX — including a real signed simulator purchase that drove
 a real grant row (2026-07-04, which also caught the `.strict()`-envelope P0 before launch).
-Real money cannot move until the consolidated blockers 1/2/4/5 above close. Additional named
+Real money cannot move until the consolidated blockers 1/2/4 above close (5 closed 2026-07-11). Additional named
 debt: `adjustment.created` never live-subscribed even in sandbox (tracked); the credit
 rollover/12-month-expiry/FIFO policy shows in the dashboard but not in the EULA text (tracked);
 the first-cycle credit race stays open-by-choice (CAISSON-25 disposition pending).
