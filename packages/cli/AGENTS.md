@@ -26,7 +26,7 @@ Agent-facing contract for driving generation (the buyer's agent + the MCP genera
 ```
 
 `edition` also accepts the legacy edition ids (`ai-kit`, `local-ai`, `agent-dev`) — Zod normalizes
-them to their bundle id above at parse time (ADR-0257 single alias point, `@caisson/registry-schema`),
+them to their bundle id above at parse time (the single alias point in `@caisson/registry-schema`),
 so a legacy and a new-vocabulary invocation produce the identical composition. Zod `.strict()`
 rejects unknown fields. `projectName` is a strict slug (it becomes a directory at generation time —
 no traversal).

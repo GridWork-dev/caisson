@@ -4,6 +4,7 @@
 // composes the OPEN raw-body signature verifier (@caisson/billing) with this package's parser +
 // checkout REST call; the full purchase->entitlement->license->grant orchestration lives in
 // services/license. Commercial half of the billing carve (ADR-0249 G3).
+import { z } from "zod";
 import { fetchWithTimeout, InternalError, parseStrict } from "@caisson/kernel";
 import {
   verifyStripeWebhook,
@@ -14,6 +15,16 @@ import {
 } from "@caisson/billing";
 import { parseStripeEvent, StripeEventSchema } from "./stripe-events.ts";
 import { parsePaddleEvent, PaddleEventSchema } from "./paddle-events.ts";
+
+// The subset of Paddle's POST /discounts response we read — the created discount's id (`dsc_…`) and
+// its (possibly-normalized) code echo. Loose (never `.strict()`): Paddle's discount entity carries
+// ~18 fields and adds more as a non-breaking change; we consume only these two.
+const PaddleDiscountResponseSchema = z.object({
+  data: z.object({
+    id: z.string(),
+    code: z.string().optional(),
+  }),
+});
 
 export function createStripeBilling(config: StripeConfig): BillingProvider {
   return {
@@ -141,6 +152,55 @@ export function createPaddleBilling(config: PaddleConfig): BillingProvider {
       if (url === undefined)
         throw new InternalError("Paddle returned no checkout url");
       return { url };
+    },
+
+    async createDiscount(input) {
+      // Mint an affiliate discount code via Paddle Billing's POST /discounts (ADR-0315). Same REST
+      // shape as createCheckout above (paddleApiBase + Bearer + fetchWithTimeout). The program
+      // parameters are FIXED (10% buyer-facing, operator-locked): `type: "percentage"` with
+      // `amount: "10"` (percentage amount, 0.01–100 per Paddle's API), `enabled_for_checkout: true`
+      // so buyers can redeem it, and `recur: true` so it applies across a subscription's billing
+      // periods (not just the first). `usage_limit: null` = unlimited redemptions (an affiliate code
+      // is shared, not single-use). The response's `data.id` is the `dsc_…` join key the webhook
+      // mapper later reads off `transaction.completed.discount_id`.
+      const baseUrl = paddleApiBase(config.env);
+      // amount "10" = the operator-LOCKED 10% buyer-facing discount (ADR-0315). Fixed program
+      // parameter, not a per-mint input — the store's AFFILIATE_DISCOUNT_PCT mirrors it, but this
+      // package cannot depend "up" on services/license (ADR-0003), so the locked value is inlined.
+      const body = {
+        description: input.description,
+        type: "percentage",
+        amount: "10",
+        enabled_for_checkout: true,
+        code: input.code,
+        recur: true,
+        usage_limit: null,
+      };
+      const res = await fetchWithTimeout(
+        `${baseUrl}/discounts`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+        { timeoutMs: 15_000 },
+      );
+      if (!res.ok) throw new InternalError("Paddle discount creation failed");
+      // Zod-parse ONLY the fields we read (loose, never .strict() — Paddle's envelope carries the
+      // full discount entity; we consume the id + code echo).
+      const parsed = PaddleDiscountResponseSchema.safeParse(await res.json());
+      const discountId = parsed.success ? parsed.data.data.id : "";
+      if (discountId === "")
+        throw new InternalError("Paddle returned no discount id");
+      // Paddle uppercases/normalizes the stored code; prefer its echo, fall back to the input.
+      const code =
+        parsed.success && parsed.data.data.code !== undefined
+          ? parsed.data.data.code
+          : input.code;
+      return { discountId, code };
     },
   };
 }

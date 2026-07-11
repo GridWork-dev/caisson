@@ -342,6 +342,26 @@ export async function revokePurchaseGrants(
   return r.rows.length;
 }
 
+/** Count the purchase's remaining ACTIVE one-time grants — the per-line refund branch flips the
+ *  purchase's `order_record` to 'refunded' when its revokes leave this at zero (SHIP-audit: Paddle
+ *  types a line-by-line full refund as 'partial', so without the flip the affiliate report keeps
+ *  paying full commission on a fully refunded order). Run inside the same tx as the revokes. */
+export async function countActivePurchaseGrants(
+  tx: TenantExecutor,
+  accountId: string,
+  purchaseId: string,
+): Promise<number> {
+  const r = await tx.query<{ n: string }>(
+    `SELECT count(*)::text AS n FROM entitlement_grant
+     WHERE account_id = $1
+       AND source_kind = 'one_time'
+       AND purchase_id = $2
+       AND status = 'active'`,
+    [accountId, purchaseId],
+  );
+  return Number(r.rows[0]?.n ?? "0");
+}
+
 export interface RevokePurchaseLineInput {
   accountId: string;
   /** The one-time purchase id (the PaymentIntent / Paddle transaction id). */

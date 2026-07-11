@@ -75,7 +75,33 @@ const config: NextConfig = {
     "@caisson/ai-meter",
     "@caisson/audit-harness",
   ],
-  turbopack: { root: monorepoRoot },
+  turbopack: {
+    root: monorepoRoot,
+    // CAISSON-82 (ADR-0315): silences the "Encountered unexpected file in NFT list" build warning
+    // on the `apps/site/app/api/ask/route.ts → lib/db.ts → @caisson/platform-migrations →
+    // services/license/dist/{index,server}.js` chain (documented in `outputFileTracingExcludes`
+    // above — that config already keeps the two service-license bootstrap files OUT of the
+    // standalone COPY; it does NOT silence the build-time WARNING itself, which fires from
+    // Turbopack's trace analysis before excludes are applied). The warning's root cause is
+    // `services/license/src/server.ts`'s `resolve(import.meta.dir,
+    // "../../../registry/index.json")` — a dynamic path Turbopack can't statically bound — but
+    // fixing it at the source (a `turbopackIgnore` comment on that call) is out of this app's
+    // surface (`services/license`). `turbopack.ignoreIssue` (Next 16.2+) is the supported
+    // apps/site-side alternative: it matches on the issue's `path` + `title` and drops it from
+    // CLI output entirely, without touching the excluded file's actual runtime reachability (the
+    // route still serves — this only suppresses the diagnostic). Scoped tight to next.config.ts
+    // (the path Turbopack attributes this specific trace-analysis issue to) + the exact title, so
+    // it can never mask an unrelated "Module not found" or other real warning on this file.
+    // Measured effect on `.next/standalone` size: negligible (179089647 without vs 179091433 with
+    // — a ~1.8KB delta, well inside normal build-to-build content-hash/metadata noise), matching
+    // the fact that this is a pure CLI-diagnostics filter, not a tracing/copy behavior change.
+    ignoreIssue: [
+      {
+        path: "**/next.config.ts",
+        title: "Encountered unexpected file in NFT list",
+      },
+    ],
+  },
   // ADR-0311 measured `experimental.optimizePackageImports: ["@caisson/ui",
   // "@caisson/demo-registry"]` here: a clean before/after build produced a byte-identical
   // `.next/static` output (20168326 bytes both times — Turbopack's per-route First Load JS

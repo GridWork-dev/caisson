@@ -11,4 +11,4 @@ Bug reports and questions about the open base are welcome — **open an issue** 
 repository's issue tracker. Include the package name, the version, and a minimal reproduction.
 Fixes land in the source monorepo and flow back out on the next mirror sync.
 
-For anything about the commercial editions, see [caisson.sh](https://caisson.sh).
+For anything about the commercial bundles, see [caisson.sh](https://caisson.sh).

@@ -1,8 +1,9 @@
 # @caisson/migrate — agent contract
 
 The base migration **assembler + runner** (ADR-0070/0090). One assembler, one runner, owned here;
-`@caisson/cli` and `@caisson/compliance` import them — never copy them (a re-introduced
-`assemble`/`readPackageMigrations` copy outside this package is an ADR-0090 violation).
+`@caisson/cli` and the commercial Compliance bundle (`@caisson/compliance`) import them — never
+copy them (a re-introduced `assemble`/`readPackageMigrations` copy outside this package violates
+the owned-once contract).
 
 ## What it does
 
@@ -33,4 +34,4 @@ owns numbered, forward-only `migrations/NNNN_*.sql`. This package:
 
 - Merge authority lives in `@caisson/kernel` + this package — never an edition (ADR-0070).
 - Down-only: depends on `@caisson/kernel`, never on `@caisson/cli` or an edition (ADR-0003).
-- Deterministic: same inputs → byte-identical assembly + emitted file set (golden-stable, ADR-0014).
+- Deterministic: same inputs → byte-identical assembly + emitted file set (golden-stable).

@@ -4,7 +4,7 @@ project: caisson
 created: 2026-07-10
 status: complete
 spec: outputs/specs/codex-production-browser-audit/SPEC.md
-adr: knowledge/decisions/ADR-0320-codex-production-browser-audit.md
+adr: knowledge/decisions/ADR-0322-codex-production-browser-audit.md
 ---
 
 # Plan — Codex production browser audit lane
@@ -26,7 +26,7 @@ adr: knowledge/decisions/ADR-0320-codex-production-browser-audit.md
 **Files:** add this SPEC/PLAN/ADR; modify `docs/state/decisions-and-forks.md`, `docs/adr-index.md`, and `CLAUDE.md`.
 
 1. Create `feature/codex-production-browser-audit` from current `origin/main`; preserve these planning files before leaving detached HEAD.
-2. Re-check open PR branches for an ADR-0320 collision and renumber under ADR-0088 if one appeared.
+2. Renumbered 0320→0322 at merge per ADR-0088 (main claimed 0320/0321 for Kickoff-N/M).
 3. Run `bun run sot` and commit `docs(specs): lock Codex production browser audit lane`.
 
 ## Task 2 — Add the repo-specific Codex skill shell

@@ -261,6 +261,12 @@ export function parsePaddleEvent(
     case "transaction.completed": {
       const subscriptionId = readString(obj.subscription_id);
       const txnId = readString(obj.id);
+      // ADR-0315 affiliate attribution: the redeemed Paddle discount id (`dsc_…`), a sibling of
+      // `data.id`/`data.subscription_id` on the transaction. Captured on BOTH the one-time
+      // (purchase.completed) AND subscription (invoice.paid) mappings below — the join key the
+      // affiliate commission report resolves. An undiscounted transaction has no `discount_id` (the
+      // "" sentinel) → null; the event still parses (a purchase without a discount is the norm).
+      const discountId = readString(obj.discount_id) || null;
       if (subscriptionId === "") {
         // One-time (non-subscription) purchase — the transaction id IS the one-off payment id: the
         // same id a later refund's adjustment.transaction_id joins back on (ADR-0108/0113). A
@@ -279,6 +285,7 @@ export function parsePaddleEvent(
           currency: readString(obj.currency_code, "usd"),
           lineItems,
           paymentId: txnId,
+          discountId,
         };
       }
       // Subscription-linked transaction (the subscription's first automatic charge OR a renewal —
@@ -327,6 +334,7 @@ export function parsePaddleEvent(
         // anchoring idempotency on a field the provider plans to drop would silently re-key
         // mid-life (corrected + verified 2026-07-01).
         invoiceId: txnId,
+        discountId,
       };
     }
     case "subscription.created":

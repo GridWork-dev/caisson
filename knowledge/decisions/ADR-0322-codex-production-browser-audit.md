@@ -1,4 +1,4 @@
-# ADR-0320 — Codex production browser audit lane
+# ADR-0322 — Codex production browser audit lane
 
 - **Status:** accepted
 - **Date:** 2026-07-10

@@ -96,6 +96,6 @@ followup, not shipped here.
 `drizzle-kit` cannot emit `FORCE ROW LEVEL SECURITY` (open drizzle-team issue
 [#5843](https://github.com/drizzle-team/drizzle-orm/issues/5843) as of this writing) — only
 `ENABLE ROW LEVEL SECURITY`, which a table's OWNER role silently bypasses. Caisson's raw-SQL
-migrations (`buildTenantPolicySql`, ADR-0014) stay the canonical source for every tenant table's
+migrations (`buildTenantPolicySql`) stay the canonical source for every tenant table's
 RLS DDL. Point `drizzle-kit`/Prisma Migrate at your OWN application tables if you use either as a
 schema tool — never let either generate or manage the RLS policy itself.

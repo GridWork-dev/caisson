@@ -92,6 +92,48 @@ async function issueProxy(req: {
   return { token: body.token, licenseId: body.licenseId };
 }
 
+/** Server-side affiliate-mint proxy (ADR-0315/0320) — the exact `issueProxy` shape, pointed at the
+ *  license service's `POST /admin/affiliate/mint`. That endpoint holds `PADDLE_API_KEY` and calls
+ *  the billing driver's `createDiscount`, so this admin app never carries the Paddle credential.
+ *  Reuses the SAME base + admin token the reissue proxy uses (`CAISSON_LICENSE_ISSUE_URL` +
+ *  `ADMIN_ISSUE_TOKEN`); no new env. Throws on any non-2xx so a failed mint writes no affiliate_code
+ *  row (the orchestrator only registers after this resolves). */
+async function mintDiscountProxy(input: {
+  code: string;
+  description: string;
+}): Promise<{ discountId: string; code: string }> {
+  const base = process.env.CAISSON_LICENSE_ISSUE_URL?.trim() ?? "";
+  const token = process.env.ADMIN_ISSUE_TOKEN?.trim() ?? "";
+  if (base === "" || token === "") {
+    throw new Error(
+      "affiliate minting is not configured (set CAISSON_LICENSE_ISSUE_URL + ADMIN_ISSUE_TOKEN)",
+    );
+  }
+  const res = await fetchWithTimeout(
+    `${base.replace(/\/$/, "")}/admin/affiliate/mint`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(input),
+    },
+    { timeoutMs: 15_000 },
+  );
+  if (!res.ok) {
+    throw new Error(`affiliate mint proxy returned ${String(res.status)}`);
+  }
+  const body = (await res.json()) as {
+    discountId?: unknown;
+    code?: unknown;
+  };
+  if (typeof body.discountId !== "string" || typeof body.code !== "string") {
+    throw new Error("affiliate mint proxy returned an unexpected body");
+  }
+  return { discountId: body.discountId, code: body.code };
+}
+
 /**
  * G38 (buyer-lifecycle audit 2026-07-07) — the deny-set PUT below is last-write-wins: two
  * concurrent revokes (different accounts) each capture their OWN full cross-tenant snapshot at
@@ -211,6 +253,7 @@ export async function getAdminMutationDeps(): Promise<AdminMutationDeps> {
     db,
     worm: new AuditChainStore({ db, store: wormStore() }),
     issue: issueProxy,
+    mintDiscount: mintDiscountProxy,
     publishDenySet: denySetPublisher(),
     // Lazy getter, not a resolved value (ADR-0278 I-1): a missing/corrupt baked index must not 500
     // every mutation type — only `grantEntitlementAdmin` ever reads `deps.index`, so a broken index

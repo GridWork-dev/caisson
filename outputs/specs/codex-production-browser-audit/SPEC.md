@@ -25,7 +25,7 @@ Give Caisson a reusable Codex Browser playbook that audits the real production p
 
 ## Context
 
-- Picker lock: operator selected Codex-app playbook, full probe-account mutation with reverts, and three-ring coverage on 2026-07-10; recorded in `knowledge/decisions/ADR-0320-codex-production-browser-audit.md`.
+- Picker lock: operator selected Codex-app playbook, full probe-account mutation with reverts, and three-ring coverage on 2026-07-10; recorded in `knowledge/decisions/ADR-0322-codex-production-browser-audit.md`.
 - Existing deterministic capture: `apps/site/scripts/visual-harness.ts` already covers route screenshots, interaction states, the buyer probe account, and production CF Access headers.
 - Existing advisory ledger: `tooling/design-critic/README.md` and `tooling/design-critic/findings.toml` preserve design findings without gating merges.
 - Existing live behavior proof: `apps/site/live/buyer-dashboard-flow.live.test.ts` and `apps/site/live/probe-session.ts` own deterministic buyer-session assertions.

@@ -1,6 +1,6 @@
 # AGENTS — @caisson/license-verify
 
-Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a downstream
+Agent-facing authoring/usage contract (the manifest's `agents` field). What a generation agent or a downstream
 edition must know to gate a paid surface on a license correctly. This package is **offline verify
 only** — license issuance (signing) never ships here.
 

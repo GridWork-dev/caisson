@@ -99,7 +99,8 @@ gh secret set MIRROR_PUSH_TOKEN --repo caisson-sh/caisson    # + op item edit (P
 Operator, separate terminal (account shorthand `my`):
 
 ```bash
-op signin --account my --raw > /tmp/claude-1000/-home-gw-lab-caisson/9b6b9cfb-9653-4aca-9158-ea5a37cbd62f/scratchpad/op-session.txt
+# Session token to a mode-600 file (never a world-readable /tmp path); reused by the driven flow.
+op signin --account my --raw | install -m 600 /dev/stdin ~/.config/op/.gw-session
 ```
 
 Then the driven flow (values never printed — Railway→op piped directly):
@@ -115,7 +116,7 @@ Then the driven flow (values never printed — Railway→op piped directly):
    Grafana OTLP 200, R2 head-bucket, AWS `kms:DescribeKey`.
 6. **Record** parity result + the SoT-flip ADR; refresh `docs/state/providers.md`.
 
-Delete the session file after: `rm …/op-session.txt`.
+Delete the session file after: `rm -f ~/.config/op/.gw-session`.
 
 ---
 

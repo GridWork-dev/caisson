@@ -36,6 +36,17 @@ const DEFAULT_EMBED_PHASE_DEADLINE_MS = 180_000;
 /** Sentinel: `raceDeadline` resolves to this when the deadline wins instead of the real promise. */
 const EMBED_DEADLINE = Symbol("embed-phase-deadline");
 
+/** Hard ceiling on the PER-QUERY embed call inside `search` (ms). The boot-phase deadline above
+ * bounds corpus embedding, but the query-time embed had NO bound: OpenRouterEmbedder's internal
+ * retry + provider-controlled `Retry-After` backoff can run minutes on a rate-limited stretch,
+ * while the support-bot's whole request budget is 20s — so a slow (not failing) embed surfaced to
+ * buyers as "retrieval unavailable" escalations (battery v2, 2026-07-10: 4/25 questions died
+ * exactly this way). Past the deadline the query degrades to the FTS floor — same degrade the
+ * catch below already applies to embed ERRORS; slow-success now degrades identically instead of
+ * hanging. ponytail: flat 8s — healthy query embeds run well under 2s, and 8s leaves the bot 12s
+ * of its 20s budget for retrieval + generation; raise only with a measured healthy-latency shift. */
+const DEFAULT_QUERY_EMBED_DEADLINE_MS = 8_000;
+
 /** Race `promise` against the time remaining until `deadlineAt`; never rejects on the deadline
  * side. The loser is NOT cancelled (no cancellation primitive here) — `promise` keeps running in
  * the background if the deadline wins, but `.then` below attaches a real rejection handler to it
@@ -101,6 +112,7 @@ export class DocsIndex {
     private readonly store: LocalStore,
     private readonly byId: Map<string, DocChunk>,
     private readonly embedder: OptionalEmbedder,
+    private readonly queryEmbedDeadlineMs: number,
   ) {}
 
   /**
@@ -113,7 +125,7 @@ export class DocsIndex {
   static async build(
     chunks: DocChunk[],
     embedder?: Embedder,
-    opts?: { embedPhaseDeadlineMs?: number },
+    opts?: { embedPhaseDeadlineMs?: number; queryEmbedDeadlineMs?: number },
   ): Promise<DocsIndex> {
     const dim = embedder?.dim ?? FTS_FLOOR_DIM;
     const store = LocalStore.open({ dim });
@@ -162,14 +174,34 @@ export class DocsIndex {
       });
       byId.set(chunk.id, chunk);
     });
-    return new DocsIndex(store, byId, embedder);
+    return new DocsIndex(
+      store,
+      byId,
+      embedder,
+      opts?.queryEmbedDeadlineMs ?? DEFAULT_QUERY_EMBED_DEADLINE_MS,
+    );
   }
 
   /** Retrieve the top-`k` chunks for `query`, fused across the FTS and (when wired) vector legs. */
   async search(query: string, k = 5): Promise<ScoredChunk[]> {
     let queryVector: number[] | undefined;
     try {
-      queryVector = await embedOrSkip(this.embedder, query);
+      // Deadline-raced (battery-v2 fix): a SLOW query embed — the provider's own retry/backoff can
+      // run minutes — degrades to the FTS floor exactly like a FAILING one, instead of holding the
+      // request open past every caller's budget. The abandoned call keeps running in the
+      // background (raceDeadline attaches its rejection handler), its result discarded.
+      const raced = await raceDeadline(
+        embedOrSkip(this.embedder, query),
+        Date.now() + this.queryEmbedDeadlineMs,
+      );
+      if (raced === EMBED_DEADLINE) {
+        process.stderr.write(
+          "[service-docs] query-embed deadline hit — serving this query on the FTS floor\n",
+        );
+        queryVector = undefined;
+      } else {
+        queryVector = raced;
+      }
     } catch {
       // A provider blip on the query embed degrades THIS query to the FTS floor rather than 500ing.
       queryVector = undefined;

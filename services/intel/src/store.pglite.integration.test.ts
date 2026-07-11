@@ -5,8 +5,6 @@
 // against the real SQL. PostgresStore's constructor accepts an injected PgQueryable (any object
 // structurally shaped like `pg.Pool`), so `tp.pg` (a PGlite instance) plugs in directly — no
 // mocking, no second code path.
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import {
   afterAll,
   beforeAll,
@@ -26,12 +24,10 @@ let store: PostgresStore;
 
 beforeAll(async () => {
   tp = await newTestPg();
-  const schemaSql = readFileSync(
-    join(import.meta.dir, "../migrations/0001_intel_schema.sql"),
-    "utf8",
-  );
-  await tp.exec(schemaSql);
   store = new PostgresStore(tp.pg);
+  // The REAL migrate() path (0001 + 0002) — the whole parity suite then runs on the schema a
+  // production `INTEL_MIGRATE_ON_BOOT` boot produces, so a broken migration chain fails here.
+  await store.migrate();
 });
 
 afterAll(async () => {
@@ -159,5 +155,18 @@ describe("PostgresStore.checkRoleIsolation (PGlite)", () => {
       "CREATE TABLE IF NOT EXISTS public.accounts (id text PRIMARY KEY)",
     );
     expect(await store.checkRoleIsolation()).toBe(false);
+  });
+});
+
+describe("PostgresStore.migrate (0001 + 0002 chain)", () => {
+  test("is idempotent and lands the 0002 triage columns with default 'open'", async () => {
+    // Re-running the full chain must no-op (every statement IF NOT EXISTS / role-guarded).
+    await store.migrate();
+    const res = await tp.pg.query<{ status: string; triaged_at: unknown }>(
+      `SELECT status, triaged_at FROM intel.findings WHERE dedup_key = $1`,
+      ["github:pglite-parity:1"],
+    );
+    expect(res.rows[0]?.status).toBe("open");
+    expect(res.rows[0]?.triaged_at).toBeNull();
   });
 });
