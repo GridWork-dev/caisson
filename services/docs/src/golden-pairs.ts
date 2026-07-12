@@ -51,4 +51,24 @@ export const GOLDENS: GoldenPair[] = [
     expected: "apps/site/content/docs/refunds.mdx",
     k: 5,
   },
+  {
+    question: "What happens when my updates window expires?",
+    expected: "apps/site/content/docs/licensing.mdx",
+    k: 3,
+  },
+  {
+    question: "How do I renew my license after the first year?",
+    expected: "apps/site/content/docs/licensing.mdx",
+    k: 5,
+  },
+  {
+    question: "How do I get started with the Local-first bundle?",
+    expected: "apps/site/content/docs/local-first/index.mdx",
+    k: 3,
+  },
+  {
+    question: "How do I install the Provenance bundle?",
+    expected: "apps/site/content/docs/provenance/index.mdx",
+    k: 4,
+  },
 ];

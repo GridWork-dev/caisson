@@ -25,6 +25,17 @@ allowlist names it, so "on-device" is enforced in code, not promised in a README
   stored in the local database, shared with the Compliance, AI-Production, and Provenance
   bundles.
 
+## Install
+
+```bash
+export CAISSON_LICENSE_TOKEN=<the token from /dashboard/license>
+bunx @caisson-sh/cli@latest --name caisson-app --edition local-first
+cd caisson-app
+bun install
+```
+
+`--edition local-first` auto-selects the Local-first bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+
 ## How it composes
 
 `local-inference` runs embeddings on-device; `local-store` persists and searches the vectors it

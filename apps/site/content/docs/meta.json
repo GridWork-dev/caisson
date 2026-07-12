@@ -16,6 +16,7 @@
     "---Tooling---",
     "cli",
     "---Policies---",
-    "refunds"
+    "refunds",
+    "licensing"
   ]
 }
