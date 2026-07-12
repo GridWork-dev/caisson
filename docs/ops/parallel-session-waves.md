@@ -38,6 +38,27 @@ the operator's pick arms it — worktrees are never spun silently.
 - **Collision map:** each kickoff names the trees it owns; overlaps are assigned to exactly
   one session before the wave starts.
 
+## Arming a wave (the preparing session's checklist)
+
+The session that arms a wave runs these IN ORDER — a wave never cuts from a dirty state:
+
+1. **Clean slate:** every open PR merged (or explicitly parked with a reason), remote
+   branches pruned to `main` only, all worktrees removed and their local branches deleted,
+   `bun run sot` green, latest main CI green.
+2. **Lock the program:** picker round → ADR + board/tracker rows; file and route the Linear
+   tickets; pin every cross-session contract (fixture paths, schemas, naming) in the tickets
+   BEFORE branches exist — parallel sessions have no coordination channel mid-flight.
+3. **Commit the program docs, THEN cut every branch from that same clean tip:**
+   `git worktree add ~/lab/caisson-kickoff-<x> -b feature/kickoff-<x>-<slug> origin/main`
+   for each session (the tip must contain this convention + the wave's ADR so sessions can
+   read them).
+4. **Write the kickoffs** (scope · program rules · owned-trees collision map · boundaries ·
+   base SHA), then **adversarially review them** (opus/sonnet lenses: contradictions vs the
+   boards, collision-map gaps, executability) and fix findings before hand-off — the first
+   wave's review caught two P1s that would have shipped silently.
+5. **Hand-off:** give the operator, per session, the worktree `cd` path + a one-line start
+   prompt ("Read KICKOFF-<X>-<slug>.md and execute it").
+
 ## Session posture
 
 Each session runs a Fable main thread with ultracode; every subagent and workflow agent
