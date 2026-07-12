@@ -108,6 +108,10 @@ jobs:
           /tmp/dispatch-and-wait.sh "${{ github.repository }}" mirror-sync.yml \
             -f ref="$RELEASE_TAG"
       - name: leg 3 — mirror npm publish (caisson-sh/caisson-oss)
+        # Pre-launch train rides skip the public npm leg (ADR-0329, amends 0325): MIRROR_PUSH_TOKEN
+        # stopped being an inert-guard when mirror-sync armed it 2026-07-10, so this leg needs its
+        # own arming variable. Set RELEASE_NPM_MIRROR_ARMED=true at the ADR-0318 W3 public flip.
+        if: vars.RELEASE_NPM_MIRROR_ARMED == 'true'
         env:
           # MIRROR_PUSH_TOKEN is the fine-grained PAT on caisson-sh/caisson-oss (contents +
           # actions/workflows rw) — the same credential mirror-sync pushes with.
