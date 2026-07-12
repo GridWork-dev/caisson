@@ -70,5 +70,6 @@ testpaths = ["tests"]
 # overrides this addopts default). --strict-markers so an unregistered marker is an error, not a typo.
 markers = [
     "live: exercises a real external remote; excluded from default runs, run with -m live",
+    "eval: offline eval gate (regression vs a committed baseline); excluded from default runs, run with -m eval",
 ]
-addopts = "-m 'not live' --strict-markers"
+addopts = "-m 'not live and not eval' --strict-markers"
