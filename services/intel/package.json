@@ -17,6 +17,7 @@
     "lint": "eslint src",
     "test": "bun test ./src",
     "test:live": "bun test ./live",
+    "eval": "bun test src/eval/intel-briefs.eval.test.ts",
     "start": "bun run src/server.ts"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@caisson/ai-evals": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",

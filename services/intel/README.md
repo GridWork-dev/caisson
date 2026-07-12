@@ -124,3 +124,41 @@ semantics), each watcher's `.run()`-level wiring (a mid-fetch throw must leave t
 never-throws guarantee — all fixture-driven, no live network calls. Live probes against the real
 external sources are self-skipping `live/*.live.test.ts` files (`bun run test:live`), matching the
 rest of the repo's convention for anything that talks to a real third party.
+
+### Judged replay eval lane (`src/eval/`, CAISSON-101)
+
+`bun run eval` joins this service to the repo's turbo `eval` task: a judged, offline replay of the
+watcher briefs. It is deterministic and self-skipping — with no cassettes committed it skips green,
+so no live model or network call ever fires in CI.
+
+The lane grades a HYBRID rubric against a recorded run: **accuracy** (the replayed finding is
+byte-identical to the recorded one) and **grounding** (every URL in a finding resolves to a host the
+watcher actually fetched) are graded deterministically in code; **actionability** (does the brief tell
+the operator what changed, why it matters, and what to do) is graded by an LLM judge whose verdicts
+are replayed from the cassette. Two pooled `defineEval` runs gate against a committed baseline via
+`@caisson/ai-evals` — `intel-replay` at threshold 1.0 and `intel-brief-quality` at 0.7, both with a
+0.6 Wilson floor (deliberately below the lane's usual 0.8 — a small session-4 sample; raise once
+n≥16 findings is proven). The always-run `src/eval/*.test.ts` unit tests plus an end-to-end replay
+over a handcrafted fixture (`src/eval/__fixtures__/competitor.fixture.json`, which lives OUTSIDE the
+cassette dir so discovery never picks it up) keep the harness meaningfully tested with zero cassettes.
+
+**Recording is an operator act** (never CI, never a feature branch):
+
+```
+bun run src/eval/record.cli.ts [watcher ...]      # default: every watcher; needs live creds + OPENROUTER_API_KEY
+```
+
+It writes one sanitized cassette per watcher to the **pinned path**
+`services/intel/__cassettes__/<watcher>.json`, capturing the request/response exchanges (never request
+headers), the watch_state it read (a recorded no-op on write — the live daemon's baselines are never
+advanced), the findings, and one embedded judge verdict per finding. **Scrub guarantee:** every known
+secret value plus generic Bearer/key-prefixed/email patterns are stripped, and a fail-closed
+`assertScrubbed` gate THROWS before write if any secret value survives anywhere in the serialized
+cassette. The session-4 operator contract to arm the gate:
+
+1. `bun run src/eval/record.cli.ts` — record cassettes live.
+2. `BLESS=1 bun run eval` — mint `services/intel/__evals__/baseline.json`; review the diff.
+3. Commit BOTH the cassettes and the baseline in one change.
+4. **Assert the lane EXECUTES non-skipped** — a skipIf path mismatch is indistinguishable from a green
+   pass, so confirm `bun test ./src/eval/intel-briefs.eval.test.ts` reports the case as RUN before
+   trusting the gate.
