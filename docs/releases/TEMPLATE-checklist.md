@@ -11,9 +11,12 @@ verification steps after the train runs; they are deliberately not checkboxes.
 - [ ] Version PR merged to main (dispatch `version-pr.yml` → review → merge; ADR-0325):
       `.changeset/` drained, versions bumped, CHANGELOGs written, `bun.lock` refreshed, AND
       `registry/{ledger.jsonl,index.json,tarballs.json}` updated in the SAME commit
-- [ ] The draft GitHub Release's tag targets EXACTLY the version-PR merge commit (publish.yml
-      re-verifies ancestry and byte-reproduces every tarball hash at the tag — a mismatch stops
-      the train)
+- [ ] The draft GitHub Release's tag targets the version-PR merge commit or its
+      attestation-only successor (docs/audit/checklist only — no package bytes; readiness
+      reads the R4 audit + this checklist from the TAGGED tree, and this checklist is only
+      completable after the merge, so a successor commit is the normal shape — operator lock
+      2026-07-12, first ride). publish.yml re-verifies ancestry and byte-reproduces every
+      tarball hash at the tag — a mismatch stops the train
 - [ ] CI green on the release SHA (check · standards-gate · registry-index · oscal-conformance ·
       deterministic — the push-to-main run on the version-PR merge commit)
 - [ ] `bun run sot` green
