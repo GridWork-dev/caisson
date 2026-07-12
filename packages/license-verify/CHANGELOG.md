@@ -1,5 +1,31 @@
 # @caisson/license-verify
 
+## 0.3.1
+
+### Patch Changes
+
+- 317bad5: Add an optional `eval` claim to the signed license shape. A verified license now reports whether
+  it was issued as a time-boxed evaluation grant rather than a paid purchase, so a consuming
+  application can apply different handling (for example, watermarking or excluding evaluation
+  installs from redistribution) without guessing from the expiry date alone. Existing tokens and
+  integrations are unaffected: the field is absent unless an issuer explicitly sets it, and every
+  paid license continues to verify exactly as before.
+- 8253e76: OSS launch readiness wave. LICENSE copyright restamped to Caisson Software LLC across the
+  open set. README/AGENTS prose trued to the built reality: six-bundle vocabulary, current
+  entitlement examples, decision-record citations stripped from public-facing docs. The
+  eu-ai-act-sample template's kernel pin corrected to the current release line, with a
+  dynamic staleness test so future version cuts fail loud. Docs service search now races the
+  per-query embed against an eight-second deadline and degrades to the keyword floor instead
+  of holding the query open past caller budgets; a refund-policy docs page makes refund
+  questions answerable. Site sign-in sets a non-HttpOnly session-hint cookie so owned-items
+  UI renders without an extra round trip, and the build ignores a spurious Next trace
+  warning. Public-mirror exporter hardened: prose renames scoped to the open package set,
+  four mirror-only test exclusions, a root bunfig for the mirror workspace, and a historical
+  backfill mode for the rot-guard.
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+  - @caisson/kernel@0.4.3
+
 ## 0.3.0
 
 ### Minor Changes

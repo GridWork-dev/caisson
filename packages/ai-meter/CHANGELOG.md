@@ -1,5 +1,40 @@
 # @caisson/ai-meter
 
+## 1.0.0
+
+### Minor Changes
+
+- 1bc677a: Add an optional embeddable usage chart at the `@caisson/ai-meter/ui` subpath. It rolls your metered
+  inference events up by model into credit, cost, and token totals, then draws a per-model spend bar
+  chart and a numeric breakdown table. Credits and cost stay integer units end to end. The surface
+  renders only the events you hand it — no database, no meter call. Presentational and server-render
+  safe; composes the `@caisson/ui` kit. Importing the package root stays React-free.
+
+### Patch Changes
+
+- Updated dependencies [08fd857]
+- Updated dependencies [230f02a]
+- Updated dependencies [a79acb4]
+- Updated dependencies [0137008]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [5a8b317]
+- Updated dependencies [8253e76]
+- Updated dependencies [f903014]
+- Updated dependencies [eff7248]
+- Updated dependencies [47e04fd]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [b5a3690]
+- Updated dependencies [b5a3690]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [c905c61]
+- Updated dependencies [2c93128]
+- Updated dependencies [b7e58a8]
+- Updated dependencies [b43959c]
+  - @caisson/ui@0.6.0
+  - @caisson/credits@0.5.0
+  - @caisson/kernel@0.4.3
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.3.4
 
 ### Patch Changes

@@ -1,5 +1,26 @@
 # @caisson/ai-kit
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [1bc677a]
+- Updated dependencies [230f02a]
+- Updated dependencies [a79acb4]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [7df836a]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+- Updated dependencies [1bc677a]
+  - @caisson/ai-meter@1.0.0
+  - @caisson/credits@0.5.0
+  - @caisson/guardrails@0.4.3
+  - @caisson/kernel@0.4.3
+  - @caisson/ai-config@0.3.1
+  - @caisson/tenancy-rls@0.5.1
+  - @caisson/prompt-registry@1.0.0
+  - @caisson/field-crypto@0.3.1
+
 ## 0.4.0
 
 ### Minor Changes

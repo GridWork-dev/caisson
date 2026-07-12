@@ -1,5 +1,40 @@
 # @caisson/mcp-server
 
+## 0.2.6
+
+### Patch Changes
+
+- 8670f38: Audit coverage and gate-test correctness fixes. The audit-harness domain partition now sweeps
+  loose files at the tooling, infra, and tools container roots into a per-container root domain,
+  so a script added directly under one of those directories can no longer escape the coverage
+  gate; its test task is also marked uncacheable because the gate reads the whole repository tree.
+  The MCP server's entitlement gate test is re-pinned to the current catalog vocabulary: a
+  dissolved edition id resolves only as its indexed meta-package and no longer grants that
+  edition's member modules, which are denied fail-closed; the current bundle ids remain the way a
+  purchase grants its member set.
+- 8253e76: OSS launch readiness wave. LICENSE copyright restamped to Caisson Software LLC across the
+  open set. README/AGENTS prose trued to the built reality: six-bundle vocabulary, current
+  entitlement examples, decision-record citations stripped from public-facing docs. The
+  eu-ai-act-sample template's kernel pin corrected to the current release line, with a
+  dynamic staleness test so future version cuts fail loud. Docs service search now races the
+  per-query embed against an eight-second deadline and degrades to the keyword floor instead
+  of holding the query open past caller budgets; a refund-policy docs page makes refund
+  questions answerable. Site sign-in sets a non-HttpOnly session-hint cookie so owned-items
+  UI renders without an extra round trip, and the build ignores a spurious Next trace
+  warning. Public-mirror exporter hardened: prose renames scoped to the open package set,
+  four mirror-only test exclusions, a root bunfig for the mirror workspace, and a historical
+  backfill mode for the rot-guard.
+- Updated dependencies [3d23da7]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+- Updated dependencies [99d665a]
+- Updated dependencies [ab352ab]
+- Updated dependencies [4d85f28]
+  - @caisson/registry-schema@0.5.0
+  - @caisson/kernel@0.4.3
+  - @caisson/ai-config@0.3.1
+
 ## 0.2.5
 
 ### Patch Changes

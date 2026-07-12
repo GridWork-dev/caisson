@@ -1,0 +1,62 @@
+# @caisson/platform-migrations
+
+## 0.2.0
+
+### Minor Changes
+
+- 5d60969: Affiliate program support. Paddle webhook parsing now captures `discount_id` on both
+  one-time purchases and subscription invoices, and the order record stamps it via a new
+  append-only platform migration. The billing provider port gains an optional
+  `createDiscount` method (the Paddle implementation mints percentage discount codes; other
+  drivers may omit it), and a new affiliate code registry migration carries per-code program
+  parameters (discount percent, commission basis points) stamped at mint time so historical
+  rows survive future parameter changes. Platform-reads test harnesses updated for the new
+  order-record column.
+- ba04bc1: A shared platform migration chain, so the marketing/dashboard app and the operator admin app
+  apply the exact same ordered database schema.
+
+  `@caisson/platform-migrations` is a new, private, unpublished package: the ordered chain of
+  platform schema migrations (credits, entitlements, licenses, usage metering, and their
+  follow-on columns), plus a small helper that assembles and applies the chain against either a
+  real Postgres or an in-memory PGlite double. It is the one place this chain is defined now.
+
+  The marketing/dashboard app's deploy-time migration runner reads the chain from this new
+  package instead of declaring it locally. The admin app's local development database bootstrap
+  now applies the SAME chain instead of hand-copying individual schema pieces — closing off a
+  class of drift where the admin app's local database could silently fall behind the real one. A
+  new automated check boots the admin app's local database and confirms every cross-tenant read
+  table exists with the correct row-level security in place.
+
+### Patch Changes
+
+- 2b65cf3: Append the order-record subscription-link migration to the shared platform chain: subscription
+  order rows now carry their backing subscription id and a coverage-stamped bit, so the refund-time
+  horizon rollback targets exactly the refunded subscription (never re-derived by a shareable price
+  id) and skips invoices that stamped no coverage.
+- Updated dependencies [5d60969]
+- Updated dependencies [1bc677a]
+- Updated dependencies [a79acb4]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [230f02a]
+- Updated dependencies [11cb4c3]
+- Updated dependencies [a79acb4]
+- Updated dependencies [4036574]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [a931095]
+- Updated dependencies [a931095]
+- Updated dependencies [b3c5b0b]
+- Updated dependencies [d5cef92]
+- Updated dependencies [d9154da]
+- Updated dependencies [8253e76]
+- Updated dependencies [99d665a]
+- Updated dependencies [4c141b0]
+- Updated dependencies [a79acb4]
+- Updated dependencies [317bad5]
+  - @caisson/billing-orchestration@0.3.0
+  - @caisson/ai-meter@1.0.0
+  - @caisson/credits@0.5.0
+  - @caisson/service-license@0.0.7
+  - @caisson/kernel@0.4.3
+  - @caisson/auth@0.3.2
+  - @caisson/migrate@0.2.5

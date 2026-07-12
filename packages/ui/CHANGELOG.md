@@ -1,5 +1,136 @@
 # @caisson/ui
 
+## 0.6.0
+
+### Minor Changes
+
+- 5a8b317: Add a `circle-user` account glyph to the icon set, and give the top-drawer Dialog variant an
+  authored slide-down enter/exit with a fading backdrop. The motion is tokenized, exits a touch faster
+  than it enters, and collapses to an instant swap under reduced-motion, with content never left
+  hidden. Modal dialogs, side drawers, and the cart are untouched.
+- f903014: Reveal gains an authored-motion variant API. Two new optional props extend the scroll
+  reveal without changing any existing call site: `direction` (`"up" | "down" | "left" |
+"right" | "none"`, default `"up"`) picks the axis the element travels in along, and
+  `distance` (px, default 12) sets the pre-reveal offset. The offset is driven through the
+  `--cs-reveal-x` / `--cs-reveal-y` custom properties the co-located `reveal.css`
+  hidden-state rule reads, with fallbacks that reproduce the legacy fade-up-12 exactly — so
+  existing `<Reveal>` and `<Reveal delay={...}>` usages are unchanged. Pair `delay` across
+  siblings (`delay={i * 70}`) for a staggered grid cascade. `prefers-reduced-motion` still
+  forces the pre-reveal state visible (never stuck at `opacity: 0`), and the primitive stays
+  gated on `.cs-js` so no-JS / pre-hydration renders content fully visible, per the design system's motion rules.
+- 51e3ed0: BREAKING: `EditionCard` / `EditionCardProps` are renamed to `BundleCard` /
+  `BundleCardProps` (`components/bundle-card`), completing the six-bundle vocabulary flip
+  now that editions are sold as bundles. Pure rename: props, markup, and the
+  shipped `.cs-edition*` CSS class contract are unchanged. Update imports from
+  `EditionCard` to `BundleCard`.
+- b5a3690: `Dialog`'s drawer variant grows a `side="top"` edge — a full-width sheet capped to content
+  height instead of a full-height side column, the shape a nav drawer under a fixed header
+  bar wants — and an optional `className` prop for a consumer-specific chrome override (e.g.
+  pinning the drawer below an app's own fixed header).
+- b5a3690: Add six interactive primitives: Tabs, Checkbox, Radio, Switch, Badge, and Accordion. All
+  hand-rolled with zero Radix and zero new dependencies, following the kit's existing recipe —
+  co-located CSS reading only `--cs-*` tokens, BEM naming, `>=24px` touch targets, and
+  hand-written keyboard interaction per the relevant WAI-ARIA authoring pattern
+  (tablist/tab/tabpanel for Tabs, native `<details name>` exclusive-group for single-open
+  Accordions, `role="switch"` for Switch). Checkbox, Radio, Switch, and Badge `forwardRef`
+  onto their single root; Tabs and Accordion don't take a ref. Every new primitive ships with
+  an automated axe-core accessibility regression test.
+- b7e58a8: Add the premium component tier, layered on the open design-system floor: an advanced data grid (multi-column filter builder, row grouping with aggregation, column show/hide and pin, CSV export, and fixed-height row virtualization), a virtualized keyboard-navigable tree, an operations/coverage matrix, a hash-chain audit timeline with per-link verification badges, a redaction-aware payload viewer, a retype-to-confirm destructive-action dialog, and an advanced date-range picker with fiscal-quarter and billing-cycle presets and a comparison range. Every component ships full keyboard navigation, ARIA roles and labels, and focus management, and themes entirely through the design-system token contract.
+
+  The open floor kit also gains the table-stakes pieces it was missing: single-column sort, a substring filter, and pagination on the DataTable, plus Dialog (native modal and edge drawer), ConfirmDialog, Toast with a live region, a styled Select, CopyField, standalone Pagination, and DetailList.
+
+- b43959c: Adds a runtime theme API: `createTheme`/`applyTheme` plus a preset registry
+  (`registerPreset`/`getPreset`/`listPresets`), available from `@caisson/ui/theme`. Three
+  built-in presets ship out of the box — `caisson` (the default), `pressure`, and
+  `bulkhead` — and buyers can layer their own token overrides on top of any of them or
+  register a fully custom preset. `applyTheme` swaps the live theme in the browser by
+  upserting a `<style>` tag; `createTheme`/`themeToCssVars`/`themeToCssText` are pure and
+  safe to call during server-side rendering.
+
+### Patch Changes
+
+- 08fd857: Fixes all 7 findings from the July 2026 production browser audit of the public site:
+
+  - The homepage "Real paths. Real code." code viewer was invisible at every breakpoint: CSS Modules
+    was silently scoping the `#repo-artifact-tab-*` id selectors that drive the pure-CSS `:has()`
+    reveal, so they never matched the real DOM ids and every card stayed `display: none`. The ids are
+    now wrapped in `:global()`.
+  - `/docs` had no `<main>` landmark, so the "Skip to content" link had no target to scroll or focus
+    to; fumadocs' `DocsLayout` now wraps its children in one `<main id="main-content" tabIndex={-1}>`.
+  - The marketplace compare checkbox's safe click target was 13x13px, well under the WCAG 2.2 2.5.8
+    minimum, and sat under the card's full-surface preview button. It now has an invisible 44x44
+    hit area lifted above the stretched action.
+  - The docs search dialog dropped focus to `<body>` on every dismissal path (Escape, close button,
+    backdrop) because none of its triggers render Radix's own `<Dialog.Trigger>`, so Radix's built-in
+    focus-restore never had a trigger to return to. It now tracks whichever element opened the dialog
+    and restores focus there via `onCloseAutoFocus`.
+  - The docs GitHub nav icon was an `<svg role="img">` with no accessible name. It now renders via a
+    site-owned `links` icon item (`aria-hidden` on the glyph) instead of fumadocs' `githubUrl`
+    shortcut, which hardcodes the unlabeled SVG; the link itself keeps its `aria-label="GitHub"`.
+  - A sitewide 44px touch-target pass: the cart trigger, mobile-nav toggle, media-carousel arrows, the
+    shared `Button` recipe, and fumadocs' own search/sidebar/GitHub icon-button trio now all carry an
+    invisible centered hit-area expansion — visual sizes are unchanged.
+  - The homepage depth-fog hero field now probes `canvas.getContext("webgl2")` before ever
+    constructing `THREE.WebGLRenderer`, and silences three.js's own console hook for the renderer
+    construction attempt, so an environment that can't allocate WebGL falls back to the poster without
+    logging repeated renderer errors.
+
+- 0137008: AppShell (dashboard shell) mobile fixes (CAISSON-69): the topbar account pill truncates with an
+  ellipsis instead of clipping past `.cs-shell`'s grid-level overflow, and a new optional
+  `mobileNavFooter` prop lets a consumer render extra content (e.g. Sign-out) inside the mobile
+  off-canvas drawer, reachable even when the topbar has no room for it.
+- 8253e76: OSS launch readiness wave. LICENSE copyright restamped to Caisson Software LLC across the
+  open set. README/AGENTS prose trued to the built reality: six-bundle vocabulary, current
+  entitlement examples, decision-record citations stripped from public-facing docs. The
+  eu-ai-act-sample template's kernel pin corrected to the current release line, with a
+  dynamic staleness test so future version cuts fail loud. Docs service search now races the
+  per-query embed against an eight-second deadline and degrades to the keyword floor instead
+  of holding the query open past caller budgets; a refund-policy docs page makes refund
+  questions answerable. Site sign-in sets a non-HttpOnly session-hint cookie so owned-items
+  UI renders without an extra round trip, and the build ignores a spurious Next trace
+  warning. Public-mirror exporter hardened: prose renames scoped to the open package set,
+  four mirror-only test exclusions, a root bunfig for the mirror workspace, and a historical
+  backfill mode for the rot-guard.
+- eff7248: Reveal now shares a single `IntersectionObserver` across every instance on the page
+  instead of constructing one per element. A page with a dozen or more `<Reveal>`s
+  (a typical landing page) used to spin up a dozen or more observers doing the same
+  scroll-tracking work; now there's exactly one, keyed to each element through a
+  `WeakMap` so every instance still reveals independently off its own intersection.
+  Visual behavior, timing, and the `prefers-reduced-motion` fallback are unchanged —
+  this is purely an internal cost reduction on page hydration.
+- 47e04fd: Typography: every sans-serif zero now renders as a plain oval — a single-glyph companion
+  face (Mona Sans, subset to the one character) sits in front of the body font, whose only
+  zero is barred and read ambiguously in prose. Docs: the eleven pages that hedged "this
+  reference is still expanding" now carry complete API references documenting each package's
+  real exported surface, with two stale auth claims corrected along the way. Marketplace:
+  diagram slides drop the duplicated chrome-bar sentence in favor of a short artifact label;
+  the carousel caption remains the single visible narration. Compare pages: the two value
+  columns no longer squeeze the Detail column to a sliver on phones.
+- 51e3ed0: `SkuMatrix` and `StatusChip` can no longer force a page wider than the viewport
+  (CAISSON-66). The matrix table moves to `table-layout: fixed` with `overflow-wrap`, so a
+  long cell breaks inside its own column instead of colliding with the neighbouring one; a
+  wide matrix (5+ columns, e.g. the Module × 6-bundle grid) gets a `:has()`-keyed min-width
+  floor and scrolls inside the existing `.cs-matrix__wrap` container (gradient cue), with
+  the first column now sticky, while a narrow compare table simply wraps in place. The
+  status chip drops `white-space: nowrap` for wrap-with-max-width, so a long fact label
+  wraps inside the pill instead of stretching the layout.
+- c905c61: Mobile grid collapse uses `minmax(0, 1fr)` instead of bare `1fr`, and `.cs-card` gains
+  `overflow-wrap: break-word`. A bare `1fr` track floors at min-content, so one long
+  unbreakable token in a card body (e.g. a slash-joined identifier list) widened the whole
+  page past a 390px viewport by 144px; the track now shrinks and the token wraps inside
+  the card.
+- 2c93128: Closes out the a11y and perf polish deferred from the interactive-primitives review:
+
+  - `Dialog` now locks background scroll while open (a native `<dialog>`'s `showModal()`
+    traps focus and makes the page inert, but never stopped it from scrolling underneath),
+    restoring the prior value on close — including for nested dialogs, which share one
+    counted lock so an inner dialog closing doesn't unlock scroll while an outer one is
+    still open. Every drawer/modal consumer picks this up automatically.
+  - `Tabs` no longer points `aria-controls` at a tabpanel id that doesn't exist in the DOM.
+    Only the active tab's panel is ever mounted, so inactive tabs now omit `aria-controls`
+    instead of referencing a dangling id.
+  - `Tooltip`'s merged trigger ref is now memoized instead of being rebuilt on every render.
+
 ## 0.5.0
 
 ### Minor Changes

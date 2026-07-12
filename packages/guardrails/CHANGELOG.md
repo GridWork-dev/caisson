@@ -1,5 +1,28 @@
 # @caisson/guardrails
 
+## 0.4.3
+
+### Patch Changes
+
+- 2b65cf3: Adds a small offline eval baseline for the PII detection/redaction path, built on the
+  existing eval harness package: one dataset pinning that obvious PII (including PII
+  pasted inside a fenced code block) gets redacted, and a second dataset pinning that
+  clean text and known near-miss shapes (a Luhn-invalid card-shaped number, a
+  Unicode-homoglyph-obfuscated email) are correctly left alone. Fully offline and
+  deterministic — no model call, no network — so it runs the real detector directly on
+  every test run and fails if that logic regresses. Adds the eval harness package as a
+  test-only dependency; no runtime behavior changes.
+- 7df836a: The PII eval baselines cover more real-world shapes: per-class detector variants
+  (parenthesized and country-code phone formats, dash-separated and 15-digit Luhn-valid
+  cards, plus-tagged subdomain emails) on the must-redact side, and more must-not-redact
+  negatives (Luhn-invalid card-shaped numbers, TLD-less email shapes, separator-less digit
+  runs) pinning the detector's false-positive behavior. The PII evals also join the dedicated
+  `eval` task, so the AI-regression lane exercises them directly.
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+  - @caisson/kernel@0.4.3
+  - @caisson/field-crypto@0.3.1
+
 ## 0.4.2
 
 ### Patch Changes

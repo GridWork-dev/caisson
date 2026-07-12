@@ -1,5 +1,43 @@
 # @caisson/audit-harness
 
+## 1.0.0
+
+### Minor Changes
+
+- 1bc677a: Add an optional embeddable matrix viewer at the `@caisson/audit-harness/ui` subpath for the tooling
+  app. It pivots the coverage rows into a domain-by-dimension grid (latest round wins) and lists the
+  reconciled findings, with an open / high-severity headline up top. The surface renders only the
+  findings and coverage handed to it — no run, no filesystem — and composes the `@caisson/ui` kit.
+  Importing the package root stays React-free.
+
+### Patch Changes
+
+- 8670f38: Audit coverage and gate-test correctness fixes. The audit-harness domain partition now sweeps
+  loose files at the tooling, infra, and tools container roots into a per-container root domain,
+  so a script added directly under one of those directories can no longer escape the coverage
+  gate; its test task is also marked uncacheable because the gate reads the whole repository tree.
+  The MCP server's entitlement gate test is re-pinned to the current catalog vocabulary: a
+  dissolved edition id resolves only as its indexed meta-package and no longer grants that
+  edition's member modules, which are denied fail-closed; the current bundle ids remain the way a
+  purchase grants its member set.
+- b63d107: Update the root-docs coverage domain to the slimmed root allowlist (README.md, CLAUDE.md, AGENTS.md) after the 2026-07-11 docs-surface phase moved PRODUCT/DESIGN/plan/SUMMARY under docs/.
+- Updated dependencies [08fd857]
+- Updated dependencies [0137008]
+- Updated dependencies [5a8b317]
+- Updated dependencies [8253e76]
+- Updated dependencies [f903014]
+- Updated dependencies [eff7248]
+- Updated dependencies [47e04fd]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [b5a3690]
+- Updated dependencies [b5a3690]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [c905c61]
+- Updated dependencies [2c93128]
+- Updated dependencies [b7e58a8]
+- Updated dependencies [b43959c]
+  - @caisson/ui@0.6.0
+
 ## 0.1.1
 
 ### Patch Changes

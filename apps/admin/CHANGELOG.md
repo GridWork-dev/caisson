@@ -1,5 +1,219 @@
 # @caisson/admin
 
+## 0.0.6
+
+### Patch Changes
+
+- 5afd1da: Admin sign-in is repositioned onto in-app GitHub OAuth, replacing the edge-only Access
+  gate as the control-plane's primary auth. Sign-in is restricted to a GitHub
+  numeric-user-id allowlist — never a username, which is renameable/re-registerable —
+  enforced both when a GitHub account first links and on every later request, so
+  narrowing the allowlist takes effect immediately even against an already-signed-in
+  session. Private package only; no publishable release.
+- a931095: The grant-entitlement admin field now suggests known entitlement ids as you type, drawn
+  from the same catalog the grant action itself validates against, so a typo is caught
+  before submitting instead of after. Private package only; no publishable release.
+- 60e65ef: `/healthz` now reports the baked `registry/index.json` digest (sha256 first-12-hex) and
+  entry count alongside the readiness flag, mirroring the license service's own field. This
+  is the admin leg of the registry index-parity probe (`registry/scripts/index-parity-probe.ts`):
+  it can now confirm the admin image serves the same index as the repo and the license
+  service, since `/healthz` is an unauthenticated Railway readiness route reachable without
+  the operator's own session. A missing or unreadable index file omits the fields rather
+  than failing readiness. Private package only; no publishable release.
+- ba3bf41: Three small hardening fixes to the admin control-plane: the Business page's `?page=`
+  query param is now capped so a hand-crafted huge value can't overflow the tenant list
+  query and 500 the page; the overview board gains a card for the Intel section (it was
+  already reachable from the top nav but missing from the home page); and the
+  purchase-email resend action now throttles to one send per account per minute so a
+  mis-click or scripted loop can't spam an account's inbox. Private package only; no
+  publishable release.
+- a931095: Admin control-plane gains an intel findings page: a read-only feed of competitor,
+  compliance-framework, GitHub-traction, analytics, and error-triage findings from the
+  standing intelligence daemon, with severity and source filters. Private package only; no
+  publishable release.
+- a931095: Admin control-plane's top nav gains a sign-out control next to the theme toggle. Private
+  package only; no publishable release.
+- a931095: Admin overview home now links its Ops, Business, Architecture, and Decisions cards
+  instead of rendering them as unlinked placeholders — all four sections were already
+  built and reachable from the top nav. Private package only; no publishable release.
+- 8db39db: Added a small live production check for the admin control-plane: it confirms the deployed
+  readiness endpoint reports healthy and that visiting the control-plane while signed out sends
+  you to the sign-in page. It runs on demand and touches only already-public, unauthenticated
+  endpoints. No product code changed, no runtime behavior change.
+- a931095: Business admin's tenants table now shows each account's resolved email address, adds a
+  search box that matches on account id or email, and paginates instead of loading every
+  row at once. The other business tables now cap their reads to a bounded page instead of
+  running unbounded. Private package only; no publishable release.
+- a931095: Business admin gains a per-account view that verifies the tamper-evident audit chain
+  every operator action already appends to, surfacing whether it is intact or where it
+  broke. Private package only; no publishable release.
+- 11cb4c3: The admin comp-grant boundary (`grantEntitlementAdmin`) now rejects an
+  unresolvable entitlement id with a 400 before writing any row, instead of accepting an
+  arbitrary string that would later brick the target account's entire entitlement
+  expansion on its next `/issue`/dashboard read. The allowlist is derived live from
+  `expandEntitlements` (bundle ids, indexed modules, reserved graduation ids, and legacy
+  aliases) — never a hand-maintained list. Private packages only; no publishable release.
+- 4036574: The Resend email driver gains an optional `replyTo` config field, sent as the `reply_to` field
+  on the wire so replies to a transactional send land in a real inbox instead of bouncing off a
+  no-reply sender. The three product senders (site magic links, license lifecycle notices, the
+  admin test-send) opt in with the support inbox, and user-facing contact copy on the refunds,
+  procurement, partners, and affiliates pages plus the ask-AI panel now points at the support
+  address; legal pages keep the accounts contact.
+- 5e9996e: Move EMAIL_SAMPLE_DATA + isEmailTemplateId into @caisson/email as public exports (single source
+  for the admin catalog preview, the send-test route, and the visual harness email leg); admin
+  imports repointed, app-local copy deleted.
+- 55b3d48: Fix the intelligence scheduler so watcher cadences longer than about 24.8 days fire at their true interval instead of collapsing into a tight loop, and run the admin control-plane's auth-table migration at server boot — with the health check failing closed if that migration does not succeed, so a broken deploy is never marked healthy.
+- a931095: Adds an admin rescue action that first-mints a license for an account that holds paid
+  entitlements but never received one, for the cases where the license reissue action
+  cannot help because there is no prior grant to re-serve. It mints through the same
+  license-issuing path the reissue action already uses, is bounded to one account per call,
+  and is fully audit-logged like every other admin action. Private package only; no
+  publishable release.
+- a931095: Adds an admin action that resends a purchase-confirmation-style email to an account's
+  own address, carrying its current entitlements and a dashboard link, for support cases
+  where a buyer needs their access back in their inbox. It is not a byte-exact copy of the
+  original receipt. Audit-logged like every other admin action. Private package only; no
+  publishable release.
+- d5cef92: Your license now arrives on its own. After a purchase or a subscription renewal, your
+  license is issued and stored automatically — no more waiting on support to run it by hand.
+  Your purchase receipt now includes it directly when it's ready.
+
+  Payment notification retries are now handled cleanly. If your payment provider redelivers a
+  notification for a transaction that already went through, you will no longer see a duplicate
+  receipt email, and a subscription's included-updates window can no longer be nudged forward by
+  a retry that carries no new charge.
+
+  If a subscription is canceled or a purchase is refunded and it actually removes something you
+  had access to, you'll now get a short email saying so, instead of finding out only by noticing
+  it missing from your dashboard.
+
+  If your one-time purchase's included-updates window is about to lapse, you'll now get an
+  advance notice by email, the same way you already do for expiring credits.
+
+  A card dispute (chargeback) on your account no longer triggers any automatic change to your
+  access — an operator reviews it and reaches out before anything changes.
+
+  On the admin side, the process that publishes revoked-license information to the edge is now
+  ordered correctly when two revokes happen close together, closing a narrow window where the
+  older of the two could have briefly overwritten the newer one.
+
+- ba04bc1: A shared platform migration chain, so the marketing/dashboard app and the operator admin app
+  apply the exact same ordered database schema.
+
+  `@caisson/platform-migrations` is a new, private, unpublished package: the ordered chain of
+  platform schema migrations (credits, entitlements, licenses, usage metering, and their
+  follow-on columns), plus a small helper that assembles and applies the chain against either a
+  real Postgres or an in-memory PGlite double. It is the one place this chain is defined now.
+
+  The marketing/dashboard app's deploy-time migration runner reads the chain from this new
+  package instead of declaring it locally. The admin app's local development database bootstrap
+  now applies the SAME chain instead of hand-copying individual schema pieces — closing off a
+  class of drift where the admin app's local database could silently fall behind the real one. A
+  new automated check boots the admin app's local database and confirms every cross-tenant read
+  table exists with the correct row-level security in place.
+
+- 4c141b0: Export the license and docs service request-body schemas for security schema fuzzing, and add a local admin auth harness so authed pages can be exercised without OAuth. No runtime behavior change.
+- b5a3690: Repoint hand-rolled inline controls at the new kit interactive primitives: the marketplace
+  facet Type/Category/Price/Media filters now use `Radio`/`Checkbox` instead of raw
+  `<input>` elements, the primary-nav Editions/Marketplace/Resources disclosures now build on
+  the new `Popover` primitive (removing duplicated Escape/outside-click/focus-return
+  handling), the mobile hamburger nav now builds on the open `Dialog` primitive's drawer
+  variant (native `<dialog>` + `showModal()`, top-edge sheet — scrim-close, focus trap, inert
+  background, and focus-return are the primitive's job now), and the admin
+  business-mutation panel's checkbox uses the same kit `Checkbox`.
+  `@caisson/testing` gains a shared axe-core + JSDOM harness (`renderIntoJsdom`,
+  `expectNoA11yViolations`/`expectNoA11yViolationsIn`) backing the new primitives' a11y
+  regression tests. Private packages only; no publishable release.
+- 97b0341: A shared component-demo registry, a live operator catalog, and two migrated growth-email
+  templates.
+
+  `@caisson/demo-registry` is a new, private, unpublished package: one typed catalog of every
+  base-kit, UI Pro, and per-package embeddable component, each entry carrying its owning
+  package, license tier, prop variants, and a live demo renderer built from sample data. It
+  is the one data source the buyer-facing component gallery and the operator catalog both
+  read from, so what ships is what gets demoed — never a second, drifting copy.
+
+  `@caisson/email` gains two more registered templates: `waitlist-welcome` and
+  `nurture-follow-up`, migrated from a standalone plain-HTML implementation into the shared
+  branded layout used by every other transactional email. Every email the product sends —
+  transactional and growth — now renders through one template registry.
+
+  The admin app's design-system section is now the catalog: every component and every email
+  template render live with sample data, grouped and filterable by license tier and owning
+  package, with a send-test-to-operator action on each email. The marketing site's two
+  standalone growth-email builders (never wired to a live sender) are removed in favor of
+  the two templates now living in `@caisson/email`; the dev-only email preview page is
+  removed too, superseded by the operator catalog.
+
+- Updated dependencies [81223a7]
+- Updated dependencies [5d60969]
+- Updated dependencies [1bc677a]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [08fd857]
+- Updated dependencies [3d23da7]
+- Updated dependencies [230f02a]
+- Updated dependencies [b8fe873]
+- Updated dependencies [11cb4c3]
+- Updated dependencies [a79acb4]
+- Updated dependencies [0137008]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [114e2a0]
+- Updated dependencies [4036574]
+- Updated dependencies [5e9996e]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [a931095]
+- Updated dependencies [a931095]
+- Updated dependencies [b3c5b0b]
+- Updated dependencies [d5cef92]
+- Updated dependencies [d9154da]
+- Updated dependencies [5a8b317]
+- Updated dependencies [0dd715a]
+- Updated dependencies [230f02a]
+- Updated dependencies [a0aa9a3]
+- Updated dependencies [8253e76]
+- Updated dependencies [ba04bc1]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [99d665a]
+- Updated dependencies [99d665a]
+- Updated dependencies [ab352ab]
+- Updated dependencies [f903014]
+- Updated dependencies [eff7248]
+- Updated dependencies [4c141b0]
+- Updated dependencies [a79acb4]
+- Updated dependencies [47e04fd]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [3758b3c]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [b5a3690]
+- Updated dependencies [b5a3690]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [c905c61]
+- Updated dependencies [2c93128]
+- Updated dependencies [b7e58a8]
+- Updated dependencies [b43959c]
+- Updated dependencies [4d85f28]
+- Updated dependencies [97b0341]
+- Updated dependencies [317bad5]
+  - @caisson/email@0.4.0
+  - @caisson/platform-migrations@0.2.0
+  - @caisson/platform-reads@0.2.0
+  - @caisson/audit-worm@1.0.0
+  - @caisson/brand@0.1.2
+  - @caisson/ui@0.6.0
+  - @caisson/registry-schema@0.5.0
+  - @caisson/credits@0.5.0
+  - @caisson/service-license@0.0.7
+  - @caisson/demo-registry@0.2.0
+  - @caisson/kernel@0.4.3
+  - @caisson/observability@0.3.0
+  - @caisson/org-controls@0.3.0
+  - @caisson/auth@0.3.2
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.0.5
 
 ### Patch Changes

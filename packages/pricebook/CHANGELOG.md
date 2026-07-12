@@ -1,5 +1,32 @@
 # @caisson/pricebook
 
+## 0.5.1
+
+### Patch Changes
+
+- 9a81dd7: Edition-trace purge: repoint every mint site off the dissolved edition ids. The four
+  archived-edition + bundle-sentinel rows in `PURCHASE_BOOK` and `RENEWAL_BOOK` now emit the canonical
+  six-bundle ids (`ai-production`/`local-first`/`agentic-dev`/`everything`), so no new purchase or renewal
+  can mint a legacy id, and a replay of any historical sandbox event grants the canonical id. `resolveRenewal`
+  drops its now-dead bundle-alias normalization (every row stores a canonical id; the read-side alias fold for
+  a future module rename stays where a grant id is consumed). Version stamps bumped (append-only versioning).
+- 2b65cf3: The Priority Support annual plan now grants 1,000 credits per cycle — matching the
+  Developer plan's allotment — replacing the earlier nominal 100-credit placeholder.
+- 99d665a: Added a `PLAN_BOOK` row for the priority-support subscription ($999/yr, next-business-day
+  first response), carrying the `priority-support` entitlement id and an annual cadence. Kept as a
+  PLACEHOLDER price id like every other row in this section until the operator creates the matching
+  Paddle product and swaps in the real price id — the same graduation the Developer and
+  Compliance-Updates rows already took.
+- Updated dependencies [3d23da7]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+- Updated dependencies [99d665a]
+- Updated dependencies [ab352ab]
+- Updated dependencies [4d85f28]
+  - @caisson/registry-schema@0.5.0
+  - @caisson/kernel@0.4.3
+
 ## 0.5.0
 
 ### Minor Changes

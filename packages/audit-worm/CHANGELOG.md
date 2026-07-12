@@ -1,5 +1,37 @@
 # @caisson/audit-worm
 
+## 1.0.0
+
+### Minor Changes
+
+- 1bc677a: Add an optional embeddable audit-chain viewer at the `@caisson/audit-worm/ui` subpath. It renders
+  your tenant's hash-chain entries alongside the verification verdict, flagging the exact entry where
+  a chain breaks. The surface is presentational and server-render safe — it draws only the data you
+  hand it, opens no database, and composes the `@caisson/ui` component kit. Importing the package root
+  stays React-free; React and the kit are optional peers pulled in only when you use `/ui`.
+
+### Patch Changes
+
+- Updated dependencies [08fd857]
+- Updated dependencies [0137008]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [5a8b317]
+- Updated dependencies [8253e76]
+- Updated dependencies [f903014]
+- Updated dependencies [eff7248]
+- Updated dependencies [47e04fd]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [b5a3690]
+- Updated dependencies [b5a3690]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [c905c61]
+- Updated dependencies [2c93128]
+- Updated dependencies [b7e58a8]
+- Updated dependencies [b43959c]
+  - @caisson/ui@0.6.0
+  - @caisson/kernel@0.4.3
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.3.0
 
 ### Minor Changes

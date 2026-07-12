@@ -1,5 +1,25 @@
 # @caisson/local-ai-app
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [317bad5]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [329150a]
+- Updated dependencies [679cce6]
+- Updated dependencies [1bc677a]
+- Updated dependencies [8253e76]
+  - @caisson/license-verify@0.3.1
+  - @caisson/kernel@0.4.3
+  - @caisson/local-ai@0.2.6
+  - @caisson/local-store@1.0.0
+  - @caisson/field-crypto@0.3.1
+  - @caisson/local-inference@0.1.2
+  - @caisson/local-privacy@0.1.2
+  - @caisson/local-sync@0.1.2
+
 ## 0.0.6
 
 ### Patch Changes

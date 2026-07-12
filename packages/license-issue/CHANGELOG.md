@@ -1,5 +1,38 @@
 # @caisson/license-issue
 
+## 1.0.0
+
+### Minor Changes
+
+- 1bc677a: Add an optional embeddable issuance-log surface at the `@caisson/license-issue/ui` subpath for the
+  admin issuer app. It renders the issued-license records — tier, live/expired status, entitlement
+  count, and coverage — with the active-vs-total split up front. The surface is read-only and
+  server-render safe: it holds no signing key and opens no database, drawing only the records handed
+  to it, and composes the `@caisson/ui` kit. Importing the package root stays React-free.
+
+### Patch Changes
+
+- Updated dependencies [08fd857]
+- Updated dependencies [0137008]
+- Updated dependencies [317bad5]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [5a8b317]
+- Updated dependencies [8253e76]
+- Updated dependencies [f903014]
+- Updated dependencies [eff7248]
+- Updated dependencies [47e04fd]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [b5a3690]
+- Updated dependencies [b5a3690]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [c905c61]
+- Updated dependencies [2c93128]
+- Updated dependencies [b7e58a8]
+- Updated dependencies [b43959c]
+  - @caisson/ui@0.6.0
+  - @caisson/license-verify@0.3.1
+  - @caisson/kernel@0.4.3
+
 ## 0.0.6
 
 ### Patch Changes
