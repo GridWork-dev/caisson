@@ -30,10 +30,19 @@ The free stack has exactly three real gaps; all close for **$0** on a single pri
    (`socket-security` GitHub App, live in CI — verified 2026-07-11 org API read,
    `docs/state/production-readiness.md`).
 2. **DONE — Arnica installed** (2026-07-12, session Q): `arnica-github-connector` on the
-   `caisson-sh` org covering caisson + caisson-oss (operator-installed, org-API-verified).
-   Free tier; git-identity/permission hardening class none of the other tools touch.
-   Remaining dashboard-side config: enable the identity/permission policies + point alerts
-   at admin@caisson.sh (Arnica has no Discord channel; email is the fit here).
+   `caisson-sh` org covering caisson + caisson-oss (operator-installed, org-API-verified,
+   silent detection-only default scan on). **Free-tier reality check (same day, browser-agent
+   config pass + pricing research):** the identity/permission class this memo credited it
+   with is NOT a free feature — free = redundant SAST/SCA/IaC/license/reputation + secrets
+   scanning plus git-posture _inventory reports_ (SBOM, excessive-permissions identification,
+   stale users/repos). The ladder: Team ~€8/user/mo adds permission mitigation/hardening;
+   Business ~€15 adds real-time policy workflows; **Enterprise ~€30/user/mo is where anomaly
+   detection lives** (per-identity billing, monthly true-ups, bots can count). Verdict for a
+   one-human pre-revenue org: **do not pay** — ~$400+/yr to watch one identity GitHub 2FA +
+   fine-grained PATs already guard fails this memo's own revenue-lens rule. KEPT free +
+   silent as a fifth detection opinion; scheduled alerts → admin@gridwork.dev (the only
+   known identity; admin@caisson.sh would need a user invite). Revisit only if identity
+   features reach a lower tier or a second human joins the org.
 
 ## Ranked
 

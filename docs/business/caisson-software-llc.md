@@ -9,6 +9,12 @@ owner: operator (business/legal track)
 The business/legal side of the commerce flip. This doc is the SOT for entity facts and the
 formation → banking → Paddle-production order of operations. Product/launch mechanics stay in
 `docs/ops/launch-runbook.md` (this doc feeds its §2 Paddle-production prerequisite).
+**2026-07-12 intake:** the full counsel/CPA packet set now lives in-repo — `legal/` +
+`finance/` (per-folder README indexes) with `caisson-internal-master-map.md` as the packet's
+own cross-cutting control map (verified-record vs family-intent separation, advisor
+workstreams, and the §13 first-sale gate register). On any conflict between this doc's
+summaries and the master map's CONFIRMED rows, the map wins (it was built from direct PDF
+inspection); this doc stays the quick-read SOT.
 Personal details (member identity documents, SSN, home address) live OUTSIDE the repo — never
 here. **Scoped override (operator lock, 2026-07-12 session-Q picker):** the counsel/CPA
 document sets under `legal/` + `finance/` are committed verbatim (incl. the EIN mailing
@@ -17,18 +23,19 @@ SSNs/account numbers stay banned everywhere.
 
 ## 1. Entity record
 
-| Fact               | Value                                                                                                                                                                         |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Legal name         | **Caisson Software LLC** (exact string everywhere legal: EIN application, Mercury, Paddle, site ToS/EULA)                                                                     |
-| Type               | Georgia limited liability company, **member-managed**, single member                                                                                                          |
-| Member             | Operator's designated sole member, 100% (details off-repo); membership **omitted from the state filing**                                                                      |
-| Registered agent   | Northwest Registered Agent (GA); their address is the public/service-of-process address                                                                                       |
-| Formation          | **APPROVED** — organized 2026-07-06, GA SOS control number **26147198**; Certificate of Organization witnessed 2026-07-08; Articles + Certificate in hand (2026-07-10 intake) |
-| EIN                | **ISSUED 2026-07-10** (same-day, ahead of the 07-15/07-21 estimates) — keep the CP-575 letter with the formation docs; Mercury + tax surfaces read from it                    |
-| Public locale line | "based in Atlanta, Georgia" — **no street address on the site**                                                                                                               |
-| Business email     | **admin@caisson.sh** (all legal/privacy/business contact points; replaces legal@/privacy@gridwork.dev)                                                                        |
-| Tax posture        | Disregarded entity (default). **No S-corp election** — deferred until ~$50k+ profit or ownership transfer                                                                     |
-| Brand vs legal     | Public brand stays "Caisson"; the legal name appears in ToS/EULA/privacy + payment/bank/tax surfaces only                                                                     |
+| Fact               | Value                                                                                                                                                                                                                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Legal name         | **Caisson Software LLC** (exact string everywhere legal: EIN application, Mercury, Paddle, site ToS/EULA)                                                                                                                                                                                                      |
+| Type               | Georgia limited liability company, **member-managed**, single member                                                                                                                                                                                                                                           |
+| Sole member        | **Lakshmi Delbel** (mother/custodial parent), 100% — named by the organizer resolution + as EIN addressee; membership **omitted from the state filing**. Control rule (master map): Liam is NOT described as a current member or beneficial owner unless counsel documents that conclusion                     |
+| Registered agent   | Northwest Registered Agent (GA); their address is the public/service-of-process address                                                                                                                                                                                                                        |
+| Formation          | **APPROVED** — organized 2026-07-06, GA SOS control number **26147198**; Certificate of Organization witnessed 2026-07-08; Articles + Certificate in hand (2026-07-10 intake)                                                                                                                                  |
+| Principal office   | 8735 Dunwoody Place Ste N, Atlanta, GA 30350 (articles; same as the RA office)                                                                                                                                                                                                                                 |
+| EIN                | **42-3746402** (name control CAIS), CP 575 G dated 2026-07-10 (same-day, ahead of the 07-15/07-21 estimates) — keep the CP-575 letter with the formation docs; Mercury + tax surfaces read from it. Notice mailing address: 1227 Barnes St NW, Atlanta, GA 30318 (do not substitute across address categories) |
+| Public locale line | "based in Atlanta, Georgia" — **no street address on the site**                                                                                                                                                                                                                                                |
+| Business email     | **admin@caisson.sh** (all legal/privacy/business contact points; replaces legal@/privacy@gridwork.dev)                                                                                                                                                                                                         |
+| Tax posture        | Disregarded entity (default). **No S-corp election** — deferred until ~$50k+ profit or ownership transfer                                                                                                                                                                                                      |
+| Brand vs legal     | Public brand stays "Caisson"; the legal name appears in ToS/EULA/privacy + payment/bank/tax surfaces only                                                                                                                                                                                                      |
 
 Where each address goes (the "full address" question — answered):
 
@@ -41,9 +48,9 @@ Where each address goes (the "full address" question — answered):
 
 **Document intake (2026-07-10):** the Northwest packet (Certificate of Organization +
 stamped Articles, free-template single-member Operating Agreement draft, Initial
-Resolutions signed by the organizer 2026-07-08) was received and reviewed. Filed OUTSIDE
-the repo at `~/lab/caisson-inbox/business-docs/` (member identity stays off-repo per the
-header rule). Draft-OA gaps found at review — all queued for the lawyer engagement
+Resolutions signed by the organizer 2026-07-08) was received and reviewed. Originally filed
+off-repo at `~/lab/caisson-inbox/business-docs/`; **moved into `legal/` 2026-07-12** under
+the session-Q override (see header). Draft-OA gaps found at review — all queued for the lawyer engagement
 (`docs/gtm/legal-review-brief.md`): the certification/Exhibit-1 blanks (unsigned, no
 capital contribution), the member address filled with the RA office address instead of the
 member's residential address, the template's §1.3(c)/1.4 death-of-member
@@ -74,6 +81,13 @@ lawyer scope — the USPTO filing is deliberately deferred to post-launch tracti
 Keep the resulting CP 575 EIN letter — Mercury and Paddle both want it.
 
 ## 3. Operating agreement — the lawyer brief
+
+**SUPERSEDED IN DETAIL (2026-07-12):** this section's 6-item sketch grew into the full
+counsel packet set under `legal/` — `counsel-drafting-memorandum.md` (the drafting brief),
+`caisson-confidential-lawyer-packet.md` (LQ question set + confirmed records),
+`draft-instrument-set.md` (the FOR-COUNSEL draft instruments, incl. the Aug 19 2027
+12:01 a.m. ET handoff design and post-majority ratification), and `caisson-exhibit-index.md`.
+The summary below stays as the quick-read; counsel works from the packet.
 
 One signature-ready **operating agreement** plus one **minor-IP-assignment instrument**,
 Georgia law, names/addresses exactly matching the member's ID and the EIN record. What it must
@@ -135,3 +149,43 @@ Run as its own session when the GA approval lands. Steps in hard order; parallel
 **Dependency spine:** Articles → EIN → OA/IP → Mercury → Paddle account → production catalog →
 checkout flip. The catalog-rework W7 sandbox big-bang is independent of ALL of this (sandbox
 creds already on the box) — only production Paddle waits on the entity chain.
+
+## 5. Advisor workstreams + first-sale gates (from the 2026-07-11 packet)
+
+The master map (`caisson-internal-master-map.md`) carries the full versions — this is the
+quick-read state. Statuses use the map's key (CONFIRMED / INTENDED / UNDER LEGAL REVIEW /
+UNDER CPA REVIEW / APPLICATION PENDING / REQUIRED BEFORE FIRST SALE).
+
+### Workstream snapshot
+
+| Workstream                                                                                                                                                                                                                    | Owner              | State                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Client/conflict identification, ownership structure, age-18 transfer, OA + resolutions (incl. the organizer-resolution "adopted general provisions" ambiguity), delegation/continuity, existing + future IP, minor employment | Lawyer             | **UNDER LEGAL REVIEW** — packet drafted 2026-07-11, engagement beginning                                                                                                              |
+| Historical funding classification (father's Amex + Liam's Current, backfilled to Jan 2025), opening books, payroll system, tax/refund reserves, gift/transfer reporting                                                       | CPA                | **UNDER CPA REVIEW** — coordination packet drafted 2026-07-11                                                                                                                         |
+| Mercury (banking) + Paddle (MoR) approvals                                                                                                                                                                                    | Lakshmi / operator | **APPLICATION PENDING** — both submit with current truthful ownership facts (Lakshmi as owner/representative); update platforms if counsel's final structure changes a submitted fact |
+
+### The central mismatch (the map's controlling caution)
+
+Lakshmi is the CONFIRMED sole legal member; the family INTENT is Liam's economic benefit now
+and 100% transfer at 18 (Aug 19, 2027); Liam is the confirmed minor operator and primary code
+author. Those facts do NOT establish present ownership/beneficial interest for Liam — counsel
+chooses and documents the structure before revenue, and no application or doc describes Liam
+as a member/beneficial owner until then.
+
+### First-sale gates (business side)
+
+The map's §13 register holds **18 REQUIRED-BEFORE-FIRST-SALE gates** (truthful KYC, Mercury,
+Paddle, definitive governance, ownership design, age-18 mechanism, delegated authority, IP
+chain, payroll, opening books, reserves, commercial paper, buyer-audience posture, export
+controls, open-source boundary, production commerce test, account/key continuity, go/no-go
+record). These COMPOSE WITH the technical gates in `docs/ops/launch-runbook.md` — the runbook
+alone no longer defines first-sale readiness; a row closes only on evidence, not on code
+existing or an application being submitted.
+
+### Calendar items the map adds
+
+- **Georgia annual registration:** first one due Jan 1 – Apr 1, 2027.
+- **Aug 19, 2027 transfer trigger:** preparation deadlines set well before the date (pre-trigger
+  review, admission record, ledger, ratification, KYC/bank/platform updates).
+- **FinCEN BOI/CTA:** current guidance exempts U.S.-created entities — verify the live rule
+  before ever filing or answering a solicitation.
