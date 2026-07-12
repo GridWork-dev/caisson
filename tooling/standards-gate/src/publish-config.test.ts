@@ -91,17 +91,30 @@ describe("publish-readiness flip (ADR-0111)", () => {
     // A SOLD-but-unpublished package (its bare slug sits in RESERVED_MODULE_ENTITLEMENT_IDS) is
     // exempt until its first publish — the reservation drops in the same change that lands the
     // index/ledger entry, so this exemption self-expires and the guard re-arms automatically.
+    // A DELISTED id is exempt permanently: delisting is terminal (ADR-0271) and
+    // ci-publish-step.ts skips delisted manifests in version mode, so a `changeset version`
+    // dependency-cascade bump on one can never gain a ledger row (first hit: the 2026-07-12
+    // train-ride consume bumped the dissolved edition metas agent-dev/ai-kit/local-ai).
+    const ledgerLines = readFileSync(
+      join(ROOT, "registry", "ledger.jsonl"),
+      "utf8",
+    )
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .map(
+        (l) => JSON.parse(l) as { op?: string; id: string; version?: string },
+      );
     const ledgered = new Set(
-      readFileSync(join(ROOT, "registry", "ledger.jsonl"), "utf8")
-        .split("\n")
-        .filter((l) => l.trim() !== "")
-        .map((l) => {
-          const e = JSON.parse(l) as { id: string; version: string };
-          return `${e.id}@${e.version}`;
-        }),
+      ledgerLines
+        .filter((e) => e.op === undefined)
+        .map((e) => `${e.id}@${e.version}`),
+    );
+    const delisted = new Set(
+      ledgerLines.filter((e) => e.op === "delist").map((e) => e.id),
     );
     const off = published
       .filter((p) => !ledgered.has(`${p.pj.name}@${p.pj.version}`))
+      .filter((p) => !delisted.has(p.pj.name))
       .filter(
         (p) =>
           !RESERVED_MODULE_ENTITLEMENT_IDS.has(
