@@ -52,6 +52,7 @@ jobs:
             eval:
               - 'packages/**'
               - 'apps/**'
+              - 'services/intel/**'
             ui:
               - 'packages/ui/**'
             local-store:
@@ -71,8 +72,8 @@ jobs:
   # and baseline; gating their merges on OUR regression baseline is wrong. The eval task ships in the
   # library for the buyer to opt into, but it is not one of the required buyer-repo CI checks.
   #
-  # NOT a required check → safe to path-skip on PRs when packages/** and apps/** are untouched;
-  # always runs on main pushes.
+  # NOT a required check → safe to path-skip on PRs when packages/**, apps/**, and services/intel/**
+  # are untouched; always runs on main pushes.
   eval:
     needs: changes
     if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.eval == 'true') }}

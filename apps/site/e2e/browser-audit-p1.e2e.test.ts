@@ -89,6 +89,28 @@ async function scrollWhenStable(target: Locator): Promise<void> {
   }
 }
 
+/** Bounded retry around a geometry-reading evaluate(): `goto`'s "load" resolves on the load
+ *  event, which fires before the browser guarantees the next paint — on a slow CI runner an
+ *  evaluate() that runs immediately after can read getBoundingClientRect() as 0x0 for every
+ *  element, and a width/height filter or hit-test built on those 0x0 rects drops everything.
+ *  Proven flake: two consecutive main-branch runs hit `controls.length === 0` on
+ *  byte-identical code on 2026-07-11 (GitHub Actions runs 29159973533 / 29160396237), then a
+ *  third run passed. `isUnpainted` names the caller's own "still reading pre-paint geometry"
+ *  signal; retries a capped few times with a small backoff to give the browser another
+ *  animation-frame tick, then returns the last result and lets the existing assertions fail
+ *  loudly — this masks the paint race, it never masks a real post-paint failure. */
+async function evaluateAfterPaint<T>(
+  run: () => Promise<T>,
+  isUnpainted: (result: T) => boolean,
+): Promise<T> {
+  let result = await run();
+  for (let attempt = 0; isUnpainted(result) && attempt < 4; attempt += 1) {
+    await new Promise((r) => setTimeout(r, 500));
+    result = await run();
+  }
+  return result;
+}
+
 describe("browser-audit P1 graduation — deterministic Playwright over a local next start (ADR-0323 D2)", () => {
   beforeAll(async () => {
     const buildId = join(SITE_DIR, ".next", "BUILD_ID");
@@ -395,35 +417,41 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
           await goto(page, "/");
           // every visible header control's center must hit ITSELF — an expanded 44px ::before
           // on a neighbor (gap-2 cluster: search/cart/theme/menu) must not swallow it.
-          const controls = await page.evaluate(() => {
-            const els = Array.from(
-              document.querySelectorAll("header button, header a[href]"),
-            ).filter((el) => {
-              const r = el.getBoundingClientRect();
-              return (
-                r.width > 0 &&
-                r.height > 0 &&
-                r.y >= 0 &&
-                r.x >= 0 &&
-                r.bottom <= window.innerHeight &&
-                r.right <= window.innerWidth
-              );
-            });
-            return els.map((el) => {
-              const r = el.getBoundingClientRect();
-              const hit = document.elementFromPoint(
-                r.x + r.width / 2,
-                r.y + r.height / 2,
-              );
-              return {
-                name:
-                  el.getAttribute("aria-label") ??
-                  el.textContent?.trim().slice(0, 20) ??
-                  el.tagName,
-                selfOwned: hit !== null && (hit === el || el.contains(hit)),
-              };
-            });
-          });
+          const controls = await evaluateAfterPaint(
+            () =>
+              page.evaluate(() => {
+                const els = Array.from(
+                  document.querySelectorAll("header button, header a[href]"),
+                ).filter((el) => {
+                  const r = el.getBoundingClientRect();
+                  return (
+                    r.width > 0 &&
+                    r.height > 0 &&
+                    r.y >= 0 &&
+                    r.x >= 0 &&
+                    r.bottom <= window.innerHeight &&
+                    r.right <= window.innerWidth
+                  );
+                });
+                return els.map((el) => {
+                  const r = el.getBoundingClientRect();
+                  const hit = document.elementFromPoint(
+                    r.x + r.width / 2,
+                    r.y + r.height / 2,
+                  );
+                  return {
+                    name:
+                      el.getAttribute("aria-label") ??
+                      el.textContent?.trim().slice(0, 20) ??
+                      el.tagName,
+                    selfOwned: hit !== null && (hit === el || el.contains(hit)),
+                  };
+                });
+              }),
+            // pre-paint every header control's rect is 0x0, so the width/height filter above
+            // drops all of them — an empty array IS the "still pre-paint" signal here.
+            (r) => r.length === 0,
+          );
           expect(controls.length).toBeGreaterThan(0);
           const stolen = controls.filter((c) => !c.selfOwned);
           expect(
@@ -497,19 +525,26 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
         for (const name of ["Previous slide", "Next slide"]) {
           const arrow = page.getByLabel(name, { exact: true }).first();
           await arrow.waitFor({ state: "visible", timeout: 10_000 });
-          const info = await arrow.evaluate((el) => {
-            const before = getComputedStyle(el, "::before");
-            const r = el.getBoundingClientRect();
-            const hit = document.elementFromPoint(
-              r.x + r.width / 2,
-              r.y + r.height / 2,
-            );
-            return {
-              w: before.width,
-              h: before.height,
-              selfOwned: hit !== null && (hit === el || el.contains(hit)),
-            };
-          });
+          const info = await evaluateAfterPaint(
+            () =>
+              arrow.evaluate((el) => {
+                const before = getComputedStyle(el, "::before");
+                const r = el.getBoundingClientRect();
+                const hit = document.elementFromPoint(
+                  r.x + r.width / 2,
+                  r.y + r.height / 2,
+                );
+                return {
+                  w: before.width,
+                  h: before.height,
+                  selfOwned: hit !== null && (hit === el || el.contains(hit)),
+                  rectEmpty: r.width === 0 || r.height === 0,
+                };
+              }),
+            // same race, one carousel-open frame later: a 0x0 rect means the hit-test above
+            // was built on pre-paint geometry, so selfOwned isn't trustworthy yet.
+            (r) => r.rectEmpty,
+          );
           expect(info.w, `${name} 44px overlay width`).toBe("44px");
           expect(info.h, `${name} 44px overlay height`).toBe("44px");
           expect(
