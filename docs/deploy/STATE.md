@@ -39,10 +39,14 @@ mirror sync from 3a03390` (history appended, never rewritten).
   packument `@caisson/kernel` still advertises `latest: 0.4.2` from the old inlined sidecar —
   by design (advertise-follows-upload).
 
-**PENDING deploy act (b): registry Worker redeploy** (`registry/worker/deploy.sh` from
-`3a03390c`) — inlines the new index.json + tarballs.json so `dist-tags.latest` advertises the
-v2026.07.12 versions. Operator-gated; the classifier held it for an in-window operator approval.
-After it: spot-check `bun add @caisson/kernel@latest` resolves 0.4.3 and installs clean.
+**Deploy act (b) EXECUTED (operator-approved, same day): registry Worker redeploy** —
+`registry/worker/deploy.sh` from post-train `main`, version `c941f5d2-d546-4c68-b680-71c22cd83f4b`,
+live at registry.caisson.sh. Pasted verify: packument `@caisson/kernel` → `latest: 0.4.3 |
+versions: 0.4.0, 0.4.1, 0.4.2, 0.4.3` · `kernel-0.4.3.tgz -> 200` · clean-env
+`bun add @caisson/kernel@latest` → `installed @caisson/kernel@0.4.3 with binaries: caisson-gate`
+· two REPAIRED-row packages install integrity-verified: `bun add @caisson/ui@latest
+@caisson/cli@latest` → `ui: 0.6.0 cli: 0.5.0` (102 packages, bun verifies packument integrity
+against served bytes — the 3a03390c row repair proven at the buyer seam).
 
 ## 2026-07-12 — wave-1 reconcile deploy act (a): registry Worker + site + docs from merged main
 
