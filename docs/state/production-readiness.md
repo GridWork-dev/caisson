@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-12
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -26,7 +26,7 @@ Six-dimension readiness assessment from the 2026-07-09 whole-repo sweep (16-agen
 | Commerce         | **BLOCKED** | Everything built + sandbox-proven end-to-end; no Paddle production account/catalog, EIN in flight — deliberate pre-launch                      |
 | Operational      | **gaps**    | Telemetry + intel daemon live; daily backups + rehearsed restore PROVEN 2026-07-11; external uptime monitor live (Better Stack)                |
 | Buyer experience | **gaps**    | All 3 P0 + 12 P1 lifecycle-audit gaps verified fixed in code; residue is the operator launch checklist                                         |
-| Quality gates    | **gaps**    | 4-check CI gate real and green; "required" is discipline (no branch protection on the private plan)                                            |
+| Quality gates    | **gaps**    | 5-check CI gate real and green; "required" is discipline (no branch protection on the private plan)                                            |
 
 ## True go-live blockers (consolidated)
 
@@ -158,7 +158,8 @@ entitlement gates, sign-out revocation, marketplace media 28/28 real. Remaining:
 
 ## Quality gates — gaps
 
-The 4-check gate (check · standards-gate · registry-index · oscal-conformance) is real, green on
+The 5-check gate (check · standards-gate · registry-index · oscal-conformance · deterministic —
+the fifth flipped required 2026-07-11, ADR-0327/CAISSON-95) is real, green on
 every recent main push/PR, and this sweep made the 3 path-filtered quality jobs (eval ·
 token-drift · native-ext) unconditional on main pushes. The PGlite flake class was killed
 structurally (PRs #168/#174). All 14 CI-mirror gates pass locally on this branch.
@@ -169,23 +170,28 @@ structurally (PRs #168/#174). All 14 CI-mirror gates pass locally on this branch
 - **P2:** live-verification harness (ADR-0224) run once end-to-end (Paddle seam, 2026-07-04);
   the 2026-07-08 credential rotation has no recorded harness re-run across the other four seams.
   (tracked as of this sweep)
-- **P2:** eval baseline is 2 suites / 5 cases, frozen since creation, while 6+ AI-surface waves
-  shipped — regression protection is nominal. (tracked as of this sweep)
+- **P2 (closed 2026-07-11/12):** eval baseline expanded structurally — PR #216 grew the TS
+  injection/PII suites (injection 2→20 attack classes, Wilson floor 0.8), then the ADR-0328 R
+  session (PR #218) ported the eval mechanics to the support-bot Python surface (44 cases across
+  injection-defense / PII-exfiltration / grounding-escalation, `eval`-marked pytest CI gate) and
+  built the intel judged replay harness (cassette recording rides session 4's operator act).
 - **P3:** `bun run sot` never runs in CI (advisory by design; a scheduled advisory run is cheap).
   (tracked as of this sweep)
 - **P3:** 147 pending changesets since the last version cut (PR #131) — a deliberate release-cut
   decision, not drift; flagged so the next cut is a chosen act. (tracked as of this sweep)
 
-## GitHub org apps + CI wiring (verified live 2026-07-11, org API read)
+## GitHub org apps + CI wiring (verified live 2026-07-12, org API read — session Q sweep)
 
-The `caisson-sh` org has exactly **three** GitHub Apps installed — anything else claimed
+The `caisson-sh` org has exactly **five** GitHub Apps installed — anything else claimed
 anywhere is stale:
 
-| App               | Repos    | Job                                                                                                     | Wiring state                                                                          |
-| ----------------- | -------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `renovate`        | selected | Dependency updates + Dockerfile `pinDigests`                                                            | Live; strict-digests flip parked until the first pin wave lands (ADR-0315)            |
-| `socket-security` | selected | Supply-chain alerts on PRs — posts the "Socket Security: Project Report" + "Pull Request Alerts" checks | Live, green on PR #205 this session                                                   |
-| `linear-code`     | all      | Linear Code Intelligence — branch/PR/deploy sync, magic-word closes                                     | Live, proven: PR #205 "Closes CAISSON-89/90/91" auto-moved all three to Done at merge |
+| App                       | Repos      | Job                                                                                                     | Wiring state                                                                                                           |
+| ------------------------- | ---------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `renovate`                | selected   | Dependency updates + Dockerfile `pinDigests`                                                            | Live; strict-digests flip parked until the first pin wave lands (ADR-0315)                                             |
+| `socket-security`         | selected   | Supply-chain alerts on PRs — posts the "Socket Security: Project Report" + "Pull Request Alerts" checks | Live, green on PR #205 this session                                                                                    |
+| `linear-code`             | all        | Linear Code Intelligence — branch/PR/deploy sync, magic-word closes                                     | Live, proven: PR #205 "Closes CAISSON-89/90/91" auto-moved all three to Done at merge                                  |
+| `blacksmith-sh`           | all        | Blacksmith VM-per-job CI runners (ADR-0326) + the Codesmith PR footer                                   | Live since 2026-07-11; hot path migrated, main runs green; free-tier burn = open fork PF2-1                            |
+| `arnica-github-connector` | both repos | Security-posture scanning (free tier — no identity/permission features; those are Enterprise-only)      | Installed + org-API-verified 2026-07-12 (session Q); verdict keep-free-never-pay (`docs/security/paid-tooling-roi.md`) |
 
 **Not apps** (repo-local, ADR-0314 four-layer stack): `semgrep-pro` is a CI job (armed by the
 `SEMGREP_APP_TOKEN` secret, free-tier Pro interfile), alongside `deterministic` (gitleaks/osv/
@@ -193,9 +199,9 @@ zizmor class), `evidence-pack`, `knip`, `token-drift`, `eval`, `native-ext`, and
 required set (`check` · `standards-gate` · `registry-index` · `oscal-conformance`). Runner:
 CI hot path migrated to Blacksmith VM-per-job runners (ADR-0326); `caisson-amd64` scale set
 retiring. Credential jobs (`publish`/`deploy-railway`/`mirror-sync`/`release-train`) stay
-`ubuntu-latest`; mac leg self-hosted `gw-macos-arm64`. No
-Arnica or other posture app is installed — the playbook's Layer 1-4 local stack covers that
-ground (`docs/security/tooling-playbook.md`).
+`ubuntu-latest`; mac leg self-hosted `gw-macos-arm64`. Arnica installed 2026-07-12 (free tier,
+posture scanning only) alongside the playbook's Layer 1-4 local stack
+(`docs/security/tooling-playbook.md`).
 
 ## Email architecture (locked 2026-07-11, ADR-0324 — execution rides Kickoff O)
 
