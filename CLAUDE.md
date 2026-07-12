@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0327.** The full
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0328.** The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate
    it here. The per-sitting lock narratives formerly inlined in this clause are archived verbatim
    in `docs/archive/build-history.md`.
@@ -48,6 +48,10 @@ docs-RAG · support-bot · SigNoz) + the local intel daemon, Paddle SANDBOX comm
 `docs/build-state.md` · deploy log `docs/deploy/STATE.md` · work tracker
 `docs/state/outstanding-work.md`. The full build chronology (P0 through the 2026-07 kickoff
 waves, every PR/ADR sitting) is archived in `docs/archive/build-history.md`.
+
+**Execution waves (ADR-0328 D6):** multi-cluster backlogs run as PARALLEL worktree sessions
+by default — one PR each (hard), push-not-merge, boards frozen, dedicated reconcile session at
+2+ branches. Full convention: `docs/ops/parallel-session-waves.md`.
 
 ## Engineering invariants (locked, ADR-0002 — apply to all product code)
 
