@@ -8,6 +8,42 @@ grounds:
 
 # Deploy log
 
+## 2026-07-12 — FIRST RELEASE-TRAIN RIDE: v2026.07.12 (ADR-0325/0328 D2) — R2 catalog upload + mirror sync
+
+Operator-approved (session 4 kickoff step 4b). WHY: the version PR (#222, 153 changesets →
+`d4a32ecc`) put the whole catalog's new versions in ledger/index/tarballs.json, but the R2
+objects only arrive via the train's leg 1 — the CAISSON-85/86 gap (rows exist, bytes 404).
+Tag `v2026.07.12` targets `3a03390c` (the version-PR merge's attestation/train-fix successor
+per the operator tag-anchoring lock — see `docs/releases/v2026.07.12-checklist.md`).
+
+Three tag attempts; the train's gates stopped each defective ride BEFORE any external write:
+
+1. `efe43438` — readiness NOT READY 6/8: job token lacked `checks: read`/`pull-requests: read`,
+   and sot's branch-hygiene counted the detached-HEAD pseudo-entry as drift. Fixed in `39d19bad`.
+2. `39d19bad` — readiness 8/8, but leg 1's byte gate killed publish: 5 tarballs.json rows stale
+   (PR #222's in-branch fixes edited packed files AFTER version-pr.yml recorded the rows;
+   append-only rows are never re-packed). Repaired in `3a03390c` — rows re-recorded from a
+   pristine checkout, 46/46 re-verified byte-identical locally. Follow-up: CAISSON-103.
+3. `3a03390c` — **train green end-to-end** (run 29213161110): readiness 8/8 → propagate.
+
+Pasted live-verify evidence:
+
+- **leg 1 — registry publish (run 29213178982):** verified 46/46 tarballs byte-identical at the
+  tag, then `[publish-and-index] R2 upload complete: 46 uploaded, 0 already present (tag
+v2026.07.12)` — **CAISSON-85/86 closed.**
+- **leg 2 — mirror sync (run 29213249786):** caisson-sh/caisson-oss HEAD → `d5a37a51 chore:
+mirror sync from 3a03390` (history appended, never rewritten).
+- **leg 3 — npm mirror publish: SKIPPED** (`RELEASE_NPM_MIRROR_ARMED` unset pre-launch,
+  ADR-0329). **leg 4 — site redeploy (run 29213272549):** green inert no-op (Railway leg unarmed).
+- **Live probe through the Worker (pre-redeploy):** `kernel-0.4.3.tgz -> 200` (R2 bytes live);
+  packument `@caisson/kernel` still advertises `latest: 0.4.2` from the old inlined sidecar —
+  by design (advertise-follows-upload).
+
+**PENDING deploy act (b): registry Worker redeploy** (`registry/worker/deploy.sh` from
+`3a03390c`) — inlines the new index.json + tarballs.json so `dist-tags.latest` advertises the
+v2026.07.12 versions. Operator-gated; the classifier held it for an in-window operator approval.
+After it: spot-check `bun add @caisson/kernel@latest` resolves 0.4.3 and installs clean.
+
 ## 2026-07-12 — wave-1 reconcile deploy act (a): registry Worker + site + docs from merged main
 
 Operator-approved (session 4, ADR-0328). WHY: the P/Q/R wave merges — the Worker had never
