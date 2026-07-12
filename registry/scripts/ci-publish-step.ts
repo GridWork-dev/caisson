@@ -544,7 +544,7 @@ function verifyForPublish(opts: VerifyForPublishOpts): PublishStepResult {
   }
   if (mismatches.length > 0) {
     throw new Error(
-      `publish-mode tarball verification failed — the tagged tree does not reproduce the recorded bytes (fix: merge a fresh version PR and cut the tag on its merge commit):\n  - ${mismatches.join("\n  - ")}`,
+      `publish-mode tarball verification failed — the tagged tree does not reproduce the recorded bytes. Rows are append-only, so a post-recording edit to packed files (CHANGELOG, package.json, src) goes permanently stale — a fresh version PR will NOT re-record an existing row. Fix: from a PRISTINE checkout of the intended tag commit, delete the stale rows and re-run --mode version to re-record them (first ride, 2026-07-12):\n  - ${mismatches.join("\n  - ")}`,
     );
   }
   return {
