@@ -171,13 +171,27 @@ async function judgeFinding(
       `judge returned no message content for finding "${finding.dedupKey}"`,
     );
   }
+  // Anthropic models via OpenRouter ignore response_format and fence-wrap the JSON — tolerate a
+  // fenced/prose-wrapped object by extracting the outermost {...}; still fail-closed on no JSON.
+  const trimmed = content.trim();
   let json: unknown;
   try {
-    json = JSON.parse(content.trim());
+    json = JSON.parse(trimmed);
   } catch {
-    throw new Error(
-      `judge returned non-JSON for finding "${finding.dedupKey}"`,
-    );
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start === -1 || end <= start) {
+      throw new Error(
+        `judge returned non-JSON for finding "${finding.dedupKey}"`,
+      );
+    }
+    try {
+      json = JSON.parse(trimmed.slice(start, end + 1));
+    } catch {
+      throw new Error(
+        `judge returned non-JSON for finding "${finding.dedupKey}"`,
+      );
+    }
   }
   return judgeVerdictSchema.parse(json);
 }
