@@ -16,14 +16,14 @@
   `response_format` for anthropic models and the judge wraps its object in markdown fences, which
   the strict parse read as non-JSON and threw on every finding. The recorder extracts the outermost
   object before parsing and stays fail-closed when no JSON is present. Surfaced by the first live
-  recording run (CAISSON-101 session-4 operator act).
+  recording run.
 - 2b65cf3: Both services now alert on background-job/watcher failures: `service-license` threads an
   `alerting` port into the credit-expiry pg-boss scheduler (a sweep/notice/tick task failure or a
   pg-boss connection error notifies the operator, then the original failure still propagates
   unchanged); `service-intel` alerts when a watcher tick fails. Both fan out to an operator Discord
   channel when `DISCORD_OPS_WEBHOOK_URL` is configured; absent it, behavior is unchanged from
   before. No public API changes.
-- 3da56f0: Add a judged replay eval lane for the intel daemon's briefs (CAISSON-101). An operator-run recorder
+- 3da56f0: Add a judged replay eval lane for the intel daemon's briefs. An operator-run recorder
   (`src/eval/record.cli.ts`) captures a sanitized cassette per watcher to the pinned path
   `services/intel/__cassettes__/<watcher>.json` — request/response exchanges, the watch_state read, the
   findings produced, and one embedded LLM verdict per finding — behind a fail-closed scrub gate that

@@ -60,7 +60,7 @@
   ordered correctly when two revokes happen close together, closing a narrow window where the
   older of the two could have briefly overwritten the newer one.
 
-- 9a81dd7: Add a `subscription-payment-received` email template (CAISSON-27): a dedicated recurring-payment
+- 9a81dd7: Add a `subscription-payment-received` email template: a dedicated recurring-payment
   receipt for subscription-cycle charges, distinct from the first-purchase `purchase-confirmation`.
   Shares the purchase-confirmation prop shape; only the copy differs.
 - 97b0341: A shared component-demo registry, a live operator catalog, and two migrated growth-email

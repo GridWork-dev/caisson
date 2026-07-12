@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- 679cce6: `--edition <bundle>` alone now auto-selects the bundle's current modules (CAISSON-88):
+- 679cce6: `--edition <bundle>` alone now auto-selects the bundle's current modules:
   the selection is resolved through `expandEntitlements` against the live registry index,
   pinned at each member's `latest`, with bundle/edition meta entries dropped — so
   `bunx create-caisson my-app --edition compliance` scaffolds without a `--module` list.

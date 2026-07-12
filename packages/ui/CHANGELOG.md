@@ -75,7 +75,7 @@
     construction attempt, so an environment that can't allocate WebGL falls back to the poster without
     logging repeated renderer errors.
 
-- 0137008: AppShell (dashboard shell) mobile fixes (CAISSON-69): the topbar account pill truncates with an
+- 0137008: AppShell (dashboard shell) mobile fixes: the topbar account pill truncates with an
   ellipsis instead of clipping past `.cs-shell`'s grid-level overflow, and a new optional
   `mobileNavFooter` prop lets a consumer render extra content (e.g. Sign-out) inside the mobile
   off-canvas drawer, reachable even when the topbar has no room for it.
@@ -107,7 +107,7 @@
   the carousel caption remains the single visible narration. Compare pages: the two value
   columns no longer squeeze the Detail column to a sliver on phones.
 - 51e3ed0: `SkuMatrix` and `StatusChip` can no longer force a page wider than the viewport
-  (CAISSON-66). The matrix table moves to `table-layout: fixed` with `overflow-wrap`, so a
+  . The matrix table moves to `table-layout: fixed` with `overflow-wrap`, so a
   long cell breaks inside its own column instead of colliding with the neighbouring one; a
   wide matrix (5+ columns, e.g. the Module × 6-bundle grid) gets a `:has()`-keyed min-width
   floor and scrolls inside the existing `.cs-matrix__wrap` container (gradient cue), with

@@ -86,7 +86,7 @@
   admin test-send) opt in with the support inbox, and user-facing contact copy on the refunds,
   procurement, partners, and affiliates pages plus the ask-AI panel now points at the support
   address; legal pages keep the accounts contact.
-- 0137008: Buyer-surface remediation (Kickoff G, CAISSON-64/61/69): fixes the /dashboard/ai-keys P0 crash by
+- 0137008: Buyer-surface remediation (Kickoff G): fixes the /dashboard/ai-keys P0 crash by
   unifying the apps/site-local migration list (`deploy-migrate.ts` and the dev PGlite double now
   apply the SAME list, closing a prod/dev migration drift that left `byok_key_meta` never created in
   production); adds a fail-closed AI-Production entitlement gate to /dashboard/ai-keys (page load +

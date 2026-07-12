@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- 679cce6: `hybridSearch` gains an `ftsWeight` option (CAISSON-83): the FTS leg's reciprocal-rank
+- 679cce6: `hybridSearch` gains an `ftsWeight` option: the FTS leg's reciprocal-rank
   contribution is scaled by `ftsWeight / (RRF_K + rank)` so callers can damp or boost
   lexical matches against the vector leg without forking the fusion. Default is 1 —
   byte-identical scores to the previous behavior — and a non-positive or non-finite

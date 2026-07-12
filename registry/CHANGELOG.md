@@ -22,7 +22,7 @@
   gate the leg previously required. Private package only; no publishable release.
 - f5a21c1: Rate-limited registry responses now carry a `Retry-After` header alongside the 429 status, so npm and bun back off and retry instead of failing the install. The edge rate limit is also resized to accommodate a full bundle install burst without tripping.
 - 2b65cf3: The registry read Worker now app-level rate-limits anonymous traffic via the native
-  Cloudflare Workers Rate Limiting binding (CAISSON-55): three independent per-IP budgets
+  Cloudflare Workers Rate Limiting binding: three independent per-IP budgets
   — catalog reads (300/60s), npm packument reads (120/60s), and tarball bytes (60/60s) —
   each checked before its route class's entitlement gate. A missing binding (not yet
   provisioned) or a limiter error fails OPEN; only a genuine bucket-empty deny returns 429.
