@@ -5,6 +5,13 @@ The generator that composes a tailored repo from the versioned registry.
 ## Usage
 
 ```
+bunx @caisson-sh/cli@latest --name my-app --edition compliance --out ./my-app
+```
+
+`--edition <e>` alone auto-selects the bundle's current modules — no need to list them. Add one or
+more `--module <id@version>` only to override that set:
+
+```
 bunx @caisson-sh/cli@latest --name my-app --edition compliance --module @caisson/kernel@0.4.2 --out ./my-app
 ```
 
@@ -28,11 +35,12 @@ of this package yet.
   `idempotencyKey` debits once.
 - **`createFileSetWriter`** — writes the generated file set to disk atomically (temp dir + rename),
   rejecting any path that would escape the target directory.
-- **`create-caisson` CLI** — `--name <slug> --edition <e> --module <id@version> …`; arg-parse, the
+- **`create-caisson` CLI** — `--name <slug> --edition <e> [--module <id@version> …]`; arg-parse, the
   same allowlist gate, then disk materialization via `createFileSetWriter`. `<e>` is one of the six
   bundle ids (`compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`,
   `everything`) or a legacy edition id (`ai-kit`, `local-ai`, `agent-dev`) — legacy ids resolve to
-  their bundle forever (ADR-0257).
+  their bundle forever (ADR-0257). `--edition` alone auto-expands to the bundle's current member
+  modules (each pinned at the registry `.latest`); `--module` overrides the auto-selection.
 
 ## Engine seam (ADR-0048)
 

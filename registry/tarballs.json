@@ -457,6 +457,17 @@
         }
       }
     },
+    "@caisson/analytics@0.1.0": {
+      "key": "analytics/analytics-0.1.0.tgz",
+      "shasum": "55a4435b0f658641af12544fab7918669ed9d780",
+      "integrity": "sha512-obxz7fj81ewjwKBKQMSTvaUoA9S4kgUdkVeViGxEczBtNopvMcXA6B5btlRluzcA/YX/f9QLIN+f0X5VsA8V7g==",
+      "size": 11903,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.2"
+        }
+      }
+    },
     "@caisson/audit-worm@0.2.2": {
       "key": "audit-worm/audit-worm-0.2.2.tgz",
       "shasum": "a5401569fe3d3a064e818b1a030bc349e289f5c6",
@@ -916,6 +927,12 @@
       "shasum": "d8134e0f5025b9f54e4657edb7728c6b7add93f8",
       "integrity": "sha512-zrXNmBxZIFkQjQWtrPA+fVVcPmSfBD5FpVhIfhA7yjGqOVGLqmfm7Hy5BVL8mbEaJ22STPJ8TpHh0zdY6aWiXA==",
       "size": 2385
+    },
+    "@caisson/everything@0.2.2": {
+      "key": "everything/everything-0.2.2.tgz",
+      "shasum": "c58aa2d9b0ade755cac22913ac9b6f249a21d8ac",
+      "integrity": "sha512-wfDQ2GbQkzMl8X3M1iNjTEpAbfcGPPbWGEkmWzaFE1iSsbPuiuVnxnDSsuBbSZPDtznhwaTsEm9teChmfKjNTA==",
+      "size": 2313
     },
     "@caisson/field-crypto@0.2.2": {
       "key": "field-crypto/field-crypto-0.2.2.tgz",
@@ -1922,6 +1939,22 @@
         "dependencies": {
           "@caisson/kernel": "0.4.1",
           "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/ui-pro@0.1.0": {
+      "key": "ui-pro/ui-pro-0.1.0.tgz",
+      "shasum": "9511e44102861a8f5de7026e37f4fe886e1a24a1",
+      "integrity": "sha512-Z9du3+lHWFs424QoP/gCaalUCeH+WZW8hVRKHun4s53pGuFZMFHu5R4y+Hq0I0e1+0YVWYJet6WhSbk/KmRkKw==",
+      "size": 63183,
+      "meta": {
+        "dependencies": {
+          "@caisson/ui": "0.5.0"
+        },
+        "peerDependencies": {
+          "lucide-react": "^1.21.0",
+          "react": "^19.0.0",
+          "react-dom": "^19.0.0"
         }
       }
     },

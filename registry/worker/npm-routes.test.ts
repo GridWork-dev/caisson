@@ -613,3 +613,83 @@ describe("npm route-class rate limits (CAISSON-55)", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("dist-tags.latest recompute over the SERVED set (CAISSON-85)", () => {
+  // The audit's P0 shape: the ledger-built index says latest=X while X has no sidecar row (a
+  // republish wave advanced metadata without packing). The packument must never advertise a
+  // latest its own versions{} does not carry.
+  const twoVersions = (id: string, latest: string) => ({
+    id,
+    latest,
+    versions: ["0.9.0", latest].map((version) => ({
+      version,
+      publishedAt:
+        version === latest
+          ? "2026-02-01T00:00:00.000Z"
+          : "2026-01-01T00:00:00.000Z",
+      gateAttestation: "ci-run-1@deadbeef",
+      manifest: {
+        id,
+        version,
+        kind: "base",
+        tier: "oss",
+        license: "Apache-2.0",
+        priceCents: null,
+        editions: [],
+        description: id,
+      },
+    })),
+  });
+  const staleIndex = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [
+      twoVersions("@caisson/kernel", "1.0.0"), // latest ROWLESS, 0.9.0 rowed
+      twoVersions("@caisson/rowless", "1.0.0"), // NO rows at all
+    ],
+  });
+  const partialSidecar = loadTarballSidecar({
+    tarballs: {
+      "@caisson/kernel@0.9.0": {
+        key: "kernel/kernel-0.9.0.tgz",
+        shasum: "cccccccccccccccccccccccccccccccccccccccc",
+        integrity: "sha512-kernel090placeholder==",
+        size: 512,
+      },
+    },
+  });
+  const community = createNpmHandler(staleIndex, partialSidecar, {
+    resolveEntitlements: () => null,
+  });
+
+  test("a rowless entry.latest falls back to the newest SERVED version — never a dangling tag", async () => {
+    const res = await community(req("/@caisson%2fkernel"));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      "dist-tags": { latest: string };
+      versions: Record<string, unknown>;
+      modified: string;
+    };
+    expect(body.versions["1.0.0"]).toBeUndefined(); // rowless → omitted
+    expect(body.versions["0.9.0"]).toBeDefined();
+    expect(body["dist-tags"].latest).toBe("0.9.0"); // recomputed, resolvable
+    expect(body.modified).toBe("2026-01-01T00:00:00.000Z"); // tracks the recomputed latest
+  });
+
+  test("a module with ZERO served versions gets the 0.0.0 sentinel, not a phantom latest", async () => {
+    const res = await community(req("/@caisson%2frowless"));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      "dist-tags": { latest: string };
+      versions: Record<string, unknown>;
+    };
+    expect(Object.keys(body.versions)).toEqual([]);
+    expect(body["dist-tags"].latest).toBe("0.0.0");
+  });
+
+  test("a fully-served entry keeps its true latest (no behavior change on the healthy path)", async () => {
+    const res = await handlerFor(null)(req("/@caisson%2fkernel"));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { "dist-tags": { latest: string } };
+    expect(body["dist-tags"].latest).toBe("1.0.0");
+  });
+});

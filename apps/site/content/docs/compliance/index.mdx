@@ -29,6 +29,17 @@ is unresolved rather than a silent guess.
 - **[field-crypto](/docs/provenance/field-crypto)** — per-tenant field encryption, shared with the
   AI-Production, Local-first, and Provenance bundles.
 
+## Install
+
+```bash
+export CAISSON_LICENSE_TOKEN=<the token from /dashboard/license>
+bunx @caisson-sh/cli@latest --name caisson-app --edition compliance
+cd caisson-app
+bun install
+```
+
+`--edition compliance` auto-selects the Compliance bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+
 ## How it composes
 
 `compliance-core`'s collectors run over facts gathered by the other modules — an RLS posture

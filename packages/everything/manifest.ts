@@ -29,14 +29,17 @@ export default defineModule({
   // SKU + ui-pro, every pin a real published version.
   members: {
     "@caisson/everything": "0.2.2",
-    "@caisson/agent-dev": "0.4.0",
     "@caisson/agent-kernel": "0.4.0",
     "@caisson/agent-runner": "0.1.4",
     // The four sibling persona-bundle metas are themselves sellable SKUs and are IN — the
     // description sells them by name, and an Everything buyer must be entitled to install them.
+    // The DISSOLVED edition metas (@caisson/agent-dev, @caisson/ai-kit, @caisson/local-ai) are
+    // deliberately ABSENT since 2026-07-12 (CAISSON-86): delisted 2026-07-07, filtered from
+    // entitlement expansion by the index allowlist, and a pin to a delisted id can never resolve
+    // on the served surface, so it would fail the coverage pin gate at the next version cut.
+    // Legacy-id aliasing for already-sold entitlements is claim-side, not a members concern.
     "@caisson/agentic-dev": "0.2.1",
     "@caisson/ai-evals": "0.3.1",
-    "@caisson/ai-kit": "0.4.0",
     "@caisson/ai-meter": "0.3.4",
     "@caisson/ai-production": "0.2.1",
     "@caisson/alerting": "0.1.5",
@@ -48,7 +51,6 @@ export default defineModule({
     "@caisson/field-crypto": "0.3.0",
     "@caisson/frameworks-pack": "0.2.0",
     "@caisson/guardrails": "0.4.2",
-    "@caisson/local-ai": "0.2.5",
     "@caisson/local-first": "0.2.1",
     "@caisson/local-inference": "0.1.1",
     "@caisson/local-privacy": "0.1.1",

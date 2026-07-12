@@ -22,6 +22,17 @@ default-deny gate. The kernel governs the loop — it does not hand the agent th
 - **[local-store](/docs/local-first/local-store)** — the hybrid vector + full-text local memory
   an agent recalls over, shared with the Local-first bundle.
 
+## Install
+
+```bash
+export CAISSON_LICENSE_TOKEN=<the token from /dashboard/license>
+bunx @caisson-sh/cli@latest --name caisson-app --edition agentic-dev
+cd caisson-app
+bun install
+```
+
+`--edition agentic-dev` auto-selects the Agentic-Dev bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+
 ## How it composes
 
 `agent-kernel`'s FSM is the spine every governed act moves through — `verify` is the only act with

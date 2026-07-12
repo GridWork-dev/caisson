@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { BUNDLE_IDS, loadRegistryIndex } from "@caisson/registry-schema";
+import { fileURLToPath } from "node:url";
+import {
+  BUNDLE_IDS,
+  loadRegistryIndex,
+  loadRegistryIndexFromFile,
+} from "@caisson/registry-schema";
 import { matchGolden } from "@caisson/testing";
 import {
   type GeneratorEngine,
@@ -264,6 +269,70 @@ describe("generate — six-bundle vocabulary (ADR-0257/0258)", () => {
     expect(() =>
       validateSelection(INDEX, { ...BASE, edition: "enterprise" }),
     ).toThrow(/edition must be one of/);
+  });
+});
+
+describe("validateSelection — edition auto-expand (CAISSON-88 fork (a))", () => {
+  // The checked-in, CI-built registry index — the real bundle memberships (index-derived).
+  const realIndex = loadRegistryIndexFromFile(
+    fileURLToPath(new URL("../../../registry/index.json", import.meta.url)),
+  );
+
+  test("--edition <bundle> with NO --module auto-populates the bundle's current members", () => {
+    const selection = validateSelection(realIndex, {
+      projectName: "acme-app",
+      edition: "compliance",
+      modules: [],
+    });
+    const ids = selection.modules.map((m) => m.id);
+    // real, index-derived compliance members land (not a hand-listed set)
+    expect(ids).toContain("@caisson/audit-worm");
+    expect(ids).toContain("@caisson/field-crypto");
+    expect(ids.length).toBeGreaterThan(1);
+    // the bundle META-package itself is a marker, never an installable module → excluded
+    expect(ids).not.toContain("@caisson/compliance");
+    // every populated module is pinned at its index `.latest` and passes the allowlist gate
+    for (const m of selection.modules) {
+      const entry = realIndex.modules.find((e) => e.id === m.id);
+      expect(m.version).toBe(entry?.latest ?? "MISSING");
+    }
+    expect(selection.edition).toBe("compliance");
+  });
+
+  test("the `everything` bundle expands to installable leaves only (all sub-bundle metas dropped)", () => {
+    const selection = validateSelection(realIndex, {
+      projectName: "acme-app",
+      edition: "everything",
+      modules: [],
+    });
+    const ids = new Set(selection.modules.map((m) => m.id));
+    for (const bundle of BUNDLE_IDS) {
+      expect(ids.has(`@caisson/${bundle}`)).toBe(false); // no bundle/edition meta ever
+    }
+    expect(ids.size).toBeGreaterThan(10);
+  });
+
+  test("an explicit --module selection is NOT auto-expanded — the buyer's set wins", () => {
+    const selection = validateSelection(realIndex, {
+      projectName: "acme-app",
+      edition: "compliance",
+      modules: [{ id: "@caisson/kernel", version: "0.4.2" }],
+    });
+    expect(selection.modules).toEqual([
+      { id: "@caisson/kernel", version: "0.4.2" },
+    ]);
+  });
+
+  test("a dissolved/unknown edition with empty modules still fails closed", () => {
+    for (const bad of ["ai-kit", "enterprise", "bundle"]) {
+      expect(() =>
+        validateSelection(realIndex, {
+          projectName: "acme-app",
+          edition: bad,
+          modules: [],
+        }),
+      ).toThrow();
+    }
   });
 });
 
