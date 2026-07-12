@@ -184,3 +184,53 @@ describe("DocsIndex query-embed deadline", () => {
     idx.close();
   });
 });
+
+describe("per-source cap in the answer window (CAISSON-83)", () => {
+  // One page contributes many near-identical chunks; a second page carries the same term once.
+  // Without the cap, the crowded page fills the whole top-k window.
+  const crowd: DocChunk[] = [
+    ...["Alpha", "Beta", "Gamma", "Delta"].map((section, i) => ({
+      id: `crowded-${String(i)}`,
+      source: "apps/site/content/docs/base/crowded.mdx",
+      title: "Crowded",
+      section,
+      kind: "docs" as const,
+      license: "Apache-2.0" as const,
+      text: `install install install variant ${section.toLowerCase()}`,
+    })),
+    {
+      id: "distinct-page",
+      source: "apps/site/content/docs/base/distinct.mdx",
+      title: "Distinct",
+      section: "Install",
+      kind: "docs" as const,
+      license: "Apache-2.0" as const,
+      text: "install steps live here on a distinct page",
+    },
+  ];
+
+  test("at most perSourceCap chunks of one source occupy the window; freed slots promote distinct pages", async () => {
+    const idx = await DocsIndex.build(crowd);
+    try {
+      const capped = await idx.search("install", 3, { perSourceCap: 2 });
+      const sources = capped.map((c) => c.source);
+      expect(
+        sources.filter((s) => s.endsWith("crowded.mdx")).length,
+      ).toBeLessThanOrEqual(2);
+      expect(sources).toContain("apps/site/content/docs/base/distinct.mdx");
+    } finally {
+      idx.close();
+    }
+  });
+
+  test("a cap of 1 yields one chunk per source (full dedupe)", async () => {
+    const idx = await DocsIndex.build(crowd);
+    try {
+      const deduped = await idx.search("install", 3, { perSourceCap: 1 });
+      const sources = deduped.map((c) => c.source);
+      expect(new Set(sources).size).toBe(sources.length);
+    } finally {
+      idx.close();
+    }
+  });
+});

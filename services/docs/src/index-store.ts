@@ -3,6 +3,7 @@
 // engine is composed, not rebuilt (ADR-0003 service→base; no-copy-paste). DocsIndex loads DocChunk[]
 // into the store (FTS text always; a vector when an Embedder is wired) and maps fused SearchHit ids back
 // to the originating chunk + citation. With no embedder, retrieval is the deterministic FTS5 floor.
+import { ValidationError } from "@caisson/kernel";
 import { LocalStore, embedOrSkip } from "@caisson/local-store";
 import type { Embedder, OptionalEmbedder } from "@caisson/local-store";
 import type { DocChunk, ScoredChunk } from "./types.ts";
@@ -78,6 +79,30 @@ function raceDeadline<T>(
       },
     );
   });
+}
+
+/**
+ * Fusion tuning (measured on the live 470-chunk corpus 2026-07-12):
+ * - FTS_WEIGHT: the FTS (bm25) leg's RRF multiplier. The docs corpus is dense with near-duplicate
+ *   "Install"/"What it does" sections, so the vec leg's semantic neighborhood crowds out the
+ *   canonical exact-match page (the battery-v2 install-question miss); exact-term evidence gets
+ *   the heavier hand. The vec leg still decides everything FTS can't see.
+ * - PER_SOURCE_CAP: max chunks from one source document in a top-k answer window. Multiple chunks
+ *   of one page carry near-identical information — a window slot spent on a second chunk of the
+ *   same page is a slot a distinct candidate page lost.
+ * Both are re-measured via the live golden suite (services/docs/live/) — change them only with a
+ * green `bun run test:live` in hand.
+ */
+const DEFAULT_FTS_WEIGHT = 1;
+const DEFAULT_PER_SOURCE_CAP = 2;
+/** Over-fetch factor before the per-source cap trims the window (cap needs surplus candidates). */
+const SEARCH_OVERFETCH = 4;
+
+/** Per-query overrides for the fusion tuning — the live probe sweeps these; production callers
+ *  use the defaults. */
+export interface SearchTuning {
+  ftsWeight?: number;
+  perSourceCap?: number;
 }
 
 /** Index text = title + section + body, so heading/title terms strengthen the FTS (bm25) leg. */
@@ -182,8 +207,13 @@ export class DocsIndex {
     );
   }
 
-  /** Retrieve the top-`k` chunks for `query`, fused across the FTS and (when wired) vector legs. */
-  async search(query: string, k = 5): Promise<ScoredChunk[]> {
+  /** Retrieve the top-`k` chunks for `query`, fused across the FTS and (when wired) vector legs,
+   *  with at most `perSourceCap` chunks per source document in the window. */
+  async search(
+    query: string,
+    k = 5,
+    tuning?: SearchTuning,
+  ): Promise<ScoredChunk[]> {
     let queryVector: number[] | undefined;
     try {
       // Deadline-raced (battery-v2 fix): a SLOW query embed — the provider's own retry/backoff can
@@ -206,15 +236,32 @@ export class DocsIndex {
       // A provider blip on the query embed degrades THIS query to the FTS floor rather than 500ing.
       queryVector = undefined;
     }
+    const ftsWeight = tuning?.ftsWeight ?? DEFAULT_FTS_WEIGHT;
+    const perSourceCap = tuning?.perSourceCap ?? DEFAULT_PER_SOURCE_CAP;
+    // Fail CLOSED like hybridSearch's ftsWeight guard: `used >= NaN` is always false, so an
+    // unguarded NaN cap would silently disable per-source dedup instead of erroring.
+    if (!Number.isFinite(perSourceCap) || perSourceCap < 1) {
+      throw new ValidationError(
+        `perSourceCap must be a finite number >= 1, got ${String(perSourceCap)}`,
+      );
+    }
+    // Over-fetch so the per-source cap has surplus candidates to promote into freed window slots.
     const hits = this.store.hybridSearch({
       queryText: query,
-      limit: k,
+      limit: k * SEARCH_OVERFETCH,
+      ftsWeight,
       ...(queryVector !== undefined ? { queryVector } : {}),
     });
     const out: ScoredChunk[] = [];
+    const perSource = new Map<string, number>();
     for (const hit of hits) {
+      if (out.length >= k) break;
       const chunk = this.byId.get(hit.id);
-      if (chunk) out.push({ ...chunk, score: hit.score });
+      if (!chunk) continue;
+      const used = perSource.get(chunk.source) ?? 0;
+      if (used >= perSourceCap) continue; // window slot goes to a distinct page instead
+      perSource.set(chunk.source, used + 1);
+      out.push({ ...chunk, score: hit.score });
     }
     return out;
   }

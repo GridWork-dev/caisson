@@ -24,9 +24,10 @@ bunx @caisson-sh/cli@latest
 
 With no flags, `create-caisson` runs **interactively** in a terminal (TTY): it prompts for a
 licensed build vs. the free Apache-2.0 sample vs. the full-catalog demo, then your project name
-and module selection. A scripted, non-interactive run needs an explicit `--name` and at least one
-`--module <id@version>` — `--edition <bundle>` narrows the prompt list but does not replace
-`--module`. Run `bunx @caisson-sh/cli@latest --help` for the full flag reference.
+and module selection. A scripted, non-interactive run needs an explicit `--name` plus either
+`--edition <bundle>` — which auto-selects the bundle's current modules — or at least one
+`--module <id@version>` (repeatable; also overrides or extends an edition's auto-selection).
+Run `bunx @caisson-sh/cli@latest --help` for the full flag reference.
 
 **Free, no license key:** `--sample` and `--demo` need no module selection and no
 `CAISSON_LICENSE_TOKEN`. `--sample` installs only public-npm Apache-2.0 packages; `--demo`

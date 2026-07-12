@@ -19,6 +19,17 @@ closed. None of the three guarantees depends on trusting a log entry.
 - **[field-crypto](/docs/provenance/field-crypto)** — per-tenant field encryption via HKDF key
   derivation behind a pluggable KMS port: one tenant's key never decrypts another tenant's data.
 
+## Install
+
+```bash
+export CAISSON_LICENSE_TOKEN=<the token from /dashboard/license>
+bunx @caisson-sh/cli@latest --name caisson-app --edition provenance
+cd caisson-app
+bun install
+```
+
+`--edition provenance` auto-selects the Provenance bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+
 ## How it composes
 
 `audit-worm` is the append-only ledger everything else roots into: each entry chains to its

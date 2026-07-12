@@ -16,7 +16,7 @@
 // defeats the test.
 import { afterAll, describe, expect, test } from "bun:test";
 import { buildCorpus } from "./corpus.ts";
-import { GOLDENS } from "./golden-pairs.ts";
+import { GOLDENS, acceptedSources } from "./golden-pairs.ts";
 import { DocsIndex } from "./index-store.ts";
 
 const corpus = buildCorpus();
@@ -30,7 +30,8 @@ describe("golden retrieval (FTS floor, real corpus)", () => {
   for (const g of GOLDENS) {
     test(`"${g.question}" surfaces ${g.expected} in top-${String(g.k)}`, async () => {
       const hits = await index.search(g.question, g.k);
-      expect(hits.map((h) => h.source)).toContain(g.expected);
+      const accepted = new Set(acceptedSources(g));
+      expect(hits.some((h) => accepted.has(h.source))).toBe(true);
     });
   }
 

@@ -178,6 +178,81 @@ describe("runWizard", () => {
     expect(selectMock).not.toHaveBeenCalled();
   });
 
+  test("a partial edition invocation PRE-SELECTS the bundle's members in the multiselect (CAISSON-88)", async () => {
+    resetQueues();
+    // A local index where @caisson/audit-worm self-declares the compliance edition, so the bundle
+    // has a member to pre-select; @caisson/kernel is an unrelated base module (stays listed, unchecked).
+    const idx = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        {
+          id: "@caisson/kernel",
+          latest: "0.3.0",
+          versions: [
+            {
+              version: "0.3.0",
+              manifest: manifest("@caisson/kernel", "the kernel module"),
+              publishedAt: "2026-06-27T00:00:00.000Z",
+              gateAttestation: "ci@x",
+            },
+          ],
+        },
+        {
+          id: "@caisson/audit-worm",
+          latest: "0.3.0",
+          versions: [
+            {
+              version: "0.3.0",
+              manifest: {
+                ...manifest("@caisson/audit-worm", "the WORM ledger"),
+                editions: ["compliance"],
+              },
+              publishedAt: "2026-06-27T00:00:00.000Z",
+              gateAttestation: "ci@x",
+            },
+          ],
+        },
+      ],
+    });
+    textQueue = ["gapfilled-name"];
+    multiselectQueue = [[{ id: "@caisson/audit-worm", version: "0.3.0" }]];
+
+    const { runWizard } = await import("./interactive.ts");
+    const result = await runWizard(idx, {
+      edition: "compliance",
+      modules: [],
+      pureRun: false,
+    });
+
+    const call = multiselectMock.mock.calls[0]?.[0] as {
+      options: { value: { id: string; version: string } }[];
+      initialValues?: { id: string; version: string }[];
+    };
+    // the FULL catalog stays listed (buyer can add/remove)…
+    expect(call.options.map((o) => o.value.id)).toEqual([
+      "@caisson/audit-worm",
+      "@caisson/kernel",
+    ]);
+    // …but the bundle's member is pre-checked, pinned at .latest…
+    expect(call.initialValues).toEqual([
+      { id: "@caisson/audit-worm", version: "0.3.0" },
+    ]);
+    // …as the SAME option-value object clack renders (it matches initialValues by reference).
+    const auditOption = call.options.find(
+      (o) => o.value.id === "@caisson/audit-worm",
+    );
+    expect(call.initialValues?.[0]).toBe(auditOption?.value);
+
+    expect(result).toEqual({
+      kind: "licensed",
+      raw: {
+        projectName: "gapfilled-name",
+        edition: "compliance",
+        modules: [{ id: "@caisson/audit-worm", version: "0.3.0" }],
+      },
+    });
+  });
+
   test("framework (ADR-0287) is carried through untouched — never its own prompt", async () => {
     resetQueues();
     textQueue = ["gapfilled-name"];

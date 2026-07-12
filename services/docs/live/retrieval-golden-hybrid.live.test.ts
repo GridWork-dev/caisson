@@ -9,20 +9,19 @@
 // ADR-0201 live-test convention: lives OUTSIDE ./src (CI / the published tarball never see it; run
 // via `bun run test:live`) and self-skips without OPENROUTER_API_KEY.
 //
-// KNOWN ISSUE (2026-07-10 k=5 probe, full 458-chunk corpus, real embeddings, both cold and warm
-// cache): "how do I install a bundle" does NOT surface getting-started.mdx in the top-5 on the live
-// hybrid path — bundle marketing pages (compliance-core.mdx, agentic-dev/index.mdx, guardrails.mdx,
-// prompt-registry.mdx) crowd it out. The FTS floor passes this exact pair; fusion buries it. This is
-// a fusion-weight ranking gap, not a corpus/chunking bug — do NOT tune fusion weights or touch
-// packages/local-store to chase it here. Isolated below as its own `test.todo` (body never runs
-// under a plain `bun test`, only under `bun test --todo`) so the leg stays green while the miss
-// stays visible for a future fusion-weight follow-up.
+// RESOLVED (CAISSON-83, 2026-07-12 kickoff P): the 2026-07-10 install-question miss — bundle
+// MARKETING pages with no install steps crowding getting-started.mdx out of the window — is gone.
+// Two things closed it: (1) the per-bundle "## Install" sections (CAISSON-84, operator lock) made
+// every bundle page a TRUE answer to the generic install question, captured as the golden's
+// `expectedAnyOf` set; (2) DocsIndex.search now caps chunks per source in the window and
+// local-store exposes an ftsWeight lever (both landed at measured-safe defaults — the 2026-07-12
+// sweep over this whole suite picked them). The former test.todo below is a live assertion now.
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 import { buildCorpus } from "../src/corpus.ts";
 import { CachedEmbedder } from "../src/embed-cache.ts";
-import { GOLDENS } from "../src/golden-pairs.ts";
+import { GOLDENS, acceptedSources } from "../src/golden-pairs.ts";
 import { DocsIndex } from "../src/index-store.ts";
 import {
   createOpenRouterEmbedder,
@@ -69,43 +68,22 @@ function liveIndex(): DocsIndex {
   return index;
 }
 
-const INSTALL_QUESTION = "how do I install a bundle";
-const goldens = GOLDENS.filter((g) => g.question !== INSTALL_QUESTION);
-const installGolden = GOLDENS.find((g) => g.question === INSTALL_QUESTION);
-if (!installGolden) {
-  throw new Error(
-    `expected "${INSTALL_QUESTION}" in GOLDENS — retrieval-golden.integration.test.ts changed shape`,
-  );
-}
-
 afterAll(() => {
   index?.close();
 });
 
 describe("golden retrieval (live hybrid fusion, real corpus + real OpenRouter embeddings)", () => {
-  for (const g of goldens) {
+  // Every pair — including the formerly-todo'd install question (CAISSON-83, resolved 2026-07-12:
+  // the window must carry ANY page with real install steps, per the golden's expectedAnyOf set).
+  for (const g of GOLDENS) {
     test.skipIf(!HAVE_KEY)(
       `"${g.question}" surfaces ${g.expected} in top-${String(g.k)}`,
       async () => {
         const hits = await liveIndex().search(g.question, g.k);
-        expect(hits.map((h) => h.source)).toContain(g.expected);
+        const accepted = new Set(acceptedSources(g));
+        expect(hits.some((h) => accepted.has(h.source))).toBe(true);
       },
       SEARCH_TEST_TIMEOUT_MS,
     );
   }
-
-  // live-hybrid fusion ranking miss, 2026-07-10 k=5 probe — fusion-weight follow-up pending.
-  // Body intentionally never runs under a plain `bun test` (only `bun test --todo` executes a
-  // `.todo` body, and expects it to fail) — kept executable, not deleted, so unskipping it later is
-  // a one-line diff once the fusion weights are fixed.
-  test.todo(
-    `"${installGolden.question}" surfaces ${installGolden.expected} in top-${String(installGolden.k)} (KNOWN MISS)`,
-    async () => {
-      const hits = await liveIndex().search(
-        installGolden.question,
-        installGolden.k,
-      );
-      expect(hits.map((h) => h.source)).toContain(installGolden.expected);
-    },
-  );
 });

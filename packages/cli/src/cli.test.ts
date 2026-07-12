@@ -209,6 +209,11 @@ describe("HELP text", () => {
     expect(HELP).toContain("agent-dev");
   });
 
+  test("documents --edition auto-selection (CAISSON-88)", () => {
+    expect(HELP).toContain("AUTO-SELECTS the bundle's current modules");
+    expect(HELP).toContain("add --module to");
+  });
+
   test("documents --demo (ADR-0274 §1)", () => {
     expect(HELP).toContain("--demo");
     expect(HELP).toContain("no license");
@@ -637,5 +642,39 @@ describe("end-to-end: a real non-interactive invocation never touches a TTY-only
     // Before the fix this produced "unknown sample template id: --demo" — a misleading error from
     // --sample silently consuming the NEXT flag as its value.
     expect(stderr).toBe("create-caisson: --sample requires a template id\n");
+  });
+
+  test("CAISSON-88: `--edition <bundle>` with NO --module dry-runs (auto-expands, non-TTY)", async () => {
+    // Pre-CAISSON-88 this failed the `Selection.modules.min(1)` invariant; now the bundle's current
+    // members auto-populate, so an edition-only invocation composes without any `--module`.
+    const registryPath = fileURLToPath(
+      new URL("../../../registry/index.json", import.meta.url),
+    );
+    const proc = Bun.spawn(
+      [
+        "bun",
+        "run",
+        fileURLToPath(new URL("./cli.ts", import.meta.url)),
+        "--name",
+        "acme-app",
+        "--edition",
+        "compliance",
+        "--dry-run",
+      ],
+      {
+        env: { ...process.env, CAISSON_REGISTRY_INDEX: registryPath },
+        stdin: "ignore",
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe("");
+    expect(stdout).toContain('for "acme-app" (compliance edition)');
   });
 });

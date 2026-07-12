@@ -140,7 +140,9 @@ Flags:
   --module <id@version>  @caisson module (repeatable; exact semver version)
   --edition <e>          compliance | ai-production | local-first | agentic-dev | provenance |
                           everything — the legacy edition ids (ai-kit, local-ai, agent-dev) still
-                          work and resolve to their bundle above (ADR-0257)
+                          work and resolve to their bundle above (ADR-0257). Passed alone (no
+                          --module) it AUTO-SELECTS the bundle's current modules; add --module to
+                          override the set.
   --deploy <target>      Add a deploy config: railway | fly | vercel (default: none)
   --framework <target>   Add a framework starter: next — a wired Next.js App-Router app
                           demonstrating auth/tenancy/billing/jobs/email/ai-config wiring on the

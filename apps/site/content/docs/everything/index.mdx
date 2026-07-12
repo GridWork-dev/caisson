@@ -25,6 +25,17 @@ individual module's bundle membership because membership in it is implicit. That
 - **[ui-pro](/docs/base/ui-pro)** — the commercial component tier on the open `@caisson/ui` base:
   DataTablePro, OpsMatrix, AuditTimeline, CommandPalette, charts, and the interactive primitives.
 
+## Install
+
+```bash
+export CAISSON_LICENSE_TOKEN=<the token from /dashboard/license>
+bunx @caisson-sh/cli@latest --name caisson-app --edition everything
+cd caisson-app
+bun install
+```
+
+`--edition everything` auto-selects the Everything bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+
 ## How it composes
 
 Every module in Everything composes exactly the way it composes inside its own persona bundle —

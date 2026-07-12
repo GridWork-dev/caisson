@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { buildCorpus, loadPricingFacts } from "./corpus.ts";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { buildCorpus, findRepoRoot, loadPricingFacts } from "./corpus.ts";
 import { DocsIndex } from "./index-store.ts";
 import { DocChunkSchema } from "./types.ts";
 
@@ -80,5 +82,42 @@ describe("pricing corpus (real SOT)", () => {
     expect(complianceChunk.text).toContain(
       "Append-only SHA-256 audit chain plus S3 Object-Lock WORM evidence storage.",
     );
+  });
+});
+
+describe("licensing.mdx renewal table (hand-authored money prose pinned to the SOT)", () => {
+  test("every bundle renewal row equals flat 40% of the live list price, X9-rounded", async () => {
+    // The renewal formula lives in apps/site/lib/pricing.ts renewalAmount() (flat 40%, floored,
+    // rounded DOWN to the nearest number ending in 9) and is what Paddle actually charges. The
+    // licensing docs page hand-types the same figures; this pin makes a repriced bundle fail HERE
+    // instead of shipping a public renewal price the dashboard and Paddle contradict (the exact
+    // drift this branch's SHIP audit caught: three rows still carried pre-reprice figures).
+    const facts = await loadPricingFacts();
+    if (facts === null) throw new Error("pricing SOT not found");
+    const mdx = readFileSync(
+      join(
+        findRepoRoot(import.meta.dir),
+        "apps/site/content/docs/licensing.mdx",
+      ),
+      "utf8",
+    );
+    const x9 = (n: number) => n - ((n + 1) % 10);
+    const rows: Record<string, string> = {
+      compliance: "Compliance",
+      "ai-production": "AI-Production",
+      everything: "Everything",
+      provenance: "Provenance",
+      "local-first": "Local-first",
+      "agentic-dev": "Agentic-Dev",
+    };
+    for (const [id, label] of Object.entries(rows)) {
+      const amount = facts.bundles.find((b) => b.id === id)?.amount;
+      if (amount === null || amount === undefined)
+        throw new Error(`no priced bundle ${id} in the SOT`);
+      const renewal = x9(Math.floor((amount * 40) / 100));
+      expect(mdx).toMatch(
+        new RegExp(`\\| ${label}\\s+\\| \\$${String(renewal)}\\s+\\|`),
+      );
+    }
   });
 });

@@ -9,6 +9,7 @@ import {
   assertKnownModule,
   assertKnownVersion,
 } from "@caisson/registry-schema";
+import { expandEditionModules } from "./edition-expand.ts";
 import { templatesEngine } from "./engine-templates.ts";
 import {
   type GeneratedFile,
@@ -40,7 +41,23 @@ export function validateSelection(
   index: RegistryIndex,
   raw: unknown,
 ): Selection {
-  const selection = Selection.parse(raw);
+  // `--edition <bundle>` with no explicit `--module` auto-expands to the
+  // bundle's CURRENT member modules (each at its index `.latest`) so the buyer need not hand-list
+  // them and the `Selection.modules.min(1)` invariant below is satisfied unchanged. An explicit
+  // selection is untouched; an unknown edition still fails closed (expandEditionModules throws /
+  // the Edition Zod transform rejects on the parse below).
+  let toParse = raw;
+  if (typeof raw === "object" && raw !== null) {
+    const r = raw as { edition?: unknown; modules?: unknown };
+    if (
+      typeof r.edition === "string" &&
+      r.edition.length > 0 &&
+      (!Array.isArray(r.modules) || r.modules.length === 0)
+    ) {
+      toParse = { ...r, modules: expandEditionModules(index, r.edition) };
+    }
+  }
+  const selection = Selection.parse(toParse);
   for (const m of selection.modules) {
     assertKnownModule(index, m.id);
     assertKnownVersion(index, m.id, m.version);

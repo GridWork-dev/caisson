@@ -8,6 +8,7 @@
 // in this module (ADR-0093).
 import { cancel, isCancel, multiselect, select, text } from "@clack/prompts";
 import type { RegistryIndex } from "@caisson/registry-schema";
+import { expandEditionModules } from "./edition-expand.ts";
 import { DEPLOY_TARGETS, ProjectName } from "./seam.ts";
 import type { RawSelection } from "./seam.ts";
 import { SAMPLE_TEMPLATES } from "./sample-templates.ts";
@@ -112,13 +113,26 @@ export async function runWizard(
       await text({ message: "Project name", validate: validateProjectName }),
     );
 
+  const options = moduleOptions(index);
+  // When `--edition <bundle>` is set but no `--module` was passed, pre-check the
+  // bundle's current members in the multiselect (the buyer can still add/remove; the full catalog
+  // stays listed). initialValues must be the SAME option-value objects clack renders (it matches by
+  // reference), so filter them out of `options` rather than re-deriving fresh objects.
+  const preselectedIds =
+    flags.edition !== undefined && flags.modules.length === 0
+      ? new Set(expandEditionModules(index, flags.edition).map((m) => m.id))
+      : new Set<string>();
+  const initialValues = options
+    .filter((o) => preselectedIds.has(o.value.id))
+    .map((o) => o.value);
   const modules =
     flags.modules.length > 0
       ? [...flags.modules]
       : ensure(
           await multiselect({
             message: "Select modules",
-            options: moduleOptions(index),
+            options,
+            ...(initialValues.length > 0 ? { initialValues } : {}),
             required: true,
           }),
         );

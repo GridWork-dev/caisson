@@ -38,6 +38,17 @@ budget returns `402`, never an unbounded charge.
 - **[field-crypto](/docs/provenance/field-crypto)** — per-tenant field encryption, shared with
   the Compliance, Local-first, and Provenance bundles, for any prompt input or output you store.
 
+## Install
+
+```bash
+export CAISSON_LICENSE_TOKEN=<the token from /dashboard/license>
+bunx @caisson-sh/cli@latest --name caisson-app --edition ai-production
+cd caisson-app
+bun install
+```
+
+`--edition ai-production` auto-selects the AI-Production bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+
 ## How it composes
 
 Metering, guardrails, and the eval gate sit at the same seam: a call to a model provider is
