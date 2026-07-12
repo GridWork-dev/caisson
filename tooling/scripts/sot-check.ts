@@ -446,6 +446,10 @@ export function computeBranchHygiene(
 ): CheckResult {
   const id = "branch-hygiene";
   const extraBranches = branches
+    // `git branch` emits parenthesized pseudo-entries — "(HEAD detached at <sha>)", "(no
+    // branch)" — in detached-HEAD checkouts (every release-tag CI checkout); they are not
+    // local branches and must not read as hygiene drift (first train ride, 2026-07-12).
+    .filter((b) => !b.startsWith("("))
     .filter((b) => b !== "main" && b !== currentBranch)
     .sort();
   const mainEntry = worktrees.find((w) => w.branch === "refs/heads/main");
