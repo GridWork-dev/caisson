@@ -19,6 +19,9 @@
  *   4. `bun run sot` green — the SoT drift tool (ADR-ceiling parity, frontmatter/docs freshness,
  *      archive integrity, tracker-vs-PR reality, changeset preflight). Doubles as the R3
  *      docs-freshness check.
+ *   4b. Registry coverage invariants (CAISSON-85/86) — every module's `latest` has a tarball row
+ *      (hard), no advertised version outside the frozen pre-sidecar backlog is rowless, and every
+ *      served member pin resolves served+tarball-backed (advertise-follows-upload, static half).
  *   5. R4 audit artifact on file — outputs/audit/release-audit-<tag>.md (the fresh full
  *      SHIP-audit-lane review of the cumulative diff since the last release tag).
  *   6. Per-release checklist complete — docs/releases/<tag>-checklist.md exists with ZERO
@@ -30,6 +33,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { checkRegistryCoverage } from "../registry/scripts/coverage-invariants";
 
 const REPO = resolve(import.meta.dir, "..");
 const REQUIRED_CHECKS = [
@@ -223,6 +227,36 @@ function checkSot(): void {
   }
 }
 
+// --- 4b. registry coverage invariants (CAISSON-85/86) --------------------------------------------
+function checkRegistryCoverageGate(): void {
+  // Static advertise-follows-upload proof: every module's latest has a tarball row (hard), no
+  // advertised version outside the frozen pre-sidecar backlog is rowless, and every served member
+  // pin resolves served+tarball-backed. Same invariants the registry-index CI job enforces via
+  // coverage-invariants.test.ts — re-run here so the train's readiness verdict is self-contained.
+  try {
+    const report = checkRegistryCoverage({
+      indexPath: join(REPO, "registry/index.json"),
+      sidecarPath: join(REPO, "registry/tarballs.json"),
+    });
+    const detail = report.ok
+      ? "latest/version/pin coverage all green (advertise-follows-upload)"
+      : `latest: [${report.latest.join(", ")}] versions: [${report.versions
+          .slice(0, 3)
+          .join(
+            ", ",
+          )}${report.versions.length > 3 ? ", …" : ""}] pins: [${report.pins
+          .slice(0, 3)
+          .join(", ")}${report.pins.length > 3 ? ", …" : ""}]`;
+    record("registry coverage (85/86)", report.ok, detail);
+  } catch (err) {
+    record(
+      "registry coverage (85/86)",
+      false,
+      `coverage check failed to run: ${String(err)}`,
+    );
+  }
+}
+
 // --- 5. R4 audit artifact ------------------------------------------------------------------------
 function checkAuditArtifact(tag: string): void {
   const path = join(REPO, "outputs/audit", `release-audit-${tag}.md`);
@@ -297,6 +331,7 @@ checkCi(sha);
 checkChangesetsDrained();
 checkChangelogs();
 checkSot();
+checkRegistryCoverageGate();
 checkAuditArtifact(tag);
 checkChecklist(tag);
 if (local) checkLiveHybrid();
