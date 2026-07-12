@@ -190,8 +190,13 @@ interface PackumentVersion {
 /**
  * Synthesize the ABBREVIATED packument (`application/vnd.npm.install-v1+json` shape) from a (possibly
  * window-filtered, ADR-0251) index entry + tarball sidecar. Only versions with a sidecar entry
- * (packed + uploaded) are exposed; `dist-tags.latest` is the entry's `.latest` (E1, latest-only —
- * already recomputed to the newest in-window version when a window applied). Content negotiation is
+ * (packed + recorded) are exposed, and `dist-tags.latest` is recomputed over that SERVED set
+ * (CAISSON-85): `entry.latest` comes from the ledger with zero sidecar knowledge, so passing it
+ * through unchecked advertised versions the tarball route can only 404 — the audit's
+ * `dist-tags.latest → missing versions{} key` P0. Rule: entry.latest when servable, else the
+ * newest servable version (entry.versions is semver-ascending from build-index), else the "0.0.0"
+ * sentinel for a nothing-servable module (versions{} is empty either way — honest, resolvable by
+ * no client, and indistinguishable from the pre-first-publish shape). Content negotiation is
  * a no-op: we ALWAYS return abbreviated, so the vendor `Accept` header can never 406 (the
  * bun-breaking bug).
  */
@@ -203,11 +208,11 @@ function abbreviatedPackument(
 ): Record<string, unknown> {
   const slug = id.slice("@caisson/".length);
   const versions: Record<string, PackumentVersion> = {};
-  let modified: string | undefined;
+  const served: { version: string; publishedAt: string }[] = [];
   if (entry !== undefined) {
     for (const v of entry.versions) {
       const dist = sidecar.tarballs[`${id}@${v.version}`];
-      if (dist === undefined) continue; // not yet packed/uploaded — omit from the packument
+      if (dist === undefined) continue; // not yet packed/recorded — omit from the packument
       versions[v.version] = {
         name: id,
         version: v.version,
@@ -220,13 +225,20 @@ function abbreviatedPackument(
         // `undefined` is a no-op, so a meta-less row stays `{name,version,dist}`.
         ...dist.meta,
       };
-      if (v.version === entry.latest || modified === undefined)
-        modified = v.publishedAt;
+      served.push({ version: v.version, publishedAt: v.publishedAt });
     }
   }
+  const newestServed = served[served.length - 1];
+  const latest =
+    entry !== undefined && versions[entry.latest] !== undefined
+      ? entry.latest
+      : (newestServed?.version ?? "0.0.0");
+  const modified =
+    served.find((s) => s.version === latest)?.publishedAt ??
+    newestServed?.publishedAt;
   return {
     name: id,
-    "dist-tags": { latest: entry?.latest ?? "0.0.0" },
+    "dist-tags": { latest },
     versions,
     modified: modified ?? new Date(0).toISOString(),
   };
