@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-12
 status: live
 grounds:
   - docs/build-state.md
@@ -7,6 +7,27 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-07-12 — wave-1 reconcile deploy act (a): registry Worker + site + docs from merged main
+
+Operator-approved (session 4, ADR-0328). WHY: the P/Q/R wave merges — the Worker had never
+deployed PR 213's `Retry-After` emitters (CAISSON-87) and gained P's tarball-backed
+`dist-tags.latest` recompute + the 3 reconciled sidecar rows; caisson-site gained the
+CAISSON-84 docs content (licensing.mdx + six per-bundle Install sections); caisson-docs gained
+the CAISSON-83 retrieval levers (`ftsWeight`, per-source cap 2) + the new corpus.
+
+- **registry Worker** — `registry/worker/deploy.sh`, version `0d85f715-42bc-4864-a324-71c401112d51`,
+  live at registry.caisson.sh. Verify pasted: sustained 8-way load tripped the tarball limiter —
+  `429 after ~160 requests` / `HTTP/2 429` / `retry-after: 10` (**CAISSON-87 Retry-After PROVEN
+  live**); `kernel-0.4.1.tgz` range-GET `200`; packument `@caisson/kernel` latest `0.4.2` per the
+  sidecar. Known pre-train state: grandfathered advertised versions (e.g. `kernel-0.4.2.tgz`,
+  `analytics-0.1.0.tgz`) still 404 at the bytes — R2 objects arrive with the first train ride
+  (rows exist, objects don't; the recompute guards NEW advertisements).
+- **caisson-site** — `railway up -s caisson-site` from main@`d4c8a287`, "Deploy complete". Verify
+  pasted: `site /docs/licensing -> 200` · `site /docs/compliance -> 200` · `site / -> 200`.
+- **caisson-docs** — `railway up -s caisson-docs` from main@`d4c8a287`, "Deploy complete";
+  re-embed on boot. Verify pasted: `{"ok":true,"chunks":506}` (489 → 506 with the new
+  licensing/install corpus).
 
 Reverse-chronological. One entry per operator-executed DEPLOY act (never autonomous —
 `identity/doctrine.md` DEPLOY line). Each entry: date · services/SHAs · WHY (the consumed-package
