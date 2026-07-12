@@ -29,8 +29,11 @@ The free stack has exactly three real gaps; all close for **$0** on a single pri
 1. **DONE — Semgrep flipped to Team edition** (free under 10 contributors) and **Socket.dev wired**
    (`socket-security` GitHub App, live in CI — verified 2026-07-11 org API read,
    `docs/state/production-readiness.md`).
-2. **(Optional) Arnica** — signed up, GitHub App install still pending. Free tier;
-   git-identity/permission hardening class none of the current tools touch.
+2. **DONE — Arnica installed** (2026-07-12, session Q): `arnica-github-connector` on the
+   `caisson-sh` org covering caisson + caisson-oss (operator-installed, org-API-verified).
+   Free tier; git-identity/permission hardening class none of the other tools touch.
+   Remaining dashboard-side config: enable the identity/permission policies + point alerts
+   at admin@caisson.sh (Arnica has no Discord channel; email is the fit here).
 
 ## Ranked
 
