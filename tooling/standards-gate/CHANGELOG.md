@@ -1,5 +1,26 @@
 # @caisson/standards-gate
 
+## 0.0.7
+
+### Patch Changes
+
+- 4b1b9b7: Disable turbo caching on the standards-gate test task. The suite reads the registry ledger and
+  every workspace package.json at runtime — outside its package input globs — so cache hits could
+  report stale-green results. Its effective inputs are the whole repo; running fresh every time is
+  the sound behavior.
+- 4d85f28: The reserved-id carve-out for ui-pro is removed from entitlement expansion: a ui-pro
+  purchase now resolves to the real module grant, and the fail-closed rejection of unknown
+  ids applies to it on any index that does not ship it. The standards gate gains the ui-pro
+  price-authority row.
+- Updated dependencies [3d23da7]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [8253e76]
+- Updated dependencies [99d665a]
+- Updated dependencies [ab352ab]
+- Updated dependencies [4d85f28]
+  - @caisson/registry-schema@0.5.0
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.0.6
 
 ### Patch Changes
