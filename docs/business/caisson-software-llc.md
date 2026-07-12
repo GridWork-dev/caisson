@@ -10,7 +10,10 @@ The business/legal side of the commerce flip. This doc is the SOT for entity fac
 formation → banking → Paddle-production order of operations. Product/launch mechanics stay in
 `docs/ops/launch-runbook.md` (this doc feeds its §2 Paddle-production prerequisite).
 Personal details (member identity documents, SSN, home address) live OUTSIDE the repo — never
-here.
+here. **Scoped override (operator lock, 2026-07-12 session-Q picker):** the counsel/CPA
+document sets under `legal/` + `finance/` are committed verbatim (incl. the EIN mailing
+address and the operator's DOB) by explicit operator choice — see each folder's README;
+SSNs/account numbers stay banned everywhere.
 
 ## 1. Entity record
 

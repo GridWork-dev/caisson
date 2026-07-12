@@ -6,18 +6,22 @@ owner: operator (business/finance track)
 
 # Finance documents — index
 
-Finance-side business documents for Caisson Software LLC (ADR-0328 D3 intake): banking,
-tax, accounting, and payout records. Entity SOT stays `docs/business/caisson-software-llc.md`.
-Personal member details (identity documents, SSN, home address) live OUTSIDE the repo — never
-here; account numbers and credentials go to the 1Password launch vault, never this folder.
+Finance-side business documents for Caisson Software LLC (ADR-0328 D3 intake): CPA
+coordination, bookkeeping, and payroll-structure packets. Entity SOT stays
+`docs/business/caisson-software-llc.md`. Cross-cutting: `../caisson-internal-master-map.md`;
+`../builders/` regenerates the docx packets from the md sources.
 
-**Mirror safety:** `scripts/export-public-mirror.ts` builds the caisson-oss mirror from a
-positive whitelist (Apache-2.0 `packages/*` + build-support tooling + `scripts/mirror-assets/`)
-— `docs/` is never a copy source, so nothing in this folder can reach the public mirror.
+**Identity-details override (operator lock, 2026-07-12 session-Q picker):** committed
+VERBATIM including the minor operator's DOB, by explicit operator choice (private repo;
+`docs/` never reaches the caisson-oss mirror). SSNs, account numbers, and card numbers
+remain banned — the packets carry masked-alias rules for those.
 
 ## Index
 
-_No documents intaken yet — populated by the 2026-07-12 session-Q scp intake._
-
 | Document | File | Notes |
 | -------- | ---- | ----- |
+| CPA bookkeeping packet | `caisson-cpa-bookkeeping-packet.md` | Books/ledger structure for the CPA (single-member disregarded entity) |
+| CPA coordination packet | `cpa-coordination-packet.md` (+ `caisson-cpa-coordination-packet-DRAFT-2026-07-11.docx`) | Payroll/withholding/family-employment question set; docx is the rendered send artifact |
+| Finance connector prompt | `caisson-finance-connector-prompt.md` | The finance-data connector working prompt |
+
+Intake provenance: `caisson-docs-2026-07-12.zip` (MacBook scp, session Q).
