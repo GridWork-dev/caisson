@@ -183,3 +183,58 @@ describe("LocalStore.list (read-only paging, agent-dev inspector Fork B)", () =>
     }
   });
 });
+
+describe("ftsWeight fusion lever (CAISSON-83)", () => {
+  test("default weight is byte-stable with the classic symmetric form (weight 1)", () => {
+    const store = LocalStore.open({ dim: 3 });
+    try {
+      seed(store);
+      const query = { queryText: "fox", queryVector: [1, 0, 0] };
+      const plain = store.hybridSearch(query);
+      const explicit = store.hybridSearch({ ...query, ftsWeight: 1 });
+      expect(explicit).toEqual(plain);
+    } finally {
+      store.close();
+    }
+  });
+
+  test("ftsWeight scales the FTS contribution only — vec-leg scores stay untouched", () => {
+    const store = LocalStore.open({ dim: 3 });
+    try {
+      seed(store);
+      // "quick" FTS-matches only fox-quick (FTS rank 1). The query vector sits on canine's axis
+      // (vec rank 1); fox-quick is vec rank 3. So fox-quick = w/(K+1) + 1/(K+3) and
+      // canine = 1/(K+1) exactly — the weight must scale ONLY the FTS term.
+      const query = { queryText: "quick", queryVector: [0.95, 0.05, 0] };
+      const score = (hits: { id: string; score: number }[], id: string) =>
+        hits.find((h) => h.id === id)?.score ?? Number.NaN;
+      const symmetric = store.hybridSearch(query);
+      const weighted = store.hybridSearch({ ...query, ftsWeight: 3 });
+      // vec-only doc: identical score under any weight.
+      expect(score(weighted, "canine")).toBeCloseTo(
+        score(symmetric, "canine"),
+        12,
+      );
+      // FTS rank-1 contribution grew from 1/(60+1) to 3/(60+1): delta is exactly 2/61.
+      expect(
+        score(weighted, "fox-quick") - score(symmetric, "fox-quick"),
+      ).toBeCloseTo(2 / 61, 12);
+    } finally {
+      store.close();
+    }
+  });
+
+  test("a non-positive or non-finite ftsWeight throws (flag-never-guess)", () => {
+    const store = LocalStore.open({ dim: 3 });
+    try {
+      seed(store);
+      for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(() =>
+          store.hybridSearch({ queryText: "fox", ftsWeight: bad }),
+        ).toThrow(ValidationError);
+      }
+    } finally {
+      store.close();
+    }
+  });
+});

@@ -49,6 +49,14 @@ export interface HybridSearchOptions {
   queryText: string;
   queryVector?: number[];
   limit?: number;
+  /**
+   * Multiplier on the FTS (bm25) leg's RRF contribution; the vec leg stays 1.0. Default 1.0 —
+   * symmetric fusion, byte-identical to the pre-option behavior (the committed RRF golden). Raise
+   * above 1 when exact-term evidence should outrank semantic-neighborhood evidence (CAISSON-83:
+   * a corpus dense with near-duplicate sections buries the canonical exact-match page on the vec
+   * leg). Must be a positive finite number; anything else THROWS (flag-never-guess).
+   */
+  ftsWeight?: number;
 }
 
 /** A fused result: the document id and its RRF score (higher = better). */
@@ -158,16 +166,23 @@ export class LocalStore {
   hybridSearch(opts: HybridSearchOptions): SearchHit[] {
     const limit = opts.limit ?? 10;
     const legLimit = Math.max(limit * 8, 50);
+    const ftsWeight = opts.ftsWeight ?? 1;
+    if (!Number.isFinite(ftsWeight) || ftsWeight <= 0) {
+      throw new ValidationError("ftsWeight must be a positive finite number", {
+        received: ftsWeight,
+      });
+    }
 
     const vecRanks = this.vecLeg(opts.queryVector, legLimit);
     const ftsRanks = this.ftsLeg(opts.queryText, legLimit);
 
-    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs.
+    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs. The
+    // FTS contribution is scaled by `ftsWeight` (default 1 — the symmetric classic form).
     const fused = new Map<number, number>();
     for (const [rowid, rank] of vecRanks)
       fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));
     for (const [rowid, rank] of ftsRanks)
-      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));
+      fused.set(rowid, (fused.get(rowid) ?? 0) + ftsWeight / (RRF_K + rank));
 
     const ranked = [...fused.entries()]
       // score descending; deterministic tie-break by rowid ascending (stable, env-free).
