@@ -28,4 +28,10 @@ resource "cloudflare_bot_management" "caisson" {
   fight_mode         = false
   enable_js          = false
   ai_bots_protection = "disabled"
+  # AI Labyrinth (link-maze). Found "enabled" during the CAISSON-87 attribution (session Q,
+  # 2026-07-12): firewallEventsAdaptive shows link_maze_injected firing on registry.caisson.sh
+  # npm paths (packuments + tarballs) on 07-10 21:33 — 11h AFTER fight_mode died — and again
+  # 07-11. It classifies npm/bun install clients as rogue AI crawlers and contradicts the
+  # ADR-0303/0313 AI-crawlers-welcome posture. Pinned off so a dashboard toggle can't re-arm.
+  crawler_protection = "disabled"
 }
