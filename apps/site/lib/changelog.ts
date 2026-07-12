@@ -17,6 +17,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: readonly ChangelogEntry[] = [
   {
+    slug: "catalog-release-v0-4",
+    date: "2026-07-12",
+    version: "v0.4",
+    title:
+      "Catalog-wide release: kernel 0.4.3, installable-version guarantee, lifecycle emails",
+    body: "A coordinated release across the whole module catalog. The registry now enforces an installable-version guarantee: every advertised version of every module resolves to a downloadable, hash-verified tarball, checked in CI before anything ships. Purchases and renewals send lifecycle confirmation emails. The kernel reaches 0.4.3, project templates track it, the support bot's answer quality is regression-gated against a recorded baseline, and modules across the catalog pick up hardening and fixes. Full per-module details ship in each package's changelog.",
+    tags: ["kernel", "registry", "release"],
+  },
+  {
     slug: "base-substrate-v0-3",
     date: "2026-06-27",
     version: "v0.3",
