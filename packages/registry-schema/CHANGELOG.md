@@ -1,5 +1,50 @@
 # @caisson/registry-schema
 
+## 0.5.0
+
+### Minor Changes
+
+- 99d665a: Added `NON_MODULE_ENTITLEMENT_IDS` (currently `priority-support`): entitlement ids
+  that are sold and stored as purchased grants for their own routing purpose but are not a package
+  and never will be. `expandEntitlements` now resolves them to no members instead of throwing, so a
+  buyer who holds one alongside real software entitlements never has their whole account's
+  entitlement expansion fail closed over an id with nothing to expand to.
+
+### Patch Changes
+
+- 3d23da7: Re-capture the real-index expansion pins for the bundle-only registry index: the three dissolved
+  edition meta-packages left the served index, so bundle leaf sets no longer contain them and a bare
+  edition purchase id now rejects fail-closed (degrading to the free base floor at every consumer)
+  instead of resolving to its meta-package.
+- 9a81dd7: Edition-trace purge: narrow the purchased-id alias spine to nothing-but-the-mechanism. The
+  four dissolved edition ids (`ai-kit`/`local-ai`/`agent-dev`) and the legacy `bundle` "buy-everything"
+  sentinel are removed from `LEGACY_ENTITLEMENT_ALIASES` (zero real buyers hold them) and the `BUNDLE_ID`
+  export is deleted. The edition→bundle INDEX-resolution relation moves to the decoupled `EDITION_BUNDLE_ID`
+  map so `expandEntitlements` still folds the historical `kind:"edition"` meta-packages' members into a
+  canonical bundle purchase — every live-index and offline-token member set is byte-identical. The single
+  `normalizeEntitlementId` alias point and the read-side `entitlementIdAliasGroup` are kept (now empty) for
+  the next module rename. `legacyEditionNamesFor` is newly exported (additive) so the generator's edition-pin
+  resolver reads the same decoupled edition→bundle relation. No public value behavior changes for the
+  six-bundle vocabulary; a dissolved edition id now resolves only to its still-served meta package (a
+  fail-safe under-grant), never over-grants.
+- 8253e76: OSS launch readiness wave. LICENSE copyright restamped to Caisson Software LLC across the
+  open set. README/AGENTS prose trued to the built reality: six-bundle vocabulary, current
+  entitlement examples, decision-record citations stripped from public-facing docs. The
+  eu-ai-act-sample template's kernel pin corrected to the current release line, with a
+  dynamic staleness test so future version cuts fail loud. Docs service search now races the
+  per-query embed against an eight-second deadline and degrades to the keyword floor instead
+  of holding the query open past caller budgets; a refund-policy docs page makes refund
+  questions answerable. Site sign-in sets a non-HttpOnly session-hint cookie so owned-items
+  UI renders without an extra round trip, and the build ignores a spurious Next trace
+  warning. Public-mirror exporter hardened: prose renames scoped to the open package set,
+  four mirror-only test exclusions, a root bunfig for the mirror workspace, and a historical
+  backfill mode for the rot-guard.
+- ab352ab: Internal test hardening: an explicit everything-bundle leaf-set pin guards the expansion membership.
+- 4d85f28: The reserved-id carve-out for ui-pro is removed from entitlement expansion: a ui-pro
+  purchase now resolves to the real module grant, and the fail-closed rejection of unknown
+  ids applies to it on any index that does not ship it. The standards gate gains the ui-pro
+  price-authority row.
+
 ## 0.4.0
 
 ### Minor Changes

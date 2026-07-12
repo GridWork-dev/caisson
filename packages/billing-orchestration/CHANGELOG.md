@@ -1,5 +1,59 @@
 # @caisson/billing-orchestration
 
+## 0.3.0
+
+### Minor Changes
+
+- 5d60969: Affiliate program support. Paddle webhook parsing now captures `discount_id` on both
+  one-time purchases and subscription invoices, and the order record stamps it via a new
+  append-only platform migration. The billing provider port gains an optional
+  `createDiscount` method (the Paddle implementation mints percentage discount codes; other
+  drivers may omit it), and a new affiliate code registry migration carries per-code program
+  parameters (discount percent, commission basis points) stamped at mint time so historical
+  rows survive future parameter changes. Platform-reads test harnesses updated for the new
+  order-record column.
+- d5cef92: Your license now arrives on its own. After a purchase or a subscription renewal, your
+  license is issued and stored automatically — no more waiting on support to run it by hand.
+  Your purchase receipt now includes it directly when it's ready.
+
+  Payment notification retries are now handled cleanly. If your payment provider redelivers a
+  notification for a transaction that already went through, you will no longer see a duplicate
+  receipt email, and a subscription's included-updates window can no longer be nudged forward by
+  a retry that carries no new charge.
+
+  If a subscription is canceled or a purchase is refunded and it actually removes something you
+  had access to, you'll now get a short email saying so, instead of finding out only by noticing
+  it missing from your dashboard.
+
+  If your one-time purchase's included-updates window is about to lapse, you'll now get an
+  advance notice by email, the same way you already do for expiring credits.
+
+  A card dispute (chargeback) on your account no longer triggers any automatic change to your
+  access — an operator reviews it and reaches out before anything changes.
+
+  On the admin side, the process that publishes revoked-license information to the edge is now
+  ordered correctly when two revokes happen close together, closing a narrow window where the
+  older of the two could have briefly overwritten the newer one.
+
+### Patch Changes
+
+- a79acb4: Test-only: pin that Paddle dunning/past-due event types (`transaction.payment_failed`,
+  `subscription.past_due`, `subscription.paused`, `subscription.resumed`) parse to a safe no-op
+  today, so a future change to the event-type switch is a deliberate decision rather than an
+  accidental drop. No behavior change; the released artifact is byte-identical (tests are excluded
+  from the tarball).
+- 2b65cf3: Fix the Paddle simulator live proof for an upstream API drift: a notification setting must now
+  opt in with `traffic_source: "simulation"`, or simulation runs abort against it with
+  "Notification setting cannot be used for 'simulation' traffic". Live-test-only change — no
+  runtime code path is affected.
+- Updated dependencies [5d60969]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [d5cef92]
+- Updated dependencies [8253e76]
+  - @caisson/billing@0.6.0
+  - @caisson/kernel@0.4.3
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.2.1
 
 ### Patch Changes

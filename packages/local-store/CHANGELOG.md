@@ -1,5 +1,48 @@
 # @caisson/local-store
 
+## 1.0.0
+
+### Minor Changes
+
+- 679cce6: `hybridSearch` gains an `ftsWeight` option: the FTS leg's reciprocal-rank
+  contribution is scaled by `ftsWeight / (RRF_K + rank)` so callers can damp or boost
+  lexical matches against the vector leg without forking the fusion. Default is 1 —
+  byte-identical scores to the previous behavior — and a non-positive or non-finite
+  weight throws a ValidationError.
+- 1bc677a: Add an optional embeddable search surface at the `@caisson/local-store/ui` subpath. It pairs a
+  controlled query box with a ranked results table, distinguishing "type to search" from "no matches"
+  so a blank query never reads as an empty store. Your app runs the retrieval and hands the hits in —
+  the surface opens no tenant database and calls no embedder. Presentational and server-render safe;
+  composes the `@caisson/ui` kit. Importing the package root stays React-free.
+
+### Patch Changes
+
+- 329150a: Fixed a retrieval bug that silently killed the FTS leg of hybrid search for every multi-word
+  query: caller text was wrapped as a single FTS5 phrase, which required all the query's tokens to
+  appear adjacent and in order in a document. A natural-language query like "refund policy" or
+  "how do I install" matched zero rows, leaving retrieval to the vector leg alone (or returning
+  nothing on the FTS floor). Queries are now sanitized per token — each whitespace-split token is
+  individually quoted and OR-joined — so FTS operators in caller text stay inert while multi-word
+  queries match documents containing any of the terms, ranked by bm25.
+- Updated dependencies [08fd857]
+- Updated dependencies [0137008]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [5a8b317]
+- Updated dependencies [8253e76]
+- Updated dependencies [f903014]
+- Updated dependencies [eff7248]
+- Updated dependencies [47e04fd]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [b5a3690]
+- Updated dependencies [b5a3690]
+- Updated dependencies [51e3ed0]
+- Updated dependencies [c905c61]
+- Updated dependencies [2c93128]
+- Updated dependencies [b7e58a8]
+- Updated dependencies [b43959c]
+  - @caisson/ui@0.6.0
+  - @caisson/kernel@0.4.3
+
 ## 0.2.4
 
 ### Patch Changes

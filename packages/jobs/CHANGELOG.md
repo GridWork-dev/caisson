@@ -1,5 +1,42 @@
 # @caisson/jobs
 
+## 0.5.0
+
+### Minor Changes
+
+- 2b65cf3: `@caisson/alerting` adds a fifth network channel, `createDiscordChannel` (SSRF-guarded, maps an
+  `AlertEvent` to a Discord webhook embed colored by severity), plus a `deliverImmediate` helper for
+  callers with no persisted incident/rate-cap state of their own. `@caisson/jobs`' pg-boss driver
+  adds an optional `alerting` port (`JobAlertingDeps`) to `createPgBossJobQueue`: a `work()` task
+  failure now reports through it before re-throwing (pg-boss's own retry/dead-letter machinery is
+  untouched), and the underlying `PgBoss` instance's `error` event — previously unhandled, a process-
+  crash risk per pg-boss's own docs — is now wired via the new `wireBossErrorHandler`. Both additions
+  are additive and optional; every existing caller keeps compiling unchanged.
+- a0aa9a3: New `createBullMqJobQueue` driver (BullMQ/Redis), joining Trigger.dev, pg-boss, and the in-memory
+  reference driver behind the same `JobQueue` port. Redis shops can now self-host the job queue without
+  Postgres or a managed service. Idempotent retries map to BullMQ's native job id; overlap-safe
+  enqueues map to BullMQ's Simple-Mode deduplication; cron scheduling maps to a job scheduler; and
+  `close()` performs a graceful shutdown (workers stop claiming before queue connections release).
+
+### Patch Changes
+
+- 8253e76: OSS launch readiness wave. LICENSE copyright restamped to Caisson Software LLC across the
+  open set. README/AGENTS prose trued to the built reality: six-bundle vocabulary, current
+  entitlement examples, decision-record citations stripped from public-facing docs. The
+  eu-ai-act-sample template's kernel pin corrected to the current release line, with a
+  dynamic staleness test so future version cuts fail loud. Docs service search now races the
+  per-query embed against an eight-second deadline and degrades to the keyword floor instead
+  of holding the query open past caller budgets; a refund-policy docs page makes refund
+  questions answerable. Site sign-in sets a non-HttpOnly session-hint cookie so owned-items
+  UI renders without an extra round trip, and the build ignores a spurious Next trace
+  warning. Public-mirror exporter hardened: prose renames scoped to the open package set,
+  four mirror-only test exclusions, a root bunfig for the mirror workspace, and a historical
+  backfill mode for the rot-guard.
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+  - @caisson/kernel@0.4.3
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.4.1
 
 ### Patch Changes

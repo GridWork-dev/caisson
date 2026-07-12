@@ -1,5 +1,30 @@
 # @caisson/org-controls
 
+## 0.3.0
+
+### Minor Changes
+
+- 230f02a: Teammates invited to an Org Controls account can now actually reach it: the dashboard has a new
+  account switcher for anyone who belongs to more than one account, so an invited seat is no longer
+  stuck on their own personal account with no way to find the org they were added to. The Members
+  page also gains a self-serve "Remove" control for the account owner — offboarding a departed
+  teammate no longer requires contacting support. An owner can never accidentally remove themselves
+  or another owner through this control.
+- a0aa9a3: New Clerk session-verification driver, beside the existing WorkOS SSO transport. Verifies a Clerk
+  session token against Clerk's JWKS (networkless when a public key is configured) and maps the claims
+  onto the same session shape the rest of the product depends on — a Clerk-authenticated buyer resolves
+  through the identical seam as a WorkOS or password-based one. An active Clerk Organization maps to an
+  account and role; a personal (non-Organization) session falls back to the product's own single-user
+  account convention.
+
+### Patch Changes
+
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+  - @caisson/kernel@0.4.3
+  - @caisson/auth@0.3.2
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.2.1
 
 ### Patch Changes

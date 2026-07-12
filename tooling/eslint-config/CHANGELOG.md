@@ -1,16 +1,6 @@
-# @caisson/analytics
+# @caisson/eslint-config
 
-## 0.2.0
-
-### Minor Changes
-
-- a0aa9a3: New package: a provider-agnostic server-side analytics port. One `AnalyticsProvider` interface with
-  an in-memory capture driver for tests plus production drivers for Plausible, PostHog, and GA4 — record
-  events from a backend, queue handler, or webhook through a single seam, swap the vendor without
-  touching call sites. Config is injected (the API key or measurement id is passed in, never read from
-  the environment inside the package) and every call is timeout-bounded. Capture is fail-open by design:
-  a network error or a non-2xx response is reported through an optional error sink, never thrown, so a
-  dropped analytics event can never break the surface it measures.
+## 0.0.1
 
 ### Patch Changes
 
@@ -26,6 +16,3 @@
   warning. Public-mirror exporter hardened: prose renames scoped to the open package set,
   four mirror-only test exclusions, a root bunfig for the mirror workspace, and a historical
   backfill mode for the rot-guard.
-- Updated dependencies [2b65cf3]
-- Updated dependencies [8253e76]
-  - @caisson/kernel@0.4.3

@@ -1,5 +1,87 @@
 # @caisson/cli
 
+## 0.5.0
+
+### Minor Changes
+
+- 679cce6: `--edition <bundle>` alone now auto-selects the bundle's current modules:
+  the selection is resolved through `expandEntitlements` against the live registry index,
+  pinned at each member's `latest`, with bundle/edition meta entries dropped — so
+  `bunx create-caisson my-app --edition compliance` scaffolds without a `--module` list.
+  Explicit `--module` flags still win outright, and the interactive wizard pre-selects the
+  expansion so a bundle buyer confirms rather than re-picks. Fail-closed: an unknown or
+  retired edition id, or an expansion that resolves to zero installable modules, throws
+  before anything is written.
+- 15c50bd: `create-caisson --demo`: generate a runnable project against the FULL module catalog without a
+  license. Free (Apache-2.0) modules install for real from the Caisson registry (no license key
+  needed), exactly like a licensed build; every commercial module is replaced by a local,
+  clearly-watermarked stub under `src/demo-stubs/` so you can see the shape of the catalog and try
+  the scaffolding before buying. Every stub call throws a `CAISSON DEMO STUB` error naming the real
+  module and pointing at https://caisson.sh — it is never the licensed source and is never for
+  production. The generated repo also gets a `DEMO.md` listing the whole catalog (installed vs.
+  stubbed), a not-for-production banner on `README.md`/`AGENTS.md`, and a corrected module list so
+  neither file overstates what's actually installed. Reach it with `create-caisson --demo --name
+<slug>`, or pick "the full catalog, commercial modules as stubs" from the interactive first-run
+  wizard.
+- bfa481d: `create-caisson --framework next`: an opt-in Next.js App Router starter (same shape as the
+  `--deploy <target>` family) — a wired app on the base substrate instead of the bare
+  `Bun.serve` harness. Ships small, working examples of every base-substrate seam: account-JWT
+  session verification as a `proxy.ts` (Next 16's `middleware.ts` rename) and a Route Handler,
+  tenant-scoped Postgres access via `withTenant` in a Server Action, a `BillingProvider`-port
+  webhook stub, a `JobQueue` enqueue example, an `Emailer` send example, and an `@caisson/ai-config`
+  lane read. Unselected, generator output is unchanged (portable-by-omission); combine with
+  `--deploy railway|fly|vercel` and the shared Dockerfile's `bun run build`/`bun run start` resolve
+  to `next build`/`next start` with no extra wiring.
+
+### Patch Changes
+
+- 08ac43e: `create-caisson` now accepts the advertised quickstart form `create-caisson my-app` — a bare
+  project name with no `--name` flag — matching every install command shown in the docs and the
+  site. An explicit `--name` still wins if both are given.
+
+  Fixes a real-install bug where the generator could not find its module registry once installed
+  from npm outside this monorepo: the registry snapshot is now bundled into the published package,
+  so a fresh `bunx create-caisson` install resolves it correctly instead of failing.
+
+  Fixes a second real-install bug in the same generated project: the `.npmrc` file that wires up
+  module installation and your license key was silently missing from every generated project once
+  the CLI was installed from a real package (package registries never ship a file literally named
+  `.npmrc`). The generator now writes it correctly every time.
+
+  `--help` now names the correct license-token environment variable, `CAISSON_LICENSE_TOKEN`
+  (it previously named the wrong one).
+
+  The `create-caisson` documentation page no longer describes a lockfile or a result type the
+  generator does not produce — it now matches what the tool actually writes and returns.
+
+- 9a81dd7: Edition-trace purge: the generator is now six-bundle-only. `--edition` input is read off the
+  registry-schema alias spine, which the purge emptied, so the dissolved edition names (`ai-kit`/`local-ai`/
+  `agent-dev`/`bundle`) are no longer accepted — the input set is exactly the six canonical bundle ids
+  (`compliance`/`ai-production`/`local-first`/`agentic-dev`/`provenance`/`everything`). No code change to the
+  seam (it self-narrows off the spine); a future module rename plugs into the same single point.
+- 8253e76: OSS launch readiness wave. LICENSE copyright restamped to Caisson Software LLC across the
+  open set. README/AGENTS prose trued to the built reality: six-bundle vocabulary, current
+  entitlement examples, decision-record citations stripped from public-facing docs. The
+  eu-ai-act-sample template's kernel pin corrected to the current release line, with a
+  dynamic staleness test so future version cuts fail loud. Docs service search now races the
+  per-query embed against an eight-second deadline and degrades to the keyword floor instead
+  of holding the query open past caller budgets; a refund-policy docs page makes refund
+  questions answerable. Site sign-in sets a non-HttpOnly session-hint cookie so owned-items
+  UI renders without an extra round trip, and the build ignores a spurious Next trace
+  warning. Public-mirror exporter hardened: prose renames scoped to the open package set,
+  four mirror-only test exclusions, a root bunfig for the mirror workspace, and a historical
+  backfill mode for the rot-guard.
+- Updated dependencies [3d23da7]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+- Updated dependencies [99d665a]
+- Updated dependencies [ab352ab]
+- Updated dependencies [4d85f28]
+  - @caisson/registry-schema@0.5.0
+  - @caisson/kernel@0.4.3
+  - @caisson/migrate@0.2.5
+
 ## 0.4.0
 
 ### Minor Changes
