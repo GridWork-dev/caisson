@@ -55,13 +55,22 @@ describe("registry coverage gates (CAISSON-85/86)", () => {
   });
 
   test("the frozen backlog never grows and only lists real current violations (heal-only)", () => {
-    // Every grandfathered entry must still BE a violation-shaped fact or have healed; what it can
-    // never do is exempt a pair that is advertised today with a row missing tomorrow. Concretely:
-    // rowlessVersions entries must each still be advertised (else the entry is stale — prune it),
-    // and the committed lists match the counts frozen at enumeration (2026-07-12) or shrink.
-    const advertised = advertisedPairs(index);
+    // Every grandfathered entry must be a CURRENT violation: the moment a backfill heals one (or a
+    // delist retires it), its entry goes stale and this test forces it OUT of the file in the same
+    // PR — the file monotonically shrinks, and a healed slot can never sit as slack to be swapped
+    // for a fresh violation later. Additions are separately capped at the 2026-07-12 enumeration
+    // counts; growing a frozen data file past review is the loud diff the required check exists for.
+    const currentRowless = new Set(
+      versionCoverageViolations(index, sidecarKeys, new Set()),
+    );
     for (const pair of grandfather.rowlessVersions) {
-      expect(advertised.has(pair)).toBe(true);
+      expect(currentRowless.has(pair)).toBe(true);
+    }
+    const currentDangling = new Set(
+      memberPinViolations(index, sidecarKeys, new Set()),
+    );
+    for (const line of grandfather.danglingMemberPins) {
+      expect(currentDangling.has(line)).toBe(true);
     }
     expect(grandfather.rowlessVersions.length).toBeLessThanOrEqual(88);
     expect(grandfather.danglingMemberPins.length).toBeLessThanOrEqual(44);

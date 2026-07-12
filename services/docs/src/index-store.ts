@@ -3,6 +3,7 @@
 // engine is composed, not rebuilt (ADR-0003 service→base; no-copy-paste). DocsIndex loads DocChunk[]
 // into the store (FTS text always; a vector when an Embedder is wired) and maps fused SearchHit ids back
 // to the originating chunk + citation. With no embedder, retrieval is the deterministic FTS5 floor.
+import { ValidationError } from "@caisson/kernel";
 import { LocalStore, embedOrSkip } from "@caisson/local-store";
 import type { Embedder, OptionalEmbedder } from "@caisson/local-store";
 import type { DocChunk, ScoredChunk } from "./types.ts";
@@ -237,6 +238,13 @@ export class DocsIndex {
     }
     const ftsWeight = tuning?.ftsWeight ?? DEFAULT_FTS_WEIGHT;
     const perSourceCap = tuning?.perSourceCap ?? DEFAULT_PER_SOURCE_CAP;
+    // Fail CLOSED like hybridSearch's ftsWeight guard: `used >= NaN` is always false, so an
+    // unguarded NaN cap would silently disable per-source dedup instead of erroring.
+    if (!Number.isFinite(perSourceCap) || perSourceCap < 1) {
+      throw new ValidationError(
+        `perSourceCap must be a finite number >= 1, got ${String(perSourceCap)}`,
+      );
+    }
     // Over-fetch so the per-source cap has surplus candidates to promote into freed window slots.
     const hits = this.store.hybridSearch({
       queryText: query,
