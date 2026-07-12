@@ -218,12 +218,15 @@ function checkSot(): void {
   try {
     run("bun", ["run", "sot"]);
     record("bun run sot", true, "SoT drift tool green (incl. docs freshness)");
-  } catch {
-    record(
-      "bun run sot",
-      false,
-      "sot check failed — run `bun run sot` for the drift report",
-    );
+  } catch (err) {
+    // Surface the captured drift report — a CI readiness red must not be blind (first ride:
+    // the only failure signal was this one-liner while sot's own output was swallowed).
+    const e = err as { stdout?: Buffer | string; stderr?: Buffer | string };
+    for (const chunk of [e.stdout, e.stderr]) {
+      const text = chunk?.toString().trim();
+      if (text) console.error(text);
+    }
+    record("bun run sot", false, "sot check failed — drift report above");
   }
 }
 

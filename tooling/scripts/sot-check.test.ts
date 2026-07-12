@@ -484,6 +484,18 @@ describe("check #4 — branch hygiene", () => {
     }
   });
 
+  test("green: a detached-HEAD pseudo-entry is not a stray branch (release-tag CI checkout)", () => {
+    // `git branch` in a detached-HEAD checkout emits "(HEAD detached at <sha>)"; every
+    // release-train readiness run checks out the tag detached, so this must stay green.
+    const result = computeBranchHygiene(
+      ["(HEAD detached at efe43438)", "main"],
+      "HEAD",
+      [],
+      "/repo/main",
+    );
+    expect(result.status).toBe("green");
+  });
+
   test("parseWorktreeList parses `git worktree list --porcelain` output", () => {
     const porcelain = [
       "worktree /repo/main",
