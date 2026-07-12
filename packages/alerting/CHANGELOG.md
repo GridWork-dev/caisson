@@ -1,5 +1,33 @@
 # @caisson/alerting
 
+## 0.2.0
+
+### Minor Changes
+
+- 2b65cf3: `@caisson/alerting` adds a fifth network channel, `createDiscordChannel` (SSRF-guarded, maps an
+  `AlertEvent` to a Discord webhook embed colored by severity), plus a `deliverImmediate` helper for
+  callers with no persisted incident/rate-cap state of their own. `@caisson/jobs`' pg-boss driver
+  adds an optional `alerting` port (`JobAlertingDeps`) to `createPgBossJobQueue`: a `work()` task
+  failure now reports through it before re-throwing (pg-boss's own retry/dead-letter machinery is
+  untouched), and the underlying `PgBoss` instance's `error` event — previously unhandled, a process-
+  crash risk per pg-boss's own docs — is now wired via the new `wireBossErrorHandler`. Both additions
+  are additive and optional; every existing caller keeps compiling unchanged.
+
+### Patch Changes
+
+- Updated dependencies [81223a7]
+- Updated dependencies [b8fe873]
+- Updated dependencies [114e2a0]
+- Updated dependencies [4036574]
+- Updated dependencies [5e9996e]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [d5cef92]
+- Updated dependencies [8253e76]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [97b0341]
+  - @caisson/email@0.4.0
+  - @caisson/kernel@0.4.3
+
 ## 0.1.5
 
 ### Patch Changes

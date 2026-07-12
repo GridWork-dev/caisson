@@ -1,5 +1,14 @@
 # @caisson/brand
 
+## 0.1.2
+
+### Patch Changes
+
+- 51e3ed0: The wordmark lockup now wraps: the footer descriptor ("compliance-grade infrastructure")
+  can drop to its own line instead of overflowing a narrow grid column and rendering on top
+  of the adjacent footer nav column at 390px viewports. The plain glyph+wordmark
+  nav usage never triggers the wrap. Private package only; no publishable release.
+
 ## 0.1.1
 
 ### Patch Changes

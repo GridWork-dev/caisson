@@ -1,5 +1,58 @@
 # @caisson/billing
 
+## 0.6.0
+
+### Minor Changes
+
+- 5d60969: Affiliate program support. Paddle webhook parsing now captures `discount_id` on both
+  one-time purchases and subscription invoices, and the order record stamps it via a new
+  append-only platform migration. The billing provider port gains an optional
+  `createDiscount` method (the Paddle implementation mints percentage discount codes; other
+  drivers may omit it), and a new affiliate code registry migration carries per-code program
+  parameters (discount percent, commission basis points) stamped at mint time so historical
+  rows survive future parameter changes. Platform-reads test harnesses updated for the new
+  order-record column.
+- d5cef92: Your license now arrives on its own. After a purchase or a subscription renewal, your
+  license is issued and stored automatically — no more waiting on support to run it by hand.
+  Your purchase receipt now includes it directly when it's ready.
+
+  Payment notification retries are now handled cleanly. If your payment provider redelivers a
+  notification for a transaction that already went through, you will no longer see a duplicate
+  receipt email, and a subscription's included-updates window can no longer be nudged forward by
+  a retry that carries no new charge.
+
+  If a subscription is canceled or a purchase is refunded and it actually removes something you
+  had access to, you'll now get a short email saying so, instead of finding out only by noticing
+  it missing from your dashboard.
+
+  If your one-time purchase's included-updates window is about to lapse, you'll now get an
+  advance notice by email, the same way you already do for expiring credits.
+
+  A card dispute (chargeback) on your account no longer triggers any automatic change to your
+  access — an operator reviews it and reaches out before anything changes.
+
+  On the admin side, the process that publishes revoked-license information to the edge is now
+  ordered correctly when two revokes happen close together, closing a narrow window where the
+  older of the two could have briefly overwritten the newer one.
+
+### Patch Changes
+
+- 8253e76: OSS launch readiness wave. LICENSE copyright restamped to Caisson Software LLC across the
+  open set. README/AGENTS prose trued to the built reality: six-bundle vocabulary, current
+  entitlement examples, decision-record citations stripped from public-facing docs. The
+  eu-ai-act-sample template's kernel pin corrected to the current release line, with a
+  dynamic staleness test so future version cuts fail loud. Docs service search now races the
+  per-query embed against an eight-second deadline and degrades to the keyword floor instead
+  of holding the query open past caller budgets; a refund-policy docs page makes refund
+  questions answerable. Site sign-in sets a non-HttpOnly session-hint cookie so owned-items
+  UI renders without an extra round trip, and the build ignores a spurious Next trace
+  warning. Public-mirror exporter hardened: prose renames scoped to the open package set,
+  four mirror-only test exclusions, a root bunfig for the mirror workspace, and a historical
+  backfill mode for the rot-guard.
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+  - @caisson/kernel@0.4.3
+
 ## 0.5.0
 
 ### Minor Changes

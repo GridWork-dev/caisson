@@ -1,5 +1,20 @@
 # @caisson/everything
 
+## 0.2.3
+
+### Patch Changes
+
+- 679cce6: Drop the three dissolved-edition meta pins (@caisson/agent-dev, @caisson/ai-kit,
+  @caisson/local-ai) from the Everything members map. The ids were delisted 2026-07-07, are
+  filtered from entitlement expansion by the index allowlist, and can never resolve on the
+  served registry surface — the newcoverage pin gate would fail the next version
+  cut on them. Buyer entitlements are unaffected: tokens sign purchased ids, and legacy-id
+  aliasing is claim-side.
+- 4d85f28: UI Pro is published to the registry at $129 standalone, and its description now covers the
+  full eleven-component set. The Everything bundle republishes with UI Pro pinned at its real
+  published version instead of the pre-publish placeholder, so an Everything purchase now
+  installs UI Pro like any other member.
+
 ## 0.2.1
 
 ### Patch Changes

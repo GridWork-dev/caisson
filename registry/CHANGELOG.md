@@ -1,5 +1,47 @@
 # @caisson/registry
 
+## 0.0.7
+
+### Patch Changes
+
+- 53f71a2: Releases are now commit-addressable: the publish step checks out the exact release tag, verifies the catalog (ledger, index, and recorded per-tarball hashes) against the tagged source tree, and re-packs every tarball requiring byte-equality with the recorded hashes before anything uploads. Version bumps and catalog updates land only through a reviewable version PR — publishing never mutates source, and a re-run never overwrites an already-published version.
+- f600196: CI evidence pack: the quality workflow now assembles gate outputs, index byte-identity proof, and test summaries into one hashed, versioned artifact.
+- 317bad5: Add an index-parity probe script that compares the registry index shipped in the repo
+  against the copies served by the deployed registry and the license service, printing a
+  per-copy table and exiting non-zero when any reachable copy serves a stale or unexpected
+  entry. Private package only; no publishable release.
+- 2b65cf3: Adds a regression test pinning the registry's anonymous catalog response to exactly the
+  open-source base set — packages with an Apache-2.0 license and no commercial bundle
+  membership — derived from the committed catalog index rather than a hardcoded id list, so
+  a legitimate new open package doesn't false-positive the test while a commercial-package
+  leak still fails loudly. Private package only; no publishable release.
+- 60e65ef: The index-parity probe (`registry/scripts/index-parity-probe.ts`) now also compares the
+  admin service's baked index against the repo reference, using the same strong digest
+  check as the license leg — completing the three-way parity check now that the admin
+  control-plane's own sign-in has made `/healthz` externally reachable without the edge
+  gate the leg previously required. Private package only; no publishable release.
+- f5a21c1: Rate-limited registry responses now carry a `Retry-After` header alongside the 429 status, so npm and bun back off and retry instead of failing the install. The edge rate limit is also resized to accommodate a full bundle install burst without tripping.
+- 2b65cf3: The registry read Worker now app-level rate-limits anonymous traffic via the native
+  Cloudflare Workers Rate Limiting binding: three independent per-IP budgets
+  — catalog reads (300/60s), npm packument reads (120/60s), and tarball bytes (60/60s) —
+  each checked before its route class's entitlement gate. A missing binding (not yet
+  provisioned) or a limiter error fails OPEN; only a genuine bucket-empty deny returns 429.
+  Private package only; no publishable release — the wrangler.toml binding config is
+  inert until the operator provisions the three `[[ratelimits]]` namespaces at DEPLOY.
+- Updated dependencies [3d23da7]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [317bad5]
+- Updated dependencies [8253e76]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [99d665a]
+- Updated dependencies [99d665a]
+- Updated dependencies [ab352ab]
+- Updated dependencies [4d85f28]
+  - @caisson/registry-schema@0.5.0
+  - @caisson/pricebook@0.5.1
+  - @caisson/license-verify@0.3.1
+
 ## 0.0.6
 
 ### Patch Changes

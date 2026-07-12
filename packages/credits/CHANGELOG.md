@@ -1,5 +1,38 @@
 # @caisson/credits
 
+## 0.5.0
+
+### Minor Changes
+
+- 230f02a: Added a "Buy credits" button on the Credits dashboard page, so a 5,000-credit top-up pack can be
+  purchased directly instead of needing to contact support. Also fixed the "Current balance" tile so
+  it never overstates what you can actually spend: it now reflects your real spendable total right
+  away, rather than briefly counting expired credits until the next daily cleanup runs.
+- a79acb4: Add `outstandingClaw`, a shared account+purchase-scoped advisory-lock guard around the
+  `creditsGrantedBySource`/`creditsClawedForSource` read that every purchase-clawback caller now
+  routes through. Closes a read-then-claw race: two differently-keyed clawback attempts against the
+  same purchase (a whole-transaction refund, a per-line adjustment, and an operator revoke can all
+  key differently) could previously each read a stale "already clawed" amount and, once the wallet's
+  own balance-clamp kicked in, drain an unrelated purchase's unspent credits out of the same fungible
+  wallet. The lock serializes racing readers so the second always observes the first's committed
+  claw.
+
+### Patch Changes
+
+- Updated dependencies [3d23da7]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [a0aa9a3]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+- Updated dependencies [99d665a]
+- Updated dependencies [ab352ab]
+- Updated dependencies [4d85f28]
+  - @caisson/registry-schema@0.5.0
+  - @caisson/jobs@0.5.0
+  - @caisson/kernel@0.4.3
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.4.1
 
 ### Patch Changes

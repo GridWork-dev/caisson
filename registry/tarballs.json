@@ -113,6 +113,18 @@
         }
       }
     },
+    "@caisson/agent-kernel@0.4.1": {
+      "key": "agent-kernel/agent-kernel-0.4.1.tgz",
+      "shasum": "34bd241a890a92a7e5e038498b6a4fdb606214fd",
+      "integrity": "sha512-v+MtGBfyQe0QzKL30Vow0S/r9p0Utxxl+BxbqWyn5cuvuG3YNAtGzseQViXMkbU7Ww7NY0bRkRMqQWnPjvtoRQ==",
+      "size": 30705,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/agent-runner@0.1.2": {
       "key": "agent-runner/agent-runner-0.1.2.tgz",
       "shasum": "ed5c5b781d061b86ca045fb016a4248ce25fad54",
@@ -145,6 +157,18 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.1",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/agent-runner@0.1.5": {
+      "key": "agent-runner/agent-runner-0.1.5.tgz",
+      "shasum": "9bdff53456edd6e9ea481a3ccbdb5dae4529bca9",
+      "integrity": "sha512-ZVlLFBtYaZLKqSPbxvD2m7QVNFagoBPqtRW0QXmjiuQMPZ+VDp7L1+bjZkDgKYZCMn1E/XdaoFmeeohAu8QrPQ==",
+      "size": 15495,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
           "zod": "^3.23.8"
         }
       }
@@ -209,6 +233,18 @@
         }
       }
     },
+    "@caisson/ai-config@0.3.1": {
+      "key": "ai-config/ai-config-0.3.1.tgz",
+      "shasum": "2c2e599f6e8865382b57c420ea64beaf6ee9ed3a",
+      "integrity": "sha512-zLRwSsayBf6mmAhztC2vohRQYRzgsnuNJbGs9LIKoULA+qUPfsPhxIcUt5r4ta6wi4xyCn/ROahkgzexnEaL8g==",
+      "size": 11604,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/ai-evals@0.2.1": {
       "key": "ai-evals/ai-evals-0.2.1.tgz",
       "shasum": "2105bcc0f5df445be685739067a1199b9a3b2c19",
@@ -236,6 +272,17 @@
       "shasum": "1d759c4f1fd4d5872383189ecead074c62fed16b",
       "integrity": "sha512-/nwPyKD4b+YmZX6ZWhVjSSYwKrGUTo0q193KelW+hn0BKBWbrFvBIQ/8g5zEr9knqVV84bLycJOVr6CVvZgqjA==",
       "size": 73152,
+      "meta": {
+        "dependencies": {
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/ai-evals@0.3.2": {
+      "key": "ai-evals/ai-evals-0.3.2.tgz",
+      "shasum": "84bb598a6f1508dd5b16759624c53fe09e568840",
+      "integrity": "sha512-rpo68G15nJqyDNstygvYQVTa/HXMOAxnZ7hd6b3+mPIqu+9hiShRpxA1AvG6rAXxpvolVl+qpjH88e8YZexdhg==",
+      "size": 33118,
       "meta": {
         "dependencies": {
           "zod": "^3.23.8"
@@ -406,6 +453,25 @@
         }
       }
     },
+    "@caisson/ai-meter@1.0.0": {
+      "key": "ai-meter/ai-meter-1.0.0.tgz",
+      "shasum": "30befbf358bbfac5e636a0b033fe3cc87d5d8fdd",
+      "integrity": "sha512-ohVvKbRP+27wq27k6wTf/pyEeaBE8B9ZXbyUoqANGrGnPY1x+CrSNps44wEqJy28y1W2pYXNq8F1xotPSMzXVg==",
+      "size": 36450,
+      "meta": {
+        "dependencies": {
+          "@caisson/credits": "0.5.0",
+          "@caisson/kernel": "0.4.3",
+          "@caisson/tenancy-rls": "0.5.1",
+          "zod": "^3.23.8"
+        },
+        "peerDependencies": {
+          "@caisson/ui": "^0.6.0",
+          "react": "^19.0.0",
+          "react-dom": "^19.0.0"
+        }
+      }
+    },
     "@caisson/ai-production@0.2.0": {
       "key": "ai-production/ai-production-0.2.0.tgz",
       "shasum": "0881e8c3bf874119691266b8f690bc632bfa9890",
@@ -457,6 +523,19 @@
         }
       }
     },
+    "@caisson/alerting@0.2.0": {
+      "key": "alerting/alerting-0.2.0.tgz",
+      "shasum": "ab89f6aadfe100602d4e493432af7080606f80eb",
+      "integrity": "sha512-2wsR+pf7d9dvgLUJbACxakwsTL0FNWvO5JYDiiTmImexmnkJjSBnccdnE2f8pjOHI/wmf5Lw5bUFziQXpzKpvQ==",
+      "size": 14816,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@caisson/email": "0.4.0",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/analytics@0.1.0": {
       "key": "analytics/analytics-0.1.0.tgz",
       "shasum": "55a4435b0f658641af12544fab7918669ed9d780",
@@ -465,6 +544,17 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.2"
+        }
+      }
+    },
+    "@caisson/analytics@0.2.0": {
+      "key": "analytics/analytics-0.2.0.tgz",
+      "shasum": "fea4f5b02b9094ed9944644cf3d15a406504e3f8",
+      "integrity": "sha512-qGIJr7DGmOSC2DfF5ZOq0rLcB7RXDIZFT3eZNzF/Vl044clAd3nTdFgv8FlX7FRiikAeIz+7ZQUNBBPdCdVVQg==",
+      "size": 12702,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3"
         }
       }
     },
@@ -524,6 +614,25 @@
         }
       }
     },
+    "@caisson/audit-worm@1.0.0": {
+      "key": "audit-worm/audit-worm-1.0.0.tgz",
+      "shasum": "060c7ca1f2cbc0603d324e604adcee1e1ae3d1ee",
+      "integrity": "sha512-ZO0qCJIvTq76BKXkwd698BgYcK5I01tNDDIYkjyeJEG2P9q8+F6BiQd3y0avRRKSANhn1iJ0RgqR+EzSn8JFww==",
+      "size": 5572,
+      "meta": {
+        "dependencies": {
+          "@aws-sdk/client-s3": "^3.1075.0",
+          "@caisson/kernel": "0.4.3",
+          "@caisson/tenancy-rls": "0.5.1",
+          "zod": "^3.23.8"
+        },
+        "peerDependencies": {
+          "@caisson/ui": "^0.6.0",
+          "react": "^19.0.0",
+          "react-dom": "^19.0.0"
+        }
+      }
+    },
     "@caisson/auth@0.2.2": {
       "key": "auth/auth-0.2.2.tgz",
       "shasum": "6a2eb0bd73f099394864d61ac700cf691d6bc841",
@@ -572,6 +681,18 @@
         }
       }
     },
+    "@caisson/auth@0.3.2": {
+      "key": "auth/auth-0.3.2.tgz",
+      "shasum": "0bc4a70ee613aa5d6b087404afbb301e779299e0",
+      "integrity": "sha512-vvwaZyq64eqeI7+bRz67U8CwAQXfwi3elF4ukv/ox/CDj1KKJOZzZ9ciqG9VGy6FkrvTtWF+VFZTonJrrMhTyw==",
+      "size": 14086,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@caisson/tenancy-rls": "0.5.1"
+        }
+      }
+    },
     "@caisson/billing-orchestration@0.2.0": {
       "key": "billing-orchestration/billing-orchestration-0.2.0.tgz",
       "shasum": "8843b2de36259f9e7ff731be46b7d9a01010d757",
@@ -596,6 +717,20 @@
           "@caisson/billing": "0.5.0",
           "@caisson/kernel": "0.4.2",
           "@caisson/tenancy-rls": "0.4.0",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/billing-orchestration@0.3.0": {
+      "key": "billing-orchestration/billing-orchestration-0.3.0.tgz",
+      "shasum": "3c44da036e23f3f96ad40a6ff13a8010bce1b9d0",
+      "integrity": "sha512-aH8JH8TKpH4QAuRdRui0DwAXuY/yzaouU9G671n/10NLYkIIQi1NBbsyAa92iHSksLr+XVCbvRyZBYETnJ+GTg==",
+      "size": 45301,
+      "meta": {
+        "dependencies": {
+          "@caisson/billing": "0.6.0",
+          "@caisson/kernel": "0.4.3",
+          "@caisson/tenancy-rls": "0.5.1",
           "zod": "^3.23.8"
         }
       }
@@ -634,6 +769,18 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.1",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/billing@0.6.0": {
+      "key": "billing/billing-0.6.0.tgz",
+      "shasum": "5ecaf487e25686847bcc3e260b2f8380727376db",
+      "integrity": "sha512-suIFcJl2OkCuPgfCHpvblSM60jSNzyq5D8aBamqhdrHig7vt99AkWVokHf2tafOtwEbgp51Jz5RDFgXYRaWWXA==",
+      "size": 19907,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
           "zod": "^3.23.8"
         }
       }
@@ -712,6 +859,27 @@
         }
       }
     },
+    "@caisson/cli@0.5.0": {
+      "key": "cli/cli-0.5.0.tgz",
+      "shasum": "e3f15117b1aa4549aeeba308f83132d11b18ac84",
+      "integrity": "sha512-rdnh0s0G0VRyxG7N1J3Rh+ThAteDWSkDngiNvrGICaJuJ8WFuPReQias9L7M4akJLOsFSyaGtf76PHAxTG9+Wg==",
+      "size": 24117,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@caisson/migrate": "0.2.5",
+          "@caisson/registry-schema": "0.5.0",
+          "@clack/prompts": "^1.7.0",
+          "zod": "^3.23.8"
+        },
+        "bin": {
+          "create-caisson": "./dist/cli.js"
+        },
+        "engines": {
+          "node": ">=20.12.0"
+        }
+      }
+    },
     "@caisson/compliance-core@0.2.0": {
       "key": "compliance-core/compliance-core-0.2.0.tgz",
       "shasum": "9d719871e4493b5e55d39e53f07be5a77035d3d3",
@@ -736,6 +904,20 @@
           "@caisson/field-crypto": "0.2.4",
           "@caisson/frameworks-pack": "0.2.0",
           "@caisson/kernel": "0.4.2",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/compliance-core@0.2.2": {
+      "key": "compliance-core/compliance-core-0.2.2.tgz",
+      "shasum": "b11eb5bb101e4b49411b93f8264b8be2e7834b1d",
+      "integrity": "sha512-YIiif4uyNTa5+ipZ/OUZgzKNGBlSYy+v9WMjFqiW12r7cTYv+WiOh0pk9ZAT1NmhcKrn6U5IkMgDXCHhPy3ZCw==",
+      "size": 50925,
+      "meta": {
+        "dependencies": {
+          "@caisson/field-crypto": "0.3.1",
+          "@caisson/frameworks-pack": "0.3.0",
+          "@caisson/kernel": "0.4.3",
           "zod": "^3.23.8"
         }
       }
@@ -820,6 +1002,27 @@
         }
       }
     },
+    "@caisson/compliance@0.5.1": {
+      "key": "compliance/compliance-0.5.1.tgz",
+      "shasum": "25db7e6c8ddd96dc36e7873169a9dcd96815a79f",
+      "integrity": "sha512-rAuBQZ7QwAzo6AUpxhHSzKHlCQsmcWmeFN5lIrEKROM4jL7oQltHshIZqHLnc0+bvfL7EOXAwv2mQwfLooA1kw==",
+      "size": 42369,
+      "meta": {
+        "dependencies": {
+          "@caisson/alerting": "0.2.0",
+          "@caisson/audit-worm": "1.0.0",
+          "@caisson/compliance-core": "0.2.2",
+          "@caisson/field-crypto": "0.3.1",
+          "@caisson/frameworks-pack": "0.3.0",
+          "@caisson/kernel": "0.4.3",
+          "@caisson/migrate": "0.2.5",
+          "@caisson/retention-runner": "0.1.7",
+          "@caisson/signing-primitive": "0.2.1",
+          "@caisson/tenancy-rls": "0.5.1",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/credits@0.3.1": {
       "key": "credits/credits-0.3.1.tgz",
       "shasum": "e757c778c0af4b650af4b55bad2226b563449338",
@@ -876,6 +1079,21 @@
         }
       }
     },
+    "@caisson/credits@0.5.0": {
+      "key": "credits/credits-0.5.0.tgz",
+      "shasum": "107ac362619ce9d833cdf2ccdab12778497cae61",
+      "integrity": "sha512-SA5zB4Olslkh9opUajGKP/7BYDggvxARa5ey+2tgXhKcQtfXdnVYUidHcu47qHwJQ2xYrx5/X4nVfp+tXDg8VA==",
+      "size": 31818,
+      "meta": {
+        "dependencies": {
+          "@caisson/jobs": "0.5.0",
+          "@caisson/kernel": "0.4.3",
+          "@caisson/registry-schema": "0.5.0",
+          "@caisson/tenancy-rls": "0.5.1",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/email@0.2.2": {
       "key": "email/email-0.2.2.tgz",
       "shasum": "7a0b34ac78b394b56f3535d11b02a2ff9ce5c196",
@@ -916,6 +1134,22 @@
         }
       }
     },
+    "@caisson/email@0.4.0": {
+      "key": "email/email-0.4.0.tgz",
+      "shasum": "ca7d06f6d7ffda766a1b33fc8467fb396fb68f7a",
+      "integrity": "sha512-KUneKccz9FfSt6SOR5huu63AUZcoBue1JLxizaya5pYtwY/HeOtkByWpbtCWaxcv1V7yg5DakCbBJwJjyLlLqA==",
+      "size": 29999,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@react-email/components": "^1.0.12",
+          "@react-email/render": "^2.0.10",
+          "nodemailer": "^9.0.3",
+          "react": "^19.2.0",
+          "react-dom": "^19.2.0"
+        }
+      }
+    },
     "@caisson/everything@0.2.0": {
       "key": "everything/everything-0.2.0.tgz",
       "shasum": "6b656ad19c67d8fe812f57aa52ae1ffa27b1e1a8",
@@ -933,6 +1167,12 @@
       "shasum": "c58aa2d9b0ade755cac22913ac9b6f249a21d8ac",
       "integrity": "sha512-wfDQ2GbQkzMl8X3M1iNjTEpAbfcGPPbWGEkmWzaFE1iSsbPuiuVnxnDSsuBbSZPDtznhwaTsEm9teChmfKjNTA==",
       "size": 2313
+    },
+    "@caisson/everything@0.2.3": {
+      "key": "everything/everything-0.2.3.tgz",
+      "shasum": "1fc54909b915ea1effc1e65167d68c59572207c9",
+      "integrity": "sha512-7JHYtaW57hZgBarf4/jzRjJqA6jqdGHKSNb7kD0XM7rQavdN0zqXTiFcmQw7ocwf0qQrVIYuwO7PKCZD0zVeFg==",
+      "size": 2755
     },
     "@caisson/field-crypto@0.2.2": {
       "key": "field-crypto/field-crypto-0.2.2.tgz",
@@ -991,6 +1231,21 @@
         }
       }
     },
+    "@caisson/field-crypto@0.3.1": {
+      "key": "field-crypto/field-crypto-0.3.1.tgz",
+      "shasum": "365cceddbc60413fc88eb8424afeb3226b90c5d6",
+      "integrity": "sha512-v+IQSNj9T0Km4Q98EmE0Gle49OplAAzKrCO/sS4kEG7C7H+mngcjTrCPdiF/eubB/X4cn+ThiNIrh1Cr3GfFow==",
+      "size": 49459,
+      "meta": {
+        "dependencies": {
+          "@aws-sdk/client-kms": "^3.1075.0",
+          "@caisson/kernel": "0.4.3",
+          "@google-cloud/kms": "^5.5.1",
+          "drizzle-orm": "^0.45.0",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/frameworks-pack@0.2.0": {
       "key": "frameworks-pack/frameworks-pack-0.2.0.tgz",
       "shasum": "cdae563f6e824f592bf84d930f2b99f9a4fd3316",
@@ -999,6 +1254,18 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.1",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/frameworks-pack@0.3.0": {
+      "key": "frameworks-pack/frameworks-pack-0.3.0.tgz",
+      "shasum": "63ccae4b33cab96a652d7b4260703eccbe8c1264",
+      "integrity": "sha512-22cVH8Ppzj47/+1KzQsrrSxXbe5gJuu8quP7gKcAyNu84Rif4Yq4llVdDyfbrfOmmKVrC9Q7RinRLaIzyTD5GQ==",
+      "size": 41818,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
           "zod": "^3.23.8"
         }
       }
@@ -1051,6 +1318,19 @@
         "dependencies": {
           "@caisson/field-crypto": "0.2.4",
           "@caisson/kernel": "0.4.2",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/guardrails@0.4.3": {
+      "key": "guardrails/guardrails-0.4.3.tgz",
+      "shasum": "2dd167e350deca6dcf4604df10e705bbdabb46a2",
+      "integrity": "sha512-dsiHibD95ghi/le0PthzQVGfz7ZP8gg6ItU1x3ZvbzP9y41fbJ4CiMR63cK57wB9T+z49YGals/RqbFgIh14Ew==",
+      "size": 26722,
+      "meta": {
+        "dependencies": {
+          "@caisson/field-crypto": "0.3.1",
+          "@caisson/kernel": "0.4.3",
           "zod": "^3.23.8"
         }
       }
@@ -1115,6 +1395,22 @@
         }
       }
     },
+    "@caisson/jobs@0.5.0": {
+      "key": "jobs/jobs-0.5.0.tgz",
+      "shasum": "3a5e0f21cd0eb675dcd28dbee7baa758d787fcfe",
+      "integrity": "sha512-nNTcUaHSslC5aDALBCPqKu9HZehORZrhifHjnkUR4TIU4kPpk7tMk0OkkHytZvZqI+CKZ0PyEM9wf/uVqueG3A==",
+      "size": 30832,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@caisson/tenancy-rls": "0.5.1",
+          "@trigger.dev/sdk": "^4.4.6",
+          "bullmq": "^5.60.0",
+          "pg-boss": "^12.18.3",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/kernel@0.4.0": {
       "key": "kernel/kernel-0.4.0.tgz",
       "shasum": "53a216c406440ceb559106779d79edbbda09cd83",
@@ -1157,6 +1453,20 @@
         }
       }
     },
+    "@caisson/kernel@0.4.3": {
+      "key": "kernel/kernel-0.4.3.tgz",
+      "shasum": "4a052abb4055b84e0b2488b0d9f5c588068c37d6",
+      "integrity": "sha512-LVnFZjmaKwlzO4QH0YIeOrIj0DCNibbwc9e4AwassMH6Ru+yYzmx97FHMODk0mcksNL/xfjgfx1pHPzNdk+qLw==",
+      "size": 52185,
+      "meta": {
+        "dependencies": {
+          "zod": "^3.23.8"
+        },
+        "bin": {
+          "caisson-gate": "./src/gate.ts"
+        }
+      }
+    },
     "@caisson/license-verify@0.2.2": {
       "key": "license-verify/license-verify-0.2.2.tgz",
       "shasum": "fe8f9f63c5d20b2d681aa3ffaa45e2fcc9bb3154",
@@ -1189,6 +1499,18 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.1",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/license-verify@0.3.1": {
+      "key": "license-verify/license-verify-0.3.1.tgz",
+      "shasum": "773cbb83f28c174c2027bd0e9eec232685e4cb23",
+      "integrity": "sha512-qV/xX34Mj2ei4EmsHW6DTmI0W9ARnVOeE6qgVVj/qy4pHyE/T0YhY1IkWJzyexptka7afUqcjo6sh0kVyCyEIg==",
+      "size": 21313,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
           "zod": "^3.23.8"
         }
       }
@@ -1293,6 +1615,19 @@
         }
       }
     },
+    "@caisson/local-inference@0.1.2": {
+      "key": "local-inference/local-inference-0.1.2.tgz",
+      "shasum": "881e0cb83f9d64334c3ce16c8322bcfbaae4eca1",
+      "integrity": "sha512-L0pC5bkBtbk3aF+G66zAOKIAdqTkuNCH/ceBXLjYarrM1jkgvrMoAwdR22Oe/RRprswDKcLIVgJ6yy2Zmdje/Q==",
+      "size": 39334,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@caisson/local-privacy": "0.1.2",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/local-privacy@0.1.0": {
       "key": "local-privacy/local-privacy-0.1.0.tgz",
       "shasum": "9413d980e5d0ebdbefa1ff2a81aa273614c4e20b",
@@ -1313,6 +1648,18 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.2",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/local-privacy@0.1.2": {
+      "key": "local-privacy/local-privacy-0.1.2.tgz",
+      "shasum": "5adddb29799ec3eb68782ede0fdc35246b86aa07",
+      "integrity": "sha512-A0lkmCL4FSqSVH+5Jya7Ad5YdtUXQdAsEkinAh304R9lCks7M5qRSIpvPv6/qssPUXR36jjeMsvIUnlNGbyuBQ==",
+      "size": 8857,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
           "zod": "^3.23.8"
         }
       }
@@ -1356,6 +1703,24 @@
         }
       }
     },
+    "@caisson/local-store@1.0.0": {
+      "key": "local-store/local-store-1.0.0.tgz",
+      "shasum": "8184350e9152805a476c31bfe47d4647f66f1e66",
+      "integrity": "sha512-KSHV5lv0L0sHsZNMP8RH8T+OTCimT6GdP8b04JCuyn3R17d6TXxOc542KTaQem4poCL5mii0Az52gQgCidlF+g==",
+      "size": 34603,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "sqlite-vec": "^0.1.9",
+          "zod": "^3.23.8"
+        },
+        "peerDependencies": {
+          "@caisson/ui": "^0.6.0",
+          "react": "^19.0.0",
+          "react-dom": "^19.0.0"
+        }
+      }
+    },
     "@caisson/local-sync@0.1.0": {
       "key": "local-sync/local-sync-0.1.0.tgz",
       "shasum": "45a92821a053adf711079b98c242b0c79d5c3696",
@@ -1376,6 +1741,18 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.2",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/local-sync@0.1.2": {
+      "key": "local-sync/local-sync-0.1.2.tgz",
+      "shasum": "ccae9163e672dc21572154d755c45a1980504449",
+      "integrity": "sha512-GEGDk+FbyD0GGzsWjy4fPFS0MYwR9SE8LzsQVoEnkETW1cXu+DoUOe/dpV4aJq28WM9e4nCDupVf62iC1fYRdA==",
+      "size": 20181,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
           "zod": "^3.23.8"
         }
       }
@@ -1440,6 +1817,21 @@
         }
       }
     },
+    "@caisson/mcp-server@0.2.6": {
+      "key": "mcp-server/mcp-server-0.2.6.tgz",
+      "shasum": "96ae861702c8d172fddb699e2e9c4f2ef980fe71",
+      "integrity": "sha512-9iztvK4xw9YQv/CVUfFLtCzyUHz5rmUy3nXqcDmcXKrxTK8pu8QquB//D5G0j5qfRWMbhkA6616fVOtsMJKbWw==",
+      "size": 40050,
+      "meta": {
+        "dependencies": {
+          "@caisson/ai-config": "0.3.1",
+          "@caisson/kernel": "0.4.3",
+          "@caisson/registry-schema": "0.5.0",
+          "@modelcontextprotocol/sdk": "^1.29.0",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/migrate@0.2.2": {
       "key": "migrate/migrate-0.2.2.tgz",
       "shasum": "79e917d075321ad8dae17b645bed4d77a534f648",
@@ -1476,6 +1868,20 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.1"
+        },
+        "peerDependencies": {
+          "pg": "^8.0.0"
+        }
+      }
+    },
+    "@caisson/migrate@0.2.5": {
+      "key": "migrate/migrate-0.2.5.tgz",
+      "shasum": "1fa1541490d4b74e2624b5eaa9a6ebbe65ac3e16",
+      "integrity": "sha512-oBEBGtHv37r3SDff63/MAJ1gNG140NQ/exsYANzMFyH3NZlkL2e3fRaOyX5FwiqWLHHSZzYllOYm25crhaF7hQ==",
+      "size": 13944,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3"
         },
         "peerDependencies": {
           "pg": "^8.0.0"
@@ -1551,6 +1957,32 @@
         }
       }
     },
+    "@caisson/observability@0.3.0": {
+      "key": "observability/observability-0.3.0.tgz",
+      "shasum": "88eae61cac82fc71cdbe26b27a9a9759ad43a129",
+      "integrity": "sha512-95DSfVXfswE+yxRoWKhXHjkZO8T7nozT8OTn/Ukvud2quREFlR2GExqTsgwTRYgY1lXPGxJOPDKQ2t+tqIqZww==",
+      "size": 18321,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@opentelemetry/api": "^1.9.1",
+          "@opentelemetry/api-logs": "^0.219.0",
+          "@opentelemetry/core": "^2.8.0",
+          "@opentelemetry/exporter-logs-otlp-http": "^0.219.0",
+          "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
+          "@opentelemetry/instrumentation": "^0.219.0",
+          "@opentelemetry/instrumentation-http": "^0.219.0",
+          "@opentelemetry/instrumentation-pg": "^0.71.0",
+          "@opentelemetry/instrumentation-undici": "^0.29.0",
+          "@opentelemetry/resources": "^2.8.0",
+          "@opentelemetry/sdk-logs": "^0.219.0",
+          "@opentelemetry/sdk-node": "^0.219.0",
+          "@opentelemetry/sdk-trace-base": "^2.8.0",
+          "@opentelemetry/semantic-conventions": "^1.41.1",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/org-controls@0.2.0": {
       "key": "org-controls/org-controls-0.2.0.tgz",
       "shasum": "ec680e39b630c7d3ffe0db919a0ee61b6cc0904b",
@@ -1575,6 +2007,21 @@
           "@caisson/auth": "0.3.0",
           "@caisson/kernel": "0.4.2",
           "@caisson/tenancy-rls": "0.4.0",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/org-controls@0.3.0": {
+      "key": "org-controls/org-controls-0.3.0.tgz",
+      "shasum": "e5485591293f8869a73b3cd1d327a31b1e4d8f5b",
+      "integrity": "sha512-eOAmasCoPJMKy2+iqbc8pxnRHIGNneuyRdDuTPa2DymZyvJQ8BmRH7zZ0FEcBym0rYkER7RNL3Lpj0WDxAmSSQ==",
+      "size": 19677,
+      "meta": {
+        "dependencies": {
+          "@caisson/auth": "0.3.2",
+          "@caisson/kernel": "0.4.3",
+          "@caisson/tenancy-rls": "0.5.1",
+          "@clerk/backend": "^2.24.0",
           "zod": "^3.23.8"
         }
       }
@@ -1620,6 +2067,17 @@
       "meta": {
         "dependencies": {
           "@caisson/tenancy-rls": "0.4.0"
+        }
+      }
+    },
+    "@caisson/platform-reads@0.2.0": {
+      "key": "platform-reads/platform-reads-0.2.0.tgz",
+      "shasum": "d9826c2ded06b3c92debb848af1bf7b2abb0004e",
+      "integrity": "sha512-u1nqfxtZ7fxzDNl5boeV9EC0QhHhq6cra7PLBbR67cXscdfTVyFk5YGGFahadNIJZe5jXBiRR0DJy+I25NG3OQ==",
+      "size": 11357,
+      "meta": {
+        "dependencies": {
+          "@caisson/tenancy-rls": "0.5.1"
         }
       }
     },
@@ -1669,6 +2127,19 @@
         "dependencies": {
           "@caisson/kernel": "0.4.2",
           "@caisson/registry-schema": "0.3.0",
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/pricebook@0.5.1": {
+      "key": "pricebook/pricebook-0.5.1.tgz",
+      "shasum": "8450b81b3bdab690719fac19c46a7ff2afa4f486",
+      "integrity": "sha512-y8iFKxM+b/nI1ppKziF7bMIzVBMKOfFcwECjAvXVVT5VL8kUGdrdNCANT/FfIhV7HBuZnKf7X+Ap1nDyfIzTPA==",
+      "size": 28498,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@caisson/registry-schema": "0.5.0",
           "zod": "^3.23.8"
         }
       }
@@ -1725,6 +2196,24 @@
         }
       }
     },
+    "@caisson/prompt-registry@1.0.0": {
+      "key": "prompt-registry/prompt-registry-1.0.0.tgz",
+      "shasum": "ffa4ba462fed703d4796da4bb2d9719d20a2830b",
+      "integrity": "sha512-S3WjdRDilYOg2sKpKO4QoA1L5Cv8fcPgSvqmNZyo5KMRlDbFuu+yYZCd7GB8JYt+cc3Oh7yvRosrpiIWIxKr7A==",
+      "size": 18426,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@caisson/tenancy-rls": "0.5.1",
+          "zod": "^3.23.8"
+        },
+        "peerDependencies": {
+          "@caisson/ui": "^0.6.0",
+          "react": "^19.0.0",
+          "react-dom": "^19.0.0"
+        }
+      }
+    },
     "@caisson/provenance@0.2.0": {
       "key": "provenance/provenance-0.2.0.tgz",
       "shasum": "02d159a68bf21137092256245a117bd5be419b80",
@@ -1761,6 +2250,18 @@
         }
       }
     },
+    "@caisson/rate-limit@0.1.3": {
+      "key": "rate-limit/rate-limit-0.1.3.tgz",
+      "shasum": "efd7ad41edab89c49007d8a84b80acf4bee613e3",
+      "integrity": "sha512-Lex0G7ZLIl4G+NSAUCCvadmRM6mQeNIFihCFQsmzwKrM1D7aoccYDjjXvirIrIRiMeX/Sv5OefldvSLVL9PsRg==",
+      "size": 18472,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@caisson/tenancy-rls": "0.5.1"
+        }
+      }
+    },
     "@caisson/registry-schema@0.2.1": {
       "key": "registry-schema/registry-schema-0.2.1.tgz",
       "shasum": "76d18ce35bf32391669a67a33022d317720b8abf",
@@ -1788,6 +2289,17 @@
       "shasum": "6abd16bb3dd6f3c269906fb3a536673f45c49c6a",
       "integrity": "sha512-yER+3iBGqpr8dAp1b/l4ha2Qti+b7Fq6G6QP84Omk6L/tWPZP1Ew/lYc8WInCLqPe6+s8KoSbC3cUanBDZgPgw==",
       "size": 34304,
+      "meta": {
+        "dependencies": {
+          "zod": "^3.23.8"
+        }
+      }
+    },
+    "@caisson/registry-schema@0.5.0": {
+      "key": "registry-schema/registry-schema-0.5.0.tgz",
+      "shasum": "888c42ef497e3b249d5642c380c1a28510364dec",
+      "integrity": "sha512-FrRlgTPo500m4vg6p1MY20TgdMoC1vF3zssPlAy0239UQIhUWQtDiQhYMGkjce2rcMbPbdRKXap0lCO0wrReOg==",
+      "size": 39350,
       "meta": {
         "dependencies": {
           "zod": "^3.23.8"
@@ -1846,6 +2358,19 @@
         }
       }
     },
+    "@caisson/retention-runner@0.1.7": {
+      "key": "retention-runner/retention-runner-0.1.7.tgz",
+      "shasum": "e2db0db2d3cc5851c50c1f10af815c58ae5e2225",
+      "integrity": "sha512-+v+XE2Aph/INiTykxosnwGYUFZ2bjZoOPZ8X9ChWbhs3t12LngEe7uBsOOdz3+vsBuQ6XqsgjSTaTTHUYQOncA==",
+      "size": 11455,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "@caisson/jobs": "0.5.0",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/signing-primitive@0.2.0": {
       "key": "signing-primitive/signing-primitive-0.2.0.tgz",
       "shasum": "1c70f93da2d15d3c69e8a506c549fb90198b3300",
@@ -1854,6 +2379,18 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.1",
+          "@noble/ed25519": "^3.1.0"
+        }
+      }
+    },
+    "@caisson/signing-primitive@0.2.1": {
+      "key": "signing-primitive/signing-primitive-0.2.1.tgz",
+      "shasum": "08b8458ed80581d5084621dbaa6c429bc67c5694",
+      "integrity": "sha512-zbH6qWjFeXgPfM2XL2KC1NgHziyeu+krPl8Pn+1n7efnkUFkwtI6/A8QBi0LDb++llpwignKLThUKJ7Krl+hXw==",
+      "size": 10214,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
           "@noble/ed25519": "^3.1.0"
         }
       }
@@ -1906,6 +2443,18 @@
         }
       }
     },
+    "@caisson/tenancy-rls@0.5.1": {
+      "key": "tenancy-rls/tenancy-rls-0.5.1.tgz",
+      "shasum": "6be7b20bb9405b08acae376db4ac7680d71c946e",
+      "integrity": "sha512-+UPtdVwH5yeZ1v/FzZoKuAEVmk4rrO2ebegS/MbMFHX2VA2LFW2iBKYU0iyXdRNzvD9UI99fJ76mwiWE8thrXg==",
+      "size": 23423,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "pg": "^8.16.0"
+        }
+      }
+    },
     "@caisson/tool-exec@0.1.3": {
       "key": "tool-exec/tool-exec-0.1.3.tgz",
       "shasum": "19c4541b5fd47f3def56a584441628eeff65d814",
@@ -1942,6 +2491,18 @@
         }
       }
     },
+    "@caisson/tool-exec@0.1.6": {
+      "key": "tool-exec/tool-exec-0.1.6.tgz",
+      "shasum": "eb6afb886ea31c20f2ecf9301be128c879913bb2",
+      "integrity": "sha512-nzdrb5bypJt2Hxv9qyDz2Gy/ASiHPYUhlCwr5AIHjdF4+QnNStKmL76rnUUpaRAZRtvdQaFTDbYyl7Kf/jfOyw==",
+      "size": 6767,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.4.3",
+          "zod": "^3.23.8"
+        }
+      }
+    },
     "@caisson/ui-pro@0.1.0": {
       "key": "ui-pro/ui-pro-0.1.0.tgz",
       "shasum": "9511e44102861a8f5de7026e37f4fe886e1a24a1",
@@ -1950,6 +2511,22 @@
       "meta": {
         "dependencies": {
           "@caisson/ui": "0.5.0"
+        },
+        "peerDependencies": {
+          "lucide-react": "^1.21.0",
+          "react": "^19.0.0",
+          "react-dom": "^19.0.0"
+        }
+      }
+    },
+    "@caisson/ui-pro@0.2.0": {
+      "key": "ui-pro/ui-pro-0.2.0.tgz",
+      "shasum": "417a343b0b988856893f5b72482d10bcc52d99d1",
+      "integrity": "sha512-vXZzHGQNYAmLfBJIvMX5FUWeOiGsVt0SAnqfcrGlDGYM6ofZppiprwcnFfjIuJ7nSTsgHraBY4287ZoeVtuxpw==",
+      "size": 65373,
+      "meta": {
+        "dependencies": {
+          "@caisson/ui": "0.6.0"
         },
         "peerDependencies": {
           "lucide-react": "^1.21.0",
@@ -1998,6 +2575,23 @@
       "meta": {
         "dependencies": {
           "radix-ui": "^1.6.0"
+        },
+        "peerDependencies": {
+          "lucide-react": "^1.21.0",
+          "react": "^19.0.0",
+          "react-dom": "^19.0.0"
+        }
+      }
+    },
+    "@caisson/ui@0.6.0": {
+      "key": "ui/ui-0.6.0.tgz",
+      "shasum": "022e252ec156b20a0452b19f5a74a1c6cca7466b",
+      "integrity": "sha512-0IzXBHsmv/+lS0hPWzyP06l289ZNIvbYLGmu3mWQosBEchhK4QRUDnKnqrlv3e0rjWyoWjBguleoss73m8ACQw==",
+      "size": 100456,
+      "meta": {
+        "dependencies": {
+          "radix-ui": "^1.6.0",
+          "zod": "^3.23.8"
         },
         "peerDependencies": {
           "lucide-react": "^1.21.0",

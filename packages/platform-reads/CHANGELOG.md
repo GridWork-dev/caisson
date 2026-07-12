@@ -1,5 +1,47 @@
 # @caisson/platform-reads
 
+## 0.2.0
+
+### Minor Changes
+
+- b8fe873: Commerce-lifecycle email templates and a live updates-window read.
+
+  `@caisson/email` gains two registered transactional templates: `purchase-confirmation`
+  (post-purchase receipt: buyer, order id, per-line labels, integer-cent total, dashboard
+  link) and `renewal-confirmation` (renewed entitlement lines with their new updates-window
+  end dates). Both mirror the existing branded layout and coerce through the same
+  fail-soft template registry.
+
+  `@caisson/platform-reads` gains `readUpdatesWindows(tx, accountId)` — the
+  per-purchased-entitlement updates-window fold (one-time-sourced grants only,
+  most-favorable bound per id) as a live read for buyer-facing surfaces, mirroring the
+  license service's `computeUpdatesWindows` semantics without importing its runtime.
+
+- 3758b3c: Adds `readSubscriptionStatuses` and `readOrderRecords`, typed reads over two new buyer-dashboard
+  tables: a subscription's current lifecycle state (active/canceled) and an append-only order/invoice
+  history. Both follow the existing column-contract pattern — a schema rename in the owning service
+  fails the columns-contract test rather than silently desyncing the reader's SQL.
+
+### Patch Changes
+
+- 5d60969: Affiliate program support. Paddle webhook parsing now captures `discount_id` on both
+  one-time purchases and subscription invoices, and the order record stamps it via a new
+  append-only platform migration. The billing provider port gains an optional
+  `createDiscount` method (the Paddle implementation mints percentage discount codes; other
+  drivers may omit it), and a new affiliate code registry migration carries per-code program
+  parameters (discount percent, commission basis points) stamped at mint time so historical
+  rows survive future parameter changes. Platform-reads test harnesses updated for the new
+  order-record column.
+- 2b65cf3: Test coverage updated for the new subscription-cancel tombstone semantics: a cancel with
+  no prior status row now records a canceled tombstone (empty price/plan sentinels) instead
+  of leaving nothing behind, so out-of-order granting invoices can detect the cancel. Reads
+  are unchanged; consumers already filter on active status.
+- 9a81dd7: Test-only: provision the new `renewal_extension` table in the updates-window integration setup —
+  `@caisson/service-license`'s `extendUpdatesWindow` now records a renewal-extension ledger row
+  (the renewal-refund un-extend ledger), so any suite that exercises it must create the table.
+- Updated dependencies [8253e76]
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.1.6
 
 ### Patch Changes

@@ -1,5 +1,25 @@
 # @caisson/compliance
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [1bc677a]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [8253e76]
+- Updated dependencies [09ed1c8]
+  - @caisson/audit-worm@1.0.0
+  - @caisson/alerting@0.2.0
+  - @caisson/kernel@0.4.3
+  - @caisson/migrate@0.2.5
+  - @caisson/tenancy-rls@0.5.1
+  - @caisson/frameworks-pack@0.3.0
+  - @caisson/retention-runner@0.1.7
+  - @caisson/compliance-core@0.2.2
+  - @caisson/field-crypto@0.3.1
+  - @caisson/signing-primitive@0.2.1
+
 ## 0.5.0
 
 ### Minor Changes

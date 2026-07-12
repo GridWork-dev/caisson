@@ -1,5 +1,147 @@
 # @caisson/service-license
 
+## 0.0.7
+
+### Patch Changes
+
+- 11cb4c3: The admin comp-grant boundary (`grantEntitlementAdmin`) now rejects an
+  unresolvable entitlement id with a 400 before writing any row, instead of accepting an
+  arbitrary string that would later brick the target account's entire entitlement
+  expansion on its next `/issue`/dashboard read. The allowlist is derived live from
+  `expandEntitlements` (bundle ids, indexed modules, reserved graduation ids, and legacy
+  aliases) — never a hand-maintained list. Private packages only; no publishable release.
+- 4036574: The Resend email driver gains an optional `replyTo` config field, sent as the `reply_to` field
+  on the wire so replies to a transactional send land in a real inbox instead of bouncing off a
+  no-reply sender. The three product senders (site magic links, license lifecycle notices, the
+  admin test-send) opt in with the support inbox, and user-facing contact copy on the refunds,
+  procurement, partners, and affiliates pages plus the ask-AI panel now points at the support
+  address; legal pages keep the accounts contact.
+- 2b65cf3: Both services now alert on background-job/watcher failures: `service-license` threads an
+  `alerting` port into the credit-expiry pg-boss scheduler (a sweep/notice/tick task failure or a
+  pg-boss connection error notifies the operator, then the original failure still propagates
+  unchanged); `service-intel` alerts when a watcher tick fails. Both fan out to an operator Discord
+  channel when `DISCORD_OPS_WEBHOOK_URL` is configured; absent it, behavior is unchanged from
+  before. No public API changes.
+- a931095: Adds an admin rescue action that first-mints a license for an account that holds paid
+  entitlements but never received one, for the cases where the license reissue action
+  cannot help because there is no prior grant to re-serve. It mints through the same
+  license-issuing path the reissue action already uses, is bounded to one account per call,
+  and is fully audit-logged like every other admin action. Private package only; no
+  publishable release.
+- a931095: Adds an admin action that resends a purchase-confirmation-style email to an account's
+  own address, carrying its current entitlements and a dashboard link, for support cases
+  where a buyer needs their access back in their inbox. It is not a byte-exact copy of the
+  original receipt. Audit-logged like every other admin action. Private package only; no
+  publishable release.
+- b3c5b0b: Documentation-only: an outdated code comment describing the first-cycle subscription race as an open gap now reflects the shipped fix (the cancel tombstone and grant-time liveness check). No behavior change.
+- d5cef92: Your license now arrives on its own. After a purchase or a subscription renewal, your
+  license is issued and stored automatically — no more waiting on support to run it by hand.
+  Your purchase receipt now includes it directly when it's ready.
+
+  Payment notification retries are now handled cleanly. If your payment provider redelivers a
+  notification for a transaction that already went through, you will no longer see a duplicate
+  receipt email, and a subscription's included-updates window can no longer be nudged forward by
+  a retry that carries no new charge.
+
+  If a subscription is canceled or a purchase is refunded and it actually removes something you
+  had access to, you'll now get a short email saying so, instead of finding out only by noticing
+  it missing from your dashboard.
+
+  If your one-time purchase's included-updates window is about to lapse, you'll now get an
+  advance notice by email, the same way you already do for expiring credits.
+
+  A card dispute (chargeback) on your account no longer triggers any automatic change to your
+  access — an operator reviews it and reaches out before anything changes.
+
+  On the admin side, the process that publishes revoked-license information to the edge is now
+  ordered correctly when two revokes happen close together, closing a narrow window where the
+  older of the two could have briefly overwritten the newer one.
+
+- d9154da: Bound the post-commit license mint (fired synchronously in the Paddle webhook response path) with
+  a 5-second deadline. A hung signer — the local Ed25519 signer never blocks, but a future KMS-backed
+  one could — now times out cleanly instead of hanging forever, preserving the never-5xx contract;
+  the mint failure is logged and the receipt simply omits the token, same as any other mint failure
+  (the buyer's next grant/renewal, or the admin first-mint lever, recovers it). This bounds the hang;
+  it does not guarantee staying inside Paddle's own webhook timeout on a slow signer, since the
+  deadline stacks on top of the grant transaction that already ran — a redundant, idempotent retry
+  from Paddle may still occur.
+- 99d665a: Add an integration test proving `resolveAccountEntitlements` never fails closed for an account
+  that holds the priority-support subscription alongside a real software entitlement — the exact
+  brick risk the non-module entitlement reservation in `@caisson/registry-schema` closes.
+  No behavior change. Private package only; no publishable release.
+- 4c141b0: Export the license and docs service request-body schemas for security schema fuzzing, and add a local admin auth harness so authed pages can be exercised without OAuth. No runtime behavior change.
+- a79acb4: Route the refund webhook (whole-transaction and per-line branches) and the admin purchase-revoke
+  action's credit clawback through the shared `outstandingClaw` guard in `@caisson/credits`, closing
+  a read-then-claw race where two differently-keyed clawback attempts against the same purchase
+  could drain an unrelated purchase's unspent credits out of the shared wallet. The Developer-plan
+  owned-coverage re-grant now shares an account-scoped advisory lock with the refund sweep via a new
+  `grantOwnedCoverageMirrors` function, so a coverage-mirror grant and a concurrent refund reconcile
+  for the same account can no longer interleave out of order — and every billing mutation path
+  (invoice grant, cancel revoke, both refund branches, admin revoke) now acquires that account lock
+  FIRST via `acquireAccountBillingLock`, one canonical order that removes advisory-lock deadlocks
+  between racing deliveries. Tests pin the lock order on every path, the one-time refund's scoping
+  boundary (a sibling subscription grant's credits and entitlement stay untouched), the actual
+  behavior of a refund keyed to a subscription cycle's transaction id (the cycle's own unspent
+  credits are clawed, bounded to that cycle's grant; the entitlement survives until cancellation),
+  and today's safe no-op on dunning and past-due event types.
+- 317bad5: Add a verified, time-boxed evaluation-license flow. An applicant is scored on their
+  work-email domain — free-mail and disposable domains are rejected outright, and a hybrid
+  risk score (mail-exchange presence, domain age, an optional enrichment lookup) routes the
+  rest to auto-approve, an operator review queue, or auto-reject, with every uncertain signal
+  widening toward review rather than approval. An approved, card-validated applicant can then
+  be issued a short-lived license that carries its own expiry: it unlocks the evaluated modules
+  for the window and falls back to the free tier automatically when the window ends or the
+  evaluation is revoked. The service health response also gains an index digest + entry count
+  so a drift probe can confirm the deployed registry-index copies agree. Private package only;
+  no publishable release.
+- Updated dependencies [81223a7]
+- Updated dependencies [5d60969]
+- Updated dependencies [1bc677a]
+- Updated dependencies [a79acb4]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [3d23da7]
+- Updated dependencies [230f02a]
+- Updated dependencies [b8fe873]
+- Updated dependencies [a79acb4]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [114e2a0]
+- Updated dependencies [4036574]
+- Updated dependencies [5e9996e]
+- Updated dependencies [317bad5]
+- Updated dependencies [a0aa9a3]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [1bc677a]
+- Updated dependencies [d5cef92]
+- Updated dependencies [0dd715a]
+- Updated dependencies [230f02a]
+- Updated dependencies [a0aa9a3]
+- Updated dependencies [8253e76]
+- Updated dependencies [2b65cf3]
+- Updated dependencies [99d665a]
+- Updated dependencies [99d665a]
+- Updated dependencies [ab352ab]
+- Updated dependencies [9a81dd7]
+- Updated dependencies [4d85f28]
+- Updated dependencies [97b0341]
+  - @caisson/email@0.4.0
+  - @caisson/billing@0.6.0
+  - @caisson/billing-orchestration@0.3.0
+  - @caisson/audit-worm@1.0.0
+  - @caisson/registry-schema@0.5.0
+  - @caisson/credits@0.5.0
+  - @caisson/alerting@0.2.0
+  - @caisson/jobs@0.5.0
+  - @caisson/pricebook@0.5.1
+  - @caisson/license-verify@0.3.1
+  - @caisson/kernel@0.4.3
+  - @caisson/license-issue@1.0.0
+  - @caisson/observability@0.3.0
+  - @caisson/org-controls@0.3.0
+  - @caisson/rate-limit@0.1.3
+  - @caisson/tenancy-rls@0.5.1
+
 ## 0.0.6
 
 ### Patch Changes

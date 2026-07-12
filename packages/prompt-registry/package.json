@@ -1,6 +1,6 @@
 {
   "name": "@caisson/prompt-registry",
-  "version": "0.2.5",
+  "version": "1.0.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {
