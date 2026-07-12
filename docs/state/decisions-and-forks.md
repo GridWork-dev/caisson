@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-11
 status: live
-adr_ceiling: 0327
+adr_ceiling: 0328
 ---
 
 # Decisions & Forks — live board
@@ -16,6 +16,7 @@ operator. Never auto-decide a fork.
 | Codex host/CI audit picker (2026-07-11)      | Release-train provenance LOCKED: version PR → green CI → immutable tag → publish exactly the tagged bytes, external writes only after source push (ADR-0325, build item CAISSON-94; train dormant until it lands) · Railway restore proof = throwaway-Postgres path, PITR declined for now · host hardening + env-mirror breadth + gridwork-core doc drift → operator-run gridwork-core session (caisson keeps only caisson-specific separation) · CI-runner boundary sent to research before a second fork round (dind=true CONFIRMED live)                                                                                                                                                               | ADR-0325; `outputs/audit/codex-host-ci-audit-2026-07-11.md`                                              |
 | CI runners → Blacksmith (2026-07-11)         | Fork round 2 off the research memo: caisson amd64 hot path leaves the shared box for Blacksmith Firecracker VM-per-job runners (~$25–50/mo, 3k free min); Mac-mini ARM leg stays; credential-bearing jobs stay GitHub-hosted; `caisson-amd64` scale set retired at verified cutover; vendor sub-fork Blacksmith over Ubicloud on product maturity. Load-bearing research fact: ZERO caisson jobs use Docker — dind was inherited pure liability                                                                                                                                                                                                                                                            | ADR-0326; CAISSON-97; `outputs/research/ci-runner-research-2026-07-11.md`                                |
 | Audit follow-on picks (2026-07-11)           | ADR-0327: the four open Codex-audit forks locked in one picker — deterministic scan layer flips to a required check sequenced after CAISSON-95 pinning · GitHub Environments lands as a rider on the CAISSON-94 release-train rework · inventory drift control = extend sot-check per recurring class (no generated feed) · branch protection stays discipline-only on the private repo, revisit on incident or launch-posture change                                                                                                                                                                                                                                                                      | ADR-0327                                                                                                 |
+| Three-session close-out program (2026-07-12) | ADR-0328: three parallel worktree sessions (P build wave · Q operator close-out · R eval/test hardening), one PR each, push-not-merge, dedicated session 4 merges + full reconcile · first ADR-0325 train ride pre-launch post-merge (amends 0318/0321 timing; fixes CAISSON-85/86; no OSS go-live) · company docs → docs/business/{legal,finance}/ · 30 Cookiy balanced positioning research from Q · opus/sonnet/haiku-only subagent lanes program-wide · D6 the standing wave convention (docs/ops/parallel-session-waves.md): waves DEFAULT for multi-cluster backlogs, one-PR-per-session hard, reconcile session required at 2+ branches, promote to gw-core after one proven wave                   | ADR-0328                                                                                                 |
 | Email architecture picker (2026-07-11)       | Address roles: admin@ = accounts/billing/legal (legal pages only) · support@ = user-facing contact everywhere except legal · security@ kept · no-reply@ = transactional sender with Reply-To support@ · hello@ RETIRED (was the live `RESEND_FROM`) · inbound stays Proton catch-all, stale disabled CF email-routing artifact deleted · execution rides Kickoff O; Proton send-as alias for support@ = operator act                                                                                                                                                                                                                                                                                       | ADR-0324; `outputs/archive/kickoffs/o-code-chunk.md`                                                     |
 | Split + triage picker (2026-07-11)           | Post-wave parallel session = the CODE chunk (Playwright graduation ADR-0323 D2 / CAISSON-93 · CAISSON-73 · the ADR-0324 email wave / CAISSON-92) as Kickoff O off clean main · site redeploy rode THIS session (executed) · Triage inbox drained: 52/53/25/73 → Todo, 57/74 → Backlog, and 55/62/63 closed Done at verify — all three had ALREADY SHIPPED via Kickoff-H/K (rate-limit.ts 429-proven · free-floor.test.ts · 46/46 SHA-pinned); the sweep-filed issues predated those merges                                                                                                                                                                                                                 | Kickoff `outputs/archive/kickoffs/o-code-chunk.md`; Linear board                                         |
 | Remediation + Cookiy picker (2026-07-11)     | Full 7-finding browser-audit wave in one branch (CAISSON-89/90/91) · four P1 replays graduate to deterministic Playwright after fixes (separately reviewed) · Ring-2/3 probe profiles = operator provisioning act · Cookiy residuals — trust/copy wave + architecture-fit diagram build now, sandbox/demo spec-first                                                                                                                                                                                                                                                                                                                                                                                       | ADR-0323; `outputs/browser-audit/2026-07-10-full-01/REPORT.md`                                           |
@@ -2106,3 +2107,28 @@ design-critic ledger. Three picks:
   and admin cockpit in a separately authorized operator session. The agent lane stays advisory;
   cleanly reproduced, operator-approved findings may graduate into separately written
   deterministic Playwright tests, never automatically.
+
+## 2026-07-12 close-out program picker (operator-locked → ADR-0328)
+
+Ran in the merge-drive session right after PRs 211-217 landed. Four questions + a follow-up
+refinement; all locked as ADR-0328:
+
+1. **Next scope** → ONE program, three PARALLEL worktree sessions (P build · Q operator · R
+   eval/test), one PR each, push-not-merge; dedicated session 4 merges all three + full
+   reconciliation/doc-sweep/gate-and-harness pass. Each session: Fable main thread, ultracode,
+   opus/sonnet/haiku-only subagents, research-driven with mid-session fork pickers (incl.
+   design forks), full 7-act flow to an open PR + status report.
+2. **Train timing** → first ADR-0325 ride pre-launch, post-session-4 merge (amends 0318/0321):
+   consume all pending changesets + fix CAISSON-85/86 via the republish; NO OSS go-live/public
+   flip — everything stays pre-launch. Operator gates: version-PR merge · tag · publish dispatch.
+3. **Deferred eval legs** → tickets filed: CAISSON-100 (Python-surface eval port → R),
+   CAISSON-101 (judged intel suite: cassettes in Q, harness in R).
+4. **WTP tail** → 30 Cookiy balanced pre-launch POSITIONING research (not pricing-only; one
+   ,059 reaction probe folded in), launched from Q; the ADR-0319 screened-panel-on-anchor-move
+   trigger unchanged. Company legal/finance docs → docs/business/{legal,finance}/ (operator
+   scp-uploads during Q).
+
+Follow-up round (same sitting): the wave pattern locked as the STANDING convention (ADR-0328
+D6) — home = caisson doc now, gw-core promotion after one proven wave · trigger = DEFAULT for
+any multi-cluster backlog (proposed as a picker, never silent) · one PR per session HARD ·
+reconcile session required at 2+ parallel branches.
