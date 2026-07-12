@@ -59,3 +59,10 @@ jobs:
         run: bunx pyright@1.1.411
       - name: test (pytest — hermetic; no Discord/OpenRouter/Postgres)
         run: uv run pytest -q
+      # The offline eval gate (CAISSON-100): the RagPipeline's injection/PII/grounding invariants run
+      # through the real pipeline with the hermetic doubles and regression-check against the committed
+      # __evals__/baseline.json. A DISTINCT step (like the TS `eval` turbo task) so an eval regression
+      # reads separately from a unit-test failure. BLESS is unset here — CI only ever compares, never
+      # rewrites the baseline (that is the operator's `BLESS=1 uv run pytest -m eval` re-bless path).
+      - name: eval gate (regression vs committed baseline, BLESS unset — offline, hermetic doubles)
+        run: uv run pytest -m eval -q
