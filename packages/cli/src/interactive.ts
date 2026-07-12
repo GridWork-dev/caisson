@@ -114,7 +114,7 @@ export async function runWizard(
     );
 
   const options = moduleOptions(index);
-  // CAISSON-88 fork (a): when `--edition <bundle>` is set but no `--module` was passed, pre-check the
+  // When `--edition <bundle>` is set but no `--module` was passed, pre-check the
   // bundle's current members in the multiselect (the buyer can still add/remove; the full catalog
   // stays listed). initialValues must be the SAME option-value objects clack renders (it matches by
   // reference), so filter them out of `options` rather than re-deriving fresh objects.

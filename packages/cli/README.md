@@ -40,8 +40,7 @@ of this package yet.
   bundle ids (`compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`,
   `everything`) or a legacy edition id (`ai-kit`, `local-ai`, `agent-dev`) — legacy ids resolve to
   their bundle forever (ADR-0257). `--edition` alone auto-expands to the bundle's current member
-  modules (each pinned at the registry `.latest`); `--module` overrides the auto-selection
-  (CAISSON-88).
+  modules (each pinned at the registry `.latest`); `--module` overrides the auto-selection.
 
 ## Engine seam (ADR-0048)
 

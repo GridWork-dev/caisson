@@ -41,7 +41,7 @@ export function validateSelection(
   index: RegistryIndex,
   raw: unknown,
 ): Selection {
-  // CAISSON-88 fork (a): `--edition <bundle>` with no explicit `--module` auto-expands to the
+  // `--edition <bundle>` with no explicit `--module` auto-expands to the
   // bundle's CURRENT member modules (each at its index `.latest`) so the buyer need not hand-list
   // them and the `Selection.modules.min(1)` invariant below is satisfied unchanged. An explicit
   // selection is untouched; an unknown edition still fails closed (expandEditionModules throws /

@@ -52,8 +52,8 @@ export interface HybridSearchOptions {
   /**
    * Multiplier on the FTS (bm25) leg's RRF contribution; the vec leg stays 1.0. Default 1.0 —
    * symmetric fusion, byte-identical to the pre-option behavior (the committed RRF golden). Raise
-   * above 1 when exact-term evidence should outrank semantic-neighborhood evidence (CAISSON-83:
-   * a corpus dense with near-duplicate sections buries the canonical exact-match page on the vec
+   * above 1 when exact-term evidence should outrank semantic-neighborhood evidence
+   * (a corpus dense with near-duplicate sections buries the canonical exact-match page on the vec
    * leg). Must be a positive finite number; anything else THROWS (flag-never-guess).
    */
   ftsWeight?: number;

@@ -1,4 +1,4 @@
-// CAISSON-88 fork (a): expand a buyer's `--edition <bundle>` into the bundle's CURRENT member
+// Expand a buyer's `--edition <bundle>` into the bundle's CURRENT member
 // modules, each pinned at its index `.latest`, so `create-caisson --edition compliance` (no
 // `--module`) auto-selects the bundle instead of failing the `Selection.modules.min(1)` invariant.
 //

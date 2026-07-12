@@ -54,7 +54,7 @@ const DEFAULT_PORT = 8789;
 /** Resolve the built registry index baked into the repo (the same file the registry Worker serves). */
 function defaultIndexPath(): string {
   // turbopackIgnore: the dynamic import.meta.dir resolve would otherwise make Next's NFT tracing
-  // (apps/site → dist/server.js) treat the whole project as traced (CAISSON-82).
+  // (apps/site → dist/server.js) treat the whole project as traced.
   return resolve(
     /* turbopackIgnore: true */ import.meta.dir,
     "../../../registry/index.json",

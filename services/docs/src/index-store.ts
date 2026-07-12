@@ -81,7 +81,7 @@ function raceDeadline<T>(
 }
 
 /**
- * Fusion tuning (CAISSON-83, measured on the live 470-chunk corpus 2026-07-12):
+ * Fusion tuning (measured on the live 470-chunk corpus 2026-07-12):
  * - FTS_WEIGHT: the FTS (bm25) leg's RRF multiplier. The docs corpus is dense with near-duplicate
  *   "Install"/"What it does" sections, so the vec leg's semantic neighborhood crowds out the
  *   canonical exact-match page (the battery-v2 install-question miss); exact-term evidence gets
@@ -207,7 +207,7 @@ export class DocsIndex {
   }
 
   /** Retrieve the top-`k` chunks for `query`, fused across the FTS and (when wired) vector legs,
-   *  with at most `perSourceCap` chunks per source document in the window (CAISSON-83). */
+   *  with at most `perSourceCap` chunks per source document in the window. */
   async search(
     query: string,
     k = 5,
