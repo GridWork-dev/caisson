@@ -33,6 +33,9 @@ export default [
       // TRIP their rules — deliberate console.log / unused args / insecure compares — so eslint on the
       // repo-wide `bunx eslint .` must skip them (they are exercised only by `semgrep test`).
       "tools/security/semgrep-rules/**",
+      // Vendored third-party detector (the impeccable anti-slop catalog, ADR-0334 quality leg) —
+      // not house code; exercised via apps/site/scripts/anti-slop.ts, never linted to our standards.
+      "apps/site/scripts/anti-slop/detector/**",
     ],
   },
   ...config,

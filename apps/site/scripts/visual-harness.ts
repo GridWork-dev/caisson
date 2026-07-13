@@ -49,10 +49,12 @@ interface Viewport {
 }
 
 const MOBILE_VIEWPORT: Viewport = { name: "mobile", width: 390, height: 844 };
-const VIEWPORTS: readonly Viewport[] = [
-  MOBILE_VIEWPORT,
-  { name: "desktop", width: 1280, height: 900 },
-];
+const DESKTOP_VIEWPORT: Viewport = {
+  name: "desktop",
+  width: 1280,
+  height: 900,
+};
+const VIEWPORTS: readonly Viewport[] = [MOBILE_VIEWPORT, DESKTOP_VIEWPORT];
 
 const MODES: readonly ("light" | "dark")[] = ["light", "dark"];
 
@@ -68,7 +70,8 @@ export type ShotCategory =
   | "auth"
   | "dashboard"
   | "email"
-  | "interaction";
+  | "interaction"
+  | "motion";
 
 interface Shot {
   category: ShotCategory;
@@ -86,6 +89,9 @@ interface Shot {
   fullPage?: boolean;
   /** Requires the authenticated buyer session (dashboard leg). */
   auth?: boolean;
+  /** Motion-leg shots run WITHOUT reducedMotion (they capture the ADR-0334 transition states);
+   *  everything else keeps `reducedMotion: "reduce"` for deterministic diffs. */
+  motion?: boolean;
 }
 
 interface ShotResult {
@@ -307,6 +313,91 @@ function interactionShots(): Shot[] {
   ];
 }
 
+/** Motion-leg shots (ADR-0334 §7 evidence — one per moment; desktop-only since the moments gate
+ *  on lg/hover). Each act drives the moment into a characteristic state and settles briefly; the
+ *  screenshots are the per-moment transition-state record the visual harness diffs across waves.
+ *  Chrome Persists is exercised by nav (mid-flight VT frames aren't deterministic to capture). */
+function motionShots(): Shot[] {
+  return [
+    {
+      category: "motion",
+      name: "seal-on-proof-chips",
+      route: "/",
+      viewports: [DESKTOP_VIEWPORT],
+      fullPage: false,
+      motion: true,
+      act: async (page) => {
+        await page
+          .evaluate(() =>
+            document
+              .querySelector("[data-doors]")
+              ?.parentElement?.querySelector("div:last-child")
+              ?.scrollIntoView({ block: "center" }),
+          )
+          .catch(() => {});
+        await page.waitForTimeout(1200); // seal draw + stagger settles
+      },
+    },
+    {
+      category: "motion",
+      name: "waterline-descent-mid",
+      route: "/",
+      viewports: [DESKTOP_VIEWPORT],
+      fullPage: false,
+      motion: true,
+      act: async (page) => {
+        // Mid-exit of the hero: the depth layer and lattice sink are mid-scrub.
+        await page.evaluate(() => window.scrollTo(0, window.innerHeight * 0.6));
+        await page.waitForTimeout(500);
+      },
+    },
+    {
+      category: "motion",
+      name: "doors-hover-lift",
+      route: "/",
+      viewports: [DESKTOP_VIEWPORT],
+      fullPage: false,
+      motion: true,
+      act: async (page) => {
+        await page.waitForTimeout(2600); // idle gate: spring enhancer attaches post-load
+        await page.locator("[data-door][data-lead]").hover();
+        await page.waitForTimeout(700); // spring settles at the lifted pose
+      },
+    },
+    {
+      category: "motion",
+      name: "living-chain-mid-build",
+      route: "/evidence",
+      viewports: [DESKTOP_VIEWPORT],
+      fullPage: false,
+      motion: true,
+      act: async (page) => {
+        // Halfway through the sticky runway: cards 2-3 landing, prevHash chip in flight.
+        await page.evaluate(() => {
+          const el = document.querySelector("[data-vt-hero]") ?? document.body;
+          void el; // anchor lookup kept simple: scroll by absolute page fraction
+          window.scrollTo(0, document.body.scrollHeight * 0.42);
+        });
+        await page.waitForTimeout(1600); // lazy upgrade + springs settle
+      },
+    },
+    {
+      category: "motion",
+      name: "living-chain-verdict",
+      route: "/evidence",
+      viewports: [DESKTOP_VIEWPORT],
+      fullPage: false,
+      motion: true,
+      act: async (page) => {
+        await page.evaluate(() =>
+          window.scrollTo(0, document.body.scrollHeight * 0.58),
+        );
+        await page.waitForTimeout(1600); // verdict stamp + seal tick settle
+      },
+    },
+  ];
+}
+
 export function parseArgs(argv: readonly string[]): {
   baseUrl: string;
   outDir: string;
@@ -369,7 +460,8 @@ async function shootOne(
     colorScheme: mode,
     // Deterministic screenshots — a scroll-reveal mid-animation would make two runs of the same
     // route diff for no reason. The site already honors prefers-reduced-motion (shows final state).
-    reducedMotion: "reduce",
+    // Motion-leg shots (ADR-0334) opt OUT to capture the real transition states.
+    reducedMotion: shot.motion ? "no-preference" : "reduce",
     ...(opts.extraHTTPHeaders
       ? { extraHTTPHeaders: opts.extraHTTPHeaders }
       : {}),
@@ -570,6 +662,7 @@ async function main(): Promise<void> {
     })),
     ...(await emailShots()),
     ...interactionShots(),
+    ...motionShots(),
     ...DASHBOARD_ROUTES.map((route): Shot => ({
       category: "dashboard",
       name: routeSlug(route),

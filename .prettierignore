@@ -14,6 +14,9 @@ registry/index.json
 # Golden fixtures are byte-exact regression artifacts owned by matchGolden (JSON.stringify(,2)+"\n").
 # Prettier would reformat them (e.g. collapse short arrays) and break the golden comparison (ADR-0013).
 **/__golden__/
+# Vendored third-party detector (impeccable anti-slop catalog, ADR-0334 quality leg) — kept
+# byte-close to upstream; exercised via apps/site/scripts/anti-slop.ts.
+apps/site/scripts/anti-slop/detector/
 # local artifacts
 .playwright-mcp/
 *.png
