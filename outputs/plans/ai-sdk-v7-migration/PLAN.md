@@ -164,14 +164,15 @@ Expected: every command exits 0; the usage golden is byte-identical; the eval ba
 
 **Files:** modify the same AI SDK manifests, lockfile, gateway, embedding, provider, registry, mock, and test files touched by the v6 compiler and codemod.
 
-1. Change `ai` to `^7`; keep every provider on its accepted v7-compatible family and move OpenAI from the v6 `^3` checkpoint to v7-compatible `^4`. Run `bun install` and capture the focused build failure before product edits.
+1. Change `ai` to `^7`; move every provider from its accepted v6 checkpoint to its v7 family: Bedrock `^5`, Anthropic `^4`, Azure `^4`, Google `^4`, OpenAI `^4`, OpenAI-compatible `^3`, and provider `^4`. Align the reference app's provider range to `^4`, run `bun install`, and capture the focused build failure before product edits.
 2. Preview `bunx @ai-sdk/codemod v7 --dry`, assert the path allowlist, then run `bunx @ai-sdk/codemod v7`. Never run the all-version codemod.
 3. Replace `StreamTextResult.fullStream` with `StreamTextResult.stream`. Continue reading terminal `finish.totalUsage` so streaming settles the all-step provider total.
 4. Keep non-streaming settlement on `result.usage`, which is the v7 all-step total. Do not switch the money path to `finalStep.usage`.
 5. Complete the v7 usage adapter for `inputTokenDetails.cacheReadTokens`; ignore reasoning-token details for pricing unless an existing price-book field explicitly consumes them.
-6. Keep trusted server-authored system messages working without enabling `allowSystemInMessages` for user-controlled raw messages. If the SDK rejects current system-message arrays, split trusted system content into `instructions` and preserve the public Caisson input contract.
-7. Preserve ESM, Node 22-or-newer compatibility, abort propagation, fetch deadlines, BYOK routing, provider cache behavior, and exactly-once reconciliation.
-8. Re-run the golden and all targeted suites without `BLESS`. Any golden or eval delta is a hard stop.
+6. Apply the v7 Google provider rename from `createGoogleGenerativeAI` to `createGoogle` and verify the factory's transport and timeout injection are unchanged.
+7. Keep trusted server-authored system messages working without enabling `allowSystemInMessages` for user-controlled raw messages. If the SDK rejects current system-message arrays, split trusted system content into `instructions` and preserve the public Caisson input contract.
+8. Preserve ESM, Node 22-or-newer compatibility, abort propagation, fetch deadlines, BYOK routing, provider cache behavior, and exactly-once reconciliation.
+9. Re-run the golden and all targeted suites without `BLESS`. Any golden or eval delta is a hard stop.
 
 **Verify:**
 

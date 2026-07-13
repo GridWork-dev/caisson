@@ -48,15 +48,15 @@ The repository has seven direct provider packages, but the Linear description na
 | Direct package              |    Current | v6 checkpoint family |    v7 final family |
 | --------------------------- | ---------: | -------------------: | -----------------: |
 | `ai`                        | `^5.0.206` |             `^6.0.0` |           `^7.0.0` |
-| `@ai-sdk/amazon-bedrock`    |  `^3.0.99` |   v6-compatible `^4` | v7-compatible `^4` |
-| `@ai-sdk/anthropic`         |  `^2.0.83` |   v6-compatible `^3` | v7-compatible `^3` |
-| `@ai-sdk/azure`             | `^2.0.114` |   v6-compatible `^3` | v7-compatible `^3` |
-| `@ai-sdk/google`            |  `^2.0.76` |   v6-compatible `^3` | v7-compatible `^3` |
+| `@ai-sdk/amazon-bedrock`    |  `^3.0.99` |   v6-compatible `^4` | v7-compatible `^5` |
+| `@ai-sdk/anthropic`         |  `^2.0.83` |   v6-compatible `^3` | v7-compatible `^4` |
+| `@ai-sdk/azure`             | `^2.0.114` |   v6-compatible `^3` | v7-compatible `^4` |
+| `@ai-sdk/google`            |  `^2.0.76` |   v6-compatible `^3` | v7-compatible `^4` |
 | `@ai-sdk/openai`            | `^2.0.109` |   v6-compatible `^3` | v7-compatible `^4` |
-| `@ai-sdk/openai-compatible` |   `^1.0.0` |   v6-compatible `^2` | v7-compatible `^2` |
-| `@ai-sdk/provider`          |   `^2.0.3` |   v6-compatible `^3` | v7-compatible `^3` |
+| `@ai-sdk/openai-compatible` |   `^1.0.0` |   v6-compatible `^2` | v7-compatible `^3` |
+| `@ai-sdk/provider`          |   `^2.0.3` |   v6-compatible `^3` | v7-compatible `^4` |
 
-Exact patch versions are resolved and recorded from the official `ai-v6` and `latest` dist-tags at execution time; peer ranges and a single resolved `@ai-sdk/provider` line must be proven in `bun.lock` before each checkpoint commit.
+Exact patch versions are resolved and recorded from the official `ai-v6` and `latest` dist-tags at execution time; peer ranges and a single resolved `@ai-sdk/provider` line must be proven in `bun.lock` before each checkpoint commit. The family matrix above was checked against the npm registry dist-tags on 2026-07-13.
 
 ## Scope
 
