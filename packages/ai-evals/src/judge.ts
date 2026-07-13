@@ -49,7 +49,7 @@ export const cassetteSchema = z
     eval: z.string().min(1),
     scorer: z.string().min(1),
     model: z.string().min(1),
-    responses: z.record(judgeVerdictSchema),
+    responses: z.record(z.string(), judgeVerdictSchema),
   })
   .strict();
 export type Cassette = z.infer<typeof cassetteSchema>;

@@ -15,7 +15,7 @@
       "services/betterstack-adapter"
     ],
     "catalog": {
-      "zod": "^3.23.8",
+      "zod": "^4.0.0",
       "typescript": "^5.7.3",
       "eslint": "^10.0.0",
       "react": "^19.2.0",
@@ -34,11 +34,6 @@
       "@types/culori": "^2.1.1",
       "sqlite-vec": "^0.1.9",
       "drizzle-orm": "^0.45.0"
-    },
-    "catalogs": {
-      "zod4": {
-        "zod": "^4.0.0"
-      }
     }
   },
   "scripts": {
@@ -71,7 +66,7 @@
     "turbo": "~2.10.0",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.10.0",
-    "zod": "^3.23.8",
+    "zod": "catalog:",
     "zod-to-json-schema": "^3.24.1"
   },
   "overrides": {

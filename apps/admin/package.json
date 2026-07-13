@@ -38,7 +38,7 @@
     "pg": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "zod": "catalog:zod4"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",

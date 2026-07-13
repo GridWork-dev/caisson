@@ -31,7 +31,7 @@ export const baselineEntrySchema = z
     threshold: z.number().min(0).max(1),
     cases: z.number().int().nonnegative(),
     score: z.number().min(0).max(1),
-    scorers: z.record(z.number().min(0).max(1)),
+    scorers: z.record(z.string(), z.number().min(0).max(1)),
   })
   .strict();
 export type BaselineEntry = z.infer<typeof baselineEntrySchema>;
@@ -39,7 +39,7 @@ export type BaselineEntry = z.infer<typeof baselineEntrySchema>;
 export const baselineFileSchema = z
   .object({
     schemaVersion: z.literal(1),
-    evals: z.record(baselineEntrySchema),
+    evals: z.record(z.string(), baselineEntrySchema),
   })
   .strict();
 export type BaselineFile = z.infer<typeof baselineFileSchema>;

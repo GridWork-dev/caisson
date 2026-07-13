@@ -57,7 +57,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "three": "^0.185.1",
-    "zod": "catalog:zod4"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
