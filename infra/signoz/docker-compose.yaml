@@ -88,7 +88,7 @@ services:
   # so it runs the same otel-collector image. It bootstraps + migrates then exits 0.
   signoz-telemetrystore-migrator:
     <<: *common
-    image: signoz/signoz-otel-collector:v0.144.5
+    image: signoz/signoz-otel-collector:v0.144.5@sha256:f9bf94d566055d06581f3befbf361cc26d670f31ad00cb31fda2ec380210c5ec
     container_name: signoz-telemetrystore-migrator
     restart: on-failure
     depends_on:
@@ -135,7 +135,7 @@ services:
   # ── OTLP ingester ───────────────────────────────────────────────────────────────────
   signoz-otel-collector:
     <<: *common
-    image: signoz/signoz-otel-collector:v0.144.5
+    image: signoz/signoz-otel-collector:v0.144.5@sha256:f9bf94d566055d06581f3befbf361cc26d670f31ad00cb31fda2ec380210c5ec
     container_name: signoz-otel-collector
     depends_on:
       clickhouse:
