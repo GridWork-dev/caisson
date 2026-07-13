@@ -49,7 +49,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           # Full history so changesets can read tags and the ledger diff is honest.
           fetch-depth: 0
@@ -149,14 +149,14 @@ jobs:
       pull-requests: read
     steps:
       - name: checkout trusted base tooling
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 1
           ref: ${{ github.event.pull_request.base.sha }}
           path: trusted
           persist-credentials: false
       - name: checkout candidate release branch as data only
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
