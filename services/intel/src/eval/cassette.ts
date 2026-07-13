@@ -56,7 +56,7 @@ export const intelCassetteSchema = strictObject({
   watcher: z.string().min(1),
   recordedAt: z.string().datetime(),
   config: cassetteConfigSchema,
-  watchState: z.record(z.string()),
+  watchState: z.record(z.string(), z.string()),
   exchanges: z.array(cassetteExchangeSchema),
   findings: z.array(FindingSchema),
 });
