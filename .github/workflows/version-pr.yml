@@ -24,7 +24,9 @@ name: version-pr
 # PR is the gated consumption point; it is still never a feature-branch act.
 on:
   workflow_dispatch:
-  pull_request:
+  # Trusted-base synchronize hook: the workflow definition + executable tooling come from main.
+  # The PR head is checked out separately and treated only as data (never imported/executed).
+  pull_request_target:
     branches: [main]
     types: [synchronize]
 
@@ -33,7 +35,7 @@ permissions:
 
 concurrency:
   group: version-pr-${{ github.event.pull_request.number || 'dispatch' }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
 
 jobs:
   version-pr:
@@ -131,10 +133,10 @@ jobs:
               )"
 
   refresh-version-tarballs:
-    # Same-repo release branches only. Fork PRs never receive write authority, and arbitrary branch
-    # names cannot opt into this credentialed lane.
+    # Same-repo automation release branches only. Fork PRs never receive write authority, and the
+    # trusted main copy of this workflow never executes candidate source or lifecycle scripts.
     if: >-
-      github.event_name == 'pull_request' &&
+      github.event_name == 'pull_request_target' &&
       github.event.pull_request.base.ref == 'main' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'release/version-')
@@ -146,10 +148,20 @@ jobs:
       contents: write
       pull-requests: read
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - name: checkout trusted base tooling
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: checkout candidate release branch as data only
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: "1.3.14"
@@ -157,35 +169,44 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('trusted/bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
-      - run: bun install --frozen-lockfile
+      - name: install trusted base dependencies without lifecycle scripts
+        working-directory: trusted
+        run: bun install --frozen-lockfile --ignore-scripts
       - name: re-record unmerged version-branch tarball rows
         run: |
           set -euo pipefail
-          git fetch origin main
-          base_sha="$(git merge-base HEAD origin/main)"
+          base_sha="$(git -C candidate merge-base HEAD '${{ github.event.pull_request.base.sha }}')"
           base_sidecar="$RUNNER_TEMP/base-tarballs.json"
-          git show "${base_sha}:registry/tarballs.json" > "$base_sidecar"
-          bun registry/scripts/ci-publish-step.ts \
-            --mode version \
-            --run-id "${{ github.run_id }}" \
-            --sha "$base_sha" \
-            --published-at "$(date -u '+%Y-%m-%dT%H:%M:%S.000Z')" \
+          base_ledger="$RUNNER_TEMP/base-ledger.jsonl"
+          git -C candidate show "${base_sha}:registry/tarballs.json" > "$base_sidecar"
+          git -C candidate show "${base_sha}:registry/ledger.jsonl" > "$base_ledger"
+          bun trusted/registry/scripts/ci-publish-step.ts \
+            --refresh-candidate-root "$GITHUB_WORKSPACE/candidate" \
             --refresh-base-sidecar "$base_sidecar" \
+            --refresh-base-ledger "$base_ledger" \
             --dry-run false
       - name: commit refreshed release truth when bytes changed
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if git diff --quiet -- \
-            registry/ledger.jsonl registry/index.json registry/tarballs.json; then
+          if git -C candidate diff --quiet -- registry/tarballs.json; then
             echo "[version-pr] tarball rows already reproduce the branch source"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -- registry/ledger.jsonl registry/index.json registry/tarballs.json
-          git commit -m "chore(release): refresh version-branch tarball rows [version-pr-refresh]"
-          git push origin "HEAD:${HEAD_REF}"
+          git -C candidate config user.name "github-actions[bot]"
+          git -C candidate config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C candidate add -- registry/tarballs.json
+          changed="$(git -C candidate diff --cached --name-only)"
+          if [ "$changed" != "registry/tarballs.json" ]; then
+            echo "::error::trusted refresh produced an unexpected staged path: $changed"
+            exit 1
+          fi
+          git -C candidate commit -m "chore(release): refresh version-branch tarball rows [version-pr-refresh]"
+          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -C candidate \
+            -c http.https://github.com/.extraheader="AUTHORIZATION: basic $basic" \
+            push origin "HEAD:${HEAD_REF}"

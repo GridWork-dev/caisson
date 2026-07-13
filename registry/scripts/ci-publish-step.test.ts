@@ -28,6 +28,7 @@ import {
   isPrivatePackage,
   readSidecar,
   recordTarballs,
+  refreshVersionCandidateTarballs,
   runPublishStep,
   writeSidecar,
 } from "./ci-publish-step";
@@ -676,6 +677,137 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  test("trusted version refresh rewrites only appended-ledger rows from candidate package bytes", () => {
+    const dir = tmpDir("trusted-version-refresh");
+    const candidateRoot = join(dir, "candidate");
+    const packageDir = join(candidateRoot, "packages", "demo");
+    const registryDir = join(candidateRoot, "registry");
+    mkdirSync(packageDir, { recursive: true });
+    mkdirSync(registryDir, { recursive: true });
+    const baseLedgerPath = join(dir, "base-ledger.jsonl");
+    const baseSidecarPath = join(dir, "base-tarballs.json");
+    const historicalKey = "@caisson/auth@1.0.0";
+    const candidateKey = "@caisson/demo@2.0.0";
+    const historical = computeTarballDist(
+      tgzWithPackageJson({ name: "@caisson/auth", version: "1.0.0" }),
+      "auth",
+      "1.0.0",
+    );
+    const baseEntry = {
+      id: "@caisson/auth",
+      version: "1.0.0",
+      manifest: mkManifest("@caisson/auth", "1.0.0"),
+      publishedAt: "2026-07-01T00:00:00.000Z",
+      gateAttestation: "base@deadbee",
+    };
+    const candidateEntry = {
+      id: "@caisson/demo",
+      version: "2.0.0",
+      manifest: mkManifest("@caisson/demo", "2.0.0"),
+      publishedAt: "2026-07-12T00:00:00.000Z",
+      gateAttestation: "version@cafe123",
+    };
+    const baseLedger = `${JSON.stringify(baseEntry)}\n`;
+    writeFileSync(baseLedgerPath, baseLedger);
+    writeFileSync(
+      join(registryDir, "ledger.jsonl"),
+      `${baseLedger}${JSON.stringify(candidateEntry)}\n`,
+    );
+    writeSidecar(
+      { tarballs: { [historicalKey]: historical } },
+      baseSidecarPath,
+    );
+    writeSidecar(
+      {
+        tarballs: {
+          [historicalKey]: historical,
+          [candidateKey]: computeTarballDist(
+            tgzWithPackageJson({ name: "@caisson/demo", version: "2.0.0" }),
+            "demo",
+            "2.0.0",
+          ),
+        },
+      },
+      join(registryDir, "tarballs.json"),
+    );
+    writeFileSync(
+      join(packageDir, "package.json"),
+      JSON.stringify({ name: "@caisson/demo", version: "2.0.0" }),
+    );
+    const freshBytes = tgzWithPackageJson({
+      name: "@caisson/demo",
+      version: "2.0.0",
+      dependencies: { zod: "^4.0.0" },
+    });
+
+    try {
+      const refreshed = refreshVersionCandidateTarballs({
+        candidateRoot,
+        baseLedgerPath,
+        baseSidecarPath,
+        stagingDir: join(dir, "staging"),
+        packFn: () => freshBytes,
+      });
+
+      expect(refreshed).toBe(1);
+      const sidecar = readSidecar(join(registryDir, "tarballs.json"));
+      expect(sidecar.tarballs[historicalKey]).toEqual(historical);
+      expect(sidecar.tarballs[candidateKey]).toEqual(
+        computeTarballDist(freshBytes, "demo", "2.0.0"),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("trusted version refresh rejects any historical sidecar drift", () => {
+    const dir = tmpDir("trusted-version-historical-drift");
+    const candidateRoot = join(dir, "candidate");
+    const registryDir = join(candidateRoot, "registry");
+    mkdirSync(registryDir, { recursive: true });
+    const baseLedgerPath = join(dir, "base-ledger.jsonl");
+    const baseSidecarPath = join(dir, "base-tarballs.json");
+    const key = "@caisson/auth@1.0.0";
+    const baseEntry = {
+      id: "@caisson/auth",
+      version: "1.0.0",
+      manifest: mkManifest("@caisson/auth", "1.0.0"),
+      publishedAt: "2026-07-01T00:00:00.000Z",
+      gateAttestation: "base@deadbee",
+    };
+    const ledger = `${JSON.stringify(baseEntry)}\n`;
+    const dist = computeTarballDist(
+      tgzWithPackageJson({ name: "@caisson/auth", version: "1.0.0" }),
+      "auth",
+      "1.0.0",
+    );
+    writeFileSync(baseLedgerPath, ledger);
+    writeFileSync(join(registryDir, "ledger.jsonl"), ledger);
+    writeSidecar({ tarballs: { [key]: dist } }, baseSidecarPath);
+    writeSidecar(
+      {
+        tarballs: {
+          [key]: { ...dist, meta: { dependencies: { evil: "1.0.0" } } },
+        },
+      },
+      join(registryDir, "tarballs.json"),
+    );
+
+    try {
+      expect(() =>
+        refreshVersionCandidateTarballs({
+          candidateRoot,
+          baseLedgerPath,
+          baseSidecarPath,
+          stagingDir: join(dir, "staging"),
+          packFn: () => Buffer.from("never"),
+        }),
+      ).toThrow(/historical tarball row drift/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -840,6 +972,31 @@ describe("publish mode (ADR-0325)", () => {
     }
   });
 
+  test("tampered packument metadata fails even when tarball hashes still match", async () => {
+    const f = mkFixture("tampered-meta");
+    try {
+      const sidecar = readSidecar(f.sidecarPath);
+      const key = "@caisson/demo@1.0.0";
+      const row = sidecar.tarballs[key];
+      expect(row).toBeDefined();
+      sidecar.tarballs[key] = {
+        ...row!,
+        meta: { dependencies: { "evil-package": "1.0.0" } },
+      };
+      writeSidecar(sidecar, f.sidecarPath);
+
+      await expect(
+        runPublishStep({
+          ...publishOpts(f),
+          dryRun: false,
+          packFn: () => Buffer.from("demo-bytes"),
+        }),
+      ).rejects.toThrow(/tarball verification failed/);
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
   test("dry-run: metadata verified, packer never invoked, nothing staged", async () => {
     const f = mkFixture("dry");
     try {
@@ -904,6 +1061,27 @@ describe("bun pm pack byte-determinism (the ADR-0325 load-bearing assumption)", 
       );
       expect(first.length).toBeGreaterThan(0);
       expect(Buffer.from(first).equals(Buffer.from(second))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("default pack never executes package lifecycle scripts", () => {
+    const dir = tmpDir("pack-ignore-scripts");
+    const pkgDir = join(dir, "pkg");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      join(pkgDir, "package.json"),
+      JSON.stringify({
+        name: "@caisson/no-script-exec",
+        version: "1.0.0",
+        scripts: { prepack: "touch PREPACK_RAN" },
+      }),
+    );
+    writeFileSync(join(pkgDir, "index.ts"), "export const ok = true;\n");
+    try {
+      defaultPack(pkgDir, "no-script-exec", "1.0.0", dir);
+      expect(existsSync(join(pkgDir, "PREPACK_RAN"))).toBe(false);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

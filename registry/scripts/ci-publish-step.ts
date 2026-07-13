@@ -28,7 +28,8 @@ import {
   readdirSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { gunzipSync } from "node:zlib";
 import { z } from "zod";
 import type { ModuleManifest } from "../schema/module-manifest";
@@ -222,7 +223,14 @@ export const defaultPack: PackFn = (packageDir, slug, version, stagingDir) => {
   const filename = `${slug}-${version}.tgz`;
   const res = spawnSync(
     "bun",
-    ["pm", "pack", "--quiet", "--filename", join(outDir, filename)],
+    [
+      "pm",
+      "pack",
+      "--quiet",
+      "--ignore-scripts",
+      "--filename",
+      join(outDir, filename),
+    ],
     { cwd: packageDir, encoding: "buffer" },
   );
   if (res.status !== 0) {
@@ -232,6 +240,154 @@ export const defaultPack: PackFn = (packageDir, slug, version, stagingDir) => {
   }
   return readFileSync(join(outDir, filename));
 };
+
+export interface RefreshVersionCandidateOpts {
+  /** PR-head checkout treated as data only; no source file under it is imported or executed. */
+  readonly candidateRoot: string;
+  /** Fork-point ledger materialized from the trusted merge base. */
+  readonly baseLedgerPath: string;
+  /** Fork-point sidecar materialized from the trusted merge base. */
+  readonly baseSidecarPath: string;
+  readonly dryRun?: boolean | undefined;
+  readonly stagingDir?: string | undefined;
+  readonly packFn?: PackFn | undefined;
+}
+
+const CandidatePackage = z
+  .object({
+    name: z.string().regex(/^@caisson\/[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    version: z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/),
+    private: z.boolean().optional(),
+  })
+  .strict();
+
+function candidatePackageKey(key: string): { slug: string; version: string } {
+  const match =
+    /^@caisson\/([a-z0-9]+(?:-[a-z0-9]+)*)@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/.exec(
+      key,
+    );
+  if (match?.[1] === undefined || match[2] === undefined) {
+    throw new Error(`invalid candidate tarball key: ${key}`);
+  }
+  return { slug: match[1], version: match[2] };
+}
+
+function pathInside(root: string, ...parts: string[]): string {
+  const path = resolve(root, ...parts);
+  if (!path.startsWith(`${root}${sep}`)) {
+    throw new Error(`candidate path escapes checkout root: ${path}`);
+  }
+  return path;
+}
+
+/**
+ * Refresh an automation-authored version PR without executing PR-head code. The trusted base
+ * workflow calls this function against a candidate checkout treated strictly as data: historical
+ * ledger/sidecar material must be byte/deep-identical to the fork point, the new sidecar-key set
+ * must exactly match appended publish rows, package identity comes from field-picked package.json,
+ * and packing disables lifecycle scripts. Only candidate registry/tarballs.json is written.
+ */
+export function refreshVersionCandidateTarballs(
+  opts: RefreshVersionCandidateOpts,
+): number {
+  const root = resolve(opts.candidateRoot);
+  const candidateLedgerPath = pathInside(root, "registry", "ledger.jsonl");
+  const candidateSidecarPath = pathInside(root, "registry", "tarballs.json");
+  const baseLedger = readFileSync(opts.baseLedgerPath, "utf8");
+  const candidateLedger = readFileSync(candidateLedgerPath, "utf8");
+  if (!candidateLedger.startsWith(baseLedger)) {
+    throw new Error(
+      "version refresh rejected historical ledger drift from the fork point",
+    );
+  }
+
+  const basePublishes = parseLedgerLines(baseLedger).publishes;
+  const candidatePublishes = parseLedgerLines(candidateLedger).publishes;
+  const basePublishKeys = new Set(
+    basePublishes.map((entry) => `${entry.id}@${entry.version}`),
+  );
+  const appendedPublishKeys = new Set(
+    candidatePublishes
+      .map((entry) => `${entry.id}@${entry.version}`)
+      .filter((key) => !basePublishKeys.has(key)),
+  );
+
+  const baseSidecar = readSidecar(opts.baseSidecarPath);
+  const candidateSidecar = readSidecar(candidateSidecarPath);
+  if (candidateSidecar.$comment !== baseSidecar.$comment) {
+    throw new Error(
+      "version refresh rejected historical tarball row drift: sidecar comment changed",
+    );
+  }
+  for (const [key, baseRow] of Object.entries(baseSidecar.tarballs)) {
+    const candidateRow = candidateSidecar.tarballs[key];
+    if (
+      candidateRow === undefined ||
+      !isDeepStrictEqual(candidateRow, baseRow)
+    ) {
+      throw new Error(
+        `version refresh rejected historical tarball row drift: ${key}`,
+      );
+    }
+  }
+
+  const candidateNewKeys = Object.keys(candidateSidecar.tarballs)
+    .filter((key) => baseSidecar.tarballs[key] === undefined)
+    .sort();
+  const unexpected = candidateNewKeys.filter(
+    (key) => !appendedPublishKeys.has(key),
+  );
+  const missing = [...appendedPublishKeys].filter(
+    (key) => !candidateNewKeys.includes(key),
+  );
+  if (unexpected.length > 0 || missing.length > 0) {
+    throw new Error(
+      `version refresh candidate rows do not exactly match appended ledger publishes (unexpected=${unexpected.join(",") || "none"}; missing=${missing.join(",") || "none"})`,
+    );
+  }
+
+  if (opts.dryRun === true) {
+    process.stdout.write(
+      `registry/ci-publish-step: dry-run — would securely re-pack ${candidateNewKeys.length} unmerged row(s)\n`,
+    );
+    return 0;
+  }
+
+  const packFn = opts.packFn ?? defaultPack;
+  const stagingDir = opts.stagingDir ?? STAGING_DIR;
+  for (const key of candidateNewKeys) {
+    const { slug, version } = candidatePackageKey(key);
+    const packageDir = pathInside(root, "packages", slug);
+    const rawPackage = z
+      .record(z.string(), z.unknown())
+      .parse(
+        JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8")),
+      );
+    const pkg = CandidatePackage.parse({
+      name: rawPackage.name,
+      version: rawPackage.version,
+      ...(rawPackage.private !== undefined
+        ? { private: rawPackage.private }
+        : {}),
+    });
+    if (
+      pkg.name !== `@caisson/${slug}` ||
+      pkg.version !== version ||
+      pkg.private === true
+    ) {
+      throw new Error(`candidate package identity does not match ${key}`);
+    }
+    const bytes = packFn(packageDir, slug, version, stagingDir);
+    candidateSidecar.tarballs[key] = computeTarballDist(bytes, slug, version);
+    process.stdout.write(
+      `registry/ci-publish-step: securely re-packed + re-recorded ${key}\n`,
+    );
+  }
+  if (candidateNewKeys.length > 0) {
+    writeSidecar(candidateSidecar, candidateSidecarPath);
+  }
+  return candidateNewKeys.length;
+}
 
 export type RecordTarballsOpts = {
   dryRun: boolean;
@@ -542,13 +698,9 @@ function verifyForPublish(opts: VerifyForPublishOpts): PublishStepResult {
     const slug = manifest.id.slice("@caisson/".length);
     const bytes = packFn(packageDir, slug, manifest.version, stagingDir);
     const dist = computeTarballDist(bytes, slug, manifest.version);
-    if (
-      dist.shasum !== row.shasum ||
-      dist.integrity !== row.integrity ||
-      dist.size !== row.size
-    ) {
+    if (!isDeepStrictEqual(dist, row)) {
       mismatches.push(
-        `${key}: packed ${dist.shasum} (${dist.size}B) != recorded ${row.shasum} (${row.size}B)`,
+        `${key}: packed distribution record does not exactly match sidecar (packed=${dist.shasum}/${dist.size}B, recorded=${row.shasum}/${row.size}B)`,
       );
       continue;
     }
@@ -774,10 +926,15 @@ export async function runPublishStep(
 // CLI entry point
 // ---------------------------------------------------------------------------
 
-function parseCliArgs(): Omit<
+type CliArgs = Omit<
   PublishStepOpts,
   "ledgerPath" | "indexPath" | "packagesDir"
-> {
+> & {
+  refreshCandidateRoot?: string | undefined;
+  refreshBaseLedgerPath?: string | undefined;
+};
+
+function parseCliArgs(): CliArgs {
   const argv = process.argv.slice(2);
   let runId = "";
   let sha = "";
@@ -785,6 +942,8 @@ function parseCliArgs(): Omit<
   let dryRun = true; // safe default: never publish unless the caller explicitly says "false"
   let mode: "version" | "publish" = "version";
   let refreshBaseSidecarPath: string | undefined;
+  let refreshCandidateRoot: string | undefined;
+  let refreshBaseLedgerPath: string | undefined;
 
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
@@ -814,6 +973,12 @@ function parseCliArgs(): Omit<
     } else if (flag === "--refresh-base-sidecar" && val !== undefined) {
       refreshBaseSidecarPath = val;
       i++;
+    } else if (flag === "--refresh-candidate-root" && val !== undefined) {
+      refreshCandidateRoot = val;
+      i++;
+    } else if (flag === "--refresh-base-ledger" && val !== undefined) {
+      refreshBaseLedgerPath = val;
+      i++;
     }
   }
 
@@ -824,14 +989,49 @@ function parseCliArgs(): Omit<
     dryRun,
     mode,
     refreshBaseSidecarPath,
+    refreshCandidateRoot,
+    refreshBaseLedgerPath,
   };
 }
 
 if (import.meta.main) {
-  runPublishStep(parseCliArgs()).catch((err: unknown) => {
-    process.stderr.write(
-      `registry/ci-publish-step: fatal: ${(err as Error).message}\n`,
-    );
-    process.exit(1);
-  });
+  const {
+    refreshCandidateRoot,
+    refreshBaseLedgerPath,
+    refreshBaseSidecarPath,
+    ...publishArgs
+  } = parseCliArgs();
+  if (refreshCandidateRoot !== undefined) {
+    try {
+      if (
+        refreshBaseLedgerPath === undefined ||
+        refreshBaseSidecarPath === undefined
+      ) {
+        throw new Error(
+          "--refresh-candidate-root requires --refresh-base-ledger and --refresh-base-sidecar",
+        );
+      }
+      refreshVersionCandidateTarballs({
+        candidateRoot: refreshCandidateRoot,
+        baseLedgerPath: refreshBaseLedgerPath,
+        baseSidecarPath: refreshBaseSidecarPath,
+        dryRun: publishArgs.dryRun,
+      });
+    } catch (err: unknown) {
+      process.stderr.write(
+        `registry/ci-publish-step: fatal: ${(err as Error).message}\n`,
+      );
+      process.exit(1);
+    }
+  } else {
+    runPublishStep({
+      ...publishArgs,
+      refreshBaseSidecarPath,
+    }).catch((err: unknown) => {
+      process.stderr.write(
+        `registry/ci-publish-step: fatal: ${(err as Error).message}\n`,
+      );
+      process.exit(1);
+    });
+  }
 }
