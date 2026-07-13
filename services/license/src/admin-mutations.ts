@@ -605,8 +605,8 @@ export async function adjustCreditsAdmin(
     await assertAccountExists(tx, input.targetAccountId);
     const balanceBefore = await balance(tx, input.targetAccountId);
     const idempotencyKey = randomUUID();
-    let balanceAfter = balanceBefore;
-    let applied = 0;
+    let balanceAfter: number;
+    let applied: number;
     if (input.deltaCredits > 0) {
       const r = await grant(tx, {
         accountId: input.targetAccountId,

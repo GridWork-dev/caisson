@@ -80,6 +80,10 @@ const DEFAULT_TENANT_ID = "default";
  *  for this read-only page — any positive integer is valid. */
 const INSPECTOR_MEMORY_DIM = 8;
 
+interface QueryParams {
+  get(name: string): string | null;
+}
+
 function clampInt(
   raw: string | null,
   fallback: number,
@@ -92,7 +96,7 @@ function clampInt(
   return Math.min(max, Math.max(min, n));
 }
 
-function parsePaging(params: URLSearchParams): {
+function parsePaging(params: QueryParams): {
   limit: number;
   offset: number;
 } {
@@ -210,10 +214,7 @@ async function renderAuditPage(lifecycle: AuditedLifecycle): Promise<string> {
 // Route: GET /memory — paged memory docs (Seam 3: local-store, Fork B = B1 `.list()`).
 // ---------------------------------------------------------------------------
 
-function renderMemoryPage(
-  memoryRoot: string,
-  params: URLSearchParams,
-): Response {
+function renderMemoryPage(memoryRoot: string, params: QueryParams): Response {
   const rawTenant = params.get("tenant");
   const tenantId =
     rawTenant !== null && rawTenant.trim().length > 0
