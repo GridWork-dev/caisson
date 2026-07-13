@@ -1,12 +1,12 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-13
 status: live
 grounds:
   - docs/business/caisson-software-llc.md
   - docs/state/go-live-legal-and-entity.md
   - knowledge/decisions/ADR-0276-eula-continuity-clause.md
   - knowledge/decisions/ADR-0282-eula-continuity-parameters.md
-  - knowledge/decisions/ADR-0302-subscription-refund-coverage-horizon.md
+  - knowledge/decisions/ADR-0302-subscription-refund-horizon-claw.md
   - apps/site/app/legal/eula/page.tsx
   - outputs/research (legal research wave, 2026-07-10 — 5 cited lanes)
 ---

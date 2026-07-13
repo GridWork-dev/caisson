@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-13
 status: live
 ---
 
@@ -41,7 +41,7 @@ launch credentials actually work end-to-end.** Every proof self-skips without it
 
 | Seam                              | Proof file(s)                                                                                                                                                       | Required env (skips if any unset)                                                                                                                                                                 | Proves (the double can't)                                                                                                                                                    |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1 · Paddle → webhook → grant**  | `packages/billing/live/paddle-webhook.live.test.ts` · `services/license/live/webhook-grant.live.test.ts`                                                            | `PADDLE_API_KEY` + `PADDLE_SIM_RECEIVER_URL` (+ `PADDLE_SANDBOX_CHECKOUT_URL` for the Playwright leg); `PADDLE_WEBHOOK_SECRET` + `DATABASE_URL` + `LICENSE_WEBHOOK_URL` + `PADDLE_PROOF_PRICE_ID` | A real Paddle-signed/simulated delivery drives the real verify→parse→`applyBillingEvent`, landing a real grant row for the reserved proof tenant, then tearing it down.      |
+| **1 · Paddle → webhook → grant**  | `packages/billing-orchestration/live/paddle-webhook.live.test.ts` · `services/license/live/webhook-grant.live.test.ts`                                              | `PADDLE_API_KEY` + `PADDLE_SIM_RECEIVER_URL` (+ `PADDLE_SANDBOX_CHECKOUT_URL` for the Playwright leg); `PADDLE_WEBHOOK_SECRET` + `DATABASE_URL` + `LICENSE_WEBHOOK_URL` + `PADDLE_PROOF_PRICE_ID` | A real Paddle-signed/simulated delivery drives the real verify→parse→`applyBillingEvent`, landing a real grant row for the reserved proof tenant, then tearing it down.      |
 | **2 · Discord role-grant**        | `services/license/live/discord-grant.live.test.ts` (license→bot Bearer push) · `services/support-bot/tests/live/test_billing_grant_live.py` (full grant + teardown) | TS: `SUPPORT_BOT_URL` + `SUPPORT_BOT_GRANT_TOKEN` + `DISCORD_PROOF_USER_ID`. Py: `DISCORD_TOKEN` + `GUILD_ID` + `DISCORD_PROOF_USER_ID` + `DISCORD_PROOF_ROLE_ID` + `BILLING_GRANT_TOKEN`         | The deployed bot authenticates the shared Bearer (TS), and a real `member.add_roles` lands the throwaway `caisson-proof` role on the guild owner then is removed (Py, F3=B). |
 | **3 · Linear Triage sink**        | `services/support-bot/tests/live/test_linear_live.py`                                                                                                               | `LINEAR_API_KEY` + `LINEAR_TEAM_ID` + `LINEAR_TRIAGE_STATE_ID`                                                                                                                                    | The real Linear API accepts the bare-header (no `Bearer`) auth + explicit team/state and returns a real `issue.url`; the proof issue is archived on teardown.                |
 | **4 · Grafana Cloud query**       | `apps/admin/live/grafana.live.test.ts`                                                                                                                              | `GRAFANA_URL` + `GRAFANA_QUERY_TOKEN` + `GRAFANA_TEMPO_DATASOURCE_UID`                                                                                                                            | The real datasource proxy accepts the real `glsa_` query token and returns the fleet's own service names (read-only, no teardown).                                           |
@@ -84,7 +84,7 @@ confirm receipt (ADR-0224 F4=A). After a rotation, spot-check the provider dashb
 
 ADR-0224 Task 1: the Paddle webhook simulator delivers real-shaped payloads to a notification
 destination, but it was open whether that delivery is **signed** with the destination's secret. The
-billing leg (`packages/billing/live/paddle-webhook.live.test.ts`) resolves this live: a signed delivery
+billing leg (`packages/billing-orchestration/live/paddle-webhook.live.test.ts`) resolves this live: a signed delivery
 asserts the full `verifyPaddleWebhook` leg; an unsigned one asserts parse-only and prints a verify-leg
 skip note.
 

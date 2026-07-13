@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-13
 status: live
 grounds:
   - docs/state/providers.md
@@ -91,9 +91,9 @@ ADR-0222). Two different COGS shapes follow from that split:
      grant-conversion constant, not a proven OpenRouter per-token cost — treat the "~9.8x spread"
      as a structural observation, not an audited margin figure.)
 
-**Net:** the flat infra floor (~$30–50/mo) is sale-count-independent; the only COGS line that
-scales per sale is platform-key credit consumption, and BYOK exists specifically to let a tenant
-opt out of that line entirely.
+**Net:** the flat infra floor (≈$46–66/mo, ≈$71–116/mo including Blacksmith CI) is
+sale-count-independent; the only COGS line that scales per sale is platform-key credit
+consumption, and BYOK exists specifically to let a tenant opt out of that line entirely.
 
 ## Catalog-doctrine lock — pricing structure is settled
 
@@ -108,9 +108,11 @@ so the catalog-shape lock doesn't require a second pass here.
 ## Contradictions found while distilling
 
 - `docs/state/providers.md` states the post-SigNoz-removal floor as **"≈$30-50/mo"** in one place
-  and **"≈$30-55/mo"** in `docs/state/decisions-and-forks.md` (PF-1 resolution note). Both are
-  loose ranges (Railway usage varies), not a hard conflict — carried here as "~$30–50/mo" per the
-  providers.md figure since it's the more-recently-swept file.
+  and **"≈$30-55/mo"** in `docs/state/decisions-and-forks.md` (PF-1 resolution note). Both predate
+  Linear Business ($16/mo, turned on 2026-07-11) and Blacksmith CI (ADR-0326) landing on the bill —
+  this file's own "Flat floor today" figure above (≈$46–66/mo, ≈$71–116/mo with Blacksmith) is the
+  current number; the providers.md/decisions-and-forks.md figures are historical, not a live
+  conflict to reconcile here.
 - No source file states a directly-measured OpenRouter $/token cost for caisson's actual traffic —
   the $0.001/credit figure is the **grant-conversion peg** (ADR-0098), not an audited inference
   cost. The "~9.8x markup" framing above is this document's own inference from the $49/5,000-credit

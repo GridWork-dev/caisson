@@ -120,7 +120,7 @@ Caisson **is not** — these boilerplate tells are **banned**:
 - ❌ "we are SOC 2 certified" (Caisson generates evidence; it is **not** an auditor — never imply
   certification; the honesty boundary is technical-vs-administrative)
 - ❌ a competitor-vs-competitor feature table for the paid hero (ADR-0040 buyer firewall)
-- ❌ rainbow per-edition colors (one accent; editions differ by icon + label, ADR-0078 §5)
+- ❌ rainbow per-bundle colors (one accent; bundles differ by icon + label, ADR-0078 §5)
 
 ## 10. Voice (pointer)
 

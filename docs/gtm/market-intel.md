@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-13
 status: live
 grounds:
   - outputs/research/market-research.md
@@ -49,7 +49,10 @@ argument (ADR-0040 hero lock predates the research; the research validates it, p
   I1/threats table, 2026-06-27).
 - **Library-class (dev-kit / framework):** the nearest direct comparable named in research is
   **Clynova**, a HIPAA boilerplate at **$999–1,999 one-time** (market-research.md, 2026-06-27) —
-  cited as proof a compliance dev-kit sells at 5–10x the price of a generic boilerplate. No
+  cited as proof a compliance dev-kit sells at 5–10x the price of a generic boilerplate.
+  **Caveat (2026-07-11):** a later, more rigorous verification pass (`comparison-targets.md`)
+  could not confirm Clynova as a real, current product and dropped it from the comparison-page
+  target list — treat this anchor as unconfirmed, not settled research. No
   competitor was found shipping the full **RLS + S3 Object-Lock WORM + append-only hash-chain
   audit trail + multi-jurisdiction module registry** stack at the app tier — both research passes
   independently call this "no turnkey starter exists" (market-research.md §1; market-competitive-analysis.md
@@ -77,7 +80,9 @@ Two separate reads, both dated 2026-06-27, converge on the same shape:
   $999–1,999 one-time is the closest direct anchor (market-research.md §2, opportunity ①).
 - **Framework/control-update subscriptions are the market's only proven recurring-revenue shape**
   for this product class: compliance.tf ~$1K/yr, Archiet $1.2K–16.8K/yr, SchemaPilot $588–5,988/yr
-  (market-research.md §1). The mechanism: compliance frameworks churn constantly (NIS2, EU AI Act
+  (market-research.md §1). **Caveat (2026-07-11):** the later `comparison-targets.md` verification
+  pass could not confirm `compliance.tf` as a real, current product either and dropped it from the
+  comparison-page target list alongside Clynova — treat this anchor as unconfirmed. The mechanism: compliance frameworks churn constantly (NIS2, EU AI Act
   Annex IV, DORA, new US state privacy law), so an auto-updating control-mapping + evidence-pack
   feed is the strongest retention lever available to this category — independent of what Caisson
   ultimately charges.
@@ -157,13 +162,13 @@ named as content/launch-calendar anchors, not internal deadlines.
 
 ## 5. Threats named in research (2026-06-27, for awareness — not yet mitigated in-repo)
 
-| Risk                              | Severity | Named mitigation                                                                                                                                                                            |
-| --------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AI codegen commoditizes Base      | High     | Make Caisson the reference implementation agents extend, not compete with                                                                                                                   |
-| "Compliance-is-service" objection | High     | Separate GRC administration (their job) from app-level compliance engineering (Caisson's) in copy                                                                                           |
-| OSS undercut                      | Medium   | Source recommends open-sourcing Base — **conflicts with the locked fully-commercial position** (ADR-0023/0050/0083); unresolved, tracked as a standing external recommendation, not adopted |
-| Incumbent expansion               | Medium   | Complement cloud/GRC tooling rather than compete on their turf                                                                                                                              |
-| Buyer trust                       | High     | Publish evidence schemas, legal-review letters, pilot case studies (none published as of this writing)                                                                                      |
+| Risk                              | Severity | Named mitigation                                                                                                                                                                                                                                  |
+| --------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AI codegen commoditizes Base      | High     | Make Caisson the reference implementation agents extend, not compete with                                                                                                                                                                         |
+| "Compliance-is-service" objection | High     | Separate GRC administration (their job) from app-level compliance engineering (Caisson's) in copy                                                                                                                                                 |
+| OSS undercut                      | Medium   | **ADOPTED (partially)** — ADR-0094 (2026-06-29) open-sourced the Base substrate under Apache-2.0 as the trust/acquisition layer; editions, compliance primitives (field-crypto, audit-worm), the generator, registry, and updates stay commercial |
+| Incumbent expansion               | Medium   | Complement cloud/GRC tooling rather than compete on their turf                                                                                                                                                                                    |
+| Buyer trust                       | High     | Publish evidence schemas, legal-review letters, pilot case studies (none published as of this writing)                                                                                                                                            |
 
 ## Sources
 

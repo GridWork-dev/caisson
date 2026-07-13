@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-10
+updated: 2026-07-13
 status: live
 owner: operator (business/legal track)
 ---
@@ -41,7 +41,7 @@ Where each address goes (the "full address" question — answered):
 
 - **Site / ToS / EULA / privacy:** entity name + "Atlanta, Georgia" + admin@caisson.sh. No
   street address required. Paddle's domain review looks for the legal name in the terms — the
-  entity sweep (in flight on the catalog branch) puts it there.
+  entity sweep landed (terms/privacy/eula/license pages carry the legal name + admin@caisson.sh).
 - **Service of process / state mail:** Northwest's RA address (included in the service).
 - **IRS / EIN / Mercury:** the REAL principal (home) address — these records are not public.
 - **Buyer receipts/invoices:** Paddle's own details — Paddle is merchant of record (ADR-0222).
@@ -118,10 +118,9 @@ contain beyond a standard single-member member-managed GA template:
 
 Run as its own session when the GA approval lands. Steps in hard order; parallel where noted.
 
-0. **Now / parallel (already moving):** GA filing processes · the site entity sweep
-   (Caisson Software LLC + admin@caisson.sh) rides the catalog-rework branch · **verify
-   admin@caisson.sh actually receives mail** (operator: wire the mailbox/alias before Paddle
-   or lawyer correspondence uses it).
+0. **Done / still open:** GA filing processes · the site entity sweep (Caisson Software LLC +
+   admin@caisson.sh) landed · **verify admin@caisson.sh actually receives mail** (operator: wire
+   the mailbox/alias before Paddle or lawyer correspondence uses it — still open).
 1. **GA approval** — **DONE 2026-07-08/10**: Certificate of Organization + stamped Articles
    in hand (control 26147198; intake note in §1).
 2. **EIN** — **DONE 2026-07-10** (same-day issuance; CP-575 with the formation docs).

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-13
 status: live
 ---
 
@@ -60,14 +60,17 @@ These BLOCK a real sale and are **operator-owned** (I can't do them from the box
 3. ~~**Discord** — enable GUILD_MEMBERS + MESSAGE_CONTENT privileged intents~~ **DONE 2026-07-11**
    (verified). Residual: confirm `SUPPORT_CHANNEL_ID`/`MEMBER_ROLE_ID` and the bot-role scope-down
    at launch.
-4. **Rotate the leaked Discord/OpenRouter creds** — **DONE 2026-07-08** (`OPENROUTER_API_KEY` split
+   ~~4. **Rotate the leaked Discord/OpenRouter creds**~~ — **DONE 2026-07-08** (`OPENROUTER_API_KEY` split
    into six per-service keys, `DISCORD_TOKEN` regenerated; see
    `docs/archive/operator-runbook-2026-07-08.md` Phase 1.1/1.2 and `docs/deploy/STATE.md`'s
-   2026-07-08 entry). Only `MIRROR_PUSH_TOKEN` rotation is still open (runbook Phase 1.3).
-5. Legal stack (above) live on the site + the Paddle attribution line.
+   2026-07-08 entry). `MIRROR_PUSH_TOKEN` rotation also **DONE 2026-07-10** (fresh fine-grained PAT,
+   mirror-sync proven green) — see `docs/state/outstanding-work.md`. All four rotations closed.
+4. Legal stack (above) live on the site + the Paddle attribution line.
 
 Box-drivable go-live tail (I do these): mount/verify is already built (webhook route exists,
-ADR-0108/0110); post-merge redeploys (`railway up -s …`); registry 32-index confirm; doc-hygiene sweep.
+ADR-0108/0110); post-merge redeploys (`railway up -s …`); doc-hygiene sweep. (The registry-index
+confirm item is dropped — reconciliation is already owned and tracked live in
+`docs/state/outstanding-work.md`.)
 
 ## Why this doc exists
 

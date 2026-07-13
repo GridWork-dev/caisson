@@ -1,13 +1,17 @@
 ---
-updated: 2026-07-12
+updated: 2026-07-13
 status: live
 ---
 
 # Build state & roadmap
 
-## Current state (2026-07-12)
+## Current state (2026-07-13)
 
-**ADR ceiling is now `0328`, PRs merged through `#220`.** Everything below the
+**ADR ceiling is now `0329`, PRs merged through `#223`.** The 2026-07-12/13
+release-train wave landed after #220: #222 (version PR — consume 153 changesets, ledger
+append + tarball rows) ran the release act, the train's first ride went green, the Worker
+redeploy went live at the buyer seam, and #223 closed the release/intel/audit/support
+tails. Everything below the
 2026-07-06 triple-merge day (the six-bundle catalog rework) is one more month of shipped
 waves: the four-track wave (#133-136), the AEO + license-seam waves, the research-response
 and triage-window pickers (#138-152), the ninth/tenth-sitting wave + the admin GitHub-OAuth
@@ -177,71 +181,10 @@ for "what is actually built right now". Canonical _decisions_ stay in `knowledge
 (ADRs) and `specs/`; the live _fork_ board stays in `docs/state/decisions-and-forks.md`. This
 is a map/catalog, not a re-statement of those.
 
-Verified against `main` at 2026-06-29 (post-PR#24: the code-wiring stack W1 open-core → W2 migrate → B1 billing-X2 → B2 entitlement resolver + worker filtering merged via PR#16/18/19, plus PR#21 design-system, PR#22 CI fleet, PR#23 `services/docs`, PR#24 `services/support-bot`). **2026-06-30 P6 integration** then merged the go-live operator gates (`ADR-0106`–`0109`: pricing · CF-Access · Paddle-MoR · support-bot member-mgmt) + the unattended code track (`ADR-0110`–`0113`: license issuer · publish-readiness flip · MCP rate-limit · entitlement-revoke + one-time + clawback), gate green 125/125. ADR ceiling on this catalog is now **0137**.
-
-**2026-07-01 Stage-2 Stream A** (branch `stream/obs-admin`, off clean `main`, local-only — **not
-pushed**) BUILT the `admin.caisson.sh` operator control-plane + the fleet-observability backend
-(charter `ADR-0138`; detail forks locked `ADR-0140`–`0143`). A1 scaffolded `apps/admin` and
-absorbed+removed `apps/studio` (now its `/design` section); A2 authored the 5-service self-host
-SigNoz Railway config under `infra/signoz/` (14d retention, 100% head, CF-Access UI); A3 added the
-support-bot Python OTLP bootstrap + the registry-Worker CF-native SigNoz destinations (the Node
-services `docs`/`license` were already instrumented); A4 built the read-only cross-tenant business
-views behind a local admin-read RLS role (`TO admin USING(true)`, fail-closed-proven); A5 the SigNoz
-`query_range` ops widgets; A6 a React Flow live architecture diagram (auto-topology baked at build +
-hand-authored annotations); A7 the decisions/ADR-trail SOT board. `bun run check` **131/131** + gate
-**45/45** green; every surface env-gated inert. **Not deployed** — the Railway provisioning of admin +
-SigNoz, DNS + CF-Access apply, and the `admin` PG role are the integration/DEPLOY session's work. ADR
-ceiling now **0143**.
-
-**2026-06-30 unified-app build session** (branch `feat/dashboard-unified-and-p6-tail`, local-only —
-**not pushed to origin**) then BUILT the dashboard host/DB switch (`ADR-0114`/`0115`) + the
-billing-scope/observability/analytics picker round (`ADR-0116`–`0118`): one unified standalone Next
-app (`output: 'standalone'`, `ADR-0114`) carrying the 5-view buyer dashboard with real `withTenant`
-RLS tenant reads; CI rewired into split workflows with turbo/bun build-cache + a new
-`deploy-railway.yml` (inert until `RAILWAY_TOKEN` is set); observability (OTel → SigNoz, `ADR-0117`),
-jobs, and the `@caisson/ui` kit integrated into the app. **Not yet deployed** — the live site is
-still served by Cloudflare Pages; Railway provisioning + DNS cutover + Pages teardown are
-DEPLOY-class and operator-gated. **CI rewired for standalone mode (2026-06-30, CI half of runbook
-C.2/C7):** the static-export `deploy-site.yml` (which built `out/` for Cloudflare Pages) is
-**retired/deleted** — deleting the Pages project itself stays the DEPLOY-class teardown (C7);
-`lighthouse.yml` is **gated to `workflow_dispatch`-only** (its `staticDistDir: out` target is gone;
-re-arm against the live Railway origin post-cutover); and `deploy-railway.yml` now **guards on
-`RAILWAY_TOKEN`** so it is a green no-op (never a red `main`) until the operator arms it at C2.
-
-**2026-06-30 pricing + store-rework wave** locked the store rework (sequenced BEFORE the Railway
-cutover per the operator's explicit ordering) AND built it on `feat/dashboard-unified-and-p6-tail`:
-value-based per-module pricing across the module catalog + edition-bundle math (`ADR-0129`), with the
-final Q4 below-sum edition points — Compliance $749 / AI Production Kit $599 / Agentic-Dev $249 /
-Local-first $349 / All-Access Bundle $1,499 — locked by the reprice ADR `ADR-0137` (supersedes the
-`ADR-0129`/`ADR-0106` point-values); the gated pre-launch storefront showing the full catalog with no
-maturity flags (`ADR-0130`, supersedes `ADR-0082` §3/§4); a site cart feeding one multi-item Paddle
-checkout with a verified fallback path (`ADR-0131`, extends `ADR-0116`); buyer sign-in via better-auth
-magic-link + GitHub/Google OAuth (`ADR-0132`); and license-keyed registry gating that closes the
-free-view leak while opening the ships-with-generator tooling trio (cli · migrate · license-verify) as
-Apache-2.0 Base (`ADR-0136`). **Status: BUILT + integrated this session** — the reprice, storefront
-catalog grid, cart + multi-item Paddle checkout, better-auth sign-in, and the license-keyed free floor
-all landed; module Paddle price-ids, the buyer-account/tenant mapping, and the customer-facing copy
-rewrite remain Stage-2/fast-follow seams.
-
-**2026-06-30 harvest grill session** (document-only, this session) locked the **next initiative
-after** the store rework + Railway cutover: the 11 gridwork-core infra packages become sellable
-substrate for Agentic-Dev + AI Production Kit, the 6 Wardfile product-code lifts harden the base,
-the cross-domain audit/validate harness gets a full build (generalizing `ADR-0101`), and two new
-commercial Compliance modules (`@caisson/alerting`, `retention-runner`) join the catalog — `ADR-0133`,
-`ADR-0134`, `ADR-0135`. **Status: locked, zero code** — spec-gated per package, ranked execution
-order tracked in `docs/archive/harvest-program.md`. ADR ceiling on this catalog is now **0137**.
-Method: `packages/*/src` + test presence, `apps/`/`services/` contents, ADR + spec artifact
-trail, git chronology. Status reflects code-on-disk, not marketing copy.
-
-> **Accuracy note (read first):** `ADR-0082` §3 (`knowledge/decisions/ADR-0082-go-live-site-posture.md`,
-> the go-live _site-copy_ ADR) says four edition packages are "currently empty stubs". That line
-> was written on a site-copy branch **before** the wave-1 edition branches merged (ADR-0082 commit
-> `1d84a92` predates the PR#11 merge `76fd474`, same day). It governs _site copy honesty_, not
-> repo build-state, and is **stale as a build-status claim**. The post-merge tree (below) shows the
-> edition packages carry real implementations + passing tests. They are _not_ empty - but they are
-> _not_ production-complete either (un-exercised live transports, no VERIFY trail, reference apps
-> only). `docs/archive/SUMMARY.md` (dated 2026-06-27) is likewise stale on wave-1 ("editions P2-P4 ... remain").
-> This file supersedes both for build-status.
+The verbose per-session build banners (2026-06-29 → 2026-07-02: Stage-2 Stream A, the unified-app
+build session, the pricing + store-rework wave, the harvest grill session) are superseded by the
+Changelog above and archived verbatim at
+`docs/archive/build-state-session-banners-2026-07-13.md`.
 
 ## Status legend
 
@@ -276,13 +219,12 @@ Phases map to `docs/archive/plan.md`. "Artifacts" = the `outputs/specs/<slug>/` 
 go-live posture `ADR-0082`/`0083`) and the design decision studio (`apps/studio`, `ADR-0040`-`0042`).
 Both **shipped**. Note: the public docs live in `apps/site`; `services/docs` (the AI-native docs
 _service_, P6 Bucket C, ADR-0096) is **built** (PR#23) and distinct from the `apps/site` Fumadocs
-static docs. **Deploy mode now locked off Cloudflare Pages:** `ADR-0114` (2026-06-30) supersedes
+static docs. **Deploy mode locked off Cloudflare Pages:** `ADR-0114` (2026-06-30) superseded
 the static-export -> CF Pages deploy of `ADR-0084` with one dynamic Next 16 app (Node `standalone`)
 on Railway, carrying `apps/site`'s buyer dashboard in the same app; the Fumadocs/MDX docs framework
-and the `apps/site` content tree are unchanged. **The standalone app + dashboard + CI rewire are now
-BUILT** on the `feat/dashboard-unified-and-p6-tail` integration branch (local-only, not pushed); the
-live site is **still Cloudflare Pages today** — the Railway provisioning + DNS cutover + Pages
-teardown remain DEPLOY-class, operator-gated.
+and the `apps/site` content tree are unchanged. The standalone app + dashboard + CI rewire shipped
+and deployed to Railway **2026-07-01**; Cloudflare Pages was torn down the same day (DNS cut over
+to Railway) — see `docs/deploy/STATE.md` for the cutover record.
 
 ## Per-package reality check
 
@@ -322,20 +264,14 @@ source LOC. Counts are the disk truth on `main`, not a quality judgement.
 Six packages built across the Stage-2 streams. All green under `bun run check`; commercial primitives
 are env-gated/dormant until creds. Editions own membership — primitives declare `editions: []`.
 
-Counts backfill (2026-07-06, sot-check parity — these packages predate the ADR-0253 counts check
-and never carried a counts row; detail stays in the rich table below / their own sections):
+Counts backfill (2026-07-06, sot-check parity) — `rate-limit`/`platform-reads`/`observability`/
+`agent-runner`/`audit-harness`/`alerting`/`tool-exec`/`retention-runner` all carry current, correct
+counts in the Edition packages table below; `platform-migrations` is the one row not duplicated
+there:
 
 | Package               | src / tests / loc |
 | --------------------- | ----------------- |
-| `rate-limit`          | 4 / 3 / 432       |
-| `platform-reads`      | 1 / 1 / 137       |
 | `platform-migrations` | 2 / 1 / 275       |
-| `observability`       | 4 / 3 / 309       |
-| `agent-runner`        | 4 / 2 / 635       |
-| `audit-harness`       | 9 / 8 / 1165      |
-| `alerting`            | 6 / 3 / 599       |
-| `tool-exec`           | 2 / 1 / 152       |
-| `retention-runner`    | 6 / 4 / 328       |
 
 | Package            | Stream / ADR          | License / tier                                        | Owns                                                                                                                                                                                                                                                                                                                                         |
 | ------------------ | --------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -387,7 +323,7 @@ index** — the redeploy is DEPLOY-class, PENDING (see the top note).
 | `license-verify`        | 4 / 2 / 364       | **substantial**                             | offline Ed25519 license verify (consumed by local-ai/agent-dev); signed `updatesUntil` window claim (`ADR-0251`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `license-issue`         | 5 / 3 / 254       | **built (commercial · private · ADR-0110)** | offline Ed25519 license **issuer** — signs canonicalized claims via a Signer port (default `node:crypto` PKCS8 Ed25519); consumed by `services/license`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `rate-limit`            | 4 / 3 / 432       | **built (open, Apache-2.0)**                | shared fixed-window rate-limit primitive (Stage-2); consumed by mcp-server + services                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `observability`         | 4 / 3 / 426       | **built (open, Apache-2.0)**                | vendor-neutral OTel bootstrap (`ADR-0117`) — base substrate, never edition-gated                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `observability`         | 4 / 3 / 428       | **built (open, Apache-2.0)**                | vendor-neutral OTel bootstrap (`ADR-0117`) — base substrate, never edition-gated                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `platform-reads`        | 1 / 3 / 306       | **built (commercial · internal)**           | shared read-model helpers for the seller platform surfaces (Stage-2)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `alerting`              | 6 / 3 / 599       | **built (commercial, `ADR-0151`)**          | deduped, rate-capped alert delivery (quiet hours + audit trail); composed by `compliance` (`ADR-0205`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `retention-runner`      | 6 / 4 / 328       | **built (commercial, `ADR-0152`)**          | policy-driven retention sweeps (expiry + legal hold); composed by `compliance` (`ADR-0205`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |

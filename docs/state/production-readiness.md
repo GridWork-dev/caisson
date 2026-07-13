@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-12
+updated: 2026-07-13
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -48,9 +48,10 @@ mostly operator-owed — none are silent breakage:
 5. **`RESEND_API_KEY` on `caisson-license`** — CLOSED 2026-07-11: `RESEND_API_KEY` +
    `RESEND_FROM` both present on the running service (railway key-scan; tracker row DONE
    2026-07-10, re-verified after the ADR-0324 email-wave redeploy).
-6. **npm publish ↔ gate-flip sequencing** — dormant until the ADR-0325 commit-addressable
-   release-train rework lands (CAISSON-94, tracked as release-train dormant); the marketed
-   `bunx @caisson-sh/cli@latest` 404s until publish runs. (tracked)
+6. **npm publish ↔ gate-flip sequencing** — the release train landed and rode green 2026-07-12
+   (tag `v2026.07.12`, ADR-0325); the public npmjs mirror leg is deliberately unarmed pre-launch
+   (ADR-0329), so the marketed `bunx @caisson-sh/cli@latest` still 404s until that leg is armed.
+   See `docs/state/outstanding-work.md`.
 
 ## Deploy / infra — gaps
 
@@ -76,9 +77,10 @@ limit 429-proven live 2026-07-10 (below).
 
 - **P1 (closed 2026-07-10):** MIRROR_PUSH_TOKEN rotated (fresh fine-grained PAT, Contents +
   Workflows scope) and verified working — `mirror-sync` run `29117126038` SUCCEEDED.
-- **Residual (tracked):** authed-admin black-box needs a one-time session-cookie harness (admin is
-  GitHub-OAuth-only); the Strix black-box cross-check needs a re-run on a lifecycle-conforming
-  engine. `docs/security/strix-findings-2026-07-10-round2.md`.
+- **Residual — CLOSED 2026-07-10** by the ADR-0314 security-tooling stack: the authed-admin
+  black-box harness is built (`tools/security/harness-admin.sh`); the Strix black-box cross-check
+  is superseded, not re-run — the Strix harness itself is RETIRED, replaced by the repo-local
+  four-layer OSS stack (`docs/security/tooling-playbook.md`). See `docs/state/outstanding-work.md`.
 - **P2 (closed 2026-07-10):** registry Worker app-level rate limiting — built (CAISSON-55,
   `registry/worker/rate-limit.ts`, native CF `simple` limiter, catalog 300/60s) and 429-proven
   firing live this round with a sanctioned vegeta run (round-1's negative was a load-shape
@@ -103,7 +105,9 @@ Checkout, webhook verify → grant, license mint, entitlement resolution, subscr
 proven end-to-end against Paddle SANDBOX — including a real signed simulator purchase that drove
 a real grant row (2026-07-04, which also caught the `.strict()`-envelope P0 before launch).
 Real money cannot move until the consolidated blockers 1/2/4 above close (5 closed 2026-07-11). Additional named
-debt: `adjustment.created` never live-subscribed even in sandbox (tracked). The credit
+debt: `adjustment.created` subscribed + live-simulated in SANDBOX 2026-07-10 (200 delivered to
+`license.caisson.sh/webhook`); still needs re-subscribing on the production destination once it
+exists (see `docs/state/outstanding-work.md`). The credit
 rollover/12-month-expiry/FIFO EULA clause SHIPPED 2026-07-09 (PR #190, CAISSON-61 —
 `apps/site/app/legal/eula/page.tsx` §5 Credits, matching ADR-0245/0252 and the built ledger); the
 first-cycle credit race code residuals were CLOSED by Kickoff-H W3 (ADR-0302 cancel tombstone +
@@ -167,9 +171,10 @@ structurally (PRs #168/#174). All 14 CI-mirror gates pass locally on this branch
 - **P1 (closed, ADR-0327):** no GitHub branch protection (private repo, free plan) — locked as
   discipline-only; revisited only on a real bypass incident or a launch-posture change.
   `caisson-oss` gets native protection free at the public flip (ADR-0318 W3).
-- **P2:** live-verification harness (ADR-0224) run once end-to-end (Paddle seam, 2026-07-04);
-  the 2026-07-08 credential rotation has no recorded harness re-run across the other four seams.
-  (tracked as of this sweep)
+- **P2 — CLOSED 2026-07-10:** live-verification harness (ADR-0224) — the full matrix is closed
+  across all seams, the last skipped leg (support-bot public HTTP) went live
+  (`discord-grant.live.test.ts` proven). See `docs/state/outstanding-work.md`'s
+  "Live-harness — ALL SEAMS CLOSED" row.
 - **P2 (closed 2026-07-11/12):** eval baseline expanded structurally — PR #216 grew the TS
   injection/PII suites (injection 2→20 attack classes, Wilson floor 0.8), then the ADR-0328 R
   session (PR #218) ported the eval mechanics to the support-bot Python surface (44 cases across
@@ -177,8 +182,10 @@ structurally (PRs #168/#174). All 14 CI-mirror gates pass locally on this branch
   built the intel judged replay harness (cassette recording rides session 4's operator act).
 - **P3:** `bun run sot` never runs in CI (advisory by design; a scheduled advisory run is cheap).
   (tracked as of this sweep)
-- **P3:** 147 pending changesets since the last version cut (PR #131) — a deliberate release-cut
-  decision, not drift; flagged so the next cut is a chosen act. (tracked as of this sweep)
+- **P3 — RESOLVED 2026-07-12:** the version cut happened — PR #222 consumed 153 pending
+  changesets and cut tag `v2026.07.12` (see `docs/state/outstanding-work.md`'s "FIRST
+  RELEASE-TRAIN RIDE GREEN" row). Pending-changeset count since that cut is whatever has accrued;
+  check `changeset status --since=origin/main` for the current figure.
 
 ## GitHub org apps + CI wiring (verified live 2026-07-12, org API read — session Q sweep)
 

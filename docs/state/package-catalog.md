@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-12
+updated: 2026-07-13
 status: live
 grounds:
   - packages/
@@ -25,7 +25,7 @@ Per root `CLAUDE.md`: **1)** `docs/state/decisions-and-forks.md` — the live op
 artifacts). This file and `docs/build-state.md` are both **catalog views derived from that hierarchy**,
 not primary sources — they sit alongside the archived plan/SUMMARY (`docs/archive/`) in the reading order, synthesizing #1/#2
 into a table. Two older root-level docs, [`docs/packages.md`](../packages.md) and
-[`docs/editions.md`](../editions.md), predate open-core (ADR-0094/0097), the P6 commerce build, and the
+[`docs/archive/editions.md`](../archive/editions.md), predate open-core (ADR-0094/0097), the P6 commerce build, and the
 ADR-0129/0130 pricing round — they are **stale on license and price** (still show all-commercial + the
 ADR-0082/ADR-0106 point-values, and the retired "edition" vocabulary) and are superseded by this file for
 that view; they are not deleted or edited here (out of scope for this task).
@@ -69,7 +69,7 @@ License-keyed gating (ADR-0136) shipped to production and was independently **VE
 status is untracked by this note (out of scope for this pass). Full build-status prose for any row:
 `docs/build-state.md` (search the package name).
 
-### Open Base substrate (Apache-2.0) — 15 packages
+### Open Base substrate (Apache-2.0) — 16 packages
 
 | Package           | License    | Sold as                                                       | Edition     | Build status          | Owns                                                                                                                                                                                         |
 | ----------------- | ---------- | ------------------------------------------------------------- | ----------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -88,9 +88,10 @@ status is untracked by this note (out of scope for this pass). Full build-status
 | `migrate`         | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | built                 | the one migration assembler + runner + file-emit (ADR-0090/0091; Apache-2.0 per ADR-0136)                                                                                                    |
 | `license-verify`  | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | substantial           | offline Ed25519 license verification (Apache-2.0 per ADR-0136)                                                                                                                               |
 | `rate-limit`      | Apache-2.0 | free                                                          | Base (open) | built                 | per-IP token-bucket limiter + per-account store, extracted from services/docs + services/license (R1+R2, PR #119)                                                                            |
+| `analytics`       | Apache-2.0 | free/open, never individually sold                            | Base (open) | built                 | vendor-neutral `AnalyticsProvider` port + capture/Plausible/PostHog/GA4 drivers, fail-open by design (ADR-0287)                                                                              |
 
-**Note:** `observability`, `cli`, `migrate`, `license-verify`, and `rate-limit` join the ADR-0094/0097
-base-11 to bring the enforced-open total to **15** (`tooling/standards-gate/src/checks.ts`
+**Note:** `observability`, `cli`, `migrate`, `license-verify`, `rate-limit`, and `analytics` join the
+ADR-0094/0097 base-11 to bring the enforced-open total to **16** (`tooling/standards-gate/src/checks.ts`
 `OPEN_BASE_NAMES`). **`credits` is NOT in this set** — flipped open→commercial by operator override
 (ADR-0249 G5) and priced under AI-Production below.
 
@@ -306,7 +307,7 @@ only by (the retired) ADR-0129 §3, and now also **free/open** anyway (ADR-0094)
 
 ## 3. Open-core split (the license invariant)
 
-**Open (Apache-2.0, 15 packages):** the full list in §1's first table — the free discovery/trust
+**Open (Apache-2.0, 16 packages):** the full list in §1's first table — the free discovery/trust
 substrate every buyer (and every non-buyer) can use unrestricted. Includes `cli`, `migrate`,
 `license-verify` (flipped commercial→Apache-2.0 by ADR-0136) and `rate-limit` (PR #119). **`credits` is
 commercial**, not open — flipped by operator override (ADR-0249 G5) after decoupling the `cli`
@@ -344,7 +345,7 @@ of scope for this pass — flagged, not resolved).
 
 ## 4. Not sold / why
 
-- **The 15-package open Base** — never sold. Per ADR-0094 (extended by ADR-0136), it is the **trust +
+- **The 16-package open Base** — never sold. Per ADR-0094 (extended by ADR-0136), it is the **trust +
   acquisition layer**: table-stakes substrate (auth/RLS/billing/jobs/email/config/MCP-transport/
   UI/registry-contract/observability/rate-limit) plus the installer/migrator/verifier tooling
   (`cli`/`migrate`/`license-verify`) with **no compliance, AI, or evidence value on its own**. Giving it

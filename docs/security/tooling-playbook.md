@@ -8,11 +8,15 @@ already do. This stack is caisson-local (`tools/security/`, this playbook) — *
 convention.
 
 Adoption + rationale: **ADR-0314**. The deep Layer-4 (Claude-Code-driven) pentest runbook is
-`docs/security/pentest-runbook.md`. Pentest findings history (kept): `strix-findings-*.md` in this dir.
+`docs/security/pentest-runbook.md`. Pentest findings history (archived): `docs/archive/strix-findings-*.md`.
 
 ## Operator setup (one-time)
 
 The stack runs $0 out of the box; two operator actions arm it fully.
+
+**Status: both steps DONE 2026-07-10/11** — `install.sh` run, `SEMGREP_APP_TOKEN` set, Semgrep
+flipped to Team tier, `semgrep-pro` CI leg green on main. Kept below for re-provisioning a new box
+or rotating the token.
 
 **1. Install the toolchain** on the box (needs `sudo pacman` for HexStrike's offensive binaries;
 everything else lands in `~/.local/bin`, no sudo):
@@ -161,9 +165,11 @@ origin (with the e2e service-token headers).
 
 ## CI
 
-`.github/workflows/security-scan.yml` — **non-required** (branch protection only watches
-`check`/`standards-gate`/`registry-index`/`oscal-conformance`), so it may go red to signal a finding
-but never blocks a merge. Two jobs:
+`.github/workflows/security-scan.yml` — the `deterministic` job is a REQUIRED check since the
+2026-07-11 ADR-0327 scan-gate flip (required set: check/standards-gate/registry-index/
+oscal-conformance/deterministic — discipline-enforced on this free-plan repo, not a GitHub
+branch-protection gate). `semgrep-pro` stays advisory/non-required (dormant until
+`SEMGREP_APP_TOKEN` is set). Two jobs:
 
 - `deterministic` — installs the scanners inline, runs `scan.sh --layer ci`, uploads the SARIF set as
   a downloadable artifact (no Security-tab upload — this private free-plan repo has no Advanced
@@ -231,7 +237,7 @@ tools/security/
   zap/plan.yaml           # ZAP Automation Framework plan
   semgrep-rules/*.yaml    # custom floor rules (+ paired .ts/.py fixtures)
 apps/admin/scripts/seed-harness-session.ts   # mints the signed admin session cookie
-.github/workflows/security-scan.yml          # non-required CI (deterministic + opt-in Pro)
+.github/workflows/security-scan.yml          # required deterministic job + advisory opt-in Pro leg
 trivy.yaml                                   # loads .trivyignore.yaml (trivy won't auto-discover it)
 .trivyignore.yaml                            # path-scoped trivy secret + misconfig accepts
 osv-scanner.toml                             # osv CVE accepts for the root bun.lock

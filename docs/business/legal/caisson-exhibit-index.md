@@ -222,7 +222,7 @@ Do not send the entire packed corpus as if every passage is current. Assemble a 
 | **F-9** | `docs/build-state.md` | Evidence of what is built, tested, partial, deployed, or pending. | Do not convert internal "built" labels into a legal warranty; verify current branch/deploy. |
 | **F-10** | `docs/state/go-live-legal-and-entity.md` and launch-runbook extracts | Operational dependencies for entity, Paddle, banking, legal pages, credentials, and production flip. | Reconcile against the new first-sale gate register and current approvals. |
 | **F-11** | `scripts/mirror-assets/TRADEMARK.md` | Current unregistered trademark policy and Apache/trademark separation. | Counsel review; registration filing remains deferred; ask whether a bounded pre-launch clearance check is needed. |
-| **F-12** | `PRODUCT.md` and current positioning extracts | Product identity, target buyer, technical-control claims, and customer journey. | Remove stale four-edition/AGPL language; confirm claims and current catalog. |
+| **F-12** | `docs/product.md` and current positioning extracts | Product identity, target buyer, technical-control claims, and customer journey. | Remove stale four-edition/AGPL language; confirm claims and current catalog. |
 
 ### Current product facts to preserve in the extract cover sheet
 
