@@ -13,33 +13,41 @@ name: version-pr
 #   4. release-train.yml readiness re-verifies (CI green at the tag SHA, changesets drained,
 #      tag-on-main) → propagation legs publish exactly the tagged bytes, zero source mutation
 #
-# KNOWN LIMITATION (documented, accepted): the branch is pushed with the ephemeral GITHUB_TOKEN,
-# which does NOT trigger pull_request CI on the PR itself (GitHub anti-loop rule). Green CI on the
-# VERSION COMMIT — the ADR-0325 requirement — comes from the push-to-main run after merge, and the
-# release-train readiness gate blocks propagation until those checks are green at the tag SHA. To
-# force pre-merge CI signal, close + reopen the PR (an operator act re-triggers normally).
+# The initial branch push uses the ephemeral GITHUB_TOKEN, so it does NOT trigger pull_request CI
+# (GitHub anti-loop rule). Later operator pushes do trigger the synchronize lane below: it re-packs
+# every row introduced since the branch fork point and commits any changed bytes back to the release
+# branch. Historical rows from main stay append-only. Green required CI on the VERSION COMMIT still
+# comes from the push-to-main run after merge; close + reopen remains the operator path to force the
+# full pre-merge CI signal.
 #
 # The "never in-branch `changeset version`" rule (ADR-0321) is unchanged — this automation-authored
 # PR is the gated consumption point; it is still never a feature-branch act.
 on:
   workflow_dispatch:
+  # Trusted-base synchronize hook: the workflow definition + executable tooling come from main.
+  # The PR head is checked out separately and treated only as data (never imported/executed).
+  pull_request_target:
+    branches: [main]
+    types: [synchronize]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
-  group: version-pr
-  cancel-in-progress: false
+  group: version-pr-${{ github.event.pull_request.number || 'dispatch' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
 
 jobs:
   version-pr:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     # STAYS GitHub-hosted (ADR-0326): this job holds contents:write + pull-requests:write.
     # Write privilege belongs on a clean hosted runner, not third-party compute.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: release # ADR-0327 rider 2: the release-family boundary (definition-first; free-plan protection rules can't enforce yet)
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
@@ -123,3 +131,82 @@ jobs:
               "2. Publish a GitHub Release whose tag targets EXACTLY the merge commit." \
               "3. The release train verifies readiness and publishes the tagged bytes with zero mutation." \
               )"
+
+  refresh-version-tarballs:
+    # Same-repo automation release branches only. Fork PRs never receive write authority, and the
+    # trusted main copy of this workflow never executes candidate source or lifecycle scripts.
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'release/version-')
+    # STAYS GitHub-hosted: this job commits to a release branch with contents:write.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: checkout trusted base tooling
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: checkout candidate release branch as data only
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('trusted/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - name: install trusted base dependencies without lifecycle scripts
+        working-directory: trusted
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: re-record unmerged version-branch tarball rows
+        run: |
+          set -euo pipefail
+          base_sha="$(git -C candidate merge-base HEAD '${{ github.event.pull_request.base.sha }}')"
+          base_sidecar="$RUNNER_TEMP/base-tarballs.json"
+          base_ledger="$RUNNER_TEMP/base-ledger.jsonl"
+          git -C candidate show "${base_sha}:registry/tarballs.json" > "$base_sidecar"
+          git -C candidate show "${base_sha}:registry/ledger.jsonl" > "$base_ledger"
+          bun trusted/registry/scripts/ci-publish-step.ts \
+            --refresh-candidate-root "$GITHUB_WORKSPACE/candidate" \
+            --refresh-base-sidecar "$base_sidecar" \
+            --refresh-base-ledger "$base_ledger" \
+            --dry-run false
+      - name: commit refreshed release truth when bytes changed
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git -C candidate diff --quiet -- registry/tarballs.json; then
+            echo "[version-pr] tarball rows already reproduce the branch source"
+            exit 0
+          fi
+          git -C candidate config user.name "github-actions[bot]"
+          git -C candidate config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C candidate add -- registry/tarballs.json
+          changed="$(git -C candidate diff --cached --name-only)"
+          if [ "$changed" != "registry/tarballs.json" ]; then
+            echo "::error::trusted refresh produced an unexpected staged path: $changed"
+            exit 1
+          fi
+          git -C candidate commit -m "chore(release): refresh version-branch tarball rows [version-pr-refresh]"
+          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -C candidate \
+            -c http.https://github.com/.extraheader="AUTHORIZATION: basic $basic" \
+            push origin "HEAD:${HEAD_REF}"

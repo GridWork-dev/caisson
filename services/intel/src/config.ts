@@ -106,7 +106,7 @@ const ConfigSchema = strictObject({
 
   llmEnabled: boolFlag(false),
   openrouterApiKey: z.string().trim().optional(),
-  llmModel: z.string().trim().min(1).default("anthropic/claude-3.5-haiku"),
+  llmModel: z.string().trim().min(1).default("anthropic/claude-sonnet-4.5"),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

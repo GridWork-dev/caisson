@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- CAISSON-102: Replace one-paragraph enrichment with a strict, grounded WHAT/WHY/ACTION JSON
+  composition contract and render explicit operator sections. The watcher cassette schema now stores
+  raw deterministic findings only; brief composition and actionability judging run live through a
+  fail-closed OpenRouter judge on GitHub-hosted CI. A red live run never blesses or commits datasets.
 - 88ccb09: New standing operator intelligence daemon: watches compliance-framework updates (NIST OSCAL, EU AI
   Act, HIPAA breach portal, AICPA SOC 2), competitor pages, GitHub traction, product analytics
   (PostHog + Plausible), and production errors, detecting changes cheaply and deterministically

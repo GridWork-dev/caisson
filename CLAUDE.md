@@ -81,7 +81,7 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
 - **Module production-standards + pipeline** — LOCKED: manifest · publish flow · lint gates ·
   commercial **editions** (ADR-0020-0023, **all four editions commercial** — Local-first's AGPL
   flank removed by **ADR-0083**); `tooling/`+`registry/` is the seam. **Open-core amendment (ADR-0094,
-  2026-06-29):** the **Base substrate** (kernel·auth·tenancy-rls·ui·billing·credits·jobs·email·ai-config·
+  2026-06-29):** the **Base substrate** (kernel·auth·tenancy-rls·ui·billing·jobs·email·ai-config·
   mcp-server) is now **Apache-2.0**; editions + field-crypto + audit-worm + registry-service + updates
   stay commercial. Re-licensing is **DONE in code** (work item W1, ADR-0094 + **ADR-0097**):
   the open registry contract split into Apache-2.0 `@caisson/registry-schema` (the commercial

@@ -24,6 +24,7 @@ describe("loadConfig", () => {
     expect(config.migrateOnBoot).toBe(false);
     // The LLM enrichment seam is the deliberate off-by-default path (SPEC "two-tier detection").
     expect(config.llmEnabled).toBe(false);
+    expect(config.llmModel).toBe("anthropic/claude-sonnet-4.5");
     expect(config.competitorUrls).toEqual([]);
     expect(config.githubOrg).toBe("caisson-sh");
   });

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "watcher": "competitor",
   "recordedAt": "2026-07-11T12:00:00.000Z",
   "config": {
@@ -196,50 +196,5 @@
         "current": "dfdefad4cbce3a20f5edf78aab54a7c3dac164878b5bf2e7a4686a91fa6d5d97"
       }
     }
-  ],
-  "judge": {
-    "model": "anthropic/claude-sonnet-4.5",
-    "responses": {
-      "competitor:82842151579bf12b:4c6820b4e7fa1583": {
-        "verdict": "pass",
-        "score": 0.9,
-        "rationale": "Concrete: names the competitor, the price move ($71→$91/mo), and implies a pricing-review action for the operator."
-      },
-      "competitor:f5bdca7d531e2c14:da8314d1b2cd2af3": {
-        "verdict": "pass",
-        "score": 0.9,
-        "rationale": "Concrete: names the competitor, the price move ($72→$92/mo), and implies a pricing-review action for the operator."
-      },
-      "competitor:5555aa3f6fabe45a:5f414f754bf715fe": {
-        "verdict": "pass",
-        "score": 0.9,
-        "rationale": "Concrete: names the competitor, the price move ($73→$93/mo), and implies a pricing-review action for the operator."
-      },
-      "competitor:4b1f6c1af7edf934:12082a53b41b5897": {
-        "verdict": "pass",
-        "score": 0.9,
-        "rationale": "Concrete: names the competitor, the price move ($74→$94/mo), and implies a pricing-review action for the operator."
-      },
-      "competitor:d47bb95b4cddbeb3:14c218bb56beb268": {
-        "verdict": "pass",
-        "score": 0.9,
-        "rationale": "Concrete: names the competitor, the price move ($75→$95/mo), and implies a pricing-review action for the operator."
-      },
-      "competitor:181fc99c2b396540:bf0d8e38fab7a767": {
-        "verdict": "pass",
-        "score": 0.9,
-        "rationale": "Concrete: names the competitor, the price move ($76→$96/mo), and implies a pricing-review action for the operator."
-      },
-      "competitor:d36bf52f91086722:180c0abbef27d14b": {
-        "verdict": "pass",
-        "score": 0.9,
-        "rationale": "Concrete: names the competitor, the price move ($77→$97/mo), and implies a pricing-review action for the operator."
-      },
-      "competitor:56a09b52ad2b4ad1:dfdefad4cbce3a20": {
-        "verdict": "pass",
-        "score": 0.9,
-        "rationale": "Concrete: names the competitor, the price move ($78→$98/mo), and implies a pricing-review action for the operator."
-      }
-    }
-  }
+  ]
 }
