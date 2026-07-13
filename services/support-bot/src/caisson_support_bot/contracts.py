@@ -9,12 +9,12 @@ validated, not just typed. ``ScoredChunk`` mirrors the TypeScript shape that ``s
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class DocKind(str, Enum):
+class DocKind(StrEnum):
     docs = "docs"
     readme = "readme"
     # ADR-0234 F4: mirrors the additive `pricing` member in services/docs `types.ts` DocKindSchema.
@@ -64,7 +64,7 @@ class Brief(BaseModel):
     )
 
 
-class ConfidenceTier(str, Enum):
+class ConfidenceTier(StrEnum):
     """The 3-tier graded-confidence verdict (2026-07-10 picker) for a resolved answer.
 
     HIGH/MEDIUM only ever label a *resolved* ``AnswerResult`` — a LOW grade never reaches one:
@@ -107,7 +107,7 @@ class AnswerResult(BaseModel):
     )
 
 
-class TicketStatus(str, Enum):
+class TicketStatus(StrEnum):
     open = "open"
     resolved = "resolved"
 

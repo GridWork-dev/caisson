@@ -197,7 +197,9 @@ export function initObservability(
   const sdk = new NodeSDK({
     resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName }),
     spanProcessors: [spanProcessor],
-    logRecordProcessors: [new BatchLogRecordProcessor(logExporter)],
+    logRecordProcessors: [
+      new BatchLogRecordProcessor({ exporter: logExporter }),
+    ],
     instrumentations: opts.instrumentations ?? defaultInstrumentations(),
   });
   sdk.start();
