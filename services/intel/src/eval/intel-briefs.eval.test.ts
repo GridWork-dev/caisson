@@ -67,6 +67,7 @@ evalTest(
     } catch (err) {
       throw new Error(
         `intel eval is not baseline-eligible: ${err instanceof Error ? err.message : String(err)}; cases=${JSON.stringify({ replay: replayRun.scoredCases, brief: briefRun.scoredCases })}`,
+        { cause: err },
       );
     }
 

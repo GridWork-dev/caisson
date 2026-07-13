@@ -1164,7 +1164,7 @@ function gatherDocsSurfaceCheck(): CheckResult {
   const stateMdFiles = readdirSync(join(REPO_ROOT, "docs", "state")).filter(
     (f) => f.endsWith(".md"),
   );
-  let agentsMdLinkTarget: string | null = null;
+  let agentsMdLinkTarget: string | null;
   try {
     agentsMdLinkTarget = readlinkSync(join(REPO_ROOT, "AGENTS.md"));
   } catch {

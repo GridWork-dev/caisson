@@ -34,7 +34,7 @@ export async function POST(): Promise<NextResponse> {
   }
 
   // The signed-in user's OWN Discord link (better-auth account list; providerId 'discord').
-  let discordUserId = "";
+  let discordUserId: string;
   try {
     const accounts = (await auth.api.listUserAccounts({
       headers: await headers(),

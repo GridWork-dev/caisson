@@ -73,7 +73,7 @@ export function verifyAccountJwt(
   ];
 
   const signingInput = `${headerSeg}.${payloadSeg}`;
-  let valid = false;
+  let valid: boolean;
   try {
     valid = cryptoVerify(
       null,

@@ -502,7 +502,7 @@ export async function runComplianceLeg(
     pack.sha256 === repeat.sha256 &&
     pack.canonicalManifest === repeat.canonicalManifest;
 
-  let validatedAgainstFormat = false;
+  let validatedAgainstFormat: boolean;
   try {
     parseEvidencePackManifest(JSON.parse(pack.canonicalManifest));
     validatedAgainstFormat = true;
@@ -574,7 +574,7 @@ export async function runComplianceLeg(
     hipaaPack.sha256 === hipaaRepeat.sha256 &&
     hipaaPack.canonicalManifest === hipaaRepeat.canonicalManifest;
 
-  let hipaaValidatedAgainstFormat = false;
+  let hipaaValidatedAgainstFormat: boolean;
   try {
     parseEvidencePackManifest(JSON.parse(hipaaPack.canonicalManifest));
     hipaaValidatedAgainstFormat = true;
