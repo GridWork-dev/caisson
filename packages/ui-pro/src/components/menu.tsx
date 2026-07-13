@@ -142,6 +142,9 @@ export function Menu({
               id={menuId}
               role="menu"
               aria-label={ariaLabel}
+              // Programmatically focusable container (items use roving tabIndex=-1 and are
+              // focused on open); satisfies the menu role's focusability contract.
+              tabIndex={-1}
               className="cs-menu"
               style={style ?? { position: "fixed", top: -9999, left: -9999 }}
               data-visible={style ? "true" : undefined}

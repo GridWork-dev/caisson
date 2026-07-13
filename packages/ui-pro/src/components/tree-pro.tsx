@@ -142,9 +142,11 @@ export function TreePro<T>({
       className="cs-tree"
       role="tree"
       aria-label={ariaLabel}
+      // Programmatically focusable (rows carry the roving tabIndex); keydown is handled on the
+      // focused row and this container only scrolls.
+      tabIndex={-1}
       style={{ maxHeight: `${viewportHeight}px` }}
       onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-      onKeyDown={onKeyDown}
     >
       <div
         style={{ height: `${flat.length * rowHeight}px`, position: "relative" }}
@@ -167,9 +169,11 @@ export function TreePro<T>({
                 role="treeitem"
                 aria-level={node.depth + 1}
                 aria-expanded={node.expandable ? node.expanded : undefined}
+                aria-selected={node.id === focusedId}
                 aria-busy={node.loading || undefined}
                 data-treeid={node.id}
                 tabIndex={isFocusable ? 0 : -1}
+                onKeyDown={onKeyDown}
                 style={{
                   height: `${rowHeight}px`,
                   paddingLeft: `calc(${node.depth} * var(--cs-space-5) + var(--cs-space-2))`,
