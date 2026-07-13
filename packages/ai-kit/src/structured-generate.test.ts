@@ -32,7 +32,7 @@ import {
 import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
 import { z } from "zod";
-import { MockLanguageModelV2 } from "ai/test";
+import { MockLanguageModelV3 } from "ai/test";
 import type { InferOptions } from "./gateway.ts";
 import {
   StructuredGenerateError,
@@ -66,18 +66,26 @@ const SETTINGS: AiSettings = {
 };
 
 /** A mock model that echoes a fixed completion text with a small deterministic usage. */
-function mockModel(text: string): MockLanguageModelV2 {
-  return new MockLanguageModelV2({
+function mockModel(text: string): MockLanguageModelV3 {
+  return new MockLanguageModelV3({
     doGenerate: async () => ({
-      finishReason: "stop",
-      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: {
+        inputTokens: {
+          total: 10,
+          noCache: 10,
+          cacheRead: 0,
+          cacheWrite: 0,
+        },
+        outputTokens: { total: 20, text: 20, reasoning: 0 },
+      },
       content: [{ type: "text", text }],
       warnings: [],
     }),
   });
 }
 
-function baseOpts(model: MockLanguageModelV2): InferOptions {
+function baseOpts(model: MockLanguageModelV3): InferOptions {
   const policy: GuardPolicy = {
     policyName: "default",
     moderator: localModerator([]),

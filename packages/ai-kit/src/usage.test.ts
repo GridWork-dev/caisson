@@ -23,11 +23,11 @@ import {
 import { matchGolden, newTestPg, type TestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import { simulateReadableStream } from "ai";
-import { MockEmbeddingModelV2, MockLanguageModelV2 } from "ai/test";
+import { MockEmbeddingModelV3, MockLanguageModelV3 } from "ai/test";
 import type {
-  LanguageModelV2,
-  LanguageModelV2StreamPart,
-  LanguageModelV2Usage,
+  LanguageModelV3,
+  LanguageModelV3StreamPart,
+  LanguageModelV3Usage,
 } from "@ai-sdk/provider";
 import { embed, type EmbedOptions } from "./embed.ts";
 import {
@@ -188,6 +188,34 @@ const METER: MeterConfig = {
 
 let tp: TestPg | undefined;
 
+interface TestLanguageUsage {
+  readonly inputTokens: number | undefined;
+  readonly outputTokens: number | undefined;
+  readonly totalTokens: number | undefined;
+  readonly cachedInputTokens?: number;
+}
+
+function sdkUsage(usage: TestLanguageUsage): LanguageModelV3Usage {
+  const cachedInputTokens = usage.cachedInputTokens ?? 0;
+  return {
+    inputTokens: {
+      total: usage.inputTokens,
+      noCache:
+        usage.inputTokens === undefined
+          ? undefined
+          : Math.max(0, usage.inputTokens - cachedInputTokens),
+      cacheRead:
+        usage.inputTokens === undefined ? undefined : cachedInputTokens,
+      cacheWrite: 0,
+    },
+    outputTokens: {
+      total: usage.outputTokens,
+      text: usage.outputTokens,
+      reasoning: 0,
+    },
+  };
+}
+
 function testPg(): TestPg {
   if (tp === undefined) throw new Error("usage golden database is not open");
   return tp;
@@ -225,21 +253,21 @@ async function resetSchema(): Promise<void> {
 }
 
 function languageModel(
-  usage: LanguageModelV2Usage,
+  usage: TestLanguageUsage,
   text = "ok",
-): MockLanguageModelV2 {
-  return new MockLanguageModelV2({
+): MockLanguageModelV3 {
+  return new MockLanguageModelV3({
     doGenerate: async () => ({
-      finishReason: "stop",
-      usage,
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: sdkUsage(usage),
       content: [{ type: "text", text }],
       warnings: [],
     }),
   });
 }
 
-function failingLanguageModel(): MockLanguageModelV2 {
-  return new MockLanguageModelV2({
+function failingLanguageModel(): MockLanguageModelV3 {
+  return new MockLanguageModelV3({
     doGenerate: async () => {
       throw new Error("provider down");
     },
@@ -248,27 +276,31 @@ function failingLanguageModel(): MockLanguageModelV2 {
 
 function streamingModel(
   chunks: readonly string[],
-  usage: LanguageModelV2Usage,
-): MockLanguageModelV2 {
-  const parts: LanguageModelV2StreamPart[] = [
+  usage: TestLanguageUsage,
+): MockLanguageModelV3 {
+  const parts: LanguageModelV3StreamPart[] = [
     { type: "stream-start", warnings: [] },
     { type: "text-start", id: "usage-golden" },
-    ...chunks.map((delta): LanguageModelV2StreamPart => ({
+    ...chunks.map((delta): LanguageModelV3StreamPart => ({
       type: "text-delta",
       id: "usage-golden",
       delta,
     })),
     { type: "text-end", id: "usage-golden" },
-    { type: "finish", finishReason: "stop", usage },
+    {
+      type: "finish",
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: sdkUsage(usage),
+    },
   ];
-  return new MockLanguageModelV2({
+  return new MockLanguageModelV3({
     doStream: async () => ({
       stream: simulateReadableStream({ chunks: parts }),
     }),
   });
 }
 
-function inferOptions(model: LanguageModelV2): InferOptions {
+function inferOptions(model: LanguageModelV3): InferOptions {
   return {
     tx: testPg().pg,
     accountId: ACCOUNT_ID,
@@ -283,11 +315,11 @@ function inferOptions(model: LanguageModelV2): InferOptions {
   };
 }
 
-function streamOptions(model: LanguageModelV2): InferStreamOptions {
+function streamOptions(model: LanguageModelV3): InferStreamOptions {
   return inferOptions(model);
 }
 
-function embedOptions(model: MockEmbeddingModelV2<string>): EmbedOptions {
+function embedOptions(model: MockEmbeddingModelV3): EmbedOptions {
   return {
     tx: testPg().pg,
     accountId: ACCOUNT_ID,
@@ -418,11 +450,12 @@ describe("v5 usage-accounting golden", () => {
       "default",
       "embedding input",
       embedOptions(
-        new MockEmbeddingModelV2({
+        new MockEmbeddingModelV3({
           maxEmbeddingsPerCall: Infinity,
           doEmbed: async () => ({
             embeddings: [[0.1, 0.2]],
             usage: { tokens: 10 },
+            warnings: [],
           }),
         }),
       ),

@@ -7,7 +7,7 @@
 // crypto context, keeping the gateway package DB-free.
 import { ValidationError } from "@caisson/kernel";
 import { resolveProvider, type AiSettings } from "@caisson/ai-config";
-import type { LanguageModelV2, ProviderV2 } from "@ai-sdk/provider";
+import type { LanguageModelV3, ProviderV3 } from "@ai-sdk/provider";
 import { buildRegistryResolver, type ModelResolver } from "./gateway.ts";
 import { defaultProviders, providerFor } from "./providers.ts";
 
@@ -24,7 +24,7 @@ export type TenantKeyResolver = (
 export interface ByokResolverOptions {
   readonly settings: AiSettings;
   /** The env-lane provider registry; defaults to `defaultProviders(settings)` (skips tenant lanes). */
-  readonly providers?: Record<string, ProviderV2>;
+  readonly providers?: Record<string, ProviderV3>;
   /** The per-tenant key port — required if any lane is `keySource: "tenant"`. */
   readonly resolveTenantKey?: TenantKeyResolver;
   /** Injectable clock for the per-tenant client cache (defaults to `Date.now`). */
@@ -68,9 +68,9 @@ export function buildByokResolver(opts: ByokResolverOptions): ModelResolver {
   const ttlMs = opts.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS;
   // A plain Map, one entry per (account, provider). Bounded by distinct BYOK tenants × their
   // providers; swap for an LRU/size-cap if a deployment accumulates enough tenants to matter.
-  const cache = new Map<string, { provider: ProviderV2; expiresAt: number }>();
+  const cache = new Map<string, { provider: ProviderV3; expiresAt: number }>();
 
-  return async (lane, accountId): Promise<LanguageModelV2> => {
+  return async (lane, accountId): Promise<LanguageModelV3> => {
     const cfg = resolveProvider(opts.settings, lane);
     if (cfg.keySource !== "tenant") {
       return envResolver(lane);

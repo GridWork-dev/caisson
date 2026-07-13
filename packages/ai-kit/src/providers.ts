@@ -3,7 +3,7 @@
 // hides it behind `infer()`; base packages may never import one directly).
 //
 // This is the LIVE transport: the one path NOT exercised in CI. Every test injects a mock
-// `LanguageModelV2` and never reaches a real adapter, so no provider key, model call, or network
+// `LanguageModelV3` and never reaches a real adapter, so no provider key, model call, or network
 // request happens in the test suite (the package's zero-live-call invariant). A buyer's BYOK key is read from
 // the env var the lane NAMES (`apiKeyEnv`, ADR-0011) — ai-config never reads the key itself; the SDK
 // adapter does, here, at the edge. `openrouter`/`local`/`ollama` are OpenAI-API-compatible, so they
@@ -21,7 +21,7 @@ import { createAzure } from "@ai-sdk/azure";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { ProviderV2 } from "@ai-sdk/provider";
+import type { ProviderV3 } from "@ai-sdk/provider";
 import {
   assertSafePublicUrl,
   fetchWithTimeout,
@@ -75,7 +75,7 @@ export function providerFor(
   cfg: ProviderConfig,
   keyOverride?: string,
   timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
-): ProviderV2 {
+): ProviderV3 {
   const apiKey =
     keyOverride ??
     (cfg.apiKeyEnv !== undefined ? process.env[cfg.apiKeyEnv] : undefined);
@@ -188,14 +188,18 @@ export function providerFor(
       });
     }
     // Azure OpenAI (ADR-0160): `model` addresses a DEPLOYMENT; `baseUrl` is the resource endpoint and
-    // `apiVersion` pins the per-call API version.
-    case "azure-openai":
-      return createAzure({
+    // `apiVersion` pins the per-call API version. AI SDK v6 changed `languageModel()` to the
+    // Responses API, so override that registry entry with `chat()` to preserve Caisson's established
+    // Chat Completions transport while retaining the provider's embedding/image capabilities.
+    case "azure-openai": {
+      const azure = createAzure({
         ...key,
         ...base,
         ...(cfg.apiVersion !== undefined ? { apiVersion: cfg.apiVersion } : {}),
         ...transport,
       });
+      return { ...azure, languageModel: (modelId) => azure.chat(modelId) };
+    }
   }
 }
 
@@ -207,8 +211,8 @@ export function providerFor(
 export function defaultProviders(
   settings: AiSettings,
   timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
-): Record<string, ProviderV2> {
-  const providers: Record<string, ProviderV2> = {};
+): Record<string, ProviderV3> {
+  const providers: Record<string, ProviderV3> = {};
   for (const cfg of Object.values(settings.lanes)) {
     // A per-tenant (BYOK) lane has no boot-time key — it is resolved per-request with the tenant's
     // decrypted key (ADR-0162), so it is skipped here (there is nothing to build without a tenant).

@@ -34,7 +34,7 @@ import type {
   LanguageModelUsage,
   ModelMessage,
 } from "ai";
-import type { LanguageModelV2, ProviderV2 } from "@ai-sdk/provider";
+import type { LanguageModelV3, ProviderV3 } from "@ai-sdk/provider";
 import type { AiSettings } from "@caisson/ai-config";
 import { resolveProvider } from "@caisson/ai-config";
 import {
@@ -65,7 +65,7 @@ import { normalizeLanguageUsage } from "./usage.ts";
 export type ModelResolver = (
   lane: string,
   accountId?: string,
-) => LanguageModelV2 | Promise<LanguageModelV2>;
+) => LanguageModelV3 | Promise<LanguageModelV3>;
 
 /** What to send the model: pre-built messages, or a registry prompt reference to resolve + render. */
 export type InferInput =
@@ -191,10 +191,10 @@ const ZERO_USAGE: Usage = {
  */
 export function buildRegistryResolver(
   settings: AiSettings,
-  providers: Record<string, ProviderV2>,
+  providers: Record<string, ProviderV3>,
 ): ModelResolver {
   const registry = createProviderRegistry(providers);
-  return (lane: string): LanguageModelV2 => {
+  return (lane: string): LanguageModelV3 => {
     const cfg = resolveProvider(settings, lane);
     return registry.languageModel(`${cfg.provider}:${cfg.model}`);
   };

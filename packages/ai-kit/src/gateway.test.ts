@@ -48,12 +48,13 @@ import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
 import { simulateReadableStream } from "ai";
 import type { LanguageModelMiddleware } from "ai";
-import { MockLanguageModelV2 } from "ai/test";
+import { MockLanguageModelV3 } from "ai/test";
 import type {
-  LanguageModelV2,
-  LanguageModelV2FinishReason,
-  LanguageModelV2StreamPart,
-  ProviderV2,
+  LanguageModelV3,
+  LanguageModelV3FinishReason,
+  LanguageModelV3StreamPart,
+  LanguageModelV3Usage,
+  ProviderV3,
 } from "@ai-sdk/provider";
 import {
   buildRegistryResolver,
@@ -97,12 +98,35 @@ const SETTINGS: AiSettings = {
   },
 };
 
+function sdkUsage(
+  inputTokens: number | undefined,
+  outputTokens: number | undefined,
+  cachedInputTokens = 0,
+): LanguageModelV3Usage {
+  return {
+    inputTokens: {
+      total: inputTokens,
+      noCache:
+        inputTokens === undefined
+          ? undefined
+          : Math.max(0, inputTokens - cachedInputTokens),
+      cacheRead: inputTokens === undefined ? undefined : cachedInputTokens,
+      cacheWrite: 0,
+    },
+    outputTokens: {
+      total: outputTokens,
+      text: outputTokens,
+      reasoning: 0,
+    },
+  };
+}
+
 /** A mock model with usage 10 in / 20 out → 50 micro → 1 credit actual. Echoes a fixed reply. */
-function mockModel(text = "ok"): MockLanguageModelV2 {
-  return new MockLanguageModelV2({
+function mockModel(text = "ok"): MockLanguageModelV3 {
+  return new MockLanguageModelV3({
     doGenerate: async () => ({
-      finishReason: "stop",
-      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: sdkUsage(10, 20),
       content: [{ type: "text", text }],
       warnings: [],
     }),
@@ -110,15 +134,11 @@ function mockModel(text = "ok"): MockLanguageModelV2 {
 }
 
 /** A mock model that completes successfully but reports NO usage (both counts undefined). */
-function mockModelNoUsage(text = "ok"): MockLanguageModelV2 {
-  return new MockLanguageModelV2({
+function mockModelNoUsage(text = "ok"): MockLanguageModelV3 {
+  return new MockLanguageModelV3({
     doGenerate: async () => ({
-      finishReason: "stop",
-      usage: {
-        inputTokens: undefined,
-        outputTokens: undefined,
-        totalTokens: undefined,
-      },
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: sdkUsage(undefined, undefined),
       content: [{ type: "text", text }],
       warnings: [],
     }),
@@ -135,32 +155,12 @@ function mockStreamModel(
   chunks: string[],
   usage: { inputTokens: number; outputTokens: number; totalTokens: number },
   chunkDelayInMs: number | null = null,
-  finishReason: LanguageModelV2FinishReason = "stop",
-): MockLanguageModelV2 {
-  const parts: LanguageModelV2StreamPart[] = [
+  finishReason: LanguageModelV3FinishReason["unified"] = "stop",
+): MockLanguageModelV3 {
+  const parts: LanguageModelV3StreamPart[] = [
     { type: "stream-start", warnings: [] },
     { type: "text-start", id: "1" },
-    ...chunks.map((delta): LanguageModelV2StreamPart => ({
-      type: "text-delta",
-      id: "1",
-      delta,
-    })),
-    { type: "text-end", id: "1" },
-    { type: "finish", finishReason, usage },
-  ];
-  return new MockLanguageModelV2({
-    doStream: async () => ({
-      stream: simulateReadableStream({ chunks: parts, chunkDelayInMs }),
-    }),
-  });
-}
-
-/** A stream that finishes normally but reports NO usage — streaming twin of `mockModelNoUsage`. */
-function mockStreamModelNoUsage(chunks: string[]): MockLanguageModelV2 {
-  const parts: LanguageModelV2StreamPart[] = [
-    { type: "stream-start", warnings: [] },
-    { type: "text-start", id: "1" },
-    ...chunks.map((delta): LanguageModelV2StreamPart => ({
+    ...chunks.map((delta): LanguageModelV3StreamPart => ({
       type: "text-delta",
       id: "1",
       delta,
@@ -168,15 +168,35 @@ function mockStreamModelNoUsage(chunks: string[]): MockLanguageModelV2 {
     { type: "text-end", id: "1" },
     {
       type: "finish",
-      finishReason: "stop",
-      usage: {
-        inputTokens: undefined,
-        outputTokens: undefined,
-        totalTokens: undefined,
-      },
+      finishReason: { unified: finishReason, raw: finishReason },
+      usage: sdkUsage(usage.inputTokens, usage.outputTokens),
     },
   ];
-  return new MockLanguageModelV2({
+  return new MockLanguageModelV3({
+    doStream: async () => ({
+      stream: simulateReadableStream({ chunks: parts, chunkDelayInMs }),
+    }),
+  });
+}
+
+/** A stream that finishes normally but reports NO usage — streaming twin of `mockModelNoUsage`. */
+function mockStreamModelNoUsage(chunks: string[]): MockLanguageModelV3 {
+  const parts: LanguageModelV3StreamPart[] = [
+    { type: "stream-start", warnings: [] },
+    { type: "text-start", id: "1" },
+    ...chunks.map((delta): LanguageModelV3StreamPart => ({
+      type: "text-delta",
+      id: "1",
+      delta,
+    })),
+    { type: "text-end", id: "1" },
+    {
+      type: "finish",
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: sdkUsage(undefined, undefined),
+    },
+  ];
+  return new MockLanguageModelV3({
     doStream: async () => ({
       stream: simulateReadableStream({ chunks: parts }),
     }),
@@ -187,18 +207,18 @@ function mockStreamModelNoUsage(chunks: string[]): MockLanguageModelV2 {
 function mockStreamModelError(
   chunks: string[],
   error: unknown,
-): MockLanguageModelV2 {
-  const parts: LanguageModelV2StreamPart[] = [
+): MockLanguageModelV3 {
+  const parts: LanguageModelV3StreamPart[] = [
     { type: "stream-start", warnings: [] },
     { type: "text-start", id: "1" },
-    ...chunks.map((delta): LanguageModelV2StreamPart => ({
+    ...chunks.map((delta): LanguageModelV3StreamPart => ({
       type: "text-delta",
       id: "1",
       delta,
     })),
     { type: "error", error },
   ];
-  return new MockLanguageModelV2({
+  return new MockLanguageModelV3({
     doStream: async () => ({
       stream: simulateReadableStream({ chunks: parts }),
     }),
@@ -220,7 +240,7 @@ const cleanPolicy = (over: Partial<GuardPolicy> = {}): GuardPolicy => ({
 });
 
 function baseOpts(
-  model: LanguageModelV2,
+  model: LanguageModelV3,
   policy: GuardPolicy,
   s: InMemoryEventSink,
   // `Partial<InferStreamOptions>` (a superset of InferOptions — adds only `abortSignal`) so the
@@ -456,10 +476,11 @@ describe("createProviderRegistry resolver", () => {
     await seed(1000);
     const s = sink();
     const model = mockModel("from-registry");
-    // A test-double ProviderV2 whose languageModel returns the mock (zero network).
-    const fakeProvider: ProviderV2 = {
+    // A test-double ProviderV3 whose languageModel returns the mock (zero network).
+    const fakeProvider: ProviderV3 = {
+      specificationVersion: "v3",
       languageModel: () => model,
-      textEmbeddingModel: () => {
+      embeddingModel: () => {
         throw new Error("unsupported");
       },
       imageModel: () => {
@@ -868,6 +889,7 @@ describe("streaming infer — inferStream", () => {
     });
     let wrapCalls = 0;
     const middleware: LanguageModelMiddleware = {
+      specificationVersion: "v3",
       wrapStream: async ({ doStream }) => {
         wrapCalls++;
         return doStream();

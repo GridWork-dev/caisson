@@ -7,26 +7,30 @@
 // It is hand-rolled (not `ai/test`'s `MockLanguageModelV2`) on purpose: the SDK's test doubles pull
 // `vitest` in transitively, which a Next/webpack production build cannot resolve. apps/ai-kit is
 // provider-SDK-exempt, so importing the `@ai-sdk/provider` contract here is allowed (ADR-0011/0022).
-import type { LanguageModelV2 } from "@ai-sdk/provider";
+import type { LanguageModelV3 } from "@ai-sdk/provider";
 
 /** A local model that also records its `doGenerate` invocations, so a caller can assert the
  *  provider was NOT reached on a fail-closed path (empty wallet, tripped breaker, guardrail block). */
-export type LocalModel = LanguageModelV2 & {
+export type LocalModel = LanguageModelV3 & {
   readonly doGenerateCalls: readonly unknown[];
 };
 
 /** Fixed usage so the integer money math is deterministic: 10 input + 20 output tokens. */
 const MOCK_USAGE = {
-  inputTokens: 10,
-  outputTokens: 20,
-  totalTokens: 30,
+  inputTokens: {
+    total: 10,
+    noCache: 10,
+    cacheRead: 0,
+    cacheWrite: 0,
+  },
+  outputTokens: { total: 20, text: 20, reasoning: 0 },
 } as const;
 
 /** Build a local echo model that returns `text` and reports `MOCK_USAGE` on every call. */
 export function mockModel(text: string): LocalModel {
   const doGenerateCalls: unknown[] = [];
   return {
-    specificationVersion: "v2",
+    specificationVersion: "v3",
     provider: "caisson-demo",
     modelId: "local-mock",
     supportedUrls: {},
@@ -35,7 +39,7 @@ export function mockModel(text: string): LocalModel {
       doGenerateCalls.push(options);
       return {
         content: [{ type: "text", text }],
-        finishReason: "stop",
+        finishReason: { unified: "stop", raw: "stop" },
         usage: MOCK_USAGE,
         warnings: [],
       };

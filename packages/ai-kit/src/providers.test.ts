@@ -1,6 +1,6 @@
 // ADR-0160: construction-level coverage for the provider transport. The LIVE call stays the
 // deliberately un-exercised seam (the package's zero-live-call invariant, ADR-0059) — these tests
-// only prove that each config enum builds a real `ProviderV2` adapter (has `.languageModel`), so a
+// only prove that each config enum builds a real `ProviderV3` adapter (has `.languageModel`), so a
 // new backend is wired, without any network/model call or provider key.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { parseAiSettings, type AiSettings } from "@caisson/ai-config";
@@ -27,7 +27,7 @@ afterAll(() => {
   delete process.env[TOGETHER_KEY_ENV];
 });
 
-describe("defaultProviders — every configured backend builds a ProviderV2 (ADR-0160)", () => {
+describe("defaultProviders — every configured backend builds a ProviderV3 (ADR-0160)", () => {
   const cases: Array<{ name: string; lane: AiSettings["lanes"][string] }> = [
     {
       name: "openai",
@@ -110,13 +110,26 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
   ];
 
   for (const { name, lane } of cases) {
-    test(`${name} → a ProviderV2 instance`, () => {
+    test(`${name} → a ProviderV3 instance`, () => {
       const providers = defaultProviders(laneSettings(lane));
       const provider = providers[lane.provider];
       expect(provider).toBeDefined();
       expect(typeof provider?.languageModel).toBe("function");
     });
   }
+
+  test("azure-openai preserves the Chat Completions transport", () => {
+    const lane: AiSettings["lanes"][string] = {
+      provider: "azure-openai",
+      model: "my-deployment",
+      apiKeyEnv: "AZURE_OPENAI_KEY",
+      baseUrl: "https://res.openai.azure.com",
+      apiVersion: "2024-06-01",
+    };
+    const provider = defaultProviders(laneSettings(lane))[lane.provider];
+
+    expect(provider?.languageModel(lane.model).provider).toBe("azure.chat");
+  });
 
   test("one instance per distinct provider across lanes", () => {
     const settings: AiSettings = {

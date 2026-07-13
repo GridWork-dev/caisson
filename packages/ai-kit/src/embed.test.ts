@@ -26,7 +26,7 @@ import {
 } from "@caisson/ai-meter";
 import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
-import { MockEmbeddingModelV2 } from "ai/test";
+import { MockEmbeddingModelV3 } from "ai/test";
 import { embed, embedMany, type EmbedOptions } from "./embed.ts";
 
 let tp: TestPg;
@@ -70,32 +70,31 @@ const SETTINGS: AiSettings = {
 function mockEmbeddingModel(
   vectors: number[][],
   tokens: number,
-): MockEmbeddingModelV2<string> {
-  return new MockEmbeddingModelV2({
+): MockEmbeddingModelV3 {
+  return new MockEmbeddingModelV3({
     maxEmbeddingsPerCall: Infinity,
     doEmbed: async () => ({
       embeddings: vectors,
       usage: { tokens },
+      warnings: [],
     }),
   });
 }
 
 /** A mock model that completes successfully but reports NO usage (the AI SDK substitutes
  *  `{ tokens: NaN }` for this — see `embed.ts`'s `mapEmbeddingUsage`). */
-function mockEmbeddingModelNoUsage(
-  vector: number[],
-): MockEmbeddingModelV2<string> {
-  return new MockEmbeddingModelV2({
+function mockEmbeddingModelNoUsage(vector: number[]): MockEmbeddingModelV3 {
+  return new MockEmbeddingModelV3({
     maxEmbeddingsPerCall: Infinity,
-    doEmbed: async () => ({ embeddings: [vector] }),
+    doEmbed: async () => ({ embeddings: [vector], warnings: [] }),
   });
 }
 
 /** A mock model whose `doEmbed` throws synchronously — a plain `Error` (not an `APICallError`), so
  *  the AI SDK's retry wrapper rethrows on the FIRST attempt (verified against the `ai@5.0.206`
  *  source: only `APICallError` with `isRetryable: true` is retried) — the test stays fast. */
-function mockFailingEmbeddingModel(): MockEmbeddingModelV2<string> {
-  return new MockEmbeddingModelV2({
+function mockFailingEmbeddingModel(): MockEmbeddingModelV3 {
+  return new MockEmbeddingModelV3({
     maxEmbeddingsPerCall: Infinity,
     doEmbed: async () => {
       throw new Error("provider down");
@@ -137,7 +136,7 @@ async function seed(amount: number): Promise<void> {
 }
 
 function baseOpts(
-  model: MockEmbeddingModelV2<string>,
+  model: MockEmbeddingModelV3,
   over: Partial<EmbedOptions> = {},
 ): EmbedOptions {
   return {
