@@ -43,7 +43,8 @@ checklist. The live work tracker is `docs/state/outstanding-work.md` · deploy l
 Research → spec → ADR lock → code. **No product code before the spec/ADR it implements is
 locked.** Current state: the full platform is SHIPPED in-repo and LIVE — base substrate + six bundles +
 generator + registry Worker (registry.caisson.sh) + the Railway fleet (site · admin · license ·
-docs-RAG · support-bot · SigNoz) + the local intel daemon, Paddle SANDBOX commerce, and the
+docs-RAG · support-bot) + Grafana Cloud (sole OTLP sink, replacing self-hosted SigNoz — removed
+2026-07-01, ADR-0177) + the local intel daemon, Paddle SANDBOX commerce, and the
 `caisson-oss` mirror + npm delivery armed (publish stays operator-gated). Live per-package truth:
 `docs/build-state.md` · deploy log `docs/deploy/STATE.md` · work tracker
 `docs/state/outstanding-work.md`. The full build chronology (P0 through the 2026-07 kickoff
@@ -106,7 +107,8 @@ _Closed since: **app framework** → Next.js App Router (ADR-0044); **hosting/si
 one dynamic Next 16 `standalone` app (marketing + docs + buyer dashboard, Fumadocs MDX kept) on
 **Railway**, superseding the ADR-0084 static-export-to-Cloudflare-Pages mode (ADR-0114/0115,
 2026-06-30). **DEPLOYED 2026-07-01** — all services LIVE on Railway (caisson.sh/www/admin/license +
-docs + support-bot + SigNoz), DNS cut over to Railway, and the Cloudflare Pages project torn down._
+docs + support-bot + SigNoz — SigNoz removed same day, replaced by Grafana Cloud, ADR-0177), DNS
+cut over to Railway, and the Cloudflare Pages project torn down._
 
 ## Commits
 
