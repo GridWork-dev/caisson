@@ -3,7 +3,7 @@ phase: ai-sdk-v7-migration
 project: caisson
 issue: CAISSON-106
 created: 2026-07-13
-status: draft
+status: accepted
 lock_gate: operator
 tags: [ai, billing]
 ---
