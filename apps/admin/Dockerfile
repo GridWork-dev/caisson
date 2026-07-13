@@ -7,13 +7,13 @@
 # BUILD CONTEXT = the REPO ROOT, not apps/admin: bun.lock references every workspace member, so a
 # partial copy fails --frozen-lockfile. On Railway set the service Root Directory = repo root (`/`)
 # and Dockerfile Path = apps/admin/Dockerfile (same convention as apps/site/railway.toml).
-FROM oven/bun:1.3.14-slim AS build
+FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS build
 WORKDIR /app
 COPY . .
 RUN bun install --frozen-lockfile
 RUN bunx turbo run build --filter=@caisson/admin --concurrency=50%
 
-FROM oven/bun:1.3.14-slim AS runtime
+FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS runtime
 WORKDIR /app
 # HOSTNAME=0.0.0.0 is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, and
 # Docker auto-sets HOSTNAME to the container id — so without this the server binds only to the
