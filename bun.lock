@@ -225,6 +225,7 @@
         "better-auth": "^1.6.23",
         "culori": "catalog:",
         "drizzle-orm": "catalog:",
+        "framer-motion": "^12.42.2",
         "fumadocs-core": "^16.10.6",
         "fumadocs-mdx": "^15.0.13",
         "fumadocs-ui": "^16.10.6",
