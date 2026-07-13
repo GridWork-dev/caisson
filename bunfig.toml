@@ -9,3 +9,10 @@
 # from inside a package/app subdir (not the repo root) is still unprotected here — accepted,
 # since every wired script scopes explicitly as noted above.
 pathIgnorePatterns = ["**/dist/**"]
+
+[install]
+# Supply-chain wait window (Kickoff T task 1): never install a package version younger than
+# 7 days — the window in which malicious releases are typically caught and yanked. Interaction
+# with Renovate: Renovate PRs opened against a <7-day-old version will fail install until the
+# version ages past the window (or is superseded); that delay is the point, not a bug.
+minimumReleaseAge = 604800
