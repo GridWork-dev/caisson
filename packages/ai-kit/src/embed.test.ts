@@ -82,7 +82,7 @@ function mockEmbeddingModel(
 }
 
 /** A mock model that completes successfully but reports NO usage (the AI SDK substitutes
- *  `{ tokens: NaN }` for this — see `embed.ts`'s `mapEmbeddingUsage`). */
+ *  `{ tokens: NaN }` for this — `normalizeEmbeddingUsage` treats that as unreported). */
 function mockEmbeddingModelNoUsage(vector: number[]): MockEmbeddingModelV4 {
   return new MockEmbeddingModelV4({
     maxEmbeddingsPerCall: Infinity,
@@ -90,9 +90,7 @@ function mockEmbeddingModelNoUsage(vector: number[]): MockEmbeddingModelV4 {
   });
 }
 
-/** A mock model whose `doEmbed` throws synchronously — a plain `Error` (not an `APICallError`), so
- *  the AI SDK's retry wrapper rethrows on the FIRST attempt (verified against the `ai@5.0.206`
- *  source: only `APICallError` with `isRetryable: true` is retried) — the test stays fast. */
+/** A mock model whose `doEmbed` throws a plain, non-retryable `Error` on the first attempt. */
 function mockFailingEmbeddingModel(): MockEmbeddingModelV4 {
   return new MockEmbeddingModelV4({
     maxEmbeddingsPerCall: Infinity,
@@ -252,6 +250,56 @@ describe("provider failure — refund", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.credits).toBe(0); // settled at ZERO_USAGE — never charged for a non-delivering call
   });
+
+  test("embed() refunds to zero when model resolution fails after reserve", async () => {
+    await seed(1000);
+    const failure = new Error("embedding resolver down");
+    const model = mockEmbeddingModel([[0.1]], 1);
+
+    await expect(
+      embed(
+        "default",
+        "x",
+        baseOpts(model, {
+          resolveModel: async () => {
+            throw failure;
+          },
+        }),
+      ),
+    ).rejects.toBe(failure);
+
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: 0 }]);
+  });
+
+  test("embedMany() refunds to zero when model resolution fails after reserve", async () => {
+    await seed(1000);
+    const failure = new Error("batch embedding resolver down");
+    const model = mockEmbeddingModel([[0.1]], 1);
+
+    await expect(
+      embedMany(
+        "default",
+        ["x"],
+        baseOpts(model, {
+          resolveModel: async () => {
+            throw failure;
+          },
+        }),
+      ),
+    ).rejects.toBe(failure);
+
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: 0 }]);
+  });
 });
 
 describe("provider reports no usage — chars/4 fallback (not a full refund)", () => {
@@ -269,6 +317,60 @@ describe("provider reports no usage — chars/4 fallback (not a full refund)", (
     expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(
       1000 - res.reconciled.actualCredits,
     );
+  });
+
+  test("a reported usage whose derived cost overflows the ledger falls back safely", async () => {
+    await seed(1000);
+    const model = mockEmbeddingModel([[0.5, 0.5]], 143_165_577);
+    const meter: MeterConfig = {
+      priceBook: {
+        "openai/text-embedding-3-small": {
+          inputPerMTok: 15_000_000,
+          cachedInputPerMTok: 15_000_000,
+          outputPerMTok: 0,
+        },
+      },
+      conversion: { microUsdPerCredit: asMicroUsdPerCredit(100) },
+    };
+
+    const res = await embed("default", "x", baseOpts(model, { meter }));
+
+    expect(res.usage).toEqual({
+      inputTokens: 1,
+      outputTokens: 0,
+      cachedInputTokens: 0,
+    });
+    expect(res.reconciled.actualCredits).toBe(1);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: 1 }]);
+  });
+
+  test("an unsafe deterministic fallback fails before reserve or provider execution", async () => {
+    await seed(1000);
+    const model = mockEmbeddingModelNoUsage([0.5, 0.5]);
+    const meter: MeterConfig = {
+      priceBook: {
+        "openai/text-embedding-3-small": {
+          inputPerMTok: 2_000_000_000_000_000,
+          cachedInputPerMTok: 0,
+          outputPerMTok: 0,
+        },
+      },
+      conversion: {
+        microUsdPerCredit: asMicroUsdPerCredit(2_000_000_000),
+      },
+    };
+
+    await expect(
+      embed("default", "12345", baseOpts(model, { meter })),
+    ).rejects.toThrow(
+      "usage estimate cannot be represented by the PostgreSQL integer ledger",
+    );
+    expect(model.doEmbedCalls).toHaveLength(0);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
   });
 });
 

@@ -1,5 +1,11 @@
-import { estimateTokens } from "@caisson/ai-meter";
-import type { Usage } from "@caisson/ai-meter";
+import {
+  BUNDLED_PRICE_BOOK,
+  CREDIT_CONVERSION,
+  computeCost,
+  estimateTokens,
+  resolvePriceEntry,
+} from "@caisson/ai-meter";
+import type { MeterConfig, Usage } from "@caisson/ai-meter";
 
 /** SDK-independent projection of the language usage fields Caisson bills. */
 export interface LanguageUsageLike {
@@ -20,9 +26,28 @@ export interface EmbeddingUsageLike {
   readonly tokens?: number | undefined;
 }
 
-function safeTokenCount(value: number | undefined): number {
-  if (value === undefined || !Number.isFinite(value)) return 0;
-  return Math.max(0, Math.trunc(value));
+// `usage_event` stores token totals, cost, and credits in PostgreSQL `integer` columns. Values
+// outside this range are not authoritative provider usage: treating them as reported would either
+// under-bill (invalid → 0) or make reconciliation fail after the reservation has already been taken.
+const MAX_POSTGRES_INTEGER = 2_147_483_647;
+
+function isLedgerInteger(value: number): boolean {
+  return (
+    Number.isSafeInteger(value) && value >= 0 && value <= MAX_POSTGRES_INTEGER
+  );
+}
+
+function reportedTokenCount(value: number): number | null {
+  return isLedgerInteger(value) ? value : null;
+}
+
+function cacheReadTokenCount(
+  value: number | undefined,
+  inputTokens: number,
+): number {
+  if (value === undefined) return 0;
+  const normalized = reportedTokenCount(value);
+  return normalized !== null && normalized <= inputTokens ? normalized : 0;
 }
 
 /**
@@ -31,31 +56,107 @@ function safeTokenCount(value: number | undefined): number {
  * with unreported usage settle at their reservation instead of receiving a silent full refund.
  */
 export function normalizeLanguageUsage(usage: LanguageUsageLike): Usage | null {
-  if (usage.inputTokens === undefined && usage.outputTokens === undefined) {
+  if (usage.inputTokens === undefined || usage.outputTokens === undefined) {
     return null;
   }
 
-  const inputTokens = safeTokenCount(usage.inputTokens);
-  const outputTokens = safeTokenCount(usage.outputTokens);
-  const cacheReadTokens = safeTokenCount(
+  const inputTokens = reportedTokenCount(usage.inputTokens);
+  const outputTokens = reportedTokenCount(usage.outputTokens);
+  if (inputTokens === null || outputTokens === null) return null;
+
+  const cacheReadTokens = cacheReadTokenCount(
     usage.inputTokenDetails?.cacheReadTokens ?? usage.cachedInputTokens,
+    inputTokens,
   );
 
   return {
     inputTokens,
     outputTokens,
-    cachedInputTokens: Math.min(cacheReadTokens, inputTokens),
+    cachedInputTokens: cacheReadTokens,
   };
 }
 
-/** Normalize embedding usage as input-only billing, falling back only when usage is unreported. */
+/** Normalize embedding usage as input-only billing, falling back when usage is missing/malformed. */
 export function normalizeEmbeddingUsage(
   usage: EmbeddingUsageLike,
   values: readonly string[],
 ): Usage {
-  const inputTokens = Number.isFinite(usage.tokens)
-    ? safeTokenCount(usage.tokens)
-    : values.reduce((sum, value) => sum + estimateTokens(value), 0);
+  const reported =
+    usage.tokens === undefined ? null : reportedTokenCount(usage.tokens);
+  const inputTokens =
+    reported ?? values.reduce((sum, value) => sum + estimateTokens(value), 0);
 
   return { inputTokens, outputTokens: 0, cachedInputTokens: 0 };
+}
+
+export interface UsageLedgerCost {
+  readonly costMicroUsd: number;
+  readonly credits: number;
+}
+
+function computeUsageLedgerCost(
+  usage: Usage,
+  provider: string,
+  model: string,
+  meter?: MeterConfig,
+): UsageLedgerCost | null {
+  if (
+    !isLedgerInteger(usage.inputTokens) ||
+    !isLedgerInteger(usage.outputTokens) ||
+    !isLedgerInteger(usage.cachedInputTokens)
+  ) {
+    return null;
+  }
+
+  const entry = resolvePriceEntry(
+    meter?.priceBook ?? BUNDLED_PRICE_BOOK,
+    provider,
+    model,
+  );
+  const cost = computeCost(
+    usage,
+    entry,
+    meter?.conversion ?? CREDIT_CONVERSION,
+  );
+  return isLedgerInteger(cost.costMicroUsd) && isLedgerInteger(cost.credits)
+    ? { costMicroUsd: cost.costMicroUsd, credits: cost.credits }
+    : null;
+}
+
+/** Return the persistable derived money values, or null for malformed/ledger-unsafe usage. */
+export function usageLedgerCost(
+  usage: Usage,
+  provider: string,
+  model: string,
+  meter?: MeterConfig,
+): UsageLedgerCost | null {
+  try {
+    return computeUsageLedgerCost(usage, provider, model, meter);
+  } catch {
+    return null;
+  }
+}
+
+/** Whether every integer derived from a usage report fits the current PostgreSQL usage ledger. */
+export function canPersistUsage(
+  usage: Usage,
+  provider: string,
+  model: string,
+  meter?: MeterConfig,
+): boolean {
+  return usageLedgerCost(usage, provider, model, meter) !== null;
+}
+
+/** Fail before reserve/provider execution when even the reservation estimate cannot be persisted. */
+export function assertUsageFitsLedger(
+  usage: Usage,
+  provider: string,
+  model: string,
+  meter?: MeterConfig,
+): void {
+  if (computeUsageLedgerCost(usage, provider, model, meter) === null) {
+    throw new RangeError(
+      "usage estimate cannot be represented by the PostgreSQL integer ledger",
+    );
+  }
 }

@@ -1,9 +1,10 @@
 # @caisson/ai-kit
 
-The **AI Production Kit** edition (ADR-0059): one metered-inference gateway — `infer(lane, input,
-opts)` — that is the enforced chokepoint for every AI feature. It composes the four base primitives
-behind Vercel AI SDK v7, so a buyer's shipped app gets cost control, reproducible prompts, fail-closed
-content safety, and a quality gate **by construction**, not by discipline.
+The **AI Production Kit** edition (ADR-0059/0213): one metered gateway with four public entry points—
+`infer`, `inferStream`, `embed`, and `embedMany`—that enforce reserve-before-provider-call accounting.
+It composes the four base primitives behind Vercel AI SDK v7, so a buyer's shipped app gets cost
+control, reproducible prompts, fail-closed content safety, and a quality gate **by construction**,
+not by discipline.
 
 - **Layer:** edition (`editions: ["ai-kit"]`) — a composition, never a fork (ADR-0003).
 - **Composes:** `@caisson/prompt-registry` (resolve + render), `@caisson/ai-meter` (reserve /
@@ -23,10 +24,15 @@ over the ai-config lanes (`buildRegistryResolver` + `defaultProviders`); CI inje
 `LanguageModelV4`, so no live model/network call happens in the gate. See `AGENTS.md` for the usage
 contract + invariants.
 
-Registry-authored system messages are projected onto AI SDK v7's trusted `instructions` channel;
-raw caller-supplied system roles remain rejected. Billing uses the all-step usage total, including
-nested cache-read tokens, while preserving the distinction between unreported usage and reported
-zero.
+Every accepted system-role message retains its exact position through AI SDK v7's explicit
+`allowSystemInMessages` compatibility switch, preserving the public raw-message contract. Billing
+uses the all-step usage total. Completed language calls with malformed or ledger-unsafe provider
+usage fall back to a ledger-safe reservation or consumed estimate without refunding below the
+reservation; embeddings instead use a deterministic input-only estimate and refund the phantom
+output reservation. Valid nested cache-read tokens retain their discount, and reported zero remains
+distinct from unreported usage. `inferStream()` starts its provider pump eagerly and exposes both a
+gateway-owned async `textStream` and a `settled` promise, so dropped or never-consumed iterators still
+reconcile exactly once.
 
 ## Metered embeddings (ADR-0213)
 

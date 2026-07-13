@@ -36,7 +36,11 @@ import {
   type InferOptions,
   type InferStreamOptions,
 } from "./gateway.ts";
-import { normalizeEmbeddingUsage, normalizeLanguageUsage } from "./usage.ts";
+import {
+  canPersistUsage,
+  normalizeEmbeddingUsage,
+  normalizeLanguageUsage,
+} from "./usage.ts";
 
 describe("normalizeLanguageUsage", () => {
   test("normalizes legacy flat usage without exposing an SDK type", () => {
@@ -53,31 +57,49 @@ describe("normalizeLanguageUsage", () => {
     });
   });
 
-  test("prefers nested cache-read usage and clamps every field to a safe integer", () => {
+  test("prefers a valid nested cache-read count", () => {
     expect(
       normalizeLanguageUsage({
-        inputTokens: 12.9,
-        outputTokens: 4.8,
+        inputTokens: 12,
+        outputTokens: 4,
         cachedInputTokens: 2,
-        inputTokenDetails: { cacheReadTokens: 99.7 },
+        inputTokenDetails: { cacheReadTokens: 8 },
       }),
     ).toEqual({
       inputTokens: 12,
       outputTokens: 4,
-      cachedInputTokens: 12,
+      cachedInputTokens: 8,
     });
+  });
 
-    expect(
-      normalizeLanguageUsage({
-        inputTokens: -10,
-        outputTokens: Number.POSITIVE_INFINITY,
-        inputTokenDetails: { cacheReadTokens: Number.NaN },
-      }),
-    ).toEqual({
-      inputTokens: 0,
-      outputTokens: 0,
-      cachedInputTokens: 0,
-    });
+  test("treats partial, fractional, malformed, or out-of-range primary counts as unreported", () => {
+    for (const usage of [
+      { inputTokens: undefined, outputTokens: 2 },
+      { inputTokens: 2, outputTokens: undefined },
+      { inputTokens: 1.5, outputTokens: 2 },
+      { inputTokens: -1, outputTokens: 2 },
+      { inputTokens: 1, outputTokens: Number.POSITIVE_INFINITY },
+      { inputTokens: Number.NaN, outputTokens: 2 },
+      { inputTokens: 2_147_483_648, outputTokens: 2 },
+    ]) {
+      expect(normalizeLanguageUsage(usage)).toBeNull();
+    }
+  });
+
+  test("does not discount malformed cache-read usage", () => {
+    for (const cacheReadTokens of [11, 1.5, Number.NaN]) {
+      expect(
+        normalizeLanguageUsage({
+          inputTokens: 10,
+          outputTokens: 2,
+          inputTokenDetails: { cacheReadTokens },
+        }),
+      ).toEqual({
+        inputTokens: 10,
+        outputTokens: 2,
+        cachedInputTokens: 0,
+      });
+    }
   });
 
   test("keeps unreported usage distinct from a reported zero", () => {
@@ -94,7 +116,7 @@ describe("normalizeLanguageUsage", () => {
 
 describe("normalizeEmbeddingUsage", () => {
   test("normalizes a reported token count as input-only usage", () => {
-    expect(normalizeEmbeddingUsage({ tokens: 10.9 }, ["ignored"])).toEqual({
+    expect(normalizeEmbeddingUsage({ tokens: 10 }, ["ignored"])).toEqual({
       inputTokens: 10,
       outputTokens: 0,
       cachedInputTokens: 0,
@@ -109,14 +131,62 @@ describe("normalizeEmbeddingUsage", () => {
       outputTokens: 0,
       cachedInputTokens: 0,
     });
-  });
-
-  test("clamps a negative reported count instead of falling back", () => {
-    expect(normalizeEmbeddingUsage({ tokens: -3 }, ["not billed"])).toEqual({
-      inputTokens: 0,
+    expect(normalizeEmbeddingUsage({ tokens: 10.9 }, ["12345"])).toEqual({
+      inputTokens: 2,
       outputTokens: 0,
       cachedInputTokens: 0,
     });
+  });
+
+  test("falls back when a reported count is negative or outside the ledger range", () => {
+    expect(normalizeEmbeddingUsage({ tokens: -3 }, ["12345"])).toEqual({
+      inputTokens: 2,
+      outputTokens: 0,
+      cachedInputTokens: 0,
+    });
+    expect(
+      normalizeEmbeddingUsage({ tokens: 2_147_483_648 }, ["12345"]),
+    ).toEqual({
+      inputTokens: 2,
+      outputTokens: 0,
+      cachedInputTokens: 0,
+    });
+  });
+});
+
+describe("canPersistUsage", () => {
+  test("rejects derived money values that exceed PostgreSQL integer columns", () => {
+    const meter: MeterConfig = {
+      priceBook: {
+        "openai/model": {
+          inputPerMTok: 1_000_000,
+          cachedInputPerMTok: 500_000,
+          outputPerMTok: 15_000_000,
+        },
+      },
+      conversion: { microUsdPerCredit: asMicroUsdPerCredit(100) },
+    };
+
+    expect(
+      canPersistUsage(
+        {
+          inputTokens: 1,
+          outputTokens: 143_165_577,
+          cachedInputTokens: 0,
+        },
+        "openai",
+        "model",
+        meter,
+      ),
+    ).toBe(false);
+    expect(
+      canPersistUsage(
+        { inputTokens: 10, outputTokens: 20, cachedInputTokens: 2 },
+        "openai",
+        "model",
+        meter,
+      ),
+    ).toBe(true);
   });
 });
 
