@@ -681,3 +681,50 @@ kbd,
   );
   --cs-duration-seal: 500ms;
 }
+
+/* ===== Chrome Persists + Door Morph (ADR-0334 moment 3) =====
+ * Cross-document view transitions on same-origin navigation — Chromium-only progressive
+ * enhancement (other engines ignore the at-rule and navigate plainly; the plain-nav path is
+ * the verified baseline). Content cross-fades ~240ms while the persistent chrome (nav, footer
+ * — named below in their components) holds still; exits run faster than enters (ADR-0078 §6).
+ * The compliance door chip morphs into the /compliance hero eyebrow via the shared
+ * `door-compliance` view-transition-name (assigned page-scoped so the name is unique per page). */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation-duration: var(--cs-duration-base);
+  animation-timing-function: var(--cs-ease-out);
+}
+
+::view-transition-new(root) {
+  animation-duration: var(--cs-duration-slow);
+  animation-timing-function: var(--cs-ease-reveal);
+}
+
+/* Door Morph destination: the /compliance hero eyebrow (wrapper hook set in its page). */
+[data-vt-hero="door-compliance"] .cs-eyebrow {
+  view-transition-name: door-compliance;
+}
+
+/* The persistent chrome: nav (brand mark included) and footer snapshot as their own groups, so
+ * identical chrome holds still while only the content cross-fades between pages. */
+.cs-nav {
+  view-transition-name: site-nav;
+}
+
+.cs-footer {
+  view-transition-name: site-footer;
+}
+
+/* Reduced motion: view transitions render as an instant swap — same commit as the feature
+ * (ADR-0334 §6). */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-image-pair(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

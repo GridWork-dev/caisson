@@ -74,6 +74,40 @@ try {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(rootGraph) }}
         />
+        {/* Speculation Rules (ADR-0334 moment 3): hover-eager prerender of marketing nav
+            targets — Chromium-only, ignored elsewhere. Never the authed/commerce/API surface;
+            analytics are prerender-safe (plausible-init defers to activation, web-vitals v5 is
+            activation-aware natively). Static JSON, no user input. */}
+        <script
+          type="speculationrules"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              prerender: [
+                {
+                  where: {
+                    and: [
+                      { href_matches: "/*" },
+                      {
+                        not: {
+                          href_matches: [
+                            "/dashboard",
+                            "/dashboard/*",
+                            "/cart",
+                            "/api/*",
+                            "/login",
+                            "/reset-password",
+                            "/forgot-password",
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                  eagerness: "moderate",
+                },
+              ],
+            }),
+          }}
+        />
       </head>
       <body>
         <a href="#main-content" className="cs-skip-link">
