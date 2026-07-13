@@ -132,4 +132,14 @@ describe("Ring-3 profile session probe", () => {
       probeAdminSession(() => new Promise<Response>(() => undefined), 5),
     ).resolves.toBe(false);
   });
+
+  test("keeps the deadline active while the response body stalls", async () => {
+    const stalledBody = {
+      ok: true,
+      json: () => new Promise<unknown>(() => undefined),
+    } as Response;
+    await expect(
+      probeAdminSession(() => Promise.resolve(stalledBody), 5),
+    ).resolves.toBe(false);
+  });
 });

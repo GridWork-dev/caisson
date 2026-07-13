@@ -35,22 +35,26 @@ export async function probeAdminSession(
 ): Promise<boolean> {
   const controller = new AbortController();
   let timeout: ReturnType<typeof setTimeout> | undefined;
-  let response: Response;
   try {
-    response = await Promise.race([
-      profileFetch(ADMIN_SESSION_URL, {
-        method: "GET",
-        credentials: "include",
-        headers: { accept: "application/json" },
-        cache: "no-store",
-        redirect: "error",
-        signal: controller.signal,
-      }),
-      new Promise<Response>((_resolve, reject) => {
+    return await Promise.race([
+      (async (): Promise<boolean> => {
+        const response = await profileFetch(ADMIN_SESSION_URL, {
+          method: "GET",
+          credentials: "include",
+          headers: { accept: "application/json" },
+          cache: "no-store",
+          redirect: "error",
+          signal: controller.signal,
+        });
+        if (!response.ok) return false;
+        const body: unknown = await response.json();
+        return adminSessionSchema.safeParse(body).success;
+      })(),
+      new Promise<boolean>((resolve) => {
         timeout = setTimeout(
           () => {
             controller.abort();
-            reject(new Error("admin session probe timed out"));
+            resolve(false);
           },
           Math.max(1, timeoutMs),
         );
@@ -60,13 +64,6 @@ export async function probeAdminSession(
     return false;
   } finally {
     if (timeout !== undefined) clearTimeout(timeout);
-  }
-  if (!response.ok) return false;
-  try {
-    const body: unknown = await response.json();
-    return adminSessionSchema.safeParse(body).success;
-  } catch {
-    return false;
   }
 }
 
