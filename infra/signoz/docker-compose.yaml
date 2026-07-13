@@ -33,7 +33,7 @@ services:
   # ── coordination ────────────────────────────────────────────────────────────────────
   clickhouse-keeper:
     <<: *common
-    image: clickhouse/clickhouse-keeper:25.5.6
+    image: clickhouse/clickhouse-keeper:25.12.11@sha256:a33a660d6a354cfc09eff0936ff123970e03b916723e3ea05dadd174c2d5ca04
     container_name: signoz-clickhouse-keeper
     configs:
       - source: keeper_config
@@ -54,7 +54,7 @@ services:
   # ── telemetry store ─────────────────────────────────────────────────────────────────
   clickhouse:
     <<: *common
-    image: clickhouse/clickhouse-server:25.5.6
+    image: clickhouse/clickhouse-server:25.12.11@sha256:8a790dd3468db22b1d4e7b18a176f378ff5ff6053b9c48dd4ea1fa71a24c5ba6
     container_name: signoz-clickhouse
     depends_on:
       clickhouse-keeper:
@@ -110,7 +110,7 @@ services:
   # ── UI + query service ──────────────────────────────────────────────────────────────
   signoz:
     <<: *common
-    image: signoz/signoz:v0.130.1
+    image: signoz/signoz:v0.132.2@sha256:ced0eaaa9fc04e5b6319737eafe2c8c715b55bc18a3d4f04483be7eaf71a389a
     container_name: signoz
     depends_on:
       clickhouse:

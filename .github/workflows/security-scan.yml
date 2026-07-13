@@ -49,7 +49,7 @@ jobs:
           fetch-depth: 0 # trufflehog git-history scan needs full history
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
-          version: "0.11.18" # pinned (same pin as support-bot.yml; no drift)
+          version: "0.11.28" # pinned (same pin as support-bot.yml; no drift)
       - name: install scanners (pinned versions, sha256-verified release artifacts)
         run: |
           # CAISSON-95: every scanner is version-pinned and digest-verified against
@@ -118,7 +118,7 @@ jobs:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
-          version: "0.11.18" # pinned (same pin as support-bot.yml; no drift)
+          version: "0.11.28" # pinned (same pin as support-bot.yml; no drift)
       # One guarded step: skip cleanly (installing nothing) when the token is absent; otherwise
       # install the PINNED semgrep (CAISSON-95, tools/security/versions.env) and run the Pro
       # platform-policy scan (interfile/cross-function taint). The custom floor rules run in the
