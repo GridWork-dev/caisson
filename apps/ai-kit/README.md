@@ -6,8 +6,8 @@ the four base primitives (prompt-registry · ai-meter · guardrails · ai-config
 chokepoint.
 
 It runs entirely **locally**: an embedded PGlite store (the production fail-closed-RLS shape, no
-Docker, no network) and a test-doubled model. **Zero provider secret, zero network egress** — the
-live transport is the only path a buyer wires last.
+Docker, no network) and a test-doubled AI SDK v7 `LanguageModelV4`. **Zero provider secret, zero
+network egress** — the live transport is the only path a buyer wires last.
 
 ## What it demonstrates
 

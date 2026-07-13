@@ -4,7 +4,7 @@ project: caisson
 issue: CAISSON-106
 spec: outputs/specs/ai-sdk-v7-migration/SPEC.md
 created: 2026-07-13
-status: draft
+status: accepted
 lock_gate: operator
 tags: [ai, billing]
 ---

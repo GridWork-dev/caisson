@@ -85,7 +85,9 @@ function liveOpts(): InferOptions {
       runtime: { tenantId: A, sink: new InMemoryEventSink() },
     },
     meter: METER,
-    maxOutputTokens: 32, // small on purpose — a live proof, not a spend
+    // Deliberately larger than the one-word response so a reported-usage reconciliation must refund
+    // part of the reservation. The provider still produces only the requested one-word output.
+    maxOutputTokens: 512,
   };
 }
 
@@ -147,6 +149,10 @@ describe("live OpenRouter gateway (ADR-0201)", () => {
       expect(res.usage.outputTokens).toBeGreaterThan(0);
       // The meter settled a real debit (ceil rounding: any nonzero usage ≥ 1 credit).
       expect(res.reconciled.actualCredits).toBeGreaterThan(0);
+      expect(res.reconciled.actualCredits).toBeLessThan(
+        res.reserved.reservedCredits,
+      );
+      expect(res.reconciled.refundedCredits).toBeGreaterThan(0);
       expect(res.reconciled.balance).toBeLessThan(1000);
     },
     LIVE_TIMEOUT_MS,
@@ -176,6 +182,10 @@ describe("live OpenRouter gateway (ADR-0201)", () => {
       expect(settled.usage.inputTokens).toBeGreaterThan(0);
       expect(settled.usage.outputTokens).toBeGreaterThan(0);
       expect(settled.reconciled.actualCredits).toBeGreaterThan(0);
+      expect(settled.reconciled.actualCredits).toBeLessThan(
+        res.reserved.reservedCredits,
+      );
+      expect(settled.reconciled.refundedCredits).toBeGreaterThan(0);
     },
     LIVE_TIMEOUT_MS,
   );

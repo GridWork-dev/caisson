@@ -1,0 +1,60 @@
+{
+  "generateReported": {
+    "usage": {
+      "inputTokens": 10,
+      "outputTokens": 20,
+      "cachedInputTokens": 0
+    },
+    "actualCredits": 1,
+    "ledgerRows": 1
+  },
+  "generateCached": {
+    "usage": {
+      "inputTokens": 200,
+      "outputTokens": 0,
+      "cachedInputTokens": 200
+    },
+    "actualCredits": 1,
+    "ledgerRows": 1
+  },
+  "generateZero": {
+    "usage": {
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "cachedInputTokens": 0
+    },
+    "refundedCredits": 2,
+    "ledgerRows": 1
+  },
+  "generateUnreported": {
+    "actualEqualsReserved": true,
+    "refundedCredits": 0
+  },
+  "generateFailed": {
+    "chargedCredits": 0,
+    "leakedReservation": false
+  },
+  "streamFinished": {
+    "usage": {
+      "inputTokens": 10,
+      "outputTokens": 20,
+      "cachedInputTokens": 0
+    },
+    "actualCredits": 1,
+    "ledgerRows": 1
+  },
+  "streamAbandoned": {
+    "usedEstimate": true,
+    "ledgerRows": 1,
+    "leakedReservation": false
+  },
+  "embedding": {
+    "usage": {
+      "inputTokens": 10,
+      "outputTokens": 0,
+      "cachedInputTokens": 0
+    },
+    "outputCredits": 0,
+    "actualCredits": 1
+  }
+}

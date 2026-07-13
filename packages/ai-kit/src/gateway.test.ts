@@ -1,5 +1,5 @@
 // Exit-gate proof for the metered inference gateway (ADR-0059). PGlite + the production
-// `withTenant` shape + a mock `LanguageModelV2` (zero network): a metered `infer()` reserves BEFORE
+// `withTenant` shape + a mock `LanguageModelV4` (zero network): a metered `infer()` reserves BEFORE
 // the provider call, reconciles to actual, fail-closed 402s on a short wallet / open breaker without
 // ever calling the model, blocks a guardrailed input with a 422 (no spend), restores tokenized PII on
 // the output while the model only ever sees redacted text, resolves a prompt by `name@version`, and
@@ -48,12 +48,13 @@ import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
 import { simulateReadableStream } from "ai";
 import type { LanguageModelMiddleware } from "ai";
-import { MockLanguageModelV2 } from "ai/test";
+import { MockLanguageModelV4 } from "ai/test";
 import type {
-  LanguageModelV2,
-  LanguageModelV2FinishReason,
-  LanguageModelV2StreamPart,
-  ProviderV2,
+  LanguageModelV4,
+  LanguageModelV4FinishReason,
+  LanguageModelV4StreamPart,
+  LanguageModelV4Usage,
+  ProviderV4,
 } from "@ai-sdk/provider";
 import {
   buildRegistryResolver,
@@ -80,6 +81,20 @@ const METER: MeterConfig = {
   now: new Date("2026-06-27T12:00:00Z"),
 };
 
+// One output token costs 2,000,000,000 micro-USD (still a PostgreSQL integer); two overflow it.
+// A 2,000,000,000 micro-USD denomination keeps the corresponding credit count small and valid.
+const LEDGER_EDGE_METER: MeterConfig = {
+  priceBook: {
+    "openai/model": {
+      inputPerMTok: 0,
+      cachedInputPerMTok: 0,
+      outputPerMTok: 2_000_000_000_000_000,
+    },
+  },
+  conversion: { microUsdPerCredit: asMicroUsdPerCredit(2_000_000_000) },
+  now: new Date("2026-06-27T12:00:00Z"),
+};
+
 const SETTINGS: AiSettings = {
   defaultLane: "default",
   lanes: {
@@ -97,12 +112,50 @@ const SETTINGS: AiSettings = {
   },
 };
 
+function sdkUsage(
+  inputTokens: number | undefined,
+  outputTokens: number | undefined,
+  cachedInputTokens = 0,
+): LanguageModelV4Usage {
+  return {
+    inputTokens: {
+      total: inputTokens,
+      noCache:
+        inputTokens === undefined
+          ? undefined
+          : Math.max(0, inputTokens - cachedInputTokens),
+      cacheRead: inputTokens === undefined ? undefined : cachedInputTokens,
+      cacheWrite: 0,
+    },
+    outputTokens: {
+      total: outputTokens,
+      text: outputTokens,
+      reasoning: 0,
+    },
+  };
+}
+
 /** A mock model with usage 10 in / 20 out → 50 micro → 1 credit actual. Echoes a fixed reply. */
-function mockModel(text = "ok"): MockLanguageModelV2 {
-  return new MockLanguageModelV2({
+function mockModel(text = "ok"): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
     doGenerate: async () => ({
-      finishReason: "stop",
-      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: sdkUsage(10, 20),
+      content: [{ type: "text", text }],
+      warnings: [],
+    }),
+  });
+}
+
+function mockModelWithUsage(
+  text: string,
+  inputTokens: number,
+  outputTokens: number,
+): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
+    doGenerate: async () => ({
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: sdkUsage(inputTokens, outputTokens),
       content: [{ type: "text", text }],
       warnings: [],
     }),
@@ -110,15 +163,11 @@ function mockModel(text = "ok"): MockLanguageModelV2 {
 }
 
 /** A mock model that completes successfully but reports NO usage (both counts undefined). */
-function mockModelNoUsage(text = "ok"): MockLanguageModelV2 {
-  return new MockLanguageModelV2({
+function mockModelNoUsage(text = "ok"): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
     doGenerate: async () => ({
-      finishReason: "stop",
-      usage: {
-        inputTokens: undefined,
-        outputTokens: undefined,
-        totalTokens: undefined,
-      },
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: sdkUsage(undefined, undefined),
       content: [{ type: "text", text }],
       warnings: [],
     }),
@@ -127,40 +176,20 @@ function mockModelNoUsage(text = "ok"): MockLanguageModelV2 {
 
 /**
  * A mock model that STREAMS `chunks` as separate `text-delta` parts, then a `finish` part carrying
- * `usage` — the low-level `LanguageModelV2StreamPart` shape `doStream` returns (note: `delta`, not
- * `text` — that field only exists on the higher-level `streamText().fullStream` parts). A
+ * `usage` — the low-level `LanguageModelV4StreamPart` shape `doStream` returns (note: `delta`, not
+ * `text` — that field only exists on the higher-level `streamText().stream` parts). A
  * `chunkDelayInMs` lets a test deterministically stop draining before `finish` arrives.
  */
 function mockStreamModel(
   chunks: string[],
   usage: { inputTokens: number; outputTokens: number; totalTokens: number },
   chunkDelayInMs: number | null = null,
-  finishReason: LanguageModelV2FinishReason = "stop",
-): MockLanguageModelV2 {
-  const parts: LanguageModelV2StreamPart[] = [
+  finishReason: LanguageModelV4FinishReason["unified"] = "stop",
+): MockLanguageModelV4 {
+  const parts: LanguageModelV4StreamPart[] = [
     { type: "stream-start", warnings: [] },
     { type: "text-start", id: "1" },
-    ...chunks.map((delta): LanguageModelV2StreamPart => ({
-      type: "text-delta",
-      id: "1",
-      delta,
-    })),
-    { type: "text-end", id: "1" },
-    { type: "finish", finishReason, usage },
-  ];
-  return new MockLanguageModelV2({
-    doStream: async () => ({
-      stream: simulateReadableStream({ chunks: parts, chunkDelayInMs }),
-    }),
-  });
-}
-
-/** A stream that finishes normally but reports NO usage — streaming twin of `mockModelNoUsage`. */
-function mockStreamModelNoUsage(chunks: string[]): MockLanguageModelV2 {
-  const parts: LanguageModelV2StreamPart[] = [
-    { type: "stream-start", warnings: [] },
-    { type: "text-start", id: "1" },
-    ...chunks.map((delta): LanguageModelV2StreamPart => ({
+    ...chunks.map((delta): LanguageModelV4StreamPart => ({
       type: "text-delta",
       id: "1",
       delta,
@@ -168,15 +197,35 @@ function mockStreamModelNoUsage(chunks: string[]): MockLanguageModelV2 {
     { type: "text-end", id: "1" },
     {
       type: "finish",
-      finishReason: "stop",
-      usage: {
-        inputTokens: undefined,
-        outputTokens: undefined,
-        totalTokens: undefined,
-      },
+      finishReason: { unified: finishReason, raw: finishReason },
+      usage: sdkUsage(usage.inputTokens, usage.outputTokens),
     },
   ];
-  return new MockLanguageModelV2({
+  return new MockLanguageModelV4({
+    doStream: async () => ({
+      stream: simulateReadableStream({ chunks: parts, chunkDelayInMs }),
+    }),
+  });
+}
+
+/** A stream that finishes normally but reports NO usage — streaming twin of `mockModelNoUsage`. */
+function mockStreamModelNoUsage(chunks: string[]): MockLanguageModelV4 {
+  const parts: LanguageModelV4StreamPart[] = [
+    { type: "stream-start", warnings: [] },
+    { type: "text-start", id: "1" },
+    ...chunks.map((delta): LanguageModelV4StreamPart => ({
+      type: "text-delta",
+      id: "1",
+      delta,
+    })),
+    { type: "text-end", id: "1" },
+    {
+      type: "finish",
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: sdkUsage(undefined, undefined),
+    },
+  ];
+  return new MockLanguageModelV4({
     doStream: async () => ({
       stream: simulateReadableStream({ chunks: parts }),
     }),
@@ -187,21 +236,29 @@ function mockStreamModelNoUsage(chunks: string[]): MockLanguageModelV2 {
 function mockStreamModelError(
   chunks: string[],
   error: unknown,
-): MockLanguageModelV2 {
-  const parts: LanguageModelV2StreamPart[] = [
+): MockLanguageModelV4 {
+  const parts: LanguageModelV4StreamPart[] = [
     { type: "stream-start", warnings: [] },
     { type: "text-start", id: "1" },
-    ...chunks.map((delta): LanguageModelV2StreamPart => ({
+    ...chunks.map((delta): LanguageModelV4StreamPart => ({
       type: "text-delta",
       id: "1",
       delta,
     })),
     { type: "error", error },
   ];
-  return new MockLanguageModelV2({
+  return new MockLanguageModelV4({
     doStream: async () => ({
       stream: simulateReadableStream({ chunks: parts }),
     }),
+  });
+}
+
+function mockStreamModelReject(error: unknown): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
+    doStream: async () => {
+      throw error;
+    },
   });
 }
 
@@ -220,7 +277,7 @@ const cleanPolicy = (over: Partial<GuardPolicy> = {}): GuardPolicy => ({
 });
 
 function baseOpts(
-  model: LanguageModelV2,
+  model: LanguageModelV4,
   policy: GuardPolicy,
   s: InMemoryEventSink,
   // `Partial<InferStreamOptions>` (a superset of InferOptions — adds only `abortSignal`) so the
@@ -237,6 +294,24 @@ function baseOpts(
     maxOutputTokens: 50,
     ...over,
   };
+}
+
+async function settlesWithin<T>(
+  promise: Promise<T>,
+  timeoutMs = 1_000,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`stream settlement exceeded ${timeoutMs}ms`)),
+      timeoutMs,
+    );
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
 }
 
 async function freshSchema(): Promise<void> {
@@ -343,6 +418,56 @@ describe("happy path — resolve → reserve → call → reconcile", () => {
     expect(res.text).toBe("pong");
     expect(res.promptVersionId).toBeNull();
     expect(model.doGenerateCalls).toHaveLength(1);
+  });
+
+  test("trusted registry system messages retain their ordered v7 prompt role", async () => {
+    await seed(1000);
+    await withTenant(tp.pg, A, (tx) =>
+      registerPrompt(tx, {
+        accountId: A,
+        name: "instructed",
+        messages: [
+          { role: "system", content: "Answer concisely." },
+          { role: "user", content: "Hello" },
+        ],
+        varSpec: {},
+      }),
+    );
+    const model = mockModel("Hello!");
+
+    const result = await infer(
+      "default",
+      { promptRef: "instructed@1" },
+      baseOpts(model, cleanPolicy(), sink()),
+    );
+
+    expect(result.text).toBe("Hello!");
+    expect(
+      model.doGenerateCalls[0]?.prompt.map((message) => message.role),
+    ).toEqual(["system", "user"]);
+  });
+
+  test("raw caller system messages preserve their position in the pre-v7 public prompt contract", async () => {
+    await seed(1000);
+    const model = mockModel("Hello!");
+
+    const result = await infer(
+      "default",
+      {
+        messages: [
+          { role: "user", content: "Hello" },
+          { role: "assistant", content: "How can I help?" },
+          { role: "system", content: "Answer concisely from here." },
+          { role: "user", content: "Summarize that." },
+        ],
+      },
+      baseOpts(model, cleanPolicy(), sink()),
+    );
+
+    expect(result.text).toBe("Hello!");
+    expect(
+      model.doGenerateCalls[0]?.prompt.map((message) => message.role),
+    ).toEqual(["user", "assistant", "system", "user"]);
   });
 });
 
@@ -456,10 +581,11 @@ describe("createProviderRegistry resolver", () => {
     await seed(1000);
     const s = sink();
     const model = mockModel("from-registry");
-    // A test-double ProviderV2 whose languageModel returns the mock (zero network).
-    const fakeProvider: ProviderV2 = {
+    // A test-double ProviderV4 whose languageModel returns the mock (zero network).
+    const fakeProvider: ProviderV4 = {
+      specificationVersion: "v4",
       languageModel: () => model,
-      textEmbeddingModel: () => {
+      embeddingModel: () => {
         throw new Error("unsupported");
       },
       imageModel: () => {
@@ -554,9 +680,403 @@ describe("provider reports no usage — settle at reserved (no silent refund)", 
     );
     expect(grants).toHaveLength(0);
   });
+
+  test("usage that overflows a derived ledger integer is treated as unreported", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockModelWithUsage("done", 1, 143_165_577);
+    const overflowMeter: MeterConfig = {
+      priceBook: {
+        "openai/model": {
+          inputPerMTok: 1_000_000,
+          cachedInputPerMTok: 500_000,
+          outputPerMTok: 15_000_000,
+        },
+      },
+      conversion: { microUsdPerCredit: asMicroUsdPerCredit(100) },
+      ...(METER.now !== undefined ? { now: METER.now } : {}),
+    };
+
+    const res = await infer(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s, { meter: overflowMeter }),
+    );
+
+    expect(res.reconciled.actualCredits).toBe(res.reserved.reservedCredits);
+    expect(res.reconciled.refundedCredits).toBe(0);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: res.reserved.reservedCredits }]);
+  });
+
+  test("a completed fallback larger than the reservation charges the consumed estimate", async () => {
+    await seed(1000);
+    const model = mockModelNoUsage("x".repeat(800));
+
+    const res = await infer(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), sink(), { maxOutputTokens: 1 }),
+    );
+
+    expect(res.usage.outputTokens).toBe(200);
+    expect(res.reconciled.actualCredits).toBeGreaterThan(
+      res.reserved.reservedCredits,
+    );
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(
+      1000 - res.reconciled.actualCredits,
+    );
+  });
+
+  test("an unsafe consumed fallback settles at the bounded reservation estimate", async () => {
+    await seed(1000);
+    const model = mockModelNoUsage("12345"); // chars/4 => 2 output tokens => unsafe cost
+
+    const res = await infer(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), sink(), {
+        maxOutputTokens: 1,
+        meter: LEDGER_EDGE_METER,
+      }),
+    );
+
+    expect(res.usage.outputTokens).toBe(1);
+    expect(res.reconciled.actualCredits).toBe(res.reserved.reservedCredits);
+    const rows = await tp.query<{ cost_micro_usd: number; credits: number }>(
+      `SELECT cost_micro_usd, credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ cost_micro_usd: 2_000_000_000, credits: 1 }]);
+  });
+
+  test("an unsafe reservation estimate fails before reserve or provider execution", async () => {
+    await seed(1000);
+    const model = mockModelNoUsage("never reached");
+
+    await expect(
+      infer(
+        "default",
+        { messages: [{ role: "user", content: "ping" }] },
+        baseOpts(model, cleanPolicy(), sink(), {
+          maxOutputTokens: 2,
+          meter: LEDGER_EDGE_METER,
+        }),
+      ),
+    ).rejects.toThrow(
+      "usage estimate cannot be represented by the PostgreSQL integer ledger",
+    );
+    expect(model.doGenerateCalls).toHaveLength(0);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
+  });
+});
+
+describe("post-reservation model setup failure — refund", () => {
+  test("infer() refunds to zero when model resolution fails after reserve", async () => {
+    await seed(1000);
+    const s = sink();
+    const failure = new Error("resolver down");
+
+    await expect(
+      infer(
+        "default",
+        { messages: [{ role: "user", content: "ping" }] },
+        baseOpts(mockModel(), cleanPolicy(), s, {
+          resolveModel: async () => {
+            throw failure;
+          },
+        }),
+      ),
+    ).rejects.toBe(failure);
+
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: 0 }]);
+  });
+
+  test("inferStream() refunds to zero when model resolution fails after reserve", async () => {
+    await seed(1000);
+    const s = sink();
+    const failure = new Error("stream resolver down");
+
+    await expect(
+      inferStream(
+        "default",
+        { messages: [{ role: "user", content: "ping" }] },
+        baseOpts(mockModel(), cleanPolicy(), s, {
+          resolveModel: async () => {
+            throw failure;
+          },
+        }),
+      ),
+    ).rejects.toBe(failure);
+
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: 0 }]);
+  });
+
+  test("inferStream() refunds a doStream rejection before the first delta", async () => {
+    await seed(1000);
+    const failure = new Error("stream setup down");
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(mockStreamModelReject(failure), cleanPolicy(), sink()),
+    );
+    const drain = async (): Promise<void> => {
+      for await (const _delta of res.textStream) {
+        // drain
+      }
+    };
+
+    await expect(drain()).rejects.toBe(failure);
+    const settled = await res.settled;
+    expect(settled.reconciled.actualCredits).toBe(0);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: 0 }]);
+  });
+
+  test("inferStream() refunds a middleware rejection before the first delta", async () => {
+    await seed(1000);
+    const failure = new Error("stream middleware down");
+    const model = mockStreamModel(["never reached"], {
+      inputTokens: 10,
+      outputTokens: 2,
+      totalTokens: 12,
+    });
+    const middleware: LanguageModelMiddleware = {
+      specificationVersion: "v4",
+      wrapStream: async () => {
+        throw failure;
+      },
+    };
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), sink(), { middleware }),
+    );
+    const drain = async (): Promise<void> => {
+      for await (const _delta of res.textStream) {
+        // drain
+      }
+    };
+
+    await expect(drain()).rejects.toBe(failure);
+    const settled = await res.settled;
+    expect(settled.reconciled.actualCredits).toBe(0);
+    expect(model.doStreamCalls).toHaveLength(0);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: 0 }]);
+  });
 });
 
 describe("streaming infer — inferStream", () => {
+  test("a stream that is never iterated still runs eagerly and reconciles", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockStreamModel(["unobserved"], {
+      inputTokens: 10,
+      outputTokens: 3,
+      totalTokens: 13,
+    });
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+
+    const settled = await settlesWithin(res.settled);
+    expect(settled.abandoned).toBe(false);
+    expect(settled.text).toBe("unobserved");
+    expect(model.doStreamCalls).toHaveLength(1);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: settled.reconciled.actualCredits }]);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(
+      1000 - settled.reconciled.actualCredits,
+    );
+  });
+
+  test("dropping an iterator after one next without return still reconciles", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockStreamModel(
+      ["first", "second"],
+      { inputTokens: 10, outputTokens: 4, totalTokens: 14 },
+      10,
+    );
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+    const iterator = res.textStream[Symbol.asyncIterator]();
+    expect(await iterator.next()).toEqual({ value: "first", done: false });
+
+    const settled = await settlesWithin(res.settled);
+    expect(settled.abandoned).toBe(false);
+    expect(settled.text).toBe("firstsecond");
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: settled.reconciled.actualCredits }]);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(
+      1000 - settled.reconciled.actualCredits,
+    );
+  });
+
+  test("return before the first next cancels and reconciles the reservation", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockStreamModel(
+      ["late"],
+      { inputTokens: 10, outputTokens: 2, totalTokens: 12 },
+      50,
+    );
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+    const iterator = res.textStream[Symbol.asyncIterator]();
+    await iterator.return?.();
+
+    const settled = await settlesWithin(res.settled);
+    expect(settled.abandoned).toBe(true);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: settled.reconciled.actualCredits }]);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(
+      1000 - settled.reconciled.actualCredits,
+    );
+  });
+
+  test("an already-aborted signal settles without waiting for a first next", async () => {
+    await seed(1000);
+    const s = sink();
+    const aborter = new AbortController();
+    aborter.abort(new Error("caller already gone"));
+    const model = mockStreamModel(
+      ["late"],
+      { inputTokens: 10, outputTokens: 2, totalTokens: 12 },
+      50,
+    );
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s, { abortSignal: aborter.signal }),
+    );
+
+    const settled = await settlesWithin(res.settled);
+    expect(settled.abandoned).toBe(true);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toEqual([{ credits: settled.reconciled.actualCredits }]);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(
+      1000 - settled.reconciled.actualCredits,
+    );
+  });
+
+  test("an iterator remains stably done after the stream completes", async () => {
+    await seed(1000);
+    const model = mockStreamModel(["done"], {
+      inputTokens: 10,
+      outputTokens: 2,
+      totalTokens: 12,
+    });
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), sink()),
+    );
+    const iterator = res.textStream[Symbol.asyncIterator]();
+
+    expect(await iterator.next()).toEqual({ done: false, value: "done" });
+    expect(await iterator.next()).toEqual({ done: true, value: undefined });
+    expect(await iterator.next()).toEqual({ done: true, value: undefined });
+    await res.settled;
+  });
+
+  test("creating an iterator does not lock the stream before its first read", async () => {
+    await seed(1000);
+    const model = mockStreamModel(["done"], {
+      inputTokens: 10,
+      outputTokens: 2,
+      totalTokens: 12,
+    });
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), sink()),
+    );
+    const dormant = res.textStream[Symbol.asyncIterator]();
+    expect(dormant).toBeDefined();
+    const active = res.textStream[Symbol.asyncIterator]();
+
+    expect(await active.next()).toEqual({ done: false, value: "done" });
+    expect(await active.next()).toEqual({ done: true, value: undefined });
+    await res.settled;
+  });
+
+  test("raw caller system messages preserve their position through inferStream", async () => {
+    await seed(1000);
+    const model = mockStreamModel(["Hello!"], {
+      inputTokens: 10,
+      outputTokens: 2,
+      totalTokens: 12,
+    });
+
+    const result = await inferStream(
+      "default",
+      {
+        messages: [
+          { role: "user", content: "Hello" },
+          { role: "assistant", content: "How can I help?" },
+          { role: "system", content: "Answer concisely from here." },
+          { role: "user", content: "Summarize that." },
+        ],
+      },
+      baseOpts(model, cleanPolicy(), sink()),
+    );
+
+    let text = "";
+    for await (const delta of result.textStream) text += delta;
+    expect(text).toBe("Hello!");
+    expect(
+      model.doStreamCalls[0]?.prompt.map((message) => message.role),
+    ).toEqual(["user", "assistant", "system", "user"]);
+    await result.settled;
+  });
+
   test("happy path: a fully-drained stream reconciles to the provider's ACTUAL usage", async () => {
     await seed(1000);
     const s = sink();
@@ -773,6 +1293,26 @@ describe("streaming infer — inferStream", () => {
     expect(settled.reconciled.actualCredits).toBe(res.reserved.reservedCredits);
   });
 
+  test("a finished stream fallback larger than the reservation charges the consumed estimate", async () => {
+    await seed(1000);
+    const model = mockStreamModelNoUsage(["x".repeat(800)]);
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), sink(), { maxOutputTokens: 1 }),
+    );
+
+    for await (const _delta of res.textStream) {
+      // drain
+    }
+    const settled = await res.settled;
+
+    expect(settled.usage.outputTokens).toBe(200);
+    expect(settled.reconciled.actualCredits).toBeGreaterThan(
+      res.reserved.reservedCredits,
+    );
+  });
+
   test("an output-guard block on normal finish still reconciles the actual spend before rejecting", async () => {
     await seed(1000);
     const s = sink();
@@ -868,6 +1408,7 @@ describe("streaming infer — inferStream", () => {
     });
     let wrapCalls = 0;
     const middleware: LanguageModelMiddleware = {
+      specificationVersion: "v3",
       wrapStream: async ({ doStream }) => {
         wrapCalls++;
         return doStream();
