@@ -176,6 +176,12 @@ R12 (docs)  <── after R4 + R10             R13 (guard/changeset/ADR) <──
 
 Per the one-operator rule — **never auto-decide a fork.** Each carries a labeled recommendation; the lock is the operator's.
 
+> **LOCKED 2026-07-13 (operator picker) → ADR-0346.** Fork R-α = **deployment-level ed25519ph
+> anchoring key** (R2/R4 take the deployment-key path; the per-tenant-key-access plumbing is
+> deleted from scope; ECDSA-P256 stays the R1-failure fallback). Fork R-γ = **minimal
+> OpenTimestampsAnchorLog shipped as code** (R9 is M, not S). Fork R-β stays evidence-resolved
+> by R1 as planned.
+
 ### Fork R-α — Signer model: tenant-key-via-ed25519ph **vs** deployment-level anchoring key
 
 - **Recommendation:** _deployment-level (or per-deployment) anchoring key via ed25519ph_ — **confidence: medium.**

@@ -57,8 +57,9 @@ subprocessor list verbatim; absence reads as immaturity in exactly the segment c
   operator-gated main-thread act with the existing Better Stack credentials).
 - The status-page CNAME (`status.caisson.sh`) lands in `infra/terraform` alongside the email
   records when chosen (same import/apply runbook posture — apply stays operator-gated).
-- Fork to lock: status page domain (CNAME vs vendor URL) · whether the registry Worker gets a
-  dedicated `/health` route or reuses an existing read.
+- Forks LOCKED (ADR-0348): status page domain = **`status.caisson.sh` CNAME** (terraform,
+  operator-gated apply; re-verify Better Stack free-tier custom-domain support at EXECUTE) ·
+  registry Worker gets a **dedicated unauthenticated `/health` route** (200 + version).
 
 ## Verification (goal-backward, when built)
 

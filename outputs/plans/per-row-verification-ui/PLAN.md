@@ -240,6 +240,18 @@ Parallelizable clusters (if run as a worktree wave, ADR-0328): {T-K1,K2,K3,K4} k
 
 Per the one-operator rule, **no fork below is decided here.** Each carries a recommendation + confidence + evidence and the explicit lock line.
 
+> **LOCKED 2026-07-13 (operator picker) → ADR-0344.** GATE-1 = **Option 2 signed anchors**
+> (the security lane's option — T-W2 becomes UNCONDITIONAL; seal copy = signature-checked variant
+> in T-F1). GATE-1a = **dedicated anchor-signing keypair** (never the license issuer key).
+> GATE-2 = **admin + tenant route BOTH in v1** (scope expansion over the admin-only
+> recommendation): the tenant self-service endpoint ships with the strict CR-07 contract
+> (session-derived accountId only, RLS-scoped, cross-tenant-denial + missing-anchor-fail-closed
+> tests) as a SEPARATE route — never conflated with the operator contract; its dashboard view
+> touches apps/site and therefore EXECUTEs after the Kickoff-S freeze lifts. A tenant-route task
+> group is added at the EXECUTE-time plan refresh. GATE-3 = **kernel/redact** (ui-pro
+> re-exports). GATE-4 = **ProofPanel in audit-worm/ui + ui-pro dep**. The sections below are the
+> pre-lock analysis, kept for the record.
+
 ### GATE-1 (PRIMARY / load-bearing) — Anchor trust-root provenance (H2 + H4, binding #2/#4)
 
 The client "local-verify" seal is cryptographic theater if the client obtains **both** `row.hash` and `anchor.tipHash` from the **same** proof-bundle response — a compromised/MITM'd server forges a self-consistent triple and the local check passes without the WORM store ever being consulted. For redacted rows (anchor-equality is the _only_ leg) this collapses to "the server says so." Three sanctioned mitigations (SECURITY-PREPLAN §H2/H4):

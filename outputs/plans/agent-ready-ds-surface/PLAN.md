@@ -137,6 +137,12 @@ Parallelizable once G0 lands: G3, G5, G2 (post-lock) on distinct files; G4 waits
 
 ### FORK F — Naming/packaging of the buyer-visible `doctor` command (REOPENED → PLAN)
 
+> **LOCKED 2026-07-13 (operator picker) → ADR-0345: Option (a).** Open `@caisson/cli` hosts a
+> second `caisson` bin; `doctor` = thin authed client of the buyer-MCP `check_usage` tool; doctor
+> logic = Apache source in ds-manifest/mcp-server gated by a **dedicated doctor/verify
+> entitlement slug**; v1 transport = **local stdio** buyer MCP. The coupled downstream in the
+> final paragraph of this section applies as written for (a).
+
 `describe --json` is locked to exist (SPEC Scope 2); the open question is where the **buyer-visible verify command** lives and whether it ships gated logic. Analysis of the three recorded options against the ADR-0094 open-core boundary, distribution reality, and CR-08:
 
 **Ground truth (verified):** `packages/cli` is Apache-2.0, bin = only `create-caisson` (P5). `packages/mcp-server` is Apache-2.0 and already gates tools by **runtime entitlement** enforced by the hosted buyer MCP's license-backed `BuyerToken.entitlements` — the coach tools are the working precedent (P3/P4). No hosted HTTP buyer-MCP is deployed; the live transport is stdio (P10). A real commercial pro surface (`@caisson/ui-pro`) exists (P9).

@@ -245,6 +245,12 @@ F1 (apps/site) — BLOCKED on Kickoff-S freeze lift + Group B merge (later stage
 
 The SPEC's six lettered forks (A–F) are already LOCKED in ADR-0333 — restated in §8 as guards, not re-opened. PLAN surfaces these **implementation sub-forks** the locked forks leave to PLAN. Each carries a recommendation + confidence; none is auto-decided.
 
+> **LOCKED 2026-07-13 (operator picker) → ADR-0347.** G1 = **Option B, the `canonicalControlId`
+> join** (overrides the parallel-view recommendation — C3 builds the join; the Legal gate still
+> caps ISO cells at maps-to until cleared). G2 = **crosswalk-level `seedProvenance`**.
+> G3 = **Option B, one reviewed record** on DATA-PROTECTION.DISPOSAL → SOC2-TSC C1.2 (re-bless
+> soc2-tsc golden only; operator is reviewer of record). G4 = **bump "2" → "3" at Group D**.
+
 **Fork G1 — How the ISO regime-crosswalk participates in the rollup.**
 The rollup core joins the three framework PACKS' canonical-control `crosswalk[]` pointers; ISO is a `regimes.ts` RegimeCrosswalk (no canonical-control pointers). VERIFY requires ISO to appear "as a fourth view."
 

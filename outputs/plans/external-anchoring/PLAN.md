@@ -149,6 +149,13 @@ T2,T3,T4,T5 ──> T8 (exports + version + changeset)  ────────
 
 ## 5. Open forks & operator gates
 
+> **LOCKED 2026-07-13 (operator picker) → ADR-0346.** P1 = **reimplement the TSA port locally in
+> audit-worm** (no signing-primitive dep). P2 = **full ASN.1/CMS dependency in v1** (complete
+> TimeStampToken DER parse + TSA certificate-chain validation in `verifyExternal` — overrides the
+> seam-first recommendation; T2/T5 take the L sizing; the new crypto dep gets its own
+> supply-chain review at EXECUTE). P3 = **services/license hosts the checkpoint scheduler**.
+> P4 = **dedicated `anchor_outbox` Postgres table** with tenant RLS + admin_write policy.
+
 Each fork below is a decision the SPEC/ADR left to PLAN. **None is auto-decided.** Recommendation + confidence + evidence, then:
 
 > **OPERATOR LOCK REQUIRED before EXECUTE.**
