@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * gen-shadcn-registry.ts — build the shadcn registry.json for the PUBLIC mirror (Kickoff T
- * task 13 / ADR-0344). The public mirror repo (caisson-sh/caisson-oss) doubles as a shadcn
+ * task 13 / ADR-0343). The public mirror repo (caisson-sh/caisson-oss) doubles as a shadcn
  * GitHub-source registry: `bunx shadcn@latest add caisson-sh/caisson-oss/button` copies the
  * Apache-2.0 kit component (its .tsx + co-located .css) straight into a buyer's app — the
  * discoverability funnel toward the commercial editions. The ADR-0097 license-gated registry
@@ -106,8 +106,18 @@ export function buildShadcnRegistry(repoRoot: string): ShadcnRegistry {
 
   const uiPkg = JSON.parse(
     readFileSync(join(repoRoot, "packages/ui/package.json"), "utf8"),
-  ) as { dependencies?: Record<string, string> };
-  const uiDeps = uiPkg.dependencies ?? {};
+  ) as {
+    dependencies?: Record<string, string>;
+    peerDependencies?: Record<string, string>;
+  };
+  // Merge peers in: packages/ui declares lucide-react as a PEER dependency, and the barrel's
+  // icon component (plus everything that pulls it) imports it — a dependencies-only lookup
+  // dropped it from every generated item (SHIP-audit P1). react/react-dom are excluded at the
+  // import-scan level, so their peer rows here are inert.
+  const uiDeps: Record<string, string> = {
+    ...(uiPkg.peerDependencies ?? {}),
+    ...(uiPkg.dependencies ?? {}),
+  };
 
   if (!existsSync(join(repoRoot, TOKENS_CSS_REL))) {
     throw new Error(
@@ -166,7 +176,20 @@ export function buildShadcnRegistry(repoRoot: string): ShadcnRegistry {
         const bare = spec.startsWith("@")
           ? spec.split("/").slice(0, 2).join("/")
           : spec.split("/")[0]!;
-        if (uiDeps[bare] !== undefined) npmDeps.add(`${bare}@${uiDeps[bare]}`);
+        const version = uiDeps[bare];
+        if (version === undefined) continue;
+        if (
+          version.startsWith("catalog:") ||
+          version.startsWith("workspace:")
+        ) {
+          // A bun-internal specifier is meaningless to a shadcn consumer — emitting it verbatim
+          // ships a broken item, skipping it silently ships a missing dep. Fail loud; map the
+          // package to a real range here when this ever fires.
+          throw new Error(
+            `gen-shadcn-registry: ${mod} imports "${bare}" whose packages/ui specifier is "${version}" — not emittable in a registry; map it to a concrete semver range`,
+          );
+        }
+        npmDeps.add(`${bare}@${version}`);
       }
     }
 

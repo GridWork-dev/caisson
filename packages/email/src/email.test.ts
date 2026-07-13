@@ -71,6 +71,9 @@ describe("capture emailer", () => {
       { "x-resend-monthly-quota": "4821", "x-resend-daily-quota": "37" },
       { "x-resend-monthly-quota": "not-a-number" },
       {},
+      // Empty/whitespace must parse to null, never 0 — Number("") is 0, which would read as
+      // "quota exhausted" and fire a false critical alert downstream.
+      { "x-resend-monthly-quota": "", "x-resend-daily-quota": "   " },
     ];
     let call = 0;
     globalThis.fetch = (async (): Promise<Response> =>
@@ -92,12 +95,14 @@ describe("capture emailer", () => {
       await emailer.send(msg); // does not throw despite the throwing observer
       await emailer.send(msg);
       await emailer.send(msg);
+      await emailer.send(msg);
     } finally {
       globalThis.fetch = realFetch;
     }
 
     expect(quotas).toEqual([
       { monthlyRemaining: 4821, dailyRemaining: 37 },
+      { monthlyRemaining: null, dailyRemaining: null },
       { monthlyRemaining: null, dailyRemaining: null },
       { monthlyRemaining: null, dailyRemaining: null },
     ]);

@@ -119,9 +119,12 @@ export function createResendEmailer(config: ResendConfig): Emailer {
   };
 }
 
-/** `null` for absent/non-numeric header values — a missing header is "unknown", never 0. */
+/** `null` for absent/empty/non-numeric header values — a missing or blank header is "unknown",
+ *  never 0 (Number("") is 0, which would read as "quota exhausted" and fire a false alert). */
 function parseQuotaHeader(raw: string | null): number | null {
   if (raw === null) return null;
-  const n = Number(raw.trim());
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  const n = Number(trimmed);
   return Number.isFinite(n) ? n : null;
 }

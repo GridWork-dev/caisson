@@ -825,7 +825,7 @@ function main(): void {
   );
 
   // registry.json — the shadcn GitHub-source registry over the exported @caisson/ui components
-  // (Kickoff T task 13 / ADR-0344): `bunx shadcn@latest add caisson-sh/caisson-oss/<item>`.
+  // (Kickoff T task 13 / ADR-0343): `bunx shadcn@latest add caisson-sh/caisson-oss/<item>`.
   // Generated per export from the SOURCE tree (the mirror copies packages/ui verbatim, so the
   // source-derived file paths hold in the mirror layout); never committed, so it can't drift.
   writeFileSync(
