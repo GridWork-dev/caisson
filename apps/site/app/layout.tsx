@@ -14,6 +14,7 @@ import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
 import { OwnedItemsProvider } from "@/components/owned-items-provider";
 import { PlausibleInit } from "@/components/plausible-init";
+import { WebVitalsReport } from "@/components/web-vitals-report";
 import { fontSansZeroPatch, fontVariables } from "@/lib/fonts";
 import { rootGraph, serializeJsonLd } from "@/lib/jsonld";
 
@@ -100,6 +101,9 @@ try {
         {/* Plausible — cookieless, no consent banner, env-gated on NEXT_PUBLIC_PLAUSIBLE_DOMAIN
             (ADR-0118, supersedes the ADR-0047 raw <Script> wiring). */}
         <PlausibleInit />
+        {/* Web-vitals field capture (task 7, ADR-0334 §7) — cookieless anonymous beacon to
+            PostHog; the web-vitals lib loads as a lazy chunk after `load`, never in first-load. */}
+        <WebVitalsReport />
       </body>
     </html>
   );
