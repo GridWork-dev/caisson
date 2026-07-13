@@ -15,6 +15,7 @@ import {
   buildBriefQualityRun,
   buildReplayRun,
   discoverCassettes,
+  assertRunEligibleForBaseline,
   replayWatcher,
 } from "./harness.ts";
 import { stableSerialize } from "./rubric.ts";
@@ -83,6 +84,8 @@ describe("intel replay E2E over the handcrafted competitor fixture", () => {
     });
     expect(replayRun.passed).toBe(true);
     expect(briefRun.passed).toBe(true);
+    expect(() => assertRunEligibleForBaseline(replayRun)).not.toThrow();
+    expect(() => assertRunEligibleForBaseline(briefRun)).not.toThrow();
 
     const baseline = join(
       mkdtempSync(join(tmpdir(), "intel-eval-")),
@@ -107,5 +110,21 @@ describe("intel replay E2E over the handcrafted competitor fixture", () => {
     const gate = gateAgainstBaseline(baseline, [replayRun, briefRun]);
     expect(gate.passed).toBe(true);
     expect(gate.blessed).toBe(false);
+  });
+
+  test("baseline eligibility rejects a threshold pass with too little Wilson confidence", async () => {
+    const cassette = readCassetteFile(FIXTURE);
+    const findings = await replayWatcher(cassette);
+    const run = await buildBriefQualityRun([{ cassette, findings }], {
+      compose: composeFixtureBrief,
+      judge: fixtureJudge,
+    });
+    const tooSmall = {
+      ...run,
+      cases: 3,
+      scoredCases: run.scoredCases.slice(0, 3),
+    };
+
+    expect(() => assertRunEligibleForBaseline(tooSmall)).toThrow(/Wilson/);
   });
 });

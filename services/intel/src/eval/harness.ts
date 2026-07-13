@@ -8,7 +8,7 @@
 //   - intel-brief-quality (0.7): live composition + live actionability judge, injected at the edge.
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
-import { defineEval, judgeGrader } from "@caisson/ai-evals";
+import { defineEval, judgeGrader, wilsonLowerBound } from "@caisson/ai-evals";
 import type { EvalCase, EvalRun, Grader, Judge } from "@caisson/ai-evals";
 import { parseFinding } from "../finding.ts";
 import { InMemoryStore } from "../store.ts";
@@ -78,6 +78,31 @@ export interface BriefQualityDependencies {
   readonly compose: (finding: Finding) => Promise<Finding>;
   /** Live actionability judge. `judgeGrader` re-validates every verdict. */
   readonly judge: Judge;
+}
+
+/**
+ * Pre-BLESS quality gate. `gateAgainstBaseline` intentionally makes BLESS the sole writer, but its
+ * write path does not compare a run to itself. Enforce both absolute threshold and Wilson confidence
+ * here so a small/lucky dataset can never become the trusted baseline.
+ */
+export function assertRunEligibleForBaseline(run: EvalRun): void {
+  if (!run.passed) {
+    throw new Error(
+      `intel eval "${run.name}" failed threshold: score ${String(run.score)} < ${String(run.threshold)}`,
+    );
+  }
+  if (run.wilsonFloor === undefined) return;
+  for (const scorer of Object.keys(run.scorers)) {
+    const successes = run.scoredCases.filter(
+      (scored) => scored.passes[scorer] === true,
+    ).length;
+    const lowerBound = wilsonLowerBound(successes, run.cases);
+    if (lowerBound < run.wilsonFloor) {
+      throw new Error(
+        `intel eval "${run.name}" scorer "${scorer}" Wilson lower bound ${String(lowerBound)} (successes=${String(successes)}/${String(run.cases)}) is below ${String(run.wilsonFloor)}`,
+      );
+    }
+  }
 }
 
 /**

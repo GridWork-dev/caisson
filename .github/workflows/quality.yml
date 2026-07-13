@@ -40,7 +40,6 @@ jobs:
       pull-requests: read
     outputs:
       eval: ${{ steps.filter.outputs.eval }}
-      intel_eval: ${{ steps.filter.outputs.intel_eval }}
       ui: ${{ steps.filter.outputs.ui }}
       local-store: ${{ steps.filter.outputs.local-store }}
       site: ${{ steps.filter.outputs.site }}
@@ -53,8 +52,6 @@ jobs:
             eval:
               - 'packages/**'
               - 'apps/**'
-              - 'services/intel/**'
-            intel_eval:
               - 'services/intel/**'
             ui:
               - 'packages/ui/**'
@@ -97,12 +94,12 @@ jobs:
         run: bunx turbo run eval --no-daemon --filter='!@caisson/service-intel'
 
   # CAISSON-102: raw watcher cassettes still replay deterministically, but brief composition and the
-  # actionability judge are live OpenRouter calls. Credential-bearing work stays GitHub-hosted, the
-  # key is scoped to the eval step, and—once a green-only cassette set is armed—a missing/invalid
-  # model response fails closed (never replays a verdict).
+  # actionability judge are live OpenRouter calls. Credential-bearing work stays GitHub-hosted and
+  # MAIN-PUSH-ONLY: PR-controlled code never receives the provider key. Once a green-only cassette
+  # set is armed, a missing/invalid model response fails closed (never replays a verdict).
   intel-eval:
     needs: changes
-    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.intel_eval == 'true') }}
+    if: ${{ !cancelled() && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

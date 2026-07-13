@@ -158,7 +158,7 @@ secret value plus generic Bearer/key-prefixed/email patterns are stripped, and a
 cassette. The session-4 operator contract to arm the gate:
 
 1. `bun run src/eval/record.cli.ts` — record cassettes live.
-2. `bun run eval` — require deterministic replay and the live judged run to pass.
+2. `bun run eval:validate` — require deterministic replay, live judged score, and Wilson floor to pass without weakening the missing-baseline gate.
 3. Only after step 2 is green, `BLESS=1 bun run eval` — mint the baseline; review the diff.
 4. Commit BOTH the cassettes and the baseline in one change. A red run commits neither.
 5. **Assert the lane EXECUTES non-skipped** — a skipIf path mismatch is indistinguishable from a green

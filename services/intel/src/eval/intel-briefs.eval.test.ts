@@ -5,7 +5,7 @@
 // ── The session-4 operator contract (how the lane is armed) ──────────────────────────────────────
 //   1. Record live, once, with real watcher creds:      bun run src/eval/record.cli.ts
 //      → writes services/intel/__cassettes__/<watcher>.json (sanitized; scrub-gated on write).
-//   2. Run the live judged lane and require green:       bun run eval
+//   2. Run the live judged lane and require green:       bun run eval:validate
 //   3. Mint only after that green run:                   BLESS=1 bun run eval
 //      → writes services/intel/__evals__/baseline.json.  Review the diff.
 //   4. Commit BOTH the cassettes and the baseline in the same change.
@@ -20,6 +20,7 @@ import { composeFindingBrief } from "../llm.ts";
 import { readCassetteFile } from "./cassette.ts";
 import {
   BASELINE_PATH,
+  assertRunEligibleForBaseline,
   buildBriefQualityRun,
   buildReplayRun,
   discoverCassettes,
@@ -58,17 +59,32 @@ evalTest(
       judge: createOpenRouterJudge(live.apiKey, live.judgeModel),
     });
 
-    // The runs must clear their own thresholds before the baseline even matters. Include compact
-    // per-case evidence in a red error so the operator can report the gap without a debug rerun.
-    if (!replayRun.passed) {
+    // Threshold + Wilson confidence must clear BEFORE either validation-only or BLESS can pass.
+    // Include per-case evidence on a red model score so remediation never needs a debug rerun.
+    try {
+      assertRunEligibleForBaseline(replayRun);
+      assertRunEligibleForBaseline(briefRun);
+    } catch (err) {
       throw new Error(
-        `intel deterministic replay failed: ${JSON.stringify({ score: replayRun.score, cases: replayRun.scoredCases })}`,
+        `intel eval is not baseline-eligible: ${err instanceof Error ? err.message : String(err)}; cases=${JSON.stringify({ replay: replayRun.scoredCases, brief: briefRun.scoredCases })}`,
       );
     }
-    if (!briefRun.passed) {
-      throw new Error(
-        `intel live brief quality failed: ${JSON.stringify({ score: briefRun.score, threshold: briefRun.threshold, cases: briefRun.scoredCases })}`,
-      );
+
+    // An explicit local/operator preflight proves the new dataset green before BLESS without
+    // weakening the generic missing-baseline failure. Normal CI never sets this flag.
+    if (process.env.INTEL_EVAL_VALIDATE_ONLY === "1") {
+      const bless = process.env.BLESS;
+      if (
+        bless !== undefined &&
+        bless !== "" &&
+        bless !== "0" &&
+        bless.toLowerCase() !== "false"
+      ) {
+        throw new Error(
+          "INTEL_EVAL_VALIDATE_ONLY and BLESS are mutually exclusive",
+        );
+      }
+      return;
     }
 
     // The regression gate (BLESS unset here): no regression vs the committed baseline, each eval over

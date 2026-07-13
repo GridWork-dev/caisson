@@ -18,6 +18,7 @@
     "test": "bun test ./src --path-ignore-patterns='**/*.eval.test.ts'",
     "test:live": "bun test ./live",
     "eval": "bun test --timeout 600000 src/eval/intel-briefs.eval.test.ts",
+    "eval:validate": "INTEL_EVAL_VALIDATE_ONLY=1 bun run eval",
     "start": "bun run src/server.ts"
   },
   "dependencies": {
