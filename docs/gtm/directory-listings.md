@@ -1,10 +1,10 @@
 ---
-updated: 2026-07-10
+updated: 2026-07-13
 status: live
 grounds:
   - knowledge/decisions/ADR-0080-copy-messaging-expansion.md
   - knowledge/decisions/ADR-0082-go-live-site-posture.md
-  - knowledge/decisions/ADR-0303-cf-access-commerce-scope.md
+  - knowledge/decisions/ADR-0303-cf-access-scoped-commerce-gate.md
   - knowledge/decisions/ADR-0318-oss-launch-program-locks.md
   - outputs/research/prelaunch-fanout-2026-07/SYNTHESIS.md
   - outputs/research/oss-launch-gtm-2026-07-10.md

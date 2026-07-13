@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-13
 status: live
 grounds:
   - knowledge/decisions/ADR-0079-seo-strategy.md
@@ -93,10 +93,10 @@ At the business level, three things must land before or at that flip:
    list) — verified 2026-07-05.
 3. **The catalog shape is now locked.** The catalog-doctrine round closed 2026-07-06 (ADR-0257
    vocabulary · ADR-0258 numbers): editions dissolved into six individually-priced bundles over a
-   fully à-la-carte package catalog, live in Paddle SANDBOX (PR #130). The editions/module pricing
-   structure referenced throughout this launch sequence (`launch-runbook.md` §2.2's per-edition
-   table) still needs a pass to the bundle-era numbers before the production flip — see
-   `pricing-packaging.md` for the current six-bundle matrix.
+   fully à-la-carte package catalog, live in Paddle SANDBOX (PR #130). `launch-runbook.md` §2.2
+   already targets the six-bundle catalog directly (the six bundles + 22 module SKUs, explicit
+   "Do NOT create edition products" instruction) — no remaining per-edition pass is owed there.
+   See `pricing-packaging.md` for the current six-bundle matrix.
 
 Launch itself is DEPLOY-class and operator-executed, never part of the autonomous build loop
 (`docs/ops/launch-runbook.md` header) — this page tracks the channel/business readiness inputs

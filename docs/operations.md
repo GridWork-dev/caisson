@@ -5,7 +5,7 @@ and deploy Caisson. This file OWNS the synthesized ops map; the canonical source
 `specs/` + `knowledge/decisions/`. Deploy specifics route to
 [`infra/terraform/README.md`](../infra/terraform/README.md) as canonical.
 
-Verified against the filesystem on 2026-07-09. Anything not directly checked is marked `(unverified)`.
+Verified against the filesystem on 2026-07-13. Anything not directly checked is marked `(unverified)`.
 
 ---
 
@@ -72,8 +72,9 @@ Releases are **changesets-driven** (ADR-0001 / ADR-0069). No hand-edited version
 - A source change to a public package requires a changeset; CI now enforces it -- `standards-gate`
   in `ci.yml` runs `bunx changeset status --since=origin/main` and fails if one's missing
   (packages are PUBLIC and versioned past `0.0.0`, not pre-publish).
-- 140 changesets are pending (unconsumed since the 2026-07-06 version cut), awaiting a deliberate
-  `changeset version` release act -- see `docs/state/outstanding-work.md`.
+- The 2026-07-06 version cut's 153 pending changesets were consumed by the 2026-07-12 version PR
+  (#222: ledger append + index/tarball rows). A fresh changeset accrues per subsequent public-package
+  change and is consumed at the next deliberate release act -- see `docs/state/outstanding-work.md`.
 
 Author a changeset locally with `bunx changeset` `(unverified -- no wrapper script; standard changesets CLI)`.
 
@@ -185,7 +186,8 @@ second operator or a CI-driven apply. Detail:
 
 **Eleven workflows** under [`.github/workflows/`](../.github/workflows/): `ci.yml`, `quality.yml`,
 `security-scan.yml` (Semgrep/Socket security gates, ADR-0314), `publish.yml`, `version-pr.yml`,
-`release-train.yml` (the ADR-0318/0325 release train, dormant until armed — CAISSON-94),
+`release-train.yml` (the ADR-0318/0325 release train, armed 2026-07-12 — CAISSON-94; first ride
+green, see `docs/deploy/STATE.md`),
 `deploy-railway.yml`, `lighthouse.yml`, `mirror-sync.yml`, `aeo-probe.yml`, `support-bot.yml`.
 All Bun + Turbo (except the Python-only `support-bot.yml`), `--frozen-lockfile`, bun pinned to
 `1.3.14` (the `packageManager` line — no `latest` floats).
@@ -256,7 +258,8 @@ exercises eval, token-drift, and native-ext.
 ### `version-pr.yml` + `publish.yml` — the ADR-0325 commit-addressable release pair
 
 Both run via `release-train.yml`'s propagation legs (on a published GitHub Release) or manual
-`workflow_dispatch`; the train stays dormant until `RELEASE_TRAIN_ARMED` is set (CAISSON-94).
+`workflow_dispatch`; the release train, armed 2026-07-12 (CAISSON-94), completed its first ride
+the same day -- see `docs/deploy/STATE.md` for ride history.
 
 **`version-pr.yml`** (operator-dispatched) is the ONLY place changesets are consumed: it runs
 `changeset version`, refreshes `bun.lock`, appends the registry ledger, rebuilds `index.json`,

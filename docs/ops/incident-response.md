@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-12
+updated: 2026-07-13
 status: live
 grounds:
   - docs/ops/db-restore.md
@@ -79,11 +79,11 @@ dashboard rollback equivalent to Railway's).
 
 ### 2. Database restore (data-level incident — a bad migration, an accidental DROP/DELETE)
 
-A code rollback does not undo a bad write. See **`docs/ops/db-restore.md`** — Railway Postgres
-PITR, restore-to-new-service flow, the pre-req checklist, and a test-restore procedure. Do not
-attempt an ad-hoc `pg_dump`/`pg_restore` recovery without first checking whether PITR is enabled
-on the affected database; PITR gives an exact-timestamp restore with the source database
-untouched the whole time, which is strictly safer than any manual approach.
+A code rollback does not undo a bad write. See **`docs/ops/db-restore.md`** — the operative,
+rehearsed restore path is the logical `pg_dump`/`pg_restore` procedure (`docs/operations.md` §9).
+Railway native PITR was evaluated and DECLINED at the 2026-07-11 backup picker (daily snapshots +
+rehearsed logical restore instead); PITR's mechanics are kept in `db-restore.md` as reference only,
+not the current procedure.
 
 ### 3. Read-only containment (data-integrity incident, buys time before a restore)
 

@@ -1,3 +1,8 @@
+---
+updated: 2026-07-13
+status: archived
+---
+
 # Security round-2 findings — 2026-07-10 (Kickoff K)
 
 Round-2 targets **round-1's own coverage gaps** (`strix-findings-2026-07-01.md` §Coverage gaps):

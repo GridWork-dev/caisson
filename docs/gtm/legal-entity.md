@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-13
 status: live
 grounds:
   - docs/state/go-live-legal-and-entity.md
@@ -130,11 +130,11 @@ answered|escalated}` — no IP, no user id, no answer text, no Turnstile token; 
 
 ## 5. Open legal items
 
-| Item                                                                                 | Owner / trigger                                                                                                                                                                   |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Credit rollover/12-month-expiry/FIFO clause (ADR-0245)                               | Operator/build — same flip gate; dashboard credit-balance copy done, EULA text still doesn't state it                                                                             |
-| Real counsel pass on the EULA                                                        | Operator — page itself is marked pending review before first sale                                                                                                                 |
-| DPA (Data Processing Agreement) template                                             | Operator — not legally forced for early B2C, but Caisson's buyer profile (audit-focused technical founder) makes it a near-certain early ask; have one ready at launch, not built |
-| GA LLC formation                                                                     | **CLOSED** — formed 2026-07-06 (operator superseded the defer-to-first-sale lock; see §1)                                                                                         |
-| Rotate leaked Discord/OpenRouter creds                                               | **CLOSED** — credential sweep executed 2026-07-08 (per-service OpenRouter key split, `DISCORD_TOKEN` rotated); `MIRROR_PUSH_TOKEN` rotation still owed, unrelated to this leak    |
-| MSA/enterprise contract, SOC 2 report (~$10–30k, 3–6 mo), Delaware C-corp conversion | Deferred by design, not gaps — MSA waits for a buyer wanting custom terms; SOC 2 is a post-v1 enterprise-procurement item; C-corp conversion only applies if raising VC           |
+| Item                                                                                 | Owner / trigger                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Credit rollover/12-month-expiry/FIFO clause (ADR-0245)                               | Operator/build — same flip gate; dashboard credit-balance copy done, EULA text still doesn't state it                                                                                             |
+| Real counsel pass on the EULA                                                        | Operator — page itself is marked pending review before first sale                                                                                                                                 |
+| DPA (Data Processing Agreement) template                                             | Operator — not legally forced for early B2C, but Caisson's buyer profile (audit-focused technical founder) makes it a near-certain early ask; have one ready at launch, not built                 |
+| GA LLC formation                                                                     | **CLOSED** — formed 2026-07-06 (operator superseded the defer-to-first-sale lock; see §1)                                                                                                         |
+| Rotate leaked Discord/OpenRouter creds                                               | **CLOSED** — credential sweep executed 2026-07-08 (per-service OpenRouter key split, `DISCORD_TOKEN` rotated); `MIRROR_PUSH_TOKEN` rotated + verified working 2026-07-10 (unrelated to this leak) |
+| MSA/enterprise contract, SOC 2 report (~$10–30k, 3–6 mo), Delaware C-corp conversion | Deferred by design, not gaps — MSA waits for a buyer wanting custom terms; SOC 2 is a post-v1 enterprise-procurement item; C-corp conversion only applies if raising VC                           |

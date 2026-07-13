@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-13
 status: live
 ---
 
@@ -46,17 +46,19 @@ PERMANENT gate — see the correction in §0.
   `packages/license-verify/src/verify.ts` carries the active baked key; the license service + registry
   Worker were redeployed on it. §5 below only re-verifies it works.
 
-### Critical correction to ADR-0107's flip mechanic
+### Critical correction to ADR-0107's flip mechanic (superseded 2026-07-07)
 
 ADR-0107 §3 says "delete `infra/terraform/access.tf` … or flip the policy `decision` from `allow` to
-`bypass`." **Deleting the whole file is now wrong.** `access.tf` was extended by ADR-0138/ADR-0140
-(2026-06-30) to also hold `admin_gate` — the **permanent**, unrelated Cloudflare Access application
-gating `admin.caisson.sh` (the operator control-plane). The file's own header comment says this in
-plain language: "Unlike the pre-launch site gate (removed at go-live), this app is permanent … so the
-go-live step that opens/removes `site_gate` cannot also open `admin.caisson.sh`"
-(`infra/terraform/access.tf` lines 55–61). **§3 below flips only the `site_gate` resource's
-`decision` and `include` fields in place — it never touches `admin_gate` and never deletes the
-file.**
+`bypass`." **Deleting the whole file is still wrong, but for a different reason than this doc
+originally said.** `access.tf` no longer holds an `admin_gate` resource at all — it was destroyed by
+`terraform apply` on 2026-07-07 (`docs/deploy/STATE.md`'s "ninth-sitting" entry: "0 to add, 0 to
+change, 2 to destroy"). `admin.caisson.sh` is gated today solely by in-app GitHub OAuth + the
+`ADMIN_GITHUB_ALLOWED_USER_IDS` numeric-id allowlist (ADR-0283) — the file's own header comment
+confirms: "admin.caisson.sh's own CF-Access application/policy (formerly here, ADR-0138/0140) was
+REMOVED by ADR-0283 — the admin control-plane gates itself now … so there is no separate admin
+Access resource in this file to avoid touching." **§3 below flips only the `site_gate` resource's
+`decision` and `include` fields in place — it never touches the admin OAuth/allowlist gate, which is
+application-level, not Terraform.**
 
 ### What this runbook does NOT cover (out of scope / already done)
 
@@ -128,8 +130,12 @@ dispatch MAY NOT proceed until** (1) the keypair rotation is live (license servi
 redeployed on the new key) — **DONE 2026-07-05**, (2) the golden/demo dev-key replacements are
 merged (P0 agent-side PR) — **DONE 2026-07-05 (PR #117)**, (3) the entitlement-token scan gate is
 green on a fresh mirror export, and (4) all three rotations above are confirmed with probes green +
-old values revoked — **steps 2–4 (OpenRouter / Discord / mirror PAT) still OPERATOR TO DO**. Record
-rotation dates here when done. (Related, same flip gate but tracked in the pre-launch sweep SPEC: the granular
+old values revoked — **all four DONE**: step 2 (OpenRouter) DONE 2026-07-08 (credential-sweep
+propagation — all keys revoked and re-minted as six per-service keys, each probed `GET /api/v1/key`
+-> 200, vault-parity-check clean, per `docs/deploy/STATE.md`); step 3 (Discord) verified
+rotated-and-consistent 2026-07-10 (Railway `DISCORD_TOKEN` sha12 matches local env, `users/@me` ->
+200, per STATE.md's support-bot listener-armed entry); step 4 (mirror PAT) DONE 2026-07-10 (line 84
+above). (Related, same flip gate but tracked in the pre-launch sweep SPEC: the granular
 `@caisson-sh`-scoped `NPM_TOKEN`.)
 
 ---
@@ -457,12 +463,16 @@ from §1 are resolved or a conscious operator call has been made on each, and §
 
 ### What this touches and what it must NOT touch
 
-`infra/terraform/access.tf` holds two independent resource pairs:
+`infra/terraform/access.tf` today holds:
 
 - `cloudflare_zero_trust_access_policy.site_gate` + `cloudflare_zero_trust_access_application.site_gate`
   — gates `caisson.sh` + `www.caisson.sh`. **This is the one you flip.**
-- `cloudflare_zero_trust_access_policy.admin_gate` + `cloudflare_zero_trust_access_application.admin_gate`
-  — gates `admin.caisson.sh`. **PERMANENT. Do not edit, do not delete, do not flip (ADR-0138/0140/0204).**
+- `cloudflare_zero_trust_access_service_token.e2e_prober` + `cloudflare_zero_trust_access_policy.site_gate_service_auth`
+  — the e2e probe-harness service-token pair (ADR-0322/0323). Unrelated to this flip; do not touch.
+
+There is no `admin_gate` resource in this file anymore (destroyed 2026-07-07). `admin.caisson.sh` is
+gated at the application level — in-app GitHub OAuth + `ADMIN_GITHUB_ALLOWED_USER_IDS` (ADR-0283) —
+which this Terraform file has no knowledge of and this runbook does not touch.
 
 ### 4.1 Edit `access.tf`
 
@@ -502,8 +512,9 @@ cd infra/terraform
 export CLOUDFLARE_API_TOKEN=...   # never commit
 terraform plan
 # EXPECT: exactly one resource to change (cloudflare_zero_trust_access_policy.site_gate) — decision
-# + include + name. ZERO changes to admin_gate, ZERO changes to any DNS record, ZERO changes to any
-# other resource. If the plan shows anything else, STOP and investigate before applying.
+# + include + name. ZERO changes to the e2e_prober service-token/policy pair, ZERO changes to any DNS
+# record, ZERO changes to any other resource. If the plan shows anything else, STOP and investigate
+# before applying.
 terraform apply
 ```
 
@@ -528,9 +539,10 @@ curl -sSI https://www.caisson.sh/
 curl -sS https://caisson.sh/healthz
 # → 200
 
-# admin MUST STILL be gated — this is the check that proves you didn't touch admin_gate
+# admin MUST STILL be gated — this checks the app-level gate (GitHub OAuth + allowlist), which this
+# flip has no way to touch since there is no admin Terraform resource anymore
 curl -sSI https://admin.caisson.sh/
-# → still an Access redirect/403, unchanged from before this whole runbook
+# → still redirects to the admin sign-in, unchanged from before this whole runbook
 ```
 
 Then, in a real browser (incognito, no prior CF-Access session cookie): load `caisson.sh`, confirm no
@@ -586,10 +598,11 @@ Paddle traffic, since that endpoint was never behind Access in the first place (
 
 ## 6. DO-NOT list
 
-- **Do NOT delete `infra/terraform/access.tf` wholesale.** It now holds the permanent `admin_gate` too
-  (see §0's correction). Only edit the `site_gate` policy block (§4.1).
-- **Do NOT touch `CF_ACCESS_TEAM_DOMAIN` / `CF_ACCESS_AUD` on `caisson-admin`.** Unrelated permanent
-  gate (ADR-0140/ADR-0204), not part of this flip.
+- **Do NOT delete `infra/terraform/access.tf` wholesale.** It still holds the `e2e_prober`
+  service-token/policy pair (ADR-0322/0323 — see §0's correction). Only edit the `site_gate` policy
+  block (§4.1).
+- **Do NOT touch `ADMIN_GITHUB_ALLOWED_USER_IDS` on `caisson-admin`.** The admin control-plane's own
+  gate (ADR-0283), not part of this flip.
 - **Do NOT expose `admin.caisson.sh`.** It has no in-app auth beyond the CF-Access-JWT middleware
   (ADR-0204 vuln-0003) — Access is load-bearing there, not cosmetic like it was for the marketing site.
 - **Do NOT leave `PADDLE_WEBHOOK_SECRET` matching between Sandbox and Production**, and do not delete

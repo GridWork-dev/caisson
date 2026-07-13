@@ -1,9 +1,13 @@
 ---
-updated: 2026-07-10
-status: design-note
+updated: 2026-07-13
+status: live
 grounds:
   - apps/site/app/(marketing)/affiliates/page.tsx
   - packages/billing/src/events.ts
+  - apps/admin/src/app/api/admin/affiliate/mint/route.ts
+  - apps/admin/src/app/business/affiliates/page.tsx
+  - services/license/src/affiliate-store.ts
+  - knowledge/decisions/ADR-0320-affiliate-program-parameters.md
 ---
 
 # Affiliate attribution — in-house mechanics on Paddle Billing
@@ -48,15 +52,19 @@ or in-house). Two consequences:
 - Test grant landed on the 07-04 proof account (`dBlFuTeHu9TTwl7DXZTxpQa7Nq7B8VTQ`) — revoke via
   admin alongside the earlier one when convenient.
 
-## The gap to close at production flip (the whole remaining build)
+## Shipped (ADR-0320, 2026-07-10, Kickoff-N) — flat 10% buyer discount / 30% commission
 
-- **`discount_id` is dropped today.** `parsePaddleEvent` (`packages/billing/src/events.ts`)
-  does not map `data.discount_id` into the `DomainBillingEvent`, so nothing downstream
-  (`order_record`, PostHog `purchase`) carries it. The capture is one field threaded through:
-  events union → `apply-billing-event` → an `order_record` column (or the PostHog `purchase`
-  properties) — small, but it gates any attribution report.
-- Per-affiliate code minting (scripted `POST /discounts` per accepted affiliate, production key).
-- A commission report (orders grouped by `discount_id`, 14-day refund-window filter, clawback on
-  `refund.completed` — the page's stated terms) and the manual payout run.
-- Decision left open on purpose: in-house report vs a third-party layer if affiliate volume ever
-  justifies it. Nothing in this design forecloses either.
+The build described as remaining above is done:
+
+- **`discount_id` now flows through.** `parsePaddleEvent` (`packages/billing/src/events.ts`)
+  threads `data.discount_id` into the `DomainBillingEvent` on both `purchase.completed` and
+  `invoice.paid` (see the line-42 comment + implementation) — the field reaches `order_record`
+  and PostHog `purchase` properties.
+- **Per-affiliate code minting is live** at
+  `apps/admin/src/app/api/admin/affiliate/mint/route.ts`.
+- **The admin dashboard is live** at `apps/admin/src/app/business/affiliates/page.tsx`.
+- **Program parameters are locked and live**: `AFFILIATE_DISCOUNT_PCT` (10% buyer discount) and
+  `AFFILIATE_COMMISSION_BPS` (30% commission) in `services/license/src/affiliate-store.ts`.
+
+Decision left open on purpose: in-house report vs a third-party layer if affiliate volume ever
+justifies replacing this. Nothing in this design forecloses either.

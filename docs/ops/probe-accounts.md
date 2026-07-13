@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-12
+updated: 2026-07-13
 status: live
 grounds:
   - apps/site/live/probe-session.ts
@@ -221,7 +221,7 @@ railway variables -s caisson-admin \
 
 This requires a redeploy of `caisson-admin` to take effect for the
 account-**creation**-time gate (`admin-auth-server.ts`'s `databaseHooks.account.create.
-before` — env vars are not hot-reloaded, `admin-auth-config.ts:99-101`). The
+before` — env vars are not hot-reloaded, `admin-auth-server.ts:99-101`). The
 **per-request** recheck (`admin-session.ts`'s `verifyAdminSession`) reads the same
 cached value, so it redeploys together — one `railway up -s caisson-admin` (or the
 Railway dashboard env-var save, which triggers its own redeploy) covers both.

@@ -1,3 +1,8 @@
+---
+updated: 2026-07-13
+status: archived
+---
+
 # Strix pentest findings — 2026-07-01
 
 First Strix run against Caisson. Engine: OpenRouter `gpt-5.5`, deep mode, read-only intent,

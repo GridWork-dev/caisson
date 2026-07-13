@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-09
+updated: 2026-07-13
 status: live
 grounds:
   - knowledge/decisions/ADR-0040-positioning-hero.md
@@ -33,7 +33,7 @@ Two-layer positioning, not a single claim (ADR-0040):
   infrastructure cheap boilerplates skip. The common enemy is happy-path boilerplate: everyone
   ships auth + Stripe + a landing page; nobody ships the parts that matter when you get audited,
   when the AI bill spikes, when a tenant's rows leak across RLS, when a regulator asks for
-  evidence. One promise houses all four editions — no orphans.
+  evidence. One promise houses every bundle — no orphans.
 - **Hero wedge (what acquisition leads with): Compliance.** It's the front door; the
   production-rigor umbrella is the house it opens into.
 
@@ -46,10 +46,11 @@ kits clear 5–10× generic-kit pricing); it scored the strongest baseline in th
 single strongest recurring-revenue lever in the market. The SERP is currently owned by finished
 compliance platforms (Vanta/Drata class), not dev-kits — a picks-and-shovels gap under them.
 
-**Edition roles under the umbrella** (ADR-0040): Compliance = paid hero / front door · AI
-Production Kit = strongest #2 ("same rigor, applied to AI infra"; intersects compliance via EU AI
-Act Annex IV) · Local-first AI = the free flank (top-of-funnel awareness, not a revenue line) ·
-Agentic-Dev = narrowest, positioned post-wedge.
+**Bundle roles under the umbrella** (ADR-0040, roles carried 1:1 into the six-bundle catalog per
+ADR-0257/0258): Compliance = paid hero / front door · AI-Production = strongest #2 ("same rigor,
+applied to AI infra"; intersects compliance via EU AI Act Annex IV) · Local-first = the free flank
+(top-of-funnel awareness, not a revenue line) · Agentic-Dev = narrowest, positioned post-wedge ·
+Provenance = net-new signing/audit-chain carve · Everything = the roll-up.
 
 ## What Caisson is NOT
 
@@ -122,10 +123,10 @@ the evidence.
    competitors — ADR-0080 §4).
 4. **Cost claim** — the retrofit-math line, quantifying the alternative (build it yourself, later,
    into a live database) against wired-on-day-one.
-5. **Edition-specific claim** (per ADR-0040 roles + specs/04 §9) — every non-compliance edition
+5. **Bundle-specific claim** (per ADR-0040 roles + specs/04 §9) — every non-compliance bundle
    reads as "the same rigor, applied to `<their problem>`" under the compliance-led umbrella, never
-   as a co-equal hero: AI Production Kit = rigor + control over the token-bill/eval-regression
-   spike; Local-first AI = sovereignty ("your data never leaves the device"); Agentic-Dev =
+   as a co-equal hero: AI-Production = rigor + control over the token-bill/eval-regression
+   spike; Local-first = sovereignty ("your data never leaves the device"); Agentic-Dev =
    governance (a governed kernel, not "autonomous magic").
 6. **Footnote claim** (once, never a table) — better base than a $199 generic kit.
 
@@ -157,12 +158,9 @@ ADR-0087/0081," waitlist CTAs, "indicative — final pricing set before launch")
 superseded: the site is live self-serve with committed prices and real checkout (ADR-0082,
 reaffirmed FULL V1-live with no roadmap/waitlist framing anywhere by ADR-0237 rider 2). The wedge,
 umbrella, ICP firewall, voice floor, and proof strategy in this file are unaffected — they govern
-message content, not checkout state. Pricing _structure_ itself was an open fork and is now
-CLOSED: the catalog-doctrine research round the compliance-split question was redirected into
+message content, not checkout state. Pricing _structure_ is CLOSED: the catalog-doctrine round
 locked 2026-07-06 (ADR-0257 vocabulary · ADR-0258 numbers) — editions dissolved into six bundles
 (Compliance, AI-Production, Local-first, Agentic-Dev, Provenance, Everything), every commercial
-package individually priced, live in Paddle SANDBOX. Where this file's edition-role language
-("Compliance = paid hero," "Local-first = free flank") intersects packaging structure, read
-"edition" as its bundle successor of the same name — the roles carry over 1:1 (ADR-0040 GTM
-weight unchanged), only the vocabulary and package-split mechanics moved; the current numbers live
-in `pricing-packaging.md`.
+package individually priced, live in Paddle SANDBOX. Current numbers live in
+`pricing-packaging.md`. Body prose above uses the bundle vocabulary directly (not an
+edition-to-bundle alias).

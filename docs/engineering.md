@@ -159,7 +159,7 @@ and catalog-rework carve packages) have real published versions today — see
 checks and nothing else — the fifth, `deterministic`, is the pinned security-scan layer in
 `security-scan.yml` (required since the ADR-0327 scan-gate flip); `eval`/`native-ext`/
 `token-drift`/`knip` live in the separate `quality.yml` (non-required, path-filtered on PRs,
-unconditional on `main` pushes) so a path-skip never blocks a required check forever. Full per-workflow detail (8 workflows total, the Greptile
+unconditional on `main` pushes) so a path-skip never blocks a required check forever. Full per-workflow detail (11 workflows total, the Greptile
 retirement, the review-gate posture): `docs/operations.md` §7 - this section is not the canonical
 CI map, do not extend it here.
 

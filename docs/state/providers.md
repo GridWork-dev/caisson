@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-12
+updated: 2026-07-13
 status: live
 grounds:
   - infra/terraform/
@@ -61,7 +61,7 @@ Cloud Free covers current volume ($0).
   edge now 307s straight to `/login`)
 - `license.caisson.sh` → Railway `caisson-license` (grey/DNS-only, Paddle webhook; cert issued)
 - `docs-api.caisson.sh` → Railway `caisson-docs`
-- Registry Worker → `caisson-registry.broken-wood-97a9.workers.dev` (license-keyed entitlement filtering, 32-module index)
+- Registry Worker → `caisson-registry.broken-wood-97a9.workers.dev` (license-keyed entitlement filtering, 46-module index — live count churns on every republish, see `registry/index.json` / `docs/state/package-catalog.md` §1)
 - Observability → Grafana Cloud `caisson.grafana.net` (sole OTLP sink; SigNoz UI removed 2026-07-01)
 
 ## Open forks
@@ -134,14 +134,14 @@ OpenRouter / Plausible / SigNoz / Exa / Discord have **no standalone CLI** — d
 **Live stack**
 
 - **Railway** — CLI `railway up -s <svc>` deploys (services are **CLI-deployed, not GitHub-connected** → merging `main` does _not_ redeploy). Env per service via `railway variables`. Config: per-service `railway.toml` + `RAILWAY_DOCKERFILE_PATH`. **State: ✅** 11 services live (caisson-prod, US-West `sfo`).
-- **Cloudflare** — DNS + registry Worker + CF-Access, driven by `infra/terraform/` (apply) and `wrangler deploy` (Worker). Token `CLOUDFLARE_API_TOKEN` (SET). **State: ✅** DNS cut over to Railway, Pages torn down, Worker live (32-module index). Edge rate-limit on the docs-api `/query` path terraformed + 429-proven 2026-07-03 (ADR-0219, CAISSON-15); registry edge revocation deny-set live (ADR-0225 R-4).
+- **Cloudflare** — DNS + registry Worker + CF-Access, driven by `infra/terraform/` (apply) and `wrangler deploy` (Worker). Token `CLOUDFLARE_API_TOKEN` (SET). **State: ✅** DNS cut over to Railway, Pages torn down, Worker live (46-module index). Edge rate-limit on the docs-api `/query` path terraformed + 429-proven 2026-07-03 (ADR-0219, CAISSON-15); registry edge revocation deny-set live (ADR-0225 R-4).
 - **Paddle** (MoR) — Paddle dashboard + REST API; client token `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` + `NEXT_PUBLIC_PADDLE_ENV` on `caisson-site`; server `PADDLE_API_KEY`/`PADDLE_WEBHOOK_SECRET` (SET local). **State: ⚠ sandbox** — 7 prices + webhook configured in sandbox; **production Paddle account + live prices are the go-live fast-follow**.
 - **Stripe** — buyer billing driver behind the `BillingProvider` port; `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`. **State: ⛔ dormant** — no keys on `caisson-site` (Paddle is the live checkout). Configure only if the Stripe path is activated.
 - **Resend** — dashboard for domain/DNS; `RESEND_API_KEY` + `RESEND_FROM` on `caisson-site` (SET). **State: ✅** domain + DNS verified.
 - **Trigger.dev** — `bunx trigger.dev@latest deploy`; `TRIGGER_SECRET_KEY` (SET). Config `trigger.config.ts`. **State: ✅** key set; free tier.
 - **OpenRouter** — six per-service `OPENROUTER_API_KEY` values (SET, split 2026-07-08 — see the
   Live stack row above), no CLI. **State: ✅** all six probe-verified live; support-bot RAG live.
-- **registry.caisson.sh** — self-hosted CF Worker serves the npm install protocol (packuments + tarballs) over a git-tracked `registry/tarballs.json` inlined into the Worker bundle (same pattern as `index.json`), license-token-authed; tarballs sink to a new **R2 bucket via scoped S3-compatible access keys** (GH Actions repo secrets) + a `wrangler.toml` routes/custom-domain entry. Built (ADR-0223) and **dormant behind `CAISSON_PUBLISH_DRY_RUN=true`** — wrangler route + R2 bucket creation + DNS are operator-gated DEPLOY acts, not yet executed. Supersedes the dead GitHub Packages buyer channel (`gh` + `GITHUB_PERSONAL_ACCESS_TOKEN` + `.npmrc` scope, still used for repo-internal package resolution only). **State: ⚠ built, not deployed**.
+- **registry.caisson.sh** — self-hosted CF Worker serves the npm install protocol (packuments + tarballs) over a git-tracked `registry/tarballs.json` inlined into the Worker bundle (same pattern as `index.json`), license-token-authed; tarballs sink to a **R2 bucket via scoped S3-compatible access keys** (GH Actions repo secrets) + a `wrangler.toml` custom-domain entry. **Live** (ADR-0223) — the custom domain + R2 `TARBALLS`/`REVOCATIONS` bindings are deployed and proven: `registry.caisson.sh` returns real 200s, and a clean-env `bun add @caisson/kernel@latest`/`@caisson/ui@latest`/`@caisson/cli@latest` installs real bytes from R2 (`docs/deploy/STATE.md` 2026-07-12 entries, post-release-train verification). `CAISSON_PUBLISH_DRY_RUN=true` still gates a different pipeline — the monorepo's own GitHub-Packages publish workflow — not this registry. Supersedes the dead GitHub Packages buyer channel (`gh` + `GITHUB_PERSONAL_ACCESS_TOKEN` + `.npmrc` scope, still used for repo-internal package resolution only). **State: ✅ live**.
 - **Plausible** — script tag on marketing pages; `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` on `caisson-site` (SET). Config in the Plausible dashboard. **State: ✅** confirmed active on the $9 Starter plan and collecting (2026-07-01).
 - **SigNoz** (self-host) — was a 5-svc Railway stack. **State: ✅ REMOVED** (2026-07-01) — the Grafana OTLP cutover completed + verified, all 5 Railway services deleted; replaced by Grafana Cloud as the sole OTLP sink. `SIGNOZ_API_KEY` no longer needed. The 3 detached volumes (`signoz-*-volume`) were **deleted 2026-07-02** (Railway soft-delete; purge 2026-07-04). The `apps/admin` `/ops` cockpit — orphaned by the removal (its client queried the now-dead SigNoz v5 API) — is rebuilt onto Grafana Cloud's Tempo query API (`ADR-0207`, 2026-07-02) and **deployed with env set** (see the Grafana Cloud row below).
 - **Greptile + TREX** — **State: ⛔ RETIRED 2026-07-06** — the Starter plan's monthly review limit hit mid-PR-#128 and the vendor was dropped (no upgrade, no replacement external reviewer). `.github/workflows/greptile-gate.yml` + `.greptile/` deleted (recoverable from git history); review is the in-session SHIP audit lane (CLAUDE.md §PR review gate). Operator follow-ups: uninstall the Greptile GitHub app from the `caisson-sh` org; drop `GREPTILE_API_KEY` from `~/.gridwork/caisson.env` at the next credential sweep.

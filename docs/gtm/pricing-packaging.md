@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-13
 status: live
 grounds:
   - knowledge/decisions/ADR-0259-ui-pro-spec-locks.md
@@ -94,19 +94,20 @@ The six-bundle catalog (ADR-0257 vocabulary · ADR-0258 numbers) is what `pricin
 catalog-rework build (W7 Paddle SANDBOX big-bang, PR #130, 2026-07-06). The Stage-2/Stage-3
 sections above show the derivation; this is the flat lookup, cents verified against code:
 
-| SKU                                        | Price                   | Note                                                                                                                                                       |
-| ------------------------------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Compliance** (bundle, one-time)          | **$1,049**              | Fail-closed RLS, WORM, audit chain, evidence packs, framework + signing carves. Supersedes the $799 edition (ADR-0227).                                    |
-| **AI-Production** (bundle, one-time)       | **$739**                | Metering, guardrails, prompt versioning, CI eval harness; credits joined the member set at Stage 3 (ADR-0258), recompute over $629.                        |
-| **Local-first** (bundle, one-time)         | **$629**                | On-device inference, privacy egress gate, local vector search; full 3-way carve (sync/inference/privacy), ADR-0258 supersedes the $349 edition (ADR-0240). |
-| **Agentic-Dev** (bundle, one-time)         | **$329**                | Governed-agent kernel: typed agent/skill/rule schema, guarded lifecycle, sandboxed execution.                                                              |
-| **Provenance** (bundle, one-time, net-new) | **$399**                | Detached signing, append-only WORM audit chain, per-tenant field encryption; $0 incremental into Everything (member-subset of Compliance).                 |
-| **Everything** (bundle, one-time)          | **$2,059**              | Every sellable SKU incl. ui-pro (only private `brand` excluded); 0.75 × Σ(the five persona bundles), ADR-0258 supersedes Stage-2's $1,749.                 |
-| **Per-module à la carte**                  | $49–$299                | Every sellable commercial SKU individually priced (ADR-0246 F1b) — see the module-catalog section below.                                                   |
-| **Compliance-Updates** (subscription)      | **$1,499/yr**           | Annual cadence per ADR-0095 §3, numbers per ADR-0106.                                                                                                      |
-| **Developer** (subscription)               | **$499/yr**             | Same.                                                                                                                                                      |
-| **Enterprise / SLA**                       | **Contact us**          | No public number, founder-assisted only (ADR-0095 §2).                                                                                                     |
-| **Credit top-up pack**                     | **$49** (5,000 credits) | ADR-0222.                                                                                                                                                  |
+| SKU                                        | Price                      | Note                                                                                                                                                              |
+| ------------------------------------------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Compliance** (bundle, one-time)          | **$1,049**                 | Fail-closed RLS, WORM, audit chain, evidence packs, framework + signing carves. Supersedes the $799 edition (ADR-0227).                                           |
+| **AI-Production** (bundle, one-time)       | **$739**                   | Metering, guardrails, prompt versioning, CI eval harness; credits joined the member set at Stage 3 (ADR-0258), recompute over $629.                               |
+| **Local-first** (bundle, one-time)         | **$629**                   | On-device inference, privacy egress gate, local vector search; full 3-way carve (sync/inference/privacy), ADR-0258 supersedes the $349 edition (ADR-0240).        |
+| **Agentic-Dev** (bundle, one-time)         | **$329**                   | Governed-agent kernel: typed agent/skill/rule schema, guarded lifecycle, sandboxed execution.                                                                     |
+| **Provenance** (bundle, one-time, net-new) | **$399**                   | Detached signing, append-only WORM audit chain, per-tenant field encryption; $0 incremental into Everything (member-subset of Compliance).                        |
+| **Everything** (bundle, one-time)          | **$2,059**                 | Every sellable SKU incl. ui-pro (only private `brand` excluded); 0.75 × Σ(the five persona bundles), ADR-0258 supersedes Stage-2's $1,749.                        |
+| **Per-module à la carte**                  | $49–$299                   | Every sellable commercial SKU individually priced (ADR-0246 F1b) — see the module-catalog section below.                                                          |
+| **Compliance-Updates** (subscription)      | **$1,499/yr**              | Annual cadence per ADR-0095 §3, numbers per ADR-0106.                                                                                                             |
+| **Developer** (subscription)               | **$499/yr**                | Same.                                                                                                                                                             |
+| **Enterprise / SLA**                       | **Contact us**             | No public number, founder-assisted only (ADR-0095 §2).                                                                                                            |
+| **Priority support** (subscription)        | **$999/yr** — locked, dark | ADR-0288-locked price + next-business-day SLA; ADR-0301 confirms it stays a placeholder in `pricing.ts` (no Paddle product yet, not wired into checkout/display). |
+| **Credit top-up pack**                     | **$49** (5,000 credits)    | ADR-0222.                                                                                                                                                         |
 
 ### Superseded — pre-catalog-rework 4-edition matrix (historical only)
 
@@ -232,7 +233,12 @@ R3 is thereby closed (the carve exists and is priced).
 
 **Still open after Stage 2 — ALL CLOSED at Stage 3 (ADR-0257/0258, see the amendments section
 at the top):** Local-first → full 3-way carve, $629 · credits-in-AI → joined, recompute $739 ·
-auth-sso shape → ONE merged `org-controls` $249. **Still open after Stage 3:** **Closed 2026-07-10 (Kickoff-J, ADR-0304/0305):** the WTP validation ran — qual (45 Cookiy transcripts) + quant (VW ladder 445432, frame test 776545), synthesized in `outputs/research/wtp-memo-2026-07-10.md`. Result: Compliance $1,049 / Everything $2,059 HOLD, no change (ADR-0304); the local-ai carve bands and the D2 "seat allowance" fork closed VOID — licensing is already per-org/no-seat via the EULA, now surfaced as advantage copy (ADR-0305).
+auth-sso shape → ONE merged `org-controls` $249. The one item still open after Stage 3 — WTP
+validation on the Compliance/Everything anchors — **closed 2026-07-10 (Kickoff-J, ADR-0304/0305):**
+qual (45 Cookiy transcripts) + quant (VW ladder 445432, frame test 776545), synthesized in
+`outputs/research/wtp-memo-2026-07-10.md`. Result: Compliance $1,049 / Everything $2,059 HOLD, no
+change (ADR-0304); the local-ai carve bands and the D2 "seat allowance" fork closed VOID —
+licensing is already per-org/no-seat via the EULA, now surfaced as advantage copy (ADR-0305).
 
 ## Contradictions found while distilling
 
