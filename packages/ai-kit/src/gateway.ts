@@ -55,6 +55,7 @@ import { renderVersion, resolvePrompt } from "@caisson/prompt-registry";
 import type { RenderedMessage } from "@caisson/prompt-registry";
 import { withTenant } from "@caisson/tenancy-rls";
 import type { Transactor } from "@caisson/tenancy-rls";
+import { normalizeLanguageUsage } from "./usage.ts";
 
 /**
  * Resolve a configured lane to its backing model. Production builds this over a provider registry
@@ -199,21 +200,6 @@ export function buildRegistryResolver(
   };
 }
 
-/**
- * Normalize the AI-SDK usage shape into the meter's integer `Usage` (cached ≤ input, never a float).
- * Returns `null` when the provider reported NO usage (both token counts undefined) — a legitimate
- * outcome on a successful call for some lanes (e.g. local/ollama). The caller must keep that distinct
- * from "0 tokens": reconcile settles an unreported call at the reservation estimate, never trueing a
- * real completed call down to a full refund (`@caisson/ai-meter`, ADR-0182 fail-closed-for-revenue).
- */
-function mapUsage(u: LanguageModelUsage): Usage | null {
-  if (u.inputTokens === undefined && u.outputTokens === undefined) return null;
-  const inputTokens = u.inputTokens ?? 0;
-  const outputTokens = u.outputTokens ?? 0;
-  const cachedInputTokens = Math.min(u.cachedInputTokens ?? 0, inputTokens);
-  return { inputTokens, outputTokens, cachedInputTokens };
-}
-
 /** Project the prompt's role/content onto the AI-SDK `ModelMessage` union (role-discriminated). */
 function toModelMessages(messages: readonly RenderedMessage[]): ModelMessage[] {
   return messages.map((m): ModelMessage => {
@@ -342,7 +328,7 @@ export async function infer(
 
   // 5. record usage. A provider may complete a call yet report NO usage — settle that at the
   //    reservation estimate (over the actual output text) rather than trueing it down to a refund.
-  const reported = mapUsage(rawUsage);
+  const reported = normalizeLanguageUsage(rawUsage);
   const usage = reported ?? estimateConsumedUsage(guarded, text);
   const usageReported = reported !== null;
 
@@ -583,9 +569,9 @@ export async function inferStream(
           yield part.text;
         } else if (part.type === "finish") {
           // A finish part means the provider completed — even when it carries no usage numbers
-          // (`mapUsage` → null). That is NOT abandonment: output guards still run below.
+          // (`normalizeLanguageUsage` → null). That is NOT abandonment: output guards still run below.
           sawFinish = true;
-          reportedUsage = mapUsage(part.totalUsage);
+          reportedUsage = normalizeLanguageUsage(part.totalUsage);
         } else if (part.type === "error") {
           streamErr = part.error;
           break;

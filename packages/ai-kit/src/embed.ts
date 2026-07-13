@@ -25,7 +25,7 @@ import type { Embedding, EmbeddingModelUsage } from "ai";
 import type { EmbeddingModelV2, ProviderV2 } from "@ai-sdk/provider";
 import type { AiSettings } from "@caisson/ai-config";
 import { resolveProvider } from "@caisson/ai-config";
-import { estimateTokens, reconcile, reserve } from "@caisson/ai-meter";
+import { reconcile, reserve } from "@caisson/ai-meter";
 import type {
   MeterConfig,
   ReconcileResult,
@@ -34,6 +34,7 @@ import type {
 } from "@caisson/ai-meter";
 import { withTenant } from "@caisson/tenancy-rls";
 import type { Transactor } from "@caisson/tenancy-rls";
+import { normalizeEmbeddingUsage } from "./usage.ts";
 
 /**
  * Resolve a configured lane to its backing TEXT embedding model. Production builds this over a
@@ -110,23 +111,6 @@ export function buildEmbeddingRegistryResolver(
 }
 
 /**
- * Normalize the AI-SDK's embedding usage into the meter's integer `Usage`. `ai@5.0.206`'s
- * `embed`/`embedMany` substitute `{ tokens: NaN }` when the provider's `doEmbed` reports no usage
- * (verified against the SDK source — never `undefined`), so a non-finite `tokens` is the no-report
- * signal; fall back to the SAME chars/4 heuristic `reserve()` itself uses, summed over the embedded
- * values. `outputTokens` is unconditionally 0 — an embedding call has no output leg.
- */
-function mapEmbeddingUsage(
-  usage: EmbeddingModelUsage,
-  values: readonly string[],
-): Usage {
-  const inputTokens = Number.isFinite(usage.tokens)
-    ? usage.tokens
-    : values.reduce((sum, v) => sum + estimateTokens(v), 0);
-  return { inputTokens, cachedInputTokens: 0, outputTokens: 0 };
-}
-
-/**
  * Run one metered embedding call through the gateway. Throws (and never calls the model / never
  * charges) when the wallet is short (`InsufficientCreditsError` 402) or the breaker is open
  * (`SpendCapError` 402) — same fail-closed contract as `infer()`. A failed provider call refunds the
@@ -190,7 +174,7 @@ export async function embed(
   }
 
   // 3. record usage + reconcile.
-  const usage = mapEmbeddingUsage(rawUsage, [value]);
+  const usage = normalizeEmbeddingUsage(rawUsage, [value]);
   const reconciled = await settle(usage);
 
   return { callId, embedding, usage, reserved, reconciled };
@@ -251,7 +235,7 @@ export async function embedMany(
     throw err;
   }
 
-  const usage = mapEmbeddingUsage(rawUsage, values);
+  const usage = normalizeEmbeddingUsage(rawUsage, values);
   const reconciled = await settle(usage);
 
   return { callId, embeddings, usage, reserved, reconciled };
