@@ -449,6 +449,55 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
     }
   });
 
+  test("recordTarballs: re-records only explicitly mutable version-PR rows", () => {
+    const dir = tmpDir("record-tarballs-refresh");
+    const path = join(dir, "tarballs.json");
+    try {
+      const historicalKey = "@caisson/auth@1.0.0";
+      const versionPrKey = "@caisson/kernel@2.0.0";
+      const historical = computeTarballDist(
+        Buffer.from("historical-auth"),
+        "auth",
+        "1.0.0",
+      );
+      const stale = computeTarballDist(
+        Buffer.from("stale-kernel"),
+        "kernel",
+        "2.0.0",
+      );
+      writeSidecar(
+        { tarballs: { [historicalKey]: historical, [versionPrKey]: stale } },
+        path,
+      );
+
+      const recorded = recordTarballs(
+        [
+          { manifest: mkManifest("@caisson/auth", "1.0.0"), packageDir: dir },
+          {
+            manifest: mkManifest("@caisson/kernel", "2.0.0"),
+            packageDir: dir,
+          },
+        ],
+        {
+          dryRun: false,
+          sidecarPath: path,
+          stagingDir: dir,
+          replaceKeys: new Set([versionPrKey]),
+          packFn: (_packageDir, slug) => Buffer.from(`fresh-${slug}`),
+        },
+      );
+
+      expect(recorded).toBe(1);
+      const sidecar = readSidecar(path);
+      expect(sidecar.tarballs[historicalKey]).toEqual(historical);
+      expect(sidecar.tarballs[versionPrKey]).toEqual(
+        computeTarballDist(Buffer.from("fresh-kernel"), "kernel", "2.0.0"),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   test("recordTarballs: dry-run records nothing and never invokes the packer", () => {
     const dir = tmpDir("record-tarballs-dry");
     const path = join(dir, "tarballs.json");
@@ -558,6 +607,70 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       // The sidecar now carries the backfilled row.
       expect(readSidecar(sidecarPath).tarballs["@caisson/demo@1.0.0"]).toEqual(
         computeTarballDist(Buffer.from("demo-bytes"), "demo", "1.0.0"),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("version refresh derives mutable rows from the fork-point sidecar", async () => {
+    const dir = tmpDir("version-refresh");
+    const pkgDir = join(dir, "packages");
+    const demo = join(pkgDir, "demo");
+    mkdirSync(demo, { recursive: true });
+    writeFileSync(
+      join(demo, "package.json"),
+      JSON.stringify({ name: "@caisson/demo", version: "2.0.0" }),
+    );
+    writeFileSync(
+      join(demo, "manifest.ts"),
+      'export default { id: "@caisson/demo", version: "2.0.0" };\n',
+    );
+    const ledgerPath = join(dir, "ledger.jsonl");
+    const indexPath = join(dir, "index.json");
+    const sidecarPath = join(dir, "tarballs.json");
+    const baseSidecarPath = join(dir, "base-tarballs.json");
+    const ledgerEntry = {
+      id: "@caisson/demo",
+      version: "2.0.0",
+      manifest: mkManifest("@caisson/demo", "2.0.0"),
+      publishedAt: "2026-07-12T00:00:00.000Z",
+      gateAttestation: "version-pr@deadbee",
+    };
+    writeFileSync(ledgerPath, `${JSON.stringify(ledgerEntry)}\n`);
+    writeFileSync(indexPath, buildIndexFromLedgerFile(ledgerPath));
+    writeSidecar({ tarballs: {} }, baseSidecarPath);
+    writeSidecar(
+      {
+        tarballs: {
+          "@caisson/demo@2.0.0": computeTarballDist(
+            Buffer.from("stale"),
+            "demo",
+            "2.0.0",
+          ),
+        },
+      },
+      sidecarPath,
+    );
+
+    try {
+      const result = await runPublishStep({
+        runId: "version-refresh",
+        sha: "abc1234def",
+        publishedAt: "2026-07-12T01:00:00.000Z",
+        dryRun: false,
+        ledgerPath,
+        indexPath,
+        packagesDir: pkgDir,
+        sidecarPath,
+        refreshBaseSidecarPath: baseSidecarPath,
+        stagingDir: dir,
+        packFn: () => Buffer.from("fresh"),
+      });
+
+      expect(result.tarballsRecorded).toBe(1);
+      expect(readSidecar(sidecarPath).tarballs["@caisson/demo@2.0.0"]).toEqual(
+        computeTarballDist(Buffer.from("fresh"), "demo", "2.0.0"),
       );
     } finally {
       rmSync(dir, { recursive: true, force: true });

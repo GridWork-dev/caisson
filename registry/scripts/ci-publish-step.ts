@@ -237,6 +237,12 @@ export type RecordTarballsOpts = {
   dryRun: boolean;
   sidecarPath?: string | undefined;
   stagingDir?: string | undefined;
+  /**
+   * Existing keys that belong to an unmerged version PR and may therefore be re-packed. Historical
+   * rows remain append-only. The synchronize workflow derives this set by comparing with the branch
+   * fork point's sidecar.
+   */
+  replaceKeys?: ReadonlySet<string> | undefined;
   /** Override the packer for isolated testing; defaults to a real `bun pm pack`. */
   packFn?: PackFn | undefined;
 };
@@ -244,11 +250,13 @@ export type RecordTarballsOpts = {
 /**
  * Pack + hash + record a sidecar row for each candidate package MISSING from the sidecar (already
  * filtered to non-private by `findManifestPaths`, so the `isPrivatePackage` exclusion is preserved —
- * a private package's manifest never reaches here). Append-only (ADR-0006): an existing sidecar key is
- * never overwritten (and never re-packed). Callers pass the FULL current-workspace manifest set, not
- * just newly-ledgered versions, so a version ledgered before the sidecar existed still gets backfilled
- * (see runPublishStep). In dry-run nothing is packed or written — the genuinely-missing {id@version →
- * key} set is logged. Returns rows recorded.
+ * a private package's manifest never reaches here). Append-only (ADR-0006): an existing historical
+ * sidecar key is never overwritten (and never re-packed). The sole exception is an explicit
+ * `replaceKeys` entry derived from rows introduced on an unmerged version branch; those bytes have not
+ * shipped yet and must follow in-branch source edits. Callers pass the FULL current-workspace manifest
+ * set, not just newly-ledgered versions, so a version ledgered before the sidecar existed still gets
+ * backfilled (see runPublishStep). In dry-run nothing is packed or written. Returns rows recorded or
+ * re-recorded.
  */
 export function recordTarballs(
   candidates: { manifest: ModuleManifest; packageDir: string }[],
@@ -258,6 +266,7 @@ export function recordTarballs(
     dryRun,
     sidecarPath = SIDECAR_PATH,
     stagingDir = STAGING_DIR,
+    replaceKeys = new Set<string>(),
     packFn = defaultPack,
   } = opts;
 
@@ -266,11 +275,12 @@ export function recordTarballs(
   if (dryRun) {
     const sidecar = readSidecar(sidecarPath);
     for (const { manifest } of candidates) {
-      if (sidecar.tarballs[`${manifest.id}@${manifest.version}`] !== undefined)
+      const key = `${manifest.id}@${manifest.version}`;
+      if (sidecar.tarballs[key] !== undefined && !replaceKeys.has(key))
         continue; // already packed — nothing to do
       const slug = manifest.id.slice("@caisson/".length);
       process.stdout.write(
-        `registry/ci-publish-step: dry-run — would pack ${manifest.id}@${manifest.version} → R2 key ${slug}/${slug}-${manifest.version}.tgz\n`,
+        `registry/ci-publish-step: dry-run — would ${replaceKeys.has(key) ? "re-pack" : "pack"} ${key} → R2 key ${slug}/${slug}-${manifest.version}.tgz\n`,
       );
     }
     return 0;
@@ -280,7 +290,7 @@ export function recordTarballs(
   let recorded = 0;
   for (const { manifest, packageDir } of candidates) {
     const key = `${manifest.id}@${manifest.version}`;
-    if (sidecar.tarballs[key] !== undefined) {
+    if (sidecar.tarballs[key] !== undefined && !replaceKeys.has(key)) {
       process.stdout.write(
         `registry/ci-publish-step: tarball already recorded — ${key} (append-only, kept)\n`,
       );
@@ -291,7 +301,7 @@ export function recordTarballs(
     sidecar.tarballs[key] = computeTarballDist(bytes, slug, manifest.version);
     recorded++;
     process.stdout.write(
-      `registry/ci-publish-step: packed + recorded ${key} → ${sidecar.tarballs[key]?.key} (${sidecar.tarballs[key]?.size} bytes)\n`,
+      `registry/ci-publish-step: ${replaceKeys.has(key) ? "re-packed + re-recorded" : "packed + recorded"} ${key} → ${sidecar.tarballs[key]?.key} (${sidecar.tarballs[key]?.size} bytes)\n`,
     );
   }
   if (recorded > 0) writeSidecar(sidecar, sidecarPath);
@@ -332,6 +342,11 @@ export type PublishStepOpts = {
   packagesDir?: string | undefined;
   /** Override for isolated testing; defaults to the on-disk registry/tarballs.json. */
   sidecarPath?: string | undefined;
+  /**
+   * Version mode only: sidecar from the release branch's fork point. Candidate keys absent there
+   * were introduced by the unmerged version PR and may be re-recorded after in-branch source edits.
+   */
+  refreshBaseSidecarPath?: string | undefined;
   /** Override for isolated testing; defaults to registry/.tarball-staging. */
   stagingDir?: string | undefined;
   /** Override the packer for isolated testing; defaults to a real `bun pm pack`. */
@@ -580,6 +595,7 @@ export async function runPublishStep(
     indexPath = INDEX_PATH,
     packagesDir = DEFAULT_PACKAGES_DIR,
     sidecarPath,
+    refreshBaseSidecarPath,
     stagingDir,
     packFn,
   } = opts;
@@ -666,6 +682,24 @@ export async function runPublishStep(
     });
   }
 
+  let replaceKeys: ReadonlySet<string> = new Set<string>();
+  if (refreshBaseSidecarPath !== undefined) {
+    if (!existsSync(refreshBaseSidecarPath)) {
+      throw new Error(
+        `version refresh base sidecar does not exist: ${refreshBaseSidecarPath}`,
+      );
+    }
+    const baseSidecar = readSidecar(refreshBaseSidecarPath);
+    replaceKeys = new Set(
+      loaded
+        .map(({ manifest }) => `${manifest.id}@${manifest.version}`)
+        .filter((key) => baseSidecar.tarballs[key] === undefined),
+    );
+    process.stdout.write(
+      `registry/ci-publish-step: version refresh — ${replaceKeys.size} unmerged row(s) may be re-recorded\n`,
+    );
+  }
+
   if (dryRun) {
     process.stdout.write(
       toAppend.length > 0
@@ -674,7 +708,13 @@ export async function runPublishStep(
     );
     // Log the planned tarball pack/upload set over the FULL workspace (backfill-aware); writes
     // nothing (R2 upload gate stays closed).
-    recordTarballs(loaded, { dryRun: true, sidecarPath, stagingDir, packFn });
+    recordTarballs(loaded, {
+      dryRun: true,
+      sidecarPath,
+      stagingDir,
+      replaceKeys,
+      packFn,
+    });
     return {
       appended: 0,
       skippedExisting,
@@ -716,6 +756,7 @@ export async function runPublishStep(
     dryRun: false,
     sidecarPath,
     stagingDir,
+    replaceKeys,
     packFn,
   });
 
@@ -743,6 +784,7 @@ function parseCliArgs(): Omit<
   let publishedAt = "";
   let dryRun = true; // safe default: never publish unless the caller explicitly says "false"
   let mode: "version" | "publish" = "version";
+  let refreshBaseSidecarPath: string | undefined;
 
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
@@ -769,10 +811,20 @@ function parseCliArgs(): Omit<
       }
       mode = val;
       i++;
+    } else if (flag === "--refresh-base-sidecar" && val !== undefined) {
+      refreshBaseSidecarPath = val;
+      i++;
     }
   }
 
-  return { runId, sha, publishedAt, dryRun, mode };
+  return {
+    runId,
+    sha,
+    publishedAt,
+    dryRun,
+    mode,
+    refreshBaseSidecarPath,
+  };
 }
 
 if (import.meta.main) {

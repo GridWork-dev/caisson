@@ -13,33 +13,39 @@ name: version-pr
 #   4. release-train.yml readiness re-verifies (CI green at the tag SHA, changesets drained,
 #      tag-on-main) → propagation legs publish exactly the tagged bytes, zero source mutation
 #
-# KNOWN LIMITATION (documented, accepted): the branch is pushed with the ephemeral GITHUB_TOKEN,
-# which does NOT trigger pull_request CI on the PR itself (GitHub anti-loop rule). Green CI on the
-# VERSION COMMIT — the ADR-0325 requirement — comes from the push-to-main run after merge, and the
-# release-train readiness gate blocks propagation until those checks are green at the tag SHA. To
-# force pre-merge CI signal, close + reopen the PR (an operator act re-triggers normally).
+# The initial branch push uses the ephemeral GITHUB_TOKEN, so it does NOT trigger pull_request CI
+# (GitHub anti-loop rule). Later operator pushes do trigger the synchronize lane below: it re-packs
+# every row introduced since the branch fork point and commits any changed bytes back to the release
+# branch. Historical rows from main stay append-only. Green required CI on the VERSION COMMIT still
+# comes from the push-to-main run after merge; close + reopen remains the operator path to force the
+# full pre-merge CI signal.
 #
 # The "never in-branch `changeset version`" rule (ADR-0321) is unchanged — this automation-authored
 # PR is the gated consumption point; it is still never a feature-branch act.
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
-  group: version-pr
-  cancel-in-progress: false
+  group: version-pr-${{ github.event.pull_request.number || 'dispatch' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   version-pr:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     # STAYS GitHub-hosted (ADR-0326): this job holds contents:write + pull-requests:write.
     # Write privilege belongs on a clean hosted runner, not third-party compute.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: release # ADR-0327 rider 2: the release-family boundary (definition-first; free-plan protection rules can't enforce yet)
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
@@ -123,3 +129,63 @@ jobs:
               "2. Publish a GitHub Release whose tag targets EXACTLY the merge commit." \
               "3. The release train verifies readiness and publishes the tagged bytes with zero mutation." \
               )"
+
+  refresh-version-tarballs:
+    # Same-repo release branches only. Fork PRs never receive write authority, and arbitrary branch
+    # names cannot opt into this credentialed lane.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'release/version-')
+    # STAYS GitHub-hosted: this job commits to a release branch with contents:write.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - name: re-record unmerged version-branch tarball rows
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          base_sha="$(git merge-base HEAD origin/main)"
+          base_sidecar="$RUNNER_TEMP/base-tarballs.json"
+          git show "${base_sha}:registry/tarballs.json" > "$base_sidecar"
+          bun registry/scripts/ci-publish-step.ts \
+            --mode version \
+            --run-id "${{ github.run_id }}" \
+            --sha "$base_sha" \
+            --published-at "$(date -u '+%Y-%m-%dT%H:%M:%S.000Z')" \
+            --refresh-base-sidecar "$base_sidecar" \
+            --dry-run false
+      - name: commit refreshed release truth when bytes changed
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- \
+            registry/ledger.jsonl registry/index.json registry/tarballs.json; then
+            echo "[version-pr] tarball rows already reproduce the branch source"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -- registry/ledger.jsonl registry/index.json registry/tarballs.json
+          git commit -m "chore(release): refresh version-branch tarball rows [version-pr-refresh]"
+          git push origin "HEAD:${HEAD_REF}"
