@@ -165,6 +165,7 @@ describe("Paddle webhook verifier live proof (seam 1, ADR-0224 F1=C)", () => {
             const msg = err instanceof AuthnError ? err.message : String(err);
             throw new Error(
               `A1=signed but verifyPaddleWebhook REJECTED a real Paddle signature — scheme drift: ${msg}`,
+              { cause: err },
             );
           }
           expect(verified).toBe(true);

@@ -302,7 +302,10 @@ export async function runHttpServer(
 ): Promise<NodeHttpServer> {
   const handler = createHttpMcpHandler(deps);
   const server = createServer((req, res) => {
-    handler(req, res).catch((err: unknown) => {
+    // bun-types augments IncomingMessage with a required signal, while @types/node 26's
+    // createServer callback exposes the unaugmented Node shape. This server runs on Bun; bridge
+    // that declaration-only mismatch at the callback boundary without weakening the public type.
+    handler(req as IncomingMessage, res).catch((err: unknown) => {
       if (!res.headersSent) {
         const { status, body } = toErrorResponse(err);
         applySecurityHeaders(res);

@@ -592,9 +592,6 @@ export async function inferStream(
         }
       }
       if (streamErr !== undefined) throw streamErr;
-    } catch (err) {
-      streamErr = err;
-      throw err;
     } finally {
       // Runs on a natural drain, an early consumer break (the for-await loop's implicit
       // generator.return()), OR a thrown error — the reservation is reconciled on every exit path.

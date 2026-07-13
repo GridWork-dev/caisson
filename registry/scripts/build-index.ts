@@ -67,7 +67,9 @@ export function parseLedgerLines(text: string): ParsedLedger {
     try {
       raw = JSON.parse(line);
     } catch (e) {
-      throw new Error(`ledger.jsonl line ${i + 1}: ${(e as Error).message}`);
+      throw new Error(`ledger.jsonl line ${i + 1}: ${(e as Error).message}`, {
+        cause: e,
+      });
     }
     const isDelist =
       typeof raw === "object" &&
@@ -95,7 +97,9 @@ export function parseLedgerLines(text: string): ParsedLedger {
         publishes.push(e);
       }
     } catch (e) {
-      throw new Error(`ledger.jsonl line ${i + 1}: ${(e as Error).message}`);
+      throw new Error(`ledger.jsonl line ${i + 1}: ${(e as Error).message}`, {
+        cause: e,
+      });
     }
   }
   return { publishes, delists };

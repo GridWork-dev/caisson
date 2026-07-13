@@ -96,7 +96,7 @@ export function computeParity(inputs: ParityInputs): ParityReport {
 
   // --- repo (reference) ---
   const repoDigest = indexDigest12(inputs.repoBytes);
-  let repoParsed: z.infer<typeof IndexShape> | null = null;
+  let repoParsed: z.infer<typeof IndexShape> | null;
   try {
     const text =
       typeof inputs.repoBytes === "string"
