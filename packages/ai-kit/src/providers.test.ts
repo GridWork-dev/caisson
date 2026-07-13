@@ -1,6 +1,6 @@
 // ADR-0160: construction-level coverage for the provider transport. The LIVE call stays the
 // deliberately un-exercised seam (the package's zero-live-call invariant, ADR-0059) — these tests
-// only prove that each config enum builds a real `ProviderV3` adapter (has `.languageModel`), so a
+// only prove that each config enum builds a real `ProviderV4` adapter (has `.languageModel`), so a
 // new backend is wired, without any network/model call or provider key.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { parseAiSettings, type AiSettings } from "@caisson/ai-config";
@@ -27,7 +27,7 @@ afterAll(() => {
   delete process.env[TOGETHER_KEY_ENV];
 });
 
-describe("defaultProviders — every configured backend builds a ProviderV3 (ADR-0160)", () => {
+describe("defaultProviders — every configured backend builds a ProviderV4 (ADR-0160)", () => {
   const cases: Array<{ name: string; lane: AiSettings["lanes"][string] }> = [
     {
       name: "openai",
@@ -110,7 +110,7 @@ describe("defaultProviders — every configured backend builds a ProviderV3 (ADR
   ];
 
   for (const { name, lane } of cases) {
-    test(`${name} → a ProviderV3 instance`, () => {
+    test(`${name} → a ProviderV4 instance`, () => {
       const providers = defaultProviders(laneSettings(lane));
       const provider = providers[lane.provider];
       expect(provider).toBeDefined();

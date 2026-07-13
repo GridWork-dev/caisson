@@ -4,14 +4,14 @@
 // `@ai-sdk/*` adapters (`defaultProviders`) with no change to the gateway. The live transport stays
 // the one path a test never exercises.
 //
-// It is hand-rolled (not `ai/test`'s `MockLanguageModelV2`) on purpose: the SDK's test doubles pull
+// It is hand-rolled (not `ai/test`'s `MockLanguageModelV4`) on purpose: the SDK's test doubles pull
 // `vitest` in transitively, which a Next/webpack production build cannot resolve. apps/ai-kit is
 // provider-SDK-exempt, so importing the `@ai-sdk/provider` contract here is allowed (ADR-0011/0022).
-import type { LanguageModelV3 } from "@ai-sdk/provider";
+import type { LanguageModelV4 } from "@ai-sdk/provider";
 
 /** A local model that also records its `doGenerate` invocations, so a caller can assert the
  *  provider was NOT reached on a fail-closed path (empty wallet, tripped breaker, guardrail block). */
-export type LocalModel = LanguageModelV3 & {
+export type LocalModel = LanguageModelV4 & {
   readonly doGenerateCalls: readonly unknown[];
 };
 
@@ -30,7 +30,7 @@ const MOCK_USAGE = {
 export function mockModel(text: string): LocalModel {
   const doGenerateCalls: unknown[] = [];
   return {
-    specificationVersion: "v3",
+    specificationVersion: "v4",
     provider: "caisson-demo",
     modelId: "local-mock",
     supportedUrls: {},

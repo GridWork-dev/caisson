@@ -13,7 +13,7 @@
     "test": "bun test ./lib"
   },
   "dependencies": {
-    "@ai-sdk/provider": "^3.0.14",
+    "@ai-sdk/provider": "^4.0.3",
     "@caisson/ai-config": "workspace:*",
     "@caisson/ai-kit": "workspace:*",
     "@caisson/ai-meter": "workspace:*",

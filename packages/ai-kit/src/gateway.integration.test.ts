@@ -64,8 +64,8 @@ import {
 import { defineEval, exactGrader } from "@caisson/ai-evals";
 import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
-import { MockLanguageModelV3 } from "ai/test";
-import type { LanguageModelV3 } from "@ai-sdk/provider";
+import { MockLanguageModelV4 } from "ai/test";
+import type { LanguageModelV4 } from "@ai-sdk/provider";
 import { infer, type InferOptions } from "./gateway.ts";
 
 let tp: TestPg;
@@ -98,8 +98,8 @@ const SETTINGS: AiSettings = {
 };
 
 /** A mock model: usage 10 in / 20 out, echoes a fixed reply. Zero network. */
-function mockModel(text = "ok"): MockLanguageModelV3 {
-  return new MockLanguageModelV3({
+function mockModel(text = "ok"): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
     doGenerate: async () => ({
       finishReason: { unified: "stop", raw: "stop" },
       usage: {
@@ -132,7 +132,7 @@ const cleanPolicy = (over: Partial<GuardPolicy> = {}): GuardPolicy => ({
 });
 
 function baseOpts(
-  model: LanguageModelV3,
+  model: LanguageModelV4,
   policy: GuardPolicy,
   s: InMemoryEventSink,
   over: Partial<InferOptions> = {},

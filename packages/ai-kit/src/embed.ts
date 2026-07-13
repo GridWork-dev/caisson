@@ -22,7 +22,7 @@ import {
   embedMany as sdkEmbedMany,
 } from "ai";
 import type { Embedding, EmbeddingModelUsage } from "ai";
-import type { EmbeddingModelV3, ProviderV3 } from "@ai-sdk/provider";
+import type { EmbeddingModelV4, ProviderV4 } from "@ai-sdk/provider";
 import type { AiSettings } from "@caisson/ai-config";
 import { resolveProvider } from "@caisson/ai-config";
 import { reconcile, reserve } from "@caisson/ai-meter";
@@ -44,7 +44,7 @@ import { normalizeEmbeddingUsage } from "./usage.ts";
 export type EmbeddingModelResolver = (
   lane: string,
   accountId?: string,
-) => EmbeddingModelV3 | Promise<EmbeddingModelV3>;
+) => EmbeddingModelV4 | Promise<EmbeddingModelV4>;
 
 export interface EmbedOptions {
   /**
@@ -101,10 +101,10 @@ const ZERO_USAGE: Usage = {
  */
 export function buildEmbeddingRegistryResolver(
   settings: AiSettings,
-  providers: Record<string, ProviderV3>,
+  providers: Record<string, ProviderV4>,
 ): EmbeddingModelResolver {
   const registry = createProviderRegistry(providers);
-  return (lane: string): EmbeddingModelV3 => {
+  return (lane: string): EmbeddingModelV4 => {
     const cfg = resolveProvider(settings, lane);
     return registry.embeddingModel(`${cfg.provider}:${cfg.model}`);
   };

@@ -23,11 +23,11 @@ import {
 import { matchGolden, newTestPg, type TestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import { simulateReadableStream } from "ai";
-import { MockEmbeddingModelV3, MockLanguageModelV3 } from "ai/test";
+import { MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 import type {
-  LanguageModelV3,
-  LanguageModelV3StreamPart,
-  LanguageModelV3Usage,
+  LanguageModelV4,
+  LanguageModelV4StreamPart,
+  LanguageModelV4Usage,
 } from "@ai-sdk/provider";
 import { embed, type EmbedOptions } from "./embed.ts";
 import {
@@ -195,7 +195,7 @@ interface TestLanguageUsage {
   readonly cachedInputTokens?: number;
 }
 
-function sdkUsage(usage: TestLanguageUsage): LanguageModelV3Usage {
+function sdkUsage(usage: TestLanguageUsage): LanguageModelV4Usage {
   const cachedInputTokens = usage.cachedInputTokens ?? 0;
   return {
     inputTokens: {
@@ -255,8 +255,8 @@ async function resetSchema(): Promise<void> {
 function languageModel(
   usage: TestLanguageUsage,
   text = "ok",
-): MockLanguageModelV3 {
-  return new MockLanguageModelV3({
+): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
     doGenerate: async () => ({
       finishReason: { unified: "stop", raw: "stop" },
       usage: sdkUsage(usage),
@@ -266,8 +266,8 @@ function languageModel(
   });
 }
 
-function failingLanguageModel(): MockLanguageModelV3 {
-  return new MockLanguageModelV3({
+function failingLanguageModel(): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
     doGenerate: async () => {
       throw new Error("provider down");
     },
@@ -277,11 +277,11 @@ function failingLanguageModel(): MockLanguageModelV3 {
 function streamingModel(
   chunks: readonly string[],
   usage: TestLanguageUsage,
-): MockLanguageModelV3 {
-  const parts: LanguageModelV3StreamPart[] = [
+): MockLanguageModelV4 {
+  const parts: LanguageModelV4StreamPart[] = [
     { type: "stream-start", warnings: [] },
     { type: "text-start", id: "usage-golden" },
-    ...chunks.map((delta): LanguageModelV3StreamPart => ({
+    ...chunks.map((delta): LanguageModelV4StreamPart => ({
       type: "text-delta",
       id: "usage-golden",
       delta,
@@ -293,14 +293,14 @@ function streamingModel(
       usage: sdkUsage(usage),
     },
   ];
-  return new MockLanguageModelV3({
+  return new MockLanguageModelV4({
     doStream: async () => ({
       stream: simulateReadableStream({ chunks: parts }),
     }),
   });
 }
 
-function inferOptions(model: LanguageModelV3): InferOptions {
+function inferOptions(model: LanguageModelV4): InferOptions {
   return {
     tx: testPg().pg,
     accountId: ACCOUNT_ID,
@@ -315,11 +315,11 @@ function inferOptions(model: LanguageModelV3): InferOptions {
   };
 }
 
-function streamOptions(model: LanguageModelV3): InferStreamOptions {
+function streamOptions(model: LanguageModelV4): InferStreamOptions {
   return inferOptions(model);
 }
 
-function embedOptions(model: MockEmbeddingModelV3): EmbedOptions {
+function embedOptions(model: MockEmbeddingModelV4): EmbedOptions {
   return {
     tx: testPg().pg,
     accountId: ACCOUNT_ID,
@@ -450,7 +450,7 @@ describe("v5 usage-accounting golden", () => {
       "default",
       "embedding input",
       embedOptions(
-        new MockEmbeddingModelV3({
+        new MockEmbeddingModelV4({
           maxEmbeddingsPerCall: Infinity,
           doEmbed: async () => ({
             embeddings: [[0.1, 0.2]],

@@ -33,8 +33,9 @@ import type {
   LanguageModelMiddleware,
   LanguageModelUsage,
   ModelMessage,
+  SystemModelMessage,
 } from "ai";
-import type { LanguageModelV3, ProviderV3 } from "@ai-sdk/provider";
+import type { LanguageModelV4, ProviderV4 } from "@ai-sdk/provider";
 import type { AiSettings } from "@caisson/ai-config";
 import { resolveProvider } from "@caisson/ai-config";
 import {
@@ -59,13 +60,13 @@ import { normalizeLanguageUsage } from "./usage.ts";
 
 /**
  * Resolve a configured lane to its backing model. Production builds this over a provider registry
- * (`buildRegistryResolver`); tests inject a mock `LanguageModelV2` — the live transport stays the
+ * (`buildRegistryResolver`); tests inject a mock `LanguageModelV4` — the live transport stays the
  * only un-exercised path.
  */
 export type ModelResolver = (
   lane: string,
   accountId?: string,
-) => LanguageModelV3 | Promise<LanguageModelV3>;
+) => LanguageModelV4 | Promise<LanguageModelV4>;
 
 /** What to send the model: pre-built messages, or a registry prompt reference to resolve + render. */
 export type InferInput =
@@ -191,10 +192,10 @@ const ZERO_USAGE: Usage = {
  */
 export function buildRegistryResolver(
   settings: AiSettings,
-  providers: Record<string, ProviderV3>,
+  providers: Record<string, ProviderV4>,
 ): ModelResolver {
   const registry = createProviderRegistry(providers);
-  return (lane: string): LanguageModelV3 => {
+  return (lane: string): LanguageModelV4 => {
     const cfg = resolveProvider(settings, lane);
     return registry.languageModel(`${cfg.provider}:${cfg.model}`);
   };
@@ -213,6 +214,38 @@ function toModelMessages(messages: readonly RenderedMessage[]): ModelMessage[] {
         return { role: "assistant", content };
     }
   });
+}
+
+interface SdkPrompt {
+  readonly messages: ModelMessage[];
+  readonly instructions?: SystemModelMessage[];
+}
+
+/**
+ * AI SDK v7 rejects system-role entries in `messages` by default. Registry prompts are trusted,
+ * server-authored artifacts, so project their system entries onto the dedicated `instructions`
+ * channel. Raw caller-supplied messages deliberately stay untouched and therefore retain v7's
+ * fail-closed rejection instead of opting user-controlled content into `allowSystemInMessages`.
+ */
+function toSdkPrompt(
+  messages: readonly RenderedMessage[],
+  trustedRegistryPrompt: boolean,
+): SdkPrompt {
+  if (!trustedRegistryPrompt) return { messages: toModelMessages(messages) };
+
+  const instructions: SystemModelMessage[] = [];
+  const modelMessages: ModelMessage[] = [];
+  for (const message of messages) {
+    if (message.role === "system") {
+      instructions.push({ role: "system", content: message.content });
+    } else {
+      modelMessages.push(message);
+    }
+  }
+
+  return instructions.length > 0
+    ? { instructions, messages: modelMessages }
+    : { messages: modelMessages };
 }
 
 /**
@@ -309,9 +342,10 @@ export async function infer(
   let text: string;
   let rawUsage: LanguageModelUsage;
   try {
+    const prompt = toSdkPrompt(guarded, promptVersionId !== null);
     const result = await generateText({
       model: wrapped,
-      messages: toModelMessages(guarded),
+      ...prompt,
       ...(opts.maxOutputTokens !== undefined
         ? { maxOutputTokens: opts.maxOutputTokens }
         : {}),
@@ -553,9 +587,10 @@ export async function inferStream(
     let sawFinish = false;
     let streamErr: unknown;
     try {
+      const prompt = toSdkPrompt(guarded, promptVersionId !== null);
       const result = streamText({
         model: wrapped,
-        messages: toModelMessages(guarded),
+        ...prompt,
         ...(opts.maxOutputTokens !== undefined
           ? { maxOutputTokens: opts.maxOutputTokens }
           : {}),
@@ -563,7 +598,7 @@ export async function inferStream(
           ? { abortSignal: opts.abortSignal }
           : {}),
       });
-      for await (const part of result.fullStream) {
+      for await (const part of result.stream) {
         if (part.type === "text-delta") {
           consumedText += part.text;
           yield part.text;
