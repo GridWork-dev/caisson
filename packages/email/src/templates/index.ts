@@ -4,7 +4,7 @@
 // `credits-expiring` billing notice (ADR-0252) and the `purchase-confirmation` receipt (services/
 // license's post-webhook-commit send) each add a per-template data shape, so the registry is
 // keyed by a `TemplateDataMap` rather than one shared prop type.
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import {
   AbandonedCheckoutEmail,
   ABANDONED_CHECKOUT_SUBJECT,
