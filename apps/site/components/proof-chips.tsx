@@ -1,9 +1,12 @@
 import { StatusChip, type IconName } from "@/components";
+import { SealOnProof } from "@/components/seal-on-proof";
 
 // A wrapping row of self-contained proof chips (ADR-0285 §4). Unlike a "·"-separated strip — whose
 // last item orphans onto its own line when it wraps — each chip is a complete pill, so a wrap reads
-// as intentional, never as a dangling fragment. Presentational, server-safe. Reused by the evidence
-// hero (fixing the orphaned "S3 Object-Lock proofs") and the homepage install card.
+// as intentional, never as a dangling fragment. Presentational, server-safe (the SealOnProof row
+// wrapper is the client half — ADR-0334 moment 1: check glyphs dash-draw once on reveal, chips
+// settle with the spring token; chips render complete without JS/under reduced motion). Reused by
+// the evidence hero (fixing the orphaned "S3 Object-Lock proofs") and the homepage install card.
 export function ProofChips({
   items,
   icon = "check",
@@ -17,7 +20,7 @@ export function ProofChips({
   note?: string;
 }) {
   return (
-    <div
+    <SealOnProof
       style={{
         display: "flex",
         flexWrap: "wrap",
@@ -36,6 +39,6 @@ export function ProofChips({
           {note}
         </span>
       ) : null}
-    </div>
+    </SealOnProof>
   );
 }

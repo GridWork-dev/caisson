@@ -661,3 +661,23 @@ kbd,
     transition-delay: 0ms !important;
   }
 }
+
+/* ===== Motion-moment tokens (ADR-0334) — site-local until the DS phase promotes them. The
+ * spring is a soft single overshoot (peak 1.06) authored as a linear() curve so one-shot
+ * settles read as physical without a motion library. ===== */
+:root {
+  --cs-ease-spring-settle: linear(
+    0,
+    0.301 12.1%,
+    0.562 23.4%,
+    0.778 34.6%,
+    0.928 45.8%,
+    1.019 57.5%,
+    1.062 69.7%,
+    1.052 76.8%,
+    1.031 84.2%,
+    1.014 91.1%,
+    1
+  );
+  --cs-duration-seal: 500ms;
+}

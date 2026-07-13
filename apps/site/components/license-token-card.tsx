@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, StatusPill } from "@caisson/ui/components";
+import { SealBadge } from "@/components/seal-on-proof";
 import type { LicenseGrantRow } from "@/lib/dashboard-reads";
 
 export interface LicenseTokenCardProps {
@@ -89,6 +90,9 @@ export function LicenseTokenCard({ grant }: LicenseTokenCardProps) {
         >
           {copied ? "Copied" : "Copy token"}
         </Button>
+        {/* Seal on Proof (ADR-0334 moment 1): the hairline seal ring draws once when the copy
+            lands — mount-triggered, decorative, gone with the 2s copied window. */}
+        {copied ? <SealBadge /> : null}
         <span className="cs-muted" style={{ fontSize: "var(--cs-text-xs)" }}>
           Verify offline with{" "}
           <code style={{ fontFamily: "var(--cs-font-mono)" }}>
