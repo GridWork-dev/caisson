@@ -43,5 +43,5 @@ export default defineModule({
     "@caisson/tenancy-rls": "0.5.0",
   },
   description:
-    "AI Production Kit edition: the metered infer() gateway composing prompt-registry + ai-meter + guardrails + ai-config behind Vercel AI SDK v5 — the enforced chokepoint for every AI feature (ADR-0059).",
+    "AI Production Kit edition: the metered infer() gateway composing prompt-registry + ai-meter + guardrails + ai-config behind Vercel AI SDK v7 — the enforced chokepoint for every AI feature (ADR-0059).",
 });
