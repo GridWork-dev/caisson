@@ -29,7 +29,7 @@
   },
   {
     "path": "package.json",
-    "content": "{\n  \"dependencies\": {\n    \"@caisson/credits\": \"0.2.0\",\n    \"@caisson/field-crypto\": \"0.1.0\"\n  },\n  \"devDependencies\": {\n    \"eslint\": \"^9.13.0\",\n    \"typescript\": \"^5.6.0\"\n  },\n  \"name\": \"acme-app\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"tsc -p tsconfig.json\",\n    \"lint\": \"eslint .\",\n    \"test\": \"bun test ./src\"\n  },\n  \"type\": \"module\"\n}\n"
+    "content": "{\n  \"dependencies\": {\n    \"@caisson/credits\": \"0.2.0\",\n    \"@caisson/field-crypto\": \"0.1.0\"\n  },\n  \"devDependencies\": {\n    \"@types/bun\": \"^1.1.14\",\n    \"eslint\": \"^9.13.0\",\n    \"typescript\": \"^5.6.0\"\n  },\n  \"name\": \"acme-app\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"tsc -p tsconfig.json\",\n    \"lint\": \"eslint .\",\n    \"test\": \"bun test ./src\"\n  },\n  \"type\": \"module\"\n}\n"
   },
   {
     "path": "railway.toml",
@@ -45,6 +45,6 @@
   },
   {
     "path": "tsconfig.json",
-    "content": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2022\",\n    \"module\": \"Preserve\",\n    \"moduleResolution\": \"Bundler\",\n    \"strict\": true,\n    \"noUncheckedIndexedAccess\": true,\n    \"verbatimModuleSyntax\": true,\n    \"skipLibCheck\": true,\n    \"outDir\": \"dist\",\n    \"rootDir\": \"src\"\n  },\n  \"include\": [\"src\"]\n}\n"
+    "content": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2022\",\n    \"module\": \"Preserve\",\n    \"moduleResolution\": \"Bundler\",\n    \"types\": [\"bun\"],\n    \"strict\": true,\n    \"noUncheckedIndexedAccess\": true,\n    \"verbatimModuleSyntax\": true,\n    \"skipLibCheck\": true,\n    \"outDir\": \"dist\",\n    \"rootDir\": \"src\"\n  },\n  \"include\": [\"src\"]\n}\n"
   }
 ]
