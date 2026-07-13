@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "AI Production Kit edition: the metered infer() gateway composing prompt-registry + ai-meter + guardrails + ai-config behind Vercel AI SDK v5 — the enforced chokepoint for every AI feature.",
+  "description": "AI Production Kit edition: the metered infer() gateway composing prompt-registry + ai-meter + guardrails + ai-config behind Vercel AI SDK v7 — the enforced chokepoint for every AI feature.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

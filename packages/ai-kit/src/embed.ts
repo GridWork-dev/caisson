@@ -38,7 +38,7 @@ import { normalizeEmbeddingUsage } from "./usage.ts";
 
 /**
  * Resolve a configured lane to its backing TEXT embedding model. Production builds this over a
- * provider registry (`buildEmbeddingRegistryResolver`); tests inject a mock `EmbeddingModelV2`.
+ * provider registry (`buildEmbeddingRegistryResolver`); tests inject a mock `EmbeddingModelV4`.
  * Mirrors `gateway.ts`'s `ModelResolver` for the embeddings surface.
  */
 export type EmbeddingModelResolver = (

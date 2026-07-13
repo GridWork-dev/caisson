@@ -2,7 +2,7 @@
 
 The **AI Production Kit** edition (ADR-0059): one metered-inference gateway — `infer(lane, input,
 opts)` — that is the enforced chokepoint for every AI feature. It composes the four base primitives
-behind Vercel AI SDK v5, so a buyer's shipped app gets cost control, reproducible prompts, fail-closed
+behind Vercel AI SDK v7, so a buyer's shipped app gets cost control, reproducible prompts, fail-closed
 content safety, and a quality gate **by construction**, not by discipline.
 
 - **Layer:** edition (`editions: ["ai-kit"]`) — a composition, never a fork (ADR-0003).
@@ -20,8 +20,13 @@ output-guard → reconcile
 
 The backing model is **injected** (`opts.resolveModel`) — production wires a `createProviderRegistry`
 over the ai-config lanes (`buildRegistryResolver` + `defaultProviders`); CI injects a mock
-`LanguageModelV2`, so no live model/network call happens in the gate. See `AGENTS.md` for the usage
+`LanguageModelV4`, so no live model/network call happens in the gate. See `AGENTS.md` for the usage
 contract + invariants.
+
+Registry-authored system messages are projected onto AI SDK v7's trusted `instructions` channel;
+raw caller-supplied system roles remain rejected. Billing uses the all-step usage total, including
+nested cache-read tokens, while preserving the distinction between unreported usage and reported
+zero.
 
 ## Metered embeddings (ADR-0213)
 

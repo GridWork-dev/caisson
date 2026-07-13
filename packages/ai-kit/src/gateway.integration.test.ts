@@ -1,7 +1,7 @@
 // End-to-end integration proof for the metered inference gateway (ADR-0059). Where
 // `gateway.test.ts` exercises each pipeline leg in isolation, this drives the WHOLE composition
 // against real schemas on PGlite (the production `withTenant` shape) with a test-doubled
-// `LanguageModelV2` (zero network — the live transport stays the only un-exercised path):
+// `LanguageModelV4` (zero network — the live transport stays the only un-exercised path):
 //
 //   - the happy path metered call: resolve `name@version` → render → reserve BEFORE the provider call
 //     → reconcile to ACTUAL, with the wallet, the append-only `usage_event`, and the spend window all

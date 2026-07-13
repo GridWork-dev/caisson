@@ -15,7 +15,7 @@
 //   - ai-config        resolveProvider      (lane → provider/model coordinates; no provider literal)
 //
 // The backing model is INJECTED (`opts.resolveModel`): production wires `buildRegistryResolver` over
-// the real `@ai-sdk/*` adapters, CI injects a mock `LanguageModelV2`. The Vercel AI SDK v5 surface
+// the real `@ai-sdk/*` adapters, CI injects a mock `LanguageModelV4`. The Vercel AI SDK v7 surface
 // (`createProviderRegistry` / `wrapLanguageModel` / `generateText` / `streamText`) is hidden behind
 // `infer()` / `inferStream()`, so the SDK stays swappable — and the live transport is the only path
 // not exercised by a test.

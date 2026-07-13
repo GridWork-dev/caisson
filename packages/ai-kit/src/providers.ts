@@ -7,7 +7,7 @@
 // request happens in the test suite (the package's zero-live-call invariant). A buyer's BYOK key is read from
 // the env var the lane NAMES (`apiKeyEnv`, ADR-0011) — ai-config never reads the key itself; the SDK
 // adapter does, here, at the edge. `openrouter`/`local`/`ollama` are OpenAI-API-compatible, so they
-// ride `@ai-sdk/openai-compatible` (ADR-0201) — NOT `createOpenAI`: since AI SDK v5 the OpenAI
+// ride `@ai-sdk/openai-compatible` (ADR-0201) — NOT `createOpenAI`: the OpenAI
 // adapter defaults `languageModel()` to the RESPONSES API, so a registry-resolved live call would
 // POST `{baseURL}/responses` (beta on OpenRouter, absent on Ollama) instead of `/chat/completions`.
 // A live-only defect — every CI path injects a mock model, which is exactly why it survived.

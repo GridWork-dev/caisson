@@ -1,5 +1,5 @@
 // Exit-gate proof for structuredGenerate<T>(): a metered infer() call over PGlite + a mock
-// `LanguageModelV2` (zero network), same fixture shape as gateway.test.ts. Three outcomes: a
+// `LanguageModelV4` (zero network), same fixture shape as gateway.test.ts. Three outcomes: a
 // well-formed JSON completion parses into the typed value, an empty completion (a refusal) throws
 // `StructuredGenerateError` with reason "refusal", and a non-JSON completion throws with reason
 // "invalid_json" — a schema mismatch on well-formed JSON throws with reason "schema_mismatch".

@@ -1,4 +1,4 @@
-// The reference app's LOCAL model — a minimal hand-rolled `LanguageModelV2` (zero network, zero
+// The reference app's LOCAL model — a minimal hand-rolled `LanguageModelV4` (zero network, zero
 // provider secret). The gateway takes the backing model as an INJECTED `resolveModel` (ADR-0059),
 // so the demo wires this echo model and production wires `buildRegistryResolver` over the real
 // `@ai-sdk/*` adapters (`defaultProviders`) with no change to the gateway. The live transport stays

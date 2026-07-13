@@ -232,7 +232,7 @@ describe("AI SDK v7 provider and transport matrix (ADR-0160/0201/0213)", () => {
 });
 
 describe("openai-compatible backends resolve the CHAT path (ADR-0201)", () => {
-  // The live-only defect ADR-0201 fixes: `createOpenAI().languageModel()` defaults to the v5
+  // The live-only defect ADR-0201 fixes: `createOpenAI().languageModel()` defaults to the
   // Responses API (`{baseURL}/responses` — beta on OpenRouter, absent on Ollama). The compatible
   // adapter's `languageModel()` IS its chat model — observable as the model instance's
   // `provider === "<name>.chat"` — so these three cases can never regress back to /responses

@@ -1,5 +1,5 @@
 // Exit-gate proof for the metered inference gateway (ADR-0059). PGlite + the production
-// `withTenant` shape + a mock `LanguageModelV2` (zero network): a metered `infer()` reserves BEFORE
+// `withTenant` shape + a mock `LanguageModelV4` (zero network): a metered `infer()` reserves BEFORE
 // the provider call, reconciles to actual, fail-closed 402s on a short wallet / open breaker without
 // ever calling the model, blocks a guardrailed input with a 422 (no spend), restores tokenized PII on
 // the output while the model only ever sees redacted text, resolves a prompt by `name@version`, and
@@ -147,7 +147,7 @@ function mockModelNoUsage(text = "ok"): MockLanguageModelV4 {
 
 /**
  * A mock model that STREAMS `chunks` as separate `text-delta` parts, then a `finish` part carrying
- * `usage` — the low-level `LanguageModelV2StreamPart` shape `doStream` returns (note: `delta`, not
+ * `usage` — the low-level `LanguageModelV4StreamPart` shape `doStream` returns (note: `delta`, not
  * `text` — that field only exists on the higher-level `streamText().stream` parts). A
  * `chunkDelayInMs` lets a test deterministically stop draining before `finish` arrives.
  */

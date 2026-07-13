@@ -5,9 +5,9 @@ import type { Usage } from "@caisson/ai-meter";
 export interface LanguageUsageLike {
   readonly inputTokens?: number | undefined;
   readonly outputTokens?: number | undefined;
-  /** AI SDK v5 field, retained only for the v5 characterization checkpoint. */
+  /** Legacy checkpoint field retained only to prove migration compatibility. */
   readonly cachedInputTokens?: number | undefined;
-  /** AI SDK v6/v7 field. */
+  /** AI SDK v7 cache-read field. */
   readonly inputTokenDetails?:
     | {
         readonly cacheReadTokens?: number | undefined;

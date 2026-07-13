@@ -26,7 +26,7 @@ output-guard → reconcile`
 
 - **The model is INJECTED (`opts.resolveModel`).** Production wires `buildRegistryResolver(settings,
 defaultProviders(settings))` (a `createProviderRegistry` over the ai-config lanes); tests inject a
-  mock `LanguageModelV2`. The Vercel AI SDK v5 is hidden behind `infer()` — never call a provider SDK
+  mock `LanguageModelV4`. The Vercel AI SDK v7 is hidden behind `infer()` — never call a provider SDK
   directly. **This package is the ONLY one that may import `ai` / `@ai-sdk/*`** (ADR-0011/0022).
 - **Reserve happens BEFORE the provider call.** A short wallet throws `InsufficientCreditsError` (402)
   and an open breaker throws `SpendCapError` (402) — in both cases the model is never called and
@@ -50,7 +50,11 @@ defaultProviders(settings))` (a `createProviderRegistry` over the ai-config lane
   the alias to change the live prompt with no redeploy. Untrusted `vars` are validated by the
   version's strict schema and escaped at render; they can only fill a content slot, never forge a role.
 - Cost normalizes through `@caisson/ai-meter`'s versioned price book into **integer credits** (never a
-  float). `opts.meter` overrides the price book / denomination / scope / clock.
+  float). AI SDK v7's all-step usage is the billing source; nested
+  `inputTokenDetails.cacheReadTokens` is clamped to input tokens, and unreported usage remains
+  distinct from reported zero. `opts.meter` overrides the price book / denomination / scope / clock.
+- Registry-authored system messages are passed through the trusted `instructions` channel. Raw
+  caller-supplied system roles are not opted into `allowSystemInMessages` and fail closed.
 
 ## Metered embeddings (ADR-0213)
 

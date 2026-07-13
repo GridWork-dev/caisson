@@ -39,7 +39,7 @@ import {
 import { normalizeEmbeddingUsage, normalizeLanguageUsage } from "./usage.ts";
 
 describe("normalizeLanguageUsage", () => {
-  test("normalizes reported v5 usage without exposing an SDK type", () => {
+  test("normalizes legacy flat usage without exposing an SDK type", () => {
     expect(
       normalizeLanguageUsage({
         inputTokens: 10,
@@ -345,7 +345,7 @@ afterAll(async () => {
   await tp?.close();
 });
 
-describe("v5 usage-accounting golden", () => {
+describe("SDK usage-accounting golden", () => {
   test("pins integer ledger outcomes across every migration-sensitive path", async () => {
     await resetSchema();
     const reported = await infer(
