@@ -20,8 +20,11 @@ import {
   createCaptureEmailer,
   createResendEmailer,
   type Emailer,
+  type ResendQuota,
 } from "@caisson/email";
+import { createInMemoryAuditSink, deliverImmediate } from "@caisson/alerting";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
+import { loadOpsAlertChannels } from "./alerting.ts";
 
 /** The buyer dashboard — license + registry access. Same hardcoded posture as deploy.ts's credit-
  *  expiry `dashboardUrl` (no dedicated env var for a single, stable, non-secret URL). */
@@ -41,9 +44,54 @@ export function resolveEmailer(
       apiKey,
       from: env.RESEND_FROM?.trim() || "Caisson <no-reply@caisson.sh>",
       replyTo: "support@caisson.sh",
+      onQuota: createQuotaCliffAlert(env),
     });
   }
   return createCaptureEmailer();
+}
+
+/**
+ * Fire-once-per-window ops alert when Resend's remaining monthly quota drops under the cliff
+ * (Kickoff T banner item 8a — Resend exposes NO usage API; the per-send response headers are the
+ * only programmatic signal, and Resend's own built-in 80%/100% quota emails land in the operator
+ * inbox as the second, zero-code layer). Threshold via RESEND_QUOTA_ALERT_REMAINING (remaining
+ * sends; default 5000 ≈ 10% of the 50k tier; "0" disables). Same never-throws posture as every
+ * other notify path here — an alert failure must never break the send that triggered it.
+ * ponytail: in-memory once-per-6h-per-process rearm — a multi-instance deploy alerts once per
+ * instance per window; shared-store dedupe only if that proves noisy.
+ */
+export function createQuotaCliffAlert(
+  env: Record<string, string | undefined> = process.env,
+): (quota: ResendQuota) => void {
+  const raw = env.RESEND_QUOTA_ALERT_REMAINING?.trim() ?? "";
+  const threshold = raw === "" ? 5000 : Number(raw);
+  const REARM_MS = 6 * 60 * 60_000;
+  let lastAlertAtMs = 0;
+  return (quota: ResendQuota): void => {
+    if (!Number.isFinite(threshold) || threshold <= 0) return;
+    const remaining = quota.monthlyRemaining;
+    if (remaining === null || remaining > threshold) return;
+    const now = Date.now();
+    if (now - lastAlertAtMs < REARM_MS) return;
+    lastAlertAtMs = now;
+    void deliverImmediate(
+      {
+        id: crypto.randomUUID(),
+        type: "email.quota_low",
+        severity: "critical",
+        tenantId: "operator",
+        recipient: "operator",
+        dedupeKey: "email.quota_low",
+        title: "Resend monthly quota cliff",
+        body: `Remaining monthly Resend quota is ${String(remaining)} sends (alert threshold ${String(threshold)}). Daily remaining: ${quota.dailyRemaining === null ? "n/a" : String(quota.dailyRemaining)}. Lifecycle + receipt email stops at 0 — bump the plan or throttle sends.`,
+        createdAt: now,
+      },
+      loadOpsAlertChannels(env),
+      createInMemoryAuditSink(),
+    ).catch(() => {
+      // Alerting must never break the send that triggered it.
+    });
+  };
 }
 
 /**

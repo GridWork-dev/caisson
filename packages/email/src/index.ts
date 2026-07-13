@@ -4,6 +4,7 @@ export type {
   Emailer,
   EmailMessage,
   ResendConfig,
+  ResendQuota,
 } from "./email.ts";
 export { createPostmarkEmailer } from "./postmark.ts";
 export type { PostmarkConfig } from "./postmark.ts";
