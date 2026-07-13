@@ -24,7 +24,7 @@
     "@caisson/auth": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
-    "@clerk/backend": "^2.24.0",
+    "@clerk/backend": "^3.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {
