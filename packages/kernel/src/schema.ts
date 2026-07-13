@@ -6,7 +6,7 @@ import { ValidationError } from "./errors.ts";
 /** `z.object(shape).strict()` — rejects unknown keys at the boundary. */
 export function strictObject<T extends z.ZodRawShape>(
   shape: T,
-): z.ZodObject<T, "strict"> {
+): z.ZodObject<T> {
   return z.object(shape).strict();
 }
 

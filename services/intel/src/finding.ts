@@ -24,7 +24,7 @@ export const FindingSchema = strictObject({
   title: z.string().trim().min(1).max(300),
   body: z.string().trim().min(1).max(10_000),
   dedupKey: z.string().trim().min(1).max(300),
-  payload: z.record(z.unknown()).default({}),
+  payload: z.record(z.string(), z.unknown()).default({}),
 });
 export type Finding = z.infer<typeof FindingSchema>;
 

@@ -56,7 +56,7 @@ const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
     z.boolean(),
     z.null(),
     z.array(jsonValueSchema),
-    z.record(jsonValueSchema),
+    z.record(z.string(), jsonValueSchema),
   ]),
 );
 
@@ -101,7 +101,7 @@ export const manifestEvidenceItem = strictObject({
   summary: z.string().trim().min(1).max(2000),
   status: z.enum(["pass", "flagged"]),
   reason: z.string().trim().min(1).max(2000).optional(),
-  facts: z.record(jsonValueSchema),
+  facts: z.record(z.string(), jsonValueSchema),
   manualSlots: z.array(manifestManualSlot),
 }).superRefine((item, ctx) => {
   if (item.status === "flagged" && item.reason === undefined) {

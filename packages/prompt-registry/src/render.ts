@@ -79,10 +79,8 @@ function zodForType(t: VarType): z.ZodTypeAny {
  * Compile a `VarSpec` into a strict Zod object: every declared variable required, unknown variables
  * rejected. This is the typed `.strict()` schema untrusted render input is validated against.
  */
-export function buildVarSchema(
-  spec: VarSpec,
-): z.ZodObject<z.ZodRawShape, "strict"> {
-  const shape: z.ZodRawShape = {};
+export function buildVarSchema(spec: VarSpec): z.ZodObject<z.ZodRawShape> {
+  const shape: Record<string, z.ZodType> = {};
   for (const [name, t] of Object.entries(spec)) {
     if (!VAR_NAME_RE.test(name)) {
       throw new ValidationError("Invalid prompt variable name", { name });
@@ -137,10 +135,9 @@ export function renderPrompt(
   rawVars: unknown,
 ): RenderedMessage[] {
   const schema = buildVarSchema(spec);
-  const parsed: Record<string, string | number | boolean> = parseStrict(
-    schema,
-    rawVars,
-  );
+  // zod 4 infers a raw-shape object as `Record<string, unknown>`; the schema still guarantees
+  // string | number | boolean per zodForType at runtime, so the String() coercion below is total.
+  const parsed: Record<string, unknown> = parseStrict(schema, rawVars);
   const stringVars: Record<string, string> = {};
   for (const [name, value] of Object.entries(parsed)) {
     stringVars[name] = typeof value === "string" ? value : String(value);
