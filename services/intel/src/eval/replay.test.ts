@@ -8,6 +8,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { gateAgainstBaseline } from "@caisson/ai-evals";
+import type { Judge } from "@caisson/ai-evals";
+import type { Finding } from "../finding.ts";
 import { readCassetteFile } from "./cassette.ts";
 import {
   buildBriefQualityRun,
@@ -23,6 +25,32 @@ const FIXTURE = join(
   "__fixtures__",
   "competitor.fixture.json",
 );
+
+const fixtureJudge: Judge = {
+  model: "fixture-live-judge",
+  evaluate: () =>
+    Promise.resolve({
+      verdict: "pass",
+      score: 1,
+      rationale: "Fixture brief contains explicit WHAT/WHY/ACTION sections.",
+    }),
+};
+
+function composeFixtureBrief(finding: Finding): Promise<Finding> {
+  return Promise.resolve({
+    ...finding,
+    body: [
+      "WHAT CHANGED",
+      finding.title,
+      "WHY IT MATTERS",
+      "The recorded competitor signal may affect positioning.",
+      "ACTION",
+      "Review the fetched page before the next pricing decision.",
+      "SOURCE DETAIL",
+      finding.body,
+    ].join("\n"),
+  });
+}
 
 describe("intel replay E2E over the handcrafted competitor fixture", () => {
   test("the fixture is invisible to the eval lane's cassette discovery", () => {
@@ -49,7 +77,10 @@ describe("intel replay E2E over the handcrafted competitor fixture", () => {
     const entries: ReplayEntry[] = [{ cassette, findings }];
 
     const replayRun = await buildReplayRun(entries);
-    const briefRun = await buildBriefQualityRun(entries);
+    const briefRun = await buildBriefQualityRun(entries, {
+      compose: composeFixtureBrief,
+      judge: fixtureJudge,
+    });
     expect(replayRun.passed).toBe(true);
     expect(briefRun.passed).toBe(true);
 

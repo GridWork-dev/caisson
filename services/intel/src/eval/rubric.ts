@@ -1,6 +1,6 @@
 // The judged-replay rubric (CAISSON-101). The HYBRID judge: accuracy + grounding are graded
-// DETERMINISTICALLY in code here (no model, no tokens); actionability is graded by the cassette's
-// embedded LLM verdicts via `@caisson/ai-evals`' `judgeGrader(cassetteJudge(...))`. All graders are
+// DETERMINISTICALLY in code here (no model, no tokens); actionability is graded by the live judge
+// injected into `judgeGrader`. All graders are
 // wired into two pooled `defineEval` runs in `intel-briefs.eval.test.ts` — split by THRESHOLD, not
 // by scope: the deterministic scorers demand a perfect 1.0 (a replay that doesn't exactly reproduce
 // the recorded finding is a harness bug), while the judged scorer runs at 0.7 (a model verdict is
@@ -13,9 +13,8 @@ import { parseFinding } from "../finding.ts";
 import type { Finding } from "../finding.ts";
 import type { Grader } from "@caisson/ai-evals";
 
-/** The fixed actionability rubric prose — decision-usefulness. Shared verbatim between the live
- *  recorder (record.cli.ts prompts the judge with it) and the replay grader (judgeGrader's fixed
- *  criteria), so the recorded verdict and the replayed check are graded against the SAME rubric. */
+/** The fixed actionability rubric prose — decision-usefulness. Passed as `judgeGrader`'s fixed
+ * criteria so a finding or composed brief cannot rewrite the standard used to score it. */
 export const ACTIONABILITY_CRITERIA =
   "Judge whether this operator-intelligence brief is DECISION-USEFUL. A useful brief tells the " +
   "operator, concretely: WHAT changed, WHY it matters, and WHAT to do about it. Pass only when the " +

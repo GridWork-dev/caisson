@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { buildEnrichPrompt, enrichFindings } from "./llm.ts";
+import {
+  buildEnrichPrompt,
+  composeFindingBrief,
+  enrichFindings,
+} from "./llm.ts";
 import type { Fetcher } from "./http.ts";
 import type { Config } from "./config.ts";
 import type { Finding } from "./finding.ts";
@@ -11,7 +15,7 @@ const finding: Finding = {
   title: "NIST OSCAL released v2.0.0",
   body: "OSCAL moved from v1.0.0 to v2.0.0.",
   dedupKey: "compliance:oscal:v2-0-0",
-  payload: {},
+  payload: { previous: "v1.0.0", current: "v2.0.0" },
 };
 
 const baseConfig: Config = {
@@ -51,6 +55,25 @@ describe("buildEnrichPrompt", () => {
     expect(prompt).toContain(finding.title);
     expect(prompt).toContain(finding.body);
     expect(prompt).toContain(finding.source);
+    expect(prompt).toContain('"previous":"v1.0.0"');
+    expect(prompt).toContain('"current":"v2.0.0"');
+  });
+
+  test("requires a grounded WHAT/WHY/ACTION JSON brief", () => {
+    const prompt = buildEnrichPrompt(finding);
+    expect(prompt).toContain('"whatChanged"');
+    expect(prompt).toContain('"whyItMatters"');
+    expect(prompt).toContain('"action"');
+    expect(prompt).toContain("STRICT JSON ONLY");
+  });
+
+  test("bounds an untrusted payload before it enters the model prompt", () => {
+    const prompt = buildEnrichPrompt({
+      ...finding,
+      payload: { external: "x".repeat(100_000) },
+    });
+    expect(prompt.length).toBeLessThan(20_000);
+    expect(prompt).toContain("[payload truncated]");
   });
 });
 
@@ -73,12 +96,25 @@ describe("enrichFindings", () => {
     expect(result).toEqual([finding]);
   });
 
-  test("prepends the analysis to the body when armed and the call succeeds", async () => {
+  test("renders explicit WHAT/WHY/ACTION sections when armed and the call succeeds", async () => {
     const fetchImpl = (() =>
       Promise.resolve(
         new Response(
           JSON.stringify({
-            choices: [{ message: { content: "This is a routine release." } }],
+            service_tier: null,
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    whatChanged: "OSCAL moved from v1.0.0 to v2.0.0.",
+                    whyItMatters:
+                      "The major-version change can affect the compliance ingestion contract.",
+                    action:
+                      "Review the v2.0.0 release notes and run the OSCAL conformance fixture before the next release.",
+                  }),
+                },
+              },
+            ],
           }),
           { status: 200 },
         ),
@@ -88,8 +124,29 @@ describe("enrichFindings", () => {
       { ...baseConfig, llmEnabled: true, openrouterApiKey: "sk-or-x" },
       fetchImpl,
     );
-    expect(result?.body).toContain("This is a routine release.");
-    expect(result?.body).toContain(finding.body);
+    expect(result?.body).toContain("WHAT CHANGED\nOSCAL moved");
+    expect(result?.body).toContain("WHY IT MATTERS\nThe major-version");
+    expect(result?.body).toContain("ACTION\nReview the v2.0.0 release notes");
+    expect(result?.body).toContain(`SOURCE DETAIL\n${finding.body}`);
+  });
+
+  test("the strict composition seam rejects an unstructured model reply", async () => {
+    const fetchImpl = (() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: "This is a routine release." } }],
+          }),
+          { status: 200 },
+        ),
+      )) as unknown as Fetcher;
+    await expect(
+      composeFindingBrief(
+        finding,
+        { apiKey: "sk-or-x", model: baseConfig.llmModel },
+        fetchImpl,
+      ),
+    ).rejects.toThrow(/structured brief/);
   });
 
   test("fails soft to the original finding when the call errors", async () => {

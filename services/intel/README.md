@@ -50,23 +50,23 @@ Full list mirrored in `.env.example`. Required: `INTEL_DATABASE_URL`. Every othe
 optional and its watcher leg self-skips (fail-soft, not fail-closed) when absent — a missing
 `POSTHOG_API_KEY` disables the `analytics` PostHog leg and the whole `error` watcher, for example.
 
-| var                                                                                                        | default                                 | purpose                                                                                                                                         |
-| ---------------------------------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `INTEL_DATABASE_URL`                                                                                       | — (required)                            | the dedicated Postgres DSN for the `intel` schema                                                                                               |
-| `INTEL_HEALTHZ_PORT` / `INTEL_HEALTHZ_HOST`                                                                | `8791` / `0.0.0.0`                      | the local health endpoint bind                                                                                                                  |
-| `INTEL_SCHEDULER_ENABLED`                                                                                  | `true`                                  | the internal per-watcher interval scheduler                                                                                                     |
-| `INTEL_MIGRATE_ON_BOOT`                                                                                    | `false`                                 | apply the schema migration at boot — dev/local convenience only; the production runtime role is DML-only and can't run it (see Deploying below) |
-| `INTEL_CADENCE_*_MS` (six vars, one per watcher)                                                           | see table above                         | per-watcher interval override                                                                                                                   |
-| `INTEL_COMPETITOR_URLS`                                                                                    | —                                       | comma-separated competitor page list (data, not code)                                                                                           |
-| `INTEL_GITHUB_ORG`                                                                                         | `caisson-sh`                            | the GitHub org whose public repos are watched                                                                                                   |
-| `GITHUB_TOKEN`                                                                                             | —                                       | raises the GitHub API rate limit; unauthenticated works too                                                                                     |
-| `POSTHOG_API_KEY` / `POSTHOG_API_HOST` / `POSTHOG_PROJECT_ID`                                              | — / `https://us.posthog.com` / `493539` | analytics rollup + error tracking                                                                                                               |
-| `PLAUSIBLE_API_KEY` / `PLAUSIBLE_API_HOST` / `PLAUSIBLE_SITE_ID`                                           | — / `https://plausible.io` / —          | the Plausible half of the analytics rollup                                                                                                      |
-| `TG_BRIDGE_ALERT_URL` / `TG_BRIDGE_ALERT_TOKEN`                                                            | —                                       | the operator's Telegram push sink for error alerts                                                                                              |
-| `LINEAR_API_KEY` / `LINEAR_TEAM_ID`                                                                        | —                                       | auto-filed Linear Triage issues for error alerts                                                                                                |
-| `INTEL_ALERT_RATE_MAX_PER_WINDOW` / `INTEL_ALERT_TZ` / `INTEL_ALERT_QUIET_START` / `INTEL_ALERT_QUIET_END` | `3` / `UTC` / `0` / `0`                 | the alerting pipeline's rate-cap + quiet-hours policy                                                                                           |
-| `INTEL_LLM_ENABLED` / `OPENROUTER_API_KEY` / `INTEL_LLM_MODEL`                                             | `false` / — / a small model             | the tier-2 enrichment seam — off unless both are set                                                                                            |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`                                                                              | —                                       | tracing export; unset is a fully dormant no-op                                                                                                  |
+| var                                                                                                        | default                                     | purpose                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `INTEL_DATABASE_URL`                                                                                       | — (required)                                | the dedicated Postgres DSN for the `intel` schema                                                                                               |
+| `INTEL_HEALTHZ_PORT` / `INTEL_HEALTHZ_HOST`                                                                | `8791` / `0.0.0.0`                          | the local health endpoint bind                                                                                                                  |
+| `INTEL_SCHEDULER_ENABLED`                                                                                  | `true`                                      | the internal per-watcher interval scheduler                                                                                                     |
+| `INTEL_MIGRATE_ON_BOOT`                                                                                    | `false`                                     | apply the schema migration at boot — dev/local convenience only; the production runtime role is DML-only and can't run it (see Deploying below) |
+| `INTEL_CADENCE_*_MS` (six vars, one per watcher)                                                           | see table above                             | per-watcher interval override                                                                                                                   |
+| `INTEL_COMPETITOR_URLS`                                                                                    | —                                           | comma-separated competitor page list (data, not code)                                                                                           |
+| `INTEL_GITHUB_ORG`                                                                                         | `caisson-sh`                                | the GitHub org whose public repos are watched                                                                                                   |
+| `GITHUB_TOKEN`                                                                                             | —                                           | raises the GitHub API rate limit; unauthenticated works too                                                                                     |
+| `POSTHOG_API_KEY` / `POSTHOG_API_HOST` / `POSTHOG_PROJECT_ID`                                              | — / `https://us.posthog.com` / `493539`     | analytics rollup + error tracking                                                                                                               |
+| `PLAUSIBLE_API_KEY` / `PLAUSIBLE_API_HOST` / `PLAUSIBLE_SITE_ID`                                           | — / `https://plausible.io` / —              | the Plausible half of the analytics rollup                                                                                                      |
+| `TG_BRIDGE_ALERT_URL` / `TG_BRIDGE_ALERT_TOKEN`                                                            | —                                           | the operator's Telegram push sink for error alerts                                                                                              |
+| `LINEAR_API_KEY` / `LINEAR_TEAM_ID`                                                                        | —                                           | auto-filed Linear Triage issues for error alerts                                                                                                |
+| `INTEL_ALERT_RATE_MAX_PER_WINDOW` / `INTEL_ALERT_TZ` / `INTEL_ALERT_QUIET_START` / `INTEL_ALERT_QUIET_END` | `3` / `UTC` / `0` / `0`                     | the alerting pipeline's rate-cap + quiet-hours policy                                                                                           |
+| `INTEL_LLM_ENABLED` / `OPENROUTER_API_KEY` / `INTEL_LLM_MODEL`                                             | `false` / — / `anthropic/claude-sonnet-4.5` | the tier-2 enrichment seam — off unless both are set                                                                                            |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`                                                                              | —                                           | tracing export; unset is a fully dormant no-op                                                                                                  |
 
 Secrets are never committed. `.env.example` ships placeholders only; the real `.env` file is
 gitignored and lives on the deploy host, injected into the container via `docker-compose.yml`'s
@@ -125,40 +125,42 @@ never-throws guarantee — all fixture-driven, no live network calls. Live probe
 external sources are self-skipping `live/*.live.test.ts` files (`bun run test:live`), matching the
 rest of the repo's convention for anything that talks to a real third party.
 
-### Judged replay eval lane (`src/eval/`, CAISSON-101)
+### Replay + live brief eval lane (`src/eval/`, CAISSON-101/102)
 
-`bun run eval` joins this service to the repo's turbo `eval` task: a judged, offline replay of the
-watcher briefs. It is deterministic and self-skipping — with no cassettes committed it skips green,
-so no live model or network call ever fires in CI.
+`bun run eval` replays the watcher cassettes deterministically, then composes each operator brief and
+judges its actionability through live OpenRouter calls. CI runs this service's lane separately on a
+GitHub-hosted runner with the provider key scoped to the eval step; the remaining repo evals stay
+secretless and deterministic. With no green-only cassette set committed, this lane self-skips.
 
 The lane grades a HYBRID rubric against a recorded run: **accuracy** (the replayed finding is
 byte-identical to the recorded one) and **grounding** (every URL in a finding resolves to a host the
 watcher actually fetched) are graded deterministically in code; **actionability** (does the brief tell
-the operator what changed, why it matters, and what to do) is graded by an LLM judge whose verdicts
-are replayed from the cassette. Two pooled `defineEval` runs gate against a committed baseline via
+the operator what changed, why it matters, and what to do) is graded by a live LLM judge. Model
+outputs and verdicts never enter the cassette. Two pooled `defineEval` runs gate against a committed baseline via
 `@caisson/ai-evals` — `intel-replay` at threshold 1.0 and `intel-brief-quality` at 0.7, both with a
 0.6 Wilson floor (deliberately below the lane's usual 0.8 — a small session-4 sample; raise once
-n≥16 findings is proven). The always-run `src/eval/*.test.ts` unit tests plus an end-to-end replay
+n≥16 findings is proven). The always-run unit tests plus an end-to-end replay
 over a handcrafted fixture (`src/eval/__fixtures__/competitor.fixture.json`, which lives OUTSIDE the
 cassette dir so discovery never picks it up) keep the harness meaningfully tested with zero cassettes.
 
-**Recording is an operator act** (never CI, never a feature branch):
+**Recording is an operator act** (never CI):
 
 ```
-bun run src/eval/record.cli.ts [watcher ...]      # default: every watcher; needs live creds + OPENROUTER_API_KEY
+bun run src/eval/record.cli.ts [watcher ...]      # default: every watcher; needs live watcher creds
 ```
 
 It writes one sanitized cassette per watcher to the **pinned path**
 `services/intel/__cassettes__/<watcher>.json`, capturing the request/response exchanges (never request
 headers), the watch_state it read (a recorded no-op on write — the live daemon's baselines are never
-advanced), the findings, and one embedded judge verdict per finding. **Scrub guarantee:** every known
+advanced), and the raw findings. **Scrub guarantee:** every known
 secret value plus generic Bearer/key-prefixed/email patterns are stripped, and a fail-closed
 `assertScrubbed` gate THROWS before write if any secret value survives anywhere in the serialized
 cassette. The session-4 operator contract to arm the gate:
 
 1. `bun run src/eval/record.cli.ts` — record cassettes live.
-2. `BLESS=1 bun run eval` — mint `services/intel/__evals__/baseline.json`; review the diff.
-3. Commit BOTH the cassettes and the baseline in one change.
-4. **Assert the lane EXECUTES non-skipped** — a skipIf path mismatch is indistinguishable from a green
+2. `bun run eval` — require deterministic replay and the live judged run to pass.
+3. Only after step 2 is green, `BLESS=1 bun run eval` — mint the baseline; review the diff.
+4. Commit BOTH the cassettes and the baseline in one change. A red run commits neither.
+5. **Assert the lane EXECUTES non-skipped** — a skipIf path mismatch is indistinguishable from a green
    pass, so confirm `bun test ./src/eval/intel-briefs.eval.test.ts` reports the case as RUN before
    trusting the gate.

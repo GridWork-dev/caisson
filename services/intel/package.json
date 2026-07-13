@@ -15,9 +15,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src",
+    "test": "bun test ./src --path-ignore-patterns='**/*.eval.test.ts'",
     "test:live": "bun test ./live",
-    "eval": "bun test src/eval/intel-briefs.eval.test.ts",
+    "eval": "bun test --timeout 600000 src/eval/intel-briefs.eval.test.ts",
     "start": "bun run src/server.ts"
   },
   "dependencies": {
