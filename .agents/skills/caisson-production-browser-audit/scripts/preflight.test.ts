@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { runPreflight } from "./preflight";
+import { probeAdminSession, runPreflight } from "./preflight";
 
 const credentials = {
   CAISSON_E2E_ACCOUNT_EMAIL: "probe@example.invalid",
@@ -15,7 +15,7 @@ describe("browser audit preflight", () => {
       env: credentials,
       buyerProfile: "caisson-probe",
       adminProfile: "caisson-admin-operator",
-      adminAuthorized: true,
+      adminSessionLive: true,
       unresolvedMutations: 0,
     });
     const serialized = JSON.stringify(result);
@@ -38,7 +38,7 @@ describe("browser audit preflight", () => {
         env: credentials,
         buyerProfile: "caisson-probe",
         adminProfile: "caisson-admin-operator",
-        adminAuthorized: true,
+        adminSessionLive: true,
         unresolvedMutations: 1,
       }),
     ).toThrow("cleanup");
@@ -49,7 +49,7 @@ describe("browser audit preflight", () => {
       env: {},
       buyerProfile: "caisson-probe",
       adminProfile: "caisson-admin-operator",
-      adminAuthorized: true,
+      adminSessionLive: true,
       unresolvedMutations: 0,
     });
 
@@ -68,9 +68,61 @@ describe("browser audit preflight", () => {
         env: credentials,
         buyerProfile: "default",
         adminProfile: "default",
-        adminAuthorized: true,
+        adminSessionLive: true,
         unresolvedMutations: 0,
       }),
     ).toThrow("dedicated");
+  });
+
+  test("rejects an expired Ring-3 profile session", () => {
+    expect(() =>
+      runPreflight({
+        env: credentials,
+        buyerProfile: "caisson-probe",
+        adminProfile: "caisson-admin-operator",
+        adminSessionLive: false,
+        unresolvedMutations: 0,
+      }),
+    ).toThrow("session");
+  });
+});
+
+describe("Ring-3 profile session probe", () => {
+  test("GETs get-session with the profile cookie jar and returns only liveness", async () => {
+    let requestedUrl = "";
+    let requestedInit: RequestInit | undefined;
+    const live = await probeAdminSession((url, init) => {
+      requestedUrl = url;
+      requestedInit = init;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            session: { id: "secret-session-id" },
+            user: { email: "operator@example.invalid" },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      );
+    });
+
+    expect(live).toBe(true);
+    expect(requestedUrl).toBe("https://admin.caisson.sh/api/auth/get-session");
+    expect(requestedInit?.method).toBe("GET");
+    expect(requestedInit?.credentials).toBe("include");
+    expect(JSON.stringify(live)).not.toContain("secret-session-id");
+    expect(JSON.stringify(live)).not.toContain("operator@example.invalid");
+  });
+
+  test("returns false for an expired empty session", async () => {
+    await expect(
+      probeAdminSession(() =>
+        Promise.resolve(
+          new Response("null", {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        ),
+      ),
+    ).resolves.toBe(false);
   });
 });

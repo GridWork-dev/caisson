@@ -302,27 +302,22 @@ curl -sS -o /dev/null -w "%{http_code}\n" -X POST https://caisson.sh/api/auth/si
 
 There is no password/API sign-in to script for admin (§3), so headless verification
 means **re-checking an already-established session**, not re-authenticating from
-scratch. After the one-time interactive OAuth login (§3.4), extract the
-`caisson-admin.session_token` cookie value from the Codex Computer-Use profile's cookie
-jar once, then:
+scratch. After the one-time interactive OAuth login (§3.4), the browser-audit preflight
+uses the selected admin profile itself to issue:
 
-```bash
-curl -sS https://admin.caisson.sh/api/auth/get-session \
-  -H "Cookie: caisson-admin.session_token=<extracted-value>" | grep -o '"email":"[^"]*"'
+```http
+GET https://admin.caisson.sh/api/auth/get-session
+credentials: include (the selected profile's own cookie jar)
 ```
 
-Expect the probe account's email back (not empty/null — an empty response means the
-session expired, or the numeric id was dropped from the allowlist — `admin-session.ts`
-re-verifies the allowlist on every call, so narrowing `ADMIN_GITHUB_ALLOWED_USER_IDS`
-kills this immediately even with a technically-live cookie). Do not persist the raw
-cookie value outside the harness's own session-storage boundary; treat it as a secret
-for the duration of the check only.
-
-**Gap to flag, not fixed here:** `.agents/skills/caisson-production-browser-audit/
-references/safety.md`'s preflight (line 5) only names the four `CAISSON_E2E_*` keys for
-its env-existence check — it has no equivalent named check for Ring-3. The skill
-maintainer should decide whether Ring-3 preflight checks profile/cookie liveness instead
-of an env var (since there is no scriptable admin credential env by design).
+The response must be 2xx JSON with non-empty `session` and `user` objects. The skill's
+`probeAdminSession` helper converts that response to one boolean; only that boolean enters
+`runPreflight`. Never extract or copy `caisson-admin.session_token`, and never record the
+response's email, user id, session id, cookie value, or value lengths. Empty/invalid JSON,
+a redirect, or a non-2xx response blocks Ring 3 until the operator re-authenticates the
+profile interactively. `admin-session.ts` re-verifies the allowlist on every call, so
+narrowing `ADMIN_GITHUB_ALLOWED_USER_IDS` fails this check even with a technically live
+cookie.
 
 ---
 

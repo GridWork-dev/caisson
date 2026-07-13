@@ -7,6 +7,51 @@ const requiredCredentialKeys = [
   "CAISSON_E2E_CF_CLIENT_SECRET",
 ] as const;
 
+const ADMIN_SESSION_URL = "https://admin.caisson.sh/api/auth/get-session";
+const nonEmptyRecord = z
+  .record(z.unknown())
+  .refine((value) => Object.keys(value).length > 0);
+const adminSessionSchema = z
+  .object({
+    session: nonEmptyRecord,
+    user: nonEmptyRecord,
+  })
+  .strict();
+
+/** A browser-profile-bound fetch adapter. Its cookie jar stays inside the Computer Use profile. */
+export type ProfileFetcher = (
+  url: string,
+  init: RequestInit,
+) => Promise<Response>;
+
+/**
+ * Probe Ring 3 through the selected browser profile. Returns liveness only: no cookie, session id,
+ * email, user id, response body, or value length crosses the preflight boundary.
+ */
+export async function probeAdminSession(
+  profileFetch: ProfileFetcher,
+): Promise<boolean> {
+  let response: Response;
+  try {
+    response = await profileFetch(ADMIN_SESSION_URL, {
+      method: "GET",
+      credentials: "include",
+      headers: { accept: "application/json" },
+      cache: "no-store",
+      redirect: "error",
+    });
+  } catch {
+    return false;
+  }
+  if (!response.ok) return false;
+  try {
+    const body: unknown = await response.json();
+    return adminSessionSchema.safeParse(body).success;
+  } catch {
+    return false;
+  }
+}
+
 export const deniedMutations = [
   "real-purchase",
   "irreversible-cancel",
@@ -25,7 +70,7 @@ const inputSchema = z
     env: z.record(z.string().optional()),
     buyerProfile: z.string().trim().min(1),
     adminProfile: z.string().trim().min(1),
-    adminAuthorized: z.boolean(),
+    adminSessionLive: z.boolean(),
     unresolvedMutations: z.number().int().nonnegative(),
   })
   .strict();
@@ -40,8 +85,8 @@ export function runPreflight(input: unknown) {
   ) {
     throw new Error("authenticated rings require separate dedicated profiles");
   }
-  if (!parsed.adminAuthorized)
-    throw new Error("admin profile authorization is stale or unknown");
+  if (!parsed.adminSessionLive)
+    throw new Error("admin profile session is expired, stale, or unknown");
   if (parsed.unresolvedMutations > 0) {
     throw new Error("unresolved cleanup journal blocks authenticated mutation");
   }
@@ -55,7 +100,7 @@ export function runPreflight(input: unknown) {
       cfClientId: present("CAISSON_E2E_CF_CLIENT_ID"),
       cfClientSecret: present("CAISSON_E2E_CF_CLIENT_SECRET"),
     },
-    profiles: { buyerDedicated: true, adminSeparateAndAuthorized: true },
+    profiles: { buyerDedicated: true, adminSeparateAndLive: true },
     unresolvedCleanup: false,
     deniedMutations,
   } as const;

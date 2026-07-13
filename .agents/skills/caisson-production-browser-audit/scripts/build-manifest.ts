@@ -70,6 +70,8 @@ export type Journey = z.infer<typeof journeySchema>;
 export type AuditManifest = z.infer<typeof manifestSchema>;
 
 const RING_ORDER: Record<Ring, number> = { public: 0, buyer: 1, admin: 2 };
+/** Repository root derived from this script, independent of the caller's working directory. */
+export const REPO_ROOT = resolve(import.meta.dir, "..", "..", "..", "..");
 
 function pageFiles(root: string): string[] {
   const files: string[] = [];
@@ -95,6 +97,7 @@ function pageRoute(root: string, file: string): string | null {
 
 function derivedSurfaces(
   root: string,
+  repoRoot: string,
   ring: Exclude<Ring, "public">,
   authMode: "probe" | "operator",
 ): Surface[] {
@@ -107,7 +110,7 @@ function derivedSurfaces(
       url,
       label: url === "/" ? `${ring} home` : url.slice(1).replaceAll("/", " / "),
       authMode,
-      source: relative(process.cwd(), file),
+      source: relative(repoRoot, file),
     }));
 }
 
@@ -139,7 +142,7 @@ export function validateManifest(input: unknown): AuditManifest {
 
 export function buildManifest(
   runId: string,
-  repoRoot = process.cwd(),
+  repoRoot = REPO_ROOT,
 ): AuditManifest {
   const publicSurfaces: Surface[] = [
     ...MARKETING_ROUTES.map((route) => ({
@@ -168,6 +171,7 @@ export function buildManifest(
   ];
   const buyer = derivedSurfaces(
     join(repoRoot, "apps/site/app"),
+    repoRoot,
     "buyer",
     "probe",
   ).filter(
@@ -176,6 +180,7 @@ export function buildManifest(
   );
   const admin = derivedSurfaces(
     join(repoRoot, "apps/admin/src/app"),
+    repoRoot,
     "admin",
     "operator",
   ).filter((surface) => surface.url !== "/login");
@@ -214,7 +219,7 @@ export function buildManifest(
 
 export function writeManifest(
   runId: string,
-  repoRoot = process.cwd(),
+  repoRoot = REPO_ROOT,
   outputRoot = join(repoRoot, "outputs/browser-audit"),
 ): string {
   const manifest = buildManifest(runId, repoRoot);
