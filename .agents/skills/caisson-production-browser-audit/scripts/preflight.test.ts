@@ -109,6 +109,7 @@ describe("Ring-3 profile session probe", () => {
     expect(requestedUrl).toBe("https://admin.caisson.sh/api/auth/get-session");
     expect(requestedInit?.method).toBe("GET");
     expect(requestedInit?.credentials).toBe("include");
+    expect(requestedInit?.signal).toBeInstanceOf(AbortSignal);
     expect(JSON.stringify(live)).not.toContain("secret-session-id");
     expect(JSON.stringify(live)).not.toContain("operator@example.invalid");
   });
@@ -123,6 +124,12 @@ describe("Ring-3 profile session probe", () => {
           }),
         ),
       ),
+    ).resolves.toBe(false);
+  });
+
+  test("returns false within a bounded deadline when the profile adapter stalls", async () => {
+    await expect(
+      probeAdminSession(() => new Promise<Response>(() => undefined), 5),
     ).resolves.toBe(false);
   });
 });

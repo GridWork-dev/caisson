@@ -3,7 +3,7 @@
 ## Preflight
 
 - Ring 2: check only whether `CAISSON_E2E_ACCOUNT_EMAIL`, `CAISSON_E2E_ACCOUNT_PASSWORD`, `CAISSON_E2E_CF_CLIENT_ID`, and `CAISSON_E2E_CF_CLIENT_SECRET` exist.
-- Ring 3: from the selected dedicated admin profile's own cookie jar, issue a read-only `GET https://admin.caisson.sh/api/auth/get-session` with credentials included. Pass only when the response is 2xx JSON with non-empty `session` and `user` objects. Feed that boolean into `runPreflight` as `adminSessionLive`; an operator attestation is not a substitute.
+- Ring 3: from the selected dedicated admin profile's own cookie jar, issue a read-only, 10-second-bounded `GET https://admin.caisson.sh/api/auth/get-session` with credentials included. Pass only when the response is 2xx JSON with non-empty `session` and `user` objects. Feed that boolean into `runPreflight` as `adminSessionLive`; an operator attestation is not a substitute.
 - Record only the Ring-3 liveness boolean. Never copy/extract the cookie or record response identity fields. A false/invalid/redirected response blocks Ring 3 until the operator re-authenticates the profile interactively.
 - Never output values, lengths, prefixes, screenshots, DOM values, or copied secrets.
 - Require a dedicated buyer profile and a distinct admin operator profile. Reject default, personal, shared, guest, identical, stale, or unknown profiles.

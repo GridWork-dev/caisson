@@ -8,6 +8,7 @@ const requiredCredentialKeys = [
 ] as const;
 
 const ADMIN_SESSION_URL = "https://admin.caisson.sh/api/auth/get-session";
+const ADMIN_SESSION_TIMEOUT_MS = 10_000;
 const nonEmptyRecord = z
   .record(z.unknown())
   .refine((value) => Object.keys(value).length > 0);
@@ -30,18 +31,35 @@ export type ProfileFetcher = (
  */
 export async function probeAdminSession(
   profileFetch: ProfileFetcher,
+  timeoutMs = ADMIN_SESSION_TIMEOUT_MS,
 ): Promise<boolean> {
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   let response: Response;
   try {
-    response = await profileFetch(ADMIN_SESSION_URL, {
-      method: "GET",
-      credentials: "include",
-      headers: { accept: "application/json" },
-      cache: "no-store",
-      redirect: "error",
-    });
+    response = await Promise.race([
+      profileFetch(ADMIN_SESSION_URL, {
+        method: "GET",
+        credentials: "include",
+        headers: { accept: "application/json" },
+        cache: "no-store",
+        redirect: "error",
+        signal: controller.signal,
+      }),
+      new Promise<Response>((_resolve, reject) => {
+        timeout = setTimeout(
+          () => {
+            controller.abort();
+            reject(new Error("admin session probe timed out"));
+          },
+          Math.max(1, timeoutMs),
+        );
+      }),
+    ]);
   } catch {
     return false;
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
   }
   if (!response.ok) return false;
   try {
