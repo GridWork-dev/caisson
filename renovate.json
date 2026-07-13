@@ -8,12 +8,28 @@
   "rangeStrategy": "replace",
   "semanticCommits": "enabled",
   "commitMessagePrefix": "chore(deps):",
+  "ignorePaths": ["packages/cli/templates/**"],
   "packageRules": [
     {
-      "description": "Buyer-facing create-caisson deploy scaffolds stay tag-pinned, NOT digest-pinned (Kickoff-K supply-chain finding): a frozen Caisson-resolved digest would rot in downstream buyer repos that have no Renovate to bump it. First-party service images still get docker:pinDigests.",
+      "description": "Buyer-facing create-caisson scaffolds are renovate-ignored entirely (ignorePaths above): template pins are golden-file-tested (a bot bump inside a template broke packages/cli goldens — PR #227), and @caisson/* template deps resolve from registry.caisson.sh, not npm (the dashboard lookup-failure noise). Template pins move deliberately, with a BLESS=1 golden re-record in the same commit. Supersedes the Kickoff-K tag-pin-not-digest rule — under ignorePaths renovate never touches templates at all.",
       "matchFileNames": ["packages/cli/templates/**"],
-      "matchDatasources": ["docker"],
-      "pinDigests": false
+      "enabled": false
+    },
+    {
+      "description": "GitHub Actions majors are runtime-only bumps in this repo's usage — one grouped PR instead of five.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "github-actions majors"
+    },
+    {
+      "description": "Never propose Python pre-releases (renovate offered 3.15.0b3 for .python-version).",
+      "matchManagers": ["pyenv"],
+      "allowedVersions": "!/[ab]\\d*$|rc\\d*$/"
+    },
+    {
+      "description": "typescript v7 (tsgo) is blocked until typescript-eslint publishes a >=7.0 peer range — stop reproposing it every cycle.",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7.0.0"
     }
   ]
 }
