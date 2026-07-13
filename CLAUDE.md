@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0333.** The full
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0343** (0334-0339 reserved for the in-flight Kickoff-S session). The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate
    it here. The per-sitting lock narratives formerly inlined in this clause are archived verbatim
    in `docs/archive/build-history.md`.
