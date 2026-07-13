@@ -16,3 +16,6 @@ pathIgnorePatterns = ["**/dist/**"]
 # with Renovate: Renovate PRs opened against a <7-day-old version will fail install until the
 # version ages past the window (or is superseded); that delay is the point, not a bug.
 minimumReleaseAge = 604800
+# Deliberate adoptions inside the window are exempted HERE, dated, and removed once aged:
+# - ai / @ai-sdk/*: AI SDK v7 adopted by PR #234 (published 2026-07-10) — remove after 2026-07-17.
+minimumReleaseAgeExcludes = ["ai", "@ai-sdk/amazon-bedrock", "@ai-sdk/anthropic", "@ai-sdk/azure", "@ai-sdk/deepseek", "@ai-sdk/gateway", "@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/openai-compatible", "@ai-sdk/otel", "@ai-sdk/provider", "@ai-sdk/provider-utils", "@ai-sdk/react", "@ai-sdk/test-server"]
