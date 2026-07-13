@@ -3,11 +3,11 @@
 // hides it behind `infer()`; base packages may never import one directly).
 //
 // This is the LIVE transport: the one path NOT exercised in CI. Every test injects a mock
-// `LanguageModelV2` and never reaches a real adapter, so no provider key, model call, or network
+// `LanguageModelV4` and never reaches a real adapter, so no provider key, model call, or network
 // request happens in the test suite (the package's zero-live-call invariant). A buyer's BYOK key is read from
 // the env var the lane NAMES (`apiKeyEnv`, ADR-0011) — ai-config never reads the key itself; the SDK
 // adapter does, here, at the edge. `openrouter`/`local`/`ollama` are OpenAI-API-compatible, so they
-// ride `@ai-sdk/openai-compatible` (ADR-0201) — NOT `createOpenAI`: since AI SDK v5 the OpenAI
+// ride `@ai-sdk/openai-compatible` (ADR-0201) — NOT `createOpenAI`: the OpenAI
 // adapter defaults `languageModel()` to the RESPONSES API, so a registry-resolved live call would
 // POST `{baseURL}/responses` (beta on OpenRouter, absent on Ollama) instead of `/chat/completions`.
 // A live-only defect — every CI path injects a mock model, which is exactly why it survived.
@@ -18,10 +18,10 @@
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createAzure } from "@ai-sdk/azure";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createGoogle } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { ProviderV2 } from "@ai-sdk/provider";
+import type { ProviderV4 } from "@ai-sdk/provider";
 import {
   assertSafePublicUrl,
   fetchWithTimeout,
@@ -75,7 +75,7 @@ export function providerFor(
   cfg: ProviderConfig,
   keyOverride?: string,
   timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
-): ProviderV2 {
+): ProviderV4 {
   const apiKey =
     keyOverride ??
     (cfg.apiKeyEnv !== undefined ? process.env[cfg.apiKeyEnv] : undefined);
@@ -109,10 +109,10 @@ export function providerFor(
     case "anthropic":
       return createAnthropic({ ...key, ...base, ...transport });
     case "google":
-      return createGoogleGenerativeAI({ ...key, ...base, ...transport });
+      return createGoogle({ ...key, ...base, ...transport });
     // The three OpenAI-COMPATIBLE (not OpenAI) backends ride `createOpenAICompatible` (ADR-0201):
     // its `languageModel()` IS the chat model, pinning live calls to `/chat/completions` — where
-    // `createOpenAI` would default to the v5 Responses API (see the file header). `includeUsage`
+    // `createOpenAI` would default to the Responses API (see the file header). `includeUsage`
     // opts STREAMING responses into usage reporting (`stream_options.include_usage`) so the meter's
     // reconcile leg trues to the provider's actuals instead of the chars/4 estimate.
     case "openrouter":
@@ -188,14 +188,18 @@ export function providerFor(
       });
     }
     // Azure OpenAI (ADR-0160): `model` addresses a DEPLOYMENT; `baseUrl` is the resource endpoint and
-    // `apiVersion` pins the per-call API version.
-    case "azure-openai":
-      return createAzure({
+    // `apiVersion` pins the per-call API version. AI SDK v6 changed `languageModel()` to the
+    // Responses API, so override that registry entry with `chat()` to preserve Caisson's established
+    // Chat Completions transport while retaining the provider's embedding/image capabilities.
+    case "azure-openai": {
+      const azure = createAzure({
         ...key,
         ...base,
         ...(cfg.apiVersion !== undefined ? { apiVersion: cfg.apiVersion } : {}),
         ...transport,
       });
+      return { ...azure, languageModel: (modelId) => azure.chat(modelId) };
+    }
   }
 }
 
@@ -207,8 +211,8 @@ export function providerFor(
 export function defaultProviders(
   settings: AiSettings,
   timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
-): Record<string, ProviderV2> {
-  const providers: Record<string, ProviderV2> = {};
+): Record<string, ProviderV4> {
+  const providers: Record<string, ProviderV4> = {};
   for (const cfg of Object.values(settings.lanes)) {
     // A per-tenant (BYOK) lane has no boot-time key — it is resolved per-request with the tenant's
     // decrypted key (ADR-0162), so it is skipped here (there is nothing to build without a tenant).

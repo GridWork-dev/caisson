@@ -1,5 +1,5 @@
-// The metered-inference gateway (ADR-0059) — the enforced chokepoint for every AI feature. One
-// `infer(lane, input, opts)` composes the four base primitives in a fixed, fail-closed order:
+// The metered language gateway (ADR-0059) — `infer()` and `inferStream()` compose the four base
+// primitives through the same enforced chokepoint in a fixed, fail-closed order:
 //
 //   resolve → render → input-guard → cap/credit-check (reserve) → provider call → record usage →
 //   output-guard → reconcile
@@ -15,7 +15,7 @@
 //   - ai-config        resolveProvider      (lane → provider/model coordinates; no provider literal)
 //
 // The backing model is INJECTED (`opts.resolveModel`): production wires `buildRegistryResolver` over
-// the real `@ai-sdk/*` adapters, CI injects a mock `LanguageModelV2`. The Vercel AI SDK v5 surface
+// the real `@ai-sdk/*` adapters, CI injects a mock `LanguageModelV4`. The Vercel AI SDK v7 surface
 // (`createProviderRegistry` / `wrapLanguageModel` / `generateText` / `streamText`) is hidden behind
 // `infer()` / `inferStream()`, so the SDK stays swappable — and the live transport is the only path
 // not exercised by a test.
@@ -34,12 +34,13 @@ import type {
   LanguageModelUsage,
   ModelMessage,
 } from "ai";
-import type { LanguageModelV2, ProviderV2 } from "@ai-sdk/provider";
+import type { LanguageModelV4, ProviderV4 } from "@ai-sdk/provider";
 import type { AiSettings } from "@caisson/ai-config";
 import { resolveProvider } from "@caisson/ai-config";
 import {
   estimateInputTokens,
   estimateTokens,
+  estimateUsage,
   reconcile,
   reserve,
 } from "@caisson/ai-meter";
@@ -55,16 +56,22 @@ import { renderVersion, resolvePrompt } from "@caisson/prompt-registry";
 import type { RenderedMessage } from "@caisson/prompt-registry";
 import { withTenant } from "@caisson/tenancy-rls";
 import type { Transactor } from "@caisson/tenancy-rls";
+import {
+  assertUsageFitsLedger,
+  canPersistUsage,
+  normalizeLanguageUsage,
+  usageLedgerCost,
+} from "./usage.ts";
 
 /**
  * Resolve a configured lane to its backing model. Production builds this over a provider registry
- * (`buildRegistryResolver`); tests inject a mock `LanguageModelV2` — the live transport stays the
+ * (`buildRegistryResolver`); tests inject a mock `LanguageModelV4` — the live transport stays the
  * only un-exercised path.
  */
 export type ModelResolver = (
   lane: string,
   accountId?: string,
-) => LanguageModelV2 | Promise<LanguageModelV2>;
+) => LanguageModelV4 | Promise<LanguageModelV4>;
 
 /** What to send the model: pre-built messages, or a registry prompt reference to resolve + render. */
 export type InferInput =
@@ -116,7 +123,7 @@ export interface InferResult {
   readonly messages: readonly RenderedMessage[];
   /** The resolved prompt-version id (the version→usage link), or null for ad-hoc messages. */
   readonly promptVersionId: string | null;
-  /** The provider's actual usage (what the reconcile leg trued the charge to). */
+  /** Provider usage, or the ledger-safe fallback the reconcile leg charged. */
   readonly usage: Usage;
   readonly reserved: ReserveResult;
   readonly reconciled: ReconcileResult;
@@ -141,9 +148,9 @@ export interface InferStreamSettled {
   readonly text: string;
   /**
    * The usage the reconcile leg settled against. On a normal finish this is the provider's
-   * REPORTED usage (from the `finish` stream part), same as `InferResult.usage`. On abandonment
-   * there is no provider report yet, so this is an ESTIMATE — the same chars/4 heuristic
-   * `reserve()` itself uses — over the text actually yielded before the stream ended.
+   * REPORTED usage (from the `finish` stream part), or a ledger-safe consumed/reservation fallback.
+   * On abandonment there is no provider report yet, so this is an ESTIMATE — the same chars/4
+   * heuristic `reserve()` itself uses — over the text yielded before the stream ended.
    */
   readonly usage: Usage;
   readonly reconciled: ReconcileResult;
@@ -190,43 +197,35 @@ const ZERO_USAGE: Usage = {
  */
 export function buildRegistryResolver(
   settings: AiSettings,
-  providers: Record<string, ProviderV2>,
+  providers: Record<string, ProviderV4>,
 ): ModelResolver {
   const registry = createProviderRegistry(providers);
-  return (lane: string): LanguageModelV2 => {
+  return (lane: string): LanguageModelV4 => {
     const cfg = resolveProvider(settings, lane);
     return registry.languageModel(`${cfg.provider}:${cfg.model}`);
   };
 }
 
-/**
- * Normalize the AI-SDK usage shape into the meter's integer `Usage` (cached ≤ input, never a float).
- * Returns `null` when the provider reported NO usage (both token counts undefined) — a legitimate
- * outcome on a successful call for some lanes (e.g. local/ollama). The caller must keep that distinct
- * from "0 tokens": reconcile settles an unreported call at the reservation estimate, never trueing a
- * real completed call down to a full refund (`@caisson/ai-meter`, ADR-0182 fail-closed-for-revenue).
- */
-function mapUsage(u: LanguageModelUsage): Usage | null {
-  if (u.inputTokens === undefined && u.outputTokens === undefined) return null;
-  const inputTokens = u.inputTokens ?? 0;
-  const outputTokens = u.outputTokens ?? 0;
-  const cachedInputTokens = Math.min(u.cachedInputTokens ?? 0, inputTokens);
-  return { inputTokens, outputTokens, cachedInputTokens };
+interface SdkPrompt {
+  readonly messages: ModelMessage[];
+  readonly allowSystemInMessages: boolean;
 }
 
-/** Project the prompt's role/content onto the AI-SDK `ModelMessage` union (role-discriminated). */
-function toModelMessages(messages: readonly RenderedMessage[]): ModelMessage[] {
-  return messages.map((m): ModelMessage => {
-    const { content } = m;
-    switch (m.role) {
-      case "system":
-        return { role: "system", content };
-      case "user":
-        return { role: "user", content };
-      case "assistant":
-        return { role: "assistant", content };
-    }
-  });
+/**
+ * AI SDK v7 rejects system-role entries in `messages` by default. Preserve Caisson's pre-v7 public
+ * prompt contract, including interleaved system turns, through the explicit compatibility switch;
+ * the existing prompt-registry and guardrail boundaries still validate every message's content.
+ */
+function toSdkPrompt(messages: readonly RenderedMessage[]): SdkPrompt {
+  return {
+    allowSystemInMessages: messages.some(
+      (message) => message.role === "system",
+    ),
+    messages: messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+    })),
+  };
 }
 
 /**
@@ -269,6 +268,9 @@ export async function infer(
     guarded.push({ role: m.role, content: out.text });
     tokens.push(...out.tokens);
   }
+
+  const reservationUsage = estimateUsage(guarded, opts.maxOutputTokens);
+  assertUsageFitsLedger(reservationUsage, cfg.provider, cfg.model, opts.meter);
 
   // 3. cap/credit-check — reserve debits the estimate up front (402 on a short wallet or open
   //    breaker; the transaction rolls back, leaving no trace). The model is NOT called before this.
@@ -315,17 +317,18 @@ export async function infer(
 
   // 4. provider call — the SDK call against the injected model, optionally middleware-wrapped. A
   //    failure refunds the reservation (reconcile to zero) so a non-delivering call never charges.
-  const model = await opts.resolveModel(lane, accountId);
-  const wrapped =
-    opts.middleware !== undefined
-      ? wrapLanguageModel({ model, middleware: opts.middleware })
-      : model;
   let text: string;
   let rawUsage: LanguageModelUsage;
   try {
+    const model = await opts.resolveModel(lane, accountId);
+    const wrapped =
+      opts.middleware !== undefined
+        ? wrapLanguageModel({ model, middleware: opts.middleware })
+        : model;
+    const prompt = toSdkPrompt(guarded);
     const result = await generateText({
       model: wrapped,
-      messages: toModelMessages(guarded),
+      ...prompt,
       ...(opts.maxOutputTokens !== undefined
         ? { maxOutputTokens: opts.maxOutputTokens }
         : {}),
@@ -342,9 +345,26 @@ export async function infer(
 
   // 5. record usage. A provider may complete a call yet report NO usage — settle that at the
   //    reservation estimate (over the actual output text) rather than trueing it down to a refund.
-  const reported = mapUsage(rawUsage);
-  const usage = reported ?? estimateConsumedUsage(guarded, text);
-  const usageReported = reported !== null;
+  const normalized = normalizeLanguageUsage(rawUsage);
+  const reported =
+    normalized !== null &&
+    canPersistUsage(normalized, cfg.provider, cfg.model, opts.meter)
+      ? normalized
+      : null;
+  const settlement =
+    reported !== null
+      ? { usage: reported, usageReported: true }
+      : fallbackLanguageSettlement(
+          guarded,
+          text,
+          reservationUsage,
+          reserved.reservedCredits,
+          cfg.provider,
+          cfg.model,
+          opts.meter,
+          false,
+        );
+  const { usage, usageReported } = settlement;
 
   // 6. output-guard (+ PII restore) then 7. reconcile. A blocked output still reconciles the actual
   //    spend (the tokens were already consumed) before the 422 propagates.
@@ -369,8 +389,7 @@ export async function infer(
   };
 }
 
-/** A promise plus its own resolve/reject — lets a generator settle `InferStreamResult.settled` as a
- *  side effect of its `finally` block, independent of how (or whether) the caller drains it. */
+/** A promise plus its own resolve/reject — lets the eager pump settle independently of consumers. */
 interface Deferred<T> {
   readonly promise: Promise<T>;
   readonly resolve: (value: T) => void;
@@ -405,6 +424,40 @@ function estimateConsumedUsage(
   };
 }
 
+interface FallbackLanguageSettlement {
+  readonly usage: Usage;
+  readonly usageReported: boolean;
+}
+
+/**
+ * Bound deterministic fallbacks to values the usage ledger can persist. A completed call cannot
+ * refund below its reservation merely because usage was missing/malformed; when its safe consumed
+ * estimate exceeds the reservation, reconcile that estimate as authoritative. Abandoned streams
+ * retain their partial-estimate refund behavior.
+ */
+function fallbackLanguageSettlement(
+  messages: RenderedMessage[],
+  consumedText: string,
+  reservationUsage: Usage,
+  reservedCredits: number,
+  provider: string,
+  model: string,
+  meter: MeterConfig | undefined,
+  allowBelowReservation: boolean,
+): FallbackLanguageSettlement {
+  const consumedUsage = estimateConsumedUsage(messages, consumedText);
+  const consumedCost = usageLedgerCost(consumedUsage, provider, model, meter);
+  if (consumedCost === null) {
+    return { usage: reservationUsage, usageReported: false };
+  }
+
+  return {
+    usage: consumedUsage,
+    usageReported:
+      allowBelowReservation || consumedCost.credits >= reservedCredits,
+  };
+}
+
 /**
  * Run one metered inference through the gateway with a STREAMING provider call: the same
  * resolve → render → input-guard → reserve pipeline as `infer()` (items 1-3, unchanged), then text
@@ -425,13 +478,12 @@ function estimateConsumedUsage(
  * abandoned stream's settle amount is necessarily an estimate, not a provider-verified number,
  * because the provider was never asked to finish billing a call the caller walked away from.
  *
- * This is implemented as an async generator with a `finally` block driving the settle: JS
- * guarantees `finally` runs on a natural drain, an early `for await...of` `break`, AND a thrown
- * error — so exactly one settle happens on every exit path (`settleOnce`'s own guard is the second,
- * belt-and-suspenders line of defense against a double-settle). Output guardrails + PII restore run
- * ONLY on a normal finish (mirrors `infer()`'s items 6/7) — there is no complete output to check,
- * or restore PII placeholders across, on an abandoned stream; the raw partial text already yielded
- * on `textStream` is what `InferStreamSettled.text` carries instead.
+ * The gateway starts an eager pump before returning. That pump owns the provider stream and drives
+ * settlement independently of consumer iteration, so a caller that never calls `next()` or drops
+ * an iterator without `return()` cannot strand the reservation. The public `ReadableStream`
+ * cancellation hook aborts the provider and waits for the same guarded settle path. Output
+ * guardrails + PII restore run ONLY on a normal finish (mirrors `infer()`'s items 6/7) — there is no
+ * complete output to check, or restore PII placeholders across, on an abandoned stream.
  */
 export async function inferStream(
   lane: string,
@@ -465,6 +517,9 @@ export async function inferStream(
     guarded.push({ role: m.role, content: out.text });
     tokens.push(...out.tokens);
   }
+
+  const reservationUsage = estimateUsage(guarded, opts.maxOutputTokens);
+  assertUsageFitsLedger(reservationUsage, cfg.provider, cfg.model, opts.meter);
 
   // 3. cap/credit-check — identical to infer(): reserve the ESTIMATE up front, fail-closed. The
   //    soft/hard spend cap is evaluated here exactly as for infer() — the streamed call never
@@ -512,13 +567,22 @@ export async function inferStream(
   // 4. provider call (STREAMING) — the model is resolved/wrapped exactly like infer(); only the
   //    call shape (streamText vs generateText) and the settle timing differ (see the abandonment
   //    note above).
-  const model = await opts.resolveModel(lane, accountId);
-  const wrapped =
-    opts.middleware !== undefined
-      ? wrapLanguageModel({ model, middleware: opts.middleware })
-      : model;
+  let wrapped: LanguageModelV4;
+  try {
+    const model = await opts.resolveModel(lane, accountId);
+    wrapped =
+      opts.middleware !== undefined
+        ? wrapLanguageModel({ model, middleware: opts.middleware })
+        : model;
+  } catch (err) {
+    await settle(ZERO_USAGE);
+    throw err;
+  }
 
   const settled = deferred<InferStreamSettled>();
+  // The eager pump can reject settlement even when the caller ignores `settled`; mark the source
+  // promise handled without changing the rejecting promise returned to an observing caller.
+  void settled.promise.catch(() => undefined);
   let settledOnce = false;
 
   const settleOnce = async (
@@ -529,12 +593,22 @@ export async function inferStream(
     if (settledOnce) return;
     settledOnce = true;
     // Two independent axes: `abandoned` (no finish part → estimate over consumed text, skip output
-    // guards) and whether the provider REPORTED usage. An abandoned stream still settles at the
-    // consumed estimate (refunding the unused hold), but a clean finish that carried NO usage settles
-    // at the reservation (no refund of a real completed call) — so `usageReported` is false only for
-    // the latter.
-    const usageReported = abandoned || reportedUsage !== null;
-    const usage = reportedUsage ?? estimateConsumedUsage(guarded, consumedText);
+    // guards) and whether the provider reported ledger-safe usage. Missing/malformed clean-finish
+    // usage cannot refund below the reservation; an unsafe fallback uses the safe reservation shape.
+    const settlement =
+      reportedUsage !== null
+        ? { usage: reportedUsage, usageReported: true }
+        : fallbackLanguageSettlement(
+            guarded,
+            consumedText,
+            reservationUsage,
+            reserved.reservedCredits,
+            cfg.provider,
+            cfg.model,
+            opts.meter,
+            abandoned,
+          );
+    const { usage, usageReported } = settlement;
     try {
       let outText = consumedText;
       if (!abandoned) {
@@ -561,41 +635,138 @@ export async function inferStream(
     }
   };
 
-  async function* driveTextStream(): AsyncGenerator<string, void, void> {
+  const consumerAbort = new AbortController();
+  const streamAbortSignal =
+    opts.abortSignal === undefined
+      ? consumerAbort.signal
+      : AbortSignal.any([opts.abortSignal, consumerAbort.signal]);
+  let consumerCancelled = false;
+
+  const textStream = new ReadableStream<string>({
+    start(controller): void {
+      void pump(controller);
+    },
+    async cancel(reason): Promise<void> {
+      consumerCancelled = true;
+      consumerAbort.abort(reason);
+      await settled.promise.catch(() => undefined);
+    },
+  });
+  const textIterable: AsyncIterable<string> = {
+    [Symbol.asyncIterator](): AsyncIterator<string, void, void> {
+      let reader: ReadableStreamDefaultReader<string> | undefined;
+      let finished = false;
+      const getReader = (): ReadableStreamDefaultReader<string> => {
+        reader ??= textStream.getReader();
+        return reader;
+      };
+      const release = (): void => {
+        if (reader === undefined) return;
+        reader.releaseLock();
+        reader = undefined;
+      };
+      return {
+        async next(): Promise<IteratorResult<string, void>> {
+          if (finished) return { done: true, value: undefined };
+          try {
+            const result = await getReader().read();
+            if (result.done) {
+              finished = true;
+              release();
+              return { done: true, value: undefined };
+            }
+            return { done: false, value: result.value };
+          } catch (error) {
+            finished = true;
+            release();
+            throw error;
+          }
+        },
+        async return(): Promise<IteratorResult<string, void>> {
+          if (finished) return { done: true, value: undefined };
+          finished = true;
+          try {
+            if (reader !== undefined) await reader.cancel();
+            else if (!textStream.locked) await textStream.cancel();
+          } finally {
+            release();
+          }
+          return { done: true, value: undefined };
+        },
+        async throw(error?: unknown): Promise<IteratorResult<string, void>> {
+          finished = true;
+          try {
+            if (reader !== undefined) await reader.cancel(error);
+            else if (!textStream.locked) await textStream.cancel(error);
+          } finally {
+            release();
+          }
+          throw error;
+        },
+      };
+    },
+  };
+
+  async function pump(
+    controller: ReadableStreamDefaultController<string>,
+  ): Promise<void> {
     let consumedText = "";
     let reportedUsage: Usage | null = null;
     let sawFinish = false;
-    let streamErr: unknown;
+    let streamFailed = false;
+    let streamError: unknown;
     try {
+      const prompt = toSdkPrompt(guarded);
       const result = streamText({
         model: wrapped,
-        messages: toModelMessages(guarded),
+        ...prompt,
         ...(opts.maxOutputTokens !== undefined
           ? { maxOutputTokens: opts.maxOutputTokens }
           : {}),
-        ...(opts.abortSignal !== undefined
-          ? { abortSignal: opts.abortSignal }
-          : {}),
+        abortSignal: streamAbortSignal,
       });
-      for await (const part of result.fullStream) {
+      for await (const part of result.stream) {
+        if (consumerCancelled) break;
         if (part.type === "text-delta") {
           consumedText += part.text;
-          yield part.text;
+          controller.enqueue(part.text);
+          // Give a consuming iterator's `return()` a turn before pulling another provider delta.
+          await Promise.resolve();
         } else if (part.type === "finish") {
           // A finish part means the provider completed — even when it carries no usage numbers
-          // (`mapUsage` → null). That is NOT abandonment: output guards still run below.
+          // (`normalizeLanguageUsage` → null). That is NOT abandonment: output guards still run below.
           sawFinish = true;
-          reportedUsage = mapUsage(part.totalUsage);
+          const normalized = normalizeLanguageUsage(part.totalUsage);
+          reportedUsage =
+            normalized !== null &&
+            canPersistUsage(normalized, cfg.provider, cfg.model, opts.meter)
+              ? normalized
+              : null;
         } else if (part.type === "error") {
-          streamErr = part.error;
+          streamFailed = true;
+          streamError = part.error;
           break;
         }
       }
-      if (streamErr !== undefined) throw streamErr;
+    } catch (err) {
+      // Caller aborts and public-stream cancellation are expected abandonment paths. Provider
+      // failures remain visible to a consumer after the reservation has been reconciled.
+      if (!streamAbortSignal.aborted) {
+        streamFailed = true;
+        streamError = err;
+      }
     } finally {
-      // Runs on a natural drain, an early consumer break (the for-await loop's implicit
-      // generator.return()), OR a thrown error — the reservation is reconciled on every exit path.
-      await settleOnce(consumedText, reportedUsage, !sawFinish);
+      // A provider/middleware setup failure before the first delta delivered no result and follows
+      // infer()'s full-refund contract. Partial-stream failures still settle the consumed estimate.
+      const settlementUsage =
+        streamFailed && !sawFinish && consumedText.length === 0
+          ? ZERO_USAGE
+          : reportedUsage;
+      await settleOnce(consumedText, settlementUsage, !sawFinish);
+      if (!consumerCancelled) {
+        if (streamFailed) controller.error(streamError);
+        else controller.close();
+      }
     }
   }
 
@@ -604,7 +775,7 @@ export async function inferStream(
     messages: guarded,
     promptVersionId,
     reserved,
-    textStream: driveTextStream(),
+    textStream: textIterable,
     settled: settled.promise,
   };
 }

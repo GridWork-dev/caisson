@@ -1,9 +1,10 @@
 // ADR-0160: construction-level coverage for the provider transport. The LIVE call stays the
 // deliberately un-exercised seam (the package's zero-live-call invariant, ADR-0059) — these tests
-// only prove that each config enum builds a real `ProviderV2` adapter (has `.languageModel`), so a
+// only prove that each config enum builds a real `ProviderV4` adapter (has `.languageModel`), so a
 // new backend is wired, without any network/model call or provider key.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { parseAiSettings, type AiSettings } from "@caisson/ai-config";
+import type { LanguageModelV4 } from "@ai-sdk/provider";
 import { defaultProviders, timeoutFetch } from "./providers.ts";
 
 function laneSettings(lane: AiSettings["lanes"][string]): AiSettings {
@@ -27,23 +28,69 @@ afterAll(() => {
   delete process.env[TOGETHER_KEY_ENV];
 });
 
-describe("defaultProviders — every configured backend builds a ProviderV2 (ADR-0160)", () => {
-  const cases: Array<{ name: string; lane: AiSettings["lanes"][string] }> = [
+interface InspectableTransport {
+  readonly fetch?: unknown;
+  readonly baseURL?: string;
+  readonly baseUrl?: () => string;
+  readonly url?: (options: { modelId: string; path: string }) => string;
+}
+
+function transportOf(model: LanguageModelV4): InspectableTransport {
+  const config = (model as unknown as { readonly config?: unknown }).config;
+  if (config === null || typeof config !== "object") {
+    throw new Error(
+      `provider ${model.provider} does not expose a transport config`,
+    );
+  }
+  return config as InspectableTransport;
+}
+
+function transportUrl(
+  transport: InspectableTransport,
+  modelId: string,
+  path: string,
+): string {
+  if (transport.url !== undefined) return transport.url({ modelId, path });
+  if (transport.baseURL !== undefined) return transport.baseURL;
+  if (transport.baseUrl !== undefined) return transport.baseUrl();
+  throw new Error(`model ${modelId} does not expose a transport URL`);
+}
+
+describe("AI SDK v7 provider and transport matrix (ADR-0160/0201/0213)", () => {
+  const cases: Array<{
+    name: string;
+    lane: AiSettings["lanes"][string];
+    expectedProvider: string;
+    transportPath: string;
+    expectedTransport: string;
+  }> = [
     {
       name: "openai",
       lane: { provider: "openai", model: "gpt-4o", apiKeyEnv: "X" },
+      expectedProvider: "openai.responses",
+      transportPath: "/responses",
+      expectedTransport: "https://api.openai.com/v1/responses",
     },
     {
       name: "anthropic",
       lane: { provider: "anthropic", model: "claude", apiKeyEnv: "X" },
+      expectedProvider: "anthropic.messages",
+      transportPath: "/messages",
+      expectedTransport: "https://api.anthropic.com/v1",
     },
     {
       name: "google",
       lane: { provider: "google", model: "gemini", apiKeyEnv: "X" },
+      expectedProvider: "google.generative-ai",
+      transportPath: "/models/gemini:generateContent",
+      expectedTransport: "https://generativelanguage.googleapis.com/v1beta",
     },
     {
       name: "openrouter",
       lane: { provider: "openrouter", model: "x/y", apiKeyEnv: "X" },
+      expectedProvider: "openrouter.chat",
+      transportPath: "/chat/completions",
+      expectedTransport: "https://openrouter.ai/api/v1/chat/completions",
     },
     {
       name: "local",
@@ -53,6 +100,9 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         apiKeyEnv: "X",
         baseUrl: "https://host:1/v1",
       },
+      expectedProvider: "local.chat",
+      transportPath: "/chat/completions",
+      expectedTransport: "https://host:1/v1/chat/completions",
     },
     {
       name: "ollama",
@@ -62,6 +112,9 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         apiKeyEnv: "X",
         baseUrl: "https://host:11434/v1",
       },
+      expectedProvider: "ollama.chat",
+      transportPath: "/chat/completions",
+      expectedTransport: "https://host:11434/v1/chat/completions",
     },
     {
       name: "bedrock",
@@ -72,6 +125,9 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         apiSecretEnv: "AWS_SECRET_ACCESS_KEY",
         region: "us-east-1",
       },
+      expectedProvider: "amazon-bedrock",
+      transportPath: "/model/invoke",
+      expectedTransport: "https://bedrock-runtime.us-east-1.amazonaws.com",
     },
     {
       name: "azure-openai",
@@ -82,6 +138,10 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         baseUrl: "https://res.openai.azure.com",
         apiVersion: "2024-06-01",
       },
+      expectedProvider: "azure.chat",
+      transportPath: "/chat/completions",
+      expectedTransport:
+        "https://res.openai.azure.com/v1/chat/completions?api-version=2024-06-01",
     },
     {
       name: "groq",
@@ -90,6 +150,9 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         model: "llama-3.3-70b-versatile",
         apiKeyEnv: GROQ_KEY_ENV,
       },
+      expectedProvider: "groq.chat",
+      transportPath: "/chat/completions",
+      expectedTransport: "https://api.groq.com/openai/v1/chat/completions",
     },
     {
       name: "mistral",
@@ -98,6 +161,9 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         model: "mistral-large-latest",
         apiKeyEnv: MISTRAL_KEY_ENV,
       },
+      expectedProvider: "mistral.chat",
+      transportPath: "/chat/completions",
+      expectedTransport: "https://api.mistral.ai/v1/chat/completions",
     },
     {
       name: "together",
@@ -106,15 +172,33 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         model: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
         apiKeyEnv: TOGETHER_KEY_ENV,
       },
+      expectedProvider: "together.chat",
+      transportPath: "/chat/completions",
+      expectedTransport: "https://api.together.xyz/v1/chat/completions",
     },
   ];
 
-  for (const { name, lane } of cases) {
-    test(`${name} → a ProviderV2 instance`, () => {
+  for (const {
+    name,
+    lane,
+    expectedProvider,
+    transportPath,
+    expectedTransport,
+  } of cases) {
+    test(`${name} → exact model identity, endpoint, and bounded fetch`, () => {
       const providers = defaultProviders(laneSettings(lane));
       const provider = providers[lane.provider];
       expect(provider).toBeDefined();
-      expect(typeof provider?.languageModel).toBe("function");
+      const model = provider?.languageModel(lane.model);
+      expect(model?.provider).toBe(expectedProvider);
+      expect(model?.modelId).toBe(lane.model);
+
+      if (model === undefined) throw new Error(`${name} model was not built`);
+      const transport = transportOf(model);
+      expect(typeof transport.fetch).toBe("function");
+      expect(transportUrl(transport, lane.model, transportPath)).toBe(
+        expectedTransport,
+      );
     });
   }
 
@@ -148,7 +232,7 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
 });
 
 describe("openai-compatible backends resolve the CHAT path (ADR-0201)", () => {
-  // The live-only defect ADR-0201 fixes: `createOpenAI().languageModel()` defaults to the v5
+  // The live-only defect ADR-0201 fixes: `createOpenAI().languageModel()` defaults to the
   // Responses API (`{baseURL}/responses` — beta on OpenRouter, absent on Ollama). The compatible
   // adapter's `languageModel()` IS its chat model — observable as the model instance's
   // `provider === "<name>.chat"` — so these three cases can never regress back to /responses

@@ -22,10 +22,10 @@ import {
   embedMany as sdkEmbedMany,
 } from "ai";
 import type { Embedding, EmbeddingModelUsage } from "ai";
-import type { EmbeddingModelV2, ProviderV2 } from "@ai-sdk/provider";
+import type { EmbeddingModelV4, ProviderV4 } from "@ai-sdk/provider";
 import type { AiSettings } from "@caisson/ai-config";
 import { resolveProvider } from "@caisson/ai-config";
-import { estimateTokens, reconcile, reserve } from "@caisson/ai-meter";
+import { estimateUsage, reconcile, reserve } from "@caisson/ai-meter";
 import type {
   MeterConfig,
   ReconcileResult,
@@ -34,16 +34,21 @@ import type {
 } from "@caisson/ai-meter";
 import { withTenant } from "@caisson/tenancy-rls";
 import type { Transactor } from "@caisson/tenancy-rls";
+import {
+  assertUsageFitsLedger,
+  canPersistUsage,
+  normalizeEmbeddingUsage,
+} from "./usage.ts";
 
 /**
  * Resolve a configured lane to its backing TEXT embedding model. Production builds this over a
- * provider registry (`buildEmbeddingRegistryResolver`); tests inject a mock `EmbeddingModelV2`.
+ * provider registry (`buildEmbeddingRegistryResolver`); tests inject a mock `EmbeddingModelV4`.
  * Mirrors `gateway.ts`'s `ModelResolver` for the embeddings surface.
  */
 export type EmbeddingModelResolver = (
   lane: string,
   accountId?: string,
-) => EmbeddingModelV2<string> | Promise<EmbeddingModelV2<string>>;
+) => EmbeddingModelV4 | Promise<EmbeddingModelV4>;
 
 export interface EmbedOptions {
   /**
@@ -100,30 +105,13 @@ const ZERO_USAGE: Usage = {
  */
 export function buildEmbeddingRegistryResolver(
   settings: AiSettings,
-  providers: Record<string, ProviderV2>,
+  providers: Record<string, ProviderV4>,
 ): EmbeddingModelResolver {
   const registry = createProviderRegistry(providers);
-  return (lane: string): EmbeddingModelV2<string> => {
+  return (lane: string): EmbeddingModelV4 => {
     const cfg = resolveProvider(settings, lane);
-    return registry.textEmbeddingModel(`${cfg.provider}:${cfg.model}`);
+    return registry.embeddingModel(`${cfg.provider}:${cfg.model}`);
   };
-}
-
-/**
- * Normalize the AI-SDK's embedding usage into the meter's integer `Usage`. `ai@5.0.206`'s
- * `embed`/`embedMany` substitute `{ tokens: NaN }` when the provider's `doEmbed` reports no usage
- * (verified against the SDK source — never `undefined`), so a non-finite `tokens` is the no-report
- * signal; fall back to the SAME chars/4 heuristic `reserve()` itself uses, summed over the embedded
- * values. `outputTokens` is unconditionally 0 — an embedding call has no output leg.
- */
-function mapEmbeddingUsage(
-  usage: EmbeddingModelUsage,
-  values: readonly string[],
-): Usage {
-  const inputTokens = Number.isFinite(usage.tokens)
-    ? usage.tokens
-    : values.reduce((sum, v) => sum + estimateTokens(v), 0);
-  return { inputTokens, cachedInputTokens: 0, outputTokens: 0 };
 }
 
 /**
@@ -141,6 +129,9 @@ export async function embed(
   const { tx, accountId, settings } = opts;
   const callId = opts.callId ?? randomUUID();
   const cfg = resolveProvider(settings, lane);
+  const reservationMessages = [{ role: "user", content: value }];
+  const reservationUsage = estimateUsage(reservationMessages);
+  assertUsageFitsLedger(reservationUsage, cfg.provider, cfg.model, opts.meter);
 
   // 1. cap/credit-check — reserve the estimate up front (402 on a short wallet or open breaker; the
   //    model is NOT called before this). No maxOutputTokens: see the file header for why the
@@ -152,7 +143,7 @@ export async function embed(
       provider: cfg.provider,
       model: cfg.model,
       lane,
-      messages: [{ role: "user", content: value }],
+      messages: reservationMessages,
       ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
       ...(opts.meter !== undefined ? { config: opts.meter } : {}),
     }),
@@ -177,10 +168,10 @@ export async function embed(
 
   // 2. provider call — a failure refunds the reservation (reconcile to zero) so a non-delivering
   //    call never charges, exactly like `infer()`'s try/catch.
-  const model = await opts.resolveModel(lane, accountId);
   let embedding: Embedding;
   let rawUsage: EmbeddingModelUsage;
   try {
+    const model = await opts.resolveModel(lane, accountId);
     const result = await sdkEmbed({ model, value });
     embedding = result.embedding;
     rawUsage = result.usage;
@@ -190,7 +181,13 @@ export async function embed(
   }
 
   // 3. record usage + reconcile.
-  const usage = mapEmbeddingUsage(rawUsage, [value]);
+  const normalized = normalizeEmbeddingUsage(rawUsage, [value]);
+  const deterministic = normalizeEmbeddingUsage({}, [value]);
+  const usage = canPersistUsage(normalized, cfg.provider, cfg.model, opts.meter)
+    ? normalized
+    : canPersistUsage(deterministic, cfg.provider, cfg.model, opts.meter)
+      ? deterministic
+      : reservationUsage;
   const reconciled = await settle(usage);
 
   return { callId, embedding, usage, reserved, reconciled };
@@ -209,6 +206,12 @@ export async function embedMany(
   const { tx, accountId, settings } = opts;
   const callId = opts.callId ?? randomUUID();
   const cfg = resolveProvider(settings, lane);
+  const reservationMessages = values.map((value) => ({
+    role: "user",
+    content: value,
+  }));
+  const reservationUsage = estimateUsage(reservationMessages);
+  assertUsageFitsLedger(reservationUsage, cfg.provider, cfg.model, opts.meter);
 
   const reserved = await withTenant(tx, accountId, (t) =>
     reserve(t, {
@@ -217,7 +220,7 @@ export async function embedMany(
       provider: cfg.provider,
       model: cfg.model,
       lane,
-      messages: values.map((v) => ({ role: "user", content: v })),
+      messages: reservationMessages,
       ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
       ...(opts.meter !== undefined ? { config: opts.meter } : {}),
     }),
@@ -239,10 +242,10 @@ export async function embedMany(
       }),
     );
 
-  const model = await opts.resolveModel(lane, accountId);
   let embeddings: readonly Embedding[];
   let rawUsage: EmbeddingModelUsage;
   try {
+    const model = await opts.resolveModel(lane, accountId);
     const result = await sdkEmbedMany({ model, values: [...values] });
     embeddings = result.embeddings;
     rawUsage = result.usage;
@@ -251,7 +254,13 @@ export async function embedMany(
     throw err;
   }
 
-  const usage = mapEmbeddingUsage(rawUsage, values);
+  const normalized = normalizeEmbeddingUsage(rawUsage, values);
+  const deterministic = normalizeEmbeddingUsage({}, values);
+  const usage = canPersistUsage(normalized, cfg.provider, cfg.model, opts.meter)
+    ? normalized
+    : canPersistUsage(deterministic, cfg.provider, cfg.model, opts.meter)
+      ? deterministic
+      : reservationUsage;
   const reconciled = await settle(usage);
 
   return { callId, embeddings, usage, reserved, reconciled };

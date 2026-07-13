@@ -1,5 +1,16 @@
 # @caisson/ai-kit
 
+## Unreleased
+
+### Patch Changes
+
+- Migrated the metered inference, streaming, embedding, and provider registry surfaces to AI SDK v7
+  through an independently green v6 checkpoint. Provider transports, timeout injection, integer
+  usage reconciliation, and the committed eval and accounting baselines remain unchanged. Streaming
+  reservations now settle independently of consumer iteration, pre-delivery failures refund in full,
+  and malformed or ledger-unsafe usage reconciles through bounded integer-safe fallbacks without
+  refunding a completed call below its reservation.
+
 ## 0.4.1
 
 ### Patch Changes

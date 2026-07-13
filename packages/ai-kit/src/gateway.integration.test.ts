@@ -1,7 +1,7 @@
 // End-to-end integration proof for the metered inference gateway (ADR-0059). Where
 // `gateway.test.ts` exercises each pipeline leg in isolation, this drives the WHOLE composition
 // against real schemas on PGlite (the production `withTenant` shape) with a test-doubled
-// `LanguageModelV2` (zero network — the live transport stays the only un-exercised path):
+// `LanguageModelV4` (zero network — the live transport stays the only un-exercised path):
 //
 //   - the happy path metered call: resolve `name@version` → render → reserve BEFORE the provider call
 //     → reconcile to ACTUAL, with the wallet, the append-only `usage_event`, and the spend window all
@@ -64,8 +64,8 @@ import {
 import { defineEval, exactGrader } from "@caisson/ai-evals";
 import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
-import { MockLanguageModelV2 } from "ai/test";
-import type { LanguageModelV2 } from "@ai-sdk/provider";
+import { MockLanguageModelV4 } from "ai/test";
+import type { LanguageModelV4 } from "@ai-sdk/provider";
 import { infer, type InferOptions } from "./gateway.ts";
 
 let tp: TestPg;
@@ -98,11 +98,19 @@ const SETTINGS: AiSettings = {
 };
 
 /** A mock model: usage 10 in / 20 out, echoes a fixed reply. Zero network. */
-function mockModel(text = "ok"): MockLanguageModelV2 {
-  return new MockLanguageModelV2({
+function mockModel(text = "ok"): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
     doGenerate: async () => ({
-      finishReason: "stop",
-      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: {
+        inputTokens: {
+          total: 10,
+          noCache: 10,
+          cacheRead: 0,
+          cacheWrite: 0,
+        },
+        outputTokens: { total: 20, text: 20, reasoning: 0 },
+      },
       content: [{ type: "text", text }],
       warnings: [],
     }),
@@ -124,7 +132,7 @@ const cleanPolicy = (over: Partial<GuardPolicy> = {}): GuardPolicy => ({
 });
 
 function baseOpts(
-  model: LanguageModelV2,
+  model: LanguageModelV4,
   policy: GuardPolicy,
   s: InMemoryEventSink,
   over: Partial<InferOptions> = {},
