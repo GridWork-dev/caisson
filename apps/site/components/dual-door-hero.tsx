@@ -62,7 +62,10 @@ export function DualDoorHero() {
               claim.
             </p>
             <div className={styles.cta}>
-              <Button href="/compliance" variant="primary">
+              {/* hard: the Door Morph (ADR-0334 moment 3) rides a cross-DOCUMENT view
+                  transition — next/link soft navs never fire it. The Speculation Rules
+                  hover-prerender makes the hard nav instant. */}
+              <Button href="/compliance" variant="primary" hard>
                 Open the Compliance bundle
               </Button>
             </div>
