@@ -13,7 +13,7 @@
 # workspace dependency first, turbo.json's `dependsOn: ["^build"]`) succeeds, and the resulting
 # `.next/standalone/apps/site/server.js` serves 200s on `/`, `/pricing`, `/healthz` under plain
 # `bun apps/site/server.js` — the exact CMD below.
-FROM oven/bun:1.3.14-slim AS build
+FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS build
 WORKDIR /app
 COPY . .
 RUN bun install --frozen-lockfile
@@ -48,7 +48,7 @@ ENV NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=$NEXT_PUBLIC_PADDLE_CLIENT_TOKEN \
 
 RUN bunx turbo run build --filter=@caisson/site --concurrency=50%
 
-FROM oven/bun:1.3.14-slim AS runtime
+FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS runtime
 WORKDIR /app
 # HOSTNAME=0.0.0.0 is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, and
 # Docker auto-sets HOSTNAME to the container id — so without this the server binds only to the
