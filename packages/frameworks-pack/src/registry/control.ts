@@ -2,8 +2,11 @@
  * Control registry builders (ADR-0057). The compliance edition models compliance as
  * config-as-code: a **clean-room, own-authored canonical control set** plus per-framework
  * crosswalk references that map each canonical control to an external framework's requirement
- * id. NEVER ingest/copy/transform SCF (CC-BY-ND) or any third-party catalog JSON -- the catalog
- * is authored by hand; crosswalk references are pointers only, not copied control text.
+ * id. NEVER ingest/copy/transform any NoDerivatives-licensed catalog (SCF, CC-BY-ND, first among
+ * them) -- the ban is ND-specific (ADR-0057 as narrowed by ADR-0333): public-domain/CC0 reference
+ * material (NIST OLIR mappings, SP 800-66r2) may seed or check crosswalk MAPPING ROWS as pointers
+ * with provenance. The catalog itself stays authored by hand; crosswalk references are pointers
+ * only, never copied control text.
  *
  * Mirrors the `defineModule` precedent (registry/schema/module-manifest.ts): typed Zod `.strict()`
  * builders that parse-and-validate at author time and fail closed on the first violation. Depends
