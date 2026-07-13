@@ -13,7 +13,7 @@ dependencies = [
     "httpx>=0.27,<0.29",
     "pydantic>=2.9,<3",
     "pydantic-settings>=2.5,<3",
-    "asyncpg>=0.30,<0.31",
+    "asyncpg>=0.31,<0.32",
     # OTLP telemetry (ADR-0117/0142) — env-gated in telemetry.py; dormant unless OTEL_EXPORTER_OTLP_ENDPOINT.
     "opentelemetry-sdk>=1.29,<2",
     "opentelemetry-exporter-otlp-proto-http>=1.29,<2",
@@ -27,8 +27,8 @@ caisson-support-bot = "caisson_support_bot.__main__:main"
 [dependency-groups]
 dev = [
     "pytest>=8.3,<9",
-    "pytest-asyncio>=0.24,<0.25",
-    "ruff>=0.6,<0.13",
+    "pytest-asyncio>=0.26,<0.27",
+    "ruff>=0.15,<0.16",
     "pyright>=1.1.380",
 ]
 
