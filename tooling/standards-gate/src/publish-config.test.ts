@@ -109,6 +109,9 @@ describe("publish-readiness flip (ADR-0111)", () => {
         .filter((e) => e.op === undefined)
         .map((e) => `${e.id}@${e.version}`),
     );
+    // Coverage boundary: this exemption is derived only from ledger `op:"delist"` rows. A package
+    // id with no such terminal row never enters this set, so the exemption cannot mask that
+    // non-delisted package's missing current-version publish row.
     const delisted = new Set(
       ledgerLines.filter((e) => e.op === "delist").map((e) => e.id),
     );

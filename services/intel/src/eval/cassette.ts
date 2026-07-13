@@ -1,22 +1,19 @@
 // The cassette boundary for the judged intel replay harness (CAISSON-101, ADR-0286 §eval).
 //
 // A cassette is the sanitized, byte-reproducible record of ONE watcher run: the config it saw, the
-// watch_state it read, every HTTP exchange it made, the findings it produced, and — the judged half
-// — the LLM verdicts an operator's live judge assigned to those findings at record time. The replay
+// watch_state it read, every HTTP exchange it made, and the raw findings it produced. The replay
 // harness (intel-briefs.eval.test.ts) reconstructs the watcher's exact world from a cassette and
-// re-runs the REAL watcher code against it with zero network and zero tokens: accuracy + grounding
-// are graded deterministically in code, and actionability replays the embedded judge verdicts. This
-// is the same record/replay discipline `@caisson/ai-evals` uses for model-graded scorers (ADR-0062),
-// extended to a whole watcher run so a brief's usefulness can be gated offline.
+// re-runs the REAL watcher code with zero watcher-network and zero watcher tokens. Accuracy +
+// grounding remain deterministic; brief composition and actionability judging are deliberately live
+// model calls in the credentialed eval lane (CAISSON-102). Model outputs never enter this dataset.
 //
-// Recording is an OPERATOR act (record.cli.ts) — cassettes are NEVER committed on a feature branch
-// (they carry real, if scrubbed, upstream payloads and are minted against live creds). The scrub
-// gate below (`assertScrubbed`) is the fail-closed guarantee that no secret VALUE survives into a
-// written cassette.
+// Recording is an OPERATOR act (record.cli.ts). A cassette may be committed only with the baseline
+// after deterministic replay and the live judged run are green (green-only dataset discipline). The
+// scrub gate below (`assertScrubbed`) is the fail-closed guarantee that no secret VALUE survives into
+// a written cassette.
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";
-import { judgeVerdictSchema } from "@caisson/ai-evals";
 import { FindingSchema } from "../finding.ts";
 import { loadConfig } from "../config.ts";
 import type { Config } from "../config.ts";
@@ -54,24 +51,14 @@ export const cassetteConfigSchema = strictObject({
 });
 export type CassetteConfig = z.infer<typeof cassetteConfigSchema>;
 
-/** The embedded judge leg (the HYBRID rubric's actionability half): one recorded verdict per finding,
- *  keyed by the finding's `dedupKey`. Reuses `@caisson/ai-evals`' own `judgeVerdictSchema` so the
- *  replayed verdict is validated by the identical schema the live `judgeGrader` re-checks. */
-export const cassetteJudgeSchema = strictObject({
-  model: z.string().min(1),
-  responses: z.record(judgeVerdictSchema),
-});
-export type CassetteJudge = z.infer<typeof cassetteJudgeSchema>;
-
 export const intelCassetteSchema = strictObject({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(2),
   watcher: z.string().min(1),
   recordedAt: z.string().datetime(),
   config: cassetteConfigSchema,
   watchState: z.record(z.string()),
   exchanges: z.array(cassetteExchangeSchema),
   findings: z.array(FindingSchema),
-  judge: cassetteJudgeSchema,
 });
 export type IntelCassette = z.infer<typeof intelCassetteSchema>;
 

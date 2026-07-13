@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import {
   buildManifest,
@@ -23,6 +24,24 @@ describe("browser audit manifest", () => {
       "/dashboard",
     );
     expect(manifest.surfaces.map((surface) => surface.url)).toContain("/ops");
+  });
+
+  test("uses the script location when invoked from the skill directory", () => {
+    const script = resolve(import.meta.dir, "build-manifest.ts");
+    const skillDirectory = resolve(import.meta.dir, "..");
+    const command = [
+      `import { buildManifest } from ${JSON.stringify(script)};`,
+      'const manifest = buildManifest("skill-cwd-proof");',
+      "process.stdout.write(String(manifest.surfaces.length));",
+    ].join(" ");
+    const result = spawnSync("bun", ["-e", command], {
+      cwd: skillDirectory,
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(0);
+    expect(Number(result.stdout)).toBeGreaterThan(0);
+    expect(result.stderr).toBe("");
   });
 
   test("rejects duplicate routes", () => {

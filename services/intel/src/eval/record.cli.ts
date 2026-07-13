@@ -7,22 +7,19 @@
 // body — never request headers) and a READ-ONLY store wrapper (captures the watch_state it reads;
 // setWatchState is a no-op so the live daemon's baselines are never advanced), then computes the
 // CANONICAL findings by replaying over the scrubbed exchanges (so the recorded findings are byte-
-// identical to what the eval lane will reproduce), judges each finding with one OpenRouter call, and
-// writes a scrub-gated cassette to services/intel/__cassettes__/<watcher>.json.
+// identical to what the eval lane will reproduce), and writes the raw findings to a scrub-gated
+// cassette. Composition and judging stay live in the credentialed eval lane; model outputs never
+// enter the dataset.
 //
-// Requires OPENROUTER_API_KEY (the judge leg). After recording: BLESS=1 bun run eval to mint the
-// baseline, then commit both. See intel-briefs.eval.test.ts for the full operator contract.
+// After recording: run the live eval; only when it is green may BLESS=1 mint the baseline and both
+// datasets be committed. See intel-briefs.eval.test.ts for the full operator contract.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { z } from "zod";
 import { fetchWithTimeout } from "@caisson/kernel";
-import { judgeVerdictSchema } from "@caisson/ai-evals";
-import type { JudgeVerdict } from "@caisson/ai-evals";
 import { loadConfig } from "../config.ts";
 import type { Config } from "../config.ts";
 import { parseFinding } from "../finding.ts";
 import type { Finding } from "../finding.ts";
-import { fetchJson } from "../http.ts";
 import type { Fetcher } from "../http.ts";
 import { logger } from "../logger.ts";
 import { PostgresStore } from "../store.ts";
@@ -35,12 +32,8 @@ import type {
   CassetteExchange,
   IntelCassette,
 } from "./cassette.ts";
-import { ACTIONABILITY_CRITERIA } from "./rubric.ts";
 import { replayWatcher } from "./harness.ts";
 
-const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
-const JUDGE_TIMEOUT_MS = 60_000;
-const DEFAULT_JUDGE_MODEL = "anthropic/claude-sonnet-4.5";
 const OUT_DIR = join(import.meta.dir, "..", "..", "__cassettes__");
 
 /**
@@ -121,81 +114,6 @@ function recordingFetcher(exchanges: CassetteExchange[]): Fetcher {
   };
 }
 
-const chatResponseSchema = z.object({
-  choices: z
-    .array(z.object({ message: z.object({ content: z.string() }) }))
-    .min(1),
-});
-
-/** Judge one finding's actionability with a single OpenRouter call. Fail-closed: a non-JSON or
- *  schema-invalid reply THROWS rather than recording a phantom verdict. */
-async function judgeFinding(
-  finding: Finding,
-  apiKey: string,
-  model: string,
-): Promise<JudgeVerdict> {
-  const prompt = [
-    ACTIONABILITY_CRITERIA,
-    "",
-    'Respond with STRICT JSON ONLY: {"verdict":"pass"|"fail","score":<number 0..1>,"rationale":"<one sentence>"}.',
-    "",
-    `SOURCE: ${finding.source} / ${finding.kind}`,
-    `TITLE: ${finding.title}`,
-    `BRIEF: ${finding.body}`,
-  ].join("\n");
-
-  const raw = await fetchJson<unknown>(
-    fetchWithTimeout,
-    OPENROUTER_ENDPOINT,
-    {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" },
-      }),
-    },
-    JUDGE_TIMEOUT_MS,
-  );
-
-  const parsedResponse = chatResponseSchema.safeParse(raw);
-  const content = parsedResponse.success
-    ? parsedResponse.data.choices[0]?.message.content
-    : undefined;
-  if (content === undefined) {
-    throw new Error(
-      `judge returned no message content for finding "${finding.dedupKey}"`,
-    );
-  }
-  // Anthropic models via OpenRouter ignore response_format and fence-wrap the JSON — tolerate a
-  // fenced/prose-wrapped object by extracting the outermost {...}; still fail-closed on no JSON.
-  const trimmed = content.trim();
-  let json: unknown;
-  try {
-    json = JSON.parse(trimmed);
-  } catch {
-    const start = trimmed.indexOf("{");
-    const end = trimmed.lastIndexOf("}");
-    if (start === -1 || end <= start) {
-      throw new Error(
-        `judge returned non-JSON for finding "${finding.dedupKey}"`,
-      );
-    }
-    try {
-      json = JSON.parse(trimmed.slice(start, end + 1));
-    } catch {
-      throw new Error(
-        `judge returned non-JSON for finding "${finding.dedupKey}"`,
-      );
-    }
-  }
-  return judgeVerdictSchema.parse(json);
-}
-
 /** The secret VALUES that must never survive into a written cassette. */
 function collectSecrets(config: Config): string[] {
   return [
@@ -259,8 +177,6 @@ async function recordWatcher(
   config: Config,
   inner: Store,
   recordedAt: string,
-  judgeApiKey: string,
-  judgeModel: string,
 ): Promise<void> {
   const nowMs = Date.parse(recordedAt);
   const secrets = collectSecrets(config);
@@ -286,33 +202,21 @@ async function recordWatcher(
     scrubExchange(ex, secrets),
   );
   const preCassette: IntelCassette = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     watcher: watcher.name,
     recordedAt,
     config: cassetteConfigOf(config),
     watchState: store.reads,
     exchanges: scrubbedExchanges,
     findings: [],
-    judge: { model: judgeModel, responses: {} },
   };
   const canonical = (await replayWatcher(preCassette)).map((f) =>
     parseFinding(scrubFinding(f, secrets)),
   );
 
-  // Judge every canonical finding (fail-closed — an invalid verdict throws, never a phantom).
-  const responses: Record<string, JudgeVerdict> = {};
-  for (const finding of canonical) {
-    responses[finding.dedupKey] = await judgeFinding(
-      finding,
-      judgeApiKey,
-      judgeModel,
-    );
-  }
-
   const cassette: IntelCassette = {
     ...preCassette,
     findings: canonical,
-    judge: { model: judgeModel, responses },
   };
   // Round-trip validate, then serialize, then run the fail-closed scrub gate BEFORE writing.
   const serialized = `${JSON.stringify(parseCassetteFile(cassette), null, 2)}\n`;
@@ -339,27 +243,12 @@ export async function main(argv: readonly string[]): Promise<number> {
   }
 
   const config = loadConfig(process.env);
-  const judgeApiKey = config.openrouterApiKey;
-  if (judgeApiKey === undefined || judgeApiKey.length === 0) {
-    process.stderr.write(
-      "record.cli requires OPENROUTER_API_KEY (the judge leg) — set it and re-run\n",
-    );
-    return 1;
-  }
-  const judgeModel = process.env.INTEL_EVAL_JUDGE_MODEL ?? DEFAULT_JUDGE_MODEL;
   const recordedAt = new Date().toISOString();
 
   const inner = new PostgresStore(config.databaseUrl);
   try {
     for (const watcher of watchers) {
-      await recordWatcher(
-        watcher,
-        config,
-        inner,
-        recordedAt,
-        judgeApiKey,
-        judgeModel,
-      );
+      await recordWatcher(watcher, config, inner, recordedAt);
     }
   } finally {
     await inner.close();

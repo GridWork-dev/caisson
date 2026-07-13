@@ -5,17 +5,12 @@
 //
 // Two runs, split by THRESHOLD (see rubric.ts):
 //   - intel-replay        (1.0): accuracy + grounding + no-extra-findings, all deterministic.
-//   - intel-brief-quality (0.7): actionability, replayed from the cassette's embedded judge verdicts.
+//   - intel-brief-quality (0.7): live composition + live actionability judge, injected at the edge.
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
-import { cassetteJudge, defineEval, judgeGrader } from "@caisson/ai-evals";
-import type {
-  Cassette,
-  EvalCase,
-  EvalRun,
-  Grader,
-  JudgeVerdict,
-} from "@caisson/ai-evals";
+import { defineEval, judgeGrader, wilsonLowerBound } from "@caisson/ai-evals";
+import type { EvalCase, EvalRun, Grader, Judge } from "@caisson/ai-evals";
+import { parseFinding } from "../finding.ts";
 import { InMemoryStore } from "../store.ts";
 import { findWatcher } from "../watchers/index.ts";
 import { buildReplayFetcher, replayConfig } from "./cassette.ts";
@@ -34,8 +29,8 @@ import type { Logger } from "../logger.ts";
 // briefs "prompt" is the enrichment rubric at services/intel/src/llm.ts + this actionability rubric.
 export const REPLAY_EVAL = "intel-replay";
 export const BRIEF_EVAL = "intel-brief-quality";
-export const PROMPT_VERSION_ID = "00000000-0000-4000-8000-000000000004";
-export const PROMPT_REF = "intel/briefs@adr-0286";
+export const PROMPT_VERSION_ID = "00000000-0000-4000-8000-000000000005";
+export const PROMPT_REF = "intel/briefs@caisson-102-live";
 
 // ponytail: 0.6, deliberately BELOW the ai-evals lane's usual 0.8 floor — the session-4 cassette
 // sample is small (a handful of findings per watcher). Raise to 0.8 once n>=16 all-passing findings
@@ -55,9 +50,8 @@ export const BASELINE_PATH = join(
   "baseline.json",
 );
 
-/** Discover committed cassettes. The directory may not exist (it never does on a feature branch —
- *  recording is a post-merge operator act), so a missing dir is an empty set, not an error. Sorted
- *  for a stable pooled-run order. */
+/** Discover committed cassettes. A missing directory is an empty set and the green-only eval entry
+ * stays skipped until a judged dataset is eligible to commit. Sorted for a stable pooled-run order. */
 export function discoverCassettes(): string[] {
   try {
     return readdirSync(CASSETTE_DIR)
@@ -77,6 +71,38 @@ export interface ReplayEntry {
   readonly cassette: IntelCassette;
   /** The findings the REAL watcher produced when re-run against the cassette (what we grade). */
   readonly findings: readonly Finding[];
+}
+
+export interface BriefQualityDependencies {
+  /** Live brief composer. The eval caller injects a fail-closed implementation. */
+  readonly compose: (finding: Finding) => Promise<Finding>;
+  /** Live actionability judge. `judgeGrader` re-validates every verdict. */
+  readonly judge: Judge;
+}
+
+/**
+ * Pre-BLESS quality gate. `gateAgainstBaseline` intentionally makes BLESS the sole writer, but its
+ * write path does not compare a run to itself. Enforce both absolute threshold and Wilson confidence
+ * here so a small/lucky dataset can never become the trusted baseline.
+ */
+export function assertRunEligibleForBaseline(run: EvalRun): void {
+  if (!run.passed) {
+    throw new Error(
+      `intel eval "${run.name}" failed threshold: score ${String(run.score)} < ${String(run.threshold)}`,
+    );
+  }
+  if (run.wilsonFloor === undefined) return;
+  for (const scorer of Object.keys(run.scorers)) {
+    const successes = run.scoredCases.filter(
+      (scored) => scored.passes[scorer] === true,
+    ).length;
+    const lowerBound = wilsonLowerBound(successes, run.cases);
+    if (lowerBound < run.wilsonFloor) {
+      throw new Error(
+        `intel eval "${run.name}" scorer "${scorer}" Wilson lower bound ${String(lowerBound)} (successes=${String(successes)}/${String(run.cases)}) is below ${String(run.wilsonFloor)}`,
+      );
+    }
+  }
 }
 
 /**
@@ -162,31 +188,26 @@ export function buildReplayRun(
 }
 
 /**
- * The judged run (threshold 0.7). One case per replayed finding; the actionability scorer replays the
- * cassette's embedded verdict for that finding's dedupKey via `cassetteJudge`. Verdicts across
- * cassettes merge into one lookup table keyed by dedupKey (unique per finding). A replayed dedupKey
- * with no recorded verdict is a hard cassette-miss error (fail-closed) — a finding can't dodge the
- * judge by being absent.
+ * The judged run (threshold 0.7). One case per replayed RAW finding. Each is first passed through the
+ * injected live composer, then the rendered brief is scored by the injected live judge. Both seams
+ * fail closed: a malformed composition or verdict rejects the run rather than falling back to the
+ * raw template notice. The raw cassette remains deterministic and contains no model output.
  */
-export function buildBriefQualityRun(
+export async function buildBriefQualityRun(
   entries: readonly ReplayEntry[],
+  dependencies: BriefQualityDependencies,
 ): Promise<EvalRun> {
-  const responses: Record<string, JudgeVerdict> = {};
-  for (const e of entries) Object.assign(responses, e.cassette.judge.responses);
-  const model = entries[0]?.cassette.judge.model ?? "unrecorded";
-  const cassette: Cassette = {
-    eval: BRIEF_EVAL,
-    scorer: "actionability",
-    model,
-    responses,
-  };
-  const cases: EvalCase[] = entries.flatMap((e) =>
-    e.findings.map((f) => ({
-      id: f.dedupKey,
-      input: { kind: "finding" },
-      output: f.body,
-    })),
-  );
+  const cases: EvalCase[] = [];
+  for (const entry of entries) {
+    for (const finding of entry.findings) {
+      const brief = parseFinding(await dependencies.compose(finding));
+      cases.push({
+        id: finding.dedupKey,
+        input: { kind: "finding", rawFinding: finding },
+        output: brief.body,
+      });
+    }
+  }
   return defineEval({
     name: BRIEF_EVAL,
     promptVersionId: PROMPT_VERSION_ID,
@@ -195,10 +216,7 @@ export function buildBriefQualityRun(
     wilsonFloor: INTEL_WILSON_FLOOR,
     cases,
     scorers: {
-      actionability: judgeGrader(
-        cassetteJudge(cassette),
-        ACTIONABILITY_CRITERIA,
-      ),
+      actionability: judgeGrader(dependencies.judge, ACTIONABILITY_CRITERIA),
     },
   });
 }

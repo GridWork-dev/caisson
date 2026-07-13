@@ -1,0 +1,410 @@
+[
+  {
+    "question": "how do I install a bundle",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.98,
+    "citations": [
+      "apps/site/content/docs/provenance/index.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "apps/site/content/docs/compliance/index.mdx",
+      "apps/site/content/docs/local-first/index.mdx",
+      "apps/site/content/docs/agentic-dev/index.mdx",
+      "apps/site/content/docs/ai-production/index.mdx"
+    ],
+    "answer": "To install a Caisson bundle, use the CLI with the `--edition` flag specifying the bundle you want. The general pattern is:\n\n```bash\nbunx @caisson-sh/cli@latest --name caisson-app --edition <bundle-name>\ncd caisson-app\nbun install\n```\n\nThe available bundles (editions) are:\n\n- **provenance** [apps/site/content/docs/provenance/index.mdx]\n- **everything** [apps/site/content/docs/everything/index.mdx]\n- **compliance** [apps/site/content/docs/compliance/index.mdx]\n- **local-first** [apps/site/content/docs/local-first/index.mdx]\n- **agentic-dev** [apps/site/content/docs/agentic-dev/index.mdx]\n- **ai-production** [apps/site/content/docs/ai-production/index.mdx]\n\nFor example, to install the **compliance** bundle:\n\n```bash\nbunx @caisson-sh/cli@latest --name caisson-app --edition compliance\ncd caisson-app\nbun install\n```\n\nYou can also add or swap individual modules using `--module <id@version>` instead of picking a full bundle. See the [Getting started](/docs/getting-started) docs for the full flag reference.",
+    "escalation_reason": null,
+    "latency_s": 5.94
+  },
+  {
+    "question": "WORM audit storage on S3",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.97,
+    "citations": [
+      "pricing/modules",
+      "apps/site/content/docs/provenance/index.mdx",
+      "packages/audit-worm/README.md",
+      "apps/site/content/docs/provenance/audit-worm.mdx",
+      "apps/site/content/docs/provenance/audit-worm.mdx",
+      "pricing/bundles"
+    ],
+    "answer": "## WORM Audit Storage on S3\n\nCaisson's `@caisson/audit-worm` package provides write-once (WORM) artifact storage backed by S3 (as well as GCS and R2) using real **Object-Lock/Object-Retention** backends [apps/site/content/docs/provenance/audit-worm.mdx].\n\n### Key behaviours\n\n- **Write-once enforcement** \u2014 `ArtifactStore.put` is strictly write-once. A second `put` to an existing key throws `ArtifactExistsError` and never overwrites [apps/site/content/docs/provenance/audit-worm.mdx].\n- **S3 Object-Lock backend** \u2014 `S3ArtifactStore` binds the same port interface over a real S3 Object-Lock backend, meaning immutability is enforced at the **storage layer**, not just in application code [apps/site/content/docs/provenance/audit-worm.mdx].\n- **Append-only SHA-256 audit chain** \u2014 `AuditChainStore.append` writes entries to a table (SELECT + INSERT only), mints a fresh WORM anchor after every entry, and `verify` detects tamper, reorder, *and* truncation [apps/site/content/docs/provenance/audit-worm.mdx].\n- **Tamper detection** \u2014 `verify` uses the WORM store as the trusted length oracle. If an anchor exists for a length beyond what the DB can produce, truncation is detected even if surviving rows still hash cleanly [apps/site/content/docs/provenance/audit-worm.mdx].\n\n### Dev/CI note\n\nA `LocalArtifactStore` filesystem double is available for development and CI \u2014 it enforces write-once semantics but **not** the time lock [apps/site/content/docs/provenance/audit-worm.mdx].\n\n### Pricing\n\nThe **Audit chain + WORM** module is **$149** standalone, or included in the **Provenance bundle ($399)** [pricing/modules] [pricing/bundles].",
+    "escalation_reason": null,
+    "latency_s": 10.1
+  },
+  {
+    "question": "does caisson require postgres",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.97,
+    "citations": [
+      "apps/site/content/docs/getting-started.mdx",
+      "packages/tenancy-rls/README.md",
+      "apps/site/content/docs/cli/create-caisson.mdx",
+      "apps/site/content/docs/ai-production/ai-meter.mdx",
+      "apps/site/content/docs/compliance/retention-runner.mdx",
+      "apps/site/content/docs/base/tenancy-rls.mdx"
+    ],
+    "answer": "Yes, Caisson requires Postgres. It is listed as a core requirement, with Neon over HTTP as the reference host, though the data layer is described as swappable [apps/site/content/docs/getting-started.mdx].\n\nPostgres is also deeply integrated into the architecture \u2014 the multi-tenant row-level security layer (`@caisson/tenancy-rls`) relies on Postgres RLS with `FORCE` policies [apps/site/content/docs/base/tenancy-rls.mdx], and the credits/billing accounting is Postgres-atomic [apps/site/content/docs/ai-production/ai-meter.mdx].",
+    "escalation_reason": null,
+    "latency_s": 4.93
+  },
+  {
+    "question": "cancel my subscription",
+    "expected": "answerable",
+    "resolved": false,
+    "tier": null,
+    "confidence": 0.0,
+    "citations": [],
+    "answer": null,
+    "escalation_reason": "Retrieved 6 source(s) and the model answered, but its self-assessed confidence (0.00) was below the escalation threshold.",
+    "latency_s": 4.88
+  },
+  {
+    "question": "what license is the base substrate under",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.99,
+    "citations": [
+      "apps/site/content/docs/base/index.mdx",
+      "apps/site/content/docs/base/index.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "apps/site/content/docs/index.mdx",
+      "packages/license-verify/README.md",
+      "apps/site/content/docs/getting-started.mdx"
+    ],
+    "answer": "The base substrate is licensed under **Apache-2.0** [apps/site/content/docs/base/index.mdx].",
+    "escalation_reason": null,
+    "latency_s": 5.06
+  },
+  {
+    "question": "license key stopped working after renewal",
+    "expected": "answerable",
+    "resolved": false,
+    "tier": null,
+    "confidence": 0.35,
+    "citations": [],
+    "answer": null,
+    "escalation_reason": "Retrieved 6 source(s) and the model answered, but its self-assessed confidence (0.35) was below the escalation threshold.",
+    "latency_s": 11.45
+  },
+  {
+    "question": "How do I install the Compliance bundle?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.95,
+    "citations": [
+      "apps/site/content/docs/compliance/index.mdx",
+      "apps/site/content/docs/compliance/compliance-core.mdx",
+      "packages/compliance/README.md",
+      "apps/site/content/docs/agentic-dev/index.mdx",
+      "apps/site/content/docs/provenance/index.mdx",
+      "apps/site/content/docs/compliance/index.mdx"
+    ],
+    "answer": "You can install the Compliance bundle using the Caisson CLI:\n\n```bash\nbunx @caisson-sh/cli@latest --name caisson-app --edition compliance\ncd caisson-app\nbun install\n```\n\nThe `--edition compliance` flag auto-selects all of the Compliance bundle's current modules and scaffolds the whole bundle. If you want to add or swap individual modules, you can use `--module <id@version>`. [apps/site/content/docs/compliance/index.mdx]\n\nAlternatively, if you only need the core compliance package directly, you can add it with:\n\n```bash\nbun add @caisson/compliance-core\n```\n[apps/site/content/docs/compliance/compliance-core.mdx]\n\n> **Note:** Compliance is a commercial bundle (`LicenseRef-Caisson-Commercial`). You'll need to purchase the bundle or individual modules \u00e0 la carte \u2014 a purchase grants the module's entitlement ID, which is checked offline against the license. [apps/site/content/docs/compliance/index.mdx]",
+    "escalation_reason": null,
+    "latency_s": 6.75
+  },
+  {
+    "question": "What's included in the AI-Production bundle?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.98,
+    "citations": [
+      "apps/site/content/docs/ai-production/index.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "apps/site/content/docs/ai-production/index.mdx",
+      "apps/site/content/docs/ai-production/ai-evals.mdx",
+      "pricing/bundles"
+    ],
+    "answer": "Based on the documentation, the **AI-Production bundle** includes the following modules:\n\n- **[ai-meter](/docs/ai-production/ai-meter)** \u2014 Postgres-atomic reserve/reconcile token metering, per-tenant spend caps, and a circuit breaker. Integer credits only, no floats.\n- **[ai-evals](/docs/ai-production/ai-evals)** \u2014 A regression gate for prompt and model changes: `defineEval()` scores a dataset, `gateAgainstBaseline()` fails the build on a real score drop.\n- **[guardrails](/docs/ai-production/guardrails)** \u2014 A fail-closed guard around every model call: PII redaction, a swappable moderator, and an unconditional secret-shape gate.\n- **[prompt-registry](/docs/ai-production/prompt-registry)** \u2014 Append-only prompt versioning with a mutable alias pointer, so promoting or rolling back a prompt is a pointer move, not a redeploy.\n- **[credits](/docs/ai-production/credits)** \u2014 The integer credit wallet the spend caps debit against: append-only ledger, debit-before-spend, fail-closed `402` on an empty balance.\n- **[field-crypto](/docs/provenance/field-crypto)** \u2014 Per-tenant field encryption for any prompt input or output you store.\n\nThe bundle is sold under a commercial license (`LicenseRef-Caisson-Commercial`). You can purchase the full bundle or any individual module \u00e0 la carte. [apps/site/content/docs/ai-production/index.mdx]",
+    "escalation_reason": null,
+    "latency_s": 5.13
+  },
+  {
+    "question": "How do I get started with the Local-first bundle?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.98,
+    "citations": [
+      "apps/site/content/docs/local-first/index.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "apps/site/content/docs/provenance/index.mdx",
+      "apps/site/content/docs/local-first/index.mdx",
+      "apps/site/content/docs/compliance/index.mdx",
+      "apps/site/content/docs/local-first/local-store.mdx"
+    ],
+    "answer": "To get started with the Local-first bundle, run the following commands:\n\n```bash\nbunx @caisson-sh/cli@latest --name caisson-app --edition local-first\ncd caisson-app\nbun install\n```\n\nThis will scaffold the entire Local-first bundle automatically. If you want to add or swap individual modules, you can use the `--module <id@version>` flag. For the full flag reference, see the [Getting started](/docs/getting-started) docs. [apps/site/content/docs/local-first/index.mdx]\n\n**Note on licensing:** The Local-first bundle is a **commercial bundle** (`LicenseRef-Caisson-Commercial`). You'll need to purchase the bundle (or individual modules \u00e0 la carte) to obtain the required entitlement. Licenses are checked offline, so the bundle works on air-gapped machines. [apps/site/content/docs/local-first/index.mdx]",
+    "escalation_reason": null,
+    "latency_s": 5.29
+  },
+  {
+    "question": "What does the Agentic-Dev bundle include?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.95,
+    "citations": [
+      "apps/site/content/docs/agentic-dev/index.mdx",
+      "apps/site/content/docs/agentic-dev/index.mdx",
+      "apps/site/content/docs/agentic-dev/agent-kernel.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "apps/site/content/docs/agentic-dev/agent-runner.mdx",
+      "pricing/modules"
+    ],
+    "answer": "Based on the sources, the **Agentic-Dev bundle** includes the following components wired together into one governed loop:\n\n- **`@caisson/agent-kernel`** \u2014 the typed schema/FSM/governance/hooks/audit-chain mechanism that governs the agent lifecycle [apps/site/content/docs/agentic-dev/agent-kernel.mdx]\n- **`@caisson/agent-runner`** \u2014 the sandboxed execution primitive for running agents [apps/site/content/docs/agentic-dev/agent-runner.mdx]\n- **`@caisson/tool-exec`** \u2014 a sandboxed, default-deny gate for shell commands [apps/site/content/docs/agentic-dev/agent-kernel.mdx]\n- **`@caisson/local-store`** \u2014 local hybrid memory [apps/site/content/docs/agentic-dev/agent-kernel.mdx]\n\nTogether, these are assembled into **one governed loop**, where every agent/skill/rule is a typed artifact, every act transition is a legal move on a state machine, and every shell command passes a default-deny gate [apps/site/content/docs/agentic-dev/index.mdx].\n\nIt is a **commercial bundle** (`LicenseRef-Caisson-Commercial`), and its modules can also be purchased \u00e0 la carte (e.g., agent-kernel is $199, agent-runner is $49) [apps/site/content/docs/agentic-dev/agent-kernel.mdx] [apps/site/content/docs/agentic-dev/agent-runner.mdx].",
+    "escalation_reason": null,
+    "latency_s": 8.42
+  },
+  {
+    "question": "How do I install the Provenance bundle?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.99,
+    "citations": [
+      "apps/site/content/docs/provenance/index.mdx",
+      "apps/site/content/docs/agentic-dev/index.mdx",
+      "apps/site/content/docs/provenance/index.mdx",
+      "apps/site/content/docs/compliance/index.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "apps/site/content/docs/ai-production/index.mdx"
+    ],
+    "answer": "To install the Provenance bundle, run the following commands:\n\n```bash\nbunx @caisson-sh/cli@latest --name caisson-app --edition provenance\ncd caisson-app\nbun install\n```\n\nThe `--edition provenance` flag automatically selects the Provenance bundle's current modules and scaffolds the whole bundle. If you want to add or swap individual modules, you can use the `--module <id@version>` flag. For the full flag reference, see the [Getting started](/docs/getting-started) documentation. [apps/site/content/docs/provenance/index.mdx]",
+    "escalation_reason": null,
+    "latency_s": 3.47
+  },
+  {
+    "question": "What's the difference between the Everything bundle and buying modules individually?",
+    "expected": "either",
+    "resolved": true,
+    "tier": "medium",
+    "confidence": 0.82,
+    "citations": [
+      "pricing/modules",
+      "apps/site/content/docs/everything/index.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "pricing/bundles",
+      "pricing/modules",
+      "apps/site/content/docs/licensing.mdx"
+    ],
+    "answer": "Based on the documentation, here are the key differences:\n\n1. **Price**: The Everything bundle costs **$2,059** as a single purchase [pricing/bundles], versus paying individual prices per module (e.g., $99 for Prompt Registry, etc.) [pricing/modules]. Buying a bundle is cheaper once you need several modules [pricing/modules].\n\n2. **Coverage**: Everything includes **every sellable SKU in the catalog** \u2014 all modules across all five persona/provenance bundles, plus three exclusive modules that are *only* available through Everything (or as \u00e0-la-carte purchases): [apps/site/content/docs/everything/index.mdx]\n   - **org-controls** (WorkOS SSO, multi-user surface, admin RLS)\n   - **billing-orchestration** (multi-provider billing engine)\n   - **ui-pro** (commercial component tier)\n\n3. **No duplication**: Modules that span multiple bundles (e.g., `field-crypto`) are granted **once**, not multiple times. Everything changes what's *licensed*, not how modules wire together. [apps/site/content/docs/everything/index.mdx]\n\n4. **Renewals**: The Everything bundle renewal is **$819/year** (flat 40% of list price), versus paying per-module renewal rates individually (e.g., $39/year for a $99 module). [apps/site/content/docs/licensing.mdx]\n\nIn short, Everything is the most cost-efficient path if you need broad coverage across the catalog.",
+    "escalation_reason": null,
+    "latency_s": 7.49
+  },
+  {
+    "question": "How do credits work and when do they expire?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.97,
+    "citations": [
+      "apps/site/content/docs/ai-production/credits.mdx",
+      "apps/site/content/docs/ai-production/credits.mdx",
+      "packages/credits/README.md",
+      "pricing/modules",
+      "apps/site/content/docs/base/kernel.mdx",
+      "apps/site/content/docs/refunds.mdx"
+    ],
+    "answer": "## How Credits Work\n\nCredits are managed by the `@caisson/credits` package, which implements an integer credit wallet with an append-only ledger [packages/credits/README.md].\n\n### Core Mechanics\n\n- **Integer only** \u2014 credits are always whole integer units, never floats [apps/site/content/docs/ai-production/credits.mdx]\n- **Granting** \u2014 `grant()` adds credits from purchases, subscription allotments, top-ups, or registered feature grants [apps/site/content/docs/ai-production/credits.mdx]\n- **Debiting** \u2014 `debit()` subtracts credits for codegen, AI features, or registered feature debits [apps/site/content/docs/ai-production/credits.mdx]\n- **Idempotency** \u2014 both `grant()` and `debit()` are idempotent via a `sourceEventId` or `idempotencyKey`, so retried webhooks are absorbed rather than double-counted [apps/site/content/docs/ai-production/credits.mdx]\n\n### Debit-Before-Spend (Fail-Closed)\n\nIf an account has insufficient credits, an `InsufficientCreditsError` is thrown **before** any paid work runs, and the entire transaction is rolled back \u2014 no debit row is written, no wallet mutation occurs [apps/site/content/docs/ai-production/credits.mdx].\n\n### FIFO Grant Consumption\n\nWhen a debit occurs, it walks the account's unexpired grants **oldest-first**, splitting across multiple grants if needed [apps/site/content/docs/ai-production/credits.mdx].\n\n### Ledger\n\n`getLedger()` returns every grant/debit event for an account. The ledger is **append-only** \u2014 nothing is ever mutated or deleted [apps/site/content/docs/ai-production/credits.mdx].\n\n---\n\n## Expiry & Clawback\n\n- **Default expiry** \u2014 grants expire after **12 months** by default [apps/site/content/docs/ai-production/credits.mdx]\n- **Sweep jobs** \u2014 `sweepExpiredGrants()` claws back unspent residue past `expires_at`; `sweepExpiryNotices()` emails accounts within a configurable expiring-soon window. Both ship as `@caisson/jobs` task definitions [apps/site/content/docs/ai-production/credits.mdx]\n- **Clawback on refunds** \u2014 `clawback()` reverses unspent credits tied to a specific purchase line, so a partial refund only reverses that line's grant \u2014 already-spent credits are not affected [apps/site/content/docs/ai-production/credits.mdx] [apps/site/content/docs/refunds.mdx]",
+    "escalation_reason": null,
+    "latency_s": 9.78
+  },
+  {
+    "question": "Can I use my Caisson license across multiple projects in my company?",
+    "expected": "either",
+    "resolved": false,
+    "tier": null,
+    "confidence": null,
+    "citations": [],
+    "answer": null,
+    "escalation_reason": "Retrieved 6 source(s) but the model judged them insufficient to answer.",
+    "latency_s": 1.9
+  },
+  {
+    "question": "What happens when my updates window expires?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.99,
+    "citations": [
+      "apps/site/content/docs/licensing.mdx",
+      "apps/site/content/docs/licensing.mdx",
+      "pricing/plans",
+      "apps/site/content/docs/ai-production/credits.mdx",
+      "apps/site/content/docs/refunds.mdx",
+      "apps/site/content/docs/index.mdx"
+    ],
+    "answer": "When your updates window expires [apps/site/content/docs/licensing.mdx]:\n\n- **Nothing is revoked.** Every version you already pulled continues to install forever.\n- **Versions published within your window** remain available to you even if you pull them *after* the window closes.\n- **New releases are blocked.** An expired window simply stops new releases (published after the window closed) from being accessible \u2014 it does not affect anything you already have.\n\nIn short, expiry is never punitive \u2014 it only prevents you from accessing newly published releases going forward.",
+    "escalation_reason": null,
+    "latency_s": 9.5
+  },
+  {
+    "question": "How do I renew my license after the first year?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "medium",
+    "confidence": 0.82,
+    "citations": [
+      "apps/site/content/docs/licensing.mdx",
+      "apps/site/content/docs/licensing.mdx",
+      "apps/site/content/docs/getting-started.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "apps/site/content/docs/local-first/index.mdx",
+      "packages/license-verify/README.md"
+    ],
+    "answer": "## Renewing Your License\n\nRenewing your Caisson license purchases another **12-month updates window**. The renewal price is a flat **40% of the then-current list price**, rounded to X9 pricing [apps/site/content/docs/licensing.mdx].\n\n### Renewal Pricing\n\n**Bundles:**\n\n| Bundle | Renewal (per year) |\n|---|---|\n| Compliance | $419 |\n| AI-Production | $289 |\n| Everything | $819 |\n| Provenance | $159 |\n| Local-first | $249 |\n| Agentic-Dev | $129 |\n\n**\u00c0 la carte modules**, based on list price:\n\n| List price | Renewal (per year) |\n|---|---|\n| $299 | $119 |\n| $249 | $99 |\n| $199 | $79 |\n| $149 | $59 |\n| $129 | $49 |\n| $99 | $39 |\n| $49 | $19 |\n\n### Note on Subscriptions\n\nIf you're on a **subscription** rather than a one-time purchase, updates are included for the entire duration of your active subscription \u2014 there's no updates window to track and nothing to renew separately [apps/site/content/docs/licensing.mdx].",
+    "escalation_reason": null,
+    "latency_s": 5.63
+  },
+  {
+    "question": "Do I keep the code forever after a one-time purchase?",
+    "expected": "either",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.99,
+    "citations": [
+      "apps/site/content/docs/licensing.mdx",
+      "apps/site/content/docs/licensing.mdx",
+      "apps/site/content/docs/everything/index.mdx",
+      "pricing/modules",
+      "pricing/plans",
+      "apps/site/content/docs/refunds.mdx"
+    ],
+    "answer": "Yes. A one-time purchase gives you a **perpetual license** \u2014 the software keeps working forever. It is verified offline using an Ed25519 signature, with no phone-home requirement and no server that could be taken down or revoked [apps/site/content/docs/licensing.mdx].\n\nA few important details:\n\n- **The license is valid for the major version you purchased** [apps/site/content/docs/licensing.mdx].\n- Your purchase includes a **12-month updates window**, during which you can pull any newly published versions (bug fixes, minor releases, etc.) [apps/site/content/docs/licensing.mdx].\n- **When that window expires, nothing is revoked.** Every version you already pulled \u2014 and anything published within your window \u2014 continues to install forever, even after the window closes. The expired window simply stops *new* releases from counting toward your entitlement [apps/site/content/docs/licensing.mdx].\n\nIn short: yes, you keep the code forever.",
+    "escalation_reason": null,
+    "latency_s": 5.39
+  },
+  {
+    "question": "How do I set up the Caisson MCP server?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.88,
+    "citations": [
+      "apps/site/content/docs/base/mcp-server.mdx",
+      "apps/site/content/docs/getting-started.mdx",
+      "apps/site/content/docs/base/mcp-server.mdx",
+      "packages/mcp-server/README.md",
+      "apps/site/content/docs/getting-started.mdx",
+      "apps/site/content/docs/cli/create-caisson.mdx"
+    ],
+    "answer": "## Setting Up the Caisson MCP Server\n\n### 1. Install the package\n\nSince `@caisson/mcp-server` is not a scaffold default, add it to your project manually:\n\n```bash\nbun add @caisson/mcp-server\n```\n\n[apps/site/content/docs/getting-started.mdx]\n\n### 2. Create your server entry point\n\nUse `runStdioServer` to host it locally over stdio \u2014 one process per buyer session:\n\n```ts\n// mcpOptions = registry index + issued tokens + the onGenerate host hook\n// See the McpServerOptions type exported by @caisson/mcp-server for the exact shape.\nawait runStdioServer({\n  mcp: mcpOptions,\n  bearer: process.env.CAISSON_MCP_TOKEN!,\n});\n```\n\n[apps/site/content/docs/getting-started.mdx]\n\n### 3. Point your agent at the server\n\nAdd an `.mcp.json` config to wire your agent (e.g. Claude Code, Cursor) to the process:\n\n```jsonc\n{\n  \"mcpServers\": {\n    \"caisson\": {\n      \"command\": \"bun\",\n      \"args\": [\"run\", \"./mcp-server.ts\"],\n      \"env\": { \"CAISSON_MCP_TOKEN\": \"${CAISSON_MCP_TOKEN}\" }\n    }\n  }\n}\n```\n\n[apps/site/content/docs/getting-started.mdx]\n\n### Key things to know\n\n- The server is **auth-gated** \u2014 every tool call uses timing-safe Bearer-token authentication. [packages/mcp-server/README.md]\n- It is **entitlement-scoped** \u2014 callers only see modules their purchase grants. [packages/mcp-server/README.md]\n- It exposes three core tools: `list_modules`, `describe_module`, and `generate`. [apps/site/content/docs/getting-started.mdx]\n- For a hosted deployment, an HTTP transport (`runHttpServer`) is also available. [apps/site/content/docs/getting-started.mdx]",
+    "escalation_reason": null,
+    "latency_s": 8.61
+  },
+  {
+    "question": "What tools does the Caisson MCP server expose?",
+    "expected": "either",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.97,
+    "citations": [
+      "apps/site/content/docs/getting-started.mdx",
+      "apps/site/content/docs/base/mcp-server.mdx",
+      "apps/site/content/docs/base/mcp-server.mdx",
+      "packages/mcp-server/README.md",
+      "apps/site/content/docs/cli/create-caisson.mdx",
+      "apps/site/content/docs/cli/create-caisson.mdx"
+    ],
+    "answer": "Based on the documentation, the Caisson MCP server exposes three base tools that every authenticated buyer sees, regardless of entitlement [apps/site/content/docs/cli/create-caisson.mdx]:\n\n1. **`list_modules`** \u2014 Takes no arguments and returns the caller's owned entitlement slugs as a sorted list of strings.\n\n2. **`describe_module`** \u2014 Takes a module `name` (1\u2013128 chars) and returns the module's name and summary. Throws an `EntitlementError` (403) if the caller doesn't own the named module.\n\n3. **`generate`** \u2014 Takes the following arguments:\n   - `projectName` (required): a slug matching `^[a-z0-9][a-z0-9-]*$`, max 64 chars\n   - `edition` (optional): one of `\"compliance\"`, `\"ai-kit\"`, `\"local-ai\"`, or `\"agent-dev\"` (legacy vocabulary)\n   - `modules` (required): an array of `{ id, version }` objects, 1\u2013100 entries\n   - `idempotencyKey` (optional): a UUID; minted server-side if omitted\n\n   Returns a `generationId` string (stable across same-key retries), not file contents.\n\nA few important behavioral notes [apps/site/content/docs/cli/create-caisson.mdx]:\n- Tools a caller isn't entitled to are **invisible** \u2014 excluded from `list_tools`, and calling them directly returns a `404`.\n- Retired tool names return `410` with a reason.\n- Every `generate` call is allowlist-checked against the registry index before any entitlement check runs.\n- When a rate limiter is wired by the host, calls are throttled per account before reaching a handler (`429`).",
+    "escalation_reason": null,
+    "latency_s": 7.62
+  },
+  {
+    "question": "What is the refund policy?",
+    "expected": "either",
+    "resolved": true,
+    "tier": "medium",
+    "confidence": 0.82,
+    "citations": [
+      "apps/site/content/docs/refunds.mdx",
+      "apps/site/content/docs/refunds.mdx",
+      "apps/site/content/docs/licensing.mdx",
+      "packages/credits/README.md",
+      "apps/site/content/docs/ai-production/credits.mdx",
+      "apps/site/content/docs/base/billing.mdx"
+    ],
+    "answer": "Based on the documentation, here is a summary of the refund policy:\n\n- **Canonical source**: The legally controlling document is the terms page at [/legal/terms](/legal/terms). The documentation notes that if there is ever a disagreement between the support summary and the legal page, the legal page controls. [apps/site/content/docs/refunds.mdx]\n\n- **Processing**: Refunds are executed by **Paddle**, who acts as the Merchant of Record. Approved refunds are returned to your original payment method (where possible) within **14 days of approval**. [apps/site/content/docs/refunds.mdx]\n\n- **Credits clawback**: When a refund is processed, any credits associated with the refunded purchase are reversed. For a **partial refund**, only the credits tied to that specific line item are clawed back \u2014 other line items are unaffected. [packages/credits/README.md] [apps/site/content/docs/ai-production/credits.mdx]\n\nFor the full and legally binding policy, please refer to [/legal/terms](/legal/terms).",
+    "escalation_reason": null,
+    "latency_s": 6.84
+  },
+  {
+    "question": "Can I get a refund on a subscription?",
+    "expected": "either",
+    "resolved": false,
+    "tier": null,
+    "confidence": 0.4,
+    "citations": [],
+    "answer": null,
+    "escalation_reason": "Retrieved 6 source(s) and the model answered, but its self-assessed confidence (0.40) was below the escalation threshold.",
+    "latency_s": 4.45
+  },
+  {
+    "question": "I was charged twice for the same bundle \u2014 what do I do?",
+    "expected": "escalate_ok",
+    "resolved": false,
+    "tier": null,
+    "confidence": null,
+    "citations": [],
+    "answer": null,
+    "escalation_reason": "Retrieved 6 source(s) and the model answered, but its confidence self-assessment was missing or unparseable; escalating rather than guessing (fail-closed).",
+    "latency_s": 2.75
+  },
+  {
+    "question": "Can I bring my own S3 bucket for audit storage?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.91,
+    "citations": [
+      "pricing/modules",
+      "apps/site/content/docs/provenance/audit-worm.mdx",
+      "apps/site/content/docs/provenance/audit-worm.mdx",
+      "apps/site/content/docs/provenance/index.mdx",
+      "apps/site/content/docs/compliance/index.mdx",
+      "pricing/bundles"
+    ],
+    "answer": "Yes. The `audit-worm` module supports pluggable cloud backends, including S3. You configure it by constructing an `S3ArtifactStore` with your own injected S3 client and bucket name [apps/site/content/docs/provenance/audit-worm.mdx].\n\nA few things to be aware of:\n\n- **Lock capability is required.** The store verifies that the bucket has an enabled Object Lock rule covering its key prefix before it becomes usable. A bucket without locking enabled will be refused (ADR-0267) [apps/site/content/docs/provenance/audit-worm.mdx].\n- **Lock mode.** You can configure the mode as `\"GOVERNANCE\"` or `\"COMPLIANCE\"` (default is `GOVERNANCE`). Choosing `COMPLIANCE` requires an explicit `complianceOptIn` flag [apps/site/content/docs/provenance/audit-worm.mdx].\n- **Encryption.** You can optionally supply a per-tenant SSE-KMS key ID for encryption at rest [apps/site/content/docs/provenance/audit-worm.mdx].\n- **Retention.** The minimum retention period is 6 years (HIPAA/SEC floor); the default is 7 years. Specifying a term below the floor throws an error rather than silently rounding up [apps/site/content/docs/provenance/audit-worm.mdx].\n\nR2 and GCS are also supported as alternatives, with async factory constructors that perform the same lock-capability check [apps/site/content/docs/provenance/audit-worm.mdx].",
+    "escalation_reason": null,
+    "latency_s": 8.24
+  },
+  {
+    "question": "Does Caisson work with Prisma?",
+    "expected": "answerable",
+    "resolved": true,
+    "tier": "high",
+    "confidence": 0.97,
+    "citations": [
+      "apps/site/content/docs/cli/create-caisson.mdx",
+      "packages/tenancy-rls/README.md",
+      "pricing/bundles",
+      "pricing/modules",
+      "apps/site/content/docs/ai-production/ai-meter.mdx",
+      "apps/site/content/docs/base/tenancy-rls.mdx"
+    ],
+    "answer": "Yes, Caisson works with Prisma. The `tenancy-rls` package provides a **Prisma bridge** via `createPrismaBridge(tx)`, which wraps a tenant-scoped `TenantExecutor` behind Prisma's raw client surface [packages/tenancy-rls/README.md] [apps/site/content/docs/base/tenancy-rls.mdx].\n\n### Key points:\n\n- `createPrismaBridge(tx)` returns an object implementing `$queryRawUnsafe` and `$executeRawUnsafe`, so existing call sites written against a real `PrismaClient` can port over **with a rename, not a rewrite** [apps/site/content/docs/base/tenancy-rls.mdx].\n- You use it **inside a `withTenant` callback**, which already acts as the transaction boundary \u2014 you do **not** need (or want) Prisma's own `$transaction` inside it [packages/tenancy-rls/README.md].\n- Multi-statement work is supported by wrapping `tx` once with `createPrismaBridge` and issuing all statements inside the same callback [packages/tenancy-rls/README.md].\n\n### Example:\n\n```ts\nawait withTenant(db, accountId, async (tx) => {\n  const prisma = createPrismaBridge(tx);\n  await prisma.$executeRawUnsafe(\n    `UPDATE account SET seats = seats - 1 WHERE id = $1`,\n    accountId,\n  );\n  await prisma.$executeRawUnsafe(\n    `INSERT INTO seat_log (account_id) VALUES ($1)`,\n    accountId,\n  );\n});\n```\n\n### One caveat:\n`$executeRawUnsafe`'s affected-row count is best-effort (`rows.length`). For bare `UPDATE`/`DELETE` statements with no `RETURNING` clause, it will report `0` even if rows were changed. Add a `RETURNING` clause if you need an accurate count [apps/site/content/docs/base/tenancy-rls.mdx].",
+    "escalation_reason": null,
+    "latency_s": 9.92
+  },
+  {
+    "question": "Does Caisson support SSO with SAML?",
+    "expected": "either",
+    "resolved": false,
+    "tier": null,
+    "confidence": null,
+    "citations": [],
+    "answer": null,
+    "escalation_reason": "Retrieved 6 source(s) and the model answered, but its confidence self-assessment was missing or unparseable; escalating rather than guessing (fail-closed).",
+    "latency_s": 3.56
+  }
+]

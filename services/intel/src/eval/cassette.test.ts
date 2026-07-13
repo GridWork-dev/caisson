@@ -11,7 +11,7 @@ import {
 } from "./cassette.ts";
 
 const VALID_CASSETTE = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   watcher: "competitor",
   recordedAt: "2026-07-11T12:00:00.000Z",
   config: {
@@ -29,7 +29,6 @@ const VALID_CASSETTE = {
   watchState: {},
   exchanges: [],
   findings: [],
-  judge: { model: "anthropic/claude-sonnet-4.5", responses: {} },
 } as const;
 
 describe("parseCassetteFile (strict boundary)", () => {
@@ -39,6 +38,15 @@ describe("parseCassetteFile (strict boundary)", () => {
 
   test("rejects an unknown top-level key", () => {
     expect(() => parseCassetteFile({ ...VALID_CASSETTE, bogus: 1 })).toThrow();
+  });
+
+  test("rejects legacy embedded judge responses", () => {
+    expect(() =>
+      parseCassetteFile({
+        ...VALID_CASSETTE,
+        judge: { model: "legacy", responses: {} },
+      }),
+    ).toThrow();
   });
 
   test("rejects a malformed finding", () => {
