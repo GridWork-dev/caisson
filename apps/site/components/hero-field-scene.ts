@@ -38,6 +38,9 @@ export interface FieldHandle {
   resume(): void;
   /** Recolour in place on a live theme toggle — no teardown/remount. */
   setDark(dark: boolean): void;
+  /** Waterline Descent (ADR-0334 §3a — the ONE scroll-fed input): 0 = surface (rest fog),
+   *  1 = fully scrolled past — the depth fog thickens and far rods dissolve sooner. */
+  setDescent(progress: number): void;
   dispose(): void;
 }
 
@@ -213,12 +216,13 @@ export function mountDepthField(
   const geometry = new BoxGeometry(1, 1, 1);
   // Concrete uniforms object (not index-accessed off material.uniforms) so strict
   // noUncheckedIndexedAccess sees each field as defined. ShaderMaterial keeps this same ref.
+  const REST_FOG = 0.058;
   const uniforms = {
     uRod: { value: hexToVec3(pal.rod) },
     uRodDeep: { value: hexToVec3(pal.rodDeep) },
     uAccent: { value: hexToVec3(pal.accent) },
     uOpacity: { value: pal.opacity },
-    uFogDensity: { value: 0.058 },
+    uFogDensity: { value: REST_FOG },
     uSweep: { value: Z_NEAR },
   };
   const material = new ShaderMaterial({
@@ -335,6 +339,12 @@ export function mountDepthField(
       uniforms.uAccent.value.copy(hexToVec3(p.accent));
       uniforms.uOpacity.value = p.opacity;
       if (!running) renderer.render(scene, camera); // repaint if paused
+    },
+    setDescent(progress: number) {
+      // +55% fog at full descent — far rods dissolve as the pressure comes on. The RAF loop
+      // renders it on the next frame; no forced repaint (a paused field is offscreen anyway).
+      const t = Math.min(1, Math.max(0, progress));
+      uniforms.uFogDensity.value = REST_FOG * (1 + 0.55 * t);
     },
     dispose() {
       pause();

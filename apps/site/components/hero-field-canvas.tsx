@@ -66,6 +66,13 @@ export function HeroFieldCanvas() {
       docVisible = !document.hidden;
       syncRunState();
     }
+    // Waterline Descent (ADR-0334 §3a): feed hero scroll-exit progress into the fog uniform.
+    // Passive listener, one clamped division — the RAF loop consumes the value; no extra paints.
+    function onScroll() {
+      if (!handle) return;
+      const heroH = canvas?.parentElement?.clientHeight || 1;
+      handle.setDescent(window.scrollY / heroH);
+    }
     function onContextLost(e: Event) {
       // GPU dropped the context — tear down to the poster (ADR-0306 resilience).
       e.preventDefault();
@@ -93,6 +100,8 @@ export function HeroFieldCanvas() {
       canvas.addEventListener("webglcontextlost", onContextLost);
       io?.observe(canvas);
       document.addEventListener("visibilitychange", onVisibility);
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll(); // seed descent for a mid-page hydrate (deep link / restored scroll)
       themeObserver.observe(document.documentElement, {
         attributes: true,
         attributeFilter: ["data-theme"],
@@ -129,6 +138,7 @@ export function HeroFieldCanvas() {
       io?.disconnect();
       themeObserver.disconnect();
       schemeMq.removeEventListener("change", onSchemeChange);
+      window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVisibility);
       canvas.removeEventListener("webglcontextlost", onContextLost);
       handle?.dispose();
