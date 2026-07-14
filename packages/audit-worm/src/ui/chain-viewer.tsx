@@ -1,15 +1,18 @@
-// @caisson/audit-worm/ui — the audit-chain viewer (ADR-0250 G2c/G2d). An embeddable,
-// headless-data-in surface: it renders the chain entries + the kernel's verification verdict it is
-// HANDED (no DB connection, no fetch). Composes the `@caisson/ui` floor (Section · MetricStat ·
-// DataTable · StatusChip · EmptyState) — brand + a11y come from the kit, this file only maps the
-// audit-worm domain shape onto it. Presentational + SSR-safe: no `useState`, no browser globals at
-// module load or render — the consuming app owns the client boundary.
-import type { CSSProperties } from "react";
+"use client";
+
+// @caisson/audit-worm/ui — the audit-chain viewer (ADR-0250 G2c/G2d, extended for per-row verification
+// T-U2). Still an embeddable, headless-data-in surface — no DB connection: it renders the chain
+// entries + the verdict it is HANDED, plus (when given) a PER-ROW six-state chip computed by the caller
+// from real anchors, and an expandable proof panel that fetches the row's proof on open (fork f). When
+// the per-row props are absent it degrades to the original chain-level-only view (backward compatible).
+// Composes the `@caisson/ui` floor (Section · MetricStat · DataTable · StatusChip · EmptyState).
+import { useState, type CSSProperties } from "react";
 import type {
   AuditChainEntry,
   ChainVerification,
   JsonValue,
 } from "@caisson/kernel";
+import type { RowState } from "@caisson/kernel/audit-verify";
 import {
   DataTable,
   EmptyState,
@@ -18,6 +21,8 @@ import {
   StatusChip,
 } from "@caisson/ui/components";
 import type { DataTableColumn, DataTableProps } from "@caisson/ui/components";
+import { RowStateChip } from "./row-state-chip.tsx";
+import { ProofPanel, type ProofBundleResponse } from "./proof-panel.tsx";
 
 const MONO: CSSProperties = { fontFamily: "var(--cs-font-mono)" };
 const STACK: CSSProperties = {
@@ -43,6 +48,14 @@ export interface ChainViewerProps {
   entries: readonly AuditChainEntry[];
   /** The kernel `verifyChain` verdict for `entries` (optionally against a trusted WORM anchor). */
   verification: ChainVerification;
+  /** Per-row six-state statuses, indexed by entry `seq` — the caller computes them from real anchors
+   *  (client recompute, M3). When given, each row shows its six-state chip; absent -> no status column. */
+  rowStatuses?: readonly RowState[];
+  /** Anchor provenance for the header line ("chain anchored at length N in write-once storage …"). */
+  anchorProvenance?: { length: number; retainUntil?: string };
+  /** Fetch a single row's proof bundle (calls the proof endpoint). When given, rows expand to a
+   *  ProofPanel that fetches on open (fork f); absent -> rows are not expandable. */
+  fetchProof?: (seq: number) => Promise<ProofBundleResponse>;
   /** Render the table's loading skeleton in place of rows. */
   loading?: boolean;
   /** Host-controlled page size — omit to render every entry. */
@@ -54,12 +67,17 @@ export interface ChainViewerProps {
 }
 
 /**
- * ChainViewer — the headline hash-chain integrity verdict + the entry ledger. `verification.valid`
- * drives the stat tone (positive / critical); a broken chain flags the offending `seq` inline.
+ * ChainViewer — the headline hash-chain integrity verdict + the entry ledger, now with optional
+ * per-row verification. A mid-chain break does NOT poison earlier rows: rows carry their OWN
+ * per-length status (the caller's `rowStatuses`), so an early row stays verified even past a later
+ * `brokenAt`.
  */
 export function ChainViewer({
   entries,
   verification,
+  rowStatuses,
+  anchorProvenance,
+  fetchProof,
   loading,
   pageSize,
   page,
@@ -67,8 +85,22 @@ export function ChainViewer({
   className,
 }: ChainViewerProps) {
   const { valid, brokenAt } = verification;
+  const [expandedSeq, setExpandedSeq] = useState<number | null>(null);
 
-  const columns: readonly DataTableColumn<AuditChainEntry>[] = [
+  const columns: DataTableColumn<AuditChainEntry>[] = [];
+
+  if (rowStatuses !== undefined) {
+    columns.push({
+      key: "status",
+      header: "Status",
+      render: (e) => {
+        const s = rowStatuses[e.seq];
+        return s !== undefined ? <RowStateChip state={s} /> : null;
+      },
+    });
+  }
+
+  columns.push(
     {
       key: "seq",
       header: "#",
@@ -109,7 +141,25 @@ export function ChainViewer({
         </code>
       ),
     },
-  ];
+  );
+
+  if (fetchProof !== undefined) {
+    columns.push({
+      key: "proof",
+      header: "Proof",
+      render: (e) => (
+        <button
+          type="button"
+          onClick={() =>
+            setExpandedSeq((cur) => (cur === e.seq ? null : e.seq))
+          }
+          aria-expanded={expandedSeq === e.seq}
+        >
+          {expandedSeq === e.seq ? "Hide" : "View"}
+        </button>
+      ),
+    });
+  }
 
   const controls: Partial<DataTableProps<AuditChainEntry>> = {};
   if (loading !== undefined) controls.loading = loading;
@@ -127,6 +177,15 @@ export function ChainViewer({
             hint={`${entries.length} ${entries.length === 1 ? "entry" : "entries"}`}
             tone={valid ? "positive" : "critical"}
           />
+          {anchorProvenance !== undefined ? (
+            <p style={{ color: "var(--cs-fg-muted)", margin: 0 }}>
+              Chain anchored at length {anchorProvenance.length} in write-once
+              storage
+              {anchorProvenance.retainUntil !== undefined
+                ? ` · retained until ${anchorProvenance.retainUntil}`
+                : ""}
+            </p>
+          ) : null}
           <DataTable
             columns={columns}
             rows={entries}
@@ -140,6 +199,14 @@ export function ChainViewer({
             }
             {...controls}
           />
+          {fetchProof !== undefined && expandedSeq !== null ? (
+            <ProofPanel
+              key={expandedSeq}
+              seq={expandedSeq}
+              fetchProof={fetchProof}
+              chainStatus={verification}
+            />
+          ) : null}
         </div>
       </Section>
     </div>

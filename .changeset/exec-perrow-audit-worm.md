@@ -16,3 +16,11 @@ signer is injected into `AuditChainStore`. `sig`+`keyId` are stored additively a
 legacy unsigned anchors stay byte-identical and structurally valid — not a chain-format break.
 `verifyAnchorSignature(anchor, publicKey)` checks a signed anchor against a pinned public key so
 tamper-evidence is independent of the row-serving API.
+
+Per-row verification UI (`./ui`): a new `ProofPanel` + `useRowVerify` hook re-run the pure kernel
+checks CLIENT-side against the fetched proof bundle (never the receipt's `checks`, M3) and fail to
+`unverifiable` when WebCrypto is unavailable (L4); a shared `RowStateChip` maps the six states onto the
+frozen `@caisson/ui` StatusChip tones. `ChainViewer` gains optional per-row six-state chips, an
+expand-to-ProofPanel that fetches the row's proof on open (fork f), and an anchor-provenance header —
+all backward compatible (absent props render the prior chain-level-only view). Adds an optional
+`@caisson/ui-pro` peer dependency for the redacted-payload viewer (GATE-4).
