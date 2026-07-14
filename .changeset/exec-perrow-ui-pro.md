@@ -17,3 +17,9 @@ anchor commitment.
 T-F1 copy pass (GATE-1 lock, ADR-0344 — signed anchors): the anchor-aware `verified` badge's aria-label
 now reads "Verified against write-once anchor (signature-checked)", matching the SPEC's locked seal
 copy. Never "impossible to tamper" or an unqualified "independently verified" claim.
+
+Fix: `build` now copies `src/components/*.css` into `dist/components/` — the plain `tsc` build never
+copied these, so any consumer resolving `@caisson/ui-pro`'s "default"/dist condition (e.g. a Next.js
+app bundling `PayloadViewer`, reached transitively via `audit-worm/ui`'s new GATE-4 dependency) hit a
+`Module not found: ./payload-viewer.css` build failure. Workspace consumers using Bun's "bun" source
+condition were unaffected; this only broke the compiled dist path.
