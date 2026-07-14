@@ -19,9 +19,13 @@ import * as realServiceLicense from "@caisson/service-license";
 import * as realAdminMutationsRuntime from "@/lib/admin-mutations-runtime";
 import { setAdminAuthFixture, VERIFIED_ADMIN } from "@/lib/admin-auth-mock";
 
+// Spread the real module and override ONLY `readLicenseForReissue` (the reissue routes this file's
+// error-mapping cases would otherwise pull a live grant through). `getAdminMutationDeps` is left REAL
+// (the spread) — the grant/credit routes here never reach it (their orchestration functions are mocked
+// to throw first), and a `{}` stub here was a process-wide landmine that left `deps.worm` undefined
+// for any OTHER route test in the suite that genuinely uses the deps (e.g. the audit-proof endpoint).
 mock.module("@/lib/admin-mutations-runtime", () => ({
   ...realAdminMutationsRuntime,
-  getAdminMutationDeps: async () => ({}) as never,
   readLicenseForReissue: async () => null,
 }));
 
