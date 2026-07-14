@@ -69,10 +69,12 @@ const ROW_BADGE: Record<
   { icon: BadgeIcon; label: string; text: string }
 > = {
   verified: {
-    // T-F1 / GATE-1 (ADR-0344, signed anchors): the seal names the strong claim the SPEC's copy law
-    // reserves for a signed anchor trust root — never "impossible to tamper" (SPEC copy law).
+    // The SPEC's sanctioned Level-2 copy — never "impossible to tamper" (SPEC copy law). This generic
+    // component badges from a caller-supplied `RowState` and runs NO signature check itself, so it must
+    // NOT claim "(signature-checked)": that strong wording is emitted only where a signature leg
+    // actually verified an anchor against a pinned key (the ProofPanel / evidence-pack README).
     icon: "shield",
-    label: "Verified against write-once anchor (signature-checked)",
+    label: "Verified against write-once anchor",
     text: "Verified",
   },
   "anchor-confirmed-original-not-disclosed": {

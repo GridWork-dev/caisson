@@ -12,7 +12,7 @@
 // redacted row's link-recompute leg reads "not applicable — payload redacted", never a pass (CR-06).
 import { useEffect, useState, type CSSProperties } from "react";
 import type { ChainVerification } from "@caisson/kernel";
-import type { RowReceipt } from "@caisson/kernel/audit-verify";
+import type { PinnedAnchorKey, RowReceipt } from "@caisson/kernel/audit-verify";
 import { PayloadViewer } from "@caisson/ui-pro";
 import { RowStateChip, type ChipState } from "./row-state-chip.tsx";
 import { useRowVerify } from "./use-row-verify.ts";
@@ -37,6 +37,12 @@ export interface ProofPanelProps {
   fetchProof: (seq: number) => Promise<ProofBundleResponse>;
   /** Optional chain-level verdict for the third assertion (chain vs current anchor). */
   chainStatus?: ChainVerification;
+  /**
+   * The pinned anchor-signing public key (GATE-1 / ADR-0344), injected OUT-OF-BAND from app config —
+   * NEVER from the proof response. Only when it is supplied (and matches the anchor's `keyId`) does the
+   * client run the signature leg and earn the "(signature-checked)" seal; absent → the honest base seal.
+   */
+  pinnedAnchorKey?: PinnedAnchorKey;
 }
 
 type Phase =
@@ -71,10 +77,21 @@ const MUTED: CSSProperties = { color: "var(--cs-fg-muted)" };
  * The seal caption — the SPEC's exact copy-law strings (T-F1, GATE-1/ADR-0344: signed anchors), so the
  * proof panel states in words what the chip encodes. Only `verified` and the redacted state get a seal
  * sentence; every other state's chip label already says what it is without a further claim to qualify.
+ *
+ * The strong "(signature-checked)" wording is emitted ONLY when `signatureChecked` — i.e. the client's
+ * own signature leg actually verified the anchor against a pinned, out-of-band key. When no signature
+ * was checked (unsigned anchor, or no pinned key wired), the honest BASE seal is used: the panel never
+ * claims a cryptographic signature check it did not perform (SPEC anti-overclaim copy law; the same
+ * gate the evidence-pack README applies). Never "impossible to tamper".
  */
-function sealCaption(state: ChipState): string | null {
+function sealCaption(
+  state: ChipState,
+  signatureChecked: boolean,
+): string | null {
   if (state === "verified") {
-    return "Verified against write-once anchor (signature-checked).";
+    return signatureChecked
+      ? "Verified against write-once anchor (signature-checked)."
+      : "Verified against write-once anchor.";
   }
   if (state === "anchor-confirmed-original-not-disclosed") {
     return "Anchor confirmed — original not disclosed.";
@@ -111,7 +128,12 @@ function Assertion({
  * (fork f) + the client recompute (M3). No store, no direct DB/WORM access — the endpoint call is the
  * injected `fetchProof`.
  */
-export function ProofPanel({ seq, fetchProof, chainStatus }: ProofPanelProps) {
+export function ProofPanel({
+  seq,
+  fetchProof,
+  chainStatus,
+  pinnedAnchorKey,
+}: ProofPanelProps) {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [copied, setCopied] = useState(false);
 
@@ -136,7 +158,7 @@ export function ProofPanel({ seq, fetchProof, chainStatus }: ProofPanelProps) {
   }, [seq, fetchProof]);
 
   const receipt = phase.kind === "loaded" ? phase.bundle.receipt : null;
-  const verify = useRowVerify(receipt);
+  const verify = useRowVerify(receipt, pinnedAnchorKey);
 
   if (phase.kind === "loading") {
     return (
@@ -183,7 +205,7 @@ export function ProofPanel({ seq, fetchProof, chainStatus }: ProofPanelProps) {
       });
   };
 
-  const seal = sealCaption(verify.state);
+  const seal = sealCaption(verify.state, verify.legs?.signature === "pass");
 
   return (
     <div style={PANEL} data-phase="loaded" data-state={verify.state}>

@@ -3,11 +3,13 @@
 // comes from the CLIENT recompute (M3), that a WebCrypto failure resolves to `unverifiable` not
 // `verified` (L4), and that a redacted row's link leg reads "not applicable" (CR-06).
 import { act } from "react";
+import { generateKeyPairSync, sign as nodeSign } from "node:crypto";
 import { renderIntoJsdom } from "@caisson/testing";
 import { afterEach, describe, expect, test } from "bun:test";
-import { anchorChain, chainEntry } from "@caisson/kernel";
+import { anchorChain, canonicalize, chainEntry } from "@caisson/kernel";
 import {
   buildRowReceipt,
+  type PinnedAnchorKey,
   type RowReceipt,
   type VerifyLegs,
 } from "@caisson/kernel/audit-verify";
@@ -19,6 +21,42 @@ const e0 = chainEntry(null, { event: "created" });
 const e1 = chainEntry(e0, { event: "locked", password: "hunter2" });
 const anchor2 = anchorChain([e0, e1]);
 const PASS: VerifyLegs = { linkRecompute: "pass", anchorEquality: "pass" };
+
+/** A receipt whose anchor is signed with an ephemeral Ed25519 key + its matching pinned public key —
+ *  the client's WebCrypto signature leg verifies the exact core the server signed (GATE-1 / ADR-0344). */
+function signedReceiptAndKey(): {
+  receipt: RowReceipt;
+  pinnedKey: PinnedAnchorKey;
+} {
+  const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+  const core: Record<string, string | number> = {
+    length: anchor2.length,
+    tipHash: anchor2.tipHash,
+  };
+  if (anchor2.genesisHash !== undefined) core.genesisHash = anchor2.genesisHash;
+  const sig = nodeSign(
+    null,
+    Buffer.from(new TextEncoder().encode(canonicalize(core))),
+    privateKey,
+  ).toString("base64");
+  const r = buildRowReceipt({
+    entry: e1,
+    anchorForRow: { ...anchor2, sig, keyId: "test-anchor-key" },
+    redacted: false,
+    checks: PASS,
+    verifiedAt: "2026-07-13T00:00:00.000Z",
+    includeAnchorProvenance: true,
+  });
+  return {
+    receipt: r,
+    pinnedKey: {
+      keyId: "test-anchor-key",
+      publicKeySpkiBase64: publicKey
+        .export({ format: "der", type: "spki" })
+        .toString("base64"),
+    },
+  };
+}
 
 function receipt(
   over: Partial<Parameters<typeof buildRowReceipt>[0]> = {},
@@ -152,7 +190,32 @@ describe("ProofPanel (T-U1)", () => {
   });
 
   describe("T-F1 seal copy (GATE-1 signed anchors, ADR-0344)", () => {
-    test("a healthy `verified` row shows the signature-checked seal caption", async () => {
+    test("a `verified` row with a checked signature shows the signature-checked seal", async () => {
+      const { receipt: signed, pinnedKey } = signedReceiptAndKey();
+      const fetchProof = async (): Promise<ProofBundleResponse> => ({
+        receipt: signed,
+        redacted: false,
+        chainLength: 2,
+      });
+      const h = renderIntoJsdom(
+        <ProofPanel
+          seq={1}
+          fetchProof={fetchProof}
+          pinnedAnchorKey={pinnedKey}
+        />,
+      );
+      try {
+        await settle();
+        const seal = h.container.querySelector('[data-testid="seal-caption"]');
+        expect(seal?.textContent).toBe(
+          "Verified against write-once anchor (signature-checked).",
+        );
+      } finally {
+        h.unmount();
+      }
+    });
+
+    test("a `verified` row with NO checked signature shows the honest base seal, never signature-checked (the fix: no unbacked cryptographic claim)", async () => {
       const fetchProof = async (): Promise<ProofBundleResponse> => ({
         receipt: receipt(),
         redacted: false,
@@ -162,9 +225,44 @@ describe("ProofPanel (T-U1)", () => {
       try {
         await settle();
         const seal = h.container.querySelector('[data-testid="seal-caption"]');
-        expect(seal?.textContent).toBe(
-          "Verified against write-once anchor (signature-checked).",
+        expect(seal?.textContent).toBe("Verified against write-once anchor.");
+        expect(h.container.textContent ?? "").not.toContain(
+          "signature-checked",
         );
+      } finally {
+        h.unmount();
+      }
+    });
+
+    test("a signed anchor whose signature does NOT verify against the pinned key renders `tampered`, not verified", async () => {
+      // Link + anchor-equality both still pass; only the signature leg fails — so this isolates it.
+      // A DIFFERENT keypair published under the SAME keyId: the real signature won't verify against it.
+      const { receipt: signed } = signedReceiptAndKey();
+      const { publicKey } = generateKeyPairSync("ed25519");
+      const wrongKey: PinnedAnchorKey = {
+        keyId: "test-anchor-key",
+        publicKeySpkiBase64: publicKey
+          .export({ format: "der", type: "spki" })
+          .toString("base64"),
+      };
+      const fetchProof = async (): Promise<ProofBundleResponse> => ({
+        receipt: signed,
+        redacted: false,
+        chainLength: 2,
+      });
+      const h = renderIntoJsdom(
+        <ProofPanel
+          seq={1}
+          fetchProof={fetchProof}
+          pinnedAnchorKey={wrongKey}
+        />,
+      );
+      try {
+        await settle();
+        const panel = h.container.querySelector('[data-phase="loaded"]');
+        expect(panel?.getAttribute("data-state")).toBe("tampered");
+        const seal = h.container.querySelector('[data-testid="seal-caption"]');
+        expect(seal?.textContent ?? "").not.toContain("signature-checked");
       } finally {
         h.unmount();
       }

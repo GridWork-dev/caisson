@@ -41,10 +41,15 @@ const rowReceiptSchema = z
     seq: z.number().int().nonnegative(),
     hash: z.string().min(1),
     prevHash: z.string().min(1).nullable(),
+    // `sig`/`keyId`/`genesisHash` are ADDITIVE public provenance (GATE-1): the client needs `sig` to
+    // run its own signature leg against a PINNED, out-of-band key. Never the internal WORM `key` (L2).
     anchor: z
       .object({
         length: z.number().int().nonnegative(),
         tipHash: z.string().min(1),
+        genesisHash: z.string().min(1).optional(),
+        sig: z.string().min(1).optional(),
+        keyId: z.string().min(1).optional(),
       })
       .strict(),
     raw: z
@@ -55,6 +60,9 @@ const rowReceiptSchema = z
       .object({
         linkRecompute: z.enum(["pass", "fail", "na"]),
         anchorEquality: z.enum(["pass", "fail"]),
+        // Display-only (M3): the server's own signature leg. The CLIENT re-runs it against its pinned
+        // key and drives the chip/seal from that — never from this field.
+        signature: z.enum(["pass", "fail", "na"]).optional(),
       })
       .strict(),
     verifiedAt: z.string().min(1),
@@ -144,6 +152,11 @@ export async function assembleProofSuccess(
     redacted,
     checks,
     verifiedAt: now.toISOString(),
+    // GATE-1 / ADR-0344: carry the anchor's `sig`/`keyId`/`genesisHash` so the client can run its OWN
+    // signature leg against a pinned, out-of-band key — the fix that makes the online "(signature-
+    // checked)" seal honest (the client verifies a signature; without this the sig never crossed the
+    // wire). All three fields are public; the internal WORM key is still never included (L2).
+    includeAnchorProvenance: true,
   });
 
   return redacted

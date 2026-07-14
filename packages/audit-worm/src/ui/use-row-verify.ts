@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import {
   classifyRowState,
   verifyEntryAgainstAnchor,
+  type PinnedAnchorKey,
   type RowReceipt,
   type RowState,
   type VerifyLegs,
@@ -23,10 +24,18 @@ export interface RowVerifyResult {
 }
 
 /**
- * Re-run the two per-row legs from a receipt's RAW material, client-side. Returns `pending` until the
+ * Re-run the per-row legs from a receipt's RAW material, client-side. Returns `pending` until the
  * async WebCrypto recompute resolves. `null` receipt (not yet fetched) stays `pending`.
+ *
+ * `pinnedKey` (GATE-1 / ADR-0344) is the anchor-signing public key, supplied OUT-OF-BAND (the app's
+ * injected config — never the proof response). When present and matching the anchor's `keyId`, the
+ * signature leg runs; the "(signature-checked)" seal is earned ONLY when that leg passes. Absent → the
+ * signature leg is `na` and the panel shows the honest base seal, never the strong one.
  */
-export function useRowVerify(receipt: RowReceipt | null): RowVerifyResult {
+export function useRowVerify(
+  receipt: RowReceipt | null,
+  pinnedKey?: PinnedAnchorKey,
+): RowVerifyResult {
   const [result, setResult] = useState<RowVerifyResult>({
     state: "pending",
     legs: null,
@@ -40,6 +49,26 @@ export function useRowVerify(receipt: RowReceipt | null): RowVerifyResult {
     let live = true;
     void (async () => {
       try {
+        // Rebuild the anchor from the receipt's public provenance so the signature leg can reconstruct
+        // the exact signed core bytes (exact-optional discipline — only carry a field that is present).
+        const anchor: {
+          length: number;
+          tipHash: string;
+          genesisHash?: string;
+          sig?: string;
+          keyId?: string;
+        } = { length: receipt.anchor.length, tipHash: receipt.anchor.tipHash };
+        if (receipt.anchor.genesisHash !== undefined) {
+          anchor.genesisHash = receipt.anchor.genesisHash;
+        }
+        if (receipt.anchor.sig !== undefined) anchor.sig = receipt.anchor.sig;
+        if (receipt.anchor.keyId !== undefined) {
+          anchor.keyId = receipt.anchor.keyId;
+        }
+        const opts: { redacted?: boolean; pinnedKey?: PinnedAnchorKey } = {
+          redacted: receipt.redacted,
+        };
+        if (pinnedKey !== undefined) opts.pinnedKey = pinnedKey;
         const legs = await verifyEntryAgainstAnchor(
           {
             seq: receipt.seq,
@@ -47,8 +76,8 @@ export function useRowVerify(receipt: RowReceipt | null): RowVerifyResult {
             payload: receipt.raw.payload,
             hash: receipt.hash,
           },
-          { length: receipt.anchor.length, tipHash: receipt.anchor.tipHash },
-          { redacted: receipt.redacted },
+          anchor,
+          opts,
         );
         const state = classifyRowState(legs, {
           redacted: receipt.redacted,
@@ -64,7 +93,7 @@ export function useRowVerify(receipt: RowReceipt | null): RowVerifyResult {
     return () => {
       live = false;
     };
-  }, [receipt]);
+  }, [receipt, pinnedKey]);
 
   return result;
 }

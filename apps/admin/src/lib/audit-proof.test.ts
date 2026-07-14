@@ -2,7 +2,9 @@
 // auth harness: server-side redaction (H3), the receipt shape (L2 no WORM key + CR-06 raw material),
 // the redacted-row honest marking (leg 1 `na`), and strict-both-ways schema behavior.
 import { describe, expect, test } from "bun:test";
-import { anchorChain, chainEntry } from "@caisson/kernel";
+import { generateKeyPairSync, sign as nodeSign } from "node:crypto";
+import { anchorChain, canonicalize, chainEntry } from "@caisson/kernel";
+import type { AuditChainAnchor } from "@caisson/kernel";
 import type { RowProof } from "@caisson/audit-worm";
 import {
   assembleProofSuccess,
@@ -17,6 +19,31 @@ function proofFor(payload: Parameters<typeof chainEntry>[1]): RowProof {
   const entry = chainEntry(null, payload);
   const anchor = anchorChain([entry]);
   return { entry, anchorForRow: anchor, chainLength: 1 };
+}
+
+/** A RowProof whose anchor is signed with an ephemeral Ed25519 key (GATE-1) — proves the signature
+ *  provenance crosses the wire so the client can run its own signature leg. */
+function signedProofFor(payload: Parameters<typeof chainEntry>[1]): RowProof {
+  const base = proofFor(payload);
+  const { privateKey } = generateKeyPairSync("ed25519");
+  const core: Record<string, string | number> = {
+    length: base.anchorForRow.length,
+    tipHash: base.anchorForRow.tipHash,
+  };
+  if (base.anchorForRow.genesisHash !== undefined) {
+    core.genesisHash = base.anchorForRow.genesisHash;
+  }
+  const sig = nodeSign(
+    null,
+    Buffer.from(new TextEncoder().encode(canonicalize(core))),
+    privateKey,
+  ).toString("base64");
+  const anchor: AuditChainAnchor = {
+    ...base.anchorForRow,
+    sig,
+    keyId: "test-anchor-key",
+  };
+  return { ...base, anchorForRow: anchor };
 }
 
 const NOW = new Date("2026-07-13T00:00:00.000Z");
@@ -37,13 +64,30 @@ describe("assembleProofSuccess — a clean (non-redacted) row", () => {
     expect(body.receipt.anchor.tipHash).toBe(proof.anchorForRow.tipHash);
   });
 
-  test("L2 — the receipt omits the internal WORM object key (length + tipHash only)", async () => {
-    const body = await assembleProofSuccess(proofFor({ event: "locked" }), NOW);
-    expect(Object.keys(body.receipt.anchor).sort()).toEqual([
-      "length",
-      "tipHash",
-    ]);
+  test("L2 — the receipt never exports the internal WORM object key (only public commitment fields)", async () => {
+    const proof = proofFor({ event: "locked" });
+    const body = await assembleProofSuccess(proof, NOW);
+    // The internal WORM key is NEVER exported (L2) — that is the invariant, not the exact field set.
     expect("key" in body.receipt.anchor).toBe(false);
+    // Only public commitment/provenance fields cross the wire: length + tipHash, plus genesisHash and
+    // (when signed) sig/keyId — the client needs the latter to run its own signature leg (GATE-1).
+    const allowed = ["length", "tipHash", "genesisHash", "sig", "keyId"];
+    expect(
+      Object.keys(body.receipt.anchor).every((k) => allowed.includes(k)),
+    ).toBe(true);
+    expect(body.receipt.anchor.length).toBe(1);
+    expect(body.receipt.anchor.tipHash).toBe(proof.anchorForRow.tipHash);
+  });
+
+  test("GATE-1 — a signed anchor's sig + keyId cross the wire so the client can check them", async () => {
+    const proof = signedProofFor({ event: "locked" });
+    const body = await assembleProofSuccess(proof, NOW);
+    // The public signature material is present in the receipt (never the private key, never the WORM key).
+    expect(body.receipt.anchor.sig).toBe(proof.anchorForRow.sig);
+    expect(body.receipt.anchor.keyId).toBe("test-anchor-key");
+    expect("key" in body.receipt.anchor).toBe(false);
+    // The outgoing body still strict-validates with the additive provenance fields present.
+    expect(ProofSuccessSchema.safeParse(body).success).toBe(true);
   });
 });
 

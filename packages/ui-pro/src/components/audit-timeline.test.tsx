@@ -77,16 +77,18 @@ describe("AuditTimeline", () => {
   });
 
   describe("T-F1 seal copy (GATE-1 signed anchors, ADR-0344)", () => {
-    test("an anchor-derived `verified` row's aria-label carries the signature-checked seal", () => {
+    test("an anchor-derived `verified` row reads the sanctioned base seal, and NOT signature-checked (this component runs no signature leg)", () => {
       const html = renderToStaticMarkup(
         <AuditTimeline
           entries={entries}
           statuses={["genesis", "verified", "unverifiable"]}
         />,
       );
-      expect(html).toContain(
-        'aria-label="Verified against write-once anchor (signature-checked)"',
-      );
+      expect(html).toContain('aria-label="Verified against write-once anchor"');
+      // This generic component badges from a caller-supplied RowState and performs no signature check,
+      // so it must never claim "(signature-checked)" — that wording is earned only where a signature
+      // leg actually verified an anchor against a pinned key (ProofPanel / evidence-pack README).
+      expect(html).not.toContain("signature-checked");
     });
 
     test("never claims impossible-to-tamper or an unqualified independent-verification claim", () => {
