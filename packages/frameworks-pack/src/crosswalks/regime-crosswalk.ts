@@ -28,8 +28,12 @@
 import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";
 
-/** The three regimes ADR-0277 locks. FedRAMP is explicitly OUT (single corpus mention, deferred). */
-export const RegimeId = z.enum(["soc2", "pci-dss", "gdpr"]);
+/**
+ * The three regimes ADR-0277 locks, plus `iso-27001` -- the fourth `regimes.ts`-pattern crosswalk
+ * ADR-0333/ADR-0347 adds (own-authored, Legal-gate-capped at `maps-to`; see `regimes.ts`). FedRAMP
+ * is explicitly OUT (single corpus mention, deferred).
+ */
+export const RegimeId = z.enum(["soc2", "pci-dss", "gdpr", "iso-27001"]);
 export type RegimeId = z.infer<typeof RegimeId>;
 
 /**
