@@ -87,6 +87,18 @@ describe("checkUsage — broken usage yields typed findings", () => {
     expect(f?.message).toContain("Frobnicate");
     expect(f?.loc?.line).toBeGreaterThan(0);
   });
+
+  // Real buyers import from the `@caisson/ui/components` subpath (the root barrel is tokens+theme
+  // only) — the headline unknown-component check must fire on that path, not just the bare barrel.
+  test("a hallucinated import from the real /components subpath is flagged", () => {
+    const real = `import { Button, Frobnicate } from "@caisson/ui/components";\n<Frobnicate />`;
+    const f = checkUsage(manifest, {
+      files: [{ path: "src/Screen.tsx", contents: real }],
+    });
+    const unknown = f.find((x) => x.rule === "unknown-component");
+    expect(unknown?.message).toContain("Frobnicate");
+    expect(f.some((x) => x.message.includes("Button"))).toBe(false); // real component, not flagged
+  });
 });
 
 describe("checkUsage — version skew from package.json", () => {

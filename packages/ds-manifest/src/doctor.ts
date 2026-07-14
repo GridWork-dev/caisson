@@ -72,11 +72,13 @@ function lineAt(contents: string, index: number): number {
 
 // --- individual checks (each pure over one file, appending to `out`) --------------------------
 
-// A named import from `@caisson/ui` whose PascalCase name is not a known component — a typo or a
-// component the agent hallucinated. ponytail: heuristic — only PascalCase specifiers are treated as
-// components, so a helper/hook/type import (`cn`, `useTheme`) is never falsely flagged.
+// A named import of a kit component whose PascalCase name is not a known component — a typo or a
+// component the agent hallucinated. Components are exported from the `@caisson/ui/components` subpath
+// (the root `@caisson/ui` barrel is tokens+theme only, ADR-0099), so the specifier must match both
+// the real buyer path and the bare barrel. ponytail: heuristic — only PascalCase specifiers are
+// treated as components, so a helper/hook/type import (`cn`, `useTheme`) is never falsely flagged.
 const UI_IMPORT_RE =
-  /import\s+(?:type\s+)?(?:\w+\s*,\s*)?\{([\s\S]*?)\}\s*from\s*["']@caisson\/ui["']/g;
+  /import\s+(?:type\s+)?(?:\w+\s*,\s*)?\{([\s\S]*?)\}\s*from\s*["']@caisson\/ui(?:\/components)?["']/g;
 
 function checkImports(
   file: DoctorFile,
