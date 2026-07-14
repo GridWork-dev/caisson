@@ -35,6 +35,11 @@ export type {
   ManifestToolRegistrar,
   DesignTokens,
 } from "./manifest-tools.ts";
+export {
+  createDiscoveryServer,
+  runDiscoveryServer,
+} from "./discovery-stdio.ts";
+export type { DiscoveryServerDeps } from "./discovery-stdio.ts";
 export { createHttpMcpHandler, runHttpServer } from "./http.ts";
 export type {
   HttpServerDeps,
