@@ -186,7 +186,16 @@
         },
         {
           "framework": "SOC2-TSC",
-          "reference": "C1.2"
+          "reference": "C1.2",
+          "verification": {
+            "status": "reviewed",
+            "relationship": "equivalent",
+            "sourceId": "packages/field-crypto/src/crypto-shred.test.ts",
+            "sourceVersion": "2026.1",
+            "sourceDigest": "e57977329145a27f8054314141f56b22bd9ea4d39001b998d47a630899d1cbe0",
+            "reviewedBy": "operator",
+            "reviewedAt": "2026-07-13T00:00:00.000Z"
+          }
         }
       ]
     },
