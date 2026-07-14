@@ -138,7 +138,7 @@ const COLOR_LITERAL_RE =
   /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})\b|oklch\s*\(/g;
 // Assigning a `--cs-*` token (CSS `--cs-x:` or a JS `"--cs-x":` object key) — overriding a kit
 // token outside the theme API. Reading one (`var(--cs-x)`) has no `:` after the name → never flagged.
-const TOKEN_OVERRIDE_RE = /--cs-[a-z0-9-]+\s*:/g;
+const TOKEN_OVERRIDE_RE = /--cs-[a-z0-9-]+["']?\s*:/g;
 
 function checkTokenMisuse(file: DoctorFile, out: Finding[]): void {
   for (const m of file.contents.matchAll(COLOR_LITERAL_RE)) {
@@ -156,7 +156,7 @@ function checkTokenMisuse(file: DoctorFile, out: Finding[]): void {
       severity: "warning",
       file: file.path,
       loc: { line: lineAt(file.contents, m.index ?? 0) },
-      message: `"${m[0].replace(/\s*:$/, "")}" is overridden outside the theme API — set kit tokens through the generated theme, not ad hoc.`,
+      message: `"${m[0].replace(/["']?\s*:$/, "")}" is overridden outside the theme API — set kit tokens through the generated theme, not ad hoc.`,
     });
   }
 }
