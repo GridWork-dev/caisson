@@ -569,8 +569,10 @@
       "version": "0.5.0",
       "bin": {
         "create-caisson": "./dist/cli.js",
+        "caisson": "./dist/caisson.js",
       },
       "dependencies": {
+        "@caisson/ds-manifest": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/migrate": "workspace:*",
         "@caisson/registry-schema": "workspace:*",

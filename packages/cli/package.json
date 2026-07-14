@@ -19,7 +19,8 @@
     }
   },
   "bin": {
-    "create-caisson": "./dist/cli.js"
+    "create-caisson": "./dist/cli.js",
+    "caisson": "./dist/caisson.js"
   },
   "files": [
     "dist",
@@ -33,6 +34,7 @@
     "test": "bun test ./src ./scripts"
   },
   "dependencies": {
+    "@caisson/ds-manifest": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/migrate": "workspace:*",
     "@caisson/registry-schema": "workspace:*",

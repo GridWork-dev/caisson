@@ -52,6 +52,9 @@ export {
 
 export { parseArgs, parseSampleArgs, runCli } from "./cli.ts";
 
+// The second `caisson` bin's free describe command (ADR-0345) — same data layer as the MCP tools.
+export { describeCommand } from "./describe.ts";
+
 export {
   type WriterOptions,
   type FileSetWriter,

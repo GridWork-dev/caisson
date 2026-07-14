@@ -14,6 +14,8 @@ export const SHEBANG = "#!/usr/bin/env node";
 const HERE = dirname(fileURLToPath(import.meta.url)); // packages/cli/scripts
 /** The compiled CLI entry the published `bin` points at (`packages/cli/dist/cli.js`). */
 export const CLI_DIST = join(HERE, "..", "dist", "cli.js");
+/** The second `caisson` bin entry (`packages/cli/dist/caisson.js`, ADR-0345). */
+export const CAISSON_DIST = join(HERE, "..", "dist", "caisson.js");
 
 /**
  * Prepend the node shebang to a built CLI file if absent. Pure on inputs (takes the target path),
@@ -32,11 +34,16 @@ export function ensureShebang(target: string = CLI_DIST): boolean {
 }
 
 if (import.meta.main) {
-  const added = ensureShebang();
   // A build script reports what it did (process.stdout, not console — no-console floor).
-  process.stdout.write(
-    added
-      ? `cli: prepended '${SHEBANG}' to dist/cli.js\n`
-      : `cli: dist/cli.js already has the node shebang — no-op\n`,
-  );
+  for (const [target, label] of [
+    [CLI_DIST, "dist/cli.js"],
+    [CAISSON_DIST, "dist/caisson.js"],
+  ] as const) {
+    const added = ensureShebang(target);
+    process.stdout.write(
+      added
+        ? `cli: prepended '${SHEBANG}' to ${label}\n`
+        : `cli: ${label} already has the node shebang — no-op\n`,
+    );
+  }
 }
