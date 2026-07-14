@@ -16,3 +16,4 @@ export {
   type ContrastViolation,
   type FunctionalKey,
 } from "./contrast.ts";
+export { loadBaseManifest } from "./read.ts";

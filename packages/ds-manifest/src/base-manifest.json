@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "generatedFor": { "pkg": "@caisson/ui", "version": "0.6.0" },
+  "components": [
+    {
+      "name": "Button",
+      "summary": "Recipe-reference interactive control — Radix Slot polymorphism, primary/ghost visual weight, sm/md sizing.",
+      "props": [
+        {
+          "name": "variant",
+          "type": "\"primary\" | \"ghost\"",
+          "optional": true,
+          "doc": "Visual weight: primary = accent fill (one of the <=10% accent slots), ghost = hairline."
+        },
+        {
+          "name": "size",
+          "type": "\"sm\" | \"md\"",
+          "optional": true
+        },
+        {
+          "name": "asChild",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Render as the single child element instead of a <button> (Radix Slot); the child must accept className and data-* attributes."
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true
+        }
+      ],
+      "variants": {
+        "variant": ["primary", "ghost"],
+        "size": ["sm", "md"]
+      },
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-accent-hover",
+        "--cs-border-strong",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-focus",
+        "--cs-glow-accent",
+        "--cs-on-accent",
+        "--cs-radius-md",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-space-5",
+        "--cs-text-sm",
+        "--cs-text-xs",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "Defaults the native type to \"button\" so it never accidentally submits a form.",
+        "Under asChild, the slotted child element must accept className and data-* attributes for the kit's styling to apply."
+      ],
+      "recipeRules": [
+        "radix-behavior-for-polymorphism",
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "tokens-only-no-inline-style"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Card",
+      "summary": "Presentational panel primitive with an optional accent treatment and interactive hover affordance.",
+      "props": [
+        {
+          "name": "accent",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Accent treatment: accent border + tinted surface (one of the <=10% accent slots)."
+        },
+        {
+          "name": "interactive",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Tonal-hover affordance: border brighten + surface step + lift (motion-tokened)."
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-accent-tint",
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-duration-base",
+        "--cs-duration-fast",
+        "--cs-duration-slow",
+        "--cs-ease-out",
+        "--cs-ease-reveal",
+        "--cs-radius-lg",
+        "--cs-shadow-md",
+        "--cs-shadow-sm",
+        "--cs-space-6",
+        "--cs-surface-1",
+        "--cs-surface-2",
+        "--cs-text-lg",
+        "--cs-tracking-tight",
+        "--cs-weight-semibold"
+      ],
+      "a11yNotes": [
+        "Renders a single native <div> with no implicit ARIA role — presentational only, server-safe."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "tokens-only-no-inline-style"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "FormField",
+      "summary": "Label + control + helper/error wrapper that wires id/aria association for any single form control.",
+      "props": [
+        {
+          "name": "label",
+          "type": "ReactNode",
+          "optional": false,
+          "doc": "The field's visible label text."
+        },
+        {
+          "name": "helperText",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Supporting copy shown under the control; hidden while error is set."
+        },
+        {
+          "name": "error",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Validation failure message; marks the control aria-invalid and is announced via role=\"alert\"."
+        },
+        {
+          "name": "mono",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Render the control in the brand's control-id monospace, for id/key/token-shaped fields."
+        },
+        {
+          "name": "children",
+          "type": "ReactElement",
+          "optional": false,
+          "doc": "The single form control — an <input>, <select>, or <textarea>."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-danger",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-font-mono",
+        "--cs-font-sans",
+        "--cs-radius-md",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-surface-1",
+        "--cs-text-sm",
+        "--cs-text-xs"
+      ],
+      "a11yNotes": [
+        "Associates the label to the control via htmlFor/id (React useId).",
+        "Wires aria-describedby to the helper or error text automatically.",
+        "Sets aria-invalid and role=\"alert\" on the error message when error is present.",
+        "The error message replaces helperText rather than rendering both at once."
+      ],
+      "recipeRules": [
+        "radix-slot-for-aria-wiring",
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "tokens-only-no-inline-style"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Terminal",
+      "summary": "Framed evidence artifact — a chrome bar plus a monospace body, purely presentational.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "optional": false,
+          "doc": "Chrome-bar label; also mirrored to the <pre> aria-label."
+        },
+        {
+          "name": "status",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "A StatusChip or text rendered at the right of the chrome bar."
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-font-mono",
+        "--cs-leading-snug",
+        "--cs-radius-lg",
+        "--cs-shadow-lg",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-space-5",
+        "--cs-surface-1",
+        "--cs-surface-2",
+        "--cs-text-sm",
+        "--cs-text-xs"
+      ],
+      "a11yNotes": [
+        "Mirrors the chrome-bar label onto the <pre> aria-label so screen readers get the same context sighted users do."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "forwardref-bem-naming",
+        "tokens-only-no-inline-style"
+      ],
+      "hasDataStar": false
+    }
+  ]
+}
