@@ -1094,6 +1094,18 @@
         }
       }
     },
+    "@caisson/ds-manifest@0.1.0": {
+      "key": "ds-manifest/ds-manifest-0.1.0.tgz",
+      "shasum": "27941fb9b2fd04792c08d09a60216501b7d21a92",
+      "integrity": "sha512-G3vQB0WSZ3FZCFkKXZgPvNxmX6PTbaSfsLg6hknkNpw/aLDwPvkds0t8O7Y1PbBXgTq1vxmjVeiw5UPQriwB/Q==",
+      "size": 35756,
+      "meta": {
+        "dependencies": {
+          "culori": "^4.0.1",
+          "zod": "^4.0.0"
+        }
+      }
+    },
     "@caisson/email@0.2.2": {
       "key": "email/email-0.2.2.tgz",
       "shasum": "7a0b34ac78b394b56f3535d11b02a2ff9ce5c196",

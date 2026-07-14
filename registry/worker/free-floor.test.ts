@@ -71,8 +71,10 @@ describe("registry Worker free floor (CAISSON-63, ADR-0136)", () => {
     // Snapshot of the committed registry/index.json at CAISSON-55/63 time. `@caisson/credits` is
     // NOT in this set — it flipped to LicenseRef-Caisson-Commercial (the catalog-program commercial
     // flip); this baseline reflects the CURRENT predicate output, not any historical listing.
+    // Bumped 16 -> 17: @caisson/ds-manifest published (Apache-2.0, editions: [] — a legitimate new
+    // OSS base package, the agent-ready design-system surface's shared manifest/doctor layer).
     expect(ids.length).toBe(baseModuleIds(COMMITTED_INDEX).length);
-    expect(ids.length).toBe(16);
+    expect(ids.length).toBe(17);
   });
 
   test("none of the 9 carve/ui-pro commercial packages ever appear in the anon set", async () => {
