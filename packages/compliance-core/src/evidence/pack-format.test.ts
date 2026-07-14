@@ -110,10 +110,17 @@ function rlsFlaggedItem(): ItemInput {
   };
 }
 
+/** An empty rollup — these fixtures exercise the format contract, not the rollup join itself
+ *  (that lives in `crosswalk-rollup.test.ts`); an empty cell list is honest when no rollup was computed. */
+function emptyRollup(): { cells: never[] } {
+  return { cells: [] };
+}
+
 /** A representative two-control manifest input: one ready (all pass), one gap (one flagged). */
 function sampleManifestInput(): ManifestInput {
   return {
     ...manifestMeta(),
+    crosswalkRollup: emptyRollup(),
     controls: [
       {
         controlId: "AUDIT.IMMUTABLE-LOG",
@@ -184,6 +191,7 @@ function asJson(value: unknown): JsonValue {
 function manifestWithItem(item: unknown, readiness: string): unknown {
   return {
     ...manifestMeta(),
+    crosswalkRollup: emptyRollup(),
     controls: [
       {
         controlId: "AUDIT.IMMUTABLE-LOG",
@@ -229,6 +237,22 @@ describe("evidencePackManifestSchema — canonical body", () => {
       parseEvidencePackManifest({
         ...sampleManifestInput(),
         signature: "ed25519:deadbeef",
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("v2: crosswalkRollup is required (rejects a manifest with no rollup section)", () => {
+    const { crosswalkRollup: _drop, ...withoutRollup } = sampleManifestInput();
+    expect(() => parseEvidencePackManifest(withoutRollup)).toThrow(
+      ValidationError,
+    );
+  });
+
+  test("v2: an unknown key inside crosswalkRollup is rejected (.strict() boundary)", () => {
+    expect(() =>
+      parseEvidencePackManifest({
+        ...sampleManifestInput(),
+        crosswalkRollup: { cells: [], extra: true },
       }),
     ).toThrow(ValidationError);
   });

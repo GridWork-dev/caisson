@@ -1,5 +1,5 @@
 {
-  "formatVersion": "1",
+  "formatVersion": "2",
   "tenantId": "tenant-acme-prod",
   "framework": {
     "id": "soc2-tsc",
@@ -104,5 +104,8 @@
     "controlsWithGaps": 1,
     "totalEvidenceItems": 3,
     "posture": "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item."
+  },
+  "crosswalkRollup": {
+    "cells": []
   }
 }
