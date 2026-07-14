@@ -107,11 +107,17 @@ describe("compliance reference app — the full leg end to end", () => {
     expect(result.allChecksPassed).toBe(true);
   });
 
-  test("7 — the crosswalk rollup lights every crosswalked requirement across all three framework views from THIS run's evidence (ADR-0333/ADR-0347, the SPEC's marquee scenario)", () => {
+  test("7 — the crosswalk rollup lights every crosswalked requirement across all FOUR framework views from THIS run's evidence (ADR-0333/ADR-0347, the SPEC's marquee goal-backward scenario)", () => {
     const cell = (
       framework: string,
       reference: string,
-    ): { readonly status: string; readonly claim: string } | undefined =>
+    ):
+      | {
+          readonly status: string;
+          readonly claim: string;
+          readonly note?: string;
+        }
+      | undefined =>
       result.manifest.crosswalkRollup.cells.find(
         (c) => c.framework === framework && c.reference === reference,
       );
@@ -129,6 +135,23 @@ describe("compliance reference app — the full leg end to end", () => {
     expect(cell("SOC2-TSC", "C1.2")?.claim).toBe("implements");
     // The SAME control's OTHER (unreviewed) reference stays maps-to — restates, never originates.
     expect(cell("SOC2-TSC", "CC6.5")?.claim).toBe("maps-to");
+    // The FOURTH view (ISO 27001, ADR-0347 Fork G1 canonicalControlId join): the SAME run's three
+    // canonical controls (ACCESS-CONTROL.LOGICAL / AUDIT.IMMUTABLE-LOG / DATA-PROTECTION.DISPOSAL)
+    // also light their joined ISO/IEC 27001:2022 Annex A rows — the goal-backward scenario's "plus
+    // the ISO crosswalk" clause, proven from real substrate evidence, not a synthetic fixture.
+    expect(cell("ISO-27001", "A.5.15")?.status).toBe("ready");
+    expect(cell("ISO-27001", "A.8.15")?.status).toBe("ready");
+    expect(cell("ISO-27001", "A.8.10")?.status).toBe("ready");
+    // Legal gate (ADR-0333) holds even at maximum real-world favorability: DATA-PROTECTION.DISPOSAL
+    // is ready AND its SOC2-TSC C1.2 reference reached `implements` above, yet the ISO row over the
+    // SAME control structurally never carries a verification record, so A.8.10 stays maps-to.
+    expect(cell("ISO-27001", "A.8.10")?.claim).toBe("maps-to");
+    expect(cell("ISO-27001", "A.5.15")?.claim).toBe("maps-to");
+    expect(cell("ISO-27001", "A.8.15")?.claim).toBe("maps-to");
+    // NIST OLIR's own subjective/incomplete warning rides along every ISO cell (ADR-0347 Fork G2).
+    expect(cell("ISO-27001", "A.5.15")?.note).toContain(
+      "subjective, incomplete",
+    );
   });
 
   test("the evidence manifest is byte-stable against its golden fixture", () => {
