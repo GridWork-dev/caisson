@@ -17,3 +17,11 @@ export {
   type FunctionalKey,
 } from "./contrast.ts";
 export { loadBaseManifest } from "./read.ts";
+export {
+  checkUsage,
+  doctorUsageSchema,
+  type DoctorFile,
+  type DoctorUsage,
+  type Finding,
+  type Severity,
+} from "./doctor.ts";
