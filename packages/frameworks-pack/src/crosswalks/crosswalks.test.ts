@@ -114,6 +114,97 @@ describe("claim posture is encoded in the type + enforced at author time (ADR-02
   });
 });
 
+describe("ADR-0347 Fork G1/G2 -- optional canonicalControlId + crosswalk-level seedProvenance", () => {
+  test("a row may carry an optional canonicalControlId (additive, .strict()-safe)", () => {
+    const cw = defineRegimeCrosswalk(
+      minimal([
+        {
+          claim: "maps-to",
+          control: "CC1.1",
+          summary: "s",
+          mechanism: "@caisson/x — mechanism",
+          evidence: "e",
+          buyerResponsibility: "b",
+          canonicalControlId: "ACCESS-CONTROL.LOGICAL",
+        },
+      ]),
+    );
+    expect(cw.rows[0]?.canonicalControlId).toBe("ACCESS-CONTROL.LOGICAL");
+  });
+
+  test("rejects a non-canonical canonicalControlId", () => {
+    expect(() =>
+      defineRegimeCrosswalk(
+        minimal([
+          {
+            claim: "maps-to",
+            control: "CC1.1",
+            summary: "s",
+            mechanism: "@caisson/x — mechanism",
+            evidence: "e",
+            buyerResponsibility: "b",
+            canonicalControlId: "access-control.logical",
+          },
+        ]),
+      ),
+    ).toThrow();
+  });
+
+  test("a crosswalk may carry optional crosswalk-level seedProvenance", () => {
+    const cw = defineRegimeCrosswalk({
+      ...minimal([
+        {
+          claim: "maps-to",
+          control: "CC1.1",
+          summary: "s",
+          mechanism: "@caisson/x — mechanism",
+          evidence: "e",
+          buyerResponsibility: "b",
+        },
+      ]),
+      seedProvenance: {
+        sourceId: "nist-sp800-53r5-iso27001-2022-olir",
+        sourceVersion: "2022",
+        sourceUrl: "https://csrc.nist.gov/olir/example.xlsx",
+        sourceDigest: "c".repeat(64),
+      },
+    });
+    expect(cw.seedProvenance?.sourceDigest).toBe("c".repeat(64));
+  });
+
+  test("rejects a non-https seedProvenance.sourceUrl", () => {
+    expect(() =>
+      defineRegimeCrosswalk({
+        ...minimal([
+          {
+            claim: "maps-to",
+            control: "CC1.1",
+            summary: "s",
+            mechanism: "@caisson/x — mechanism",
+            evidence: "e",
+            buyerResponsibility: "b",
+          },
+        ]),
+        seedProvenance: {
+          sourceId: "nist-sp800-53r5-iso27001-2022-olir",
+          sourceVersion: "2022",
+          sourceUrl: "http://csrc.nist.gov/olir/example.xlsx",
+          sourceDigest: "c".repeat(64),
+        },
+      }),
+    ).toThrow();
+  });
+
+  test("existing SOC2/PCI/GDPR crosswalks carry neither field (no v1 churn)", () => {
+    for (const cw of regimeCrosswalks) {
+      expect(cw.seedProvenance).toBeUndefined();
+      for (const row of cw.rows) {
+        expect(row.canonicalControlId).toBeUndefined();
+      }
+    }
+  });
+});
+
 describe("every authored crosswalk is honest and well-formed", () => {
   const cases: ReadonlyArray<readonly [string, RegimeCrosswalk]> = [
     ["soc2", soc2Crosswalk],
