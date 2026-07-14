@@ -11,6 +11,7 @@ import {
 } from "./regime-crosswalk.ts";
 import {
   gdprCrosswalk,
+  iso27001Crosswalk,
   pciDssCrosswalk,
   regimeCrosswalks,
   soc2Crosswalk,
@@ -195,12 +196,26 @@ describe("ADR-0347 Fork G1/G2 -- optional canonicalControlId + crosswalk-level s
     ).toThrow();
   });
 
-  test("existing SOC2/PCI/GDPR crosswalks carry neither field (no v1 churn)", () => {
-    for (const cw of regimeCrosswalks) {
+  test("the own-authored SOC2/PCI/GDPR crosswalks carry neither field (no v1 churn)", () => {
+    // ISO (below) is the sole exception -- it is SEEDED (seedProvenance) and JOINABLE
+    // (canonicalControlId), by design (ADR-0347 Fork G1/G2).
+    for (const cw of [soc2Crosswalk, pciDssCrosswalk, gdprCrosswalk]) {
       expect(cw.seedProvenance).toBeUndefined();
       for (const row of cw.rows) {
         expect(row.canonicalControlId).toBeUndefined();
       }
+    }
+  });
+
+  test("iso27001Crosswalk carries seedProvenance and every row a canonicalControlId", () => {
+    expect(iso27001Crosswalk.seedProvenance?.sourceId).toBe(
+      "nist-sp800-53r5-iso27001-2022-olir",
+    );
+    expect(iso27001Crosswalk.seedProvenance?.sourceDigest).toMatch(
+      /^[0-9a-f]{64}$/,
+    );
+    for (const row of iso27001Crosswalk.rows) {
+      expect(row.canonicalControlId).toBeDefined();
     }
   });
 });
@@ -210,11 +225,13 @@ describe("every authored crosswalk is honest and well-formed", () => {
     ["soc2", soc2Crosswalk],
     ["pci-dss", pciDssCrosswalk],
     ["gdpr", gdprCrosswalk],
+    ["iso-27001", iso27001Crosswalk],
   ];
 
-  test("regimeCrosswalks holds exactly the three ADR-0277 regimes (FedRAMP out)", () => {
+  test("regimeCrosswalks holds the three ADR-0277 regimes plus iso-27001 (ADR-0333/ADR-0347; FedRAMP still out)", () => {
     expect(regimeCrosswalks.map((c) => c.regime).sort()).toEqual([
       "gdpr",
+      "iso-27001",
       "pci-dss",
       "soc2",
     ]);
@@ -309,6 +326,13 @@ describe("crosswalk exports are byte-stable (golden)", () => {
       PKG_SRC_META,
       "crosswalk-gdpr",
       exportRegimeCrosswalk(gdprCrosswalk),
+    );
+  });
+  test("iso-27001 crosswalk export", () => {
+    matchGolden(
+      PKG_SRC_META,
+      "crosswalk-iso-27001",
+      exportRegimeCrosswalk(iso27001Crosswalk),
     );
   });
 });
