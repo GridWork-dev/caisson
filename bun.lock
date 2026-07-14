@@ -483,6 +483,7 @@
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@caisson/ui": "workspace:*",
+        "@caisson/ui-pro": "workspace:*",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "eslint": "catalog:",
@@ -492,11 +493,13 @@
       },
       "peerDependencies": {
         "@caisson/ui": "workspace:^",
+        "@caisson/ui-pro": "workspace:^",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
       },
       "optionalPeers": [
         "@caisson/ui",
+        "@caisson/ui-pro",
         "react",
         "react-dom",
       ],
