@@ -75,4 +75,29 @@ describe("AuditTimeline", () => {
     expect(html).toContain("Tampered");
     expect(html).not.toContain("Link only");
   });
+
+  describe("T-F1 seal copy (GATE-1 signed anchors, ADR-0344)", () => {
+    test("an anchor-derived `verified` row's aria-label carries the signature-checked seal", () => {
+      const html = renderToStaticMarkup(
+        <AuditTimeline
+          entries={entries}
+          statuses={["genesis", "verified", "unverifiable"]}
+        />,
+      );
+      expect(html).toContain(
+        'aria-label="Verified against write-once anchor (signature-checked)"',
+      );
+    });
+
+    test("never claims impossible-to-tamper or an unqualified independent-verification claim", () => {
+      const html = renderToStaticMarkup(
+        <AuditTimeline
+          entries={entries}
+          statuses={["genesis", "verified", "tampered"]}
+        />,
+      );
+      expect(html).not.toMatch(/impossible to tamper/i);
+      expect(html).not.toMatch(/\bindependently verified\b/i);
+    });
+  });
 });

@@ -14,7 +14,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { ChainVerification } from "@caisson/kernel";
 import type { RowReceipt } from "@caisson/kernel/audit-verify";
 import { PayloadViewer } from "@caisson/ui-pro";
-import { RowStateChip } from "./row-state-chip.tsx";
+import { RowStateChip, type ChipState } from "./row-state-chip.tsx";
 import { useRowVerify } from "./use-row-verify.ts";
 
 /** The proof-bundle the injected `fetchProof` returns — the admin endpoint's response contract. */
@@ -66,6 +66,21 @@ const MONO: CSSProperties = {
   wordBreak: "break-all",
 };
 const MUTED: CSSProperties = { color: "var(--cs-fg-muted)" };
+
+/**
+ * The seal caption — the SPEC's exact copy-law strings (T-F1, GATE-1/ADR-0344: signed anchors), so the
+ * proof panel states in words what the chip encodes. Only `verified` and the redacted state get a seal
+ * sentence; every other state's chip label already says what it is without a further claim to qualify.
+ */
+function sealCaption(state: ChipState): string | null {
+  if (state === "verified") {
+    return "Verified against write-once anchor (signature-checked).";
+  }
+  if (state === "anchor-confirmed-original-not-disclosed") {
+    return "Anchor confirmed — original not disclosed.";
+  }
+  return null;
+}
 
 /** One assertion row — a labelled pass/fail/na verdict. */
 function Assertion({
@@ -168,9 +183,12 @@ export function ProofPanel({ seq, fetchProof, chainStatus }: ProofPanelProps) {
       });
   };
 
+  const seal = sealCaption(verify.state);
+
   return (
     <div style={PANEL} data-phase="loaded" data-state={verify.state}>
       <RowStateChip state={verify.state} />
+      {seal !== null ? <span data-testid="seal-caption">{seal}</span> : null}
 
       <Assertion
         label="Link recompute"

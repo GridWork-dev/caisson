@@ -69,8 +69,10 @@ const ROW_BADGE: Record<
   { icon: BadgeIcon; label: string; text: string }
 > = {
   verified: {
+    // T-F1 / GATE-1 (ADR-0344, signed anchors): the seal names the strong claim the SPEC's copy law
+    // reserves for a signed anchor trust root — never "impossible to tamper" (SPEC copy law).
     icon: "shield",
-    label: "Verified against write-once anchor",
+    label: "Verified against write-once anchor (signature-checked)",
     text: "Verified",
   },
   "anchor-confirmed-original-not-disclosed": {

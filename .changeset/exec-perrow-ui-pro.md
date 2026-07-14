@@ -13,3 +13,7 @@ dependency) and badges from them, so a truncated or wholesale-rewritten chain re
 `unverifiable`, not "verified". When no statuses are given the presentation-side link check still runs
 but its badge is honestly relabelled "Link only" — a link check proves neighbour consistency, never the
 anchor commitment.
+
+T-F1 copy pass (GATE-1 lock, ADR-0344 — signed anchors): the anchor-aware `verified` badge's aria-label
+now reads "Verified against write-once anchor (signature-checked)", matching the SPEC's locked seal
+copy. Never "impossible to tamper" or an unqualified "independently verified" claim.

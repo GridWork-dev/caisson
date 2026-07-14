@@ -150,4 +150,65 @@ describe("ProofPanel (T-U1)", () => {
       h.unmount();
     }
   });
+
+  describe("T-F1 seal copy (GATE-1 signed anchors, ADR-0344)", () => {
+    test("a healthy `verified` row shows the signature-checked seal caption", async () => {
+      const fetchProof = async (): Promise<ProofBundleResponse> => ({
+        receipt: receipt(),
+        redacted: false,
+        chainLength: 2,
+      });
+      const h = renderIntoJsdom(<ProofPanel seq={1} fetchProof={fetchProof} />);
+      try {
+        await settle();
+        const seal = h.container.querySelector('[data-testid="seal-caption"]');
+        expect(seal?.textContent).toBe(
+          "Verified against write-once anchor (signature-checked).",
+        );
+      } finally {
+        h.unmount();
+      }
+    });
+
+    test("a redacted row shows the anchor-confirmed seal, never the verified seal", async () => {
+      const masked = receipt({
+        entry: { ...e1, payload: { event: "locked", password: "[redacted]" } },
+        redacted: true,
+        checks: { linkRecompute: "na", anchorEquality: "pass" },
+      });
+      const fetchProof = async (): Promise<ProofBundleResponse> => ({
+        receipt: masked,
+        redacted: true,
+        redactedPaths: ["password"],
+        chainLength: 2,
+      });
+      const h = renderIntoJsdom(<ProofPanel seq={1} fetchProof={fetchProof} />);
+      try {
+        await settle();
+        const seal = h.container.querySelector('[data-testid="seal-caption"]');
+        expect(seal?.textContent).toBe(
+          "Anchor confirmed — original not disclosed.",
+        );
+      } finally {
+        h.unmount();
+      }
+    });
+
+    test("never renders impossible-to-tamper or an unqualified independent-verification claim", async () => {
+      const fetchProof = async (): Promise<ProofBundleResponse> => ({
+        receipt: receipt(),
+        redacted: false,
+        chainLength: 2,
+      });
+      const h = renderIntoJsdom(<ProofPanel seq={1} fetchProof={fetchProof} />);
+      try {
+        await settle();
+        const text = h.container.textContent ?? "";
+        expect(text).not.toMatch(/impossible to tamper/i);
+        expect(text).not.toMatch(/\bindependently verified\b/i);
+      } finally {
+        h.unmount();
+      }
+    });
+  });
 });

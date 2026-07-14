@@ -24,3 +24,9 @@ frozen `@caisson/ui` StatusChip tones. `ChainViewer` gains optional per-row six-
 expand-to-ProofPanel that fetches the row's proof on open (fork f), and an anchor-provenance header —
 all backward compatible (absent props render the prior chain-level-only view). Adds an optional
 `@caisson/ui-pro` peer dependency for the redacted-payload viewer (GATE-4).
+
+T-F1 copy pass (GATE-1 lock, ADR-0344 — signed anchors): `ProofPanel` now renders a seal caption under
+the chip using the SPEC's exact copy-law strings — "Verified against write-once anchor
+(signature-checked)" for `verified`, "Anchor confirmed — original not disclosed" for the redacted
+state, and no seal line for any other state. Never "impossible to tamper" or an unqualified
+"independently verified" claim.
