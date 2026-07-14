@@ -22,7 +22,11 @@
 // be atomic with the commit. The advisory lock + write-once key make this fail CLOSED — a put that
 // outlived a rolled-back commit poisons only that one length and stalls further appends (the safe
 // direction for an immutable log), never silently accepts an un-anchored entry.
-import { randomUUID } from "node:crypto";
+import {
+  randomUUID,
+  verify as cryptoVerify,
+  type KeyObject,
+} from "node:crypto";
 import { z } from "zod";
 import {
   anchorChain,
@@ -51,6 +55,7 @@ import {
   type ArtifactStore,
 } from "./store.ts";
 import { DEFAULT_RETENTION_YEARS, retainUntilFrom } from "./retain.ts";
+import type { AnchorSigner } from "./anchor-signer.ts";
 
 /** Advisory-lock namespace so audit-chain locks never collide with another subsystem's keyspace. */
 const LOCK_NAMESPACE = "caisson.audit-chain";
@@ -60,11 +65,14 @@ const ANCHOR_DIR = "anchors";
 /** Zero-pad the length so anchor keys sort lexicographically and never collide across magnitudes. */
 const LENGTH_PAD = 12;
 
-/** The trusted anchor body, validated on read back from the (possibly remote) WORM store. */
+/** The trusted anchor body, validated on read back from the (possibly remote) WORM store. `sig`+`keyId`
+ *  are ADDITIVE optional fields (T-W2 / GATE-1) — a legacy unsigned anchor omits them and stays valid. */
 const anchorSchema = strictObject({
   length: z.number().int().nonnegative(),
   tipHash: z.string().min(1),
   genesisHash: z.string().min(1).optional(),
+  sig: z.string().min(1).optional(),
+  keyId: z.string().min(1).optional(),
 });
 
 /** A row read back from `audit_chain_entry`. `payload` is jsonb — already a parsed JSON value. */
@@ -94,14 +102,35 @@ function anchorKey(accountId: string, length: number): string {
   );
 }
 
+/**
+ * The anchor's CANONICAL CORE bytes: `canonicalize({length, tipHash, genesisHash?})`. This is what the
+ * anchor signature is computed OVER, and what an external-anchoring lane builds against — `sig`/`keyId`
+ * are DELIBERATELY EXCLUDED (T-W2 seam), so the core stays byte-identical whether or not an anchor is
+ * signed, and byte-identical to every legacy unsigned anchor. Never change these bytes (chain-format
+ * break). `encodeStoredAnchor` is the WORM body; THIS is the signed/external core.
+ */
 function encodeAnchor(anchor: AuditChainAnchor): Uint8Array {
-  // The anchor is a trusted commitment — store its CANONICAL bytes so the stored form is
-  // deterministic and reproducible (the same hash discipline the chain itself uses).
   const obj: { [key: string]: JsonValue } = {
     length: anchor.length,
     tipHash: anchor.tipHash,
   };
   if (anchor.genesisHash !== undefined) obj.genesisHash = anchor.genesisHash;
+  return new TextEncoder().encode(canonicalize(obj));
+}
+
+/**
+ * The WORM object body: the canonical CORE plus the optional `sig`+`keyId` stored ALONGSIDE (T-W2).
+ * For an UNSIGNED anchor (no `sig`) this is byte-identical to {@link encodeAnchor} and to the legacy
+ * stored form — the signature fields are purely additive, so no existing anchor needs migrating.
+ */
+function encodeStoredAnchor(anchor: AuditChainAnchor): Uint8Array {
+  const obj: { [key: string]: JsonValue } = {
+    length: anchor.length,
+    tipHash: anchor.tipHash,
+  };
+  if (anchor.genesisHash !== undefined) obj.genesisHash = anchor.genesisHash;
+  if (anchor.sig !== undefined) obj.sig = anchor.sig;
+  if (anchor.keyId !== undefined) obj.keyId = anchor.keyId;
   return new TextEncoder().encode(canonicalize(obj));
 }
 
@@ -113,11 +142,44 @@ function decodeAnchor(body: Uint8Array): AuditChainAnchor {
     throw new ValidationError("audit chain anchor is not valid JSON");
   }
   const a = parseStrict(anchorSchema, parsed);
-  // Build to the exact-optional shape: only carry `genesisHash` when it is actually present (Zod's
+  // Build to the exact-optional shape: only carry an optional field when it is actually present (Zod's
   // `.optional()` widens to `string | undefined`, which exactOptionalPropertyTypes rejects).
-  return a.genesisHash === undefined
-    ? { length: a.length, tipHash: a.tipHash }
-    : { length: a.length, tipHash: a.tipHash, genesisHash: a.genesisHash };
+  const anchor: {
+    length: number;
+    tipHash: string;
+    genesisHash?: string;
+    sig?: string;
+    keyId?: string;
+  } = { length: a.length, tipHash: a.tipHash };
+  if (a.genesisHash !== undefined) anchor.genesisHash = a.genesisHash;
+  if (a.sig !== undefined) anchor.sig = a.sig;
+  if (a.keyId !== undefined) anchor.keyId = a.keyId;
+  return anchor;
+}
+
+/**
+ * Verify a signed anchor's Ed25519 signature over its canonical CORE bytes against a pinned public
+ * key. Returns `false` for an unsigned anchor (no `sig`), a malformed signature, or a mismatch — a
+ * signature check is `crypto.verify` (constant-time by construction), NOT a secret compare, so it is
+ * the right tool here and never a hand-rolled `timingSafeEqual` (SPEC G7). This is the server-side
+ * check; the browser / offline verifier runs the WebCrypto equivalent over the same core bytes.
+ */
+export function verifyAnchorSignature(
+  anchor: AuditChainAnchor,
+  publicKey: KeyObject,
+): boolean {
+  if (anchor.sig === undefined) return false;
+  let sig: Buffer;
+  try {
+    sig = Buffer.from(anchor.sig, "base64");
+  } catch {
+    return false;
+  }
+  try {
+    return cryptoVerify(null, encodeAnchor(anchor), publicKey, sig);
+  } catch {
+    return false;
+  }
 }
 
 async function loadEntries(
@@ -143,6 +205,15 @@ export interface AuditChainStoreOptions {
   readonly now?: () => Date;
   /** WORM retention term (years) for the anchor object. Default: the `retain.ts` legal floor. */
   readonly retentionYears?: number;
+  /**
+   * Optional anchor-signing identity (T-W2 / GATE-1). When present, EVERY minted anchor is signed at
+   * mint — `sig`+`keyId` are stored additively alongside the canonical core, so the client / offline
+   * pack can check tamper-evidence against a pinned public key. Absent → unsigned anchors (the legacy
+   * form, still structurally valid). Production wiring injects `Ed25519AnchorSigner.fromEnv()` at the
+   * composition root once the operator provisions `CAISSON_ANCHOR_SIGNING_KEY`; tests inject an
+   * ephemeral keypair.
+   */
+  readonly signer?: AnchorSigner;
 }
 
 /** The result of one append: the new entry and the anchor minted over the resulting chain. */
@@ -182,12 +253,14 @@ export class AuditChainStore {
   private readonly store: ArtifactStore;
   private readonly now: () => Date;
   private readonly retentionYears: number;
+  private readonly signer: AnchorSigner | undefined;
 
   constructor(opts: AuditChainStoreOptions) {
     this.db = opts.db;
     this.store = opts.store;
     this.now = opts.now ?? ((): Date => new Date());
     this.retentionYears = opts.retentionYears ?? DEFAULT_RETENTION_YEARS;
+    this.signer = opts.signer;
   }
 
   /**
@@ -246,13 +319,28 @@ export class AuditChainStore {
       const entries = await loadEntries(tx, accountId);
       const anchor = anchorChain(entries);
 
+      // GATE-1 (T-W2): sign the anchor's CANONICAL CORE bytes at mint when a signer is configured.
+      // `sig`+`keyId` are stored ALONGSIDE the core (additive optional fields), so legacy unsigned
+      // anchors stay structurally valid and the signed core stays byte-identical to the unsigned form
+      // — this is NOT a chain-format break and existing anchors need no migration. The signature is
+      // over the core the external-anchoring lane also uses, so both roots agree.
+      let anchorToStore: AuditChainAnchor = anchor;
+      if (this.signer !== undefined) {
+        const sigBytes = await this.signer.sign(encodeAnchor(anchor));
+        anchorToStore = {
+          ...anchor,
+          sig: Buffer.from(sigBytes).toString("base64"),
+          keyId: this.signer.keyId,
+        };
+      }
+
       // The trusted commitment lands in WORM under a LENGTH-keyed, write-once key. A second anchor
       // for the same length (a truncate-then-re-append, a replay) hits the existing immutable object
       // → ArtifactExistsError → ConflictError: the original tip can never be overwritten.
       try {
         await this.store.put(
           anchorKey(accountId, anchor.length),
-          encodeAnchor(anchor),
+          encodeStoredAnchor(anchorToStore),
           {
             retainUntil,
             contentType: "application/json",
@@ -268,7 +356,7 @@ export class AuditChainStore {
         throw err;
       }
 
-      return { entry, anchor };
+      return { entry, anchor: anchorToStore };
     });
   }
 
