@@ -21,6 +21,7 @@ import {
   type EvidenceControlPlan,
   type GenerateEvidencePackInput,
 } from "./generate.ts";
+import type { CrosswalkRollup } from "./crosswalk-rollup.ts";
 
 // matchGolden anchors __golden__/ to the URL it is handed. ALL compliance goldens live in the ONE
 // package-level dir (src/__golden__) — the same path the evidence-pack fixtures were written to — so
@@ -121,6 +122,44 @@ const tenantIsolationControl = (): EvidenceControlPlan => ({
   evidence: [rlsFlaggedResult()],
 });
 
+/**
+ * A small, hand-written rollup mirroring this file's own two illustrative controls' crosswalk
+ * pointers — kept self-contained (not computed against the real frameworks-pack catalogs) so this
+ * generator-plumbing test stays decoupled from catalog content; the real join logic is proven
+ * against the real catalogs in `crosswalk-rollup.test.ts`. Sorted (framework, reference), as the
+ * generator's own determinism contract requires.
+ */
+function sampleRollup(): CrosswalkRollup {
+  return {
+    cells: [
+      {
+        framework: "HIPAA-Security",
+        reference: "164.312(b)",
+        canonicalControlIds: ["AUDIT.IMMUTABLE-LOG"],
+        status: "ready",
+        claim: "maps-to",
+        evidencePointers: ["AUDIT.IMMUTABLE-LOG"],
+      },
+      {
+        framework: "SOC2-TSC",
+        reference: "CC6.1",
+        canonicalControlIds: ["DATA-PROTECTION.TENANT-ISOLATION"],
+        status: "gap",
+        claim: "maps-to",
+        evidencePointers: ["DATA-PROTECTION.TENANT-ISOLATION"],
+      },
+      {
+        framework: "SOC2-TSC",
+        reference: "CC7.2",
+        canonicalControlIds: ["AUDIT.IMMUTABLE-LOG"],
+        status: "ready",
+        claim: "maps-to",
+        evidencePointers: ["AUDIT.IMMUTABLE-LOG"],
+      },
+    ],
+  };
+}
+
 function baseInput(): GenerateEvidencePackInput {
   return {
     tenantId: TENANT,
@@ -128,6 +167,7 @@ function baseInput(): GenerateEvidencePackInput {
     chainAnchor: { length: 128, tipHash: TIP, genesisHash: GENESIS },
     controls: [immutableLogControl(), tenantIsolationControl()],
     now: new Date("2026-06-27T12:00:00.000Z"),
+    crosswalkRollup: sampleRollup(),
   };
 }
 
@@ -177,6 +217,11 @@ describe("generateEvidencePack — canonical body (T12 golden, BLESS unset)", ()
     expect(manifest.summary.controlsReady).toBe(1);
     expect(manifest.summary.controlsWithGaps).toBe(1);
     expect(manifest.summary.totalEvidenceItems).toBe(3);
+  });
+
+  test("assembles the caller-computed crosswalkRollup into the manifest unchanged (v2)", () => {
+    const { manifest } = generateEvidencePack(baseInput());
+    expect(manifest.crosswalkRollup).toEqual(sampleRollup());
   });
 
   test("the canonical body excludes the clock and any signature (edge-injected)", () => {

@@ -106,6 +106,43 @@
     "posture": "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item."
   },
   "crosswalkRollup": {
-    "cells": []
+    "cells": [
+      {
+        "framework": "HIPAA-Security",
+        "reference": "164.312(b)",
+        "canonicalControlIds": [
+          "AUDIT.IMMUTABLE-LOG"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "AUDIT.IMMUTABLE-LOG"
+        ]
+      },
+      {
+        "framework": "SOC2-TSC",
+        "reference": "CC6.1",
+        "canonicalControlIds": [
+          "DATA-PROTECTION.TENANT-ISOLATION"
+        ],
+        "status": "gap",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "DATA-PROTECTION.TENANT-ISOLATION"
+        ]
+      },
+      {
+        "framework": "SOC2-TSC",
+        "reference": "CC7.2",
+        "canonicalControlIds": [
+          "AUDIT.IMMUTABLE-LOG"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "AUDIT.IMMUTABLE-LOG"
+        ]
+      }
+    ]
   }
 }
