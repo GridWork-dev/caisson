@@ -39,6 +39,7 @@
     "@caisson/migrate": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@clack/prompts": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -49,9 +50,11 @@
     "@caisson/email": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
     "@caisson/jobs": "workspace:*",
+    "@caisson/mcp-server": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
+    "@caisson/ui": "workspace:*",
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "@types/react": "catalog:",
