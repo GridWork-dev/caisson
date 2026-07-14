@@ -54,4 +54,25 @@ describe("AuditTimeline", () => {
     expect(html).not.toContain("cs-timeline__badge");
     expect(html).toContain("Created");
   });
+
+  test("the blind path relabels its badge 'Link only' — never a bare 'Verified' (honesty, T-U4)", () => {
+    const html = renderToStaticMarkup(<AuditTimeline entries={entries} />);
+    expect(html).toContain("Link only");
+    expect(html).not.toContain(">Verified<");
+  });
+
+  test("anchor-derived statuses override the blind check: a link-fine row can read tampered", () => {
+    // The blind check would call entry 1 'verified' (its prevHash matches). The anchor-derived status
+    // says tampered — that must win (closing the anchor-blindness gap).
+    const html = renderToStaticMarkup(
+      <AuditTimeline
+        entries={entries}
+        statuses={["genesis", "tampered", "unverifiable"]}
+      />,
+    );
+    expect(html).toContain('data-status="tampered"');
+    expect(html).toContain('data-status="unverifiable"');
+    expect(html).toContain("Tampered");
+    expect(html).not.toContain("Link only");
+  });
 });
