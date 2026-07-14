@@ -8,3 +8,11 @@ export {
   type ComponentManifest,
   type ComponentProp,
 } from "./schema.ts";
+export {
+  checkContrast,
+  type ContrastFunctional,
+  type ContrastTheme,
+  type ContrastThemeKey,
+  type ContrastViolation,
+  type FunctionalKey,
+} from "./contrast.ts";
