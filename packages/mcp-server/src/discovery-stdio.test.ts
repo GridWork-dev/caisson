@@ -13,7 +13,11 @@ import {
   fonts,
   lightTheme,
 } from "@caisson/ui/tokens";
-import { loadBaseManifest, type ComponentManifest } from "@caisson/ds-manifest";
+import {
+  loadBaseManifest,
+  type Component,
+  type ComponentManifest,
+} from "@caisson/ds-manifest";
 import { createDiscoveryServer, type DesignTokens } from "./index.ts";
 
 const BASE = loadBaseManifest();
@@ -23,7 +27,7 @@ const TOKENS: DesignTokens = {
   fonts: { sans: fonts.sans, mono: fonts.mono },
 };
 
-const PRO_COMPONENT = {
+const PRO_COMPONENT: Component = {
   name: "DataTablePro",
   summary: "Pro data grid.",
   props: [],
@@ -32,7 +36,7 @@ const PRO_COMPONENT = {
   a11yNotes: [],
   recipeRules: [],
   hasDataStar: false,
-} as const;
+};
 
 let client: Client | undefined;
 afterEach(async () => {
@@ -54,8 +58,9 @@ async function connect(manifest: ComponentManifest): Promise<Client> {
   return c;
 }
 
-function textOf(result: { content: unknown }): unknown {
-  const content = result.content as { type: string; text: string }[];
+function textOf(result: unknown): unknown {
+  const content =
+    (result as { content?: { type: string; text: string }[] }).content ?? [];
   return JSON.parse(content[0]?.text ?? "{}");
 }
 
