@@ -193,6 +193,74 @@ describe("computeCrosswalkRollup — OLIR seed note attachment", () => {
   });
 });
 
+describe("computeCrosswalkRollup — ISO 27001 fourth view (ADR-0347 Fork G1, canonicalControlId join)", () => {
+  test("an rls-force pass ALSO lights the ISO A.5.15 row via ACCESS-CONTROL.LOGICAL's canonicalControlId", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([["ACCESS-CONTROL.LOGICAL", "ready"]]),
+      regimeCrosswalks,
+    });
+    const isoCell = cell(rollup.cells, "ISO-27001", "A.5.15");
+    expect(isoCell?.status).toBe("ready");
+    expect(isoCell?.claim).toBe("maps-to");
+    expect(isoCell?.canonicalControlIds).toEqual(["ACCESS-CONTROL.LOGICAL"]);
+  });
+
+  test("the ISO cell's status tracks the joined control's status (gap propagates)", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([["AUDIT.IMMUTABLE-LOG", "gap"]]),
+      regimeCrosswalks,
+    });
+    expect(cell(rollup.cells, "ISO-27001", "A.8.15")?.status).toBe("gap");
+  });
+
+  test("the ISO cell carries the OLIR seed note from the crosswalk's seedProvenance", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([["DATA-PROTECTION.ENCRYPTION", "ready"]]),
+      regimeCrosswalks,
+    });
+    expect(cell(rollup.cells, "ISO-27001", "A.8.24")?.note).toContain(
+      "subjective, incomplete",
+    );
+  });
+
+  test("a canonicalControlId absent from controlStatuses contributes no ISO cell", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([]),
+      regimeCrosswalks,
+    });
+    expect(cell(rollup.cells, "ISO-27001", "A.5.15")).toBeUndefined();
+  });
+
+  test("Legal gate (ADR-0333): an ISO cell never renders implements, even at maximum optimism", () => {
+    // Every canonical control an ISO row joins to is `ready` here -- the most favorable input the
+    // rollup could ever see for that cell. It must still be `maps-to`: an ISO-driven contribution
+    // never carries a `verification` record (no per-row provenance exists on RegimeCrosswalkRow), so
+    // Fork E condition (b) can never hold, structurally, regardless of control readiness.
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([
+        ["ACCESS-CONTROL.LOGICAL", "ready"],
+        ["DATA-PROTECTION.ENCRYPTION", "ready"],
+        ["DATA-PROTECTION.DISPOSAL", "ready"],
+        ["AUDIT.IMMUTABLE-LOG", "ready"],
+        ["SYSTEM-OPERATIONS.DETECTION", "ready"],
+        ["AUTHENTICATION.ENTITY", "ready"],
+        ["GOVERNANCE.DOCUMENTATION", "ready"],
+      ]),
+      regimeCrosswalks,
+    });
+    const isoCells = rollup.cells.filter((c) => c.framework === "ISO-27001");
+    expect(isoCells.length).toBeGreaterThan(0);
+    for (const c of isoCells) {
+      expect(c.claim).toBe("maps-to");
+    }
+  });
+});
+
 describe("computeCrosswalkRollup — determinism", () => {
   test("cells are sorted (framework, reference) regardless of catalogs input order", () => {
     const a = computeCrosswalkRollup({

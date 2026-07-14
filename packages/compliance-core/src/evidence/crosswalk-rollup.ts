@@ -14,6 +14,16 @@
 // label) is already `implements`. No matching regime row -- or any gap in (a)/(b) -- default to
 // `maps-to`. A canonical control this run gathered NO evidence for (absent from `controlStatuses`)
 // contributes nothing: the rollup reflects what THIS pack run evidenced, not the whole catalog.
+//
+// ISO 27001 AS A FOURTH VIEW (ADR-0347 Fork G1, Option B -- the locked `canonicalControlId` join):
+// `@caisson/frameworks-pack`'s `iso27001Crosswalk` (a `RegimeCrosswalk`, not a framework pack) has no
+// `crosswalk[]` pointers of its own -- instead each of its rows carries an OPTIONAL
+// `canonicalControlId` pointing at a REAL canonical control already crosswalked from the three
+// shipped packs. A second pass below joins THOSE rows into the SAME `byRef` map as an ordinary
+// contribution, so one collector run lights the ISO view exactly like the others. The Legal gate
+// (ADR-0333) caps every ISO cell at `maps-to` -- enforced STRUCTURALLY here, not merely by the fact
+// that every authored ISO row is `maps-to`: an ISO-driven contribution never carries a `verification`
+// record, so condition (b) above can never hold for a cell an ISO row contributed to.
 import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";
 import {
@@ -91,15 +101,21 @@ export type CrosswalkRollup = z.infer<typeof crosswalkRollupSchema>;
 
 /**
  * Framework label -> regime id, for the labels that have a buyer-facing regime crosswalk today
- * (`@caisson/frameworks-pack` `regimes.ts`). Only SOC2-TSC is mapped in v1; HIPAA-Security and
- * EU-AI-Act have no regime crosswalk, so their cells always default `maps-to` (correct — Fork E
- * condition (c) has no row to satisfy). ISO's join (ADR-0347 Fork G1's `canonicalControlId`) is a
- * later-wave concern (Group C) and is intentionally NOT wired here.
+ * (`@caisson/frameworks-pack` `regimes.ts`). Only SOC2-TSC and ISO-27001 are mapped in v1;
+ * HIPAA-Security and EU-AI-Act have no regime crosswalk, so their cells always default `maps-to`
+ * (correct — Fork E condition (c) has no row to satisfy). The ISO-27001 entry matters only if a
+ * framework pack ever crosswalks a reference directly at that label (none do today, `iso27001Crosswalk`
+ * itself is joined via `canonicalControlId` below, not through this map).
  */
 const FRAMEWORK_LABEL_TO_REGIME: Readonly<Record<string, string | undefined>> =
   {
     "SOC2-TSC": "soc2",
+    "ISO-27001": "iso-27001",
   };
+
+/** The regime id + rendered framework label `iso27001Crosswalk` joins into the rollup as (ADR-0347 Fork G1). */
+const ISO_REGIME_ID = "iso-27001";
+const ISO_FRAMEWORK_LABEL = "ISO-27001";
 
 /** The seed id `regimes.ts`/Group C would stamp on an OLIR-derived reference (ADR-0347 Fork G2). */
 const OLIR_SEED_SOURCE_ID = "nist-sp800-53r5-iso27001-2022-olir";
@@ -186,6 +202,37 @@ export function computeCrosswalkRollup(
     }
   }
 
+  // ISO 27001 fourth view (ADR-0347 Fork G1, Option B): join `iso27001Crosswalk`'s rows through
+  // their `canonicalControlId` pointer into the SAME map, as an ordinary contribution -- but one
+  // that NEVER carries a `verification` record, so the Legal gate (ADR-0333) holds structurally
+  // (condition (b) below can never be satisfied by an ISO-driven contribution).
+  const isoCrosswalk = input.regimeCrosswalks.find(
+    (rc) => rc.regime === ISO_REGIME_ID,
+  );
+  const isoNote =
+    isoCrosswalk?.seedProvenance?.sourceId === OLIR_SEED_SOURCE_ID
+      ? OLIR_NOTE
+      : undefined;
+  if (isoCrosswalk !== undefined) {
+    for (const row of isoCrosswalk.rows) {
+      if (row.canonicalControlId === undefined) continue;
+      const status = input.controlStatuses.get(row.canonicalControlId);
+      if (status === undefined) continue; // not evidenced this run — contributes nothing
+      const k = refKey(ISO_FRAMEWORK_LABEL, row.control);
+      const entry = byRef.get(k) ?? {
+        framework: ISO_FRAMEWORK_LABEL,
+        reference: row.control,
+        contributions: [],
+      };
+      entry.contributions.push({
+        controlId: row.canonicalControlId,
+        status,
+        verification: undefined,
+      });
+      byRef.set(k, entry);
+    }
+  }
+
   const cells: CrosswalkRollupCell[] = [];
   for (const { framework, reference, contributions } of byRef.values()) {
     const canonicalControlIds = [
@@ -214,7 +261,9 @@ export function computeCrosswalkRollup(
       (c) => c.verification?.sourceId === OLIR_SEED_SOURCE_ID,
     )
       ? OLIR_NOTE
-      : undefined;
+      : framework === ISO_FRAMEWORK_LABEL
+        ? isoNote
+        : undefined;
 
     cells.push(
       parseStrict(crosswalkRollupCellSchema, {

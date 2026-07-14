@@ -255,6 +255,19 @@
         ]
       },
       {
+        "framework": "ISO-27001",
+        "reference": "A.5.37",
+        "canonicalControlIds": [
+          "GOVERNANCE.DOCUMENTATION"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "GOVERNANCE.DOCUMENTATION"
+        ],
+        "note": "Seeded from the NIST OLIR SP 800-53 rev5 <-> ISO/IEC 27001:2022 mapping. OLIR's own mappings are subjective, incomplete, and not equivalence claims."
+      },
+      {
         "framework": "SOC2-TSC",
         "reference": "CC7.2",
         "canonicalControlIds": [
