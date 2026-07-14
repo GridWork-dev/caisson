@@ -30,6 +30,8 @@
     "@aws-sdk/client-s3": "catalog:",
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
+    "asn1js": "3.0.10",
+    "pkijs": "3.4.0",
     "zod": "catalog:"
   },
   "peerDependencies": {

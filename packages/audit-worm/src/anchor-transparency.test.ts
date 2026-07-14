@@ -7,9 +7,11 @@ import {
   anchorReceiptKey,
   anchorReceiptSchema,
   sha256Hex,
+  StubTrustedTimestampLog,
   targetId,
   timestampReceiptSchema,
   transparencyTargetSchema,
+  TsaAnchorLog,
   type AnchorReceipt,
   type TransparencyTarget,
 } from "./anchor-transparency.ts";
@@ -125,5 +127,43 @@ describe("helpers", () => {
     expect(sha256Hex(bytes)).toBe(
       createHash("sha256").update(bytes).digest("hex"),
     );
+  });
+});
+
+describe("StubTrustedTimestampLog", () => {
+  const anchorBytes = new TextEncoder().encode(
+    '{"length":3,"tipHash":"deadbeef"}',
+  );
+
+  test("attests sha256(anchorBytes) at the injected clock, deterministically", async () => {
+    const log = new StubTrustedTimestampLog({ now: new Date(0) });
+    const r = await log.submit(anchorBytes);
+    expect(r.messageImprint).toBe(sha256Hex(anchorBytes));
+    expect(r.algorithm).toBe("rfc3161");
+    expect(r.hashAlgorithm).toBe("sha256");
+    expect(r.timestampedAt).toBe("1970-01-01T00:00:00.000Z");
+    // deterministic: same input + clock -> byte-identical receipt
+    expect(await log.submit(anchorBytes)).toEqual(r);
+    // the receipt is schema-valid
+    expect(timestampReceiptSchema.parse(r)).toEqual(r);
+  });
+});
+
+describe("TsaAnchorLog (constructor guards, no network)", () => {
+  test("a valid https endpoint constructs", () => {
+    expect(
+      () => new TsaAnchorLog({ url: "https://freetsa.org/tsr" }),
+    ).not.toThrow();
+  });
+
+  test("a non-http(s) url is refused fail-closed", () => {
+    expect(() => new TsaAnchorLog({ url: "ftp://tsa.example/tsr" })).toThrow();
+    expect(() => new TsaAnchorLog({ url: "not a url" })).toThrow();
+  });
+
+  test("a sub-second timeout is refused", () => {
+    expect(
+      () => new TsaAnchorLog({ url: "https://tsa.example", timeoutMs: 10 }),
+    ).toThrow();
   });
 });
