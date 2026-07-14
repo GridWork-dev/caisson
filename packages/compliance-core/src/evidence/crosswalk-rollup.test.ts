@@ -10,6 +10,7 @@ import {
 import {
   computeCrosswalkRollup,
   controlStatusFromEvidence,
+  crosswalkRollupCellSchema,
   type ControlStatus,
   type CrosswalkRollupCell,
 } from "./crosswalk-rollup.ts";
@@ -283,6 +284,40 @@ describe("computeCrosswalkRollup — determinism", () => {
     const refs = a.cells.map((c) => `${c.framework} ${c.reference}`);
     expect(refs).toEqual([...refs].sort());
   });
+});
+
+describe("Legal-gate copy guard (ADR-0080 / ADR-0333 Group G) -- rollup note is readiness language only", () => {
+  function cellInput(
+    note: string,
+  ): Parameters<typeof crosswalkRollupCellSchema.parse>[0] {
+    return {
+      framework: "ISO-27001",
+      reference: "A.5.15",
+      canonicalControlIds: ["ACCESS-CONTROL.LOGICAL"],
+      status: "ready",
+      claim: "maps-to",
+      evidencePointers: ["ACCESS-CONTROL.LOGICAL"],
+      note,
+    };
+  }
+
+  test("a note using neutral readiness language parses", () => {
+    expect(() =>
+      crosswalkRollupCellSchema.parse(
+        cellInput("Seeded from a public-domain mapping; check data only."),
+      ),
+    ).not.toThrow();
+  });
+
+  for (const forbidden of ["compliant", "certified", "verified"]) {
+    test(`a note claiming "${forbidden}" is rejected`, () => {
+      expect(() =>
+        crosswalkRollupCellSchema.parse(
+          cellInput(`This mapping means the buyer is ${forbidden}.`),
+        ),
+      ).toThrow();
+    });
+  }
 });
 
 describe("controlStatusFromEvidence — worst-of a control's gathered evidence", () => {

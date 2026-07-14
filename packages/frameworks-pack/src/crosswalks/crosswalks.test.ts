@@ -16,6 +16,10 @@ import {
   regimeCrosswalks,
   soc2Crosswalk,
 } from "./regimes.ts";
+import { euAiAct } from "../frameworks/eu-ai-act.ts";
+import { hipaaSecurity } from "../frameworks/hipaa-security.ts";
+import { soc2Tsc } from "../frameworks/soc2-tsc.ts";
+import type { Framework } from "../registry/control.ts";
 
 // matchGolden anchors __golden__/ to the URL handed to it. The frameworks-pack keeps ALL goldens in
 // ONE package-level dir (src/__golden__ — the manifest's gated `golden` path), so anchor at src/
@@ -334,5 +338,29 @@ describe("crosswalk exports are byte-stable (golden)", () => {
       "crosswalk-iso-27001",
       exportRegimeCrosswalk(iso27001Crosswalk),
     );
+  });
+});
+
+describe("Legal-gate guards (ADR-0333/ADR-0347 Group G) -- the ISO crosswalk never overclaims", () => {
+  test("every iso27001Crosswalk row is maps-to -- none is implements", () => {
+    for (const row of iso27001Crosswalk.rows) {
+      expect(row.claim).toBe("maps-to");
+    }
+  });
+
+  test("no shipped pack's crosswalk reference to the ISO-27001 framework label carries an expert-reviewed verification", () => {
+    // Forward-looking structural guard: none of the three shipped packs crosswalks a control
+    // DIRECTLY at the "ISO-27001" framework label today (the join instead runs the other way, via
+    // iso27001Crosswalk's own canonicalControlId -- see crosswalk-rollup.ts). If one ever does, the
+    // Legal gate (ADR-0333) still forbids an expert-reviewed claim on it pending the ADR-0319 answer.
+    const catalogs: readonly Framework[] = [soc2Tsc, hipaaSecurity, euAiAct];
+    for (const catalog of catalogs) {
+      for (const control of catalog.controls) {
+        for (const ref of control.crosswalk) {
+          if (ref.framework !== "ISO-27001") continue;
+          expect(ref.verification?.status).not.toBe("expert-reviewed");
+        }
+      }
+    }
   });
 });

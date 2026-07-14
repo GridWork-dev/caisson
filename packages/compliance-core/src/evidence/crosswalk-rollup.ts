@@ -88,8 +88,22 @@ export const crosswalkRollupCellSchema = strictObject({
   claim: claimSchema,
   /** Where the buyer looks for the evidence backing this cell (the contributing canonical control ids). */
   evidencePointers: z.array(z.string()).min(1),
-  /** Attached when a contributing reference cites an OLIR seed (NIST's own subjective/incomplete warning). */
-  note: z.string().trim().min(1).max(500).optional(),
+  /**
+   * Attached when a contributing reference cites an OLIR seed (NIST's own subjective/incomplete
+   * warning). Readiness/posture language only — never a "compliant"/"certified"/"verified" marketing
+   * claim (ADR-0080 copy law; extends the `pack-format.ts` `postureCopy` guard, ADR-0333 Legal gate,
+   * to the rollup's own free-text field).
+   */
+  note: z
+    .string()
+    .trim()
+    .min(1)
+    .max(500)
+    .refine((s) => !/\b(compliant|certified|verified)\b/i.test(s), {
+      message:
+        'rollup note must use readiness language, never claim "compliant"/"certified"/"verified" (ADR-0080)',
+    })
+    .optional(),
 });
 export type CrosswalkRollupCell = z.infer<typeof crosswalkRollupCellSchema>;
 
