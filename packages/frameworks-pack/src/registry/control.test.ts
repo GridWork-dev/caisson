@@ -3,8 +3,10 @@ import { ValidationError } from "@caisson/kernel";
 import { matchGolden } from "@caisson/testing";
 import {
   type CanonicalControl,
+  type CrosswalkVerification,
   defineControl,
   defineFramework,
+  isVerificationStale,
 } from "./control.ts";
 
 // matchGolden anchors __golden__/ to the file URL it's handed. The compliance package keeps ALL
@@ -108,6 +110,132 @@ describe("defineControl", () => {
         ],
       }),
     ).toThrow(ValidationError);
+  });
+});
+
+describe("structured provenance (ADR-0333/CR-10 -- verification replaces verified: boolean)", () => {
+  function sampleVerification(): CrosswalkVerification {
+    return {
+      status: "reviewed",
+      relationship: "equivalent",
+      sourceId: "packages/field-crypto/src/crypto-shred.test.ts",
+      sourceVersion: "2026.1",
+      sourceDigest:
+        "e57977329145a27f8054314141f56b22bd9ea4d39001b998d47a630899d1cbe0".slice(
+          0,
+          64,
+        ),
+      reviewedBy: "operator",
+      reviewedAt: "2026-07-13T00:00:00.000Z",
+    };
+  }
+
+  test("a crosswalk reference with a valid verification record parses", () => {
+    const control = defineControl({
+      id: "ACCESS-CONTROL.MFA",
+      title: "x",
+      family: "Access Control",
+      statement: "y",
+      crosswalk: [
+        {
+          framework: "SOC2-TSC",
+          reference: "C1.2",
+          verification: sampleVerification(),
+        },
+      ],
+    });
+    expect(control.crosswalk[0]?.verification).toEqual(sampleVerification());
+  });
+
+  test("verification is optional -- an absent record is honest unreviewed-equivalent", () => {
+    const control = defineControl({
+      id: "ACCESS-CONTROL.MFA",
+      title: "x",
+      family: "Access Control",
+      statement: "y",
+      crosswalk: [{ framework: "SOC2-TSC", reference: "CC6.1" }],
+    });
+    expect(control.crosswalk[0]?.verification).toBeUndefined();
+  });
+
+  test("rejects an unknown field inside verification (.strict() boundary)", () => {
+    expect(() =>
+      defineControl({
+        id: "ACCESS-CONTROL.MFA",
+        title: "x",
+        family: "Access Control",
+        statement: "y",
+        crosswalk: [
+          {
+            framework: "SOC2-TSC",
+            reference: "C1.2",
+            verification: {
+              ...sampleVerification(),
+              // @ts-expect-error -- unknown key must be rejected at the boundary
+              confidencePercent: 90,
+            },
+          },
+        ],
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("rejects a malformed sourceDigest (must be 64-hex)", () => {
+    expect(() =>
+      defineControl({
+        id: "ACCESS-CONTROL.MFA",
+        title: "x",
+        family: "Access Control",
+        statement: "y",
+        crosswalk: [
+          {
+            framework: "SOC2-TSC",
+            reference: "C1.2",
+            verification: {
+              ...sampleVerification(),
+              sourceDigest: "not-a-digest",
+            },
+          },
+        ],
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("rejects an invalid status/relationship enum value", () => {
+    expect(() =>
+      defineControl({
+        id: "ACCESS-CONTROL.MFA",
+        title: "x",
+        family: "Access Control",
+        statement: "y",
+        crosswalk: [
+          {
+            framework: "SOC2-TSC",
+            reference: "C1.2",
+            verification: {
+              ...sampleVerification(),
+              status: "verified" as unknown as CrosswalkVerification["status"],
+            },
+          },
+        ],
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  describe("isVerificationStale (A2 -- source-digest change invalidates review)", () => {
+    test("undefined verification is stale (never reviewed)", () => {
+      expect(isVerificationStale(undefined, "a".repeat(64))).toBe(true);
+    });
+
+    test("matching sourceDigest is not stale", () => {
+      const v = sampleVerification();
+      expect(isVerificationStale(v, v.sourceDigest)).toBe(false);
+    });
+
+    test("a changed sourceDigest is stale", () => {
+      const v = sampleVerification();
+      expect(isVerificationStale(v, "b".repeat(64))).toBe(true);
+    });
   });
 });
 
