@@ -1281,6 +1281,7 @@
       "name": "@caisson/ui-pro",
       "version": "0.2.0",
       "dependencies": {
+        "@caisson/kernel": "workspace:*",
         "@caisson/ui": "workspace:*",
       },
       "devDependencies": {

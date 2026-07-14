@@ -26,6 +26,7 @@
     "test": "bun test ./src"
   },
   "dependencies": {
+    "@caisson/kernel": "workspace:*",
     "@caisson/ui": "workspace:*"
   },
   "peerDependencies": {

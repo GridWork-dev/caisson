@@ -23,6 +23,11 @@
       "bun": "./src/audit-verify.ts",
       "types": "./dist/audit-verify.d.ts",
       "default": "./dist/audit-verify.js"
+    },
+    "./redact": {
+      "bun": "./src/redact.ts",
+      "types": "./dist/redact.d.ts",
+      "default": "./dist/redact.js"
     }
   },
   "bin": {
