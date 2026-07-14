@@ -18,6 +18,11 @@
       "bun": "./src/fetch.ts",
       "types": "./dist/fetch.d.ts",
       "default": "./dist/fetch.js"
+    },
+    "./audit-verify": {
+      "bun": "./src/audit-verify.ts",
+      "types": "./dist/audit-verify.d.ts",
+      "default": "./dist/audit-verify.js"
     }
   },
   "bin": {
