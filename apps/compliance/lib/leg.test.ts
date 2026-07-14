@@ -107,6 +107,30 @@ describe("compliance reference app — the full leg end to end", () => {
     expect(result.allChecksPassed).toBe(true);
   });
 
+  test("7 — the crosswalk rollup lights every crosswalked requirement across all three framework views from THIS run's evidence (ADR-0333/ADR-0347, the SPEC's marquee scenario)", () => {
+    const cell = (
+      framework: string,
+      reference: string,
+    ): { readonly status: string; readonly claim: string } | undefined =>
+      result.manifest.crosswalkRollup.cells.find(
+        (c) => c.framework === framework && c.reference === reference,
+      );
+    // AUDIT.IMMUTABLE-LOG's crosswalk pointers propagate into HIPAA-Security and EU-AI-Act too, from
+    // the SAME soc2-tsc pack run — "fix once, satisfied across N frameworks" (SPEC Goal).
+    expect(cell("SOC2-TSC", "CC7.2")?.status).toBe("ready");
+    expect(cell("HIPAA-Security", "164.312(b)")?.status).toBe("ready");
+    expect(cell("EU-AI-Act", "Art. 12")?.status).toBe("ready");
+    // Default propagation is maps-to (Fork E) — the rls-force-style controls here carry no reviewed
+    // verification record.
+    expect(cell("SOC2-TSC", "CC6.1")?.claim).toBe("maps-to");
+    // The ONE authored reviewed record (ADR-0347 Fork G3) reaches `implements` end to end: the
+    // control is ready, the reference is reviewed, and the soc2 regime-crosswalk row is already
+    // implements (the crypto-shred proof).
+    expect(cell("SOC2-TSC", "C1.2")?.claim).toBe("implements");
+    // The SAME control's OTHER (unreviewed) reference stays maps-to — restates, never originates.
+    expect(cell("SOC2-TSC", "CC6.5")?.claim).toBe("maps-to");
+  });
+
   test("the evidence manifest is byte-stable against its golden fixture", () => {
     // The canonical body excludes the clock + signature, so a fixed (tenantId, now) is reproducible.
     expect(result.manifest.tenantId).toBe(DEMO_TENANT_ID);

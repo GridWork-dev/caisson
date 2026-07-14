@@ -48,14 +48,18 @@ import {
   EvidencePackBlockedError,
   beginImpersonation,
   chainVerifyCollector,
+  computeCrosswalkRollup,
+  controlStatusFromEvidence,
   emitEvidenceGenerated,
   endImpersonation,
+  euAiAct,
   findDualRecordSeqs,
   generateEvidencePack,
   hipaaSecurity,
   impersonationCollector,
   parseEvidencePackManifest,
   recordImpersonatedAction,
+  regimeCrosswalks,
   rlsForceCollector,
   signEvidencePack,
   soc2Tsc,
@@ -65,6 +69,7 @@ import {
   withTenantCrypto,
   wormRetentionCollector,
   type CollectorResult,
+  type CrosswalkRollup,
   type EvidenceControlPlan,
   type EvidencePackChainAnchor,
   type EvidencePackFramework,
@@ -252,6 +257,24 @@ function controlPlan(
     crosswalk: control.crosswalk,
     evidence,
   };
+}
+
+/** Every shipped framework catalog — the rollup joins against all three regardless of which one
+ *  the CURRENT pack targets, so evidence gathered for this run's controls still lights the OTHER
+ *  frameworks' requirements they share a canonical control or crosswalk pointer with (the SPEC's
+ *  "fix once, satisfied across N frameworks" claim, ADR-0333/ADR-0347). */
+const ROLLUP_CATALOGS: readonly Framework[] = [soc2Tsc, hipaaSecurity, euAiAct];
+
+/** Compute the cross-framework rollup for one pack run's controls (ADR-0333/ADR-0347). */
+function rollupFor(controls: readonly EvidenceControlPlan[]): CrosswalkRollup {
+  const controlStatuses = new Map(
+    controls.map((c) => [c.controlId, controlStatusFromEvidence(c.evidence)]),
+  );
+  return computeCrosswalkRollup({
+    catalogs: ROLLUP_CATALOGS,
+    controlStatuses,
+    regimeCrosswalks,
+  });
 }
 
 /** A deterministic OSCAL UUID source (a counter) — makes the OSCAL bundle byte-stable for the
@@ -494,6 +517,7 @@ export async function runComplianceLeg(
     chainAnchor,
     controls,
     now,
+    crosswalkRollup: rollupFor(controls),
   };
 
   const pack = generateEvidencePack(generateInput);
@@ -566,6 +590,7 @@ export async function runComplianceLeg(
     chainAnchor,
     controls: hipaaControls,
     now,
+    crosswalkRollup: rollupFor(hipaaControls),
   };
 
   const hipaaPack = generateEvidencePack(hipaaGenerateInput);
