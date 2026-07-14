@@ -689,6 +689,23 @@
         "react-dom": "^19.0.0",
       },
     },
+    "packages/ds-manifest": {
+      "name": "@caisson/ds-manifest",
+      "version": "0.1.0",
+      "dependencies": {
+        "culori": "catalog:",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "@caisson/ui": "workspace:*",
+        "@types/culori": "catalog:",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/email": {
       "name": "@caisson/email",
       "version": "0.4.0",
@@ -1652,6 +1669,8 @@
     "@caisson/demo-registry": ["@caisson/demo-registry@workspace:packages/demo-registry"],
 
     "@caisson/design-critic": ["@caisson/design-critic@workspace:tooling/design-critic"],
+
+    "@caisson/ds-manifest": ["@caisson/ds-manifest@workspace:packages/ds-manifest"],
 
     "@caisson/email": ["@caisson/email@workspace:packages/email"],
 

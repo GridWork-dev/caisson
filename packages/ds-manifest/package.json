@@ -1,0 +1,36 @@
+{
+  "name": "@caisson/ds-manifest",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "description": "Shared data + analysis layer for the agent-ready design-system surface: a typed component-manifest schema, a reader for the committed base/pro manifests, and pure static-check functions (contrast, usage doctor) any of the CLI, MCP, and build-time generator fronts can import.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "culori": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@caisson/ui": "workspace:*",
+    "@types/culori": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  }
+}
