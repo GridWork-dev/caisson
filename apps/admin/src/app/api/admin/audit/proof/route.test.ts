@@ -25,9 +25,8 @@ const { GET } = await import("./route.ts");
 
 let store: AuditChainStore;
 let wormDir: string;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the PGlite double exposes .query directly
 let pg: {
-  query: (sql: string, params?: unknown[]) => Promise<{ rows: any[] }>;
+  query: (sql: string, params?: unknown[]) => Promise<{ rows: unknown[] }>;
 };
 
 /** The `globalThis`-cached admin transactor (admin-db.ts) — reset so getAdminDb rebuilds under our env. */
