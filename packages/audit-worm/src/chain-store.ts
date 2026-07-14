@@ -30,6 +30,7 @@ import {
   chainEntry,
   ConflictError,
   isUniqueViolation,
+  NotFoundError,
   strictObject,
   parseStrict,
   ValidationError,
@@ -148,6 +149,27 @@ export interface AuditChainStoreOptions {
 export interface AppendResult {
   readonly entry: AuditChainEntry;
   readonly anchor: AuditChainAnchor;
+}
+
+/**
+ * A single-row proof: the raw (unredacted at this layer) entry, the per-length WORM anchor minted
+ * when it was the tip, and the current chain length. Redaction happens ABOVE this layer at the
+ * endpoint, before the payload crosses the wire (H3). The endpoint recomputes leg 1 (link) and
+ * leg 2 (`anchorForRow.tipHash === entry.hash`) from this material.
+ */
+export interface RowProof {
+  readonly entry: AuditChainEntry;
+  readonly anchorForRow: AuditChainAnchor;
+  readonly chainLength: number;
+}
+
+/**
+ * Fail-closed result when the row's per-length anchor is unreadable — the SAME direction `verify()`
+ * takes. NEVER a fabricated pass (binding #6): the endpoint maps this to a 200 `unverifiable` verdict.
+ */
+export interface RowProofUnverifiable {
+  readonly unverifiable: true;
+  readonly reason: string;
 }
 
 /**
@@ -283,6 +305,72 @@ export class AuditChainStore {
       );
       const anchor = decodeAnchor(anchorObj.body);
       return verifyChain(entries, anchor);
+    });
+  }
+
+  /**
+   * Read a single row's proof material: the entry at `seq`, its per-length WORM anchor (`anchor(seq+1)`
+   * — the commitment minted when this row was the tip, so `anchor(seq+1).tipHash === row.hash` is a
+   * genuine per-row check), and the chain length. Targeted single-row + single-anchor read (fork f —
+   * one WORM GET per inspected row), tenant-scoped through `withTenant`.
+   *
+   * Fail-closed contract:
+   *   - `seq` is bounded server-side to `0 <= seq < length` (L1). `seq == length` addresses
+   *     `anchor(length+1)` — the truncation-probe key — and `seq > length` is out of range; both throw
+   *     `ValidationError` (→ 400 at the route), NEVER a silent `unverifiable`.
+   *   - A missing `anchor(seq+1)` returns `{ unverifiable: true, reason }` (matching `verify()`'s
+   *     direction), never a fabricated pass (binding #6).
+   *   - The WORM key is constructed SERVER-SIDE only, via `anchorKey`/`buildArtifactKey` (CR-07 §5).
+   */
+  async getRowProof(
+    accountId: string,
+    seq: number,
+  ): Promise<RowProof | RowProofUnverifiable> {
+    return withTenant(this.db, accountId, async (tx) => {
+      // Target chain length from the tenant's OWN rows (RLS-scoped). For a healthy contiguous chain
+      // count == length == maxSeq+1; any tamper that breaks that surfaces at chain-level `verify()`.
+      const lenRes = await tx.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM audit_chain_entry WHERE account_id = $1`,
+        [accountId],
+      );
+      const chainLength = lenRes.rows[0]?.n ?? 0;
+
+      // L1: valid rows are 0 .. length-1. Reject the truncation-probe boundary and beyond.
+      if (!Number.isInteger(seq) || seq < 0 || seq >= chainLength) {
+        throw new ValidationError("audit chain seq is out of range", {
+          seq,
+          chainLength,
+        });
+      }
+
+      // Fork f: one WORM GET — the per-length anchor minted when this row was the tip.
+      let anchorForRow: AuditChainAnchor;
+      try {
+        const anchorObj = await this.store.get(anchorKey(accountId, seq + 1));
+        anchorForRow = decodeAnchor(anchorObj.body);
+      } catch (err) {
+        if (err instanceof NotFoundError) {
+          return {
+            unverifiable: true,
+            reason: "per-length anchor is missing for this row",
+          };
+        }
+        throw err;
+      }
+
+      const rowRes = await tx.query<ChainRow>(
+        `SELECT seq, prev_hash, payload, hash
+           FROM audit_chain_entry
+          WHERE account_id = $1 AND seq = $2`,
+        [accountId, seq],
+      );
+      const row = rowRes.rows[0];
+      if (row === undefined) {
+        // The COUNT said this seq exists but the targeted read found nothing (a concurrent change or
+        // inconsistency). Fail closed rather than fabricate.
+        return { unverifiable: true, reason: "row not found for seq" };
+      }
+      return { entry: toEntry(row), anchorForRow, chainLength };
     });
   }
 }

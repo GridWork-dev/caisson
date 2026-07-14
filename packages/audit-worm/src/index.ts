@@ -76,6 +76,8 @@ export {
 export {
   type AuditChainStoreOptions,
   type AppendResult,
+  type RowProof,
+  type RowProofUnverifiable,
   AuditChainStore,
 } from "./chain-store.ts";
 

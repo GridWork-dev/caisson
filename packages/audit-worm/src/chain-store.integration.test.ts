@@ -24,6 +24,7 @@ import {
   canonicalize,
   ConflictError,
   isUniqueViolation,
+  ValidationError,
   type JsonValue,
 } from "@caisson/kernel";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
@@ -227,6 +228,94 @@ describe("tenant isolation (ADR-0005, fail-closed)", () => {
       return r.rows[0]?.n;
     });
     expect(cross).toBe(0);
+  });
+});
+
+describe("getRowProof — single-row proof read (T-W1, fork f)", () => {
+  test("a valid seq returns the entry, its per-length anchor, and the chain length", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }, { c: 3 }]);
+    const chainRows = await chain.load(acct);
+
+    for (let seq = 0; seq < 3; seq++) {
+      const proof = await chain.getRowProof(acct, seq);
+      expect("unverifiable" in proof).toBe(false);
+      if ("unverifiable" in proof) throw new Error("unexpected unverifiable");
+      expect(proof.chainLength).toBe(3);
+      expect(proof.entry.hash).toBe(chainRows[seq]!.hash);
+      // Leg 2 relationship: anchor(seq+1).tipHash === row.hash (a genuine per-row commitment check).
+      expect(proof.anchorForRow.length).toBe(seq + 1);
+      expect(proof.anchorForRow.tipHash).toBe(chainRows[seq]!.hash);
+    }
+  });
+
+  test("seq == length is rejected (L1 — the truncation-probe key anchor(length+1))", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }]); // length 2, valid seq 0..1
+    await expect(chain.getRowProof(acct, 2)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  test("seq > length is rejected (out of range, never a silent unverifiable)", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }]);
+    await expect(chain.getRowProof(acct, 99)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  test("a negative or non-integer seq is rejected", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }]);
+    await expect(chain.getRowProof(acct, -1)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    await expect(chain.getRowProof(acct, 0.5)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  test("a missing per-length anchor fails closed to unverifiable (never a fabricated pass)", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }]); // anchors for length 1,2 exist
+    // Superuser inserts seq 2 WITHOUT minting anchor(3) — the row exists but its per-length anchor
+    // does not. getRowProof must fail closed, matching verify()'s direction.
+    const rows = await chain.load(acct);
+    await tp.query(
+      `INSERT INTO audit_chain_entry (id, account_id, seq, prev_hash, payload, hash)
+       VALUES ($1, $2, 2, $3, '{"c":3}'::jsonb, $4)`,
+      [randomUUID(), acct, rows[1]!.hash, "deadbeef".repeat(8)],
+    );
+    const proof = await chain.getRowProof(acct, 2);
+    expect(proof).toEqual({
+      unverifiable: true,
+      reason: "per-length anchor is missing for this row",
+    });
+  });
+
+  test("tenant scoping — a seq valid for one account is out of range for a shorter one", async () => {
+    const a = randomUUID();
+    const b = randomUUID();
+    await seed(a, [{ a: 1 }, { a: 2 }]); // length 2
+    await seed(b, [{ b: 1 }]); // length 1
+
+    const proofA = await chain.getRowProof(a, 1);
+    expect("unverifiable" in proofA).toBe(false);
+    if ("unverifiable" in proofA) throw new Error("unexpected unverifiable");
+    expect(proofA.chainLength).toBe(2);
+
+    // b's chain has length 1, so seq 1 is out of range under b's own tenant scope.
+    await expect(chain.getRowProof(b, 1)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    // ...and each account's genesis proof is distinct.
+    const gA = await chain.getRowProof(a, 0);
+    const gB = await chain.getRowProof(b, 0);
+    if ("unverifiable" in gA || "unverifiable" in gB) {
+      throw new Error("unexpected unverifiable");
+    }
+    expect(gA.entry.hash).not.toBe(gB.entry.hash);
   });
 });
 
