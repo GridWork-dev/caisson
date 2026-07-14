@@ -25,3 +25,6 @@ export * from "./evidence/generate.ts";
 export * from "./evidence/oscal-export.ts";
 export * from "./evidence/oscal-export-xml.ts";
 export * from "./evidence/oscal-assessment-plan.ts";
+
+// --- Control<->collector binding table (PLAN Group E) — a derived artifact, not a config layer. --
+export * from "./evidence/binding-table.ts";

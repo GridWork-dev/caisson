@@ -1,0 +1,48 @@
+[
+  {
+    "collectorId": "substrate.ai-risk-register",
+    "controlId": "RISK-MANAGEMENT.AI-LIFECYCLE",
+    "manualSlotIds": [
+      "ai-risk-management-policy"
+    ],
+    "resolved": true
+  },
+  {
+    "collectorId": "substrate.audit-chain-integrity",
+    "controlId": "AUDIT.IMMUTABLE-LOG",
+    "manualSlotIds": [],
+    "resolved": true
+  },
+  {
+    "collectorId": "substrate.field-crypto-policy",
+    "controlId": "DATA-PROTECTION.PHI-ENCRYPTION",
+    "manualSlotIds": [
+      "encryption-key-management-policy"
+    ],
+    "resolved": false
+  },
+  {
+    "collectorId": "substrate.impersonation-dual-trail",
+    "controlId": "ACCESS-CONTROL.LOGICAL",
+    "manualSlotIds": [
+      "support-access-policy"
+    ],
+    "resolved": true
+  },
+  {
+    "collectorId": "substrate.tenant-isolation-force-rls",
+    "controlId": "ACCESS-CONTROL.LOGICAL",
+    "manualSlotIds": [
+      "tenant-isolation-test-report"
+    ],
+    "resolved": true
+  },
+  {
+    "collectorId": "substrate.worm-retention-floor",
+    "controlId": "DATA-PROTECTION.DISPOSAL",
+    "manualSlotIds": [
+      "object-lock-configuration"
+    ],
+    "resolved": true
+  }
+]
