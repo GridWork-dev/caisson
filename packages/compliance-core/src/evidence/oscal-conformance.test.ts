@@ -251,7 +251,8 @@ function manifestFor(
   const tail =
     controlsWithGaps === 1 ? "a remediation item" : "remediation items";
   return parseEvidencePackManifest({
-    formatVersion: "1",
+    formatVersion: "2",
+    crosswalkRollup: { cells: [] },
     tenantId: "tenant-acme-prod",
     framework: { id, title, version: "2024.1" },
     chainAnchor: { length: 128, tipHash: TIP, genesisHash: GENESIS },
