@@ -115,13 +115,25 @@ export const ROW_RECEIPT_VERSION = 1;
  * recomputes both legs from; `anchor` carries the per-length commitment (length + tipHash, never the
  * internal WORM key — L2). `checks`/`verifiedAt` are DERIVED/UNTRUSTED display fields: they record
  * what the issuing run computed and a verifier MUST ignore them, recomputing from `raw` (CR-06).
+ *
+ * `anchor.genesisHash`/`sig`/`keyId` are ADDITIVE, OPT-IN fields (T-E1 evidence-pack export, H4):
+ * present only when the caller asks `buildRowReceipt` to include anchor provenance. Reconstructing the
+ * signed core (`{length, tipHash, genesisHash?}`, matching `audit-worm`'s `encodeAnchor`) needs
+ * `genesisHash` alongside `sig`/`keyId`, which is why the three travel together. Omitted by default —
+ * every existing receipt shape (e.g. the live admin proof endpoint) is byte-identical to before.
  */
 export interface RowReceipt {
   readonly v: number;
   readonly seq: number;
   readonly hash: string;
   readonly prevHash: string | null;
-  readonly anchor: { readonly length: number; readonly tipHash: string };
+  readonly anchor: {
+    readonly length: number;
+    readonly tipHash: string;
+    readonly genesisHash?: string;
+    readonly sig?: string;
+    readonly keyId?: string;
+  };
   readonly raw: {
     readonly prevHash: string | null;
     readonly payload: JsonValue;
@@ -142,14 +154,42 @@ export function buildRowReceipt(input: {
   redacted: boolean;
   checks: VerifyLegs;
   verifiedAt: string;
+  /**
+   * Opt-in (T-E1 evidence-pack export, H4): also carry the anchor's `genesisHash`+`sig`+`keyId` so an
+   * offline verifier can reconstruct the exact signed core bytes and independently check anchor
+   * authenticity against a pinned public key — the offline instance of GATE-1's signed-anchor claim.
+   * Defaults to `false`; existing callers (the live admin proof endpoint) are unaffected.
+   */
+  includeAnchorProvenance?: boolean;
 }): RowReceipt {
-  const { entry, anchorForRow, redacted, checks, verifiedAt } = input;
+  const {
+    entry,
+    anchorForRow,
+    redacted,
+    checks,
+    verifiedAt,
+    includeAnchorProvenance,
+  } = input;
+  const anchor: {
+    length: number;
+    tipHash: string;
+    genesisHash?: string;
+    sig?: string;
+    keyId?: string;
+  } = { length: anchorForRow.length, tipHash: anchorForRow.tipHash };
+  if (includeAnchorProvenance === true) {
+    if (anchorForRow.genesisHash !== undefined) {
+      anchor.genesisHash = anchorForRow.genesisHash;
+    }
+    if (anchorForRow.sig !== undefined) anchor.sig = anchorForRow.sig;
+    if (anchorForRow.keyId !== undefined) anchor.keyId = anchorForRow.keyId;
+  }
   return {
     v: ROW_RECEIPT_VERSION,
     seq: entry.seq,
     hash: entry.hash,
     prevHash: entry.prevHash,
-    anchor: { length: anchorForRow.length, tipHash: anchorForRow.tipHash },
+    anchor,
     raw: { prevHash: entry.prevHash, payload: entry.payload },
     redacted,
     checks,

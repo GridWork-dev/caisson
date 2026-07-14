@@ -28,13 +28,18 @@
       "bun": "./src/redact.ts",
       "types": "./dist/redact.d.ts",
       "default": "./dist/redact.js"
+    },
+    "./evidence": {
+      "bun": "./src/evidence/index.ts",
+      "types": "./dist/evidence/index.d.ts",
+      "default": "./dist/evidence/index.js"
     }
   },
   "bin": {
     "caisson-gate": "./src/gate.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && mkdir -p dist/evidence && cp src/evidence/standalone-verifier.mjs dist/evidence/standalone-verifier.mjs",
     "lint": "eslint src",
     "test": "bun test ./src"
   },
