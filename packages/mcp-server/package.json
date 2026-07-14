@@ -22,8 +22,10 @@
   },
   "dependencies": {
     "@caisson/ai-config": "workspace:*",
+    "@caisson/ds-manifest": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
+    "@caisson/ui": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "catalog:"
   },
