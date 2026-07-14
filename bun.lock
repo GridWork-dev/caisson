@@ -470,6 +470,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
+        "@caisson/jobs": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "asn1js": "3.0.10",
