@@ -1400,6 +1400,7 @@
       "name": "@caisson/service-license",
       "version": "0.0.7",
       "dependencies": {
+        "@aws-sdk/client-s3": "catalog:",
         "@caisson/alerting": "workspace:*",
         "@caisson/audit-worm": "workspace:*",
         "@caisson/billing": "workspace:*",

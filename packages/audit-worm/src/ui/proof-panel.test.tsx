@@ -71,13 +71,19 @@ function receipt(
   });
 }
 
-/** Flush the pending fetch + async recompute microtasks/macrotasks so React settles. */
-async function settle(): Promise<void> {
-  for (let i = 0; i < 3; i += 1) {
+/**
+ * Flush the pending fetch + async recompute microtasks/macrotasks so React settles. With an
+ * `until` predicate, keeps flushing (bounded) until it holds — the WebCrypto verify chain
+ * (SPKI import + subtle.verify) can outlast a fixed pass count on a slow CI box.
+ */
+async function settle(until?: () => boolean): Promise<void> {
+  const maxPasses = until === undefined ? 3 : 200;
+  for (let i = 0; i < maxPasses; i += 1) {
     // eslint-disable-next-line no-await-in-loop -- deliberately sequential settle passes
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));
     });
+    if (until !== undefined && until()) return;
   }
 }
 
@@ -258,7 +264,12 @@ describe("ProofPanel (T-U1)", () => {
         />,
       );
       try {
-        await settle();
+        await settle(() => {
+          const state = h.container
+            .querySelector('[data-phase="loaded"]')
+            ?.getAttribute("data-state");
+          return state !== undefined && state !== "pending";
+        });
         const panel = h.container.querySelector('[data-phase="loaded"]');
         expect(panel?.getAttribute("data-state")).toBe("tampered");
         const seal = h.container.querySelector('[data-testid="seal-caption"]');

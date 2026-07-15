@@ -1,6 +1,6 @@
 # SPEC — External transparency anchoring for the audit-worm chain
 
-- **Status:** LOCKED (amended 2026-07-13 post-audit re-lock; forks locked → ADR-0332) — plan-ready, EXCEPT the Rekor leg which is gated on a protocol spike before its PLAN
+- **Status:** SHIPPED — v1 only (PR #239, 2026-07-15; forks locked → ADR-0332, PLAN locks ADR-0346): TSA leg + durable outbox + chain-level `verifyExternal`. The v1.1 Rekor leg is still NOT built — its gating protocol spike is now COMPLETE (`SPIKE-rekor-v2-protocol.md:3`, 'GO to decompose v1.1') but no PLAN has decomposed the Rekor work yet.
 - **Tags:** `security` · `external-system` · product (Compliance bundle / premium provenance)
 - **Sibling spec:** SPEC-per-row-verification-ui.md — that spec renders verification; this one supplies the external trust root it chains up to.
 - **Prior art in-repo:** ADR-0056 already reserves "DSSE/in-toto + Sigstore/Rekor transparency" as the **premium provenance tier — un-wired seam**, and `packages/signing-primitive/src/sign.ts` already ships the RFC-3161 `TimestampAuthority` port (stub-doubled, live transport un-wired). This spec **wires that reserved seam** and extends it from evidence-pack signatures to the chain itself. External prior art: Sectum (Rekor-anchored evidence packs, pre-alpha).

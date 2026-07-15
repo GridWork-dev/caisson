@@ -1,6 +1,6 @@
 # SPEC — Agent-ready design-system surface for `@caisson/ui`
 
-- **Date:** 2026-07-13 · **Status:** LOCKED (amended 2026-07-13 post-audit re-lock; forks locked → ADR-0330) — plan-ready
+- **Date:** 2026-07-13 · **Status:** SHIPPED (PR #237, 2026-07-15; forks locked → ADR-0330, PLAN locks ADR-0345) — all five re-cut v1 slices (manifest, CLI `describe --json`, static doctor, authed MCP tools, stdio discovery MCP)
 - **Tags:** `product` `frontend` `ai` `security` (eval act fires on `ai`; security audit fires on `security` — this spec now depends on an MCP transport/auth boundary decision and an entitlement-gated doctor surface, CR-09)
 - **Provenance:** Astryx pattern (github.com/facebook/astryx — "fully customizable and agent ready", CLI as _the primary interface for humans and agents_ + MCP server, beta, 7k★); Storybook 10.3+ `componentsManifest` (default-on since storybookjs/mcp #208, 2026-04); caisson agent-visibility thesis (ADR-0254 lineage, llms.txt shipped). Amended post-audit against the 2026-07-13 adversarial review round (below).
 

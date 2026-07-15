@@ -68,3 +68,9 @@ outputs/w3-proof/
 .security-out/
 apps/admin/.harness/
 tools/security/openapi/
+
+# graphify knowledge-graph output (built locally, 28M — never committed)
+graphify-out/
+
+# apps/admin LocalArtifactStore test artifact (created transiently by a running test)
+apps/admin/.caisson-admin-worm/
