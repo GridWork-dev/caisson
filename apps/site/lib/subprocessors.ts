@@ -73,6 +73,14 @@ export const SUBPROCESSORS: readonly Subprocessor[] = [
     region: "United States",
   },
   {
+    processor: "Plausible",
+    purpose: "Cookieless site analytics for the marketing pages.",
+    dataCategories: [
+      "Aggregated page views (no cookies, no persistent identifier)",
+    ],
+    region: "European Union",
+  },
+  {
     processor: "Grafana Cloud",
     purpose: "Observability: metrics, logs, and traces from the Caisson fleet.",
     dataCategories: ["Operational telemetry"],
