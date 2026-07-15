@@ -48,6 +48,7 @@ function baseInput(): GenerateEvidencePackInput {
       tipHash: "a".repeat(64),
       genesisHash: "b".repeat(64),
     },
+    crosswalkRollup: { cells: [] },
     controls: [
       {
         controlId: "AUDIT.IMMUTABLE-LOG",
