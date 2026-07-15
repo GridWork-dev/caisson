@@ -9,6 +9,8 @@ import {
   extractTableRows,
   latestAtomTag,
   newItems,
+  snapshotOf,
+  textDelta,
 } from "../detect.ts";
 import { dedupKey } from "../finding.ts";
 import { fetchText } from "../http.ts";
@@ -59,9 +61,21 @@ function stateKey(source: Source): string {
   return `compliance:${source.key}:${source.mode === "atom" ? "version" : "hash"}`;
 }
 
+/** The snapshot key paired with a hash-mode source's hash key — holds the bounded normalized text
+ *  the next change is diffed against (CAISSON-101). Atom sources carry no snapshot. */
+function snapshotKey(source: Source): string {
+  return `compliance:${source.key}:snapshot`;
+}
+
 /** All the watch_state keys this watcher reads/writes — the store fetches exactly these. */
 export function complianceStateKeys(): string[] {
-  return [...SOURCES.map(stateKey), HIPAA_STATE_KEY];
+  const keys: string[] = [];
+  for (const source of SOURCES) {
+    keys.push(stateKey(source));
+    if (source.mode === "hash") keys.push(snapshotKey(source));
+  }
+  keys.push(HIPAA_STATE_KEY);
+  return keys;
 }
 
 export interface FetchedSource {
@@ -87,6 +101,19 @@ export function detectComplianceChanges(
     if (current === null) continue;
     const before = prev[key];
     if (before !== undefined && before !== current) {
+      const payload: Record<string, unknown> = {
+        url: source.url,
+        previous: before,
+        current,
+      };
+      // Hash-mode notices carry a real before/after content delta so the composed brief can state
+      // WHAT changed instead of "content-level delta unavailable" (CAISSON-101).
+      if (source.mode === "hash") {
+        const delta = textDelta(text, prev[snapshotKey(source)]);
+        payload.currentExcerpt = delta.currentExcerpt;
+        if (delta.previousExcerpt !== undefined)
+          payload.previousExcerpt = delta.previousExcerpt;
+      }
       findings.push({
         source: "compliance",
         kind: source.mode === "atom" ? "framework_release" : "framework_change",
@@ -100,10 +127,14 @@ export function detectComplianceChanges(
             ? `${source.label} moved from ${before} to ${current}. Re-check the compliance mappings that cite it.`
             : `${source.label} content changed since the last check. Review the page for updates that affect the compliance mappings.`,
         dedupKey: dedupKey("compliance", source.key, current),
-        payload: { url: source.url, previous: before, current },
+        payload,
       });
     }
     nextState[key] = current;
+    // Persist the snapshot on every observation (baseline, no-change, and change) so the next change
+    // has a prior to diff against. Written after reading prev above, so a change diffs the OLD text.
+    if (source.mode === "hash")
+      nextState[snapshotKey(source)] = snapshotOf(text);
   }
   return { findings, nextState };
 }

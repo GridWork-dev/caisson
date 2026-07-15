@@ -21,6 +21,23 @@ describe("detectSoc2Change", () => {
     expect(findings[0]?.source).toBe("soc2");
   });
 
+  test("a first observation stores a snapshot alongside the hash", () => {
+    const { nextState } = detectSoc2Change("SOC 2 resources page v1", {});
+    expect(nextState["soc2:aicpa:snapshot"]).toBe("SOC 2 resources page v1");
+  });
+
+  test("a change with a stored snapshot carries a before/after content delta", () => {
+    const head = "SOC 2 Type II report guidance updated ";
+    const { findings, nextState } = detectSoc2Change(`${head}March 2026`, {
+      "soc2:aicpa:hash": "deadbeef",
+      "soc2:aicpa:snapshot": `${head}March 2025`,
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.payload["previousExcerpt"]).toContain("March 2025");
+    expect(findings[0]?.payload["currentExcerpt"]).toContain("March 2026");
+    expect(nextState["soc2:aicpa:snapshot"]).toBe(`${head}March 2026`);
+  });
+
   test("an unchanged hash emits nothing", () => {
     const baseline = detectSoc2Change("stable content", {}).nextState;
     const { findings } = detectSoc2Change("stable content", baseline);

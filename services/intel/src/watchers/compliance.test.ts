@@ -69,6 +69,40 @@ describe("detectComplianceChanges", () => {
     expect(findings[0]?.kind).toBe("framework_change");
   });
 
+  test("a first observation stores a normalized snapshot alongside the hash", () => {
+    const { findings, nextState } = detectComplianceChanges(
+      [
+        {
+          source: HASH_SOURCE,
+          text: "the EU AI Act applies from 2 August 2025",
+        },
+      ],
+      {},
+    );
+    expect(findings).toEqual([]);
+    expect(nextState["compliance:eu-ai-act-eurlex:snapshot"]).toBe(
+      "the EU AI Act applies from 2 August 2025",
+    );
+  });
+
+  test("a hash change with a stored snapshot carries a before/after content delta in the payload", () => {
+    const head = "The EU AI Act applies from ";
+    const { findings, nextState } = detectComplianceChanges(
+      [{ source: HASH_SOURCE, text: `${head}2 August 2026` }],
+      {
+        "compliance:eu-ai-act-eurlex:hash": "deadbeef",
+        "compliance:eu-ai-act-eurlex:snapshot": `${head}2 August 2025`,
+      },
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.payload["previousExcerpt"]).toContain("2 August 2025");
+    expect(findings[0]?.payload["currentExcerpt"]).toContain("2 August 2026");
+    // The new snapshot is stored so the NEXT change diffs against this text.
+    expect(nextState["compliance:eu-ai-act-eurlex:snapshot"]).toBe(
+      `${head}2 August 2026`,
+    );
+  });
+
   test("an empty body from a hash-mode source is no signal — it neither emits nor overwrites a stored baseline", () => {
     const { findings, nextState } = detectComplianceChanges(
       [{ source: HASH_SOURCE, text: "   " }],

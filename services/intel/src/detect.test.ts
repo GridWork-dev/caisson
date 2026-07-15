@@ -4,6 +4,8 @@ import {
   extractTableRows,
   latestAtomTag,
   newItems,
+  snapshotOf,
+  textDelta,
 } from "./detect.ts";
 
 describe("contentHash", () => {
@@ -67,5 +69,52 @@ describe("newItems", () => {
 
   test("empty previous means everything is new", () => {
     expect(newItems([], ["a"])).toEqual(["a"]);
+  });
+});
+
+describe("snapshotOf", () => {
+  test("normalizes whitespace and hard-caps length", () => {
+    expect(snapshotOf("a   b\n\tc")).toBe("a b c");
+    expect(snapshotOf("x".repeat(20_000)).length).toBe(16_000);
+  });
+});
+
+describe("textDelta", () => {
+  test("with no prior snapshot, emits a current-only excerpt (no before)", () => {
+    const delta = textDelta("the page now reads this", undefined);
+    expect(delta.currentExcerpt).toBe("the page now reads this");
+    expect(delta.previousExcerpt).toBeUndefined();
+  });
+
+  test("extracts the changed region with context, not the whole page", () => {
+    const head = "Article 1. This Regulation applies from ";
+    const tail = " across all member states of the Union.";
+    const delta = textDelta(
+      `${head}2 August 2026${tail}`,
+      `${head}2 August 2025${tail}`,
+    );
+    // Both excerpts are present and centered on the divergence...
+    expect(delta.previousExcerpt).toContain("2 August 2025");
+    expect(delta.currentExcerpt).toContain("2 August 2026");
+    // ...and the current excerpt does not still claim the old value.
+    expect(delta.currentExcerpt).not.toContain("2 August 2025");
+  });
+
+  test("strips embedded URLs so a finding never carries an unfetched host (grounding)", () => {
+    const delta = textDelta(
+      "see the guidance at https://other.example.com/x now",
+      "see the guidance at https://other.example.com/x before",
+    );
+    expect(delta.currentExcerpt).not.toContain("http");
+    expect(delta.currentExcerpt).toContain("[link]");
+  });
+
+  test("a change beyond the captured window degrades to a current-only excerpt", () => {
+    const prefix = "z".repeat(16_050); // exceeds SNAPSHOT_MAX_CHARS
+    const delta = textDelta(`${prefix}NEW`, snapshotOf(`${prefix}OLD`));
+    // The divergence is past the 16k cap, so the two capped snapshots are identical — no diffable
+    // region; fall back to a current-only excerpt (the composer keeps its honest hash-only notice).
+    expect(delta.previousExcerpt).toBeUndefined();
+    expect(delta.currentExcerpt.length).toBeGreaterThan(0);
   });
 });
