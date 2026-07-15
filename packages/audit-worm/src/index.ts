@@ -82,7 +82,7 @@ export {
   verifyAnchorSignature,
 } from "./chain-store.ts";
 
-// Dedicated anchor-signing identity (T-W2 / GATE-1a) — signs the anchor core at mint.
+// Dedicated anchor-signing identity — signs the anchor core at mint.
 export {
   type AnchorSigner,
   ANCHOR_SIGNING_KEY_ENV,

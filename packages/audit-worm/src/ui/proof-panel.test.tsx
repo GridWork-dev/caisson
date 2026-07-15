@@ -23,7 +23,7 @@ const anchor2 = anchorChain([e0, e1]);
 const PASS: VerifyLegs = { linkRecompute: "pass", anchorEquality: "pass" };
 
 /** A receipt whose anchor is signed with an ephemeral Ed25519 key + its matching pinned public key —
- *  the client's WebCrypto signature leg verifies the exact core the server signed (GATE-1 / ADR-0344). */
+ *  the client's WebCrypto signature leg verifies the exact core the server signed. */
 function signedReceiptAndKey(): {
   receipt: RowReceipt;
   pinnedKey: PinnedAnchorKey;
@@ -189,7 +189,7 @@ describe("ProofPanel (T-U1)", () => {
     }
   });
 
-  describe("T-F1 seal copy (GATE-1 signed anchors, ADR-0344)", () => {
+  describe("T-F1 seal copy (signed anchors)", () => {
     test("a `verified` row with a checked signature shows the signature-checked seal", async () => {
       const { receipt: signed, pinnedKey } = signedReceiptAndKey();
       const fetchProof = async (): Promise<ProofBundleResponse> => ({

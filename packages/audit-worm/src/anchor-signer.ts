@@ -1,9 +1,9 @@
-// src/anchor-signer.ts — the DEDICATED anchor-signing identity for the WORM audit chain (T-W2,
-// GATE-1 / GATE-1a). Each per-length anchor's CANONICAL CORE bytes are signed at mint so a client or
+// src/anchor-signer.ts — the DEDICATED anchor-signing identity for the WORM audit chain. Each
+// per-length anchor's CANONICAL CORE bytes are signed at mint so a client or
 // an offline pack verifier can check tamper-evidence against a pinned public key — making the trust
 // root independent of the row-serving API (SECURITY-PREPLAN H2/H4).
 //
-// Domain-separated from the license issuer key ON PURPOSE (GATE-1a): an anchor-key compromise must not
+// Domain-separated from the license issuer key ON PURPOSE: an anchor-key compromise must not
 // forge licenses, and rotating the license key must not invalidate anchor-verification history. This
 // mirrors @caisson/license-issue's Ed25519Signer discipline — the key is held as an opaque KeyObject
 // (never enumerated, logged, or JSON-serialized) and loaded from a DEDICATED env var whose VALUE is

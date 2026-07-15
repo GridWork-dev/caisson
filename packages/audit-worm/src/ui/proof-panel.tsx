@@ -3,7 +3,7 @@
 // ProofPanel (T-U1) — the per-row proof detail an auditor expands: the three assertions (link
 // recompute · per-length anchor equality · chain-vs-current-anchor) each pass/fail, the anchor
 // metadata, a copyable JSON receipt, and — for a redacted row — the masked payload via ui-pro's
-// PayloadViewer (GATE-4: introduces the audit-worm/ui -> ui-pro dependency; both commercial).
+// PayloadViewer (this introduces the audit-worm/ui -> ui-pro dependency; both commercial).
 //
 // Fork f: the panel FETCHES the row's proof on open (the caller injects `fetchProof`, which calls the
 // admin proof endpoint) — one WORM GET per inspected row, zero cost for passive viewing. The chip and
@@ -38,7 +38,7 @@ export interface ProofPanelProps {
   /** Optional chain-level verdict for the third assertion (chain vs current anchor). */
   chainStatus?: ChainVerification;
   /**
-   * The pinned anchor-signing public key (GATE-1 / ADR-0344), injected OUT-OF-BAND from app config —
+   * The pinned anchor-signing public key, injected OUT-OF-BAND from app config —
    * NEVER from the proof response. Only when it is supplied (and matches the anchor's `keyId`) does the
    * client run the signature leg and earn the "(signature-checked)" seal; absent → the honest base seal.
    */
@@ -74,7 +74,7 @@ const MONO: CSSProperties = {
 const MUTED: CSSProperties = { color: "var(--cs-fg-muted)" };
 
 /**
- * The seal caption — the SPEC's exact copy-law strings (T-F1, GATE-1/ADR-0344: signed anchors), so the
+ * The seal caption — the SPEC's exact copy-law strings for signed anchors, so the
  * proof panel states in words what the chip encodes. Only `verified` and the redacted state get a seal
  * sentence; every other state's chip label already says what it is without a further claim to qualify.
  *
@@ -205,6 +205,7 @@ export function ProofPanel({
       });
   };
 
+  // nosemgrep: no-insecure-token-compare -- verify.legs.signature is a pass/fail/na verdict, not a secret; the real Ed25519 check is crypto.subtle.verify in the kernel's verifyAnchorSignature. No timing side channel on a public verdict enum.
   const seal = sealCaption(verify.state, verify.legs?.signature === "pass");
 
   return (

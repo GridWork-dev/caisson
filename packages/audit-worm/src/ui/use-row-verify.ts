@@ -27,7 +27,7 @@ export interface RowVerifyResult {
  * Re-run the per-row legs from a receipt's RAW material, client-side. Returns `pending` until the
  * async WebCrypto recompute resolves. `null` receipt (not yet fetched) stays `pending`.
  *
- * `pinnedKey` (GATE-1 / ADR-0344) is the anchor-signing public key, supplied OUT-OF-BAND (the app's
+ * `pinnedKey` is the anchor-signing public key, supplied OUT-OF-BAND (the app's
  * injected config — never the proof response). When present and matching the anchor's `keyId`, the
  * signature leg runs; the "(signature-checked)" seal is earned ONLY when that leg passes. Absent → the
  * signature leg is `na` and the panel shows the honest base seal, never the strong one.

@@ -56,7 +56,7 @@ export interface ChainViewerProps {
   /** Fetch a single row's proof bundle (calls the proof endpoint). When given, rows expand to a
    *  ProofPanel that fetches on open (fork f); absent -> rows are not expandable. */
   fetchProof?: (seq: number) => Promise<ProofBundleResponse>;
-  /** The pinned anchor-signing public key (GATE-1), threaded to the expanded ProofPanel so its
+  /** The pinned anchor-signing public key, threaded to the expanded ProofPanel so its
    *  signature leg can run against a key delivered OUT-OF-BAND (app config), never the proof response. */
   pinnedAnchorKey?: PinnedAnchorKey;
   /** Render the table's loading skeleton in place of rows. */

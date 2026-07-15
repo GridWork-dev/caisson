@@ -344,7 +344,7 @@ describe("getRowProof — single-row proof read (T-W1, fork f)", () => {
   });
 });
 
-describe("signed anchors (T-W2, GATE-1)", () => {
+describe("signed anchors (T-W2)", () => {
   test("a signed anchor round-trips: sign at mint, read back, crypto.verify passes", async () => {
     const acct = randomUUID();
     const r = await signedChain.append(acct, { event: "signed", v: 1 });

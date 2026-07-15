@@ -66,7 +66,7 @@ const ANCHOR_DIR = "anchors";
 const LENGTH_PAD = 12;
 
 /** The trusted anchor body, validated on read back from the (possibly remote) WORM store. `sig`+`keyId`
- *  are ADDITIVE optional fields (T-W2 / GATE-1) — a legacy unsigned anchor omits them and stays valid. */
+ *  are ADDITIVE optional fields — a legacy unsigned anchor omits them and stays valid. */
 const anchorSchema = strictObject({
   length: z.number().int().nonnegative(),
   tipHash: z.string().min(1),
@@ -206,7 +206,7 @@ export interface AuditChainStoreOptions {
   /** WORM retention term (years) for the anchor object. Default: the `retain.ts` legal floor. */
   readonly retentionYears?: number;
   /**
-   * Optional anchor-signing identity (T-W2 / GATE-1). When present, EVERY minted anchor is signed at
+   * Optional anchor-signing identity. When present, EVERY minted anchor is signed at
    * mint — `sig`+`keyId` are stored additively alongside the canonical core, so the client / offline
    * pack can check tamper-evidence against a pinned public key. Absent → unsigned anchors (the legacy
    * form, still structurally valid). Production wiring injects `Ed25519AnchorSigner.fromEnv()` at the
@@ -319,7 +319,7 @@ export class AuditChainStore {
       const entries = await loadEntries(tx, accountId);
       const anchor = anchorChain(entries);
 
-      // GATE-1 (T-W2): sign the anchor's CANONICAL CORE bytes at mint when a signer is configured.
+      // Sign the anchor's CANONICAL CORE bytes at mint when a signer is configured.
       // `sig`+`keyId` are stored ALONGSIDE the core (additive optional fields), so legacy unsigned
       // anchors stay structurally valid and the signed core stays byte-identical to the unsigned form
       // — this is NOT a chain-format break and existing anchors need no migration. The signature is

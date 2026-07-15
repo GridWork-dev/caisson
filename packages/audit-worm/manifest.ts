@@ -19,6 +19,7 @@ export default defineModule({
     "@caisson/kernel",
     "@caisson/tenancy-rls",
     "@caisson/ui",
+    "@caisson/ui-pro",
   ],
   golden: "src/__golden__",
   description:
