@@ -205,7 +205,8 @@ anywhere is stale:
 zizmor class), `evidence-pack`, `knip`, `token-drift`, `eval`, `native-ext`, and the 4-check
 required set (`check` · `standards-gate` · `registry-index` · `oscal-conformance`). Runner:
 CI hot path migrated to Blacksmith VM-per-job runners (ADR-0326); `caisson-amd64` scale set
-retiring. Credential jobs (`publish`/`deploy-railway`/`mirror-sync`/`release-train`) stay
+RETIRED (removed from the gw-ms-a2 runscaler config 2026-07-13, box-verified 2026-07-15 —
+only gridwork-core/wardfile scale sets remain). Credential jobs (`publish`/`deploy-railway`/`mirror-sync`/`release-train`) stay
 `ubuntu-latest`; mac leg self-hosted `gw-macos-arm64`. Arnica installed 2026-07-12 (free tier,
 posture scanning only) alongside the playbook's Layer 1-4 local stack
 (`docs/security/tooling-playbook.md`).
