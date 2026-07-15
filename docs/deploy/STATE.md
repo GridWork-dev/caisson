@@ -8,6 +8,28 @@ grounds:
 
 # Deploy log
 
+## 2026-07-15 — reconcile-wave fleet redeploy: site · admin · license · docs on clean main (`ca44db58`)
+
+Operator-approved at the 07-15 reconcile picker. WHY: put the merged six-PR wave (#235–#240,
+kickoffs S+T + the four SPEC exec lanes) plus the #241 close-out (anchoring-scheduler wiring,
+release-age fix, state sweep) onto the fleet. Pre-launch gate stays ON (Paddle sandbox).
+Scope by diff vs pre-wave main: site (49 files, motion v2), admin (6), license (6, scheduler
+wired INERT), docs (kernel dep changed). Skipped: registry Worker (test-only change),
+support-bot + intel (zero changes).
+
+Evidence (`railway up -s <svc> --ci` from the main checkout, sequential):
+
+- `caisson-site` → SUCCESS 12:09Z · probe `https://caisson.sh` 200
+- `caisson-admin` → SUCCESS 12:11Z · probe `https://admin.caisson.sh` 307 (OAuth gate, expected)
+- `caisson-docs` → SUCCESS 12:14Z · probe `https://docs-api.caisson.sh/health` 200
+- `caisson-license` → first attempt FAILED at boot (`EACCES reading /app/packages/auth/src/jwt.ts`):
+  the file was mode 600 locally (git tracks only the executable bit, so invisible to status) and
+  `railway up` ships local perms; license runs from source so the runtime user hit it — site/admin
+  build as root at build time and survived. Fixed by chmod'ing 73 non-world-readable local files
+  (git status unchanged), redeploy `a3c19b45` → SUCCESS 12:18Z · probe
+  `https://license.caisson.sh/health` 200 · boot log clean, issuer serving, no scheduler line
+  (`ANCHOR_CHECKPOINT_SCHEDULE` unset → inert by design, arming is a separate operator act).
+
 ## 2026-07-12 — FIRST RELEASE-TRAIN RIDE: v2026.07.12 (ADR-0325/0328 D2) — R2 catalog upload + mirror sync
 
 Operator-approved (session 4 kickoff step 4b). WHY: the version PR (#222, 153 changesets →
