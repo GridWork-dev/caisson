@@ -93,6 +93,20 @@ function json(body: unknown, status: number, filtering: boolean): Response {
 }
 
 /**
+ * Unauthenticated liveness response for the public uptime monitor (ADR-0348). `version` is the
+ * registry schema version the handler already validated at construction — the cheapest version
+ * source in scope, no R2/KV read. Reuses the standard security headers but forces `cache-control:
+ * no-store` (and carries no `Vary`) so a monitor never reads a cached body and the route can never
+ * leak a caller-filtered response.
+ */
+function health(version: number): Response {
+  return new Response(JSON.stringify({ status: "ok", version }), {
+    status: 200,
+    headers: { ...jsonHeaders(false), "cache-control": "no-store" },
+  });
+}
+
+/**
  * The gate result: the caller's entitled module ids + a per-module updates-window lookup
  * (ADR-0255). `windowFor(moduleId)` returns `null` for unbounded (the caller decides applicability —
  * base modules are never window-filtered regardless of what this returns).
@@ -233,6 +247,10 @@ export function createIndexHandler(
       return json({ error: "method_not_allowed" }, 405, filtering);
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // Liveness probe — served BEFORE the entitlement gate so it never runs the resolver, scans the
+    // index, or reads R2. A fixed 200 for the public uptime monitor (ADR-0348).
+    if (path === "/health") return health(validated.schemaVersion);
 
     // Entitlement gate (ADR-0008/0071): compute the caller's entitled module set + per-module
     // updates window, or `null` when no resolver is configured (serve everything). The resolver runs
