@@ -20,6 +20,7 @@
     "start": "bun run src/deploy.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
     "@caisson/alerting": "workspace:*",
     "@caisson/audit-worm": "workspace:*",
     "@caisson/billing": "workspace:*",
