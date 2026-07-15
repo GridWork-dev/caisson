@@ -54,4 +54,52 @@ describe("AuditTimeline", () => {
     expect(html).not.toContain("cs-timeline__badge");
     expect(html).toContain("Created");
   });
+
+  test("the blind path relabels its badge 'Link only' — never a bare 'Verified' (honesty, T-U4)", () => {
+    const html = renderToStaticMarkup(<AuditTimeline entries={entries} />);
+    expect(html).toContain("Link only");
+    expect(html).not.toContain(">Verified<");
+  });
+
+  test("anchor-derived statuses override the blind check: a link-fine row can read tampered", () => {
+    // The blind check would call entry 1 'verified' (its prevHash matches). The anchor-derived status
+    // says tampered — that must win (closing the anchor-blindness gap).
+    const html = renderToStaticMarkup(
+      <AuditTimeline
+        entries={entries}
+        statuses={["genesis", "tampered", "unverifiable"]}
+      />,
+    );
+    expect(html).toContain('data-status="tampered"');
+    expect(html).toContain('data-status="unverifiable"');
+    expect(html).toContain("Tampered");
+    expect(html).not.toContain("Link only");
+  });
+
+  describe("T-F1 seal copy (signed anchors)", () => {
+    test("an anchor-derived `verified` row reads the sanctioned base seal, and NOT signature-checked (this component runs no signature leg)", () => {
+      const html = renderToStaticMarkup(
+        <AuditTimeline
+          entries={entries}
+          statuses={["genesis", "verified", "unverifiable"]}
+        />,
+      );
+      expect(html).toContain('aria-label="Verified against write-once anchor"');
+      // This generic component badges from a caller-supplied RowState and performs no signature check,
+      // so it must never claim "(signature-checked)" — that wording is earned only where a signature
+      // leg actually verified an anchor against a pinned key (ProofPanel / evidence-pack README).
+      expect(html).not.toContain("signature-checked");
+    });
+
+    test("never claims impossible-to-tamper or an unqualified independent-verification claim", () => {
+      const html = renderToStaticMarkup(
+        <AuditTimeline
+          entries={entries}
+          statuses={["genesis", "verified", "tampered"]}
+        />,
+      );
+      expect(html).not.toMatch(/impossible to tamper/i);
+      expect(html).not.toMatch(/\bindependently verified\b/i);
+    });
+  });
 });

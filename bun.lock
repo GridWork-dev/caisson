@@ -37,6 +37,7 @@
         "@caisson/org-controls": "workspace:*",
         "@caisson/platform-migrations": "workspace:*",
         "@caisson/platform-reads": "workspace:*",
+        "@caisson/rate-limit": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "@caisson/service-license": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -482,6 +483,7 @@
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@caisson/ui": "workspace:*",
+        "@caisson/ui-pro": "workspace:*",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "eslint": "catalog:",
@@ -491,11 +493,13 @@
       },
       "peerDependencies": {
         "@caisson/ui": "workspace:^",
+        "@caisson/ui-pro": "workspace:^",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
       },
       "optionalPeers": [
         "@caisson/ui",
+        "@caisson/ui-pro",
         "react",
         "react-dom",
       ],
@@ -1281,6 +1285,7 @@
       "name": "@caisson/ui-pro",
       "version": "0.2.0",
       "dependencies": {
+        "@caisson/kernel": "workspace:*",
         "@caisson/ui": "workspace:*",
       },
       "devDependencies": {

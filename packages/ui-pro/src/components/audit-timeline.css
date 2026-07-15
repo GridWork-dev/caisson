@@ -86,6 +86,22 @@
   background: var(--cs-surface-1);
 }
 
+/* Anchor-aware six-state (T-U4): tampered mirrors broken (danger); the muted states carry their
+ * meaning in the label + glyph, never colour alone. */
+.cs-timeline__item[data-status="tampered"] .cs-timeline__dot {
+  background: var(--cs-danger);
+}
+.cs-timeline__badge[data-status="tampered"] {
+  color: var(--cs-danger);
+  background: var(--cs-surface-1);
+}
+.cs-timeline__badge[data-status="unverifiable"],
+.cs-timeline__badge[data-status="anchor-confirmed-original-not-disclosed"],
+.cs-timeline__badge[data-status="pending"] {
+  color: var(--cs-fg-muted);
+  background: var(--cs-surface-1);
+}
+
 .cs-timeline__meta {
   display: flex;
   align-items: center;
