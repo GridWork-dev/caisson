@@ -19,4 +19,8 @@ minimumReleaseAge = 604800
 # Deliberate adoptions inside the window are exempted HERE, dated, and removed once aged:
 # - ai / @ai-sdk/*: AI SDK v7 adopted by PR #234 (published 2026-07-10) — remove after 2026-07-17.
 # - vite: vite@8.1.4 pulled by @storybook/builder-vite, adopted by Kickoff-S (published 2026-07-09) — remove after 2026-07-16.
-minimumReleaseAgeExcludes = ["ai", "@ai-sdk/amazon-bedrock", "@ai-sdk/anthropic", "@ai-sdk/azure", "@ai-sdk/deepseek", "@ai-sdk/gateway", "@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/openai-compatible", "@ai-sdk/otel", "@ai-sdk/provider", "@ai-sdk/provider-utils", "@ai-sdk/react", "@ai-sdk/test-server", "vite"]
+# - storybook 10.5.0 set + @storybook/addon-mcp 0.7.0 + eslint-plugin-storybook: the Kickoff-S
+#   Storybook trial itself (published 2026-07-10) — remove after 2026-07-17. The trial's PR CI
+#   passed on a warm runner cache; a COLD-cache frozen install still age-filters manifest fetches,
+#   which is what reddened main post-merge. Exclusions must cover the packages, not just vite.
+minimumReleaseAgeExcludes = ["ai", "@ai-sdk/amazon-bedrock", "@ai-sdk/anthropic", "@ai-sdk/azure", "@ai-sdk/deepseek", "@ai-sdk/gateway", "@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/openai-compatible", "@ai-sdk/otel", "@ai-sdk/provider", "@ai-sdk/provider-utils", "@ai-sdk/react", "@ai-sdk/test-server", "vite", "storybook", "@storybook/addon-a11y", "@storybook/addon-docs", "@storybook/addon-mcp", "@storybook/addon-vitest", "@storybook/builder-vite", "@storybook/react-vite", "eslint-plugin-storybook"]

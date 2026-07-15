@@ -397,6 +397,31 @@ export class AuditChainStore {
   }
 
   /**
+   * Read the tenant's CURRENT WORM anchor as `{ length, anchorBytes }`, or `null` when the tenant
+   * has no chain yet. The external-anchoring checkpoint injects this as its `CurrentAnchorReader`
+   * port (which anchor-checkpoint.ts deferred to "once the chain-store accessor lands"). `anchorBytes`
+   * is the canonical CORE — `encodeAnchor`, with `sig`/`keyId` EXCLUDED — the exact bytes the anchor
+   * signature and the external message imprint are taken over, byte-identical to what `verify` reads
+   * back and checks. Tenant-scoped through `withTenant`; reads the trusted write-once WORM object
+   * (never a recompute). A missing anchor for a NON-empty chain throws `NotFoundError` — the same
+   * fail-closed direction `verify()` takes, because that is corruption, not "no chain".
+   */
+  async readCurrentAnchor(accountId: string): Promise<{
+    readonly length: number;
+    readonly anchorBytes: Uint8Array;
+  } | null> {
+    return withTenant(this.db, accountId, async (tx) => {
+      const entries = await loadEntries(tx, accountId);
+      if (entries.length === 0) return null;
+      const anchorObj = await this.store.get(
+        anchorKey(accountId, entries.length),
+      );
+      const anchor = decodeAnchor(anchorObj.body);
+      return { length: entries.length, anchorBytes: encodeAnchor(anchor) };
+    });
+  }
+
+  /**
    * Read a single row's proof material: the entry at `seq`, its per-length WORM anchor (`anchor(seq+1)`
    * — the commitment minted when this row was the tip, so `anchor(seq+1).tipHash === row.hash` is a
    * genuine per-row check), and the chain length. Targeted single-row + single-anchor read (fork f —

@@ -10,6 +10,14 @@
 // transaction plumbing, never on tenant isolation.
 // ponytail: two consumers, one Next-specific — lift into @caisson/tenancy-rls only if a THIRD
 // headless service needs the same Pool→Transactor adapter.
+import { S3Client } from "@aws-sdk/client-s3";
+import {
+  AnchorOutbox,
+  AuditChainStore,
+  S3ArtifactStore,
+  TsaAnchorLog,
+  type AnchorCheckpointDeps,
+} from "@caisson/audit-worm";
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { Pool, type PoolClient } from "pg";
 import {
@@ -17,6 +25,10 @@ import {
   startAbandonedCheckoutScheduler,
 } from "./abandoned-checkout-scheduler.ts";
 import { createJobAlertingDeps, loadOpsAlertChannels } from "./alerting.ts";
+import {
+  loadAnchorCheckpointScheduleConfig,
+  startAnchorCheckpointScheduler,
+} from "./anchoring-scheduler.ts";
 import {
   loadCreditExpiryScheduleConfig,
   startCreditExpiryScheduler,
@@ -111,4 +123,46 @@ if (import.meta.main) {
     posthog: loadPostHogCaptureConfig(),
     alerting: createJobAlertingDeps(loadOpsAlertChannels()),
   });
+
+  // External-anchoring checkpoint sweep (services/license host): inert until
+  // ANCHOR_CHECKPOINT_SCHEDULE is armed. Unset → construct NOTHING (no S3 client, no TSA client) and
+  // nothing runs, byte-for-byte today's behavior — so we gate the whole construction on the schedule
+  // rather than eagerly build the (env-requiring, throwing) deps just to pass `schedule: null`.
+  // Armed but missing the WORM bucket or TSA url follows the scheduler's fail-safe-absent posture:
+  // one stderr line, skip the sweep, NEVER crash the issuer (commerce/webhook outranks the
+  // checkpoint). Fire-and-forget, same posture as the schedulers above.
+  const anchorSchedule = loadAnchorCheckpointScheduleConfig();
+  if (anchorSchedule !== null) {
+    const wormBucket = process.env.CAISSON_WORM_BUCKET?.trim() ?? "";
+    const tsaUrl = process.env.CAISSON_TSA_URL?.trim() ?? "";
+    if (wormBucket === "" || tsaUrl === "") {
+      process.stderr.write(
+        "[service-license] ANCHOR_CHECKPOINT_SCHEDULE is set but CAISSON_WORM_BUCKET and/or CAISSON_TSA_URL is missing — skipping the anchor-checkpoint sweep (commerce outranks it).\n",
+      );
+    } else {
+      // ONE S3 WORM store, shared by the reader (reads each tenant's current anchor) and the handler
+      // (writes the receipt): both MUST target the bucket the audit chain anchored into. Region via
+      // the standard AWS env chain, mirroring apps/admin's wormStore().
+      const store = new S3ArtifactStore({
+        client: new S3Client({ region: process.env.AWS_REGION ?? "us-east-1" }),
+        bucket: wormBucket,
+      });
+      const checkpoint: AnchorCheckpointDeps = {
+        store,
+        outbox: new AnchorOutbox(db),
+        // TsaAnchorLog owns its own fetchWithTimeout egress (20s default) — never double-wrapped.
+        log: new TsaAnchorLog({ url: tsaUrl }),
+        // AuditChainStore satisfies CurrentAnchorReader via readCurrentAnchor; SAME store as above.
+        reader: new AuditChainStore({ db, store }),
+        target: { kind: "tsa", url: tsaUrl, grade: "trusted-timestamped" },
+      };
+      void startAnchorCheckpointScheduler({
+        db,
+        connectionString: url,
+        schedule: anchorSchedule,
+        checkpoint,
+        alerting: createJobAlertingDeps(loadOpsAlertChannels()),
+      });
+    }
+  }
 }

@@ -344,6 +344,39 @@ describe("getRowProof — single-row proof read (T-W1, fork f)", () => {
   });
 });
 
+describe("readCurrentAnchor — CurrentAnchorReader port (external-anchoring checkpoint)", () => {
+  test("returns the current anchor's core bytes + length, byte-identical to the stored WORM anchor", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }, { c: 3 }]);
+    const current = await chain.readCurrentAnchor(acct);
+    if (current === null) throw new Error("unexpected null");
+    expect(current.length).toBe(3);
+    // Unsigned chain → the stored WORM body IS the canonical core: the exact bytes `verify` reads
+    // back and the external message imprint is taken over.
+    const stored = (await store.get(anchorKeyFor(acct, 3))).body;
+    expect(current.anchorBytes).toEqual(stored);
+  });
+
+  test("a signed chain's reader bytes are the CORE only — sig/keyId stripped (the imprint seam)", async () => {
+    const acct = randomUUID();
+    await signedChain.append(acct, { a: 1 });
+    const current = await signedChain.readCurrentAnchor(acct);
+    if (current === null) throw new Error("unexpected null");
+    const text = new TextDecoder().decode(current.anchorBytes);
+    expect(text.includes("sig")).toBe(false);
+    expect(text.includes("keyId")).toBe(false);
+    // The stored signed body DOES carry sig/keyId — the reader must never anchor those bytes.
+    const storedText = new TextDecoder().decode(
+      (await store.get(anchorKeyFor(acct, 1))).body,
+    );
+    expect(storedText.includes("sig")).toBe(true);
+  });
+
+  test("an empty tenant chain → null (nothing to anchor)", async () => {
+    expect(await chain.readCurrentAnchor(randomUUID())).toBeNull();
+  });
+});
+
 describe("signed anchors (T-W2)", () => {
   test("a signed anchor round-trips: sign at mint, read back, crypto.verify passes", async () => {
     const acct = randomUUID();
