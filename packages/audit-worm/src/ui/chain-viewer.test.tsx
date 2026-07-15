@@ -51,6 +51,56 @@ describe("ChainViewer — SSR render (ADR-0250)", () => {
   });
 });
 
+describe("ChainViewer — per-row six-state chips + provenance (T-U2)", () => {
+  test("rowStatuses render distinct per-row chips; a late break doesn't poison an early row", () => {
+    const html = renderToStaticMarkup(
+      <ChainViewer
+        entries={entries}
+        verification={{ valid: false, brokenAt: 1 }}
+        rowStatuses={["verified", "tampered"]}
+      />,
+    );
+    // Row 0 stays verified even though row 1 is tampered (per-length anchors localize tamper).
+    expect(html).toContain("Verified");
+    expect(html).toContain("Tampered");
+  });
+
+  test("the redaction state shows the honest chip, never `verified`", () => {
+    const html = renderToStaticMarkup(
+      <ChainViewer
+        entries={entries}
+        verification={{ valid: true, brokenAt: null }}
+        rowStatuses={["genesis", "anchor-confirmed-original-not-disclosed"]}
+      />,
+    );
+    expect(html).toContain("Anchor confirmed");
+    expect(html).toContain("Chain root");
+  });
+
+  test("anchorProvenance renders the write-once provenance header line", () => {
+    const html = renderToStaticMarkup(
+      <ChainViewer
+        entries={entries}
+        verification={{ valid: true, brokenAt: null }}
+        anchorProvenance={{ length: 2, retainUntil: "2033-07-13" }}
+      />,
+    );
+    expect(html).toContain("Chain anchored at length 2 in write-once storage");
+    expect(html).toContain("retained until 2033-07-13");
+  });
+
+  test("without the new props it renders identically (backward compatible — no status/proof column)", () => {
+    const html = renderToStaticMarkup(
+      <ChainViewer
+        entries={entries}
+        verification={{ valid: true, brokenAt: null }}
+      />,
+    );
+    expect(html).not.toContain("Status");
+    expect(html).not.toContain("write-once storage");
+  });
+});
+
 describe("previewPayload — bounded one-line JSON", () => {
   test("truncates past the max with an ellipsis", () => {
     const long = previewPayload({ note: "x".repeat(200) }, 40);

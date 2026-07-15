@@ -14,7 +14,7 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { randomUUID } from "node:crypto";
+import { randomUUID, generateKeyPairSync, type KeyObject } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -24,16 +24,33 @@ import {
   canonicalize,
   ConflictError,
   isUniqueViolation,
+  ValidationError,
   type JsonValue,
 } from "@caisson/kernel";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 import { LocalArtifactStore } from "./store.local.ts";
-import { AuditChainStore } from "./chain-store.ts";
+import { buildArtifactKey } from "./store.ts";
+import { AuditChainStore, verifyAnchorSignature } from "./chain-store.ts";
+import { Ed25519AnchorSigner } from "./anchor-signer.ts";
 
 let tp: TestPg;
 let migrationSql: string;
 let tmpDir: string;
+let store: LocalArtifactStore;
 let chain: AuditChainStore;
+/** A store whose anchors are SIGNED at mint (T-W2) with an ephemeral test keypair. */
+let signedChain: AuditChainStore;
+let anchorPubKey: KeyObject;
+
+/** Reconstruct an anchor's WORM key the way `anchorKey` does (12-zero-padded length). */
+function anchorKeyFor(accountId: string, length: number): string {
+  return buildArtifactKey(
+    accountId,
+    "audit-chain",
+    "anchors",
+    `${String(length).padStart(12, "0")}.json`,
+  );
+}
 
 const FIXED_NOW = (): Date => new Date("2026-06-27T00:00:00.000Z");
 
@@ -60,8 +77,17 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(m1);
   tmpDir = await mkdtemp(join(tmpdir(), "audit-worm-chain-"));
-  const store = new LocalArtifactStore(tmpDir);
+  store = new LocalArtifactStore(tmpDir);
   chain = new AuditChainStore({ db: tp.pg, store, now: FIXED_NOW });
+  // Ephemeral test keypair — a real anchor key is NEVER generated or committed here.
+  const kp = generateKeyPairSync("ed25519");
+  anchorPubKey = kp.publicKey;
+  signedChain = new AuditChainStore({
+    db: tp.pg,
+    store,
+    now: FIXED_NOW,
+    signer: new Ed25519AnchorSigner("test-anchor-key", kp.privateKey),
+  });
 }, 120_000); // PGlite WASM init can be slow under parallel CI load — generous hook timeout.
 
 afterAll(async () => {
@@ -227,6 +253,169 @@ describe("tenant isolation (ADR-0005, fail-closed)", () => {
       return r.rows[0]?.n;
     });
     expect(cross).toBe(0);
+  });
+});
+
+describe("getRowProof — single-row proof read (T-W1, fork f)", () => {
+  test("a valid seq returns the entry, its per-length anchor, and the chain length", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }, { c: 3 }]);
+    const chainRows = await chain.load(acct);
+
+    for (let seq = 0; seq < 3; seq++) {
+      const proof = await chain.getRowProof(acct, seq);
+      expect("unverifiable" in proof).toBe(false);
+      if ("unverifiable" in proof) throw new Error("unexpected unverifiable");
+      expect(proof.chainLength).toBe(3);
+      expect(proof.entry.hash).toBe(chainRows[seq]!.hash);
+      // Leg 2 relationship: anchor(seq+1).tipHash === row.hash (a genuine per-row commitment check).
+      expect(proof.anchorForRow.length).toBe(seq + 1);
+      expect(proof.anchorForRow.tipHash).toBe(chainRows[seq]!.hash);
+    }
+  });
+
+  test("seq == length is rejected (L1 — the truncation-probe key anchor(length+1))", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }]); // length 2, valid seq 0..1
+    await expect(chain.getRowProof(acct, 2)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  test("seq > length is rejected (out of range, never a silent unverifiable)", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }]);
+    await expect(chain.getRowProof(acct, 99)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  test("a negative or non-integer seq is rejected", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }]);
+    await expect(chain.getRowProof(acct, -1)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    await expect(chain.getRowProof(acct, 0.5)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  test("a missing per-length anchor fails closed to unverifiable (never a fabricated pass)", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }]); // anchors for length 1,2 exist
+    // Superuser inserts seq 2 WITHOUT minting anchor(3) — the row exists but its per-length anchor
+    // does not. getRowProof must fail closed, matching verify()'s direction.
+    const rows = await chain.load(acct);
+    await tp.query(
+      `INSERT INTO audit_chain_entry (id, account_id, seq, prev_hash, payload, hash)
+       VALUES ($1, $2, 2, $3, '{"c":3}'::jsonb, $4)`,
+      [randomUUID(), acct, rows[1]!.hash, "deadbeef".repeat(8)],
+    );
+    const proof = await chain.getRowProof(acct, 2);
+    expect(proof).toEqual({
+      unverifiable: true,
+      reason: "per-length anchor is missing for this row",
+    });
+  });
+
+  test("tenant scoping — a seq valid for one account is out of range for a shorter one", async () => {
+    const a = randomUUID();
+    const b = randomUUID();
+    await seed(a, [{ a: 1 }, { a: 2 }]); // length 2
+    await seed(b, [{ b: 1 }]); // length 1
+
+    const proofA = await chain.getRowProof(a, 1);
+    expect("unverifiable" in proofA).toBe(false);
+    if ("unverifiable" in proofA) throw new Error("unexpected unverifiable");
+    expect(proofA.chainLength).toBe(2);
+
+    // b's chain has length 1, so seq 1 is out of range under b's own tenant scope.
+    await expect(chain.getRowProof(b, 1)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    // ...and each account's genesis proof is distinct.
+    const gA = await chain.getRowProof(a, 0);
+    const gB = await chain.getRowProof(b, 0);
+    if ("unverifiable" in gA || "unverifiable" in gB) {
+      throw new Error("unexpected unverifiable");
+    }
+    expect(gA.entry.hash).not.toBe(gB.entry.hash);
+  });
+});
+
+describe("signed anchors (T-W2)", () => {
+  test("a signed anchor round-trips: sign at mint, read back, crypto.verify passes", async () => {
+    const acct = randomUUID();
+    const r = await signedChain.append(acct, { event: "signed", v: 1 });
+    // append returns the SIGNED anchor.
+    expect(r.anchor.sig).toBeDefined();
+    expect(r.anchor.keyId).toBe("test-anchor-key");
+
+    const proof = await signedChain.getRowProof(acct, 0);
+    if ("unverifiable" in proof) throw new Error("unexpected unverifiable");
+    expect(proof.anchorForRow.sig).toBeDefined();
+    expect(proof.anchorForRow.keyId).toBe("test-anchor-key");
+    expect(verifyAnchorSignature(proof.anchorForRow, anchorPubKey)).toBe(true);
+  });
+
+  test("the signed anchor's CORE bytes are byte-identical to the legacy unsigned body (the seam)", async () => {
+    // Same payload → same genesis hashes, so the unsigned body and the signed body's core must match.
+    const acctU = randomUUID();
+    await chain.append(acctU, { a: 1 });
+    const uBody = new TextDecoder().decode(
+      (await store.get(anchorKeyFor(acctU, 1))).body,
+    );
+
+    const acctS = randomUUID();
+    await signedChain.append(acctS, { a: 1 });
+    const sParsed = JSON.parse(
+      new TextDecoder().decode((await store.get(anchorKeyFor(acctS, 1))).body),
+    ) as Record<string, unknown>;
+    expect(sParsed.sig).toBeDefined();
+    expect(sParsed.keyId).toBe("test-anchor-key");
+
+    const { sig: _sig, keyId: _keyId, ...sCore } = sParsed;
+    // Strip the signature fields → the remaining core canonicalizes to the exact legacy bytes.
+    expect(canonicalize(sCore as JsonValue)).toBe(uBody);
+    expect(uBody.includes("sig")).toBe(false);
+    expect(uBody.includes("keyId")).toBe(false);
+  });
+
+  test("a legacy UNSIGNED anchor stays structurally valid (verify passes; signature check is false)", async () => {
+    const acct = randomUUID();
+    await seed(acct, [{ a: 1 }, { b: 2 }]); // `chain` has no signer → unsigned anchors
+    expect(await chain.verify(acct)).toEqual({ valid: true, brokenAt: null });
+    const proof = await chain.getRowProof(acct, 1);
+    if ("unverifiable" in proof) throw new Error("unexpected unverifiable");
+    expect(proof.anchorForRow.sig).toBeUndefined();
+    // No signature present → the signature check is false, but the chain still verifies structurally.
+    expect(verifyAnchorSignature(proof.anchorForRow, anchorPubKey)).toBe(false);
+  });
+
+  test("a signed chain still verifies structurally (sig fields are ignored by verifyChain)", async () => {
+    const acct = randomUUID();
+    await signedChain.append(acct, { a: 1 });
+    await signedChain.append(acct, { b: 2 });
+    expect(await signedChain.verify(acct)).toEqual({
+      valid: true,
+      brokenAt: null,
+    });
+  });
+
+  test("a forged anchor (tampered tip or wrong key) fails the signature check", async () => {
+    const acct = randomUUID();
+    await signedChain.append(acct, { a: 1 });
+    const proof = await signedChain.getRowProof(acct, 0);
+    if ("unverifiable" in proof) throw new Error("unexpected unverifiable");
+
+    // Tamper the tip: the signature was over the original core, so it no longer verifies.
+    const tampered = { ...proof.anchorForRow, tipHash: "f".repeat(64) };
+    expect(verifyAnchorSignature(tampered, anchorPubKey)).toBe(false);
+
+    // A different public key never verifies this signature.
+    const otherPub = generateKeyPairSync("ed25519").publicKey;
+    expect(verifyAnchorSignature(proof.anchorForRow, otherPub)).toBe(false);
   });
 });
 

@@ -30,6 +30,11 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
  * synthetic `intel` target and anchor the WORM chain there, mirroring `system_mode`'s `system`.
  * `affiliate_mint` (ADR-0315/0320): the operator minted an affiliate discount code — also
  * account-less, logged under the synthetic `affiliate` target.
+ * `audit_proof_read` (ADR-0344 / per-row verification): the operator READ one tenant row's proof
+ * bundle through the admin proof-bundle endpoint. Unlike every other action here it records a READ,
+ * not a mutation, so it appends NO WORM entry — a cross-tenant read of a customer's cryptographic
+ * audit material is a sensitive access the customer-trust + insider-threat story wants recorded (M1),
+ * logged under the RAW target account the operator inspected.
  */
 export const ADMIN_ACTIONS = [
   "entitlement_grant",
@@ -44,6 +49,7 @@ export const ADMIN_ACTIONS = [
   "intel_review",
   "intel_dismiss",
   "affiliate_mint",
+  "audit_proof_read",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
@@ -59,7 +65,7 @@ CREATE TABLE admin_action_log (
   payload_before jsonb,
   payload_after jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT admin_action_log_action CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend', 'system_mode', 'license_rotate', 'intel_review', 'intel_dismiss', 'affiliate_mint'))
+  CONSTRAINT admin_action_log_action CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend', 'system_mode', 'license_rotate', 'intel_review', 'intel_dismiss', 'affiliate_mint', 'audit_proof_read'))
 );
 GRANT INSERT ON admin_action_log TO admin_write;
 GRANT SELECT ON admin_action_log TO admin;
@@ -67,7 +73,8 @@ GRANT SELECT ON admin_action_log TO admin;
 
 // ADR-0225 (Fork R-5 = A), widened again for `license_first_mint` + `email_resend` (buyer-lifecycle
 // audit wave), and again for `intel_review`/`intel_dismiss`/`affiliate_mint` (Kickoff-N, ADR-0316
-// F5 + ADR-0315/0320). The forward migration that widens the action-enum CHECK to admit new actions on an
+// F5 + ADR-0315/0320), and again for `audit_proof_read` (ADR-0344 per-row verification). The
+// forward migration that widens the action-enum CHECK to admit new actions on an
 // environment that already created `admin_action_log` under an older CHECK (ADR-0220). Idempotent
 // (DROP IF EXISTS → ADD), additive, and — crucially — NOT an edit to the checksum-pinned CREATE above:
 // mirrors `ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL`'s append-a-migration convention (ADR-0014, never
@@ -80,7 +87,7 @@ GRANT SELECT ON admin_action_log TO admin;
 export const ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL = `
 ALTER TABLE admin_action_log DROP CONSTRAINT IF EXISTS admin_action_log_action;
 ALTER TABLE admin_action_log ADD CONSTRAINT admin_action_log_action
-  CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend', 'system_mode', 'license_rotate', 'intel_review', 'intel_dismiss', 'affiliate_mint'));
+  CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend', 'system_mode', 'license_rotate', 'intel_review', 'intel_dismiss', 'affiliate_mint', 'audit_proof_read'));
 `;
 
 export interface AdminActionLogInput {

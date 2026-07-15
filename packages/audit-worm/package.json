@@ -37,11 +37,15 @@
   },
   "peerDependencies": {
     "@caisson/ui": "workspace:^",
+    "@caisson/ui-pro": "workspace:^",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
     "@caisson/ui": {
+      "optional": true
+    },
+    "@caisson/ui-pro": {
       "optional": true
     },
     "react": {
@@ -56,6 +60,7 @@
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@caisson/ui": "workspace:*",
+    "@caisson/ui-pro": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "eslint": "catalog:",

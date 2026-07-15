@@ -76,8 +76,20 @@ export {
 export {
   type AuditChainStoreOptions,
   type AppendResult,
+  type RowProof,
+  type RowProofUnverifiable,
   AuditChainStore,
+  verifyAnchorSignature,
 } from "./chain-store.ts";
+
+// Dedicated anchor-signing identity — signs the anchor core at mint.
+export {
+  type AnchorSigner,
+  ANCHOR_SIGNING_KEY_ENV,
+  ANCHOR_SIGNING_KEY_ID_ENV,
+  DEFAULT_ANCHOR_SIGNING_KEY_ID,
+  Ed25519AnchorSigner,
+} from "./anchor-signer.ts";
 
 // Append-only locked-version table + derived current.
 export {
