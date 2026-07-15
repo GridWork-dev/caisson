@@ -25,6 +25,10 @@ bun add @caisson/audit-worm
   (`verify` runs `verifyChain(entries, anchor)`).
 - **`LockedVersionStore`** — append-only locked versions; "current" is a derived no-successor
   predicate cross-checked against the kernel model (never a stored column).
+- **External anchoring (v1, `trusted-timestamped` grade)** — `TrustedTimestampLog`/`TsaAnchorLog`,
+  the durable `AnchorOutbox`, the per-tenant checkpoint handler, and `verifyExternal` periodically
+  attest the chain's WORM anchor to an RFC-3161 TSA (SPEC `external-anchoring`, ADR-0332/0346). Trust
+  grades, the honest-limit language, and the TSA egress note: `docs/security/external-anchoring.md`.
 
 ## Golden
 

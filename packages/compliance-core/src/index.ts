@@ -20,6 +20,8 @@ export * from "./evidence/crosswalk-rollup.ts";
 // --- Canonical pack format + deterministic generator. -------------------------------------------
 export * from "./evidence/pack-format.ts";
 export * from "./evidence/generate.ts";
+// External-anchor grade tag + detached-receipt attachment (SPEC external-anchoring §6).
+export * from "./evidence/external-anchor.ts";
 
 // --- OSCAL export seam (assessment plan, results, POA&M, XML). ----------------------------------
 export * from "./evidence/oscal-export.ts";
