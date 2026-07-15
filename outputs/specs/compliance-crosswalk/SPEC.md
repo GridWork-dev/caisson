@@ -1,6 +1,6 @@
 # SPEC — Compliance crosswalk: shared control spine, cross-framework rollup, named-person attestations
 
-- **Repo:** caisson · **Tags:** `product`, `security` · **Status:** LOCKED (amended 2026-07-13 post-audit re-lock; forks locked → ADR-0333, which also supersedes ADR-0057 in part) — plan-ready
+- **Repo:** caisson · **Tags:** `product`, `security` · **Status:** SHIPPED (PR #238, 2026-07-15; forks locked → ADR-0333, which also supersedes ADR-0057 in part; PLAN locks ADR-0347)
 - **Prior art:** em-dash (github.com/aanishs/em-dash, MIT, 9★) — 800-53-rev5 catalog spine + frameworks-as-filter-files + tool-bindings.json + signed attestations. Studied, not adopted.
 - **Builds on (partly superseded):** ADR-0057 (canonical control model + licensing floor — ADR-0333 supersedes IN PART, see "ADR-0057 relationship" below), ADR-0277 (regime crosswalk data), ADR-0279 (claim posture), ADR-0058 (collectors, flag-never-guess), ADR-0056 (per-tenant detached Ed25519 pack signing).
 
