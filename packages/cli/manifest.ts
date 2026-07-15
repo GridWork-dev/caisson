@@ -17,6 +17,7 @@ export default defineModule({
   tier: "oss",
   license: pkg.license,
   dependencies: [
+    "@caisson/ds-manifest",
     "@caisson/kernel",
     "@caisson/migrate",
     "@caisson/registry-schema",

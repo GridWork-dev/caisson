@@ -52,6 +52,16 @@ export {
 
 export { parseArgs, parseSampleArgs, runCli } from "./cli.ts";
 
+// The second `caisson` bin's free describe command (ADR-0345) — same data layer as the MCP tools.
+export { describeCommand } from "./describe.ts";
+// The `caisson doctor` thin client of the buyer MCP check_usage tool (ADR-0345 Fork F).
+export {
+  collectFiles,
+  runDoctorClient,
+  runDoctorCli,
+  type DoctorClientInput,
+} from "./doctor.ts";
+
 export {
   type WriterOptions,
   type FileSetWriter,

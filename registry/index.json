@@ -2700,6 +2700,33 @@
       ]
     },
     {
+      "id": "@caisson/ds-manifest",
+      "latest": "0.1.0",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "manifest": {
+            "id": "@caisson/ds-manifest",
+            "version": "0.1.0",
+            "kind": "base",
+            "editions": [],
+            "tier": "oss",
+            "priceCents": null,
+            "license": "Apache-2.0",
+            "dependencies": [],
+            "members": {},
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Component-manifest schema, reader, and pure static-check library (contrast, usage validation) shared by the CLI, MCP tools, and build-time generator that make a design-system kit agent-readable."
+          },
+          "publishedAt": "2026-07-13T00:00:00.000Z",
+          "gateAttestation": "exec-ds-surface@8d604930"
+        }
+      ]
+    },
+    {
       "id": "@caisson/email",
       "latest": "0.4.0",
       "versions": [

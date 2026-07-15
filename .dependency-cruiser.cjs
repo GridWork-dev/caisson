@@ -20,7 +20,7 @@ const PROVIDER_SDK_RE =
   "node_modules/(openai|@azure/openai|@anthropic-ai/(sdk|bedrock|vertex-sdk)|@google/(genai|generative-ai)|@aws-sdk/client-bedrock-runtime|@mistralai/mistralai|cohere-ai|groq-sdk|replicate|together-ai|ollama|ai/|@ai-sdk/(openai|openai-compatible|anthropic|google|openrouter|amazon-bedrock|azure))";
 
 const BASE_PKGS =
-  "packages/(auth|tenancy-rls|billing|credits|ai-config|mcp-server|ui|jobs|email|kernel|registry-schema|migrate|pricebook|audit-worm|field-crypto|cli|agent-kernel|local-store|prompt-registry|ai-meter|guardrails|ai-evals|license-verify|rate-limit)";
+  "packages/(auth|tenancy-rls|billing|credits|ai-config|mcp-server|ui|jobs|email|kernel|registry-schema|migrate|pricebook|audit-worm|field-crypto|cli|agent-kernel|local-store|prompt-registry|ai-meter|guardrails|ai-evals|license-verify|rate-limit|ds-manifest)";
 const EDITIONS = ["compliance", "ai-kit", "local-ai", "agent-dev"];
 const EDITION_PKGS = `packages/(${EDITIONS.join("|")})`;
 
