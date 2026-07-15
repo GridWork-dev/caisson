@@ -1,5 +1,5 @@
 {
-  "formatVersion": "1",
+  "formatVersion": "2",
   "tenantId": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
   "framework": {
     "id": "hipaa-security",
@@ -167,5 +167,118 @@
     "controlsWithGaps": 0,
     "totalEvidenceItems": 4,
     "posture": "3 of 3 controls evidence-ready; no gaps recorded."
+  },
+  "crosswalkRollup": {
+    "cells": [
+      {
+        "framework": "EU-AI-Act",
+        "reference": "Art. 18",
+        "canonicalControlIds": [
+          "GOVERNANCE.DOCUMENTATION"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "GOVERNANCE.DOCUMENTATION"
+        ]
+      },
+      {
+        "framework": "HIPAA-Security",
+        "reference": "164.308(a)(3)(i)",
+        "canonicalControlIds": [
+          "ACCESS-CONTROL.WORKFORCE"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "ACCESS-CONTROL.WORKFORCE"
+        ]
+      },
+      {
+        "framework": "HIPAA-Security",
+        "reference": "164.308(a)(4)(i)",
+        "canonicalControlIds": [
+          "ACCESS-CONTROL.WORKFORCE"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "ACCESS-CONTROL.WORKFORCE"
+        ]
+      },
+      {
+        "framework": "HIPAA-Security",
+        "reference": "164.312(b)",
+        "canonicalControlIds": [
+          "AUDIT.CONTROLS"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "AUDIT.CONTROLS"
+        ]
+      },
+      {
+        "framework": "HIPAA-Security",
+        "reference": "164.316(a)",
+        "canonicalControlIds": [
+          "GOVERNANCE.DOCUMENTATION"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "GOVERNANCE.DOCUMENTATION"
+        ]
+      },
+      {
+        "framework": "HIPAA-Security",
+        "reference": "164.316(b)(1)",
+        "canonicalControlIds": [
+          "GOVERNANCE.DOCUMENTATION"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "GOVERNANCE.DOCUMENTATION"
+        ]
+      },
+      {
+        "framework": "HIPAA-Security",
+        "reference": "164.316(b)(2)(i)",
+        "canonicalControlIds": [
+          "GOVERNANCE.DOCUMENTATION"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "GOVERNANCE.DOCUMENTATION"
+        ]
+      },
+      {
+        "framework": "ISO-27001",
+        "reference": "A.5.37",
+        "canonicalControlIds": [
+          "GOVERNANCE.DOCUMENTATION"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "GOVERNANCE.DOCUMENTATION"
+        ],
+        "note": "Seeded from the NIST OLIR SP 800-53 rev5 <-> ISO/IEC 27001:2022 mapping. OLIR's own mappings are subjective, incomplete, and not equivalence claims."
+      },
+      {
+        "framework": "SOC2-TSC",
+        "reference": "CC7.2",
+        "canonicalControlIds": [
+          "AUDIT.CONTROLS"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "AUDIT.CONTROLS"
+        ]
+      }
+    ]
   }
 }

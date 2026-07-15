@@ -1,0 +1,79 @@
+{
+  "regime": "iso-27001",
+  "title": "ISO/IEC 27001:2022 Annex A — Caisson technical-control crosswalk",
+  "regimeRevision": "ISO/IEC 27001:2022 (Annex A, per ISO/IEC 27002:2022)",
+  "crosswalkVersion": "2026.1",
+  "disclaimer": {
+    "notACertification": "This crosswalk is not a certification, attestation, or compliance validation. Caisson ships technical controls that run inside your own systems; for this regime Caisson is not an assessed, certified, or compliant entity — you are. No regulatory seal, logo, or badge is claimed or implied.",
+    "noComplianceGuarantee": "These mappings are not designed to, and do not, ensure your compliance with any standard or framework, and it is your responsibility to ensure any such compliance. Using this crosswalk neither replaces your own efforts to achieve compliance nor guarantees that you will pass any assessment.",
+    "claimLegend": "'maps to' means a Caisson mechanism addresses the same security domain as the requirement; it is not an assertion that the requirement is satisfied. 'implements' is used only where a live test or CI artifact in the Caisson repository proves the named technical control, and each such row links that proof. Neither claim covers the full requirement — see each row's buyer-responsibility column.",
+    "scopeBoundary": "This crosswalk covers only the technical controls the compliance bundle ships. Organizational, administrative, and physical controls — policy, personnel, vendor and access management, incident response, your own data classification and configuration, and the independent assessment itself — remain your responsibility. A requirement not listed here is not covered by Caisson.",
+    "regimeSpecific": "Under ISO/IEC 27001, certification applies to an organization's information security management system (ISMS) — a documented, audited program run BY an organization — never to a standalone software product. Caisson holds no ISO/IEC 27001 certificate and is not 'ISO certified'; this crosswalk cites bare Annex A control identifiers as factual references and maps the technical controls they call for. Establishing, operating, and certifying your own ISMS remains between you and your accredited certification body.",
+    "regimeRevision": "ISO/IEC 27001:2022 (Annex A, per ISO/IEC 27002:2022)"
+  },
+  "rows": [
+    {
+      "claim": "maps-to",
+      "control": "A.5.15",
+      "summary": "Logical and physical access to information and other associated assets is governed by rules derived from business and security requirements.",
+      "mechanism": "@caisson/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary (a missing tenant scope denies as a 404, never widens access).",
+      "evidence": "Tenant-isolation tests and the RLS provisioning generator in packages/tenancy-rls.",
+      "buyerResponsibility": "Your identity provider and user-authentication configuration, the authorization/least-privilege model above the data layer, and periodic access recertification.",
+      "canonicalControlId": "ACCESS-CONTROL.LOGICAL"
+    },
+    {
+      "claim": "maps-to",
+      "control": "A.8.24",
+      "summary": "The use of cryptography to protect information is governed by defined rules, including key management practices.",
+      "mechanism": "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data, plus a self-describing, rotatable key envelope.",
+      "evidence": "Encryption and key-envelope tests in packages/field-crypto.",
+      "buyerResponsibility": "Selecting which fields hold sensitive information, your key-custody and rotation policy, and encryption in transit at your own network boundary.",
+      "canonicalControlId": "DATA-PROTECTION.ENCRYPTION"
+    },
+    {
+      "claim": "maps-to",
+      "control": "A.8.10",
+      "summary": "Information held in systems, devices, or storage media is deleted once it is no longer required, so it cannot be recovered.",
+      "mechanism": "@caisson/field-crypto — crypto-shred renders a subject's ciphertext irreversibly unrecoverable by destroying its governing key, selectively (other subjects still decrypt) and irreversibly (a shredded scope cannot be re-provisioned).",
+      "evidence": "The crypto-shred tests prove disposal is selective, irreversible, and leaves the committed-ciphertext audit chain verifiable.",
+      "buyerResponsibility": "Defining the retention schedule that triggers disposal, and identifying which records reach end of life (the retention-runner schedules the sweep).",
+      "canonicalControlId": "DATA-PROTECTION.DISPOSAL"
+    },
+    {
+      "claim": "maps-to",
+      "control": "A.8.15",
+      "summary": "Activity logs are produced, retained, and protected from unauthorized access or alteration so that events remain reviewable.",
+      "mechanism": "@caisson/audit-worm — an append-only, hash-chained log verifiable against a trusted anchor, so tampering, truncation, or rewriting after the fact is detectable.",
+      "evidence": "The tamper-evidence integration tests in packages/audit-worm.",
+      "buyerResponsibility": "Deciding which application events are written to the log and your own log-review process; a write-once backing store for production is your deployment choice.",
+      "canonicalControlId": "AUDIT.IMMUTABLE-LOG"
+    },
+    {
+      "claim": "maps-to",
+      "control": "A.8.16",
+      "summary": "Systems are monitored for anomalous behavior so that potential security events are identified and can be acted on.",
+      "mechanism": "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined conditions, drawing on the audit-worm chain and substrate collector facts.",
+      "evidence": "Alerting pipeline and channel tests in packages/alerting.",
+      "buyerResponsibility": "Deciding what to monitor, defining alert thresholds and routing, and acting on the alerts raised.",
+      "canonicalControlId": "SYSTEM-OPERATIONS.DETECTION"
+    },
+    {
+      "claim": "maps-to",
+      "control": "A.8.5",
+      "summary": "Access is granted only after a secure authentication procedure verifies the identity of the person or entity requesting it.",
+      "mechanism": "@caisson/auth — session and JWT verification gating requests at the application boundary before any protected resource is reached.",
+      "evidence": "JWT/session verification tests in packages/auth.",
+      "buyerResponsibility": "Multi-factor authentication policy, credential lifecycle, and any federation with your own identity provider.",
+      "canonicalControlId": "AUTHENTICATION.ENTITY"
+    },
+    {
+      "claim": "maps-to",
+      "control": "A.5.37",
+      "summary": "Operating procedures and records for information-security-relevant processes are documented, retained, and made available to those who need them.",
+      "mechanism": "@caisson/audit-worm — a fail-closed retention floor rejects a retention term configured below the minimum, so operating records and documentation are not disposed of early.",
+      "evidence": "Retention-floor tests in packages/audit-worm.",
+      "buyerResponsibility": "Authoring and maintaining the operating procedures themselves; Caisson enforces that your configured retention floor cannot be silently shortened, not that any particular procedure exists.",
+      "canonicalControlId": "GOVERNANCE.DOCUMENTATION"
+    }
+  ]
+}

@@ -32,6 +32,30 @@ const frameworkId = z
   .string()
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "must be a kebab-case framework slug");
 
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+
+/**
+ * Structured provenance for a crosswalk mapping (ADR-0333/CR-10; replaces the never-shipped
+ * `verified: boolean`). `status` gates claim propagation (only `reviewed`/`expert-reviewed`
+ * mappings can ever back an `implements` rollup cell -- ADR-0333 Fork E); `relationship` records
+ * how tightly the mapping actually corresponds; `sourceId`/`sourceVersion`/`sourceDigest` pin the
+ * material a reviewer checked the mapping against, and `reviewedBy`/`reviewedAt` are the audit
+ * trail. A source-digest change is meant to invalidate the review (reverting it to `unreviewed`) --
+ * see `isVerificationStale` below; v1 has no live re-ingestion pipeline to auto-detect that drift,
+ * so this stays a documented + tested convention (ADR-0333 Fork A/B: no spine, no vendored catalog).
+ */
+export const CrosswalkVerification = strictObject({
+  status: z.enum(["unreviewed", "reviewed", "expert-reviewed"]),
+  relationship: z.enum(["related", "partial", "equivalent"]),
+  /** What was reviewed against (e.g. a proof-test path, an OLIR mapping id). Bounded, not patterned. */
+  sourceId: z.string().trim().min(1).max(120),
+  sourceVersion: z.string().trim().min(1).max(80),
+  sourceDigest: z.string().regex(SHA256_HEX),
+  reviewedBy: z.string().trim().min(1).max(200),
+  reviewedAt: z.string().trim().min(1).max(40),
+});
+export type CrosswalkVerification = z.infer<typeof CrosswalkVerification>;
+
 /**
  * A crosswalk reference: a pointer from a canonical control to an external framework's requirement
  * id (e.g. SOC2-TSC `CC6.1`, HIPAA-Security `164.312(a)(2)(i)`). `reference` is an opaque, bounded
@@ -45,9 +69,32 @@ export const CrosswalkReference = strictObject({
   reference: z.string().trim().min(1).max(200),
   /** Optional clarifying note on the nature of the mapping (own-authored). */
   note: z.string().trim().min(1).max(500).optional(),
+  /**
+   * Optional structured provenance (ADR-0333) -- additive, `.strict()`-safe. Absent means
+   * `unreviewed`-equivalent: the rollup (compliance-core) never renders `implements` for a
+   * mapping with no `verification` record.
+   */
+  verification: CrosswalkVerification.optional(),
 });
 export type CrosswalkReference = z.infer<typeof CrosswalkReference>;
 export type CrosswalkReferenceInput = z.input<typeof CrosswalkReference>;
+
+/**
+ * Whether a mapping's recorded review is stale against the source it was reviewed against
+ * (ADR-0333: a source-digest change invalidates dependent verification). `undefined` verification
+ * (never reviewed) counts as stale. `currentSourceDigest` is the live digest of `sourceId` --
+ * ponytail: v1 has no ingestion pipeline that re-hashes an external source at runtime (A2), so
+ * every call site today passes the record's own `sourceDigest` back as "current" (never stale by
+ * construction); a future source-refresh pipeline (e.g. an OLIR re-pull) supplies a real live
+ * digest here instead, and this same check starts catching real drift.
+ */
+export function isVerificationStale(
+  verification: CrosswalkVerification | undefined,
+  currentSourceDigest: string,
+): boolean {
+  if (verification === undefined) return true;
+  return verification.sourceDigest !== currentSourceDigest;
+}
 
 /**
  * A single canonical control: the own-authored requirement plus its crosswalk references. Crosswalk

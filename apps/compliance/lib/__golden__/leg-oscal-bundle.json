@@ -16,7 +16,7 @@
           {
             "name": "caisson-evidence-pack-sha256",
             "ns": "https://caisson.sh/ns/oscal",
-            "value": "b8303f5247b11f6ff184ffb102a1023ec975637edb2ee2732a727228dc266938"
+            "value": "b07c2378e006ad6479be98573c0657f036d68c64d7e6c3f7ad1922818742aa7d"
           }
         ],
         "links": [
@@ -48,6 +48,11 @@
               "name": "caisson-readiness-posture",
               "ns": "https://caisson.sh/ns/oscal",
               "value": "3 of 3 controls evidence-ready; no gaps recorded."
+            },
+            {
+              "name": "caisson-crosswalk-rollup",
+              "ns": "https://caisson.sh/ns/oscal",
+              "value": "{\"cells\":[{\"framework\":\"EU-AI-Act\",\"reference\":\"Art. 12\",\"canonicalControlIds\":[\"AUDIT.IMMUTABLE-LOG\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"AUDIT.IMMUTABLE-LOG\"]},{\"framework\":\"HIPAA-Security\",\"reference\":\"164.312(b)\",\"canonicalControlIds\":[\"AUDIT.IMMUTABLE-LOG\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"AUDIT.IMMUTABLE-LOG\"]},{\"framework\":\"ISO-27001\",\"reference\":\"A.5.15\",\"canonicalControlIds\":[\"ACCESS-CONTROL.LOGICAL\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"ACCESS-CONTROL.LOGICAL\"],\"note\":\"Seeded from the NIST OLIR SP 800-53 rev5 <-> ISO/IEC 27001:2022 mapping. OLIR's own mappings are subjective, incomplete, and not equivalence claims.\"},{\"framework\":\"ISO-27001\",\"reference\":\"A.8.10\",\"canonicalControlIds\":[\"DATA-PROTECTION.DISPOSAL\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"DATA-PROTECTION.DISPOSAL\"],\"note\":\"Seeded from the NIST OLIR SP 800-53 rev5 <-> ISO/IEC 27001:2022 mapping. OLIR's own mappings are subjective, incomplete, and not equivalence claims.\"},{\"framework\":\"ISO-27001\",\"reference\":\"A.8.15\",\"canonicalControlIds\":[\"AUDIT.IMMUTABLE-LOG\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"AUDIT.IMMUTABLE-LOG\"],\"note\":\"Seeded from the NIST OLIR SP 800-53 rev5 <-> ISO/IEC 27001:2022 mapping. OLIR's own mappings are subjective, incomplete, and not equivalence claims.\"},{\"framework\":\"SOC2-TSC\",\"reference\":\"C1.2\",\"canonicalControlIds\":[\"DATA-PROTECTION.DISPOSAL\"],\"status\":\"ready\",\"claim\":\"implements\",\"evidencePointers\":[\"DATA-PROTECTION.DISPOSAL\"]},{\"framework\":\"SOC2-TSC\",\"reference\":\"CC4.1\",\"canonicalControlIds\":[\"AUDIT.IMMUTABLE-LOG\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"AUDIT.IMMUTABLE-LOG\"]},{\"framework\":\"SOC2-TSC\",\"reference\":\"CC6.1\",\"canonicalControlIds\":[\"ACCESS-CONTROL.LOGICAL\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"ACCESS-CONTROL.LOGICAL\"]},{\"framework\":\"SOC2-TSC\",\"reference\":\"CC6.2\",\"canonicalControlIds\":[\"ACCESS-CONTROL.LOGICAL\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"ACCESS-CONTROL.LOGICAL\"]},{\"framework\":\"SOC2-TSC\",\"reference\":\"CC6.3\",\"canonicalControlIds\":[\"ACCESS-CONTROL.LOGICAL\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"ACCESS-CONTROL.LOGICAL\"]},{\"framework\":\"SOC2-TSC\",\"reference\":\"CC6.5\",\"canonicalControlIds\":[\"DATA-PROTECTION.DISPOSAL\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"DATA-PROTECTION.DISPOSAL\"]},{\"framework\":\"SOC2-TSC\",\"reference\":\"CC7.2\",\"canonicalControlIds\":[\"AUDIT.IMMUTABLE-LOG\"],\"status\":\"ready\",\"claim\":\"maps-to\",\"evidencePointers\":[\"AUDIT.IMMUTABLE-LOG\"]}]}"
             }
           ],
           "observations": [
@@ -186,7 +191,7 @@
           {
             "name": "caisson-evidence-pack-sha256",
             "ns": "https://caisson.sh/ns/oscal",
-            "value": "b8303f5247b11f6ff184ffb102a1023ec975637edb2ee2732a727228dc266938"
+            "value": "b07c2378e006ad6479be98573c0657f036d68c64d7e6c3f7ad1922818742aa7d"
           }
         ],
         "links": [

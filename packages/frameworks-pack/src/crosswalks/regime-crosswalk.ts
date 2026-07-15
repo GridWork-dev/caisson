@@ -28,8 +28,12 @@
 import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";
 
-/** The three regimes ADR-0277 locks. FedRAMP is explicitly OUT (single corpus mention, deferred). */
-export const RegimeId = z.enum(["soc2", "pci-dss", "gdpr"]);
+/**
+ * The three regimes ADR-0277 locks, plus `iso-27001` -- the fourth `regimes.ts`-pattern crosswalk
+ * ADR-0333/ADR-0347 adds (own-authored, Legal-gate-capped at `maps-to`; see `regimes.ts`). FedRAMP
+ * is explicitly OUT (single corpus mention, deferred).
+ */
+export const RegimeId = z.enum(["soc2", "pci-dss", "gdpr", "iso-27001"]);
 export type RegimeId = z.infer<typeof RegimeId>;
 
 /**
@@ -66,6 +70,17 @@ export const ProofPointer = strictObject({
 });
 export type ProofPointer = z.infer<typeof ProofPointer>;
 
+/**
+ * Canonical control id — mirrors `registry/control.ts`'s pattern. Kept local (not imported) so this
+ * module has no dependency on the canonical-control registry; only the shape is shared.
+ */
+const canonicalControlId = z
+  .string()
+  .regex(
+    /^[A-Z0-9]+(?:[.-][A-Z0-9]+)*$/,
+    "must be an uppercase canonical control id (e.g. ACCESS-CONTROL.MFA)",
+  );
+
 /** The four columns shared by every row, regardless of claim level. */
 const rowBase = {
   /** Regime control id — opaque label (regime ids carry parens/dots/spaces), bounded not patterned. */
@@ -78,6 +93,13 @@ const rowBase = {
   evidence: z.string().trim().min(1).max(400),
   /** LOAD-BEARING: what Caisson does NOT cover for this control. Required — the row is dishonest without it. */
   buyerResponsibility: z.string().trim().min(1).max(600),
+  /**
+   * Optional pointer to a `@caisson/frameworks-pack` canonical control (ADR-0347 Fork G1). Lets a
+   * live collector run light this row through the same join `compliance-core`'s rollup uses for the
+   * framework packs — additive, `.strict()`-safe. Unset today (no v1 caller wires it); the join
+   * itself is a later-wave concern (ADR-0347 Fork G1 stages the actual join at the ISO crosswalk).
+   */
+  canonicalControlId: canonicalControlId.optional(),
 } as const;
 
 /**
@@ -104,6 +126,32 @@ export const RegimeCrosswalkRow = z.discriminatedUnion("claim", [
 export type RegimeCrosswalkRow = z.infer<typeof RegimeCrosswalkRow>;
 export type RegimeCrosswalkRowInput = z.input<typeof RegimeCrosswalkRow>;
 
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+
+/**
+ * Crosswalk-level seed provenance (ADR-0333/0347 Fork G2) — the URL + hash pin for the public-domain
+ * mapping data a crosswalk was SEEDED from (check data only, never ingested text; licensing floor
+ * ADR-0057/ADR-0333). One seed per crosswalk, not per row — the pin is uniform across every row a
+ * crosswalk authors from the same mapping revision. Additive, `.strict()`-safe.
+ */
+export const RegimeCrosswalkSeedProvenance = strictObject({
+  /** Stable id for the seed mapping (e.g. `nist-sp800-53r5-iso27001-2022-olir`). */
+  sourceId: z.string().trim().min(1).max(120),
+  sourceVersion: z.string().trim().min(1).max(80),
+  /** The seed's canonical URL. HTTPS-only (never auto-coerced — security floor). */
+  sourceUrl: z
+    .string()
+    .trim()
+    .refine((u) => new URL(u).protocol === "https:", {
+      message: "seed provenance sourceUrl must be an https:// URL",
+    }),
+  /** SHA-256 of the pinned seed bytes (e.g. the OLIR xlsx), lowercase 64-hex. */
+  sourceDigest: z.string().regex(SHA256_HEX),
+});
+export type RegimeCrosswalkSeedProvenance = z.infer<
+  typeof RegimeCrosswalkSeedProvenance
+>;
+
 /**
  * An authored regime crosswalk: the pinned regime revision + own-authored rows. Control ids must be
  * unique within the crosswalk. `regimeSpecificDisclaimer` is the one regime-specific sentence the
@@ -120,6 +168,8 @@ export const RegimeCrosswalk = strictObject({
   crosswalkVersion: z.string().trim().min(1).max(40),
   /** The regime-specific disclaimer sentence folded into the exported disclaimer block. */
   regimeSpecificDisclaimer: z.string().trim().min(1).max(800),
+  /** Optional crosswalk-level seed provenance (ADR-0347 Fork G2) — unset for a fully own-authored crosswalk. */
+  seedProvenance: RegimeCrosswalkSeedProvenance.optional(),
   rows: z
     .array(RegimeCrosswalkRow)
     .min(1, "a regime crosswalk must declare at least one row")

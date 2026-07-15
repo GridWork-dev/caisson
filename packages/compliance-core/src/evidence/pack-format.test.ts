@@ -110,10 +110,53 @@ function rlsFlaggedItem(): ItemInput {
   };
 }
 
+/** An empty rollup — used only by the one-off negative-path fixtures below; these exercise the
+ *  format contract, not the rollup join itself (that lives in `crosswalk-rollup.test.ts`). */
+function emptyRollup(): { cells: never[] } {
+  return { cells: [] };
+}
+
+/**
+ * The rollup for `sampleManifestInput()`'s two controls, mirroring their own crosswalk pointers.
+ * MUST stay byte-identical to `generate.test.ts`'s `sampleRollup()` — both fixtures assemble the
+ * SAME illustrative manifest and share the `evidence-pack.manifest` golden as a cross-check.
+ */
+function sampleRollup(): ManifestInput["crosswalkRollup"] {
+  return {
+    cells: [
+      {
+        framework: "HIPAA-Security",
+        reference: "164.312(b)",
+        canonicalControlIds: ["AUDIT.IMMUTABLE-LOG"],
+        status: "ready",
+        claim: "maps-to",
+        evidencePointers: ["AUDIT.IMMUTABLE-LOG"],
+      },
+      {
+        framework: "SOC2-TSC",
+        reference: "CC6.1",
+        canonicalControlIds: ["DATA-PROTECTION.TENANT-ISOLATION"],
+        status: "gap",
+        claim: "maps-to",
+        evidencePointers: ["DATA-PROTECTION.TENANT-ISOLATION"],
+      },
+      {
+        framework: "SOC2-TSC",
+        reference: "CC7.2",
+        canonicalControlIds: ["AUDIT.IMMUTABLE-LOG"],
+        status: "ready",
+        claim: "maps-to",
+        evidencePointers: ["AUDIT.IMMUTABLE-LOG"],
+      },
+    ],
+  };
+}
+
 /** A representative two-control manifest input: one ready (all pass), one gap (one flagged). */
 function sampleManifestInput(): ManifestInput {
   return {
     ...manifestMeta(),
+    crosswalkRollup: sampleRollup(),
     controls: [
       {
         controlId: "AUDIT.IMMUTABLE-LOG",
@@ -184,6 +227,7 @@ function asJson(value: unknown): JsonValue {
 function manifestWithItem(item: unknown, readiness: string): unknown {
   return {
     ...manifestMeta(),
+    crosswalkRollup: emptyRollup(),
     controls: [
       {
         controlId: "AUDIT.IMMUTABLE-LOG",
@@ -229,6 +273,22 @@ describe("evidencePackManifestSchema — canonical body", () => {
       parseEvidencePackManifest({
         ...sampleManifestInput(),
         signature: "ed25519:deadbeef",
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("v2: crosswalkRollup is required (rejects a manifest with no rollup section)", () => {
+    const { crosswalkRollup: _drop, ...withoutRollup } = sampleManifestInput();
+    expect(() => parseEvidencePackManifest(withoutRollup)).toThrow(
+      ValidationError,
+    );
+  });
+
+  test("v2: an unknown key inside crosswalkRollup is rejected (.strict() boundary)", () => {
+    expect(() =>
+      parseEvidencePackManifest({
+        ...sampleManifestInput(),
+        crosswalkRollup: { cells: [], extra: true },
       }),
     ).toThrow(ValidationError);
   });

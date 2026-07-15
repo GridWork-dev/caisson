@@ -429,6 +429,17 @@ export function toOscalAssessmentResults(
         ns: CAISSON_OSCAL_NS,
         value: manifest.summary.posture,
       },
+      // ADR-0333/ADR-0347 Fork F: the cross-framework rollup rides the existing SAR as report
+      // content, never a new OSCAL catalog-model artifact. `prop/@value` is a free string (like the
+      // posture prop above), so JSON-serializing the whole rollup here is schema-safe -- no
+      // NIST-constrained token field involved (the R1 risk this deliberately avoids).
+      // ponytail: reuses the existing OscalProp machinery; one prop for the whole rollup rather than
+      // one per cell keeps the SAR from growing an unbounded per-cell prop list.
+      {
+        name: "caisson-crosswalk-rollup",
+        ns: CAISSON_OSCAL_NS,
+        value: JSON.stringify(manifest.crosswalkRollup),
+      },
     ],
     observations,
     findings,

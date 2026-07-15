@@ -23,12 +23,17 @@ import { z } from "zod";
 import { strictObject, parseStrict } from "@caisson/kernel";
 import type { JsonValue } from "@caisson/kernel";
 import { CrosswalkReference } from "@caisson/frameworks-pack";
+import { crosswalkRollupSchema } from "./crosswalk-rollup.ts";
 
 /**
  * The evidence-pack format version. Append-only (ADR-0006): a breaking shape change mints a new
- * version, never an in-place edit — old packs stay verifiable against the format they were sealed under.
+ * version, never an in-place edit — old packs stay verifiable against the format they were sealed
+ * under. v1 -> v2 (ADR-0333/ADR-0347): adds the required `crosswalkRollup` section (the
+ * cross-framework evidence rollup, PLAN Group B). Each staged feature owns exactly one bump — named
+ * attestations (ADR-0333 Fork D) are a distinct, later migration (v2 -> v3, ADR-0347 Fork G4), not
+ * folded into this one.
  */
-export const EVIDENCE_PACK_FORMAT_VERSION = "1" as const;
+export const EVIDENCE_PACK_FORMAT_VERSION = "2" as const;
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 
@@ -181,6 +186,13 @@ export const evidencePackManifestSchema = strictObject({
   chainAnchor: evidencePackChainAnchor,
   controls: z.array(manifestControl).min(1),
   summary: manifestSummary,
+  /**
+   * The cross-framework evidence rollup (ADR-0333/ADR-0347, v2) — a pure join over every shipped
+   * pack's crosswalk pointers, computed by the caller (`computeCrosswalkRollup`) and assembled here
+   * unchanged (derived-not-asserted, like `summary`). Required in v2; may be an empty cell list when
+   * this run's controls carry no crosswalk pointers.
+   */
+  crosswalkRollup: crosswalkRollupSchema,
 }).superRefine((m, ctx) => {
   const totalControls = m.controls.length;
   const controlsReady = m.controls.filter(

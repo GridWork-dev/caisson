@@ -14,6 +14,9 @@ export * from "./evidence/collectors/field-crypto-policy.ts";
 export * from "./evidence/collectors/ai-risk-register.ts";
 export * from "./evidence/collectors/impersonation.ts";
 
+// --- Cross-framework evidence rollup (ADR-0333/ADR-0347) — the crosswalk-pointer join. -----------
+export * from "./evidence/crosswalk-rollup.ts";
+
 // --- Canonical pack format + deterministic generator. -------------------------------------------
 export * from "./evidence/pack-format.ts";
 export * from "./evidence/generate.ts";
@@ -22,3 +25,6 @@ export * from "./evidence/generate.ts";
 export * from "./evidence/oscal-export.ts";
 export * from "./evidence/oscal-export-xml.ts";
 export * from "./evidence/oscal-assessment-plan.ts";
+
+// --- Control<->collector binding table (PLAN Group E) — a derived artifact, not a config layer. --
+export * from "./evidence/binding-table.ts";
