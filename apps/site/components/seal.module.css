@@ -1,0 +1,106 @@
+/* Seal on Proof (ADR-0334 moment 1) — one-shot dash draw + spring-overshoot settle.
+ * Additive only: without JS, without IO, or under reduced motion the chips and glyphs render
+ * complete and static. Permitted properties per ADR-0334 §2: stroke-dasharray/offset (one-shot,
+ * small elements) + transform/opacity; easing via the --cs-ease-spring-settle linear() token. */
+
+.seal {
+  /* Layout comes from the consumer (ProofChips passes its flex styles through). */
+}
+
+.badge {
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  flex: none;
+  color: var(--cs-accent);
+}
+
+.badgeRing,
+.badgeCheck {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.badgeRing {
+  /* Start the ring draw at 12 o'clock, not the SVG-default 3 o'clock. */
+  transform: rotate(-90deg);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* --- ProofChips row: each chip's check glyph draws in, chip settles with overshoot. --- */
+  .seal[data-sealed] :global(.cs-chip) {
+    animation: seal-settle var(--cs-duration-seal) var(--cs-ease-spring-settle)
+      both;
+  }
+  /* Lucide check on the 24-grid is ~23 units long; 26 covers it with headroom. One-shot paint
+   * cost on a 16px glyph — inside the ADR-0334 §2(a) bound. */
+  .seal[data-sealed] :global(.cs-chip) svg path {
+    stroke-dasharray: 26;
+    animation: seal-draw-26 450ms var(--cs-ease-out) both;
+  }
+  /* Bounded stagger, mirroring reveal.css: 6 steps, later siblings share the last step. */
+  .seal[data-sealed] :global(.cs-chip:nth-child(2)),
+  .seal[data-sealed] :global(.cs-chip:nth-child(2)) svg path {
+    animation-delay: 90ms;
+  }
+  .seal[data-sealed] :global(.cs-chip:nth-child(3)),
+  .seal[data-sealed] :global(.cs-chip:nth-child(3)) svg path {
+    animation-delay: 180ms;
+  }
+  .seal[data-sealed] :global(.cs-chip:nth-child(4)),
+  .seal[data-sealed] :global(.cs-chip:nth-child(4)) svg path {
+    animation-delay: 270ms;
+  }
+  .seal[data-sealed] :global(.cs-chip:nth-child(5)),
+  .seal[data-sealed] :global(.cs-chip:nth-child(5)) svg path {
+    animation-delay: 360ms;
+  }
+  .seal[data-sealed] :global(.cs-chip:nth-child(n + 6)),
+  .seal[data-sealed] :global(.cs-chip:nth-child(n + 6)) svg path {
+    animation-delay: 450ms;
+  }
+
+  /* --- SealBadge: ring draws (400ms), check follows, whole badge pops via the spring token. --- */
+  .badge {
+    animation: seal-settle 450ms var(--cs-ease-spring-settle) both;
+  }
+  .badgeRing {
+    stroke-dasharray: 1;
+    animation: seal-draw-1 400ms var(--cs-ease-out) both;
+  }
+  .badgeCheck {
+    stroke-dasharray: 1;
+    animation: seal-draw-1 280ms var(--cs-ease-out) 300ms both;
+  }
+}
+
+@keyframes seal-draw-26 {
+  from {
+    stroke-dashoffset: 26;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes seal-draw-1 {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes seal-settle {
+  from {
+    transform: scale(0.94);
+  }
+  to {
+    transform: scale(1);
+  }
+}

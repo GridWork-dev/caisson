@@ -10,6 +10,7 @@ import {
   Section,
   type IconName,
 } from "@/components";
+import { LivingChainSection } from "@/components/living-chain-lazy";
 import { ProofChips } from "@/components/proof-chips";
 import {
   breadcrumb,
@@ -185,6 +186,17 @@ export default function EvidencePage() {
           </div>
         </Section>
       </Reveal>
+
+      {/* ===== The Living Chain (ADR-0334 moment 4 — flagship) ===== */}
+      <Section
+        eyebrow="The chain, live"
+        title="Watch the audit chain build itself."
+        lede="This is the shipped ChainViewer over a genuine kernel-built hash chain — each append links to the last by SHA-256, and verifyChain stamps the verdict. Scroll it into existence; the hashes are real either way."
+      >
+        <div style={{ marginTop: "var(--cs-space-8)" }}>
+          <LivingChainSection />
+        </div>
+      </Section>
 
       {/* ===== How to get it ===== */}
       <Reveal>

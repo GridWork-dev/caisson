@@ -4,7 +4,16 @@ import config from "@caisson/eslint-config";
 // like every other workspace member) rather than the deprecated `next lint`. Ignore Next's
 // generated output, the static-export dir, the fumadocs-mdx codegen dir, and ambient types.
 export default [
-  { ignores: [".next/**", "out/**", ".source/**", "next-env.d.ts"] },
+  {
+    ignores: [
+      ".next/**",
+      "out/**",
+      ".source/**",
+      "next-env.d.ts",
+      // Vendored anti-slop detector (impeccable catalog) — third-party, not linted to our rules.
+      "scripts/anti-slop/detector/**",
+    ],
+  },
   ...config,
   // Build tooling runs on Node — give the .mjs scripts the Node globals they use.
   {

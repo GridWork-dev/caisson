@@ -211,34 +211,38 @@ export default function CompliancePage() {
       />
 
       {/* ===== Hero ===== */}
-      <Hero
-        eyebrow={record.hero.eyebrow}
-        title={record.hero.title}
-        lede={record.hero.lede}
-        ctas={
-          <>
-            {bundleCartItem && (
-              <AddToCartButton item={bundleCartItem} variant="primary" />
-            )}
-            <Button href="/docs" variant="ghost">
-              Read the docs
-            </Button>
-          </>
-        }
-        credentials={
-          <CredentialStrip
-            items={[
-              "SOC 2 CC6.1",
-              "HIPAA §164.312",
-              "PCI DSS · GDPR crosswalks",
-              "WORM evidence",
-              "Append-only audit",
-            ]}
-            note="Caisson generates the evidence — the certification is your auditor's call, not ours. Support is included with every license: a real person on email and Discord, business-days response."
-          />
-        }
-        artifact={heroArtifact}
-      />
+      {/* data-vt-hero: Door Morph landing pad (ADR-0334 moment 3) — the home compliance door
+          chip morphs into this hero's eyebrow; global.css assigns the view-transition-name. */}
+      <div data-vt-hero="door-compliance">
+        <Hero
+          eyebrow={record.hero.eyebrow}
+          title={record.hero.title}
+          lede={record.hero.lede}
+          ctas={
+            <>
+              {bundleCartItem && (
+                <AddToCartButton item={bundleCartItem} variant="primary" />
+              )}
+              <Button href="/docs" variant="ghost">
+                Read the docs
+              </Button>
+            </>
+          }
+          credentials={
+            <CredentialStrip
+              items={[
+                "SOC 2 CC6.1",
+                "HIPAA §164.312",
+                "PCI DSS · GDPR crosswalks",
+                "WORM evidence",
+                "Append-only audit",
+              ]}
+              note="Caisson generates the evidence — the certification is your auditor's call, not ours. Support is included with every license: a real person on email and Discord, business-days response."
+            />
+          }
+          artifact={heroArtifact}
+        />
+      </div>
 
       {/* ===== What it composes ===== */}
       <Reveal>

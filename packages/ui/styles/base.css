@@ -157,6 +157,9 @@ kbd,
   line-height: var(--cs-leading-tight);
   margin-block: var(--cs-space-4) var(--cs-space-3);
   max-width: 28ch;
+  /* No orphaned last word on multi-line section titles (task 8). .cs-display keeps `balance`
+   * (short display lines want even lengths; pretty only tunes the last line). */
+  text-wrap: pretty;
 }
 
 .cs-display {
@@ -174,6 +177,7 @@ kbd,
   font-size: var(--cs-text-lg);
   line-height: var(--cs-leading-relaxed);
   max-width: 62ch;
+  text-wrap: pretty;
 }
 
 .cs-muted {

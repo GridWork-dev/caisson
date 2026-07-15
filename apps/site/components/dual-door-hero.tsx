@@ -1,4 +1,5 @@
 import { Button, CodeBlock, StatusChip, Terminal } from "@/components";
+import { DoorsWithWeight } from "@/components/doors-with-weight";
 import { HeroField } from "@/components/hero-field";
 import { ProofChips } from "@/components/proof-chips";
 import { bundlePrice, BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
@@ -24,6 +25,7 @@ export function DualDoorHero() {
       {/* Ambient depth-fog lattice field (ADR-0306) — additive layer BEHIND the content; the h1/LCP
           contract below is untouched. */}
       <HeroField />
+      <DoorsWithWeight />
       <div className="cs-container">
         <span className="cs-eyebrow">One audited base — two ways in</span>
         <h1 className="cs-display" style={{ marginTop: "var(--cs-space-5)" }}>
@@ -39,10 +41,12 @@ export function DualDoorHero() {
           underneath is the same.
         </p>
 
-        {/* Two doors: Compliance leads (accent), production is the secondary umbrella door. */}
-        <div className={styles.doors}>
+        {/* Two doors: Compliance leads (accent), production is the secondary umbrella door.
+            data-doors/data-door: hooks for the Doors With Weight enhancer (ADR-0334 moment 5) —
+            interruptible springs attach post-idle on hover-capable devices; HTML unchanged. */}
+        <div className={styles.doors} data-doors="">
           {/* ponytail: door sub-claim copy is Cookiy-287453-refinable later (string swap, no rebuild). */}
-          <div className={styles.door} data-lead>
+          <div className={styles.door} data-lead data-door="">
             <span className={styles.kicker}>Building something regulated?</span>
             <StatusChip
               className={styles.chip}
@@ -58,13 +62,16 @@ export function DualDoorHero() {
               claim.
             </p>
             <div className={styles.cta}>
-              <Button href="/compliance" variant="primary">
+              {/* hard: the Door Morph (ADR-0334 moment 3) rides a cross-DOCUMENT view
+                  transition — next/link soft navs never fire it. The Speculation Rules
+                  hover-prerender makes the hard nav instant. */}
+              <Button href="/compliance" variant="primary" hard>
                 Open the Compliance bundle
               </Button>
             </div>
           </div>
 
-          <div className={styles.door}>
+          <div className={styles.door} data-door="">
             <span className={styles.kicker}>Building for production?</span>
             <StatusChip
               className={styles.chip}

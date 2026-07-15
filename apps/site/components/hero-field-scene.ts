@@ -38,6 +38,9 @@ export interface FieldHandle {
   resume(): void;
   /** Recolour in place on a live theme toggle — no teardown/remount. */
   setDark(dark: boolean): void;
+  /** Waterline Descent (ADR-0334 §3a — the ONE scroll-fed input): 0 = surface (rest fog),
+   *  1 = fully scrolled past — the depth fog thickens and far rods dissolve sooner. */
+  setDescent(progress: number): void;
   dispose(): void;
 }
 
@@ -95,11 +98,13 @@ const Z_NEAR = -2;
 const SWEEP_PERIOD = 9; // seconds — a slow health-check pulse, not a strobe
 
 const VERTEX = /* glsl */ `
+  varying float vWorldX;
   varying float vWorldY;
   varying float vWorldZ;
   varying float vViewDepth;
   void main() {
     vec4 world = instanceMatrix * vec4(position, 1.0);
+    vWorldX = world.x;
     vWorldY = world.y;
     vWorldZ = world.z;
     vec4 mv = modelViewMatrix * world;
@@ -115,6 +120,8 @@ const FRAGMENT = /* glsl */ `
   uniform float uOpacity;
   uniform float uFogDensity;
   uniform float uSweep;   // current scan-line position along Z
+  uniform vec2 uAccentDrift; // (world-x of the pointer, strength) — ADR-0334 §3b
+  varying float vWorldX;
   varying float vWorldY;
   varying float vWorldZ;
   varying float vViewDepth;
@@ -130,6 +137,12 @@ const FRAGMENT = /* glsl */ `
     float band = exp(-pow((vWorldZ - uSweep) * 0.55, 2.0));
     col = mix(col, uAccent, band * 0.5 * yf);
     col += uAccent * band * 0.12;
+
+    // Accent drift (ADR-0334 §3b, Doors With Weight): columns near the pointer's world-x warm
+    // faintly toward the accent — the instrument light answering the hand. Well under the 10%
+    // accent budget (peak mix 0.14, a narrow gaussian, strength eased in the frame loop).
+    float drift = exp(-pow((vWorldX - uAccentDrift.x) * 0.22, 2.0));
+    col = mix(col, uAccent, drift * uAccentDrift.y * 0.14 * yf);
 
     // Depth fog by view distance (exp2) — far rods dissolve. Alpha only, so the real page bg shows
     // through and the field seams perfectly into it (no painted fog colour to drift from --cs-bg).
@@ -213,13 +226,15 @@ export function mountDepthField(
   const geometry = new BoxGeometry(1, 1, 1);
   // Concrete uniforms object (not index-accessed off material.uniforms) so strict
   // noUncheckedIndexedAccess sees each field as defined. ShaderMaterial keeps this same ref.
+  const REST_FOG = 0.058;
   const uniforms = {
     uRod: { value: hexToVec3(pal.rod) },
     uRodDeep: { value: hexToVec3(pal.rodDeep) },
     uAccent: { value: hexToVec3(pal.accent) },
     uOpacity: { value: pal.opacity },
-    uFogDensity: { value: 0.058 },
+    uFogDensity: { value: REST_FOG },
     uSweep: { value: Z_NEAR },
+    uAccentDrift: { value: new Vector2(0, 0) },
   };
   const material = new ShaderMaterial({
     vertexShader: VERTEX,
@@ -293,6 +308,15 @@ export function mountDepthField(
 
     // Gentle parallax: pointer + a slow autonomous drift so the depth breathes without a pointer.
     eased.lerp(pointer, 0.04);
+    // Accent drift follows the eased pointer (same plumbing, ADR-0334 §3b): map pointer x
+    // (-1..1) onto the lattice's world-x span; strength eases up from 0 on the first real move.
+    uniforms.uAccentDrift.value.set(
+      eased.x * ((NX - 1) * SPACING_X * 0.5),
+      Math.min(
+        1,
+        uniforms.uAccentDrift.value.y + (pointer.lengthSq() > 0 ? 0.02 : 0),
+      ),
+    );
     const driftX = Math.sin(t * 0.13) * 0.25;
     const driftY = Math.cos(t * 0.09) * 0.12;
     camera.position.set(
@@ -335,6 +359,12 @@ export function mountDepthField(
       uniforms.uAccent.value.copy(hexToVec3(p.accent));
       uniforms.uOpacity.value = p.opacity;
       if (!running) renderer.render(scene, camera); // repaint if paused
+    },
+    setDescent(progress: number) {
+      // +55% fog at full descent — far rods dissolve as the pressure comes on. The RAF loop
+      // renders it on the next frame; no forced repaint (a paused field is offscreen anyway).
+      const t = Math.min(1, Math.max(0, progress));
+      uniforms.uFogDensity.value = REST_FOG * (1 + 0.55 * t);
     },
     dispose() {
       pause();

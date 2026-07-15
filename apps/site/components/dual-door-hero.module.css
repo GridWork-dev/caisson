@@ -55,6 +55,12 @@
   color: var(--cs-fg);
 }
 
+/* Door Morph (ADR-0334 moment 3): the lead door's chip carries the shared view-transition-name;
+ * navigating to /compliance morphs it into that page's hero eyebrow (Chromium-only). */
+.door[data-lead] span.chip {
+  view-transition-name: door-compliance;
+}
+
 /* Bolder standout chip (ADR-0285 §4): the door price/count chip reads as a headline stat, not a
  * quiet footnote. `span.chip` (0,1,1) reliably wins over the kit's `.cs-chip` base (0,1,0) regardless
  * of stylesheet order. */
