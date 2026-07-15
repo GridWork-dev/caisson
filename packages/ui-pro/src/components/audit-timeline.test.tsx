@@ -76,7 +76,7 @@ describe("AuditTimeline", () => {
     expect(html).not.toContain("Link only");
   });
 
-  describe("T-F1 seal copy (GATE-1 signed anchors, ADR-0344)", () => {
+  describe("T-F1 seal copy (signed anchors)", () => {
     test("an anchor-derived `verified` row reads the sanctioned base seal, and NOT signature-checked (this component runs no signature leg)", () => {
       const html = renderToStaticMarkup(
         <AuditTimeline
