@@ -14,7 +14,12 @@ export default defineModule({
   tier: "paid",
   priceCents: 14900,
   license: pkg.license,
-  dependencies: ["@caisson/kernel", "@caisson/tenancy-rls", "@caisson/ui"],
+  dependencies: [
+    "@caisson/jobs",
+    "@caisson/kernel",
+    "@caisson/tenancy-rls",
+    "@caisson/ui",
+  ],
   golden: "src/__golden__",
   description:
     "Write-once (WORM) artifact store (S3 Object-Lock seam) + SHA-256 append-only audit chain with a trusted WORM anchor + append-only locked-version DB with derived-current — the compliance evidentiary primitive.",
