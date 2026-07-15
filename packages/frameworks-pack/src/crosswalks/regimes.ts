@@ -1,9 +1,11 @@
 /**
- * The three named-regime crosswalks ADR-0277 locks: SOC 2, PCI DSS, GDPR. CLEAN-ROOM, OWN-AUTHORED.
+ * The four named-regime crosswalks: SOC 2, PCI DSS, and GDPR (ADR-0277), plus ISO/IEC 27001:2022
+ * (ADR-0333/ADR-0347, added as a fourth `regimes.ts`-pattern crosswalk). CLEAN-ROOM, OWN-AUTHORED.
  *
  * Every `summary` is an original Caisson paraphrase of the requirement — we do NOT copy or transform
- * the AICPA Trust Services Criteria, the PCI DSS standard text, or the GDPR articles. The `control`
- * ids are bare regime IDENTIFIERS (factual citations), not the requirement text behind them.
+ * the AICPA Trust Services Criteria, the PCI DSS standard text, the GDPR articles, or the ISO/IEC
+ * 27001:2022 Annex A control text. The `control` ids are bare regime IDENTIFIERS (factual citations),
+ * not the requirement text behind them.
  *
  * HONESTY FLOOR (task binding + ADR-0279): only mechanisms that actually exist in this repo are
  * mapped — audit-worm (WORM + hash chain), field-crypto (encryption + crypto-shred), tenancy-rls
@@ -12,6 +14,19 @@
  * such row links that test in `proof`; when in doubt the row is `"maps-to"`. Fewer, defensible rows
  * beat broad coverage. The `buyerResponsibility` column (never dropped) carries what Caisson does NOT
  * cover, so the whole document stays at the "maps to / supports" register — never "makes you compliant".
+ *
+ * ISO/IEC 27001:2022 LEGAL GATE (ADR-0333, absolute for v1): every `iso27001Crosswalk` row is
+ * `claim: "maps-to"` -- never `"implements"`, never `expert-reviewed` -- pending the ADR-0319 legal
+ * answer on the ISO identifier / EU database-right question. Each row's `canonicalControlId`
+ * (ADR-0347 Fork G1) lets a live collector pass light the row in the cross-framework rollup
+ * (`compliance-core`'s `computeCrosswalkRollup`) through the SAME join the framework packs use --
+ * the Legal gate still caps the resulting cell at `maps-to` (enforced structurally in the rollup,
+ * not merely by convention here). `iso27001Crosswalk.seedProvenance` (ADR-0347 Fork G2) pins the
+ * NIST OLIR **2022-edition** SP 800-53 Rev 5 <-> ISO/IEC 27001:2022 mapping (CSRC catalog
+ * `referenceId=155`) this crosswalk was CHECKED against -- CHECK DATA ONLY: the xlsx's own
+ * requirement-text columns are never read into this file, only its identifier-pair rows (e.g.
+ * `SC-13 -> A.8.24`), per the ADR-0057/ADR-0333 licensing floor. The retired 2013-edition mapping
+ * (a `.docx` target) is NEVER used -- see ADR-0333 "Rejected".
  */
 import {
   defineRegimeCrosswalk,
@@ -315,9 +330,156 @@ export const gdprCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
   ],
 });
 
-/** All three regime crosswalks, for iteration in tests and by a consumer that exports the whole set. */
+/**
+ * ISO/IEC 27001:2022 Annex A -- the fourth `regimes.ts`-pattern crosswalk (ADR-0333/ADR-0347).
+ * Every row is own-authored paraphrase over a bare Annex A identifier (never Annex A text), and
+ * every row is capped `claim: "maps-to"` by the Legal gate (ADR-0333) -- no exceptions in v1.
+ * `canonicalControlId` on each row (ADR-0347 Fork G1) points at a REAL canonical control already
+ * crosswalked from the shipped SOC2/HIPAA/EU-AI-Act packs, so a live collector run that evidences
+ * that control also lights this ISO row in the cross-framework rollup. Each id pairing below was
+ * CHECKED (identifiers only, never text) against the pinned OLIR 2022-edition mapping's own
+ * SP 800-53 <-> ISO/IEC 27001:2022 rows (`seedProvenance` below) -- e.g. the mapping's own
+ * `SC-13 -> A.8.24` and `MP-06 -> A.8.10` rows back the encryption and disposal pairings here.
+ */
+export const iso27001Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
+  regime: "iso-27001",
+  title: "ISO/IEC 27001:2022 Annex A — Caisson technical-control crosswalk",
+  regimeRevision: "ISO/IEC 27001:2022 (Annex A, per ISO/IEC 27002:2022)",
+  crosswalkVersion: CROSSWALK_VERSION,
+  regimeSpecificDisclaimer:
+    "Under ISO/IEC 27001, certification applies to an organization's information security " +
+    "management system (ISMS) — a documented, audited program run BY an organization — never to a " +
+    "standalone software product. Caisson holds no ISO/IEC 27001 certificate and is not 'ISO " +
+    "certified'; this crosswalk cites bare Annex A control identifiers as factual references and " +
+    "maps the technical controls they call for. Establishing, operating, and certifying your own " +
+    "ISMS remains between you and your accredited certification body.",
+  seedProvenance: {
+    sourceId: "nist-sp800-53r5-iso27001-2022-olir",
+    sourceVersion:
+      "NIST OLIR v1.0.0, posted 2023-11-13 (focal document SP 800-53 Rev 5.1.1)",
+    sourceUrl:
+      "https://csrc.nist.gov/csrc/media/Projects/olir/documents/submissions/sp800-53r5-to-iso-27001-mapping-2022-OLIR-2023-10-12-UPDATED.xlsx",
+    sourceDigest:
+      "e631de234a1fac057991773f015c221226940540f5602e1b70a3768eaff5cbd9",
+  },
+  rows: [
+    {
+      claim: "maps-to",
+      control: "A.5.15",
+      summary:
+        "Logical and physical access to information and other associated assets is governed by " +
+        "rules derived from business and security requirements.",
+      mechanism:
+        "@caisson/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary " +
+        "(a missing tenant scope denies as a 404, never widens access).",
+      evidence:
+        "Tenant-isolation tests and the RLS provisioning generator in packages/tenancy-rls.",
+      buyerResponsibility:
+        "Your identity provider and user-authentication configuration, the authorization/" +
+        "least-privilege model above the data layer, and periodic access recertification.",
+      canonicalControlId: "ACCESS-CONTROL.LOGICAL",
+    },
+    {
+      claim: "maps-to",
+      control: "A.8.24",
+      summary:
+        "The use of cryptography to protect information is governed by defined rules, including key " +
+        "management practices.",
+      mechanism:
+        "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional " +
+        "authenticated data, plus a self-describing, rotatable key envelope.",
+      evidence: "Encryption and key-envelope tests in packages/field-crypto.",
+      buyerResponsibility:
+        "Selecting which fields hold sensitive information, your key-custody and rotation policy, " +
+        "and encryption in transit at your own network boundary.",
+      canonicalControlId: "DATA-PROTECTION.ENCRYPTION",
+    },
+    {
+      claim: "maps-to",
+      control: "A.8.10",
+      summary:
+        "Information held in systems, devices, or storage media is deleted once it is no longer " +
+        "required, so it cannot be recovered.",
+      mechanism:
+        "@caisson/field-crypto — crypto-shred renders a subject's ciphertext irreversibly " +
+        "unrecoverable by destroying its governing key, selectively (other subjects still decrypt) " +
+        "and irreversibly (a shredded scope cannot be re-provisioned).",
+      evidence:
+        "The crypto-shred tests prove disposal is selective, irreversible, and leaves the " +
+        "committed-ciphertext audit chain verifiable.",
+      buyerResponsibility:
+        "Defining the retention schedule that triggers disposal, and identifying which records " +
+        "reach end of life (the retention-runner schedules the sweep).",
+      canonicalControlId: "DATA-PROTECTION.DISPOSAL",
+    },
+    {
+      claim: "maps-to",
+      control: "A.8.15",
+      summary:
+        "Activity logs are produced, retained, and protected from unauthorized access or " +
+        "alteration so that events remain reviewable.",
+      mechanism:
+        "@caisson/audit-worm — an append-only, hash-chained log verifiable against a trusted " +
+        "anchor, so tampering, truncation, or rewriting after the fact is detectable.",
+      evidence: "The tamper-evidence integration tests in packages/audit-worm.",
+      buyerResponsibility:
+        "Deciding which application events are written to the log and your own log-review " +
+        "process; a write-once backing store for production is your deployment choice.",
+      canonicalControlId: "AUDIT.IMMUTABLE-LOG",
+    },
+    {
+      claim: "maps-to",
+      control: "A.8.16",
+      summary:
+        "Systems are monitored for anomalous behavior so that potential security events are " +
+        "identified and can be acted on.",
+      mechanism:
+        "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined " +
+        "conditions, drawing on the audit-worm chain and substrate collector facts.",
+      evidence: "Alerting pipeline and channel tests in packages/alerting.",
+      buyerResponsibility:
+        "Deciding what to monitor, defining alert thresholds and routing, and acting on the " +
+        "alerts raised.",
+      canonicalControlId: "SYSTEM-OPERATIONS.DETECTION",
+    },
+    {
+      claim: "maps-to",
+      control: "A.8.5",
+      summary:
+        "Access is granted only after a secure authentication procedure verifies the identity of " +
+        "the person or entity requesting it.",
+      mechanism:
+        "@caisson/auth — session and JWT verification gating requests at the application " +
+        "boundary before any protected resource is reached.",
+      evidence: "JWT/session verification tests in packages/auth.",
+      buyerResponsibility:
+        "Multi-factor authentication policy, credential lifecycle, and any federation with your " +
+        "own identity provider.",
+      canonicalControlId: "AUTHENTICATION.ENTITY",
+    },
+    {
+      claim: "maps-to",
+      control: "A.5.37",
+      summary:
+        "Operating procedures and records for information-security-relevant processes are " +
+        "documented, retained, and made available to those who need them.",
+      mechanism:
+        "@caisson/audit-worm — a fail-closed retention floor rejects a retention term configured " +
+        "below the minimum, so operating records and documentation are not disposed of early.",
+      evidence: "Retention-floor tests in packages/audit-worm.",
+      buyerResponsibility:
+        "Authoring and maintaining the operating procedures themselves; Caisson enforces that " +
+        "your configured retention floor cannot be silently shortened, not that any particular " +
+        "procedure exists.",
+      canonicalControlId: "GOVERNANCE.DOCUMENTATION",
+    },
+  ],
+});
+
+/** All four regime crosswalks, for iteration in tests and by a consumer that exports the whole set. */
 export const regimeCrosswalks: readonly RegimeCrosswalk[] = [
   soc2Crosswalk,
   pciDssCrosswalk,
   gdprCrosswalk,
+  iso27001Crosswalk,
 ];

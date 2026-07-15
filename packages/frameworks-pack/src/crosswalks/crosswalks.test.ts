@@ -11,10 +11,15 @@ import {
 } from "./regime-crosswalk.ts";
 import {
   gdprCrosswalk,
+  iso27001Crosswalk,
   pciDssCrosswalk,
   regimeCrosswalks,
   soc2Crosswalk,
 } from "./regimes.ts";
+import { euAiAct } from "../frameworks/eu-ai-act.ts";
+import { hipaaSecurity } from "../frameworks/hipaa-security.ts";
+import { soc2Tsc } from "../frameworks/soc2-tsc.ts";
+import type { Framework } from "../registry/control.ts";
 
 // matchGolden anchors __golden__/ to the URL handed to it. The frameworks-pack keeps ALL goldens in
 // ONE package-level dir (src/__golden__ — the manifest's gated `golden` path), so anchor at src/
@@ -114,16 +119,123 @@ describe("claim posture is encoded in the type + enforced at author time (ADR-02
   });
 });
 
+describe("ADR-0347 Fork G1/G2 -- optional canonicalControlId + crosswalk-level seedProvenance", () => {
+  test("a row may carry an optional canonicalControlId (additive, .strict()-safe)", () => {
+    const cw = defineRegimeCrosswalk(
+      minimal([
+        {
+          claim: "maps-to",
+          control: "CC1.1",
+          summary: "s",
+          mechanism: "@caisson/x — mechanism",
+          evidence: "e",
+          buyerResponsibility: "b",
+          canonicalControlId: "ACCESS-CONTROL.LOGICAL",
+        },
+      ]),
+    );
+    expect(cw.rows[0]?.canonicalControlId).toBe("ACCESS-CONTROL.LOGICAL");
+  });
+
+  test("rejects a non-canonical canonicalControlId", () => {
+    expect(() =>
+      defineRegimeCrosswalk(
+        minimal([
+          {
+            claim: "maps-to",
+            control: "CC1.1",
+            summary: "s",
+            mechanism: "@caisson/x — mechanism",
+            evidence: "e",
+            buyerResponsibility: "b",
+            canonicalControlId: "access-control.logical",
+          },
+        ]),
+      ),
+    ).toThrow();
+  });
+
+  test("a crosswalk may carry optional crosswalk-level seedProvenance", () => {
+    const cw = defineRegimeCrosswalk({
+      ...minimal([
+        {
+          claim: "maps-to",
+          control: "CC1.1",
+          summary: "s",
+          mechanism: "@caisson/x — mechanism",
+          evidence: "e",
+          buyerResponsibility: "b",
+        },
+      ]),
+      seedProvenance: {
+        sourceId: "nist-sp800-53r5-iso27001-2022-olir",
+        sourceVersion: "2022",
+        sourceUrl: "https://csrc.nist.gov/olir/example.xlsx",
+        sourceDigest: "c".repeat(64),
+      },
+    });
+    expect(cw.seedProvenance?.sourceDigest).toBe("c".repeat(64));
+  });
+
+  test("rejects a non-https seedProvenance.sourceUrl", () => {
+    expect(() =>
+      defineRegimeCrosswalk({
+        ...minimal([
+          {
+            claim: "maps-to",
+            control: "CC1.1",
+            summary: "s",
+            mechanism: "@caisson/x — mechanism",
+            evidence: "e",
+            buyerResponsibility: "b",
+          },
+        ]),
+        seedProvenance: {
+          sourceId: "nist-sp800-53r5-iso27001-2022-olir",
+          sourceVersion: "2022",
+          sourceUrl: "http://csrc.nist.gov/olir/example.xlsx",
+          sourceDigest: "c".repeat(64),
+        },
+      }),
+    ).toThrow();
+  });
+
+  test("the own-authored SOC2/PCI/GDPR crosswalks carry neither field (no v1 churn)", () => {
+    // ISO (below) is the sole exception -- it is SEEDED (seedProvenance) and JOINABLE
+    // (canonicalControlId), by design (ADR-0347 Fork G1/G2).
+    for (const cw of [soc2Crosswalk, pciDssCrosswalk, gdprCrosswalk]) {
+      expect(cw.seedProvenance).toBeUndefined();
+      for (const row of cw.rows) {
+        expect(row.canonicalControlId).toBeUndefined();
+      }
+    }
+  });
+
+  test("iso27001Crosswalk carries seedProvenance and every row a canonicalControlId", () => {
+    expect(iso27001Crosswalk.seedProvenance?.sourceId).toBe(
+      "nist-sp800-53r5-iso27001-2022-olir",
+    );
+    expect(iso27001Crosswalk.seedProvenance?.sourceDigest).toMatch(
+      /^[0-9a-f]{64}$/,
+    );
+    for (const row of iso27001Crosswalk.rows) {
+      expect(row.canonicalControlId).toBeDefined();
+    }
+  });
+});
+
 describe("every authored crosswalk is honest and well-formed", () => {
   const cases: ReadonlyArray<readonly [string, RegimeCrosswalk]> = [
     ["soc2", soc2Crosswalk],
     ["pci-dss", pciDssCrosswalk],
     ["gdpr", gdprCrosswalk],
+    ["iso-27001", iso27001Crosswalk],
   ];
 
-  test("regimeCrosswalks holds exactly the three ADR-0277 regimes (FedRAMP out)", () => {
+  test("regimeCrosswalks holds the three ADR-0277 regimes plus iso-27001 (ADR-0333/ADR-0347; FedRAMP still out)", () => {
     expect(regimeCrosswalks.map((c) => c.regime).sort()).toEqual([
       "gdpr",
+      "iso-27001",
       "pci-dss",
       "soc2",
     ]);
@@ -219,5 +331,36 @@ describe("crosswalk exports are byte-stable (golden)", () => {
       "crosswalk-gdpr",
       exportRegimeCrosswalk(gdprCrosswalk),
     );
+  });
+  test("iso-27001 crosswalk export", () => {
+    matchGolden(
+      PKG_SRC_META,
+      "crosswalk-iso-27001",
+      exportRegimeCrosswalk(iso27001Crosswalk),
+    );
+  });
+});
+
+describe("Legal-gate guards (ADR-0333/ADR-0347 Group G) -- the ISO crosswalk never overclaims", () => {
+  test("every iso27001Crosswalk row is maps-to -- none is implements", () => {
+    for (const row of iso27001Crosswalk.rows) {
+      expect(row.claim).toBe("maps-to");
+    }
+  });
+
+  test("no shipped pack's crosswalk reference to the ISO-27001 framework label carries an expert-reviewed verification", () => {
+    // Forward-looking structural guard: none of the three shipped packs crosswalks a control
+    // DIRECTLY at the "ISO-27001" framework label today (the join instead runs the other way, via
+    // iso27001Crosswalk's own canonicalControlId -- see crosswalk-rollup.ts). If one ever does, the
+    // Legal gate (ADR-0333) still forbids an expert-reviewed claim on it pending the ADR-0319 answer.
+    const catalogs: readonly Framework[] = [soc2Tsc, hipaaSecurity, euAiAct];
+    for (const catalog of catalogs) {
+      for (const control of catalog.controls) {
+        for (const ref of control.crosswalk) {
+          if (ref.framework !== "ISO-27001") continue;
+          expect(ref.verification?.status).not.toBe("expert-reviewed");
+        }
+      }
+    }
   });
 });

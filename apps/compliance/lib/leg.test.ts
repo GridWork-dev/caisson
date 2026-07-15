@@ -107,6 +107,53 @@ describe("compliance reference app — the full leg end to end", () => {
     expect(result.allChecksPassed).toBe(true);
   });
 
+  test("7 — the crosswalk rollup lights every crosswalked requirement across all FOUR framework views from THIS run's evidence (ADR-0333/ADR-0347, the SPEC's marquee goal-backward scenario)", () => {
+    const cell = (
+      framework: string,
+      reference: string,
+    ):
+      | {
+          readonly status: string;
+          readonly claim: string;
+          readonly note?: string;
+        }
+      | undefined =>
+      result.manifest.crosswalkRollup.cells.find(
+        (c) => c.framework === framework && c.reference === reference,
+      );
+    // AUDIT.IMMUTABLE-LOG's crosswalk pointers propagate into HIPAA-Security and EU-AI-Act too, from
+    // the SAME soc2-tsc pack run — "fix once, satisfied across N frameworks" (SPEC Goal).
+    expect(cell("SOC2-TSC", "CC7.2")?.status).toBe("ready");
+    expect(cell("HIPAA-Security", "164.312(b)")?.status).toBe("ready");
+    expect(cell("EU-AI-Act", "Art. 12")?.status).toBe("ready");
+    // Default propagation is maps-to (Fork E) — the rls-force-style controls here carry no reviewed
+    // verification record.
+    expect(cell("SOC2-TSC", "CC6.1")?.claim).toBe("maps-to");
+    // The ONE authored reviewed record (ADR-0347 Fork G3) reaches `implements` end to end: the
+    // control is ready, the reference is reviewed, and the soc2 regime-crosswalk row is already
+    // implements (the crypto-shred proof).
+    expect(cell("SOC2-TSC", "C1.2")?.claim).toBe("implements");
+    // The SAME control's OTHER (unreviewed) reference stays maps-to — restates, never originates.
+    expect(cell("SOC2-TSC", "CC6.5")?.claim).toBe("maps-to");
+    // The FOURTH view (ISO 27001, ADR-0347 Fork G1 canonicalControlId join): the SAME run's three
+    // canonical controls (ACCESS-CONTROL.LOGICAL / AUDIT.IMMUTABLE-LOG / DATA-PROTECTION.DISPOSAL)
+    // also light their joined ISO/IEC 27001:2022 Annex A rows — the goal-backward scenario's "plus
+    // the ISO crosswalk" clause, proven from real substrate evidence, not a synthetic fixture.
+    expect(cell("ISO-27001", "A.5.15")?.status).toBe("ready");
+    expect(cell("ISO-27001", "A.8.15")?.status).toBe("ready");
+    expect(cell("ISO-27001", "A.8.10")?.status).toBe("ready");
+    // Legal gate (ADR-0333) holds even at maximum real-world favorability: DATA-PROTECTION.DISPOSAL
+    // is ready AND its SOC2-TSC C1.2 reference reached `implements` above, yet the ISO row over the
+    // SAME control structurally never carries a verification record, so A.8.10 stays maps-to.
+    expect(cell("ISO-27001", "A.8.10")?.claim).toBe("maps-to");
+    expect(cell("ISO-27001", "A.5.15")?.claim).toBe("maps-to");
+    expect(cell("ISO-27001", "A.8.15")?.claim).toBe("maps-to");
+    // NIST OLIR's own subjective/incomplete warning rides along every ISO cell (ADR-0347 Fork G2).
+    expect(cell("ISO-27001", "A.5.15")?.note).toContain(
+      "subjective, incomplete",
+    );
+  });
+
   test("the evidence manifest is byte-stable against its golden fixture", () => {
     // The canonical body excludes the clock + signature, so a fixed (tenantId, now) is reproducible.
     expect(result.manifest.tenantId).toBe(DEMO_TENANT_ID);

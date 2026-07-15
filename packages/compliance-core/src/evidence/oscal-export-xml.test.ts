@@ -43,7 +43,8 @@ describe("oscal-cli arg builders (pure, always run)", () => {
 
 function sampleBundle(): ReturnType<typeof toOscalBundle> {
   const manifest = parseEvidencePackManifest({
-    formatVersion: "1",
+    formatVersion: "2",
+    crosswalkRollup: { cells: [] },
     tenantId: "tenant-acme-prod",
     framework: {
       id: "soc2-tsc",

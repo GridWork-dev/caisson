@@ -12,6 +12,7 @@ import {
   type EvidencePackManifest,
 } from "./pack-format.ts";
 import {
+  CAISSON_OSCAL_NS,
   OSCAL_VERSION,
   toOscalAssessmentResults,
   toOscalBundle,
@@ -45,10 +46,35 @@ function det(overrides?: Partial<OscalExportOptions>): OscalExportOptions {
   return { now: NOW, newId: counterIds(), ...overrides };
 }
 
+/** The crosswalk rollup for `fixtureManifest()`'s two controls (ADR-0333/ADR-0347, v2). */
+function fixtureRollup(): { cells: unknown[] } {
+  return {
+    cells: [
+      {
+        framework: "SOC2-TSC",
+        reference: "CC6.1",
+        canonicalControlIds: ["DATA-PROTECTION.TENANT-ISOLATION"],
+        status: "gap",
+        claim: "maps-to",
+        evidencePointers: ["DATA-PROTECTION.TENANT-ISOLATION"],
+      },
+      {
+        framework: "SOC2-TSC",
+        reference: "CC7.2",
+        canonicalControlIds: ["AUDIT.IMMUTABLE-LOG"],
+        status: "ready",
+        claim: "maps-to",
+        evidencePointers: ["AUDIT.IMMUTABLE-LOG"],
+      },
+    ],
+  };
+}
+
 /** A two-control pack: one READY (2 passing items), one GAP (1 flagged item). */
 function fixtureManifest(): EvidencePackManifest {
   return parseEvidencePackManifest({
-    formatVersion: "1",
+    formatVersion: "2",
+    crosswalkRollup: fixtureRollup(),
     tenantId: TENANT,
     framework: {
       id: "soc2-tsc",
@@ -127,7 +153,8 @@ function fixtureManifest(): EvidencePackManifest {
 /** An all-ready pack (no gaps) — the clean-export case. */
 function cleanManifest(): EvidencePackManifest {
   return parseEvidencePackManifest({
-    formatVersion: "1",
+    formatVersion: "2",
+    crosswalkRollup: { cells: [] },
     tenantId: TENANT,
     framework: {
       id: "soc2-tsc",
@@ -313,6 +340,18 @@ describe("toOscalAssessmentResults — SAR mapping", () => {
       "sha256 prop",
     );
     expect(prop.value).toBe(sha);
+  });
+
+  test("ADR-0333/ADR-0347 Fork F: the SAR result carries the crosswalk rollup as a Caisson-namespaced prop", () => {
+    const manifest = fixtureManifest();
+    const sar = toOscalAssessmentResults(manifest, det())["assessment-results"];
+    const result = req(sar.results[0], "result");
+    const prop = req(
+      result.props.find((p) => p.name === "caisson-crosswalk-rollup"),
+      "crosswalk-rollup prop",
+    );
+    expect(prop.ns).toBe(CAISSON_OSCAL_NS);
+    expect(JSON.parse(prop.value)).toEqual(manifest.crosswalkRollup);
   });
 });
 

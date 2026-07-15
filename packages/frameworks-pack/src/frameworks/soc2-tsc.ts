@@ -188,7 +188,24 @@ export const soc2Tsc: Framework = defineFramework({
         "is an accepted disposal mechanism.",
       crosswalk: [
         { framework: "SOC2-TSC", reference: "CC6.5" },
-        { framework: "SOC2-TSC", reference: "C1.2" },
+        {
+          framework: "SOC2-TSC",
+          reference: "C1.2",
+          // ADR-0347 Fork G3 (operator lock): the ONE authored verification record in v1 -- reviewed
+          // against the crypto-shred proof test backing the regime crosswalk's own soc2/C1.2
+          // `implements` row (regimes.ts), so the rollup can demonstrate one real end-to-end
+          // `implements` cell (Fork E). sourceDigest is the SHA-256 of the reviewed proof file.
+          verification: {
+            status: "reviewed",
+            relationship: "equivalent",
+            sourceId: "packages/field-crypto/src/crypto-shred.test.ts",
+            sourceVersion: "2026.1",
+            sourceDigest:
+              "e57977329145a27f8054314141f56b22bd9ea4d39001b998d47a630899d1cbe0",
+            reviewedBy: "operator",
+            reviewedAt: "2026-07-13T00:00:00.000Z",
+          },
+        },
       ],
     },
     {

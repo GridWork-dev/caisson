@@ -60,7 +60,7 @@ describe("@caisson/compliance barrel", () => {
     expect(typeof flaggedResult).toBe("function");
     expect(typeof unresolvedResult).toBe("function");
     expect(typeof parseEvidencePackManifest).toBe("function");
-    expect(EVIDENCE_PACK_FORMAT_VERSION).toBe("1");
+    expect(EVIDENCE_PACK_FORMAT_VERSION).toBe("2");
     expect(typeof generateEvidencePack).toBe("function");
     expect(EvidencePackBlockedError.prototype).toBeInstanceOf(Error);
     expect(typeof signEvidencePack).toBe("function");

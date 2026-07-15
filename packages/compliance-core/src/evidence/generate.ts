@@ -36,6 +36,7 @@ import {
 } from "@caisson/kernel";
 import type { CrosswalkReference } from "@caisson/frameworks-pack";
 import type { CollectorResult } from "./collector.ts";
+import type { CrosswalkRollup } from "./crosswalk-rollup.ts";
 import {
   EVIDENCE_PACK_FORMAT_VERSION,
   type evidencePackManifestSchema,
@@ -79,6 +80,13 @@ export interface GenerateEvidencePackInput {
   readonly controls: readonly EvidenceControlPlan[];
   /** Injected wall-clock instant; surfaced only on `generatedAt`, never hashed (clock at the edge). */
   readonly now: Date;
+  /**
+   * The cross-framework evidence rollup (ADR-0333/ADR-0347, v2) — CALLER-computed via
+   * `computeCrosswalkRollup`. Keeps the generator pure and free of any concrete-catalog import
+   * (the "facts injected at the edge" ethos `collector.ts` already follows); assembled into the
+   * manifest unchanged, like `summary`.
+   */
+  readonly crosswalkRollup: CrosswalkRollup;
 }
 
 /** The generated pack: the canonical body, its bytes, the deterministic archive + digest, and the edge clock. */
@@ -409,6 +417,7 @@ export function generateEvidencePack(
     framework: input.framework,
     chainAnchor: input.chainAnchor,
     controls,
+    crosswalkRollup: input.crosswalkRollup,
     summary: {
       totalControls: controls.length,
       controlsReady,

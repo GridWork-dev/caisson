@@ -308,6 +308,7 @@ describe("integration — sign a freshly generated pack (T13 → T14)", () => {
         },
       ],
       now: new Date("2026-06-27T12:00:00.000Z"),
+      crosswalkRollup: { cells: [] },
     };
     const pack = generateEvidencePack(input);
     const sig = await signEvidencePack(

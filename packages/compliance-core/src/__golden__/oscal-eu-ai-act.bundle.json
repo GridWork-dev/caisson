@@ -43,6 +43,11 @@
               "name": "caisson-readiness-posture",
               "ns": "https://caisson.sh/ns/oscal",
               "value": "2 of 3 controls evidence-ready; 1 gap recorded as a remediation item."
+            },
+            {
+              "name": "caisson-crosswalk-rollup",
+              "ns": "https://caisson.sh/ns/oscal",
+              "value": "{\"cells\":[]}"
             }
           ],
           "observations": [
