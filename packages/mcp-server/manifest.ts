@@ -15,8 +15,10 @@ export default defineModule({
   license: pkg.license,
   dependencies: [
     "@caisson/ai-config",
+    "@caisson/ds-manifest",
     "@caisson/kernel",
     "@caisson/registry-schema",
+    "@caisson/ui",
   ],
   description:
     "Auth-gated buyer MCP: timing-safe Bearer verify, entitlement-scoped reads, allowlist + credit-gated generate tools (ADR-0008/0004).",

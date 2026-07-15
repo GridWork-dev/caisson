@@ -42,6 +42,22 @@ of this package yet.
   their bundle forever (ADR-0257). `--edition` alone auto-expands to the bundle's current member
   modules (each pinned at the registry `.latest`); `--module` overrides the auto-selection.
 
+## Agent-facing commands (the `caisson` bin, ADR-0345)
+
+A second bin, `caisson`, ships alongside `create-caisson` for a coding agent adopting `@caisson/ui`:
+
+```
+caisson describe --json           # the full component manifest — no Caisson account required
+caisson describe <name> --json    # one component's props/variants/tokens (case-insensitive)
+caisson doctor [dir] [--json]     # verify usage against a licensed buyer MCP (entitlement-gated)
+```
+
+`describe` reads the committed Apache-base manifest directly (same data as the discovery MCP —
+see `@caisson/mcp-server`'s README for the no-auth stdio config). `doctor` is a **thin client**: it
+collects your source and calls the buyer MCP's `check_usage` tool over stdio
+(`CAISSON_MCP_COMMAND` / `CAISSON_MCP_ARGS`) — the doctor logic itself runs entitlement-gated on
+your already-credentialed `@caisson/mcp-server`, not locally.
+
 ## Engine seam (ADR-0048)
 
 The default engine is a deterministic in-repo template copy + typed token/JSON-merge (no network) —

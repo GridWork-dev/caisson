@@ -1,0 +1,23 @@
+/**
+ * Typed reader for the committed component manifest. `base-manifest.json` (bundled alongside this
+ * file) is a small hand-authored fixture covering four real `@caisson/ui` components — one for
+ * every recipe shape the kit uses (Radix polymorphism, Radix aria-wiring, plain presentational,
+ * and a component with no `data-*` variant at all) — standing in for the kit's own build-time
+ * generator output until that generator lands and replaces this file with the real, full manifest.
+ */
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { parseComponentManifest, type ComponentManifest } from "./schema.ts";
+
+const BASE_MANIFEST_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "base-manifest.json",
+);
+
+/** Read + validate the committed base component manifest off disk. Throws if the file is missing
+ *  or fails schema validation — a caller never receives a shape it hasn't been checked against. */
+export function loadBaseManifest(): ComponentManifest {
+  const raw: unknown = JSON.parse(readFileSync(BASE_MANIFEST_PATH, "utf8"));
+  return parseComponentManifest(raw);
+}

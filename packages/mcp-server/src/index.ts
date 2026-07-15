@@ -22,6 +22,24 @@ export type {
 } from "./coach.ts";
 export { createStdioMcpServer, runStdioServer } from "./stdio.ts";
 export type { StdioServerDeps } from "./stdio.ts";
+export {
+  registerManifestTools,
+  listComponents,
+  describeComponent,
+  getTokens,
+  DEFAULT_DOCTOR_ENTITLEMENT,
+  DEFAULT_PRO_ENTITLEMENT,
+} from "./manifest-tools.ts";
+export type {
+  ManifestToolsOptions,
+  ManifestToolRegistrar,
+  DesignTokens,
+} from "./manifest-tools.ts";
+export {
+  createDiscoveryServer,
+  runDiscoveryServer,
+} from "./discovery-stdio.ts";
+export type { DiscoveryServerDeps } from "./discovery-stdio.ts";
 export { createHttpMcpHandler, runHttpServer } from "./http.ts";
 export type {
   HttpServerDeps,

@@ -35,6 +35,10 @@ import {
   expandEntitlements,
 } from "@caisson/registry-schema";
 import { registerCoachTools, type CoachOptions } from "./coach.ts";
+import {
+  registerManifestTools,
+  type ManifestToolsOptions,
+} from "./manifest-tools.ts";
 
 export interface BuyerToken {
   token: string;
@@ -147,6 +151,13 @@ export interface McpServerOptions {
    * omitted no coach tool exists (fail-closed). See `coach.ts`.
    */
   coach?: CoachOptions;
+  /**
+   * Opt-in agent-ready design-system tools (ADR-0330/ADR-0345). When present, the base
+   * list_components/describe_component/get_tokens read tools plus the entitlement-gated check_usage
+   * doctor (and, if a pro manifest is supplied, describe_pro_component) are registered through the
+   * same seam; when omitted no design-system tool exists (fail-closed). See `manifest-tools.ts`.
+   */
+  dsManifest?: ManifestToolsOptions;
   /**
    * Optional server-side per-account rate-limit gate (ADR-0112). When present it is AWAITED before
    * EVERY tool dispatch (base or edition) — a buyer over their limit is blocked with `RateLimitError`
@@ -446,5 +457,7 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   };
   // ADR-0076 wire: the coach is just an edition registering its tools through the seam.
   if (options.coach) registerCoachTools(server, options.coach);
+  // ADR-0330/0345 wire: the design-system tools register through the same seam, same one-way flow.
+  if (options.dsManifest) registerManifestTools(server, options.dsManifest);
   return server;
 }
