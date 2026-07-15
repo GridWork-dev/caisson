@@ -8,6 +8,24 @@ grounds:
 
 # Deploy log
 
+## 2026-07-15 (PM) — trust-page site redeploy + intel container rebuild + Better Stack public status page (`0a58f8ee`)
+
+Same-day follow-on to the reconcile redeploy below, carrying the two post-picker build PRs:
+
+- `caisson-site` → redeployed with PR #242 (`/trust` page + subprocessor module + footer route);
+  live probe `https://caisson.sh/trust` 200 with subprocessor table, betteruptime link,
+  `security@caisson.sh`, and zero `certif|compliant` hits (ADR-0080 gate).
+- **Better Stack public status page LIVE**: `https://caisson.betteruptime.com` (id 255425),
+  monitors site 4656433 · license 4656434 · docs-RAG 4676344. Created WITHOUT the custom domain
+  (the SPEC's own fallback) — `status.caisson.sh` attach + terraform CNAME stays operator-gated.
+- **intel container** rebuilt from PR #243 (`docker compose up -d --build`, healthy) — hash-mode
+  watchers now persist snapshots, so the CAISSON-101 eval lane arms at the next genuine
+  EUR-Lex/AICPA page change.
+- **NOT deployed: registry Worker.** The `/health` route (PR #242) is merged in code only —
+  `bash registry/worker/deploy.sh` is a credentialed Cloudflare act (classifier-denied to the
+  session; CLOUDFLARE_* in `~/.gridwork/caisson.env`). `registry.caisson.sh/health` probes 404
+  until the operator runs it; the 4th status-page monitor waits on that.
+
 ## 2026-07-15 — reconcile-wave fleet redeploy: site · admin · license · docs on clean main (`ca44db58`)
 
 Operator-approved at the 07-15 reconcile picker. WHY: put the merged six-PR wave (#235–#240,
