@@ -104,3 +104,97 @@ missing. The only deploy pointer is the `out/` argument to wrangler (also set as
 
 > `@cloudflare/next-on-pages` is **not** used — it was npm-deprecated and archived 2025-09-29.
 > Static export needs no Next adapter.
+
+## Email deliverability (SPF/DKIM/DMARC, `email.tf`)
+
+`email.tf` brings the SPF/DKIM/MX/DMARC records for caisson.sh's two live mail paths — Proton Mail
+(the business mailbox) and Resend, the product's transactional sender (ADR-0324), which rides
+Amazon SES infrastructure — `send.caisson.sh` is Resend's custom MAIL-FROM subdomain — under
+Terraform. **Every record in `email.tf` already
+exists live in the zone** (hand-created before this module existed): adopt each one with
+`terraform import` before the first `plan`/`apply` touches this file, or `plan` will try to CREATE
+duplicates of records that are already routing real mail.
+
+### 1. Find each record's ID
+
+```bash
+export ZONE_ID=...        # var.cloudflare_zone_id
+export CF_API_TOKEN=...   # same scoped token as CLOUDFLARE_API_TOKEN (needs DNS:Read at minimum)
+
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=caisson.sh&type=TXT"
+# ^ returns BOTH the SPF and the protonmail-verification TXT (same name+type) — match the `id` to
+#   the right resource below by its `content` field.
+
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=caisson.sh&type=MX"
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=_dmarc.caisson.sh&type=TXT"
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=resend._domainkey.caisson.sh&type=TXT"
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=send.caisson.sh&type=TXT"
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=send.caisson.sh&type=MX"
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=protonmail._domainkey.caisson.sh&type=CNAME"
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=protonmail2._domainkey.caisson.sh&type=CNAME"
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=protonmail3._domainkey.caisson.sh&type=CNAME"
+```
+
+### 2. Import each resource
+
+```bash
+terraform import cloudflare_dns_record.apex_spf                     "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.apex_protonmail_verification "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.apex_mx_primary              "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.apex_mx_secondary            "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.protonmail_dkim              "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.protonmail2_dkim             "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.protonmail3_dkim             "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.resend_dkim                  "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.send_spf                     "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.send_mx                      "$ZONE_ID/<record-id>"
+terraform import cloudflare_dns_record.dmarc                        "$ZONE_ID/<record-id>"
+```
+
+### 3. Enable Cloudflare DMARC Management (optional, recommended)
+
+Free zone-level feature: Cloudflare ingests DMARC aggregate reports on your behalf instead of (or
+alongside) a self-hosted `rua` inbox.
+
+```bash
+curl -s -X PATCH -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/email/auth/dmarc-reports" \
+  -d '{"enabled":true}'
+```
+
+Then read the 32-hex token either from `GET` on the same endpoint, or from the zone's own
+`_dmarc` record (Cloudflare appends its `mailto:<token>@dmarc-reports.cloudflare.net` to the live
+record once enabled — **do not let that stand as the unmanaged value**: `email.tf`'s `dmarc`
+resource is Terraform's declared owner of this record's content, so the token belongs in the
+variable below, not in a Cloudflare-side edit that Terraform would otherwise fight or revert).
+
+### 4. Set the token variable
+
+```bash
+# terraform.tfvars (gitignored)
+dmarc_rua_cloudflare_token = "<the 32-hex token from step 3>"
+```
+
+Leave it `""` (the default) to skip Cloudflare DMARC Management entirely — the record then carries
+only `rua=mailto:admin@gridwork.dev`, matching what's live today.
+
+### 5. Plan before apply
+
+`terraform plan` MUST show **no create and no destroy** for any `cloudflare_dns_record.*` in
+`email.tf` — only in-place updates are expected on first apply after import (TTL normalizing from
+each record's current live value to `1`/Auto, and `dmarc`'s content picking up the token from step
+4 if set). If plan shows a **create or destroy** for any record above, STOP: the import in step 2
+didn't target the right record, or the live value has drifted since this file was written —
+reconcile before `apply`.
+
+`terraform apply` for this file is a DEPLOY-class operator act, same as every other change in this
+module — never run inside the autonomous cycle.

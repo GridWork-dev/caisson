@@ -7,6 +7,7 @@
 // that are syntactic: no-any, no-console, type-only import discipline.
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 import { boundaries } from "./boundaries.js";
 import { antiSlop } from "./anti-slop.js";
 
@@ -48,6 +49,29 @@ export default tseslint.config(
     rules: {
       "no-console": "off",
     },
+  },
+  {
+    // jsx-a11y recommended (Kickoff T task 14 — verified gap: the kit ships a11y-conscious
+    // components with no static a11y lint floor). Scoped to JSX surfaces; the plugin's flat
+    // config carries no `files` key of its own, so we add one.
+    // RAMP (wave constraint, 2026-07-13): severities are mapped to "warn" because the remaining
+    // violations live in packages/ui and apps/site — frozen trees owned by the parallel design
+    // session this wave. Reconcile session: fix those, then delete the mapping below so the
+    // plugin's own "error" severities gate the repo. ui-pro's violations were fixed in-wave.
+    files: ["**/*.tsx", "**/*.jsx"],
+    ...jsxA11y.flatConfigs.recommended,
+    rules: Object.fromEntries(
+      Object.entries(jsxA11y.flatConfigs.recommended.rules).map(
+        ([id, level]) => {
+          const severity = Array.isArray(level) ? level[0] : level;
+          if (severity === "off" || severity === 0) return [id, "off"];
+          return [
+            id,
+            Array.isArray(level) ? ["warn", ...level.slice(1)] : "warn",
+          ];
+        },
+      ),
+    ),
   },
   // D9 import-boundary rules (ADR-0011/0022): provider-SDK denylist. Static backstop;
   // dependency-cruiser is the authoritative dynamic/transitive layer.
