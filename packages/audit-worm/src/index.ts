@@ -88,3 +88,49 @@ export {
   provenanceSchema,
   LockedVersionStore,
 } from "./version-store.ts";
+
+// External anchoring, v1 (TSA `trusted-timestamped` leg; SPEC external-anchoring, ADR-0332/0346).
+export {
+  type AnchorGrade,
+  type TransparencyTarget,
+  type TsaTarget,
+  type TimestampReceipt,
+  type AnchorReceipt,
+  type AnchorOutboxState,
+  type AnchorOutboxKey,
+  type AnchorOutboxRow,
+  type TrustedTimestampLog,
+  type TsaAnchorLogConfig,
+  anchorGradeSchema,
+  transparencyTargetSchema,
+  tsaTargetSchema,
+  timestampReceiptSchema,
+  anchorReceiptSchema,
+  anchorOutboxStateSchema,
+  anchorOutboxRowSchema,
+  targetId,
+  sha256Hex,
+  anchorReceiptKey,
+  StubTrustedTimestampLog,
+  TsaAnchorLog,
+} from "./anchor-transparency.ts";
+
+export { AnchorOutbox, ANCHOR_OUTBOX_SCHEMA_SQL } from "./anchor-outbox.ts";
+
+export {
+  type AnchorCheckpointPayload,
+  type AnchorCheckpointResult,
+  type AnchorCheckpointDeps,
+  type CurrentAnchorReader,
+  ANCHOR_CHECKPOINT_TASK,
+  anchorCheckpointPayloadSchema,
+  runAnchorCheckpoint,
+  defineAnchorCheckpointTask,
+  enqueueAnchorCheckpoint,
+} from "./anchor-checkpoint.ts";
+
+export {
+  type VerifyExternalDeps,
+  type AnchorVerification,
+  verifyExternal,
+} from "./verify-external.ts";

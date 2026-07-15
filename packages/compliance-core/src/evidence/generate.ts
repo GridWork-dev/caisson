@@ -47,6 +47,12 @@ import {
   type EvidencePackFramework,
   type EvidencePackManifest,
 } from "./pack-format.ts";
+import {
+  anchorGradePhrase,
+  buildExternalAnchorEntry,
+  type AnchorGrade,
+  type ExternalAnchorAttachment,
+} from "./external-anchor.ts";
 
 // The Zod INPUT shapes of the canonical body — the generator assembles into these and lets
 // `parseEvidencePackManifest` validate + normalize (key order follows the schema, not construction).
@@ -87,6 +93,14 @@ export interface GenerateEvidencePackInput {
    * manifest unchanged, like `summary`.
    */
   readonly crosswalkRollup: CrosswalkRollup;
+  /**
+   * Optionally, the newest external-anchor receipt for this tenant (SPEC external-anchoring §6). It
+   * is attached DETACHED — an extra archive entry + an envelope grade tag — NEVER a field in the
+   * canonical body (the receipt carries a non-deterministic TSA token; hashing it would break
+   * byte-stability). Absence is NOT an unresolved-evidence gap: anchoring is buyer-optional, so a
+   * pack still generates normally with no external-anchor entry.
+   */
+  readonly externalAnchor?: ExternalAnchorAttachment;
 }
 
 /** The generated pack: the canonical body, its bytes, the deterministic archive + digest, and the edge clock. */
@@ -101,6 +115,12 @@ export interface EvidencePack {
   readonly sha256: string;
   /** The injected generation instant, ISO-8601. NOT part of the canonical body (edge-stamped). */
   readonly generatedAt: string;
+  /**
+   * The trust grade of the attached external-anchor receipt, when one was supplied (detached, on the
+   * envelope — like `generatedAt`, never in the canonical body). Absent when anchoring is off / no
+   * receipt was minted. `trusted-timestamped` in v1; `externally-transparent` once v1.1 ships.
+   */
+  readonly externalAnchorGrade?: AnchorGrade;
 }
 
 /**
@@ -199,8 +219,12 @@ function posturePhrase(total: number, ready: number, gaps: number): string {
   return `${head}; ${String(gaps)} ${gapWord} recorded as ${tail}.`;
 }
 
-/** Render the human-readable auditor summary. Derived from the body; carries no clock → byte-stable. */
-function renderAuditorSummary(m: EvidencePackManifest): string {
+/** Render the human-readable auditor summary. Derived from the body; carries no clock → byte-stable
+ *  (an external-anchor grade, when present, adds one honest line — never a clock or token). */
+function renderAuditorSummary(
+  m: EvidencePackManifest,
+  externalGrade?: AnchorGrade,
+): string {
   const lines: string[] = [
     "Caisson — Control Evidence Pack",
     `Framework: ${m.framework.title} (${m.framework.id}, v${m.framework.version})`,
@@ -226,6 +250,9 @@ function renderAuditorSummary(m: EvidencePackManifest): string {
         lines.push(`    - flagged: ${e.collectorId} — ${e.reason}`);
       }
     }
+  }
+  if (externalGrade !== undefined) {
+    lines.push("", anchorGradePhrase(externalGrade));
   }
   lines.push(
     "",
@@ -334,17 +361,25 @@ function buildDeterministicZip(files: readonly ArchiveFile[]): Uint8Array {
   return new Uint8Array(Buffer.concat([localPart, centralDir, eocd]));
 }
 
-/** Assemble the archive entries: canonical manifest + per-control evidence + auditor summary. */
+/**
+ * Assemble the archive entries: canonical manifest + per-control evidence + auditor summary, plus —
+ * when supplied — the DETACHED external-anchor receipt (its own entry, never merged into the body).
+ */
 function buildArchiveEntries(
   manifest: EvidencePackManifest,
   canonicalManifest: string,
+  external?: {
+    readonly name: string;
+    readonly data: Uint8Array;
+    readonly grade: AnchorGrade;
+  },
 ): ArchiveFile[] {
   const enc = new TextEncoder();
   const files: ArchiveFile[] = [
     { name: "manifest.json", data: enc.encode(canonicalManifest) },
     {
       name: "auditor-summary.txt",
-      data: enc.encode(renderAuditorSummary(manifest)),
+      data: enc.encode(renderAuditorSummary(manifest, external?.grade)),
     },
   ];
   for (const control of manifest.controls) {
@@ -352,6 +387,9 @@ function buildArchiveEntries(
       name: `controls/${control.controlId}.json`,
       data: enc.encode(canonicalize(toJson(control))),
     });
+  }
+  if (external !== undefined) {
+    files.push({ name: external.name, data: external.data });
   }
   return files;
 }
@@ -429,10 +467,15 @@ export function generateEvidencePack(
   const manifest = parseEvidencePackManifest(rawManifest);
 
   // PHASE 3 — canonical bytes + deterministic archive + byte-stable digest. The clock is stamped
-  // ONLY on the envelope, never into the hashed contents.
+  // ONLY on the envelope, never into the hashed contents. The external-anchor receipt (when present)
+  // rides as a DETACHED archive entry + an envelope grade tag — never inside the canonical body.
+  const external =
+    input.externalAnchor !== undefined
+      ? buildExternalAnchorEntry(input.externalAnchor)
+      : undefined;
   const canonicalManifest = canonicalize(toJson(manifest));
   const archive = buildDeterministicZip(
-    buildArchiveEntries(manifest, canonicalManifest),
+    buildArchiveEntries(manifest, canonicalManifest, external),
   );
   const sha256 = createHash("sha256").update(archive).digest("hex");
 
@@ -442,5 +485,6 @@ export function generateEvidencePack(
     archive,
     sha256,
     generatedAt: input.now.toISOString(),
+    ...(external !== undefined ? { externalAnchorGrade: external.grade } : {}),
   };
 }
