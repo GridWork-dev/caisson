@@ -61,6 +61,53 @@ describe("capture emailer", () => {
     expect(typeof emailer.send).toBe("function");
   });
 
+  test("createResendEmailer onQuota sees the remaining-quota headers on a successful send; absent/garbage headers parse to null; observer errors never break the send", async () => {
+    const realFetch = globalThis.fetch;
+    const quotas: Array<{
+      monthlyRemaining: number | null;
+      dailyRemaining: number | null;
+    }> = [];
+    const headerSets: Array<Record<string, string>> = [
+      { "x-resend-monthly-quota": "4821", "x-resend-daily-quota": "37" },
+      { "x-resend-monthly-quota": "not-a-number" },
+      {},
+      // Empty/whitespace must parse to null, never 0 — Number("") is 0, which would read as
+      // "quota exhausted" and fire a false critical alert downstream.
+      { "x-resend-monthly-quota": "", "x-resend-daily-quota": "   " },
+    ];
+    let call = 0;
+    globalThis.fetch = (async (): Promise<Response> =>
+      new Response(null, {
+        status: 200,
+        headers: headerSets[call++] ?? {},
+      })) as unknown as typeof fetch;
+
+    try {
+      const emailer = createResendEmailer({
+        apiKey: "x",
+        from: "a@b.c",
+        onQuota: (q) => {
+          quotas.push(q);
+          throw new Error("observer bug — must not break the send");
+        },
+      });
+      const msg = { to: "ops@example.com", template: "t", data: {} };
+      await emailer.send(msg); // does not throw despite the throwing observer
+      await emailer.send(msg);
+      await emailer.send(msg);
+      await emailer.send(msg);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+
+    expect(quotas).toEqual([
+      { monthlyRemaining: 4821, dailyRemaining: 37 },
+      { monthlyRemaining: null, dailyRemaining: null },
+      { monthlyRemaining: null, dailyRemaining: null },
+      { monthlyRemaining: null, dailyRemaining: null },
+    ]);
+  });
+
   test("createResendEmailer falls back to a generic subject/text mapping for a free-form template (no html)", async () => {
     const realFetch = globalThis.fetch;
     let capturedBody: Record<string, unknown> | undefined;

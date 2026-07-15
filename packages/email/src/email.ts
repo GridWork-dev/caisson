@@ -49,12 +49,24 @@ export function createCaptureEmailer(): CaptureEmailer {
   };
 }
 
+/** Remaining-send quota telemetry parsed from Resend's response headers on a successful send.
+ *  `x-resend-monthly-quota` is present on every plan; `x-resend-daily-quota` only on the free
+ *  plan. `null` = header absent or non-numeric (never fabricated). */
+export interface ResendQuota {
+  monthlyRemaining: number | null;
+  dailyRemaining: number | null;
+}
+
 export interface ResendConfig {
   apiKey: string;
   from: string;
   /** Optional Reply-To address — replies to a transactional send land here instead of bouncing
    *  off the (typically no-reply) sender identity. Omitted from the wire body when unset. */
   replyTo?: string;
+  /** Optional quota observer, called after each SUCCESSFUL send with the remaining-quota headers
+   *  Resend returns (its API exposes no usage endpoint — these headers are the only programmatic
+   *  signal). Observer errors are swallowed: telemetry must never break a send. */
+  onQuota?: (quota: ResendQuota) => void;
 }
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
@@ -89,6 +101,30 @@ export function createResendEmailer(config: ResendConfig): Emailer {
         // Do NOT include the response body — it can echo recipient / key fragments.
         throw new InternalError("email send failed");
       }
+      if (config.onQuota) {
+        try {
+          config.onQuota({
+            monthlyRemaining: parseQuotaHeader(
+              res.headers.get("x-resend-monthly-quota"),
+            ),
+            dailyRemaining: parseQuotaHeader(
+              res.headers.get("x-resend-daily-quota"),
+            ),
+          });
+        } catch {
+          // Quota telemetry must never break a send.
+        }
+      }
     },
   };
+}
+
+/** `null` for absent/empty/non-numeric header values — a missing or blank header is "unknown",
+ *  never 0 (Number("") is 0, which would read as "quota exhausted" and fire a false alert). */
+function parseQuotaHeader(raw: string | null): number | null {
+  if (raw === null) return null;
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : null;
 }

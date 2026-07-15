@@ -33,7 +33,6 @@
     "@xyflow/react": "^12.11.1",
     "better-auth": "^1.6.23",
     "culori": "catalog:",
-    "drizzle-orm": "catalog:",
     "next": "catalog:",
     "pg": "catalog:",
     "react": "catalog:",

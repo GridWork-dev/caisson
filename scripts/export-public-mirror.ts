@@ -28,6 +28,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { buildShadcnRegistry } from "./gen-shadcn-registry.ts";
 import {
   createHash,
   createPrivateKey,
@@ -821,6 +822,15 @@ function main(): void {
   cpSync(
     join(assets, "publish.yml"),
     join(outDir, ".github/workflows/publish.yml"),
+  );
+
+  // registry.json — the shadcn GitHub-source registry over the exported @caisson/ui components
+  // (Kickoff T task 13 / ADR-0343): `bunx shadcn@latest add caisson-sh/caisson-oss/<item>`.
+  // Generated per export from the SOURCE tree (the mirror copies packages/ui verbatim, so the
+  // source-derived file paths hold in the mirror layout); never committed, so it can't drift.
+  writeFileSync(
+    join(outDir, "registry.json"),
+    JSON.stringify(buildShadcnRegistry(repoRoot), null, 2) + "\n",
   );
 
   // MIRROR-MANIFEST.json — provenance for the generated repo.

@@ -24,6 +24,10 @@ coverage/
 # gw session-stream telemetry (hook-generated, not source)
 outputs/streams/
 
+# graphify knowledge-graph build output (Kickoff T task 16 — served by the graphify MCP from the
+# MAIN checkout; regenerated on demand, never committed)
+graphify-out/
+
 # registry/index.json IS tracked (ADR-0047): it must be committed so the CI registry-index job can
 # `git diff --exit-code` a fresh rebuild against it and fail on drift. "Never hand-edited" is
 # enforced by that byte-identical check + CODEOWNERS — NOT by gitignoring it (which would hide drift).

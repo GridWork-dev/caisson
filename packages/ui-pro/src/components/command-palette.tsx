@@ -194,8 +194,18 @@ export function CommandPalette({
                       role="option"
                       aria-selected={i === active}
                       data-active={i === active}
+                      // aria-activedescendant pattern: DOM focus stays on the input (which owns
+                      // the keyboard); options are programmatically focusable click targets.
+                      tabIndex={-1}
                       onMouseMove={() => setActive(i)}
                       onClick={() => runAt(i)}
+                      onKeyDown={(e) => {
+                        // A clicked option holds DOM focus (tabIndex=-1); Enter re-runs it.
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          runAt(i);
+                        }
+                      }}
                     >
                       <span className="cs-cmdk__option-label">{a.label}</span>
                       {a.hint ? (

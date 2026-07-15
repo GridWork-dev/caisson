@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { Button, Select } from "@caisson/ui/components";
@@ -193,6 +193,9 @@ export function DataTablePro<T>({
     (c) => c.value && c.filterable !== false,
   );
   const groupableCols = columns.filter((c) => c.value && c.groupable);
+  // Instance-unique ids so the toolbar labels bind to their Selects (jsx-a11y
+  // label-has-associated-control can't see through the kit's Select wrapper).
+  const uid = useId();
 
   return (
     <div className="cs-grid" data-dense={dense ? "" : undefined}>
@@ -207,9 +210,10 @@ export function DataTablePro<T>({
         />
         <div className="cs-grid__tools">
           {groupableCols.length > 0 ? (
-            <label className="cs-grid__tool">
+            <label className="cs-grid__tool" htmlFor={`${uid}-group`}>
               <span className="cs-grid__tool-label">Group</span>
               <Select
+                id={`${uid}-group`}
                 aria-label="Group by column"
                 value={groupBy ?? ""}
                 onChange={(e) => setGroupBy(e.target.value || null)}
@@ -251,9 +255,10 @@ export function DataTablePro<T>({
           </details>
 
           {views && views.length > 0 ? (
-            <label className="cs-grid__tool">
+            <label className="cs-grid__tool" htmlFor={`${uid}-view`}>
               <span className="cs-grid__tool-label">View</span>
               <Select
+                id={`${uid}-view`}
                 aria-label="Apply saved view"
                 defaultValue=""
                 onChange={(e) => {
@@ -340,7 +345,7 @@ export function DataTablePro<T>({
 
           {groups ? (
             groups.map((g) => (
-              <tbody key={g.key} className="cs-grid__group" role="rowgroup">
+              <tbody key={g.key} className="cs-grid__group">
                 <tr className="cs-grid__group-head">
                   <th scope="colgroup" colSpan={colCount}>
                     <span className="cs-grid__group-name">
