@@ -93,3 +93,53 @@
     linear-gradient(to right, var(--cs-bg) 0%, transparent 56%),
     linear-gradient(to top, var(--cs-bg) 1%, transparent 40%);
 }
+
+/* ===== Waterline Descent (ADR-0334 moment 2, dep-free) =====
+ * Scrolling past the hero reads as the chamber taking pressure: a bottom-up depth layer rises
+ * (opacity only) while the lattice — poster SVG and live canvas alike — sinks slightly
+ * (transform only), both scrubbed by the hero's own exit from the viewport via
+ * `animation-timeline: view()` (ADR-0334 §2b: scroll/view timelines driving transform/opacity).
+ * Static in Firefox/Safari (@supports) and under reduced motion; the depth layer rests at
+ * opacity 0 — a pure additive overlay, never covering content (pointer-events inherited none). */
+.depth {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(to top, var(--cs-bg) 30%, transparent 78%);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .depth {
+      animation: cs-descent-fog linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 90%;
+    }
+    .posterSvg,
+    .canvas {
+      animation: cs-descent-sink linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+  }
+}
+
+@keyframes cs-descent-fog {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+
+/* The structure rises past the viewport a touch faster than the page scrolls — the visitor
+ * descends. Compositor-only (translate). */
+@keyframes cs-descent-sink {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 0 -4%;
+  }
+}

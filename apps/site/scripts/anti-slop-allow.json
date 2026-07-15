@@ -1,0 +1,50 @@
+{
+  "$comment": "Reviewed anti-slop findings that stay (apps/site/scripts/anti-slop.ts filters against this list). Key = antipattern id + repo-relative file. Every entry carries the human reason it is accepted; delete an entry to re-arm the check for that file.",
+  "allow": [
+    {
+      "antipattern": "broken-image",
+      "file": "apps/site/components/hero-field.tsx",
+      "reason": "False positive: the '<img>' string sits in a doc comment explaining the poster deliberately has NO img element (LCP contract). No image tag exists."
+    },
+    {
+      "antipattern": "bounce-easing",
+      "file": "apps/site/components/seal.module.css",
+      "reason": "Deliberate, operator-locked: the --cs-ease-spring-settle linear() token (ADR-0334 SS2c) is a soft single overshoot peaking at 1.06 - spring-settle physics, not elastic/bounce slop."
+    },
+    {
+      "antipattern": "flat-type-hierarchy",
+      "file": "apps/site/app/global.css",
+      "reason": "Pre-existing scale in page-local styles; the type hierarchy authority is the @caisson/ui token scale (tokens.css), which this heuristic does not see."
+    },
+    {
+      "antipattern": "em-dash-overuse",
+      "file": "apps/site/app/global.css",
+      "reason": "Detector counts CSS comments as body copy; house comment voice uses em-dashes. Rendered copy is governed by the ADR-0080 copy laws, not this heuristic."
+    },
+    {
+      "antipattern": "em-dash-overuse",
+      "file": "apps/site/app/layout.tsx",
+      "reason": "Same comment-text false positive as global.css - JSX comments, not rendered copy."
+    },
+    {
+      "antipattern": "em-dash-overuse",
+      "file": "packages/ui/src/tokens/theme.ts",
+      "reason": "TS doc comments, not rendered copy."
+    },
+    {
+      "antipattern": "em-dash-overuse",
+      "file": "packages/ui/src/components/reveal.css",
+      "reason": "CSS comments, not rendered copy."
+    },
+    {
+      "antipattern": "em-dash-overuse",
+      "file": "packages/ui/src/components/reveal.tsx",
+      "reason": "TS doc comments, not rendered copy."
+    },
+    {
+      "antipattern": "side-tab",
+      "file": "packages/ui/src/components/toast.css",
+      "reason": "The toast enters from the viewport edge by design (kit primitive, ADR-0099 recipe); not a floating side-tab affordance."
+    }
+  ]
+}

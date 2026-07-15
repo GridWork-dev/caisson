@@ -71,6 +71,8 @@ export function HeroField() {
       </svg>
       <HeroFieldCanvas />
       <div className={styles.scrim} />
+      {/* Waterline Descent (ADR-0334 moment 2): scroll-scrubbed depth layer — rests invisible. */}
+      <div className={styles.depth} />
     </div>
   );
 }

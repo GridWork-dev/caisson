@@ -31,6 +31,10 @@
   width: 100%;
   min-width: 0;
   resize: vertical;
+  /* Auto-grow with content (task 8); rows=2 stays the floor, the cap keeps long prompts from
+   * swallowing the panel. Chromium-only today — others keep the manual vertical resize. */
+  field-sizing: content;
+  max-block-size: 10rem;
   padding: var(--cs-space-3);
   border: 1px solid var(--cs-border-strong);
   border-radius: var(--cs-radius-md);

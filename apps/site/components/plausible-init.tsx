@@ -13,11 +13,27 @@ export function PlausibleInit() {
   useEffect(() => {
     const domain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
     if (domain === undefined || domain.length === 0) return;
+    // Re-bind post-guard: function declarations hoist above the narrowing, so the closure would
+    // otherwise see `string | undefined`.
+    const site = domain;
     let cancelled = false;
-    void import("@plausible-analytics/tracker").then(({ init }) => {
-      if (cancelled) return;
-      init({ domain, outboundLinks: true, fileDownloads: true });
-    });
+    function start(): void {
+      void import("@plausible-analytics/tracker").then(({ init }) => {
+        if (cancelled) return;
+        init({ domain: site, outboundLinks: true, fileDownloads: true });
+      });
+    }
+    // Speculation-Rules prerender guard (ADR-0334 moment 3): a prerendered page must not fire
+    // a pageview the visitor may never activate — defer init to the activation event.
+    const doc = document as Document & { prerendering?: boolean };
+    if (doc.prerendering) {
+      document.addEventListener("prerenderingchange", start, { once: true });
+      return () => {
+        cancelled = true;
+        document.removeEventListener("prerenderingchange", start);
+      };
+    }
+    start();
     return () => {
       cancelled = true;
     };
