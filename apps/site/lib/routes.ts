@@ -59,6 +59,7 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/evidence", label: "Evidence pack", priority: 0.8, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/updates", label: "Updates", priority: 0.7, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/procurement", label: "Security & procurement", priority: 0.7, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
+  { path: "/trust", label: "Trust", priority: 0.75, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/affiliates", label: "Affiliates", priority: 0.5, changeFrequency: "monthly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/partners", label: "Design partners", priority: 0.5, changeFrequency: "monthly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/frameworks/eu-ai-act", label: "EU AI Act", priority: 0.75, changeFrequency: "weekly", group: "framework" }, // prettier-ignore
