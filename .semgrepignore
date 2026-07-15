@@ -20,5 +20,12 @@ services/support-bot/.ruff_cache/
 # `semgrep test` reads them directly and is unaffected by this file.
 tools/security/semgrep-rules/
 
+# Vendored third-party design-QA tool (the "Impeccable" anti-slop DOM detector, Apache-2.0) —
+# runs only in a headless browser during design checks, never a caisson runtime/credential
+# surface. Its `*Token`/`token ===` sites compare CSS position keywords ('center'/'left'/'auto'),
+# not secrets, so no-insecure-token-compare fires purely on the name heuristic; and
+# detect-antipatterns-browser.js is a GENERATED bundle. Not a caisson scan target.
+apps/site/scripts/anti-slop/
+
 # Do NOT blanket-exclude tests/ — money/license/crypto test fixtures are exactly where a bad
 # secret-compare pattern gets copy-pasted from.
