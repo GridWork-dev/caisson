@@ -80,7 +80,7 @@ export interface AuditChainAnchor {
   readonly genesisHash?: string;
   /**
    * Optional base64 Ed25519 signature over the anchor's CANONICAL CORE bytes (`{length, tipHash,
-   * genesisHash?}`, T-W2 / GATE-1). ADDITIVE and EXCLUDED from the canonical core itself, so a
+   * genesisHash?}`). ADDITIVE and EXCLUDED from the canonical core itself, so a
    * legacy unsigned anchor stays byte-identical and this is never a chain-format break. Verified
    * against a pinned public key by the client / offline pack, making tamper-evidence independent of
    * the row-serving API.

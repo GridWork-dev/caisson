@@ -1,4 +1,4 @@
-// Pure, node-free redaction predicate (T-K3 / GATE-3). Moved from ui-pro's presentation layer into
+// Pure, node-free redaction predicate. Moved from ui-pro's presentation layer into
 // the open Apache base so the proof-bundle endpoint can redact SERVER-SIDE — masking secret-bearing
 // fields BEFORE the payload crosses the wire (H3), never leaving the original for a client to read
 // out of the network response, the copied receipt, or the exported pack. It imports no node builtin,

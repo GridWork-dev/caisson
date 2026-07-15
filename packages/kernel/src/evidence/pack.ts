@@ -22,7 +22,7 @@ export const EVIDENCE_PACK_FORMAT_VERSION = 1 as const;
 
 /**
  * The anchor-signing public key a pack pins so its bundled verifier can independently check anchor
- * authenticity (GATE-1 / H4) — the offline instance of "verify without trusting caisson". Optional:
+ * authenticity — the offline way to verify without trusting caisson. Optional:
  * absent when the caller has no signed anchors to prove, or chooses not to embed provenance.
  */
 export interface EvidencePackAnchorAuth {
@@ -39,7 +39,7 @@ export interface EvidencePackMeta {
   /** Optional chain-level verdict, for the README's chain-vs-current-anchor framing (CR-04: external
    *  anchoring, if any, attaches at THIS level, never per row). */
   readonly chainVerification?: ChainVerification;
-  /** Optional pinned anchor-signing public key (GATE-1 / H4). */
+  /** Optional pinned anchor-signing public key. */
   readonly anchorAuth?: EvidencePackAnchorAuth;
 }
 

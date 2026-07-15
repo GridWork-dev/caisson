@@ -43,9 +43,9 @@ export type LegResult = "pass" | "fail" | "na";
 
 /**
  * A pinned anchor-signing public key, delivered OUT-OF-BAND (baked into the app bundle / injected
- * config) — NEVER read from the row-serving response, which is exactly the independent trust root H2
- * requires. Supplying it is what lets the client run the signature leg and earn the
- * "(signature-checked)" seal (GATE-1 / ADR-0344): a compromised row API can forge a self-consistent
+ * config) — NEVER read from the row-serving response, which is exactly the independent trust root the
+ * design requires. Supplying it is what lets the client run the signature leg and earn the
+ * "(signature-checked)" seal: a compromised row API can forge a self-consistent
  * `(payload, hash, anchor)` triple, but it cannot forge a signature that verifies against THIS key.
  */
 export interface PinnedAnchorKey {
@@ -56,7 +56,7 @@ export interface PinnedAnchorKey {
 
 /**
  * The per-row legs: link recompute (leg 1), per-length WORM-anchor tip equality (leg 2), and the
- * Ed25519 anchor-signature (leg 3, GATE-1).
+ * Ed25519 anchor-signature (leg 3).
  */
 export interface VerifyLegs {
   readonly linkRecompute: LegResult;
@@ -106,7 +106,7 @@ function anchorCoreBytes(anchor: AuditChainAnchor): Uint8Array<ArrayBuffer> {
 }
 
 /**
- * Leg 3 (GATE-1 / ADR-0344): verify a signed anchor's Ed25519 signature over its canonical CORE
+ * Leg 3: verify a signed anchor's Ed25519 signature over its canonical CORE
  * against a PINNED, out-of-band public key, using WebCrypto (node-free). Returns `pass`/`fail` ONLY
  * when the anchor is signed AND `pinnedKey.keyId` matches the anchor's `keyId`; `na` when it is
  * unsigned, no pinned key was supplied, the keyId does not match, or the runtime lacks WebCrypto
@@ -157,7 +157,7 @@ export async function verifyAnchorSignature(
  * stored hash. A `redacted` row ships a MASKED payload that can never recompute the original hash, so
  * leg 1 is reported `na` — never a silent `fail` that would read as tamper (CR-06 honest marking).
  *
- * Leg 3 (anchor signature): verified against `opts.pinnedKey` when present (GATE-1). This is the leg
+ * Leg 3 (anchor signature): verified against `opts.pinnedKey` when present. This is the leg
  * that makes the "(signature-checked)" seal HONEST — without a pinned key it is `na` and the strong
  * seal is withheld (the seal-copy caller gates on `legs.signature === "pass"`).
  */
@@ -195,6 +195,7 @@ export function classifyRowState(
   if (
     legs.anchorEquality === "fail" ||
     legs.linkRecompute === "fail" ||
+    // nosemgrep: no-insecure-token-compare -- `legs.signature` is a LegResult verdict ("pass"/"fail"/"na"), not a secret or signature value; the real Ed25519 check is crypto.subtle.verify in verifyAnchorSignature. No timing side channel exists on a public verdict enum.
     legs.signature === "fail"
   ) {
     // A failing leg is tamper evidence (the proof panel names WHICH from the legs object) — a signed
@@ -259,7 +260,7 @@ export function buildRowReceipt(input: {
   /**
    * Opt-in (T-E1 evidence-pack export, H4): also carry the anchor's `genesisHash`+`sig`+`keyId` so an
    * offline verifier can reconstruct the exact signed core bytes and independently check anchor
-   * authenticity against a pinned public key — the offline instance of GATE-1's signed-anchor claim.
+   * authenticity against a pinned public key — the offline counterpart of the signed-anchor check.
    * Defaults to `false`; existing callers (the live admin proof endpoint) are unaffected.
    */
   includeAnchorProvenance?: boolean;

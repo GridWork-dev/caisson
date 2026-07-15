@@ -110,7 +110,7 @@ function signedAnchor(
   };
 }
 
-describe("verifyAnchorSignature (leg 3, GATE-1 / ADR-0344)", () => {
+describe("verifyAnchorSignature (leg 3)", () => {
   test("signed anchor + matching pinned key → pass (client checks a real signature)", async () => {
     const { anchor, pinnedKey } = signedAnchor(anchorForRow(1));
     expect(await verifyAnchorSignature(anchor, pinnedKey)).toBe("pass");
@@ -202,7 +202,7 @@ describe("classifyRowState (six states)", () => {
         { redacted: false },
       ),
     ).toBe("tampered");
-    // A signed anchor whose signature does not verify is a forged anchor → tampered (GATE-1).
+    // A signed anchor whose signature does not verify is a forged anchor → tampered.
     expect(
       classifyRowState(
         { linkRecompute: "pass", anchorEquality: "pass", signature: "fail" },

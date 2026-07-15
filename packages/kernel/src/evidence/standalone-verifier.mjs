@@ -17,8 +17,8 @@
 //   2. anchor equality    — anchor.tipHash === hash (the per-row commitment; L2's public-tag rule, plain
 //                           equality is correct, not a secret compare).
 //   3. anchor signature   — OPTIONAL: only run when the receipt carries `anchor.sig` AND the pack
-//                           supplies a matching `anchorAuth.publicKeySpkiBase64` (GATE-1 / H4 — the
-//                           offline instance of "verify without trusting caisson"). Absent either side,
+//                           supplies a matching `anchorAuth.publicKeySpkiBase64` — the offline way to
+//                           verify authenticity without trusting Caisson. Absent either side,
 //                           this leg reports "not-available", never a silent pass or fail.
 //
 // A row's overall verdict is FAIL iff any of the three legs actually run and fail; "na"/"not-available"
@@ -148,6 +148,7 @@ export async function verifyReceipt(receipt, anchorAuth) {
   }
 
   const overall =
+    // nosemgrep: no-insecure-token-compare -- link/anchorEquality/signature are pass/fail verdict strings, not secrets; the Ed25519 signature check itself is verifyEd25519 above. No timing side channel on a public verdict.
     link === "fail" || anchorEquality === "fail" || signature === "fail"
       ? "FAIL"
       : "PASS";
