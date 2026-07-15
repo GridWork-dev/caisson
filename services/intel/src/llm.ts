@@ -110,7 +110,8 @@ export const ENRICH_SYSTEM_PROMPT = [
   "Use only the supplied facts. Do not invent causes, impacts, dates, owners, or URLs.",
   "State the concrete change, why it matters to the operator, and one concrete next action.",
   "Use exact URLs, counts, versions, and before/after identifiers from the payload when present.",
-  'If the facts prove only a hash/content change, say "content-level delta unavailable" instead of inventing one.',
+  "When previousExcerpt and currentExcerpt are present, they are the before/after text of the changed section — state the concrete wording that changed as WHAT changed; do not fall back to a generic notice.",
+  'If the facts prove only a hash/content change with no excerpt, say "content-level delta unavailable" instead of inventing one.',
   "When the facts do not prove urgency, say that plainly and propose a bounded review action.",
   'Respond with STRICT JSON ONLY: {"whatChanged":"...","whyItMatters":"...","action":"..."}.',
 ].join("\n");
