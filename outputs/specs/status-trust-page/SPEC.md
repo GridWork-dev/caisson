@@ -1,6 +1,6 @@
 # SPEC — Public status page + /trust page + subprocessor list
 
-- **Date:** 2026-07-13 · **Status:** PROPOSED — operator lock required before EXECUTE
+- **Date:** 2026-07-13 · **Status:** SHIPPED — locked by ADR-0348 (2026-07-13), EXECUTED 2026-07-15 (PR 242: /trust + subprocessor table + Worker /health; Better Stack page 255425 live; status.caisson.sh CNAME applied same day). Verification gate met: 4 named monitors public, /trust links the page, zero certif/compliant hits.
 - **Tags:** `ui` `product` (`ui` fires the UI review at SHIP)
 - **Source:** Kickoff T banner item 8 (AUDIT-SYNTHESIS §D HIGH gap): a compliance-infrastructure
   vendor selling trust artifacts has no public availability surface and no subprocessor

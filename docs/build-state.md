@@ -7,7 +7,7 @@ status: live
 
 ## Current state (2026-07-15)
 
-**ADR ceiling is now `0348`, PRs merged through `#240`.** The 2026-07-15 execution wave (PRs
+**ADR ceiling is now `0350`, PRs merged through `#243`.** The 2026-07-15 execution wave (PRs
 #236-240, plus #235) built out the four 2026-07-13 SPEC locks and Kickoff-T: agent-ready DS
 surface v1 (`ADR-0330`/`0345`), compliance crosswalk rollup + ISO 27001 fourth view
 (`ADR-0333`/`0347`), external anchoring v1 (`ADR-0332`/`0346`), per-row tamperproof verification

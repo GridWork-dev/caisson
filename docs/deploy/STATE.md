@@ -21,10 +21,16 @@ Same-day follow-on to the reconcile redeploy below, carrying the two post-picker
 - **intel container** rebuilt from PR #243 (`docker compose up -d --build`, healthy) — hash-mode
   watchers now persist snapshots, so the CAISSON-101 eval lane arms at the next genuine
   EUR-Lex/AICPA page change.
-- **NOT deployed: registry Worker.** The `/health` route (PR #242) is merged in code only —
-  `bash registry/worker/deploy.sh` is a credentialed Cloudflare act (classifier-denied to the
-  session; CLOUDFLARE_* in `~/.gridwork/caisson.env`). `registry.caisson.sh/health` probes 404
-  until the operator runs it; the 4th status-page monitor waits on that.
+- **registry Worker DEPLOYED (operator-directed follow-up, same sitting):** version
+  `71bff3c8` via `registry/worker/deploy.sh` — `registry.caisson.sh/health` 200
+  `{"status":"ok","version":1}` (3× consistent). 4th Better Stack monitor created
+  (id 4677314, "Module registry") and attached to page 255425 (resource 8964977).
+- **`status.caisson.sh` CUSTOM DOMAIN LIVE (operator-directed):** free-tier support
+  re-verified, `custom_domain` set on page 255425, `infra/terraform/status-page.tf` CNAME →
+  `statuspage.betteruptime.com` applied **targeted only** (`-target=cloudflare_dns_record.status_page`;
+  the email.tf records exist in Cloudflare but NOT in this tfstate — a blanket apply would
+  create duplicates; their import runbook remains an open operator act). Probe:
+  https://status.caisson.sh 200, all 4 monitors rendered.
 
 ## 2026-07-15 — reconcile-wave fleet redeploy: site · admin · license · docs on clean main (`ca44db58`)
 
