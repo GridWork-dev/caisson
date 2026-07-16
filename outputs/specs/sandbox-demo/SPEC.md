@@ -1,11 +1,16 @@
 ---
-status: draft-for-lock
+status: locked (ADR-0350, 2026-07-16)
 owner: operator
 ---
 
 # SPEC — Pre-purchase interactive sandbox/demo
 
-**Status: draft-for-lock.** No build until the operator locks a fork on the options table below
+**Status: LOCKED 2026-07-16 → ADR-0350.** All six forks dispositioned: F1 = (c) server-side
+demo-run job · F2 = NO, (d) excerpts bundle WITH the (c) build (operator override) · F3 =
+lightweight email capture · F4 = fold as a ladder · F5 = hard daily cap auto-disable · F6 =
+build first, independent. Build NOW in a parallel worktree wave; the `create-caisson --demo`
+generator leg (ADR-0274 pt 1) builds first inside the program. Original draft text below is
+unchanged history. It read: no build until the operator locks a fork on the options table below
 (per ADR-0323 Decision 4c — spec-first, this doc tables forks, decides nothing). Tags:
 `external-system`, `security`, `billing`, `frontend`.
 
