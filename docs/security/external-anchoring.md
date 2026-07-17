@@ -64,7 +64,12 @@ inert-until-armed — unset `ANCHOR_CHECKPOINT_SCHEDULE` means no TSA connection
 
 The v1.1 `externally-transparent` grade adds a **second, larger egress class**: a submission of the
 anchor bytes (still hashes only — `{length, tipHash, genesisHash}`, no payload/PII) into a **public,
-permanently and irrevocably visible** append-only log. Two targets, both behind the same port:
+permanently and irrevocably visible** append-only log. Like the TSA leg above, the path is
+env-gated and inert until armed — concretely: `CAISSON_ANCHOR_TARGET` selects the leg (`tsa` is
+the default and the only value the deploy seam will wire today; `rekor`/`ots` are refused until
+the operator arming act), and the Rekor leg additionally requires `CAISSON_REKOR_ANCHORING_KEY`
+(the deployment-level ed25519ph seed) plus the buyer-side `IrreversiblePublicityOptIn` at the
+call site. Two targets, both behind the same port:
 
 - **Rekor v2** (`sigstore.dev`) — POST of a `hashedrekord/0.0.2` entry (an ed25519ph signature over a
   deployment-level anchoring key + the anchor digest) to a shard read from a **deployment-supplied
