@@ -1,5 +1,12 @@
 # @caisson/site
 
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [f844386]
+  - @caisson/cli@0.6.3
+
 ## 0.2.6
 
 ### Patch Changes
