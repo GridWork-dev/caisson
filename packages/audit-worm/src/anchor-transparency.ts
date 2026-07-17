@@ -65,12 +65,37 @@ export const tsaTargetSchema = strictObject({
 export type TsaTarget = z.infer<typeof tsaTargetSchema>;
 
 /**
- * The pluggable target union (Fork F). v1 carries ONLY the TSA variant; the v1.1 Rekor/OTS variants
- * ({ kind: "rekor" | "ots"; grade: "externally-transparent" }) slot into this discriminated union
- * without a rewrite — that is the whole point of keeping it a union of one today.
+ * A Rekor v2 public-log target (v1.1). Carries NO write URL — the shard URL is read from a
+ * deployment-supplied SigningConfig at `RekorAnchorLog` construction (spike decision #3: never hardcode
+ * `log2025-1…` in source; it rotates ~6-monthly). `grade` is pinned to `externally-transparent` at the
+ * type level. Submission additionally requires the typed irreversible-publicity opt-in (Fork D, R10).
+ */
+export const rekorTargetSchema = strictObject({
+  kind: z.literal("rekor"),
+  grade: z.literal("externally-transparent"),
+});
+export type RekorTarget = z.infer<typeof rekorTargetSchema>;
+
+/**
+ * An OpenTimestamps public-log target (v1.1, Fork R-γ). Bitcoin-anchored via calendar servers;
+ * `grade` is pinned to `externally-transparent`. Like the Rekor target it requires the irreversible-
+ * publicity opt-in (R10). Its offline verify is a documented Bitcoin-header-dependent seam (v1.1 ships
+ * the submit leg; full verify is out of scope — see `anchor-ots.ts`).
+ */
+export const otsTargetSchema = strictObject({
+  kind: z.literal("ots"),
+  grade: z.literal("externally-transparent"),
+});
+export type OtsTarget = z.infer<typeof otsTargetSchema>;
+
+/**
+ * The pluggable target union (Fork F). v1 carried ONLY the TSA variant; v1.1 adds the Rekor + OTS
+ * public-log variants — the whole point of keeping this a discriminated union.
  */
 export const transparencyTargetSchema = z.discriminatedUnion("kind", [
   tsaTargetSchema,
+  rekorTargetSchema,
+  otsTargetSchema,
 ]);
 export type TransparencyTarget = z.infer<typeof transparencyTargetSchema>;
 
@@ -106,6 +131,81 @@ export const timestampReceiptSchema = strictObject({
 });
 export type TimestampReceipt = z.infer<typeof timestampReceiptSchema>;
 
+// --- self-contained Rekor transparency receipt (v1.1, spike decision #2) ------------------------
+
+/** Standard base64 (with padding) — the wire encoding for every byte field a Rekor receipt carries. */
+const base64String = z
+  .string()
+  .min(1)
+  .regex(/^[A-Za-z0-9+/]+={0,2}$/, "must be standard base64");
+
+/**
+ * The SELF-CONTAINED public-log receipt (`externally-transparent`). It carries EVERYTHING
+ * `verifyExternal` needs to check offline — including the log's own checkpoint-signing key + origin —
+ * because Rekor v2 removed online proof retrieval AND shards retire ~6-monthly while receipts are
+ * WORM-retained for years (spike decision #2 + Q4): a stored receipt must verify with NO live TUF/Rekor
+ * fetch, long after its shard is gone. `verifyExternal` verifies the checkpoint signature against
+ * `logPublicKey` WITHOUT enforcing TUF timestamp freshness — a years-old-but-valid checkpoint still
+ * verifies. The leaf's `data.digest` (inside `canonicalizedBody`) is `SHA-512(anchorBytes)`; the outer
+ * `AnchorReceipt.anchorDigest` stays `sha256` (the target-agnostic join key), a distinct hash.
+ */
+export const transparencyReceiptSchema = strictObject({
+  algorithm: z.literal("rekor-v2-hashedrekord"),
+  /** The log origin string (the checkpoint's first line, e.g. `log2025-1.rekor.sigstore.dev`). */
+  origin: z.string().min(1),
+  /** The raw C2SP signed-note checkpoint envelope (origin/treeSize/rootHash + `— name sig`). */
+  checkpoint: z.string().min(1),
+  /** The log's checkpoint-signing algorithm. Only Ed25519 checkpoints are verifiable today. */
+  logKeyDetails: z.literal("PKIX_ED25519"),
+  /** base64 DER SPKI of the log's checkpoint-signing key — snapshotted so the receipt self-verifies. */
+  logPublicKey: base64String,
+  /** base64 SHA-256 log id (`TransparencyLogEntry.logId.keyId`), bound to the fixture shard. */
+  logId: base64String,
+  /** The authoritative leaf position (`TransparencyLogEntry.logIndex`, top-level, int64 as string). */
+  logIndex: z.string().regex(/^\d+$/),
+  /** The RFC-6962 inclusion-proof audit path (`inclusionProof.hashes[]`, base64). */
+  inclusionHashes: z.array(base64String),
+  /** base64 leaf preimage (`canonicalizedBody`): the `{data,signature}` the leaf hash is taken over. */
+  canonicalizedBody: base64String,
+  /** Optional RFC-3161 token composing the `trusted-timestamped` layer over the same anchor (Q5 #5). */
+  rfc3161Token: base64String.optional(),
+});
+export type TransparencyReceipt = z.infer<typeof transparencyReceiptSchema>;
+
+/**
+ * An OpenTimestamps receipt (v1.1, Fork R-γ minimal drop-in). OTS needs NO per-entry signature — the
+ * calendar Merkle-trees all submitters and commits to Bitcoin — so `signature`/`verifier` are absent.
+ * `status: pending` holds the calendar's `PendingAttestation` (Bitcoin not yet confirmed); `complete`
+ * holds the upgraded proof. FULL verification requires Bitcoin block headers (documented seam, out of
+ * scope v1.1) — the persisted proof is durable evidence, upgraded/verified later.
+ */
+export const otsReceiptSchema = strictObject({
+  algorithm: z.literal("opentimestamps"),
+  /** `sha256(anchorBytes)` — the digest OTS calendars aggregate (lowercase hex). */
+  messageImprint: z.string().regex(/^[0-9a-f]{64}$/),
+  /** The calendar servers the digest was submitted to. */
+  calendars: z.array(z.string().url()).min(1),
+  /** base64 of the `.ots` proof bytes (a `PendingAttestation` while `pending`). */
+  proof: z.string().min(1),
+  /** `pending` = Bitcoin not yet confirmed; `complete` = upgraded proof landed. */
+  status: z.enum(["pending", "complete"]),
+  /** When the calendar accepted the digest (ISO-8601). */
+  submittedAt: z.string().min(1),
+});
+export type OtsReceipt = z.infer<typeof otsReceiptSchema>;
+
+/**
+ * The receipt a `TransparencyLog.submit` returns, per target: a TSA `TimestampReceipt`, a self-contained
+ * Rekor `TransparencyReceipt`, or an `OtsReceipt`. Discriminated on `algorithm`. Existing rfc3161
+ * receipts parse unchanged — widening to a union is backward-compatible.
+ */
+export const anchorSubmitReceiptSchema = z.discriminatedUnion("algorithm", [
+  timestampReceiptSchema,
+  transparencyReceiptSchema,
+  otsReceiptSchema,
+]);
+export type AnchorSubmitReceipt = z.infer<typeof anchorSubmitReceiptSchema>;
+
 // --- the persisted WORM anchor receipt ---------------------------------------------------------
 
 /**
@@ -121,7 +221,7 @@ export const anchorReceiptSchema = strictObject({
   anchorLength: z.number().int().nonnegative(),
   anchorDigest: z.string().regex(/^[0-9a-f]{64}$/),
   grade: anchorGradeSchema,
-  receipt: timestampReceiptSchema,
+  receipt: anchorSubmitReceiptSchema,
   /** When Caisson persisted the receipt to WORM (ISO-8601). Distinct from `receipt.timestampedAt`. */
   receiptedAt: z.string().min(1),
 });
@@ -176,6 +276,82 @@ export type AnchorOutboxRow = z.infer<typeof anchorOutboxRowSchema>;
  */
 export interface TrustedTimestampLog {
   submit(anchorBytes: Uint8Array): Promise<TimestampReceipt>;
+}
+
+/**
+ * The target-agnostic anchoring port (Fork F). `submit` egresses the anchor bytes to SOME external log
+ * and returns whichever receipt that target produces (TSA `TimestampReceipt` or Rekor
+ * `TransparencyReceipt`). Every concrete log — `TsaAnchorLog`, `RekorAnchorLog`, `OpenTimestampsAnchorLog`
+ * — implements this; the checkpoint handler and outbox are written against it and stay target-blind
+ * (correction #3). `TrustedTimestampLog` is the narrower TSA-only shape; a `TsaAnchorLog` satisfies both.
+ */
+export interface TransparencyLog {
+  submit(anchorBytes: Uint8Array): Promise<AnchorSubmitReceipt>;
+}
+
+/**
+ * The minimal signer port `RekorAnchorLog` needs — the deployment ed25519ph anchoring signer
+ * (`@caisson/signing-primitive`'s `Ed25519PhSigner`) is INJECTED as this structural shape, so audit-worm
+ * keeps its down-only dependency set (no `signing-primitive` import; ADR-0346 P1 discipline). `sign`
+ * returns a detached 64-byte ed25519ph signature over the exact anchor bytes; `publicKey` returns the
+ * raw 32-byte Ed25519 key (this module DER-wraps it into the Rekor verifier material).
+ */
+export interface AnchorSubmissionSigner {
+  readonly keyId: string;
+  readonly algorithm: "ed25519ph";
+  sign(anchorBytes: Uint8Array): Promise<Uint8Array>;
+  publicKey(): Promise<Uint8Array>;
+}
+
+// --- Fork D: typed irreversible-publicity opt-in (R10; mirrors store.s3 COMPLIANCE opt-in) ------
+
+/** The exact acknowledgement a deployment must echo to submit to a PUBLIC transparency log. */
+export const PUBLICITY_ACKNOWLEDGEMENT =
+  "I acknowledge public transparency-log anchoring is irreversible: each submission is a permanent, " +
+  "publicly visible entry (existence, timing, and rough volume are disclosed) and cannot be deleted.";
+
+const PUBLICITY_OPT_IN_BRAND: unique symbol = Symbol(
+  "audit-worm.irreversible-publicity-opt-in",
+);
+
+/**
+ * The typed, opaque proof that a deployment has acknowledged public-log anchoring is irreversible
+ * (Fork D). Unforgeable in practice — the only constructor is {@link irreversiblePublicityOptIn}, which
+ * demands the exact {@link PUBLICITY_ACKNOWLEDGEMENT}. No public-log target submits without one in hand,
+ * so the irreversible public egress cannot be triggered by accident or by a default. TSA never needs it.
+ */
+export interface IrreversiblePublicityOptIn {
+  readonly [PUBLICITY_OPT_IN_BRAND]: true;
+}
+
+/**
+ * Mint the irreversible-publicity opt-in. Fail-closed: the acknowledgement must be the exact
+ * {@link PUBLICITY_ACKNOWLEDGEMENT} string, so neither a typo nor a default ever yields one.
+ */
+export function irreversiblePublicityOptIn(input: {
+  acknowledgement: string;
+}): IrreversiblePublicityOptIn {
+  if (input.acknowledgement !== PUBLICITY_ACKNOWLEDGEMENT) {
+    throw new ValidationError(
+      "audit-worm: public-log anchoring requires the exact irreversible-publicity acknowledgement string",
+    );
+  }
+  return { [PUBLICITY_OPT_IN_BRAND]: true };
+}
+
+/**
+ * The runtime brand check a public-log target uses to refuse a forged/absent opt-in (a belt for untyped
+ * JS callers; the type system is the primary gate — the brand symbol is module-private, so the only way
+ * to obtain the value is {@link irreversiblePublicityOptIn}).
+ */
+export function isIrreversiblePublicityOptIn(
+  value: unknown,
+): value is IrreversiblePublicityOptIn {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as Record<PropertyKey, unknown>)[PUBLICITY_OPT_IN_BRAND] === true
+  );
 }
 
 // --- shared helpers (keyer + digest; imported by writer T4 and reader/verify siblings) ---------

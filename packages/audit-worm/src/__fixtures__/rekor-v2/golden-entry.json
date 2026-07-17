@@ -1,0 +1,41 @@
+{
+  "logIndex": "27980982",
+  "logId": {
+    "keyId": "zxGZFVvd0FEmjR8WrFwMdcAJ9vtaY/QXf44Y1wUeP6A="
+  },
+  "kindVersion": {
+    "kind": "hashedrekord",
+    "version": "0.0.2"
+  },
+  "integratedTime": "0",
+  "inclusionPromise": null,
+  "inclusionProof": {
+    "logIndex": "27980982",
+    "rootHash": "BMaZUvk+WSuxS/OwBOgkzAmyRy2l0/jlXc+weNB6hOQ=",
+    "treeSize": "27981000",
+    "hashes": [
+      "AqYABqsZMN23ID47fnARzztC+nfkjkUmsGwLyP3fGr4=",
+      "svgF2QyhBciNJ3Ov1IMJPJ/QfQrF0eRWJOKFu59Ny5M=",
+      "7KsLOy/Ay7gPF5CJKFv8+nswwOnMZ5yvddmzrTDeCeo=",
+      "vVZcMvizPH1ICjF8zxSvbByXyEEu4EArzV+Wh3GYtgY=",
+      "2MdW51VfpiBRAZhKt45jGCL81RcurvOZGSDLAh0vv7g=",
+      "H6FyVAyxU06f0bQfoIbmcHVHYw/pebht0txWRde09go=",
+      "KgkgkbHLKUhp70iBby2S62a+yXEmvnd/PmCeuZJT6mA=",
+      "YczNaVMsw2nWsQPRC+h2//84KGo9nnpDqXGe77gTtFM=",
+      "WPOOLcIdK5zw0SmMS0wdBIIOQsVegFO2GOqRlBFIGEs=",
+      "gw7agHsHxPTltyAI2N+1bAzxxvy2M4VNbS9F3ZhmHxM=",
+      "bRQLc1sen/ZJqM7pbiAH6NYC1sLcVWvTHhVp3ClhrYw=",
+      "B6HLu14ICM7Bh3GYSwbRK95QM3w4uFTuELukujR2mf8=",
+      "PEomVHTry254I5CE9c7tySCPlBdKwEis2AbDtJsDa5E=",
+      "OwPvi6eYQ7H+8o+kJtsUJVilhQvK98b5nFqFRER1dS0=",
+      "hKQwqwxV1kivrp7AYvFmBQC3ZDw/qciqoWbalknIJE4=",
+      "0+nZTf9jcGbJeZGg+gB8+RKWYdQ2sX1vZksDE6aeQ1c=",
+      "xu15PFj43u5JXGOi/IIJ9qbU5zwlycJ9EE2OwrM1rW8=",
+      "nMlYR4OONBiVLjbmuP2SPU9/HKa/8g61u8q6a78To2A="
+    ],
+    "checkpoint": {
+      "envelope": "log2025-1.rekor.sigstore.dev\n27981000\nBMaZUvk+WSuxS/OwBOgkzAmyRy2l0/jlXc+weNB6hOQ=\n\n— log2025-1.rekor.sigstore.dev zxGZFfp9/7T571jvjNBia+V0W8nWWh1WAcvohsKtJxD35yfKZmvqHo/tQ6vLDWoxqKjbL0MN7hHNz5JxiJXzhO38Kwc=\n"
+    }
+  },
+  "canonicalizedBody": "eyJhcGlWZXJzaW9uIjoiMC4wLjIiLCJraW5kIjoiaGFzaGVkcmVrb3JkIiwic3BlYyI6eyJoYXNoZWRSZWtvcmRWMDAyIjp7ImRhdGEiOnsiYWxnb3JpdGhtIjoiU0hBMl81MTIiLCJkaWdlc3QiOiJubnFTbjl1Sm5JV2IwNjBCNGs1dWlsTEhXMUs2NUtRakllc1FQbnZTVlpwZTRsbG1ET0YwWjdteFQzL2pLZGkwTDg1YlgvNElHaE9vN3o0enlONEFMQT09In0sInNpZ25hdHVyZSI6eyJjb250ZW50IjoiU2JDZmtqQUhBRzRidmhYKzRWalVHK2I3OFZ4K2QxTE9aRy9PK0RQTHh6R3dPU1Y2SWFrRDZ4ZHNValVlM0ZnYm42cUpKWU1LK1ViRjR4QUdzK1QxQlE9PSIsInZlcmlmaWVyIjp7ImtleURldGFpbHMiOiJQS0lYX0VEMjU1MTlfUEgiLCJwdWJsaWNLZXkiOnsicmF3Qnl0ZXMiOiJNQ293QlFZREsyVndBeUVBL1lJYnVPYlN1dENUV3BZQmJMWmc0ZlFlblRWL0orbzNQV2dwWkdTdHV6Yz0ifX19fX19"
+}

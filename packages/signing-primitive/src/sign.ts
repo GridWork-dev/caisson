@@ -42,8 +42,14 @@ export interface SignableManifest {
   readonly chainAnchor: { readonly tipHash: string };
 }
 
-/** The base-tier signature scheme. A buyer-KMS asymmetric scheme would extend this behind the port. */
-export type SignatureAlgorithm = "ed25519";
+/**
+ * The signature schemes this surface produces. `ed25519` is the base-tier evidence-pack scheme (pure
+ * EdDSA over the full message). `ed25519ph` is the external-anchoring prehash variant (RFC-8032 §5.1,
+ * SHA-512 prehash) required by Rekor v2 `hashedrekord` — pure Ed25519 is rejected there (it re-hashes
+ * the message it is only given the digest of). A buyer-KMS asymmetric scheme would extend this behind
+ * the port.
+ */
+export type SignatureAlgorithm = "ed25519" | "ed25519ph";
 
 const ED25519_SECRET_BYTES = 32;
 const ED25519_PUBLIC_BYTES = 32;
