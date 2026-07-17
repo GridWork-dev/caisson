@@ -12,5 +12,6 @@ TUF/Rekor fetch, freshness-independent so receipts outlive shard turndown), RFC-
 verification, and a `SHA-512(anchorBytes)` leaf-digest binding. The persisted WORM receipt is
 self-contained (checkpoint + inclusion proof + embedded log key + origin). Public-log submission
 requires a typed irreversible-publicity opt-in (mirrors the COMPLIANCE opt-in); TSA stays the default
-target. Adds `@noble/curves`. The audit-worm minor bump needs the Compliance bundle members-fold
-republish.
+target. The ed25519ph signer is injected from `@caisson/signing-primitive`; the offline verify uses
+`node:crypto` (Ed25519 checkpoint verify + RFC-6962 SHA-256 hashing), so audit-worm gains no new crypto
+dependency. The audit-worm minor bump needs the Compliance bundle members-fold republish.
