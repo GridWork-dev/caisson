@@ -44,6 +44,14 @@ const delist = (id: string) => ({
   delistedAt: "2026-07-07T16:00:00.000Z",
   reason: "test delist",
 });
+/** A version-level delist line (ADR-0359). */
+const delistVersion = (id: string, version: string) => ({
+  op: "delist",
+  id,
+  version,
+  delistedAt: "2026-07-17T16:00:00.000Z",
+  reason: "test version delist",
+});
 const jsonl = (...lines: object[]) =>
   `${lines.map((l) => JSON.stringify(l)).join("\n")}\n`;
 
@@ -225,6 +233,85 @@ describe("registry index builder (ADR-0021/0047)", () => {
     // Build metadata (SemVer §10) does not affect precedence.
     expect(compareSemver("1.0.0-rc.1+build1", "1.0.0-rc.1+build2")).toBe(0);
     expect(compareSemver("1.0.0+a", "1.0.0+b")).toBe(0);
+  });
+
+  test("a version-delist line drops only that version, keeping the module + its other versions (ADR-0359)", () => {
+    const text = jsonl(
+      pub("@caisson/x", "0.1.0"),
+      pub("@caisson/x", "0.2.0"),
+      pub("@caisson/x", "0.3.0"),
+      delistVersion("@caisson/x", "0.2.0"),
+    );
+    const { publishes, delists } = parseLedgerLines(text);
+    expect(publishes).toHaveLength(3); // history preserved
+    expect(delists).toHaveLength(1);
+    const index = buildIndex(publishes, delists);
+    expect(index.modules).toHaveLength(1);
+    expect(index.modules[0]!.versions.map((v) => v.version)).toEqual([
+      "0.1.0",
+      "0.3.0",
+    ]);
+    expect(index.modules[0]!.latest).toBe("0.3.0");
+  });
+
+  test("a publish after a version-delist of that exact pair is a ledger error (delisting is terminal)", () => {
+    const text = jsonl(
+      pub("@caisson/x", "0.1.0"),
+      delistVersion("@caisson/x", "0.1.0"),
+      pub("@caisson/x", "0.1.0"),
+    );
+    expect(() => parseLedgerLines(text)).toThrow(/after its version-delist/);
+  });
+
+  test("a version-delist without a prior publish of that exact pair is a ledger error", () => {
+    const text = jsonl(
+      pub("@caisson/x", "0.1.0"),
+      delistVersion("@caisson/x", "0.2.0"),
+    );
+    expect(() => parseLedgerLines(text)).toThrow(/no prior publish/);
+  });
+
+  test("a duplicate version-delist of the same pair is a ledger error", () => {
+    const text = jsonl(
+      pub("@caisson/x", "0.1.0"),
+      pub("@caisson/x", "0.2.0"),
+      delistVersion("@caisson/x", "0.1.0"),
+      delistVersion("@caisson/x", "0.1.0"),
+    );
+    expect(() => parseLedgerLines(text)).toThrow(/duplicate delist/);
+  });
+
+  test("a version-delist of an already module-delisted id is a ledger error (ADR-0359)", () => {
+    const text = jsonl(
+      pub("@caisson/x", "0.1.0"),
+      pub("@caisson/x", "0.2.0"),
+      delist("@caisson/x"),
+      delistVersion("@caisson/x", "0.1.0"),
+    );
+    expect(() => parseLedgerLines(text)).toThrow(/already module-delisted/);
+  });
+
+  test("a module-delist of an id that already has version-delists is allowed (moot, not conflicting)", () => {
+    const text = jsonl(
+      pub("@caisson/x", "0.1.0"),
+      pub("@caisson/x", "0.2.0"),
+      delistVersion("@caisson/x", "0.1.0"),
+      delist("@caisson/x"),
+    );
+    const { publishes, delists } = parseLedgerLines(text);
+    expect(delists).toHaveLength(2);
+    const index = buildIndex(publishes, delists);
+    expect(index.modules).toHaveLength(0); // module-delist wins — id fully gone
+  });
+
+  test("buildIndex throws if a version-delist would orphan latest (fail-closed, ADR-0359)", () => {
+    const text = jsonl(
+      pub("@caisson/x", "0.1.0"),
+      pub("@caisson/x", "0.2.0"),
+      delistVersion("@caisson/x", "0.2.0"), // 0.2.0 IS the current latest
+    );
+    const { publishes, delists } = parseLedgerLines(text);
+    expect(() => buildIndex(publishes, delists)).toThrow(/would orphan latest/);
   });
 
   test("the ledger rebuilds into the committed index (golden = the file itself)", () => {

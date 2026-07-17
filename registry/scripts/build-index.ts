@@ -23,6 +23,7 @@ export const LEDGER_PATH = join(REGISTRY_DIR, "ledger.jsonl");
 export const INDEX_PATH = join(REGISTRY_DIR, "index.json");
 
 const MODULE_ID_RE = /^@caisson\/[a-z0-9-]+$/;
+const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 /** One ledger line = one gated publish: the module id + that version's RegistryVersion record. */
 export const LedgerEntry = RegistryVersion.extend({
@@ -30,15 +31,29 @@ export const LedgerEntry = RegistryVersion.extend({
 }).strict();
 export type LedgerEntry = z.infer<typeof LedgerEntry>;
 
-/** A delist line (ADR-0271): an APPEND that removes the module's entry from every future index
- *  rebuild. The publish lines above it stay in the ledger forever (ADR-0006 append-only) — history
- *  and tarball provenance are preserved; only the served index surface drops the module. Terminal:
- *  a later publish line for a delisted id is a ledger error (an explicit re-list mechanism can be
- *  added when a real need appears — silent resurrection is the failure mode this forbids). */
+/** A delist line: an APPEND that removes an entry from every future index rebuild. The publish
+ *  lines above it stay in the ledger forever (ADR-0006 append-only) — history and tarball
+ *  provenance are preserved; only the served index surface drops the entry.
+ *
+ *  Two granularities, distinguished by the optional `version` field:
+ *  - **Module-level** (`version` absent, ADR-0271): drops the whole module id from the index.
+ *    Terminal for the id — a later publish line for a delisted id is a ledger error, and (ADR-0359)
+ *    so is a later version-delist for it (the module is already fully gone; a version-delist under
+ *    it would be redundant ledger noise). A module-delist MAY follow existing version-delists of
+ *    the same id (those become moot, not conflicting).
+ *  - **Version-level** (`version` present, ADR-0359 — extends ADR-0271 to version granularity):
+ *    drops only that one (id, version) pair from the index; every other version of the module is
+ *    unaffected. Terminal for that exact pair — a later publish of the same (id, version) is a
+ *    ledger error. Must follow a publish of that exact pair.
+ *
+ *  Silent resurrection is the failure mode both terminal rules forbid — an explicit re-list
+ *  mechanism can be added when a real need appears. */
 export const DelistEntry = z
   .object({
     op: z.literal("delist"),
     id: z.string().regex(MODULE_ID_RE),
+    /** Present = version-level delist of only this (id, version); absent = module-level (ADR-0271). */
+    version: z.string().regex(SEMVER_RE).optional(),
     delistedAt: z.string().datetime(),
     reason: z.string().min(1).max(500),
   })
@@ -51,14 +66,20 @@ export type ParsedLedger = {
 };
 
 /** Parse the JSONL ledger into publish + delist lines, skipping blanks. Parse-or-throw per line
- *  (never a cast). Order rules enforced here, where line order is visible: a delist must follow at
- *  least one publish of its id, an id is delisted at most once, and no publish may follow its
- *  delist. */
+ *  (never a cast). Order rules enforced here, where line order is visible:
+ *  - Module-level delist: must follow at least one publish of its id; an id is module-delisted at
+ *    most once; no publish may follow its module delist; no version-delist of that id may follow
+ *    its module delist (ADR-0359 — the module is already fully gone).
+ *  - Version-level delist (ADR-0359): must follow a publish of that EXACT (id, version); that
+ *    exact pair is version-delisted at most once; no publish of that exact pair may follow its
+ *    version delist. A version-delist is itself rejected if its id is already module-delisted. */
 export function parseLedgerLines(text: string): ParsedLedger {
   const publishes: LedgerEntry[] = [];
   const delists: DelistEntry[] = [];
   const publishedIds = new Set<string>();
+  const publishedVersionKeys = new Set<string>();
   const delistedIds = new Set<string>();
+  const delistedVersionKeys = new Set<string>();
   const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = (lines[i] as string).trim();
@@ -78,22 +99,49 @@ export function parseLedgerLines(text: string): ParsedLedger {
     try {
       if (isDelist) {
         const d = DelistEntry.parse(raw);
-        if (!publishedIds.has(d.id)) {
-          throw new Error(`delist of ${d.id} has no prior publish line`);
+        if (d.version !== undefined) {
+          // Version-level delist (ADR-0359).
+          const versionKey = `${d.id}@${d.version}`;
+          if (delistedIds.has(d.id)) {
+            throw new Error(
+              `version-delist of ${versionKey} — module ${d.id} is already module-delisted`,
+            );
+          }
+          if (!publishedVersionKeys.has(versionKey)) {
+            throw new Error(
+              `version-delist of ${versionKey} has no prior publish line`,
+            );
+          }
+          if (delistedVersionKeys.has(versionKey)) {
+            throw new Error(`duplicate delist of ${versionKey}`);
+          }
+          delistedVersionKeys.add(versionKey);
+        } else {
+          // Module-level delist (ADR-0271) — unchanged; may follow existing version-delists.
+          if (!publishedIds.has(d.id)) {
+            throw new Error(`delist of ${d.id} has no prior publish line`);
+          }
+          if (delistedIds.has(d.id)) {
+            throw new Error(`duplicate delist of ${d.id}`);
+          }
+          delistedIds.add(d.id);
         }
-        if (delistedIds.has(d.id)) {
-          throw new Error(`duplicate delist of ${d.id}`);
-        }
-        delistedIds.add(d.id);
         delists.push(d);
       } else {
         const e = LedgerEntry.parse(raw);
+        const versionKey = `${e.id}@${e.version}`;
         if (delistedIds.has(e.id)) {
           throw new Error(
             `publish of ${e.id}@${e.version} after its delist — delisting is terminal`,
           );
         }
+        if (delistedVersionKeys.has(versionKey)) {
+          throw new Error(
+            `publish of ${versionKey} after its version-delist — delisting is terminal`,
+          );
+        }
         publishedIds.add(e.id);
+        publishedVersionKeys.add(versionKey);
         publishes.push(e);
       }
     } catch (e) {
@@ -138,20 +186,52 @@ export function compareSemver(a: string, b: string): number {
   return ca.pre < cb.pre ? -1 : 1;
 }
 
-/** Build the validated index object from ledger entries (pure — no file IO). A delisted id keeps
- *  its publish lines in the ledger but contributes NO index entry (ADR-0271) — it leaves the
- *  discovery/membership surface entirely. */
+/** Build the validated index object from ledger entries (pure — no file IO). A module-delisted id
+ *  keeps its publish lines in the ledger but contributes NO index entry (ADR-0271) — it leaves the
+ *  discovery/membership surface entirely. A version-delisted (id, version) pair (ADR-0359) keeps
+ *  its publish line too but is excluded from just that module's version list; the module itself
+ *  stays listed as long as at least one version survives. */
 export function buildIndex(
   entries: readonly LedgerEntry[],
   delists: readonly DelistEntry[] = [],
 ): RegistryIndex {
-  const delisted = new Set(delists.map((d) => d.id));
+  const delistedModuleIds = new Set(
+    delists.filter((d) => d.version === undefined).map((d) => d.id),
+  );
+  const versionDelists = delists.filter(
+    (d): d is DelistEntry & { version: string } => d.version !== undefined,
+  );
+  const delistedVersionKeys = new Set(
+    versionDelists.map((d) => `${d.id}@${d.version}`),
+  );
   const byId = new Map<string, LedgerEntry[]>();
   for (const e of entries) {
-    if (delisted.has(e.id)) continue;
+    if (delistedModuleIds.has(e.id)) continue;
+    if (delistedVersionKeys.has(`${e.id}@${e.version}`)) continue;
     const list = byId.get(e.id) ?? [];
     list.push(e);
     byId.set(e.id, list);
+  }
+
+  // Fail-closed (ADR-0359): a version-delist may never orphan `latest` — the module's TRUE latest
+  // (the highest version ever published for a still-live id) must survive version-level pruning.
+  // Prune is only ever meant for superseded, non-latest versions; a delist targeting what would be
+  // latest is a tooling/ledger bug, not a valid prune — throw rather than silently re-pointing the
+  // served `latest` dist-tag to a different version.
+  const trueLatestById = new Map<string, string>();
+  for (const e of entries) {
+    if (delistedModuleIds.has(e.id)) continue; // no `latest` concept for a fully-gone module
+    const cur = trueLatestById.get(e.id);
+    if (cur === undefined || compareSemver(e.version, cur) > 0) {
+      trueLatestById.set(e.id, e.version);
+    }
+  }
+  for (const d of versionDelists) {
+    if (trueLatestById.get(d.id) === d.version) {
+      throw new Error(
+        `version-delist of ${d.id}@${d.version} would orphan latest — delisting the current latest version is not allowed`,
+      );
+    }
   }
 
   const modules = [...byId.keys()].sort().map((id) => {
