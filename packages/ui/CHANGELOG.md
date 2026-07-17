@@ -1,5 +1,13 @@
 # @caisson/ui
 
+## 0.6.1
+
+### Patch Changes
+
+- 809592d: Add a Storybook 10.5 component playground for the kit (`.storybook/`, `vitest.config.ts`, one `*.stories.tsx` per component covering all 39 exported primitives). Wires `@storybook/addon-a11y` + `@storybook/addon-vitest` for browser-mode axe accessibility checks per story (`bun run test:storybook`) and `@storybook/addon-mcp` for agent-facing component documentation and story-preview tooling (`bun run storybook`). Dev-only tooling — no production runtime code changed.
+- 809592d: Typography polish: `.cs-section-title` and `.cs-lede` gain `text-wrap: pretty` (no orphaned
+  last words on multi-line headings and ledes); `.cs-display` keeps `balance`.
+
 ## 0.6.0
 
 ### Minor Changes

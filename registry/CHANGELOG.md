@@ -1,5 +1,14 @@
 # @caisson/registry
 
+## 0.0.8
+
+### Patch Changes
+
+- a8d8f5e: Add a dedicated unauthenticated health route to the registry read Worker: GET /health returns a 200 with the registry schema version and is never cached, giving uptime monitors a stable check target that reads no data.
+  - @caisson/license-verify@0.3.2
+  - @caisson/pricebook@0.5.2
+  - @caisson/registry-schema@0.5.0
+
 ## 0.0.7
 
 ### Patch Changes

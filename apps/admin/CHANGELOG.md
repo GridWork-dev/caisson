@@ -1,5 +1,44 @@
 # @caisson/admin
 
+## 0.0.7
+
+### Patch Changes
+
+- 59e1365: Drop the unused drizzle-orm dependency from apps/admin (Kickoff T task 8 non-gated leg). No admin
+  source imports it; knip could not flag it because better-auth declares drizzle-orm as an optional
+  peerDependency, which knip counts as a legitimate reference.
+- 7e823a9: Renovate dependency pins (exact versions) across the app and service workspaces; no code change.
+- Updated dependencies [ca44db5]
+- Updated dependencies [baaa4fc]
+- Updated dependencies [a8696cf]
+- Updated dependencies [1867fa3]
+- Updated dependencies [e5e4311]
+- Updated dependencies [e5e4311]
+- Updated dependencies [59e1365]
+- Updated dependencies [59e1365]
+- Updated dependencies [a0fd9b1]
+- Updated dependencies [d1b4afa]
+- Updated dependencies [7e823a9]
+- Updated dependencies [809592d]
+- Updated dependencies [809592d]
+- Updated dependencies [e183860]
+  - @caisson/audit-worm@2.0.0
+  - @caisson/org-controls@0.3.1
+  - @caisson/auth@0.3.3
+  - @caisson/kernel@0.5.0
+  - @caisson/email@0.5.0
+  - @caisson/service-license@0.0.8
+  - @caisson/brand@0.1.3
+  - @caisson/demo-registry@0.2.1
+  - @caisson/observability@0.3.1
+  - @caisson/ui@0.6.1
+  - @caisson/platform-migrations@0.2.1
+  - @caisson/credits@0.5.1
+  - @caisson/rate-limit@0.1.4
+  - @caisson/tenancy-rls@0.5.2
+  - @caisson/platform-reads@0.2.1
+  - @caisson/registry-schema@0.5.0
+
 ## 0.0.6
 
 ### Patch Changes

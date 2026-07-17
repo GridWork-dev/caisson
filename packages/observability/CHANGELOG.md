@@ -1,5 +1,15 @@
 # @caisson/observability
 
+## 0.3.1
+
+### Patch Changes
+
+- d1b4afa: Renovate non-major dependency bumps; adapt to the OTel sdk-logs BatchLogRecordProcessor
+  options-object constructor and the ruff 0.15 StrEnum rule.
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+
 ## 0.3.0
 
 ### Minor Changes

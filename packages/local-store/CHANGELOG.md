@@ -1,5 +1,16 @@
 # @caisson/local-store
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [e5e4311]
+- Updated dependencies [809592d]
+- Updated dependencies [809592d]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/ui@0.6.1
+
 ## 1.0.0
 
 ### Minor Changes

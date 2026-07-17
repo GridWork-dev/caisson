@@ -1,5 +1,51 @@
 # @caisson/compliance-core
 
+## 0.3.0
+
+### Minor Changes
+
+- 1867fa3: Evidence packs can now include external-anchoring proof. When a newest external-anchor receipt
+  is available, the evidence-pack generator attaches it as a separate archive entry
+  (`external-anchor-receipt.json`) and labels the pack's evidence grade accordingly in
+  `auditor-summary.txt`. The signed `manifest.json` body is unchanged either way, so existing
+  verification is unaffected, and packs without an anchor receipt are still fully valid — external
+  anchoring is an optional upgrade, not a requirement.
+- c186409: The cross-framework evidence rollup. `computeCrosswalkRollup` joins the shipped framework packs'
+  existing `crosswalk[]` pointers against per-control evidence status into a `CrosswalkRollup` that
+  restates, never originates, a claim. The evidence-pack format bumps from v1 to v2 (append-only, so
+  old packs are never rewritten): `crosswalkRollup` is now a required manifest section, assembled by
+  the generator from a caller-computed value. The OSCAL Security Assessment Results export carries the
+  rollup as a Caisson-namespaced report-content property, never a new catalog-model artifact. Adds
+  `buildBindingTable`, a derived control-to-collector projection. Re-blesses the evidence-pack and
+  OSCAL goldens for the v2 bump.
+- c186409: ISO/IEC 27001:2022 ships as a fourth regime crosswalk. `iso27001Crosswalk` provides seven
+  own-authored mapping entries over bare Annex A identifiers (never Annex A text), each held at the
+  conservative `maps-to` claim level (the legal gate), and each carrying a `canonicalControlId`
+  pointer into a real, already-crosswalked framework-pack control. `RegimeId` gains `"iso-27001"`.
+  Each identifier pairing was checked, never copied, against the pinned NIST OLIR 2022-edition
+  SP 800-53 to ISO/IEC 27001:2022 mapping; the crosswalk's `seedProvenance` pins that mapping's URL
+  and an independently verified SHA-256.
+
+  `computeCrosswalkRollup` (`@caisson/compliance-core`) joins the ISO crosswalk's entries through
+  their `canonicalControlId` into the same join the framework packs use, so a live collector run
+  lights the ISO view exactly like SOC2, HIPAA, and EU-AI-Act. The legal gate is enforced
+  structurally: an ISO-driven contribution never carries a verification record, so a cell it
+  contributes to can never render `implements`. A new schema-level guard on the rollup cell's `note`
+  field extends the existing posture-copy check (no "compliant"/"certified"/"verified" marketing
+  language) to the rollup rendering.
+
+### Patch Changes
+
+- e183860: Unify the workspace on zod 4 (catalog flip; the zod4 sub-catalog is retired). Explicit key schemas on every z.record call, and the ZodObject generic signatures drop the v3 "strict" type parameter. Runtime validation behavior is unchanged apart from zod 4's tightened RFC-4122 uuid and email format checks, verified against the money and license seams.
+- Updated dependencies [e5e4311]
+- Updated dependencies [c186409]
+- Updated dependencies [c186409]
+- Updated dependencies [e9128e0]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/frameworks-pack@0.4.0
+  - @caisson/field-crypto@0.3.2
+
 ## 0.2.2
 
 ### Patch Changes

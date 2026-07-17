@@ -1,5 +1,44 @@
 # @caisson/service-license
 
+## 0.0.8
+
+### Patch Changes
+
+- 59e1365: Resend quota telemetry + volume-cliff ops alert (Kickoff T deliverability item). The Resend driver
+  gains an optional `onQuota` observer fed from the `x-resend-monthly-quota` / `x-resend-daily-quota`
+  response headers on successful sends — Resend exposes no usage API, so these headers are the only
+  programmatic signal; observer errors never break a send. services/license wires the observer to a
+  Discord ops alert when remaining monthly quota drops under `RESEND_QUOTA_ALERT_REMAINING` (default
+  5000, "0" disables), rearming every 6h. Resend's own built-in 80%/100% quota emails remain the
+  zero-code second layer.
+- 7e823a9: Renovate dependency pins (exact versions) across the app and service workspaces; no code change.
+- Updated dependencies [ca44db5]
+- Updated dependencies [baaa4fc]
+- Updated dependencies [a8696cf]
+- Updated dependencies [1867fa3]
+- Updated dependencies [e5e4311]
+- Updated dependencies [e5e4311]
+- Updated dependencies [59e1365]
+- Updated dependencies [a0fd9b1]
+- Updated dependencies [d1b4afa]
+- Updated dependencies [e183860]
+  - @caisson/audit-worm@2.0.0
+  - @caisson/org-controls@0.3.1
+  - @caisson/billing-orchestration@0.3.1
+  - @caisson/kernel@0.5.0
+  - @caisson/email@0.5.0
+  - @caisson/observability@0.3.1
+  - @caisson/alerting@0.2.1
+  - @caisson/billing@0.6.1
+  - @caisson/credits@0.5.1
+  - @caisson/jobs@0.5.1
+  - @caisson/license-issue@1.0.1
+  - @caisson/license-verify@0.3.2
+  - @caisson/pricebook@0.5.2
+  - @caisson/rate-limit@0.1.4
+  - @caisson/tenancy-rls@0.5.2
+  - @caisson/registry-schema@0.5.0
+
 ## 0.0.7
 
 ### Patch Changes

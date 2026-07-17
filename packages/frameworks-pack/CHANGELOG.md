@@ -1,5 +1,42 @@
 # @caisson/frameworks-pack
 
+## 0.4.0
+
+### Minor Changes
+
+- c186409: Structured verification provenance for crosswalk mappings. `CrosswalkReference` gains an optional
+  `verification` object (review status, relationship, source id/version/digest, and reviewer)
+  replacing the never-shipped `verified: boolean`, alongside an `isVerificationStale` helper.
+  `RegimeCrosswalkRow` gains an optional `canonicalControlId` join surface (unused until a later
+  increment wires ISO into the evidence rollup), and `RegimeCrosswalk` gains an optional
+  crosswalk-level `seedProvenance` pin for the public-domain mapping data a crosswalk was checked
+  against. Adds the first reviewed verification record: the `DATA-PROTECTION.DISPOSAL` control's
+  SOC2-TSC `C1.2` reference (crypto-shred), re-blessing only the `soc2-tsc` catalog golden.
+- c186409: ISO/IEC 27001:2022 ships as a fourth regime crosswalk. `iso27001Crosswalk` provides seven
+  own-authored mapping entries over bare Annex A identifiers (never Annex A text), each held at the
+  conservative `maps-to` claim level (the legal gate), and each carrying a `canonicalControlId`
+  pointer into a real, already-crosswalked framework-pack control. `RegimeId` gains `"iso-27001"`.
+  Each identifier pairing was checked, never copied, against the pinned NIST OLIR 2022-edition
+  SP 800-53 to ISO/IEC 27001:2022 mapping; the crosswalk's `seedProvenance` pins that mapping's URL
+  and an independently verified SHA-256.
+
+  `computeCrosswalkRollup` (`@caisson/compliance-core`) joins the ISO crosswalk's entries through
+  their `canonicalControlId` into the same join the framework packs use, so a live collector run
+  lights the ISO view exactly like SOC2, HIPAA, and EU-AI-Act. The legal gate is enforced
+  structurally: an ISO-driven contribution never carries a verification record, so a cell it
+  contributes to can never render `implements`. A new schema-level guard on the rollup cell's `note`
+  field extends the existing posture-copy check (no "compliant"/"certified"/"verified" marketing
+  language) to the rollup rendering.
+
+### Patch Changes
+
+- e9128e0: Correct the control-registry header comment: the third-party-catalog ingestion ban is scoped to
+  NoDerivatives-licensed catalogs; public-domain reference material may seed crosswalk mapping rows
+  as pointers with provenance. Comment-only change, no runtime behavior difference.
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+
 ## 0.3.0
 
 ### Minor Changes
