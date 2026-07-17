@@ -582,6 +582,25 @@
         }
       }
     },
+    "@caisson/ai-meter@1.0.3": {
+      "key": "ai-meter/ai-meter-1.0.3.tgz",
+      "shasum": "9a4b9fc08a78e756478f6d5f0efea9d4e78c0511",
+      "integrity": "sha512-l90iy+758OfpRb7LA8zp+G2gk3+GiQ1LW8HApBux1GQ1xWooolsihheNPOmw8ISk1PnUvJax6LoFWeRl6iSdrQ==",
+      "size": 36506,
+      "meta": {
+        "dependencies": {
+          "@caisson/credits": "0.5.3",
+          "@caisson/kernel": "0.5.0",
+          "@caisson/tenancy-rls": "0.5.2",
+          "zod": "^4.0.0"
+        },
+        "peerDependencies": {
+          "@caisson/ui": "^0.6.1",
+          "react": "^19.0.0",
+          "react-dom": "^19.0.0"
+        }
+      }
+    },
     "@caisson/ai-production@0.2.0": {
       "key": "ai-production/ai-production-0.2.0.tgz",
       "shasum": "0881e8c3bf874119691266b8f690bc632bfa9890",
@@ -1123,6 +1142,30 @@
         }
       }
     },
+    "@caisson/cli@0.6.2": {
+      "key": "cli/cli-0.6.2.tgz",
+      "shasum": "311a12e5a97529512994ad25da57ec69f3d24431",
+      "integrity": "sha512-01czORCQ7gZhhLcGJEMFyf8TUc+Hm/8XpweLb3fSzDNNU1YnWKNE8cUjXATgTY5WsoGjP5XyqSj11eDP8MXhrw==",
+      "size": 24602,
+      "meta": {
+        "dependencies": {
+          "@caisson/ds-manifest": "0.2.0",
+          "@caisson/kernel": "0.5.0",
+          "@caisson/migrate": "0.2.6",
+          "@caisson/registry-schema": "0.5.2",
+          "@clack/prompts": "^1.7.0",
+          "@modelcontextprotocol/sdk": "^1.29.0",
+          "zod": "^4.0.0"
+        },
+        "bin": {
+          "create-caisson": "./dist/cli.js",
+          "caisson": "./dist/caisson.js"
+        },
+        "engines": {
+          "node": ">=20.12.0"
+        }
+      }
+    },
     "@caisson/compliance-core@0.2.0": {
       "key": "compliance-core/compliance-core-0.2.0.tgz",
       "shasum": "9d719871e4493b5e55d39e53f07be5a77035d3d3",
@@ -1397,6 +1440,21 @@
           "@caisson/jobs": "0.5.1",
           "@caisson/kernel": "0.5.0",
           "@caisson/registry-schema": "0.5.1",
+          "@caisson/tenancy-rls": "0.5.2",
+          "zod": "^4.0.0"
+        }
+      }
+    },
+    "@caisson/credits@0.5.3": {
+      "key": "credits/credits-0.5.3.tgz",
+      "shasum": "9b712a962037ae5226815b4b297f7c625b795e65",
+      "integrity": "sha512-4rKbMcjd8+BUi3xKMzCeiVEj4auMmh51lFmSZI3OvGmMMPxDesNqiAcihcbxJ8lYkfq0OJWZ9Yy5Y620fefDGg==",
+      "size": 31878,
+      "meta": {
+        "dependencies": {
+          "@caisson/jobs": "0.5.1",
+          "@caisson/kernel": "0.5.0",
+          "@caisson/registry-schema": "0.5.2",
           "@caisson/tenancy-rls": "0.5.2",
           "zod": "^4.0.0"
         }
@@ -2350,6 +2408,23 @@
         }
       }
     },
+    "@caisson/mcp-server@0.3.2": {
+      "key": "mcp-server/mcp-server-0.3.2.tgz",
+      "shasum": "eb39090195d9b4c2d01151510d934a135d8f36c3",
+      "integrity": "sha512-CRza4XgFJi+FZ9B5uHnKU1iUjrKMhrcvO2QYLNUZ+mPUbldvlAog/qz7Mms5ypDgcYM/3r1XIkTU/eB+bG3L5g==",
+      "size": 48979,
+      "meta": {
+        "dependencies": {
+          "@caisson/ai-config": "0.3.2",
+          "@caisson/ds-manifest": "0.2.0",
+          "@caisson/kernel": "0.5.0",
+          "@caisson/registry-schema": "0.5.2",
+          "@caisson/ui": "0.6.1",
+          "@modelcontextprotocol/sdk": "^1.29.0",
+          "zod": "^4.0.0"
+        }
+      }
+    },
     "@caisson/migrate@0.2.2": {
       "key": "migrate/migrate-0.2.2.tgz",
       "shasum": "79e917d075321ad8dae17b645bed4d77a534f648",
@@ -2754,6 +2829,19 @@
         }
       }
     },
+    "@caisson/pricebook@0.5.4": {
+      "key": "pricebook/pricebook-0.5.4.tgz",
+      "shasum": "35f668ee55e9b8d0ce35e4ebc868155078ff8311",
+      "integrity": "sha512-ebAJvpfnW+PxE/eWvGu+Cq7iipSCJoBllhUFDKUB5yh9Boed7/X3PLJMO6Esf+FeWQtqZKB4cD8Mf0fdLdnhFg==",
+      "size": 28561,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.5.0",
+          "@caisson/registry-schema": "0.5.2",
+          "zod": "^4.0.0"
+        }
+      }
+    },
     "@caisson/prompt-registry@0.2.2": {
       "key": "prompt-registry/prompt-registry-0.2.2.tgz",
       "shasum": "9ed5ac6667fffe4371027a11197df8d24f238ad0",
@@ -2951,6 +3039,17 @@
       "shasum": "2533fa62a5954d22d96ebca2707474837266f075",
       "integrity": "sha512-m6M8FKmbYDe9ftFFcBgBgtMVWV+WawOmtTP83CN5nZ4ur9msYKcDQdwFQ5zJ2iESBjI4VCwvnMRVGxDb9r4/BQ==",
       "size": 39959,
+      "meta": {
+        "dependencies": {
+          "zod": "^4.0.0"
+        }
+      }
+    },
+    "@caisson/registry-schema@0.5.2": {
+      "key": "registry-schema/registry-schema-0.5.2.tgz",
+      "shasum": "95af65d1326a5f14f7eae70510f52ccc0d691a1d",
+      "integrity": "sha512-RhC6WMJkPpd0BisV/bEYz9rkvN7yJq06f7ToQGvuE6wtWqizBo56OCnwHndjC2ECZrRgjTAS2pxw0LaMzTXO/g==",
+      "size": 40041,
       "meta": {
         "dependencies": {
           "zod": "^4.0.0"

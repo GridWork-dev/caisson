@@ -1,5 +1,20 @@
 # @caisson/site
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [5a09b01]
+  - @caisson/registry-schema@0.5.2
+  - @caisson/credits@0.5.3
+  - @caisson/pricebook@0.5.4
+  - @caisson/service-license@0.0.10
+  - @caisson/ai-kit@0.4.4
+  - @caisson/ai-meter@1.0.3
+  - @caisson/platform-migrations@0.2.3
+  - @caisson/platform-reads@0.2.1
+  - @caisson/demo-registry@0.2.3
+
 ## 0.2.3
 
 ### Patch Changes

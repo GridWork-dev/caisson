@@ -1,6 +1,6 @@
 {
   "name": "@caisson/pricebook",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {
