@@ -1,6 +1,6 @@
 {
   "name": "@caisson/site",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "license": "LicenseRef-Caisson-Commercial",
   "private": true,
   "type": "module",
