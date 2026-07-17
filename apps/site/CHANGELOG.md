@@ -1,5 +1,42 @@
 # @caisson/site
 
+## 0.2.5
+
+### Patch Changes
+
+- d5ae100: Ask-AI: emit a PostHog `$ai_generation` LLM-observability event per model call
+
+  The public Ask-AI route calls OpenRouter directly (it bypasses the sold `@caisson/ai-kit`
+  package, which must never carry a hardcoded vendor sink), so its generations were invisible in
+  PostHog — the M4 audit finding of zero `$ai_*` events in caisson-prod. The route now surfaces the
+  OpenRouter usage token counts it previously discarded and, after each real model call, fires one
+  fire-and-forget, fail-soft `$ai_generation` capture carrying model, provider, input/output tokens,
+  total USD cost, latency, and HTTP/error status. No prompt or completion text ever leaves the box —
+  `$ai_input` and `$ai_output_choices` are never sent. Config-gated on `POSTHOG_CAPTURE_KEY`; when it is
+  unset there is no capture and zero behavior change.
+
+- 12182a5: Renumber the three CAISSON-110 demo-run site-local migrations 0023-0025 → 0027-0029: the shared
+  platform chain had itself grown 0023_order_record_subscription_link…0026_affiliate_code, so the
+  demo entries sorted mid-chain, renumbered prod's applied positional ledger, and failed the
+  caisson-license predeploy closed on checksum drift (nothing applied). The migrations have never
+  been applied anywhere persistent, so the rename is safe. Adds an append-only assembled-ledger
+  golden test pinning the merged chain, and updates the claimed-prefix registry note (next free:
+  0030).
+- d3a889a: Ship the /demo sandbox surface: a capped, Turnstile-gated demo-run that generates a visitor's own
+  scaffold in-process behind atomic daily and concurrency budgets with per-IP rate limits, a shared
+  prebuilt preview pane rendering a real passing install, build, and test transcript of the demo app,
+  and a read-only commercial-excerpt section backed by an append-only, secret-scanned, drift-guarded
+  manifest. Request bodies across the demo-run and ask-ai routes now read through a shared streaming
+  size cap that a chunked or garbage content-length request cannot bypass.
+- Updated dependencies [12182a5]
+- Updated dependencies [1de88d7]
+  - @caisson/platform-migrations@0.2.4
+  - @caisson/audit-worm@2.1.0
+  - @caisson/cli@0.6.2
+  - @caisson/demo-registry@0.2.4
+  - @caisson/service-license@0.0.11
+  - @caisson/platform-reads@0.2.1
+
 ## 0.2.4
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@caisson/compliance",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

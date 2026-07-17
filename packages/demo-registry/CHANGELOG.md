@@ -1,5 +1,12 @@
 # @caisson/demo-registry
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [1de88d7]
+  - @caisson/audit-worm@2.1.0
+
 ## 0.2.3
 
 ### Patch Changes
