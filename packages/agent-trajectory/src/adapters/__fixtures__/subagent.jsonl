@@ -1,0 +1,5 @@
+{"type":"user","message":{"role":"user","content":"summarize the repo"},"timestamp":"2026-07-16T10:00:00.000Z","isSidechain":false}
+{"type":"assistant","message":{"model":"claude-opus-4-8","usage":{"input_tokens":1200,"output_tokens":340,"cache_read_input_tokens":800}},"timestamp":"2026-07-16T10:00:01.000Z","isSidechain":false}
+{"type":"assistant","message":{"model":"claude-haiku-4-8","usage":{"input_tokens":500,"output_tokens":90,"cache_read_input_tokens":0}},"timestamp":"2026-07-16T10:00:02.000Z","isSidechain":true}
+{"type":"assistant","message":{"model":"claude-haiku-4-8","usage":{"input_tokens":420,"output_tokens":75}},"timestamp":"2026-07-16T10:00:03.000Z","isSidechain":true}
+{"type":"assistant","message":{"model":"claude-opus-4-8","usage":{"input_tokens":1600,"output_tokens":510,"cache_read_input_tokens":1200}},"timestamp":"2026-07-16T10:00:04.000Z","isSidechain":false}
