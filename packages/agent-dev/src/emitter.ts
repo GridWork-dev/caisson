@@ -1,6 +1,8 @@
 // src/emitter.ts — the thin, ENGINE-NEUTRAL multi-harness emitter (ADR-0066, extended ADR-0264).
 // Renders ONE typed Caisson schema (agent-kernel `Artifact`s + lifecycle hook bindings) into
-// per-harness config bundles: `.claude/` for Claude Code (agents/skills/rules + a hooks manifest),
+// per-harness config bundles: `.claude/` for Claude Code (agents + `skills/<name>/SKILL.md` directory
+// skills + rules + a hooks manifest), the universal `.agents/skills/<name>/SKILL.md` cross-tool skills
+// surface (agentskills.io standard; byte-identical SKILL.md to the Claude copy),
 // a single aggregated `AGENTS.md` — the universal multi-tool BASE layer Codex, Cursor, Devin, Zed,
 // Gemini CLI, and the Copilot coding agent all read natively (ADR-0264) — per-artifact `.cursor/
 // rules/*.mdc` for Cursor, Devin Desktop (`.devin/rules/`, mirrored to the `.windsurf/rules/` legacy
@@ -182,12 +184,37 @@ When to invoke: ${a.whenToInvoke}
 `;
 }
 
-function claudeSkill(s: SkillArtifact): string {
+/**
+ * Render a skill as an agentskills.io SKILL.md (frontmatter + body). Emitted BYTE-IDENTICALLY at both
+ * `.claude/skills/<name>/SKILL.md` and the universal `.agents/skills/<name>/SKILL.md` —
+ * the twin-path precedent Devin/Windsurf already set. The optional spec fields (license,
+ * compatibility, allowed-tools, metadata) render only when present, right after `description`; the
+ * `allowed-tools` bare-token array joins to the spec's space-separated string, and every value goes
+ * through `yamlScalar` so no authored content can break out of the frontmatter. Frontmatter is
+ * spec-pure (operator lock 2026-07-17): `trigger` is NOT emitted — agentskills.io has no such field;
+ * trigger intent still reaches consumers via the AGENTS.md aggregate and the artifact itself.
+ */
+function skillMarkdown(s: SkillArtifact): string {
+  let optional = "";
+  if (s.license !== undefined) {
+    optional += `license: ${yamlScalar(s.license)}\n`;
+  }
+  if (s.compatibility !== undefined) {
+    optional += `compatibility: ${yamlScalar(s.compatibility)}\n`;
+  }
+  if (s.allowedTools !== undefined) {
+    optional += `allowed-tools: ${yamlScalar(s.allowedTools.join(" "))}\n`;
+  }
+  if (s.metadata !== undefined) {
+    optional += "metadata:\n";
+    for (const [key, value] of Object.entries(s.metadata)) {
+      optional += `  ${yamlScalar(key)}: ${yamlScalar(value)}\n`;
+    }
+  }
   return `---
 name: ${s.name}
 description: ${yamlScalar(s.description)}
-trigger: ${s.trigger}
----
+${optional}---
 
 ${s.description}
 
@@ -425,8 +452,8 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
         break;
       case "skill":
         files.push({
-          path: `.claude/skills/${a.name}.md`,
-          content: claudeSkill(a),
+          path: `.claude/skills/${a.name}/SKILL.md`,
+          content: skillMarkdown(a),
         });
         warnIfUnrepresentedByClaudeCode(warnings, a);
         break;
@@ -444,6 +471,23 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
     }
   }
   files.push({ path: ".claude/hooks.json", content: claudeHooks(input.hooks) });
+
+  // .agents/skills — the universal cross-tool SKILL.md home (agentskills.io standard: Codex's current
+  // home, Cursor-compatible). A SKILLS-ONLY surface: rules/agents do not emit here. The
+  // SKILL.md bytes are IDENTICAL to `.claude/skills/<name>/SKILL.md` (the twin-path precedent). Like
+  // Claude Code, this surface has no mechanism for a skill's `activation` scope — a `paths`/`manual`
+  // skill pushes a fidelity warning (ADR-0264, never a silent degrade).
+  for (const s of skills) {
+    files.push({
+      path: `.agents/skills/${s.name}/SKILL.md`,
+      content: skillMarkdown(s),
+    });
+    if (s.activation === "paths" || s.activation === "manual") {
+      warnings.push(
+        `.agents (universal skills): skill '${s.name}' uses '${s.activation}' activation, which .agents/skills/ has no mechanism to represent — it always loads.`,
+      );
+    }
+  }
 
   // AGENTS.md — the universal multi-tool base layer (one aggregated file; ADR-0264 §4).
   files.push({

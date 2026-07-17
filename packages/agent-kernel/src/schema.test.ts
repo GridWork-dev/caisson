@@ -146,3 +146,72 @@ describe("activation/paths extension (ADR-0264)", () => {
     );
   });
 });
+
+describe("agentskills.io SKILL.md portability fields", () => {
+  test("absent portability fields round-trip a skill unaffected", () => {
+    expect(parseArtifact(SKILL)).toEqual(SKILL);
+  });
+
+  test("all four fields round-trip when present", () => {
+    const enriched = {
+      ...SKILL,
+      license: "Apache-2.0",
+      compatibility: "Designed for Claude Code (or similar products)",
+      metadata: { author: "caisson", channel: "stable" },
+      allowedTools: ["Bash(git:*)", "Read"],
+    };
+    const parsed = parseArtifact(enriched);
+    if (parsed.kind !== "skill") throw new Error("expected a skill");
+    expect(parsed).toEqual(enriched);
+    expect(parsed.metadata).toEqual({ author: "caisson", channel: "stable" });
+    expect(parsed.allowedTools).toEqual(["Bash(git:*)", "Read"]);
+  });
+
+  test("only skills carry the portability fields — an agent rejects them (.strict)", () => {
+    expect(() => parseArtifact({ ...AGENT, license: "MIT" })).toThrow(
+      ValidationError,
+    );
+  });
+
+  test("a name over 64 chars and a description over 1024 chars are rejected", () => {
+    expect(() => parseArtifact({ ...SKILL, name: "a".repeat(65) })).toThrow(
+      ValidationError,
+    );
+    expect(() =>
+      parseArtifact({ ...SKILL, description: "d".repeat(1025) }),
+    ).toThrow(ValidationError);
+  });
+
+  test("license over 256 and compatibility over 500 chars are rejected", () => {
+    expect(() => parseArtifact({ ...SKILL, license: "l".repeat(257) })).toThrow(
+      ValidationError,
+    );
+    expect(() =>
+      parseArtifact({ ...SKILL, compatibility: "c".repeat(501) }),
+    ).toThrow(ValidationError);
+  });
+
+  test("metadata bounds — over-long key/value and over 32 entries are rejected", () => {
+    expect(() =>
+      parseArtifact({ ...SKILL, metadata: { ["k".repeat(129)]: "v" } }),
+    ).toThrow(ValidationError);
+    expect(() =>
+      parseArtifact({ ...SKILL, metadata: { k: "v".repeat(1025) } }),
+    ).toThrow(ValidationError);
+    const tooMany = Object.fromEntries(
+      Array.from({ length: 33 }, (_, i) => [`k${i}`, "v"]),
+    );
+    expect(() => parseArtifact({ ...SKILL, metadata: tooMany })).toThrow(
+      ValidationError,
+    );
+  });
+
+  test("an allowed-tools token with internal whitespace or an empty array is rejected", () => {
+    expect(() =>
+      parseArtifact({ ...SKILL, allowedTools: ["Bash git"] }),
+    ).toThrow(ValidationError);
+    expect(() => parseArtifact({ ...SKILL, allowedTools: [] })).toThrow(
+      ValidationError,
+    );
+  });
+});
