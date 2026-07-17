@@ -1,0 +1,9 @@
+{
+  "command": "bun install",
+  "exitCode": 1,
+  "durationMs": 635,
+  "stdout": "bun install v1.3.14 (0d9b296a)\n",
+  "stderr": "Resolving dependencies\nResolved, downloaded and extracted [29]\nerror: GET https://registry.caisson.sh/@caisson/ds-manifest/-/ds-manifest-0.1.0.tgz - 404\nerror: GET https://registry.caisson.sh/@caisson/ds-manifest/-/ds-manifest-0.1.0.tgz - 404\n",
+  "stdoutTruncated": false,
+  "stderrTruncated": false
+}
