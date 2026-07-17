@@ -47,19 +47,19 @@ export default defineModule({
   // and the full-tree-index guard test asserts every pin resolves to a real published ledger version
   // (never the "0.0.0" dev sentinel).
   members: {
-    "@caisson/compliance": "0.5.0",
+    "@caisson/compliance": "0.5.3",
     // The three compliance carve SKUs folded into the Compliance bundle
     // (members-fold republish, third wave).
-    "@caisson/compliance-core": "0.2.1",
-    "@caisson/frameworks-pack": "0.2.0",
-    "@caisson/signing-primitive": "0.2.0",
-    "@caisson/audit-worm": "0.3.0",
-    "@caisson/field-crypto": "0.3.0",
-    "@caisson/tenancy-rls": "0.5.0",
-    "@caisson/kernel": "0.4.2",
+    "@caisson/compliance-core": "0.3.1",
+    "@caisson/frameworks-pack": "0.4.0",
+    "@caisson/signing-primitive": "0.3.0",
+    "@caisson/audit-worm": "2.1.0",
+    "@caisson/field-crypto": "0.3.2",
+    "@caisson/tenancy-rls": "0.5.2",
+    "@caisson/kernel": "0.5.0",
     // Operational-compliance primitives folded into the Compliance bundle (ADR-0178).
-    "@caisson/alerting": "0.1.5",
-    "@caisson/retention-runner": "0.1.6",
+    "@caisson/alerting": "0.2.1",
+    "@caisson/retention-runner": "0.1.8",
   },
   golden: "src/__golden__",
   description:

@@ -817,9 +817,13 @@ export async function runPublishStep(
     `registry/ci-publish-step: ${label} mode=${mode} run=${runId || "??"} sha=${sha.slice(0, 7) || "??"} at=${publishedAt || "??"}\n`,
   );
 
-  // Parse the existing ledger to identify already-recorded (id@version) pairs and the delisted ids
-  // (ADR-0271): a delisted module still has a workspace manifest, but appending a new publish for it
-  // would be a ledger error (delisting is terminal) — skip it loudly instead of failing the run.
+  // Parse the existing ledger to identify already-recorded (id@version) pairs and the MODULE-level
+  // delisted ids (ADR-0271): a delisted module still has a workspace manifest, but appending a new
+  // publish for it would be a ledger error (delisting is terminal) — skip it loudly instead of
+  // failing the run. Filtered to `d.version === undefined` (ADR-0359) — a version-level delist
+  // marks only ONE historical version as unpublished, not the whole module; folding it into this
+  // set would wrongly treat every live module with a pruned old version as fully delisted and
+  // silently skip its next version bump from the ledger/index/tarballs (catalog-freeze bug).
   const rawLedger = existsSync(ledgerPath)
     ? readFileSync(ledgerPath, "utf8")
     : "";
@@ -827,7 +831,9 @@ export async function runPublishStep(
   const alreadyPublished = new Set(
     existingEntries.map((e) => `${e.id}@${e.version}`),
   );
-  const delistedIds = new Set(delists.map((d) => d.id));
+  const delistedIds = new Set(
+    delists.filter((d) => d.version === undefined).map((d) => d.id),
+  );
 
   // Discover all workspace package manifest.ts files.
   const manifestPaths = findManifestPaths(packagesDir);
