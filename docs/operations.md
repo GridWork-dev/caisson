@@ -140,15 +140,41 @@ service). The prior static-export -> Cloudflare Pages path (`wrangler pages depl
 `caisson-site` Pages project) is **retired**; the Pages project itself has been torn down.
 
 ```bash
-railway up --service caisson-site --ci        # from repo root; builds via apps/site/Dockerfile
+bun tooling/scripts/railway-deploy.ts --service caisson-site --ref <git-ref>   # from repo root
 ```
 
-- `.github/workflows/deploy-railway.yml` runs the same `railway up` on every push to `main`
+`railway-deploy.ts` resolves `<ref>` to a full SHA, refuses one that isn't an ancestor of
+`origin/main`, stages a **clean `git archive` tree** (git's own normalized file modes, no dirty
+working-tree state, no untracked cruft — the fix for the local-mode-600-file-shipped incident
+below) in a scratch dir, then runs `railway up --service <svc> --ci` from that clean dir instead
+of the live checkout. It refuses to redeploy a SHA that already has a receipt for that service
+unless `--force`; add `--dry-run` to resolve + stage + print the plan without touching Railway or
+writing anything. Each deploy appends a row to `docs/deploy/receipts/<service>.json`
+(`{sha, deployedAt, deployedBy, forced?}`) but never commits it — the script prints the
+suggested `git add`/`git commit`.
+
+- `.github/workflows/deploy-railway.yml` runs the same `railway-deploy.ts` on every push to `main`
   touching `apps/site/**`/`packages/**`, but **stays an inert no-op today** -- the `RAILWAY_TOKEN`
-  repo secret is not set, so deploys are the operator running `railway up` manually. It self-arms
+  repo secret is not set, so deploys are the operator running the script manually. It self-arms
   the moment that secret is added (no other change needed).
 - Secrets: a Railway project token (`RAILWAY_TOKEN`), scoped to `caisson-prod`. No Cloudflare
   deploy credential is needed for the site anymore.
+
+**PRE-ARM requirement (before adding `RAILWAY_TOKEN` as a repo secret):**
+
+1. The workflow's `resolve deploy ref` and deploy steps must pass `github.event.inputs.ref` /
+   `steps.resolve-ref.outputs.ref` through a step-level `env:` block and reference the shell
+   variable in `run:` -- never interpolate `${{ }}` directly into a `run:` script. This closes
+   the Actions script-injection sink on the runner holding the prod token. Verify it's still true
+   before arming (it is, as of the SHIP-audit fix that added this note).
+2. `RAILWAY_TOKEN` must live in a protected GitHub `production` environment with a
+   required-reviewer rule. `workflow_dispatch` runs the _dispatched ref's own copy_ of
+   `deploy-railway.yml` and `railway-deploy.ts` -- the ancestry guard only proves the deployed
+   _commit_ is safe, not that the _workflow code executing on that run_ hasn't been altered by
+   whoever triggered it. Environment protection is what gates the credentialed step itself.
+3. Deploy receipts (`docs/deploy/receipts/<service>.json`) are on-box uncommitted state -- the
+   single-use gate they provide only holds on the operator's persistent checkout, not a fresh
+   CI/clone checkout (see the `ponytail:` note at the gate in `railway-deploy.ts`).
 
 ---
 
@@ -320,7 +346,8 @@ macOS minutes. Manual fallback if the mini is down: flip the leg back to `runs-o
   deploys.
 - Steps: an arm-check gates on the `RAILWAY_TOKEN` secret (absent -> every real step SKIPS and the
   job succeeds as a no-op); when armed, installs the Railway CLI and runs
-  `railway up --service caisson-site --ci` (build-on-Railway via `apps/site/Dockerfile`).
+  `bun tooling/scripts/railway-deploy.ts --service caisson-site --ref <sha>` (build-on-Railway via
+  `apps/site/Dockerfile`, from a clean `git archive` staging dir, receipt-gated -- see §5 above).
 - Least privilege: `permissions: contents: read`; uses the Railway project token, not
   `GITHUB_TOKEN`. `concurrency: deploy-railway`, `cancel-in-progress: false`, `timeout-minutes: 25`.
 - **Stays GitHub-hosted (not on the fleet):** a production deploy token does not belong on the
