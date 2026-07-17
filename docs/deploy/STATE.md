@@ -8,6 +8,20 @@ grounds:
 
 # Deploy log
 
+## 2026-07-17 (late PM, after the parallel-wave deploy) — Worker redeploy: the CAISSON-125 prune live (`3fdc6a8d`)
+
+Pre-approved by the operator ("worker redeploy approved whenever asking as it's off clean
+main") as the DEPLOY tail of PR #265 (ADR-0359 — CAISSON-125 resolved PRUNE, not backfill).
+
+- **Registry Worker redeployed** (`registry/worker/deploy.sh`, version `cd733a02`) off clean
+  main `3fdc6a8d`, bundling the pruned `index.json`: the 93 R2-404 rows are no longer
+  advertised (87 append-only version-delists for live modules + 6 sidecar-only removals under
+  module-delisted ids; packument 330 → 243 versions, every module keeps ≥ 1 version, no
+  latest touched). Verified live: `@caisson/kernel` serves 0.5.0 latest with 0.4.2 absent.
+- **The daily R2 parity probe goes green by honest omission** — nothing advertised is
+  missing from R2. The advisory-red state recorded in the entry below is CLOSED.
+- No other service touched; no R2 objects written or deleted; pre-launch gate stays ON.
+
 ## 2026-07-17 (late PM) — Parallel-wave deploy: v2026.07.17.4 ride + Worker + caisson-site (`03b07b33`)
 
 Operator-approved ("Ride + site redeploy") closing the ADR-0357 PM parallel wave
