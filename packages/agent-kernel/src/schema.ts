@@ -83,7 +83,7 @@ export const AgentArtifact = strictObject({
 });
 
 /**
- * The agentskills.io SKILL.md portability fields (CAISSON-116). Every field is OPTIONAL — an absent
+ * The agentskills.io SKILL.md portability fields. Every field is OPTIONAL — an absent
  * field ⇒ a byte-identical round-trip for every skill authored before they existed (ADR-0264
  * discipline). Bounds mirror the spec's caps. `name`/`description` are bounded SKILL-SCOPED: only the
  * skill member emits a SKILL.md, so the agent/rule members keep their looser `slug`/`nonEmpty` (their

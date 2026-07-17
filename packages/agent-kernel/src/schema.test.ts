@@ -147,7 +147,7 @@ describe("activation/paths extension (ADR-0264)", () => {
   });
 });
 
-describe("agentskills.io SKILL.md portability fields (CAISSON-116)", () => {
+describe("agentskills.io SKILL.md portability fields", () => {
   test("absent portability fields round-trip a skill unaffected", () => {
     expect(parseArtifact(SKILL)).toEqual(SKILL);
   });

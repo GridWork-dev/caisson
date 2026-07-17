@@ -2,7 +2,7 @@
 // Renders ONE typed Caisson schema (agent-kernel `Artifact`s + lifecycle hook bindings) into
 // per-harness config bundles: `.claude/` for Claude Code (agents + `skills/<name>/SKILL.md` directory
 // skills + rules + a hooks manifest), the universal `.agents/skills/<name>/SKILL.md` cross-tool skills
-// surface (agentskills.io standard, CAISSON-116; byte-identical SKILL.md to the Claude copy),
+// surface (agentskills.io standard; byte-identical SKILL.md to the Claude copy),
 // a single aggregated `AGENTS.md` — the universal multi-tool BASE layer Codex, Cursor, Devin, Zed,
 // Gemini CLI, and the Copilot coding agent all read natively (ADR-0264) — per-artifact `.cursor/
 // rules/*.mdc` for Cursor, Devin Desktop (`.devin/rules/`, mirrored to the `.windsurf/rules/` legacy
@@ -186,7 +186,7 @@ When to invoke: ${a.whenToInvoke}
 
 /**
  * Render a skill as an agentskills.io SKILL.md (frontmatter + body). Emitted BYTE-IDENTICALLY at both
- * `.claude/skills/<name>/SKILL.md` and the universal `.agents/skills/<name>/SKILL.md` (CAISSON-116) —
+ * `.claude/skills/<name>/SKILL.md` and the universal `.agents/skills/<name>/SKILL.md` —
  * the twin-path precedent Devin/Windsurf already set. The optional spec fields (license,
  * compatibility, allowed-tools, metadata) render only when present, right after `description`; the
  * `allowed-tools` bare-token array joins to the spec's space-separated string, and every value goes
@@ -473,7 +473,7 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
   files.push({ path: ".claude/hooks.json", content: claudeHooks(input.hooks) });
 
   // .agents/skills — the universal cross-tool SKILL.md home (agentskills.io standard: Codex's current
-  // home, Cursor-compatible; CAISSON-116). A SKILLS-ONLY surface: rules/agents do not emit here. The
+  // home, Cursor-compatible). A SKILLS-ONLY surface: rules/agents do not emit here. The
   // SKILL.md bytes are IDENTICAL to `.claude/skills/<name>/SKILL.md` (the twin-path precedent). Like
   // Claude Code, this surface has no mechanism for a skill's `activation` scope — a `paths`/`manual`
   // skill pushes a fidelity warning (ADR-0264, never a silent degrade).
