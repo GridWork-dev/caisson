@@ -92,6 +92,32 @@ describe("sanitizeAdrCitations", () => {
     expect(after).toContain("\n  Never build a path");
     expect(after).not.toContain("ADR-0021");
   });
+
+  // Regression: two whole-document cleanup passes (empty-parens strip, space-before-punct strip)
+  // used to run after the citation removal and silently corrupted any real `()` call or
+  // space-before-punctuation ANYWHERE in the text — not just next to a stripped citation. Fixed by
+  // moving the cleanup inside the removal callback, scoped to only the removal site.
+  test("leaves real API syntax with empty parens intact when nowhere near a citation", () => {
+    const cases = [
+      "Validate every input with `z.object().strict()` at the boundary.",
+      "IDs come from `crypto.randomUUID()`, never Math.random.",
+      "Call `initObservability()` once at process start.",
+      "The teardown hook runs `cleanup()` before exit.",
+      "The lint pass covers every source file (not .tsx files, those are excluded).",
+    ];
+    for (const text of cases) {
+      expect(sanitizeAdrCitations(text)).toBe(text);
+    }
+  });
+
+  test("strips a real ADR citation while leaving unrelated () syntax elsewhere in the same text intact", () => {
+    const text =
+      "Debit before spend (ADR-0049/0007). Validate with `z.object().strict()` and `crypto.randomUUID()` for ids.";
+    const after = sanitizeAdrCitations(text);
+    expect(after).toBe(
+      "Debit before spend. Validate with `z.object().strict()` and `crypto.randomUUID()` for ids.",
+    );
+  });
 });
 
 describe("resolveCatalogSpec", () => {

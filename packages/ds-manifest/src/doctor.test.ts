@@ -99,6 +99,18 @@ describe("checkUsage — broken usage yields typed findings", () => {
     expect(unknown?.message).toContain("Frobnicate");
     expect(f.some((x) => x.message.includes("Button"))).toBe(false); // real component, not flagged
   });
+
+  // A mirror buyer imports the renamed `@caisson-sh/ui` — the finding message must name the scope
+  // they actually used, not the private `@caisson/ui`.
+  test("a hallucinated import from the mirror's @caisson-sh/ui scope names that scope in the message", () => {
+    const shBroken = `import { Button, Frobnicate } from "@caisson-sh/ui";\n<Frobnicate />`;
+    const f = checkUsage(manifest, {
+      files: [{ path: "src/Screen.tsx", contents: shBroken }],
+    });
+    const unknown = f.find((x) => x.rule === "unknown-component");
+    expect(unknown?.message).toContain("@caisson-sh/ui");
+    expect(unknown?.message).not.toContain("@caisson/ui");
+  });
 });
 
 describe("checkUsage — version skew from package.json", () => {
@@ -110,6 +122,19 @@ describe("checkUsage — version skew from package.json", () => {
     expect(skew).toBeDefined();
     expect(skew?.message).toContain(manifest.generatedFor.version);
     expect(skew?.file).toBe("package.json");
+  });
+
+  test("a mismatched @caisson-sh/ui pin names that scope, not the private one", () => {
+    const shBroken = `{
+  "name": "buyer-app",
+  "dependencies": { "@caisson-sh/ui": "^0.5.0" }
+}`;
+    const findings = checkUsage(manifest, {
+      files: [{ path: "package.json", contents: shBroken }],
+    });
+    const skew = findings.find((f) => f.rule === "version-skew");
+    expect(skew?.message).toContain("@caisson-sh/ui");
+    expect(skew?.message).not.toContain("pins @caisson/ui");
   });
 });
 

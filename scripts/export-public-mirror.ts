@@ -400,25 +400,33 @@ function isBareAdrParenthetical(content: string): boolean {
   return sawAdrToken;
 }
 
-/** Pure sanitizer: strips bare-ADR-id parentheticals from prose text and tidies the whitespace /
- *  empty-paren residue the strip itself leaves behind. Scoped to the removal site only (consumes
- *  the whitespace run immediately around a stripped parenthetical, collapsing a trailing run to a
- *  single separating space so words never fuse) — it never touches whitespace or formatting
- *  elsewhere in the document (e.g. a markdown list's indented continuation lines). Exported for
- *  unit testing. */
+/** Pure sanitizer: strips bare-ADR-id parentheticals from prose text and tidies the whitespace
+ *  residue the strip itself leaves behind. Scoped to the removal site only — all cleanup happens
+ *  inside the replace callback, which by construction only ever fires where a bare parenthetical
+ *  was actually found, so it never touches whitespace/punctuation elsewhere in the document (a
+ *  markdown list's indented continuation lines, or unrelated code like `crypto.randomUUID()` or
+ *  `.strict()` sitting nearby). Two whole-document cleanup passes used to run here (`/\(\s*\)/g`
+ *  and `/[ \t]+([.,;:])/g`) — they silently corrupted any real empty-parens call or
+ *  space-before-punctuation ANYWHERE in the text, not just next to a stripped citation (e.g.
+ *  `z.object().strict()` -> `z.object.strict`). Removed; the only real per-site residue (a single
+ *  trailing space left stranded directly before punctuation, e.g. "(ADR-1) .") is now collapsed by
+ *  peeking at just the one character after this match. Exported for unit testing. */
 export function sanitizeAdrCitations(text: string): string {
-  let out = text.replace(
+  return text.replace(
     /[ \t]*\(([^()]*)\)([ \t]*)/g,
-    (whole: string, content: string, trailingWs: string) =>
-      isBareAdrParenthetical(content)
-        ? trailingWs.length > 0
-          ? " "
-          : ""
-        : whole,
+    (
+      whole: string,
+      content: string,
+      trailingWs: string,
+      offset: number,
+      full: string,
+    ) => {
+      if (!isBareAdrParenthetical(content)) return whole;
+      if (trailingWs.length === 0) return "";
+      const next = full[offset + whole.length];
+      return next !== undefined && /[.,;:]/.test(next) ? "" : " ";
+    },
   );
-  out = out.replace(/\(\s*\)/g, ""); // any leftover empty parens
-  out = out.replace(/[ \t]+([.,;:])/g, "$1"); // stray space before punctuation left by the strip
-  return out;
 }
 
 /** Applies `sanitizeAdrCitations` only inside `//` line comments and `/* … *\/` block comments —
@@ -432,7 +440,10 @@ export function sanitizeAdrCitations(text: string): string {
  *  turned `expect(stub).toBeDefined();` into `expect(stub).toBeDefined;` — a silently no-op
  *  assertion). ponytail: a regex scan, not a real parser — string-literal-aware is the floor this
  *  bug needs; nested `${}` template-literal expressions are not specially handled (none in this
- *  corpus today). Exported for unit testing. */
+ *  corpus today), and neither are JS regex literals containing `/*` (e.g. `/foo\/\*bar/`) — a
+ *  literal like that could open the same false comment span this fix closes for strings. A corpus
+ *  scan found zero such cases today; a transpile-based fail-loud guardrail is deliberately deferred,
+ *  not built here. Exported for unit testing. */
 export function sanitizeSourceComments(code: string): string {
   return code.replace(
     /`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\/\*[\s\S]*?\*\/|(?<!:)\/\/[^\n]*/g,
