@@ -12,6 +12,7 @@ import {
   parseMissingLine,
   renderRow,
   runBackfill,
+  uploadToR2,
 } from "./r2-historical-backfill";
 
 const AUTH_BYTES = Buffer.from("real-auth-1.0.0-tarball-bytes");
@@ -76,6 +77,11 @@ describe("parseMissingLine", () => {
   test("skips malformed lines rather than throwing", () => {
     expect(parseMissingLine("not-a-valid-key")).toBeNull();
     expect(parseMissingLine("auth/demo-1.0.0.tgz")).toBeNull(); // slug mismatch across the '/'
+  });
+
+  test("rejects a traversal-shaped slug in the @caisson/ form (FIX 4 — symmetric slug guard)", () => {
+    expect(parseMissingLine("@caisson/../../etc/passwd@1.0.0")).toBeNull();
+    expect(parseMissingLine("@caisson/Auth@1.0.0")).toBeNull(); // uppercase not allowed either
   });
 });
 
@@ -211,6 +217,90 @@ describe("runBackfill — batch behavior", () => {
     expect(uploadedKeys).toEqual(["demo/demo-2.0.0.tgz"]);
     expect(result.uploaded).toBe(1);
     expect(result.failed).toBe(1);
+  });
+
+  test("an upload throw on one target becomes an error row and never blocks a following target", () => {
+    const demoBytes = Buffer.from("demo-2.0.0-bytes");
+    const demoDist = computeTarballDist(demoBytes, "demo", "2.0.0");
+    const uploadedKeys: string[] = [];
+    const result = runBackfill({
+      targets: [target("auth", "1.0.0"), target("demo", "2.0.0")],
+      sidecar: {
+        tarballs: {
+          "@caisson/auth@1.0.0": AUTH_DIST,
+          "@caisson/demo@2.0.0": demoDist,
+        },
+      },
+      resolveCommit: (slug) => `${slug}-commit`,
+      packAtCommit: (slug) => (slug === "auth" ? AUTH_BYTES : demoBytes),
+      upload: (r2Key) => {
+        if (r2Key === "auth/auth-1.0.0.tgz") {
+          throw new Error("transient S3 error");
+        }
+        uploadedKeys.push(r2Key);
+      },
+      doUpload: true,
+    });
+    expect(result.rows.map((r) => r.status)).toEqual(["error", "uploaded"]);
+    expect(result.rows[0]?.detail).toContain("upload failed");
+    expect(result.rows[0]?.detail).toContain("transient S3 error");
+    expect(uploadedKeys).toEqual(["demo/demo-2.0.0.tgz"]);
+    expect(result.uploaded).toBe(1);
+    expect(result.failed).toBe(1);
+  });
+});
+
+describe("uploadToR2 — credential env guard (FIX 2)", () => {
+  test("missing R2 credential env vars fail closed before any upload attempt", () => {
+    const keys = [
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY",
+      "R2_ACCOUNT_ID",
+    ] as const;
+    const saved: Record<(typeof keys)[number], string | undefined> = {
+      R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+      R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+      R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+    };
+    for (const k of keys) delete process.env[k];
+    try {
+      expect(() => uploadToR2("auth/auth-1.0.0.tgz", AUTH_BYTES)).toThrow(
+        "missing required env var(s) for R2 upload: R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ACCOUNT_ID",
+      );
+    } finally {
+      for (const k of keys) {
+        const v = saved[k];
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
+  });
+
+  test("one missing credential (of three) is still fail-closed and named in the message", () => {
+    const keys = [
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY",
+      "R2_ACCOUNT_ID",
+    ] as const;
+    const saved: Record<(typeof keys)[number], string | undefined> = {
+      R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+      R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+      R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+    };
+    process.env.R2_ACCESS_KEY_ID = "test-key";
+    process.env.R2_SECRET_ACCESS_KEY = "test-secret";
+    delete process.env.R2_ACCOUNT_ID;
+    try {
+      expect(() => uploadToR2("auth/auth-1.0.0.tgz", AUTH_BYTES)).toThrow(
+        "missing required env var(s) for R2 upload: R2_ACCOUNT_ID",
+      );
+    } finally {
+      for (const k of keys) {
+        const v = saved[k];
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
   });
 });
 

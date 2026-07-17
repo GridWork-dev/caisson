@@ -16,8 +16,11 @@
 // integrity check fail LATER instead of failing loud HERE.
 //
 // Upload reuses the EXACT mechanism publish.yml + r2-parity-probe.ts already use for this bucket:
-// `aws s3 cp` against R2's S3-compatible endpoint (R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY/
-// R2_ACCOUNT_ID) — not `wrangler r2 object put`, which has no configured credential path for the
+// `aws s3 cp` against R2's S3-compatible endpoint. Required env: R2_ACCESS_KEY_ID/
+// R2_SECRET_ACCESS_KEY/R2_ACCOUNT_ID — the same three secrets publish.yml exports; internally they
+// are mapped to AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY (the names the `aws` CLI itself reads) for
+// the child process only, matching publish.yml's `AWS_ACCESS_KEY_ID: secrets.R2_ACCESS_KEY_ID`
+// convention. Not `wrangler r2 object put`, which has no configured credential path for the
 // caisson-registry-tarballs bucket in this repo. Same bucket name, same object-key layout
 // (`<slug>/<slug>-<version>.tgz`), no new dependency, no new credential surface.
 //
@@ -58,6 +61,8 @@ export interface HistoricalTarget {
  * Blank lines and `#`-comments are skipped (null). Malformed non-blank lines are also skipped —
  * the caller counts skipped lines and reports them, rather than aborting the whole file over one typo.
  */
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 export function parseMissingLine(raw: string): HistoricalTarget | null {
   const line = raw.trim();
   if (line === "" || line.startsWith("#")) return null;
@@ -68,7 +73,7 @@ export function parseMissingLine(raw: string): HistoricalTarget | null {
     const id = line.slice(0, at);
     const version = line.slice(at + 1);
     const slug = id.slice("@caisson/".length);
-    if (slug === "" || version === "") return null;
+    if (slug === "" || version === "" || !SLUG_PATTERN.test(slug)) return null;
     return {
       id,
       slug,
@@ -123,17 +128,19 @@ export const resolveHistoricalCommit: ResolveCommitFn = (slug, version) => {
   );
   const commits = log.split("\n").filter((l) => l !== "");
   for (const commit of commits) {
-    let raw: string;
+    let parsed: ReturnType<typeof PackageJsonVersion.safeParse>;
     try {
-      raw = execFileSync(
+      const raw = execFileSync(
         "git",
         ["show", `${commit}:packages/${slug}/package.json`],
         { cwd: REPO_ROOT, encoding: "utf8" },
       );
+      parsed = PackageJsonVersion.safeParse(JSON.parse(raw));
     } catch {
-      continue; // path didn't exist at this commit (e.g. package added later in a rename chain)
+      // path didn't exist at this commit (rename chain), or the historical package.json at this
+      // commit is malformed JSON — either way, keep walking to older commits rather than aborting.
+      continue;
     }
-    const parsed = PackageJsonVersion.safeParse(JSON.parse(raw));
     if (parsed.success && parsed.data.version === version) {
       return commit;
     }
@@ -183,12 +190,27 @@ export const packAtHistoricalCommit: PackAtCommitFn = (
 };
 
 /** Live `UploadFn`: `aws s3 cp` against R2's S3-compatible endpoint — the exact mechanism
- *  publish.yml already uses for this bucket (no new credential surface). */
+ *  publish.yml already uses for this bucket (no new credential surface). `aws` authenticates from
+ *  AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY, so the R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY an operator
+ *  exports are mapped to those names for the child process only — matching publish.yml's
+ *  `AWS_ACCESS_KEY_ID: secrets.R2_ACCESS_KEY_ID` convention. */
 export const uploadToR2: UploadFn = (r2Key, bytes) => {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  if (accountId === undefined || accountId === "") {
-    throw new Error("R2_ACCOUNT_ID is not set — cannot build the R2 endpoint");
+  const required = {
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+  };
+  const missing = Object.entries(required)
+    .filter(([, v]) => v === undefined || v === "")
+    .map(([name]) => name);
+  if (missing.length > 0) {
+    throw new Error(
+      `missing required env var(s) for R2 upload: ${missing.join(", ")}`,
+    );
   }
+  const accessKeyId = required.R2_ACCESS_KEY_ID as string;
+  const secretAccessKey = required.R2_SECRET_ACCESS_KEY as string;
+  const accountId = required.R2_ACCOUNT_ID as string;
   const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
   const scratchDir = mkdtempSync(join(tmpdir(), "r2-backfill-upload-"));
   try {
@@ -205,7 +227,14 @@ export const uploadToR2: UploadFn = (r2Key, bytes) => {
         endpoint,
         "--no-progress",
       ],
-      { stdio: "pipe" },
+      {
+        stdio: "pipe",
+        env: {
+          ...process.env,
+          AWS_ACCESS_KEY_ID: accessKeyId,
+          AWS_SECRET_ACCESS_KEY: secretAccessKey,
+        },
+      },
     );
   } finally {
     rmSync(scratchDir, { recursive: true, force: true });
@@ -293,7 +322,17 @@ export function backfillOne(
     };
   }
 
-  opts.upload(target.r2Key, bytes);
+  try {
+    opts.upload(target.r2Key, bytes);
+  } catch (err) {
+    return {
+      sidecarKey: target.sidecarKey,
+      r2Key: target.r2Key,
+      commit,
+      status: "error",
+      detail: `upload failed: ${(err as Error).message}`,
+    };
+  }
   return {
     sidecarKey: target.sidecarKey,
     r2Key: target.r2Key,
