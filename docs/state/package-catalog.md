@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-15
+updated: 2026-07-17
 status: live
 grounds:
   - packages/
@@ -137,12 +137,13 @@ import sites repointed, sync last.
 
 ### Commercial — Agentic-Dev bundle ($329) + members
 
-| Package          | License    | Sold as                                                           | Bundle(s)          | Build status              | Owns                                                                                                    |
-| ---------------- | ---------- | ----------------------------------------------------------------- | ------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `agentic-dev`    | Commercial | bundle hero package — **$329** (ADR-0258; ADR-0257 §1 vocabulary) | Agentic-Dev (self) | substantial               | typed agent/skill/rule schema + lifecycle + multi-harness emitter — now composes `tool-exec`            |
-| `agent-kernel` † | Commercial | à la carte $199                                                   | Agentic-Dev        | substantial               | governed engine-neutral agent kernel                                                                    |
-| `agent-runner`   | Commercial | à la carte $49                                                    | Agentic-Dev        | built (ADR-0186)          | sandboxed, governed agent execution (worktree isolation, auditable transcript)                          |
-| `tool-exec`      | Commercial | à la carte $99 (ADR-0260 first price)                             | Agentic-Dev        | built (Stage-2, ADR-0153) | governed tool-execution gate: default-deny allowlist over Zod-strict argv schemas + execFile arg-arrays |
+| Package            | License    | Sold as                                                                                                           | Bundle(s)             | Build status                   | Owns                                                                                                                                        |
+| ------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentic-dev`      | Commercial | bundle hero package — **$329** (ADR-0258; ADR-0257 §1 vocabulary)                                                 | Agentic-Dev (self)    | substantial                    | typed agent/skill/rule schema + lifecycle + multi-harness emitter — now composes `tool-exec`                                                |
+| `agent-kernel` †   | Commercial | à la carte $199                                                                                                   | Agentic-Dev           | substantial                    | governed engine-neutral agent kernel                                                                                                        |
+| `agent-runner`     | Commercial | à la carte $49                                                                                                    | Agentic-Dev           | built (ADR-0186)               | sandboxed, governed agent execution (worktree isolation, auditable transcript)                                                              |
+| `agent-trajectory` | Commercial | not yet sold — indexed @0.2.0 but unsellable (no price row, no bundle membership) until the ADR-0349 publish gate | Agentic-Dev (planned) | built (ADR-0349/0351, slice 1) | engine-neutral trajectory contract: append-only `.strict()` event schema, digest-ref payloads, replay projection, claude-transcript adapter |
+| `tool-exec`        | Commercial | à la carte $99 (ADR-0260 first price)                                                                             | Agentic-Dev           | built (Stage-2, ADR-0153)      | governed tool-execution gate: default-deny allowlist over Zod-strict argv schemas + execFile arg-arrays                                     |
 
 `local-store` (member of both Local-first and Agentic-Dev) is listed once, under Local-first above.
 
@@ -295,6 +296,7 @@ standalone SKU no persona bundle grants (Everything-only). Grouped below by cata
 | `local-privacy`         | $99   | Local-first                                        | built (commercial carve, ADR-0258 §1)                                                                                                       |
 | `agent-kernel` †        | $199  | Agentic-Dev                                        | substantial                                                                                                                                 |
 | `agent-runner`          | $49   | Agentic-Dev                                        | built (ADR-0186)                                                                                                                            |
+| `agent-trajectory`      | —     | Agentic-Dev (planned; no members-map entry yet)    | built (ADR-0349/0351 slice 1) — indexed @0.2.0, unsellable until the publish gate                                                           |
 | `tool-exec`             | $99   | Agentic-Dev                                        | built (Stage-2, ADR-0153)                                                                                                                   |
 | `org-controls`          | $249  | — (Everything only)                                | built (commercial carve, ADR-0257 §1)                                                                                                       |
 | `billing-orchestration` | $99   | — (Everything only)                                | built (commercial carve, ADR-0257 §1)                                                                                                       |
