@@ -7,7 +7,6 @@ allowed-tools: Bash(git:*) Read
 metadata:
   author: caisson
   channel: stable
-trigger: user
 ---
 
 Execute a written plan task-by-task with review checkpoints.

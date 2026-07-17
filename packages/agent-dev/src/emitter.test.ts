@@ -281,7 +281,7 @@ describe("frontmatter injection — authored fields cannot erase the tools allow
       fileNamed(bundle, ".claude/skills/attacker-skill/SKILL.md"),
     );
     expect(claude.description).toBe(payload);
-    expect(claude.trigger).toBe("user");
+    expect(claude.trigger).toBeUndefined();
     expect(claude.injected).toBeUndefined();
     // The universal .agents/skills copy is byte-identical — the same hostile description is contained,
     // still a single parseable frontmatter doc with no injected key.

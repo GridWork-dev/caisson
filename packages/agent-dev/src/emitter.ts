@@ -190,9 +190,9 @@ When to invoke: ${a.whenToInvoke}
  * the twin-path precedent Devin/Windsurf already set. The optional spec fields (license,
  * compatibility, allowed-tools, metadata) render only when present, right after `description`; the
  * `allowed-tools` bare-token array joins to the spec's space-separated string, and every value goes
- * through `yamlScalar` so no authored content can break out of the frontmatter. `trigger` and the
- * Steps body render exactly as before, so a skill that sets none of the new fields emits byte-identical
- * frontmatter to the pre-CAISSON-116 output (only the path moved).
+ * through `yamlScalar` so no authored content can break out of the frontmatter. Frontmatter is
+ * spec-pure (operator lock 2026-07-17): `trigger` is NOT emitted — agentskills.io has no such field;
+ * trigger intent still reaches consumers via the AGENTS.md aggregate and the artifact itself.
  */
 function skillMarkdown(s: SkillArtifact): string {
   let optional = "";
@@ -214,8 +214,7 @@ function skillMarkdown(s: SkillArtifact): string {
   return `---
 name: ${s.name}
 description: ${yamlScalar(s.description)}
-${optional}trigger: ${s.trigger}
----
+${optional}---
 
 ${s.description}
 
