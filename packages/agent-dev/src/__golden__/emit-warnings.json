@@ -1,6 +1,7 @@
 [
   "Claude Code: skill 'guided-execution' uses 'manual' activation, which .claude/skills/ has no mechanism to represent — it always loads.",
   "Claude Code: rule 'no-any-in-prod' uses 'paths' activation, which .claude/rules/ has no mechanism to represent — it always loads.",
+  ".agents (universal skills): skill 'guided-execution' uses 'manual' activation, which .agents/skills/ has no mechanism to represent — it always loads.",
   "GitHub Copilot: skill 'guided-execution' has no path scope declared; .github/instructions/guided-execution.instructions.md applies repo-wide (applyTo: \"**\").",
   "Cline: skill 'guided-execution' uses 'manual' activation, which .clinerules/ cannot represent at file level; emitting as always-active."
 ]

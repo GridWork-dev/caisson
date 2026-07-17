@@ -36,7 +36,8 @@ describe("renderHarnessBundles — engine-neutral fan-out (ADR-0066/0264)", () =
         ".claude/agents/code-reviewer.md",
         ".claude/hooks.json",
         ".claude/rules/no-any-in-prod.md",
-        ".claude/skills/guided-execution.md",
+        ".claude/skills/guided-execution/SKILL.md",
+        ".agents/skills/guided-execution/SKILL.md",
         ".cursor/rules/code-reviewer.mdc",
         ".cursor/rules/guided-execution.mdc",
         ".cursor/rules/no-any-in-prod.mdc",
@@ -277,11 +278,18 @@ describe("frontmatter injection — authored fields cannot erase the tools allow
     });
     const bundle = renderHarnessBundles({ artifacts: [skill], hooks: [] });
     const claude = parseFrontmatter(
-      fileNamed(bundle, ".claude/skills/attacker-skill.md"),
+      fileNamed(bundle, ".claude/skills/attacker-skill/SKILL.md"),
     );
     expect(claude.description).toBe(payload);
     expect(claude.trigger).toBe("user");
     expect(claude.injected).toBeUndefined();
+    // The universal .agents/skills copy is byte-identical — the same hostile description is contained,
+    // still a single parseable frontmatter doc with no injected key.
+    const agents = parseFrontmatter(
+      fileNamed(bundle, ".agents/skills/attacker-skill/SKILL.md"),
+    );
+    expect(agents.description).toBe(payload);
+    expect(agents.injected).toBeUndefined();
     const cursor = parseFrontmatter(
       fileNamed(bundle, ".cursor/rules/attacker-skill.mdc"),
     );
