@@ -1,8 +1,8 @@
 # Contributing
 
 This repository is a **read-only public mirror**. The source of truth is the private Caisson
-monorepo — the mirror is generated from it and force-synced, so any commit pushed here directly
-is overwritten on the next sync.
+monorepo — the mirror is generated from it and synced forward as append-only commits, so any
+commit pushed here directly is not part of that history and will be lost on the next sync.
 
 **Pull requests are not accepted on the mirror.** They cannot be merged back to the source and
 will be closed.
