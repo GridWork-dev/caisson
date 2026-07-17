@@ -134,7 +134,13 @@ export function topoSort(
 export async function backfill(opts: BackfillOpts): Promise<void> {
   const { manifests, allowlist, publish, ledgerText = "" } = opts;
   const { delists } = parseLedgerLines(ledgerText);
-  const delistedIds = new Set(delists.map((d) => d.id));
+  // MODULE-level delists only (ADR-0359) — a version-delist marks one historical version
+  // unpublished, not the whole module; the allowlist gate already keeps this driver dormant in
+  // practice, but the idiom must match every other delists consumer (ci-publish-step.ts,
+  // build-index.ts, prune-versions.ts) rather than silently drift.
+  const delistedIds = new Set(
+    delists.filter((d) => d.version === undefined).map((d) => d.id),
+  );
 
   // Only consider modules not yet in the registry AND not delisted (ADR-0271 — see the
   // `ledgerText` doc above for why a delisted id must never reach `publish`).

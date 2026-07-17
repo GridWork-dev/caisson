@@ -17,12 +17,12 @@ export default defineModule({
   license: pkg.license,
   members: {
     "@caisson/agentic-dev": "0.2.1",
-    "@caisson/agent-kernel": "0.4.0",
-    "@caisson/agent-runner": "0.1.4",
-    "@caisson/ai-config": "0.3.0",
-    "@caisson/kernel": "0.4.2",
-    "@caisson/local-store": "0.2.4",
-    "@caisson/tool-exec": "0.1.5",
+    "@caisson/agent-kernel": "0.6.0",
+    "@caisson/agent-runner": "0.2.0",
+    "@caisson/ai-config": "0.3.2",
+    "@caisson/kernel": "0.5.0",
+    "@caisson/local-store": "1.0.1",
+    "@caisson/tool-exec": "0.1.7",
   },
   description:
     "Agentic-Dev bundle: composes @caisson/agent-kernel (governed engine-neutral agent lifecycle) + @caisson/agent-runner (sandboxed execution) + @caisson/tool-exec (governed tool-calls) + @caisson/local-store (hybrid memory) + @caisson/ai-config (embedder lane) into one governed agent-build stack.",
