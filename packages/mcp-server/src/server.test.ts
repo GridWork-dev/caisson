@@ -569,6 +569,10 @@ describe("prompt registry (registerPrompt / listPrompts / getPrompt)", () => {
     expect(text).toContain("generate");
     expect(text).toContain("@caisson/auth");
     expect(text).toContain("shop");
+    // The recipe pins the CONCRETE latest from the index — the literal "latest" is a pointer
+    // the generate gate (assertKnownVersion) rejects with a 400.
+    expect(text).toContain('"version": "0.1.0"');
+    expect(text).not.toContain('"version": "latest"');
   });
 
   test("integrate_module rejects a module the registry does not know (400, never recommends it)", async () => {
@@ -662,6 +666,13 @@ describe("prompt registry (registerPrompt / listPrompts / getPrompt)", () => {
       server.getPrompt(session, "integrate_module", {
         module_id: "@caisson/auth",
         bogus: "y",
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    // args are length-bounded at the boundary like every tool arg (max 512).
+    await expect(
+      server.getPrompt(session, "integrate_module", {
+        module_id: "@caisson/auth",
+        project_name: "x".repeat(513),
       }),
     ).rejects.toBeInstanceOf(ValidationError);
   });

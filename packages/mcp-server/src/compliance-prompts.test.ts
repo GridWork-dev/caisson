@@ -10,8 +10,42 @@ import {
   type PromptRegistration,
 } from "./index.ts";
 
-// This suite never calls generate, so a minimal valid (empty) index satisfies the option.
-const INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });
+// The walkthrough resolves each edition member to its concrete latest from the index (fail-closed
+// on a missing member), so the fixture must carry all three compliance modules.
+function fixtureModule(id: string) {
+  return {
+    id,
+    latest: "0.3.0",
+    versions: [
+      {
+        version: "0.3.0",
+        manifest: {
+          id,
+          version: "0.3.0",
+          kind: "base",
+          editions: ["compliance"],
+          tier: "paid",
+          priceCents: 4900,
+          license: "LicenseRef-Caisson-Commercial",
+          description: `Fixture module ${id}.`,
+        },
+        publishedAt: "2026-06-27T00:00:00.000Z",
+        gateAttestation: "ci-fixture@0000000",
+      },
+    ],
+  };
+}
+
+const COMPLIANCE_MEMBERS = [
+  "@caisson/compliance",
+  "@caisson/audit-worm",
+  "@caisson/field-crypto",
+];
+
+const INDEX = loadRegistryIndex({
+  schemaVersion: 1,
+  modules: COMPLIANCE_MEMBERS.map(fixtureModule),
+});
 
 const TOKENS = [
   {
@@ -83,6 +117,26 @@ describe("compliance_evidence_walkthrough — wiring + entitlement gating", () =
     expect(text).toContain("@caisson/field-crypto");
     expect(text).toContain("acme");
     expect(text).toContain("SOC2");
+    // The recipe must pin CONCRETE versions — the literal "latest" is an index pointer the
+    // generate gate (assertKnownVersion) rejects with a 400.
+    expect(text).toContain('"version": "0.3.0"');
+    expect(text).not.toContain('"latest"');
+  });
+
+  test("fails closed when an edition member is missing from the index", async () => {
+    const drifted = createMcpServer({
+      tokens: [...TOKENS],
+      index: loadRegistryIndex({
+        schemaVersion: 1,
+        modules: [fixtureModule("@caisson/compliance")],
+      }),
+      onGenerate: async () => ({ generationId: "g" }),
+      compliancePrompts: {},
+    });
+    const s = drifted.authenticate("tok_compliance_buyer_000000000000");
+    await expect(
+      drifted.getPrompt(s, "compliance_evidence_walkthrough", {}),
+    ).rejects.toBeInstanceOf(ValidationError);
   });
 
   test("honors a hipaa framework arg", async () => {
@@ -131,6 +185,7 @@ describe("registerCompliancePrompts — registrar-only wiring", () => {
           registered.push(r.name);
         },
       },
+      INDEX,
       {},
     );
     expect(registered).toEqual(["compliance_evidence_walkthrough"]);

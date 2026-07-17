@@ -605,7 +605,9 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     // every other boundary in this repo.
     const shape: Record<string, z.ZodTypeAny> = {};
     for (const arg of registration.arguments) {
-      shape[arg.name] = arg.required ? z.string() : z.string().optional();
+      // .max(512) — bound strings at the boundary like every tool arg in this package.
+      const base = z.string().max(512);
+      shape[arg.name] = arg.required ? base : base.optional();
     }
     const parsed = parseStrict(strictObject(shape), rawArgs) as Record<
       string,
@@ -778,11 +780,21 @@ export function createMcpServer(options: McpServerOptions): McpServer {
               : moduleId,
         });
       }
+      // Resolve to a CONCRETE version: `generate` validates via assertKnownVersion, which only
+      // accepts members of entry.versions — the literal string "latest" is an index pointer and
+      // would 400. Same resolution the CLI does before its own generate call.
+      const entry = options.index.modules.find((m) => m.id === moduleId);
+      if (entry === undefined) {
+        throw new ValidationError("Unknown registry module or version", {
+          module: moduleId,
+        });
+      }
+      const version = args.version ?? entry.latest;
       const projectName = args.project_name ?? "my-app";
       const versionLine =
         args.version !== undefined
           ? `"${args.version}"`
-          : '"latest" (or pin a specific version)';
+          : `"${entry.latest}" (the current latest; pin any published version instead if needed)`;
       const text = [
         `Integrate ${moduleId} into the "${projectName}" project.`,
         "",
@@ -792,7 +804,7 @@ export function createMcpServer(options: McpServerOptions): McpServer {
         JSON.stringify(
           {
             projectName,
-            modules: [{ id: moduleId, version: args.version ?? "latest" }],
+            modules: [{ id: moduleId, version }],
           },
           null,
           2,
@@ -828,6 +840,6 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   if (options.dsManifest) registerManifestTools(server, options.dsManifest);
   // Compliance-edition prompt registers through the same seam, same one-way flow.
   if (options.compliancePrompts)
-    registerCompliancePrompts(server, options.compliancePrompts);
+    registerCompliancePrompts(server, options.index, options.compliancePrompts);
   return server;
 }

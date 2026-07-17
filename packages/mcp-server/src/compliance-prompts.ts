@@ -10,6 +10,7 @@
 // advisory strings, not imported OSCAL frameworkIds, keeping the cross-package coupling ADR-0161
 // already rejects for the transports out of this seam too.
 import { ValidationError } from "@caisson/kernel";
+import type { RegistryIndex } from "@caisson/registry-schema";
 
 /** The default entitlement slug gating the compliance prompt (the `compliance` edition, from
  *  registry-schema's EDITIONS). Overridable so the operator can remap it to whatever SKU lands. */
@@ -65,6 +66,7 @@ export interface CompliancePromptOptions {
  */
 export function registerCompliancePrompts(
   server: CompliancePromptRegistrar,
+  index: RegistryIndex,
   options: CompliancePromptOptions,
 ): void {
   const requiredEntitlement =
@@ -97,6 +99,20 @@ export function registerCompliancePrompts(
         });
       }
       const projectName = args.project_name ?? "my-app";
+      // Resolve each module to its CONCRETE latest version: `generate` validates via
+      // assertKnownVersion, which only accepts members of entry.versions — the literal string
+      // "latest" is an index pointer and would 400. Fail-closed if the hard-coded edition
+      // membership ever drifts from the live index.
+      const modules = COMPLIANCE_MODULES.map((id) => {
+        const entry = index.modules.find((m) => m.id === id);
+        if (entry === undefined) {
+          throw new ValidationError(
+            "Compliance module missing from registry index",
+            { module: id },
+          );
+        }
+        return { id, version: entry.latest };
+      });
       const text = [
         `Generate a ${framework.toUpperCase()} compliance-edition project scaffold for "${projectName}".`,
         "",
@@ -105,10 +121,7 @@ export function registerCompliancePrompts(
           {
             projectName,
             edition: "compliance",
-            modules: COMPLIANCE_MODULES.map((id) => ({
-              id,
-              version: "latest",
-            })),
+            modules,
           },
           null,
           2,
