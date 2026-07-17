@@ -1,5 +1,13 @@
 # @caisson/app-compliance
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [1de88d7]
+  - @caisson/audit-worm@2.1.0
+  - @caisson/compliance@0.5.3
+
 ## 0.0.8
 
 ### Patch Changes

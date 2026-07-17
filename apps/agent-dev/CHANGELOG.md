@@ -1,5 +1,12 @@
 # @caisson/app-agent-dev
 
+## 0.0.10
+
+### Patch Changes
+
+- Updated dependencies [ce1e576]
+  - @caisson/agent-dev@0.5.0
+
 ## 0.0.9
 
 ### Patch Changes

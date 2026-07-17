@@ -3,7 +3,7 @@
   "modules": [
     {
       "id": "@caisson/agent-kernel",
-      "latest": "0.4.2",
+      "latest": "0.5.0",
       "versions": [
         {
           "version": "0.1.0",
@@ -211,6 +211,29 @@
           },
           "publishedAt": "2026-07-17T11:12:00.000Z",
           "gateAttestation": "29576009052@5a51227b972ff68a903a2b03f2cfe65369ce7316"
+        },
+        {
+          "version": "0.5.0",
+          "manifest": {
+            "id": "@caisson/agent-kernel",
+            "version": "0.5.0",
+            "kind": "base",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 4900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [
+              "@caisson/kernel"
+            ],
+            "members": {},
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": "src/__golden__",
+            "stability": "alpha",
+            "description": "Engine-neutral agent kernel: agent/skill/rule Zod schema + lifecycle act FSM + hooks dispatcher; consumed base→base (cli/mcp-server) and edition→base (agent-dev)."
+          },
+          "publishedAt": "2026-07-17T15:36:36.000Z",
+          "gateAttestation": "29592776041@ce1e5765df33fae8250e3ab8678c6037da964684"
         }
       ]
     },
@@ -1495,7 +1518,7 @@
     },
     {
       "id": "@caisson/audit-worm",
-      "latest": "2.0.0",
+      "latest": "2.1.0",
       "versions": [
         {
           "version": "0.1.0",
@@ -1716,6 +1739,33 @@
           },
           "publishedAt": "2026-07-17T11:12:00.000Z",
           "gateAttestation": "29576009052@5a51227b972ff68a903a2b03f2cfe65369ce7316"
+        },
+        {
+          "version": "2.1.0",
+          "manifest": {
+            "id": "@caisson/audit-worm",
+            "version": "2.1.0",
+            "kind": "primitive",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 14900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [
+              "@caisson/jobs",
+              "@caisson/kernel",
+              "@caisson/tenancy-rls",
+              "@caisson/ui",
+              "@caisson/ui-pro"
+            ],
+            "members": {},
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": "src/__golden__",
+            "stability": "alpha",
+            "description": "Write-once (WORM) artifact store (S3 Object-Lock seam) + SHA-256 append-only audit chain with a trusted WORM anchor + append-only locked-version DB with derived-current — the compliance evidentiary primitive."
+          },
+          "publishedAt": "2026-07-17T15:36:36.000Z",
+          "gateAttestation": "29592776041@ce1e5765df33fae8250e3ab8678c6037da964684"
         }
       ]
     },
@@ -2529,7 +2579,7 @@
     },
     {
       "id": "@caisson/compliance",
-      "latest": "0.5.2",
+      "latest": "0.5.3",
       "versions": [
         {
           "version": "0.1.0",
@@ -2895,12 +2945,55 @@
           },
           "publishedAt": "2026-07-17T11:12:00.000Z",
           "gateAttestation": "29576009052@5a51227b972ff68a903a2b03f2cfe65369ce7316"
+        },
+        {
+          "version": "0.5.3",
+          "manifest": {
+            "id": "@caisson/compliance",
+            "version": "0.5.3",
+            "kind": "bundle",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 104900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [
+              "@caisson/alerting",
+              "@caisson/audit-worm",
+              "@caisson/compliance-core",
+              "@caisson/field-crypto",
+              "@caisson/frameworks-pack",
+              "@caisson/kernel",
+              "@caisson/migrate",
+              "@caisson/retention-runner",
+              "@caisson/signing-primitive",
+              "@caisson/tenancy-rls"
+            ],
+            "members": {
+              "@caisson/compliance": "0.5.0",
+              "@caisson/compliance-core": "0.2.1",
+              "@caisson/frameworks-pack": "0.2.0",
+              "@caisson/signing-primitive": "0.2.0",
+              "@caisson/audit-worm": "0.3.0",
+              "@caisson/field-crypto": "0.3.0",
+              "@caisson/tenancy-rls": "0.5.0",
+              "@caisson/kernel": "0.4.2",
+              "@caisson/alerting": "0.1.5",
+              "@caisson/retention-runner": "0.1.6"
+            },
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": "src/__golden__",
+            "stability": "alpha",
+            "description": "Compliance edition (the hero): seeds a tenant, writes encrypted SEC/HIPAA fields under a tenant-scoped crypto boundary, locks an append-only artifact into WORM with a SHA-256 audit-chain anchor, and emits a deterministic, signed control→evidence pack — own-authored SOC2-TSC + HIPAA control packs, flag-never-guess generation."
+          },
+          "publishedAt": "2026-07-17T15:36:36.000Z",
+          "gateAttestation": "29592776041@ce1e5765df33fae8250e3ab8678c6037da964684"
         }
       ]
     },
     {
       "id": "@caisson/compliance-core",
-      "latest": "0.3.0",
+      "latest": "0.3.1",
       "versions": [
         {
           "version": "0.2.0",
@@ -3001,6 +3094,31 @@
           },
           "publishedAt": "2026-07-17T11:12:00.000Z",
           "gateAttestation": "29576009052@5a51227b972ff68a903a2b03f2cfe65369ce7316"
+        },
+        {
+          "version": "0.3.1",
+          "manifest": {
+            "id": "@caisson/compliance-core",
+            "version": "0.3.1",
+            "kind": "base",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 29900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [
+              "@caisson/field-crypto",
+              "@caisson/frameworks-pack",
+              "@caisson/kernel"
+            ],
+            "members": {},
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": "src/__golden__",
+            "stability": "alpha",
+            "description": "The compliance evidence engine: typed collectors, a deterministic canonical evidence-pack format and generator that refuses to emit when any control's evidence is unresolved, and OSCAL exports (assessment plan, assessment results, plan of action and milestones, XML round-trip)."
+          },
+          "publishedAt": "2026-07-17T15:36:36.000Z",
+          "gateAttestation": "29592776041@ce1e5765df33fae8250e3ab8678c6037da964684"
         }
       ]
     },
@@ -5403,7 +5521,7 @@
     },
     {
       "id": "@caisson/mcp-server",
-      "latest": "0.3.2",
+      "latest": "0.4.0",
       "versions": [
         {
           "version": "0.1.0",
@@ -5685,6 +5803,33 @@
           },
           "publishedAt": "2026-07-17T12:06:02.000Z",
           "gateAttestation": "29579023179@5a09b01e3b90a04b74b4a0b055503882dd3e40a2"
+        },
+        {
+          "version": "0.4.0",
+          "manifest": {
+            "id": "@caisson/mcp-server",
+            "version": "0.4.0",
+            "kind": "base",
+            "editions": [],
+            "tier": "oss",
+            "priceCents": null,
+            "license": "Apache-2.0",
+            "dependencies": [
+              "@caisson/ai-config",
+              "@caisson/ds-manifest",
+              "@caisson/kernel",
+              "@caisson/registry-schema",
+              "@caisson/ui"
+            ],
+            "members": {},
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Auth-gated buyer MCP: timing-safe Bearer verify, entitlement-scoped reads, allowlist + credit-gated generate tools (ADR-0008/0004)."
+          },
+          "publishedAt": "2026-07-17T15:36:36.000Z",
+          "gateAttestation": "29592776041@ce1e5765df33fae8250e3ab8678c6037da964684"
         }
       ]
     },
@@ -7468,7 +7613,7 @@
     },
     {
       "id": "@caisson/signing-primitive",
-      "latest": "0.2.2",
+      "latest": "0.3.0",
       "versions": [
         {
           "version": "0.2.0",
@@ -7538,6 +7683,29 @@
           },
           "publishedAt": "2026-07-17T11:12:00.000Z",
           "gateAttestation": "29576009052@5a51227b972ff68a903a2b03f2cfe65369ce7316"
+        },
+        {
+          "version": "0.3.0",
+          "manifest": {
+            "id": "@caisson/signing-primitive",
+            "version": "0.3.0",
+            "kind": "base",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 19900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [
+              "@caisson/kernel"
+            ],
+            "members": {},
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": "src/__golden__",
+            "stability": "alpha",
+            "description": "Per-tenant evidence signing: detached Ed25519 signatures over a canonical, chain-anchored manifest body, with an optional RFC-3161 trusted-timestamp countersignature and a fail-closed verify path."
+          },
+          "publishedAt": "2026-07-17T15:36:36.000Z",
+          "gateAttestation": "29592776041@ce1e5765df33fae8250e3ab8678c6037da964684"
         }
       ]
     },

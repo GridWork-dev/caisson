@@ -1,5 +1,12 @@
 # @caisson/service-license
 
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [1de88d7]
+  - @caisson/audit-worm@2.1.0
+
 ## 0.0.10
 
 ### Patch Changes
