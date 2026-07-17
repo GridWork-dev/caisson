@@ -8,6 +8,39 @@ grounds:
 
 # Deploy log
 
+## 2026-07-17 (PM) — Kickoff-U reconcile wave: fleet redeploy + v2026.07.17.2 ride + R2 repair + Worker + PostHog activation (`331e971e`)
+
+Operator-approved deploy wave closing the Kickoff-U reconcile (PRs #246/#247/#250/#251 + version
+PR #256, ADR-0353–0356). Pre-launch gate stays ON (Paddle sandbox); Rekor anchoring set stays
+UNARMED.
+
+- **Fleet redeploy (touched four, `railway up`):** caisson-license (predeploy
+  `applied 0, skipped 29` — no new migrations, swap confirmed), caisson-site (Ask-AI
+  `$ai_generation` capture + version bumps), caisson-support-bot (M4 telemetry observer + clears
+  audit M1 stale-code debt; fresh container confirmed), caisson-admin. services/docs skipped
+  (unchanged). Probes all 200: site `/healthz` + `/demo`, license `/health`, support-bot
+  `/health`, admin.
+- **PostHog LLM-obs ACTIVATED (ADR-0356):** `POSTHOG_CAPTURE_KEY` set on caisson-site +
+  caisson-support-bot from caisson.env (host defaults US). Events flow on the next real model
+  call; no prompt/completion text by design.
+- **Registry publish ride `v2026.07.17.2`** (second ride of the day): the first attempt (tag
+  `v2026.07.17.1`) FAILED CLOSED at the byte gate — the #256 consume bumped workspace deps
+  embedded in `@caisson/cli@0.6.2` + `@caisson/platform-reads@0.2.1` packed package.json at
+  unchanged versions (the #249/#253 churn class), staling both append-only rows. Re-recorded
+  from a pristine NO-BUILD worktree at the tag (`331e971e`; published tarballs are SOURCE packs —
+  a built worktree poisons `bun pm pack` with dist/.turbo/test artifacts, 2-6x fat and can never
+  match CI). Ride 2 green: **6 tarballs uploaded, 42 already present, byte-verified at the tag**.
+- **R2 repair (operator-locked exception to never-overwrite):** the two re-recorded keys held the
+  morning's bytes while the sidecar (and any future Worker packument) carries the tag-verified
+  hashes — a Worker redeploy would have broken installs of exactly those two versions. Both
+  objects overwritten with byte-exact tag repacks (sha1 `6269e79e` cli / `dc21caee`
+  platform-reads), round-trip-verified from R2. Caveat: any pre-existing lockfile pinning the OLD
+  integrity of these two versions fails — pre-launch that is only our own test installs.
+  CAISSON-119's R2-parity probe covers recurrence.
+- **registry Worker redeployed:** version `a52b98f1` from the pristine tag worktree (pricebook +
+  license-verify dists built first; deploy.sh builds registry-schema). `registry.caisson.sh/health`
+  200; packuments now advertise the v2026.07.17.2 rows consistent with R2.
+
 ## 2026-07-17 — runtime+sandbox wave: R2 publish ride + Worker + site/support-bot/license redeploys (`12182a52`)
 
 Operator-approved close-out of the CAISSON-109/110 wave (PRs #244/#249/#253/#254/#255 + consumes
