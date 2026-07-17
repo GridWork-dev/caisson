@@ -14,6 +14,7 @@ import {
 } from "bun:test";
 setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -26,10 +27,13 @@ import {
   sha256Hex,
   StubTrustedTimestampLog,
   type AnchorOutboxKey,
+  type AnchorSubmitReceipt,
   type TimestampReceipt,
+  type TransparencyLog,
   type TransparencyTarget,
   type TrustedTimestampLog,
 } from "./anchor-transparency.ts";
+import { rekorEntryToReceipt } from "./anchor-rekor.ts";
 import {
   runAnchorCheckpoint,
   type AnchorCheckpointDeps,
@@ -200,6 +204,86 @@ describe("runAnchorCheckpoint — CR-02 crash windows resolve to needs_reconcile
       anchorLength: 7,
       anchorDigest: digest,
     };
+    expect((await outbox.get(key))?.state).toBe("needs_reconcile");
+  });
+});
+
+// R7 — the SAME target-agnostic handler drives a Rekor (`externally-transparent`) target: it writes a
+// public-log receipt under the target grade, and a lost-response window resolves to needs_reconcile with
+// NO second submit — the load-bearing guard, since a blind Rekor resubmit would mint a duplicate
+// irrevocable public entry (Rekor v2 has no idempotency key / lookup).
+describe("runAnchorCheckpoint — Rekor target is target-agnostic + never blind-resubmits", () => {
+  const FIX = join(import.meta.dir, "__fixtures__", "rekor-v2");
+  const rekorReceipt = (): AnchorSubmitReceipt =>
+    rekorEntryToReceipt(
+      JSON.parse(readFileSync(join(FIX, "golden-entry.json"), "utf8")),
+      JSON.parse(readFileSync(join(FIX, "trusted_root.json"), "utf8")),
+    );
+  const REKOR_TARGET: TransparencyTarget = {
+    kind: "rekor",
+    grade: "externally-transparent",
+  };
+
+  class CountingRekorLog implements TransparencyLog {
+    calls = 0;
+    readonly #receipt: AnchorSubmitReceipt;
+    constructor(receipt: AnchorSubmitReceipt) {
+      this.#receipt = receipt;
+    }
+    submit(): Promise<AnchorSubmitReceipt> {
+      this.calls += 1;
+      return Promise.resolve(this.#receipt);
+    }
+  }
+
+  function rekorDeps(
+    reader: CurrentAnchorReader,
+    log: TransparencyLog,
+  ): AnchorCheckpointDeps {
+    return { store, outbox, log, reader, target: REKOR_TARGET, now: FIXED_NOW };
+  }
+
+  test("one tick writes an externally-transparent WORM receipt keyed by the rekor target", async () => {
+    const acct = randomUUID();
+    const bytes = new TextEncoder().encode(`{"length":11,"tipHash":"${acct}"}`);
+    const log = new CountingRekorLog(rekorReceipt());
+    const r = await runAnchorCheckpoint(
+      acct,
+      rekorDeps(fixedReader(bytes, 11), log),
+    );
+    expect(r.status).toBe("receipted");
+    if (r.status !== "receipted") throw new Error("unreachable");
+    expect(r.receiptKey).toBe(
+      `${acct}/audit-chain/receipts/000000000011.rekor.json`,
+    );
+    const obj = await store.get(r.receiptKey);
+    const receipt = anchorReceiptSchema.parse(
+      JSON.parse(new TextDecoder().decode(obj.body)),
+    );
+    expect(receipt.grade).toBe("externally-transparent");
+    expect(receipt.receipt.algorithm).toBe("rekor-v2-hashedrekord");
+  });
+
+  test("a lost-response window resolves to needs_reconcile with NO duplicate public submit", async () => {
+    const acct = randomUUID();
+    const bytes = new TextEncoder().encode(`{"length":13,"tipHash":"${acct}"}`);
+    const key: AnchorOutboxKey = {
+      accountId: acct,
+      target: "rekor",
+      anchorLength: 13,
+      anchorDigest: sha256Hex(bytes),
+    };
+    // A prior tick accepted the entry but the receipt was lost (process died before persist).
+    await outbox.enqueuePending(key);
+    await outbox.markSubmitted(key);
+
+    const log = new CountingRekorLog(rekorReceipt());
+    const r = await runAnchorCheckpoint(
+      acct,
+      rekorDeps(fixedReader(bytes, 13), log),
+    );
+    expect(r.status).toBe("needs_reconcile");
+    expect(log.calls).toBe(0); // NO second irrevocable public submit
     expect((await outbox.get(key))?.state).toBe("needs_reconcile");
   });
 });

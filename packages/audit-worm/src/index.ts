@@ -135,6 +135,7 @@ export {
   anchorReceiptKey,
   PUBLICITY_ACKNOWLEDGEMENT,
   irreversiblePublicityOptIn,
+  isIrreversiblePublicityOptIn,
   StubTrustedTimestampLog,
   TsaAnchorLog,
 } from "./anchor-transparency.ts";

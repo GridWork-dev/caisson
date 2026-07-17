@@ -25,6 +25,7 @@ import {
   ValidationError,
 } from "@caisson/kernel";
 import {
+  isIrreversiblePublicityOptIn,
   transparencyReceiptSchema,
   type AnchorSubmissionSigner,
   type IrreversiblePublicityOptIn,
@@ -178,10 +179,10 @@ export class RekorAnchorLog implements TransparencyLog {
 
   constructor(config: RekorAnchorLogConfig) {
     // Fork D: the opt-in is a required, branded arg — TypeScript blocks construction without it, and
-    // this runtime guard blocks an untyped JS caller passing a forged value.
-    if (config.optIn === null || typeof config.optIn !== "object") {
+    // this runtime brand check blocks an untyped JS caller passing a forged value.
+    if (!isIrreversiblePublicityOptIn(config.optIn)) {
       throw new ValidationError(
-        "RekorAnchorLog requires an irreversible-publicity opt-in (Fork D)",
+        "RekorAnchorLog requires a valid irreversible-publicity opt-in (Fork D)",
       );
     }
     const timeoutMs = config.timeoutMs ?? MIN_REKOR_TIMEOUT_MS;

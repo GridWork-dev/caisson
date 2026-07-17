@@ -305,6 +305,21 @@ export function irreversiblePublicityOptIn(input: {
   return { [PUBLICITY_OPT_IN_BRAND]: true };
 }
 
+/**
+ * The runtime brand check a public-log target uses to refuse a forged/absent opt-in (a belt for untyped
+ * JS callers; the type system is the primary gate — the brand symbol is module-private, so the only way
+ * to obtain the value is {@link irreversiblePublicityOptIn}).
+ */
+export function isIrreversiblePublicityOptIn(
+  value: unknown,
+): value is IrreversiblePublicityOptIn {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as Record<PropertyKey, unknown>)[PUBLICITY_OPT_IN_BRAND] === true
+  );
+}
+
 // --- shared helpers (keyer + digest; imported by writer T4 and reader/verify siblings) ---------
 
 /** WORM key layout for a receipt: `{account_id}/audit-chain/receipts/<zero-padded len>.<target>.json`. */
