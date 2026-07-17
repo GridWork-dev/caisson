@@ -39,7 +39,7 @@ import {
   anchorReceiptKey,
   type AnchorGrade,
   type AnchorReceipt,
-  type TransparencyTarget,
+  type TsaTarget,
 } from "./anchor-transparency.ts";
 import type { CurrentAnchorReader } from "./anchor-checkpoint.ts";
 import { verifyExternal } from "./verify-external.ts";
@@ -51,7 +51,7 @@ const EKU_TIMESTAMPING = "1.3.6.1.5.5.7.3.8";
 const ID_CT_TSTINFO = "1.2.840.113549.1.9.16.1.4";
 const ID_SIGNED_DATA = "1.2.840.113549.1.7.2";
 
-const TARGET: TransparencyTarget = {
+const TARGET: TsaTarget = {
   kind: "tsa",
   url: "https://tsa.example/tsr",
   grade: "trusted-timestamped",

@@ -115,6 +115,9 @@ export type {
 // LICENSE_REVOCATION_SCHEMA_SQL are consumed) applies this; the store functions stay internal
 // because nothing outside this service writes eval_application rows.
 export { EVAL_APPLICATION_SCHEMA_SQL } from "./eval-store.ts";
+// The anchor-outbox table (ADR-0332/0346 external anchoring). Schema ONLY, same consumption
+// path as the schema constants above; the scheduler trio stays unarmed until the operator gate.
+export { ANCHOR_OUTBOX_SCHEMA_SQL } from "@caisson/audit-worm";
 export {
   ADMIN_MUTATION_PROVISION_SQL,
   GrantEntitlementBody,

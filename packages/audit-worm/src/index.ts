@@ -101,31 +101,64 @@ export {
   LockedVersionStore,
 } from "./version-store.ts";
 
-// External anchoring, v1 (TSA `trusted-timestamped` leg; SPEC external-anchoring, ADR-0332/0346).
+// External anchoring, v1 (TSA `trusted-timestamped`) + v1.1 (Rekor `externally-transparent`) legs;
+// SPEC external-anchoring, ADR-0332/0346.
 export {
   type AnchorGrade,
   type TransparencyTarget,
   type TsaTarget,
+  type RekorTarget,
+  type OtsTarget,
   type TimestampReceipt,
+  type TransparencyReceipt,
+  type OtsReceipt,
+  type AnchorSubmitReceipt,
   type AnchorReceipt,
   type AnchorOutboxState,
   type AnchorOutboxKey,
   type AnchorOutboxRow,
   type TrustedTimestampLog,
+  type TransparencyLog,
+  type AnchorSubmissionSigner,
+  type IrreversiblePublicityOptIn,
   type TsaAnchorLogConfig,
   anchorGradeSchema,
   transparencyTargetSchema,
   tsaTargetSchema,
+  rekorTargetSchema,
+  otsTargetSchema,
   timestampReceiptSchema,
+  transparencyReceiptSchema,
+  otsReceiptSchema,
+  anchorSubmitReceiptSchema,
   anchorReceiptSchema,
   anchorOutboxStateSchema,
   anchorOutboxRowSchema,
   targetId,
   sha256Hex,
   anchorReceiptKey,
+  PUBLICITY_ACKNOWLEDGEMENT,
+  irreversiblePublicityOptIn,
+  isIrreversiblePublicityOptIn,
   StubTrustedTimestampLog,
   TsaAnchorLog,
 } from "./anchor-transparency.ts";
+
+// External anchoring v1.1 — Rekor v2 public-log submit + offline inclusion-proof verify.
+export {
+  type RekorAnchorLogConfig,
+  type RekorVerifyResult,
+  RekorAnchorLog,
+  rekorEntryToReceipt,
+  verifyRekorReceipt,
+} from "./anchor-rekor.ts";
+
+// External anchoring v1.1 — OpenTimestamps drop-in (Fork R-γ; submit leg + stub; verify is a seam).
+export {
+  type OpenTimestampsAnchorLogConfig,
+  OpenTimestampsAnchorLog,
+  StubOpenTimestampsLog,
+} from "./anchor-ots.ts";
 
 export { AnchorOutbox, ANCHOR_OUTBOX_SCHEMA_SQL } from "./anchor-outbox.ts";
 
