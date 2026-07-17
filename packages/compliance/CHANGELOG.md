@@ -1,5 +1,16 @@
 # @caisson/compliance
 
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [1de88d7]
+- Updated dependencies [1de88d7]
+- Updated dependencies [1de88d7]
+  - @caisson/compliance-core@0.3.1
+  - @caisson/audit-worm@2.1.0
+  - @caisson/signing-primitive@0.3.0
+
 ## 0.5.2
 
 ### Patch Changes

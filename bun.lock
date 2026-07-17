@@ -23,7 +23,7 @@
     },
     "apps/admin": {
       "name": "@caisson/admin",
-      "version": "0.0.9",
+      "version": "0.0.10",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
         "@caisson/audit-worm": "workspace:*",
@@ -67,7 +67,7 @@
     },
     "apps/agent-dev": {
       "name": "@caisson/app-agent-dev",
-      "version": "0.0.9",
+      "version": "0.0.10",
       "bin": {
         "caisson-agent-dev": "./src/index.ts",
       },
@@ -85,7 +85,7 @@
     },
     "apps/ai-kit": {
       "name": "@caisson/ai-kit-app",
-      "version": "0.0.10",
+      "version": "0.0.11",
       "dependencies": {
         "@ai-sdk/provider": "^4.0.3",
         "@caisson/ai-config": "workspace:*",
@@ -115,7 +115,7 @@
     },
     "apps/base": {
       "name": "@caisson/app-base",
-      "version": "0.0.10",
+      "version": "0.0.11",
       "dependencies": {
         "@caisson/auth": "workspace:*",
         "@caisson/billing": "workspace:*",
@@ -139,7 +139,7 @@
     },
     "apps/compliance": {
       "name": "@caisson/app-compliance",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "dependencies": {
         "@caisson/audit-worm": "workspace:*",
         "@caisson/compliance": "workspace:*",
@@ -192,7 +192,7 @@
     },
     "apps/site": {
       "name": "@caisson/site",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "dependencies": {
         "@caisson/ai-kit": "workspace:*",
         "@caisson/ai-meter": "workspace:*",
@@ -263,7 +263,7 @@
     },
     "packages/agent-dev": {
       "name": "@caisson/agent-dev",
-      "version": "0.4.3",
+      "version": "0.5.0",
       "dependencies": {
         "@caisson/agent-kernel": "workspace:*",
         "@caisson/agent-runner": "workspace:*",
@@ -282,7 +282,7 @@
     },
     "packages/agent-kernel": {
       "name": "@caisson/agent-kernel",
-      "version": "0.4.2",
+      "version": "0.5.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -489,7 +489,7 @@
     },
     "packages/audit-worm": {
       "name": "@caisson/audit-worm",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
         "@caisson/jobs": "workspace:*",
@@ -635,7 +635,7 @@
     },
     "packages/compliance": {
       "name": "@caisson/compliance",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "dependencies": {
         "@caisson/alerting": "workspace:*",
         "@caisson/audit-worm": "workspace:*",
@@ -659,7 +659,7 @@
     },
     "packages/compliance-core": {
       "name": "@caisson/compliance-core",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "dependencies": {
         "@caisson/field-crypto": "workspace:*",
         "@caisson/frameworks-pack": "workspace:*",
@@ -694,7 +694,7 @@
     },
     "packages/demo-registry": {
       "name": "@caisson/demo-registry",
-      "version": "0.2.3",
+      "version": "0.2.4",
       "dependencies": {
         "@caisson/ai-meter": "workspace:*",
         "@caisson/audit-harness": "workspace:*",
@@ -1002,7 +1002,7 @@
     },
     "packages/mcp-server": {
       "name": "@caisson/mcp-server",
-      "version": "0.3.2",
+      "version": "0.4.0",
       "dependencies": {
         "@caisson/ai-config": "workspace:*",
         "@caisson/ds-manifest": "workspace:*",
@@ -1090,7 +1090,7 @@
     },
     "packages/platform-migrations": {
       "name": "@caisson/platform-migrations",
-      "version": "0.2.3",
+      "version": "0.2.4",
       "dependencies": {
         "@caisson/ai-meter": "workspace:*",
         "@caisson/auth": "workspace:*",
@@ -1228,7 +1228,7 @@
     },
     "packages/signing-primitive": {
       "name": "@caisson/signing-primitive",
-      "version": "0.2.2",
+      "version": "0.3.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@noble/curves": "2.2.0",
@@ -1345,7 +1345,7 @@
     },
     "registry": {
       "name": "@caisson/registry",
-      "version": "0.0.10",
+      "version": "0.0.11",
       "dependencies": {
         "@caisson/license-verify": "workspace:*",
         "@caisson/pricebook": "workspace:*",
@@ -1419,7 +1419,7 @@
     },
     "services/license": {
       "name": "@caisson/service-license",
-      "version": "0.0.10",
+      "version": "0.0.11",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
         "@caisson/alerting": "workspace:*",
