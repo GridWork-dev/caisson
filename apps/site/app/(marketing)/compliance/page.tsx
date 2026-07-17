@@ -481,6 +481,51 @@ export default function CompliancePage() {
         </Section>
       </Reveal>
 
+      {/* ===== How it's proven: the real CI conformance gate + precise scope ===== */}
+      <Reveal>
+        <Section
+          eyebrow="How compliance is proven"
+          title="The evidence format is schema-checked in CI, on every push."
+          lede="Not a claim you take on trust: every push runs an OSCAL conformance gate. The evidence pack is exported to NIST OSCAL v1.2.2 and round-tripped JSON → XML → schema-validate against the published OSCAL schema, so a malformed or drifted export fails the build before it ships."
+          band="tint"
+        >
+          <Card>
+            <div className="cs-status">
+              <StatusChip
+                label="oscal-conformance · required check"
+                tone="success"
+                icon="check"
+                dot
+              />
+            </div>
+            <code
+              className="mono"
+              style={{
+                display: "block",
+                marginTop: "var(--cs-space-4)",
+                fontSize: "var(--cs-text-xs)",
+                color: "var(--cs-fg-muted)",
+              }}
+            >
+              oscal-cli validate soc2-evidence.xml → SAR + POA&amp;M · v1.2.2 ·
+              schema OK
+            </code>
+            <p
+              className="cs-muted"
+              style={{ marginTop: "var(--cs-space-4)", maxWidth: "72ch" }}
+            >
+              Precise scope: this gate proves the evidence pack conforms to the
+              NIST OSCAL schema — structure and well-formedness — so the export
+              is machine-readable by any tool that speaks OSCAL. It is a
+              self-run conformance check on Caisson&rsquo;s own export format,
+              not a third-party assessment. No external body assesses or
+              certifies Caisson or your deployment; that engagement stays with
+              your auditor.
+            </p>
+          </Card>
+        </Section>
+      </Reveal>
+
       {/* ===== FAQ (visible + JSON-LD) ===== */}
       <Reveal>
         <Section
