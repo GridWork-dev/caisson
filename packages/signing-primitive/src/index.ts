@@ -4,3 +4,4 @@
 // trusted-timestamp countersignature, and a fail-closed verify path. The evidence engine
 // (@caisson/compliance-core) produces the bodies this module signs; the Compliance edition composes both.
 export * from "./sign.ts";
+export * from "./ph-signer.ts";
