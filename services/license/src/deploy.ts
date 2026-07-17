@@ -133,9 +133,23 @@ if (import.meta.main) {
   // checkpoint). Fire-and-forget, same posture as the schedulers above.
   const anchorSchedule = loadAnchorCheckpointScheduleConfig();
   if (anchorSchedule !== null) {
+    // Target selection (inert-until-armed): TSA is the default and the ONLY grade wired at this deploy.
+    // The public-log `externally-transparent` grade (Rekor v2 / OpenTimestamps) is a SEPARATE,
+    // operator-gated DEPLOY step — it additionally needs a deployment SigningConfig + TrustedRoot, the
+    // CAISSON_REKOR_ANCHORING_KEY, and the typed irreversible-publicity opt-in (docs/security/
+    // external-anchoring.md). Unset CAISSON_ANCHOR_TARGET → "tsa" → byte-identical to today. A non-TSA
+    // selection FAILS SAFE (skip, never silently anchor to TSA under a public-log label; commerce
+    // outranks the sweep either way).
+    const anchorTarget = (
+      process.env.CAISSON_ANCHOR_TARGET?.trim() || "tsa"
+    ).toLowerCase();
     const wormBucket = process.env.CAISSON_WORM_BUCKET?.trim() ?? "";
     const tsaUrl = process.env.CAISSON_TSA_URL?.trim() ?? "";
-    if (wormBucket === "" || tsaUrl === "") {
+    if (anchorTarget !== "tsa") {
+      process.stderr.write(
+        `[service-license] CAISSON_ANCHOR_TARGET=${anchorTarget} selects public-log (externally-transparent) anchoring, an operator-gated DEPLOY step not wired at this deploy — skipping the anchor-checkpoint sweep. See docs/security/external-anchoring.md.\n`,
+      );
+    } else if (wormBucket === "" || tsaUrl === "") {
       process.stderr.write(
         "[service-license] ANCHOR_CHECKPOINT_SCHEDULE is set but CAISSON_WORM_BUCKET and/or CAISSON_TSA_URL is missing — skipping the anchor-checkpoint sweep (commerce outranks it).\n",
       );
