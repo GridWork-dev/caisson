@@ -36,6 +36,12 @@ export default [
       // Vendored third-party detector (the impeccable anti-slop catalog, ADR-0334 quality leg) —
       // not house code; exercised via apps/site/scripts/anti-slop.ts, never linted to our standards.
       "apps/site/scripts/anti-slop/detector/**",
+      // Public-mirror asset TEMPLATES copied verbatim into the caisson-oss mirror by
+      // scripts/export-public-mirror.ts. mirror-assets/eslint.config.js imports the mirror-only
+      // @caisson-sh/eslint-config; ESLint 10's per-file config lookup would load it during a repo-root
+      // `bunx eslint .` and crash (package absent in the private repo). The mirror's own CI
+      // (mirror-assets/ci.yml) lints these there — never here.
+      "scripts/mirror-assets/**",
     ],
   },
   ...config,
