@@ -21,6 +21,7 @@
     "test": "bun test ./src"
   },
   "dependencies": {
+    "@caisson/agent-trajectory": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "zod": "catalog:"
   },

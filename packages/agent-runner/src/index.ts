@@ -18,3 +18,10 @@ export {
   type SpawnAgentResult,
   type TailResult,
 } from "./agent-runner.ts";
+export {
+  buildTrajectoryEvents,
+  type BuildTrajectoryOptions,
+  type RecordableRun,
+  type TranscriptLine,
+} from "./trajectory.ts";
+export type { TrajectoryStore } from "@caisson/agent-trajectory";
