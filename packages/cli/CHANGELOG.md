@@ -1,5 +1,31 @@
 # @caisson/cli
 
+## 0.6.0
+
+### Minor Changes
+
+- 7f68b56: Add a second `caisson` bin alongside `create-caisson`. `caisson describe --json` prints the full
+  committed @caisson/ui component manifest (or one component by name, case-insensitive) as
+  deterministic JSON — the same data layer the MCP tools serve, free and with no Caisson account. The
+  `caisson doctor` verify command rides the same bin as a thin authed client of the buyer MCP.
+
+### Patch Changes
+
+- 46e45e6: Buyer-template CI workflows track actions/checkout v7; generate golden fixtures re-blessed to
+  match.
+- 59e1365: Generated-project templates now declare their own type surface: explicit `types` in both template
+  tsconfigs (base: bun; next: bun + node) and an `@types/bun` devDependency. TS 6.0 exposed a latent
+  template bug — the shipped `golden.test.ts` imports `bun:test`, which only ever type-checked
+  because the monorepo's own hoisted @types leaked into the composition exit-gate; a buyer's fresh
+  install had no such luck. Golden filesets re-blessed accordingly.
+- Updated dependencies [7f68b56]
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/ds-manifest@0.2.0
+  - @caisson/kernel@0.5.0
+  - @caisson/migrate@0.2.6
+  - @caisson/registry-schema@0.5.0
+
 ## 0.5.0
 
 ### Minor Changes

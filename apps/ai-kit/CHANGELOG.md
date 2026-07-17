@@ -1,5 +1,27 @@
 # @caisson/ai-kit-app
 
+## 0.0.8
+
+### Patch Changes
+
+- baaa4fc: Dependency safe-batch bump: ai-kit's Next.js pin moves onto the shared catalog version and org-controls upgrades to Clerk backend v3; no behavior change.
+- Updated dependencies [93c0a78]
+- Updated dependencies [a8696cf]
+- Updated dependencies [7f68b56]
+- Updated dependencies [e5e4311]
+- Updated dependencies [59e1365]
+- Updated dependencies [a8696cf]
+- Updated dependencies [e183860]
+  - @caisson/ai-kit@0.4.2
+  - @caisson/mcp-server@0.3.0
+  - @caisson/kernel@0.5.0
+  - @caisson/prompt-registry@1.0.1
+  - @caisson/ai-config@0.3.2
+  - @caisson/ai-meter@1.0.1
+  - @caisson/credits@0.5.1
+  - @caisson/guardrails@0.4.4
+  - @caisson/tenancy-rls@0.5.2
+
 ## 0.0.7
 
 ### Patch Changes

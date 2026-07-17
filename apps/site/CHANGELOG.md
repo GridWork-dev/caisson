@@ -1,5 +1,54 @@
 # @caisson/site
 
+## 0.2.2
+
+### Patch Changes
+
+- 7e823a9: Renovate dependency pins (exact versions) across the app and service workspaces; no code change.
+- a8d8f5e: Add a Trust page that links the public status page, gives the security contact, points to the shipped security and evidence documentation, and lists the third-party services that process data for the Caisson service. Link it from the site footer.
+- Updated dependencies [93c0a78]
+- Updated dependencies [ca44db5]
+- Updated dependencies [baaa4fc]
+- Updated dependencies [a8696cf]
+- Updated dependencies [1867fa3]
+- Updated dependencies [e5e4311]
+- Updated dependencies [e5e4311]
+- Updated dependencies [e5e4311]
+- Updated dependencies [59e1365]
+- Updated dependencies [59e1365]
+- Updated dependencies [59e1365]
+- Updated dependencies [59e1365]
+- Updated dependencies [a0fd9b1]
+- Updated dependencies [d1b4afa]
+- Updated dependencies [7e823a9]
+- Updated dependencies [809592d]
+- Updated dependencies [809592d]
+- Updated dependencies [e183860]
+  - @caisson/ai-kit@0.4.2
+  - @caisson/audit-worm@2.0.0
+  - @caisson/org-controls@0.3.1
+  - @caisson/auth@0.3.3
+  - @caisson/kernel@0.5.0
+  - @caisson/ui-pro@0.3.0
+  - @caisson/email@0.5.0
+  - @caisson/service-license@0.0.8
+  - @caisson/brand@0.1.3
+  - @caisson/demo-registry@0.2.1
+  - @caisson/observability@0.3.1
+  - @caisson/ui@0.6.1
+  - @caisson/prompt-registry@1.0.1
+  - @caisson/platform-migrations@0.2.1
+  - @caisson/ai-meter@1.0.1
+  - @caisson/billing@0.6.1
+  - @caisson/credits@0.5.1
+  - @caisson/field-crypto@0.3.2
+  - @caisson/local-store@1.0.1
+  - @caisson/migrate@0.2.6
+  - @caisson/pricebook@0.5.2
+  - @caisson/tenancy-rls@0.5.2
+  - @caisson/platform-reads@0.2.1
+  - @caisson/registry-schema@0.5.0
+
 ## 0.2.1
 
 ### Patch Changes

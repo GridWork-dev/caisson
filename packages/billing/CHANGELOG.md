@@ -1,5 +1,13 @@
 # @caisson/billing
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+
 ## 0.6.0
 
 ### Minor Changes
