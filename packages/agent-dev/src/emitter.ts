@@ -54,6 +54,14 @@ export interface EmitHookBinding {
 export interface EmitInput {
   readonly artifacts: readonly Artifact[];
   readonly hooks: readonly EmitHookBinding[];
+  /**
+   * Trust gate for a skill's `scripts` (executable content). Omitted / `false` ⇒ scripts are WITHHELD
+   * (one fidelity warning per script-carrying skill, never a silent drop); `true` ⇒ they emit under
+   * `<skill-dir>/scripts/`. `references`/`assets` are inert bundled content and always emit regardless.
+   * The edition composer sets this from artifact ORIGIN (`index.ts`): the curated Caisson default set is
+   * trusted (always `true`); a caller-supplied override is untrusted (honors the caller's opt-in).
+   */
+  readonly allowScripts?: boolean;
 }
 
 /** One emitted file: a bundle-relative POSIX path and its byte-stable text content. */
@@ -164,6 +172,32 @@ function resolveActivation(a: RuleArtifact | SkillArtifact): {
 } {
   const mode = a.activation ?? "always";
   return { mode, paths: mode === "paths" ? (a.paths ?? []) : [] };
+}
+
+/**
+ * The bundled files a skill ships into ONE SKILL.md directory root (`.claude/skills/<name>` or the
+ * universal `.agents/skills/<name>`): `references` + `assets` unconditionally, `scripts` only when
+ * `allowScripts`. Each lands under its category subdir (`<root>/references|assets|scripts/<file.path>`);
+ * every emitted file rides the existing `writeBundle` gate (path-escape + secret scan) unchanged.
+ */
+function skillBundle(
+  s: SkillArtifact,
+  dirRoot: string,
+  allowScripts: boolean,
+): EmittedFile[] {
+  const out: EmittedFile[] = [];
+  for (const f of s.references ?? []) {
+    out.push({ path: `${dirRoot}/references/${f.path}`, content: f.content });
+  }
+  for (const f of s.assets ?? []) {
+    out.push({ path: `${dirRoot}/assets/${f.path}`, content: f.content });
+  }
+  if (allowScripts) {
+    for (const f of s.scripts ?? []) {
+      out.push({ path: `${dirRoot}/scripts/${f.path}`, content: f.content });
+    }
+  }
+  return out;
 }
 
 // ── Claude Code: one file per artifact under `.claude/{agents,skills,rules}/` + a hooks manifest. ───
@@ -440,6 +474,7 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
 
   const files: EmittedFile[] = [];
   const warnings: string[] = [];
+  const allowScripts = input.allowScripts === true;
 
   // Claude Code — one file per artifact (input order), then the hooks manifest.
   for (const a of input.artifacts) {
@@ -455,7 +490,19 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
           path: `.claude/skills/${a.name}/SKILL.md`,
           content: skillMarkdown(a),
         });
+        files.push(...skillBundle(a, `.claude/skills/${a.name}`, allowScripts));
         warnIfUnrepresentedByClaudeCode(warnings, a);
+        {
+          // Executable content is trust-gated: withheld scripts are DISCLOSED once per skill (never a
+          // silent drop), reusing the ADR-0264 fidelity-warning channel. Pushed here (the one loop that
+          // visits every skill once) so the `.agents` twin loop below does not duplicate it.
+          const scriptCount = a.scripts?.length ?? 0;
+          if (!allowScripts && scriptCount > 0) {
+            warnings.push(
+              `Skill '${a.name}' declares ${scriptCount} script(s) withheld from emission; pass allowScripts to include them.`,
+            );
+          }
+        }
         break;
       case "rule":
         files.push({
@@ -482,6 +529,7 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
       path: `.agents/skills/${s.name}/SKILL.md`,
       content: skillMarkdown(s),
     });
+    files.push(...skillBundle(s, `.agents/skills/${s.name}`, allowScripts));
     if (s.activation === "paths" || s.activation === "manual") {
       warnings.push(
         `.agents (universal skills): skill '${s.name}' uses '${s.activation}' activation, which .agents/skills/ has no mechanism to represent — it always loads.`,

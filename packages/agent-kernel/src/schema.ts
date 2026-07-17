@@ -110,12 +110,43 @@ const allowedToolToken = z
     "an allowed-tools token must be non-empty with no whitespace",
   );
 /** The optional SKILL.md fields a `SkillArtifact` gains (license, compatibility, metadata,
- * allowed-tools). No `scripts`/`references`/`assets` — that trust boundary is a later write-gate. */
+ * allowed-tools). Executable/bundled content (`scripts`/`references`/`assets`) is the sibling
+ * `skillBundleFields` below — the emitter's write-gate (`allowScripts`) decides which reach disk. */
 const skillPortabilityFields = {
   license: z.string().min(1).max(256).optional(),
   compatibility: z.string().min(1).max(500).optional(),
   metadata: skillMetadata.optional(),
   allowedTools: z.array(allowedToolToken).min(1).max(64).optional(),
+};
+/**
+ * A relative path for a file bundled alongside a SKILL.md (e.g. `helpers/setup.sh`). Same relative-only,
+ * bounded floor as `pathGlob`: a leading `/` or any `..` segment is rejected. The emitter's write-gate
+ * re-checks the ASSEMBLED destination (`<skill-dir>/<category>/<path>`) too, so this is defence in
+ * depth, not the sole guard.
+ */
+const bundledPath = z
+  .string()
+  .min(1)
+  .max(1024)
+  .regex(
+    /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/,
+    "must be a relative path (no leading `/`, no `..` segment)",
+  );
+/** One bundled file shipped next to a SKILL.md — a relative path + its text content (256 KiB cap). */
+const bundledFile = strictObject({
+  path: bundledPath,
+  content: z.string().max(262_144),
+});
+/**
+ * The optional BUNDLED-FILE maps a `SkillArtifact` gains (ADR-0264 optional-field discipline: all
+ * absent ⇒ byte-identical round-trip; only the SKILL member carries them — agents/rules reject them via
+ * the top-level `.strict()`). `references`/`assets` are inert bundled content and always emit;
+ * `scripts` are executable and pass through the emitter's `allowScripts` trust gate.
+ */
+const skillBundleFields = {
+  references: z.array(bundledFile).max(64).optional(),
+  assets: z.array(bundledFile).max(64).optional(),
+  scripts: z.array(bundledFile).max(64).optional(),
 };
 
 /**
@@ -134,6 +165,7 @@ const SkillArtifactShape = strictObject({
   dependencies,
   ...activationFields,
   ...skillPortabilityFields,
+  ...skillBundleFields,
 });
 export const SkillArtifact = SkillArtifactShape.refine(
   pathsRequiredWhenScoped,

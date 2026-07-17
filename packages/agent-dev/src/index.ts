@@ -140,16 +140,25 @@ export interface AgentDevEdition {
   readonly toolExec: ToolExec;
   /** The reference-consistent artifact set this edition governs + emits. */
   readonly artifacts: readonly Artifact[];
-  /** PURE render of the artifact set + hook bindings into the multi-harness bundle. */
-  render(hooks?: readonly EmitHookBinding[]): EmittedBundle;
+  /**
+   * PURE render of the artifact set + hook bindings into the multi-harness bundle. `opts.allowScripts`
+   * opts a script-carrying skill's executable content in — but ONLY matters for a caller-supplied
+   * artifact override: the curated Caisson default set is trusted and always emits its scripts.
+   */
+  render(
+    hooks?: readonly EmitHookBinding[],
+    opts?: { readonly allowScripts?: boolean },
+  ): EmittedBundle;
   /**
    * Render + FAIL-CLOSED guarded write of the bundle under `targetRoot`. Returns the paths written
    * AND the bundle's fidelity warnings — the one-call path must surface them (ADR-0264 "warns
    * loudly, never silently degrades"), not leave them stranded on a `render()` the caller skipped.
+   * `opts.allowScripts` carries the same trust-tiered meaning as `render`.
    */
   emit(
     targetRoot: string,
     hooks?: readonly EmitHookBinding[],
+    opts?: { readonly allowScripts?: boolean },
   ): {
     readonly written: readonly string[];
     readonly warnings: readonly string[];
@@ -171,6 +180,10 @@ export interface AgentDevEdition {
 export function createAgentDevEdition(
   options: AgentDevEditionOptions,
 ): AgentDevEdition {
+  // Artifact ORIGIN is a composition-time fact (no schema field on the artifact): the curated Caisson
+  // default set is TRUSTED and always emits its scripts; a caller-supplied override is UNTRUSTED and
+  // must opt scripts in explicitly (the executable-content trust tier, operator lock 2026-07-17).
+  const usesCuratedDefault = options.artifacts === undefined;
   const artifacts = options.artifacts ?? CAISSON_DEFAULT_ARTIFACTS;
   validateArtifactSet(artifacts); // reference integrity over the whole set — throws on a ghost ref
 
@@ -208,8 +221,15 @@ export function createAgentDevEdition(
   // execFile only runs on `toolExec.run(...)`, keeping the edition engine-neutral (ADR-0066).
   const toolExec = createToolExec(options.toolExec ?? { allowlist: [] });
 
-  const render = (hooks: readonly EmitHookBinding[] = []): EmittedBundle =>
-    renderHarnessBundles({ artifacts, hooks });
+  const render = (
+    hooks: readonly EmitHookBinding[] = [],
+    opts: { readonly allowScripts?: boolean } = {},
+  ): EmittedBundle =>
+    renderHarnessBundles({
+      artifacts,
+      hooks,
+      allowScripts: usesCuratedDefault || opts.allowScripts === true,
+    });
 
   return {
     lifecycle,
@@ -217,8 +237,8 @@ export function createAgentDevEdition(
     toolExec,
     artifacts,
     render,
-    emit: (targetRoot, hooks = []) => {
-      const bundle = render(hooks);
+    emit: (targetRoot, hooks = [], opts = {}) => {
+      const bundle = render(hooks, opts);
       return {
         written: writeBundle(targetRoot, bundle),
         warnings: bundle.warnings,

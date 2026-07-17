@@ -77,6 +77,22 @@ describe("artifact schema", () => {
       );
     }
   });
+
+  test("bundled-file paths reject traversal/absolute at parse time, accept relative", () => {
+    for (const category of ["references", "assets", "scripts"] as const) {
+      for (const path of ["../escape.sh", "a/../../escape.sh", "/etc/passwd"]) {
+        expect(() =>
+          parseArtifact({ ...SKILL, [category]: [{ path, content: "x" }] }),
+        ).toThrow(ValidationError);
+      }
+      expect(
+        parseArtifact({
+          ...SKILL,
+          [category]: [{ path: "helpers/setup.sh", content: "x" }],
+        }),
+      ).toBeDefined();
+    }
+  });
 });
 
 describe("activation/paths extension (ADR-0264)", () => {

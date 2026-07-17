@@ -30,6 +30,15 @@ export const CAISSON_SKILLS: readonly SkillArtifact[] = [
       "review the resulting diff against the task's acceptance",
       "unblock the next task only after the gate passes",
     ],
+    // A curated helper script: the review gate for step three. As part of the trusted default set it
+    // always emits (the executable-content trust tier); a caller override must opt scripts in.
+    scripts: [
+      {
+        path: "gate-check.sh",
+        content:
+          '#!/usr/bin/env bash\n# Refuse to advance while the working tree is dirty.\nset -euo pipefail\ntest -z "$(git status --porcelain)"\n',
+      },
+    ],
   }),
   defineSkill({
     name: "goal-backward-verify",
