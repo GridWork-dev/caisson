@@ -37,7 +37,7 @@ site 0.2.6 · registry 0.0.12). Pre-launch gate stays ON.
   backlog**: superseded versions recorded in the sidecar that no ride ever uploaded (rides
   stage only rows current at ride time — the morning "43 byte-verified" and tonight's 53 were
   the current sets). The index/packument advertises full version history, so a buyer pinning
-  an old version would 404 — pre-launch severity low, but it needs an operator fork
+  an old version would 404 — pre-launch severity low, but it needs an operator fork (LOCKED same night: accept advisory-red — backfill tracked CAISSON-125)
   (backfill from historical checkouts vs prune historical rows vs accept-advisory). The
   probe stays red on its daily cron until that fork is decided — by design, it is advisory
   and gates nothing.
