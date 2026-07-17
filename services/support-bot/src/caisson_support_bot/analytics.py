@@ -16,18 +16,52 @@ from __future__ import annotations
 
 import hashlib
 import sys
+import uuid
 
 import httpx
 
 from .contracts import AnswerResult, ConfidenceTier
+from .inference import GenerationTelemetry
 
 _QUESTION_CAP = 200
 _REASON_CAP = 300
+
+# No stable per-user identity at generation time (the usage is surfaced deep in inference.py, without a
+# Discord user in scope). A namespaced server sentinel — same "support:" namespace as hash_distinct_id's
+# per-user output — keeps every server-side generation under one non-PII identity. CAISSON-120.
+_GENERATION_DISTINCT_ID = "support:server"
 
 
 def hash_distinct_id(raw: str) -> str:
     """Stable pseudonymous distinct id for PostHog — hashed, prefixed, never the raw Discord id."""
     return "support:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def generation_event(tel: GenerationTelemetry) -> dict[str, object]:
+    """PostHog ``$ai_generation`` properties for one generation's telemetry — the pure unit under test.
+
+    PRIVACY INVARIANT: NEVER carries prompt or completion TEXT — ``$ai_input`` / ``$ai_output_choices``
+    are omitted entirely; only token counts, cost, latency, model, provider, and the error state leave
+    the box. A fresh trace id per call is doubled as the parent id (a single-span generation).
+    """
+    trace_id = str(uuid.uuid4())
+    props: dict[str, object] = {
+        "$ai_trace_id": trace_id,
+        "$ai_parent_id": trace_id,
+        "$ai_model": tel.model,
+        "$ai_provider": "openrouter",
+        "$ai_input_tokens": tel.input_tokens or 0,
+        "$ai_output_tokens": tel.output_tokens or 0,
+        "$ai_latency": tel.latency_s,
+        "$ai_is_error": tel.is_error,
+    }
+    if tel.cost is not None:
+        props["$ai_total_cost_usd"] = tel.cost
+    if tel.status is not None:
+        props["$ai_http_status"] = tel.status
+    if tel.error is not None:
+        props["$ai_error"] = tel.error
+    return props
 
 
 def answer_event(
@@ -72,6 +106,16 @@ class AnswerAnalytics:
     ) -> None:
         event, props = answer_event(question=question, result=result, surface=surface)
         await self._post(event=event, distinct_id=hash_distinct_id(user_id), properties=props)
+
+    async def capture_generation(self, tel: GenerationTelemetry) -> None:
+        """Emit one ``$ai_generation`` LLM-observability event (CAISSON-120 / audit M4). Wired as the
+        ``OpenRouterInference.on_generation`` observer; fail-soft via ``_post`` (a capture failure logs
+        one line and never touches the answer path). Distinct id is a non-PII server sentinel."""
+        await self._post(
+            event="$ai_generation",
+            distinct_id=_GENERATION_DISTINCT_ID,
+            properties=generation_event(tel),
+        )
 
     async def capture_escalate_reply(self, *, user_id: str, referenced_answer: str | None) -> None:
         """The reply-``escalate`` label: a human overrode a hedged answer with a real escalation."""

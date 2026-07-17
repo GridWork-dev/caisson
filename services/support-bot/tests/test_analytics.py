@@ -8,9 +8,15 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from caisson_support_bot.analytics import AnswerAnalytics, answer_event, hash_distinct_id
+from caisson_support_bot.analytics import (
+    AnswerAnalytics,
+    answer_event,
+    generation_event,
+    hash_distinct_id,
+)
 from caisson_support_bot.bot import handle_question
 from caisson_support_bot.contracts import AnswerResult, Brief, ConfidenceTier
+from caisson_support_bot.inference import GenerationTelemetry
 
 
 def _resolved(tier: ConfidenceTier = ConfidenceTier.high) -> AnswerResult:
@@ -109,6 +115,86 @@ async def test_capture_is_fail_soft_on_network_error() -> None:
             question="q", result=_escalated(), surface="channel", user_id="42"
         )
         await analytics.capture_escalate_reply(user_id="42", referenced_answer="prior answer")
+
+
+# --- $ai_generation telemetry (CAISSON-120 / audit M4) ----------------------------------------------
+
+
+def test_generation_event_shape_and_trace_linkage() -> None:
+    props = generation_event(
+        GenerationTelemetry(
+            model="anthropic/claude-sonnet-4.6",
+            status=200,
+            input_tokens=812,
+            output_tokens=64,
+            cost=0.003,
+            latency_s=1.4,
+        )
+    )
+    assert props["$ai_model"] == "anthropic/claude-sonnet-4.6"
+    assert props["$ai_provider"] == "openrouter"
+    assert props["$ai_input_tokens"] == 812
+    assert props["$ai_output_tokens"] == 64
+    assert props["$ai_total_cost_usd"] == 0.003
+    assert props["$ai_http_status"] == 200
+    assert props["$ai_latency"] == 1.4
+    assert props["$ai_is_error"] is False
+    # fresh trace id doubled as the parent id (single-span generation).
+    assert props["$ai_trace_id"] == props["$ai_parent_id"]
+    assert isinstance(props["$ai_trace_id"], str) and len(str(props["$ai_trace_id"])) > 0
+
+
+def test_generation_event_never_emits_prompt_or_completion_text() -> None:
+    props = generation_event(GenerationTelemetry(model="m", input_tokens=1, output_tokens=1))
+    for banned in ("$ai_input", "$ai_output_choices", "$ai_input_state"):
+        assert banned not in props
+
+
+def test_generation_event_error_path_carries_error_and_missing_counts_default_zero() -> None:
+    props = generation_event(
+        GenerationTelemetry(model="m", status=429, error="openrouter returned 429")
+    )
+    assert props["$ai_is_error"] is True
+    assert props["$ai_error"] == "openrouter returned 429"
+    assert props["$ai_http_status"] == 429
+    # missing usage ⇒ counts default to 0, and no cost key is emitted.
+    assert props["$ai_input_tokens"] == 0
+    assert props["$ai_output_tokens"] == 0
+    assert "$ai_total_cost_usd" not in props
+
+
+@pytest.mark.asyncio
+async def test_capture_generation_posts_the_ai_generation_envelope() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"status": 1})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        analytics = AnswerAnalytics(key="phc_test", host="https://ph.test", client=client)
+        await analytics.capture_generation(
+            GenerationTelemetry(model="m", status=200, input_tokens=5, output_tokens=7, cost=0.001)
+        )
+
+    assert len(seen) == 1
+    assert str(seen[0].url) == "https://ph.test/capture/"
+    body = json.loads(seen[0].content)
+    assert body["api_key"] == "phc_test"
+    assert body["event"] == "$ai_generation"
+    assert body["distinct_id"] == "support:server"
+    assert body["properties"]["$ai_input_tokens"] == 5
+
+
+@pytest.mark.asyncio
+async def test_capture_generation_is_fail_soft_on_network_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("down", request=request)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        analytics = AnswerAnalytics(key="phc_test", host="https://ph.test", client=client)
+        # Must not raise — a telemetry outage never touches the answer path.
+        await analytics.capture_generation(GenerationTelemetry(model="m"))
 
 
 @pytest.mark.asyncio
