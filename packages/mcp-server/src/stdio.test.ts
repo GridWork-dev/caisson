@@ -167,6 +167,37 @@ describe("stdio transport binding", () => {
     ).rejects.toThrow();
   });
 
+  test("capabilities advertise prompts, and prompts/list + get round-trip", async () => {
+    const server = createStdioMcpServer(deps());
+    const [serverTransport, clientTransport] =
+      InMemoryTransport.createLinkedPair();
+    client = new Client({ name: "stdio-test-client", version: "0.0.0" });
+
+    await Promise.all([
+      server.connect(serverTransport),
+      client.connect(clientTransport),
+    ]);
+
+    expect(client.getServerCapabilities()?.prompts).toBeDefined();
+
+    const list = await client.listPrompts();
+    expect(list.prompts.map((p) => p.name)).toContain("integrate_module");
+
+    const got = await client.getPrompt({
+      name: "integrate_module",
+      arguments: { module_id: "@caisson/auth" },
+    });
+    expect(got.messages).toHaveLength(1);
+    const msg = got.messages[0];
+    expect(msg?.content.type).toBe("text");
+    expect((msg?.content as { text: string }).text).toContain("@caisson/auth");
+
+    // An unknown prompt surfaces as a rejected JSON-RPC error (the mapped not-found).
+    await expect(
+      client.getPrompt({ name: "nope_missing", arguments: {} }),
+    ).rejects.toThrow();
+  });
+
   test("runStdioServer connects the bound server to an injected transport and returns it", async () => {
     const [serverTransport, clientTransport] =
       InMemoryTransport.createLinkedPair();

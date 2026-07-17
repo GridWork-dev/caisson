@@ -39,6 +39,10 @@ import {
   registerManifestTools,
   type ManifestToolsOptions,
 } from "./manifest-tools.ts";
+import {
+  registerCompliancePrompts,
+  type CompliancePromptOptions,
+} from "./compliance-prompts.ts";
 
 export interface BuyerToken {
   token: string;
@@ -129,6 +133,54 @@ export interface ResourceRegistration {
   readonly handler: (ctx: ResourceHandlerContext) => Promise<unknown>;
 }
 
+/** One declared argument of a prompt. `required` gates whether a caller may omit it; the per-prompt
+ *  args schema `getPrompt` builds from these rejects both a missing required arg and any undeclared
+ *  extra arg (strict), consistent with every other boundary in this repo. */
+export interface PromptArgSpec {
+  readonly name: string;
+  readonly description?: string;
+  readonly required: boolean;
+}
+
+/** One message a prompt renders. Mirrors the MCP `PromptMessage` shape (role + text content) without
+ *  importing the SDK into the transport-agnostic core — the transports return it verbatim. */
+export interface PromptMessage {
+  readonly role: "user" | "assistant";
+  readonly content: { readonly type: "text"; readonly text: string };
+}
+
+/** What a prompt handler returns. Structurally the SDK `GetPromptResult` (optional description +
+ *  messages); the transports hand it back to the client unchanged. */
+export interface PromptResult {
+  readonly description?: string;
+  readonly messages: readonly PromptMessage[];
+}
+
+/** What a prompt handler receives: the authenticated caller's session and the validated args (a
+ *  `Record<string,string>` per the MCP `prompts/get` contract — already parsed against the prompt's
+ *  declared arguments, so unknown keys and missing-required args are rejected before the handler). */
+export interface PromptHandlerContext {
+  readonly session: McpSession;
+  readonly args: Readonly<Record<string, string>>;
+}
+
+/**
+ * One registered prompt, the prompt-side mirror of `ResourceRegistration`/`ToolRegistration`.
+ * `requiredEntitlement` is the edition slug a caller must own to *see* and *get* this prompt; `null`
+ * marks a base prompt visible to every authenticated buyer. The entitlement is re-validated
+ * timing-safe on every get through the SAME `isEntitled` gate the tools/resources use.
+ * `name`/`description`/`version`/`arguments` are the declarative manifest fields, validated by
+ * `promptManifestSchema` at registration time (mirroring `toolManifestSchema`/`resourceManifestSchema`).
+ */
+export interface PromptRegistration {
+  readonly name: string;
+  readonly requiredEntitlement: string | null;
+  readonly description: string;
+  readonly version: string;
+  readonly arguments: readonly PromptArgSpec[];
+  readonly handler: (ctx: PromptHandlerContext) => Promise<PromptResult>;
+}
+
 /**
  * A deliberately-deprecated tool (ADR-0216). Distinct from "never existed": a retired name answers
  * `RetiredToolError` (410) with `reason`/`retiredAt`, so a buyer integration gets an actionable
@@ -190,6 +242,12 @@ export interface McpServerOptions {
    * deny throws. `services/license` provides the token-bucket-backed implementation.
    */
   checkRateLimit?: RateLimitHook;
+  /**
+   * Opt-in compliance-edition prompt (`compliance_evidence_walkthrough`). When present the prompt is
+   * registered through the same seam, gated on the `compliance` entitlement by default; when omitted
+   * no compliance prompt exists (fail-closed). See `compliance-prompts.ts`.
+   */
+  compliancePrompts?: CompliancePromptOptions;
 }
 
 export interface McpServer {
@@ -227,6 +285,26 @@ export interface McpServer {
    * `options.checkRateLimit` before serving.
    */
   readResource(session: McpSession, uri: string): Promise<unknown>;
+  /**
+   * Register a prompt. Mirrors `registerTool`/`registerResource`: the manifest fields
+   * (`name`/`description`/`version`/`arguments`) are validated at registration time, then a
+   * duplicate name is a fail-closed `ValidationError` — a prompt can never silently shadow a peer.
+   */
+  registerPrompt(registration: PromptRegistration): void;
+  /** The prompts VISIBLE to this caller: base prompts + only the entitled edition ones. */
+  listPrompts(session: McpSession): readonly PromptRegistration[];
+  /**
+   * Get one prompt by name. Enforces the SAME invisible-entitlement contract as `readResource`
+   * (an unregistered name and a name the caller is not entitled to are the identical 404, checked
+   * BEFORE the rate-limit gate), awaits `options.checkRateLimit`, then validates `rawArgs` against
+   * the prompt's declared arguments (strict — missing-required and unknown-extra both rejected)
+   * before invoking the handler.
+   */
+  getPrompt(
+    session: McpSession,
+    name: string,
+    rawArgs: Record<string, string>,
+  ): Promise<PromptResult>;
 }
 
 // The `modules` array ceiling (b719aff8). Enforced TWICE: an O(1) raw-length pre-guard in the
@@ -258,6 +336,30 @@ const resourceManifestSchema = strictObject({
   name: z.string().min(1).max(120),
   description: z.string().min(1).max(280),
   mimeType: z.string().min(1).max(120),
+});
+
+// The declarative per-prompt manifest, the prompt-side mirror of `resourceManifestSchema`: validated
+// in `registerPrompt()` before the duplicate-name guard, so a bad manifest is a registration-time
+// `ValidationError`. `name`/`arguments[].name` are code-supplied slugs (a registration-time shape
+// guard, not an untrusted-input gate); the caller's actual args are re-validated per-get against a
+// schema built from `arguments`.
+const PROMPT_NAME = z
+  .string()
+  .max(64)
+  .regex(/^[a-z][a-z0-9_]*$/, "must be a lower_snake slug");
+const promptManifestSchema = strictObject({
+  name: PROMPT_NAME,
+  description: z.string().min(1).max(280),
+  version: z.string().regex(/^\d+\.\d+\.\d+$/, "must be a semver x.y.z"),
+  arguments: z
+    .array(
+      strictObject({
+        name: PROMPT_NAME,
+        description: z.string().min(1).max(200).optional(),
+        required: z.boolean(),
+      }),
+    )
+    .max(10),
 });
 
 // `.max(128)` = the repo module-id bound (PurchasedIds in registry-schema); `name` is a module slug.
@@ -300,6 +402,10 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   // per-instance seeding, same entitlement gate (`isEntitled` below), same invisible-not-found
   // contract. No retirement ledger — resources have no deprecation lifecycle in this slice.
   const resources = new Map<string, ResourceRegistration>();
+  // The parallel PROMPT registry, the prompt-side mirror of `registry`/`resources`. Same
+  // per-instance seeding, same entitlement gate, same invisible-not-found contract. No retirement
+  // ledger — prompts have no deprecation lifecycle in this slice (mirrors resources).
+  const prompts = new Map<string, PromptRegistration>();
 
   /**
    * Constant-time entitlement gate. A base tool (`required === null`) is always entitled; an
@@ -446,6 +552,70 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     return registration.handler({ session });
   }
 
+  // --- Prompts: the prompt-side mirror of the tool/resource registries above, reusing the same
+  //     `isEntitled` gate and `options.checkRateLimit` hook. ---
+
+  function registerPrompt(registration: PromptRegistration): void {
+    // Manifest validation mirrors `registerTool`/`registerResource`: a malformed manifest is a
+    // registration-time `ValidationError`, checked BEFORE the duplicate-name guard.
+    parseStrict(promptManifestSchema, {
+      name: registration.name,
+      description: registration.description,
+      version: registration.version,
+      arguments: registration.arguments,
+    });
+    if (prompts.has(registration.name)) {
+      throw new ValidationError(
+        `Prompt already registered: ${registration.name}`,
+        { prompt: registration.name },
+      );
+    }
+    prompts.set(registration.name, registration);
+  }
+
+  function listPrompts(session: McpSession): readonly PromptRegistration[] {
+    return [...prompts.values()]
+      .filter((reg) => isEntitled(session, reg.requiredEntitlement))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async function getPrompt(
+    session: McpSession,
+    name: string,
+    rawArgs: Record<string, string>,
+  ): Promise<PromptResult> {
+    const registration = prompts.get(name);
+    // Invisible-prompt contract (mirrors `readResource`): an unregistered name AND a name the caller
+    // is not entitled to are BOTH a 404 — an entitlement-gated prompt never leaks that it exists.
+    // Checked BEFORE the rate-limit gate, so a 404 never consumes a caller's throttle.
+    if (
+      registration === undefined ||
+      !isEntitled(session, registration.requiredEntitlement)
+    ) {
+      throw new NotFoundError(`Unknown prompt: ${name}`);
+    }
+    // Same abuse-throttle gate as `handleToolCall`/`readResource` (ADR-0112): awaited before the
+    // handler runs — but AFTER the invisible-404, so a not-found never burns throttle.
+    if (options.checkRateLimit !== undefined) {
+      await options.checkRateLimit(session.accountId);
+    }
+    // Build the per-prompt strict args schema from the declared arguments (each `z.string()`,
+    // `.optional()` unless required) and validate the caller's `Record<string,string>` against it —
+    // rejecting both a missing-required arg and any undeclared extra key (strict), consistent with
+    // every other boundary in this repo.
+    const shape: Record<string, z.ZodTypeAny> = {};
+    for (const arg of registration.arguments) {
+      // .max(512) — bound strings at the boundary like every tool arg in this package.
+      const base = z.string().max(512);
+      shape[arg.name] = arg.required ? base : base.optional();
+    }
+    const parsed = parseStrict(strictObject(shape), rawArgs) as Record<
+      string,
+      string
+    >;
+    return registration.handler({ session, args: parsed });
+  }
+
   // --- Base tools (ADR-0008): visible to every authenticated buyer, no edition entitlement. ---
 
   registerTool({
@@ -565,6 +735,91 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     handler: async () => options.index,
   });
 
+  // --- Base prompts: visible to every authenticated buyer, no edition entitlement.
+
+  // integrate_module: narrate the describe_module → generate recipe for one owned module. Validates
+  // `moduleId` against the live registry index up front (mirroring `generate`'s allowlist), so the
+  // prompt can never recommend a module the generator would reject.
+  registerPrompt({
+    name: "integrate_module",
+    requiredEntitlement: null,
+    description:
+      "Walk through adding one purchased Caisson module to a project: describe it, then generate.",
+    version: "1.0.0",
+    arguments: [
+      {
+        name: "module_id",
+        description: "The @caisson/<slug> module to integrate.",
+        required: true,
+      },
+      {
+        name: "version",
+        description: "A specific module version (defaults to latest).",
+        required: false,
+      },
+      {
+        name: "project_name",
+        description: "The target project slug (default my-app).",
+        required: false,
+      },
+    ],
+    handler: async ({ args }) => {
+      // `module_id` is a required arg → always present at runtime (getPrompt validates it); the `??`
+      // only satisfies noUncheckedIndexedAccess. An empty id fails assertKnownModule → 400 anyway.
+      const moduleId = args.module_id ?? "";
+      try {
+        assertKnownModule(options.index, moduleId);
+        if (args.version !== undefined) {
+          assertKnownVersion(options.index, moduleId, args.version);
+        }
+      } catch {
+        throw new ValidationError("Unknown registry module or version", {
+          module:
+            args.version !== undefined
+              ? `${moduleId}@${args.version}`
+              : moduleId,
+        });
+      }
+      // Resolve to a CONCRETE version: `generate` validates via assertKnownVersion, which only
+      // accepts members of entry.versions — the literal string "latest" is an index pointer and
+      // would 400. Same resolution the CLI does before its own generate call.
+      const entry = options.index.modules.find((m) => m.id === moduleId);
+      if (entry === undefined) {
+        throw new ValidationError("Unknown registry module or version", {
+          module: moduleId,
+        });
+      }
+      const version = args.version ?? entry.latest;
+      const projectName = args.project_name ?? "my-app";
+      const versionLine =
+        args.version !== undefined
+          ? `"${args.version}"`
+          : `"${entry.latest}" (the current latest; pin any published version instead if needed)`;
+      const text = [
+        `Integrate ${moduleId} into the "${projectName}" project.`,
+        "",
+        `1. Inspect the module first — call the describe_module tool with { "name": "${moduleId}" } to confirm you are entitled to it and read its summary.`,
+        "",
+        "2. Generate the project scaffold — call the generate tool:",
+        JSON.stringify(
+          {
+            projectName,
+            modules: [{ id: moduleId, version }],
+          },
+          null,
+          2,
+        ),
+        `   (use ${versionLine} for the module version).`,
+        "",
+        "generate validates every requested module against the registry allowlist and your entitlements, then debits credits and writes the scaffold in one idempotent step.",
+      ].join("\n");
+      return {
+        description: `Integration recipe for ${moduleId}`,
+        messages: [{ role: "user", content: { type: "text", text } }],
+      };
+    },
+  });
+
   const server: McpServer = {
     authenticate,
     registerTool,
@@ -574,11 +829,17 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     registerResource,
     listResources,
     readResource,
+    registerPrompt,
+    listPrompts,
+    getPrompt,
   };
   // ADR-0076 wire: the coach is just an edition registering its tools through the seam.
   if (options.coach) registerCoachTools(server, options.coach);
   // ADR-0330/0345 wire: the design-system tools (and their resource front) register
   // through the same seam, same one-way flow.
   if (options.dsManifest) registerManifestTools(server, options.dsManifest);
+  // Compliance-edition prompt registers through the same seam, same one-way flow.
+  if (options.compliancePrompts)
+    registerCompliancePrompts(server, options.index, options.compliancePrompts);
   return server;
 }

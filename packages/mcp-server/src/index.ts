@@ -12,7 +12,20 @@ export type {
   RetiredTool,
   ResourceRegistration,
   ResourceHandlerContext,
+  PromptRegistration,
+  PromptHandlerContext,
+  PromptArgSpec,
+  PromptMessage,
+  PromptResult,
 } from "./server.ts";
+export {
+  registerCompliancePrompts,
+  DEFAULT_COMPLIANCE_ENTITLEMENT,
+} from "./compliance-prompts.ts";
+export type {
+  CompliancePromptOptions,
+  CompliancePromptRegistrar,
+} from "./compliance-prompts.ts";
 export { registerCoachTools, presenceEnvPort } from "./coach.ts";
 export type {
   CoachOptions,
