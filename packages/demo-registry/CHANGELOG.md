@@ -1,5 +1,12 @@
 # @caisson/demo-registry
 
+## 0.2.2
+
+### Patch Changes
+
+- @caisson/license-issue@1.0.1
+- @caisson/ai-meter@1.0.2
+
 ## 0.2.1
 
 ### Patch Changes

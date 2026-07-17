@@ -1,5 +1,14 @@
 # @caisson/cli
 
+## 0.6.1
+
+### Patch Changes
+
+- 3f05e1e: Track the kernel 0.5.0 release in the EU AI Act sample template's dependency range so a freshly
+  generated sample installs the current Apache-2.0 kernel instead of pinning a superseded minor.
+- Updated dependencies [3f05e1e]
+  - @caisson/registry-schema@0.5.1
+
 ## 0.6.0
 
 ### Minor Changes

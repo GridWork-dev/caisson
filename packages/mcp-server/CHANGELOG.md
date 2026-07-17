@@ -1,5 +1,12 @@
 # @caisson/mcp-server
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [3f05e1e]
+  - @caisson/registry-schema@0.5.1
+
 ## 0.3.0
 
 ### Minor Changes
