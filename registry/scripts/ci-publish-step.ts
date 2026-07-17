@@ -355,6 +355,7 @@ export function refreshVersionCandidateTarballs(
 
   const packFn = opts.packFn ?? defaultPack;
   const stagingDir = opts.stagingDir ?? STAGING_DIR;
+  const newKeySet = new Set(candidateNewKeys);
   for (const key of candidateNewKeys) {
     const { slug, version } = candidatePackageKey(key);
     const packageDir = pathInside(root, "packages", slug);
@@ -383,6 +384,40 @@ export function refreshVersionCandidateTarballs(
       `registry/ci-publish-step: securely re-packed + re-recorded ${key}\n`,
     );
   }
+
+  // Sibling-churn guard: an EXISTING row whose package is still at that same version on this branch
+  // (i.e. NOT bumped this PR) must still re-pack to the bytes it advertises. When a later consume
+  // bumps a `workspace:*` dependency, `bun pm pack` rewrites that resolved version into the sibling's
+  // tarball — staling an unchanged sibling row at its own version. Today that only surfaces hours
+  // later at the publish/tag byte-gate; catch it HERE, on the version PR, before merge. Superseded
+  // historical versions (package.json gone, or already bumped past the row) are un-repackable from
+  // HEAD and out of scope — the live R2 probe (r2-parity-probe.ts) is their integrity net.
+  const siblingMismatches: string[] = [];
+  for (const key of Object.keys(candidateSidecar.tarballs)) {
+    if (newKeySet.has(key)) continue; // freshly re-recorded above
+    const { slug, version } = candidatePackageKey(key);
+    const packageDir = pathInside(root, "packages", slug);
+    const pkgJsonPath = join(packageDir, "package.json");
+    if (!existsSync(pkgJsonPath)) continue; // superseded — no longer on disk
+    const rawPackage = z
+      .record(z.string(), z.unknown())
+      .parse(JSON.parse(readFileSync(pkgJsonPath, "utf8")));
+    if (rawPackage.version !== version) continue; // superseded historical version
+    const recorded = candidateSidecar.tarballs[key] as TarballDist;
+    const bytes = packFn(packageDir, slug, version, stagingDir);
+    const dist = computeTarballDist(bytes, slug, version);
+    if (dist.shasum !== recorded.shasum || dist.size !== recorded.size) {
+      siblingMismatches.push(
+        `${key} (recorded=${recorded.shasum}/${String(recorded.size)}B, would-be=${dist.shasum}/${String(dist.size)}B)`,
+      );
+    }
+  }
+  if (siblingMismatches.length > 0) {
+    throw new Error(
+      `version refresh: these already-recorded sibling rows no longer re-pack to their advertised bytes from this branch — a workspace dependency's resolved version changed since the row was recorded. Fix: add a changeset bumping each package's OWN version in this release so a fresh row is recorded, else the release fails at the publish/tag byte-gate:\n  - ${siblingMismatches.join("\n  - ")}`,
+    );
+  }
+
   if (candidateNewKeys.length > 0) {
     writeSidecar(candidateSidecar, candidateSidecarPath);
   }
