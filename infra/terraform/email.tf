@@ -4,10 +4,11 @@
 # send.caisson.sh is Resend's custom MAIL-FROM (return-path) subdomain, so it carries its own
 # amazonses SPF + feedback MX — envelope-from alignment without touching the apex's reputation.
 #
-# EVERY record below already exists live in the zone (hand-created before this module existed) —
-# see README.md "Email deliverability" for the mandatory `terraform import` adoption runbook.
-# Skipping it makes `apply` try to CREATE duplicates of records that are already live and serving
-# mail; `plan` will show a create for any resource here that wasn't imported first.
+# EVERY record below already exists live in the zone (hand-created before this module existed).
+# ADOPTED 2026-07-16: all 11 resources terraform-imported (plus the 6 CAA records in caa.tf) —
+# a full `terraform plan` now reports no differences, so blanket applies are safe. The import
+# runbook in README.md "Email deliverability" is kept as the pattern for any future hand-created
+# record adoption.
 
 # --- apex (caisson.sh) SPF — authorizes Proton's outbound relay to send as @caisson.sh ---
 # DKIM/SPF/DMARC alignment is what keeps mail out of spam: SPF lists which servers may claim to
