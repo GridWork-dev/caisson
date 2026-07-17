@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-16
+updated: 2026-07-17
 status: live
 grounds:
   - docs/build-state.md
@@ -7,6 +7,37 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-07-17 — runtime+sandbox wave: R2 publish ride + Worker + site/support-bot/license redeploys (`12182a52`)
+
+Operator-approved close-out of the CAISSON-109/110 wave (PRs #244/#249/#253/#254/#255 + consumes
+#245/#248/#252). Pre-launch gate stays ON (Paddle sandbox).
+
+- **Registry publish ride `v2026.07.17`** (the sandbox audit's failing-install finding was a real
+  prod registry gap): tag at `96645936` after 3 consumes + 2 stale-row re-records → publish.yml
+  `dry_run=false` SUCCESS — **43 tarballs uploaded to R2, 5 already present, byte-verified at the
+  tag**. Recurrence guards on CAISSON-119 (R2-parity probe; pack-embeds-devDep-versions churn).
+- **registry Worker redeployed** (operator-approved): version `0a9e722d` via wrangler on a fresh
+  worktree (built the missing pricebook + license-verify dists first — deploy.sh only builds
+  registry-schema). `registry.caisson.sh/health` 200; scaffold install/build/test proof green
+  against the live registry after rebuilding the stale bundled CLI index snapshot.
+- **caisson-site redeployed** (`railway up`, SUCCESS): PR #254 `/demo` surface — prebuilt preview
+  pane with a REAL passing transcript, demo-run with F5 atomic caps, bounded-body reads on
+  demo-run + ask-ai. Probes: `/demo` 200 · bare POST 403 (Turnstile fail-closed) · `/healthz` 200.
+- **caisson-support-bot redeployed** (`railway up`, SUCCESS) — carries the docs-RAG excerpt
+  updates from the wave.
+- **caisson-license redeployed twice** — the first run FAILED CLOSED on
+  `checksum drift at version 24 (0024_rate_limit.sql)`: the three PR #254 site-local migrations
+  (0023-0025) landed mid-chain because the shared platform chain had itself grown 0023-0026 and
+  the assembly renumbers positionally. Fix PR #255 (merged `12182a52`) renamed them 0027-0029 +
+  added an append-only assembled-ledger golden test. Second run SUCCESS:
+  `[deploy-migrate] platform: applied 3, skipped 26` (`rate_limit`, `demo_run_budget`,
+  `demo_run_leads` created), better-auth ensured. Post-migrate probe:
+  `GET /api/demo/run` → `{"enabled":true}` 200 (was 500 on the missing tables).
+- **Migration lesson (locked into tests):** site DB migrations apply ONLY via caisson-license's
+  `preDeployCommand` — redeploying caisson-site alone never migrates; and a new migration's
+  numeric prefix must sort past the merged chain's highest (claimed-prefix registry in
+  `@caisson/platform-migrations`; next free `0030`).
 
 ## 2026-07-15 (PM) — trust-page site redeploy + intel container rebuild + Better Stack public status page (`0a58f8ee`)
 
