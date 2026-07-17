@@ -281,6 +281,54 @@ function pathInside(root: string, ...parts: string[]): string {
 }
 
 /**
+ * Sibling-churn guard (CAISSON-124): every EXISTING sidecar row not in `skipKeys` (i.e. not freshly
+ * (re-)recorded this run) whose package is still at that same version on this tree must still
+ * re-pack to the bytes it advertises. When a consume bumps a `workspace:*` dependency, `bun pm
+ * pack` rewrites that resolved version into an unchanged sibling's tarball — staling its row at
+ * its own version. Shared by both call sites that can churn a sibling this way: the trusted
+ * synchronize-refresh path (`refreshVersionCandidateTarballs`) and the initial dispatch
+ * `--mode version` step (`runPublishStep`) — a single-shot version PR never fires a synchronize
+ * event, so without this shared check that path skips the guard entirely (the bug this closes).
+ * Superseded historical versions (package.json gone, or already bumped past the row) are
+ * un-repackable from HEAD and out of scope — the live R2 probe (r2-parity-probe.ts) is their
+ * integrity net.
+ */
+function checkSiblingChurn(opts: {
+  sidecar: Sidecar;
+  skipKeys: ReadonlySet<string>;
+  packageDirFor: (slug: string) => string;
+  packFn: PackFn;
+  stagingDir: string;
+}): void {
+  const { sidecar, skipKeys, packageDirFor, packFn, stagingDir } = opts;
+  const siblingMismatches: string[] = [];
+  for (const key of Object.keys(sidecar.tarballs)) {
+    if (skipKeys.has(key)) continue; // freshly (re-)recorded this run
+    const { slug, version } = candidatePackageKey(key);
+    const packageDir = packageDirFor(slug);
+    const pkgJsonPath = join(packageDir, "package.json");
+    if (!existsSync(pkgJsonPath)) continue; // superseded — no longer on disk
+    const rawPackage = z
+      .record(z.string(), z.unknown())
+      .parse(JSON.parse(readFileSync(pkgJsonPath, "utf8")));
+    if (rawPackage.version !== version) continue; // superseded historical version
+    const recorded = sidecar.tarballs[key] as TarballDist;
+    const bytes = packFn(packageDir, slug, version, stagingDir);
+    const dist = computeTarballDist(bytes, slug, version);
+    if (dist.shasum !== recorded.shasum || dist.size !== recorded.size) {
+      siblingMismatches.push(
+        `${key} (recorded=${recorded.shasum}/${String(recorded.size)}B, would-be=${dist.shasum}/${String(dist.size)}B)`,
+      );
+    }
+  }
+  if (siblingMismatches.length > 0) {
+    throw new Error(
+      `sibling-churn: these already-recorded rows no longer re-pack to their advertised bytes from this tree — a workspace dependency's resolved version changed since the row was recorded. Fix: add a changeset bumping each package's OWN version in this release so a fresh row is recorded, else the release fails at the publish/tag byte-gate:\n  - ${siblingMismatches.join("\n  - ")}`,
+    );
+  }
+}
+
+/**
  * Refresh an automation-authored version PR without executing PR-head code. The trusted base
  * workflow calls this function against a candidate checkout treated strictly as data: historical
  * ledger/sidecar material must be byte/deep-identical to the fork point, the new sidecar-key set
@@ -385,38 +433,15 @@ export function refreshVersionCandidateTarballs(
     );
   }
 
-  // Sibling-churn guard: an EXISTING row whose package is still at that same version on this branch
-  // (i.e. NOT bumped this PR) must still re-pack to the bytes it advertises. When a later consume
-  // bumps a `workspace:*` dependency, `bun pm pack` rewrites that resolved version into the sibling's
-  // tarball — staling an unchanged sibling row at its own version. Today that only surfaces hours
-  // later at the publish/tag byte-gate; catch it HERE, on the version PR, before merge. Superseded
-  // historical versions (package.json gone, or already bumped past the row) are un-repackable from
-  // HEAD and out of scope — the live R2 probe (r2-parity-probe.ts) is their integrity net.
-  const siblingMismatches: string[] = [];
-  for (const key of Object.keys(candidateSidecar.tarballs)) {
-    if (newKeySet.has(key)) continue; // freshly re-recorded above
-    const { slug, version } = candidatePackageKey(key);
-    const packageDir = pathInside(root, "packages", slug);
-    const pkgJsonPath = join(packageDir, "package.json");
-    if (!existsSync(pkgJsonPath)) continue; // superseded — no longer on disk
-    const rawPackage = z
-      .record(z.string(), z.unknown())
-      .parse(JSON.parse(readFileSync(pkgJsonPath, "utf8")));
-    if (rawPackage.version !== version) continue; // superseded historical version
-    const recorded = candidateSidecar.tarballs[key] as TarballDist;
-    const bytes = packFn(packageDir, slug, version, stagingDir);
-    const dist = computeTarballDist(bytes, slug, version);
-    if (dist.shasum !== recorded.shasum || dist.size !== recorded.size) {
-      siblingMismatches.push(
-        `${key} (recorded=${recorded.shasum}/${String(recorded.size)}B, would-be=${dist.shasum}/${String(dist.size)}B)`,
-      );
-    }
-  }
-  if (siblingMismatches.length > 0) {
-    throw new Error(
-      `version refresh: these already-recorded sibling rows no longer re-pack to their advertised bytes from this branch — a workspace dependency's resolved version changed since the row was recorded. Fix: add a changeset bumping each package's OWN version in this release so a fresh row is recorded, else the release fails at the publish/tag byte-gate:\n  - ${siblingMismatches.join("\n  - ")}`,
-    );
-  }
+  // Sibling-churn guard (shared with the dispatch --mode version step — CAISSON-124): catch it HERE,
+  // on the version PR, before merge, rather than hours later at the publish/tag byte-gate.
+  checkSiblingChurn({
+    sidecar: candidateSidecar,
+    skipKeys: newKeySet,
+    packageDirFor: (slug) => pathInside(root, "packages", slug),
+    packFn,
+    stagingDir,
+  });
 
   if (candidateNewKeys.length > 0) {
     writeSidecar(candidateSidecar, candidateSidecarPath);
@@ -939,12 +964,36 @@ export async function runPublishStep(
   // Reconcile the tarball sidecar over EVERY current-workspace version (append-only; packs only the
   // versions missing a row). This backfills the catalog that was ledgered before the sidecar existed
   // — else a steady-state run packs nothing and every packument returns versions:{} (finding-2).
+  // Snapshot which keys the sidecar already carried BEFORE this run packs anything — mirrors
+  // recordTarballs' own pack condition exactly, so "just (re-)recorded this run" below can't drift
+  // from what recordTarballs actually wrote.
+  const sidecarBefore = readSidecar(sidecarPath).tarballs;
   const tarballsRecorded = recordTarballs(loaded, {
     dryRun: false,
     sidecarPath,
     stagingDir,
     replaceKeys,
     packFn,
+  });
+
+  // Sibling-churn guard (CAISSON-124): run the same repack-and-compare check the synchronize
+  // refresh job runs, but INSIDE this initial dispatch step — a single-shot version PR (created
+  // here, merged with no follow-up push) never fires a synchronize event, so this was previously
+  // the only place the check never ran, and a churned sibling row sailed through to the
+  // publish-time byte gate instead.
+  const justRecordedKeys = new Set(
+    loaded
+      .map(({ manifest }) => `${manifest.id}@${manifest.version}`)
+      .filter(
+        (key) => sidecarBefore[key] === undefined || replaceKeys.has(key),
+      ),
+  );
+  checkSiblingChurn({
+    sidecar: readSidecar(sidecarPath),
+    skipKeys: justRecordedKeys,
+    packageDirFor: (slug) => join(packagesDir, slug),
+    packFn: packFn ?? defaultPack,
+    stagingDir: stagingDir ?? STAGING_DIR,
   });
 
   return {

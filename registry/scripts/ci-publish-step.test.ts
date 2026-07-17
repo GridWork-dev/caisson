@@ -678,6 +678,95 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
     }
   });
 
+  test("CAISSON-124: sibling-churn guard fires INSIDE the dispatch --mode version step (no synchronize event needed)", async () => {
+    // Proves the fix: a single-shot version PR (workflow_dispatch, no follow-up push) never
+    // triggers the pull_request_target synchronize refresh job, so this check must run here too.
+    const dir = tmpDir("mode-version-sibling-churn");
+    const pkgDir = join(dir, "packages");
+    const authDir = join(pkgDir, "auth");
+    const demoDir = join(pkgDir, "demo");
+    mkdirSync(authDir, { recursive: true });
+    mkdirSync(demoDir, { recursive: true });
+    writeFileSync(
+      join(authDir, "package.json"),
+      JSON.stringify({ name: "@caisson/auth", version: "1.0.0" }),
+    );
+    writeFileSync(
+      join(authDir, "manifest.ts"),
+      'export default { id: "@caisson/auth", version: "1.0.0" };\n',
+    );
+    writeFileSync(
+      join(demoDir, "package.json"),
+      JSON.stringify({ name: "@caisson/demo", version: "1.0.0" }),
+    );
+    // demo@1.0.0 is NEW this run, so it goes through appendLedger's full ModuleManifest validation
+    // (an already-ledgered sibling like auth below never re-validates its manifest).
+    writeFileSync(
+      join(demoDir, "manifest.ts"),
+      [
+        "export default {",
+        '  id: "@caisson/demo",',
+        '  version: "1.0.0",',
+        '  kind: "base",',
+        '  tier: "oss",',
+        '  license: "Apache-2.0",',
+        '  description: "demo",',
+        "};",
+        "",
+      ].join("\n"),
+    );
+    const ledgerPath = join(dir, "ledger.jsonl");
+    const indexPath = join(dir, "index.json");
+    const sidecarPath = join(dir, "tarballs.json");
+    // auth@1.0.0 was already published + sidecar'd by an EARLIER release; unchanged this run.
+    const authEntry = {
+      id: "@caisson/auth",
+      version: "1.0.0",
+      manifest: mkManifest("@caisson/auth", "1.0.0"),
+      publishedAt: "2026-07-01T00:00:00.000Z",
+      gateAttestation: "prior-run@deadbee",
+    };
+    writeFileSync(ledgerPath, `${JSON.stringify(authEntry)}\n`);
+    writeFileSync(indexPath, buildIndexFromLedgerFile(ledgerPath));
+    writeSidecar(
+      {
+        tarballs: {
+          "@caisson/auth@1.0.0": computeTarballDist(
+            Buffer.from("original-auth-bytes"),
+            "auth",
+            "1.0.0",
+          ),
+        },
+      },
+      sidecarPath,
+    );
+
+    try {
+      // This run's changeset consume ledgers demo@1.0.0 (new) but not auth — auth's OWN version is
+      // unchanged, yet its resolved workspace:* dependency shifted, so its repack no longer
+      // reproduces the recorded row. Simulated by returning different bytes for auth than recorded.
+      await expect(
+        runPublishStep({
+          runId: "ci-mode-version",
+          sha: "abc1234def",
+          publishedAt: "2026-07-17T00:00:00.000Z",
+          dryRun: false,
+          ledgerPath,
+          indexPath,
+          packagesDir: pkgDir,
+          sidecarPath,
+          stagingDir: dir,
+          packFn: (_packageDir, slug) =>
+            slug === "auth"
+              ? Buffer.from("churned-auth-bytes")
+              : Buffer.from("demo-bytes"),
+        }),
+      ).rejects.toThrow(/no longer re-pack to their advertised bytes/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   test("trusted version refresh rewrites only appended-ledger rows from candidate package bytes", () => {
     const dir = tmpDir("trusted-version-refresh");
     const candidateRoot = join(dir, "candidate");
