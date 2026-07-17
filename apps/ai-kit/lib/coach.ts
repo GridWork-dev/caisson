@@ -63,6 +63,10 @@ export async function coachConfigureLane(
     registerTool({ name, handler }) {
       handlers.set(name, handler);
     },
+    registerPrompt() {
+      // The demo drives the four tools directly; the setup_ai_config prompt only renders
+      // guidance text and registers on the live MCP seam, not this in-process walkthrough.
+    },
   };
   registerCoachTools(registrar, { env: presenceEnvPort(envPresent), writer });
 
