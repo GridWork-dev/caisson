@@ -92,6 +92,32 @@ describe("sanitizeAdrCitations", () => {
     expect(after).toContain("\n  Never build a path");
     expect(after).not.toContain("ADR-0021");
   });
+
+  // Regression: two whole-document cleanup passes (empty-parens strip, space-before-punct strip)
+  // used to run after the citation removal and silently corrupted any real `()` call or
+  // space-before-punctuation ANYWHERE in the text — not just next to a stripped citation. Fixed by
+  // moving the cleanup inside the removal callback, scoped to only the removal site.
+  test("leaves real API syntax with empty parens intact when nowhere near a citation", () => {
+    const cases = [
+      "Validate every input with `z.object().strict()` at the boundary.",
+      "IDs come from `crypto.randomUUID()`, never Math.random.",
+      "Call `initObservability()` once at process start.",
+      "The teardown hook runs `cleanup()` before exit.",
+      "The lint pass covers every source file (not .tsx files, those are excluded).",
+    ];
+    for (const text of cases) {
+      expect(sanitizeAdrCitations(text)).toBe(text);
+    }
+  });
+
+  test("strips a real ADR citation while leaving unrelated () syntax elsewhere in the same text intact", () => {
+    const text =
+      "Debit before spend (ADR-0049/0007). Validate with `z.object().strict()` and `crypto.randomUUID()` for ids.";
+    const after = sanitizeAdrCitations(text);
+    expect(after).toBe(
+      "Debit before spend. Validate with `z.object().strict()` and `crypto.randomUUID()` for ids.",
+    );
+  });
 });
 
 describe("resolveCatalogSpec", () => {
@@ -161,5 +187,25 @@ describe("sanitizeSourceComments", () => {
   test("never mistakes a https:// URL string for a line comment", () => {
     const code = 'const DOCS_URL = "https://caisson.sh/docs"; // stable link';
     expect(sanitizeSourceComments(code)).toBe(code);
+  });
+
+  test("never mistakes a string literal's raw comment-lookalike text for a real comment", () => {
+    // Regression: a string literal containing `*/`/`/*` used to be misread as spanning into the
+    // next real block comment, and the empty-parens cleanup then stripped `()` out of real code
+    // caught in that false span (found live in packages/cli/src/demo.test.ts's hostile-string
+    // fixture: `expect(stub).toBeDefined();` was corrupted to `expect(stub).toBeDefined;`).
+    const code = [
+      "const injected = '*/ throw new Error(\"INJECTED\"); /*';",
+      "/**",
+      " * Debit before spend (ADR-0049).",
+      " */",
+      "expect(stub).toBeDefined();",
+    ].join("\n");
+    const after = sanitizeSourceComments(code);
+    expect(after).toContain(
+      "const injected = '*/ throw new Error(\"INJECTED\"); /*';",
+    );
+    expect(after).toContain(" * Debit before spend.");
+    expect(after).toContain("expect(stub).toBeDefined();");
   });
 });

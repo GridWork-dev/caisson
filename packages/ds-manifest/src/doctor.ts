@@ -75,10 +75,15 @@ function lineAt(contents: string, index: number): number {
 // A named import of a kit component whose PascalCase name is not a known component — a typo or a
 // component the agent hallucinated. Components are exported from the `@caisson/ui/components` subpath
 // (the root `@caisson/ui` barrel is tokens+theme only, ADR-0099), so the specifier must match both
-// the real buyer path and the bare barrel. ponytail: heuristic — only PascalCase specifiers are
-// treated as components, so a helper/hook/type import (`cn`, `useTheme`) is never falsely flagged.
+// the real buyer path and the bare barrel. The optional `-sh` scope covers the public mirror's
+// renamed `@caisson-sh/ui` — this same source ships as both `@caisson/ds-manifest` (private,
+// buyers import `@caisson/ui`) and `@caisson-sh/ds-manifest` (mirror, buyers import
+// `@caisson-sh/ui`); a real commercial buyer never has a `-sh` specifier, so this is a strict
+// widening with no behavior change for the private product. ponytail: heuristic — only PascalCase
+// specifiers are treated as components, so a helper/hook/type import (`cn`, `useTheme`) is never
+// falsely flagged.
 const UI_IMPORT_RE =
-  /import\s+(?:type\s+)?(?:\w+\s*,\s*)?\{([\s\S]*?)\}\s*from\s*["']@caisson\/ui(?:\/components)?["']/g;
+  /import\s+(?:type\s+)?(?:\w+\s*,\s*)?\{([\s\S]*?)\}\s*from\s*["']@caisson(?<scope>-sh)?\/ui(?:\/components)?["']/g;
 
 function checkImports(
   file: DoctorFile,
@@ -96,19 +101,21 @@ function checkImports(
         ?.trim();
       if (name === undefined || name === "") continue;
       if (/^[A-Z]/.test(name) && !known.has(name)) {
+        const scope = `@caisson${m.groups?.scope ?? ""}/ui`;
         out.push({
           rule: "unknown-component",
           severity: "error",
           file: file.path,
           loc: { line },
-          message: `"${name}" is imported from @caisson/ui but is not a component in the manifest.`,
+          message: `"${name}" is imported from ${scope} but is not a component in the manifest.`,
         });
       }
     }
   }
 }
 
-const PKG_UI_DEP_RE = /"@caisson\/ui"\s*:\s*"([^"]+)"/;
+// Optional `-sh` scope: same mirror-vs-private rationale as UI_IMPORT_RE above.
+const PKG_UI_DEP_RE = /"@caisson(?<scope>-sh)?\/ui"\s*:\s*"([^"]+)"/;
 const SEMVER_RE = /(\d+\.\d+\.\d+)/;
 
 // A buyer package.json pinning a different `@caisson/ui` than the manifest was generated for — the
@@ -121,15 +128,16 @@ function checkVersionSkew(
   if (!file.path.endsWith("package.json")) return;
   const dep = PKG_UI_DEP_RE.exec(file.contents);
   if (dep === null) return;
-  const declared = SEMVER_RE.exec(dep[1] ?? "")?.[1];
+  const declared = SEMVER_RE.exec(dep[2] ?? "")?.[1];
   if (declared === undefined || declared === manifest.generatedFor.version)
     return;
+  const scope = `@caisson${dep.groups?.scope ?? ""}/ui`;
   out.push({
     rule: "version-skew",
     severity: "warning",
     file: file.path,
     loc: { line: lineAt(file.contents, dep.index) },
-    message: `package.json pins @caisson/ui ${declared}, but this manifest was generated for ${manifest.generatedFor.version} — regenerate or align the versions.`,
+    message: `package.json pins ${scope} ${declared}, but this manifest was generated for ${manifest.generatedFor.version} — regenerate or align the versions.`,
   });
 }
 
