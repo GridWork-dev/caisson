@@ -24,8 +24,13 @@ import {
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
+  ErrorCode,
+  ListResourcesRequestSchema,
   ListToolsRequestSchema,
+  McpError,
+  ReadResourceRequestSchema,
   type CallToolResult,
+  type ReadResourceResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { toErrorResponse } from "@caisson/kernel";
@@ -62,7 +67,9 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
   // handler is ever wired, so an unauthenticated caller cannot reach list_tools OR tools/call.
   const session = mcp.authenticate(deps.bearer);
 
-  const options: ServerOptions = { capabilities: { tools: {} } };
+  // `resources: {}` is declared alongside `tools: {}` so the SDK advertises the resource capability
+  // AND admits the resources/* request handlers below.
+  const options: ServerOptions = { capabilities: { tools: {}, resources: {} } };
   const server = new Server(
     { name: "caisson-buyer-mcp", version: SERVER_VERSION },
     options,
@@ -96,6 +103,46 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
           isError: true,
           content: [{ type: "text", text: JSON.stringify(body) }],
         };
+      }
+    },
+  );
+
+  // Resource wiring, the read-side mirror of the tool wiring above. Only the resources
+  // this caller is entitled to are listed; an unentitled or unknown URI collapses to the same 404.
+  server.setRequestHandler(ListResourcesRequestSchema, () => ({
+    resources: mcp.listResources(session).map((reg) => ({
+      uri: reg.uri,
+      name: reg.name,
+      description: reg.description,
+      mimeType: reg.mimeType,
+    })),
+  }));
+
+  server.setRequestHandler(
+    ReadResourceRequestSchema,
+    async (request): Promise<ReadResourceResult> => {
+      try {
+        const result = await mcp.readResource(session, request.params.uri);
+        return {
+          contents: [
+            {
+              uri: request.params.uri,
+              mimeType: "application/json",
+              text: JSON.stringify(result),
+            },
+          ],
+        };
+      } catch (err) {
+        // resources/read has no `isError` result arm (unlike tools/call), so a failure surfaces as
+        // a JSON-RPC error carrying the SAME client-safe envelope in `data` (`toErrorResponse`,
+        // ADR-0019). An unentitled URI and an unknown URI both collapse to the identical not_found
+        // envelope (the invisible-resource contract) — never distinguishable.
+        const { body } = toErrorResponse(err);
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          body.error.message,
+          body.error,
+        );
       }
     },
   );

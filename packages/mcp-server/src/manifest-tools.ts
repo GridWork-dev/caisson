@@ -56,6 +56,17 @@ export interface ManifestToolRegistrar {
     audit: { logArgs: boolean };
     handler: (ctx: { args: unknown }) => Promise<unknown>;
   }): void;
+  /** The resource-registration half of the seam. `McpServer` is structurally
+   *  assignable to this — a resource handler needs neither session nor args here (the seam gates
+   *  entitlement; these read handlers are pure over the manifest). */
+  registerResource(registration: {
+    uri: string;
+    name: string;
+    description: string;
+    mimeType: string;
+    requiredEntitlement: string | null;
+    handler: () => Promise<unknown>;
+  }): void;
 }
 
 export interface ManifestToolsOptions {
@@ -199,6 +210,44 @@ export function registerManifestTools(
         const { name } = parseStrict(describeArgs, args);
         return describeComponent(proManifest, name);
       },
+    });
+  }
+
+  // --- Design-system RESOURCES: an additional protocol front over the SAME pure read
+  //     functions the tools use — one data layer, two fronts. Few stable URIs, not one-per-component
+  //     dynamic ones. Base resources are open to every authenticated buyer; the pro roster rides the
+  //     same runtime entitlement gate as `describe_pro_component`. ---
+
+  server.registerResource({
+    uri: "caisson://design-system/components",
+    name: "Design-system components",
+    description:
+      "The open @caisson/ui component roster (names, summaries, typed variant props) as JSON.",
+    mimeType: "application/json",
+    requiredEntitlement: null,
+    handler: async () => listComponents(options.baseManifest),
+  });
+
+  server.registerResource({
+    uri: "caisson://design-system/tokens",
+    name: "Design-system tokens",
+    description:
+      "The @caisson/ui design tokens (themes, functional colours, fonts) as JSON for agent theming.",
+    mimeType: "application/json",
+    requiredEntitlement: null,
+    handler: async () => getTokens(options.tokens),
+  });
+
+  if (options.proManifest !== undefined) {
+    const proManifest = options.proManifest;
+    server.registerResource({
+      uri: "caisson://design-system/pro-components",
+      name: "Pro design-system components",
+      description:
+        "The @caisson/ui-pro component roster as JSON. Entitlement-gated — invisible to callers without the pro tier.",
+      mimeType: "application/json",
+      requiredEntitlement: proEntitlement,
+      handler: async () => listComponents(proManifest),
     });
   }
 }
