@@ -548,3 +548,121 @@ describe("ADR-0257/0270 bundle vocabulary through the server gate", () => {
     ).rejects.toBeInstanceOf(EntitlementError);
   });
 });
+
+// --- Prompts: the prompt-side mirror of the tool/resource registries. Drives
+//     registerPrompt/listPrompts/getPrompt directly (no transport). ---
+describe("prompt registry (registerPrompt / listPrompts / getPrompt)", () => {
+  test("integrate_module is a base prompt visible to every authenticated buyer", () => {
+    expect(server.listPrompts(session).map((p) => p.name)).toContain(
+      "integrate_module",
+    );
+  });
+
+  test("integrate_module renders a describe_module -> generate recipe for a known module", async () => {
+    const out = await server.getPrompt(session, "integrate_module", {
+      module_id: "@caisson/auth",
+      project_name: "shop",
+    });
+    expect(out.messages).toHaveLength(1);
+    const text = out.messages[0]?.content.text ?? "";
+    expect(text).toContain("describe_module");
+    expect(text).toContain("generate");
+    expect(text).toContain("@caisson/auth");
+    expect(text).toContain("shop");
+  });
+
+  test("integrate_module rejects a module the registry does not know (400, never recommends it)", async () => {
+    await expect(
+      server.getPrompt(session, "integrate_module", {
+        module_id: "@caisson/does-not-exist",
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  test("an unknown prompt name is a NotFoundError", async () => {
+    await expect(
+      server.getPrompt(session, "no_such_prompt", {}),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  test("an unentitled prompt is the SAME NotFoundError as an unknown one (invisible)", async () => {
+    server.registerPrompt({
+      name: "edition_only_prompt",
+      requiredEntitlement: "ai-kit",
+      description: "Edition-gated prompt fixture.",
+      version: "1.0.0",
+      arguments: [],
+      handler: async () => ({
+        messages: [{ role: "user", content: { type: "text", text: "x" } }],
+      }),
+    });
+    // session owns compliance/auth/billing, NOT ai-kit → invisible.
+    expect(server.listPrompts(session).map((p) => p.name)).not.toContain(
+      "edition_only_prompt",
+    );
+    const gated = await server
+      .getPrompt(session, "edition_only_prompt", {})
+      .catch((e: unknown) => e);
+    const unknown = await server
+      .getPrompt(session, "totally_unknown", {})
+      .catch((e: unknown) => e);
+    expect(gated).toBeInstanceOf(NotFoundError);
+    expect((gated as NotFoundError).code).toBe((unknown as NotFoundError).code);
+  });
+
+  test("a duplicate prompt name is a fail-closed ValidationError", () => {
+    expect(() =>
+      server.registerPrompt({
+        name: "integrate_module",
+        requiredEntitlement: null,
+        description: "Colliding prompt.",
+        version: "1.0.0",
+        arguments: [],
+        handler: async () => ({
+          messages: [{ role: "user", content: { type: "text", text: "x" } }],
+        }),
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("a malformed manifest is rejected at registration time", () => {
+    expect(() =>
+      server.registerPrompt({
+        name: "Bad-Name",
+        requiredEntitlement: null,
+        description: "Bad prompt name.",
+        version: "1.0.0",
+        arguments: [],
+        handler: async () => ({
+          messages: [{ role: "user", content: { type: "text", text: "x" } }],
+        }),
+      }),
+    ).toThrow(ValidationError);
+    expect(() =>
+      server.registerPrompt({
+        name: "ok_name",
+        requiredEntitlement: null,
+        description: "Bad version.",
+        version: "not-semver",
+        arguments: [],
+        handler: async () => ({
+          messages: [{ role: "user", content: { type: "text", text: "x" } }],
+        }),
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("getPrompt strict-validates args: missing-required and unknown-extra both rejected", async () => {
+    // integrate_module requires module_id; omit it.
+    await expect(
+      server.getPrompt(session, "integrate_module", { project_name: "x" }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    // an undeclared extra key is rejected (strict).
+    await expect(
+      server.getPrompt(session, "integrate_module", {
+        module_id: "@caisson/auth",
+        bogus: "y",
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+});

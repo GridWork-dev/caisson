@@ -25,11 +25,14 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   CallToolRequestSchema,
   ErrorCode,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
   McpError,
   ReadResourceRequestSchema,
   type CallToolResult,
+  type GetPromptResult,
   type ReadResourceResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
@@ -67,9 +70,11 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
   // handler is ever wired, so an unauthenticated caller cannot reach list_tools OR tools/call.
   const session = mcp.authenticate(deps.bearer);
 
-  // `resources: {}` is declared alongside `tools: {}` so the SDK advertises the resource capability
-  // AND admits the resources/* request handlers below.
-  const options: ServerOptions = { capabilities: { tools: {}, resources: {} } };
+  // `resources: {}` and `prompts: {}` are declared alongside `tools: {}` so the SDK advertises those
+  // capabilities AND admits the resources/* and prompts/* request handlers below.
+  const options: ServerOptions = {
+    capabilities: { tools: {}, resources: {}, prompts: {} },
+  };
   const server = new Server(
     { name: "caisson-buyer-mcp", version: SERVER_VERSION },
     options,
@@ -137,6 +142,51 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
         // a JSON-RPC error carrying the SAME client-safe envelope in `data` (`toErrorResponse`,
         // ADR-0019). An unentitled URI and an unknown URI both collapse to the identical not_found
         // envelope (the invisible-resource contract) — never distinguishable.
+        const { body } = toErrorResponse(err);
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          body.error.message,
+          body.error,
+        );
+      }
+    },
+  );
+
+  // Prompt wiring, the prompt-side mirror of the tool/resource wiring above. Only the prompts this
+  // caller is entitled to are listed; an unentitled or unknown name collapses to the same 404.
+  server.setRequestHandler(ListPromptsRequestSchema, () => ({
+    prompts: mcp.listPrompts(session).map((reg) => ({
+      name: reg.name,
+      description: reg.description,
+      ...(reg.arguments.length > 0
+        ? {
+            arguments: reg.arguments.map((a) => ({
+              name: a.name,
+              ...(a.description !== undefined
+                ? { description: a.description }
+                : {}),
+              required: a.required,
+            })),
+          }
+        : {}),
+    })),
+  }));
+
+  server.setRequestHandler(
+    GetPromptRequestSchema,
+    async (request): Promise<GetPromptResult> => {
+      try {
+        // The core returns readonly PromptResult; the SDK result type is mutable-structural — cast
+        // at this boundary (the shape is identical; no runtime copy needed).
+        return (await mcp.getPrompt(
+          session,
+          request.params.name,
+          request.params.arguments ?? {},
+        )) as GetPromptResult;
+      } catch (err) {
+        // prompts/get has no `isError` result arm (like resources/read) — surface the same
+        // client-safe envelope (`toErrorResponse`, ADR-0019) as a JSON-RPC error; an unentitled and
+        // an unknown name both collapse to the identical not_found envelope (invisible-prompt).
         const { body } = toErrorResponse(err);
         throw new McpError(
           ErrorCode.InvalidParams,

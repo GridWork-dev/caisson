@@ -111,6 +111,25 @@ describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
     expect(seen).toEqual(["acct_a", "acct_a", "acct_a"]);
   });
 
+  test("getPrompt awaits the hook once, AFTER the invisible-404 (a not-found prompt burns no throttle)", async () => {
+    const seen: string[] = [];
+    const hook: RateLimitHook = async (accountId) => {
+      seen.push(accountId);
+    };
+    const server = createMcpServer({ ...baseOptions(), checkRateLimit: hook });
+    const session = server.authenticate(TOKEN);
+    // A known base module → integrate_module resolves and the hook fires exactly once.
+    await server.getPrompt(session, "integrate_module", {
+      module_id: "@caisson/auth",
+    });
+    expect(seen).toEqual(["acct_a"]);
+    // An unknown prompt is a 404 BEFORE the hook — no throttle consumed.
+    await expect(
+      server.getPrompt(session, "no_such_prompt", {}),
+    ).rejects.toBeInstanceOf(NotFoundError);
+    expect(seen).toEqual(["acct_a"]);
+  });
+
   test("an unknown tool is still a 404 — the hook does not mask the not-found path", async () => {
     let hookCalls = 0;
     const hook: RateLimitHook = async () => {

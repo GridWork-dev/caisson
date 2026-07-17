@@ -58,6 +58,26 @@ export interface CoachToolRegistrar {
     audit: { logArgs: boolean };
     handler: (ctx: { args: unknown }) => Promise<unknown>;
   }): void;
+  /** The prompt-registration half of the seam. `McpServer` is structurally assignable to this. A
+   *  coach prompt handler needs no session (the seam gates entitlement) — just the validated args. */
+  registerPrompt(registration: {
+    name: string;
+    requiredEntitlement: string | null;
+    description: string;
+    version: string;
+    arguments: readonly {
+      name: string;
+      description?: string;
+      required: boolean;
+    }[];
+    handler: (ctx: { args: Readonly<Record<string, string>> }) => Promise<{
+      description?: string;
+      messages: readonly {
+        role: "user" | "assistant";
+        content: { type: "text"; text: string };
+      }[];
+    }>;
+  }): void;
 }
 
 export interface CoachOptions {
@@ -275,6 +295,84 @@ export function registerCoachTools(
       const checked = keyNames(parsed);
       const missing = checked.filter((name) => !options.env.has(name));
       return { valid: missing.length === 0, checked, missing };
+    },
+  });
+
+  // setup_ai_config: the guided walkthrough that ties the four coach tools together. Gated on the
+  // SAME ai-kit entitlement (the seam re-checks it timing-safe per get) and invisible (404) to a
+  // non-entitled buyer. Args carry provider IDENTIFIERS only — never a key — so the prompt stays
+  // secrets-safe by construction like the tools it narrates.
+  server.registerPrompt({
+    name: "setup_ai_config",
+    requiredEntitlement,
+    description:
+      "Guided walkthrough: inspect env, propose a validated forge.config, verify keys, then write it.",
+    version: "1.0.0",
+    arguments: [
+      {
+        name: "providers",
+        description: "Comma-separated provider ids, e.g. anthropic,openai.",
+        required: true,
+      },
+      {
+        name: "default_provider",
+        description:
+          "Which provider is the default lane (defaults to the first).",
+        required: false,
+      },
+    ],
+    handler: async ({ args }) => {
+      // Parse the comma-list ourselves — a caller-visible ValidationError beats a malformed lane
+      // surfacing three tool-calls later. Each segment must be a non-empty provider slug.
+      // `providers` is a required arg → always present; the `?? ""` only satisfies
+      // noUncheckedIndexedAccess and collapses cleanly to the empty→ValidationError path below.
+      const providers = (args.providers ?? "")
+        .split(",")
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
+      const firstProvider = providers[0];
+      if (firstProvider === undefined) {
+        throw new ValidationError("providers must name at least one provider", {
+          providers: args.providers ?? "",
+        });
+      }
+      for (const p of providers) {
+        if (!/^[a-z][a-z0-9-]*$/.test(p)) {
+          throw new ValidationError("Malformed provider id", { provider: p });
+        }
+      }
+      const defaultProvider = args.default_provider ?? firstProvider;
+      if (!providers.includes(defaultProvider)) {
+        throw new ValidationError("default_provider must be one of providers", {
+          default_provider: defaultProvider,
+        });
+      }
+      const envNames = [
+        ...new Set(providers.map((p) => defaultKeyEnv(p))),
+      ].sort();
+      const lanes = providers.map((p) => ({
+        name: p,
+        provider: p,
+        model: `<model-for-${p}>`,
+        apiKeyEnv: defaultKeyEnv(p),
+      }));
+      const text = [
+        `Set up AI config for providers: ${providers.join(", ")} (default lane: ${defaultProvider}).`,
+        "",
+        "1. Check which provider keys are already set (presence only) — call inspect_env:",
+        JSON.stringify({ names: envNames }, null, 2),
+        "",
+        "2. Propose a validated forge.config — call propose_ai_config (replace each <model-for-*> placeholder with a real model id):",
+        JSON.stringify({ defaultLane: defaultProvider, lanes }, null, 2),
+        "",
+        "3. Verify every referenced key NAME is present — call validate_setup with the settings propose_ai_config returned.",
+        "",
+        "4. Once valid and approved, persist it — call write_forge_config with those settings and approve:true. Without approve:true it only previews; a real key value is never written or logged.",
+      ].join("\n");
+      return {
+        description: `AI setup walkthrough (${providers.join(", ")})`,
+        messages: [{ role: "user", content: { type: "text", text } }],
+      };
     },
   });
 }
