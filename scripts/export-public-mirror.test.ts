@@ -162,4 +162,24 @@ describe("sanitizeSourceComments", () => {
     const code = 'const DOCS_URL = "https://caisson.sh/docs"; // stable link';
     expect(sanitizeSourceComments(code)).toBe(code);
   });
+
+  test("never mistakes a string literal's raw comment-lookalike text for a real comment", () => {
+    // Regression: a string literal containing `*/`/`/*` used to be misread as spanning into the
+    // next real block comment, and the empty-parens cleanup then stripped `()` out of real code
+    // caught in that false span (found live in packages/cli/src/demo.test.ts's hostile-string
+    // fixture: `expect(stub).toBeDefined();` was corrupted to `expect(stub).toBeDefined;`).
+    const code = [
+      "const injected = '*/ throw new Error(\"INJECTED\"); /*';",
+      "/**",
+      " * Debit before spend (ADR-0049).",
+      " */",
+      "expect(stub).toBeDefined();",
+    ].join("\n");
+    const after = sanitizeSourceComments(code);
+    expect(after).toContain(
+      "const injected = '*/ throw new Error(\"INJECTED\"); /*';",
+    );
+    expect(after).toContain(" * Debit before spend.");
+    expect(after).toContain("expect(stub).toBeDefined();");
+  });
 });

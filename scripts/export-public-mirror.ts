@@ -81,6 +81,10 @@ const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
     "reads the repo-root registry/index.json fixture, which does not ship in the mirror (W1 sandbox finding L-A1: ENOENT failed the mirror's own `bun run test`)",
   ],
   [
+    "packages/cli/scripts/bundle-registry-index.test.ts",
+    "reads the repo-root registry/index.json (via SOURCE_INDEX), which does not ship in the mirror — same class as the registry-schema entitlement-expansion exclusion above (ENOENT fails the mirror's own `bun test`)",
+  ],
+  [
     "packages/registry-schema/src/bundle-manifests.test.ts",
     "dynamically imports the COMMERCIAL bundle packages' manifest.ts files (provenance, ai-production, local-first, agentic-dev, everything) — none exist in the open mirror (W1 sandbox finding L-A2)",
   ],
@@ -419,12 +423,23 @@ export function sanitizeAdrCitations(text: string): string {
 
 /** Applies `sanitizeAdrCitations` only inside `//` line comments and `/* … *\/` block comments —
  *  code outside a comment is never touched. The `(?<!:)` guard keeps a `https://`-style URL
- *  string from being misread as the start of a line comment. ponytail: a regex comment scan, not
- *  a real parser — sufficient since ADR citations only ever appear in prose comments here.
- *  Exported for unit testing. */
+ *  string from being misread as the start of a line comment. String/template literals are matched
+ *  and passed through UNCHANGED before comments are considered — without this, a string literal
+ *  containing a raw `/*`/`*\/`-lookalike sequence (e.g. a comment-injection test fixture) gets
+ *  misread as spanning into the next real comment closer, and the blanket empty-parens cleanup in
+ *  `sanitizeAdrCitations` then strips `()` out of real code caught in that false span (found via
+ *  the mirror's own `bunx eslint .`: `packages/cli/src/demo.test.ts`'s hostile-string fixture
+ *  turned `expect(stub).toBeDefined();` into `expect(stub).toBeDefined;` — a silently no-op
+ *  assertion). ponytail: a regex scan, not a real parser — string-literal-aware is the floor this
+ *  bug needs; nested `${}` template-literal expressions are not specially handled (none in this
+ *  corpus today). Exported for unit testing. */
 export function sanitizeSourceComments(code: string): string {
-  return code.replace(/\/\*[\s\S]*?\*\/|(?<!:)\/\/[^\n]*/g, (comment) =>
-    sanitizeAdrCitations(comment),
+  return code.replace(
+    /`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\/\*[\s\S]*?\*\/|(?<!:)\/\/[^\n]*/g,
+    (token) =>
+      token.startsWith("/*") || token.startsWith("//")
+        ? sanitizeAdrCitations(token)
+        : token,
   );
 }
 
@@ -733,6 +748,13 @@ function main(): void {
       "@types/bun": "^1.1.14",
       turbo: "~2.5.6",
       typescript: "^5.6.3",
+      // Root eslint.config.js (shipped below) imports @caisson-sh/eslint-config — a `workspace:*`
+      // reference resolves as a per-consumer symlink, not a root hoist, so root needs its own
+      // entry for `bunx eslint .` to resolve it. eslint itself is that config's peerDependency;
+      // pin it here too so the mirror's CI lint leg doesn't rely on bunx's on-the-fly install.
+      "@caisson-sh/eslint-config": "workspace:*",
+      eslint: "^10.0.0",
+      prettier: "^3.3.3",
     },
     packageManager: "bun@1.3.14",
   };
@@ -817,6 +839,8 @@ function main(): void {
   cpSync(join(assets, "README.md"), join(outDir, "README.md"));
   cpSync(join(assets, "CONTRIBUTING.md"), join(outDir, "CONTRIBUTING.md"));
   cpSync(join(assets, "TRADEMARK.md"), join(outDir, "TRADEMARK.md"));
+  cpSync(join(assets, "eslint.config.js"), join(outDir, "eslint.config.js"));
+  cpSync(join(assets, ".prettierignore"), join(outDir, ".prettierignore"));
   mkdirSync(join(outDir, ".github/workflows"), { recursive: true });
   cpSync(join(assets, "ci.yml"), join(outDir, ".github/workflows/ci.yml"));
   cpSync(
@@ -856,6 +880,19 @@ function main(): void {
       null,
       2,
     ) + "\n",
+  );
+
+  // Reformat the exported tree with the SOURCE repo's own installed prettier (`.prettierignore`
+  // above exempts golden fixtures + the drift-guarded tokens.css, same as the source repo's own
+  // ignore file). The npm scope rename (`@caisson/` → `@caisson-sh/`, 3 chars longer) sometimes
+  // pushes an import specifier that fit the source file's print width over it — reformatting once,
+  // here, keeps the mirror `prettier --check` clean regardless of how any future rename or export
+  // transform happens to interact with a source file's pre-existing wrap width, rather than chasing
+  // individual source files by hand every time the scope shifts a line length.
+  execFileSync(
+    resolve(repoRoot, "node_modules/.bin/prettier"),
+    ["--write", "--log-level", "warn", "."],
+    { cwd: outDir, stdio: "inherit" },
   );
 
   // --- entitlement-token gate: nothing shaped like a license token ships unless dev-signed ---
