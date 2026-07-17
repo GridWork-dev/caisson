@@ -2731,9 +2731,9 @@
     },
     "@caisson/platform-reads@0.2.1": {
       "key": "platform-reads/platform-reads-0.2.1.tgz",
-      "shasum": "20011d15b4bd0c2dd6ed90923d27a9c8c52cc813",
-      "integrity": "sha512-+WOhUrPnI+D+E1YMg8fF0fMvxgf2MkLhJzVYd9N6BYQ9ERMzU0Y2CK9JZ/kzLePSVqK9kxkQo6RDlBH+bCgvIw==",
-      "size": 11369,
+      "shasum": "ad8e9b8d74472e926ce6cb14429311939ee8f9cc",
+      "integrity": "sha512-ABqGBhsO90Pf9wBC8fcpSC4hrqTlLSjVb0zHVp8zUCBuJ/MPpcN9MSDg8tt27W1eirqLAu/Q92zRK8XTyRaneQ==",
+      "size": 11368,
       "meta": {
         "dependencies": {
           "@caisson/tenancy-rls": "0.5.2"
