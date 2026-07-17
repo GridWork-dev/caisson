@@ -32,6 +32,8 @@ import {
   parseStrict,
   strictObject,
 } from "@caisson/kernel";
+import type { TrajectoryStore } from "@caisson/agent-trajectory";
+import { buildTrajectoryEvents } from "./trajectory.ts";
 
 // ---------------------------------------------------------------------------
 // Provider config (ADR-0186 F2) — provider-agnostic { binary, baseUrlEnv, authEnv, model }.
@@ -358,6 +360,12 @@ export interface RunReport {
 export interface AgentRunnerConfig {
   /** Caller-supplied run-registry root (ADR-0186 decoupling seam — no home-dir default). */
   readonly runsRoot: string;
+  /**
+   * OPTIONAL trajectory recorder (the `@caisson/agent-trajectory` store port). When present,
+   * `record(runId)` emits an append-only trajectory for the run; when absent the runner behaves
+   * byte-identically to today (observation is strictly opt-in and off the hot path).
+   */
+  readonly recorder?: TrajectoryStore;
 }
 
 export interface AgentRunner {
@@ -367,6 +375,13 @@ export interface AgentRunner {
   kill(runId: string): { runId: string; status: RunStatusValue };
   list(): RunMeta[];
   finalReport(runId: string): RunReport;
+  /**
+   * Emit the run's trajectory into the configured recorder (PLAN T3). No-op when no recorder is
+   * configured. Intended to run once after the run has finished — the transcript is the source of
+   * truth, so replaying it is deterministic. Append-only: re-recording a run whose events already
+   * landed rejects at the store (fresh event ids ⇒ a rewrite conflict, not a silent overwrite).
+   */
+  record(runId: string): Promise<void>;
 }
 
 /** Whole-token argv-template substitution — `{task}`/`{model}` must be the ENTIRE array element. */
@@ -565,6 +580,16 @@ export function createAgentRunner(config: AgentRunnerConfig): AgentRunner {
         startedAt: st.meta.startedAt,
         ...(st.meta.endedAt !== undefined ? { endedAt: st.meta.endedAt } : {}),
       };
+    },
+
+    async record(runId: string): Promise<void> {
+      const recorder = config.recorder;
+      if (recorder === undefined) return; // uninstrumented — no trajectory to emit
+      const meta = readMeta(dir, runId);
+      const events = parseJsonl(meta.jsonlPath);
+      for (const event of buildTrajectoryEvents(meta, events)) {
+        await recorder.append(event);
+      }
     },
   };
 }

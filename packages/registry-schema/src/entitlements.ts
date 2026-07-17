@@ -80,12 +80,16 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the SAME change that first indexes its package — its bare slug then resolves through the
  * ordinary indexed-module branch below.
  *
- * Currently reserved: NONE. `ui-pro` graduated the documented way 2026-07-07 — removed here in the
- * same change that first indexed `@caisson/ui-pro@0.1.0` and repinned the everything members map off
- * the 0.0.0 sentinel (everything@0.2.2); its bare slug now resolves through the ordinary
- * indexed-module branch below. (`alerting` and `retention-runner` graduated the same way earlier.)
- * The mechanism stays: the next sold-before-published SKU adds its slug here in the same commit that
- * creates its purchase row.
+ * Currently reserved: nothing. `agent-trajectory` graduated 2026-07-17 — the slice-1 changeset
+ * consume auto-ledgered/indexed `@caisson/agent-trajectory@0.2.0`, so per the rule above its
+ * reservation left in the change that acknowledged that first index entry. Index presence is NOT
+ * sellability: it stays `sellable: false`, carries no PRICE_AUTHORITY row, and joins no bundle
+ * members map until the ADR-0351 rider-3 publish gate at the end of the runtime program, so no
+ * purchase path reaches it. `ui-pro` graduated the documented way 2026-07-07 — removed in the same
+ * change that first indexed `@caisson/ui-pro@0.1.0` and repinned the everything members map off the
+ * 0.0.0 sentinel (everything@0.2.2). (`alerting` and `retention-runner` graduated the same way
+ * earlier.) The mechanism stays: the next sold-or-reserved-before-published SKU adds its slug here
+ * in the same commit that creates its purchase row (or its package).
  */
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
   new Set<string>([]);

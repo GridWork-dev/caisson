@@ -393,9 +393,17 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
     expect(served).not.toContain("@caisson/audit-worm"); // no edition-sibling bleed
   });
 
-  test("the everything bundle still delivers every module in the real index", async () => {
+  test("the everything bundle delivers every module in the real index except the rider-3 unpublished set", async () => {
+    // Indexed-but-unpublished modules (ADR-0351 rider 3) sit in the index with sellable:false and
+    // deliberately join NO bundle members map — not even everything — until their publish gate.
+    // Explicit allowlist on purpose: a future module missing from everything's members that is NOT
+    // named here still fails, so the completeness guard survives the exception.
+    const RIDER3_UNPUBLISHED = new Set(["@caisson/agent-trajectory"]);
     const served = await ids(realHandlerFor(["everything"])(req("/")));
-    expect(served.sort()).toEqual(realIndex.modules.map((m) => m.id).sort());
+    const expected = realIndex.modules
+      .map((m) => m.id)
+      .filter((id) => !RIDER3_UNPUBLISHED.has(id));
+    expect(served.sort()).toEqual(expected.sort());
   });
 
   test("a purged legacy 'bundle' id over the real index degrades to the anonymous free floor (ADR-0270)", async () => {

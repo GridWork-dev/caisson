@@ -1,5 +1,25 @@
 # @caisson/registry
 
+## 0.0.10
+
+### Patch Changes
+
+- 5a09b01: Re-record the platform-reads tarball sidecar row from a pristine checkout after the consume runner
+  recorded bytes the committed tree cannot reproduce, and tighten the everything-bundle delivery
+  invariant to every sellable module — an indexed but unsellable module deliberately rides outside
+  every bundle until its publish gate.
+- Updated dependencies [5a09b01]
+  - @caisson/registry-schema@0.5.2
+  - @caisson/pricebook@0.5.4
+
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [3f05e1e]
+  - @caisson/registry-schema@0.5.1
+  - @caisson/pricebook@0.5.3
+
 ## 0.0.8
 
 ### Patch Changes

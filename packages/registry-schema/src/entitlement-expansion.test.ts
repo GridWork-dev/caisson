@@ -112,11 +112,13 @@ describe("per-module bare-slug purchase-id form", () => {
     expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
   });
 
-  test("RESERVED_MODULE_ENTITLEMENT_IDS is empty — ui-pro graduated at its first publish", () => {
-    // ui-pro published 2026-07-07 (@caisson/ui-pro@0.1.0 indexed; everything@0.2.2 repins it off
-    // the 0.0.0 sentinel) and left the reservation in the SAME change — the documented graduation
-    // path alerting/retention-runner took (ADR-0150/0151). The mechanism stays for the next
-    // sold-before-published SKU.
+  test("RESERVED_MODULE_ENTITLEMENT_IDS is empty — agent-trajectory graduated at its first index entry", () => {
+    // agent-trajectory graduated 2026-07-17 (auto-ledgered/indexed @ 0.2.0 by the slice-1 consume) —
+    // the documented path ui-pro (2026-07-07) and alerting/retention-runner took. Index presence is
+    // not sellability: it stays sellable:false, priced nowhere, and in no bundle members map until
+    // the ADR-0351 rider-3 publish gate. The mechanism stays for the next
+    // sold-or-reserved-before-published SKU; its fail-soft branch is covered by the temp-root
+    // fixture suite in tooling/standards-gate catalog-checks.
     expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual([]);
   });
 
