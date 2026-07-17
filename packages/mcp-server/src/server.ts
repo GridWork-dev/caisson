@@ -106,6 +106,29 @@ export interface ToolRegistration {
   readonly handler: (ctx: ToolHandlerContext) => Promise<unknown>;
 }
 
+/** What a resource handler receives: the authenticated caller's session. Resources are
+ *  addressed by URI, not args — a read carries no payload beyond the session it is served under. */
+export interface ResourceHandlerContext {
+  readonly session: McpSession;
+}
+
+/**
+ * One registered readable resource, the resource-side mirror of `ToolRegistration`.
+ * `requiredEntitlement` is the edition slug a caller must own to *see* and *read* this resource;
+ * `null` marks a base resource visible to every authenticated buyer. The entitlement is re-validated
+ * timing-safe on every read through the SAME `isEntitled` gate the tools use. `uri`/`name`/
+ * `description`/`mimeType` are the declarative manifest fields, validated by `resourceManifestSchema`
+ * at registration time (mirroring `toolManifestSchema`), not read time.
+ */
+export interface ResourceRegistration {
+  readonly uri: string;
+  readonly name: string;
+  readonly description: string;
+  readonly mimeType: string;
+  readonly requiredEntitlement: string | null;
+  readonly handler: (ctx: ResourceHandlerContext) => Promise<unknown>;
+}
+
 /**
  * A deliberately-deprecated tool (ADR-0216). Distinct from "never existed": a retired name answers
  * `RetiredToolError` (410) with `reason`/`retiredAt`, so a buyer integration gets an actionable
@@ -190,6 +213,20 @@ export interface McpServer {
     tool: string,
     args: unknown,
   ): Promise<unknown>;
+  /**
+   * Register a readable resource. Mirrors `registerTool`: the manifest fields
+   * (`uri`/`name`/`description`/`mimeType`) are validated at registration time, then a duplicate URI
+   * is a fail-closed `ValidationError` — a resource can never silently shadow a peer.
+   */
+  registerResource(registration: ResourceRegistration): void;
+  /** The resources VISIBLE to this caller: base resources + only the entitled edition ones. */
+  listResources(session: McpSession): readonly ResourceRegistration[];
+  /**
+   * Read one resource by URI. Enforces the SAME invisible-entitlement contract as `handleToolCall`
+   * (an unregistered URI and a URI the caller is not entitled to are the identical 404) and awaits
+   * `options.checkRateLimit` before serving.
+   */
+  readResource(session: McpSession, uri: string): Promise<unknown>;
 }
 
 // The `modules` array ceiling (b719aff8). Enforced TWICE: an O(1) raw-length pre-guard in the
@@ -208,6 +245,19 @@ const toolManifestSchema = strictObject({
   description: z.string().min(1).max(280),
   version: z.string().regex(/^\d+\.\d+\.\d+$/, "must be a semver x.y.z"),
   audit: strictObject({ logArgs: z.boolean() }),
+});
+
+// The declarative per-resource manifest, the mirror of `toolManifestSchema`: validated
+// in `registerResource()` before the duplicate-URI guard, so a bad manifest is a registration-time
+// `ValidationError`. The `uri` is a stable `caisson://<path>` scheme (documented in the README) — a
+// registration-time shape guard on code-supplied URIs, not an untrusted-input gate.
+const resourceManifestSchema = strictObject({
+  uri: z
+    .string()
+    .regex(/^caisson:\/\/[a-z0-9/-]+$/, "must be a caisson:// URI"),
+  name: z.string().min(1).max(120),
+  description: z.string().min(1).max(280),
+  mimeType: z.string().min(1).max(120),
 });
 
 // `.max(128)` = the repo module-id bound (PurchasedIds in registry-schema); `name` is a module slug.
@@ -246,6 +296,10 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   // Append-only retirement ledger (ADR-0216): per-server-instance, same seeding pattern as
   // `registry` — no new persistence surface. A name is exactly one of active/retired/unknown.
   const retiredTools = new Map<string, RetiredTool>();
+  // The parallel RESOURCE registry, the read-side mirror of `registry`. Same
+  // per-instance seeding, same entitlement gate (`isEntitled` below), same invisible-not-found
+  // contract. No retirement ledger — resources have no deprecation lifecycle in this slice.
+  const resources = new Map<string, ResourceRegistration>();
 
   /**
    * Constant-time entitlement gate. A base tool (`required === null`) is always entitled; an
@@ -342,6 +396,54 @@ export function createMcpServer(options: McpServerOptions): McpServer {
       await options.checkRateLimit(session.accountId);
     }
     return registration.handler({ session, args });
+  }
+
+  // --- Resources: the read-side mirror of the tool registry above, reusing the same
+  //     `isEntitled` gate and `options.checkRateLimit` hook. ---
+
+  function registerResource(registration: ResourceRegistration): void {
+    // Manifest validation mirrors `registerTool`: a malformed manifest is a registration-time
+    // `ValidationError`, checked BEFORE the duplicate-URI guard.
+    parseStrict(resourceManifestSchema, {
+      uri: registration.uri,
+      name: registration.name,
+      description: registration.description,
+      mimeType: registration.mimeType,
+    });
+    if (resources.has(registration.uri)) {
+      throw new ValidationError(
+        `Resource already registered: ${registration.uri}`,
+        { uri: registration.uri },
+      );
+    }
+    resources.set(registration.uri, registration);
+  }
+
+  function listResources(session: McpSession): readonly ResourceRegistration[] {
+    return [...resources.values()]
+      .filter((reg) => isEntitled(session, reg.requiredEntitlement))
+      .sort((a, b) => a.uri.localeCompare(b.uri));
+  }
+
+  async function readResource(
+    session: McpSession,
+    uri: string,
+  ): Promise<unknown> {
+    const registration = resources.get(uri);
+    // Invisible-resource contract (mirrors `handleToolCall`): an unregistered URI AND a URI the
+    // caller is not entitled to are BOTH a 404 — an entitlement-gated resource never leaks that it
+    // exists. Checked BEFORE the rate-limit gate, so a 404 never consumes a caller's throttle.
+    if (
+      registration === undefined ||
+      !isEntitled(session, registration.requiredEntitlement)
+    ) {
+      throw new NotFoundError(`Unknown resource: ${uri}`);
+    }
+    // Same abuse-throttle gate as `handleToolCall` (ADR-0112): awaited before serving any read.
+    if (options.checkRateLimit !== undefined) {
+      await options.checkRateLimit(session.accountId);
+    }
+    return registration.handler({ session });
   }
 
   // --- Base tools (ADR-0008): visible to every authenticated buyer, no edition entitlement. ---
@@ -448,16 +550,35 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     },
   });
 
+  // --- Base resources: visible to every authenticated buyer, no edition entitlement.
+
+  // The full registry catalog as a resource (operator lock 2026-07-17: expose the FULL index
+  // as-held — discovery is the point; prices/tiers are already public marketing data). The Bearer
+  // gate still fronts it; `requiredEntitlement: null` means any authenticated buyer, not anonymous.
+  registerResource({
+    uri: "caisson://registry/index",
+    name: "Caisson registry index",
+    description:
+      "The full Caisson module registry catalog (modules, versions, tiers, prices) as JSON.",
+    mimeType: "application/json",
+    requiredEntitlement: null,
+    handler: async () => options.index,
+  });
+
   const server: McpServer = {
     authenticate,
     registerTool,
     retireTool,
     listTools,
     handleToolCall,
+    registerResource,
+    listResources,
+    readResource,
   };
   // ADR-0076 wire: the coach is just an edition registering its tools through the seam.
   if (options.coach) registerCoachTools(server, options.coach);
-  // ADR-0330/0345 wire: the design-system tools register through the same seam, same one-way flow.
+  // ADR-0330/0345 wire: the design-system tools (and their resource front) register
+  // through the same seam, same one-way flow.
   if (options.dsManifest) registerManifestTools(server, options.dsManifest);
   return server;
 }

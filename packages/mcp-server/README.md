@@ -11,6 +11,28 @@ writing (the same debit-before-spend seam as the CLI). Ships the setup-coach too
 buyer from "no AI config" to a validated `forge.config` without ever handling a secret value —
 see `AGENTS.md` for the tool contract.
 
+## Resources
+
+Alongside its tools, the authenticated buyer MCP exposes **readable resources** on both transports
+(stdio + Streamable-HTTP). Resources are the read-side mirror of the tool registry: entitlement-scoped
+the same way (a resource a caller is not entitled to is invisible — `resources/list` omits it and
+`resources/read` returns the same not-found an unknown URI gets), rate-limited through the same
+ADR-0112 hook, and served under the same timing-safe Bearer gate.
+
+URIs follow a stable `caisson://<namespace>/<name>` scheme:
+
+| URI                                      | Entitlement                    | Content                                                                                                                     |
+| ---------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `caisson://registry/index`               | none (any authenticated buyer) | The full module registry catalog (modules, versions, tiers, prices) as JSON.                                                |
+| `caisson://design-system/components`     | none                           | The open `@caisson/ui` component roster as JSON (present only when the host wires `dsManifest`).                            |
+| `caisson://design-system/tokens`         | none                           | The `@caisson/ui` design tokens (themes, functional colours, fonts) as JSON.                                                |
+| `caisson://design-system/pro-components` | `@caisson/ui-pro`              | The `@caisson/ui-pro` component roster as JSON (present only when a pro manifest is wired; invisible without the pro tier). |
+
+The design-system resources are an additional protocol front over the SAME pure read functions the
+`list_components` / `get_tokens` tools use — one data layer, two fronts. The registry-index resource
+exposes the full catalog as-held: discovery is the point, and prices/tiers are already public
+marketing data.
+
 ## Local design-system discovery MCP
 
 `discovery-bin.ts` is a separate, **local stdio-only** MCP a coding agent runs to discover the open

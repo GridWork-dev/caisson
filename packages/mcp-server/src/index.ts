@@ -10,6 +10,8 @@ export type {
   ToolRegistration,
   RateLimitHook,
   RetiredTool,
+  ResourceRegistration,
+  ResourceHandlerContext,
 } from "./server.ts";
 export { registerCoachTools, presenceEnvPort } from "./coach.ts";
 export type {
