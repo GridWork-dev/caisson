@@ -1,5 +1,62 @@
 # @caisson/audit-worm
 
+## 2.0.0
+
+### Minor Changes
+
+- 1867fa3: External anchoring v1 (TSA `trusted-timestamped` leg): the `TrustedTimestampLog` port with a
+  deterministic `StubTrustedTimestampLog` and a live RFC-3161 `TsaAnchorLog` (real DER via pkijs), a
+  durable `anchor_outbox` state machine (persist-before-egress; response loss resolves to
+  `needs_reconcile`, never a blind resubmit), and the per-tenant checkpoint handler + `@caisson/jobs`
+  task (`ANCHOR_CHECKPOINT_TASK`). Adds pinned `pkijs`/`asn1js` and a `@caisson/jobs` down-edge.
+  `packages/jobs` gains zero anchoring knowledge (CR-16). The audit-worm minor bump needs the
+  Compliance bundle members-fold republish (`packages/compliance/manifest.ts` pins
+  `@caisson/audit-worm`).
+- e5e4311: Per-row proof reads on the WORM-anchored audit chain.
+  `AuditChainStore.getRowProof(accountId, seq)` returns a single row plus the per-length WORM anchor
+  minted when it was the tip (`anchor(seq+1)`), so `anchor(seq+1).tipHash === row.hash` is a genuine
+  per-row commitment check. One targeted row read and one WORM GET per inspected row (fork f), tenant
+  scoped through `withTenant`. `seq` is bounded server-side to `0 <= seq < length` (rejects the
+  truncation-probe boundary), and a missing anchor fails closed to `unverifiable`, never a fabricated
+  pass.
+
+  Signed anchors: a new dedicated `Ed25519AnchorSigner` (loaded from `CAISSON_ANCHOR_SIGNING_KEY`,
+  domain-separated from the license issuer key) signs each anchor's canonical core bytes at mint when a
+  signer is injected into `AuditChainStore`. `sig`+`keyId` are stored additively alongside the core, so
+  legacy unsigned anchors stay byte-identical and structurally valid — not a chain-format break.
+  `verifyAnchorSignature(anchor, publicKey)` checks a signed anchor against a pinned public key so
+  tamper-evidence is independent of the row-serving API.
+
+  Per-row verification UI (`./ui`): a new `ProofPanel` + `useRowVerify` hook re-run the pure kernel
+  checks CLIENT-side against the fetched proof bundle (never the receipt's `checks`, M3) and fail to
+  `unverifiable` when WebCrypto is unavailable (L4); a shared `RowStateChip` maps the six states onto the
+  frozen `@caisson/ui` StatusChip tones. `ChainViewer` gains optional per-row six-state chips, an
+  expand-to-ProofPanel that fetches the row's proof on open (fork f), and an anchor-provenance header —
+  all backward compatible (absent props render the prior chain-level-only view). Adds an optional
+  `@caisson/ui-pro` peer dependency for the redacted-payload viewer.
+
+  Signed-anchor copy pass: `ProofPanel` now renders a seal caption under
+  the chip using the SPEC's exact copy-law strings — "Verified against write-once anchor
+  (signature-checked)" for `verified`, "Anchor confirmed — original not disclosed" for the redacted
+  state, and no seal line for any other state. Never "impossible to tamper" or an unqualified
+  "independently verified" claim.
+
+### Patch Changes
+
+- ca44db5: Add a read accessor to the audit chain store that returns a tenant's current anchor bytes and length, so scheduled external timestamping can read the latest anchor without reaching into the store's internals.
+- Updated dependencies [e5e4311]
+- Updated dependencies [e5e4311]
+- Updated dependencies [59e1365]
+- Updated dependencies [59e1365]
+- Updated dependencies [809592d]
+- Updated dependencies [809592d]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/ui-pro@0.3.0
+  - @caisson/ui@0.6.1
+  - @caisson/jobs@0.5.1
+  - @caisson/tenancy-rls@0.5.2
+
 ## 1.0.0
 
 ### Minor Changes

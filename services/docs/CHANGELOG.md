@@ -1,5 +1,18 @@
 # @caisson/service-docs
 
+## 0.0.8
+
+### Patch Changes
+
+- 7e823a9: Renovate dependency pins (exact versions) across the app and service workspaces; no code change.
+- Updated dependencies [e5e4311]
+- Updated dependencies [d1b4afa]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/observability@0.3.1
+  - @caisson/local-store@1.0.1
+  - @caisson/rate-limit@0.1.4
+
 ## 0.0.7
 
 ### Patch Changes

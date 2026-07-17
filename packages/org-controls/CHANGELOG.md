@@ -1,5 +1,17 @@
 # @caisson/org-controls
 
+## 0.3.1
+
+### Patch Changes
+
+- baaa4fc: Dependency safe-batch bump: ai-kit's Next.js pin moves onto the shared catalog version and org-controls upgrades to Clerk backend v3; no behavior change.
+- Updated dependencies [a8696cf]
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/auth@0.3.3
+  - @caisson/kernel@0.5.0
+  - @caisson/tenancy-rls@0.5.2
+
 ## 0.3.0
 
 ### Minor Changes

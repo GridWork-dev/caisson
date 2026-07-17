@@ -1,5 +1,16 @@
 # @caisson/billing-orchestration
 
+## 0.3.1
+
+### Patch Changes
+
+- a8696cf: Remove redundant assignments and retain original errors when wrapping failures under the ESLint 10 recommended rules.
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/billing@0.6.1
+  - @caisson/tenancy-rls@0.5.2
+
 ## 0.3.0
 
 ### Minor Changes

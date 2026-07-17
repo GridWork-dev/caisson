@@ -1,5 +1,53 @@
 # @caisson/ui-pro
 
+## 0.3.0
+
+### Minor Changes
+
+- e5e4311: The redaction predicate re-homes to the open base: `@caisson/ui-pro`'s `lib/redact` now re-exports
+  `REDACTED`, `DEFAULT_REDACT_KEYS`, `isRedactedKey`, and `redactValue` from `@caisson/kernel/redact`.
+  Every `../lib/redact` import stays stable, and the proof-bundle endpoint redacts server-side
+  from the same predicate. Adds a `@caisson/kernel` dependency.
+
+  `AuditTimeline` closes its anchor-blindness gap (T-U4): a new optional `statuses` prop takes
+  anchor-derived per-row six-state statuses (computed by the caller from real WORM anchors — no new
+  dependency) and badges from them, so a truncated or wholesale-rewritten chain reads `tampered` /
+  `unverifiable`, not "verified". When no statuses are given the presentation-side link check still runs
+  but its badge is honestly relabelled "Link only" — a link check proves neighbour consistency, never the
+  anchor commitment.
+
+  Signed-anchor copy pass: the anchor-aware `verified` badge's aria-label
+  now reads "Verified against write-once anchor (signature-checked)", matching the SPEC's locked seal
+  copy. Never "impossible to tamper" or an unqualified "independently verified" claim.
+
+  Fix: `build` now copies `src/components/*.css` into `dist/components/` — the plain `tsc` build never
+  copied these, so any consumer resolving `@caisson/ui-pro`'s "default"/dist condition (e.g. a Next.js
+  app bundling `PayloadViewer`, reached transitively via `audit-worm/ui`'s new dependency) hit a
+  `Module not found: ./payload-viewer.css` build failure. Workspace consumers using Bun's "bun" source
+  condition were unaffected; this only broke the compiled dist path.
+
+### Patch Changes
+
+- 59e1365: Static a11y lint floor (Kickoff T task 14): eslint-plugin-jsx-a11y recommended wired into the
+  shared eslint config, scoped to JSX surfaces. Severities ride at warn for this wave because the
+  remaining findings live in packages/ui and apps/site (frozen, owned by the parallel design
+  session); the reconcile session fixes those and deletes the warn mapping so the plugin's own
+  error severities gate the repo. ui-pro's nine findings are fixed here: labels bound to their
+  Selects via useId, redundant tbody role dropped, menu/tree/option containers made
+  programmatically focusable, treeitems carry aria-selected, and keyboard handling moved onto the
+  focused tree rows.
+- 59e1365: TypeScript bridge to 6.0.3 (Kickoff T task 5, re-derived version map): the workspace catalog moves
+  from ^5.7.3 to ^6.0.3 (the stable JS-compiler transition release; 7.x is the native compiler whose
+  stable API waits for 7.1). standards-gate pins its own typescript to ^6.0.3 explicitly so a future
+  catalog move to 7.x cannot strand its ts.createScanner usage. brand, ui-pro, and demo-registry gain
+  a css.d.ts ambient declaration for the side-effect CSS imports TS 6.0 now checks (TS2882).
+- Updated dependencies [e5e4311]
+- Updated dependencies [809592d]
+- Updated dependencies [809592d]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/ui@0.6.1
+
 ## 0.2.0
 
 ### Minor Changes

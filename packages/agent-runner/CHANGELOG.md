@@ -1,5 +1,13 @@
 # @caisson/agent-runner
 
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+
 ## 0.1.5
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @caisson/standards-gate
 
+## 0.0.8
+
+### Patch Changes
+
+- 59e1365: TypeScript bridge to 6.0.3 (Kickoff T task 5, re-derived version map): the workspace catalog moves
+  from ^5.7.3 to ^6.0.3 (the stable JS-compiler transition release; 7.x is the native compiler whose
+  stable API waits for 7.1). standards-gate pins its own typescript to ^6.0.3 explicitly so a future
+  catalog move to 7.x cannot strand its ts.createScanner usage. brand, ui-pro, and demo-registry gain
+  a css.d.ts ambient declaration for the side-effect CSS imports TS 6.0 now checks (TS2882).
+  - @caisson/tenancy-rls@0.5.2
+  - @caisson/registry-schema@0.5.0
+
 ## 0.0.7
 
 ### Patch Changes
