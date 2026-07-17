@@ -808,6 +808,122 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  // -------------------------------------------------------------------------
+  // Sibling-churn guard: an UNCHANGED sibling (same version this PR) whose bytes no longer reproduce
+  // means a workspace:* dep's resolved version moved since the row was recorded — caught at
+  // version-PR time, not hours later at the publish/tag byte-gate.
+  // -------------------------------------------------------------------------
+
+  /** A trusted-refresh fixture: a single historical `@caisson/auth@1.0.0` row (present in both base
+   *  and candidate sidecars, no new keys), with packages/auth on disk at `diskVersion`. */
+  function mkSiblingFixture(label: string, diskVersion: string) {
+    const dir = tmpDir(label);
+    const candidateRoot = join(dir, "candidate");
+    const authDir = join(candidateRoot, "packages", "auth");
+    const registryDir = join(candidateRoot, "registry");
+    mkdirSync(authDir, { recursive: true });
+    mkdirSync(registryDir, { recursive: true });
+    const baseLedgerPath = join(dir, "base-ledger.jsonl");
+    const baseSidecarPath = join(dir, "base-tarballs.json");
+    const key = "@caisson/auth@1.0.0";
+    const originalBytes = tgzWithPackageJson({
+      name: "@caisson/auth",
+      version: "1.0.0",
+      dependencies: { "@caisson/kernel": "1.0.0" },
+    });
+    const recorded = computeTarballDist(originalBytes, "auth", "1.0.0");
+    const entry = {
+      id: "@caisson/auth",
+      version: "1.0.0",
+      manifest: mkManifest("@caisson/auth", "1.0.0"),
+      publishedAt: "2026-07-01T00:00:00.000Z",
+      gateAttestation: "base@deadbee",
+    };
+    const ledger = `${JSON.stringify(entry)}\n`;
+    writeFileSync(baseLedgerPath, ledger);
+    writeFileSync(join(registryDir, "ledger.jsonl"), ledger);
+    writeSidecar({ tarballs: { [key]: recorded } }, baseSidecarPath);
+    writeSidecar(
+      { tarballs: { [key]: recorded } },
+      join(registryDir, "tarballs.json"),
+    );
+    writeFileSync(
+      join(authDir, "package.json"),
+      JSON.stringify({ name: "@caisson/auth", version: diskVersion }),
+    );
+    return {
+      dir,
+      candidateRoot,
+      baseLedgerPath,
+      baseSidecarPath,
+      originalBytes,
+    };
+  }
+
+  test("sibling-churn: an unchanged sibling whose repack no longer matches ⇒ throws with the fix", () => {
+    const f = mkSiblingFixture("sibling-churn-mismatch", "1.0.0");
+    // The workspace dep now resolves differently → repack yields different bytes than the row.
+    const churned = tgzWithPackageJson({
+      name: "@caisson/auth",
+      version: "1.0.0",
+      dependencies: { "@caisson/kernel": "1.1.0" },
+    });
+    try {
+      expect(() =>
+        refreshVersionCandidateTarballs({
+          candidateRoot: f.candidateRoot,
+          baseLedgerPath: f.baseLedgerPath,
+          baseSidecarPath: f.baseSidecarPath,
+          stagingDir: join(f.dir, "staging"),
+          packFn: () => churned,
+        }),
+      ).toThrow(/no longer re-pack to their advertised bytes/);
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("sibling-churn: an unchanged sibling that still reproduces ⇒ no throw", () => {
+    const f = mkSiblingFixture("sibling-churn-ok", "1.0.0");
+    try {
+      const refreshed = refreshVersionCandidateTarballs({
+        candidateRoot: f.candidateRoot,
+        baseLedgerPath: f.baseLedgerPath,
+        baseSidecarPath: f.baseSidecarPath,
+        stagingDir: join(f.dir, "staging"),
+        packFn: () => f.originalBytes, // reproduces the recorded row exactly
+      });
+      expect(refreshed).toBe(0); // no new keys, and no sibling drift
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("sibling-churn: a superseded historical version (disk bumped past the row) is skipped, no false positive", () => {
+    const f = mkSiblingFixture("sibling-churn-superseded", "2.0.0");
+    let packed = 0;
+    try {
+      const refreshed = refreshVersionCandidateTarballs({
+        candidateRoot: f.candidateRoot,
+        baseLedgerPath: f.baseLedgerPath,
+        baseSidecarPath: f.baseSidecarPath,
+        stagingDir: join(f.dir, "staging"),
+        // Would mismatch the 1.0.0 row if ever invoked — proves the version-mismatch key is skipped.
+        packFn: () => {
+          packed++;
+          return tgzWithPackageJson({
+            name: "@caisson/auth",
+            version: "9.9.9",
+          });
+        },
+      });
+      expect(refreshed).toBe(0);
+      expect(packed).toBe(0); // the 1.0.0 row is never re-packed (disk is 2.0.0)
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
