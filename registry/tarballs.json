@@ -149,6 +149,18 @@
         }
       }
     },
+    "@caisson/agent-kernel@0.6.0": {
+      "key": "agent-kernel/agent-kernel-0.6.0.tgz",
+      "shasum": "d7a5b916fed6d082c26965b725b833516d47253c",
+      "integrity": "sha512-uqfoKA1l6Bo+K9v8Ankk9Lzb0jA5srRo3WxnVyNzd4j6ZzPwWQF/kAusVl30ZHlXwzw47VXIdup+4bnxDtNUmQ==",
+      "size": 33076,
+      "meta": {
+        "dependencies": {
+          "@caisson/kernel": "0.5.0",
+          "zod": "^4.0.0"
+        }
+      }
+    },
     "@caisson/agent-runner@0.1.2": {
       "key": "agent-runner/agent-runner-0.1.2.tgz",
       "shasum": "ed5c5b781d061b86ca045fb016a4248ce25fad54",
@@ -2500,6 +2512,23 @@
       "shasum": "d3d3b126645b51a63110bf0b88b94549fb24745b",
       "integrity": "sha512-e7UO9vhW1ITDchpFYeiMGWky3Wmexley/SprADtDA2IdurRob5aXY9DW30stEe5zEsnSkzNKzlsBjNTh9R5q9g==",
       "size": 54590,
+      "meta": {
+        "dependencies": {
+          "@caisson/ai-config": "0.3.2",
+          "@caisson/ds-manifest": "0.2.0",
+          "@caisson/kernel": "0.5.0",
+          "@caisson/registry-schema": "0.5.2",
+          "@caisson/ui": "0.6.1",
+          "@modelcontextprotocol/sdk": "^1.29.0",
+          "zod": "^4.0.0"
+        }
+      }
+    },
+    "@caisson/mcp-server@0.5.0": {
+      "key": "mcp-server/mcp-server-0.5.0.tgz",
+      "shasum": "77e7f94005b595734017c235c065c59cbc943838",
+      "integrity": "sha512-enaY5R/knLrKPoox54J6cpXX7sDAsVQhMnHxzIVYD63UoaOOZALMB1I1S118XsH3eypAmAY89BD9+gWOnr/kpg==",
+      "size": 63718,
       "meta": {
         "dependencies": {
           "@caisson/ai-config": "0.3.2",
