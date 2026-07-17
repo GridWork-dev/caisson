@@ -5,7 +5,12 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from caisson_support_bot.inference import FakeInference, InferenceError, OpenRouterInference
+from caisson_support_bot.inference import (
+    FakeInference,
+    GenerationTelemetry,
+    InferenceError,
+    OpenRouterInference,
+)
 
 from .conftest import make_client
 
@@ -69,3 +74,72 @@ async def test_fake_inference_records_calls_and_returns_canned() -> None:
     out = await fake.generate(system="s", user="u")
     assert out == "canned"
     assert fake.calls == [("s", "u")]
+
+
+# --- $ai_generation telemetry (CAISSON-120 / audit M4) ----------------------------------------------
+
+
+async def test_on_generation_surfaces_usage_on_success() -> None:
+    seen: list[GenerationTelemetry] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": "grounded"}}],
+                "usage": {"prompt_tokens": 812, "completion_tokens": 64, "cost": 0.003},
+            },
+        )
+
+    async def observe(tel: GenerationTelemetry) -> None:
+        seen.append(tel)
+
+    async with make_client(handler) as client:
+        inf = OpenRouterInference(
+            api_key="k", model="anthropic/claude-sonnet-4.6", client=client, on_generation=observe
+        )
+        out = await inf.generate(system="s", user="u")
+
+    assert out == "grounded"
+    assert len(seen) == 1
+    tel = seen[0]
+    assert tel.model == "anthropic/claude-sonnet-4.6"
+    assert tel.status == 200
+    assert tel.input_tokens == 812
+    assert tel.output_tokens == 64
+    assert tel.cost == 0.003
+    assert tel.latency_s >= 0.0
+    assert tel.is_error is False
+    assert tel.error is None
+
+
+async def test_on_generation_reports_error_on_non_200() -> None:
+    seen: list[GenerationTelemetry] = []
+
+    async def observe(tel: GenerationTelemetry) -> None:
+        seen.append(tel)
+
+    async with make_client(lambda req: httpx.Response(429, json={"error": "rate"})) as client:
+        inf = OpenRouterInference(api_key="k", model="m", client=client, on_generation=observe)
+        with pytest.raises(InferenceError):
+            await inf.generate(system="s", user="u")
+
+    assert len(seen) == 1
+    assert seen[0].status == 429
+    assert seen[0].is_error is True
+    assert "429" in (seen[0].error or "")
+
+
+async def test_on_generation_failure_is_fail_soft() -> None:
+    """A throwing observer must never break generation (telemetry is best-effort)."""
+
+    async def boom(tel: GenerationTelemetry) -> None:
+        raise RuntimeError("posthog down")
+
+    async with make_client(
+        lambda req: httpx.Response(200, json={"choices": [{"message": {"content": "ok"}}]})
+    ) as client:
+        inf = OpenRouterInference(api_key="k", model="m", client=client, on_generation=boom)
+        out = await inf.generate(system="s", user="u")  # must not raise
+
+    assert out == "ok"

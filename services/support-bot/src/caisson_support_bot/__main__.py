@@ -37,11 +37,23 @@ async def _run(settings: Settings) -> None:
             client=http,
             default_k=settings.retrieval_k,
         )
+        # Constructed before the inference client so its capture_generation can be wired as the
+        # on_generation observer (CAISSON-120); None (posthog_capture_key unset) ⇒ no $ai_* capture.
+        analytics = (
+            AnswerAnalytics(
+                key=settings.posthog_capture_key,
+                host=settings.posthog_capture_host,
+                client=http,
+            )
+            if settings.posthog_capture_key
+            else None
+        )
         inference = OpenRouterInference(
             api_key=settings.openrouter_api_key,
             model=settings.openrouter_model,
             client=http,
             referer=settings.openrouter_referer,
+            on_generation=analytics.capture_generation if analytics is not None else None,
         )
         pipeline = RagPipeline(
             docs=docs,
@@ -58,15 +70,6 @@ async def _run(settings: Settings) -> None:
             store = PostgresTicketStore(pool)
             await store.ensure_schema()
 
-        analytics = (
-            AnswerAnalytics(
-                key=settings.posthog_capture_key,
-                host=settings.posthog_capture_host,
-                client=http,
-            )
-            if settings.posthog_capture_key
-            else None
-        )
         bot = make_bot(
             settings=settings,
             pipeline=pipeline,
