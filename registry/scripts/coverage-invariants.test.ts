@@ -58,8 +58,14 @@ describe("registry coverage gates (CAISSON-85/86)", () => {
     // Every grandfathered entry must be a CURRENT violation: the moment a backfill heals one (or a
     // delist retires it), its entry goes stale and this test forces it OUT of the file in the same
     // PR — the file monotonically shrinks, and a healed slot can never sit as slack to be swapped
-    // for a fresh violation later. Additions are separately capped at the 2026-07-12 enumeration
-    // counts; growing a frozen data file past review is the loud diff the required check exists for.
+    // for a fresh violation later. Additions are separately capped at the enumeration counts;
+    // growing a frozen data file past review is the loud diff the required check exists for.
+    // Re-enumerated once 2026-07-17 when the ADR-0359 prune delisted 93 rows: rowlessVersions held
+    // steady at 88 (untouched); danglingMemberPins retired the stale everything@0.2.0/0.2.1/0.2.2
+    // pinner rows (those pinning versions were themselves version-delisted, so the served index no
+    // longer carries them to check) and grew to enumerate the latest bundle manifests' member pins
+    // the prune exposed as dead edges (those manifests' pinned old versions were among the pruned
+    // rows) — the caps below re-freeze at the new counts.
     const currentRowless = new Set(
       versionCoverageViolations(index, sidecarKeys, new Set()),
     );
@@ -73,7 +79,7 @@ describe("registry coverage gates (CAISSON-85/86)", () => {
       expect(currentDangling.has(line)).toBe(true);
     }
     expect(grandfather.rowlessVersions.length).toBeLessThanOrEqual(88);
-    expect(grandfather.danglingMemberPins.length).toBeLessThanOrEqual(44);
+    expect(grandfather.danglingMemberPins.length).toBeLessThanOrEqual(114);
   });
 
   test("checkRegistryCoverage over the committed files reports ok", () => {
