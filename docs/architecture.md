@@ -54,7 +54,12 @@ to `ai-config`+`ai-kit` (ADR-0011).
   tools riding the existing ADR-0216 `registerTool` seam (`list_components`/`describe_component`/
   `get_tokens` free; `check_usage`/`describe_pro_component` entitlement-gated, `ds-doctor` sold
   independent of any edition). `packages/cli`'s second `caisson` bin (`describe`/`doctor`) is a
-  thin client of the same manifest + MCP.
+  thin client of the same manifest + MCP. The buyer MCP also serves a parallel **resources**
+  surface (ADR-0355): `resources/list`+`resources/read` over `caisson://<ns>/<name>` URIs —
+  design-system components/tokens (+ entitlement-gated pro-components) as a second front over
+  the same pure functions, plus a full-catalog `caisson://registry/index` for any authenticated
+  bearer; same entitlement gating, rate-limit hook, and invisible-not-found contract as the
+  tools.
 - **Money seam** — `services/license` mounts the Paddle webhook (`app.ts`), sole MoR, at
   `license.caisson.sh` (DNS-only/grey in `infra/terraform/main.tf` — never Cloudflare-proxied, so no
   WAF/rate-limit rule can ever evaluate against it, by construction not by path-expression). Credits

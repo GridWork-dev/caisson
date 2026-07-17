@@ -294,7 +294,8 @@ definition-first; the free plan can't enforce protection rules on it yet).
   `workflow_dispatch`. Self-hosted; write scope is one docs file via the ephemeral `GITHUB_TOKEN`.
 - **`support-bot.yml`** — the Python gate for `services/support-bot` (uv/ruff/pyright/pytest), the
   repo's only Python surface. Path-scoped to `services/support-bot/**`; deliberately NOT one of the
-  5 required checks. Runs on the same `caisson-amd64` fleet as the TS gates.
+  5 required checks. Runs on Blacksmith VM-per-job runners like the TS gates (ADR-0326; the
+  `caisson-amd64` scale set was retired 2026-07-13).
 
 **Fleet first-run verification (done on PR#22, the wiring PR).** All `gw-linux-amd64` jobs picked
 up the runner and ran (they SERIALIZE — there is one amd64 runner, one-job-then-reset, so the gate

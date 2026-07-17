@@ -12,7 +12,9 @@ Owner: one agent, whole package (no shared files). Location `packages/agent-traj
 
 1. `manifest.ts` — kind `primitive`, commercial license posture (NOT Apache; NOT added to any
    bundle member map — reserved-id/unpublished per ADR-0351 rider 3). Follow the shape of
-   `packages/tool-exec/manifest.ts`.
+   `packages/tool-exec/manifest.ts`. (UPDATE 2026-07-17: the slug GRADUATED out of
+   `RESERVED_MODULE_ENTITLEMENT_IDS` at the PR #249 consume — indexed at 0.2.0 but
+   unsellable/unpriced/bundle-less until the publish gate, the rider-3 explicit exception.)
 2. `src/schema.ts` — the trajectory contract: event envelope
    `{ eventId (uuid), runId, seq (monotonic int), version (int, start 1), occurredAt (ISO), kind, payload }`
    with kinds: `run.started`, `run.finished`, `step.started`, `step.finished`, `model.call`,

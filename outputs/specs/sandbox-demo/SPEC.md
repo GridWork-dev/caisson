@@ -5,7 +5,7 @@ owner: operator
 
 # SPEC — Pre-purchase interactive sandbox/demo
 
-**Status: LOCKED 2026-07-16 → ADR-0350.** All six forks dispositioned: F1 = (c) server-side
+**Status: SHIPPED 2026-07-17 (PR #254 + the #255 migration renumber; PLAN-gate locks ADR-0352, stress-proven `STRESS-2026-07-17.md`; live-verified at caisson.sh/demo). Originally LOCKED 2026-07-16 → ADR-0350.** All six forks dispositioned: F1 = (c) server-side
 demo-run job · F2 = NO, (d) excerpts bundle WITH the (c) build (operator override) · F3 =
 lightweight email capture · F4 = fold as a ladder · F5 = hard daily cap auto-disable · F6 =
 build first, independent. Build NOW in a parallel worktree wave; the `create-caisson --demo`

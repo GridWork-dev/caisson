@@ -123,7 +123,7 @@ liveness check) — only the operator Paddle dunning-cancel dashboard check belo
 
 ## Operational — gaps
 
-SigNoz + Grafana OTLP pipeline live; docs/support-bot edge hardening live-verified; admin intel
+Grafana Cloud OTLP pipeline live (SigNoz removed 2026-07-01, ADR-0177); docs/support-bot edge hardening live-verified; admin intel
 daemon (ADR-0286) healthy with its scheduler bug fixed; pg-boss crons armed and DB-verified.
 
 - **P0 (closed 2026-07-11):** Railway Postgres backup/PITR — daily snapshots + proven
