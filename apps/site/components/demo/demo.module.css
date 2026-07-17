@@ -106,7 +106,6 @@
   padding: var(--cs-space-4);
   max-width: 62ch;
   border: 1px solid var(--cs-border);
-  border-left: 3px solid var(--cs-warning);
   border-radius: var(--cs-radius-md);
   background: color-mix(in oklab, var(--cs-warning) 8%, var(--cs-surface-1));
   color: var(--cs-fg);
