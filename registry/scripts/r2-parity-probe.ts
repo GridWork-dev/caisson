@@ -246,6 +246,8 @@ async function main(): Promise<void> {
     process.exit(0);
   }
   const tmpDir = mkdtempSync(join(tmpdir(), "r2-parity-"));
+  // Exit AFTER the finally — process.exit inside the try would skip the tmpDir cleanup.
+  let exitCode: number;
   try {
     const fetched = await fetchAllFromR2(rows, {
       bucket: R2_BUCKET,
@@ -254,10 +256,11 @@ async function main(): Promise<void> {
     });
     const report = computeR2Parity(rows, fetched);
     process.stdout.write(`${renderReport(report)}\n`);
-    process.exit(report.drift ? 1 : 0);
+    exitCode = report.drift ? 1 : 0;
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });
   }
+  process.exit(exitCode);
 }
 
 if (import.meta.main) {
