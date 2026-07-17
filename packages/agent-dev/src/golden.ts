@@ -63,6 +63,19 @@ const EMIT_ARTIFACTS: readonly Artifact[] = [
     compatibility: "Designed for Claude Code (or similar products)",
     metadata: { author: "caisson", channel: "stable" },
     allowedTools: ["Bash(git:*)", "Read"],
+    // Bundled-file maps (ADR-0264 write-gate): references/assets always emit; scripts emit because this
+    // golden runs with `allowScripts: true`. All three fan into both SKILL.md directory targets.
+    references: [
+      {
+        path: "checklist.md",
+        content:
+          "# Review checklist\n\n- diff matches the task\n- tests pass\n",
+      },
+    ],
+    assets: [{ path: "flow.txt", content: "task -> review -> unblock\n" }],
+    scripts: [
+      { path: "run.sh", content: "#!/usr/bin/env bash\necho next-task\n" },
+    ],
   },
   {
     kind: "rule",
@@ -80,6 +93,9 @@ export const EMIT_INPUT: EmitInput = {
     { on: "before:execute", use: "code-reviewer" },
     { on: "before:ship", use: "code-reviewer" },
   ],
+  // Trusted-tier render: scripts emit alongside references/assets (the withheld path is covered in
+  // emitter.test.ts). Pins the bundled-file layout under both SKILL.md directory targets.
+  allowScripts: true,
 };
 
 export const agentDevGolden = defineModuleGolden({
