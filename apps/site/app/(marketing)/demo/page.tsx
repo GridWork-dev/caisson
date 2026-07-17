@@ -9,8 +9,9 @@ import { PreviewPane } from "@/components/demo/preview-pane";
 // T3 seam: the append-only, secret-scanned excerpt manifest (apps/site/lib/demo-excerpts). Rendered
 // read-only; an empty array (manifest not yet landed / flag off) renders the section's graceful state.
 // Export name follows the repo's data-array convention (MODULE_PRICES / STACK_AXES); this is the
-// single T2↔T3 contract point — if T3 names it otherwise, reconcile here.
-import { DEMO_EXCERPTS } from "@/lib/demo-excerpts";
+// single T2↔T3 contract point — T3 landed the manifest at demo-excerpts/manifest.ts (the dir also
+// holds the tools/ scanner's peer types), so this reconciles to the file, not a dir barrel.
+import { DEMO_EXCERPTS } from "@/lib/demo-excerpts/manifest";
 import { breadcrumb, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
 
