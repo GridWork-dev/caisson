@@ -1,6 +1,6 @@
 {
   "name": "@caisson/agent-runner",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

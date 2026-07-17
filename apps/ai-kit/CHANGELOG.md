@@ -1,5 +1,15 @@
 # @caisson/ai-kit-app
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [3f05e1e]
+  - @caisson/ai-kit@0.4.3
+  - @caisson/credits@0.5.2
+  - @caisson/mcp-server@0.3.1
+  - @caisson/ai-meter@1.0.2
+
 ## 0.0.8
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @caisson/agent-dev
 
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies [3f05e1e]
+  - @caisson/agent-runner@0.2.0
+
 ## 0.4.2
 
 ### Patch Changes
