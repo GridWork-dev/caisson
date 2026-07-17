@@ -324,6 +324,33 @@ describe("HTTP transport binding (ADR-0161)", () => {
     ).rejects.toThrow();
   });
 
+  test("capabilities advertise prompts, and prompts/list + get round-trip over HTTP", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    const client = new Client({ name: "http-test-client", version: "0.0.0" });
+    openClients.push(client);
+    await client.connect(bearerTransport(url, TOKEN_A));
+
+    expect(client.getServerCapabilities()?.prompts).toBeDefined();
+
+    const list = await client.listPrompts();
+    expect(list.prompts.map((p) => p.name)).toContain("integrate_module");
+
+    const got = await client.getPrompt({
+      name: "integrate_module",
+      arguments: { module_id: "@caisson/auth" },
+    });
+    expect(got.messages).toHaveLength(1);
+    expect((got.messages[0]?.content as { text: string }).text).toContain(
+      "@caisson/auth",
+    );
+
+    await expect(
+      client.getPrompt({ name: "nope_missing", arguments: {} }),
+    ).rejects.toThrow();
+  });
+
   test("two different bearers get two independent, non-cross-talking sessions", async () => {
     const { server, url } = await listen();
     openServers.push(server);

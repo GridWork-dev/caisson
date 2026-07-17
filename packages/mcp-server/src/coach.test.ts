@@ -331,6 +331,64 @@ describe("validate_setup — fail-closed verdict", () => {
   });
 });
 
+describe("setup_ai_config prompt — entitlement-gated + arg validation", () => {
+  const server = makeServer();
+  const entitled = server.authenticate("tok_acct_b_111111111111");
+  const nonEntitled = server.authenticate("tok_acct_a_000000000000");
+
+  test("visible to an ai-kit buyer, invisible (404) to a non-entitled buyer", async () => {
+    expect(server.listPrompts(entitled).map((p) => p.name)).toContain(
+      "setup_ai_config",
+    );
+    expect(server.listPrompts(nonEntitled).map((p) => p.name)).not.toContain(
+      "setup_ai_config",
+    );
+    await expect(
+      server.getPrompt(nonEntitled, "setup_ai_config", {
+        providers: "anthropic",
+      }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  test("narrates the four coach tools with the derived key NAMES — never a value", async () => {
+    const out = await server.getPrompt(entitled, "setup_ai_config", {
+      providers: "anthropic,openai",
+      default_provider: "openai",
+    });
+    const text = out.messages[0]?.content.text ?? "";
+    expect(text).toContain("inspect_env");
+    expect(text).toContain("propose_ai_config");
+    expect(text).toContain("validate_setup");
+    expect(text).toContain("write_forge_config");
+    expect(text).toContain("ANTHROPIC_API_KEY");
+    expect(text).toContain("OPENAI_API_KEY");
+    expect(text).not.toContain(SECRET);
+  });
+
+  test("rejects a malformed provider id", async () => {
+    await expect(
+      server.getPrompt(entitled, "setup_ai_config", {
+        providers: "anthropic,not a provider!",
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  test("rejects a default_provider that names no listed provider", async () => {
+    await expect(
+      server.getPrompt(entitled, "setup_ai_config", {
+        providers: "anthropic",
+        default_provider: "openai",
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  test("rejects an empty providers list", async () => {
+    await expect(
+      server.getPrompt(entitled, "setup_ai_config", { providers: " , " }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+});
+
 describe("presenceEnvPort adapter", () => {
   test("collapses values to booleans; empty string counts as unset", () => {
     const port = presenceEnvPort({
@@ -349,12 +407,16 @@ describe("presenceEnvPort adapter", () => {
         registerTool: (r) => {
           calls.push(r.name);
         },
+        registerPrompt: (r) => {
+          calls.push(r.name);
+        },
       },
       { env: presenceEnvPort({}), writer: recordingWriter().port },
     );
     expect(calls.sort()).toEqual([
       "inspect_env",
       "propose_ai_config",
+      "setup_ai_config",
       "validate_setup",
       "write_forge_config",
     ]);

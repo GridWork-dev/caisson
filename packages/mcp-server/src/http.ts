@@ -33,11 +33,14 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import {
   CallToolRequestSchema,
   ErrorCode,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
   McpError,
   ReadResourceRequestSchema,
   type CallToolResult,
+  type GetPromptResult,
   type ReadResourceResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
@@ -162,10 +165,12 @@ function buildBoundServer(
   mcp: ReturnType<typeof createMcpServer>,
   session: McpSession,
 ): Server {
-  // `resources: {}` declared alongside `tools: {}` — advertises the capability AND admits the
-  // resources/* handlers. Deliberately duplicated from `stdio.ts` per ADR-0161
-  // decision 1 (zero edits to stdio's exports/behaviour), same as the tool wiring.
-  const options: ServerOptions = { capabilities: { tools: {}, resources: {} } };
+  // `resources: {}` and `prompts: {}` declared alongside `tools: {}` — advertises the capabilities
+  // AND admits the resources/* and prompts/* handlers. Deliberately duplicated from `stdio.ts` per
+  // ADR-0161 decision 1 (zero edits to stdio's exports/behaviour), same as the tool wiring.
+  const options: ServerOptions = {
+    capabilities: { tools: {}, resources: {}, prompts: {} },
+  };
   const server = new Server(
     { name: "caisson-buyer-mcp", version: SERVER_VERSION },
     options,
@@ -229,6 +234,49 @@ function buildBoundServer(
         // resources/read has no `isError` result arm — surface the same client-safe envelope
         // (`toErrorResponse`, ADR-0019) as a JSON-RPC error; an unentitled and an unknown URI both
         // collapse to the identical not_found envelope (the invisible-resource contract).
+        const { body } = toErrorResponse(err);
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          body.error.message,
+          body.error,
+        );
+      }
+    },
+  );
+
+  // Prompt wiring, identical to `stdio.ts`'s — duplicated per ADR-0161 decision 1.
+  server.setRequestHandler(ListPromptsRequestSchema, () => ({
+    prompts: mcp.listPrompts(session).map((reg) => ({
+      name: reg.name,
+      description: reg.description,
+      ...(reg.arguments.length > 0
+        ? {
+            arguments: reg.arguments.map((a) => ({
+              name: a.name,
+              ...(a.description !== undefined
+                ? { description: a.description }
+                : {}),
+              required: a.required,
+            })),
+          }
+        : {}),
+    })),
+  }));
+
+  server.setRequestHandler(
+    GetPromptRequestSchema,
+    async (request): Promise<GetPromptResult> => {
+      try {
+        // The core returns readonly PromptResult; cast to the SDK's mutable-structural result at
+        // this boundary (identical shape, no runtime copy) — same as `stdio.ts`.
+        return (await mcp.getPrompt(
+          session,
+          request.params.name,
+          request.params.arguments ?? {},
+        )) as GetPromptResult;
+      } catch (err) {
+        // prompts/get has no `isError` result arm (like resources/read) — surface the same
+        // client-safe not_found envelope; an unentitled and an unknown name collapse identically.
         const { body } = toErrorResponse(err);
         throw new McpError(
           ErrorCode.InvalidParams,

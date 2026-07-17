@@ -33,6 +33,25 @@ The design-system resources are an additional protocol front over the SAME pure 
 exposes the full catalog as-held: discovery is the point, and prices/tiers are already public
 marketing data.
 
+## Prompts
+
+The authenticated buyer MCP also exposes **prompts** on both transports — the prompt-side mirror of
+the tool and resource registries. Prompts are entitlement-scoped the same way (a prompt a caller is
+not entitled to is invisible: `prompts/list` omits it and `prompts/get` returns the same not-found an
+unknown name gets), rate-limited through the same ADR-0112 hook, and served under the same
+timing-safe Bearer gate. Each `prompts/get` validates the caller's arguments against the prompt's
+declared argument set (strict — a missing required argument and any undeclared extra key are both
+rejected) before rendering.
+
+| Prompt                            | Entitlement                    | Renders                                                                                                                                              |
+| --------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `integrate_module`                | none (any authenticated buyer) | A `describe_module` → `generate` recipe for adding one purchased module to a project.                                                                |
+| `setup_ai_config`                 | `ai-kit`                       | The guided `inspect_env` → `propose_ai_config` → `validate_setup` → `write_forge_config` walkthrough (present only when the host wires `coach`).     |
+| `compliance_evidence_walkthrough` | `compliance`                   | A `generate` recipe for the compliance edition, plus where framework evidence assembly lives (present only when the host wires `compliancePrompts`). |
+
+Prompts carry provider/module IDENTIFIERS only — never a secret value — so they stay secrets-safe by
+construction like the coach tools they narrate.
+
 ## Local design-system discovery MCP
 
 `discovery-bin.ts` is a separate, **local stdio-only** MCP a coding agent runs to discover the open
