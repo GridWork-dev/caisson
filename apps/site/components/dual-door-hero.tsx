@@ -57,9 +57,9 @@ export function DualDoorHero() {
             <p className={styles.claim}>
               The compliance wedge: fail-closed RLS, WORM evidence storage, an
               append-only audit chain, per-tenant field encryption, and an
-              evidence-pack generator you run — mapped to SOC 2 and HIPAA, with
-              PCI DSS and GDPR crosswalk exports. Never a certification we
-              claim.
+              evidence-pack generator you run — the technical controls an audit
+              checks for, mapped to SOC 2 and HIPAA with PCI DSS and GDPR
+              crosswalk exports. Never a certification we claim.
             </p>
             <div className={styles.cta}>
               {/* hard: the Door Morph (ADR-0334 moment 3) rides a cross-DOCUMENT view
