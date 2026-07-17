@@ -1,5 +1,11 @@
 # @caisson/everything
 
+## 0.2.4
+
+### Patch Changes
+
+- 3fdc6a8: Each bundle's member list now references the current published release of every included module, replacing references to superseded releases that are no longer downloadable. Installing any of these bundles resolves every included module to a real, currently available package.
+
 ## 0.2.3
 
 ### Patch Changes
