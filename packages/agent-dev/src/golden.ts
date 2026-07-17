@@ -1,7 +1,8 @@
 // Multi-harness emit golden (ADR-0013 golden-first · ADR-0066 engine-neutral emitter). Pins the
 // BYTE-STABLE per-harness bundle the agent-dev emitter must render from ONE typed Caisson schema:
-// `.claude/` for Claude Code (agents/skills/rules + a hooks manifest), a single aggregated
-// `AGENTS.md` for Codex, and per-artifact `.cursor/rules/*.mdc` for Cursor. The binding contract
+// `.claude/` for Claude Code (agents + `skills/<name>/SKILL.md` directory skills + rules + a hooks
+// manifest), the universal `.agents/skills/<name>/SKILL.md` cross-tool skills surface, a
+// single aggregated `AGENTS.md` for Codex, and per-artifact `.cursor/rules/*.mdc` for Cursor. The binding contract
 // (ADR-0066) the committed tree enforces: Claude Code is ONE emit target among several — no harness
 // is the substrate, and the same schema fans out to every harness shape.
 //
@@ -56,6 +57,12 @@ const EMIT_ARTIFACTS: readonly Artifact[] = [
       "unblock the next task",
     ],
     activation: "manual",
+    // The agentskills.io SKILL.md portability fields — exercised here so the golden
+    // pins their frontmatter rendering (space-separated allowed-tools, nested metadata map).
+    license: "Apache-2.0",
+    compatibility: "Designed for Claude Code (or similar products)",
+    metadata: { author: "caisson", channel: "stable" },
+    allowedTools: ["Bash(git:*)", "Read"],
   },
   {
     kind: "rule",
