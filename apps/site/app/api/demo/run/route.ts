@@ -11,7 +11,11 @@ import { checkRateLimit } from "@caisson/rate-limit";
 import { withTenant } from "@caisson/tenancy-rls";
 import { getDb } from "@/lib/db";
 import { makeTurnstileVerifier } from "@/lib/ask-ai/turnstile";
-import { type DemoRunDeps, handleDemoRun } from "@/lib/demo-run/handler";
+import {
+  type DemoRunDeps,
+  handleDemoRun,
+  SECURITY_HEADERS,
+} from "@/lib/demo-run/handler";
 import { generateDemoRun } from "@/lib/demo-run/run";
 import {
   demoRunEnabled,
@@ -85,5 +89,5 @@ export async function GET(): Promise<Response> {
   const status = demoRunEnabled()
     ? await readDemoRunStatus(await getDb(), resolveDemoRunCaps())
     : ({ enabled: false, reason: "disabled" } as const);
-  return Response.json(status, { headers: { "Cache-Control": "no-store" } });
+  return Response.json(status, { headers: SECURITY_HEADERS });
 }

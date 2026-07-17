@@ -207,7 +207,14 @@ export async function reserveDemoRun(
 }
 
 /** Release one concurrency slot on run completion (best-effort — the caller swallows failures so a
- *  metering write never fails the user's response). Floored at 0 so a double-release can't go negative. */
+ *  metering write never fails the user's response). Floored at 0 so a double-release can't go negative.
+ *
+ *  ponytail: no lease/TTL reaper on the gauge. A process crash (or a swallowed release failure)
+ *  between reserve and release strands a slot; enough of them 503 the run path until the UTC-day row
+ *  rolls over — worst case ~24h of fail-CLOSED self-DoS, never an over-admission. Accepted because
+ *  generation is a synchronous ~50ms pure construction (the crash window is tiny) and the operator
+ *  can clear a wedged day with one SQL UPDATE (reset `concurrency`) or by advancing past midnight
+ *  UTC. Upgrade path if it ever bites: per-reservation lease rows with a stale-reservation reaper. */
 export async function releaseDemoRun(
   db: Transactor,
   day: string,

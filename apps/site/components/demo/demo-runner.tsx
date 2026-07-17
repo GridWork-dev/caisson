@@ -52,6 +52,30 @@ export function DemoRunner() {
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Proactive availability probe (F5): GET the run-path status once on mount so a tripped cap /
+  // kill switch greys the CTA BEFORE a visitor fills the form, not only after a failed POST.
+  // Fail-safe: any probe error leaves the form active — the POST path is the real gate.
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/demo/run")
+      .then(async (res) => {
+        if (!res.ok || cancelled) return;
+        const s = (await res.json()) as { enabled?: unknown; reason?: unknown };
+        if (!cancelled && s.enabled === false) {
+          setState({
+            status: "unavailable",
+            reason: isUnavailableReason(s.reason) ? s.reason : "disabled",
+          });
+        }
+      })
+      .catch(() => {
+        /* probe is best-effort */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const running = state.status === "running";
   const capTripped =
     state.status === "unavailable" &&
@@ -271,13 +295,13 @@ function RunResult({ result }: { result: DemoRunResult }) {
         </span>
       </div>
 
-      {Array.isArray(result.moduleSummary) &&
-        result.moduleSummary.length > 0 && (
+      {Array.isArray(result.moduleSummary?.modules) &&
+        result.moduleSummary.modules.length > 0 && (
           <ul
             className={styles.moduleList}
             aria-label="Modules in this project"
           >
-            {result.moduleSummary.map((m) => (
+            {result.moduleSummary.modules.map((m) => (
               <li key={m.id} className={styles.moduleItem} data-tier={m.tier}>
                 <code className="mono">{m.id}</code>
                 <span className={styles.moduleTier}>

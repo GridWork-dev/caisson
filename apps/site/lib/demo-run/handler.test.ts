@@ -90,6 +90,37 @@ describe("body validation", () => {
     );
     expect(res.status).toBe(413);
   });
+
+  test("rejects an oversize CHUNKED body with a garbage content-length → 413 without buffering it all", async () => {
+    // The NaN fail-open class: `Number("not-a-number")` is NaN, so a content-length precheck alone
+    // never fires and `req.text()` would buffer the WHOLE stream pre-auth. The streaming bounded
+    // read must abort within one chunk of the cap instead of draining all 100 chunks.
+    const { deps } = makeDeps();
+    const chunk = new TextEncoder().encode("A".repeat(1024));
+    let pulled = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (pulled >= 100) {
+          controller.close();
+          return;
+        }
+        pulled++;
+        controller.enqueue(chunk);
+      },
+    });
+    const request = new Request("https://caisson.sh/api/demo/run", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "content-length": "not-a-number",
+        "x-real-ip": "1.2.3.4",
+      },
+      body: stream,
+    });
+    const res = await handleDemoRun(request, deps);
+    expect(res.status).toBe(413);
+    expect(pulled).toBeLessThan(100);
+  });
 });
 
 describe("gates", () => {

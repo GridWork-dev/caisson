@@ -13,11 +13,13 @@
 //   200 {runId, tree:[{path,bytes}], files:{path→content}, moduleSummary, generatedInMs}
 import { z } from "zod";
 import { clientIp } from "@caisson/rate-limit";
+import { readBodyBounded } from "../bounded-body.ts";
 import { ipKeys } from "./store.ts";
 import type { DemoRunResult } from "./run.ts";
 
-/** {email, projectName, turnstileToken} is tiny — cap the body well below any legitimate payload
- *  BEFORE buffering (CWE-770), same idiom as ask-ai/handler.ts's MAX_ASK_BODY_BYTES. */
+/** {email, projectName, turnstileToken} is tiny — cap the body well below any legitimate payload.
+ *  Enforced by the STREAMING bounded read (lib/bounded-body.ts), not a content-length precheck a
+ *  chunked or NaN-length request could skip (CWE-770). */
 const MAX_BODY_BYTES = 8_192;
 
 /**
@@ -68,7 +70,7 @@ export interface DemoRunDeps {
   recordLead: (email: string, runId: string, ip: string) => Promise<void>;
 }
 
-const SECURITY_HEADERS: Record<string, string> = {
+export const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
@@ -100,17 +102,13 @@ export async function handleDemoRun(
   req: Request,
   deps: DemoRunDeps,
 ): Promise<Response> {
-  // 1. body — size-capped BEFORE buffering (CWE-770), then a bad/unknown-field body dies here.
-  const declared = Number(req.headers.get("content-length") ?? "0");
-  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
-    return jsonError("payload_too_large", 413);
-  }
+  // 1. body — read through the STREAMING size cap (never fully buffered first, CWE-770), then a
+  //    bad/unknown-field body dies here.
+  const body = await readBodyBounded(req, MAX_BODY_BYTES);
+  if (!body.ok) return jsonError("payload_too_large", 413);
   let rawBody: unknown;
   try {
-    const text = await req.text();
-    if (text.length > MAX_BODY_BYTES)
-      return jsonError("payload_too_large", 413);
-    rawBody = JSON.parse(text);
+    rawBody = JSON.parse(body.text);
   } catch {
     return jsonError("invalid_request", 400);
   }

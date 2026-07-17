@@ -16,6 +16,7 @@
 //   escalation {reason:EscalationReason}             — terminal, any fail-safe outcome (UI renders the CTA)
 //   done       {}                                    — stream end
 import { z } from "zod";
+import { readBodyBounded } from "../bounded-body.ts";
 import {
   buildContext,
   composeSystem,
@@ -36,11 +37,11 @@ export const AskBody = z
   .strict();
 export type AskBody = z.infer<typeof AskBody>;
 
-// Request-body byte cap enforced BEFORE buffering/parsing (CWE-770, Kickoff-K). /api/ask is public +
+// Request-body byte cap enforced by a STREAMING bounded read (CWE-770, Kickoff-K). /api/ask is public +
 // unauthenticated and its body read runs ahead of the Turnstile gate, so an unbounded POST would buffer
-// fully in memory pre-auth; a self-hosted Next App Router route handler imposes no body limit of its own.
-// 16 KiB is generous for AskBody (question ≤2000, turnstileToken ≤2048). Same idiom as
-// registry/worker/revocations-put.ts (content-length precheck + text-length check).
+// fully in memory pre-auth; a self-hosted Next App Router route handler imposes no body limit of its
+// own, and a content-length precheck alone is skippable (chunked / NaN-length requests). 16 KiB is
+// generous for AskBody (question ≤2000, turnstileToken ≤2048). Shared reader: lib/bounded-body.ts.
 const MAX_ASK_BODY_BYTES = 16_384;
 
 export type Lane = "public" | "premium";
@@ -138,18 +139,13 @@ export async function handleAsk(
   req: Request,
   deps: AskDeps,
 ): Promise<Response> {
-  // 1. body — size-capped BEFORE buffering (CWE-770), then a bad body dies here, not at OpenRouter.
-  const declared = Number(req.headers.get("content-length") ?? "0");
-  if (Number.isFinite(declared) && declared > MAX_ASK_BODY_BYTES) {
-    return jsonError("payload_too_large", 413);
-  }
+  // 1. body — read through the streaming size cap (never fully buffered first, CWE-770), then a bad
+  //    body dies here, not at OpenRouter.
+  const body = await readBodyBounded(req, MAX_ASK_BODY_BYTES);
+  if (!body.ok) return jsonError("payload_too_large", 413);
   let rawBody: unknown;
   try {
-    const text = await req.text();
-    if (text.length > MAX_ASK_BODY_BYTES) {
-      return jsonError("payload_too_large", 413);
-    }
-    rawBody = JSON.parse(text);
+    rawBody = JSON.parse(body.text);
   } catch {
     return jsonError("invalid_request", 400);
   }

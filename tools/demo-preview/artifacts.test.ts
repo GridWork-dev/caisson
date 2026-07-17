@@ -5,6 +5,8 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 
+import { PreviewSchema } from "../../apps/site/components/demo/preview-schema";
+
 const DIR = join(import.meta.dir, "../../apps/site/public/demo-preview");
 
 async function readJson(name: string): Promise<unknown> {
@@ -54,8 +56,23 @@ describe("demo-preview committed artifacts", () => {
     expect(manifest.steps.test).not.toBeNull();
   });
 
+  test("preview.json satisfies the T2 reader contract with every step passing", async () => {
+    // THE seam guard (writer: tools/demo-preview/generate.ts · reader: apps/site/components/demo/
+    // preview-data.ts): the committed file must parse against the READER's schema — a shape drift
+    // here is exactly the class that shipped a permanently-dark preview pane. All steps must be
+    // ok:true — a failing install/build/test transcript is a real product finding that must never
+    // render as the "proof it runs" pane; regenerate against a healthy registry instead.
+    const preview = PreviewSchema.parse(await readJson("preview.json"));
+    expect(preview.steps.length).toBeGreaterThanOrEqual(3);
+    for (const s of preview.steps) {
+      expect(`${s.label}: ${s.ok ? "ok" : "FAILED"}`).toBe(`${s.label}: ok`);
+    }
+    expect(preview.fileManifest.length).toBeGreaterThan(0);
+  });
+
   test("no committed transcript leaks an absolute /home or /Users path", async () => {
     for (const name of [
+      "preview.json",
       "transcript-install.json",
       "transcript-build.json",
       "transcript-test.json",

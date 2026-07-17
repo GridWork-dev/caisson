@@ -51,7 +51,13 @@ export function truncateUtf8(s: string, maxBytes: number): string {
 /** Split a generated file set into a full `{path, bytes}` tree (true sizes) and a bounded content map:
  *  each file capped at MAX_FILE_BYTES, the cumulative content capped at MAX_TOTAL_BYTES; anything over
  *  either bound is truncated with a marker. Exported for a direct unit test on fabricated oversize input
- *  (the real demo output may well fit under the total, so truncation needs its own coverage). */
+ *  (the real demo output may well fit under the total, so truncation needs its own coverage).
+ *
+ *  Bound tolerance (documented, not a bug): `used` counts kept CONTENT bytes only — the ~90-byte
+ *  truncation markers ride on top, so the serialized map can exceed MAX_TOTAL_BYTES by at most
+ *  (marker size × truncated-file count). The file count is fixed by the generator (never
+ *  attacker-multipliable via projectName), so the overage is a small bounded constant; the unit
+ *  test pins the practical ceiling at 420KB. */
 export function boundFiles(
   files: readonly { readonly path: string; readonly content: string }[],
 ): {

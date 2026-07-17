@@ -8,22 +8,31 @@ export interface DemoRunTreeEntry {
   readonly bytes: number;
 }
 
-/** Compact per-module line for the run summary (a subset of the CLI's DemoModuleSummary). */
+/** Compact per-module line for the run summary (mirrors lib/demo-run/run.ts's moduleSummary rows). */
 export interface DemoModuleSummaryLine {
   readonly id: string;
+  readonly version: string;
   readonly tier: "oss" | "paid";
-  readonly description: string;
+}
+
+/** The run summary object T1 returns: counts + the per-module lines. */
+export interface DemoModuleSummary {
+  readonly total: number;
+  readonly oss: number;
+  readonly paid: number;
+  readonly modules: readonly DemoModuleSummaryLine[];
 }
 
 /**
- * `200` body of POST /api/demo/run (FIXED contract). `moduleSummary` is optional + only rendered
- * when it arrives as an array, so a shape drift from T1 degrades instead of crashing the client.
+ * `200` body of POST /api/demo/run (FIXED contract). `moduleSummary` is optional + its `modules`
+ * list is only rendered when it arrives as an array, so a shape drift from T1 degrades instead of
+ * crashing the client.
  */
 export interface DemoRunResult {
   readonly runId: string;
   readonly tree: readonly DemoRunTreeEntry[];
   readonly files: Readonly<Record<string, string>>;
-  readonly moduleSummary?: readonly DemoModuleSummaryLine[];
+  readonly moduleSummary?: DemoModuleSummary;
   readonly generatedInMs: number;
 }
 

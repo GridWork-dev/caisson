@@ -193,7 +193,7 @@ async function main(): Promise<void> {
       projectName: PROJECT_NAME,
       generatedAt: new Date().toISOString(),
       generatedInMs,
-      moduleSummaryLine: genStdout.trim().split("\n")[0] ?? "",
+      moduleSummaryLine: scrub(genStdout, tmpDir).trim().split("\n")[0] ?? "",
       tree: boundedTree,
       treeTruncated: boundedTree.length < tree.length,
       totalTreeBytes: totalBytes,
@@ -237,6 +237,39 @@ async function main(): Promise<void> {
         null,
         2,
       ) + "\n",
+    );
+
+    // The T2 reader contract: ONE preview.json shaped exactly like PreviewSchema
+    // (apps/site/components/demo/preview-schema.ts) — the file the /demo page's PreviewPane
+    // actually loads. The raw manifest/transcript files above stay as the full-fidelity record;
+    // artifacts.test.ts asserts this committed file parses against the reader's schema, so the
+    // writer↔reader seam can never silently drift again.
+    const previewStep = (
+      label: string,
+      t: StepTranscript,
+    ): { label: string; command: string; output: string; ok: boolean } => ({
+      label,
+      command: t.command.slice(0, 500),
+      output: (
+        t.stdout + (t.stderr ? (t.stdout ? "\n" : "") + t.stderr : "")
+      ).slice(0, 20_000),
+      ok: t.exitCode === 0,
+    });
+    const preview = {
+      generatedAt: manifest.generatedAt,
+      appName: PROJECT_NAME,
+      bundle: "demo",
+      steps: [
+        previewStep("bun install", install),
+        previewStep("bun run build", build),
+        previewStep("bun test", test),
+        ...(walkthrough ? [previewStep("bun run demo", walkthrough)] : []),
+      ],
+      fileManifest: boundedTree,
+    };
+    await writeFile(
+      join(OUT_DIR, "preview.json"),
+      JSON.stringify(preview, null, 2) + "\n",
     );
 
     process.stdout.write(`[demo-preview] wrote artifacts to ${OUT_DIR}\n`);

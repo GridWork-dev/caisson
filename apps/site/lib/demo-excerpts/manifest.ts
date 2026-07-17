@@ -5,7 +5,11 @@
 // and it matches its declared sourcePath content byte-for-byte (drift = red test).
 //
 // Append-only: add new entries at the end; never edit or remove a shipped entry (ADR-0006 append-only
-// convention applied to display content, not just data).
+// convention applied to display content, not just data). Resolution of the append-only-vs-drift
+// tension: when the LIVE source legitimately changes, the drift test goes red on purpose — the
+// sanctioned amendment is refreshing that entry's `content` + `sourceCommit` to the new HEAD (this
+// manifest is a display MIRROR of the source, not a locked artifact; append-only protects the entry
+// SET — ids are never silently dropped or repurposed — not a stale byte copy).
 
 export interface DemoExcerptEntry {
   readonly id: string;
