@@ -17,6 +17,11 @@ on:
       - "packages/**"
       - ".github/workflows/deploy-railway.yml"
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "The git ref to deploy (checked out, ancestry-verified, archived clean)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -47,6 +52,21 @@ jobs:
           fi
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         if: steps.guard.outputs.armed == 'true'
+        with:
+          # Full history: tooling/scripts/railway-deploy.ts resolves --ref and checks its ancestry
+          # against origin/main itself, so the checkout needs every commit + branch it might touch.
+          fetch-depth: 0
+      # A manual dispatch can leave `ref` blank; default to the SHA that triggered this run (the
+      # push SHA, or the workflow_dispatch ref's tip) — mirrors publish.yml's tag-defaulting.
+      - name: resolve deploy ref
+        if: steps.guard.outputs.armed == 'true'
+        id: resolve-ref
+        run: |
+          RAW_REF="${{ github.event.inputs.ref }}"
+          echo "ref=${RAW_REF:-${{ github.sha }}}" >> "$GITHUB_OUTPUT"
+      - name: fetch origin/main (ancestry check needs it)
+        if: steps.guard.outputs.armed == 'true'
+        run: git fetch origin main --quiet
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         if: steps.guard.outputs.armed == 'true'
         with:
@@ -54,8 +74,15 @@ jobs:
       - name: install Railway CLI
         if: steps.guard.outputs.armed == 'true'
         run: bun add -g @railway/cli@5.23.3
-      - name: deploy apps/site to Railway (build-on-Railway, repo-root context)
+      # Immutable-input deploy: resolves the ref to a commit, refuses one that isn't an ancestor
+      # of origin/main, stages a CLEAN `git archive` tree (no dirty working-tree state, no
+      # untracked cruft, git's own normalized file modes), runs `railway up` from that staging
+      # dir, and appends a single-use receipt — never a bare `railway up` off the live checkout.
+      - name: deploy apps/site to Railway (immutable-input, receipt-gated)
         if: steps.guard.outputs.armed == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service caisson-site --ci
+        run: |
+          bun tooling/scripts/railway-deploy.ts \
+            --service caisson-site \
+            --ref "${{ steps.resolve-ref.outputs.ref }}"

@@ -309,9 +309,14 @@ auto-deploy is armed) so Next.js rebuilds with the new env in scope.
 ### 2.6 Redeploy
 
 ```bash
-railway up -y --service caisson-license --ci
-railway up -y --service caisson-site --ci
+bun tooling/scripts/railway-deploy.ts --service caisson-license --ref <git-ref>
+bun tooling/scripts/railway-deploy.ts --service caisson-site --ref <git-ref>
 ```
+
+`railway-deploy.ts` (`docs/operations.md` §5) resolves `<git-ref>` to a SHA, refuses one that
+isn't an ancestor of `origin/main`, and deploys from a clean `git archive` staging dir instead of
+the live checkout — it also refuses to redeploy a SHA the receipts file already has a row for
+(`docs/deploy/receipts/<service>.json`) unless you pass `--force`.
 
 (Or let the §2.3 merge + armed auto-deploy — `deploy-railway.yml` — do it, if that's wired; verify
 either way per §4.)

@@ -140,12 +140,22 @@ service). The prior static-export -> Cloudflare Pages path (`wrangler pages depl
 `caisson-site` Pages project) is **retired**; the Pages project itself has been torn down.
 
 ```bash
-railway up --service caisson-site --ci        # from repo root; builds via apps/site/Dockerfile
+bun tooling/scripts/railway-deploy.ts --service caisson-site --ref <git-ref>   # from repo root
 ```
 
-- `.github/workflows/deploy-railway.yml` runs the same `railway up` on every push to `main`
+`railway-deploy.ts` resolves `<ref>` to a full SHA, refuses one that isn't an ancestor of
+`origin/main`, stages a **clean `git archive` tree** (git's own normalized file modes, no dirty
+working-tree state, no untracked cruft — the fix for the local-mode-600-file-shipped incident
+below) in a scratch dir, then runs `railway up --service <svc> --ci` from that clean dir instead
+of the live checkout. It refuses to redeploy a SHA that already has a receipt for that service
+unless `--force`; add `--dry-run` to resolve + stage + print the plan without touching Railway or
+writing anything. Each deploy appends a row to `docs/deploy/receipts/<service>.json`
+(`{sha, deployedAt, deployedBy, forced?}`) but never commits it — the script prints the
+suggested `git add`/`git commit`.
+
+- `.github/workflows/deploy-railway.yml` runs the same `railway-deploy.ts` on every push to `main`
   touching `apps/site/**`/`packages/**`, but **stays an inert no-op today** -- the `RAILWAY_TOKEN`
-  repo secret is not set, so deploys are the operator running `railway up` manually. It self-arms
+  repo secret is not set, so deploys are the operator running the script manually. It self-arms
   the moment that secret is added (no other change needed).
 - Secrets: a Railway project token (`RAILWAY_TOKEN`), scoped to `caisson-prod`. No Cloudflare
   deploy credential is needed for the site anymore.
@@ -320,7 +330,8 @@ macOS minutes. Manual fallback if the mini is down: flip the leg back to `runs-o
   deploys.
 - Steps: an arm-check gates on the `RAILWAY_TOKEN` secret (absent -> every real step SKIPS and the
   job succeeds as a no-op); when armed, installs the Railway CLI and runs
-  `railway up --service caisson-site --ci` (build-on-Railway via `apps/site/Dockerfile`).
+  `bun tooling/scripts/railway-deploy.ts --service caisson-site --ref <sha>` (build-on-Railway via
+  `apps/site/Dockerfile`, from a clean `git archive` staging dir, receipt-gated -- see §5 above).
 - Least privilege: `permissions: contents: read`; uses the Railway project token, not
   `GITHUB_TOKEN`. `concurrency: deploy-railway`, `cancel-in-progress: false`, `timeout-minutes: 25`.
 - **Stays GitHub-hosted (not on the fleet):** a production deploy token does not belong on the
