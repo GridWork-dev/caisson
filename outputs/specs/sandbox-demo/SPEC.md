@@ -9,8 +9,13 @@ owner: operator
 demo-run job · F2 = NO, (d) excerpts bundle WITH the (c) build (operator override) · F3 =
 lightweight email capture · F4 = fold as a ladder · F5 = hard daily cap auto-disable · F6 =
 build first, independent. Build NOW in a parallel worktree wave; the `create-caisson --demo`
-generator leg (ADR-0274 pt 1) builds first inside the program. Original draft text below is
-unchanged history. It read: no build until the operator locks a fork on the options table below
+generator leg (ADR-0274 pt 1) builds first inside the program. **PLAN-gate locks ADR-0352
+(2026-07-16):** preview contract = per-request generated files + ONE shared prebuilt preview
+(pure in-process `generateDemo` — no per-request install/build/network/subprocess); F2 bundle
+= one page with independent deploys/flags/rollback; F5 = run-count + concurrency on a
+PG-shared atomic counter; CORRECTION — the `--demo` generator leg had ALREADY shipped
+(PR 143, `15c50bd6`), so the build-order rider is satisfied history and the unbuilt program
+is the web/job harness only. Original draft text below is unchanged history. It read: no build until the operator locks a fork on the options table below
 (per ADR-0323 Decision 4c — spec-first, this doc tables forks, decides nothing). Tags:
 `external-system`, `security`, `billing`, `frontend`.
 

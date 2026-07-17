@@ -7,6 +7,13 @@ tags: [ai, security, billing]
 # SPEC — Governed single-agent runtime
 
 - **Decision:** ADR-0349 (Fork AR-1, operator-locked 2026-07-15: option 1, spec-now build-now)
+- **PLAN-gate locks:** ADR-0351 (2026-07-16) — AR-2 home = engine-neutral primitive + ai-kit
+  adapter (resolves this SPEC's scope-item-1 "kernel-primitives only" vs ai-kit tension);
+  AR-3 = trusted usage-adapter package, CLI runs `billingStatus: unsupported` until proven;
+  AR-4 = metadata + encrypted payload refs, replay = deterministic projection. Binding
+  riders: pinned ai@7.0.22 fail-closed seam spike first (v7 callbacks swallow errors;
+  `onStepEnd` never authoritative), slice 1 = trajectory observation, serial risk DAG +
+  launch firewall.
 - **Research:** `outputs/research/agent-runtime-audit-2026-07-15.md` (read-only audit +
   exa-verified external patterns)
 - **Tags:** `ai` (fires EVAL) · `security` (fires the security audit — approval/trajectory
