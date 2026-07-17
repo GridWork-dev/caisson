@@ -1,0 +1,56 @@
+// Agent-runtime slice-1 dependency-boundary fixture (CAISSON-109, ADR-0349/0351). Real-tree
+// assertions in the catalog-checks.test.ts house style: the committed workspace must satisfy the
+// trajectory-observation contract that slice 1 introduces. This records the T3 dependency-direction
+// decision as an executable lock — agent-trajectory is the engine-neutral substrate, agent-runner
+// and ai-kit are its consumers, and the AI SDK stays confined to ai-kit.
+import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { findRoot, readWorkspace } from "./workspace";
+
+const ROOT = findRoot(import.meta.dir);
+const pkgs = readWorkspace(ROOT);
+const byName = new Map(pkgs.map((p) => [p.name, p]));
+
+const TRAJECTORY = "@caisson/agent-trajectory";
+const RUNNER = "@caisson/agent-runner";
+const AI_KIT = "@caisson/ai-kit";
+
+// The kernel-level primitives agent-trajectory (a `primitive`) may sit on. It is the engine-neutral
+// contract; it depends only "down" onto kernel — never onto a runner, an edition, or ai-kit
+// (ADR-0003 down-only; ADR-0351: the trajectory is the substrate, never the consumer).
+const KERNEL_LEVEL = new Set(["@caisson/kernel"]);
+
+describe("agent-runtime slice-1 dependency boundary (ADR-0349/0351)", () => {
+  test("agent-trajectory (primitive) depends on nothing above kernel-level", () => {
+    const p = byName.get(TRAJECTORY);
+    expect(p).toBeDefined();
+    const upward = p!.workspaceDeps.filter((d) => !KERNEL_LEVEL.has(d));
+    expect(upward).toEqual([]);
+  });
+
+  test("agent-trajectory never depends 'up' on its consumers (runner/ai-kit)", () => {
+    const deps = byName.get(TRAJECTORY)!.workspaceDeps;
+    expect(deps).not.toContain(RUNNER);
+    expect(deps).not.toContain(AI_KIT);
+  });
+
+  test("agent-runner and ai-kit depend on agent-trajectory (direction: consumer -> contract)", () => {
+    expect(byName.get(RUNNER)!.workspaceDeps).toContain(TRAJECTORY);
+    expect(byName.get(AI_KIT)!.workspaceDeps).toContain(TRAJECTORY);
+  });
+
+  test("ai-kit remains the only packages/* module importing `ai` / `@ai-sdk/*`", () => {
+    // `\s+` spans newlines, so a multi-line import still matches; requiring `from`/`import` before
+    // the specifier excludes value strings (e.g. email's `w === "ai"` scroll-token comparison).
+    const importRe = /(?:from|import)\s+["'](?:ai|@ai-sdk\/[^"']+)["']/;
+    const glob = new Bun.Glob("packages/*/src/**/*.{ts,tsx}");
+    const importers = new Set<string>();
+    for (const rel of glob.scanSync({ cwd: ROOT })) {
+      if (importRe.test(readFileSync(join(ROOT, rel), "utf8"))) {
+        importers.add(rel.split("/").slice(0, 2).join("/")); // packages/<name>
+      }
+    }
+    expect([...importers].sort()).toEqual(["packages/ai-kit"]);
+  });
+});
