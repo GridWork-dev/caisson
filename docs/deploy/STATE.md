@@ -8,6 +8,40 @@ grounds:
 
 # Deploy log
 
+## 2026-07-17 (late PM) — Parallel-wave deploy: v2026.07.17.4 ride + Worker + caisson-site (`03b07b33`)
+
+Operator-approved ("Ride + site redeploy") closing the ADR-0357 PM parallel wave
+(PRs 257-260 + version PR 261 consume: agent-kernel/agent-dev 0.6.0 · mcp-server 0.5.0 ·
+site 0.2.6 · registry 0.0.12). Pre-launch gate stays ON.
+
+- **caisson-site redeployed** (`railway up`): the four ADR-0357 copy locks live — verified
+  serving on `/compliance` (proof-scope block) and `/build-vs-buy` (DIY objection). No
+  migrations in the wave (no license predeploy needed).
+- **Registry publish ride `v2026.07.17.4`:** the first attempt (tag `v2026.07.17.3`) FAILED
+  CLOSED at the byte gate — the 261 consume churned `@caisson/cli@0.6.2` packed bytes at an
+  unchanged version (third occurrence of the pack-embeds-devDep-versions class). The new
+  sibling-churn gate (PR 257) could not catch it: it runs only on release-branch synchronize,
+  and a single-shot version PR never fires one — filed CAISSON-124 (run the check inside the
+  dispatch `--mode version` step). Row re-recorded from a pristine no-build worktree at the
+  tag (hash matched the byte-gate computation exactly, `03b07b33`), re-tagged, ride green —
+  53 tarballs staged/uploaded byte-verified.
+- **Worker redeployed** bundling the corrected sidecar + the 261 index: live `/index.json`
+  advertises cli 0.6.2 + mcp-server 0.5.0 on the public floor (commercial entries correctly
+  absent unauthenticated; agent-dev's "delisted — skipped" is pre-existing catalog state).
+- **R2 parity probe first production run (auto-fired by the green publish; correctly SKIPPED
+  after the failed one): DRIFT — 1 hash-mismatch + 93 missing.** The mismatch was tonight's
+  own re-record meeting the ride's upload-never-overwrites rule (R2 kept the morning
+  cli-0.6.2 bytes while the sidecar advertised the tag-tree bytes) — REPAIRED in-session per
+  the morning's operator-locked overwrite procedure (`wrangler r2 object put` from a pristine
+  tag pack, round-trip sha1 `c8d22311`/24602B verified). The **93 MISSING are the historical
+  backlog**: superseded versions recorded in the sidecar that no ride ever uploaded (rides
+  stage only rows current at ride time — the morning "43 byte-verified" and tonight's 53 were
+  the current sets). The index/packument advertises full version history, so a buyer pinning
+  an old version would 404 — pre-launch severity low, but it needs an operator fork
+  (backfill from historical checkouts vs prune historical rows vs accept-advisory). The
+  probe stays red on its daily cron until that fork is decided — by design, it is advisory
+  and gates nothing.
+
 ## 2026-07-17 (PM) — Kickoff-U reconcile wave: fleet redeploy + v2026.07.17.2 ride + R2 repair + Worker + PostHog activation (`331e971e`)
 
 Operator-approved deploy wave closing the Kickoff-U reconcile (PRs #246/#247/#250/#251 + version
