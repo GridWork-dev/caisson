@@ -1,0 +1,12 @@
+{
+  "mediaType": "application/vnd.dev.sigstore.signingconfig.v0.2+json",
+  "rekorTlogUrls": [
+    {
+      "url": "https://log2025-1.rekor.sigstore.dev",
+      "majorApiVersion": 2,
+      "validFor": { "start": "2025-10-06T00:00:00Z" },
+      "operator": "sigstore.dev"
+    }
+  ],
+  "rekorTlogConfig": { "selector": "ANY" }
+}
