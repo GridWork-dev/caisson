@@ -1,5 +1,18 @@
 # @caisson/prompt-registry
 
+## 1.0.1
+
+### Patch Changes
+
+- e183860: Unify the workspace on zod 4 (catalog flip; the zod4 sub-catalog is retired). Explicit key schemas on every z.record call, and the ZodObject generic signatures drop the v3 "strict" type parameter. Runtime validation behavior is unchanged apart from zod 4's tightened RFC-4122 uuid and email format checks, verified against the money and license seams.
+- Updated dependencies [e5e4311]
+- Updated dependencies [809592d]
+- Updated dependencies [809592d]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/ui@0.6.1
+  - @caisson/tenancy-rls@0.5.2
+
 ## 1.0.0
 
 ### Minor Changes

@@ -1,5 +1,15 @@
 # @caisson/auth
 
+## 0.3.3
+
+### Patch Changes
+
+- a8696cf: Remove redundant assignments and retain original errors when wrapping failures under the ESLint 10 recommended rules.
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/tenancy-rls@0.5.2
+
 ## 0.3.2
 
 ### Patch Changes

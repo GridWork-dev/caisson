@@ -1,5 +1,30 @@
 # @caisson/mcp-server
 
+## 0.3.0
+
+### Minor Changes
+
+- 7f68b56: Add the agent-ready design-system tools to the buyer MCP: three base read tools
+  (list_components / describe_component / get_tokens) any authenticated buyer can call to discover the
+  open @caisson/ui kit, plus an entitlement-gated check_usage static doctor (on a dedicated doctor
+  slug) and an optional gated describe_pro_component. Ships a local stdio-only discovery server that
+  exposes the three read tools over the Apache-base manifest with no auth and no network listener, and
+  a runnable discovery entry an agent configures as a local MCP.
+
+### Patch Changes
+
+- a8696cf: Keep the Bun HTTP server callback compatible with the Node 26 request type declarations.
+- Updated dependencies [7f68b56]
+- Updated dependencies [e5e4311]
+- Updated dependencies [809592d]
+- Updated dependencies [809592d]
+- Updated dependencies [e183860]
+  - @caisson/ds-manifest@0.2.0
+  - @caisson/kernel@0.5.0
+  - @caisson/ui@0.6.1
+  - @caisson/ai-config@0.3.2
+  - @caisson/registry-schema@0.5.0
+
 ## 0.2.6
 
 ### Patch Changes
