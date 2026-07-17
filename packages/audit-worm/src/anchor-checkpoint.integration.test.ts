@@ -125,6 +125,10 @@ describe("runAnchorCheckpoint — happy path + idempotency", () => {
     expect(receipt.grade).toBe("trusted-timestamped");
     expect(receipt.anchorLength).toBe(3);
     expect(receipt.anchorDigest).toBe(sha256Hex(bytes));
+    // Narrow the receipt union to the RFC-3161 member for this TSA target.
+    if (receipt.receipt.algorithm !== "rfc3161") {
+      throw new Error("expected an rfc3161 receipt for a TSA target");
+    }
     expect(receipt.receipt.messageImprint).toBe(sha256Hex(bytes));
 
     // outbox row is terminal receipted
