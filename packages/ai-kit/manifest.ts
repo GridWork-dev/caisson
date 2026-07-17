@@ -21,6 +21,7 @@ export default defineModule({
   priceCents: 73900,
   license: pkg.license,
   dependencies: [
+    "@caisson/agent-trajectory",
     "@caisson/ai-config",
     "@caisson/ai-meter",
     "@caisson/credits",
