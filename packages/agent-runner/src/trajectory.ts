@@ -64,6 +64,10 @@ export function buildTrajectoryEvents(
   events: readonly TranscriptLine[],
   opts: BuildTrajectoryOptions = {},
 ): TrajectoryEvent[] {
+  // ponytail: the default eventId is a fresh randomUUID per call, so rebuilding the same run yields
+  // different event bytes — a retry after a PARTIAL append hits the store's rewrite rejection
+  // instead of no-oping. Fine while record() targets the in-memory store (cannot fail mid-loop); a
+  // durable store should inject a deterministic factory (e.g. uuidv5 of `runId:seq`) via opts.eventId.
   const eventId = opts.eventId ?? (() => crypto.randomUUID());
   const startedAt = meta.startedAt;
   const endedAt = meta.endedAt ?? meta.startedAt;

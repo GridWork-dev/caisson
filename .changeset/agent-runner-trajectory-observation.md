@@ -1,5 +1,5 @@
 ---
-"@caisson/agent-runner": patch
+"@caisson/agent-runner": minor
 ---
 
 Add optional trajectory observation to the agent runner. When a caller injects a trajectory recorder

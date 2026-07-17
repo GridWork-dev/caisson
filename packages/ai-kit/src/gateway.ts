@@ -112,15 +112,24 @@ export type TrajectoryRecorder = (
  * Wrap a recorder in the swallow-and-warn contract above: emit into it, and if it throws, surface a
  * `trajectory.record_failed` ops event (best-effort — a sink failure is swallowed too) instead of
  * letting observation break the money path. A no-op when no recorder is wired.
+ *
+ * Takes a THUNK so event construction (digesting, ledger reads) runs inside the swallow boundary —
+ * a throw while building the event must not strand a live reservation any more than a recorder
+ * throw may.
  */
 function trajectoryEmitter(
   recorder: TrajectoryRecorder | undefined,
   sink: EventSink,
   accountId: string,
-): (event: Pick<GatewayTrajectoryEvent, "kind" | "payload">) => Promise<void> {
+): (
+  build: () => Pick<GatewayTrajectoryEvent, "kind" | "payload">,
+) => Promise<void> {
   if (recorder === undefined) return async () => {};
-  return async (event) => {
+  return async (build) => {
+    let kind = "unbuilt";
     try {
+      const event = build();
+      kind = event.kind;
       await recorder(event);
     } catch (err) {
       try {
@@ -129,7 +138,7 @@ function trajectoryEmitter(
           timestamp: new Date().toISOString(),
           tenantId: accountId,
           attributes: {
-            kind: event.kind,
+            kind,
             error: err instanceof Error ? err.message : String(err),
           },
         });
@@ -395,14 +404,14 @@ export async function infer(
   // Observe the model call (prompt digest only — never the prompt text). Emitted after reserve so a
   //    fail-closed 402 leaves no dangling call record; before the provider call so a provider failure
   //    still leaves the attempt observed.
-  await emit({
+  await emit(() => ({
     kind: "model.call",
     payload: {
       provider: cfg.provider,
       model: cfg.model,
       prompt: promptDigest(guarded),
     },
-  });
+  }));
 
   // 4. provider call — the SDK call against the injected model, optionally middleware-wrapped. A
   //    failure refunds the reservation (reconcile to zero) so a non-delivering call never charges.
@@ -456,7 +465,9 @@ export async function infer(
   const { usage, usageReported } = settlement;
 
   // 6. output-guard (+ PII restore) then 7. reconcile. A blocked output still reconciles the actual
-  //    spend (the tokens were already consumed) before the 422 propagates.
+  //    spend (the tokens were already consumed) before the 422 propagates. ponytail: the blocked
+  //    path emits no model.usage — the trajectory shows a model.call with settled spend and no usage
+  //    claim; the loop slice may add a failed-usage emit if evals need the symmetry.
   let outText: string;
   try {
     await guardOutput(text, policy, runtime);
@@ -468,7 +479,7 @@ export async function infer(
   const reconciled = await settle(usage, usageReported);
 
   // Observe the metered usage — the SAME integers the ledger just settled (billingStatus: metered).
-  await emit({
+  await emit(() => ({
     kind: "model.usage",
     payload: {
       provider: cfg.provider,
@@ -479,7 +490,7 @@ export async function infer(
       credits: reconciled.actualCredits,
       billingStatus: "metered",
     },
-  });
+  }));
 
   return {
     callId,
@@ -684,14 +695,14 @@ export async function inferStream(
   }
 
   // Observe the model call (prompt digest only) — after reserve + model resolve, before streaming.
-  await emit({
+  await emit(() => ({
     kind: "model.call",
     payload: {
       provider: cfg.provider,
       model: cfg.model,
       prompt: promptDigest(guarded),
     },
-  });
+  }));
 
   const settled = deferred<InferStreamSettled>();
   // The eager pump can reject settlement even when the caller ignores `settled`; mark the source
@@ -746,7 +757,7 @@ export async function inferStream(
       // Observe the metered usage on a NORMAL finish only — the ledger's own integers. An abandoned
       // stream's settle amount is an estimate, not a provider-verified metered number, so no claim.
       if (!abandoned) {
-        await emit({
+        await emit(() => ({
           kind: "model.usage",
           payload: {
             provider: cfg.provider,
@@ -757,7 +768,7 @@ export async function inferStream(
             credits: reconciled.actualCredits,
             billingStatus: "metered",
           },
-        });
+        }));
       }
       settled.resolve({ text: outText, usage, reconciled, abandoned });
     } catch (err) {

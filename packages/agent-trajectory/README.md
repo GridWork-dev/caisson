@@ -61,12 +61,17 @@ The fields that MUST be a `DigestRef`: `run.started.input`, `run.finished.output
 
 Every `model.usage` event declares how much to trust its numbers:
 
-- `metered` — the numbers **are** the credit ledger's (the ai-kit gateway path). Billing-grade.
+- `metered` — the numbers **are** the credit ledger's stored settlement for the call (the ai-kit
+  gateway path). `credits` is always the reconciled actuals; the token integers are
+  provider-reported when the provider reported usage, and the ledger's reservation-shaped estimate
+  when it did not (the gateway settles that case at the estimate rather than refunding — the tokens
+  were consumed either way). Billing-grade.
 - `estimated` — real counts from a trusted adapter (e.g. a Claude Code transcript) but **not
   price-normalized**, so **not** billing-grade; `credits` is `0`.
 - `unsupported` — the surface has **no validated usage contract**; no token claims are made.
 
-A producer must not stamp `metered` unless the counts reconcile against the ledger.
+A producer must not stamp `metered` unless the event carries exactly what the ledger settled and
+charged — never an independent claim.
 
 ## Replay = deterministic projection
 
