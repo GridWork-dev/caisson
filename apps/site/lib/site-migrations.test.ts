@@ -21,9 +21,13 @@ const EXPECTED_NAMES_IN_ORDER = [
   "0020_tenant_ai_credential.sql",
   "0021_byok_key_meta.sql",
   "0022_compliance_attestation.sql",
+  // CAISSON-110 (ADR-0350 F5): the demo-run rate-limit store + F5 budget/lead tables.
+  "0023_rate_limit.sql",
+  "0024_demo_run_budget.sql",
+  "0025_demo_run_leads.sql",
 ];
 
-test("SITE_LOCAL_MIGRATIONS contains exactly the 5 expected apps/site-local migrations, in order", () => {
+test("SITE_LOCAL_MIGRATIONS contains exactly the 8 expected apps/site-local migrations, in order", () => {
   expect(SITE_LOCAL_MIGRATIONS.map((m) => m.name)).toEqual(
     EXPECTED_NAMES_IN_ORDER,
   );
