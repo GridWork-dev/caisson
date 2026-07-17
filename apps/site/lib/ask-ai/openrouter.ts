@@ -18,10 +18,18 @@ export class GenerationError extends Error {
   }
 }
 
-/** One streamed event: an incremental text delta, or the terminal cost (USD, from usage.cost). */
+/** One streamed event: an incremental text delta, or the terminal usage (USD cost from usage.cost,
+ *  plus the prompt/completion token counts for $ai_generation observability — CAISSON-120). Tokens are
+ *  optional: they ride the same terminal chunk as the cost, but a malformed/partial usage object may
+ *  omit them, so a consumer defaults a missing count to 0. */
 export type StreamEvent =
   | { readonly type: "delta"; readonly text: string }
-  | { readonly type: "cost"; readonly usd: number };
+  | {
+      readonly type: "cost";
+      readonly usd: number;
+      readonly inputTokens?: number | undefined;
+      readonly outputTokens?: number | undefined;
+    };
 
 export interface StreamArgs {
   readonly apiKey: string;
@@ -38,7 +46,16 @@ export interface StreamArgs {
 
 interface OpenRouterChunk {
   choices?: { delta?: { content?: string | null } }[];
-  usage?: { cost?: number | null } | null;
+  usage?: {
+    cost?: number | null;
+    prompt_tokens?: number | null;
+    completion_tokens?: number | null;
+  } | null;
+}
+
+/** A finite non-negative token count, or undefined when the usage object omits/malforms it. */
+function tokenCount(v: number | null | undefined): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined;
 }
 
 /**
@@ -122,7 +139,12 @@ export async function* streamOpenRouter(
         }
         const cost = obj.usage?.cost;
         if (typeof cost === "number" && Number.isFinite(cost)) {
-          yield { type: "cost", usd: cost };
+          yield {
+            type: "cost",
+            usd: cost,
+            inputTokens: tokenCount(obj.usage?.prompt_tokens),
+            outputTokens: tokenCount(obj.usage?.completion_tokens),
+          };
         }
       }
     }

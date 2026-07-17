@@ -6,6 +6,10 @@
 // from server-only env: DOCS_SERVICE_TOKEN, OPENROUTER_API_KEY, TURNSTILE_SECRET never reach the browser.
 import { getSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import {
+  captureAiGeneration,
+  loadAiCaptureConfig,
+} from "@/lib/ask-ai/ai-capture";
 import { type AskDeps, handleAsk } from "@/lib/ask-ai/handler";
 import { logQuestion } from "@/lib/ask-ai/question-log";
 import { retrieveChunks } from "@/lib/ask-ai/retrieve";
@@ -41,6 +45,10 @@ const throttledEscalate =
         await pushSiteEscalation(escalateConfig, question, reason);
       })
     : null;
+
+// M4 (CAISSON-120): server-side $ai_generation capture, env-gated on POSTHOG_CAPTURE_KEY (unset ⇒
+// null ⇒ no capture, zero behavior change). Resolved once per process, like escalateConfig above.
+const aiCaptureConfig = loadAiCaptureConfig();
 
 function envOr(name: string, fallback: string): string {
   const v = process.env[name]?.trim();
@@ -88,6 +96,13 @@ function buildDeps(): AskDeps {
     // key must be OMITTED (not set to `undefined`) when the push is unconfigured, so the optional
     // dep is spread in rather than assigned a possibly-undefined value.
     ...(throttledEscalate !== null ? { escalate: throttledEscalate } : {}),
+    // M4: emit one $ai_generation event per model call (fire-and-forget, never throws). Same
+    // omit-when-unconfigured spread as `escalate` (exactOptionalPropertyTypes).
+    ...(aiCaptureConfig !== null
+      ? {
+          captureGeneration: (gen) => captureAiGeneration(aiCaptureConfig, gen),
+        }
+      : {}),
   };
 }
 

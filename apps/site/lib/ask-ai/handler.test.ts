@@ -4,6 +4,7 @@
 // escalations, and the per-lane HARD spend-cap trip on BOTH lanes (F2 rider, hardened). No network, no DB.
 import { expect, test } from "bun:test";
 import { type AskDeps, handleAsk } from "./handler.ts";
+import type { AiGeneration } from "./ai-capture.ts";
 import type { StreamEvent } from "./openrouter.ts";
 import type { ScoredChunk } from "./retrieve.ts";
 
@@ -451,4 +452,99 @@ test("an escalate failure never reaches the response (best-effort)", async () =>
   );
   expect(evs.some((e) => e.event === "escalation")).toBe(true);
   expect(evs.at(-1)?.event).toBe("done");
+});
+
+// --- $ai_generation capture (M4, CAISSON-120) -------------------------------------------------------
+
+async function* streamWithUsage(text: string): AsyncGenerator<StreamEvent> {
+  yield { type: "delta", text };
+  yield { type: "cost", usd: 0.003, inputTokens: 812, outputTokens: 64 };
+}
+
+function captureSpy(): {
+  calls: AiGeneration[];
+  fn: (g: AiGeneration) => Promise<void>;
+} {
+  const calls: AiGeneration[] = [];
+  // records synchronously (before any await), so it is observable once handleAsk resolves.
+  return {
+    calls,
+    fn: async (g) => {
+      calls.push(g);
+    },
+  };
+}
+
+test("captureGeneration receives the usage on a resolved answer (tokens, cost, no error)", async () => {
+  const spy = captureSpy();
+  await events(
+    await handleAsk(
+      ask({ question: "how do credits work?" }),
+      deps({
+        stream: () => streamWithUsage(`Billing uses integer credits [${DOC}].`),
+        captureGeneration: spy.fn,
+      }),
+    ),
+  );
+  expect(spy.calls).toHaveLength(1);
+  expect(spy.calls[0]).toMatchObject({
+    model: "google/gemini-3.5-flash",
+    inputTokens: 812,
+    outputTokens: 64,
+    totalCostUsd: 0.003,
+    isError: false,
+    httpStatus: 200,
+  });
+});
+
+test("captureGeneration still fires on a successful-but-escalated generation (sentinel)", async () => {
+  const spy = captureSpy();
+  await events(
+    await handleAsk(
+      ask({ question: "unanswerable" }),
+      deps({
+        stream: () => streamWithUsage("INSUFFICIENT_CONTEXT"),
+        captureGeneration: spy.fn,
+      }),
+    ),
+  );
+  // the model DID run (tokens/cost real); the escalation is a downstream business decision.
+  expect(spy.calls).toHaveLength(1);
+  expect(spy.calls[0]?.isError).toBe(false);
+  expect(spy.calls[0]?.inputTokens).toBe(812);
+});
+
+test("captureGeneration reports is_error on a generation failure", async () => {
+  const spy = captureSpy();
+  await events(
+    await handleAsk(
+      ask({ question: "q" }),
+      deps({
+        stream: () => {
+          throw new Error("openrouter down");
+        },
+        captureGeneration: spy.fn,
+      }),
+    ),
+  );
+  expect(spy.calls).toHaveLength(1);
+  expect(spy.calls[0]).toMatchObject({
+    isError: true,
+    error: "generation_failed",
+  });
+  expect(spy.calls[0]?.httpStatus).toBeUndefined();
+});
+
+test("captureGeneration is NOT called when no model ran (spend_cap)", async () => {
+  const spy = captureSpy();
+  await events(
+    await handleAsk(
+      ask({ question: "q" }),
+      deps({
+        spend: { reserve: async () => false, settle: async () => {} },
+        captureGeneration: spy.fn,
+      }),
+    ),
+  );
+  expect(spy.calls).toHaveLength(0);
 });
