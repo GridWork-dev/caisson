@@ -15,10 +15,18 @@
 // `schema_version` ledger already recorded them under those names, and the chain is forward-only
 // (ADR-0006) — renaming them would make a real deployment try to re-apply them as "new"
 // migrations. `0020`-`0022` are net-new (never applied anywhere but this app's dev PGlite double,
-// under those exact names already) and sort after `0011`/`0012` and after the shared chain's own
-// highest migration (`0019_order_record.sql`) by construction — no renumbering needed, no gap in
-// the ledger, and the dev PGlite double (which rebuilds fresh on every process boot) loses nothing
-// by dropping its old `0023`/`0024` aliases for the two ask_ai_* tables.
+// under those exact names already) and sort after `0011`/`0012` and after what was then the shared
+// chain's highest migration (`0019_order_record.sql`) — no renumbering needed, no gap in the
+// ledger, and the dev PGlite double (which rebuilds fresh on every process boot) loses nothing by
+// dropping its old `0023`/`0024` aliases for the two ask_ai_* tables.
+//
+// NUMBERING A NEW ENTRY: the shared chain GROWS — check `platformMigrationsPackage`'s claimed-
+// prefix note (@caisson/platform-migrations) and pick a prefix sorting after the merged chain's
+// current highest name. A mid-chain landing renumbers every later migration's positional seq and
+// fails the next real deploy closed on checksum drift (the 2026-07-17 caisson-license failure:
+// these three demo entries were first named 0023-0025 against a shared chain that had itself
+// grown to 0026_affiliate_code). The assembled-ledger golden in `site-migrations.test.ts` now
+// pins this — append-only, never re-slot.
 import { TENANT_AI_CREDENTIAL_SCHEMA_SQL } from "@caisson/ai-kit";
 import type { MigrationFile } from "@caisson/platform-migrations";
 import { RATE_LIMIT_SCHEMA_SQL } from "@caisson/rate-limit";
@@ -91,10 +99,11 @@ export const SITE_LOCAL_MIGRATIONS: readonly MigrationFile[] = [
   // sandbox demo-run's per-IP / per-/64 quotas (the site DB had no `rate_limit` table before — it is
   // "boot-ensured by services/license" on ITS own DB, per platform-migrations' policy-guard comment;
   // the site owns a distinct DB and must create it here). RLS-scoped, so it lands after the app-role
-  // migration in the shared chain.
-  { name: "0023_rate_limit.sql", sql: RATE_LIMIT_SCHEMA_SQL },
+  // migration in the shared chain. 0027-0029 (not 0023-0025): the shared chain owns 0023-0026 —
+  // see the numbering note atop this file.
+  { name: "0027_rate_limit.sql", sql: RATE_LIMIT_SCHEMA_SQL },
   // CAISSON-110 (ADR-0350 F5 / ADR-0352). The demo-run daily budget counter + lead telemetry — both
   // global (non-tenant), no RLS, same posture as the ask_ai_* counters (0011/0012).
-  { name: "0024_demo_run_budget.sql", sql: DEMO_RUN_BUDGET_SCHEMA_SQL },
-  { name: "0025_demo_run_leads.sql", sql: DEMO_RUN_LEADS_SCHEMA_SQL },
+  { name: "0028_demo_run_budget.sql", sql: DEMO_RUN_BUDGET_SCHEMA_SQL },
+  { name: "0029_demo_run_leads.sql", sql: DEMO_RUN_LEADS_SCHEMA_SQL },
 ];

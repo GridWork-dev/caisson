@@ -193,9 +193,12 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
  * array, not this function's array-position: an `extra` entry's numeric prefix decides where it
  * lands, not where it sits in the array you pass in (apps/site/lib/deploy-migrate.ts deliberately
  * uses `0011`/`0012` to reproduce their pre-extraction slot — see its own module doc). apps/site's
- * extras have since claimed `0020`–`0022`, and the shared chain `0025`–`0026` (ADR-0315); a caller
- * with no historical slot to preserve should use `0027_*.sql` and up, landing after the shared
- * chain's `0026_affiliate_code.sql`.
+ * extras have since claimed `0020`–`0022` and `0027`–`0029` (CAISSON-110 demo-run), and the shared
+ * chain `0025`–`0026` (ADR-0315); the next free prefix — for THIS chain or any caller with no
+ * historical slot to preserve — is `0030_*.sql` and up. A mid-chain landing renumbers every later
+ * migration's positional seq and fails the next real deploy closed on checksum drift (the
+ * 2026-07-17 caisson-license failure); apps/site's `site-migrations.test.ts` golden-pins the
+ * assembled ledger append-only.
  */
 export function platformMigrationsPackage(
   extra: readonly MigrationFile[] = [],
