@@ -77,13 +77,25 @@ export const rekorTargetSchema = strictObject({
 export type RekorTarget = z.infer<typeof rekorTargetSchema>;
 
 /**
- * The pluggable target union (Fork F). v1 carried ONLY the TSA variant; v1.1 adds the Rekor public-log
- * variant. The OTS variant ({ kind: "ots"; grade: "externally-transparent" }) slots in beside it
- * (R9) — the whole point of keeping this a discriminated union.
+ * An OpenTimestamps public-log target (v1.1, Fork R-γ). Bitcoin-anchored via calendar servers;
+ * `grade` is pinned to `externally-transparent`. Like the Rekor target it requires the irreversible-
+ * publicity opt-in (R10). Its offline verify is a documented Bitcoin-header-dependent seam (v1.1 ships
+ * the submit leg; full verify is out of scope — see `anchor-ots.ts`).
+ */
+export const otsTargetSchema = strictObject({
+  kind: z.literal("ots"),
+  grade: z.literal("externally-transparent"),
+});
+export type OtsTarget = z.infer<typeof otsTargetSchema>;
+
+/**
+ * The pluggable target union (Fork F). v1 carried ONLY the TSA variant; v1.1 adds the Rekor + OTS
+ * public-log variants — the whole point of keeping this a discriminated union.
  */
 export const transparencyTargetSchema = z.discriminatedUnion("kind", [
   tsaTargetSchema,
   rekorTargetSchema,
+  otsTargetSchema,
 ]);
 export type TransparencyTarget = z.infer<typeof transparencyTargetSchema>;
 
@@ -161,14 +173,36 @@ export const transparencyReceiptSchema = strictObject({
 export type TransparencyReceipt = z.infer<typeof transparencyReceiptSchema>;
 
 /**
- * The receipt a `TransparencyLog.submit` returns, per target: a TSA `TimestampReceipt` OR a self-
- * contained Rekor `TransparencyReceipt`. Discriminated on `algorithm` (`rfc3161` vs
- * `rekor-v2-hashedrekord`); the OTS variant slots in beside them (R9). Existing rfc3161 receipts parse
- * unchanged — widening to a union is backward-compatible.
+ * An OpenTimestamps receipt (v1.1, Fork R-γ minimal drop-in). OTS needs NO per-entry signature — the
+ * calendar Merkle-trees all submitters and commits to Bitcoin — so `signature`/`verifier` are absent.
+ * `status: pending` holds the calendar's `PendingAttestation` (Bitcoin not yet confirmed); `complete`
+ * holds the upgraded proof. FULL verification requires Bitcoin block headers (documented seam, out of
+ * scope v1.1) — the persisted proof is durable evidence, upgraded/verified later.
+ */
+export const otsReceiptSchema = strictObject({
+  algorithm: z.literal("opentimestamps"),
+  /** `sha256(anchorBytes)` — the digest OTS calendars aggregate (lowercase hex). */
+  messageImprint: z.string().regex(/^[0-9a-f]{64}$/),
+  /** The calendar servers the digest was submitted to. */
+  calendars: z.array(z.string().url()).min(1),
+  /** base64 of the `.ots` proof bytes (a `PendingAttestation` while `pending`). */
+  proof: z.string().min(1),
+  /** `pending` = Bitcoin not yet confirmed; `complete` = upgraded proof landed. */
+  status: z.enum(["pending", "complete"]),
+  /** When the calendar accepted the digest (ISO-8601). */
+  submittedAt: z.string().min(1),
+});
+export type OtsReceipt = z.infer<typeof otsReceiptSchema>;
+
+/**
+ * The receipt a `TransparencyLog.submit` returns, per target: a TSA `TimestampReceipt`, a self-contained
+ * Rekor `TransparencyReceipt`, or an `OtsReceipt`. Discriminated on `algorithm`. Existing rfc3161
+ * receipts parse unchanged — widening to a union is backward-compatible.
  */
 export const anchorSubmitReceiptSchema = z.discriminatedUnion("algorithm", [
   timestampReceiptSchema,
   transparencyReceiptSchema,
+  otsReceiptSchema,
 ]);
 export type AnchorSubmitReceipt = z.infer<typeof anchorSubmitReceiptSchema>;
 

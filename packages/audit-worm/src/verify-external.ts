@@ -187,7 +187,16 @@ export async function verifyExternal(
   if (deps.target.kind === "tsa") {
     return verifyTsaReceipt(receipt, current.anchorBytes, expectedDigest, deps);
   }
-  return verifyRekorExternal(receipt, current.anchorBytes);
+  if (deps.target.kind === "rekor") {
+    return verifyRekorExternal(receipt, current.anchorBytes);
+  }
+  // OTS (Fork R-γ): v1.1 ships the submit leg only. Offline verification requires upgrading the `.ots`
+  // proof and confirming the Bitcoin commitment via block headers — a documented seam, out of scope
+  // here. Fail closed HONESTLY rather than claim a grade we cannot prove offline (Fork E).
+  return fail(
+    grade,
+    "OpenTimestamps offline verification requires Bitcoin block headers (documented seam, out of scope in v1.1)",
+  );
 }
 
 /** The TSA `trusted-timestamped` path: full RFC-3161 CMS verification (ADR-0346 P2). */

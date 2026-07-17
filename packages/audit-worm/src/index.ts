@@ -108,8 +108,10 @@ export {
   type TransparencyTarget,
   type TsaTarget,
   type RekorTarget,
+  type OtsTarget,
   type TimestampReceipt,
   type TransparencyReceipt,
+  type OtsReceipt,
   type AnchorSubmitReceipt,
   type AnchorReceipt,
   type AnchorOutboxState,
@@ -124,8 +126,10 @@ export {
   transparencyTargetSchema,
   tsaTargetSchema,
   rekorTargetSchema,
+  otsTargetSchema,
   timestampReceiptSchema,
   transparencyReceiptSchema,
+  otsReceiptSchema,
   anchorSubmitReceiptSchema,
   anchorReceiptSchema,
   anchorOutboxStateSchema,
@@ -148,6 +152,13 @@ export {
   rekorEntryToReceipt,
   verifyRekorReceipt,
 } from "./anchor-rekor.ts";
+
+// External anchoring v1.1 — OpenTimestamps drop-in (Fork R-γ; submit leg + stub; verify is a seam).
+export {
+  type OpenTimestampsAnchorLogConfig,
+  OpenTimestampsAnchorLog,
+  StubOpenTimestampsLog,
+} from "./anchor-ots.ts";
 
 export { AnchorOutbox, ANCHOR_OUTBOX_SCHEMA_SQL } from "./anchor-outbox.ts";
 
