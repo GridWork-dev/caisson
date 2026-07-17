@@ -39,6 +39,37 @@ const ATTACHMENT: ExternalAnchorAttachment = {
   receipt: RECEIPT,
 };
 
+/**
+ * A self-contained Rekor (`externally-transparent`) receipt — mirrors audit-worm's
+ * `transparencyReceiptSchema`. Every byte field is already base64/string (like `timestampReceipt.token`),
+ * so it is JSON-safe and canonicalizes cleanly with no byte-field breakage (R11).
+ */
+const REKOR_RECEIPT: JsonValue = {
+  accountId: "acct-1",
+  target: "rekor",
+  anchorLength: 3,
+  anchorDigest: "c".repeat(64),
+  grade: "externally-transparent",
+  receipt: {
+    algorithm: "rekor-v2-hashedrekord",
+    origin: "log2025-1.rekor.sigstore.dev",
+    checkpoint:
+      "log2025-1.rekor.sigstore.dev\n42\ncm9vdA==\n\n— log2025-1.rekor.sigstore.dev c2ln\n",
+    logKeyDetails: "PKIX_ED25519",
+    logPublicKey: "MCowBQYDK2VwAyEAcHVia2V5",
+    logId: "bG9nSWQ=",
+    logIndex: "27980982",
+    inclusionHashes: ["aGFzaDE=", "aGFzaDI="],
+    canonicalizedBody: "eyJib2R5Ijp0cnVlfQ==",
+  },
+  receiptedAt: "2026-07-17T00:00:01.000Z",
+};
+
+const REKOR_ATTACHMENT: ExternalAnchorAttachment = {
+  grade: "externally-transparent",
+  receipt: REKOR_RECEIPT,
+};
+
 function baseInput(): GenerateEvidencePackInput {
   return {
     tenantId: "tenant-x",
@@ -177,5 +208,46 @@ describe("generateEvidencePack — detached external-anchor attachment", () => {
       externalAnchor: ATTACHMENT,
     });
     expect(a.sha256).toBe(b.sha256);
+  });
+});
+
+// R11 — the SAME generic detached-attachment path carries a Rekor `externally-transparent` receipt: it
+// round-trips canonicalize() cleanly (base64 byte fields are JSON-safe), and the honest public-log
+// phrase renders — the source (external-anchor.ts) is already grade-agnostic, this pins the behavior.
+describe("externally-transparent (Rekor) receipt round-trips the pack format", () => {
+  test("buildExternalAnchorEntry canonicalizes a Rekor receipt back to identical JSON", () => {
+    const entry = buildExternalAnchorEntry(REKOR_ATTACHMENT);
+    expect(entry.grade).toBe("externally-transparent");
+    const decoded = JSON.parse(new TextDecoder().decode(entry.data));
+    // Byte fields survive canonicalization unchanged (no truncation / re-encoding).
+    expect(decoded.receipt.algorithm).toBe("rekor-v2-hashedrekord");
+    expect(decoded.receipt.canonicalizedBody).toBe("eyJib2R5Ijp0cnVlfQ==");
+    expect(decoded.receipt.inclusionHashes).toEqual(["aGFzaDE=", "aGFzaDI="]);
+  });
+
+  test("the generator tags the externally-transparent grade + renders the public-log phrase", () => {
+    const anchored = generateEvidencePack({
+      ...baseInput(),
+      externalAnchor: REKOR_ATTACHMENT,
+    });
+    expect(anchored.externalAnchorGrade).toBe("externally-transparent");
+    const summary = readZipEntry(anchored.archive, "auditor-summary.txt");
+    expect(summary).toMatch(/public/i);
+    const entry = readZipEntry(anchored.archive, EXTERNAL_ANCHOR_RECEIPT_ENTRY);
+    expect(JSON.parse(entry as string)).toMatchObject({ target: "rekor" });
+  });
+
+  test("an anchored Rekor pack is deterministic + leaves the signed body byte-identical", () => {
+    const plain = generateEvidencePack(baseInput());
+    const a = generateEvidencePack({
+      ...baseInput(),
+      externalAnchor: REKOR_ATTACHMENT,
+    });
+    const b = generateEvidencePack({
+      ...baseInput(),
+      externalAnchor: REKOR_ATTACHMENT,
+    });
+    expect(a.sha256).toBe(b.sha256);
+    expect(a.canonicalManifest).toBe(plain.canonicalManifest);
   });
 });
