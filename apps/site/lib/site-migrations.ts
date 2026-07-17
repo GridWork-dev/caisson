@@ -21,9 +21,14 @@
 // by dropping its old `0023`/`0024` aliases for the two ask_ai_* tables.
 import { TENANT_AI_CREDENTIAL_SCHEMA_SQL } from "@caisson/ai-kit";
 import type { MigrationFile } from "@caisson/platform-migrations";
+import { RATE_LIMIT_SCHEMA_SQL } from "@caisson/rate-limit";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 import { ASK_AI_QUESTION_SCHEMA_SQL } from "./ask-ai/question-log.ts";
 import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
+import {
+  DEMO_RUN_BUDGET_SCHEMA_SQL,
+  DEMO_RUN_LEADS_SCHEMA_SQL,
+} from "./demo-run/store.ts";
 
 // BYOK display metadata (ADR-0183) — holds NO secret: the encrypted key lives in ai-kit's
 // `tenant_ai_credential`; this table carries only the masked tail + version so the write-only edge
@@ -82,4 +87,14 @@ export const SITE_LOCAL_MIGRATIONS: readonly MigrationFile[] = [
     name: "0022_compliance_attestation.sql",
     sql: COMPLIANCE_ATTESTATION_SCHEMA_SQL,
   },
+  // CAISSON-110 (ADR-0350 F5). The shared @caisson/rate-limit account-store table backs the
+  // sandbox demo-run's per-IP / per-/64 quotas (the site DB had no `rate_limit` table before — it is
+  // "boot-ensured by services/license" on ITS own DB, per platform-migrations' policy-guard comment;
+  // the site owns a distinct DB and must create it here). RLS-scoped, so it lands after the app-role
+  // migration in the shared chain.
+  { name: "0023_rate_limit.sql", sql: RATE_LIMIT_SCHEMA_SQL },
+  // CAISSON-110 (ADR-0350 F5 / ADR-0352). The demo-run daily budget counter + lead telemetry — both
+  // global (non-tenant), no RLS, same posture as the ask_ai_* counters (0011/0012).
+  { name: "0024_demo_run_budget.sql", sql: DEMO_RUN_BUDGET_SCHEMA_SQL },
+  { name: "0025_demo_run_leads.sql", sql: DEMO_RUN_LEADS_SCHEMA_SQL },
 ];
