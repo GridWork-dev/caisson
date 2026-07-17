@@ -48,8 +48,8 @@ test("platform migrations apply in order then are idempotent", async () => {
   // 21 shared-chain migrations + the 8 apps/site-local extras (dense seq 1–29). CAISSON-64:
   // `SITE_LOCAL_MIGRATIONS` carries 0011/0012 (ask_ai_*, prod-canonical names) plus the net-new
   // 0020/0021/0022 (tenant_ai_credential / byok_key_meta / compliance_attestation) — previously
-  // dev-PGlite-only. CAISSON-110 (ADR-0350 F5) appended 0023_rate_limit / 0024_demo_run_budget /
-  // 0025_demo_run_leads (the sandbox demo-run store), taking the tail from 5 to 8 → +3 here.
+  // dev-PGlite-only. CAISSON-110 (ADR-0350 F5) appended 0027_rate_limit / 0028_demo_run_budget /
+  // 0029_demo_run_leads (the sandbox demo-run store), taking the tail from 5 to 8 → +3 here.
   expect(first.applied).toEqual([
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     22, 23, 24, 25, 26, 27, 28, 29,
