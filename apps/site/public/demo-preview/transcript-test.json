@@ -1,0 +1,9 @@
+{
+  "command": "bun run test",
+  "exitCode": 0,
+  "durationMs": 17,
+  "stdout": "bun test v1.3.14 (0d9b296a)\n",
+  "stderr": "$ bun test ./src\n\n 1 pass\n 0 fail\n 2 expect() calls\nRan 1 test across 1 file. [12.00ms]\n",
+  "stdoutTruncated": false,
+  "stderrTruncated": false
+}

@@ -54,9 +54,17 @@ WORKDIR /app
 # Docker auto-sets HOSTNAME to the container id — so without this the server binds only to the
 # container-hostname interface and Railway's edge gets a 502 (unlike docs/support-bot, which use
 # Bun.serve and bind 0.0.0.0 by default). This is Next's own documented Docker requirement.
+#
+# CAISSON_REGISTRY_INDEX_PATH is load-bearing for the sandbox demo-run route (CAISSON-110): its
+# generator (apps/site/lib/demo-run/run.ts `registryIndex()`) reads registry/index.json to build the
+# in-process scaffold. EXACT precedent apps/admin/Dockerfile (comp-grant boundary): Next's standalone
+# server.js runs `process.chdir(__dirname)` on boot, so at runtime cwd is /app/apps/site — the env var
+# is honored FIRST, before the cwd-relative fallback would ENOENT on /app/apps/site/registry/index.json.
+# Without it every /api/demo/run POST 500s in prod (fail-closed generation_failed).
 ENV NODE_ENV=production \
     PORT=3030 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    CAISSON_REGISTRY_INDEX_PATH=/app/registry/index.json
 
 # output:'standalone' traces the minimal node_modules subset the server actually needs into
 # .next/standalone, preserving the monorepo-relative path (server.js lands at apps/site/server.js,
@@ -65,6 +73,13 @@ ENV NODE_ENV=production \
 COPY --from=build /app/apps/site/.next/standalone ./
 COPY --from=build /app/apps/site/.next/static ./apps/site/.next/static
 COPY --from=build /app/apps/site/public ./apps/site/public
+
+# CAISSON-110: the demo-run generator reads the built registry index at runtime via a plain node:fs
+# read of a repo-root-relative path (loadRegistryIndexFromFile, @caisson/registry-schema) — NOT a JS
+# import, so Next's standalone output-file tracer never picks it up. Copied explicitly to the SAME
+# path CAISSON_REGISTRY_INDEX_PATH points at above. EXACT precedent: apps/admin/Dockerfile copies the
+# same index for its comp-grant boundary (ADR-0278 F1) for the identical tracer-miss reason.
+COPY --from=build /app/registry/index.json ./registry/index.json
 
 # Non-root: the standalone server never writes to disk at runtime (no ISR/revalidate — see
 # next.config.ts), so the root-owned, world-readable copies above need no chown. `bun` (uid/gid

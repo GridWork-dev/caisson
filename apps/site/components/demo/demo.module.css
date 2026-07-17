@@ -1,0 +1,334 @@
+/* /demo surface (T2). Token-only color (DESIGN.md §2), theme-aware by cascade; grid tracks are
+ * min-width:0 so code frames scroll inside themselves instead of blowing out the column. */
+
+/* ===== Run form ===== */
+.runner {
+  max-width: 52rem;
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--cs-space-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--cs-space-2);
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--cs-text-sm);
+  font-weight: var(--cs-weight-medium);
+  color: var(--cs-fg);
+}
+
+.input {
+  width: 100%;
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  color: var(--cs-fg);
+  font: inherit;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--cs-accent);
+  outline-offset: 1px;
+}
+
+.input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.formNote {
+  margin: var(--cs-space-4) 0 0;
+  max-width: 62ch;
+  font-size: var(--cs-text-xs);
+  line-height: var(--cs-leading-snug);
+  color: var(--cs-fg-muted);
+}
+
+/* ===== In-flight progress ===== */
+.progress {
+  margin-top: var(--cs-space-6);
+  display: grid;
+  gap: var(--cs-space-2);
+}
+
+.progressBar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--cs-surface-2);
+  overflow: hidden;
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--cs-accent);
+  animation: demoIndeterminate 1.1s var(--cs-ease-out) infinite;
+}
+
+@keyframes demoIndeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressFill {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+
+.progressLabel {
+  margin: 0;
+  font-size: var(--cs-text-sm);
+  color: var(--cs-fg-muted);
+}
+
+/* ===== State notes (403 / 429 / 503 / error) ===== */
+.stateNote {
+  margin-top: var(--cs-space-6);
+  padding: var(--cs-space-4);
+  max-width: 62ch;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: color-mix(in oklab, var(--cs-warning) 8%, var(--cs-surface-1));
+  color: var(--cs-fg);
+  font-size: var(--cs-text-sm);
+  line-height: var(--cs-leading-snug);
+}
+
+/* ===== Run result: module list + file browser ===== */
+.result {
+  margin-top: var(--cs-space-6);
+  display: grid;
+  gap: var(--cs-space-4);
+}
+
+.resultHead,
+.previewMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cs-space-2);
+}
+
+.resultTitle {
+  font-weight: var(--cs-weight-medium);
+  color: var(--cs-fg);
+}
+
+.resultRunId {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.moduleList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+}
+
+.moduleItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-1) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  font-size: var(--cs-text-xs);
+}
+
+.moduleItem[data-tier="paid"] {
+  border-color: color-mix(in oklab, var(--cs-accent) 45%, var(--cs-border));
+}
+
+.moduleTier {
+  color: var(--cs-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.65rem;
+}
+
+.browser {
+  display: grid;
+  grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+  gap: var(--cs-space-4);
+  align-items: start;
+}
+
+@media (max-width: 48rem) {
+  .browser {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.fileList {
+  list-style: none;
+  margin: 0;
+  padding: var(--cs-space-2);
+  max-height: 26rem;
+  overflow-y: auto;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+}
+
+.fileRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cs-space-2);
+  width: 100%;
+  padding: var(--cs-space-1) var(--cs-space-2);
+  border: 0;
+  border-radius: var(--cs-radius-sm);
+  background: transparent;
+  color: var(--cs-fg-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fileRow:hover {
+  background: var(--cs-surface-2);
+  color: var(--cs-fg);
+}
+
+.fileRow:focus-visible {
+  outline: 2px solid var(--cs-accent);
+  outline-offset: -2px;
+}
+
+.fileRow[data-active] {
+  background: color-mix(in oklab, var(--cs-accent) 14%, transparent);
+  color: var(--cs-fg);
+  box-shadow: inset 2px 0 0 var(--cs-accent);
+}
+
+.filePath {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileBytes {
+  margin-left: auto;
+  flex: none;
+  opacity: 0.7;
+}
+
+.viewer {
+  min-width: 0;
+}
+
+/* ===== Shared preview pane ===== */
+.preview {
+  display: grid;
+  gap: var(--cs-space-4);
+}
+
+.previewSteps {
+  display: grid;
+  gap: var(--cs-space-4);
+}
+
+/* ===== Excerpts ===== */
+.excerpts {
+  display: grid;
+  gap: var(--cs-space-8);
+}
+
+.excerpt {
+  display: grid;
+  gap: var(--cs-space-3);
+  min-width: 0;
+}
+
+.excerptHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--cs-space-3);
+}
+
+.excerptTitle {
+  margin: 0;
+  font-size: var(--cs-text-lg);
+  font-weight: var(--cs-weight-medium);
+  color: var(--cs-fg);
+}
+
+.excerptPath {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.emptyNote {
+  max-width: 60ch;
+  color: var(--cs-fg-muted);
+}
+
+/* ===== Ladder (F4) ===== */
+.ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--cs-space-5);
+  max-width: 46rem;
+}
+
+.ladderRung {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--cs-space-4);
+  align-items: start;
+}
+
+.ladderNum {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid var(--cs-border-strong);
+  background: var(--cs-surface-1);
+  color: var(--cs-fg);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--cs-weight-medium);
+}
+
+.ladderTitle {
+  margin: 0 0 var(--cs-space-1);
+  font-weight: var(--cs-weight-medium);
+  color: var(--cs-fg);
+}
+
+.ladderHere {
+  color: var(--cs-accent);
+  font-weight: 400;
+}
