@@ -443,7 +443,7 @@ export function verifyRekorReceipt(
       bytesEqual(s.blob.subarray(0, 4), expectKeyHash),
   );
   if (ownSig === undefined) return fail("no matching log checkpoint signature");
-  let checkpointOk = false;
+  let checkpointOk: boolean;
   try {
     checkpointOk = edVerify(
       null,
