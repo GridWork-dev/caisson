@@ -119,6 +119,15 @@ const FAQ = [
     answer: `Building the controls yourself runs $80k and 6–9 months for SOC 2 alone. A hosted platform is a recurring subscription that never ends. Owning the Compliance bundle source is ${COMPLIANCE_PRICE}, once — the controls are wired on day one, and an optional updates plan keeps framework mappings current if you want it.`,
   },
   {
+    question: "Can't I just have an AI coding assistant write these controls?",
+    answer:
+      "You can generate a first draft in an afternoon — but a plausible draft is exactly the trap on the money and crypto seams. Fail-closed RLS, a tamper-evident audit chain, per-tenant field encryption, and license-token verification are the parts where code that looks right passes review and still leaks a tenant or fails an audit. Caisson's are already written, tested in CI on every push, and yours to own — and someone still has to maintain and re-map them as frameworks move, which the updates plan does for you.",
+  },
+  {
+    question: "What support and updates come with the code I own?",
+    answer: `Every license includes support from a real person on email and Discord, business-days response, and 12 months of updates from your order date — registry access to any entitled-package version published in that window. After it you can renew updates for another 12 months at 40% of the then-current list price or let it lapse; either way the perpetual license keeps working, with no subscription or network call required to stay valid. The EULA's vendor-continuity clause keeps your license and offline verification intact even if the product is discontinued.`,
+  },
+  {
     question: "What happens if I stop paying?",
     answer: `Nothing you own goes away. The Compliance bundle is a one-time, perpetual purchase — the source and every control you bought stay yours. Only the optional Compliance Updates plan (${UPDATES_PRICE}) lapses, which means you stop receiving refreshed framework mappings, not that your code stops working.`,
   },
