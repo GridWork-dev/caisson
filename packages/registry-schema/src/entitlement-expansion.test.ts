@@ -112,12 +112,21 @@ describe("per-module bare-slug purchase-id form", () => {
     expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
   });
 
-  test("RESERVED_MODULE_ENTITLEMENT_IDS is empty — ui-pro graduated at its first publish", () => {
-    // ui-pro published 2026-07-07 (@caisson/ui-pro@0.1.0 indexed; everything@0.2.2 repins it off
-    // the 0.0.0 sentinel) and left the reservation in the SAME change — the documented graduation
-    // path alerting/retention-runner took (ADR-0150/0151). The mechanism stays for the next
-    // sold-before-published SKU.
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual([]);
+  test("RESERVED_MODULE_ENTITLEMENT_IDS reserves the built-but-unpublished agent-trajectory primitive", () => {
+    // ui-pro graduated 2026-07-07 (indexed @ 0.1.0), leaving the set empty — the documented path
+    // alerting/retention-runner took. It re-arms here for agent-trajectory: the trajectory-observation
+    // primitive ships but publish rides LAST behind the runtime loop slice, so its slug is reserved
+    // (fail-soft to nothing) until its first index/ledger entry, which drops it from this set.
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual(["agent-trajectory"]);
+  });
+
+  test("a reserved-but-unindexed slug (agent-trajectory) expands to nothing, never throws (TM-E)", () => {
+    // This fixture index carries no @caisson/agent-trajectory entry; a reserved slug must fail SOFT to
+    // an empty grant rather than fail-closed-throw and brick an unrelated purchased id alongside it.
+    expect([...expandEntitlements(index, ["agent-trajectory"])]).toEqual([]);
+    expect([
+      ...expandEntitlements(index, ["compliance", "agent-trajectory"]),
+    ]).toEqual([...expandEntitlements(index, ["compliance"])]);
   });
 
   test("with the reservation gone, an unindexed ui-pro fails closed like any unknown id", () => {

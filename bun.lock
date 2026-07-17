@@ -297,6 +297,22 @@
       "name": "@caisson/agent-runner",
       "version": "0.1.6",
       "dependencies": {
+        "@caisson/agent-trajectory": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/agent-trajectory": {
+      "name": "@caisson/agent-trajectory",
+      "version": "0.1.0",
+      "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
       },
@@ -352,6 +368,7 @@
         "@ai-sdk/openai": "^4.0.11",
         "@ai-sdk/openai-compatible": "^3.0.7",
         "@ai-sdk/provider": "^4.0.3",
+        "@caisson/agent-trajectory": "workspace:*",
         "@caisson/ai-config": "workspace:*",
         "@caisson/ai-meter": "workspace:*",
         "@caisson/credits": "workspace:*",
@@ -1670,6 +1687,8 @@
     "@caisson/agent-kernel": ["@caisson/agent-kernel@workspace:packages/agent-kernel"],
 
     "@caisson/agent-runner": ["@caisson/agent-runner@workspace:packages/agent-runner"],
+
+    "@caisson/agent-trajectory": ["@caisson/agent-trajectory@workspace:packages/agent-trajectory"],
 
     "@caisson/agentic-dev": ["@caisson/agentic-dev@workspace:packages/agentic-dev"],
 

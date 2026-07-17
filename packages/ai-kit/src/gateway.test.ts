@@ -62,7 +62,13 @@ import {
   inferStream,
   type InferOptions,
   type InferStreamOptions,
+  type TrajectoryRecorder,
 } from "./gateway.ts";
+import {
+  createMemoryTrajectoryStore,
+  TRAJECTORY_VERSION,
+  type TrajectoryEvent,
+} from "@caisson/agent-trajectory";
 
 let tp: TestPg;
 const A = "acct_kit_a";
@@ -1553,5 +1559,115 @@ describe("streaming infer — inferStream", () => {
     );
     expect(rows).toHaveLength(1);
     expect(rows[0]?.call_id).toBe(callId);
+  });
+});
+
+describe("trajectory observation — additive, never fails the metered call", () => {
+  // A recorder that assigns the append-only envelope (runId + monotonic seq) around each gateway
+  // event and appends it into a REAL memory store — the seam a governed run loop owns (CAISSON-111).
+  function recordingStore(runId: string) {
+    const store = createMemoryTrajectoryStore();
+    let seq = 0;
+    const recorder: TrajectoryRecorder = async (e) => {
+      await store.append({
+        eventId: randomUUID(),
+        runId,
+        seq: seq++,
+        version: TRAJECTORY_VERSION,
+        occurredAt: new Date().toISOString(),
+        ...e,
+      } as TrajectoryEvent);
+    };
+    return { store, recorder };
+  }
+
+  test("infer() emits model.call (prompt digest only) then model.usage (metered)", async () => {
+    await seed(1000);
+    const { store, recorder } = recordingStore("run_kit_1");
+    // usage 10 in / 20 out → 1 credit actual.
+    const model = mockModel("Hi world!");
+
+    const res = await infer(
+      "default",
+      { messages: [{ role: "user", content: "secret prompt body" }] },
+      baseOpts(model, cleanPolicy(), sink(), { recorder }),
+    );
+    expect(res.reconciled.actualCredits).toBe(1);
+
+    const events = await store.read("run_kit_1");
+    expect(events.map((e) => e.kind)).toEqual(["model.call", "model.usage"]);
+
+    const call = events[0];
+    expect(call?.kind).toBe("model.call");
+    if (call?.kind === "model.call") {
+      expect(call.payload.provider).toBe("openai");
+      expect(call.payload.model).toBe("model");
+      expect(call.payload.prompt.digest).toMatch(/^[0-9a-f]{64}$/);
+      expect(call.payload.prompt.byteLength).toBeGreaterThan(0);
+    }
+    // The prompt TEXT is NEVER carried in the trajectory — digest-ref only (AR-4).
+    expect(JSON.stringify(events)).not.toContain("secret prompt body");
+
+    const usage = events[1];
+    expect(usage?.kind).toBe("model.usage");
+    if (usage?.kind === "model.usage") {
+      expect(usage.payload.billingStatus).toBe("metered");
+      expect(usage.payload.inputTokens).toBe(10);
+      expect(usage.payload.outputTokens).toBe(20);
+      // The ledger's OWN integer — the same credits reconcile settled.
+      expect(usage.payload.credits).toBe(res.reconciled.actualCredits);
+    }
+  });
+
+  test("infer() swallows a recorder failure and surfaces a trajectory.record_failed warning", async () => {
+    await seed(1000);
+    const s = sink();
+    const boom: TrajectoryRecorder = () => {
+      throw new Error("recorder down");
+    };
+
+    const res = await infer(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(mockModel("pong"), cleanPolicy(), s, { recorder: boom }),
+    );
+
+    // The metered call completes normally — observation never breaks the money path.
+    expect(res.text).toBe("pong");
+    expect(res.reconciled.actualCredits).toBe(1);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(999);
+    // Both emit sites failed → warnings surfaced on the guard runtime's sink, no throw.
+    const warnings = s.events.filter(
+      (e) => e.name === "trajectory.record_failed",
+    );
+    expect(warnings.length).toBe(2);
+  });
+
+  test("inferStream() emits model.call then model.usage on a normal drain", async () => {
+    await seed(1000);
+    const { store, recorder } = recordingStore("run_kit_stream");
+    const model = mockStreamModel(["Hel", "lo"], {
+      inputTokens: 10,
+      outputTokens: 20,
+      totalTokens: 30,
+    });
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), sink(), { recorder }),
+    );
+    for await (const _delta of res.textStream) {
+      // drain to a normal finish
+    }
+    await res.settled;
+
+    const events = await store.read("run_kit_stream");
+    expect(events.map((e) => e.kind)).toEqual(["model.call", "model.usage"]);
+    const usage = events[1];
+    if (usage?.kind === "model.usage") {
+      expect(usage.payload.billingStatus).toBe("metered");
+      expect(usage.payload.outputTokens).toBe(20);
+    }
   });
 });

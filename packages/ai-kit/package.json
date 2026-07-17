@@ -29,6 +29,7 @@
     "@ai-sdk/openai": "^4.0.11",
     "@ai-sdk/openai-compatible": "^3.0.7",
     "@ai-sdk/provider": "^4.0.3",
+    "@caisson/agent-trajectory": "workspace:*",
     "@caisson/ai-config": "workspace:*",
     "@caisson/ai-meter": "workspace:*",
     "@caisson/credits": "workspace:*",
