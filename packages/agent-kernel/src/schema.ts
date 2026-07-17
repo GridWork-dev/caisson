@@ -83,6 +83,42 @@ export const AgentArtifact = strictObject({
 });
 
 /**
+ * The agentskills.io SKILL.md portability fields (CAISSON-116). Every field is OPTIONAL — an absent
+ * field ⇒ a byte-identical round-trip for every skill authored before they existed (ADR-0264
+ * discipline). Bounds mirror the spec's caps. `name`/`description` are bounded SKILL-SCOPED: only the
+ * skill member emits a SKILL.md, so the agent/rule members keep their looser `slug`/`nonEmpty` (their
+ * round-trips are untouched). The shared `slug` regex already matches the spec's name format exactly
+ * (lowercase alnum, single non-consecutive hyphens, no leading/trailing) — the only addition is the cap.
+ */
+const skillName = slug.max(64);
+const skillDescription = z.string().min(1).max(1024);
+/** A `metadata` string→string property bag (client-defined keys; the top-level `.strict()` still
+ * rejects unknown SKILL fields). Bounded key/value lengths + entry count. */
+const skillMetadata = z
+  .record(z.string().min(1).max(128), z.string().max(1024))
+  .refine((m) => Object.keys(m).length <= 32, {
+    message: "metadata may declare at most 32 entries",
+  });
+/** One `allowed-tools` token — a bare portability string (each non-empty, no internal whitespace, e.g.
+ * `Bash(git:*)` / `Read`). Deliberately NOT the tool-exec `CommandSpec` shape: this is a spec
+ * portability field emitted as a space-separated frontmatter string, never an execution gate. */
+const allowedToolToken = z
+  .string()
+  .max(128)
+  .regex(
+    /^\S+$/,
+    "an allowed-tools token must be non-empty with no whitespace",
+  );
+/** The optional SKILL.md fields a `SkillArtifact` gains (license, compatibility, metadata,
+ * allowed-tools). No `scripts`/`references`/`assets` — that trust boundary is a later write-gate. */
+const skillPortabilityFields = {
+  license: z.string().min(1).max(256).optional(),
+  compatibility: z.string().min(1).max(500).optional(),
+  metadata: skillMetadata.optional(),
+  allowedTools: z.array(allowedToolToken).min(1).max(64).optional(),
+};
+
+/**
  * A skill: an ordered workflow with a trigger class (the playbook surface). The raw shape (below) is
  * kept unexported/unrefined so it stays a `z.discriminatedUnion` member (a refined `ZodEffects` has no
  * `.shape` for the union to read the discriminant off); the exported `SkillArtifact` adds the
@@ -91,12 +127,13 @@ export const AgentArtifact = strictObject({
  */
 const SkillArtifactShape = strictObject({
   kind: z.literal("skill"),
-  name: slug,
-  description: nonEmpty,
+  name: skillName,
+  description: skillDescription,
   trigger: z.enum(["user", "manual", "runtime"]),
   steps: z.array(nonEmpty).min(1),
   dependencies,
   ...activationFields,
+  ...skillPortabilityFields,
 });
 export const SkillArtifact = SkillArtifactShape.refine(
   pathsRequiredWhenScoped,
