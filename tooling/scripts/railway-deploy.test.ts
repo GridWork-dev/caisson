@@ -3,13 +3,14 @@
 // pattern in packages/tool-exec/src/tool-exec.test.ts).
 import { describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
-import type { ExecFileSyncFn } from "./railway-deploy";
+import type { Args, ExecFileSyncFn } from "./railway-deploy";
 import {
   appendReceipt,
   archiveRefToDir,
   assertAncestorOfMain,
   buildReceiptRow,
   checkReceiptCollision,
+  main,
   parseArgv,
   parseReceipts,
   receiptsPath,
@@ -83,7 +84,10 @@ describe("resolveRef -- ref resolution", () => {
       "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     );
     expect(calls).toEqual([
-      { cmd: "git", args: ["rev-parse", "--verify", "main^{commit}"] },
+      {
+        cmd: "git",
+        args: ["rev-parse", "--verify", "--end-of-options", "main^{commit}"],
+      },
     ]);
   });
 
@@ -102,7 +106,13 @@ describe("assertAncestorOfMain -- ancestry check", () => {
     expect(calls).toEqual([
       {
         cmd: "git",
-        args: ["merge-base", "--is-ancestor", "deadbeef", "origin/main"],
+        args: [
+          "merge-base",
+          "--is-ancestor",
+          "--end-of-options",
+          "deadbeef",
+          "origin/main",
+        ],
       },
     ]);
   });
@@ -121,7 +131,10 @@ describe("archiveRefToDir -- clean staging via git archive | tar -x", () => {
     const { fn, calls } = fakeExec([archiveBuf, ""]);
     const stageDir = `/tmp/railway-deploy-test-${process.pid}`;
     archiveRefToDir("deadbeef", "/repo", stageDir, fn);
-    expect(calls[0]).toEqual({ cmd: "git", args: ["archive", "deadbeef"] });
+    expect(calls[0]).toEqual({
+      cmd: "git",
+      args: ["archive", "--end-of-options", "deadbeef"],
+    });
     expect(calls[1]?.cmd).toBe("tar");
     expect(calls[1]?.args).toEqual(["-x", "-C", stageDir]);
     rmSync(stageDir, { recursive: true, force: true });
@@ -242,5 +255,29 @@ describe("appendReceipt -- append-only", () => {
       { sha: "sha1", deployedAt: "t0", deployedBy: "Liam" },
     ]);
     expect(existing).toHaveLength(1);
+  });
+});
+
+describe("main -- P0 ordering: ancestry gates any deploy", () => {
+  test("railway up is never invoked when the ancestry check fails", async () => {
+    const { fn, calls } = fakeExec([
+      "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n", // resolveRef succeeds
+      new Error("exit code 1"), // assertAncestorOfMain fails -- main() must stop here
+    ]);
+    const args: Args = {
+      service: "caisson-site",
+      ref: "some-feature-branch",
+      force: false,
+      dryRun: false,
+    };
+
+    await expect(main(args, fn)).rejects.toThrow(
+      /is not an ancestor of origin\/main/,
+    );
+
+    // Only the resolve + ancestry-check git calls ran; archive and "railway up" never fired.
+    expect(calls).toHaveLength(2);
+    expect(calls.every((c) => c.cmd === "git")).toBe(true);
+    expect(calls.some((c) => c.cmd === "railway")).toBe(false);
   });
 });

@@ -61,8 +61,9 @@ jobs:
       - name: resolve deploy ref
         if: steps.guard.outputs.armed == 'true'
         id: resolve-ref
+        env:
+          RAW_REF: ${{ github.event.inputs.ref }}
         run: |
-          RAW_REF="${{ github.event.inputs.ref }}"
           echo "ref=${RAW_REF:-${{ github.sha }}}" >> "$GITHUB_OUTPUT"
       - name: fetch origin/main (ancestry check needs it)
         if: steps.guard.outputs.armed == 'true'
@@ -82,7 +83,8 @@ jobs:
         if: steps.guard.outputs.armed == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DEPLOY_REF: ${{ steps.resolve-ref.outputs.ref }}
         run: |
           bun tooling/scripts/railway-deploy.ts \
             --service caisson-site \
-            --ref "${{ steps.resolve-ref.outputs.ref }}"
+            --ref "$DEPLOY_REF"

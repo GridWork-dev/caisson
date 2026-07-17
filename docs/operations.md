@@ -160,6 +160,22 @@ suggested `git add`/`git commit`.
 - Secrets: a Railway project token (`RAILWAY_TOKEN`), scoped to `caisson-prod`. No Cloudflare
   deploy credential is needed for the site anymore.
 
+**PRE-ARM requirement (before adding `RAILWAY_TOKEN` as a repo secret):**
+
+1. The workflow's `resolve deploy ref` and deploy steps must pass `github.event.inputs.ref` /
+   `steps.resolve-ref.outputs.ref` through a step-level `env:` block and reference the shell
+   variable in `run:` -- never interpolate `${{ }}` directly into a `run:` script. This closes
+   the Actions script-injection sink on the runner holding the prod token. Verify it's still true
+   before arming (it is, as of the SHIP-audit fix that added this note).
+2. `RAILWAY_TOKEN` must live in a protected GitHub `production` environment with a
+   required-reviewer rule. `workflow_dispatch` runs the _dispatched ref's own copy_ of
+   `deploy-railway.yml` and `railway-deploy.ts` -- the ancestry guard only proves the deployed
+   _commit_ is safe, not that the _workflow code executing on that run_ hasn't been altered by
+   whoever triggered it. Environment protection is what gates the credentialed step itself.
+3. Deploy receipts (`docs/deploy/receipts/<service>.json`) are on-box uncommitted state -- the
+   single-use gate they provide only holds on the operator's persistent checkout, not a fresh
+   CI/clone checkout (see the `ponytail:` note at the gate in `railway-deploy.ts`).
+
 ---
 
 ## 6. Terraform: Cloudflare DNS + Access + WAF (`caisson.sh`)

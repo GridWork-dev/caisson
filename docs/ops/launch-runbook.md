@@ -319,7 +319,9 @@ the live checkout — it also refuses to redeploy a SHA the receipts file alread
 (`docs/deploy/receipts/<service>.json`) unless you pass `--force`.
 
 (Or let the §2.3 merge + armed auto-deploy — `deploy-railway.yml` — do it, if that's wired; verify
-either way per §4.)
+either way per §4.) **Before arming `RAILWAY_TOKEN`, read the PRE-ARM requirement block in
+`docs/operations.md` §5** — it needs the Actions-injection fix present plus a protected
+`production` environment with a required reviewer, not just the secret added.
 
 ### Verify (§1 of the required probes)
 

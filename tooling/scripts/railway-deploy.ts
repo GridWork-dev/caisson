@@ -44,7 +44,9 @@ export type ExecFileSyncFn = typeof execFileSync;
 
 const ArgsSchema = z
   .object({
-    service: z.string().min(1),
+    // Railway-slug bound (not just non-empty) -- closes a path-traversal into receiptsPath()
+    // below (`docs/deploy/receipts/${service}.json`) and the typo-defeats-single-use-gate variant.
+    service: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
     ref: z.string().min(1),
     force: z.boolean(),
     dryRun: z.boolean(),
@@ -142,10 +144,14 @@ export function resolveRef(
 ): string {
   let out: string | Buffer;
   try {
-    out = exec("git", ["rev-parse", "--verify", `${ref}^{commit}`], {
-      cwd,
-      encoding: "utf8",
-    });
+    out = exec(
+      "git",
+      ["rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`],
+      {
+        cwd,
+        encoding: "utf8",
+      },
+    );
   } catch {
     throw new Error(
       `railway-deploy: could not resolve ref "${ref}" to a commit (git rev-parse --verify failed)`,
@@ -162,7 +168,11 @@ export function assertAncestorOfMain(
   exec: ExecFileSyncFn = execFileSync,
 ): void {
   try {
-    exec("git", ["merge-base", "--is-ancestor", sha, "origin/main"], { cwd });
+    exec(
+      "git",
+      ["merge-base", "--is-ancestor", "--end-of-options", sha, "origin/main"],
+      { cwd },
+    );
   } catch {
     throw new Error(
       `railway-deploy: ${sha} is not an ancestor of origin/main -- refusing to deploy a ref not on main`,
@@ -180,7 +190,7 @@ export function archiveRefToDir(
   stageDir: string,
   exec: ExecFileSyncFn = execFileSync,
 ): void {
-  const archive = exec("git", ["archive", sha], {
+  const archive = exec("git", ["archive", "--end-of-options", sha], {
     cwd,
     maxBuffer: ARCHIVE_MAX_BUFFER,
   }) as Buffer;
@@ -212,17 +222,22 @@ export function resolveDeployedBy(
 // main
 // ============================================================================================
 
-async function main(): Promise<void> {
-  const args = parseArgv(process.argv.slice(2));
-
-  const sha = resolveRef(args.ref, REPO_ROOT);
-  assertAncestorOfMain(sha, REPO_ROOT);
+/** Exported (with the same `exec` seam as every other impure function above) so a test can drive
+ *  the real ordering -- resolve -> ancestry-assert -> archive -> deploy -- with an injected
+ *  double, instead of re-implementing the sequence. `exec` defaults to the real `execFileSync`
+ *  for the `import.meta.main` entrypoint below. */
+export async function main(
+  args: Args,
+  exec: ExecFileSyncFn = execFileSync,
+): Promise<void> {
+  const sha = resolveRef(args.ref, REPO_ROOT, exec);
+  assertAncestorOfMain(sha, REPO_ROOT, exec);
 
   const stageDir = mkdtempSync(join(tmpdir(), "railway-deploy-"));
   try {
-    archiveRefToDir(sha, REPO_ROOT, stageDir);
+    archiveRefToDir(sha, REPO_ROOT, stageDir, exec);
 
-    const deployedBy = resolveDeployedBy(REPO_ROOT);
+    const deployedBy = resolveDeployedBy(REPO_ROOT, exec);
     const deployedAt = new Date().toISOString();
     const row = buildReceiptRow(sha, deployedAt, deployedBy, args.force);
     const railwayArgs = ["up", "--service", args.service, "--ci"];
@@ -247,9 +262,14 @@ async function main(): Promise<void> {
     const existing = parseReceipts(
       existsSync(path) ? readFileSync(path, "utf8") : null,
     );
+    // ponytail: single-use gate holds only on the operator's on-box persistent checkout --
+    // receipts are a local uncommitted ledger (never git-committed by this tool, see file
+    // header), so a fresh clone/CI checkout reads empty here and the gate is a no-op there.
+    // Acceptable today because CI stays inert until RAILWAY_TOKEN is armed. Upgrade path if
+    // single-use must ever hold in CI: read from committed git state, or an O_EXCL lock.
     checkReceiptCollision(existing, sha, args.force);
 
-    execFileSync("railway", railwayArgs, { cwd: stageDir, stdio: "inherit" });
+    exec("railway", railwayArgs, { cwd: stageDir, stdio: "inherit" });
 
     const updated = appendReceipt(existing, row);
     mkdirSync(dirname(path), { recursive: true });
@@ -271,7 +291,7 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  main().catch((err: unknown) => {
+  main(parseArgv(process.argv.slice(2))).catch((err: unknown) => {
     process.stderr.write(`railway-deploy: ${(err as Error).message}\n`);
     process.exit(1);
   });
