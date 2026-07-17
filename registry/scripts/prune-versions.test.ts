@@ -6,7 +6,13 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildIndex, parseLedgerLines } from "./build-index";
-import { applyPrune, parsePruneLine, planPrune } from "./prune-versions";
+import {
+  applyPrune,
+  parseMissingFileText,
+  parsePruneLine,
+  planPrune,
+  runPrune,
+} from "./prune-versions";
 
 /** A minimal valid publish line (mirrors build-index.test.ts's `pub` fixture). */
 const pub = (id: string, version: string) => ({
@@ -159,6 +165,58 @@ describe("parsePruneLine (--missing-file format)", () => {
     expect(parsePruneLine("not-a-valid-line")).toBeNull();
     expect(parsePruneLine("@caisson/")).toBeNull();
     expect(parsePruneLine("@caisson/auth")).toBeNull(); // no version
+  });
+
+  /** Renders a report line EXACTLY the way r2-parity-probe.ts's renderReport does. */
+  const renderReportLine = (status: string, key: string, detail: string) =>
+    `  ${status.toUpperCase().padEnd(14)} ${key} — ${detail}`;
+
+  test("accepts a realistic r2-parity-probe.ts MISSING report line, rejects OK/summary lines", () => {
+    const missingLine = renderReportLine(
+      "missing",
+      "auth/auth-1.2.3.tgz",
+      "advertised in tarballs.json but 404 from R2",
+    );
+    expect(parsePruneLine(missingLine)).toEqual({
+      id: "@caisson/auth",
+      version: "1.2.3",
+      key: "@caisson/auth@1.2.3",
+    });
+
+    const okLine = renderReportLine(
+      "ok",
+      "auth/auth-1.0.0.tgz",
+      "abc123 . 10B",
+    );
+    expect(parsePruneLine(okLine)).toBeNull();
+
+    expect(
+      parsePruneLine("R2 parity: 96/99 advertised objects reproduce"),
+    ).toBeNull();
+    expect(parsePruneLine("RESULT: DRIFT DETECTED")).toBeNull();
+  });
+});
+
+describe("parseMissingFileText (skipped-line counting)", () => {
+  test("counts unparseable non-blank, non-comment lines; blanks and comments are exempt", () => {
+    const text = [
+      "@caisson/alpha@0.1.0",
+      "",
+      "# a comment",
+      "not-a-valid-line",
+      "@caisson/beta@1.0.0",
+      "also garbage",
+    ].join("\n");
+    const { targets, skipped } = parseMissingFileText(text);
+    expect(targets.map((t) => t.key)).toEqual([
+      "@caisson/alpha@0.1.0",
+      "@caisson/beta@1.0.0",
+    ]);
+    expect(skipped).toBe(2);
+  });
+
+  test("a clean file has zero skipped", () => {
+    expect(parseMissingFileText("@caisson/alpha@0.1.0\n").skipped).toBe(0);
   });
 });
 
@@ -409,6 +467,70 @@ describe("prune-versions golden / round-trip (ADR-0359)", () => {
       expect(readFileSync(ledgerPath, "utf8")).toBe(ledgerBefore);
       expect(readFileSync(indexPath, "utf8")).toBe(indexBefore);
       expect(readFileSync(sidecarPath, "utf8")).toBe(sidecarBefore);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("runPrune: skipped > 0 aborts BEFORE any write in --write mode, and reports exit 1 in dry-run too", () => {
+    const dir = tmpDir("skipped-abort");
+    try {
+      const { ledgerPath, indexPath, sidecarPath } = writeFixture(dir);
+      const ledgerBefore = readFileSync(ledgerPath, "utf8");
+      const indexBefore = readFileSync(indexPath, "utf8");
+      const sidecarBefore = readFileSync(sidecarPath, "utf8");
+      // One otherwise-clean, applicable target — proves skipped alone (not an empty target list)
+      // is what blocks the run: a mangled paste with ONE bad line must never half-apply the rest.
+      const targets = [
+        { id: "@caisson/alpha", version: "0.1.0", key: "@caisson/alpha@0.1.0" },
+      ];
+
+      const writeRun = runPrune({
+        targets,
+        skipped: 1,
+        ledgerText: ledgerBefore,
+        write: true,
+        delistedAt: "2026-07-17T20:00:00.000Z",
+        reason: "test prune",
+        ledgerPath,
+        indexPath,
+        sidecarPath,
+      });
+      expect(writeRun.applied).toBeNull();
+      expect(writeRun.exitCode).toBe(1);
+      // Nothing was written: applyPrune was never reached.
+      expect(readFileSync(ledgerPath, "utf8")).toBe(ledgerBefore);
+      expect(readFileSync(indexPath, "utf8")).toBe(indexBefore);
+      expect(readFileSync(sidecarPath, "utf8")).toBe(sidecarBefore);
+
+      const dryRun = runPrune({
+        targets,
+        skipped: 1,
+        ledgerText: ledgerBefore,
+        write: false,
+        delistedAt: "2026-07-17T20:00:00.000Z",
+        reason: "test prune",
+        ledgerPath,
+        indexPath,
+        sidecarPath,
+      });
+      expect(dryRun.applied).toBeNull();
+      expect(dryRun.exitCode).toBe(1); // fail-loud even though dry-run never writes either way
+
+      // A clean run (skipped: 0) over the SAME target set succeeds, proving skipped was the gate.
+      const cleanRun = runPrune({
+        targets,
+        skipped: 0,
+        ledgerText: ledgerBefore,
+        write: true,
+        delistedAt: "2026-07-17T20:00:00.000Z",
+        reason: "test prune",
+        ledgerPath,
+        indexPath,
+        sidecarPath,
+      });
+      expect(cleanRun.applied).not.toBeNull();
+      expect(cleanRun.exitCode).toBe(0);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

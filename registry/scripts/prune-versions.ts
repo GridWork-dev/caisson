@@ -23,8 +23,10 @@
 //
 // --missing-file <path> lines: one `@caisson/<slug>@<version>` pair per line (the primary,
 // documented form — matches a tarballs.json/ledger key exactly). Blank lines and `#`-comments are
-// skipped. The R2 object-key form `<slug>/<slug>-<version>.tgz` is also accepted, so a
-// r2-parity-probe.ts MISSING report line can be pasted straight in without reformatting.
+// skipped. The R2 object-key form `<slug>/<slug>-<version>.tgz` is also accepted. A pasted
+// r2-parity-probe.ts MISSING report line pastes straight in (its key is extracted and parsed the
+// same way); other probe report lines (OK, HASH-MISMATCH, the header/summary lines) are rejected
+// — grep MISSING first when pasting a full report.
 //
 // Defaults to dry-run (prints the plan only, writes nothing); --write applies. Idempotent: a pair
 // already carrying a version-delist is skipped loudly (status "already-delisted"), not an error —
@@ -64,11 +66,20 @@ export interface PruneTarget {
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/** Matches an r2-parity-probe.ts renderReport MISSING line's status + key prefix (after this
+ *  function's own leading-whitespace trim has already eaten the report's 2-space indent):
+ *  "MISSING" + the padEnd(14) padding + the explicit template space, then the R2 key, then the
+ *  " — " before the detail. Captures the key. Every other status (OK, HASH-MISMATCH,
+ *  SIZE-MISMATCH, UNREACHABLE) and the header/summary lines deliberately do NOT match. */
+const MISSING_REPORT_LINE = /^MISSING\s+(\S+)\s+—/u;
+
 /**
  * Parse one `--missing-file` line. Primary (documented) form: `@caisson/<slug>@<version>`. Also
- * accepts the R2 object-key form `<slug>/<slug>-<version>.tgz` so a probe's MISSING report lines
- * can be pasted directly. Blank lines and `#`-comments are skipped (null); malformed non-blank
- * lines are also skipped — the caller counts + reports them rather than aborting the whole file.
+ * accepts the R2 object-key form `<slug>/<slug>-<version>.tgz`, including a pasted
+ * r2-parity-probe.ts MISSING report line (its key is extracted via MISSING_REPORT_LINE and parsed
+ * the same way) — every other report line (OK, header, summary) is rejected. Blank lines and
+ * `#`-comments are skipped (null); malformed non-blank lines are also skipped — the caller counts
+ * + reports them rather than aborting the whole file.
  */
 export function parsePruneLine(raw: string): PruneTarget | null {
   const line = raw.trim();
@@ -84,12 +95,35 @@ export function parsePruneLine(raw: string): PruneTarget | null {
     return { id, version, key: `${id}@${version}` };
   }
 
-  const match = /^([a-z0-9-]+)\/\1-(.+)\.tgz$/.exec(line);
+  const r2Line = MISSING_REPORT_LINE.exec(line)?.[1] ?? line;
+  const match = /^([a-z0-9-]+)\/\1-(.+)\.tgz$/.exec(r2Line);
   const slug = match?.[1];
   const version = match?.[2];
   if (slug === undefined || version === undefined) return null;
   const id = `@caisson/${slug}`;
   return { id, version, key: `${id}@${version}` };
+}
+
+export interface ParsedMissingFile {
+  readonly targets: PruneTarget[];
+  /** Count of non-blank, non-comment lines that did NOT parse (e.g. a mangled paste, or a raw
+   *  r2-parity-probe.ts report paste that still has OK/header/summary lines mixed in). */
+  readonly skipped: number;
+}
+
+/** Parse a full `--missing-file` text into targets + an unparseable-line count. Pure — no file IO. */
+export function parseMissingFileText(text: string): ParsedMissingFile {
+  const targets: PruneTarget[] = [];
+  let skipped = 0;
+  for (const line of text.split("\n")) {
+    const parsed = parsePruneLine(line);
+    if (parsed === null) {
+      if (line.trim() !== "" && !line.trim().startsWith("#")) skipped++;
+      continue;
+    }
+    targets.push(parsed);
+  }
+  return { targets, skipped };
 }
 
 // ---------------------------------------------------------------------------
@@ -323,6 +357,54 @@ export function applyPrune(opts: ApplyPruneOpts): ApplyPruneResult {
   return { appended, indexBytes, tarballsRemoved };
 }
 
+export interface RunPruneOpts {
+  readonly targets: readonly PruneTarget[];
+  readonly skipped: number;
+  readonly ledgerText: string;
+  readonly write: boolean;
+  readonly delistedAt: string;
+  readonly reason: string;
+  readonly ledgerPath?: string | undefined;
+  readonly indexPath?: string | undefined;
+  readonly sidecarPath?: string | undefined;
+}
+
+export interface RunPruneResult {
+  readonly plan: PrunePlan;
+  /** null when nothing was (or could be) applied: dry-run, a skipped-line abort, or nothing to apply. */
+  readonly applied: ApplyPruneResult | null;
+  readonly exitCode: number;
+}
+
+/**
+ * The CLI's core decide-and-apply step, split out from `main` so the fail-loud contract is
+ * testable without spawning a subprocess: `skipped > 0` (any unparseable non-blank, non-comment
+ * `--missing-file` line — e.g. a raw probe-report paste that still has OK/header/summary lines in
+ * it) refuses to apply ANYTHING, in either mode. `applyPrune` is never called when skipped > 0 —
+ * abort BEFORE any write, so a mangled paste can never be mistaken for a clean full run.
+ */
+export function runPrune(opts: RunPruneOpts): RunPruneResult {
+  const plan = planPrune(opts.targets, opts.ledgerText);
+
+  if (opts.skipped > 0) {
+    return { plan, applied: null, exitCode: 1 };
+  }
+  if (!opts.write || plan.toPruneSidecar.length === 0) {
+    return { plan, applied: null, exitCode: plan.refused.length > 0 ? 1 : 0 };
+  }
+
+  const applied = applyPrune({
+    ledgerTargets: plan.toApply,
+    sidecarTargets: plan.toPruneSidecar,
+    delistedAt: opts.delistedAt,
+    reason: opts.reason,
+    ledgerPath: opts.ledgerPath,
+    indexPath: opts.indexPath,
+    sidecarPath: opts.sidecarPath,
+  });
+  return { plan, applied, exitCode: plan.refused.length > 0 ? 1 : 0 };
+}
+
 // ---------------------------------------------------------------------------
 // CLI entry point
 // ---------------------------------------------------------------------------
@@ -374,17 +456,9 @@ function parseCliArgs(): CliArgs {
 
 function main(): void {
   const args = parseCliArgs();
-  const lines = readFileSync(args.missingFile, "utf8").split("\n");
-  const targets: PruneTarget[] = [];
-  let skipped = 0;
-  for (const line of lines) {
-    const parsed = parsePruneLine(line);
-    if (parsed === null) {
-      if (line.trim() !== "" && !line.trim().startsWith("#")) skipped++;
-      continue;
-    }
-    targets.push(parsed);
-  }
+  const { targets, skipped } = parseMissingFileText(
+    readFileSync(args.missingFile, "utf8"),
+  );
 
   const label = args.write ? "[live]" : "[dry-run]";
   process.stdout.write(
@@ -394,7 +468,15 @@ function main(): void {
   const ledgerText = existsSync(LEDGER_PATH)
     ? readFileSync(LEDGER_PATH, "utf8")
     : "";
-  const plan = planPrune(targets, ledgerText);
+  const { plan, applied, exitCode } = runPrune({
+    targets,
+    skipped,
+    ledgerText,
+    write: args.write,
+    delistedAt: args.delistedAt,
+    reason: args.reason,
+  });
+
   for (const row of plan.rows) {
     process.stdout.write(
       `  [${row.status.toUpperCase().padEnd(16)}] ${row.target.key} — ${row.detail}\n`,
@@ -405,28 +487,29 @@ function main(): void {
     `registry/prune-versions: ${String(plan.toApply.length)} to version-delist, ${String(cleanupOnly)} sidecar-only cleanup, ${String(plan.refused.length)} refused\n`,
   );
 
+  if (skipped > 0) {
+    process.stderr.write(
+      `registry/prune-versions: fatal: ${String(skipped)} unparseable line(s) in ${args.missingFile} — refusing to ${args.write ? "apply anything" : "trust this as a clean plan"}. Blank lines and #-comments are fine; every other line must parse. Pasting a full r2-parity-probe.ts report? grep MISSING first.\n`,
+    );
+    process.exit(exitCode);
+  }
+
   if (!args.write) {
     process.stdout.write(
       "registry/prune-versions: dry-run — pass --write to apply\n",
     );
-    process.exit(plan.refused.length > 0 ? 1 : 0);
+    process.exit(exitCode);
   }
 
-  if (plan.toPruneSidecar.length === 0) {
+  if (applied === null) {
     process.stdout.write("registry/prune-versions: nothing to apply\n");
-    process.exit(plan.refused.length > 0 ? 1 : 0);
+    process.exit(exitCode);
   }
 
-  const result = applyPrune({
-    ledgerTargets: plan.toApply,
-    sidecarTargets: plan.toPruneSidecar,
-    delistedAt: args.delistedAt,
-    reason: args.reason,
-  });
   process.stdout.write(
-    `registry/prune-versions: appended ${String(result.appended)} delist line(s); rebuilt index.json (${String(result.indexBytes)} bytes); removed ${String(result.tarballsRemoved)} tarballs.json row(s)\n`,
+    `registry/prune-versions: appended ${String(applied.appended)} delist line(s); rebuilt index.json (${String(applied.indexBytes)} bytes); removed ${String(applied.tarballsRemoved)} tarballs.json row(s)\n`,
   );
-  process.exit(plan.refused.length > 0 ? 1 : 0);
+  process.exit(exitCode);
 }
 
 if (import.meta.main) {

@@ -192,13 +192,15 @@ describe("pre-publish pin check (the next version cut stays green)", () => {
     // module's own current workspace version is fine: the same version-PR run advertises + packs
     // the member in the same commit.
     const advertised = advertisedPairs(index);
-    // A delisted id never re-enters the index (ci-publish-step skips its workspace manifest), so
-    // its on-disk manifest must not count as "resolves at this cut" — and a pin TO one is dangling
-    // by definition (the served index will never carry it again).
+    // A MODULE-delisted id never re-enters the index (ci-publish-step skips its workspace
+    // manifest), so its on-disk manifest must not count as "resolves at this cut" — and a pin TO
+    // one is dangling by definition (the served index will never carry it again). Filtered to
+    // `d.version === undefined` (ADR-0359): a version-delisted module is still live and re-enters
+    // the index under its surviving versions, so it must not be folded into this set.
     const delisted = new Set(
-      parseLedgerLines(readFileSync(LEDGER_PATH, "utf8")).delists.map(
-        (d) => d.id,
-      ),
+      parseLedgerLines(readFileSync(LEDGER_PATH, "utf8"))
+        .delists.filter((d) => d.version === undefined)
+        .map((d) => d.id),
     );
     const workspaceCurrent = new Set<string>();
     const manifests = [] as {
