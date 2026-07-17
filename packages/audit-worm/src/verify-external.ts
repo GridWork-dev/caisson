@@ -1,26 +1,23 @@
-// src/verify-external.ts — chain-level external-anchor verification (T5; SPEC external-anchoring
-// Design §5, Fork E; ADR-0346 P2 = FULL ASN.1/CMS depth).
+// src/verify-external.ts — chain-level external-anchor verification (SPEC external-anchoring Design §5,
+// Fork E; ADR-0346 P2 = full CMS depth; ADR-0332/0346 v1.1 = offline inclusion-proof depth).
 //
-// `verifyExternal` sits beside `AuditChainStore.verify()` and answers a different question: not "is
-// the local chain internally consistent against its WORM anchor" (that is `verify()`), but "does a
-// stored external-anchor receipt genuinely attest THIS tenant's current anchor". V1 verifies the
-// `trusted-timestamped` (RFC-3161 TSA) grade to FULL depth and NOTHING else:
-//   1. a receipt object exists in WORM for the current anchor length (existence);
-//   2. the receipt's `anchorDigest` (and the token's messageImprint) byte-match `sha256(anchorBytes)`
-//      of the CURRENT anchor, compared constant-time (tamper catch);
-//   3. the RFC-3161 TimeStampToken parses as complete CMS DER, its signature verifies over the
-//      TSTInfo, the TSTInfo's imprint equals `sha256(anchorBytes)`, the signing cert carries the
-//      timeStamping EKU, and — when the buyer configures trust anchors — the TSA certificate chain
-//      validates against them (ADR-0346 P2, done via pkijs — no hand-rolled ASN.1).
+// `verifyExternal` sits beside `AuditChainStore.verify()` and answers a different question: not "is the
+// local chain internally consistent against its WORM anchor" (that is `verify()`), but "does a stored
+// external-anchor receipt genuinely attest THIS tenant's current anchor". It DISPATCHES on the target:
 //
-// FAIL-CLOSED at every step: a missing/malformed receipt, a digest mismatch, an unparseable or
-// unverifiable token, or a wrong grade all resolve to `{ verified: false, reason }` — never a throw
-// that a caller might read as "inconclusive", and never a `verified: true` on doubt.
+//   TSA target  → `trusted-timestamped`: existence + anchor-byte match + FULL RFC-3161 CMS verification
+//                 (token parses as CMS DER, signature verifies over the TSTInfo bound to the live anchor,
+//                 timeStamping EKU, and — when trust anchors are configured — cert-chain validation).
+//   Rekor target → `externally-transparent`: existence + anchor-byte match + a FULLY OFFLINE public-log
+//                 check (C2SP signed-note checkpoint against the receipt-embedded log key, RFC-6962
+//                 inclusion proof, `SHA-512(anchorBytes)` leaf-digest binding) — zero live TUF/Rekor
+//                 fetch. `verifyRekorReceipt` (anchor-rekor.ts) owns the crypto; this file wires it.
 //
-// GRADE HONESTY (Fork E, ADR-0332 Binding): the returned `grade` is ALWAYS `trusted-timestamped` in
-// v1. `verifyExternal` refuses to ever report `externally-transparent` — a receipt Caisson has not
-// verified against a PUBLIC log (which does not exist in v1) is not externally anchored. A receipt
-// whose stored grade is anything other than `trusted-timestamped` fails closed here.
+// FAIL-CLOSED at every step: a missing/malformed receipt, a digest mismatch, a grade/target mismatch, or
+// any unverifiable token/proof resolves to `{ verified: false, reason }` — never a throw a caller might
+// read as "inconclusive", and never `verified: true` on doubt. GRADE HONESTY (Fork E, ADR-0332 Binding):
+// the returned `grade` is exactly the target's grade; a `trusted-timestamped` receipt is NEVER reported
+// as `externally-transparent`, and vice-versa (a grade/receipt mismatch fails closed).
 import {
   Certificate,
   ContentInfo,
@@ -37,12 +34,13 @@ import {
   anchorReceiptSchema,
   sha256Hex,
   targetId,
+  type AnchorGrade,
+  type AnchorReceipt,
   type TransparencyTarget,
 } from "./anchor-transparency.ts";
+import { verifyRekorReceipt } from "./anchor-rekor.ts";
 import type { CurrentAnchorReader } from "./anchor-checkpoint.ts";
 
-/** The only grade v1 can produce or report (Fork E). Hard-coded so a bug can never widen it. */
-const V1_GRADE = "trusted-timestamped" as const;
 /** id-kp-timeStamping — RFC-3161 requires the TSA signing cert to carry this EKU. */
 const EKU_TIMESTAMPING = "1.3.6.1.5.5.7.3.8";
 /** X.509 extendedKeyUsage extension OID. */
@@ -50,15 +48,11 @@ const EKU_EXTENSION_OID = "2.5.29.37";
 
 /**
  * pkijs needs a WebCrypto engine for SignedData.verify. Bun exposes `globalThis.crypto` (WebCrypto)
- * globally; set it ONCE, idempotently. Nothing else in this package uses a pkijs crypto engine
- * (TsaAnchorLog only does DER encode/parse), so this is a private, side-effect-free-until-called set.
+ * globally; set it ONCE, idempotently. Only the TSA path uses it (the Rekor path is node:crypto).
  */
 let engineReady = false;
 function ensureCryptoEngine(): void {
   if (engineReady) return;
-  // Bun's WebCrypto `generateKey` overload set (X25519/Ed25519) is narrower than pkijs's
-  // `ICryptoEngine`, so the constructed engine needs a bridging cast — runtime is fully compatible
-  // (the RSA + digest surface verify uses is present); only the DOM-vs-Bun lib types diverge.
   const engine = new CryptoEngine({
     name: "caisson-audit-worm",
     crypto: globalThis.crypto,
@@ -82,34 +76,45 @@ export interface VerifyExternalDeps {
   readonly store: ArtifactStore;
   /** Reads the tenant's current anchor + its EXACT canonical bytes (same port the handler uses). */
   readonly reader: CurrentAnchorReader;
-  /** The anchor target (v1: a TSA target carrying `grade: "trusted-timestamped"`). */
+  /** The anchor target (TSA `trusted-timestamped` or Rekor `externally-transparent`). */
   readonly target: TransparencyTarget;
   /**
-   * Buyer-configured TSA CA root certificates (DER), Fork C. When provided, the token's certificate
-   * chain is validated against them (full P2 depth → `chainValidated: true`). When omitted, the
-   * signature + imprint + EKU are still verified but the chain is NOT anchored to a known root
+   * Buyer-configured TSA CA root certificates (DER), Fork C. TSA path only. When provided, the token's
+   * certificate chain is validated against them (`chainValidated: true`); when omitted, the signature +
+   * imprint + EKU are still verified but the chain is not anchored to a known root
    * (`chainValidated: false`) — the honest limit surfaced to the caller, never silently upgraded.
    */
   readonly trustAnchors?: readonly Uint8Array[];
 }
 
-/** The typed verdict. `grade` is ALWAYS `trusted-timestamped` in v1 — never `externally-transparent`. */
+/**
+ * The typed verdict. `grade` is exactly the target's grade — a discriminated union on (grade, verified)
+ * so the two grades never conflate, and a TSA verdict carries `chainValidated` while a Rekor verdict
+ * carries the public `logIndex`.
+ */
 export type AnchorVerification =
   | {
-      readonly grade: typeof V1_GRADE;
+      readonly grade: "trusted-timestamped";
       readonly verified: true;
       /** Whether the TSA cert chain was validated against buyer-configured trust anchors. */
       readonly chainValidated: boolean;
       readonly anchorLength: number;
     }
   | {
-      readonly grade: typeof V1_GRADE;
+      readonly grade: "externally-transparent";
+      readonly verified: true;
+      /** The public-log index the anchor is provably included at. */
+      readonly logIndex: string;
+      readonly anchorLength: number;
+    }
+  | {
+      readonly grade: AnchorGrade;
       readonly verified: false;
       readonly reason: string;
     };
 
-function fail(reason: string): AnchorVerification {
-  return { grade: V1_GRADE, verified: false, reason };
+function fail(grade: AnchorGrade, reason: string): AnchorVerification {
+  return { grade, verified: false, reason };
 }
 
 /** True iff the certificate carries the id-kp-timeStamping extended key usage (RFC-3161). */
@@ -120,21 +125,17 @@ function hasTimestampingEku(cert: Certificate | undefined): boolean {
 }
 
 /**
- * Verify that the WORM receipt for the tenant's CURRENT anchor genuinely attests it, to full v1
- * (`trusted-timestamped`) depth. Fail-closed; the returned `grade` is always `trusted-timestamped`.
+ * Verify a stored external-anchor receipt against the tenant's CURRENT anchor. Fail-closed; the returned
+ * `grade` is exactly the target's grade. Dispatches TSA (full CMS) vs Rekor (offline inclusion proof).
  */
 export async function verifyExternal(
   accountId: string,
   deps: VerifyExternalDeps,
 ): Promise<AnchorVerification> {
-  // Fork E honesty guard: v1 can only verify the timestamped grade. A public-log target has no
-  // inclusion-proof check in v1 and must not be reported as verified.
-  if (deps.target.grade !== V1_GRADE) {
-    return fail(`v1 verifyExternal supports only the ${V1_GRADE} grade`);
-  }
+  const grade = deps.target.grade;
 
   const current = await deps.reader.readCurrentAnchor(accountId);
-  if (current === null) return fail("tenant has no anchor to verify");
+  if (current === null) return fail(grade, "tenant has no anchor to verify");
 
   const expectedDigest = sha256Hex(current.anchorBytes);
   const target = targetId(deps.target);
@@ -142,11 +143,14 @@ export async function verifyExternal(
 
   // (1) existence.
   if ((await deps.store.head(receiptKey)) === null) {
-    return fail("no external-anchor receipt for the current anchor length");
+    return fail(
+      grade,
+      "no external-anchor receipt for the current anchor length",
+    );
   }
 
   // Read + parse the receipt, fail-closed on any malformation.
-  let receipt;
+  let receipt: AnchorReceipt;
   try {
     const obj = await deps.store.get(receiptKey);
     receipt = parseStrict(
@@ -154,45 +158,71 @@ export async function verifyExternal(
       JSON.parse(new TextDecoder().decode(obj.body)),
     );
   } catch {
-    return fail("external-anchor receipt is missing or malformed");
+    return fail(grade, "external-anchor receipt is missing or malformed");
   }
 
-  // Grade honesty: a v1 receipt must be trusted-timestamped (never report externally-transparent).
-  if (receipt.grade !== V1_GRADE) {
-    return fail(`receipt grade ${receipt.grade} is not verifiable in v1`);
+  // Grade honesty: the stored receipt's grade must match the target's grade exactly.
+  if (receipt.grade !== grade) {
+    return fail(
+      grade,
+      `receipt grade ${receipt.grade} does not match the target`,
+    );
   }
 
-  // (2) byte-match the CURRENT anchor against the receipt's stored digest + the token's imprint,
-  // constant-time. Length + digest + imprint must all agree with the live anchor.
+  // (2) byte-match the CURRENT anchor against the receipt's stored length + digest, constant-time.
   if (receipt.anchorLength !== current.length) {
-    return fail("receipt anchor length does not match the current anchor");
+    return fail(
+      grade,
+      "receipt anchor length does not match the current anchor",
+    );
   }
   if (!safeEqualFixed(receipt.anchorDigest, expectedDigest)) {
     return fail(
+      grade,
       "receipt anchor digest does not match the current anchor (tamper)",
     );
   }
-  if (!safeEqualFixed(receipt.receipt.messageImprint, expectedDigest)) {
-    return fail("receipt timestamp imprint does not match the current anchor");
+
+  // (3) grade-specific verification.
+  if (deps.target.kind === "tsa") {
+    return verifyTsaReceipt(receipt, current.anchorBytes, expectedDigest, deps);
+  }
+  return verifyRekorExternal(receipt, current.anchorBytes);
+}
+
+/** The TSA `trusted-timestamped` path: full RFC-3161 CMS verification (ADR-0346 P2). */
+async function verifyTsaReceipt(
+  receipt: AnchorReceipt,
+  anchorBytes: Uint8Array,
+  expectedDigest: string,
+  deps: VerifyExternalDeps,
+): Promise<AnchorVerification> {
+  const grade = "trusted-timestamped" as const;
+  if (receipt.receipt.algorithm !== "rfc3161") {
+    return fail(grade, "receipt is not an RFC-3161 timestamp receipt");
+  }
+  const token = receipt.receipt;
+  if (!safeEqualFixed(token.messageImprint, expectedDigest)) {
+    return fail(
+      grade,
+      "receipt timestamp imprint does not match the current anchor",
+    );
   }
 
-  // (3) FULL CMS verification of the RFC-3161 TimeStampToken.
   ensureCryptoEngine();
 
   let signedData: SignedData;
   try {
-    const tokenDer = Uint8Array.from(
-      Buffer.from(receipt.receipt.token, "base64"),
-    );
+    const tokenDer = Uint8Array.from(Buffer.from(token.token, "base64"));
     const asn1 = fromBER(tokenDer);
-    if (asn1.offset === -1) return fail("timestamp token is not valid DER");
+    if (asn1.offset === -1)
+      return fail(grade, "timestamp token is not valid DER");
     const contentInfo = new ContentInfo({ schema: asn1.result });
     signedData = new SignedData({ schema: contentInfo.content });
   } catch {
-    return fail("timestamp token is not a valid CMS SignedData");
+    return fail(grade, "timestamp token is not a valid CMS SignedData");
   }
 
-  // Parse buyer trust anchors (DER CA certs) if provided; a malformed anchor fails closed.
   const chainValidated = (deps.trustAnchors ?? []).length > 0;
   let trustedCerts: Certificate[] = [];
   if (chainValidated) {
@@ -203,39 +233,57 @@ export async function verifyExternal(
         return new Certificate({ schema: parsed.result });
       });
     } catch {
-      return fail("a configured TSA trust anchor is not valid DER");
+      return fail(grade, "a configured TSA trust anchor is not valid DER");
     }
   }
 
-  // pkijs treats an id-ct-TSTInfo token as COUNTERSIGNING external `data`: it recomputes
-  // sha256(data) and compares it to the token's messageImprint, verifies the CMS signature over the
-  // TSTInfo, and (with checkChain) validates the signer cert path to `trustedCerts`. Passing the
-  // CURRENT anchor bytes as `data` binds all of that to the live anchor in one vetted call.
   let result: { signatureVerified?: boolean; signerCertificate?: Certificate };
   try {
     result = (await signedData.verify({
       signer: 0,
-      data: toArrayBuffer(current.anchorBytes),
+      data: toArrayBuffer(anchorBytes),
       checkChain: chainValidated,
       trustedCerts,
       extendedMode: true,
     })) as { signatureVerified?: boolean; signerCertificate?: Certificate };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    return fail(`timestamp token verification failed: ${message}`);
+    return fail(grade, `timestamp token verification failed: ${message}`);
   }
 
   if (result.signatureVerified !== true) {
-    return fail("timestamp token signature did not verify");
+    return fail(grade, "timestamp token signature did not verify");
   }
   if (!hasTimestampingEku(result.signerCertificate)) {
-    return fail("timestamp signer certificate lacks the timeStamping EKU");
+    return fail(
+      grade,
+      "timestamp signer certificate lacks the timeStamping EKU",
+    );
   }
 
   return {
-    grade: V1_GRADE,
+    grade,
     verified: true,
     chainValidated,
-    anchorLength: current.length,
+    anchorLength: receipt.anchorLength,
+  };
+}
+
+/** The Rekor `externally-transparent` path: fully offline public-log inclusion verification. */
+function verifyRekorExternal(
+  receipt: AnchorReceipt,
+  anchorBytes: Uint8Array,
+): AnchorVerification {
+  const grade = "externally-transparent" as const;
+  if (receipt.receipt.algorithm !== "rekor-v2-hashedrekord") {
+    return fail(grade, "receipt is not a Rekor transparency receipt");
+  }
+  const result = verifyRekorReceipt(receipt.receipt, anchorBytes);
+  if (!result.ok) return fail(grade, result.reason);
+  return {
+    grade,
+    verified: true,
+    logIndex: result.logIndex,
+    anchorLength: receipt.anchorLength,
   };
 }

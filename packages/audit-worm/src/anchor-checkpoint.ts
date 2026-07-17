@@ -26,8 +26,8 @@ import {
   targetId,
   type AnchorOutboxKey,
   type AnchorReceipt,
+  type TransparencyLog,
   type TransparencyTarget,
-  type TrustedTimestampLog,
 } from "./anchor-transparency.ts";
 import type { AnchorOutbox } from "./anchor-outbox.ts";
 import { ArtifactExistsError, type ArtifactStore } from "./store.ts";
@@ -65,8 +65,12 @@ export interface AnchorCheckpointDeps {
   readonly store: ArtifactStore;
   /** The durable outbox (persist-before-egress state machine). */
   readonly outbox: AnchorOutbox;
-  /** The `trusted-timestamped` port — `TsaAnchorLog` in prod, `StubTrustedTimestampLog` in tests. */
-  readonly log: TrustedTimestampLog;
+  /**
+   * The target-agnostic anchoring port. `TsaAnchorLog` (`trusted-timestamped`) or `RekorAnchorLog` /
+   * `OpenTimestampsAnchorLog` (`externally-transparent`) in prod; a stub in tests. The handler is
+   * target-blind — it writes whatever receipt `submit` returns under the target's grade.
+   */
+  readonly log: TransparencyLog;
   /** Reads the tenant's current anchor + its canonical bytes (see {@link CurrentAnchorReader}). */
   readonly reader: CurrentAnchorReader;
   /** The anchor target (v1: a TSA target carrying `grade: "trusted-timestamped"`). */
@@ -151,7 +155,7 @@ export async function runAnchorCheckpoint(
     target,
     anchorLength: current.length,
     anchorDigest,
-    grade: deps.target.grade, // "trusted-timestamped" — a TSA target can carry no other grade (v1)
+    grade: deps.target.grade, // the target's pinned grade; the receipt shape matches it (union)
     receipt,
     receiptedAt: now().toISOString(),
   });
