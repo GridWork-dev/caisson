@@ -33,38 +33,6 @@
         }
       }
     },
-    "@caisson/agent-dev@0.3.0": {
-      "key": "agent-dev/agent-dev-0.3.0.tgz",
-      "shasum": "a4466f8dc2b1de54d069763b2f57de52916005a7",
-      "integrity": "sha512-+996ZKKospLldLlae4b3NOTNPhsSuTbQr84GOTZ4svdx5JiT6I7goy3qhhIzp37CETIsn3f7Wekl+GYQu/dvTA==",
-      "size": 54389,
-      "meta": {
-        "dependencies": {
-          "@caisson/agent-kernel": "0.3.0",
-          "@caisson/agent-runner": "0.1.3",
-          "@caisson/ai-config": "0.2.3",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/local-store": "0.2.3",
-          "@caisson/tool-exec": "0.1.4"
-        }
-      }
-    },
-    "@caisson/agent-dev@0.4.0": {
-      "key": "agent-dev/agent-dev-0.4.0.tgz",
-      "shasum": "40bdc72935c840c86f8e6c33cc0721e2b128eb16",
-      "integrity": "sha512-vzwK9Cc5hq90H0l2E0xIA4lZSZRHyyrANVXijQI6ElHYQVSmj42kv2cHZT8vsM5SDSEbZWIoZomW6kUjLHcXuw==",
-      "size": 30348,
-      "meta": {
-        "dependencies": {
-          "@caisson/agent-kernel": "0.3.1",
-          "@caisson/agent-runner": "0.1.4",
-          "@caisson/ai-config": "0.2.4",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/local-store": "0.2.4",
-          "@caisson/tool-exec": "0.1.5"
-        }
-      }
-    },
     "@caisson/agent-kernel@0.2.2": {
       "key": "agent-kernel/agent-kernel-0.2.2.tgz",
       "shasum": "6692bf89babc3044e9a51c52fd05abe7e47e941b",
@@ -85,30 +53,6 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.3.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/agent-kernel@0.3.1": {
-      "key": "agent-kernel/agent-kernel-0.3.1.tgz",
-      "shasum": "28c847a2101d16c7b2970d99d80024118afbf1bd",
-      "integrity": "sha512-B4eEoekQyyDTxgkkj7lg7qx3zruL+KbBQuhx5wcpuvpqjBem4o8a2fI4aV87QJND1iVUYToAV0pOdGhdcz4gRg==",
-      "size": 66870,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/agent-kernel@0.4.0": {
-      "key": "agent-kernel/agent-kernel-0.4.0.tgz",
-      "shasum": "c5f39c359535c437b417b73945a910d80ac5f11c",
-      "integrity": "sha512-ydVtoVAmOxrfM8FPIgP4cDhlKwlu7DPF8ulKiqopOJAxXaq5GOiDZNFTT8rinAn7JsK8fHsSrXbii02DHgbLWQ==",
-      "size": 30678,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
           "zod": "^3.23.8"
         }
       }
@@ -185,18 +129,6 @@
         }
       }
     },
-    "@caisson/agent-runner@0.1.4": {
-      "key": "agent-runner/agent-runner-0.1.4.tgz",
-      "shasum": "5740e0b2537855478588b0f1bb53992cf51946b9",
-      "integrity": "sha512-eQGg69D6pukotUU08UhLdY3bUrqi6wbdQ2wz6Vv6s4b+B6V8CWhEOXA8wCFdoy1IwQhnQlQwyX6Prnny82y1HA==",
-      "size": 35673,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/agent-runner@0.1.5": {
       "key": "agent-runner/agent-runner-0.1.5.tgz",
       "shasum": "9bdff53456edd6e9ea481a3ccbdb5dae4529bca9",
@@ -206,18 +138,6 @@
         "dependencies": {
           "@caisson/kernel": "0.4.3",
           "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/agent-runner@0.1.6": {
-      "key": "agent-runner/agent-runner-0.1.6.tgz",
-      "shasum": "f8a3af01f1a2394e1cdeed8ef0ef872a8190ae64",
-      "integrity": "sha512-I3W67iIo9Vlq5KgiryQoSk2JBruaFBMyWxbQ2p28mTlWyKR047jCayu0tC+N9/ZQoNQs1BevUxAMYjfyVbW/RA==",
-      "size": 15529,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.5.0",
-          "zod": "^4.0.0"
         }
       }
     },
@@ -246,12 +166,6 @@
         }
       }
     },
-    "@caisson/agentic-dev@0.2.0": {
-      "key": "agentic-dev/agentic-dev-0.2.0.tgz",
-      "shasum": "3f67e11df68b6f9b89a78a802f771e5e6c6403e0",
-      "integrity": "sha512-47lQLD7e7wYznz2FlKQTv3zVvDB31n1JV3yotAwSeOKbyROPKu52VCpo7J15NlfvJFPj+wc+xu85DpalQdZHBQ==",
-      "size": 1401
-    },
     "@caisson/agentic-dev@0.2.1": {
       "key": "agentic-dev/agentic-dev-0.2.1.tgz",
       "shasum": "c4960fc1001a80d0f84c676a00d957d9ec63a7d8",
@@ -278,30 +192,6 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.3.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/ai-config@0.2.4": {
-      "key": "ai-config/ai-config-0.2.4.tgz",
-      "shasum": "9fa6dc3f4a4fc1e10a2cb6912c0d43461a8d4998",
-      "integrity": "sha512-VSSb3E/ORttRYFBhRjmPRTqf3x+CxBwtL8vmsgM/65qU+cMAv2mnEOhI53B9IirQdtnF7aVh7n74bjQ1tdYkcA==",
-      "size": 15208,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/ai-config@0.3.0": {
-      "key": "ai-config/ai-config-0.3.0.tgz",
-      "shasum": "deac9b13543124472e3500f8a17b42b781144160",
-      "integrity": "sha512-c6rhh6ElxGHM1FYU5nkHy6JCOtqXOnjbV5cBvXIrHkjeF3me6xZdA2qGjQVVhnIEPVO9kZ7l5OYSiBGbOA0Q3g==",
-      "size": 11054,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
           "zod": "^3.23.8"
         }
       }
@@ -346,17 +236,6 @@
       "shasum": "45f877cebcc90b72c10c57dccb91a4a72c88dcad",
       "integrity": "sha512-FANeVCQT6UVUq0XX1+fkWC35FCZLBhYOLUzf/z6LvU039lSAc9cs1g9YLlwd2SdgujiOVLAvSNbMSebsy8l9pw==",
       "size": 28606,
-      "meta": {
-        "dependencies": {
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/ai-evals@0.3.1": {
-      "key": "ai-evals/ai-evals-0.3.1.tgz",
-      "shasum": "1d759c4f1fd4d5872383189ecead074c62fed16b",
-      "integrity": "sha512-/nwPyKD4b+YmZX6ZWhVjSSYwKrGUTo0q193KelW+hn0BKBWbrFvBIQ/8g5zEr9knqVV84bLycJOVr6CVvZgqjA==",
-      "size": 73152,
       "meta": {
         "dependencies": {
           "zod": "^3.23.8"
@@ -439,60 +318,6 @@
         }
       }
     },
-    "@caisson/ai-kit@0.3.1": {
-      "key": "ai-kit/ai-kit-0.3.1.tgz",
-      "shasum": "a55260ae0cf2be7e18ad7a16dbbc808c918f83e1",
-      "integrity": "sha512-GscxVCK+oH4fE9lMl2CYiuI9UksBkaLfgc2qPGHpXQiZwuug43aVNIiJptW9Js1a33gJUBOpRSuUUB8zyTEDYA==",
-      "size": 111429,
-      "meta": {
-        "dependencies": {
-          "@ai-sdk/amazon-bedrock": "^3.0.99",
-          "@ai-sdk/anthropic": "^2.0.83",
-          "@ai-sdk/azure": "^2.0.114",
-          "@ai-sdk/google": "^2.0.76",
-          "@ai-sdk/openai": "^2.0.109",
-          "@ai-sdk/openai-compatible": "^1.0.0",
-          "@ai-sdk/provider": "^2.0.3",
-          "@caisson/ai-config": "0.2.3",
-          "@caisson/ai-meter": "0.3.2",
-          "@caisson/credits": "0.3.2",
-          "@caisson/field-crypto": "0.2.3",
-          "@caisson/guardrails": "0.4.0",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/prompt-registry": "0.2.3",
-          "@caisson/tenancy-rls": "0.3.2",
-          "ai": "^5.0.206",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/ai-kit@0.4.0": {
-      "key": "ai-kit/ai-kit-0.4.0.tgz",
-      "shasum": "8f0df6215ef5219cb6c71d5a05c897428e29ac83",
-      "integrity": "sha512-3i+E19EVh7+ZGxlr0LTi3ivdR6IBzW66hL/DmMLKNJ31s8fHF1/mTERCN/J4VgGCrhuc0hCfT69tatIsuUepPQ==",
-      "size": 48429,
-      "meta": {
-        "dependencies": {
-          "@ai-sdk/amazon-bedrock": "^3.0.99",
-          "@ai-sdk/anthropic": "^2.0.83",
-          "@ai-sdk/azure": "^2.0.114",
-          "@ai-sdk/google": "^2.0.76",
-          "@ai-sdk/openai": "^2.0.109",
-          "@ai-sdk/openai-compatible": "^1.0.0",
-          "@ai-sdk/provider": "^2.0.3",
-          "@caisson/ai-config": "0.2.4",
-          "@caisson/ai-meter": "0.3.3",
-          "@caisson/credits": "0.4.0",
-          "@caisson/field-crypto": "0.2.4",
-          "@caisson/guardrails": "0.4.1",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/prompt-registry": "0.2.4",
-          "@caisson/tenancy-rls": "0.4.0",
-          "ai": "^5.0.206",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/ai-meter@0.3.1": {
       "key": "ai-meter/ai-meter-0.3.1.tgz",
       "shasum": "ec68453ee18c8f6880aaee24c504c994d60a562b",
@@ -521,34 +346,6 @@
         }
       }
     },
-    "@caisson/ai-meter@0.3.3": {
-      "key": "ai-meter/ai-meter-0.3.3.tgz",
-      "shasum": "6ac48b3aafe3bd2c6c49ed7866b4302500da8ce5",
-      "integrity": "sha512-F92sw/asgSTbepY8dukXbGG+8aOfPg8bjHZ39n9kGpIwYIIY0ONJB8iUDv7hPs4jUPRnRgkoBnxkEeg6KII3pw==",
-      "size": 74867,
-      "meta": {
-        "dependencies": {
-          "@caisson/credits": "0.3.2",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/tenancy-rls": "0.3.2",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/ai-meter@0.3.4": {
-      "key": "ai-meter/ai-meter-0.3.4.tgz",
-      "shasum": "d7a04157a66718845bb75815e03d56442241e624",
-      "integrity": "sha512-SjWlR4yscGnwfyOH13MNoeX6DO8A+nMqMeqiJY9WfzrVXDjvcYmYiD0PVbetaf9/FODESAKXQee6BNIlhcZpPA==",
-      "size": 31672,
-      "meta": {
-        "dependencies": {
-          "@caisson/credits": "0.4.0",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/tenancy-rls": "0.4.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/ai-meter@1.0.0": {
       "key": "ai-meter/ai-meter-1.0.0.tgz",
       "shasum": "30befbf358bbfac5e636a0b033fe3cc87d5d8fdd",
@@ -563,44 +360,6 @@
         },
         "peerDependencies": {
           "@caisson/ui": "^0.6.0",
-          "react": "^19.0.0",
-          "react-dom": "^19.0.0"
-        }
-      }
-    },
-    "@caisson/ai-meter@1.0.1": {
-      "key": "ai-meter/ai-meter-1.0.1.tgz",
-      "shasum": "be12fd7c0fb4539a3194663f8cda38de101c476a",
-      "integrity": "sha512-bi8qpeQkYhkGAbMTzwh154jGa7zACSw0DT856Iio1gB+G25gW3EmL+/zRnv9e/4z42UmNidzymEiZVRUPcjJKg==",
-      "size": 36481,
-      "meta": {
-        "dependencies": {
-          "@caisson/credits": "0.5.1",
-          "@caisson/kernel": "0.5.0",
-          "@caisson/tenancy-rls": "0.5.2",
-          "zod": "^4.0.0"
-        },
-        "peerDependencies": {
-          "@caisson/ui": "^0.6.1",
-          "react": "^19.0.0",
-          "react-dom": "^19.0.0"
-        }
-      }
-    },
-    "@caisson/ai-meter@1.0.2": {
-      "key": "ai-meter/ai-meter-1.0.2.tgz",
-      "shasum": "4a4301abfcc5130eb5d432326cebb4d04b7c93f0",
-      "integrity": "sha512-Qd1wGCi2CvYJY7FwQGmpa5o4lTn6dosA9ddxHFLfK0Dt3iJl1zubKadl6I25g8Eg0+PHkSWBGzjOkuJhIBzDMQ==",
-      "size": 36485,
-      "meta": {
-        "dependencies": {
-          "@caisson/credits": "0.5.2",
-          "@caisson/kernel": "0.5.0",
-          "@caisson/tenancy-rls": "0.5.2",
-          "zod": "^4.0.0"
-        },
-        "peerDependencies": {
-          "@caisson/ui": "^0.6.1",
           "react": "^19.0.0",
           "react-dom": "^19.0.0"
         }
@@ -624,12 +383,6 @@
           "react-dom": "^19.0.0"
         }
       }
-    },
-    "@caisson/ai-production@0.2.0": {
-      "key": "ai-production/ai-production-0.2.0.tgz",
-      "shasum": "0881e8c3bf874119691266b8f690bc632bfa9890",
-      "integrity": "sha512-wCmszuxc5pk/m47s6TuqyMCfrNiKIKwFlMDBo7IXc105eDt2Z/ubmzQSjXfC1/56GWOO8dyModYKMgxY1SKP+Q==",
-      "size": 1587
     },
     "@caisson/ai-production@0.2.1": {
       "key": "ai-production/ai-production-0.2.1.tgz",
@@ -663,19 +416,6 @@
         }
       }
     },
-    "@caisson/alerting@0.1.5": {
-      "key": "alerting/alerting-0.1.5.tgz",
-      "shasum": "c345826f9cb3f4e2c9fa6b1454892a8bac891bac",
-      "integrity": "sha512-QJRZhP3LKdnldKcNl57phbNeq8pbTSoh/PQWiw9BAdbmSrl06BRWhStR0DdJtb8jJMtqNEXyixxLHsuw1BvHuw==",
-      "size": 28766,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@caisson/email": "0.2.3",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/alerting@0.2.0": {
       "key": "alerting/alerting-0.2.0.tgz",
       "shasum": "ab89f6aadfe100602d4e493432af7080606f80eb",
@@ -699,17 +439,6 @@
           "@caisson/kernel": "0.5.0",
           "@caisson/email": "0.5.0",
           "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/analytics@0.1.0": {
-      "key": "analytics/analytics-0.1.0.tgz",
-      "shasum": "55a4435b0f658641af12544fab7918669ed9d780",
-      "integrity": "sha512-obxz7fj81ewjwKBKQMSTvaUoA9S4kgUdkVeViGxEczBtNopvMcXA6B5btlRluzcA/YX/f9QLIN+f0X5VsA8V7g==",
-      "size": 11903,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2"
         }
       }
     },
@@ -759,34 +488,6 @@
           "@aws-sdk/client-s3": "^3.1075.0",
           "@caisson/kernel": "0.3.0",
           "@caisson/tenancy-rls": "0.3.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/audit-worm@0.2.4": {
-      "key": "audit-worm/audit-worm-0.2.4.tgz",
-      "shasum": "e4b306e0d2695b65fe4795fabffbad3f2f9c3f0c",
-      "integrity": "sha512-avrzORJ5BwB0OUUcVg2TKWQR1zCq+jZVUhpRXuyIkLkeIG0ggXXwgUxVxbL7WGCnHzdD6wQ+bLYuf9UKS04s+A==",
-      "size": 55529,
-      "meta": {
-        "dependencies": {
-          "@aws-sdk/client-s3": "^3.1075.0",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/tenancy-rls": "0.3.2",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/audit-worm@0.3.0": {
-      "key": "audit-worm/audit-worm-0.3.0.tgz",
-      "shasum": "cecc7c09e643dd92bd02ff4f5fac360af0910155",
-      "integrity": "sha512-ZR76pHTWlGTs8Vd3Nv8eK0usGwOZW8sw/EBHFdZnPXz1jrg/oD3H790JckISxGZNQQ7GWIFHX29IwYlxAF4KKw==",
-      "size": 85043,
-      "meta": {
-        "dependencies": {
-          "@aws-sdk/client-s3": "^3.1075.0",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/tenancy-rls": "0.4.0",
           "zod": "^3.23.8"
         }
       }
@@ -880,30 +581,6 @@
         }
       }
     },
-    "@caisson/auth@0.3.0": {
-      "key": "auth/auth-0.3.0.tgz",
-      "shasum": "d4e62a53f41f962f9c366cf18496f830ebdada40",
-      "integrity": "sha512-I05OJBd0F7mqkzYu5W6zz4ca2FdrefsPZSBu9IoyeVvvDZRmL6LVrPmHKBpKpewA1eQE2D93IOFAwBNWt8sroA==",
-      "size": 27853,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@caisson/tenancy-rls": "0.3.2"
-        }
-      }
-    },
-    "@caisson/auth@0.3.1": {
-      "key": "auth/auth-0.3.1.tgz",
-      "shasum": "3449a3ed3139838e6a2e4d1e41ec408fb62afef8",
-      "integrity": "sha512-s1G1LPLw61uvteNWHfrnLScCk3v1gBaSNN+ojvOV8/0YsUwQjcvcJ6znuw8bZTw70vVcrJTWZs7yJuipxGMHtA==",
-      "size": 13461,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "@caisson/tenancy-rls": "0.4.0"
-        }
-      }
-    },
     "@caisson/auth@0.3.2": {
       "key": "auth/auth-0.3.2.tgz",
       "shasum": "0bc4a70ee613aa5d6b087404afbb301e779299e0",
@@ -925,34 +602,6 @@
         "dependencies": {
           "@caisson/kernel": "0.5.0",
           "@caisson/tenancy-rls": "0.5.2"
-        }
-      }
-    },
-    "@caisson/billing-orchestration@0.2.0": {
-      "key": "billing-orchestration/billing-orchestration-0.2.0.tgz",
-      "shasum": "8843b2de36259f9e7ff731be46b7d9a01010d757",
-      "integrity": "sha512-vsL5HnD0so/WZhGOjbu7okLuGQdboj9dCYW0cI139mjf2nlOwEIAg3NjnS0N7NK55xoccQ8MIjCsIbomIqOb4g==",
-      "size": 100337,
-      "meta": {
-        "dependencies": {
-          "@caisson/billing": "0.4.1",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/tenancy-rls": "0.3.2",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/billing-orchestration@0.2.1": {
-      "key": "billing-orchestration/billing-orchestration-0.2.1.tgz",
-      "shasum": "3606ce5b2cc73edd2e7d9c90638903535029d0c7",
-      "integrity": "sha512-Wdjq2uEAm678yhwOwIImEKjZQ++ahui44QOyo2U8kO0tuxRgWIblBKqku020iKpq5gAzxgIT201NOEx+8KMOug==",
-      "size": 40717,
-      "meta": {
-        "dependencies": {
-          "@caisson/billing": "0.5.0",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/tenancy-rls": "0.4.0",
-          "zod": "^3.23.8"
         }
       }
     },
@@ -1006,18 +655,6 @@
         "dependencies": {
           "@caisson/kernel": "0.3.0",
           "@caisson/tenancy-rls": "0.3.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/billing@0.5.0": {
-      "key": "billing/billing-0.5.0.tgz",
-      "shasum": "f32d7e7820db5b6805a54e46d0faa84789a5021d",
-      "integrity": "sha512-xEU1PrUS2MgKkyJe6BNttz37GKiLUxYhs74Ac2Qlf+g8d5P1HlFqrlDT/mDaCiBlHs+/GYTBLe10DJc65pTX5Q==",
-      "size": 63865,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
           "zod": "^3.23.8"
         }
       }
@@ -1082,44 +719,6 @@
         }
       }
     },
-    "@caisson/cli@0.3.0": {
-      "key": "cli/cli-0.3.0.tgz",
-      "shasum": "78084a06f98ada5244dba1980bd63d620158d039",
-      "integrity": "sha512-g55o4gx6jVuDvpcwePdUEnEr0HSq19Hf7OngbIXm9z2lx0B4LJDP/LBJkOBDQzs6iaP+r0gsdk+IjWLx0QUV6A==",
-      "size": 71695,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@caisson/migrate": "0.2.3",
-          "@caisson/registry-schema": "0.2.1",
-          "zod": "^3.23.8"
-        },
-        "bin": {
-          "create-caisson": "./dist/cli.js"
-        }
-      }
-    },
-    "@caisson/cli@0.4.0": {
-      "key": "cli/cli-0.4.0.tgz",
-      "shasum": "68c05b232ae2dd7aa4247e973e8eedc9d3764dfe",
-      "integrity": "sha512-EaKSqP77KAh6pPOF0ytdpL/lComMrhgbBUaxdGaVYQyMaqASRLBRiYZ6KKPmFpnXb3w+pc5Ty2ksI0nKrbJBSw==",
-      "size": 92919,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "@caisson/migrate": "0.2.4",
-          "@caisson/registry-schema": "0.3.0",
-          "@clack/prompts": "^1.7.0",
-          "zod": "^3.23.8"
-        },
-        "bin": {
-          "create-caisson": "./dist/cli.js"
-        },
-        "engines": {
-          "node": ">=20.12.0"
-        }
-      }
-    },
     "@caisson/cli@0.5.0": {
       "key": "cli/cli-0.5.0.tgz",
       "shasum": "a035f8bb7ad7b7a422732750f2742befebe29307",
@@ -1135,54 +734,6 @@
         },
         "bin": {
           "create-caisson": "./dist/cli.js"
-        },
-        "engines": {
-          "node": ">=20.12.0"
-        }
-      }
-    },
-    "@caisson/cli@0.6.0": {
-      "key": "cli/cli-0.6.0.tgz",
-      "shasum": "619beca6cc9af8bbdb9ecaaa9775bf98df64a93f",
-      "integrity": "sha512-oSEyRcKYy49aANyv9xxhcWik4YaZh35hgJxaXIabZ8OYtTZyKQwGGd1WBNgRgqXbcTgbGi5f8FyUs4p4ZS4GLg==",
-      "size": 24597,
-      "meta": {
-        "dependencies": {
-          "@caisson/ds-manifest": "0.2.0",
-          "@caisson/kernel": "0.5.0",
-          "@caisson/migrate": "0.2.6",
-          "@caisson/registry-schema": "0.5.0",
-          "@clack/prompts": "^1.7.0",
-          "@modelcontextprotocol/sdk": "^1.29.0",
-          "zod": "^4.0.0"
-        },
-        "bin": {
-          "create-caisson": "./dist/cli.js",
-          "caisson": "./dist/caisson.js"
-        },
-        "engines": {
-          "node": ">=20.12.0"
-        }
-      }
-    },
-    "@caisson/cli@0.6.1": {
-      "key": "cli/cli-0.6.1.tgz",
-      "shasum": "3e11cee3c25d93a910b65f20505bf9c48290c69b",
-      "integrity": "sha512-w/triIJGN2OsRVwKjN5jHOyycP2Qp80svSl7gDid3PFWiLX02nVTFfIr+jLCBD8Uy5IYLQu7mHno45+sOfigRA==",
-      "size": 24602,
-      "meta": {
-        "dependencies": {
-          "@caisson/ds-manifest": "0.2.0",
-          "@caisson/kernel": "0.5.0",
-          "@caisson/migrate": "0.2.6",
-          "@caisson/registry-schema": "0.5.1",
-          "@clack/prompts": "^1.7.0",
-          "@modelcontextprotocol/sdk": "^1.29.0",
-          "zod": "^4.0.0"
-        },
-        "bin": {
-          "create-caisson": "./dist/cli.js",
-          "caisson": "./dist/caisson.js"
         },
         "engines": {
           "node": ">=20.12.0"
@@ -1210,34 +761,6 @@
         },
         "engines": {
           "node": ">=20.12.0"
-        }
-      }
-    },
-    "@caisson/compliance-core@0.2.0": {
-      "key": "compliance-core/compliance-core-0.2.0.tgz",
-      "shasum": "9d719871e4493b5e55d39e53f07be5a77035d3d3",
-      "integrity": "sha512-g8xl9Hs6bvXchB8aoVaO4C6DLPYsjLi2zAoxJ8IezpDIPpVmVIuQuLGDD5SBsv91EwQycY0wZs/GbUNLy2ZOuQ==",
-      "size": 130173,
-      "meta": {
-        "dependencies": {
-          "@caisson/field-crypto": "0.2.3",
-          "@caisson/frameworks-pack": "0.1.0",
-          "@caisson/kernel": "0.4.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/compliance-core@0.2.1": {
-      "key": "compliance-core/compliance-core-0.2.1.tgz",
-      "shasum": "dc8b17f2b365d590ab17880d48a073fba5567677",
-      "integrity": "sha512-COFqR/Ua6O2+M3egcRqHtK/rqyexkPrAQ1a60YwBULNF2o3O2Mv3HUjYEw230t8cFGoo+mvBw1TG1MDVyqAXmQ==",
-      "size": 50883,
-      "meta": {
-        "dependencies": {
-          "@caisson/field-crypto": "0.2.4",
-          "@caisson/frameworks-pack": "0.2.0",
-          "@caisson/kernel": "0.4.2",
-          "zod": "^3.23.8"
         }
       }
     },
@@ -1317,48 +840,6 @@
           "@caisson/retention-runner": "0.1.2",
           "@caisson/tenancy-rls": "0.3.0",
           "@noble/ed25519": "^3.1.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/compliance@0.4.0": {
-      "key": "compliance/compliance-0.4.0.tgz",
-      "shasum": "4cd15dffeac782b266313a65823045adea5a3c41",
-      "integrity": "sha512-kOC8yDkWebE1ufaSzNwFZxlsr4EJ8TRyJimvMe7u5/3QkiCKj62dng8qLXgAJkJEBrISDjLqb/iIvvjvcXGt0g==",
-      "size": 200954,
-      "meta": {
-        "dependencies": {
-          "@caisson/alerting": "0.1.4",
-          "@caisson/audit-worm": "0.2.3",
-          "@caisson/compliance-core": "0.1.0",
-          "@caisson/field-crypto": "0.2.3",
-          "@caisson/frameworks-pack": "0.1.0",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/migrate": "0.2.3",
-          "@caisson/retention-runner": "0.1.4",
-          "@caisson/signing-primitive": "0.1.0",
-          "@caisson/tenancy-rls": "0.3.2",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/compliance@0.5.0": {
-      "key": "compliance/compliance-0.5.0.tgz",
-      "shasum": "45cdb0fa32341641fed0d89b43fcee0bb3b1621b",
-      "integrity": "sha512-YU1XnNGs6Z9DD7lPzmKsVk34MXC1+czE/zf4dUWxGE/t8absB6T+mNQb63Zn++zxUdZ57DXwdY+R7C2GCiXjVw==",
-      "size": 41998,
-      "meta": {
-        "dependencies": {
-          "@caisson/alerting": "0.1.5",
-          "@caisson/audit-worm": "0.2.4",
-          "@caisson/compliance-core": "0.2.0",
-          "@caisson/field-crypto": "0.2.4",
-          "@caisson/frameworks-pack": "0.2.0",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/migrate": "0.2.4",
-          "@caisson/retention-runner": "0.1.5",
-          "@caisson/signing-primitive": "0.2.0",
-          "@caisson/tenancy-rls": "0.4.0",
           "zod": "^3.23.8"
         }
       }
@@ -1452,36 +933,6 @@
         }
       }
     },
-    "@caisson/credits@0.4.0": {
-      "key": "credits/credits-0.4.0.tgz",
-      "shasum": "b49afbb6d60bd94bc191a95bf317f2654420abbf",
-      "integrity": "sha512-KU/w1KhI9TFUYWey6a8InJORUBx00Mb+ESVUcK+L6FKEKGBvEGL6ic3mazXGqhkTgX1G3JAk2x0kz8/IZF28kQ==",
-      "size": 62493,
-      "meta": {
-        "dependencies": {
-          "@caisson/jobs": "0.3.1",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/registry-schema": "0.2.1",
-          "@caisson/tenancy-rls": "0.3.2",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/credits@0.4.1": {
-      "key": "credits/credits-0.4.1.tgz",
-      "shasum": "50fcad96ceeb8c23f63f9b0f2659d27170fc0b65",
-      "integrity": "sha512-BxIpyvtcjYjRTi8K095ihHxMRMlfno63rR8VpcfHA/P1IQjopdxxtqeoUCx0+PBsa1nFxeEj1FNPcalHlUHyDA==",
-      "size": 26482,
-      "meta": {
-        "dependencies": {
-          "@caisson/jobs": "0.4.0",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/registry-schema": "0.3.0",
-          "@caisson/tenancy-rls": "0.4.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/credits@0.5.0": {
       "key": "credits/credits-0.5.0.tgz",
       "shasum": "107ac362619ce9d833cdf2ccdab12778497cae61",
@@ -1497,36 +948,6 @@
         }
       }
     },
-    "@caisson/credits@0.5.1": {
-      "key": "credits/credits-0.5.1.tgz",
-      "shasum": "511ca68f3cdc03102834adb3b3c395e8757219ac",
-      "integrity": "sha512-jTSZGsdsG6N9V6WlQZBMpuwGMJeVSeC4IjgC0V7xjyX/HKFxmE/UMYcd+TYTp0dUoiuP18hgzpcf1vBAUDfwkg==",
-      "size": 31843,
-      "meta": {
-        "dependencies": {
-          "@caisson/jobs": "0.5.1",
-          "@caisson/kernel": "0.5.0",
-          "@caisson/registry-schema": "0.5.0",
-          "@caisson/tenancy-rls": "0.5.2",
-          "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/credits@0.5.2": {
-      "key": "credits/credits-0.5.2.tgz",
-      "shasum": "ecaa80af7276f720eac1d3889b6d5aa3bc2c0761",
-      "integrity": "sha512-jtpf7KT0Og+EGV22yhZU/i62ZaHxGO1fFfrzbjSSVmJ/gb3Y0n/dMYSparry+FFgQUR93v4Dd2fXq0L2dQd8Jw==",
-      "size": 31865,
-      "meta": {
-        "dependencies": {
-          "@caisson/jobs": "0.5.1",
-          "@caisson/kernel": "0.5.0",
-          "@caisson/registry-schema": "0.5.1",
-          "@caisson/tenancy-rls": "0.5.2",
-          "zod": "^4.0.0"
-        }
-      }
-    },
     "@caisson/credits@0.5.3": {
       "key": "credits/credits-0.5.3.tgz",
       "shasum": "9b712a962037ae5226815b4b297f7c625b795e65",
@@ -1538,18 +959,6 @@
           "@caisson/kernel": "0.5.0",
           "@caisson/registry-schema": "0.5.2",
           "@caisson/tenancy-rls": "0.5.2",
-          "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/ds-manifest@0.1.0": {
-      "key": "ds-manifest/ds-manifest-0.1.0.tgz",
-      "shasum": "27941fb9b2fd04792c08d09a60216501b7d21a92",
-      "integrity": "sha512-G3vQB0WSZ3FZCFkKXZgPvNxmX6PTbaSfsLg6hknkNpw/aLDwPvkds0t8O7Y1PbBXgTq1vxmjVeiw5UPQriwB/Q==",
-      "size": 35756,
-      "meta": {
-        "dependencies": {
-          "culori": "^4.0.1",
           "zod": "^4.0.0"
         }
       }
@@ -1590,22 +999,6 @@
         }
       }
     },
-    "@caisson/email@0.3.0": {
-      "key": "email/email-0.3.0.tgz",
-      "shasum": "31a097801a93e658855514b5c19cc465c9c90d65",
-      "integrity": "sha512-NiF0NECJVnKD2gExXKqdctrHcvWbWlfWFLTZbHFFH7ojZw4xcjl6BKR3uby6fNPcAzwlqGdQhnCN+4jU3uUPBQ==",
-      "size": 34086,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@react-email/components": "^1.0.12",
-          "@react-email/render": "^2.0.10",
-          "nodemailer": "^9.0.3",
-          "react": "^19.2.0",
-          "react-dom": "^19.2.0"
-        }
-      }
-    },
     "@caisson/email@0.4.0": {
       "key": "email/email-0.4.0.tgz",
       "shasum": "99469f3b682bf9e8292aac17316b7dd769f6e740",
@@ -1636,24 +1029,6 @@
           "react-dom": "^19.2.0"
         }
       }
-    },
-    "@caisson/everything@0.2.0": {
-      "key": "everything/everything-0.2.0.tgz",
-      "shasum": "6b656ad19c67d8fe812f57aa52ae1ffa27b1e1a8",
-      "integrity": "sha512-AOELR56L/nCYa8EPJyxY8bSY8RTxI4M90Ic5jWOqa/vWbaGUFk2/vYsSAeU8hWsynQy82JbHFuAzU/ZzE0oXeQ==",
-      "size": 2156
-    },
-    "@caisson/everything@0.2.1": {
-      "key": "everything/everything-0.2.1.tgz",
-      "shasum": "d8134e0f5025b9f54e4657edb7728c6b7add93f8",
-      "integrity": "sha512-zrXNmBxZIFkQjQWtrPA+fVVcPmSfBD5FpVhIfhA7yjGqOVGLqmfm7Hy5BVL8mbEaJ22STPJ8TpHh0zdY6aWiXA==",
-      "size": 2385
-    },
-    "@caisson/everything@0.2.2": {
-      "key": "everything/everything-0.2.2.tgz",
-      "shasum": "c58aa2d9b0ade755cac22913ac9b6f249a21d8ac",
-      "integrity": "sha512-wfDQ2GbQkzMl8X3M1iNjTEpAbfcGPPbWGEkmWzaFE1iSsbPuiuVnxnDSsuBbSZPDtznhwaTsEm9teChmfKjNTA==",
-      "size": 2313
     },
     "@caisson/everything@0.2.3": {
       "key": "everything/everything-0.2.3.tgz",
@@ -1689,35 +1064,6 @@
         }
       }
     },
-    "@caisson/field-crypto@0.2.4": {
-      "key": "field-crypto/field-crypto-0.2.4.tgz",
-      "shasum": "408149e221d527cad98909b8f2df966569cf1e33",
-      "integrity": "sha512-3ovJsYTY6dF2s7UIdy5XhTOLyunAiddDscMkiWoqZ7xL03BVw92Ty+81zMmfrUxsWNIjDi5B0qJgQSI12rWhZA==",
-      "size": 99417,
-      "meta": {
-        "dependencies": {
-          "@aws-sdk/client-kms": "^3.1075.0",
-          "@caisson/kernel": "0.4.1",
-          "drizzle-orm": "^0.45.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/field-crypto@0.3.0": {
-      "key": "field-crypto/field-crypto-0.3.0.tgz",
-      "shasum": "e68e07d3bdeab43cdd1240cdb3149dc7725314fd",
-      "integrity": "sha512-qdJ5+5SOYAps3LXyC227aYRfGq2cTqdjAGDa5gGn+LR4K49k8HPOSc+yFFR6y4z3XUrmJRKVCwitiN5vRFN41g==",
-      "size": 49249,
-      "meta": {
-        "dependencies": {
-          "@aws-sdk/client-kms": "^3.1075.0",
-          "@caisson/kernel": "0.4.2",
-          "@google-cloud/kms": "^5.5.1",
-          "drizzle-orm": "^0.45.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/field-crypto@0.3.1": {
       "key": "field-crypto/field-crypto-0.3.1.tgz",
       "shasum": "365cceddbc60413fc88eb8424afeb3226b90c5d6",
@@ -1745,18 +1091,6 @@
           "@google-cloud/kms": "^5.5.1",
           "drizzle-orm": "^0.45.0",
           "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/frameworks-pack@0.2.0": {
-      "key": "frameworks-pack/frameworks-pack-0.2.0.tgz",
-      "shasum": "cdae563f6e824f592bf84d930f2b99f9a4fd3316",
-      "integrity": "sha512-ujZQvjHXQemUufsO7qIJLoMXWt9sJsDz8bSddzTvEfX9VcEnkr4ArbqvH4YZzm341dISjH0DPL2r16Vh2Bylwg==",
-      "size": 48579,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "zod": "^3.23.8"
         }
       }
     },
@@ -1806,32 +1140,6 @@
         "dependencies": {
           "@caisson/field-crypto": "0.2.1",
           "@caisson/kernel": "0.3.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/guardrails@0.4.1": {
-      "key": "guardrails/guardrails-0.4.1.tgz",
-      "shasum": "2dfe30d5096d7e696749050fcef9ad2ed4198aff",
-      "integrity": "sha512-iLfdh3v6iJLI7muE+0TtyzyFu8r4NNQuLd9yrsTeMkQWGkZyNXh+2c4LwOP4yV7ch3zFasDj9exHkdS/f/HSAA==",
-      "size": 54189,
-      "meta": {
-        "dependencies": {
-          "@caisson/field-crypto": "0.2.3",
-          "@caisson/kernel": "0.4.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/guardrails@0.4.2": {
-      "key": "guardrails/guardrails-0.4.2.tgz",
-      "shasum": "87a2c4aaf1e38f4a8685b248462e373bf277635d",
-      "integrity": "sha512-RLugxmnseAHXXzDz2IYEG0xQD2UjvfbkTcsRU90EKsxS1WtyuqhnUvZA/dC6Db6AN8HJXLG0PDAX6MJzodL1VQ==",
-      "size": 23526,
-      "meta": {
-        "dependencies": {
-          "@caisson/field-crypto": "0.2.4",
-          "@caisson/kernel": "0.4.2",
           "zod": "^3.23.8"
         }
       }
@@ -1886,36 +1194,6 @@
         "dependencies": {
           "@caisson/kernel": "0.3.0",
           "@caisson/tenancy-rls": "0.3.0",
-          "@trigger.dev/sdk": "^4.4.6",
-          "pg-boss": "^12.18.3",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/jobs@0.4.0": {
-      "key": "jobs/jobs-0.4.0.tgz",
-      "shasum": "5129695e16676f38c7b0ebf528b7786780cbc926",
-      "integrity": "sha512-SqlxAUkpoVKUw0y3RvB6ZXTxyP01n/p7J8WFN3euxwIOlsw3yeKepgkclCyUgfu6bA6aBjDhEzNqlhzyPDRCgA==",
-      "size": 47897,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@caisson/tenancy-rls": "0.3.2",
-          "@trigger.dev/sdk": "^4.4.6",
-          "pg-boss": "^12.18.3",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/jobs@0.4.1": {
-      "key": "jobs/jobs-0.4.1.tgz",
-      "shasum": "7fc8647cb49025f1eca962b40686807699065bb2",
-      "integrity": "sha512-6XT+6tedyIIFhYImq+eZ4xKPp19pMzO3MOU3RP2cYCWuRpSa6/ChCFR1JkFsue+nkkca6yZEFUGtQpOAuXxOgA==",
-      "size": 22338,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "@caisson/tenancy-rls": "0.4.0",
           "@trigger.dev/sdk": "^4.4.6",
           "pg-boss": "^12.18.3",
           "zod": "^3.23.8"
@@ -1982,20 +1260,6 @@
         }
       }
     },
-    "@caisson/kernel@0.4.2": {
-      "key": "kernel/kernel-0.4.2.tgz",
-      "shasum": "0f8f4ac43c31f22b29132ab2e91dc03765d77460",
-      "integrity": "sha512-l0re6LkprzNtaUJ3nLtrhLsNFOrPNhRKirltPuONyvw8DUgED9rE2KHXcv7S4ckJ5CyiAYMdjwwvOL2NaGZIag==",
-      "size": 124013,
-      "meta": {
-        "dependencies": {
-          "zod": "^3.23.8"
-        },
-        "bin": {
-          "caisson-gate": "./src/gate.ts"
-        }
-      }
-    },
     "@caisson/kernel@0.4.3": {
       "key": "kernel/kernel-0.4.3.tgz",
       "shasum": "4a052abb4055b84e0b2488b0d9f5c588068c37d6",
@@ -2044,18 +1308,6 @@
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.3.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/license-verify@0.3.0": {
-      "key": "license-verify/license-verify-0.3.0.tgz",
-      "shasum": "fcf7dad9a2c1b50031d5d3879d3e5f70e2436312",
-      "integrity": "sha512-j63QOLovX5uswQ4+eqUPIau7XQg/m69jDX7JL4kVbzkArNna0eBYDtAZucqwaYQht4gnXgGQkFwrdnswMG+taQ==",
-      "size": 35162,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
           "zod": "^3.23.8"
         }
       }
@@ -2112,77 +1364,11 @@
         }
       }
     },
-    "@caisson/local-ai@0.2.4": {
-      "key": "local-ai/local-ai-0.2.4.tgz",
-      "shasum": "d9b23f3be15f18ae84c77a8acca4885463ff065e",
-      "integrity": "sha512-p/UKVXFYV8k44HkHXl2RE8Jiz4t5Hc3TofNgNNwLQR2pdNH/8F8Ll6g/seDIZJc7Jqj6LUCAsL4V8ackHgfd9Q==",
-      "size": 120086,
-      "meta": {
-        "dependencies": {
-          "@caisson/field-crypto": "0.2.3",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/local-inference": "0.0.0",
-          "@caisson/local-privacy": "0.0.0",
-          "@caisson/license-verify": "0.2.3",
-          "@caisson/local-store": "0.2.3",
-          "@caisson/local-sync": "0.0.0"
-        }
-      }
-    },
-    "@caisson/local-ai@0.2.5": {
-      "key": "local-ai/local-ai-0.2.5.tgz",
-      "shasum": "fed3aec82244735f5f552792f586faabe12da365",
-      "integrity": "sha512-lWWqjLaOyhB5WIboHT4aYKwM3WSJg1XAYCML0mjFfLUQBEC+uUDxPU7g50u/JVm0NkZxO/OmoVyyZTr+oQpyng==",
-      "size": 14103,
-      "meta": {
-        "dependencies": {
-          "@caisson/field-crypto": "0.2.4",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/local-inference": "0.1.0",
-          "@caisson/local-privacy": "0.1.0",
-          "@caisson/license-verify": "0.3.0",
-          "@caisson/local-store": "0.2.4",
-          "@caisson/local-sync": "0.1.0"
-        }
-      }
-    },
-    "@caisson/local-first@0.2.0": {
-      "key": "local-first/local-first-0.2.0.tgz",
-      "shasum": "45fe67016361453bc338e614607d851ae11b9fe2",
-      "integrity": "sha512-R6SACk9zMxnWXL+IbhXFzVL+SWtwc/NHXN9o9HpmNrgbmoxo4aBVGdpvfjlnKJBd0SNMCcLsh9oQljT2iB+yKA==",
-      "size": 1489
-    },
     "@caisson/local-first@0.2.1": {
       "key": "local-first/local-first-0.2.1.tgz",
       "shasum": "03411b8412bcb6f4cb782b13f403424db89083dc",
       "integrity": "sha512-NreLtIJnygFu+BlG1hfvkzrK9VVALTVIxAgdkUqOevPZ5pQHXa3+D24gONB0527ptyMSHIX+9Oqa5JkO5JBBAw==",
       "size": 1712
-    },
-    "@caisson/local-inference@0.1.0": {
-      "key": "local-inference/local-inference-0.1.0.tgz",
-      "shasum": "3130332bbc7567d7eb7d9446996365d1d5120823",
-      "integrity": "sha512-la3cFs50dvm5s6yWbPm5eVVmAhQWUUjVmm56OArSGF/orbULuWalad117zm86lC683TexxMOp/CbecE/43h1Ng==",
-      "size": 97162,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@caisson/local-privacy": "0.0.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/local-inference@0.1.1": {
-      "key": "local-inference/local-inference-0.1.1.tgz",
-      "shasum": "7456c808ccfda07c494a873bfce4ddd9e377d87b",
-      "integrity": "sha512-nRe/HILdo8GvszJrbMdqyW/lKiW+py47QbHIljK4ef2UPuPzbFADGD9FkVCVNiOYp6Q1tlaBy1GoqcSEUYJd+w==",
-      "size": 39307,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "@caisson/local-privacy": "0.1.0",
-          "zod": "^3.23.8"
-        }
-      }
     },
     "@caisson/local-inference@0.1.2": {
       "key": "local-inference/local-inference-0.1.2.tgz",
@@ -2207,30 +1393,6 @@
           "@caisson/kernel": "0.5.0",
           "@caisson/local-privacy": "0.1.3",
           "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/local-privacy@0.1.0": {
-      "key": "local-privacy/local-privacy-0.1.0.tgz",
-      "shasum": "9413d980e5d0ebdbefa1ff2a81aa273614c4e20b",
-      "integrity": "sha512-g+mZmdjRBfZ348TMt/TK+XFBWT7f3zETsWCVpEVGCmYOjzU0dk6bAcnpqma4VwF8ImEibJ+FO1eVgNj16IrWKQ==",
-      "size": 18096,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/local-privacy@0.1.1": {
-      "key": "local-privacy/local-privacy-0.1.1.tgz",
-      "shasum": "fda90b953e08f723a9c7faf400f92d3c0439add7",
-      "integrity": "sha512-MwUJNI+g8h6Jjssjz6LlIu4hs9V206uosOE0rSJuDsh5B4J8c3c+4fXQ4iyflGYKeMKmUzGkifLXBhc8DTJQEw==",
-      "size": 8824,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "zod": "^3.23.8"
         }
       }
     },
@@ -2284,19 +1446,6 @@
         }
       }
     },
-    "@caisson/local-store@0.2.4": {
-      "key": "local-store/local-store-0.2.4.tgz",
-      "shasum": "e37ceb567243bd5a9b6f31d296f285e31ad2934a",
-      "integrity": "sha512-UtldoakJ9pBIwHP0vCk3Ot5aNkX9ioCctgyijq8vHYNaBXfIXU3pHRxuq11GMmsN4XIuwNXI8fSzo8x3u68ShA==",
-      "size": 67176,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "sqlite-vec": "^0.1.9",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/local-store@1.0.0": {
       "key": "local-store/local-store-1.0.0.tgz",
       "shasum": "af6e7490cbaa09161048961e303c77e4aa01791a",
@@ -2330,30 +1479,6 @@
           "@caisson/ui": "^0.6.1",
           "react": "^19.0.0",
           "react-dom": "^19.0.0"
-        }
-      }
-    },
-    "@caisson/local-sync@0.1.0": {
-      "key": "local-sync/local-sync-0.1.0.tgz",
-      "shasum": "45a92821a053adf711079b98c242b0c79d5c3696",
-      "integrity": "sha512-vWLWqFXyGXfu+WGin6OvHtTLIPdwAC1ITE/pdud0CZvaZ7axlmLwHM+XlgknpmQSptLqbEkIImTgcf2kErdRyg==",
-      "size": 46536,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/local-sync@0.1.1": {
-      "key": "local-sync/local-sync-0.1.1.tgz",
-      "shasum": "686b9d934a62892a65d85e197e197e3481235ec9",
-      "integrity": "sha512-5R9B0xKN217ZYrH2Feh04pQrD8p8uXn6zoOBq3wXh7rG77+vqFRBPliQxZfchphgaspVf1E05B5p/wiSfEev6A==",
-      "size": 20149,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "zod": "^3.23.8"
         }
       }
     },
@@ -2411,36 +1536,6 @@
         }
       }
     },
-    "@caisson/mcp-server@0.2.4": {
-      "key": "mcp-server/mcp-server-0.2.4.tgz",
-      "shasum": "66787b518a4f201cfc1f773e143ffefe878467be",
-      "integrity": "sha512-6FZccrPFl7CtKnZnTetmsDiptTaxUsJPKTIbffdfG55fVmiPySaHYImSNMwv9Ubx0S3rosANTF9XxDIER3zQ9w==",
-      "size": 88489,
-      "meta": {
-        "dependencies": {
-          "@caisson/ai-config": "0.2.3",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/registry-schema": "0.2.1",
-          "@modelcontextprotocol/sdk": "^1.29.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/mcp-server@0.2.5": {
-      "key": "mcp-server/mcp-server-0.2.5.tgz",
-      "shasum": "fc8ded604eea92424c09029a94a51c57a067fbb1",
-      "integrity": "sha512-htIhACxm7x8Ee1GxOYlHNq35SJJfk1Zw93x9guXy6nruJ8dnrczanjJ/eKmtIIGYCsE2vwMwFk8e79aSEsqhTw==",
-      "size": 38902,
-      "meta": {
-        "dependencies": {
-          "@caisson/ai-config": "0.2.4",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/registry-schema": "0.3.0",
-          "@modelcontextprotocol/sdk": "^1.29.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/mcp-server@0.2.6": {
       "key": "mcp-server/mcp-server-0.2.6.tgz",
       "shasum": "96ae861702c8d172fddb699e2e9c4f2ef980fe71",
@@ -2453,40 +1548,6 @@
           "@caisson/registry-schema": "0.5.0",
           "@modelcontextprotocol/sdk": "^1.29.0",
           "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/mcp-server@0.3.0": {
-      "key": "mcp-server/mcp-server-0.3.0.tgz",
-      "shasum": "976f3cfeb429d7be7743b6bd26a9191d40c00789",
-      "integrity": "sha512-vL+RC2AKEL1qa3W5bwvxS4YESFJZ+fTqDiCshtTxUe0yhOSB/dyy2ilPaNob0M5MN1j2UiwfqHod+DsVNPIbQg==",
-      "size": 48935,
-      "meta": {
-        "dependencies": {
-          "@caisson/ai-config": "0.3.2",
-          "@caisson/ds-manifest": "0.2.0",
-          "@caisson/kernel": "0.5.0",
-          "@caisson/registry-schema": "0.5.0",
-          "@caisson/ui": "0.6.1",
-          "@modelcontextprotocol/sdk": "^1.29.0",
-          "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/mcp-server@0.3.1": {
-      "key": "mcp-server/mcp-server-0.3.1.tgz",
-      "shasum": "289d36bd284b8f88b28358ad7e69c2d576c62e5d",
-      "integrity": "sha512-K9RBX2ah1e4nIwQVyJkHAMGsEWFs8p6XahYXIcKIJV6CCV2ARRVS+NzGr/QbKWFrfxEJvyKH5wxNCIo376lEoA==",
-      "size": 48967,
-      "meta": {
-        "dependencies": {
-          "@caisson/ai-config": "0.3.2",
-          "@caisson/ds-manifest": "0.2.0",
-          "@caisson/kernel": "0.5.0",
-          "@caisson/registry-schema": "0.5.1",
-          "@caisson/ui": "0.6.1",
-          "@modelcontextprotocol/sdk": "^1.29.0",
-          "zod": "^4.0.0"
         }
       }
     },
@@ -2569,20 +1630,6 @@
         }
       }
     },
-    "@caisson/migrate@0.2.4": {
-      "key": "migrate/migrate-0.2.4.tgz",
-      "shasum": "06fb0603b0f3c56798278d3c055d26b5b441fe4a",
-      "integrity": "sha512-KtXd+hsb3f/67GOiAXexh4iF1nOzycRzqn9jjWBDPZvF8TGGGlR9q/RFhcLqw5UTQrzWlEnUglctX3VK74i0wg==",
-      "size": 21241,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1"
-        },
-        "peerDependencies": {
-          "pg": "^8.0.0"
-        }
-      }
-    },
     "@caisson/migrate@0.2.5": {
       "key": "migrate/migrate-0.2.5.tgz",
       "shasum": "1fa1541490d4b74e2624b5eaa9a6ebbe65ac3e16",
@@ -2657,29 +1704,6 @@
         }
       }
     },
-    "@caisson/observability@0.2.4": {
-      "key": "observability/observability-0.2.4.tgz",
-      "shasum": "21d260de404b7f7363341bd106fd02088740f92b",
-      "integrity": "sha512-sS3LU0Le+PzrhAiFh1d/RePS+Jbgpj5i1HS34b4eWi/8PoseoII70DeNRIeT9S+CvhrA7aEJyJ0SA+J0bZUkFQ==",
-      "size": 28522,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@opentelemetry/api": "^1.9.1",
-          "@opentelemetry/core": "^2.8.0",
-          "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
-          "@opentelemetry/instrumentation": "^0.219.0",
-          "@opentelemetry/instrumentation-http": "^0.219.0",
-          "@opentelemetry/instrumentation-pg": "^0.71.0",
-          "@opentelemetry/instrumentation-undici": "^0.29.0",
-          "@opentelemetry/resources": "^2.8.0",
-          "@opentelemetry/sdk-node": "^0.219.0",
-          "@opentelemetry/sdk-trace-base": "^2.8.0",
-          "@opentelemetry/semantic-conventions": "^1.41.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/observability@0.3.0": {
       "key": "observability/observability-0.3.0.tgz",
       "shasum": "88eae61cac82fc71cdbe26b27a9a9759ad43a129",
@@ -2729,34 +1753,6 @@
           "@opentelemetry/sdk-trace-base": "^2.8.0",
           "@opentelemetry/semantic-conventions": "^1.41.1",
           "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/org-controls@0.2.0": {
-      "key": "org-controls/org-controls-0.2.0.tgz",
-      "shasum": "ec680e39b630c7d3ffe0db919a0ee61b6cc0904b",
-      "integrity": "sha512-4ZG8PAzqLMnUSfFqz6FB/0zS0CZ3JOAeNmnEdWvIa9uTbpWWG0xv48RWMfJqA/nFgAoh7+KVX5xZtMEeR/6eEQ==",
-      "size": 29239,
-      "meta": {
-        "dependencies": {
-          "@caisson/auth": "0.2.3",
-          "@caisson/kernel": "0.4.1",
-          "@caisson/tenancy-rls": "0.3.2",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/org-controls@0.2.1": {
-      "key": "org-controls/org-controls-0.2.1.tgz",
-      "shasum": "03e9d451239b1f064c49fa455c939dd0baa2ecc2",
-      "integrity": "sha512-xKUKNO/nCKQVrqEZ12r7H8JGwVullWwvqDAkP581jwbAA8xhJbPmcXBx9fbz0qHz8cAEFnbeGetaObp4qknVZg==",
-      "size": 12515,
-      "meta": {
-        "dependencies": {
-          "@caisson/auth": "0.3.0",
-          "@caisson/kernel": "0.4.2",
-          "@caisson/tenancy-rls": "0.4.0",
-          "zod": "^3.23.8"
         }
       }
     },
@@ -2812,28 +1808,6 @@
         }
       }
     },
-    "@caisson/platform-reads@0.1.5": {
-      "key": "platform-reads/platform-reads-0.1.5.tgz",
-      "shasum": "31494ca057a11cd5a1f6ee5d3d27a766cf9cdf13",
-      "integrity": "sha512-nWFAmWGmfwIG0MYgf8vP6jS4s4piNAfXZc2Sr6S4im9LAUCAQzCqcQjqZZ94v7FqMO061XysQ6fUXUYDQq4IkQ==",
-      "size": 8898,
-      "meta": {
-        "dependencies": {
-          "@caisson/tenancy-rls": "0.3.2"
-        }
-      }
-    },
-    "@caisson/platform-reads@0.1.6": {
-      "key": "platform-reads/platform-reads-0.1.6.tgz",
-      "shasum": "e893f0fe0a62a2dac168a2612fe2c6a64e346c23",
-      "integrity": "sha512-4OQPPXOHq66cOKMnWUOHDlZSJ4BJqyzqbcCkoccPpJrhcclyRnmynFRokMKRm0OZH7M4xogWrEfkEL5z3taueQ==",
-      "size": 6302,
-      "meta": {
-        "dependencies": {
-          "@caisson/tenancy-rls": "0.4.0"
-        }
-      }
-    },
     "@caisson/platform-reads@0.2.0": {
       "key": "platform-reads/platform-reads-0.2.0.tgz",
       "shasum": "d9826c2ded06b3c92debb848af1bf7b2abb0004e",
@@ -2880,32 +1854,6 @@
         }
       }
     },
-    "@caisson/pricebook@0.4.0": {
-      "key": "pricebook/pricebook-0.4.0.tgz",
-      "shasum": "1fea28f74bc4e81b32a9716d12846e3f46c3cad6",
-      "integrity": "sha512-2RiDHfWEeNe0Mql4Pan7Gi9HYXaO1VpP1zyS6Rze2RMHZY7mkRZs20pPEzVtzLnB34kixFVnSNd7rgjENOdenA==",
-      "size": 56904,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@caisson/registry-schema": "0.2.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/pricebook@0.5.0": {
-      "key": "pricebook/pricebook-0.5.0.tgz",
-      "shasum": "c2cdb92d73a035b868135100f8832e9f2af7b1cd",
-      "integrity": "sha512-Y6GKBgWzWazES7i+GH8GMFxy20Hui85HreJSnIgFqiBoYNCe0Ct4zrv9EQYD5U7N9TaVhmWJ7zB70FrPr67mEw==",
-      "size": 63391,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "@caisson/registry-schema": "0.3.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/pricebook@0.5.1": {
       "key": "pricebook/pricebook-0.5.1.tgz",
       "shasum": "8450b81b3bdab690719fac19c46a7ff2afa4f486",
@@ -2916,32 +1864,6 @@
           "@caisson/kernel": "0.4.3",
           "@caisson/registry-schema": "0.5.0",
           "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/pricebook@0.5.2": {
-      "key": "pricebook/pricebook-0.5.2.tgz",
-      "shasum": "b66ad8208e671e588ec16713c93b79600a620135",
-      "integrity": "sha512-0iTJqVw9Ujy1ZkIahyQg5niCtKMyY9OvbPt6ISw9l393z/7AaWSCxYkKAkds4gRI6tDPRAhxdfmWY5J5bfAv1A==",
-      "size": 28514,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.5.0",
-          "@caisson/registry-schema": "0.5.0",
-          "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/pricebook@0.5.3": {
-      "key": "pricebook/pricebook-0.5.3.tgz",
-      "shasum": "b91251c448f186e9b25954eab616b30b114d17ca",
-      "integrity": "sha512-YOOCBtwjwtB6/hcVMbVfvxDKoUItjPuMq25G25II+3dyjTlc94z5ekea68g5AXZMmbs3jU5iGLbMh2DGkC1ing==",
-      "size": 28532,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.5.0",
-          "@caisson/registry-schema": "0.5.1",
-          "zod": "^4.0.0"
         }
       }
     },
@@ -2984,32 +1906,6 @@
         }
       }
     },
-    "@caisson/prompt-registry@0.2.4": {
-      "key": "prompt-registry/prompt-registry-0.2.4.tgz",
-      "shasum": "c6763559c1b62d0db7cd123f5298d320daf5d4ad",
-      "integrity": "sha512-y+D4c1R0lIdg79dJEh3rNBOHe8CBBagRsOvjtfsbe0irhgr67ytoJTzj2/z0kV+D8E05NOXLtWdqkyK+EIT7rQ==",
-      "size": 32034,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@caisson/tenancy-rls": "0.3.2",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/prompt-registry@0.2.5": {
-      "key": "prompt-registry/prompt-registry-0.2.5.tgz",
-      "shasum": "8a12ed907e7c7914a7fd20ed9931dfad1b288173",
-      "integrity": "sha512-0G0dG65fkHIzEXRiEHH3IHiF2/IwXEflmtl0Zs9vNzhNeS2F41Na7H59IJgIbNUPDzTRbRbmRr5JXfcikgEG1Q==",
-      "size": 14277,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "@caisson/tenancy-rls": "0.4.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/prompt-registry@1.0.0": {
       "key": "prompt-registry/prompt-registry-1.0.0.tgz",
       "shasum": "ffa4ba462fed703d4796da4bb2d9719d20a2830b",
@@ -3046,41 +1942,11 @@
         }
       }
     },
-    "@caisson/provenance@0.2.0": {
-      "key": "provenance/provenance-0.2.0.tgz",
-      "shasum": "02d159a68bf21137092256245a117bd5be419b80",
-      "integrity": "sha512-tsGH4s6fQmj1bBqW2vtZXfUwVdQdpXV2XgJafl5ZI/a5sK7T1Uu3bAQTn9GNTGPsU2HeM8MC4nI8rqhTYmp7DQ==",
-      "size": 1482
-    },
     "@caisson/provenance@0.2.1": {
       "key": "provenance/provenance-0.2.1.tgz",
       "shasum": "c57f79357114158a57066ab39cb0fc51305d10db",
       "integrity": "sha512-qgBinJICSH91gV83q5MA46UPR6bjybqyaxyF2xWSPbIyetQ5qOSeXTm6v+oQenoN7cV0FneH3Ir77+FBv4whMw==",
       "size": 1696
-    },
-    "@caisson/rate-limit@0.1.1": {
-      "key": "rate-limit/rate-limit-0.1.1.tgz",
-      "shasum": "004e6f39a471a5dfc23e0bc6af0ffb7e787765e2",
-      "integrity": "sha512-WB7aT69V2PjD72F8RrYACMedX/gAseC295+UuhwB7Pgxm9972ltjLLmp/SrKMZgxoeSeNRlHBbGKpf1N19Tydg==",
-      "size": 34204,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@caisson/tenancy-rls": "0.3.2"
-        }
-      }
-    },
-    "@caisson/rate-limit@0.1.2": {
-      "key": "rate-limit/rate-limit-0.1.2.tgz",
-      "shasum": "ffaf884c960cb0c17f55b4e532bb239b393a65d7",
-      "integrity": "sha512-OpnUx3yC9q6YRs1fSHyQLNfmeMqqdMgD3fSiwSVDeNxBPnKpxOxoNxOjwc6HQQBNxpT+C9cIZ09IecalWQ6MMw==",
-      "size": 17840,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "@caisson/tenancy-rls": "0.4.0"
-        }
-      }
     },
     "@caisson/rate-limit@0.1.3": {
       "key": "rate-limit/rate-limit-0.1.3.tgz",
@@ -3117,28 +1983,6 @@
         }
       }
     },
-    "@caisson/registry-schema@0.3.0": {
-      "key": "registry-schema/registry-schema-0.3.0.tgz",
-      "shasum": "7257d7fbaf33ade8e5a9efad94b1b178f74d72b2",
-      "integrity": "sha512-d5VjqEdUFofhzPhUnJaswWgV0Kq+T8J2CB47wsMs8Eo8Cyb6KOvvZLQ5oGq+J9x6fLcR8pk+vg6b3zCby7Du/g==",
-      "size": 75873,
-      "meta": {
-        "dependencies": {
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/registry-schema@0.4.0": {
-      "key": "registry-schema/registry-schema-0.4.0.tgz",
-      "shasum": "6abd16bb3dd6f3c269906fb3a536673f45c49c6a",
-      "integrity": "sha512-yER+3iBGqpr8dAp1b/l4ha2Qti+b7Fq6G6QP84Omk6L/tWPZP1Ew/lYc8WInCLqPe6+s8KoSbC3cUanBDZgPgw==",
-      "size": 34304,
-      "meta": {
-        "dependencies": {
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/registry-schema@0.5.0": {
       "key": "registry-schema/registry-schema-0.5.0.tgz",
       "shasum": "888c42ef497e3b249d5642c380c1a28510364dec",
@@ -3147,17 +1991,6 @@
       "meta": {
         "dependencies": {
           "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/registry-schema@0.5.1": {
-      "key": "registry-schema/registry-schema-0.5.1.tgz",
-      "shasum": "2533fa62a5954d22d96ebca2707474837266f075",
-      "integrity": "sha512-m6M8FKmbYDe9ftFFcBgBgtMVWV+WawOmtTP83CN5nZ4ur9msYKcDQdwFQ5zJ2iESBjI4VCwvnMRVGxDb9r4/BQ==",
-      "size": 39959,
-      "meta": {
-        "dependencies": {
-          "zod": "^4.0.0"
         }
       }
     },
@@ -3198,32 +2031,6 @@
         }
       }
     },
-    "@caisson/retention-runner@0.1.5": {
-      "key": "retention-runner/retention-runner-0.1.5.tgz",
-      "shasum": "733406a26de51ccb7174d774cb9b495ce3ad49a5",
-      "integrity": "sha512-oHeTR8lfgXX5rhTG8Pt1QDJ1WPFT/vd2bZivgKL01BBqvn16fQYd95FoZwagcxMs40M2D23S2IVtbuIlb1D1cw==",
-      "size": 22316,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@caisson/jobs": "0.3.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
-    "@caisson/retention-runner@0.1.6": {
-      "key": "retention-runner/retention-runner-0.1.6.tgz",
-      "shasum": "c8648c0d5c5cc8459f6818c6188e9b89388415a7",
-      "integrity": "sha512-dBbVRc3MJoEgLwwnnNuGu5MFC21WoznFB2lpETstXmMRw1zc2yP7mVhpCzlUoGU7nTyMNYxM1ZB6dxnCXRBnqA==",
-      "size": 11413,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "@caisson/jobs": "0.4.0",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/retention-runner@0.1.7": {
       "key": "retention-runner/retention-runner-0.1.7.tgz",
       "shasum": "e2db0db2d3cc5851c50c1f10af815c58ae5e2225",
@@ -3247,18 +2054,6 @@
           "@caisson/kernel": "0.5.0",
           "@caisson/jobs": "0.5.1",
           "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/signing-primitive@0.2.0": {
-      "key": "signing-primitive/signing-primitive-0.2.0.tgz",
-      "shasum": "1c70f93da2d15d3c69e8a506c549fb90198b3300",
-      "integrity": "sha512-8mP+30ABZuePw8sLxpmuIWwGH7Vt4DqOui9IyUdjMTtb2b509OyyxVsGVqglc0hATd1UduFmnhPj7e1w4mUJtg==",
-      "size": 21619,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "@noble/ed25519": "^3.1.0"
         }
       }
     },
@@ -3324,30 +2119,6 @@
         }
       }
     },
-    "@caisson/tenancy-rls@0.4.0": {
-      "key": "tenancy-rls/tenancy-rls-0.4.0.tgz",
-      "shasum": "fc5175d15e1eed773873da35940826eab4f20792",
-      "integrity": "sha512-5Oxbby8AQ5q1x3bBL8JsMOHWLUptijIFI9SV1XG6k5mRPl6yNJEo8iCUpM7WAt30Vx9x5CkcimjNJTEA7DBjOQ==",
-      "size": 33700,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "pg": "^8.16.0"
-        }
-      }
-    },
-    "@caisson/tenancy-rls@0.5.0": {
-      "key": "tenancy-rls/tenancy-rls-0.5.0.tgz",
-      "shasum": "b8693ef43031277df4eefed475b407b17ab71704",
-      "integrity": "sha512-GBAg5q9umb9MowEyfvNwVJzc3TpULiworhEU/XYTXVpblr0QY3L/7MriH2iePzAayt/p5ucCIr/3rVytH1H1DQ==",
-      "size": 22831,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.2",
-          "pg": "^8.16.0"
-        }
-      }
-    },
     "@caisson/tenancy-rls@0.5.1": {
       "key": "tenancy-rls/tenancy-rls-0.5.1.tgz",
       "shasum": "6be7b20bb9405b08acae376db4ac7680d71c946e",
@@ -3396,18 +2167,6 @@
         }
       }
     },
-    "@caisson/tool-exec@0.1.5": {
-      "key": "tool-exec/tool-exec-0.1.5.tgz",
-      "shasum": "716f4900c86e9f19496c5d83e0a6549a83ae3741",
-      "integrity": "sha512-oVDWZrstzlOzpK3TVpJO1ufXA1wtvfzEL41h9CTuON98I1QOrQVwmn9vgAW4c99CKhp2L/eE6x0pjK2OqMrdjA==",
-      "size": 10782,
-      "meta": {
-        "dependencies": {
-          "@caisson/kernel": "0.4.1",
-          "zod": "^3.23.8"
-        }
-      }
-    },
     "@caisson/tool-exec@0.1.6": {
       "key": "tool-exec/tool-exec-0.1.6.tgz",
       "shasum": "eb6afb886ea31c20f2ecf9301be128c879913bb2",
@@ -3429,22 +2188,6 @@
         "dependencies": {
           "@caisson/kernel": "0.5.0",
           "zod": "^4.0.0"
-        }
-      }
-    },
-    "@caisson/ui-pro@0.1.0": {
-      "key": "ui-pro/ui-pro-0.1.0.tgz",
-      "shasum": "9511e44102861a8f5de7026e37f4fe886e1a24a1",
-      "integrity": "sha512-Z9du3+lHWFs424QoP/gCaalUCeH+WZW8hVRKHun4s53pGuFZMFHu5R4y+Hq0I0e1+0YVWYJet6WhSbk/KmRkKw==",
-      "size": 63183,
-      "meta": {
-        "dependencies": {
-          "@caisson/ui": "0.5.0"
-        },
-        "peerDependencies": {
-          "lucide-react": "^1.21.0",
-          "react": "^19.0.0",
-          "react-dom": "^19.0.0"
         }
       }
     },
@@ -3486,38 +2229,6 @@
       "shasum": "fa38408a1480904c0a1ce9578b708f133d00e1dc",
       "integrity": "sha512-VAO7bCNu722t8LuKTbVen7h90F//CV6WU6hNCQDeTrPegOhgB4FsaV6zvzgxvw7iVpUSeZjwDJ1woy2MPDQw+A==",
       "size": 54514,
-      "meta": {
-        "dependencies": {
-          "radix-ui": "^1.6.0"
-        },
-        "peerDependencies": {
-          "lucide-react": "^1.21.0",
-          "react": "^19.0.0",
-          "react-dom": "^19.0.0"
-        }
-      }
-    },
-    "@caisson/ui@0.4.0": {
-      "key": "ui/ui-0.4.0.tgz",
-      "shasum": "f4a1768f51af2a880ecdf5cbb2cc020f5bdcb61d",
-      "integrity": "sha512-Z3n4lTkzaFBcXgmk1MpCaMzUZkpzLPekq3eWonOdQfEIsLy9dhOP7uJet2fuOEJpwT8YUXbCI7VafwG/KCoyLQ==",
-      "size": 61549,
-      "meta": {
-        "dependencies": {
-          "radix-ui": "^1.6.0"
-        },
-        "peerDependencies": {
-          "lucide-react": "^1.21.0",
-          "react": "^19.0.0",
-          "react-dom": "^19.0.0"
-        }
-      }
-    },
-    "@caisson/ui@0.5.0": {
-      "key": "ui/ui-0.5.0.tgz",
-      "shasum": "f4fb90c94b1c6b5341b3016e205357bfa642918f",
-      "integrity": "sha512-qqpqernj4Go2qer/V162NPdava/Tfq9eKbOlOdxcQASTdgkcITGiIaTBa9LdEpSKl5pcu+CDmCJb1lhdaWxQ3g==",
-      "size": 118798,
       "meta": {
         "dependencies": {
           "radix-ui": "^1.6.0"
