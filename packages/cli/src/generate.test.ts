@@ -328,13 +328,23 @@ describe.skipIf(!existsSync(REGISTRY_INDEX_PATH))(
     });
 
     test("an explicit --module selection is NOT auto-expanded — the buyer's set wins", () => {
+      // Derive a served NON-latest kernel version instead of hardcoding one: a version-level
+      // delist (ADR-0359) can retire any historical version from the real index, and a non-latest
+      // pin is what proves the explicit selection survives without being bumped to latest.
+      const kernel = realIndex.modules.find((e) => e.id === "@caisson/kernel");
+      if (!kernel)
+        throw new Error("@caisson/kernel missing from the real index");
+      const pinned =
+        kernel.versions
+          .map((v) => v.version)
+          .find((v) => v !== kernel.latest) ?? kernel.latest;
       const selection = validateSelection(realIndex, {
         projectName: "acme-app",
         edition: "compliance",
-        modules: [{ id: "@caisson/kernel", version: "0.4.2" }],
+        modules: [{ id: "@caisson/kernel", version: pinned }],
       });
       expect(selection.modules).toEqual([
-        { id: "@caisson/kernel", version: "0.4.2" },
+        { id: "@caisson/kernel", version: pinned },
       ]);
     });
 
