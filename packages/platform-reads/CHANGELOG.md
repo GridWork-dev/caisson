@@ -1,5 +1,11 @@
 # @caisson/platform-reads
 
+## 0.2.1
+
+### Patch Changes
+
+- @caisson/tenancy-rls@0.5.2
+
 ## 0.2.0
 
 ### Minor Changes

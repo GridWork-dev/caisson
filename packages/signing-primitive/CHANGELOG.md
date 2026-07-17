@@ -1,5 +1,18 @@
 # @caisson/signing-primitive
 
+## 0.2.2
+
+### Patch Changes
+
+- c186409: Wire the mirrored evidence-pack goldens to the compliance-core v2 format bump (the new
+  `crosswalkRollup` section): re-blesses each package's static copy of the evidence-pack manifest
+  golden and, for `@caisson/signing-primitive`, regenerates the golden detached Ed25519 signature over
+  the new canonical bytes (same fixed test key; public key unchanged). No behavior change, fixture
+  parity only.
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@caisson/eslint-config",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "The single ESLint standards source (ADR-0002) + the import-boundary rules (ADR-0022). Every package extends index.js.",

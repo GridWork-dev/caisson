@@ -1,6 +1,6 @@
 {
   "name": "@caisson/local-ai",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

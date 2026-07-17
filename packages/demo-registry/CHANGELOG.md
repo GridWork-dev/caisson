@@ -1,5 +1,32 @@
 # @caisson/demo-registry
 
+## 0.2.1
+
+### Patch Changes
+
+- 59e1365: TypeScript bridge to 6.0.3 (Kickoff T task 5, re-derived version map): the workspace catalog moves
+  from ^5.7.3 to ^6.0.3 (the stable JS-compiler transition release; 7.x is the native compiler whose
+  stable API waits for 7.1). standards-gate pins its own typescript to ^6.0.3 explicitly so a future
+  catalog move to 7.x cannot strand its ts.createScanner usage. brand, ui-pro, and demo-registry gain
+  a css.d.ts ambient declaration for the side-effect CSS imports TS 6.0 now checks (TS2882).
+- Updated dependencies [ca44db5]
+- Updated dependencies [1867fa3]
+- Updated dependencies [e5e4311]
+- Updated dependencies [e5e4311]
+- Updated dependencies [59e1365]
+- Updated dependencies [59e1365]
+- Updated dependencies [809592d]
+- Updated dependencies [809592d]
+- Updated dependencies [e183860]
+  - @caisson/audit-worm@2.0.0
+  - @caisson/ui-pro@0.3.0
+  - @caisson/ui@0.6.1
+  - @caisson/prompt-registry@1.0.1
+  - @caisson/ai-meter@1.0.1
+  - @caisson/license-issue@1.0.1
+  - @caisson/local-store@1.0.1
+  - @caisson/audit-harness@1.0.0
+
 ## 0.2.0
 
 ### Minor Changes

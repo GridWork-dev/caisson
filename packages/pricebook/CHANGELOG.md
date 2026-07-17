@@ -1,5 +1,14 @@
 # @caisson/pricebook
 
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [e5e4311]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/registry-schema@0.5.0
+
 ## 0.5.1
 
 ### Patch Changes

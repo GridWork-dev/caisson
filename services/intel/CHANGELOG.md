@@ -1,5 +1,21 @@
 # @caisson/service-intel
 
+## 0.0.3
+
+### Patch Changes
+
+- 0a58f8e: Hash-mode compliance change notices (EU AI Act, SOC 2) now persist a bounded normalized snapshot next
+  to the detection hash and carry a real before/after content delta in the finding payload, so the
+  composed operator brief can state WHAT changed instead of "content-level delta unavailable"
+  (CAISSON-101). Private service — versioned, not published.
+- 7e823a9: Renovate dependency pins (exact versions) across the app and service workspaces; no code change.
+- Updated dependencies [e5e4311]
+- Updated dependencies [d1b4afa]
+- Updated dependencies [e183860]
+  - @caisson/kernel@0.5.0
+  - @caisson/observability@0.3.1
+  - @caisson/alerting@0.2.1
+
 ## 0.0.2
 
 ### Patch Changes
