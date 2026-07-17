@@ -1,5 +1,14 @@
 # @caisson/ai-kit-app
 
+## 0.0.10
+
+### Patch Changes
+
+- @caisson/credits@0.5.3
+- @caisson/mcp-server@0.3.2
+- @caisson/ai-kit@0.4.4
+- @caisson/ai-meter@1.0.3
+
 ## 0.0.9
 
 ### Patch Changes
