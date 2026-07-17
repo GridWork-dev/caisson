@@ -1,13 +1,13 @@
 {
-  "name": "@caisson/agent-runner",
-  "version": "0.1.6",
+  "name": "@caisson/agent-trajectory",
+  "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Sandboxed governed agent runner for Agentic-Dev: spawn a headless agent CLI in an isolated worktree with a from-scratch scrubbed env (never spreads process.env), stream the transcript to a durable .jsonl, and parse it into a structured run report.",
+  "description": "Engine-neutral trajectory contract: an append-only, replayable event log (runs, steps, model calls, tool proposals/approvals, usage, checkpoints) with digest-ref payload discipline — the observation substrate the governed agent runtime records into.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -21,7 +21,6 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@caisson/agent-trajectory": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "zod": "catalog:"
   },

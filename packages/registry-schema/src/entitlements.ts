@@ -80,15 +80,20 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the SAME change that first indexes its package — its bare slug then resolves through the
  * ordinary indexed-module branch below.
  *
- * Currently reserved: NONE. `ui-pro` graduated the documented way 2026-07-07 — removed here in the
- * same change that first indexed `@caisson/ui-pro@0.1.0` and repinned the everything members map off
- * the 0.0.0 sentinel (everything@0.2.2); its bare slug now resolves through the ordinary
- * indexed-module branch below. (`alerting` and `retention-runner` graduated the same way earlier.)
- * The mechanism stays: the next sold-before-published SKU adds its slug here in the same commit that
- * creates its purchase row.
+ * Currently reserved: `agent-trajectory` — the built-but-unpublished trajectory-observation primitive
+ * (`kind: "primitive"`, commercial, `sellable: false`). Its package ships (version + tier-correct
+ * publishConfig) but publish rides LAST behind the runtime loop slice, so it carries no ledger/index
+ * entry yet; reserving its slug exempts it from the publish-readiness version↔ledger guard the same way
+ * a sold-before-published SKU is exempt (no buyer holds it, so the expand-to-nothing branch is inert).
+ * Remove it in the same change that first indexes `@caisson/agent-trajectory`. `ui-pro` graduated the
+ * documented way 2026-07-07 — removed here in the same change that first indexed `@caisson/ui-pro@0.1.0`
+ * and repinned the everything members map off the 0.0.0 sentinel (everything@0.2.2); its bare slug now
+ * resolves through the ordinary indexed-module branch below. (`alerting` and `retention-runner`
+ * graduated the same way earlier.) The mechanism stays: the next sold-or-reserved-before-published SKU
+ * adds its slug here in the same commit that creates its purchase row (or its package).
  */
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
-  new Set<string>([]);
+  new Set<string>(["agent-trajectory"]);
 
 /**
  * Bare-slug entitlement ids that are SOLD and stored as purchased grants for their OWN routing

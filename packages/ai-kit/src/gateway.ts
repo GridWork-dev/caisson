@@ -22,7 +22,7 @@
 //
 // Each meter leg runs in its OWN `withTenant` transaction: a DB transaction is never held open across
 // the (slow, network) provider call, and reserve/reconcile are independently idempotent on `callId`.
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   createProviderRegistry,
   generateText,
@@ -52,6 +52,8 @@ import type {
 } from "@caisson/ai-meter";
 import { detokenizePii, guardInput, guardOutput } from "@caisson/guardrails";
 import type { GuardPolicy, GuardRuntime, PiiToken } from "@caisson/guardrails";
+import type { EventSink } from "@caisson/kernel";
+import type { TrajectoryEvent } from "@caisson/agent-trajectory";
 import { renderVersion, resolvePrompt } from "@caisson/prompt-registry";
 import type { RenderedMessage } from "@caisson/prompt-registry";
 import { withTenant } from "@caisson/tenancy-rls";
@@ -84,6 +86,83 @@ export interface GuardConfig {
   readonly runtime: GuardRuntime;
 }
 
+/** The two trajectory event kinds the gateway observes: the model call, then its metered usage. */
+type GatewayTrajectoryEvent = Extract<
+  TrajectoryEvent,
+  { kind: "model.call" | "model.usage" }
+>;
+
+/**
+ * An OPTIONAL observation sink the gateway emits into (SPEC scope-item-2, ADR-0351 rider 1). The
+ * caller — a governed run loop — OWNS the run: it wraps each `{ kind, payload }` the gateway supplies
+ * in the append-only envelope (runId, monotonic seq, eventId, occurredAt, version) and appends it to a
+ * `TrajectoryStore`. The gateway emits `model.call` (model id + prompt DIGEST only, never the prompt
+ * text — AR-4) before the provider call and `model.usage` (`billingStatus: 'metered'`, the SAME
+ * integers the ledger settled) after reconcile.
+ *
+ * Observation NEVER fails the metered call: a recorder that throws/rejects is swallowed and surfaced
+ * as a `trajectory.record_failed` ops warning on the guard runtime's sink. The fail-closed inversion
+ * (a metered step blocked when observation cannot record) arrives only with the loop slice — not here.
+ */
+export type TrajectoryRecorder = (
+  event: Pick<GatewayTrajectoryEvent, "kind" | "payload">,
+) => void | Promise<void>;
+
+/**
+ * Wrap a recorder in the swallow-and-warn contract above: emit into it, and if it throws, surface a
+ * `trajectory.record_failed` ops event (best-effort — a sink failure is swallowed too) instead of
+ * letting observation break the money path. A no-op when no recorder is wired.
+ *
+ * Takes a THUNK so event construction (digesting, ledger reads) runs inside the swallow boundary —
+ * a throw while building the event must not strand a live reservation any more than a recorder
+ * throw may.
+ */
+function trajectoryEmitter(
+  recorder: TrajectoryRecorder | undefined,
+  sink: EventSink,
+  accountId: string,
+): (
+  build: () => Pick<GatewayTrajectoryEvent, "kind" | "payload">,
+) => Promise<void> {
+  if (recorder === undefined) return async () => {};
+  return async (build) => {
+    let kind = "unbuilt";
+    try {
+      const event = build();
+      kind = event.kind;
+      await recorder(event);
+    } catch (err) {
+      try {
+        await sink.emit({
+          name: "trajectory.record_failed",
+          timestamp: new Date().toISOString(),
+          tenantId: accountId,
+          attributes: {
+            kind,
+            error: err instanceof Error ? err.message : String(err),
+          },
+        });
+      } catch {
+        // The ops sink failing must not fail the metered call either — swallow.
+      }
+    }
+  };
+}
+
+/** The prompt, content-addressed: a sha256 digest + byte length, never the prompt text itself (AR-4). */
+function promptDigest(messages: readonly RenderedMessage[]): {
+  digest: string;
+  byteLength: number;
+} {
+  const canonical = JSON.stringify(
+    messages.map((m) => ({ role: m.role, content: m.content })),
+  );
+  return {
+    digest: createHash("sha256").update(canonical).digest("hex"),
+    byteLength: Buffer.byteLength(canonical, "utf8"),
+  };
+}
+
 export interface InferOptions {
   /**
    * The tenant pool. The gateway opens its OWN `withTenant` scopes — resolve, reserve, and reconcile
@@ -106,6 +185,12 @@ export interface InferOptions {
   readonly meter?: MeterConfig;
   /** Output-token budget — sizes the reservation and caps the provider call. */
   readonly maxOutputTokens?: number;
+  /**
+   * OPTIONAL trajectory observation sink. When present the gateway emits `model.call` (prompt digest
+   * only) before the provider call and `model.usage` (metered, the ledger's own integers) after
+   * reconcile. Additive: absent ⇒ byte-identical behavior; a recorder failure never fails the call.
+   */
+  readonly recorder?: TrajectoryRecorder;
   /**
    * Abort the in-flight provider call (a caller timeout, a hung-up request, …). A hang still hits
    * the existing failure path — `catch → settle(ZERO_USAGE)` — so an abort never leaks the up-front
@@ -244,6 +329,7 @@ export async function infer(
   const { policy, runtime } = guard;
   const callId = opts.callId ?? randomUUID();
   const cfg = resolveProvider(settings, lane);
+  const emit = trajectoryEmitter(opts.recorder, runtime.sink, accountId);
 
   // 1. resolve + render — a registry ref becomes escaped messages; raw messages pass through.
   let messages: readonly RenderedMessage[];
@@ -315,6 +401,18 @@ export async function infer(
       }),
     );
 
+  // Observe the model call (prompt digest only — never the prompt text). Emitted after reserve so a
+  //    fail-closed 402 leaves no dangling call record; before the provider call so a provider failure
+  //    still leaves the attempt observed.
+  await emit(() => ({
+    kind: "model.call",
+    payload: {
+      provider: cfg.provider,
+      model: cfg.model,
+      prompt: promptDigest(guarded),
+    },
+  }));
+
   // 4. provider call — the SDK call against the injected model, optionally middleware-wrapped. A
   //    failure refunds the reservation (reconcile to zero) so a non-delivering call never charges.
   let text: string;
@@ -367,7 +465,9 @@ export async function infer(
   const { usage, usageReported } = settlement;
 
   // 6. output-guard (+ PII restore) then 7. reconcile. A blocked output still reconciles the actual
-  //    spend (the tokens were already consumed) before the 422 propagates.
+  //    spend (the tokens were already consumed) before the 422 propagates. ponytail: the blocked
+  //    path emits no model.usage — the trajectory shows a model.call with settled spend and no usage
+  //    claim; the loop slice may add a failed-usage emit if evals need the symmetry.
   let outText: string;
   try {
     await guardOutput(text, policy, runtime);
@@ -377,6 +477,20 @@ export async function infer(
     throw err;
   }
   const reconciled = await settle(usage, usageReported);
+
+  // Observe the metered usage — the SAME integers the ledger just settled (billingStatus: metered).
+  await emit(() => ({
+    kind: "model.usage",
+    payload: {
+      provider: cfg.provider,
+      model: cfg.model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      cachedInputTokens: usage.cachedInputTokens,
+      credits: reconciled.actualCredits,
+      billingStatus: "metered",
+    },
+  }));
 
   return {
     callId,
@@ -494,6 +608,7 @@ export async function inferStream(
   const { policy, runtime } = guard;
   const callId = opts.callId ?? randomUUID();
   const cfg = resolveProvider(settings, lane);
+  const emit = trajectoryEmitter(opts.recorder, runtime.sink, accountId);
 
   // 1. resolve + render — identical to infer().
   let messages: readonly RenderedMessage[];
@@ -579,6 +694,16 @@ export async function inferStream(
     throw err;
   }
 
+  // Observe the model call (prompt digest only) — after reserve + model resolve, before streaming.
+  await emit(() => ({
+    kind: "model.call",
+    payload: {
+      provider: cfg.provider,
+      model: cfg.model,
+      prompt: promptDigest(guarded),
+    },
+  }));
+
   const settled = deferred<InferStreamSettled>();
   // The eager pump can reject settlement even when the caller ignores `settled`; mark the source
   // promise handled without changing the rejecting promise returned to an observing caller.
@@ -629,6 +754,22 @@ export async function inferStream(
       // 7. reconcile — actual usage on a reported finish, an ESTIMATE on abandonment, the reservation
       //    on a finish that reported no usage (see above).
       const reconciled = await settle(usage, usageReported);
+      // Observe the metered usage on a NORMAL finish only — the ledger's own integers. An abandoned
+      // stream's settle amount is an estimate, not a provider-verified metered number, so no claim.
+      if (!abandoned) {
+        await emit(() => ({
+          kind: "model.usage",
+          payload: {
+            provider: cfg.provider,
+            model: cfg.model,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            cachedInputTokens: usage.cachedInputTokens,
+            credits: reconciled.actualCredits,
+            billingStatus: "metered",
+          },
+        }));
+      }
       settled.resolve({ text: outText, usage, reconciled, abandoned });
     } catch (err) {
       settled.reject(err);

@@ -16,7 +16,10 @@ export default defineModule({
   // (ADR-0007). Sold only via the Agentic-Dev edition fold (ADR-0186 F5).
   priceCents: 4900,
   license: pkg.license,
-  dependencies: ["@caisson/kernel"],
+  // agent-trajectory is a `primitive` too — a primitive depending on another primitive is legal
+  // under the down-only rule (never depends "up" on an edition); the standards-gate fixture (T5)
+  // asserts this direction (agent-runner → agent-trajectory, never the reverse).
+  dependencies: ["@caisson/agent-trajectory", "@caisson/kernel"],
   golden: null,
   description:
     "Sandboxed governed agent runner: spawn a headless agent CLI (provider-agnostic {binary, baseUrlEnv, authEnv, model}) in an isolated worktree with a from-scratch scrubbed env — never spreads process.env — streaming an auditable .jsonl transcript parsed into a structured run report.",

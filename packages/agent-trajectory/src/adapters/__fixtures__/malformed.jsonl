@@ -1,0 +1,5 @@
+{"type":"assistant","message":{"model":"claude-opus-4-8","usage":{"input_tokens":900,"output_tokens":210,"cache_read_input_tokens":0}},"timestamp":"2026-07-16T11:00:00.000Z"}
+{ this is not valid json at all
+{"type":"assistant","message":{"role":"assistant","content":"no usage here"},"timestamp":"2026-07-16T11:00:01.000Z"}
+{"type":"summary","summary":"session wrap","timestamp":"2026-07-16T11:00:02.000Z"}
+{"type":"assistant","message":{"model":"claude-opus-4-8","usage":{"input_tokens":300,"output_tokens":44}},"timestamp":"2026-07-16T11:00:03.000Z"}
