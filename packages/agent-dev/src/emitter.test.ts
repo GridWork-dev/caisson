@@ -6,7 +6,12 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseArtifact } from "@caisson/agent-kernel";
+import {
+  InMemoryAuditLifecycleStore,
+  parseArtifact,
+  type Artifact,
+} from "@caisson/agent-kernel";
+import { createAgentDevEdition } from "./index.ts";
 import { EMIT_INPUT } from "./golden.ts";
 import {
   type EmittedBundle,
@@ -37,7 +42,13 @@ describe("renderHarnessBundles — engine-neutral fan-out (ADR-0066/0264)", () =
         ".claude/hooks.json",
         ".claude/rules/no-any-in-prod.md",
         ".claude/skills/guided-execution/SKILL.md",
+        ".claude/skills/guided-execution/references/checklist.md",
+        ".claude/skills/guided-execution/assets/flow.txt",
+        ".claude/skills/guided-execution/scripts/run.sh",
         ".agents/skills/guided-execution/SKILL.md",
+        ".agents/skills/guided-execution/references/checklist.md",
+        ".agents/skills/guided-execution/assets/flow.txt",
+        ".agents/skills/guided-execution/scripts/run.sh",
         ".cursor/rules/code-reviewer.mdc",
         ".cursor/rules/guided-execution.mdc",
         ".cursor/rules/no-any-in-prod.mdc",
@@ -337,4 +348,142 @@ describe("frontmatter injection — authored fields cannot erase the tools allow
       expect(fileNamed(bundle, clinePath)).toContain(payload);
     });
   }
+});
+
+// ── ADR-0264 bundled-file write-gate: references/assets always emit; scripts are executable content
+// behind an `allowScripts` trust gate. `references`/`assets` and (when allowed) `scripts` fan into both
+// SKILL.md directory targets; withheld scripts disclose via the fidelity-warning channel, never a silent
+// drop; and every bundled file rides the EXISTING writeBundle secret scan (not a new bespoke gate). ────
+describe("bundled files — scripts consent gate (ADR-0264)", () => {
+  function scriptSkill(scriptContent = "echo hi\n"): Artifact {
+    return parseArtifact({
+      kind: "skill",
+      name: "with-scripts",
+      description: "A skill that ships a helper script.",
+      trigger: "user",
+      steps: ["run the helper"],
+      references: [{ path: "guide.md", content: "# Guide\n" }],
+      assets: [{ path: "logo.txt", content: "caisson\n" }],
+      scripts: [{ path: "helper.sh", content: scriptContent }],
+    });
+  }
+  const scriptPaths = [
+    ".claude/skills/with-scripts/scripts/helper.sh",
+    ".agents/skills/with-scripts/scripts/helper.sh",
+  ] as const;
+
+  test("allowScripts omitted ⇒ scripts withheld + one disclosure warning; refs/assets still emit", () => {
+    const bundle = renderHarnessBundles({
+      artifacts: [scriptSkill()],
+      hooks: [],
+    });
+    const paths = bundle.files.map((f) => f.path);
+    for (const p of scriptPaths) expect(paths).not.toContain(p);
+    // Inert bundled content is unaffected by the gate.
+    expect(paths).toContain(".claude/skills/with-scripts/references/guide.md");
+    expect(paths).toContain(".agents/skills/with-scripts/assets/logo.txt");
+    // Exactly one withheld-disclosure warning for the one script-carrying skill.
+    const withheld = bundle.warnings.filter((w) =>
+      w.includes("withheld from emission"),
+    );
+    expect(withheld).toHaveLength(1);
+    expect(withheld[0]).toContain("with-scripts");
+  });
+
+  test("allowScripts:true ⇒ scripts emit into both SKILL.md targets, no withheld warning", () => {
+    const bundle = renderHarnessBundles({
+      artifacts: [scriptSkill()],
+      hooks: [],
+      allowScripts: true,
+    });
+    const paths = bundle.files.map((f) => f.path);
+    for (const p of scriptPaths) expect(paths).toContain(p);
+    expect(
+      bundle.warnings.some((w) => w.includes("withheld from emission")),
+    ).toBe(false);
+  });
+
+  test("a secret inside a script's content trips the EXISTING writeBundle secret gate", () => {
+    const root = freshRoot();
+    const bundle = renderHarnessBundles({
+      artifacts: [scriptSkill("api_key=abcdef0123456789abcdef\n")],
+      hooks: [],
+      allowScripts: true,
+    });
+    let thrown: unknown;
+    try {
+      writeBundle(root, bundle);
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toBeInstanceOf(EmitSecurityError);
+    expect((thrown as EmitSecurityError).code).toBe("secret-leak");
+  });
+});
+
+// ── The edition surface holds the fail-closed default: the trust decision is made at COMPOSITION time
+// from artifact origin (no schema field). Curated default set ⇒ trusted (scripts always emit); a
+// caller-supplied override ⇒ untrusted (scripts require the explicit opt-in). ─────────────────────────
+describe("createAgentDevEdition — executable-content trust tier (operator lock 2026-07-17)", () => {
+  const untrusted: readonly Artifact[] = [
+    parseArtifact({
+      kind: "skill",
+      name: "third-party-skill",
+      description: "A caller-supplied skill carrying a script.",
+      trigger: "user",
+      steps: ["do the thing"],
+      scripts: [{ path: "run.sh", content: "echo third-party\n" }],
+    }),
+  ];
+
+  test("curated default set is trusted — scripts emit with no opt-in", () => {
+    const root = freshRoot();
+    const edition = createAgentDevEdition({
+      store: new InMemoryAuditLifecycleStore(),
+      memoryDim: 8,
+    });
+    try {
+      const { written, warnings } = edition.emit(root);
+      // The curated guided-execution helper reached disk without any allowScripts flag.
+      expect(
+        written.some((p) =>
+          p.endsWith(
+            join("skills", "guided-execution", "scripts", "gate-check.sh"),
+          ),
+        ),
+      ).toBe(true);
+      expect(warnings.some((w) => w.includes("withheld from emission"))).toBe(
+        false,
+      );
+    } finally {
+      edition.close();
+    }
+  });
+
+  test("caller override is untrusted — scripts withheld by default, opt-in emits them", () => {
+    const root = freshRoot();
+    const edition = createAgentDevEdition({
+      store: new InMemoryAuditLifecycleStore(),
+      memoryDim: 8,
+      artifacts: untrusted,
+    });
+    try {
+      const withheld = edition.emit(root);
+      expect(
+        withheld.written.some((p) => p.includes(join("scripts", "run.sh"))),
+      ).toBe(false);
+      expect(
+        withheld.warnings.some((w) => w.includes("withheld from emission")),
+      ).toBe(true);
+
+      const allowed = edition.emit(join(root, "opt-in"), [], {
+        allowScripts: true,
+      });
+      expect(
+        allowed.written.some((p) => p.includes(join("scripts", "run.sh"))),
+      ).toBe(true);
+    } finally {
+      edition.close();
+    }
+  });
 });
