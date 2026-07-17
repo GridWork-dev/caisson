@@ -25,6 +25,7 @@ import {
 } from "./rag.ts";
 import { type Citation, type ScoredChunk, toCitations } from "./retrieve.ts";
 import type { StreamEvent } from "./openrouter.ts";
+import type { AiGeneration } from "./ai-capture.ts";
 import { dollarsToMicro } from "./spend.ts";
 
 /** POST /api/ask body — `.strict()` at the trust boundary. `question` mirrors the docs contract bounds. */
@@ -95,6 +96,12 @@ export interface AskDeps {
    * call site). Best-effort; a failure never reaches the response. Optional for the same reason as
    * `capture`. */
   escalate?: (question: string, reason: EscalationReason) => Promise<void>;
+  /** Emit one `$ai_generation` LLM-observability event (CAISSON-120 / audit M4). Called once per
+   * request that ACTUALLY invoked the model — a resolved answer, a business escalation on a successful
+   * generation (sentinel/leak), OR a generation failure — but NEVER on a pre-generation escalation
+   * (`spend_cap` / retrieval, which never reached the model). Fire-and-forget; never throws into the
+   * response. No prompt/completion text is ever passed. Optional for the same reason as `capture`. */
+  captureGeneration?: (gen: AiGeneration) => Promise<void>;
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -183,6 +190,13 @@ export async function handleAsk(
       // ADR-0236: every terminal path below is either a resolved answer or an escalation — the
       // assignment to "answered" happens only after all guards pass.
       let outcome: "answered" | "escalated" = "escalated";
+      // M4 (CAISSON-120) $ai_generation telemetry — only emitted when the model was actually invoked
+      // (genAttempted). costUsd (above) carries the USD cost; these carry the rest.
+      let genAttempted = false;
+      let genLatencyMs = 0;
+      let genInputTokens = 0;
+      let genOutputTokens = 0;
+      let genError: string | undefined;
       try {
         // 4a. hard per-lane spend cap (F2 rider, hardened + extended to both lanes) — reserve BEFORE
         // any paid work, atomically, so two concurrent requests near the cap can never both pass (closes
@@ -210,6 +224,8 @@ export async function handleAsk(
         // USER turn carries only the question.
         const system = composeSystem(buildContext(chunks));
         let full = "";
+        genAttempted = true;
+        const genStartMs = Date.now();
         try {
           for await (const ev of deps.stream({
             model,
@@ -217,12 +233,20 @@ export async function handleAsk(
             user: question,
           })) {
             if (ev.type === "delta") full += ev.text;
-            else costUsd = ev.usd;
+            else {
+              costUsd = ev.usd;
+              if (ev.inputTokens !== undefined) genInputTokens = ev.inputTokens;
+              if (ev.outputTokens !== undefined)
+                genOutputTokens = ev.outputTokens;
+            }
           }
         } catch {
+          genLatencyMs = Date.now() - genStartMs;
+          genError = "generation_failed";
           escalate("generation_failed");
           return;
         }
+        genLatencyMs = Date.now() - genStartMs;
 
         // 4d. decide (guards on the FULL reply — intact rag.py semantics).
         const answer = full.trim();
@@ -268,6 +292,29 @@ export async function handleAsk(
         }
         emit("done", {});
         controller.close();
+
+        // M4 (CAISSON-120): one $ai_generation event per real model call — a resolved answer, a
+        // business escalation on a successful generation (sentinel/leak), OR a generation failure —
+        // never a pre-generation escalation (spend_cap / retrieval never set genAttempted). Fired
+        // detached after close, like the escalate push below: fire-and-forget, a PostHog failure never
+        // touches the answer path (the seam itself never throws; `.catch` is defense-in-depth, and the
+        // whole `?.(...).catch` chain short-circuits to undefined when the dep is unset).
+        if (genAttempted) {
+          const gen: AiGeneration = {
+            model,
+            inputTokens: genInputTokens,
+            outputTokens: genOutputTokens,
+            totalCostUsd: costUsd ?? 0,
+            latencySeconds: genLatencyMs / 1000,
+            isError: genError !== undefined,
+            ...(genError === undefined
+              ? { httpStatus: 200 }
+              : { error: genError }),
+          };
+          void deps.captureGeneration?.(gen).catch(() => {
+            /* best-effort */
+          });
+        }
 
         // G21: file a support ticket for a genuinely-unanswered question — never for `spend_cap`,
         // which is a capacity signal (a traffic burst tripping the daily budget), not a question a
