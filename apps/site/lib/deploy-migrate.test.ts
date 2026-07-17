@@ -45,20 +45,21 @@ test("platform migrations apply in order then are idempotent", async () => {
   // link append at 0023). 25/26 = the ADR-0315/0320 affiliate-flip appends (order_record
   // discount_id, then the affiliate_code registry).
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  // 22 shared-chain migrations (0001–0019 plus 0023–0026) + the 5 apps/site-local extras
-  // (CAISSON-64: `SITE_LOCAL_MIGRATIONS` carries 0011/0012 (ask_ai_*, prod-canonical names) plus
-  // the net-new 0020/0021/0022 (tenant_ai_credential / byok_key_meta / compliance_attestation) —
-  // previously dev-PGlite-only, never applied to a real deployment.
+  // 21 shared-chain migrations + the 8 apps/site-local extras (dense seq 1–29). CAISSON-64:
+  // `SITE_LOCAL_MIGRATIONS` carries 0011/0012 (ask_ai_*, prod-canonical names) plus the net-new
+  // 0020/0021/0022 (tenant_ai_credential / byok_key_meta / compliance_attestation) — previously
+  // dev-PGlite-only. CAISSON-110 (ADR-0350 F5) appended 0023_rate_limit / 0024_demo_run_budget /
+  // 0025_demo_run_leads (the sandbox demo-run store), taking the tail from 5 to 8 → +3 here.
   expect(first.applied).toEqual([
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-    22, 23, 24, 25, 26,
+    22, 23, 24, 25, 26, 27, 28, 29,
   ]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
   expect(second.skipped).toEqual([
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-    22, 23, 24, 25, 26,
+    22, 23, 24, 25, 26, 27, 28, 29,
   ]);
 });
 
