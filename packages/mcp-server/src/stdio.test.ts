@@ -135,6 +135,38 @@ describe("stdio transport binding", () => {
     });
   });
 
+  test("capabilities advertise resources, and resources/list + read round-trip", async () => {
+    const server = createStdioMcpServer(deps());
+    const [serverTransport, clientTransport] =
+      InMemoryTransport.createLinkedPair();
+    client = new Client({ name: "stdio-test-client", version: "0.0.0" });
+
+    await Promise.all([
+      server.connect(serverTransport),
+      client.connect(clientTransport),
+    ]);
+
+    // (v) the server advertises the resources capability over this transport.
+    expect(client.getServerCapabilities()?.resources).toBeDefined();
+
+    const list = await client.listResources();
+    expect(list.resources.map((r) => r.uri)).toContain(
+      "caisson://registry/index",
+    );
+
+    const read = await client.readResource({ uri: "caisson://registry/index" });
+    const contents = read.contents as { uri: string; text: string }[];
+    const parsed = JSON.parse(contents[0]?.text ?? "{}") as {
+      modules: { id: string }[];
+    };
+    expect(parsed.modules.map((m) => m.id)).toEqual(["@caisson/auth"]);
+
+    // A read on an unknown URI surfaces as a rejected JSON-RPC error (the mapped not-found).
+    await expect(
+      client.readResource({ uri: "caisson://nope/missing" }),
+    ).rejects.toThrow();
+  });
+
   test("runStdioServer connects the bound server to an injected transport and returns it", async () => {
     const [serverTransport, clientTransport] =
       InMemoryTransport.createLinkedPair();

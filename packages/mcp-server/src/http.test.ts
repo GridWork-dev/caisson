@@ -296,6 +296,34 @@ describe("HTTP transport binding (ADR-0161)", () => {
     expect(textOf(result)).toMatchObject({ error: { code: "not_entitled" } });
   });
 
+  test("capabilities advertise resources, and resources/list + read round-trip over HTTP", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    const client = new Client({ name: "http-test-client", version: "0.0.0" });
+    openClients.push(client);
+    await client.connect(bearerTransport(url, TOKEN_A));
+
+    // (v) the resources capability is advertised over the network transport too.
+    expect(client.getServerCapabilities()?.resources).toBeDefined();
+
+    const list = await client.listResources();
+    expect(list.resources.map((r) => r.uri)).toContain(
+      "caisson://registry/index",
+    );
+
+    const read = await client.readResource({ uri: "caisson://registry/index" });
+    const contents = read.contents as { uri: string; text: string }[];
+    const parsed = JSON.parse(contents[0]?.text ?? "{}") as {
+      modules: { id: string }[];
+    };
+    expect(parsed.modules.map((m) => m.id)).toEqual(["@caisson/auth"]);
+
+    await expect(
+      client.readResource({ uri: "caisson://nope/missing" }),
+    ).rejects.toThrow();
+  });
+
   test("two different bearers get two independent, non-cross-talking sessions", async () => {
     const { server, url } = await listen();
     openServers.push(server);

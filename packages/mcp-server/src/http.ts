@@ -32,8 +32,13 @@ import {
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   CallToolRequestSchema,
+  ErrorCode,
+  ListResourcesRequestSchema,
   ListToolsRequestSchema,
+  McpError,
+  ReadResourceRequestSchema,
   type CallToolResult,
+  type ReadResourceResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { ConfigError, ValidationError, toErrorResponse } from "@caisson/kernel";
@@ -157,7 +162,10 @@ function buildBoundServer(
   mcp: ReturnType<typeof createMcpServer>,
   session: McpSession,
 ): Server {
-  const options: ServerOptions = { capabilities: { tools: {} } };
+  // `resources: {}` declared alongside `tools: {}` — advertises the capability AND admits the
+  // resources/* handlers. Deliberately duplicated from `stdio.ts` per ADR-0161
+  // decision 1 (zero edits to stdio's exports/behaviour), same as the tool wiring.
+  const options: ServerOptions = { capabilities: { tools: {}, resources: {} } };
   const server = new Server(
     { name: "caisson-buyer-mcp", version: SERVER_VERSION },
     options,
@@ -189,6 +197,44 @@ function buildBoundServer(
           isError: true,
           content: [{ type: "text", text: JSON.stringify(body) }],
         };
+      }
+    },
+  );
+
+  // Resource wiring, identical to `stdio.ts`'s — duplicated per ADR-0161 decision 1.
+  server.setRequestHandler(ListResourcesRequestSchema, () => ({
+    resources: mcp.listResources(session).map((reg) => ({
+      uri: reg.uri,
+      name: reg.name,
+      description: reg.description,
+      mimeType: reg.mimeType,
+    })),
+  }));
+
+  server.setRequestHandler(
+    ReadResourceRequestSchema,
+    async (request): Promise<ReadResourceResult> => {
+      try {
+        const result = await mcp.readResource(session, request.params.uri);
+        return {
+          contents: [
+            {
+              uri: request.params.uri,
+              mimeType: "application/json",
+              text: JSON.stringify(result),
+            },
+          ],
+        };
+      } catch (err) {
+        // resources/read has no `isError` result arm — surface the same client-safe envelope
+        // (`toErrorResponse`, ADR-0019) as a JSON-RPC error; an unentitled and an unknown URI both
+        // collapse to the identical not_found envelope (the invisible-resource contract).
+        const { body } = toErrorResponse(err);
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          body.error.message,
+          body.error,
+        );
       }
     },
   );
