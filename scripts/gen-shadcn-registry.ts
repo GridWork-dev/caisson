@@ -20,7 +20,14 @@
  *     `var(--cs-*)` custom properties (the recipe, ADR-0099), so without the tokens css they
  *     render unstyled;
  *   - npm deps are parsed from bare import specifiers and versioned from packages/ui's own
- *     package.json (react/react-dom excluded — peers a shadcn consumer already has).
+ *     package.json (react/react-dom excluded — peers a shadcn consumer already has);
+ *   - every registry:ui file carries an explicit `@ui/<basename>` target (CAISSON-126) — without
+ *     it, shadcn's default-target inference only strips the leading `packages/<pkg>/` segment and
+ *     joins the rest onto the ui alias dir, landing components at
+ *     `src/components/ui/src/components/<name>.tsx` instead of flat. `@ui/` is the alias
+ *     placeholder shadcn resolves against the consumer's own components.json ui alias
+ *     (shadcn@4.7.0+); source components live in one flat directory (readdirSync, no subdirs)
+ *     so per-item basenames are structurally unique and can't collide.
  *
  * Standalone check: `bun scripts/gen-shadcn-registry.ts` prints a summary and fails loudly on
  * any broken invariant (missing file, unresolvable sibling import, implausibly small barrel).
@@ -194,13 +201,33 @@ export function buildShadcnRegistry(repoRoot: string): ShadcnRegistry {
     }
 
     const files: RegistryFile[] = [];
+    const seenTargets = new Set<string>();
     for (const cur of closure) {
       const tsx = present.has(`${cur}.tsx`) ? `${cur}.tsx` : `${cur}.ts`;
-      files.push({ path: `${COMPONENTS_REL}/${tsx}`, type: "registry:ui" });
+      const tsxTarget = `@ui/${tsx}`;
+      if (seenTargets.has(tsxTarget)) {
+        throw new Error(
+          `gen-shadcn-registry: item "${mod}" has two files targeting ${tsxTarget} — disambiguate`,
+        );
+      }
+      seenTargets.add(tsxTarget);
+      files.push({
+        path: `${COMPONENTS_REL}/${tsx}`,
+        type: "registry:ui",
+        target: tsxTarget,
+      });
       if (present.has(`${cur}.css`)) {
+        const cssTarget = `@ui/${cur}.css`;
+        if (seenTargets.has(cssTarget)) {
+          throw new Error(
+            `gen-shadcn-registry: item "${mod}" has two files targeting ${cssTarget} — disambiguate`,
+          );
+        }
+        seenTargets.add(cssTarget);
         files.push({
           path: `${COMPONENTS_REL}/${cur}.css`,
           type: "registry:ui",
+          target: cssTarget,
         });
       }
     }
