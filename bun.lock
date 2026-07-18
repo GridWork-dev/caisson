@@ -366,6 +366,7 @@
       "name": "@caisson/ai-evals",
       "version": "0.3.3",
       "dependencies": {
+        "@caisson/agent-trajectory": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {

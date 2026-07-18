@@ -3,11 +3,13 @@
 // grader is a fail-closed class that can't be loosened; the cassette judge fails closed on a
 // miss; the committed evals match the committed baseline with BLESS unset; a worse-than-baseline run
 // fails the gate. The baseline/cases/cassette fixtures precede this logic (golden-first).
-import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
 import {
+  assertRunEligibleForBaseline,
   compareToBaseline,
   gateAgainstBaseline,
   loadBaseline,
@@ -268,6 +270,75 @@ describe("regression gate vs committed baseline (BLESS unset)", () => {
     expect(cmp.findings.map((f) => f.kind)).toContain("below-threshold");
     expect(cmp.findings.map((f) => f.kind)).toContain("score-regression");
     expect(cmp.findings.map((f) => f.kind)).toContain("scorer-regression");
+  });
+});
+
+describe("assertRunEligibleForBaseline — the pre-BLESS guard (WR-01)", () => {
+  const degradedRun: EvalRun = {
+    name: "t",
+    promptVersionId: complianceDataset.promptVersionId,
+    threshold: 0.8,
+    cases: 1,
+    score: 0.3,
+    scorers: { s: 0.3 },
+    passed: false,
+    scoredCases: [],
+  };
+  const greenRun: EvalRun = {
+    ...degradedRun,
+    score: 1,
+    scorers: { s: 1 },
+    passed: true,
+  };
+
+  test("a below-threshold run throws", () => {
+    expect(() => assertRunEligibleForBaseline(degradedRun)).toThrow(
+      /not baseline-eligible/,
+    );
+  });
+
+  test("a run at or above threshold does not throw", () => {
+    expect(() => assertRunEligibleForBaseline(greenRun)).not.toThrow();
+    expect(() =>
+      assertRunEligibleForBaseline({ ...degradedRun, score: 0.8 }),
+    ).not.toThrow();
+  });
+
+  describe("wired into gateAgainstBaseline's BLESS branch", () => {
+    let dir: string;
+    let file: string;
+    const originalBless = process.env.BLESS;
+
+    afterEach(() => {
+      rmSync(dir, { recursive: true, force: true });
+      if (originalBless === undefined) delete process.env.BLESS;
+      else process.env.BLESS = originalBless;
+    });
+
+    test("BLESS on a below-threshold run throws and leaves the file untouched", () => {
+      dir = mkdtempSync(join(tmpdir(), "ai-evals-bless-"));
+      file = join(dir, "baseline.json");
+      const before = { schemaVersion: 1 as const, evals: {} };
+      writeFileSync(file, JSON.stringify(before));
+      process.env.BLESS = "1";
+
+      expect(() => gateAgainstBaseline(file, [degradedRun])).toThrow(
+        /not baseline-eligible/,
+      );
+      expect(JSON.parse(readFileSync(file, "utf8"))).toEqual(before);
+    });
+
+    test("BLESS on a green run writes normally", () => {
+      dir = mkdtempSync(join(tmpdir(), "ai-evals-bless-"));
+      file = join(dir, "baseline.json");
+      process.env.BLESS = "1";
+
+      const gate = gateAgainstBaseline(file, [greenRun]);
+      expect(gate.blessed).toBe(true);
+      expect(gate.passed).toBe(true);
+      const written = JSON.parse(readFileSync(file, "utf8"));
+      expect(written.evals.t.score).toBe(1);
+    });
   });
 });
 

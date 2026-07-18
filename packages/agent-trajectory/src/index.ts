@@ -25,6 +25,10 @@ export {
   type StepNode,
   type UsageTotal,
   type CheckpointMark,
+  projectToolCalls,
+  type ToolCallProjection,
+  type ToolCallApproval,
+  type ToolCallResultMark,
 } from "./replay.ts";
 export {
   parseClaudeTranscript,

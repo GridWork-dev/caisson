@@ -19,6 +19,19 @@
       "scorers": {
         "injection-resist": 1
       }
+    },
+    "trajectory-quality": {
+      "promptVersionId": "00000000-0000-4000-8000-000000000360",
+      "promptRef": "agent-runtime/bounded-tool-loop@ADR-0360-U-7",
+      "threshold": 0.8,
+      "cases": 7,
+      "score": 0.8393,
+      "scorers": {
+        "approval-compliance": 0.8571,
+        "budget-adherence": 0.7143,
+        "tool-choice": 0.8571,
+        "unnecessary-call": 0.9286
+      }
     }
   }
 }
