@@ -112,14 +112,15 @@ describe("per-module bare-slug purchase-id form", () => {
     expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
   });
 
-  test("RESERVED_MODULE_ENTITLEMENT_IDS is empty — agent-trajectory graduated at its first index entry", () => {
-    // agent-trajectory graduated 2026-07-17 (auto-ledgered/indexed @ 0.2.0 by the slice-1 consume) —
-    // the documented path ui-pro (2026-07-07) and alerting/retention-runner took. Index presence is
-    // not sellability: it stays sellable:false, priced nowhere, and in no bundle members map until
-    // the ADR-0351 rider-3 publish gate. The mechanism stays for the next
-    // sold-or-reserved-before-published SKU; its fail-soft branch is covered by the temp-root
-    // fixture suite in tooling/standards-gate catalog-checks.
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual([]);
+  test("RESERVED_MODULE_ENTITLEMENT_IDS holds exactly the pre-publish agent-usage reservation", () => {
+    // agent-usage is created unpublished (the ADR-0351 rider-3 publish-last rule): its slug rides
+    // the reservation until its first consume auto-ledgers/indexes it, then the reservation drops
+    // in the change that acknowledges that entry — the exact path agent-trajectory took 2026-07-17
+    // (indexed @ 0.2.0 by the slice-1 consume), ui-pro (2026-07-07), and alerting/retention-runner
+    // before it. Index presence is not sellability: sellable:false, priced nowhere, no bundle
+    // members map until the publish gate. The fail-soft branch is covered by the temp-root fixture
+    // suite in tooling/standards-gate catalog-checks.
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual(["agent-usage"]);
   });
 
   test("with the reservation gone, an unindexed ui-pro fails closed like any unknown id", () => {

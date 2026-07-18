@@ -80,7 +80,9 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the SAME change that first indexes its package — its bare slug then resolves through the
  * ordinary indexed-module branch below.
  *
- * Currently reserved: nothing. `agent-trajectory` graduated 2026-07-17 — the slice-1 changeset
+ * Currently reserved: `agent-usage` (the usage-adapter primitive, created unpublished per the
+ * ADR-0351 rider-3 publish-last rule; graduates at its first consume exactly as agent-trajectory
+ * did). Prior graduations: `agent-trajectory` graduated 2026-07-17 — the slice-1 changeset
  * consume auto-ledgered/indexed `@caisson/agent-trajectory@0.2.0`, so per the rule above its
  * reservation left in the change that acknowledged that first index entry. Index presence is NOT
  * sellability: it stays `sellable: false`, carries no PRICE_AUTHORITY row, and joins no bundle
@@ -92,7 +94,7 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the same commit that creates its purchase row (or its package).
  */
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
-  new Set<string>([]);
+  new Set<string>(["agent-usage"]);
 
 /**
  * Bare-slug entitlement ids that are SOLD and stored as purchased grants for their OWN routing
