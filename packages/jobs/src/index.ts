@@ -22,6 +22,7 @@ export type {
   PgBossJob,
   PgBossJobQueueConfig,
   PgBossSchedule,
+  PgBossStoppable,
 } from "./pgboss.ts";
 export { createBullMqJobQueue } from "./bullmq.ts";
 export type {

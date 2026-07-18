@@ -80,6 +80,19 @@ export interface PgBossClient {
     data?: object | null,
     options?: { tz?: string },
   ): Promise<void>;
+  /** Stops maintenance timers and closes pg-boss's own internal pool (WR-01, security review):
+   *  `start()` leaves both running indefinitely — a short-lived caller (a CLI command, a script)
+   *  that never calls this hangs the process on exit. */
+  stop(): Promise<void>;
+}
+
+/** A driver that lazily started a REAL pg-boss client can also stop it — the caller's own
+ *  cleanup (a CLI's `close()`, a script's shutdown) awaits this instead of leaking pg-boss's
+ *  maintenance timers + pool past the caller's own connection teardown (WR-01). */
+export interface PgBossStoppable {
+  /** Safe no-op if the client was never lazily started (e.g. only `enqueue` for a task whose
+   *  handler never ran, or the queue was never touched at all). */
+  stop(): Promise<void>;
 }
 
 /**
@@ -192,7 +205,7 @@ export function deriveIdempotentJobId(
 export function createPgBossJobQueue(
   tasks: readonly TaskDefinition<unknown>[],
   config: PgBossJobQueueConfig,
-): JobQueue & JobConsumer & JobLedger & PgBossSchedule {
+): JobQueue & JobConsumer & JobLedger & PgBossSchedule & PgBossStoppable {
   const registry = new Map<string, TaskDefinition<unknown>>(
     tasks.map((task) => [task.name, task]),
   );
@@ -330,6 +343,14 @@ export function createPgBossJobQueue(
       const client = await getClient();
       await ensureQueue(client, name);
       await client.schedule(name, cron, data ?? null, options);
+    },
+
+    async stop(): Promise<void> {
+      // Nothing to stop if the client was never lazily started — never force a start just to
+      // immediately tear it down.
+      if (clientPromise === undefined) return;
+      const client = await clientPromise;
+      await client.stop();
     },
   };
 }

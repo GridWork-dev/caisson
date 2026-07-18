@@ -19,7 +19,10 @@ const AI_KIT = "@caisson/ai-kit";
 // The kernel-level primitives agent-trajectory (a `primitive`) may sit on. It is the engine-neutral
 // contract; it depends only "down" onto kernel — never onto a runner, an edition, or ai-kit
 // (ADR-0003 down-only; ADR-0351: the trajectory is the substrate, never the consumer).
-const KERNEL_LEVEL = new Set(["@caisson/kernel"]);
+// tenancy-rls joined the set with the durable PG stores (ADR-0360 U-3): the FORCE-RLS
+// TrajectoryStore/RunStateStore sit on the same Base tenancy primitive every other row store uses —
+// still down-only, still no runner/edition/ai-kit.
+const KERNEL_LEVEL = new Set(["@caisson/kernel", "@caisson/tenancy-rls"]);
 
 describe("agent-runtime slice-1 dependency boundary (ADR-0349/0351)", () => {
   test("agent-trajectory (primitive) depends on nothing above kernel-level", () => {

@@ -69,6 +69,19 @@ export {
   createFileSetWriter,
 } from "./writer.ts";
 
+// `caisson run approve|deny|status` (ADR-0360 U-2/U-3) — direct DB service the second bin's `run`
+// subcommand calls into.
+export {
+  RUN_HELP,
+  approveRun,
+  denyRun,
+  readRunStatus,
+  runRunCli,
+  type DecisionOutcome,
+  type RunServiceDeps,
+  type RunStatusView,
+} from "./run.ts";
+
 // The migration assembler + runner are owned by the base @caisson/migrate (ADR-0090); the cli imports
 // them, never copies them. Re-exported here so the cli's existing public API is unchanged.
 export {

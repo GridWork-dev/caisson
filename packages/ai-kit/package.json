@@ -35,6 +35,7 @@
     "@caisson/credits": "workspace:*",
     "@caisson/field-crypto": "workspace:*",
     "@caisson/guardrails": "workspace:*",
+    "@caisson/jobs": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/prompt-registry": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",

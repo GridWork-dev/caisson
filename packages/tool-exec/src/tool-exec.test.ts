@@ -127,3 +127,92 @@ describe("createToolExec — real spawn (default ExecFn), a safe binary", () => 
     expect(result.stdout).toBe("ok");
   });
 });
+
+describe("createToolExec — two-phase gate (ADR-0360 S3): propose() then execute()", () => {
+  test("propose validates + parks without spawning; execute later runs the SAME validated argv", async () => {
+    const { fn, calls } = fakeExecFn();
+    const toolExec = createToolExec({ allowlist: [echoSpec], execFn: fn });
+
+    const proposed = await toolExec.propose(
+      "echo",
+      ["hello", "world"],
+      "smoke",
+    );
+    expect(proposed).toEqual({
+      name: "echo",
+      command: "/bin/echo",
+      args: ["hello", "world"],
+      reason: "smoke",
+    });
+    expect(calls).toHaveLength(0); // propose never spawns
+
+    const result = await toolExec.execute(proposed);
+    expect(result).toMatchObject({
+      command: "/bin/echo",
+      args: ["hello", "world"],
+      ok: true,
+      reason: "smoke",
+    });
+    expect(calls).toHaveLength(1);
+  });
+
+  test("propose rejects an unregistered command BEFORE anything is parked", async () => {
+    const { fn, calls } = fakeExecFn();
+    const toolExec = createToolExec({ allowlist: [echoSpec], execFn: fn });
+    await expect(toolExec.propose("rm", ["-rf", "/"])).rejects.toThrow(
+      NotFoundError,
+    );
+    expect(calls).toHaveLength(0);
+  });
+
+  test("propose rejects args failing the schema, BEFORE anything is parked", async () => {
+    const { fn, calls } = fakeExecFn();
+    const toolExec = createToolExec({ allowlist: [echoSpec], execFn: fn });
+    await expect(toolExec.propose("echo", { not: "an array" })).rejects.toThrow(
+      ValidationError,
+    );
+    expect(calls).toHaveLength(0);
+  });
+
+  test("execute never re-validates args — a proposal built by hand still spawns with its own array", async () => {
+    const { fn, calls } = fakeExecFn();
+    const toolExec = createToolExec({ allowlist: [echoSpec], execFn: fn });
+    const result = await toolExec.execute({
+      name: "echo",
+      command: "/bin/echo",
+      args: ["already", "validated"],
+    });
+    expect(result.ok).toBe(true);
+    expect(calls[0]?.args).toEqual(["already", "validated"]);
+  });
+
+  test("execute refuses a proposal whose command no longer matches the allowlist (drift defense)", async () => {
+    const { fn, calls } = fakeExecFn();
+    const toolExec = createToolExec({ allowlist: [echoSpec], execFn: fn });
+    await expect(
+      toolExec.execute({
+        name: "echo",
+        command: "/bin/rm", // proposed against a DIFFERENT command than the current allowlist entry
+        args: ["-rf", "/"],
+      }),
+    ).rejects.toThrow(NotFoundError);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("execute refuses a proposal for a name removed from the allowlist since propose", async () => {
+    const { fn, calls } = fakeExecFn();
+    const toolExec = createToolExec({ allowlist: [], execFn: fn });
+    await expect(
+      toolExec.execute({ name: "echo", command: "/bin/echo", args: ["x"] }),
+    ).rejects.toThrow(NotFoundError);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("the existing single-phase run() path is untouched by the two-phase addition", async () => {
+    const { fn, calls } = fakeExecFn();
+    const toolExec = createToolExec({ allowlist: [echoSpec], execFn: fn });
+    const result = await toolExec.run("echo", ["still", "works"]);
+    expect(result.ok).toBe(true);
+    expect(calls).toHaveLength(1);
+  });
+});

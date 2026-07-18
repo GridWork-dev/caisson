@@ -274,9 +274,11 @@ describe("runToolLoop — the governed per-step harness", () => {
     expect(await bal()).toBe(100 - result.creditsSpent);
   });
 
-  // Proves MONEY idempotency by callId (fresh stores per attempt); trajectory-level resume
-  // against a durable store is S3's contract — a real same-runId restart collides at seq 0
-  // there by design (flagged for the S3 security review).
+  // Proves MONEY idempotency by callId (fresh stores per attempt). A bare `runToolLoop()`
+  // re-invocation against a SHARED durable store still collides at seq 0 by design — that is
+  // not how S3 resumes a run. S3 (ADR-0360 U-3, `resumeToolLoop` + `approval.ts`) landed the
+  // real mechanism: an approved parked run continues from its persisted `resumeSeq`, never from
+  // seq 0 — see `approval.test.ts`'s "real process boundary" test for the resumed-run proof.
   test("restart-shaped retry with the same runId settles the METER exactly once (no double charge)", async () => {
     await seed(100);
     const runId = "run-retry";
