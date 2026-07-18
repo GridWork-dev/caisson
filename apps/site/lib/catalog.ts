@@ -69,6 +69,9 @@ const MODULE_PRICE_IDS: Record<string, string> = {
   "local-store": "pri_01kwj6m5w3s4fmvseap7zmp5yf",
   "agent-kernel": "pri_01kwj6m63qpt52489tq5a3v6q3",
   "agent-runner": "pri_01kwj71a53hycbspsfv8pck5vc",
+  // agent-trajectory joined the catalog 2026-07-18 (agent-runtime wave) — created via
+  // tools/paddle-catalog-recreate.ts against the sandbox, marker custom_data.caisson_id.
+  "agent-trajectory": "pri_01kxvpjjx55q4cf21cwjbjhwv5",
   // The 11 carve/standalone SKUs from the W7 catalog big-bang (each matched one-for-one against
   // the pricebook's W7 PURCHASE_BOOK rows).
   "compliance-core": "pri_01kwwqa0k69m965tx8hgsv904h",
