@@ -1316,9 +1316,9 @@
     },
     "@caisson/cli@0.7.2": {
       "key": "cli/cli-0.7.2.tgz",
-      "shasum": "d0f07b779fa0d78b01eef71c79af25b925138714",
-      "integrity": "sha512-OnIhdsb2SxEctuT7E6gOJhtTjgsEliPr0AdXKwqjMubrEGGmC4cjaafo5wR1Ao3psSfa2b4gilbQ+CmwYZxyDQ==",
-      "size": 24626,
+      "shasum": "ee6c2e597c15de3a6129bd3293becc637e6e1f25",
+      "integrity": "sha512-EAtqV6MiuDjEHmDNXDBxIQPlqnNCPhCmmd5S81I3DW6SfwisAg5kZOtfoOnSnT5fd4j1AR2NJKJDsp6CDej3Mw==",
+      "size": 24625,
       "meta": {
         "dependencies": {
           "@caisson/ds-manifest": "0.2.1",
@@ -2259,8 +2259,8 @@
     },
     "@caisson/kernel@0.5.2": {
       "key": "kernel/kernel-0.5.2.tgz",
-      "shasum": "740d0bb8cb92f3b243e86b73d66808abb9780c90",
-      "integrity": "sha512-Q9VJ9cxo42QmPHscBoO86VZM8LD1D0JJoH1mWqq4sN2n973SCXZi75hNndXxEcfVSoGfvb+iGMDnpg5U1gtb0A==",
+      "shasum": "73ef2b43b0c5805c8a271fbdb0f61c359a4f9bf6",
+      "integrity": "sha512-ZxFaNgfizS6gaKQVbXT6Wu3TZQB2RaEG5jUGzQdKRyc7E7rIyJYA79RLOnMUVYNBeiMSMKqh9EbtWLUjlDWusg==",
       "size": 71425,
       "meta": {
         "dependencies": {
