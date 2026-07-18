@@ -1,5 +1,12 @@
 # @caisson/ui-pro
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [7de6fa4]
+  - @caisson/kernel@0.5.1
+
 ## 0.3.0
 
 ### Minor Changes

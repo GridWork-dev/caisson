@@ -1,6 +1,6 @@
 {
   "name": "@caisson/local-store",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

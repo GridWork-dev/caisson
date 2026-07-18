@@ -1,5 +1,14 @@
 # @caisson/org-controls
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [7de6fa4]
+  - @caisson/kernel@0.5.1
+  - @caisson/auth@0.3.4
+  - @caisson/tenancy-rls@0.5.3
+
 ## 0.3.1
 
 ### Patch Changes

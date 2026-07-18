@@ -1,6 +1,6 @@
 {
   "name": "@caisson/ai-evals",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

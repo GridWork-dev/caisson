@@ -1,5 +1,13 @@
 # @caisson/retention-runner
 
+## 0.1.10
+
+### Patch Changes
+
+- Updated dependencies [7de6fa4]
+  - @caisson/kernel@0.5.1
+  - @caisson/jobs@0.6.1
+
 ## 0.1.9
 
 ### Patch Changes

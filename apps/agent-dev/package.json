@@ -1,6 +1,6 @@
 {
   "name": "@caisson/app-agent-dev",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
