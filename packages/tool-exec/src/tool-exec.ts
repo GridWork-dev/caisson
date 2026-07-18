@@ -90,8 +90,39 @@ export interface ToolExecConfig {
   readonly now?: () => number;
 }
 
+/**
+ * A validated, not-yet-executed call (ADR-0360 S3 two-phase gate): the allowlist lookup + Zod
+ * validation have already run, so `execute` never re-validates `args` — the recorded `args` here
+ * ARE the exact argv `execute` will spawn. Serializable (plain data) so a caller can park it in an
+ * external approval store between `propose` and `execute` without re-deriving anything.
+ */
+export interface ProposedToolCall {
+  readonly name: string;
+  readonly command: string;
+  readonly args: readonly string[];
+  readonly reason?: string;
+}
+
 export interface ToolExec {
   run(name: string, args: unknown, reason?: string): Promise<ExecResult>;
+  /**
+   * Two-phase gate, phase 1: validate `args` against the allowlisted command's schema WITHOUT
+   * spawning anything. Same fail-closed lookup/validation as `run` — unregistered `name` throws
+   * `NotFoundError`, a bad shape throws `ValidationError` — so a proposal that parks for external
+   * approval is already known-safe-to-execute the moment it exists.
+   */
+  propose(
+    name: string,
+    args: unknown,
+    reason?: string,
+  ): Promise<ProposedToolCall>;
+  /**
+   * Two-phase gate, phase 2: execute a call `propose` already validated (e.g. after an external
+   * approval decision). Re-checks the name is STILL allowlisted to the SAME command — defense
+   * against the allowlist changing between propose and execute — but never re-validates `args`,
+   * which were already validated at propose time.
+   */
+  execute(proposed: ProposedToolCall): Promise<ExecResult>;
 }
 
 /**
@@ -101,6 +132,9 @@ export interface ToolExec {
  *    `ValidationError` (from `parseStrict`) BEFORE anything is spawned.
  * 3. Spawn via the injected `ExecFn` (defaults to `execFile`, argv array, no shell) and return the
  *    full provenance record.
+ *
+ * `propose`/`execute` (ADR-0360 S3) split steps 1-2 from step 3 — additive; `run`'s single-phase
+ * path is unchanged for non-gated tools.
  */
 export function createToolExec(config: ToolExecConfig): ToolExec {
   const registry = new Map<string, CommandSpec>(
@@ -110,6 +144,27 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const execFn = config.execFn ?? defaultExecFn;
   const now = config.now ?? Date.now;
+
+  const spawn = async (
+    command: string,
+    args: readonly string[],
+    reason: string | undefined,
+  ): Promise<ExecResult> => {
+    const { stdout, stderr, exitCode } = await execFn(command, args, {
+      cwd,
+      timeoutMs,
+    });
+    const result: ExecResult = {
+      command,
+      args,
+      exitCode,
+      stdout,
+      stderr,
+      ok: exitCode === 0,
+      at: now(),
+    };
+    return reason === undefined ? result : { ...result, reason };
+  };
 
   return {
     async run(
@@ -124,21 +179,38 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
         });
       }
       const validatedArgs = parseStrict(spec.argsSchema, args);
-      const { stdout, stderr, exitCode } = await execFn(
-        spec.command,
-        validatedArgs,
-        { cwd, timeoutMs },
-      );
-      const result: ExecResult = {
+      return spawn(spec.command, validatedArgs, reason);
+    },
+
+    async propose(
+      name: string,
+      args: unknown,
+      reason?: string,
+    ): Promise<ProposedToolCall> {
+      const spec = registry.get(name);
+      if (spec === undefined) {
+        throw new NotFoundError(`No command registered for "${name}"`, {
+          command: name,
+        });
+      }
+      const validatedArgs = parseStrict(spec.argsSchema, args);
+      const proposed: ProposedToolCall = {
+        name,
         command: spec.command,
         args: validatedArgs,
-        exitCode,
-        stdout,
-        stderr,
-        ok: exitCode === 0,
-        at: now(),
       };
-      return reason === undefined ? result : { ...result, reason };
+      return reason === undefined ? proposed : { ...proposed, reason };
+    },
+
+    async execute(proposed: ProposedToolCall): Promise<ExecResult> {
+      const spec = registry.get(proposed.name);
+      if (spec === undefined || spec.command !== proposed.command) {
+        throw new NotFoundError(
+          `No command registered for "${proposed.name}" matching its proposed command (allowlist changed since propose)`,
+          { command: proposed.name },
+        );
+      }
+      return spawn(spec.command, proposed.args, proposed.reason);
     },
   };
 }

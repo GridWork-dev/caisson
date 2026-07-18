@@ -27,11 +27,14 @@ export default defineModule({
     "@caisson/credits",
     "@caisson/field-crypto",
     "@caisson/guardrails",
+    "@caisson/jobs",
     "@caisson/kernel",
     "@caisson/prompt-registry",
     "@caisson/tenancy-rls",
   ],
   // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
+  // `@caisson/jobs` joins here with S3 (ADR-0360 U-3): approveToolCall enqueues the resume job
+  // through it — open (Apache-2.0) primitive, no open-core boundary issue (ADR-0094/0097).
   members: {
     "@caisson/ai-kit": "0.4.0",
     "@caisson/ai-config": "0.3.0",
@@ -39,6 +42,7 @@ export default defineModule({
     "@caisson/credits": "0.4.1",
     "@caisson/field-crypto": "0.3.0",
     "@caisson/guardrails": "0.4.2",
+    "@caisson/jobs": "0.5.1",
     "@caisson/kernel": "0.4.2",
     "@caisson/prompt-registry": "0.2.5",
     "@caisson/tenancy-rls": "0.5.0",

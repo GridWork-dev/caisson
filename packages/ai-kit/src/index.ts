@@ -11,13 +11,20 @@ export { buildRegistryResolver, infer, inferStream } from "./gateway.ts";
 
 // The bounded tool loop (ADR-0360 U-1): the governed per-step harness — reserve/settle around
 // every model AND tool step, fail-closed budget + trajectory envelope (SPIKE-v7-seam pattern d).
-export { runToolLoop } from "./agent-loop.ts";
+// `resumeToolLoop` (ADR-0360 U-3, S3) continues a parked run after an external approval.
+export { runToolLoop, resumeToolLoop } from "./agent-loop.ts";
 export type {
   LoopTool,
+  ResumeToolLoopOptions,
   RunToolLoopOptions,
   ToolLoopFailureCode,
   ToolLoopResult,
 } from "./agent-loop.ts";
+
+// The approval seam (ADR-0360 U-2/U-3, S3): the operator-facing approve/deny entrypoints a CLI or
+// admin surface calls directly (no MCP round-trip, PLAN-gate decision).
+export { RESUME_TASK_NAME, approveToolCall, denyToolCall } from "./approval.ts";
+export type { ApprovalDeps, ApprovalOutcome } from "./approval.ts";
 export type {
   GuardConfig,
   InferInput,

@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
