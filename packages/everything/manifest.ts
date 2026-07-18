@@ -34,6 +34,10 @@ export default defineModule({
     "@caisson/everything": "0.2.3",
     "@caisson/agent-kernel": "0.6.0",
     "@caisson/agent-runner": "0.2.0",
+    // agent-trajectory joins at the encRef-bearing 0.3.0 (2026-07-18 consume) — same rule as
+    // the agentic-dev pin: never the pre-encRef 0.2.0. agent-usage stays OUT (indexed
+    // sellable:false, rider-3 unpublished — no bundle carries it until its own publish gate).
+    "@caisson/agent-trajectory": "0.3.0",
     // The five sibling persona-bundle metas are themselves sellable SKUs and are IN — the
     // description sells them by name, and an Everything buyer must be entitled to install them.
     // The DISSOLVED edition metas (@caisson/agent-dev, @caisson/ai-kit, @caisson/local-ai) are
