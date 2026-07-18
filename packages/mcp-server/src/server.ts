@@ -43,6 +43,7 @@ import {
   registerCompliancePrompts,
   type CompliancePromptOptions,
 } from "./compliance-prompts.ts";
+import { registerRunTools, type RunToolsOptions } from "./run-tools.ts";
 
 export interface BuyerToken {
   token: string;
@@ -248,6 +249,15 @@ export interface McpServerOptions {
    * no compliance prompt exists (fail-closed). See `compliance-prompts.ts`.
    */
   compliancePrompts?: CompliancePromptOptions;
+  /**
+   * Opt-in agent-runtime tools (ADR-0360 S5, ADR-0361/0362). When present, `run_start`/`run_status`
+   * are registered through the same seam, gated on the module's OWN dedicated entitlement (default
+   * `"@caisson/agent-trajectory"`, never the Agentic-Dev bundle's fold slug); when omitted neither
+   * tool exists (fail-closed). The actual loop/store wiring is the HOST's `@caisson/ai-kit`
+   * `buildRunTools` callback pair (injected, mirrors `onGenerate` — this open package never imports
+   * the commercial edition at runtime). See `run-tools.ts`.
+   */
+  runTools?: RunToolsOptions;
 }
 
 export interface McpServer {
@@ -841,5 +851,8 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   // Compliance-edition prompt registers through the same seam, same one-way flow.
   if (options.compliancePrompts)
     registerCompliancePrompts(server, options.index, options.compliancePrompts);
+  // ADR-0360 S5 / ADR-0361/0362 wire: run_start/run_status register through the same seam, same
+  // one-way flow — the injected host callbacks are the ONLY commercial-tier coupling.
+  if (options.runTools) registerRunTools(server, options.runTools);
   return server;
 }

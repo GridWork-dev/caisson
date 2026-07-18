@@ -75,3 +75,9 @@ export type {
   ByokResolverOptions,
   TenantKeyResolver,
 } from "./byok-resolver.ts";
+
+// The MCP `run_start`/`run_status` host callbacks (ADR-0360, S5 exposure/publish, ADR-0361/0362):
+// the injected wiring `@caisson/mcp-server`'s open-tier `run-tools.ts` seam calls into, since the
+// open package can never import this commercial edition at runtime.
+export { buildRunTools } from "./mcp-run-tools.ts";
+export type { RunStatusResult, RunToolsDeps } from "./mcp-run-tools.ts";

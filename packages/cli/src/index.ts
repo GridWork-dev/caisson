@@ -69,17 +69,20 @@ export {
   createFileSetWriter,
 } from "./writer.ts";
 
-// `caisson run approve|deny|status` (ADR-0360 U-2/U-3) — direct DB service the second bin's `run`
-// subcommand calls into.
+// `caisson run start|approve|deny|status` (ADR-0360 U-2/U-3, S5) — direct DB service (approve/
+// deny/status) + the thin MCP client (start) the second bin's `run` subcommand calls into.
 export {
   RUN_HELP,
   approveRun,
   denyRun,
   readRunStatus,
   runRunCli,
+  runStartClient,
   type DecisionOutcome,
   type RunServiceDeps,
+  type RunStartClientInput,
   type RunStatusView,
+  type TrajectoryProjectionView,
 } from "./run.ts";
 
 // The migration assembler + runner are owned by the base @caisson/migrate (ADR-0090); the cli imports

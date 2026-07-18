@@ -315,6 +315,7 @@
       "name": "@caisson/agent-trajectory",
       "version": "0.2.0",
       "dependencies": {
+        "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "zod": "catalog:",
@@ -403,9 +404,13 @@
       },
       "devDependencies": {
         "@caisson/ai-evals": "workspace:*",
+        "@caisson/cli": "workspace:*",
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/mcp-server": "workspace:*",
+        "@caisson/registry-schema": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
+        "@modelcontextprotocol/sdk": "^1.29.0",
         "eslint": "catalog:",
         "msw": "^2.14.6",
         "typescript": "catalog:",
