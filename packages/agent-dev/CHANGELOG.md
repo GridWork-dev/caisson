@@ -1,5 +1,17 @@
 # @caisson/agent-dev
 
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [7de6fa4]
+  - @caisson/kernel@0.5.1
+  - @caisson/agent-kernel@0.6.1
+  - @caisson/agent-runner@0.2.2
+  - @caisson/ai-config@0.3.3
+  - @caisson/local-store@1.0.2
+  - @caisson/tool-exec@0.2.1
+
 ## 0.6.1
 
 ### Patch Changes

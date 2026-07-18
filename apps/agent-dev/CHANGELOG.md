@@ -1,5 +1,12 @@
 # @caisson/app-agent-dev
 
+## 0.0.13
+
+### Patch Changes
+
+- @caisson/agent-dev@0.6.2
+- @caisson/agent-runner@0.2.2
+
 ## 0.0.12
 
 ### Patch Changes

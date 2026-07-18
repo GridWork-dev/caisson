@@ -1,5 +1,12 @@
 # @caisson/kernel
 
+## 0.5.1
+
+### Patch Changes
+
+- 7de6fa4: Rebuilt against this release's pinned dependencies so the published artifact matches its
+  recorded checksum exactly. No functional changes.
+
 ## 0.5.0
 
 ### Minor Changes

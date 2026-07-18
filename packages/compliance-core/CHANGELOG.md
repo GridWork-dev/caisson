@@ -1,5 +1,14 @@
 # @caisson/compliance-core
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [7de6fa4]
+  - @caisson/kernel@0.5.1
+  - @caisson/field-crypto@0.3.3
+  - @caisson/frameworks-pack@0.5.1
+
 ## 0.4.0
 
 ### Minor Changes
