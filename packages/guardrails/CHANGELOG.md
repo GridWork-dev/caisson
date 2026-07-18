@@ -1,5 +1,13 @@
 # @caisson/guardrails
 
+## 0.4.6
+
+### Patch Changes
+
+- Updated dependencies [7de6fa4]
+  - @caisson/kernel@0.5.1
+  - @caisson/field-crypto@0.3.3
+
 ## 0.4.5
 
 ### Patch Changes

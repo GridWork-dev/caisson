@@ -1,5 +1,14 @@
 # @caisson/registry-schema
 
+## 0.5.4
+
+### Patch Changes
+
+- 5d03808: The Agentic-Dev and Everything bundles now include the agent-trajectory module — the
+  governed run record behind agent runs: an append-only, replayable event log with approval
+  gating, encrypted-at-rest paused runs, and deterministic replay. Purchases from 18 July
+  2026 include it; earlier purchases keep their existing bundle snapshot.
+
 ## 0.5.3
 
 ### Patch Changes

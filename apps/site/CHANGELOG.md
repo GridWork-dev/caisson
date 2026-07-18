@@ -1,5 +1,37 @@
 # @caisson/site
 
+## 0.2.9
+
+### Patch Changes
+
+- Updated dependencies [5d03808]
+- Updated dependencies [7de6fa4]
+- Updated dependencies [63e9fae]
+  - @caisson/registry-schema@0.5.4
+  - @caisson/kernel@0.5.1
+  - @caisson/platform-reads@0.2.3
+  - @caisson/ai-kit@0.5.1
+  - @caisson/cli@0.7.1
+  - @caisson/credits@0.5.5
+  - @caisson/pricebook@0.5.6
+  - @caisson/service-license@0.0.13
+  - @caisson/ai-meter@1.0.5
+  - @caisson/audit-worm@2.1.2
+  - @caisson/auth@0.3.4
+  - @caisson/billing@0.6.2
+  - @caisson/email@0.5.1
+  - @caisson/field-crypto@0.3.3
+  - @caisson/local-store@1.0.2
+  - @caisson/migrate@0.2.7
+  - @caisson/observability@0.3.2
+  - @caisson/org-controls@0.3.2
+  - @caisson/platform-migrations@0.2.6
+  - @caisson/prompt-registry@1.0.2
+  - @caisson/rate-limit@0.1.5
+  - @caisson/tenancy-rls@0.5.3
+  - @caisson/ui-pro@0.3.1
+  - @caisson/demo-registry@0.2.6
+
 ## 0.2.8
 
 ### Patch Changes

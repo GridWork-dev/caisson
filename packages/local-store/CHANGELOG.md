@@ -1,5 +1,12 @@
 # @caisson/local-store
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [7de6fa4]
+  - @caisson/kernel@0.5.1
+
 ## 1.0.1
 
 ### Patch Changes
