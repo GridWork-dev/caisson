@@ -8,6 +8,30 @@ grounds:
 
 # Deploy log
 
+## 2026-07-17 (night) — SECOND full train ride v2026.07.17.5 + Worker redeploy: bundles with live pins (`fdf9dedb`)
+
+The 14-changeset consume (version PR #266 → `8cd9ac5e`) rode the FULL release train — the
+second ADR-0325 ride ever (today's earlier .1–.4 rides used the publish-lane dispatch). The
+train's readiness gate first failed CLOSED (missing R4 audit + per-release checklist — the
+attestation-only-successor shape from the 2026-07-12 operator lock), so the tag was re-cut
+onto `fdf9dedb` carrying both artifacts; second run green end-to-end (run 29622027895).
+
+- **Legs:** readiness 9/9 (incl. the live-hybrid retrieval golden leg, run locally green) →
+  leg 1 byte-verified + uploaded the 9 new tarballs to R2 (never-overwrite) → leg 2 mirror
+  sync appended `mirror sync from fdf9ded` to caisson-oss (healing the 5-day / 91-commit
+  staleness the same-night audit sweep flagged) → leg 3 npm SKIPPED (unarmed pre-launch,
+  ADR-0329) → leg 4 inert (`RAILWAY_TOKEN` unset).
+- **What shipped:** the six bundles republished with live member pins (everything@0.2.4 ·
+  compliance@0.5.4 · ai-production@0.2.2 · local-first@0.2.2 · provenance@0.2.2 ·
+  agentic-dev@0.2.2 — the CAISSON-125 prune's customer-facing tail) + cli@0.6.3 +
+  mcp-server@0.5.1 + ds-manifest@0.2.1. `skippedDelisted === 3` held in the live consume —
+  the prune PR's P1 fix's first production exercise.
+- **Worker redeployed** (version `c22eed25`) off clean main `fdf9dedb`. Live proof:
+  cli@0.6.3 packument serves with dist, tarball GET 200 sha1-identical to the sidecar row
+  (69d0dcd5/24607B); commercial bundles correctly absent unauthenticated (entitlement
+  floor). Release notes buyer-clean (no tracker ids).
+- Pre-launch gate stays ON; no R2 objects overwritten; ledger append-only holds.
+
 ## 2026-07-17 (late PM, after the parallel-wave deploy) — Worker redeploy: the CAISSON-125 prune live (`3fdc6a8d`)
 
 Pre-approved by the operator ("worker redeploy approved whenever asking as it's off clean
