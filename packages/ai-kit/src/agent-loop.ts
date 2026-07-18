@@ -22,6 +22,13 @@
 // before any spend, and the final text is output-guarded before it is returned. Intermediate
 // tool-conversation traffic is digest-referenced in the trajectory but not re-guarded per step —
 // the S3 approval seam is the gate for tool content.
+//
+// ACCEPTED RESIDUALS (2026-07-17 SHIP audit, recorded): (F3) reserve and settle are separate
+// transactions — a settle/refund transaction that itself fails leaves an orphaned hold, classified
+// `"settle"` so an out-of-band reconciler (the closing dependency; usage_event idempotency makes
+// its retries safe) can sweep it. (F5) the memory TrajectoryStore is tenant-blind — acceptable for
+// tests/single-process; the S3 PG store carries tenant RLS. `ToolLoopResult.failure.message` may
+// carry raw provider/tool error text — in-process only, never persisted; callers treat as sensitive.
 import { createHash, randomUUID } from "node:crypto";
 import {
   generateText,
@@ -87,6 +94,12 @@ export interface RunToolLoopOptions {
   readonly creditBudget: number;
   /** REQUIRED envelope store — every append here is fail-closed (append failure stops the run). */
   readonly store: TrajectoryStore;
+  /**
+   * The run's identity AND the idempotency root: per-step meter call ids derive from it, so a
+   * same-runId retry settles exactly once. SECURITY (audit F2): this MUST be server-controlled —
+   * never derived from client/untrusted input — or a replayed runId turns idempotent no-ops into
+   * free inference. Omit to get a server-random uuid.
+   */
   readonly runId?: string;
   readonly maxOutputTokens?: number;
   readonly abortSignal?: AbortSignal;
@@ -99,7 +112,10 @@ export type ToolLoopFailureCode =
   | "provider"
   | "tool"
   | "guard"
-  | "step-ceiling";
+  | "step-ceiling"
+  /** A settle/refund transaction failed AFTER its reserve committed: the hold is orphaned until
+   * the out-of-band reconciler sweeps it (audit F3). Distinct so orphans are discoverable. */
+  | "settle";
 
 export interface ToolLoopResult {
   readonly runId: string;
@@ -242,25 +258,32 @@ export async function runToolLoop(
       }),
     );
 
+  // Terminal append is BEST-EFFORT (review WR-02): by the time run.finished is written the run's
+  // outcome — and its money — is already decided; a dead store must not convert a decided result
+  // into a rejection (the projection then shows the run still "running", which is honest).
   const finishRun = async (
     status: "completed" | "failed",
     reason?: string,
   ): Promise<void> => {
-    await append("run.finished", {
-      status,
-      ...(reason !== undefined ? { reason } : {}),
-      ...(status === "completed" && finalText.length > 0
-        ? { output: digestOf(finalText) }
-        : {}),
-    });
+    try {
+      await append("run.finished", {
+        status,
+        ...(reason !== undefined ? { reason } : {}),
+        ...(status === "completed" && finalText.length > 0
+          ? { output: digestOf(finalText) }
+          : {}),
+      });
+    } catch {
+      // Swallowed by design — see above.
+    }
   };
 
-  await append("run.started", {
-    agentId: opts.agentId,
-    input: digestOf(guardedPrompt),
-  });
-
   try {
+    await append("run.started", {
+      agentId: opts.agentId,
+      input: digestOf(guardedPrompt),
+    });
+
     for (let step = 1; step <= opts.maxSteps; step += 1) {
       const stepId = `s${String(step)}`;
       const stepCallId = `${runId}:${stepId}`;
@@ -287,6 +310,18 @@ export async function runToolLoop(
           `step ${String(step)} estimate (${String(est.credits)} credits) would exceed the remaining budget (${String(opts.creditBudget - creditsSpent)} of ${String(opts.creditBudget)})`,
         );
       }
+
+      // model.call is appended BEFORE the reserve (review BL-01): its payload has no dependency
+      // on the reservation, and keeping the reserve→settle window free of REQUIRED appends means
+      // an append failure can never orphan a committed debit. (The gateway emits post-reserve for
+      // record aesthetics; here money-correctness wins — a 402'd step leaves a model.call record
+      // with its step.finished error telling the story.)
+      await append("model.call", {
+        stepId,
+        provider: cfg.provider,
+        model: cfg.model,
+        prompt: digestOf(messages.map((m) => messageText(m))),
+      });
 
       // Reserve (fail-closed 402): debit-before-spend for the model step.
       let reserved;
@@ -320,14 +355,12 @@ export async function runToolLoop(
         );
       }
 
-      await append("model.call", {
-        stepId,
-        provider: cfg.provider,
-        model: cfg.model,
-        prompt: digestOf(messages.map((m) => messageText(m))),
-      });
-
       // The provider call — one SDK step exactly (pattern d). Failure refunds the reservation.
+      // The output bound is ALWAYS passed and is the SAME number the estimate priced
+      // (`estUsage.outputTokens` = caller's maxOutputTokens or the meter default) — an uncapped
+      // call would turn creditBudget into a fail-open ceiling (audit F1): the reserve would hold
+      // 1024 output tokens while the provider generated the model max, and the shortfall would
+      // true up far past the budget.
       let result;
       try {
         const model = await opts.resolveModel(opts.lane, accountId);
@@ -336,21 +369,34 @@ export async function runToolLoop(
           messages,
           tools: sdkTools,
           stopWhen: stepCountIs(1),
-          ...(opts.maxOutputTokens !== undefined
-            ? { maxOutputTokens: opts.maxOutputTokens }
-            : {}),
+          maxOutputTokens: estUsage.outputTokens,
           ...(opts.abortSignal !== undefined
             ? { abortSignal: opts.abortSignal }
             : {}),
         });
       } catch (err) {
-        await settleStep(
-          stepCallId,
-          reserved.reservedCredits,
-          reserved.windowKey,
-          ZERO_USAGE,
-          true, // a genuine zero — the call failed, full refund
-        );
+        try {
+          await settleStep(
+            stepCallId,
+            reserved.reservedCredits,
+            reserved.windowKey,
+            ZERO_USAGE,
+            true, // a genuine zero — the call failed, full refund
+          );
+        } catch (settleErr) {
+          // The refund transaction itself failed: the reserve hold is ORPHANED until the
+          // out-of-band reconciler sweeps it (audit F3). Classify distinctly so it is
+          // discoverable — never mislabeled as a provider failure.
+          await append("step.finished", {
+            stepId,
+            status: "error",
+            errorCode: "settle",
+          });
+          throw new LoopFailure(
+            "settle",
+            `refund failed after provider error (orphaned reservation ${stepCallId}): ${settleErr instanceof Error ? settleErr.message : String(settleErr)}`,
+          );
+        }
         await append("step.finished", {
           stepId,
           status: "error",
@@ -370,13 +416,28 @@ export async function runToolLoop(
         canPersistUsage(normalized, cfg.provider, cfg.model, opts.meter)
           ? normalized
           : null;
-      const reconciled = await settleStep(
-        stepCallId,
-        reserved.reservedCredits,
-        reserved.windowKey,
-        reported ?? estUsage,
-        reported !== null,
-      );
+      let reconciled: ReconcileResult;
+      try {
+        reconciled = await settleStep(
+          stepCallId,
+          reserved.reservedCredits,
+          reserved.windowKey,
+          reported ?? estUsage,
+          reported !== null,
+        );
+      } catch (settleErr) {
+        // A throwing settle (e.g. a shortfall debit on a short wallet) leaves the estimate
+        // charged and NO usage_event row — an orphaned hold for the reconciler (audit F1/F3).
+        await append("step.finished", {
+          stepId,
+          status: "error",
+          errorCode: "settle",
+        });
+        throw new LoopFailure(
+          "settle",
+          `settle failed (orphaned reservation ${stepCallId}): ${settleErr instanceof Error ? settleErr.message : String(settleErr)}`,
+        );
+      }
       creditsSpent += reconciled.actualCredits;
 
       await append("model.usage", {
@@ -448,8 +509,9 @@ export async function runToolLoop(
           );
         }
 
-        // The tool step's own reservation: zero credits, but the breaker/caps gate still runs —
-        // an open breaker 402s HERE, before the tool executes (SPEC §3 item 5).
+        // The tool step's own reservation: zero credits, but the BREAKER gate still runs (the
+        // caps evaluation is a no-op on a zero-spend reserve) — an open breaker 402s HERE,
+        // before the tool executes (SPEC §3 item 5).
         let toolReserved;
         try {
           toolReserved = await withTenant(tx, accountId, (t) =>
@@ -485,13 +547,20 @@ export async function runToolLoop(
         try {
           output = await impl.execute(call.input);
         } catch (err) {
-          await settleStep(
-            toolCallKey,
-            toolReserved.reservedCredits,
-            toolReserved.windowKey,
-            ZERO_USAGE,
-            true,
-          );
+          try {
+            await settleStep(
+              toolCallKey,
+              toolReserved.reservedCredits,
+              toolReserved.windowKey,
+              ZERO_USAGE,
+              true,
+            );
+          } catch (settleErr) {
+            throw new LoopFailure(
+              "settle",
+              `tool refund failed (orphaned reservation ${toolCallKey}): ${settleErr instanceof Error ? settleErr.message : String(settleErr)}`,
+            );
+          }
           await append("tool.result", {
             toolCallId,
             ok: false,
@@ -509,13 +578,20 @@ export async function runToolLoop(
         }
         // Settle the zero-credit tool reservation at reserved (usage unreported) — the
         // usage_event row is the tool step's audit trail.
-        await settleStep(
-          toolCallKey,
-          toolReserved.reservedCredits,
-          toolReserved.windowKey,
-          ZERO_USAGE,
-          false,
-        );
+        try {
+          await settleStep(
+            toolCallKey,
+            toolReserved.reservedCredits,
+            toolReserved.windowKey,
+            ZERO_USAGE,
+            false,
+          );
+        } catch (settleErr) {
+          throw new LoopFailure(
+            "settle",
+            `tool settle failed (orphaned reservation ${toolCallKey}): ${settleErr instanceof Error ? settleErr.message : String(settleErr)}`,
+          );
+        }
         await append("tool.result", {
           toolCallId,
           ok: true,

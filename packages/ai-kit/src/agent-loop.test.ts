@@ -23,6 +23,7 @@ import {
 } from "@caisson/kernel";
 import {
   AI_METER_SCHEMA_SQL,
+  DEFAULT_OUTPUT_TOKENS,
   SPEND_POLICY_TABLE,
   USAGE_EVENT_TABLE,
   type MeterConfig,
@@ -264,15 +265,19 @@ describe("runToolLoop — the governed per-step harness", () => {
     const second = prompts[1];
     expect(JSON.stringify(second)).toContain("tool-result");
 
-    // Projection banding equals the ledger's settled actuals; wallet conservation is the
-    // exactly-once proxy (any double-settle would double-debit).
+    // Projection banding equals the ledger's settled actuals. Wallet conservation is a
+    // necessary consistency check (not a standalone exactly-once oracle — that proof is the
+    // retry test below plus the meter's usage_event UNIQUE idempotency).
     const p = project(events);
     expect(p.status).toBe("completed");
     expect(p.usageTotals.metered.credits).toBe(result.creditsSpent);
     expect(await bal()).toBe(100 - result.creditsSpent);
   });
 
-  test("restart-shaped retry with the same runId settles exactly once (no double charge)", async () => {
+  // Proves MONEY idempotency by callId (fresh stores per attempt); trajectory-level resume
+  // against a durable store is S3's contract — a real same-runId restart collides at seq 0
+  // there by design (flagged for the S3 security review).
+  test("restart-shaped retry with the same runId settles the METER exactly once (no double charge)", async () => {
     await seed(100);
     const runId = "run-retry";
     const mk = () =>
@@ -364,6 +369,77 @@ describe("runToolLoop — the governed per-step harness", () => {
     expect(result.failure?.code).toBe("trajectory-append");
     expect(calls()).toBe(0); // the step never ran
     expect(await bal()).toBe(100); // and never reserved
+  });
+
+  test("a model.call append failure cannot orphan a reservation (BL-01: append is pre-reserve)", async () => {
+    await seed(100);
+    const { model, calls } = scriptedModel([textResult("never")]);
+    const inner = createMemoryTrajectoryStore();
+    const failing: TrajectoryStore = {
+      async append(event) {
+        if (event.kind === "model.call") throw new Error("store down");
+        return inner.append(event);
+      },
+      read: (runId) => inner.read(runId),
+    };
+    const result = await runToolLoop(loopOpts(model, failing));
+    expect(result.status).toBe("failed");
+    expect(result.failure?.code).toBe("trajectory-append");
+    expect(calls()).toBe(0); // model never called
+    expect(await bal()).toBe(100); // NOTHING debited — the append precedes the reserve
+  });
+
+  test("a model.usage append failure fails the run with money already consistent", async () => {
+    await seed(100);
+    const { model } = scriptedModel([textResult("done")]);
+    const inner = createMemoryTrajectoryStore();
+    const failing: TrajectoryStore = {
+      async append(event) {
+        if (event.kind === "model.usage") throw new Error("store down");
+        return inner.append(event);
+      },
+      read: (runId) => inner.read(runId),
+    };
+    const result = await runToolLoop(loopOpts(model, failing));
+    expect(result.status).toBe("failed");
+    expect(result.failure?.code).toBe("trajectory-append");
+    // The step settled before the failed append: wallet and reported spend agree — no orphan.
+    expect(await bal()).toBe(100 - result.creditsSpent);
+    expect(result.creditsSpent).toBe(1);
+  });
+
+  test("the provider call is ALWAYS output-bounded by the priced estimate (audit F1)", async () => {
+    await seed(100);
+    const captured: Array<number | undefined> = [];
+    const model = new MockLanguageModelV4({
+      doGenerate: async (options: LanguageModelV4CallOptions) => {
+        captured.push(options.maxOutputTokens);
+        return textResult("done");
+      },
+    });
+    const store = createMemoryTrajectoryStore();
+    // No maxOutputTokens supplied — the loop must still bound the call at the meter default
+    // it priced the reservation with (an uncapped call would fail the budget ceiling open).
+    const opts = loopOpts(model, store);
+    const { maxOutputTokens: _drop, ...rest } = opts;
+    const result = await runToolLoop(rest as RunToolLoopOptions);
+    expect(result.status).toBe("completed");
+    expect(captured).toEqual([DEFAULT_OUTPUT_TOKENS]);
+  });
+
+  test("a persistently-dead store still resolves a failed result (terminal append best-effort)", async () => {
+    await seed(100);
+    const { model } = scriptedModel([textResult("never")]);
+    const dead: TrajectoryStore = {
+      async append() {
+        throw new Error("store down");
+      },
+      read: async () => [],
+    };
+    const result = await runToolLoop(loopOpts(model, dead));
+    expect(result.status).toBe("failed");
+    expect(result.failure?.code).toBe("trajectory-append");
+    expect(await bal()).toBe(100);
   });
 
   test("provider failure refunds the reservation", async () => {
