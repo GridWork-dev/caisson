@@ -32,6 +32,7 @@ import {
   SPEND_POLICY_TABLE,
   SpendCapError,
   USAGE_EVENT_TABLE,
+  reconcile,
   type MeterConfig,
 } from "@caisson/ai-meter";
 import {
@@ -60,6 +61,7 @@ import {
   buildRegistryResolver,
   infer,
   inferStream,
+  OrphanedReservationError,
   type InferOptions,
   type InferStreamOptions,
   type TrajectoryRecorder,
@@ -780,6 +782,125 @@ describe("provider reports no usage — settle at reserved (no silent refund)", 
   });
 });
 
+describe("charge-above-reservation shortfall — orphaned reservation (CAISSON-108 finding 1)", () => {
+  // Same fixture shape as "a completed fallback larger than the reservation charges the consumed
+  // estimate" above (reservedCredits 1, actual fallback 5 credits — delta 4) but the wallet holds
+  // ONLY the reservation: reconcile's shortfall debit has nothing left to cover the delta.
+  test("infer(): a reconcile debit past the wallet classifies the failure and strands no partial write", async () => {
+    await seed(1); // exactly covers the 1-credit reservation, nothing left for the 4-credit shortfall
+    const model = mockModelNoUsage("x".repeat(800));
+
+    const call = infer(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), sink(), {
+        maxOutputTokens: 1,
+        callId: "orphan-infer-1",
+      }),
+    );
+
+    await expect(call).rejects.toBeInstanceOf(OrphanedReservationError);
+    const err = (await call.catch(
+      (e: unknown) => e,
+    )) as OrphanedReservationError;
+    expect(err.code).toBe("orphaned_reservation");
+    expect(err.httpStatus).toBe(402);
+    expect(err.details).toMatchObject({
+      callId: "orphan-infer-1",
+      reservedCredits: 1,
+    });
+
+    // reserve()'s debit (a separate, already-committed transaction) still holds exactly its
+    // credit — no partial extra debit, no negative balance, nothing silently topped up.
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(0);
+    // reconcile()'s usage_event insert + shortfall debit share ONE transaction and rolled back
+    // together — no ledger row exists yet for this call.
+    const rows = await tp.query(
+      `SELECT 1 FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1 AND call_id = $2`,
+      [A, "orphan-infer-1"],
+    );
+    expect(rows).toHaveLength(0);
+
+    // The sweep: once the wallet is topped up, an out-of-band reconciler retries reconcile()
+    // under the SAME callId — usage_event's (account, call_id) UNIQUE settles it exactly once.
+    await withTenant(tp.pg, A, (tx) =>
+      grant(tx, {
+        accountId: A,
+        amount: asCredits(10),
+        eventType: "purchase",
+        sourceEventId: "topup",
+      }),
+    );
+    const usage = { inputTokens: 1, outputTokens: 200, cachedInputTokens: 0 };
+    const swept = await withTenant(tp.pg, A, (tx) =>
+      reconcile(tx, {
+        accountId: A,
+        callId: "orphan-infer-1",
+        provider: "openai",
+        model: "model",
+        lane: "default",
+        reservedCredits: 1,
+        usage,
+        usageReported: true,
+        config: METER,
+      }),
+    );
+    expect(swept.idempotent).toBe(false);
+    expect(swept.actualCredits).toBe(5);
+    expect(swept.chargedCredits).toBe(4);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(6); // 0 + 10 - 4
+    const sweptRows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1 AND call_id = $2`,
+      [A, "orphan-infer-1"],
+    );
+    expect(sweptRows).toEqual([{ credits: 5 }]);
+
+    // A second sweep attempt (a retried request, a duplicate reconciler pass) settles once —
+    // no double debit, no second row.
+    const resweep = await withTenant(tp.pg, A, (tx) =>
+      reconcile(tx, {
+        accountId: A,
+        callId: "orphan-infer-1",
+        provider: "openai",
+        model: "model",
+        lane: "default",
+        reservedCredits: 1,
+        usage,
+        usageReported: true,
+        config: METER,
+      }),
+    );
+    expect(resweep.idempotent).toBe(true);
+    expect(resweep.chargedCredits).toBe(0);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(6);
+  });
+
+  test("inferStream(): the same shortfall classifies the failure identically", async () => {
+    await seed(1);
+    const model = mockStreamModelNoUsage(["x".repeat(800)]);
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), sink(), {
+        maxOutputTokens: 1,
+        callId: "orphan-stream-1",
+      }),
+    );
+    for await (const _delta of res.textStream) {
+      // drain — the SDK-level text is unaffected, only settlement fails
+    }
+
+    await expect(res.settled).rejects.toBeInstanceOf(OrphanedReservationError);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(0);
+    const rows = await tp.query(
+      `SELECT 1 FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1 AND call_id = $2`,
+      [A, "orphan-stream-1"],
+    );
+    expect(rows).toHaveLength(0);
+  });
+});
+
 describe("post-reservation model setup failure — refund", () => {
   test("infer() refunds to zero when model resolution fails after reserve", async () => {
     await seed(1000);
@@ -983,7 +1104,7 @@ describe("streaming infer — inferStream", () => {
     );
   });
 
-  test("an already-aborted signal settles without waiting for a first next", async () => {
+  test("an already-aborted signal settles ZERO — provably pre-contact, provider never reached (CAISSON-108 finding 2)", async () => {
     await seed(1000);
     const s = sink();
     const aborter = new AbortController();
@@ -1002,14 +1123,21 @@ describe("streaming infer — inferStream", () => {
 
     const settled = await settlesWithin(res.settled);
     expect(settled.abandoned).toBe(true);
+    // Provider never contacted at all — doStream was never called — so this settles ZERO, not
+    // the chars/4 input-token estimate fallbackLanguageSettlement would otherwise charge.
+    expect(model.doStreamCalls).toHaveLength(0);
+    expect(settled.usage).toEqual({
+      inputTokens: 0,
+      outputTokens: 0,
+      cachedInputTokens: 0,
+    });
+    expect(settled.reconciled.actualCredits).toBe(0);
     const rows = await tp.query<{ credits: number }>(
       `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
       [A],
     );
-    expect(rows).toEqual([{ credits: settled.reconciled.actualCredits }]);
-    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(
-      1000 - settled.reconciled.actualCredits,
-    );
+    expect(rows).toEqual([{ credits: 0 }]);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
   });
 
   test("an iterator remains stably done after the stream completes", async () => {
@@ -1191,6 +1319,11 @@ describe("streaming infer — inferStream", () => {
 
     const settled = await res.settled;
     expect(settled.abandoned).toBe(true);
+    // Post-contact (the provider was already reached and yielded output before the abort) —
+    // this is NOT the pre-contact carve-out, so it keeps charging the consumed estimate, never
+    // ZERO. Guards against the pre-contact fix (CAISSON-108 finding 2) over-reaching.
+    expect(settled.usage.outputTokens).toBeGreaterThan(0);
+    expect(model.doStreamCalls).toHaveLength(1);
     const rows = await tp.query(
       `SELECT 1 FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
       [A],
