@@ -77,6 +77,10 @@ const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
     "exercises the debit-before-spend seam against the real COMMERCIAL @caisson/credits ledger (a dev-only fixture behind the DebitFn injection port); credits is excluded from the open mirror",
   ],
   [
+    "packages/cli/src/run.test.ts",
+    "imports TrajectoryEvent directly from the COMMERCIAL @caisson/agent-trajectory package (shape-parity assertion) and reads its migration SQL files by relative path; agent-trajectory is excluded from the open mirror. run.ts itself (still shipped) only references agent-trajectory in comments and hand-mirrors its schema via raw SQL by design (ADR-0094/0097 open/commercial boundary) — it stays mirror-safe. Sibling run-start.test.ts imports only @caisson/mcp-server + @caisson/registry-schema (both open) and ships unexcluded.",
+  ],
+  [
     "packages/registry-schema/src/entitlement-expansion.test.ts",
     "reads the repo-root registry/index.json fixture, which does not ship in the mirror (W1 sandbox finding L-A1: ENOENT failed the mirror's own `bun run test`)",
   ],
@@ -104,7 +108,9 @@ const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
 const DROP_COMMERCIAL_DEV_DEPS: ReadonlyMap<
   string,
   ReadonlySet<string>
-> = new Map([["@caisson/cli", new Set(["@caisson/credits"])]]);
+> = new Map([
+  ["@caisson/cli", new Set(["@caisson/credits", "@caisson/agent-trajectory"])],
+]);
 
 /** Packages whose `test` script is dropped in the mirror (their only test is excluded above, so
  *  turbo skips the package rather than erroring on a now-empty glob). */
