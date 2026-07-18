@@ -21,7 +21,7 @@ import { ConfigError } from "@caisson/kernel";
 import { BUNDLE_IDS, type BundleId } from "@caisson/registry-schema";
 
 /** Append-only version stamp — an upgrade-book change bumps this, never edits it in place. */
-export const UPGRADE_BOOK_VERSION = "2026-07-06.1";
+export const UPGRADE_BOOK_VERSION = "2026-07-18.1";
 
 /**
  * Every creditable commercial SKU → its retail price (integer USD, ADR-0258/0260). The single
@@ -58,6 +58,7 @@ export const SKU_RETAIL: Readonly<Record<string, number>> = {
   // Agentic-Dev members
   "agent-kernel": 199,
   "agent-runner": 49,
+  "agent-trajectory": 49,
   "tool-exec": 99,
   // Standalone commercial SKUs (in Everything, not in a persona bundle)
   "org-controls": 249,
@@ -81,6 +82,7 @@ export const BUNDLE_RETAIL: Readonly<Record<BundleId, number>> = {
 const GENESIS = "2026-06-01T00:00:00.000Z"; // original edition members (ADR-0020-0023 lineage)
 const STAGE2 = "2026-07-01T00:00:00.000Z"; // Stage-2 harvest members (alerting/retention/tool-exec/agent-runner)
 const CATALOG_REWORK = "2026-07-06T00:00:00.000Z"; // ADR-0257/0258 carves, fold-ins, net-new bundles
+const AGENT_RUNTIME = "2026-07-18T00:00:00.000Z"; // agent-runtime wave: agent-trajectory joins agentic-dev
 
 /**
  * F7 bundle-membership TIMELINE: `bundleId → (memberSku → ISO join instant)`. A member's join date
@@ -121,6 +123,7 @@ export const BUNDLE_MEMBERSHIP_BOOK: Readonly<
   "agentic-dev": {
     "agent-kernel": GENESIS,
     "agent-runner": STAGE2,
+    "agent-trajectory": AGENT_RUNTIME,
     "tool-exec": STAGE2,
     "local-store": GENESIS,
   },

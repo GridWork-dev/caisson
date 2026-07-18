@@ -15,7 +15,7 @@ import { z } from "zod";
 import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
 
 /** Append-only version stamp — a renewal-row change bumps this, never edits it in place (ADR-0006). */
-export const RENEWAL_BOOK_VERSION = "2026-07-07.1";
+export const RENEWAL_BOOK_VERSION = "2026-07-18.1";
 
 export const renewalBookEntrySchema = strictObject({
   /** The purchased id (edition/bundle/module slug) whose updates window this price renews. */
@@ -68,6 +68,10 @@ export const RENEWAL_BOOK: Record<string, RenewalBookEntry> = {
     renewsEntitlement: "billing-orchestration",
   },
   pri_01kwwqa5a8z41s64x1fnfzqanj: { renewsEntitlement: "ui-pro" },
+  // agent-trajectory joined the catalog 2026-07-18 (agent-runtime wave) — sandbox renewal
+  // price created via tools/paddle-catalog-recreate.ts (its own marker-carrying "Updates
+  // Renewal" parent; the earlier hand-built parent keeps the pre-existing rows above).
+  pri_01kxvpjp4hga6v33nbx6nn0yw1: { renewsEntitlement: "agent-trajectory" },
 };
 
 /** Validate a renewal-book override at a boundary (Zod `.strict()` per row). */
