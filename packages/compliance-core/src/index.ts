@@ -23,10 +23,13 @@ export * from "./evidence/generate.ts";
 // External-anchor grade tag + detached-receipt attachment (SPEC external-anchoring §6).
 export * from "./evidence/external-anchor.ts";
 
-// --- OSCAL export seam (assessment plan, results, POA&M, XML). ----------------------------------
+// --- OSCAL export seam (assessment plan, results, POA&M, catalog, XML). -------------------------
 export * from "./evidence/oscal-export.ts";
 export * from "./evidence/oscal-export-xml.ts";
 export * from "./evidence/oscal-assessment-plan.ts";
+// The generated OSCAL catalog expression of the caisson canonical control catalog (SPEC
+// oscal-spine (a), ADR-0363/ADR-0364).
+export * from "./evidence/oscal-catalog-export.ts";
 
 // --- Control<->collector binding table (PLAN Group E) — a derived artifact, not a config layer. --
 export * from "./evidence/binding-table.ts";
