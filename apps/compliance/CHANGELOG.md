@@ -1,5 +1,12 @@
 # @caisson/app-compliance
 
+## 0.0.11
+
+### Patch Changes
+
+- @caisson/compliance@0.5.5
+- @caisson/audit-worm@2.1.1
+
 ## 0.0.10
 
 ### Patch Changes

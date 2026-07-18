@@ -1,5 +1,18 @@
 # @caisson/service-license
 
+## 0.0.12
+
+### Patch Changes
+
+- Updated dependencies [f40653b]
+- Updated dependencies [c3b0e41]
+  - @caisson/registry-schema@0.5.3
+  - @caisson/jobs@0.6.0
+  - @caisson/credits@0.5.4
+  - @caisson/license-issue@1.0.1
+  - @caisson/pricebook@0.5.5
+  - @caisson/audit-worm@2.1.1
+
 ## 0.0.11
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @caisson/app-base
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [c7476b9]
+  - @caisson/mcp-server@0.6.0
+  - @caisson/credits@0.5.4
+
 ## 0.0.13
 
 ### Patch Changes
