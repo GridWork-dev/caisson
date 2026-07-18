@@ -1,10 +1,15 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import {
+  MIRROR_ASSET_FILES,
   resolveCatalogSpec,
   rewriteProseMentions,
   sanitizeAdrCitations,
   sanitizeSourceComments,
 } from "./export-public-mirror.ts";
+
+const MIRROR_ASSETS_DIR = join(import.meta.dir, "mirror-assets");
 
 describe("rewriteProseMentions", () => {
   const open = new Set(["kernel", "ai-config", "license-verify"]);
@@ -207,5 +212,23 @@ describe("sanitizeSourceComments", () => {
     );
     expect(after).toContain(" * Debit before spend.");
     expect(after).toContain("expect(stub).toBeDefined();");
+  });
+});
+
+describe("MIRROR_ASSET_FILES", () => {
+  test("every listed source file exists under scripts/mirror-assets/", () => {
+    for (const { src } of MIRROR_ASSET_FILES) {
+      expect(existsSync(join(MIRROR_ASSETS_DIR, src))).toBe(true);
+    }
+  });
+
+  // Pins the presentation-punch-list additions actually land in the export wiring, not just on
+  // disk under mirror-assets/ (an asset never added to this table is silently never exported).
+  test("ships the community-health + presentation assets at the expected mirror path", () => {
+    const dests = MIRROR_ASSET_FILES.map((f) => f.dest);
+    expect(dests).toContain("SECURITY.md");
+    expect(dests).toContain("SUPPORT.md");
+    expect(dests).toContain("CODE_OF_CONDUCT.md");
+    expect(dests).toContain(".github/ISSUE_TEMPLATE/bug_report.md");
   });
 });
