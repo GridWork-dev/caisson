@@ -1,11 +1,13 @@
 ---
-status: draft (ADR-0363 build-now lock; PLAN gate pending operator review)
+status: locked (ADR-0363 build-now + ADR-0364 fork locks F2-F5; PLAN authoring may begin)
 owner: operator
 ---
 
 # SPEC — Dual-catalog OSCAL spine: caisson catalog OSCAL expression + vendored NIST 800-53 rev5 + OLIR-style mapping rows
 
-- **Repo:** caisson · **Tags:** `product`, `security` · **Status:** DRAFT — spec-first per ADR-0363; PLAN awaits operator lock.
+- **Repo:** caisson · **Tags:** `product`, `security` · **Status:** LOCKED — forks resolved at the
+  2026-07-18 same-day picker → **ADR-0364** (F2 OLIR-verbatim override · F3 extend-in-place ·
+  F4 one merged catalog · F5 scheduled-watch override; F1 was bound by ADR-0363's own text).
 - **Lock:** ADR-0363 (2026-07-18, "build now") supersedes in part ADR-0333's deferred-fork gate — the
   real-FedRAMP-ask trigger is dropped; the fork's stated PRECONDITIONS become binding build
   requirements here, unchanged in substance.
@@ -172,7 +174,14 @@ here — flagged as F3 below.
 7. The source-bundle coherence + update/diff/re-review lifecycle (Binding requirements 1-2) exist as a
    documented, runnable procedure — not prose — before PLAN closes this SPEC's scope.
 
-## Forks (open — operator picker at PLAN time)
+## Forks — LOCKED 2026-07-18 → ADR-0364
+
+Resolution record: **F1 = (b)** (bound by ADR-0363's own text, not separately asked) ·
+**F2 = (b) OLIR 5-way verbatim** (operator override of the (a) recommendation; scoped to the
+nist80053 crosswalk only, existing enum untouched elsewhere) · **F3 = (a) extend in place** ·
+**F4 = (a) one merged catalog** · **F5 = (b) scheduled watch job** (operator override of the
+(a) recommendation; flags diffs for review, never auto-applies). Original options kept below
+for the record.
 
 **F1. Mapping-row home & shape**
 
