@@ -47,6 +47,15 @@ function sampleRun(): TrajectoryEvent[] {
       credits: 0,
       billingStatus: "estimated",
     }),
+    e("model.usage", {
+      provider: "openai",
+      model: "gpt-5.2-codex",
+      inputTokens: 30,
+      outputTokens: 6,
+      credits: 2,
+      billingStatus: "priced",
+      priceBookVersion: "2026-06-01",
+    }),
     e("checkpoint", {
       checkpointId: "c1",
       label: "after-usage",
@@ -83,6 +92,12 @@ describe("project — deterministic projection", () => {
       cachedInputTokens: 40,
       credits: 5,
     });
+    expect(p.usageTotals.priced).toEqual({
+      inputTokens: 30,
+      outputTokens: 6,
+      cachedInputTokens: 0,
+      credits: 2,
+    });
     expect(p.usageTotals.estimated).toEqual({
       inputTokens: 50,
       outputTokens: 10,
@@ -95,6 +110,15 @@ describe("project — deterministic projection", () => {
       cachedInputTokens: 0,
       credits: 0,
     });
+  });
+
+  test("usageTotals bands serialize in the fixed order (ADR-0360 U-4 byte contract)", () => {
+    expect(Object.keys(project(sampleRun()).usageTotals)).toEqual([
+      "metered",
+      "priced",
+      "estimated",
+      "unsupported",
+    ]);
   });
 
   test("step tree nests the subagent under its parent with per-step status", () => {

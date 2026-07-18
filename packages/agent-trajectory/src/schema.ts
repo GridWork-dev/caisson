@@ -33,11 +33,18 @@ export type DigestRef = z.infer<typeof DigestRef>;
 
 /**
  * Usage honesty (AR-3): how much to trust the token/credit numbers on a `model.usage` event.
- * `metered` — the numbers ARE the ledger's (ai-kit gateway). `estimated` — real counts from a
- * trusted adapter (e.g. a Claude Code transcript) but not price-normalized, so not billing-grade.
- * `unsupported` — the surface has no validated usage contract; NO token claims are made.
+ * `metered` — the numbers ARE the ledger's (ai-kit gateway). `priced` — pricebook-computed integer
+ * credits attached to real adapter-extracted counts (ADR-0360 U-4); never ledger-settled — a cost
+ * statement, not a charge. `estimated` — real counts from a trusted adapter (e.g. a Claude Code
+ * transcript) but not price-normalized, so not billing-grade. `unsupported` — the surface has no
+ * validated usage contract; NO token claims are made.
  */
-export const BillingStatus = z.enum(["metered", "estimated", "unsupported"]);
+export const BillingStatus = z.enum([
+  "metered",
+  "priced",
+  "estimated",
+  "unsupported",
+]);
 export type BillingStatus = z.infer<typeof BillingStatus>;
 
 /** The eleven event kinds — the closed vocabulary of the trajectory contract. */
@@ -119,8 +126,38 @@ const ModelUsagePayload = z
     /** Integer credit units charged (ADR-0007). 0 when not billing-grade (estimated/unsupported). */
     credits: intNonneg,
     billingStatus: BillingStatus,
+    /**
+     * Pricebook provenance (ADR-0360 U-4): which `PRICE_BOOK_VERSION` computed a `priced` event's
+     * credits. Only valid on `priced` events (that direction is enforced below); OPTIONAL even on
+     * `priced` per the U-4 lock — producers (the S2b normalizer) always stamp it, but the contract
+     * does not require it, and a zero/absent stamp must not be "tightened" into a reverse refine
+     * without an ADR reconcile (a zero-credit priced/metered event is legitimate).
+     */
+    priceBookVersion: nonEmpty.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((v, ctx) => {
+    // The previously comment-only invariant, now enforced (ADR-0360 U-4): credit claims are only
+    // legal on billing-grade bands; provenance only decorates the band it explains.
+    if (
+      v.credits > 0 &&
+      v.billingStatus !== "metered" &&
+      v.billingStatus !== "priced"
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["credits"],
+        message: `credits must be 0 when billingStatus is "${v.billingStatus}" (only metered/priced carry credit claims)`,
+      });
+    }
+    if (v.priceBookVersion !== undefined && v.billingStatus !== "priced") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["priceBookVersion"],
+        message: `priceBookVersion is only valid on billingStatus "priced" (got "${v.billingStatus}")`,
+      });
+    }
+  });
 
 const ToolProposedPayload = z
   .object({

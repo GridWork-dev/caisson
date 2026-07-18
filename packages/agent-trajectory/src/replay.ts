@@ -33,7 +33,7 @@ export interface RunProjection {
   readonly runId: string;
   readonly status: "pending" | "running" | "completed" | "failed" | "cancelled";
   readonly steps: StepNode[];
-  /** One entry per billingStatus band, always all three keys in a fixed order (deterministic). */
+  /** One entry per billingStatus band, always all four keys in a fixed order (deterministic). */
   readonly usageTotals: Record<BillingStatus, UsageTotal>;
   readonly checkpoints: CheckpointMark[];
 }
@@ -55,8 +55,11 @@ export function project(events: readonly TrajectoryEvent[]): RunProjection {
   const runId = ordered[0]?.runId ?? "";
 
   let status: RunProjection["status"] = "pending";
+  // Key order is the projection's byte order: metered → priced → estimated → unsupported
+  // (the `priced` band landed with ADR-0360 U-4 — the one recorded projection-bytes change).
   const usageTotals: Record<BillingStatus, UsageTotal> = {
     metered: zeroTotal(),
+    priced: zeroTotal(),
     estimated: zeroTotal(),
     unsupported: zeroTotal(),
   };

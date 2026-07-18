@@ -66,12 +66,18 @@ Every `model.usage` event declares how much to trust its numbers:
   provider-reported when the provider reported usage, and the ledger's reservation-shaped estimate
   when it did not (the gateway settles that case at the estimate rather than refunding — the tokens
   were consumed either way). Billing-grade.
+- `priced` — pricebook-computed integer credits attached to real adapter-extracted counts
+  (ADR-0360 U-4). A **cost statement, never a charge**: the credits are computed against a price
+  book and are never ledger-settled. `metered` stays the only ledger-truth band. Provenance is
+  carried in `priceBookVersion` — only valid on `priced` events (schema-enforced), and optional
+  even there per the U-4 lock; the price-normalizing producer always stamps it.
 - `estimated` — real counts from a trusted adapter (e.g. a Claude Code transcript) but **not
   price-normalized**, so **not** billing-grade; `credits` is `0`.
 - `unsupported` — the surface has **no validated usage contract**; no token claims are made.
 
 A producer must not stamp `metered` unless the event carries exactly what the ledger settled and
-charged — never an independent claim.
+charged — never an independent claim. The schema enforces the credit invariant: `credits > 0` is
+only legal on `metered`/`priced`; `estimated`/`unsupported` events carry `credits: 0`.
 
 ## Replay = deterministic projection
 

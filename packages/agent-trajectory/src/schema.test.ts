@@ -51,6 +51,18 @@ const samples: Array<[string, unknown]> = [
     },
   ],
   [
+    "model.usage",
+    {
+      provider: "openai",
+      model: "gpt-5.2-codex",
+      inputTokens: 200,
+      outputTokens: 40,
+      credits: 7,
+      billingStatus: "priced",
+      priceBookVersion: "2026-06-01",
+    },
+  ],
+  [
     "tool.proposed",
     {
       stepId: "s1",
@@ -134,6 +146,70 @@ describe("TrajectoryEvent — strict boundary rejects unknown fields", () => {
   test("a non-hex digest is rejected (payload discipline)", () => {
     expect(() =>
       parseStrict(DigestRef, { digest: "nothex", byteLength: 4 }),
+    ).toThrow(ValidationError);
+  });
+});
+
+describe("model.usage — billing-grade credit invariant (ADR-0360 U-4)", () => {
+  const usage = (over: Record<string, unknown>) =>
+    evt("model.usage", 0, {
+      provider: "anthropic",
+      model: "opus",
+      inputTokens: 10,
+      outputTokens: 2,
+      ...over,
+    });
+
+  test("estimated with nonzero credits is rejected", () => {
+    expect(() =>
+      parseStrict(
+        TrajectoryEvent,
+        usage({ credits: 1, billingStatus: "estimated" }),
+      ),
+    ).toThrow(ValidationError);
+  });
+
+  test("unsupported with nonzero credits is rejected", () => {
+    expect(() =>
+      parseStrict(
+        TrajectoryEvent,
+        usage({ credits: 1, billingStatus: "unsupported" }),
+      ),
+    ).toThrow(ValidationError);
+  });
+
+  test("priced with nonzero credits and a priceBookVersion parses", () => {
+    const parsed = parseStrict(
+      TrajectoryEvent,
+      usage({
+        credits: 4,
+        billingStatus: "priced",
+        priceBookVersion: "2026-06-01",
+      }),
+    );
+    if (parsed.kind !== "model.usage") throw new Error("kind narrowing failed");
+    expect(parsed.payload.priceBookVersion).toBe("2026-06-01");
+  });
+
+  test("priced with zero credits parses (band does not require spend)", () => {
+    expect(() =>
+      parseStrict(
+        TrajectoryEvent,
+        usage({ credits: 0, billingStatus: "priced" }),
+      ),
+    ).not.toThrow();
+  });
+
+  test("priceBookVersion on a non-priced band is rejected", () => {
+    expect(() =>
+      parseStrict(
+        TrajectoryEvent,
+        usage({
+          credits: 3,
+          billingStatus: "metered",
+          priceBookVersion: "2026-06-01",
+        }),
+      ),
     ).toThrow(ValidationError);
   });
 });
