@@ -46,12 +46,14 @@ import {
 } from "@caisson/ai-meter";
 import type {
   MeterConfig,
+  ReconcileInput,
   ReconcileResult,
   ReserveResult,
   Usage,
 } from "@caisson/ai-meter";
 import { detokenizePii, guardInput, guardOutput } from "@caisson/guardrails";
 import type { GuardPolicy, GuardRuntime, PiiToken } from "@caisson/guardrails";
+import { CaissonError, InsufficientCreditsError } from "@caisson/kernel";
 import type { EventSink } from "@caisson/kernel";
 import type { TrajectoryEvent } from "@caisson/agent-trajectory";
 import { renderVersion, resolvePrompt } from "@caisson/prompt-registry";
@@ -275,6 +277,57 @@ const ZERO_USAGE: Usage = {
 };
 
 /**
+ * A reconcile that debits ABOVE the reservation (a positive delta — e.g. `fallbackLanguageSettlement`'s
+ * consumed-estimate exceeding `reservedCredits` on an unreported-usage clean finish) but hits a short
+ * wallet. `reconcile()`'s `usage_event` insert and the shortfall debit share ONE transaction, so a
+ * short wallet rolls the whole leg back: no ledger row lands, yet `reserve()`'s up-front debit — a
+ * SEPARATE, already-committed transaction — still holds `reservedCredits`. Never underbills, wallet
+ * never negative, but the hold is otherwise invisible. Classify it distinctly instead of letting the
+ * raw `InsufficientCreditsError` propagate un-marked (mirrors `agent-loop.ts`'s F3 residual): the
+ * `usage_event` UNIQUE (account, call_id) makes a later reconcile retry — once the wallet is topped up
+ * — settle safely and exactly once.
+ */
+export class OrphanedReservationError extends CaissonError {
+  readonly code = "orphaned_reservation";
+  readonly httpStatus = 402;
+  constructor(callId: string, reservedCredits: number, cause: unknown) {
+    super(
+      `reconcile failed above the reservation — orphaned hold pending sweep (call ${callId})`,
+      {
+        callId,
+        reservedCredits,
+        cause: cause instanceof Error ? cause.message : String(cause),
+      },
+    );
+  }
+}
+
+/**
+ * Reconcile inside its own `withTenant` scope, reclassifying a shortfall-on-reconcile
+ * `InsufficientCreditsError` as `OrphanedReservationError` (see the type doc) instead of letting it
+ * surface unmarked. Shared by `infer()` and `inferStream()` so the classification lives in exactly
+ * one place — the shared seam both settle closures reconcile through.
+ */
+async function reconcileOrOrphan(
+  tx: Transactor,
+  accountId: string,
+  input: ReconcileInput,
+): Promise<ReconcileResult> {
+  try {
+    return await withTenant(tx, accountId, (t) => reconcile(t, input));
+  } catch (err) {
+    if (err instanceof InsufficientCreditsError) {
+      throw new OrphanedReservationError(
+        input.callId,
+        input.reservedCredits,
+        err,
+      );
+    }
+    throw err;
+  }
+}
+
+/**
  * Build a `ModelResolver` from a provider registry over the ai-config lanes (ADR-0059): each lane's
  * `{ provider, model }` resolves to `registry.languageModel("provider:model")`. The provider
  * instances are injected (the real `@ai-sdk/*` adapters in prod via `defaultProviders`, a double in
@@ -384,22 +437,20 @@ export async function infer(
     usage: Usage,
     usageReported = true,
   ): Promise<ReconcileResult> =>
-    withTenant(tx, accountId, (t) =>
-      reconcile(t, {
-        accountId,
-        callId,
-        provider: cfg.provider,
-        model: cfg.model,
-        lane,
-        reservedCredits: reserved.reservedCredits,
-        usage,
-        usageReported,
-        windowKey: reserved.windowKey,
-        ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
-        promptVersionId,
-        ...(opts.meter !== undefined ? { config: opts.meter } : {}),
-      }),
-    );
+    reconcileOrOrphan(tx, accountId, {
+      accountId,
+      callId,
+      provider: cfg.provider,
+      model: cfg.model,
+      lane,
+      reservedCredits: reserved.reservedCredits,
+      usage,
+      usageReported,
+      windowKey: reserved.windowKey,
+      ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
+      promptVersionId,
+      ...(opts.meter !== undefined ? { config: opts.meter } : {}),
+    });
 
   // Observe the model call (prompt digest only — never the prompt text). Emitted after reserve so a
   //    fail-closed 402 leaves no dangling call record; before the provider call so a provider failure
@@ -591,6 +642,10 @@ function fallbackLanguageSettlement(
  * idempotent on `callId` (a retry under the same id settles once, never double-charges) — but an
  * abandoned stream's settle amount is necessarily an estimate, not a provider-verified number,
  * because the provider was never asked to finish billing a call the caller walked away from.
+ * **Carve-out:** an `abortSignal` already fired before `streamText` was ever called is provably
+ * PRE-contact — the provider was never reached at all — and settles ZERO_USAGE instead of the
+ * input-token estimate (CAISSON-108 finding 2); a signal that fires after the provider call has
+ * started keeps the estimate-over-consumed-text behavior above, never under-charging real spend.
  *
  * The gateway starts an eager pump before returning. That pump owns the provider stream and drives
  * settlement independently of consumer iteration, so a caller that never calls `next()` or drops
@@ -662,22 +717,20 @@ export async function inferStream(
     usage: Usage,
     usageReported = true,
   ): Promise<ReconcileResult> =>
-    withTenant(tx, accountId, (t) =>
-      reconcile(t, {
-        accountId,
-        callId,
-        provider: cfg.provider,
-        model: cfg.model,
-        lane,
-        reservedCredits: reserved.reservedCredits,
-        usage,
-        usageReported,
-        windowKey: reserved.windowKey,
-        ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
-        promptVersionId,
-        ...(opts.meter !== undefined ? { config: opts.meter } : {}),
-      }),
-    );
+    reconcileOrOrphan(tx, accountId, {
+      accountId,
+      callId,
+      provider: cfg.provider,
+      model: cfg.model,
+      lane,
+      reservedCredits: reserved.reservedCredits,
+      usage,
+      usageReported,
+      windowKey: reserved.windowKey,
+      ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
+      promptVersionId,
+      ...(opts.meter !== undefined ? { config: opts.meter } : {}),
+    });
 
   // 4. provider call (STREAMING) — the model is resolved/wrapped exactly like infer(); only the
   //    call shape (streamText vs generateText) and the settle timing differ (see the abandonment
@@ -851,6 +904,15 @@ export async function inferStream(
   async function pump(
     controller: ReadableStreamDefaultController<string>,
   ): Promise<void> {
+    // Provably pre-contact: the signal was already aborted before streamText — and so the
+    // provider — was ever called. Settle ZERO_USAGE directly (infer()'s abort-before-call full
+    // refund, mirrored) instead of falling into the estimate fallback below, which would charge
+    // the input-token estimate for a call that never reached the provider (CAISSON-108 finding 2).
+    if (streamAbortSignal.aborted) {
+      await settleOnce("", ZERO_USAGE, true);
+      if (!consumerCancelled) controller.close();
+      return;
+    }
     let consumedText = "";
     let reportedUsage: Usage | null = null;
     let sawFinish = false;
