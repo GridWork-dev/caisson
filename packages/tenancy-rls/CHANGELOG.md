@@ -1,5 +1,12 @@
 # @caisson/tenancy-rls
 
+## 0.5.4
+
+### Patch Changes
+
+- Updated dependencies [fc0bb99]
+  - @caisson/kernel@0.5.2
+
 ## 0.5.3
 
 ### Patch Changes

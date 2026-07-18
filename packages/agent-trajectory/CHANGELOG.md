@@ -1,5 +1,14 @@
 # @caisson/agent-trajectory
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [fc0bb99]
+  - @caisson/kernel@0.5.2
+  - @caisson/field-crypto@0.3.4
+  - @caisson/tenancy-rls@0.5.4
+
 ## 0.3.1
 
 ### Patch Changes

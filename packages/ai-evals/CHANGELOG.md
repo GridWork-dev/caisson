@@ -1,5 +1,11 @@
 # @caisson/ai-evals
 
+## 0.4.2
+
+### Patch Changes
+
+- @caisson/agent-trajectory@0.3.2
+
 ## 0.4.1
 
 ### Patch Changes

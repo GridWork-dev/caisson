@@ -1,5 +1,14 @@
 # @caisson/credits
 
+## 0.5.6
+
+### Patch Changes
+
+- Updated dependencies [fc0bb99]
+  - @caisson/kernel@0.5.2
+  - @caisson/jobs@0.6.2
+  - @caisson/tenancy-rls@0.5.4
+
 ## 0.5.5
 
 ### Patch Changes

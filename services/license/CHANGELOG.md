@@ -1,5 +1,27 @@
 # @caisson/service-license
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [6f0af8a]
+- Updated dependencies [fc0bb99]
+  - @caisson/pricebook@0.6.0
+  - @caisson/kernel@0.5.2
+  - @caisson/alerting@0.2.3
+  - @caisson/audit-worm@2.1.3
+  - @caisson/billing@0.6.3
+  - @caisson/billing-orchestration@0.3.3
+  - @caisson/credits@0.5.6
+  - @caisson/email@0.5.2
+  - @caisson/jobs@0.6.2
+  - @caisson/license-issue@1.0.3
+  - @caisson/license-verify@0.3.4
+  - @caisson/observability@0.3.3
+  - @caisson/org-controls@0.3.3
+  - @caisson/rate-limit@0.1.6
+  - @caisson/tenancy-rls@0.5.4
+
 ## 0.0.13
 
 ### Patch Changes

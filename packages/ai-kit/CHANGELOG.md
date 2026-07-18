@@ -1,5 +1,21 @@
 # @caisson/ai-kit
 
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [fc0bb99]
+  - @caisson/kernel@0.5.2
+  - @caisson/agent-trajectory@0.3.2
+  - @caisson/ai-config@0.3.4
+  - @caisson/ai-meter@1.0.6
+  - @caisson/credits@0.5.6
+  - @caisson/field-crypto@0.3.4
+  - @caisson/guardrails@0.4.7
+  - @caisson/jobs@0.6.2
+  - @caisson/prompt-registry@1.0.3
+  - @caisson/tenancy-rls@0.5.4
+
 ## 0.5.1
 
 ### Patch Changes
