@@ -43,6 +43,7 @@ function createFakeClient(): PgBossClient & {
     data: object | null;
     tz: string | undefined;
   }>;
+  readonly stopCalls: number;
   queueState: QueueState | null;
   /** Set to make the next `work()` immediately deliver this batch to its handler. */
   nextWorkBatch: readonly PgBossJob[];
@@ -64,9 +65,13 @@ function createFakeClient(): PgBossClient & {
   }> = [];
   let queueState: QueueState | null = null;
   let nextWorkBatch: readonly PgBossJob[] = [];
+  let stopCalls = 0;
   return {
     async start() {
       return undefined;
+    },
+    async stop() {
+      stopCalls += 1;
     },
     async createQueue(name) {
       createQueueCalls.push(name);
@@ -108,6 +113,9 @@ function createFakeClient(): PgBossClient & {
     },
     get scheduleCalls() {
       return scheduleCalls;
+    },
+    get stopCalls() {
+      return stopCalls;
     },
     get queueState() {
       return queueState;
@@ -543,5 +551,28 @@ describe("pg-boss schedule() (ADR-0256)", () => {
     ).rejects.toThrow(NotFoundError);
     expect(client.scheduleCalls).toHaveLength(0);
     expect(client.createQueueCalls).toHaveLength(0);
+  });
+});
+
+describe("pg-boss stop() (WR-01: a short-lived caller must be able to release the client)", () => {
+  test("delegates to client.stop() once the client was lazily started", async () => {
+    const client = createFakeClient();
+    const queue = createPgBossJobQueue(grantCreditsTasks, { client });
+
+    await queue.enqueue("grant-credits", { accountId: "acct_a", amount: 100 });
+    expect(client.stopCalls).toBe(0); // not stopped just by using it
+
+    await queue.stop();
+
+    expect(client.stopCalls).toBe(1);
+  });
+
+  test("is a safe no-op when the client was never lazily started", async () => {
+    const client = createFakeClient();
+    const queue = createPgBossJobQueue(grantCreditsTasks, { client });
+
+    await queue.stop(); // enqueue/work/schedule never called — no client to stop
+
+    expect(client.stopCalls).toBe(0);
   });
 });

@@ -333,6 +333,11 @@ function buildDeps(config: z.infer<typeof EnvConfig>): {
   return {
     deps: { tx, accountId: config.accountId, jobs },
     close: async () => {
+      // WR-01 (security review): approve's enqueue lazily boss.start()s a pg-boss client that
+      // leaves maintenance timers + its own pool running until stopped — a successful `caisson
+      // run approve` would otherwise never exit. deny/status never call enqueue, so this is a
+      // safe no-op on those paths (see createPgBossJobQueue's stop()).
+      await jobs.stop();
       await pool.end();
     },
   };

@@ -127,6 +127,7 @@ function createFakeQueueFactory(): {
       async schedule(name: string, cron: string, data?: object | null) {
         scheduleCalls.push({ name, cron, data: data ?? null });
       },
+      async stop() {},
     };
   };
   return {

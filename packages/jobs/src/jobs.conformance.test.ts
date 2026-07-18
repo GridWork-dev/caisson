@@ -56,6 +56,9 @@ function fakePgBossClient(): PgBossClient {
     async schedule() {
       return undefined;
     },
+    async stop() {
+      return undefined;
+    },
   };
 }
 
