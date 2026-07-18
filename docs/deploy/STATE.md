@@ -8,6 +8,21 @@ grounds:
 
 # Deploy log
 
+## 2026-07-17 (night, close-out) — Worker redeploy off the audit-fix merges (`97c9924a`)
+
+The DEPLOY tail of the audit-follow-up chain, per the operator's "proceed through audit
+fixes, PR, merge, and worker redeploy" and the standing clean-main pre-approval.
+
+- **Registry Worker redeployed** (`registry/worker/deploy.sh`, version `d41bd5b6`) off
+  clean main `97c9924a` (the --strict-digests merge, PR 267). Content-identical to
+  `c22eed25` — nothing under `registry/` changed since `fdf9dedb` (the two commits since
+  are `f45ab6bd` terraform DMARC authz + `97c9924a` security-scan.yml) — run as
+  belt-and-braces because the operator named the redeploy explicitly. Live probe:
+  index.json serves, kernel packument 200.
+- Same sitting, off-repo: Tailscale upgraded 1.98.4 → 1.98.9 on the box (daemon
+  restarted); the DMARC external-report authorization TXT applied via terraform and
+  answering live.
+
 ## 2026-07-17 (night) — SECOND full train ride v2026.07.17.5 + Worker redeploy: bundles with live pins (`fdf9dedb`)
 
 The 14-changeset consume (version PR #266 → `8cd9ac5e`) rode the FULL release train — the
