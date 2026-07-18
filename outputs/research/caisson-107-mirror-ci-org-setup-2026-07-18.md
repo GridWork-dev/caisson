@@ -313,9 +313,15 @@ preconditions are green. This means:
    - The `caisson-sh/.github` org-profile repo is its own small initiative (a second repo, not a
      `caisson-oss` setting) — can be built and pushed anytime; only _matters_ for marketing once
      `caisson-sh` itself is a public-facing brand, i.e. at or after the flip.
-3. **Track 1's one loose end** (§2's "open thread"): confirm the `bundle-registry-index.ts`
+3. ~~**Track 1's one loose end** (§2's "open thread"): confirm the `bundle-registry-index.ts`
    build-time call path on a cold turbo cache before fully closing CAISSON-107 — cheap, 5-minute
-   verification, not a redesign.
+   verification, not a redesign.~~ **CLOSED 2026-07-18 (same day, verification run):** a fresh
+   clone of the mirror ran the exact ci.yml steps genuinely cold (0/18 turbo cache hits) — all
+   green, no throw. Root cause of the safety is layered, not accidental: the exporter's
+   pre-existing `BUILD_SCRIPT_OVERRIDES` (`scripts/export-public-mirror.ts` ~line 123) strips
+   both `bundle-migrations` and `bundle-registry-index` invocations off the mirror's cli build
+   script, and `bundle-registry-index.ts` only executes under `import.meta.main` anyway;
+   `resolveIndexPath()` falls back without throwing. No follow-up needed.
 
 ---
 
