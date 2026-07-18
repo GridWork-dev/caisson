@@ -18,3 +18,9 @@ export * from "./frameworks/eu-ai-act.ts";
 // every assertive row, and the disclaimer embedded in the export artifact.
 export * from "./crosswalks/regime-crosswalk.ts";
 export * from "./crosswalks/regimes.ts";
+export * from "./crosswalks/nist-800-53.ts";
+
+// --- Vendored NIST SP 800-53 rev5 OSCAL catalog (SPEC oscal-spine, ADR-0363/0364) — the pinned
+// source bundle + control-id existence surface the nist80053Crosswalk is checked against.
+export * from "./vendor/nist-catalog-pin.ts";
+export * from "./vendor/nist-catalog-controls.ts";

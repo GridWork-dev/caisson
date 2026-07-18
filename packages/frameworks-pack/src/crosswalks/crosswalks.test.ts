@@ -16,10 +16,12 @@ import {
   regimeCrosswalks,
   soc2Crosswalk,
 } from "./regimes.ts";
+import { nist80053Crosswalk } from "./nist-800-53.ts";
 import { euAiAct } from "../frameworks/eu-ai-act.ts";
 import { hipaaSecurity } from "../frameworks/hipaa-security.ts";
 import { soc2Tsc } from "../frameworks/soc2-tsc.ts";
 import type { Framework } from "../registry/control.ts";
+import { loadVendoredNistControlIds } from "../vendor/nist-catalog-controls.ts";
 
 // matchGolden anchors __golden__/ to the URL handed to it. The frameworks-pack keeps ALL goldens in
 // ONE package-level dir (src/__golden__ — the manifest's gated `golden` path), so anchor at src/
@@ -230,12 +232,14 @@ describe("every authored crosswalk is honest and well-formed", () => {
     ["pci-dss", pciDssCrosswalk],
     ["gdpr", gdprCrosswalk],
     ["iso-27001", iso27001Crosswalk],
+    ["nist-800-53", nist80053Crosswalk],
   ];
 
-  test("regimeCrosswalks holds the three ADR-0277 regimes plus iso-27001 (ADR-0333/ADR-0347; FedRAMP still out)", () => {
+  test("regimeCrosswalks holds the three ADR-0277 regimes plus iso-27001 and nist-800-53 (ADR-0333/ADR-0347/ADR-0363-0364; FedRAMP itself still out)", () => {
     expect(regimeCrosswalks.map((c) => c.regime).sort()).toEqual([
       "gdpr",
       "iso-27001",
+      "nist-800-53",
       "pci-dss",
       "soc2",
     ]);
@@ -258,11 +262,14 @@ describe("every authored crosswalk is honest and well-formed", () => {
       });
 
       test("no row uses forbidden certification/compliance vocabulary in its own prose (copy law)", () => {
-        // Caisson is never the grammatical subject of "compliant/certified/satisfies" (memo §a/§b,
-        // ADR-0080). The neutral "maps to / implements a technical control" register holds in the data.
-        // (regimeSpecificDisclaimer is exempt — it legitimately uses these words in NEGATED form, e.g.
-        // "does not make you PCI DSS compliant"; that text is checked for the negation instead, below.)
-        const forbidden = /\b(certified|compliant|satisfies)\b/i;
+        // Caisson is never the grammatical subject of "compliant/certified/satisfies/fedramp"
+        // (memo §a/§b, ADR-0080; "fedramp" added by the oscal-spine SPEC binding requirement 3 —
+        // no "FedRAMP nearly free" claim anywhere). The neutral "maps to / implements a technical
+        // control" register holds in the data. (regimeSpecificDisclaimer is exempt — it
+        // legitimately uses these words in NEGATED form, e.g. "does not make you PCI DSS
+        // compliant" / "not FedRAMP authorized"; that text is checked for the dangerous PHRASES
+        // instead, below — never the bare word.)
+        const forbidden = /\b(certified|compliant|satisfies|fedramp)\b/i;
         expect(cw.title).not.toMatch(forbidden);
         for (const row of cw.rows) {
           expect(row.summary).not.toMatch(forbidden);
@@ -270,6 +277,17 @@ describe("every authored crosswalk is honest and well-formed", () => {
           expect(row.evidence).not.toMatch(forbidden);
           expect(row.buyerResponsibility).not.toMatch(forbidden);
         }
+      });
+
+      test("regimeSpecificDisclaimer never claims FedRAMP-nearly-free / nearly-FedRAMP (binding requirement 3)", () => {
+        // The bare word "fedramp" IS allowed here in honest negated form (nist-800-53.ts's own
+        // disclaimer says "not FedRAMP authorized" / "no claim of FedRAMP readiness or
+        // proximity" — mirrors how SOC2/PCI/GDPR/ISO already negate "compliant"/"certified" in
+        // their own disclaimers). What binding requirement 3 forbids is the SPECIFIC marketing
+        // phrase ADR-0363/SPEC name verbatim: "FedRAMP nearly free" / "nearly FedRAMP".
+        const dangerousPhrase =
+          /fedramp[\s-]*nearly[\s-]*free|nearly[\s-]*fedramp/i;
+        expect(cw.regimeSpecificDisclaimer).not.toMatch(dangerousPhrase);
       });
     });
   }
@@ -339,6 +357,13 @@ describe("crosswalk exports are byte-stable (golden)", () => {
       exportRegimeCrosswalk(iso27001Crosswalk),
     );
   });
+  test("nist-800-53 crosswalk export", () => {
+    matchGolden(
+      PKG_SRC_META,
+      "crosswalk-nist-800-53",
+      exportRegimeCrosswalk(nist80053Crosswalk),
+    );
+  });
 });
 
 describe("Legal-gate guards (ADR-0333/ADR-0347 Group G) -- the ISO crosswalk never overclaims", () => {
@@ -363,4 +388,78 @@ describe("Legal-gate guards (ADR-0333/ADR-0347 Group G) -- the ISO crosswalk nev
       }
     }
   });
+});
+
+describe("ADR-0364 F2 -- OLIR relationship vocabulary is scoped to nist80053Crosswalk only", () => {
+  test("the four existing crosswalks never populate relationship/rationale/strength", () => {
+    for (const cw of [
+      soc2Crosswalk,
+      pciDssCrosswalk,
+      gdprCrosswalk,
+      iso27001Crosswalk,
+    ]) {
+      for (const row of cw.rows) {
+        expect(row.relationship).toBeUndefined();
+        expect(row.rationale).toBeUndefined();
+        expect(row.strength).toBeUndefined();
+      }
+    }
+  });
+
+  test("every nist80053Crosswalk row carries NIST IR 8278A relationship + rationale", () => {
+    const validRelationships = new Set([
+      "subset-of",
+      "intersects-with",
+      "equal",
+      "superset-of",
+      "not-related-to",
+    ]);
+    const validRationales = new Set(["syntactic", "semantic", "functional"]);
+    for (const row of nist80053Crosswalk.rows) {
+      expect(row.relationship).toBeDefined();
+      expect(validRelationships.has(row.relationship as string)).toBe(true);
+      expect(row.rationale).toBeDefined();
+      expect(validRationales.has(row.rationale as string)).toBe(true);
+      if (row.strength !== undefined) {
+        expect(row.strength).toBeGreaterThanOrEqual(0);
+        expect(row.strength).toBeLessThanOrEqual(10);
+      }
+    }
+  });
+});
+
+describe("nist80053Crosswalk -- claim cap + required canonicalControlId (ADR-0364)", () => {
+  test("every row is maps-to -- none is implements (no verification field exists to promote it)", () => {
+    for (const row of nist80053Crosswalk.rows) {
+      expect(row.claim).toBe("maps-to");
+    }
+  });
+
+  test("every row's canonicalControlId is set and resolves to a real control across the shipped packs", () => {
+    const allCanonicalIds = new Set(
+      [soc2Tsc, hipaaSecurity, euAiAct].flatMap((fw) =>
+        fw.controls.map((c) => c.id),
+      ),
+    );
+    for (const row of nist80053Crosswalk.rows) {
+      expect(row.canonicalControlId).toBeDefined();
+      expect(allCanonicalIds.has(row.canonicalControlId as string)).toBe(true);
+    }
+  });
+
+  test("carries seedProvenance pinning the vendored catalog (binding requirement 1)", () => {
+    expect(nist80053Crosswalk.seedProvenance?.sourceDigest).toMatch(
+      /^[0-9a-f]{64}$/,
+    );
+    expect(nist80053Crosswalk.seedProvenance?.sourceUrl).toMatch(/^https:\/\//);
+  });
+});
+
+describe("nist80053Crosswalk -- every cited 800-53 control id exists in the vendored catalog", () => {
+  const vendoredIds = loadVendoredNistControlIds();
+  for (const row of nist80053Crosswalk.rows) {
+    test(`${row.control} exists in the vendored NIST SP 800-53 rev5 catalog`, () => {
+      expect(vendoredIds.has(row.control.toUpperCase())).toBe(true);
+    });
+  }
 });
