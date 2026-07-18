@@ -1,5 +1,27 @@
 # @caisson/site
 
+## 0.2.8
+
+### Patch Changes
+
+- Updated dependencies [c7476b9]
+- Updated dependencies [f40653b]
+- Updated dependencies [ba4f62d]
+- Updated dependencies [9d50e7c]
+- Updated dependencies [c3b0e41]
+- Updated dependencies [4c6d3f7]
+  - @caisson/ai-kit@0.5.0
+  - @caisson/cli@0.7.0
+  - @caisson/registry-schema@0.5.3
+  - @caisson/ai-meter@1.0.4
+  - @caisson/platform-reads@0.2.2
+  - @caisson/credits@0.5.4
+  - @caisson/pricebook@0.5.5
+  - @caisson/service-license@0.0.12
+  - @caisson/demo-registry@0.2.5
+  - @caisson/platform-migrations@0.2.5
+  - @caisson/audit-worm@2.1.1
+
 ## 0.2.7
 
 ### Patch Changes

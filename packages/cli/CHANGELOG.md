@@ -1,5 +1,35 @@
 # @caisson/cli
 
+## 0.7.0
+
+### Minor Changes
+
+- c7476b9: You can now start a governed agent run and check its status without writing any code. The
+  `caisson run start "<prompt>"` command opens a bounded, metered run through your own gateway and
+  prints the result — including a pause for review if the model wants to use a tool that needs
+  approval. A matching pair of agent-facing tools, `run_start` and `run_status`, is available from
+  your buyer MCP server for an AI agent to call directly, gated behind the same licensed entitlement
+  as the rest of the runtime. Neither surface ever exposes the raw parked-run snapshot; status
+  reporting only ever shows the run's state and its trajectory.
+- c3b0e41: Agent-runtime tool calls can now require human approval before they execute. A tool marked
+  `approvalRequired` parks the run instead of running it: the proposal is recorded, the run's
+  state is saved durably, and the run process can exit cleanly while the request waits. An
+  operator reviews the pending call and approves or denies it — from the `caisson` CLI or any
+  service with database access — and approval resumes the run from exactly where it left off,
+  picks up the approved call, and continues to completion. Denial finishes the run without ever
+  executing the tool. A durable run-state store and a durable trajectory log back this: approving
+  the same call twice is a no-op, two concurrent resume attempts can never both execute the tool,
+  and everything is tenant-isolated. The underlying tool-execution primitive gained a matching
+  two-phase mode — validate and park a call, then execute it later once it's approved — for
+  callers who want the same propose/execute split without the full run loop.
+
+### Patch Changes
+
+- Updated dependencies [f40653b]
+- Updated dependencies [c3b0e41]
+  - @caisson/registry-schema@0.5.3
+  - @caisson/jobs@0.6.0
+
 ## 0.6.3
 
 ### Patch Changes

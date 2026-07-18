@@ -1,5 +1,59 @@
 # @caisson/ai-kit
 
+## 0.5.0
+
+### Minor Changes
+
+- c7476b9: You can now start a governed agent run and check its status without writing any code. The
+  `caisson run start "<prompt>"` command opens a bounded, metered run through your own gateway and
+  prints the result — including a pause for review if the model wants to use a tool that needs
+  approval. A matching pair of agent-facing tools, `run_start` and `run_status`, is available from
+  your buyer MCP server for an AI agent to call directly, gated behind the same licensed entitlement
+  as the rest of the runtime. Neither surface ever exposes the raw parked-run snapshot; status
+  reporting only ever shows the run's state and its trajectory.
+- 9d50e7c: The AI kit gains `runToolLoop` — a bounded, governed agent tool loop. Each model step and
+  each tool execution reserves credits before it runs and settles to actuals after (the same
+  debit-before-spend ledger every gateway call uses), with a hard step ceiling, a caller-side
+  integer credit budget that fails the run closed when the next step cannot fit, and a full
+  append-only trajectory of the run (prompts, tool arguments, and results travel as content
+  digests, never bodies). Tools are executed by the loop itself between model steps, so a
+  declined reservation or an exhausted budget stops execution before any spend. The meter
+  now also accepts a zero output-token bound on reservations, which lets non-generating
+  actions take a zero-credit, cap-checked reservation.
+- c3b0e41: Agent-runtime tool calls can now require human approval before they execute. A tool marked
+  `approvalRequired` parks the run instead of running it: the proposal is recorded, the run's
+  state is saved durably, and the run process can exit cleanly while the request waits. An
+  operator reviews the pending call and approves or denies it — from the `caisson` CLI or any
+  service with database access — and approval resumes the run from exactly where it left off,
+  picks up the approved call, and continues to completion. Denial finishes the run without ever
+  executing the tool. A durable run-state store and a durable trajectory log back this: approving
+  the same call twice is a no-op, two concurrent resume attempts can never both execute the tool,
+  and everything is tenant-isolated. The underlying tool-execution primitive gained a matching
+  two-phase mode — validate and park a call, then execute it later once it's approved — for
+  callers who want the same propose/execute split without the full run loop.
+
+### Patch Changes
+
+- ba4f62d: Fixed two edge cases in the metered inference gateway's billing path. A reconcile that needed
+  to charge above the up-front reservation, but hit a wallet that couldn't cover the difference,
+  now surfaces a distinct `OrphanedReservationError` instead of an unmarked insufficient-credits
+  error — the held reservation is no longer invisible, and a later retry under the same call id
+  settles it exactly once. And a stream aborted before the provider was ever contacted now settles
+  zero cost instead of the estimated input tokens; a stream aborted after the provider responded
+  still charges for what was actually consumed.
+- Updated dependencies [9d50e7c]
+- Updated dependencies [c7476b9]
+- Updated dependencies [c3b0e41]
+- Updated dependencies [c3b0e41]
+- Updated dependencies [dffd0c1]
+- Updated dependencies [4c6d3f7]
+- Updated dependencies [696b2c5]
+  - @caisson/ai-meter@1.0.4
+  - @caisson/agent-trajectory@0.3.0
+  - @caisson/jobs@0.6.0
+  - @caisson/guardrails@0.4.5
+  - @caisson/credits@0.5.4
+
 ## 0.4.4
 
 ### Patch Changes

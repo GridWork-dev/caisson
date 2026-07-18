@@ -1,5 +1,19 @@
 # @caisson/admin
 
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [f40653b]
+- Updated dependencies [4c6d3f7]
+  - @caisson/registry-schema@0.5.3
+  - @caisson/platform-reads@0.2.2
+  - @caisson/credits@0.5.4
+  - @caisson/service-license@0.0.12
+  - @caisson/demo-registry@0.2.5
+  - @caisson/platform-migrations@0.2.5
+  - @caisson/audit-worm@2.1.1
+
 ## 0.0.10
 
 ### Patch Changes
