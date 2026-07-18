@@ -68,8 +68,9 @@ Every `model.usage` event declares how much to trust its numbers:
   were consumed either way). Billing-grade.
 - `priced` — pricebook-computed integer credits attached to real adapter-extracted counts
   (ADR-0360 U-4). A **cost statement, never a charge**: the credits are computed against a price
-  book (provenance stamped in `priceBookVersion`, present iff `priced`) and are never
-  ledger-settled. `metered` stays the only ledger-truth band.
+  book and are never ledger-settled. `metered` stays the only ledger-truth band. Provenance is
+  carried in `priceBookVersion` — only valid on `priced` events (schema-enforced), and optional
+  even there per the U-4 lock; the price-normalizing producer always stamps it.
 - `estimated` — real counts from a trusted adapter (e.g. a Claude Code transcript) but **not
   price-normalized**, so **not** billing-grade; `credits` is `0`.
 - `unsupported` — the surface has **no validated usage contract**; no token claims are made.

@@ -128,7 +128,10 @@ const ModelUsagePayload = z
     billingStatus: BillingStatus,
     /**
      * Pricebook provenance (ADR-0360 U-4): which `PRICE_BOOK_VERSION` computed a `priced` event's
-     * credits. Present iff `billingStatus === "priced"` (enforced below).
+     * credits. Only valid on `priced` events (that direction is enforced below); OPTIONAL even on
+     * `priced` per the U-4 lock — producers (the S2b normalizer) always stamp it, but the contract
+     * does not require it, and a zero/absent stamp must not be "tightened" into a reverse refine
+     * without an ADR reconcile (a zero-credit priced/metered event is legitimate).
      */
     priceBookVersion: nonEmpty.optional(),
   })
