@@ -10,5 +10,9 @@
 -- DESTRUCTIVELY (`USING NULL`) is correct: any pre-existing parked_state value was never a real
 -- buyer's data, and a jsonb→text cast of a real payload would just produce un-decryptable text
 -- (it was never a field-crypto envelope) — NULLing it is honest, not lossy in any way that matters.
+--
+-- WARNING for a future maintainer: `USING NULL` is safe HERE only because 0.2.0 was never deployed
+-- to a populated buyer database (`sellable: false`, pre-publish). Never reuse this destructive-cast
+-- pattern on a column any live deployment might hold real rows in — that would be silent data loss.
 
 ALTER TABLE agent_run_state ALTER COLUMN parked_state TYPE text USING NULL;
