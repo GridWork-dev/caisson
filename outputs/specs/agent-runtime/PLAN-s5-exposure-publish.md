@@ -24,14 +24,29 @@
 3. **MCP:** `run_start`/`run_status` via the registerTool seam (coach.ts /
    manifest-tools.ts template; a new optional `McpServerOptions` group), gated on the
    module's OWN dedicated entitlement slug (ADR-0362) — never the Agentic-Dev bundle
-   slug. Denied entitlement fails closed with the standard 402-shaped tool error.
-4. **Bundle membership + pricing publish (END of slice, ADR-0351 rider 3).** The runtime
-   modules leave the reserved-id convention and become real catalog entries: ledger
-   append inputs + index build + pricebook rows + Agentic-Dev membership (composition per
-   ADR-0362). Price points resolve per ADR-0260's new-SKU first-price rule; if a number
-   is not derivable from a locked formula, it surfaces as an operator picker at
-   EXECUTE — never auto-decided. In-repo artifacts land in-branch; the live index
-   re-publish + Worker redeploy stay operator-gated (DEPLOY is separate from SHIP).
+   slug. **As-built correction:** denied entitlement fails closed with the seam's
+   established invisible-404 (`NotFoundError`, ADR-0345 — the ds-doctor precedent this
+   task's own routing note points at), not a 402. A 402 would leak that the tool exists
+   to a caller who isn't entitled to see it; both the code-review and security audits at
+   SHIP ruled the invisible-404 the correct behavior and this line a drafting error.
+4. **Bundle membership + pricing publish (END of slice, ADR-0351 rider 3).** **As-built
+   correction:** the SHIP audits caught that `packages/cli/src/meter.ts`'s
+   `foldEditionMembers` writes a bundle's member pins VERBATIM into a buyer's generated
+   scaffold — pinning the Agentic-Dev bundle's `members` map at agent-trajectory's
+   currently-ledgered pre-encRef version (0.2.0, `sellable: false`) would ship the
+   plaintext-`parked_state` tarball, defeating this slice's own ADR-0361 gate; pinning
+   the not-yet-ledgered encRef version would violate the members-pin-real-versions rule
+   (`registry/scripts/full-tree-index.test.ts`). Bundle membership — and the pricebook
+   `SKU_RETAIL`/`BUNDLE_MEMBERSHIP_BOOK` rows, which turn out to also need a matching
+   `apps/site/lib/pricing.ts` catalog row via `pricing.test.ts`'s exact-keyset check —
+   therefore ride a small post-consume follow-up PR, pinned at the real published
+   encRef-bearing version, per this repo's ride-after-consume discipline. This slice's
+   actual in-repo publish artifact is narrower than originally scoped: the `sellable`
+   flip on `@caisson/agent-trajectory`'s own manifest (leaving the module a real,
+   priced-at-its-existing-anchor catalog entry with no standalone SKU) plus its
+   changeset — no ledger append, no bundle composition, no pricebook rows in this PR.
+   The live index re-publish + Worker redeploy stay operator-gated regardless (DEPLOY is
+   separate from SHIP).
 5. **Parent demo end-to-end (SPEC exit gate):** one deterministic proof driving
    start → park → approve → resume → finish across the CLI and MCP surfaces against the
    real PG stores (zero network, mock model).
