@@ -1,5 +1,12 @@
 # @caisson/kernel
 
+## 0.5.2
+
+### Patch Changes
+
+- fc0bb99: Rebuilt against this release's refreshed dependency resolution so the published artifact
+  matches its recorded checksum exactly. No functional changes.
+
 ## 0.5.1
 
 ### Patch Changes

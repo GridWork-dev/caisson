@@ -1,5 +1,18 @@
 # @caisson/platform-migrations
 
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [fc0bb99]
+  - @caisson/kernel@0.5.2
+  - @caisson/service-license@0.0.14
+  - @caisson/ai-meter@1.0.6
+  - @caisson/auth@0.3.5
+  - @caisson/billing-orchestration@0.3.3
+  - @caisson/credits@0.5.6
+  - @caisson/migrate@0.2.8
+
 ## 0.2.6
 
 ### Patch Changes

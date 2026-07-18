@@ -1,5 +1,18 @@
 # @caisson/app-base
 
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [fc0bb99]
+  - @caisson/kernel@0.5.2
+  - @caisson/auth@0.3.5
+  - @caisson/billing@0.6.3
+  - @caisson/credits@0.5.6
+  - @caisson/mcp-server@0.6.2
+  - @caisson/rate-limit@0.1.6
+  - @caisson/tenancy-rls@0.5.4
+
 ## 0.0.15
 
 ### Patch Changes

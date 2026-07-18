@@ -1,5 +1,12 @@
 # @caisson/migrate
 
+## 0.2.8
+
+### Patch Changes
+
+- Updated dependencies [fc0bb99]
+  - @caisson/kernel@0.5.2
+
 ## 0.2.7
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @caisson/platform-reads
 
+## 0.2.4
+
+### Patch Changes
+
+- fc0bb99: Rebuilt against this release's refreshed dependency resolution so the published artifact
+  matches its recorded checksum exactly. No functional changes.
+  - @caisson/tenancy-rls@0.5.4
+
 ## 0.2.3
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @caisson/demo-registry
 
+## 0.2.7
+
+### Patch Changes
+
+- @caisson/ai-meter@1.0.6
+- @caisson/audit-worm@2.1.3
+- @caisson/license-issue@1.0.3
+- @caisson/local-store@1.0.3
+- @caisson/prompt-registry@1.0.3
+- @caisson/ui-pro@0.3.2
+
 ## 0.2.6
 
 ### Patch Changes
