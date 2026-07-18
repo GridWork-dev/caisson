@@ -73,6 +73,23 @@ commercial bundle.
 | `@caisson-sh/eslint-config`   | Shared ESLint flat-config: lint rules + package-boundary enforcement.                                      | Apache-2.0 |
 | `@caisson-sh/testing`         | Shared test harness: golden-file regression + the PGlite fail-closed-RLS harness.                          | Apache-2.0 |
 
+## Copying a single UI component via shadcn
+
+This repository also doubles as a [shadcn](https://ui.shadcn.com) GitHub-source registry, so
+you can copy one `@caisson-sh/ui` component straight into your own app without adding the
+package as a dependency:
+
+```bash
+bunx shadcn@latest add caisson-sh/caisson-oss/button
+```
+
+Every component depends on the `caisson-tokens` item (the `--cs-*` custom-property sheet each
+component reads for light/dark styling) — `shadcn add` pulls it in automatically.
+
+> **If you've already run `shadcn init`:** its default preset seeds its own `components/ui/button.tsx`.
+> Adding the caisson `button` item overwrites that file. Rename or back up a customized preset
+> component first if you want to keep both.
+
 ## The commercial bundles
 
 The open base opens into **six commercial bundles** — Compliance, AI-Production, Local-first,

@@ -50,6 +50,18 @@ describe("buildShadcnRegistry — explicit per-file targets (CAISSON-126)", () =
       }
     }
   });
+
+  test("component targets are flat — no src/ segment, no nested components/ui/src/ (2026-07-17 ADR-0343 proof)", () => {
+    for (const item of registry.items) {
+      if (item.name === "caisson-tokens") continue;
+      for (const file of item.files) {
+        // exactly "@ui/<basename>" — a second "/" would mean shadcn's default-target
+        // inference nests the install (the regression the proof run caught).
+        expect(file.target).toMatch(/^@ui\/[a-z0-9.-]+$/);
+        expect(file.target).not.toContain("src/");
+      }
+    }
+  });
 });
 
 describe("parseBarrelModules (unchanged behavior sanity check)", () => {
