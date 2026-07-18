@@ -2259,8 +2259,8 @@
     },
     "@caisson/kernel@0.5.2": {
       "key": "kernel/kernel-0.5.2.tgz",
-      "shasum": "73ef2b43b0c5805c8a271fbdb0f61c359a4f9bf6",
-      "integrity": "sha512-ZxFaNgfizS6gaKQVbXT6Wu3TZQB2RaEG5jUGzQdKRyc7E7rIyJYA79RLOnMUVYNBeiMSMKqh9EbtWLUjlDWusg==",
+      "shasum": "740d0bb8cb92f3b243e86b73d66808abb9780c90",
+      "integrity": "sha512-Q9VJ9cxo42QmPHscBoO86VZM8LD1D0JJoH1mWqq4sN2n973SCXZi75hNndXxEcfVSoGfvb+iGMDnpg5U1gtb0A==",
       "size": 71425,
       "meta": {
         "dependencies": {
