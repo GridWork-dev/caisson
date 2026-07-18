@@ -684,12 +684,14 @@ describe("park/approve/resume across a REAL process boundary (PGlite, fresh stor
     ]);
     expect(await bal()).toBe(100 - resumed.creditsSpent);
 
-    // RETENTION (security audit finding 1): a successful terminal resume clears parked_state —
-    // the plaintext conversation snapshot has no further use once the run is done.
-    const rows = await tp.query<{ parked_state: unknown }>(
-      `SELECT parked_state FROM agent_run_state WHERE run_id = $1`,
+    // WR-02 + RETENTION (finding 1): a successful terminal resume marks the run-state row
+    // FINISHED (not left dangling at "running" forever) and clears parked_state — the plaintext
+    // conversation snapshot has no further use once the run is done.
+    const rows = await tp.query<{ status: string; parked_state: unknown }>(
+      `SELECT status, parked_state FROM agent_run_state WHERE run_id = $1`,
       [parked.runId],
     );
+    expect(rows[0]?.status).toBe("finished");
     expect(rows[0]?.parked_state).toBeNull();
   });
 });

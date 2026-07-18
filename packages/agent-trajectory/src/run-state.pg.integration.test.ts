@@ -163,6 +163,66 @@ describe("createPgRunStateStore — CAS transitions over a real Postgres", () =>
     expect(rows[0]?.parked_state).toBeNull();
   });
 
+  test("resumeSeqAdvance is applied exactly once, on the winning approve only (WR-04)", async () => {
+    const acct = randomUUID();
+    const runId = randomUUID();
+    await createPgRunStateStore(tp.pg, acct).park({
+      runId,
+      toolCallId: "call-1",
+      resumeSeq: 5,
+      parkedState: null,
+    });
+    const first = await createPgRunStateStore(tp.pg, acct).approve(
+      runId,
+      "call-1",
+      1,
+    );
+    expect(first.resumeSeq).toBe(6);
+    const second = await createPgRunStateStore(tp.pg, acct).approve(
+      runId,
+      "call-1",
+      1,
+    );
+    expect(second.resumeSeq).toBe(6); // NOT re-advanced to 7 on the idempotent retry
+  });
+
+  test("re-park after a claimed resume succeeds; parking an unclaimed/already-parked run fails closed (WR-04)", async () => {
+    const acct = randomUUID();
+    const runId = randomUUID();
+    await createPgRunStateStore(tp.pg, acct).park({
+      runId,
+      toolCallId: "call-1",
+      resumeSeq: 0,
+      parkedState: null,
+    });
+    await createPgRunStateStore(tp.pg, acct).approve(runId, "call-1");
+    await createPgRunStateStore(tp.pg, acct).claimResume(runId, "call-1");
+
+    // The run is "running" with no unclaimed pending call — a second gated tool may re-park it
+    // (the ON CONFLICT DO UPDATE ... WHERE status='running' AND claimed=true CAS).
+    await createPgRunStateStore(tp.pg, acct).park({
+      runId,
+      toolCallId: "call-2",
+      resumeSeq: 3,
+      parkedState: { messages: ["b"] },
+    });
+    expect(await createPgRunStateStore(tp.pg, acct).read(runId)).toMatchObject({
+      status: "parked",
+      pendingToolCallId: "call-2",
+      resumeSeq: 3,
+    });
+
+    // Parking again while ALREADY parked (unclaimed) is a caller bug — fail closed.
+    await expect(
+      createPgRunStateStore(tp.pg, acct).park({
+        runId,
+        toolCallId: "call-3",
+        resumeSeq: 4,
+        parkedState: null,
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
   test("unknown runId/toolCallId fail closed", async () => {
     const acct = randomUUID();
     await expect(
@@ -179,6 +239,19 @@ describe("createPgRunStateStore — CAS transitions over a real Postgres", () =>
     await expect(
       createPgRunStateStore(tp.pg, acct).approve(runId, "wrong-call"),
     ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  test("deny/claimResume/finish on an unknown runId fail closed (WR-04, only approve was covered before)", async () => {
+    const acct = randomUUID();
+    await expect(
+      createPgRunStateStore(tp.pg, acct).deny(randomUUID(), "call-1"),
+    ).rejects.toBeInstanceOf(NotFoundError);
+    await expect(
+      createPgRunStateStore(tp.pg, acct).claimResume(randomUUID(), "call-1"),
+    ).rejects.toBeInstanceOf(NotFoundError);
+    await expect(
+      createPgRunStateStore(tp.pg, acct).finish(randomUUID()),
+    ).rejects.toBeInstanceOf(NotFoundError);
   });
 
   test("tenant isolation: one account's run-state never bleeds into another", async () => {
