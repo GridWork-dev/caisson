@@ -97,7 +97,7 @@ export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
   new Set<string>([]);
 // agent-usage graduated 2026-07-18: indexed (sellable:false) by the agent-runtime consume,
 // so grants resolve via the index; it stays unsellable and in no bundle until its own
-// publish gate (operator lock). agent-trajectory graduated earlier (PR #249).
+// publish gate (operator lock). agent-trajectory graduated earlier, at its first index entry.
 
 /**
  * Bare-slug entitlement ids that are SOLD and stored as purchased grants for their OWN routing
