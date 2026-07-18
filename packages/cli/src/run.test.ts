@@ -14,8 +14,13 @@ import {
 setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { ConfigError, ValidationError } from "@caisson/kernel";
+import { ConfigError, ValidationError, parseStrict } from "@caisson/kernel";
+// Test-only (devDependency, never runtime — see run.ts's file header on the open↔commercial
+// boundary): the REAL Zod schema, used to prove this package's hand-kept event-shape mirror
+// hasn't drifted from the canonical one.
+import { TrajectoryEvent } from "@caisson/agent-trajectory";
 import {
+  appendedEvent,
   approveRun,
   denyRun,
   readRunStatus,
@@ -188,6 +193,19 @@ describe("denyRun", () => {
     expect(rows[1]?.event.payload).toMatchObject({ status: "failed" });
   });
 
+  test("RETENTION (security audit finding 1): deny clears parked_state in the row", async () => {
+    const acct = randomUUID();
+    const runId = randomUUID();
+    await park(acct, runId, "call-1");
+    const { jobs } = capturingJobs();
+    await denyRun(deps(acct, jobs), runId, "call-1", "op");
+    const rows = await tp.query<{ parked_state: unknown }>(
+      `SELECT parked_state FROM agent_run_state WHERE run_id = $1`,
+      [runId],
+    );
+    expect(rows[0]?.parked_state).toBeNull();
+  });
+
   test("idempotent on retry — never double-appends", async () => {
     const acct = randomUUID();
     const runId = randomUUID();
@@ -226,5 +244,53 @@ describe("readRunStatus", () => {
     const { jobs } = capturingJobs();
     expect(await readRunStatus(deps(b, jobs), runId)).toBeUndefined();
     expect((await readRunStatus(deps(a, jobs), runId))?.status).toBe("parked");
+  });
+});
+
+// LOW (security audit item 3): this package cannot import @caisson/agent-trajectory's Zod schema
+// at RUNTIME (open↔commercial boundary), so run.ts's raw INSERTs never run parseStrict against
+// it. This test closes the drift risk a different way: prove the EXACT objects appendedEvent()
+// builds for every event kind this file writes parse successfully against the real schema
+// (a devDependency here, never shipped). A future edit to either side that breaks the shape fails
+// this test, not a buyer's production insert.
+describe("appendedEvent — shape parity with @caisson/agent-trajectory's TrajectoryEvent schema", () => {
+  const runId = randomUUID();
+
+  test("tool.approved (approveRun's event)", () => {
+    const event = appendedEvent(runId, 0, "tool.approved", {
+      toolCallId: "call-1",
+      actor: "operator@example.com",
+    });
+    expect(() => parseStrict(TrajectoryEvent, event)).not.toThrow();
+  });
+
+  test("tool.denied (denyRun's first event, reason omitted and present)", () => {
+    const withoutReason = appendedEvent(runId, 0, "tool.denied", {
+      toolCallId: "call-1",
+      actor: "operator@example.com",
+    });
+    expect(() => parseStrict(TrajectoryEvent, withoutReason)).not.toThrow();
+
+    const withReason = appendedEvent(runId, 0, "tool.denied", {
+      toolCallId: "call-1",
+      actor: "operator@example.com",
+      reason: "not safe",
+    });
+    expect(() => parseStrict(TrajectoryEvent, withReason)).not.toThrow();
+  });
+
+  test("run.finished (denyRun's second event)", () => {
+    const event = appendedEvent(runId, 1, "run.finished", {
+      status: "failed",
+      reason: "tool-denied",
+    });
+    expect(() => parseStrict(TrajectoryEvent, event)).not.toThrow();
+  });
+
+  test("an unknown event kind is rejected by the real schema (proves the check is live, not a tautology)", () => {
+    const event = appendedEvent(runId, 0, "tool.made-up", {
+      toolCallId: "call-1",
+    });
+    expect(() => parseStrict(TrajectoryEvent, event)).toThrow();
   });
 });

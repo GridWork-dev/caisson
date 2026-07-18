@@ -69,7 +69,10 @@ async function readRunState(
   return res.rows[0];
 }
 
-function appendedEvent(
+/** Exported for the cross-package shape-assertion test only (run.test.ts): validates the exact
+ *  objects this file inserts actually parse against @caisson/agent-trajectory's REAL Zod
+ *  TrajectoryEvent schema (a devDependency there, never a runtime one — see the file header). */
+export function appendedEvent(
   runId: string,
   seq: number,
   kind: string,
@@ -192,9 +195,11 @@ export async function denyRun(
     throw new ValidationError("deny requires a non-empty --actor");
   }
   const outcome = await withTenant(deps.tx, deps.accountId, async (exec) => {
+    // parked_state is cleared here too (RETENTION, security audit finding 1) — mirrors
+    // run-state.pg.ts's deny()/finish(): a terminal run keeps no plaintext snapshot around.
     const res = await exec.query<RunStateRow>(
       `UPDATE agent_run_state
-          SET status = 'finished', decision = 'denied', updated_at = now()
+          SET status = 'finished', decision = 'denied', parked_state = NULL, updated_at = now()
         WHERE run_id = $1 AND status = 'parked' AND pending_tool_call_id = $2 AND decision IS NULL
         RETURNING status, pending_tool_call_id, decision, resume_seq, updated_at`,
       [runId, toolCallId],

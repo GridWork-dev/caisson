@@ -614,6 +614,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@caisson/agent-trajectory": "workspace:*",
         "@caisson/ai-config": "workspace:*",
         "@caisson/auth": "workspace:*",
         "@caisson/billing": "workspace:*",
