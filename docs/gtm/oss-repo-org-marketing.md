@@ -58,9 +58,10 @@ value" claim in ADR-0094.
   met at the package level; there is no root-level rollup.
 
 **Intentionally absent today:** README badges, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`,
-issue templates, a root `LICENSE` file (each package carries its own; no repo-root copy),
-an `examples/` directory, an org-level `.github` profile repo. None of this blocks the technical
-readiness gate — it's presentation debt, the subject of §2–3.
+issue templates, an `examples/` directory, an org-level `.github` profile repo. None of this
+blocks the technical readiness gate — it's presentation debt, the subject of §2–3.
+(CORRECTION 2026-07-18, verified via the GitHub license API: a repo-root Apache-2.0 `LICENSE`
+DOES ship on the mirror and GitHub detects it — the original draft wrongly listed it as absent.)
 
 ## 2. PR-work recommendations
 
@@ -146,20 +147,12 @@ low-quality first reports.
 
 **Effort:** small, one YAML/MD file, ~20 min.
 
-### Root-level LICENSE
+### Root-level LICENSE — ALREADY DONE (correction 2026-07-18)
 
-**What:** An Apache-2.0 `LICENSE` file at the mirror's repo root (today only per-package
-`LICENSE` files exist — the README's own License section already says "each package carries its
-own `LICENSE`," which is correct for npm publish but leaves the repo root without one).
-
-**Why:** GitHub's license detector reads the repo-root file to populate the "About" sidebar
-license field and the license-badge API — without it, GitHub shows "no license detected" at the
-repo level even though every package is correctly licensed underneath.
-
-**Precedent:** same GitHub Docs community-health-file convention; standard OSS repo-root practice
-independent of the citation above.
-
-**Effort:** trivial — boilerplate Apache-2.0 text + NOTICE, ~15 min.
+**Verified via the GitHub license API:** the mirror repo root already carries an Apache-2.0
+`LICENSE` and GitHub's detector reads it (SPDX `Apache-2.0`, path `LICENSE`). The original
+draft's claim that only per-package files exist was wrong — no action needed; the "About"
+sidebar license field populates correctly.
 
 ### Terminal recording in the README
 
