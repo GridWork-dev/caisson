@@ -60,6 +60,7 @@ export {
   compareToBaseline,
   loadBaseline,
   gateAgainstBaseline,
+  assertRunEligibleForBaseline,
 } from "./baseline.ts";
 export type {
   BaselineEntry,

@@ -193,17 +193,36 @@ export function loadBaseline(file: string): BaselineFile {
 }
 
 /**
+ * Pre-BLESS eligibility gate (WR-01): throws if `run.score` is below its own `threshold` (the same
+ * `EPS` tolerance `compareToBaseline` uses for a real float compare). `gateAgainstBaseline`'s BLESS
+ * branch has no threshold check of its own — without this, `BLESS=1` on a genuinely failing run
+ * would silently overwrite the committed baseline with that failing score, turning "trust the
+ * baseline" into "trust whatever last got blessed." Called for every run BEFORE any read/write, so a
+ * throw here leaves the baseline file completely untouched.
+ */
+export function assertRunEligibleForBaseline(run: EvalRun): void {
+  if (run.score + EPS < run.threshold) {
+    throw new Error(
+      `eval "${run.name}" is not baseline-eligible: score ${String(run.score)} < threshold ${String(run.threshold)}`,
+    );
+  }
+}
+
+/**
  * The regression gate. Compares each run to the committed baseline at `file`.
  *
  * With `BLESS` set, REWRITES the baseline from the current runs (merging into any existing entries so
- * a partial run never drops other evals) and passes — the sole sanctioned re-baseline path. Without
- * `BLESS`, returns `passed: false` if ANY run regressed, missed its threshold, or lacked a baseline.
+ * a partial run never drops other evals) and passes — the sole sanctioned re-baseline path. Every run
+ * must clear `assertRunEligibleForBaseline` FIRST (WR-01) — a below-threshold run throws before
+ * anything is read or written, never partially blessed. Without `BLESS`, returns `passed: false` if
+ * ANY run regressed, missed its threshold, or lacked a baseline.
  */
 export function gateAgainstBaseline(
   file: string,
   runs: readonly EvalRun[],
 ): BaselineGateResult {
   if (blessEnabled()) {
+    for (const run of runs) assertRunEligibleForBaseline(run);
     const existing = existsSync(file)
       ? readBaselineFile(file)
       : {

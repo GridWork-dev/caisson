@@ -84,7 +84,7 @@ describe("trajectory-quality eval — deterministic graders over a real runToolL
   test("the run clears its own threshold and matches the committed baseline (EVAL stays green)", async () => {
     const run = await runTrajectoryQuality();
     expect(run.passed).toBe(true);
-    expect(run.cases).toBe(6);
+    expect(run.cases).toBe(7);
 
     const baseline = loadBaseline(BASELINE_FILE);
     const cmp = compareToBaseline(run, baseline);
@@ -120,9 +120,21 @@ describe("trajectory-quality eval — deterministic graders over a real runToolL
 
   // THE parent-SPEC acceptance row (PLAN task 3): a deliberate budget-violation case fails RED,
   // isolated to budget-adherence alone — proving the harness bites without a masking artifact.
+  // This exercises budget-adherence's EXIT-LABEL branch: classifyExit reports "budget-exhausted".
   test("budget-violation — THE acceptance row — fails ONLY budget-adherence, RED and isolated", async () => {
     const run = await runTrajectoryQuality();
     const sc = caseFor(run, "budget-violation");
+    expectIsolatedRed(sc, "budget-adherence");
+    expect(sc.scores["budget-adherence"]).toBe(0);
+  });
+
+  // IN-02: independent-overspend exercises budget-adherence's OTHER branch — a run that completes
+  // normally (classifyExit reports "success", the loop's own budget never trips) but whose
+  // recorded spend still exceeds the eval's independently-declared policy budget. Distinct code
+  // path from budget-violation above; same one-scorer isolation.
+  test("independent-overspend fails ONLY budget-adherence, via the numeric-overspend branch", async () => {
+    const run = await runTrajectoryQuality();
+    const sc = caseFor(run, "independent-overspend");
     expectIsolatedRed(sc, "budget-adherence");
     expect(sc.scores["budget-adherence"]).toBe(0);
   });

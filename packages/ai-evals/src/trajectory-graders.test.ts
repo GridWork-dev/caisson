@@ -248,6 +248,53 @@ describe("trajectoryApprovalComplianceGrader", () => {
       true,
     );
   });
+
+  // WR-02: a park-bypass — a declared-gated tool that executed with NO approval event at all
+  // (the loop never paused for it). Before this fixture, a call with `approval === undefined` was
+  // always treated as "nothing to audit"; a regressed loop that skipped parking would sail through.
+  test("fails a PARK-BYPASS: a declared-gated tool executed with no approval event", async () => {
+    const f = fixture({
+      toolCalls: [
+        call({
+          toolCallId: "c1",
+          name: "send_email",
+          result: { ok: true, seq: 1 },
+          // no `approval` — the loop ran it without ever pausing for a decision.
+        }),
+      ],
+    });
+    const expected: TrajectoryExpected = {
+      ...EXPECTED,
+      allowedTools: ["send_email"],
+      approvalRequiredTools: ["send_email"],
+    };
+    const compliance = await trajectoryApprovalComplianceGrader()(
+      args(f, expected),
+    );
+    expect(compliance.pass).toBe(false);
+    expect(compliance.score).toBe(0);
+
+    // Isolated (Kickoff-R discipline): the other three graders stay green on this same case.
+    expect((await trajectoryToolChoiceGrader()(args(f, expected))).pass).toBe(
+      true,
+    );
+    expect((await trajectoryUnnecessaryCallGrader()(args(f))).pass).toBe(true);
+    expect(
+      (await trajectoryBudgetAdherenceGrader()(args(f, expected))).pass,
+    ).toBe(true);
+  });
+
+  test("approvalRequiredTools unset: an unapproved call is still just 'ungated, nothing to audit'", async () => {
+    const f = fixture({
+      toolCalls: [
+        call({ toolCallId: "c1", name: "ping", result: { ok: true, seq: 1 } }),
+      ],
+    });
+    // EXPECTED carries no approvalRequiredTools — the default no-gated-tools posture.
+    expect((await trajectoryApprovalComplianceGrader()(args(f))).pass).toBe(
+      true,
+    );
+  });
 });
 
 describe("trajectoryBudgetAdherenceGrader", () => {
