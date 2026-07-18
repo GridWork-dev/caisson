@@ -1,5 +1,12 @@
 # @caisson/platform-reads
 
+## 0.2.3
+
+### Patch Changes
+
+- 63e9fae: Rebuilt against this release's updated platform dependencies so the published artifact
+  matches its recorded checksum exactly. No functional changes.
+
 ## 0.2.2
 
 ### Patch Changes

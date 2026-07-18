@@ -1,5 +1,12 @@
 # @caisson/credits
 
+## 0.5.5
+
+### Patch Changes
+
+- Updated dependencies [5d03808]
+  - @caisson/registry-schema@0.5.4
+
 ## 0.5.4
 
 ### Patch Changes

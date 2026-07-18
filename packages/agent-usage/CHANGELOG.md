@@ -1,5 +1,11 @@
 # @caisson/agent-usage
 
+## 0.2.1
+
+### Patch Changes
+
+- @caisson/ai-meter@1.0.5
+
 ## 0.2.0
 
 ### Minor Changes
