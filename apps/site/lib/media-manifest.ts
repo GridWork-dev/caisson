@@ -47,6 +47,7 @@ export type DiagramKey =
   | "local-hybrid-rrf"
   | "agent-lifecycle-fsm"
   | "runner-env-scrub"
+  | "trajectory-run-record"
   | "retention-erasure";
 
 /** The live-rendered kit components wired into a media slide (ADR-0308 full-depth, extending
@@ -107,6 +108,7 @@ const DIAGRAM_ORDER: readonly DiagramKey[] = [
   "local-hybrid-rrf",
   "agent-lifecycle-fsm",
   "runner-env-scrub",
+  "trajectory-run-record",
   "retention-erasure",
 ];
 
@@ -149,6 +151,8 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
     "The seven-act lifecycle FSM: only legal transitions advance — a failed verify re-opens plan, and an illegal skip throws, never a silent pass.",
   "runner-env-scrub":
     "The child env is built from scratch — a fixed non-secret allowlist plus only the target provider's key — and the run streams to an auditable .jsonl transcript.",
+  "trajectory-run-record":
+    "Every step, tool proposal, approval, and spend appends to the run's event log — sensitive bodies referenced by digest, a paused run's resume material encrypted at rest — and project() replays the same log to the same projection every time.",
   "retention-erasure":
     "One validated erasure request fans out to every registered target with per-target error isolation — a failing store lands in its own result, never aborting the others — then exactly one reason-tagged audit row is written.",
 };
@@ -193,6 +197,7 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
   "local-hybrid-rrf": new Set(["module:local-store"]),
   "agent-lifecycle-fsm": new Set(["module:agent-kernel"]),
   "runner-env-scrub": new Set(["module:agent-runner"]),
+  "trajectory-run-record": new Set(["module:agent-trajectory"]),
   "retention-erasure": new Set(["module:retention-runner"]),
 };
 

@@ -33,6 +33,9 @@ export const MODULE_DB_POSTURE: Record<string, DbPosture> = {
   "retention-runner": "postgres",
   "field-crypto": "postgres",
   alerting: "postgres",
+  // agent-trajectory ships PG-backed trajectory/run-state stores on tenancy-rls (memory impls
+  // exist for tests, but the durable posture is Postgres).
+  "agent-trajectory": "postgres",
   // SQLite / on-device — no server database.
   "local-store": "sqlite",
   "local-sync": "sqlite",

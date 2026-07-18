@@ -322,6 +322,12 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
           "Spawns a headless coding agent as a detached subprocess in an isolated worktree with a from-scratch scrubbed env, streaming an auditable transcript.",
       },
       {
+        id: "agent-trajectory",
+        name: "Agent trajectory",
+        oneLiner:
+          "The governed run record: an append-only, replayable event log of every step, tool proposal, approval, and spend — sensitive bodies by digest, paused runs encrypted at rest, deterministic replay.",
+      },
+      {
         id: "local-store",
         name: "Local hybrid memory",
         oneLiner:

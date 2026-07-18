@@ -232,6 +232,14 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     blurb:
       "Sandboxed, governed agent execution: spawn a headless coding agent into an isolated worktree and stream back an auditable transcript, with the child's environment built from scratch rather than inherited.",
   },
+  {
+    id: "agent-trajectory",
+    label: "Agent trajectory",
+    amount: 49,
+    bundles: ["agentic-dev"],
+    blurb:
+      "The governed run record: an append-only, replayable event log of every agent step, tool proposal, approval, and spend — sensitive bodies referenced by digest, paused runs encrypted at rest, and a deterministic replay for scoring and audit.",
+  },
   // ---- Catalog-rework carve + standalone SKUs (ADR-0257/0258/0260) ----
   // Prices are the @caisson/pricebook `SKU_RETAIL` truth (pinned by pricing.test.ts); `bundles[]`
   // is the registry members-map membership (pinned bidirectionally).

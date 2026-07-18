@@ -105,7 +105,7 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
   test("the W7 catalog rows resolve — every carve/new SKU and the Provenance bundle is renewable", () => {
     // The 12 net-new sandbox renewal prices created at the catalog big-bang (2026-07-06). With the
     // five legacy-keyed edition/bundle rows normalizing to the other five bundles, the full sellable
-    // catalog is renewable: 22 modules + 6 bundles across 28 rows.
+    // catalog is renewable: 23 modules + 6 bundles across 29 rows (agent-trajectory added 2026-07-18).
     const W7_RENEWAL_ROWS: Readonly<Record<string, string>> = {
       pri_01kwwqa4k2z4wx3b53nacbpd7w: "provenance",
       pri_01kwwqa4n21y7ah006yb9q07r1: "compliance-core",
@@ -123,6 +123,10 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
     for (const [priceId, ent] of Object.entries(W7_RENEWAL_ROWS)) {
       expect(resolveRenewal(priceId).renewsEntitlement).toBe(ent);
     }
-    expect(Object.keys(RENEWAL_BOOK).length).toBe(28);
+    // 28 W7-era rows + agent-trajectory (agent-runtime wave, 2026-07-18).
+    expect(
+      resolveRenewal("pri_01kxvpjp4hga6v33nbx6nn0yw1").renewsEntitlement,
+    ).toBe("agent-trajectory");
+    expect(Object.keys(RENEWAL_BOOK).length).toBe(29);
   });
 });

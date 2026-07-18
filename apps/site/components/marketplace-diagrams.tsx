@@ -950,6 +950,69 @@ function RunnerEnvScrub() {
   );
 }
 
+/** @caisson/agent-trajectory — the governed run record (src/store.ts + src/run-state.ts +
+ *  src/replay.ts): every step/tool-proposal/approval/spend event APPENDS to the run's log
+ *  (never edits), sensitive bodies cross as digest refs, a parked run's resume material is
+ *  encrypted at rest (field-crypto), and `project()` folds the same log to the same
+ *  projection deterministically. */
+function TrajectoryRunRecord() {
+  return (
+    <Frame
+      title="Every step, tool proposal, approval, and spend appends to the run's event log — sensitive bodies referenced by digest, paused runs encrypted at rest — and project() replays the same log to the same projection every time."
+      bar="trajectory-run-record.svg"
+    >
+      <Arrowheads />
+      <path
+        d={`M 104 55 L 118 55`}
+        className={styles.arrow}
+        markerEnd="url(#cs-arrow)"
+      />
+      <path
+        d={`M 216 55 L 230 55`}
+        className={styles.arrow}
+        markerEnd="url(#cs-arrow)"
+      />
+      <Node
+        x={12}
+        y={36}
+        w={92}
+        h={38}
+        head="agent step"
+        sub="body → digest ref"
+      />
+      <Node
+        x={124}
+        y={36}
+        w={92}
+        h={38}
+        head="append(event)"
+        sub="append-only log"
+        tone="accent"
+      />
+      <Node
+        x={236}
+        y={36}
+        w={92}
+        h={38}
+        head="project()"
+        sub="deterministic replay"
+        tone="success"
+      />
+      <path
+        d={`M 170 74 L 170 106`}
+        className={styles.arrow}
+        markerEnd="url(#cs-arrow)"
+      />
+      <Note x={124} y={124}>
+        park → approve/deny → resume, CAS-guarded
+      </Note>
+      <Note x={124} y={160}>
+        parked resume material encrypted at rest
+      </Note>
+    </Frame>
+  );
+}
+
 /** @caisson/retention-runner — `runErasure` (src/run-erasure.ts): every registered target runs
  *  with per-target error isolation (the allSettled shape ADR-0152 locks), then the injected sink
  *  writes exactly one reason-tagged audit row. */
@@ -1049,6 +1112,7 @@ const DIAGRAMS: Record<DiagramKey, () => React.ReactElement> = {
   "local-hybrid-rrf": LocalHybridRrf,
   "agent-lifecycle-fsm": AgentLifecycleFsm,
   "runner-env-scrub": RunnerEnvScrub,
+  "trajectory-run-record": TrajectoryRunRecord,
   "retention-erasure": RetentionErasure,
 };
 
