@@ -1,5 +1,12 @@
 # @caisson/audit-worm
 
+## 2.1.1
+
+### Patch Changes
+
+- Updated dependencies [c3b0e41]
+  - @caisson/jobs@0.6.0
+
 ## 2.1.0
 
 ### Minor Changes

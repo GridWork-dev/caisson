@@ -1,5 +1,13 @@
 # @caisson/registry
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [f40653b]
+  - @caisson/registry-schema@0.5.3
+  - @caisson/pricebook@0.5.5
+
 ## 0.0.13
 
 ### Patch Changes

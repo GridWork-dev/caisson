@@ -1,5 +1,14 @@
 # @caisson/standards-gate
 
+## 0.0.11
+
+### Patch Changes
+
+- c7476b9: The agent-runtime dependency-boundary check now allows the trajectory package to depend on the
+  field-encryption primitive, since parked run bodies are now encrypted at rest.
+- Updated dependencies [f40653b]
+  - @caisson/registry-schema@0.5.3
+
 ## 0.0.10
 
 ### Patch Changes

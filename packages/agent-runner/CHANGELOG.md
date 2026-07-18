@@ -1,5 +1,15 @@
 # @caisson/agent-runner
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [c7476b9]
+- Updated dependencies [c3b0e41]
+- Updated dependencies [dffd0c1]
+- Updated dependencies [696b2c5]
+  - @caisson/agent-trajectory@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

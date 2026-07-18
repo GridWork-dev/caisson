@@ -1,5 +1,13 @@
 # @caisson/registry-schema
 
+## 0.5.3
+
+### Patch Changes
+
+- f40653b: The entitlement vocabulary reserves the new usage-adapter module's identifier until its
+  first published release, so license checks resolve it consistently during the gap between
+  the package existing and its catalog entry appearing.
+
 ## 0.5.2
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @caisson/demo-registry
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies [9d50e7c]
+  - @caisson/ai-meter@1.0.4
+  - @caisson/license-issue@1.0.1
+  - @caisson/audit-worm@2.1.1
+
 ## 0.2.4
 
 ### Patch Changes

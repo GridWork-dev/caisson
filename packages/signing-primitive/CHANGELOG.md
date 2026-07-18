@@ -1,5 +1,12 @@
 # @caisson/signing-primitive
 
+## 0.3.1
+
+### Patch Changes
+
+- 4c6d3f7: Rebuilt against this release's updated platform dependencies so each published artifact
+  matches its recorded checksum exactly. No functional changes.
+
 ## 0.3.0
 
 ### Minor Changes

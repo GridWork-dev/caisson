@@ -1,5 +1,13 @@
 # @caisson/agent-dev
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [c3b0e41]
+  - @caisson/tool-exec@0.2.0
+  - @caisson/agent-runner@0.2.1
+
 ## 0.6.0
 
 ### Minor Changes
