@@ -1,5 +1,12 @@
 # @caisson/field-crypto
 
+## 0.3.4
+
+### Patch Changes
+
+- Updated dependencies [fc0bb99]
+  - @caisson/kernel@0.5.2
+
 ## 0.3.3
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @caisson/cli
 
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies [fc0bb99]
+  - @caisson/kernel@0.5.2
+  - @caisson/jobs@0.6.2
+  - @caisson/migrate@0.2.8
+  - @caisson/tenancy-rls@0.5.4
+
 ## 0.7.1
 
 ### Patch Changes

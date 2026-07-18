@@ -1,5 +1,41 @@
 # @caisson/site
 
+## 0.2.10
+
+### Patch Changes
+
+- 6f0af8a: The agent-trajectory module is now purchasable: priced at $49 a la carte, creditable
+  toward an Agentic-Dev or Everything bundle upgrade, with its bundle membership recorded
+  in the pricing timeline as of 18 July 2026. The purchase and renewal books route its
+  checkout and updates-renewal to the module's entitlement, and the pricing page lists it
+  alongside the other Agentic-Dev modules with its own mechanism diagram.
+- Updated dependencies [6f0af8a]
+- Updated dependencies [fc0bb99]
+- Updated dependencies [fc0bb99]
+  - @caisson/pricebook@0.6.0
+  - @caisson/kernel@0.5.2
+  - @caisson/platform-reads@0.2.4
+  - @caisson/service-license@0.0.14
+  - @caisson/ai-kit@0.5.2
+  - @caisson/ai-meter@1.0.6
+  - @caisson/audit-worm@2.1.3
+  - @caisson/auth@0.3.5
+  - @caisson/billing@0.6.3
+  - @caisson/cli@0.7.2
+  - @caisson/credits@0.5.6
+  - @caisson/email@0.5.2
+  - @caisson/field-crypto@0.3.4
+  - @caisson/local-store@1.0.3
+  - @caisson/migrate@0.2.8
+  - @caisson/observability@0.3.3
+  - @caisson/org-controls@0.3.3
+  - @caisson/platform-migrations@0.2.7
+  - @caisson/prompt-registry@1.0.3
+  - @caisson/rate-limit@0.1.6
+  - @caisson/tenancy-rls@0.5.4
+  - @caisson/ui-pro@0.3.2
+  - @caisson/demo-registry@0.2.7
+
 ## 0.2.9
 
 ### Patch Changes
