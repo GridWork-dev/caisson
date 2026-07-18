@@ -147,9 +147,13 @@ export function createPgRunStateStore(
 
     deny(runId: string, toolCallId: string): Promise<TransitionResult> {
       return withTenant(tx, accountId, async (exec) => {
+        // parked_state is cleared here (RETENTION, security audit finding 1): once a run is
+        // terminal, the plaintext conversation snapshot it held for a resume that will never
+        // happen is pure liability, not a resumable asset. `toSnapshot` never surfaces this field
+        // anyway (see run-state.ts); this is about what actually sits in the row.
         const res = await exec.query<Row>(
           `UPDATE agent_run_state
-              SET status = 'finished', decision = 'denied', updated_at = now()
+              SET status = 'finished', decision = 'denied', parked_state = NULL, updated_at = now()
             WHERE run_id = $1 AND status = 'parked' AND pending_tool_call_id = $2 AND decision IS NULL
             RETURNING status, pending_tool_call_id, decision, claimed, resume_seq, parked_state, updated_at`,
           [runId, toolCallId],
@@ -209,8 +213,11 @@ export function createPgRunStateStore(
 
     finish(runId: string): Promise<void> {
       return withTenant(tx, accountId, async (exec) => {
+        // RETENTION (security audit finding 1): clear parked_state on every terminal transition,
+        // same rationale as deny() above — a completed/failed run's plaintext snapshot has no
+        // further use.
         const res = await exec.query(
-          `UPDATE agent_run_state SET status = 'finished', updated_at = now() WHERE run_id = $1
+          `UPDATE agent_run_state SET status = 'finished', parked_state = NULL, updated_at = now() WHERE run_id = $1
            RETURNING run_id`,
           [runId],
         );

@@ -204,6 +204,8 @@ export function createMemoryRunStateStore(): RunStateStore {
       ) {
         r.status = "finished";
         r.decision = "denied";
+        // RETENTION (security audit finding 1): a terminal run keeps no snapshot around.
+        r.parkedState = null;
         r.updatedAt = nowIso();
         return { ...toSnapshot(runId, r), wasNoop: false };
       }
@@ -252,6 +254,8 @@ export function createMemoryRunStateStore(): RunStateStore {
         throw new NotFoundError("unknown run", { runId });
       }
       r.status = "finished";
+      // RETENTION (security audit finding 1): same as deny() — no snapshot survives terminal.
+      r.parkedState = null;
       r.updatedAt = nowIso();
     },
 

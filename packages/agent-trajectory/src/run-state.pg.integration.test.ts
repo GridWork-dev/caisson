@@ -129,6 +129,40 @@ describe("createPgRunStateStore — CAS transitions over a real Postgres", () =>
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
+  test("RETENTION (security audit finding 1): deny clears parked_state in the row", async () => {
+    const acct = randomUUID();
+    const runId = randomUUID();
+    await createPgRunStateStore(tp.pg, acct).park({
+      runId,
+      toolCallId: "call-1",
+      resumeSeq: 0,
+      parkedState: { messages: ["sensitive conversation content"] },
+    });
+    await createPgRunStateStore(tp.pg, acct).deny(runId, "call-1");
+    const rows = await tp.query<{ parked_state: unknown }>(
+      `SELECT parked_state FROM agent_run_state WHERE run_id = $1`,
+      [runId],
+    );
+    expect(rows[0]?.parked_state).toBeNull();
+  });
+
+  test("RETENTION (security audit finding 1): finish clears parked_state in the row", async () => {
+    const acct = randomUUID();
+    const runId = randomUUID();
+    await createPgRunStateStore(tp.pg, acct).park({
+      runId,
+      toolCallId: "call-1",
+      resumeSeq: 0,
+      parkedState: { messages: ["sensitive conversation content"] },
+    });
+    await createPgRunStateStore(tp.pg, acct).finish(runId);
+    const rows = await tp.query<{ parked_state: unknown }>(
+      `SELECT parked_state FROM agent_run_state WHERE run_id = $1`,
+      [runId],
+    );
+    expect(rows[0]?.parked_state).toBeNull();
+  });
+
   test("unknown runId/toolCallId fail closed", async () => {
     const acct = randomUUID();
     await expect(
