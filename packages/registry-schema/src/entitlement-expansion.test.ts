@@ -611,7 +611,9 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
   // ABSENT from every leaf set. That is the ONLY delta — the delist-equality proof showed each
   // bundle's own members map carries every real member. Keyed on the CANONICAL bundle ids the
   // catalog + grants use. `everything` re-captured again after the ui-pro first publish to pin
-  // @caisson/ui-pro's entry into the explicit leaf set.
+  // @caisson/ui-pro's entry into the explicit leaf set. Re-captured 2026-07-18: @caisson/agent-trajectory
+  // joined the agentic-dev and everything members maps (the agent-runtime consume), so it is now in
+  // both leaf sets.
   const REAL_INDEX = join(
     dirname(fileURLToPath(import.meta.url)),
     "..",
@@ -658,6 +660,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
     "agentic-dev": [
       "@caisson/agent-kernel",
       "@caisson/agent-runner",
+      "@caisson/agent-trajectory",
       "@caisson/agentic-dev",
       "@caisson/ai-config",
       "@caisson/kernel",
@@ -673,6 +676,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
     everything: [
       "@caisson/agent-kernel",
       "@caisson/agent-runner",
+      "@caisson/agent-trajectory",
       "@caisson/agentic-dev",
       "@caisson/ai-evals",
       "@caisson/ai-meter",
