@@ -1,20 +1,38 @@
 // src/run-state.pg.ts — PG-backed `RunStateStore` (ADR-0360 U-3) over `agent_run_state`
-// (migrations/0002_agent_run_state.sql). Every transition is a single `UPDATE … WHERE … RETURNING`
-// compare-and-swap — never a read-then-write — so two concurrent callers racing the SAME transition
-// can never both "win": Postgres row-level locking serializes the two UPDATEs, and the loser's WHERE
-// clause re-evaluates against the FIRST winner's already-committed row and matches zero rows.
+// (migrations/0002_agent_run_state.sql + 0003's encrypted-column widen). Every transition is a
+// single `UPDATE … WHERE … RETURNING` compare-and-swap — never a read-then-write — so two
+// concurrent callers racing the SAME transition can never both "win": Postgres row-level locking
+// serializes the two UPDATEs, and the loser's WHERE clause re-evaluates against the FIRST winner's
+// already-committed row and matches zero rows.
+//
+// ENCRYPTED-AT-REST parked_state (ADR-0361, S5 gate): `park()` seals the caller's opaque snapshot
+// through `@caisson/field-crypto`'s row-bound `encryptField`/`decryptField` (the explicit sibling of
+// the transparent Drizzle column — encrypt-field.ts) BEFORE it reaches the row; `claimResume()`
+// opens it back. `columnContext` binds the ciphertext to this column; `rowId` is `run_id` — the
+// table's stable PRIMARY KEY, immutable across a re-park of the SAME run (encrypt-field.ts's stable-PK
+// requirement) — so a ciphertext relocated to another run's row fails AEAD auth on decrypt. This
+// mirrors `@caisson/ai-kit`'s `byok-store.ts`: the caller supplies a ready `FieldCryptoContext`
+// (built via `derivedContext(provider, accountId)`), never a bare key-provider — no new key-material
+// shape (ADR-0361's mandate). `null`/`undefined` parkedState stores SQL NULL, never an envelope of
+// "null" — `deny()`/`finish()`'s retention null-out (S3, security audit finding 1) is unaffected and
+// unchanged: those paths just write NULL, no crypto involved either way.
 //
 // PER-CALL TENANT SCOPING (mirrors `store.pg.ts` — see its file header for the full rationale): a
 // `RunStateStore` is held for a run's whole life and its methods interleave with the loop's OWN
 // separate ai-meter `withTenant` calls; holding one pre-opened transaction across that span deadlocks
 // PGlite (a single connection) on the nested `withTenant`. Every method here opens its OWN
 // short-lived `withTenant` transaction instead. `@caisson/tenancy-rls` is a REAL runtime dependency.
-import { ConflictError, NotFoundError } from "@caisson/kernel";
+import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
 import {
   withTenant,
   type TenantExecutor,
   type Transactor,
 } from "@caisson/tenancy-rls";
+import {
+  decryptField,
+  encryptField,
+  type FieldCryptoContext,
+} from "@caisson/field-crypto";
 import type {
   ParkInput,
   RunResumeMaterial,
@@ -24,13 +42,53 @@ import type {
   TransitionResult,
 } from "./run-state.ts";
 
+/** The stable column identity bound into the crypto AAD (an envelope cannot be moved + opened
+ *  elsewhere) — mirrors `@caisson/ai-kit`'s `BYOK_COLUMN_CONTEXT` naming convention. */
+const PARKED_STATE_COLUMN_CONTEXT = "agent-runtime.parked_state";
+
+/** Seal a caller's opaque `parkedState` into the base64 field-crypto envelope this column stores,
+ *  or `null` through unchanged (deny/finish/an unset park both mean "nothing to encrypt"). */
+function sealParkedState(
+  ctx: FieldCryptoContext,
+  runId: string,
+  parkedState: unknown,
+): string | null {
+  if (parkedState === null || parkedState === undefined) return null;
+  return encryptField(
+    ctx,
+    PARKED_STATE_COLUMN_CONTEXT,
+    runId,
+    JSON.stringify(parkedState),
+  );
+}
+
+/** Open a stored envelope back into the caller's opaque snapshot, or `null` through unchanged. A
+ *  non-null, non-string value is a schema violation (the column is `text`) — fail closed rather
+ *  than pass a non-string to `decryptField`. */
+function openParkedState(
+  ctx: FieldCryptoContext,
+  runId: string,
+  stored: unknown,
+): unknown {
+  if (stored === null || stored === undefined) return null;
+  if (typeof stored !== "string") {
+    throw new ValidationError(
+      "run-state.pg: parked_state envelope must be a string",
+      { runId },
+    );
+  }
+  return JSON.parse(
+    decryptField(ctx, PARKED_STATE_COLUMN_CONTEXT, runId, stored),
+  );
+}
+
 interface Row {
   readonly status: RunStatus;
   readonly pending_tool_call_id: string | null;
   readonly decision: "approved" | "denied" | null;
   readonly claimed: boolean;
   readonly resume_seq: number;
-  readonly parked_state: unknown;
+  readonly parked_state: string | null;
   readonly updated_at: unknown;
 }
 
@@ -61,10 +119,14 @@ async function readRow(
 /** Build a PG-backed `RunStateStore` bound to one tenant. `tx` is the RAW `Transactor`; every
  *  method call opens its OWN short-lived `withTenant` transaction (see the file header).
  *  `accountId` is stamped on the first-time `park` INSERT and must equal the bound GUC or the RLS
- *  `WITH CHECK` clause rejects it. */
+ *  `WITH CHECK` clause rejects it. `cryptoCtx` is the caller-supplied `FieldCryptoContext` sealing/
+ *  opening `parked_state` (ADR-0361) — `cryptoCtx.tenantId` MUST equal `accountId`, mirroring
+ *  `@caisson/ai-kit`'s `putTenantProviderKey`/`getTenantProviderKey` convention (the RLS scope and
+ *  the crypto AAD tenant binding must agree). */
 export function createPgRunStateStore(
   tx: Transactor,
   accountId: string,
+  cryptoCtx: FieldCryptoContext,
 ): RunStateStore {
   return {
     park(input: ParkInput): Promise<void> {
@@ -75,7 +137,7 @@ export function createPgRunStateStore(
         const res = await exec.query(
           `INSERT INTO agent_run_state
              (run_id, account_id, status, pending_tool_call_id, decision, claimed, resume_seq, parked_state, updated_at)
-           VALUES ($1, $2, 'parked', $3, NULL, false, $4, $5::jsonb, now())
+           VALUES ($1, $2, 'parked', $3, NULL, false, $4, $5, now())
            ON CONFLICT (run_id) DO UPDATE
              SET status = 'parked',
                  pending_tool_call_id = EXCLUDED.pending_tool_call_id,
@@ -92,7 +154,7 @@ export function createPgRunStateStore(
             accountId,
             input.toolCallId,
             input.resumeSeq,
-            JSON.stringify(input.parkedState ?? null),
+            sealParkedState(cryptoCtx, input.runId, input.parkedState),
           ],
         );
         if (res.rows.length === 0) {
@@ -193,7 +255,10 @@ export function createPgRunStateStore(
         );
         const won = res.rows[0];
         if (won !== undefined) {
-          return { resumeSeq: won.resume_seq, parkedState: won.parked_state };
+          return {
+            resumeSeq: won.resume_seq,
+            parkedState: openParkedState(cryptoCtx, runId, won.parked_state),
+          };
         }
 
         const current = await readRow(exec, runId);

@@ -60,9 +60,13 @@ async function park(
   toolCallId: string,
   resumeSeq = 0,
 ): Promise<void> {
+  // parked_state is `text` as of migration 0003 (ADR-0361 — a field-crypto envelope in production).
+  // This package never reads/decrypts the column (open↔commercial boundary, see run.ts's file
+  // header) and no test here asserts on its content, so a plain placeholder string exercises the
+  // same CAS/idempotency/retention paths without needing @caisson/field-crypto as a devDependency.
   await tp.exec(
     `INSERT INTO agent_run_state (run_id, account_id, status, pending_tool_call_id, decision, claimed, resume_seq, parked_state, updated_at)
-     VALUES ('${runId}', '${accountId}', 'parked', '${toolCallId}', NULL, false, ${String(resumeSeq)}, '{}'::jsonb, now())`,
+     VALUES ('${runId}', '${accountId}', 'parked', '${toolCallId}', NULL, false, ${String(resumeSeq)}, 'placeholder-not-a-real-envelope', now())`,
   );
 }
 
@@ -80,8 +84,15 @@ beforeAll(async () => {
       import.meta.url,
     ),
   ).text();
+  const m3 = await Bun.file(
+    new URL(
+      "../../agent-trajectory/src/migrations/0003_agent_run_state_parked_state_encrypted.sql",
+      import.meta.url,
+    ),
+  ).text();
   await tp.exec(m1);
   await tp.exec(m2);
+  await tp.exec(m3);
 });
 
 afterAll(async () => {
