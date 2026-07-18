@@ -44,6 +44,11 @@ import {
 import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
 import type { JobQueue } from "@caisson/jobs";
+import {
+  DerivedKeyProvider,
+  derivedContext,
+  type FieldCryptoContext,
+} from "@caisson/field-crypto";
 import { MockLanguageModelV4 } from "ai/test";
 import type {
   LanguageModelV4FinishReason,
@@ -74,6 +79,21 @@ import {
 
 let tp: TestPg;
 const A = "acct_approval_a";
+
+// ADR-0361: the encRef wrap of `parked_state` needs a `FieldCryptoContext` per store instance —
+// mirrors `run-state.pg.integration.test.ts`'s `cryptoCtxFor`/`stateStore` helpers. A fixed
+// `DerivedKeyProvider` derives the SAME key deterministically for "fresh" store objects across the
+// real-process-boundary test below.
+const KEY_PROVIDER = new DerivedKeyProvider(
+  Buffer.alloc(32, 3),
+  Buffer.alloc(32, 5),
+);
+const cryptoCtxFor = (accountId: string): FieldCryptoContext =>
+  derivedContext(KEY_PROVIDER, accountId);
+const stateStore = (
+  accountId: string,
+): ReturnType<typeof createPgRunStateStore> =>
+  createPgRunStateStore(tp.pg, accountId, cryptoCtxFor(accountId));
 
 const METER: MeterConfig = {
   priceBook: {
@@ -260,8 +280,15 @@ beforeEach(async () => {
       import.meta.url,
     ),
   ).text();
+  const m3 = await Bun.file(
+    new URL(
+      "../../agent-trajectory/src/migrations/0003_agent_run_state_parked_state_encrypted.sql",
+      import.meta.url,
+    ),
+  ).text();
   await tp.exec(m1);
   await tp.exec(m2);
+  await tp.exec(m3);
 });
 
 afterAll(async () => {
@@ -629,11 +656,7 @@ describe("park/approve/resume across a REAL process boundary (PGlite, fresh stor
     // transaction per call — see store.pg.ts's file header for why a store must never hold one
     // transaction open across a run's whole life).
     const parked = await runToolLoop(
-      loopOpts(
-        model,
-        createPgTrajectoryStore(tp.pg, A),
-        createPgRunStateStore(tp.pg, A),
-      ),
+      loopOpts(model, createPgTrajectoryStore(tp.pg, A), stateStore(A)),
     );
     expect(parked.status).toBe("parked");
     expect(parked.toolCallId).toBe("call-1");
@@ -643,7 +666,7 @@ describe("park/approve/resume across a REAL process boundary (PGlite, fresh stor
     await approveToolCall(
       {
         store: createPgTrajectoryStore(tp.pg, A),
-        runState: createPgRunStateStore(tp.pg, A),
+        runState: stateStore(A),
         jobs,
       },
       parked.runId,
@@ -655,11 +678,7 @@ describe("park/approve/resume across a REAL process boundary (PGlite, fresh stor
 
     // "Process 3" (the resume worker, yet ANOTHER fresh set of store objects).
     const resumed = await resumeToolLoop({
-      ...loopOpts(
-        model,
-        createPgTrajectoryStore(tp.pg, A),
-        createPgRunStateStore(tp.pg, A),
-      ),
+      ...loopOpts(model, createPgTrajectoryStore(tp.pg, A), stateStore(A)),
       runId: parked.runId,
     });
     expect(resumed.status).toBe("completed");

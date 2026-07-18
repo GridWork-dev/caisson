@@ -21,8 +21,16 @@ const AI_KIT = "@caisson/ai-kit";
 // (ADR-0003 down-only; ADR-0351: the trajectory is the substrate, never the consumer).
 // tenancy-rls joined the set with the durable PG stores (ADR-0360 U-3): the FORCE-RLS
 // TrajectoryStore/RunStateStore sit on the same Base tenancy primitive every other row store uses —
-// still down-only, still no runner/edition/ai-kit.
-const KERNEL_LEVEL = new Set(["@caisson/kernel", "@caisson/tenancy-rls"]);
+// still down-only, still no runner/edition/ai-kit. field-crypto joined the set with the encRef wrap
+// of `parked_state` (S5, ADR-0361's mandate: the wrap MUST land before publish, and ADR-0361
+// explicitly requires field-crypto's OWN key/tenancy conventions, not a new key-material shape) —
+// field-crypto is itself a Base-kernel-only primitive (see its own manifest.ts), so this widening is
+// still a lateral primitive→primitive dependency, never "up" onto a runner/edition/ai-kit.
+const KERNEL_LEVEL = new Set([
+  "@caisson/kernel",
+  "@caisson/tenancy-rls",
+  "@caisson/field-crypto",
+]);
 
 describe("agent-runtime slice-1 dependency boundary (ADR-0349/0351)", () => {
   test("agent-trajectory (primitive) depends on nothing above kernel-level", () => {

@@ -61,3 +61,5 @@ export type {
   HttpMcpHandler,
   HttpListenOptions,
 } from "./http.ts";
+export { registerRunTools, DEFAULT_RUN_ENTITLEMENT } from "./run-tools.ts";
+export type { RunToolsOptions, RunToolRegistrar } from "./run-tools.ts";

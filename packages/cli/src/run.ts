@@ -1,16 +1,25 @@
-// `caisson run approve|deny|status` (ADR-0360 U-2, S3 PLAN-gate transport decision). Direct
-// service/DB call against the buyer's OWN Postgres — never an MCP round-trip: the CLI is
-// operator-side tooling against a deployment the operator already has DB credentials for, so an
-// MCP hop adds a network auth surface for zero gain.
+// `caisson run start|approve|deny|status` (ADR-0360 U-2/S5, S3+S5 PLAN-gate transport decisions).
+// TWO deliberately different transports on the SAME bin, per verb:
+//   - `approve`/`deny`/`status` — direct service/DB call against the buyer's OWN Postgres, never an
+//     MCP round-trip (S3 lock): operator-side tooling against a deployment the operator already has
+//     DB credentials for, so an MCP hop adds a network auth surface for zero gain.
+//   - `start` — a THIN MCP CLIENT (S5, the `doctor.ts` pattern): opening a governed run needs the
+//     full commercial-tier loop (models, metering, guardrails, agent-trajectory) that an OSS package
+//     can never import at runtime (open↔commercial boundary, below) — so, exactly like `caisson
+//     doctor`, it calls the buyer's own already-credentialed `@caisson/mcp-server` `run_start` tool
+//     over stdio and renders the result. The entitlement gate lives server-side (ADR-0362's
+//     dedicated slug); a denied caller sees the seam's invisible 404, surfaced here as a clear error.
 //
-// WHY RAW SQL, NOT @caisson/agent-trajectory (open↔commercial boundary, ADR-0094/0097): `@caisson/
-// cli` is OSS-tier (Apache-2.0); `@caisson/agent-trajectory` is commercial. `checkOpenCommercialBoundary`
-// (the standards gate) forbids an open package from depending "up" on a commercial one at runtime.
-// The CAS/append SQL below is therefore a DELIBERATE, SMALL, hand-kept mirror of agent-trajectory's
-// canonical `agent_run_state`/`trajectory_event` shapes (`run-state.pg.ts`/`store.pg.ts`) — same
-// table/column names, same CAS semantics, same idempotency rule — covered by its own test suite so
-// drift is caught, never silent. `RESUME_TASK_NAME` mirrors `@caisson/ai-kit`'s `approval.ts`
-// constant for the same open↔commercial reason.
+// WHY RAW SQL FOR approve/deny/status, NOT @caisson/agent-trajectory (open↔commercial boundary,
+// ADR-0094/0097): `@caisson/cli` is OSS-tier (Apache-2.0); `@caisson/agent-trajectory` is
+// commercial. `checkOpenCommercialBoundary` (the standards gate) forbids an open package from
+// depending "up" on a commercial one at runtime. The CAS/append SQL below is therefore a
+// DELIBERATE, SMALL, hand-kept mirror of agent-trajectory's canonical `agent_run_state`/
+// `trajectory_event` shapes (`run-state.pg.ts`/`store.pg.ts`) — same table/column names, same CAS
+// semantics, same idempotency rule — covered by its own test suite so drift is caught, never
+// silent. `RESUME_TASK_NAME` mirrors `@caisson/ai-kit`'s `approval.ts` constant for the same
+// open↔commercial reason. `status`'s trajectory summary is the SAME kind of small hand-kept mirror
+// (never `project()`, never `parked_state` — see `readTrajectoryProjection` below).
 //
 // SECURITY: Zod `.strict()` on the resolved config; `actor` is mandatory on approve/deny; an
 // unknown runId/toolCallId or a status mismatch fails closed (the CAS `UPDATE … WHERE …` finds zero
@@ -18,9 +27,12 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { z } from "zod";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { ConfigError, ValidationError, parseStrict } from "@caisson/kernel";
 import { withTenant, type TenantExecutor } from "@caisson/tenancy-rls";
 import { createPgBossJobQueue, type PgBossJobQueueConfig } from "@caisson/jobs";
+import { buyerMcpTransport } from "./doctor.ts";
 
 /** Mirrors `@caisson/agent-trajectory`'s `TRAJECTORY_VERSION` (schema.ts) — see the file header. */
 const TRAJECTORY_VERSION = 1;
@@ -37,15 +49,65 @@ interface RunStateRow {
   readonly updated_at: unknown;
 }
 
+/** A minimal, hand-rolled trajectory summary (mirrors this file's own house style: a deliberate,
+ *  small mirror of `@caisson/agent-trajectory`'s canonical logic, never an import of the commercial
+ *  package — see the file header on the open↔commercial boundary). This is NOT the full
+ *  `project()` fold (step tree, usage totals, checkpoints) — just the ONE field a `caisson run
+ *  status` operator actually wants: has the LOOP itself declared the run running/completed/failed/
+ *  cancelled, distinct from the run-state CAS's own parked/running/finished (the park mechanism,
+ *  not the loop's outcome). `pending` means no `run.started` event has landed yet. */
+export interface TrajectoryProjectionView {
+  readonly status: "pending" | "running" | "completed" | "failed" | "cancelled";
+  readonly eventCount: number;
+}
+
+interface TrajectoryEventRow {
+  readonly event: { kind: string; payload?: Record<string, unknown> };
+}
+
+async function readTrajectoryProjection(
+  exec: TenantExecutor,
+  runId: string,
+): Promise<TrajectoryProjectionView> {
+  const res = await exec.query<TrajectoryEventRow>(
+    `SELECT event FROM trajectory_event WHERE run_id = $1 ORDER BY seq ASC`,
+    [runId],
+  );
+  let status: TrajectoryProjectionView["status"] = "pending";
+  for (const row of res.rows) {
+    const kind = row.event.kind;
+    if (kind === "run.started") {
+      status = "running";
+    } else if (kind === "run.finished") {
+      const finished = row.event.payload?.status;
+      if (
+        finished === "completed" ||
+        finished === "failed" ||
+        finished === "cancelled"
+      ) {
+        status = finished;
+      }
+    }
+  }
+  return { status, eventCount: res.rows.length };
+}
+
 export interface RunStatusView {
   readonly runId: string;
   readonly status: RunStatus;
   readonly pendingToolCallId: string | null;
   readonly resumeSeq: number;
   readonly updatedAt: string;
+  /** The loop's own outcome per the trajectory log (never `parked_state` — that column is never
+   *  read by this file at all, encrypted or not). */
+  readonly trajectory: TrajectoryProjectionView;
 }
 
-function toStatusView(runId: string, row: RunStateRow): RunStatusView {
+function toStatusView(
+  runId: string,
+  row: RunStateRow,
+  trajectory: TrajectoryProjectionView,
+): RunStatusView {
   const updatedAt = row.updated_at;
   return {
     runId,
@@ -54,6 +116,7 @@ function toStatusView(runId: string, row: RunStateRow): RunStatusView {
     resumeSeq: row.resume_seq,
     updatedAt:
       updatedAt instanceof Date ? updatedAt.toISOString() : String(updatedAt),
+    trajectory,
   };
 }
 
@@ -242,15 +305,61 @@ export async function denyRun(
   return { runId, toolCallId, status: outcome };
 }
 
-/** Read-only run-state snapshot — `undefined` if the run never parked. */
+/** Read-only run-state + trajectory-projection snapshot — `undefined` if the run never parked
+ *  (mirrors the pre-existing contract: `caisson run status` answers "what is this parked/decided
+ *  run doing", not a general run lookup). Never reads `parked_state` — that column is not in
+ *  `readRunState`'s SELECT list at all. */
 export async function readRunStatus(
   deps: RunServiceDeps,
   runId: string,
 ): Promise<RunStatusView | undefined> {
   return withTenant(deps.tx, deps.accountId, async (exec) => {
     const row = await readRunState(exec, runId);
-    return row === undefined ? undefined : toStatusView(runId, row);
+    if (row === undefined) return undefined;
+    const trajectory = await readTrajectoryProjection(exec, runId);
+    return toStatusView(runId, row, trajectory);
   });
+}
+
+// --- start: a thin MCP client (S5, the doctor.ts pattern) ------------------------------------
+
+export interface RunStartClientInput {
+  /** Injectable MCP transport (a StdioClientTransport in the bin; InMemoryTransport in tests). */
+  readonly transport: Transport;
+  readonly prompt: string;
+}
+
+/**
+ * Call the buyer MCP `run_start` tool over `transport` and return its result (opaque JSON — the
+ * governed `ToolLoopResult` shape `@caisson/ai-kit`'s host wiring returns, unknown to this OSS
+ * package by construction). A denied (unentitled/invisible) tool surfaces as the MCP `isError`
+ * envelope — rethrown as a clear Error so the caller sees "not licensed", never a silent no-op.
+ * Mirrors `doctor.ts`'s `runDoctorClient` exactly.
+ */
+export async function runStartClient(
+  input: RunStartClientInput,
+): Promise<unknown> {
+  const client = new Client({ name: "caisson-run-start", version: "1.0.0" });
+  await client.connect(input.transport);
+  try {
+    const result = await client.callTool({
+      name: "run_start",
+      arguments: { prompt: input.prompt },
+    });
+    const content =
+      (result as { content?: { type: string; text: string }[] }).content ?? [];
+    const payload = JSON.parse(content[0]?.text ?? "{}") as {
+      error?: { code?: string; message?: string };
+    };
+    if (result.isError === true) {
+      const code = payload.error?.code ?? "error";
+      const message = payload.error?.message ?? "run_start failed";
+      throw new Error(`${code}: ${message}`);
+    }
+    return payload;
+  } finally {
+    await client.close();
+  }
 }
 
 // --- Bin wiring -----------------------------------------------------------------------------
@@ -344,15 +453,19 @@ function buildDeps(config: z.infer<typeof EnvConfig>): {
 }
 
 export const RUN_HELP = `\
-caisson run — approval + status for a parked agent run (ADR-0360 U-2)
+caisson run — start, approval, and status for a governed agent run (ADR-0360 U-2, S5)
 
 Usage:
+  caisson run start   <prompt>
   caisson run approve <runId> <toolCallId> --actor <name>
   caisson run deny    <runId> <toolCallId> --actor <name> [--reason <text>]
   caisson run status  <runId>
 
-Reads DATABASE_URL and CAISSON_ACCOUNT_ID from the environment — direct DB access against your own
-deployment (no MCP round-trip). --actor is required on approve/deny.
+start is a THIN MCP CLIENT: it needs your licensed Caisson buyer MCP — set CAISSON_MCP_COMMAND
+(and optional CAISSON_MCP_ARGS) to your local @caisson/mcp-server command, entitlement-gated
+(ADR-0362). approve/deny/status read DATABASE_URL and CAISSON_ACCOUNT_ID from the environment —
+direct DB access against your own deployment (no MCP round-trip). --actor is required on
+approve/deny.
 `;
 
 function flag(argv: readonly string[], name: string): string | undefined {
@@ -364,6 +477,20 @@ export async function runRunCli(argv: readonly string[]): Promise<void> {
   const [sub, ...rest] = argv;
   if (sub === undefined || sub === "--help" || sub === "-h") {
     process.stdout.write(RUN_HELP);
+    return;
+  }
+
+  if (sub === "start") {
+    // No DB env needed at all — start is a pure thin MCP client (see the file header).
+    const prompt = rest.join(" ").trim();
+    if (prompt.length === 0) {
+      throw new Error("usage: caisson run start <prompt>");
+    }
+    const result = await runStartClient({
+      transport: buyerMcpTransport(),
+      prompt,
+    });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }
 

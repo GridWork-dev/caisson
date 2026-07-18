@@ -85,14 +85,16 @@ export function collectFiles(root: string): DoctorFile[] {
 
 /** Build the stdio transport to the buyer's local MCP from env config (the buyer's token flows to
  *  that server process via its own env, not through the doctor). Throws a clear message when the
- *  buyer has not configured their licensed MCP. */
-function buyerMcpTransport(): Transport {
+ *  buyer has not configured their licensed MCP. Exported: `run.ts`'s `caisson run start` is the
+ *  SAME thin-MCP-client shape (a second entitlement-gated tool on the buyer's own server), so it
+ *  reuses this helper rather than re-deriving env wiring. */
+export function buyerMcpTransport(): Transport {
   const command = process.env.CAISSON_MCP_COMMAND;
   if (command === undefined || command === "") {
     throw new Error(
-      "doctor needs your licensed Caisson buyer MCP — set CAISSON_MCP_COMMAND " +
+      "this command needs your licensed Caisson buyer MCP — set CAISSON_MCP_COMMAND " +
         "(and optional CAISSON_MCP_ARGS) to your local @caisson/mcp-server command. " +
-        "The verify doctor is entitlement-gated.",
+        "The agent-runtime tools are entitlement-gated.",
     );
   }
   const args = (process.env.CAISSON_MCP_ARGS ?? "")

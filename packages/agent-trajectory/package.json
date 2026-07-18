@@ -21,6 +21,7 @@
     "test": "bun test ./src"
   },
   "dependencies": {
+    "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "zod": "catalog:"
