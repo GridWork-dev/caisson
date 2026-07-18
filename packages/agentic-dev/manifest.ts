@@ -19,6 +19,10 @@ export default defineModule({
     "@caisson/agentic-dev": "0.2.1",
     "@caisson/agent-kernel": "0.6.0",
     "@caisson/agent-runner": "0.2.0",
+    // agent-trajectory joins at the version CARRYING the encrypted-parked-state wrap (0.3.0,
+    // ledgered by the 2026-07-18 consume) — a member pin must name the wrap-bearing sellable
+    // version, never merely a real published one (the pre-encRef 0.2.0 must never compose).
+    "@caisson/agent-trajectory": "0.3.0",
     "@caisson/ai-config": "0.3.2",
     "@caisson/kernel": "0.5.0",
     "@caisson/local-store": "1.0.1",
