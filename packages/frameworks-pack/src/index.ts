@@ -23,4 +23,11 @@ export * from "./crosswalks/nist-800-53.ts";
 // --- Vendored NIST SP 800-53 rev5 OSCAL catalog (SPEC oscal-spine, ADR-0363/0364) — the pinned
 // source bundle + control-id existence surface the nist80053Crosswalk is checked against.
 export * from "./vendor/nist-catalog-pin.ts";
-export * from "./vendor/nist-catalog-controls.ts";
+// Only the PURE parser + its type are public. `loadVendoredNistControlIds` does I/O relative to
+// its own module file and ENOENTs from a built dist/ tree (bare tsc ships no JSON copy) — it
+// stays a package-internal test/re-vendor-script helper, imported by relative path where it's
+// genuinely needed. Regression-pinned in index.test.ts.
+export {
+  extractControlIds,
+  type NistCatalogDocument,
+} from "./vendor/nist-catalog-controls.ts";

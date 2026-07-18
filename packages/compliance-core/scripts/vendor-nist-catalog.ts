@@ -21,14 +21,13 @@
 //   bun packages/compliance-core/scripts/vendor-nist-catalog.ts --refetch   # diff-only report
 //   bun packages/compliance-core/scripts/vendor-nist-catalog.ts --sha <sha> [--refetch]
 import { createHash } from "node:crypto";
-import { appendFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { fetchWithTimeout } from "@caisson/kernel";
 import {
   extractControlIds,
-  loadVendoredNistControlIds,
   nist80053Crosswalk,
   NIST_CATALOG_PIN,
   NIST_CATALOG_REPO,
@@ -180,7 +179,14 @@ async function runRefetchDiff(sha: string): Promise<void> {
   const freshIds = extractControlIds(
     JSON.parse(Buffer.from(fresh).toString("utf8")) as NistCatalogDocument,
   );
-  const currentIds = loadVendoredNistControlIds();
+  // Read the committed vendored file directly (this script already knows its own path) rather
+  // than the removed `loadVendoredNistControlIds` package export — that I/O helper stays
+  // package-internal to frameworks-pack (SHIP-audit P2 fix: it ENOENTs from a built dist/ tree).
+  const currentIds = extractControlIds(
+    JSON.parse(
+      readFileSync(VENDORED_CATALOG_PATH, "utf8"),
+    ) as NistCatalogDocument,
+  );
   const diff = diffControlIds(currentIds, freshIds);
   const stale = staleRows(diff.removed);
 
