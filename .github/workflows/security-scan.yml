@@ -90,7 +90,10 @@ jobs:
           # deliberately NON-hidden: actions/upload-artifact@v4 (>=4.4) excludes hidden files/dirs by
           # default, so a dot-dir uploaded empty ("No files were found") — the SARIF set evaporated.
           export SECURITY_OUT_DIR="$RUNNER_TEMP/security-out"
-          bash tools/security/scan.sh --layer ci
+          # --strict-digests: Dockerfile digest-pin check (K-03) is ENFORCING — the ADR-0315
+          # trigger (Renovate's first pin-wave merged) fired 2026-07-13; check-docker-digests.sh
+          # proven green on main 2026-07-17 before the flip.
+          bash tools/security/scan.sh --layer ci --strict-digests
       - name: upload SARIF artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
