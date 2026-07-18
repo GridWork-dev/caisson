@@ -316,6 +316,7 @@
       "version": "0.2.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -376,6 +377,7 @@
         "@caisson/credits": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
         "@caisson/guardrails": "workspace:*",
+        "@caisson/jobs": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/prompt-registry": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -601,11 +603,14 @@
       },
       "dependencies": {
         "@caisson/ds-manifest": "workspace:*",
+        "@caisson/jobs": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/migrate": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
         "@clack/prompts": "^1.7.0",
         "@modelcontextprotocol/sdk": "^1.29.0",
+        "pg": "catalog:",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -615,9 +620,7 @@
         "@caisson/credits": "workspace:*",
         "@caisson/email": "workspace:*",
         "@caisson/eslint-config": "workspace:*",
-        "@caisson/jobs": "workspace:*",
         "@caisson/mcp-server": "workspace:*",
-        "@caisson/tenancy-rls": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@caisson/ui": "workspace:*",
@@ -627,7 +630,6 @@
         "@types/react-dom": "catalog:",
         "eslint": "catalog:",
         "next": "catalog:",
-        "pg": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
         "typescript": "catalog:",

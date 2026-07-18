@@ -33,5 +33,10 @@
     "table": "impersonation_session",
     "package": "@caisson/compliance",
     "reason": "Begin/end is the whole app write surface: SELECT+INSERT+column-scoped UPDATE (ended_at) only — never a full-row UPDATE or DELETE (ADR-0187)."
+  },
+  {
+    "table": "trajectory_event",
+    "package": "@caisson/agent-trajectory",
+    "reason": "Append-only trajectory log (ADR-0360 U-3): SELECT+INSERT only, UPDATE/DELETE explicitly REVOKEd — mirrors ai-meter's usage_event and audit-worm's audit_chain_entry (a compromised app query can append but never rewrite or drop a committed event)."
   }
 ]

@@ -11,8 +11,13 @@
 // rule forces `paid`. `priceCents` mirrors the pre-launch placeholder anchor (4900) the other
 // commercial primitives carry; FINAL pricing is the still-open Pricing fork (SD-6/ADR-0012), out of
 // scope here — it need only be a positive integer (ADR-0007). Deps are DOWN-ONLY (ADR-0003):
-// @caisson/kernel (parseStrict + the typed error model) and nothing "up". `golden: null` — the
-// package emits no golden-able artifact; its teeth are the schema/append-only/replay tests.
+// @caisson/kernel (parseStrict + the typed error model) and, as of S3 (ADR-0360 U-3),
+// @caisson/tenancy-rls — the PG-backed TrajectoryStore/RunStateStore need it at RUNTIME (each
+// `append`/CAS call opens its own short-lived `withTenant` transaction; see store.pg.ts's file
+// header for why a pre-scoped executor deadlocks PGlite across a long-lived run). tenancy-rls is
+// Apache-2.0, a primitive itself (precedented: ai-meter already depends on it the same way), so this
+// stays a lateral primitive→primitive dependency, never "up". `golden: null` — the package emits no
+// golden-able artifact; its teeth are the schema/append-only/replay/CAS tests.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -26,7 +31,7 @@ export default defineModule({
   // Exempts it from the price-coverage locked-price requirement.
   sellable: false,
   license: pkg.license,
-  dependencies: ["@caisson/kernel"],
+  dependencies: ["@caisson/kernel", "@caisson/tenancy-rls"],
   golden: null,
   description:
     "Engine-neutral trajectory contract: an append-only, replayable event log (runs, steps, model calls, tool proposals/approvals, usage, checkpoints) with digest-ref payload discipline (sensitive bodies referenced by sha256 digest, never inlined) and a deterministic projection over shuffled arrival.",
