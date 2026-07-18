@@ -33,3 +33,7 @@ docs/session-logs/
 docs/business/legal/
 docs/business/finance/
 docs/business/caisson-internal-master-map.md
+# Vendored verbatim NIST SP 800-53 rev5 OSCAL catalog (oscal-spine SPEC binding requirement 1,
+# ADR-0363/0364) — hash-pinned to packages/frameworks-pack/src/vendor/nist-catalog-pin.ts; prettier
+# must never reformat it, or the pinned SHA-256 drift-guard test breaks.
+packages/frameworks-pack/src/vendor/nist-800-53-rev5-catalog.json

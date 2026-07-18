@@ -1,0 +1,1438 @@
+{
+  "catalog": {
+    "uuid": "00000000-0000-4000-8000-000000000001",
+    "metadata": {
+      "title": "Caisson Canonical Control Catalog",
+      "last-modified": "2026-07-18T00:00:00.000Z",
+      "version": "2026.1",
+      "oscal-version": "1.2.2"
+    },
+    "groups": [
+      {
+        "id": "access-control",
+        "class": "caisson-control-family",
+        "title": "Access Control",
+        "controls": [
+          {
+            "id": "ACCESS-CONTROL.DEPROVISIONING",
+            "class": "caisson-canonical-control",
+            "title": "Timely access removal on role change or departure",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Access Control"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:ACCESS-CONTROL.DEPROVISIONING",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Access is revoked promptly when a user changes role or leaves, on a defined deadline measured from the triggering event; orphaned and shared credentials are prohibited and periodically reconciled."
+              }
+            ]
+          },
+          {
+            "id": "ACCESS-CONTROL.LOGICAL",
+            "class": "caisson-canonical-control",
+            "title": "Logical access provisioning and least privilege",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Access Control"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:ACCESS-CONTROL.LOGICAL",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Logical access to systems and tenant data is granted through an authorized request, provisioned on the principle of least privilege, and recertified periodically; access rights are matched to a documented role rather than granted ad hoc."
+              },
+              {
+                "name": "guidance",
+                "prose": "Enforce tenant isolation at the data layer (fail-closed row-level security) so least privilege holds even when an application bug would otherwise widen scope."
+              }
+            ]
+          },
+          {
+            "id": "ACCESS-CONTROL.MFA",
+            "class": "caisson-canonical-control",
+            "title": "Multi-factor authentication for privileged access",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Access Control"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:ACCESS-CONTROL.MFA",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Privileged access to production systems and the tenant data plane requires a second authentication factor beyond a password; single-factor privileged sessions are denied."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "accuracy-robustness-cybersecurity",
+        "class": "caisson-control-family",
+        "title": "Accuracy, Robustness & Cybersecurity",
+        "controls": [
+          {
+            "id": "PERFORMANCE.ACCURACY-ROBUSTNESS",
+            "class": "caisson-canonical-control",
+            "title": "Accuracy and robustness throughout the lifecycle",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Accuracy, Robustness & Cybersecurity"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:PERFORMANCE.ACCURACY-ROBUSTNESS",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The high-risk AI system achieves an appropriate level of accuracy, robustness, and consistent performance throughout its lifecycle; the relevant accuracy metrics and expected level are declared in the accompanying instructions for use, and the system is resilient against errors, faults, or inconsistencies that may arise from its own operation or its interaction with other systems."
+              }
+            ]
+          },
+          {
+            "id": "SECURITY.AI-RESILIENCE",
+            "class": "caisson-canonical-control",
+            "title": "Cybersecurity resilience against AI-specific attack vectors",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Accuracy, Robustness & Cybersecurity"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:SECURITY.AI-RESILIENCE",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The high-risk AI system is resilient against attempts by unauthorized third parties to alter its use, behavior, or performance by exploiting system vulnerabilities, including AI-specific attack vectors such as training-data poisoning, adversarial examples, model evasion, and confidentiality attacks against the model or its training data, with technical and organizational measures proportionate to the identified risks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "administrative-safeguards",
+        "class": "caisson-control-family",
+        "title": "Administrative Safeguards",
+        "controls": [
+          {
+            "id": "ACCESS-CONTROL.WORKFORCE",
+            "class": "caisson-canonical-control",
+            "title": "Workforce authorization and access management",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Administrative Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:ACCESS-CONTROL.WORKFORCE",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Access to ePHI is authorized and supervised; the organization grants, documents, reviews, and terminates each workforce member's access on the principle of minimum necessary use."
+              }
+            ]
+          },
+          {
+            "id": "BUSINESS-CONTINUITY.CONTINGENCY",
+            "class": "caisson-canonical-control",
+            "title": "Contingency plan and data backup",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Administrative Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:BUSINESS-CONTINUITY.CONTINGENCY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "A contingency plan governs response to events that damage systems containing ePHI, including a data backup plan and a disaster recovery plan that are tested and kept current."
+              }
+            ]
+          },
+          {
+            "id": "GOVERNANCE.SANCTION-POLICY",
+            "class": "caisson-canonical-control",
+            "title": "Workforce sanction policy",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Administrative Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:GOVERNANCE.SANCTION-POLICY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "A documented sanction policy applies appropriate consequences to workforce members who fail to comply with the organization's security policies and procedures."
+              }
+            ]
+          },
+          {
+            "id": "GOVERNANCE.SECURITY-MANAGEMENT",
+            "class": "caisson-canonical-control",
+            "title": "Security management process and risk analysis",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Administrative Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:GOVERNANCE.SECURITY-MANAGEMENT",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization runs a security management process for electronic protected health information (ePHI), beginning with an accurate and thorough risk analysis of the confidentiality, integrity, and availability of the ePHI it holds."
+              },
+              {
+                "name": "guidance",
+                "prose": "Record the risk-analysis date and scope as evidence; re-run it after material change to systems handling ePHI."
+              }
+            ]
+          },
+          {
+            "id": "GOVERNANCE.SECURITY-RESPONSIBILITY",
+            "class": "caisson-canonical-control",
+            "title": "Assigned security responsibility and accountability",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Administrative Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:GOVERNANCE.SECURITY-RESPONSIBILITY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "A named individual or role holds documented accountability for the information security program, and security responsibilities are assigned across the organization with sufficient authority and resources to execute them."
+              }
+            ]
+          },
+          {
+            "id": "INCIDENT-RESPONSE.PROCEDURES",
+            "class": "caisson-canonical-control",
+            "title": "Security incident procedures",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Administrative Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:INCIDENT-RESPONSE.PROCEDURES",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization identifies and responds to suspected or known security incidents, mitigates their harmful effects to the extent practicable, and documents incidents and their outcomes."
+              }
+            ]
+          },
+          {
+            "id": "RISK-MANAGEMENT.REMEDIATION",
+            "class": "caisson-canonical-control",
+            "title": "Risk management measures",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Administrative Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:RISK-MANAGEMENT.REMEDIATION",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization implements security measures sufficient to reduce risks to ePHI to a reasonable and appropriate level, and tracks those measures to completion."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "availability",
+        "class": "caisson-control-family",
+        "title": "Availability",
+        "controls": [
+          {
+            "id": "AVAILABILITY.BACKUP-RECOVERY",
+            "class": "caisson-canonical-control",
+            "title": "Backup and recovery capability",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Availability"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:AVAILABILITY.BACKUP-RECOVERY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Data is backed up on a defined schedule and recovery is tested periodically against documented recovery objectives, so that the organization can restore service and data after a disruptive event."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "change-management",
+        "class": "caisson-control-family",
+        "title": "Change Management",
+        "controls": [
+          {
+            "id": "CHANGE-MANAGEMENT.SDLC",
+            "class": "caisson-canonical-control",
+            "title": "Authorized, tested, and reviewed changes",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Change Management"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:CHANGE-MANAGEMENT.SDLC",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Changes to infrastructure and software are authorized, tested, and reviewed before deployment, with segregation between the party that develops a change and the party that approves its release to production."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "communication-information",
+        "class": "caisson-control-family",
+        "title": "Communication & Information",
+        "controls": [
+          {
+            "id": "COMMUNICATION.OBJECTIVES",
+            "class": "caisson-canonical-control",
+            "title": "Communication of security objectives and responsibilities",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Communication & Information"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:COMMUNICATION.OBJECTIVES",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Security objectives, policies, and individual responsibilities are communicated to internal personnel and, where relevant, to external parties; channels exist for personnel and third parties to report security concerns."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "conformity-assessment",
+        "class": "caisson-control-family",
+        "title": "Conformity Assessment",
+        "controls": [
+          {
+            "id": "CONFORMITY.ASSESSMENT-PROCEDURE",
+            "class": "caisson-canonical-control",
+            "title": "Conformity assessment before market placement",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Conformity Assessment"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:CONFORMITY.ASSESSMENT-PROCEDURE",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Before placing a high-risk AI system on the market or putting it into service, the provider carries out the applicable conformity assessment procedure for that system, and repeats the assessment in the event of a substantial modification to the system."
+              }
+            ]
+          },
+          {
+            "id": "CONFORMITY.DECLARATION-AND-MARKING",
+            "class": "caisson-canonical-control",
+            "title": "EU declaration of conformity and CE marking",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Conformity Assessment"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:CONFORMITY.DECLARATION-AND-MARKING",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The provider draws up a written EU declaration of conformity for each high-risk AI system, keeps it available to competent authorities for the regulatory period, and affixes the CE marking visibly, legibly, and indelibly to the system or its documentation before it is placed on the market."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "data-governance",
+        "class": "caisson-control-family",
+        "title": "Data Governance",
+        "controls": [
+          {
+            "id": "DATA-GOVERNANCE.TRAINING-DATA-QUALITY",
+            "class": "caisson-canonical-control",
+            "title": "Training, validation, and testing data governance",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Data Governance"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:DATA-GOVERNANCE.TRAINING-DATA-QUALITY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Training, validation, and testing datasets used to develop the high-risk AI system are subject to data governance practices covering relevant design choices, data collection and provenance, preparation and labelling, an examination for possible biases, and the identification of data gaps or shortcomings, so the datasets are relevant, sufficiently representative, and to the best extent possible free of errors for the system's intended purpose."
+              },
+              {
+                "name": "guidance",
+                "prose": "Record the data-governance decisions and the bias-examination outcome alongside the dataset version identifier so the gate is evidentiable against a specific training run, not asserted in the abstract."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "data-protection",
+        "class": "caisson-control-family",
+        "title": "Data Protection",
+        "controls": [
+          {
+            "id": "DATA-PROTECTION.DISPOSAL",
+            "class": "caisson-canonical-control",
+            "title": "Secure retention and disposal of confidential data",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Data Protection"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:DATA-PROTECTION.DISPOSAL",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Confidential data is retained only as long as required and then disposed of so that it is rendered unrecoverable; for encrypted data, destruction of the governing key (crypto-shred) is an accepted disposal mechanism."
+              }
+            ]
+          },
+          {
+            "id": "DATA-PROTECTION.ENCRYPTION",
+            "class": "caisson-canonical-control",
+            "title": "Encryption of sensitive data at rest and in transit",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Data Protection"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:DATA-PROTECTION.ENCRYPTION",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Sensitive and confidential data is encrypted at rest and in transit using current, industry-accepted algorithms, with keys managed under controlled custody and rotated on a defined schedule; plaintext sensitive data is never persisted outside an encrypted column."
+              },
+              {
+                "name": "guidance",
+                "prose": "Bind ciphertext to its row and tenant (row-scoped AAD) so a relocated ciphertext fails authentication rather than decrypting under another record."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "documentation-requirements",
+        "class": "caisson-control-family",
+        "title": "Documentation Requirements",
+        "controls": [
+          {
+            "id": "GOVERNANCE.DOCUMENTATION",
+            "class": "caisson-canonical-control",
+            "title": "Policies, procedures, and documentation retention",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Documentation Requirements"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:GOVERNANCE.DOCUMENTATION",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Security policies and procedures are documented, and required actions, activities, and assessments are recorded and retained for the regulatory period, available to those responsible for implementing them."
+              },
+              {
+                "name": "guidance",
+                "prose": "Retain the technical documentation and quality-management-system records for the regulation's post-market-placement floor; the WORM retention helper enforces the minimum so evidence is not disposed of early."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "governance",
+        "class": "caisson-control-family",
+        "title": "Governance",
+        "controls": [
+          {
+            "id": "GOVERNANCE.CONTROL-ENVIRONMENT",
+            "class": "caisson-canonical-control",
+            "title": "Control environment and commitment to integrity",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Governance"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:GOVERNANCE.CONTROL-ENVIRONMENT",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization establishes and maintains a documented control environment that sets the tone for security: a code of conduct, defined security policies, and management accountability for upholding them are in place and reviewed at least annually."
+              },
+              {
+                "name": "guidance",
+                "prose": "Maintain board-or-owner-approved security policies; record the annual review date and approver in the audit chain so the control environment is evidentiable, not asserted."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "human-oversight",
+        "class": "caisson-control-family",
+        "title": "Human Oversight",
+        "controls": [
+          {
+            "id": "HUMAN-OVERSIGHT.DESIGN",
+            "class": "caisson-canonical-control",
+            "title": "Human oversight built into system design",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Human Oversight"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:HUMAN-OVERSIGHT.DESIGN",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The high-risk AI system is designed and built, including with appropriate human-machine interface tools, so that it can be effectively overseen by natural persons during the period it is in use — able to understand the system's capacities and limitations, remain aware of the risk of automation bias, correctly interpret the system's output, and intervene in or halt the system's operation through a stop mechanism."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "incident-reporting",
+        "class": "caisson-control-family",
+        "title": "Incident Reporting",
+        "controls": [
+          {
+            "id": "INCIDENT-RESPONSE.SERIOUS-INCIDENT-REPORTING",
+            "class": "caisson-canonical-control",
+            "title": "Reporting of serious incidents",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Incident Reporting"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:INCIDENT-RESPONSE.SERIOUS-INCIDENT-REPORTING",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The provider reports any serious incident involving the high-risk AI system to the market surveillance authorities of the member states where the incident occurred, within the regulation's defined reporting timelines, and investigates the incident and the system in connection with it."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "incident-response",
+        "class": "caisson-control-family",
+        "title": "Incident Response",
+        "controls": [
+          {
+            "id": "INCIDENT-RESPONSE.HANDLING",
+            "class": "caisson-canonical-control",
+            "title": "Security incident response and recovery",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Incident Response"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:INCIDENT-RESPONSE.HANDLING",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "A documented procedure governs the identification, containment, eradication, and recovery of security incidents, including communication to affected parties; incidents and their resolutions are recorded for post-incident review."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "monitoring",
+        "class": "caisson-control-family",
+        "title": "Monitoring",
+        "controls": [
+          {
+            "id": "MONITORING.CONTROL-EVALUATION",
+            "class": "caisson-canonical-control",
+            "title": "Ongoing control monitoring and deficiency remediation",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Monitoring"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:MONITORING.CONTROL-EVALUATION",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization evaluates whether its controls are present and operating, communicates identified deficiencies to those responsible for corrective action, and tracks remediation to closure on a defined timeline."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "organizational-requirements",
+        "class": "caisson-control-family",
+        "title": "Organizational Requirements",
+        "controls": [
+          {
+            "id": "VENDOR-MANAGEMENT.BAA",
+            "class": "caisson-canonical-control",
+            "title": "Business associate agreements",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Organizational Requirements"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:VENDOR-MANAGEMENT.BAA",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Before a business associate creates, receives, maintains, or transmits ePHI on the organization's behalf, a written agreement binds the associate to safeguard the ePHI to the standard the organization is itself held to."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "physical-safeguards",
+        "class": "caisson-control-family",
+        "title": "Physical Safeguards",
+        "controls": [
+          {
+            "id": "PHYSICAL-SECURITY.DEVICE-MEDIA",
+            "class": "caisson-canonical-control",
+            "title": "Device and media controls",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Physical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:PHYSICAL-SECURITY.DEVICE-MEDIA",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The receipt, removal, reuse, and disposal of hardware and electronic media that contain ePHI are governed so that ePHI is not improperly disclosed or left recoverable on decommissioned media."
+              }
+            ]
+          },
+          {
+            "id": "PHYSICAL-SECURITY.FACILITY",
+            "class": "caisson-canonical-control",
+            "title": "Facility access controls",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Physical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:PHYSICAL-SECURITY.FACILITY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Physical access to facilities and systems that house ePHI is limited to authorized personnel, while ensuring properly authorized access is allowed."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "post-market-monitoring",
+        "class": "caisson-control-family",
+        "title": "Post-Market Monitoring",
+        "controls": [
+          {
+            "id": "MONITORING.POST-MARKET-PLAN",
+            "class": "caisson-canonical-control",
+            "title": "Post-market monitoring system",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Post-Market Monitoring"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:MONITORING.POST-MARKET-PLAN",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The provider establishes and documents a post-market monitoring system proportionate to the nature of the AI technology and the risks of the high-risk AI system, actively and systematically collecting, documenting, and analyzing relevant data on the system's performance throughout its lifecycle."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "provider-obligations",
+        "class": "caisson-control-family",
+        "title": "Provider Obligations",
+        "controls": [
+          {
+            "id": "GOVERNANCE.AUTHORITY-COOPERATION",
+            "class": "caisson-canonical-control",
+            "title": "Cooperation with competent authorities",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Provider Obligations"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:GOVERNANCE.AUTHORITY-COOPERATION",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Upon a reasoned request from a competent authority, the provider supplies all information and documentation necessary to demonstrate the high-risk AI system's conformity, in a language the authority can readily understand, and grants access to automatically generated logs that are within the provider's control."
+              }
+            ]
+          },
+          {
+            "id": "GOVERNANCE.QUALITY-MANAGEMENT-SYSTEM",
+            "class": "caisson-canonical-control",
+            "title": "Provider quality management system",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Provider Obligations"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:GOVERNANCE.QUALITY-MANAGEMENT-SYSTEM",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The provider operates a documented quality management system, proportionate to the size of the organization, covering its regulatory-compliance strategy, design-control and verification procedures, data-management procedures, the risk management system, and the post-market monitoring system — kept as systematic, orderly documentation in the form of written policies, procedures, and instructions."
+              }
+            ]
+          },
+          {
+            "id": "MONITORING.CORRECTIVE-ACTION",
+            "class": "caisson-canonical-control",
+            "title": "Corrective action and duty to inform on non-conformity",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Provider Obligations"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:MONITORING.CORRECTIVE-ACTION",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "When the provider has reason to consider that a high-risk AI system it has placed on the market does not conform to the regulation, it immediately takes the corrective action necessary to bring the system into conformity, withdraw it, disable it, or recall it as appropriate, and informs the relevant distributors, deployers, and competent authorities."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "record-keeping",
+        "class": "caisson-control-family",
+        "title": "Record-Keeping",
+        "controls": [
+          {
+            "id": "AUDIT.IMMUTABLE-LOG",
+            "class": "caisson-canonical-control",
+            "title": "Immutable, hash-chained audit log",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Record-Keeping"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:AUDIT.IMMUTABLE-LOG",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Security-relevant events are written to an append-only, hash-chained log that cannot be altered or deleted after the fact; integrity is verifiable against a trusted anchor so tampering, truncation, or rewriting is detectable."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "registration",
+        "class": "caisson-control-family",
+        "title": "Registration",
+        "controls": [
+          {
+            "id": "GOVERNANCE.EU-DATABASE-REGISTRATION",
+            "class": "caisson-canonical-control",
+            "title": "Registration in the EU database",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Registration"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:GOVERNANCE.EU-DATABASE-REGISTRATION",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Before placing a high-risk AI system on the market or putting it into service, the provider registers itself and the system in the EU database for high-risk AI systems, and keeps the registered information accurate and up to date."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "risk-management",
+        "class": "caisson-control-family",
+        "title": "Risk Management",
+        "controls": [
+          {
+            "id": "RISK-MANAGEMENT.AI-LIFECYCLE",
+            "class": "caisson-canonical-control",
+            "title": "AI system risk management across the lifecycle",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Risk Management"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:RISK-MANAGEMENT.AI-LIFECYCLE",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The provider establishes, implements, documents, and maintains a risk management system run as a continuous iterative process across the high-risk AI system's entire lifecycle (design, development, deployment, and monitoring): identifying and analyzing the known and reasonably foreseeable risks the system poses to health, safety, and fundamental rights, and adopting risk-elimination or risk-mitigation measures proportionate to those risks."
+              },
+              {
+                "name": "guidance",
+                "prose": "Tie each identified risk to a mitigation measure or an explicit accepted-risk decision, and re-run the iteration after any material change to the model, training data, or intended purpose so the risk register stays current, not a one-time assessment."
+              }
+            ]
+          },
+          {
+            "id": "RISK-MANAGEMENT.ASSESSMENT",
+            "class": "caisson-canonical-control",
+            "title": "Risk identification and assessment",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Risk Management"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:RISK-MANAGEMENT.ASSESSMENT",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization identifies risks to the achievement of its security objectives, analyzes them for likelihood and impact, and determines how each risk will be managed; the assessment is refreshed on a defined cadence and after significant change."
+              },
+              {
+                "name": "guidance",
+                "prose": "Tie each assessed risk to a control or an accepted-risk decision; retain the assessment and its date as evidence."
+              }
+            ]
+          },
+          {
+            "id": "RISK-MANAGEMENT.FRAUD",
+            "class": "caisson-canonical-control",
+            "title": "Consideration of fraud in risk assessment",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Risk Management"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:RISK-MANAGEMENT.FRAUD",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The risk assessment explicitly considers the potential for fraud, including unauthorized access, data exfiltration, and abuse of privilege, and the ways such acts could circumvent existing controls."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "system-operations",
+        "class": "caisson-control-family",
+        "title": "System Operations",
+        "controls": [
+          {
+            "id": "SYSTEM-OPERATIONS.DETECTION",
+            "class": "caisson-canonical-control",
+            "title": "Detection and monitoring of anomalies",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "System Operations"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:SYSTEM-OPERATIONS.DETECTION",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization monitors systems for indicators of compromise and configuration drift, and generates alerts on anomalous activity so that potential security events are detected rather than discovered after the fact."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "technical-documentation",
+        "class": "caisson-control-family",
+        "title": "Technical Documentation",
+        "controls": [
+          {
+            "id": "DOCUMENTATION.TECHNICAL-FILE",
+            "class": "caisson-canonical-control",
+            "title": "Technical documentation drawn up before market placement",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Technical Documentation"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:DOCUMENTATION.TECHNICAL-FILE",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Technical documentation is drawn up before the high-risk AI system is placed on the market or put into service and is kept up to date, demonstrating that the system complies with the applicable requirements and providing competent authorities the information needed to assess that compliance."
+              },
+              {
+                "name": "guidance",
+                "prose": "Structure the file against the regulation's technical-documentation outline: (1) general system description, (2) detailed description of the system's elements and development process, (3) monitoring/functioning/control, (4) performance-metric appropriateness, (5) the risk management system, (6) lifecycle changes, (7) harmonised standards applied, (8) the EU declaration of conformity, (9) the post-market monitoring plan — and version the file so each section's evidence is traceable to a specific release."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "technical-safeguards",
+        "class": "caisson-control-family",
+        "title": "Technical Safeguards",
+        "controls": [
+          {
+            "id": "ACCESS-CONTROL.AUTO-LOGOFF",
+            "class": "caisson-canonical-control",
+            "title": "Automatic logoff of inactive sessions",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Technical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:ACCESS-CONTROL.AUTO-LOGOFF",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Electronic sessions that access ePHI terminate automatically after a defined period of inactivity, reducing the risk of unauthorized access to an unattended workstation."
+              }
+            ]
+          },
+          {
+            "id": "ACCESS-CONTROL.EMERGENCY",
+            "class": "caisson-canonical-control",
+            "title": "Emergency access procedure",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Technical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:ACCESS-CONTROL.EMERGENCY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "A documented and tested procedure provides necessary access to ePHI during an emergency, while preserving attribution and a record of the emergency access for later review."
+              }
+            ]
+          },
+          {
+            "id": "ACCESS-CONTROL.UNIQUE-ID",
+            "class": "caisson-canonical-control",
+            "title": "Unique user identification",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Technical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:ACCESS-CONTROL.UNIQUE-ID",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Each user is assigned a unique identifier so that access to and actions on ePHI are attributable to a single individual; shared or anonymous accounts for ePHI access are prohibited."
+              }
+            ]
+          },
+          {
+            "id": "AUDIT.CONTROLS",
+            "class": "caisson-canonical-control",
+            "title": "Audit controls over ePHI systems",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Technical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:AUDIT.CONTROLS",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Hardware, software, or procedural mechanisms record and examine activity in systems that contain or use ePHI, so that access and changes are attributable and reviewable."
+              }
+            ]
+          },
+          {
+            "id": "AUTHENTICATION.ENTITY",
+            "class": "caisson-canonical-control",
+            "title": "Person or entity authentication",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Technical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:AUTHENTICATION.ENTITY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization verifies that a person or entity seeking access to ePHI is the one claimed before access is granted, using authentication that resists credential reuse."
+              }
+            ]
+          },
+          {
+            "id": "DATA-PROTECTION.ENCRYPTION-REST",
+            "class": "caisson-canonical-control",
+            "title": "Encryption of ePHI at rest",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Technical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:DATA-PROTECTION.ENCRYPTION-REST",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "ePHI maintained by the organization is encrypted at rest using a current, industry-accepted mechanism, with keys held under controlled custody so that exposure of the storage medium does not disclose plaintext ePHI."
+              }
+            ]
+          },
+          {
+            "id": "DATA-PROTECTION.INTEGRITY",
+            "class": "caisson-canonical-control",
+            "title": "ePHI integrity protection",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Technical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:DATA-PROTECTION.INTEGRITY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization protects ePHI from improper alteration or destruction and can detect when ePHI has been altered, both in storage and in transit."
+              }
+            ]
+          },
+          {
+            "id": "DATA-PROTECTION.TRANSMISSION",
+            "class": "caisson-canonical-control",
+            "title": "Transmission security for ePHI",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Technical Safeguards"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:DATA-PROTECTION.TRANSMISSION",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "ePHI transmitted over an electronic communications network is guarded against unauthorized access, including encryption of the transmission where appropriate to the risk."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "transparency",
+        "class": "caisson-control-family",
+        "title": "Transparency",
+        "controls": [
+          {
+            "id": "TRANSPARENCY.INSTRUCTIONS-FOR-USE",
+            "class": "caisson-canonical-control",
+            "title": "Transparency and instructions for use",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Transparency"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:TRANSPARENCY.INSTRUCTIONS-FOR-USE",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The high-risk AI system is designed so its operation is sufficiently transparent for deployers to interpret its output and use it appropriately, and is accompanied by instructions for use that disclose the provider's identity, the system's intended purpose, its level of accuracy and known limitations, and the human-oversight measures a deployer must implement."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "vendor-management",
+        "class": "caisson-control-family",
+        "title": "Vendor Management",
+        "controls": [
+          {
+            "id": "VENDOR-MANAGEMENT.THIRD-PARTY",
+            "class": "caisson-canonical-control",
+            "title": "Vendor and third-party risk management",
+            "props": [
+              {
+                "name": "caisson-family",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "Vendor Management"
+              }
+            ],
+            "links": [
+              {
+                "href": "urn:caisson:control:VENDOR-MANAGEMENT.THIRD-PARTY",
+                "rel": "canonical"
+              }
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "The organization assesses the security of vendors and subservice organizations that handle its data, binds them to security obligations by contract, and monitors their continued compliance over the life of the relationship."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

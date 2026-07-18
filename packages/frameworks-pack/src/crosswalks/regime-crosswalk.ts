@@ -30,10 +30,18 @@ import { parseStrict, strictObject } from "@caisson/kernel";
 
 /**
  * The three regimes ADR-0277 locks, plus `iso-27001` -- the fourth `regimes.ts`-pattern crosswalk
- * ADR-0333/ADR-0347 adds (own-authored, Legal-gate-capped at `maps-to`; see `regimes.ts`). FedRAMP
- * is explicitly OUT (single corpus mention, deferred).
+ * ADR-0333/ADR-0347 adds (own-authored, Legal-gate-capped at `maps-to`; see `regimes.ts`), plus
+ * `nist-800-53` -- the fifth (ADR-0363/ADR-0364, the oscal-spine SPEC; see `nist-800-53.ts`).
+ * FedRAMP itself is explicitly OUT (single corpus mention, deferred) -- the 800-53 axis is a
+ * reference-catalog crosswalk, never a FedRAMP-readiness claim.
  */
-export const RegimeId = z.enum(["soc2", "pci-dss", "gdpr", "iso-27001"]);
+export const RegimeId = z.enum([
+  "soc2",
+  "pci-dss",
+  "gdpr",
+  "iso-27001",
+  "nist-800-53",
+]);
 export type RegimeId = z.infer<typeof RegimeId>;
 
 /**
@@ -100,6 +108,27 @@ const rowBase = {
    * itself is a later-wave concern (ADR-0347 Fork G1 stages the actual join at the ISO crosswalk).
    */
   canonicalControlId: canonicalControlId.optional(),
+  /**
+   * NIST IR 8278A OLIR relationship vocabulary, verbatim (ADR-0364 F2) -- additive, `.strict()`-safe,
+   * optional on every row so the four existing crosswalks (soc2/pci-dss/gdpr/iso-27001) are
+   * untouched; in practice only `nist80053Crosswalk` (`nist-800-53.ts`) populates these three
+   * fields. `relationship` is the set-theory correspondence between what the Caisson mechanism
+   * actually covers and the cited requirement's scope; `rationale` is how that correspondence was
+   * determined; `strength` is NIST's own OPTIONAL 0-10 confidence value (IR 8278A prescribes no
+   * methodology for it). The `claim`/`maps-to` cap above is unaffected -- this vocabulary
+   * describes the mapping, it never promotes the claim.
+   */
+  relationship: z
+    .enum([
+      "subset-of",
+      "intersects-with",
+      "equal",
+      "superset-of",
+      "not-related-to",
+    ])
+    .optional(),
+  rationale: z.enum(["syntactic", "semantic", "functional"]).optional(),
+  strength: z.number().int().min(0).max(10).optional(),
 } as const;
 
 /**

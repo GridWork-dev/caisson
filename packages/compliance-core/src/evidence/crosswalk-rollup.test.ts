@@ -262,6 +262,84 @@ describe("computeCrosswalkRollup — ISO 27001 fourth view (ADR-0347 Fork G1, ca
   });
 });
 
+describe("computeCrosswalkRollup — NIST SP 800-53 fifth view (oscal-spine SPEC, task 4)", () => {
+  // Mirrors the ISO 27001 fourth-view block above exactly — the generalized loop must treat every
+  // canonicalControlId-carrying regime crosswalk identically, not special-case ISO.
+  test("an rls-force pass ALSO lights the NIST AC-3/AC-6 rows via ACCESS-CONTROL.LOGICAL's canonicalControlId", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([["ACCESS-CONTROL.LOGICAL", "ready"]]),
+      regimeCrosswalks,
+    });
+    const ac3 = cell(rollup.cells, "NIST-800-53", "AC-3");
+    const ac6 = cell(rollup.cells, "NIST-800-53", "AC-6");
+    expect(ac3?.status).toBe("ready");
+    expect(ac3?.claim).toBe("maps-to");
+    expect(ac3?.canonicalControlIds).toEqual(["ACCESS-CONTROL.LOGICAL"]);
+    expect(ac6?.status).toBe("ready");
+  });
+
+  test("the NIST cell's status tracks the joined control's status (gap propagates)", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([["AUDIT.IMMUTABLE-LOG", "gap"]]),
+      regimeCrosswalks,
+    });
+    expect(cell(rollup.cells, "NIST-800-53", "AU-9")?.status).toBe("gap");
+  });
+
+  test("a canonicalControlId absent from controlStatuses contributes no NIST cell", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([]),
+      regimeCrosswalks,
+    });
+    expect(cell(rollup.cells, "NIST-800-53", "AC-3")).toBeUndefined();
+  });
+
+  test("Legal gate: an NIST-800-53 cell never renders implements, even at maximum optimism", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([
+        ["ACCESS-CONTROL.LOGICAL", "ready"],
+        ["AUDIT.IMMUTABLE-LOG", "ready"],
+        ["DATA-PROTECTION.ENCRYPTION", "ready"],
+        ["DATA-PROTECTION.INTEGRITY", "ready"],
+        ["SYSTEM-OPERATIONS.DETECTION", "ready"],
+        ["AUTHENTICATION.ENTITY", "ready"],
+        ["DATA-PROTECTION.DISPOSAL", "ready"],
+      ]),
+      regimeCrosswalks,
+    });
+    const nistCells = rollup.cells.filter((c) => c.framework === "NIST-800-53");
+    expect(nistCells.length).toBeGreaterThan(0);
+    for (const c of nistCells) {
+      expect(c.claim).toBe("maps-to");
+    }
+  });
+
+  test("NIST-800-53 cells carry no OLIR-seed note (own-authored, not third-party-seeded)", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([["ACCESS-CONTROL.LOGICAL", "ready"]]),
+      regimeCrosswalks,
+    });
+    expect(cell(rollup.cells, "NIST-800-53", "AC-3")?.note).toBeUndefined();
+  });
+
+  test("ISO and NIST views coexist — the same canonicalControlId lights both, distinct references", () => {
+    const rollup = computeCrosswalkRollup({
+      catalogs: CATALOGS,
+      controlStatuses: statuses([["AUDIT.IMMUTABLE-LOG", "ready"]]),
+      regimeCrosswalks,
+    });
+    expect(cell(rollup.cells, "ISO-27001", "A.8.15")?.status).toBe("ready");
+    expect(cell(rollup.cells, "NIST-800-53", "AU-2")?.status).toBe("ready");
+    expect(cell(rollup.cells, "NIST-800-53", "AU-9")?.status).toBe("ready");
+    expect(cell(rollup.cells, "NIST-800-53", "AU-11")?.status).toBe("ready");
+  });
+});
+
 describe("computeCrosswalkRollup — determinism", () => {
   test("cells are sorted (framework, reference) regardless of catalogs input order", () => {
     const a = computeCrosswalkRollup({
