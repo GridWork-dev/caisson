@@ -164,7 +164,9 @@ const reserveCoreSchema = strictObject({
   model: z.string().min(1),
   lane: z.string().min(1),
   messages: z.array(estimateMessageSchema),
-  maxOutputTokens: z.number().int().positive().optional(),
+  // 0 is legal (ADR-0360 S2): a non-generating action (a tool step) reserves with empty messages +
+  // maxOutputTokens 0 — a zero-credit reservation that still runs the breaker/caps gate up front.
+  maxOutputTokens: z.number().int().nonnegative().optional(),
   keySource: z.enum(["env", "tenant"]).optional(),
 });
 
