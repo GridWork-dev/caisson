@@ -1,4 +1,4 @@
-// Exit-gate proof for the bounded tool loop (CAISSON-111 S2, ADR-0360 U-1). Same deterministic
+// Exit-gate proof for the bounded tool loop (the agent-runtime loop slice, ADR-0360 U-1). Same deterministic
 // harness as gateway.test.ts: PGlite + production withTenant + MockLanguageModelV4 (zero network),
 // the fixed METER price book making the integer money math exact. Proves the spike-pattern-(d)
 // contract: reserve-before-step / settle-after-step in the loop's own try/catch, fail-closed

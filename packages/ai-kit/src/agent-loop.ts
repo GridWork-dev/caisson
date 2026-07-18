@@ -1,4 +1,4 @@
-// The bounded tool loop (CAISSON-111 S2, ADR-0360 U-1) — the caller-owned per-step harness the
+// The bounded tool loop (the agent-runtime loop slice, ADR-0360 U-1) — the caller-owned per-step harness the
 // v7 seam spike blessed as pattern (d): one `generateText` per step (`stopWhen: stepCountIs(1)`,
 // `responseMessages` threaded forward), with reserve-before-step and settle-after-step in THIS
 // module's own try/catch — NEVER in an SDK lifecycle callback (`onStepEnd` swallows throws;
