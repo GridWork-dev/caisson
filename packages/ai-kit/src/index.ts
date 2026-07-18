@@ -8,6 +8,16 @@
 
 // The gateway + the provider-registry resolver (AI-SDK core only — no vendor SDK here).
 export { buildRegistryResolver, infer, inferStream } from "./gateway.ts";
+
+// The bounded tool loop (CAISSON-111 S2): the governed per-step harness — reserve/settle around
+// every model AND tool step, fail-closed budget + trajectory envelope (SPIKE-v7-seam pattern d).
+export { runToolLoop } from "./agent-loop.ts";
+export type {
+  LoopTool,
+  RunToolLoopOptions,
+  ToolLoopFailureCode,
+  ToolLoopResult,
+} from "./agent-loop.ts";
 export type {
   GuardConfig,
   InferInput,
