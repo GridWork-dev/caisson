@@ -247,6 +247,78 @@
         "note": "Seeded from the NIST OLIR SP 800-53 rev5 <-> ISO/IEC 27001:2022 mapping. OLIR's own mappings are subjective, incomplete, and not equivalence claims."
       },
       {
+        "framework": "NIST-800-53",
+        "reference": "AC-3",
+        "canonicalControlIds": [
+          "ACCESS-CONTROL.LOGICAL"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "ACCESS-CONTROL.LOGICAL"
+        ]
+      },
+      {
+        "framework": "NIST-800-53",
+        "reference": "AC-6",
+        "canonicalControlIds": [
+          "ACCESS-CONTROL.LOGICAL"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "ACCESS-CONTROL.LOGICAL"
+        ]
+      },
+      {
+        "framework": "NIST-800-53",
+        "reference": "AU-11",
+        "canonicalControlIds": [
+          "AUDIT.IMMUTABLE-LOG"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "AUDIT.IMMUTABLE-LOG"
+        ]
+      },
+      {
+        "framework": "NIST-800-53",
+        "reference": "AU-2",
+        "canonicalControlIds": [
+          "AUDIT.IMMUTABLE-LOG"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "AUDIT.IMMUTABLE-LOG"
+        ]
+      },
+      {
+        "framework": "NIST-800-53",
+        "reference": "AU-9",
+        "canonicalControlIds": [
+          "AUDIT.IMMUTABLE-LOG"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "AUDIT.IMMUTABLE-LOG"
+        ]
+      },
+      {
+        "framework": "NIST-800-53",
+        "reference": "MP-6",
+        "canonicalControlIds": [
+          "DATA-PROTECTION.DISPOSAL"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "DATA-PROTECTION.DISPOSAL"
+        ]
+      },
+      {
         "framework": "SOC2-TSC",
         "reference": "C1.2",
         "canonicalControlIds": [
