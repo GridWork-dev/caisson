@@ -3,7 +3,7 @@
 // sorts by `seq` first, so a shuffled batch (e.g. out-of-order stream delivery) resolves to one
 // canonical result. This is the shape evals score and the audit chain can anchor; it is a pure
 // function of the event log, never of wall-clock or map-iteration order.
-import type { BillingStatus, TrajectoryEvent } from "./schema.ts";
+import type { BillingStatus, DigestRef, TrajectoryEvent } from "./schema.ts";
 
 /** One node in the run's step tree, children ordered by the seq of their `step.started`. */
 export interface StepNode {
@@ -134,4 +134,133 @@ export function project(events: readonly TrajectoryEvent[]): RunProjection {
   }
 
   return { runId, status, steps: roots, usageTotals, checkpoints };
+}
+
+// --- projectToolCalls — a SIBLING projection (ADR-0360 U-7) ------------------------------------
+// Folds `tool.proposed`/`tool.approved`/`tool.denied`/`tool.result` into one scored-consumable
+// list per toolCallId, ordered by proposal seq. This does NOT touch `project()`/`RunProjection` —
+// tool.* events still carry no state in that fold (the comment above says so and stays true) — so
+// every existing `project()` input keeps its existing byte-identical output. Same determinism
+// discipline: sort by `seq` first, so shuffled arrival still folds to one canonical result.
+
+/** One proposed tool call's outcome, folded from the approval + result events that named its
+ *  `toolCallId` (if any arrived). Absent `approval`/`result` means the call is still in flight
+ *  (parked awaiting approval, or approved-but-not-yet-settled) — a scorer treats that as "nothing
+ *  to audit yet", not a violation. */
+export interface ToolCallApproval {
+  readonly outcome: "approved" | "denied";
+  readonly actor: string;
+  readonly seq: number;
+  readonly reason?: string;
+}
+
+export interface ToolCallResultMark {
+  readonly ok: boolean;
+  readonly seq: number;
+  readonly exitCode?: number;
+}
+
+export interface ToolCallProjection {
+  readonly toolCallId: string;
+  readonly stepId: string;
+  readonly name: string;
+  /** The tool's arguments, digest-referenced only (AR-4) — never the raw body. */
+  readonly args: DigestRef;
+  readonly proposedSeq: number;
+  readonly approval?: ToolCallApproval;
+  readonly result?: ToolCallResultMark;
+}
+
+/**
+ * Fold a log's tool.proposed/approved/denied/result events into one entry per `toolCallId`,
+ * ordered by proposal seq — the shape a trajectory-quality scorer (ADR-0360 U-7, `@caisson/ai-
+ * evals`) reads: which tool, what it argued (digest only), who approved/denied it and how, and
+ * whether it succeeded. An approval/result event naming a `toolCallId` with no matching
+ * `tool.proposed` (a malformed/partial log) is dropped rather than synthesizing a call — mirrors
+ * `project()`'s own defensive handling of an orphaned `step.finished`.
+ */
+export function projectToolCalls(
+  events: readonly TrajectoryEvent[],
+): ToolCallProjection[] {
+  const ordered = [...events].sort((a, b) => a.seq - b.seq);
+
+  interface MutableToolCall {
+    toolCallId: string;
+    stepId: string;
+    name: string;
+    args: DigestRef;
+    proposedSeq: number;
+    approval?: ToolCallApproval;
+    result?: ToolCallResultMark;
+  }
+  const byId = new Map<string, MutableToolCall>();
+  const order: string[] = [];
+
+  for (const e of ordered) {
+    switch (e.kind) {
+      case "tool.proposed": {
+        if (!byId.has(e.payload.toolCallId)) order.push(e.payload.toolCallId);
+        byId.set(e.payload.toolCallId, {
+          toolCallId: e.payload.toolCallId,
+          stepId: e.payload.stepId,
+          name: e.payload.name,
+          args: e.payload.args,
+          proposedSeq: e.seq,
+        });
+        break;
+      }
+      case "tool.approved": {
+        const call = byId.get(e.payload.toolCallId);
+        if (call !== undefined) {
+          call.approval = {
+            outcome: "approved",
+            actor: e.payload.actor,
+            seq: e.seq,
+          };
+        }
+        break;
+      }
+      case "tool.denied": {
+        const call = byId.get(e.payload.toolCallId);
+        if (call !== undefined) {
+          call.approval = {
+            outcome: "denied",
+            actor: e.payload.actor,
+            seq: e.seq,
+            ...(e.payload.reason !== undefined
+              ? { reason: e.payload.reason }
+              : {}),
+          };
+        }
+        break;
+      }
+      case "tool.result": {
+        const call = byId.get(e.payload.toolCallId);
+        if (call !== undefined) {
+          call.result = {
+            ok: e.payload.ok,
+            seq: e.seq,
+            ...(e.payload.exitCode !== undefined
+              ? { exitCode: e.payload.exitCode }
+              : {}),
+          };
+        }
+        break;
+      }
+      // run.*/step.*/model.*/checkpoint carry no tool-call state in this fold.
+      default:
+        break;
+    }
+  }
+
+  return order.map((id) => {
+    const call = byId.get(id);
+    /* c8 ignore next 3 -- id came from byId's own keys, set in the same loop above */
+    if (call === undefined) {
+      throw new Error(
+        `projectToolCalls: internal invariant violated for ${id}`,
+      );
+    }
+    return call;
+  });
 }

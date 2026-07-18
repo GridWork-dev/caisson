@@ -22,6 +22,7 @@
     "eval": "bun run ./src/eval.cli.ts"
   },
   "dependencies": {
+    "@caisson/agent-trajectory": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

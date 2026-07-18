@@ -13,6 +13,12 @@ import { defineEval, parseDataset } from "./define-eval.ts";
 import type { EvalRun, Grader } from "./index.ts";
 import { injectionGrader, judgeGrader, regexGrader } from "./graders.ts";
 import { cassetteJudge, parseCassette } from "./judge.ts";
+import {
+  trajectoryApprovalComplianceGrader,
+  trajectoryBudgetAdherenceGrader,
+  trajectoryToolChoiceGrader,
+  trajectoryUnnecessaryCallGrader,
+} from "./trajectory-graders.ts";
 
 // Fixtures live at the package root (one level up from `src/`), the layout the harness tests assert.
 const PKG_ROOT = join(import.meta.dir, "..");
@@ -56,7 +62,32 @@ async function runSuite(): Promise<readonly EvalRun[]> {
     wilsonFloor: 0.8,
   });
 
-  return [compliance, injection];
+  // Trajectory-quality (ADR-0360 U-7): all four graders are deterministic — no cassette, no judge.
+  // The dataset deliberately carries one RED case per grader (incl. the parent-SPEC acceptance row,
+  // a budget-violation case) so the mean sits below a perfect 1.0 by design; `threshold` (0.8, set
+  // in the committed dataset) is the bar a real regression must cross to redden this gate — the
+  // per-case isolation proof (each red case fails exactly ONE scorer) lives in
+  // trajectory-quality.eval.test.ts, not here.
+  const trajectoryDataset = parseDataset(
+    readJson("__evals__/trajectory-quality.case.json"),
+  );
+  const trajectory = await defineEval({
+    name: trajectoryDataset.eval,
+    promptVersionId: trajectoryDataset.promptVersionId,
+    ...(trajectoryDataset.promptRef !== undefined
+      ? { promptRef: trajectoryDataset.promptRef }
+      : {}),
+    threshold: trajectoryDataset.threshold,
+    cases: trajectoryDataset.cases,
+    scorers: {
+      "tool-choice": trajectoryToolChoiceGrader(),
+      "unnecessary-call": trajectoryUnnecessaryCallGrader(),
+      "approval-compliance": trajectoryApprovalComplianceGrader(),
+      "budget-adherence": trajectoryBudgetAdherenceGrader(),
+    },
+  });
+
+  return [compliance, injection, trajectory];
 }
 
 function report(gate: BaselineGateResult): void {

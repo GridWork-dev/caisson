@@ -60,6 +60,7 @@ export {
   compareToBaseline,
   loadBaseline,
   gateAgainstBaseline,
+  assertRunEligibleForBaseline,
 } from "./baseline.ts";
 export type {
   BaselineEntry,
@@ -115,3 +116,19 @@ export {
   fleissKappa,
 } from "./agreement.ts";
 export type { StabilityResult } from "./agreement.ts";
+
+// Trajectory graders (ADR-0360 U-7) — the one accepted new dependency, on @caisson/agent-trajectory
+// (primitive->primitive). Deterministic: tool-choice vs allowlist, unnecessary-call detection,
+// approval compliance, and budget adherence, over the agent-runtime bounded loop's own event log.
+export {
+  buildTrajectoryFixture,
+  trajectoryApprovalComplianceGrader,
+  trajectoryBudgetAdherenceGrader,
+  trajectoryToolChoiceGrader,
+  trajectoryUnnecessaryCallGrader,
+} from "./trajectory-graders.ts";
+export type {
+  TrajectoryCaseKind,
+  TrajectoryExpected,
+  TrajectoryFixture,
+} from "./trajectory-graders.ts";
