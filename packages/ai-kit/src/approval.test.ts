@@ -382,6 +382,43 @@ describe("approveToolCall / denyToolCall — orchestration (in-memory)", () => {
     });
   });
 
+  test("F2 self-heal: a crash-shaped retry (CAS committed, append missing) still ends with tool.approved present", async () => {
+    await seed(100);
+    const { model } = scriptedModel([toolCallResult("call-1")]);
+    const store = createMemoryTrajectoryStore();
+    const runState = createMemoryRunStateStore();
+    const parked = await runToolLoop(loopOpts(model, store, runState));
+    expect(parked.status).toBe("parked");
+
+    // Simulate the crash: the run-state CAS commits (mirrors what approveToolCall's first line
+    // does), but the process dies before the trajectory append runs.
+    const direct = await runState.approve(parked.runId, "call-1", 1);
+    expect(direct.wasNoop).toBe(false);
+    expect(await store.read(parked.runId)).not.toContainEqual(
+      expect.objectContaining({ kind: "tool.approved" }),
+    );
+
+    // The retry: a fresh approveToolCall call sees wasNoop=true (the CAS already committed) and
+    // must self-heal the missing append rather than silently accepting "already decided".
+    const { jobs, enqueued } = capturingJobs();
+    const retried = await approveToolCall(
+      { store, runState, jobs },
+      parked.runId,
+      "call-1",
+      "operator@example.com",
+    );
+    expect(retried.status).toBe("running");
+
+    const events = await store.read(parked.runId);
+    const approvals = events.filter((e) => e.kind === "tool.approved");
+    expect(approvals).toHaveLength(1);
+    expect(approvals[0]?.payload).toMatchObject({
+      toolCallId: "call-1",
+      actor: "operator@example.com",
+    });
+    expect(enqueued).toHaveLength(1); // the wake signal still fires
+  });
+
   test("approve requires a non-empty actor", async () => {
     const store = createMemoryTrajectoryStore();
     const runState = createMemoryRunStateStore();
@@ -646,5 +683,13 @@ describe("park/approve/resume across a REAL process boundary (PGlite, fresh stor
       "run.finished",
     ]);
     expect(await bal()).toBe(100 - resumed.creditsSpent);
+
+    // RETENTION (security audit finding 1): a successful terminal resume clears parked_state —
+    // the plaintext conversation snapshot has no further use once the run is done.
+    const rows = await tp.query<{ parked_state: unknown }>(
+      `SELECT parked_state FROM agent_run_state WHERE run_id = $1`,
+      [parked.runId],
+    );
+    expect(rows[0]?.parked_state).toBeNull();
   });
 });

@@ -1087,7 +1087,7 @@ export async function resumeToolLoop(
       status: "ok",
     });
 
-    return await runSteps(
+    const result = await runSteps(
       engine,
       opts,
       sdkTools,
@@ -1096,6 +1096,18 @@ export async function resumeToolLoop(
       parked.stepsUsed + 1,
       state,
     );
+    if (result.status === "completed") {
+      // RETENTION (security audit finding 1): a successful terminal resume clears parked_state
+      // too — cheap (one best-effort CAS already used for the failure path below) and closes the
+      // same liability. A re-park (result.status === "parked") already wrote a fresh row via
+      // runToolCallBatch's own `park()` call, so nothing to do here in that case.
+      try {
+        await runState.finish(runId);
+      } catch {
+        // Best-effort — the trajectory's run.finished is the authority on the run's outcome.
+      }
+    }
+    return result;
   } catch (err) {
     if (err instanceof LoopParked) {
       return {

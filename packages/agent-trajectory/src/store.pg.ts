@@ -21,10 +21,18 @@
 //
 // DUAL-WRITE RESIDUAL (documented, mirrors audit-worm's own "KNOWN BOUND" note): because each
 // append is its own transaction, a crash between two related appends (e.g. `approveToolCall`'s
-// run-state CAS commit and its `tool.approved` trajectory append) is not atomic. Both operations are
-// independently idempotent/retry-safe (`RunStateStore.approve`'s `wasNoop`, this store's
-// byte-identical-reappend rule), which bounds the failure mode to "requires an operator retry", never
-// a silent double-write.
+// run-state CAS commit and its `tool.approved` trajectory append) is not atomic. This store's own
+// append-only semantics (idempotent byte-identical re-append, gap/rewrite rejection) prevent a
+// silent DOUBLE-write on any retry, but — corrected claim (security audit F2, this was previously
+// overstated here): a bare retry of the CAS alone does NOT recover a missing append by itself,
+// because `RunStateStore.approve`'s `wasNoop` on a retry means "already decided", so a caller that
+// only re-runs the CAS and gates its append on `!wasNoop` would skip the append FOREVER — the
+// crash window would otherwise be a silently lost audit record, not a recoverable one. The actual
+// recovery is the CALLER's job: `@caisson/ai-kit`'s `approveToolCall` reads the log tail on a
+// `wasNoop` retry and re-appends `tool.approved` if it's missing (self-heal), and
+// `@caisson/cli`'s `run.ts` avoids the window entirely by running the CAS and the append in ONE
+// transaction. This store provides the idempotency primitive; it does not itself guarantee
+// recovery — a caller composing raw appends around a CAS must do one of those two things.
 //
 // Semantics mirror the in-memory store exactly (its tests are the contract, per the PLAN): a
 // byte-identical re-append at an already-recorded seq is idempotent (safe retry after a dropped
