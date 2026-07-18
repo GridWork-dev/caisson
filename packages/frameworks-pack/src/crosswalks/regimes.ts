@@ -1,6 +1,8 @@
 /**
- * The four named-regime crosswalks: SOC 2, PCI DSS, and GDPR (ADR-0277), plus ISO/IEC 27001:2022
- * (ADR-0333/ADR-0347, added as a fourth `regimes.ts`-pattern crosswalk). CLEAN-ROOM, OWN-AUTHORED.
+ * The five named-regime crosswalks: SOC 2, PCI DSS, and GDPR (ADR-0277), ISO/IEC 27001:2022
+ * (ADR-0333/ADR-0347, added as a fourth `regimes.ts`-pattern crosswalk), and NIST SP 800-53 rev5
+ * (ADR-0363/ADR-0364, added as a fifth — authored in the sibling `nist-800-53.ts`, re-exported
+ * here into the shared `regimeCrosswalks` array). CLEAN-ROOM, OWN-AUTHORED.
  *
  * Every `summary` is an original Caisson paraphrase of the requirement — we do NOT copy or transform
  * the AICPA Trust Services Criteria, the PCI DSS standard text, the GDPR articles, or the ISO/IEC
@@ -32,6 +34,7 @@ import {
   defineRegimeCrosswalk,
   type RegimeCrosswalk,
 } from "./regime-crosswalk.ts";
+import { nist80053Crosswalk } from "./nist-800-53.ts";
 
 /** Caisson crosswalk data version — dated, versioned like the framework catalogs (bumped on any edit). */
 const CROSSWALK_VERSION = "2026.1";
@@ -476,10 +479,11 @@ export const iso27001Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
   ],
 });
 
-/** All four regime crosswalks, for iteration in tests and by a consumer that exports the whole set. */
+/** All five regime crosswalks, for iteration in tests and by a consumer that exports the whole set. */
 export const regimeCrosswalks: readonly RegimeCrosswalk[] = [
   soc2Crosswalk,
   pciDssCrosswalk,
   gdprCrosswalk,
   iso27001Crosswalk,
+  nist80053Crosswalk,
 ];

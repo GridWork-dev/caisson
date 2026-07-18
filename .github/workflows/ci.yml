@@ -191,7 +191,10 @@ jobs:
     # `check` job SKIPS these tests (oscal-cli is not installed there), so this is where the
     # ground-truth NIST schema validation actually runs. Validation is schema-only
     # (--disable-constraint-validation): constraint checks resolve the published import-ap URL, a
-    # deploy-time concern, not export well-formedness.
+    # deploy-time concern, not export well-formedness. Extended by the oscal-spine SPEC (task 2,
+    # ADR-0363/0364) with two direct JSON `oscal-cli validate` legs (no XML conversion needed for a
+    # schema-only check): the generated caisson catalog, and the vendored NIST SP 800-53 rev5
+    # catalog itself (a corruption check on the committed bytes — binding requirement 1).
     # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
@@ -224,3 +227,11 @@ jobs:
           oscal-cli --version
           # The OSCAL export moved from packages/compliance to the compliance-core carve (ADR-0257 W1).
           cd packages/compliance-core && bun test src/evidence/oscal-export-xml.test.ts
+      - name: generate + validate the caisson OSCAL catalog (oscal-spine SPEC task 2, v1.2.2)
+        run: |
+          cd packages/compliance-core
+          bun run scripts/gen-catalog-for-ci.ts /tmp/caisson-catalog.oscal.json
+          oscal-cli validate --disable-constraint-validation /tmp/caisson-catalog.oscal.json
+      - name: validate the vendored NIST SP 800-53 rev5 catalog (corruption check, binding req 1)
+        run: |
+          oscal-cli validate --disable-constraint-validation packages/frameworks-pack/src/vendor/nist-800-53-rev5-catalog.json

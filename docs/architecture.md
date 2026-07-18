@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-17
+updated: 2026-07-18
 status: live
 grounds:
   - package.json
@@ -111,12 +111,12 @@ checkpoint scheduler on `caisson-license` ships inert pending the operator armin
 
 ## 4. The gate stack
 
-| Check               | Where it lives                                                                 | Guards                                                                                                                                                                                                                               |
-| ------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `standards-gate`    | `.github/workflows/ci.yml` → `tooling/standards-gate/src/cli.ts` (`checks.ts`) | the SPDX/license authority — AGPL boundary, open-core split, down-only, manifest↔package.json agreement, RLS equivalence, shipped-prose, entitlement-token leaks. Runs pre-install (fs-only) AND post-install (needs `node_modules`) |
-| `check`             | `.github/workflows/ci.yml`                                                     | `turbo run build lint test` (the full workspace — 51 `packages/` + apps + services + tooling, no `--filter`) + `bun run gate` (`packages/kernel/src/gate.ts`)                                                                        |
-| `registry-index`    | `.github/workflows/ci.yml`                                                     | `registry/index.json` is a byte-identical rebuild from the git-tracked ledger — proves CI (not a hand-edit) produced it                                                                                                              |
-| `oscal-conformance` | `.github/workflows/ci.yml` (`blacksmith-4vcpu-ubuntu-2404`, ADR-0326)          | NIST OSCAL v1.2.2 JSON→XML→schema round-trip via `oscal-cli` (Maven), for `packages/compliance`                                                                                                                                      |
+| Check               | Where it lives                                                                 | Guards                                                                                                                                                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `standards-gate`    | `.github/workflows/ci.yml` → `tooling/standards-gate/src/cli.ts` (`checks.ts`) | the SPDX/license authority — AGPL boundary, open-core split, down-only, manifest↔package.json agreement, RLS equivalence, shipped-prose, entitlement-token leaks. Runs pre-install (fs-only) AND post-install (needs `node_modules`)                            |
+| `check`             | `.github/workflows/ci.yml`                                                     | `turbo run build lint test` (the full workspace — 51 `packages/` + apps + services + tooling, no `--filter`) + `bun run gate` (`packages/kernel/src/gate.ts`)                                                                                                   |
+| `registry-index`    | `.github/workflows/ci.yml`                                                     | `registry/index.json` is a byte-identical rebuild from the git-tracked ledger — proves CI (not a hand-edit) produced it                                                                                                                                         |
+| `oscal-conformance` | `.github/workflows/ci.yml` (`blacksmith-4vcpu-ubuntu-2404`, ADR-0326)          | NIST OSCAL v1.2.2 JSON→XML→schema round-trip via `oscal-cli` (Maven), for `packages/compliance`; plus two direct JSON `oscal-cli validate` legs (ADR-0363/0364, oscal-spine): the generated caisson catalog and the vendored NIST SP 800-53 rev5 catalog itself |
 
 `standards-gate` + `check` + `registry-index` + `oscal-conformance` + `deterministic` (the pinned security-scan gate, ADR-0327) are the 5 unconditional required checks (ADR-0016);
 the `greptile-gate` review check was RETIRED with the vendor (2026-07-06 — review is the
