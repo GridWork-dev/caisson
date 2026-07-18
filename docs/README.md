@@ -35,6 +35,7 @@ the source-of-truth hierarchy in `CLAUDE.md` wins (board > ADRs > specs > `docs/
 | The live work tracker: operator-owed / build-gated / trigger-parked / recently closed                                                                                     | `docs/state/outstanding-work.md`                                                                             |
 | Deploy log: what was redeployed, why, and the pasted live-verify evidence                                                                                                 | `docs/deploy/STATE.md`                                                                                       |
 | Operational procedures: launch runbook, live-verification harness, live-transport checklist, incident response, DB restore                                                | `docs/ops/`                                                                                                  |
+| Every open operator act (walkthrough checklist) + the rendered standing live-state synthesis (Claude artifact)                                                            | `docs/ops/operator-walkthrough.md`                                                                           |
 
 **Routing rules (mirrors `identity/index.md`):** each topic resolves to exactly one owning
 file; a dead pointer is a bug. The per-aspect files own the _synthesized view_; the
