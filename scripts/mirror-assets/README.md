@@ -1,5 +1,8 @@
 # Caisson
 
+[![CI](https://github.com/caisson-sh/caisson-oss/actions/workflows/ci.yml/badge.svg)](https://github.com/caisson-sh/caisson-oss/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/github/license/caisson-sh/caisson-oss)](https://github.com/caisson-sh/caisson-oss/blob/main/LICENSE)
+
 > This repository is a **generated, read-only mirror** of the open (Apache-2.0) packages in the
 > private Caisson monorepo — development, history, and PRs live there; every commit here is a
 > mirror sync (see `MIRROR-MANIFEST.json` for the source commit and `CONTRIBUTING.md` for how to
@@ -111,6 +114,8 @@ every sync.
 
 - Docs and self-serve purchase: [caisson.sh](https://caisson.sh)
 - Bugs in the open base: open an issue on this repository's tracker.
+- Other ways to get help: [SUPPORT.md](SUPPORT.md)
+- Report a vulnerability: [SECURITY.md](SECURITY.md) — do not open a public issue.
 
 ## License
 

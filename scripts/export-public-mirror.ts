@@ -35,7 +35,7 @@ import {
   createPublicKey,
   verify as cryptoVerify,
 } from "node:crypto";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 const APACHE = "Apache-2.0";
 const COMMERCIAL = "LicenseRef-Caisson-Commercial";
@@ -373,6 +373,30 @@ function rewriteTsconfigRefs(pkgDir: string): void {
  *  three well-known doc files at the package root — never recurses (a package's own docs, not its
  *  templates/fixtures data, which stay governed by `REWRITE_SKIP_DIRS`). */
 const PACKAGE_PROSE_FILES = ["README.md", "CHANGELOG.md", "AGENTS.md"];
+
+/** GTM / community-health assets copied verbatim from scripts/mirror-assets/ into every export.
+ *  `dest` is relative to outDir; `src` is relative to scripts/mirror-assets/. A pure data table
+ *  (rather than inline cpSync calls) so export-public-mirror.test.ts can pin that a new asset is
+ *  actually wired in without running the full export. */
+export const MIRROR_ASSET_FILES: ReadonlyArray<{
+  readonly src: string;
+  readonly dest: string;
+}> = [
+  { src: "README.md", dest: "README.md" },
+  { src: "CONTRIBUTING.md", dest: "CONTRIBUTING.md" },
+  { src: "TRADEMARK.md", dest: "TRADEMARK.md" },
+  { src: "SECURITY.md", dest: "SECURITY.md" },
+  { src: "SUPPORT.md", dest: "SUPPORT.md" },
+  { src: "CODE_OF_CONDUCT.md", dest: "CODE_OF_CONDUCT.md" },
+  { src: "eslint.config.js", dest: "eslint.config.js" },
+  { src: ".prettierignore", dest: ".prettierignore" },
+  { src: "ci.yml", dest: ".github/workflows/ci.yml" },
+  { src: "publish.yml", dest: ".github/workflows/publish.yml" },
+  {
+    src: "ISSUE_TEMPLATE/bug_report.md",
+    dest: ".github/ISSUE_TEMPLATE/bug_report.md",
+  },
+];
 
 /** Findings 6efc5c3da5addb5a / 7023e53bc240b60f / a7f243986de1287f: README/CHANGELOG/AGENTS.md
  *  prose and source comments across the mirror cite bare internal ADR decision-log ids in
@@ -843,21 +867,17 @@ function main(): void {
     ].join("\n"),
   );
 
-  // GTM assets (README / CONTRIBUTING / TRADEMARK / mirror CI / mirror publish), authored
-  // under scripts/mirror-assets/. TRADEMARK.md must ship before the mirror goes public
-  // (ADR-0319 — Apache-2.0 §6 grants no trademark rights; the policy closes the gap).
+  // GTM / community-health assets (README / CONTRIBUTING / TRADEMARK / SECURITY / SUPPORT /
+  // CODE_OF_CONDUCT / mirror CI / mirror publish / issue template), authored under
+  // scripts/mirror-assets/ per the MIRROR_ASSET_FILES table above. TRADEMARK.md must ship
+  // before the mirror goes public (ADR-0319 — Apache-2.0 §6 grants no trademark rights; the
+  // policy closes the gap).
   const assets = join(repoRoot, "scripts/mirror-assets");
-  cpSync(join(assets, "README.md"), join(outDir, "README.md"));
-  cpSync(join(assets, "CONTRIBUTING.md"), join(outDir, "CONTRIBUTING.md"));
-  cpSync(join(assets, "TRADEMARK.md"), join(outDir, "TRADEMARK.md"));
-  cpSync(join(assets, "eslint.config.js"), join(outDir, "eslint.config.js"));
-  cpSync(join(assets, ".prettierignore"), join(outDir, ".prettierignore"));
-  mkdirSync(join(outDir, ".github/workflows"), { recursive: true });
-  cpSync(join(assets, "ci.yml"), join(outDir, ".github/workflows/ci.yml"));
-  cpSync(
-    join(assets, "publish.yml"),
-    join(outDir, ".github/workflows/publish.yml"),
-  );
+  for (const { src, dest } of MIRROR_ASSET_FILES) {
+    const destPath = join(outDir, dest);
+    mkdirSync(dirname(destPath), { recursive: true });
+    cpSync(join(assets, src), destPath);
+  }
 
   // registry.json — the shadcn GitHub-source registry over the exported @caisson/ui components
   // (Kickoff T task 13 / ADR-0343): `bunx shadcn@latest add caisson-sh/caisson-oss/<item>`.
