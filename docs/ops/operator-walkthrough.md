@@ -41,11 +41,7 @@ request; the repo owns truth, the artifact restates.
 
 ## Dashboard reads (2–5 minutes each; unblocks audit reruns)
 
-- [ ] **OpenRouter** — regen the dead `OPENROUTER_MANAGEMENT_KEY` (M2); restores
-      per-key usage reads.
 - [ ] **Railway** — confirm Postgres backup recency on both DBs (main + admin).
-- [ ] **Tailscale admin console** — review ACLs, node list, key expiry (box-side audit
-      cannot read these; the binary itself is current at 1.98.9).
 - [ ] **Arnica** — read current findings in the dashboard (email alerts wired; the
       finding list itself never reviewed).
 - [ ] **Grafana Cloud org portal** — exact quota GB usage (org-admin-only page).
@@ -53,15 +49,16 @@ request; the repo owns truth, the artifact restates.
 - [ ] **1Password** — `op signin` + run the vault parity check (interactive; last
       parity exit 0 at the vault sweep).
 
-## Design-tooling adoption residuals (2026-07-13 round, `outputs/research/design-reference-layer-2026-07-13.md`)
+## Design-tooling adoption residual (caisson-owned remainder)
 
-- [ ] **Stitch trial key** — provision `STITCH_API_KEY` (+ gw-core files
-      `system/mcps/stitch.toml`); unblocks the half-day pricing-hero variant trial.
-      superdesign stays gated on the Stitch verdict.
-- [ ] **Recraft API key** — provision `RECRAFT_API_KEY` (PAYG ~$0.04/img) if the
-      image lane is wanted; revisit at 30d telemetry.
 - [ ] **FixAEO free scan** — ~5 min in a browser; external validation of the shipped
       llms.txt/robots/schema. Never pay (ADR-0254).
+
+The rest of the 2026-07-13 adoption round (Stitch key + MCP manifest, superdesign gate,
+Recraft key, 21st.dev manifest) is **gridwork-core work** — handed off to that repo's
+session queue 2026-07-17 (gw handoff, branch main), together with the Tailscale ACL
+console review and the `OPENROUTER_MANAGEMENT_KEY` regen (global surfaces, not caisson's;
+the caisson audit rerun that waits on the OpenRouter key stays noted on the board).
 
 ## Optional / time-gated
 
