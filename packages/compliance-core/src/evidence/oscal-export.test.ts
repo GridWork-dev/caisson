@@ -5,18 +5,27 @@
 // shape, the honest readiness→objective-status mapping (ready→satisfied, gap→not-satisfied + POA&M
 // item), determinism under injected clock + id seam, the honesty floor (no compliant/certified),
 // and fail-closed behaviour on a bad clock / malformed provenance.
-import { describe, expect, test } from "bun:test";
-import { canonicalize, ValidationError, type JsonValue } from "@caisson/kernel";
+import { afterAll, describe, expect, test } from "bun:test";
+import {
+  canonicalize,
+  InternalError,
+  ValidationError,
+  type JsonValue,
+} from "@caisson/kernel";
 import {
   parseEvidencePackManifest,
   type EvidencePackManifest,
 } from "./pack-format.ts";
 import {
   CAISSON_OSCAL_NS,
+  createOscalHttpTransport,
   OSCAL_VERSION,
+  OscalDeliveryConfigSchema,
   toOscalAssessmentResults,
   toOscalBundle,
   toOscalPlanOfActionAndMilestones,
+  type AssertDestinationSafe,
+  type OscalDeliveryConfig,
   type OscalExportOptions,
 } from "./oscal-export.ts";
 
@@ -453,5 +462,192 @@ describe("toOscalBundle — determinism + honesty + fail-closed", () => {
         det({ packSha256: "not-a-digest" }),
       ),
     ).toThrow(ValidationError);
+  });
+});
+
+// --- createOscalHttpTransport — the live delivery seam ---------------------------------------------
+// `OscalDeliveryConfigSchema` is the https-only + SSRF-literal validation boundary at construction
+// (mirrors @caisson/alerting's `safeHttpsUrl`); `postOscalDocument` ALSO re-runs the resolved SSRF
+// guard immediately before every fetch (the alerting idiom — a config object can be built without
+// parsing the schema). `createOscalHttpTransport`'s second, optional `assertDestinationSafe` param
+// exists purely so these mechanics tests can point a real Bun.serve loopback stub through `deliver`
+// without weakening the production default (which is the real, DNS-resolving kernel guard — proven
+// separately below).
+describe("OscalDeliveryConfigSchema — https-only + config validation", () => {
+  const UNSAFE_URLS = [
+    "http://grc.example.com/ingest", // non-https
+    "file:///etc/passwd", // non-http scheme
+    "https://user:pass@grc.example.com/", // credentials in URL
+    "https://127.0.0.1/", // loopback
+    "https://localhost/", // loopback name
+    "https://169.254.169.254/", // cloud metadata
+    "https://10.0.0.1/", // private
+    "not-a-url", // malformed
+  ];
+
+  for (const url of UNSAFE_URLS) {
+    test(`rejects ${url}`, () => {
+      expect(
+        OscalDeliveryConfigSchema.safeParse({ destinationUrl: url }).success,
+      ).toBe(false);
+    });
+  }
+
+  test("accepts a public https destination, with or without a bearer token", () => {
+    expect(
+      OscalDeliveryConfigSchema.safeParse({
+        destinationUrl: "https://grc.example.com/ingest",
+      }).success,
+    ).toBe(true);
+    expect(
+      OscalDeliveryConfigSchema.safeParse({
+        destinationUrl: "https://grc.example.com/ingest",
+        bearerToken: "tok_123",
+      }).success,
+    ).toBe(true);
+  });
+
+  test("rejects an empty bearer token", () => {
+    expect(
+      OscalDeliveryConfigSchema.safeParse({
+        destinationUrl: "https://grc.example.com/ingest",
+        bearerToken: "",
+      }).success,
+    ).toBe(false);
+  });
+
+  test("rejects an unknown field (.strict())", () => {
+    expect(
+      OscalDeliveryConfigSchema.safeParse({
+        destinationUrl: "https://grc.example.com/ingest",
+        extra: "nope",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+/** Test-only stand-in for the resolved SSRF guard — a loopback Bun.serve stub can never pass the
+ * real `assertSafePublicUrlResolved` (it denylists localhost/127.0.0.1 by design), so the mechanics
+ * tests below inject this no-op instead of weakening what `createOscalHttpTransport` calls by
+ * default. */
+const acceptAnyDestination: AssertDestinationSafe = async () => {};
+
+describe("createOscalHttpTransport — delivery mechanics", () => {
+  type Received = { path: string; headers: Headers; body: unknown };
+  let received: Received[] = [];
+  let nextStatus = 200;
+  let stall = false;
+
+  const server = Bun.serve({
+    port: 0,
+    async fetch(req) {
+      const body: unknown = await req.json();
+      received.push({
+        path: new URL(req.url).pathname,
+        headers: req.headers,
+        body,
+      });
+      if (stall) await new Promise(() => {}); // never resolves — the WR-02 timeout leg
+      return new Response(nextStatus === 200 ? "ok" : "fail", {
+        status: nextStatus,
+      });
+    },
+  });
+  const config: OscalDeliveryConfig = {
+    destinationUrl: `http://localhost:${String(server.port)}/oscal/ingest`,
+    bearerToken: "tok_secret",
+  };
+
+  afterAll(() => {
+    server.stop(true);
+  });
+
+  test("delivers the SAR then the POA&M, Bearer-gated, with the OSCAL content-types", async () => {
+    received = [];
+    nextStatus = 200;
+    stall = false;
+    const bundle = toOscalBundle(fixtureManifest(), det());
+
+    await createOscalHttpTransport(config, acceptAnyDestination).deliver(
+      bundle,
+    );
+
+    expect(received).toHaveLength(2);
+    expect(received[0]?.headers.get("authorization")).toBe("Bearer tok_secret");
+    expect(received[0]?.headers.get("content-type")).toBe(
+      "application/oscal-assessment-results+json",
+    );
+    expect(received[0]?.body).toEqual(
+      JSON.parse(JSON.stringify(bundle.assessmentResults)),
+    );
+    expect(received[1]?.headers.get("content-type")).toBe(
+      "application/oscal-poam+json",
+    );
+    expect(received[1]?.body).toEqual(
+      JSON.parse(JSON.stringify(bundle.planOfActionAndMilestones)),
+    );
+  });
+
+  test("omits the Authorization header when no bearer token is configured", async () => {
+    received = [];
+    nextStatus = 200;
+    stall = false;
+    const noAuthConfig: OscalDeliveryConfig = {
+      destinationUrl: config.destinationUrl,
+    };
+
+    await createOscalHttpTransport(noAuthConfig, acceptAnyDestination).deliver(
+      toOscalBundle(fixtureManifest(), det()),
+    );
+
+    expect(received[0]?.headers.has("authorization")).toBe(false);
+  });
+
+  test("fails closed on a non-2xx and never sends the POA&M after the SAR fails", async () => {
+    received = [];
+    nextStatus = 502;
+    stall = false;
+
+    await expect(
+      createOscalHttpTransport(config, acceptAnyDestination).deliver(
+        toOscalBundle(fixtureManifest(), det()),
+      ),
+    ).rejects.toThrow(InternalError);
+
+    // Single attempt, fail-closed before the second document — no retry storm.
+    expect(received).toHaveLength(1);
+  });
+
+  test("fails closed with a typed error on a fetch timeout, and never sends the POA&M", async () => {
+    received = [];
+    nextStatus = 200;
+    stall = true;
+    const timeoutConfig: OscalDeliveryConfig = { ...config, timeoutMs: 20 };
+
+    await expect(
+      createOscalHttpTransport(timeoutConfig, acceptAnyDestination).deliver(
+        toOscalBundle(fixtureManifest(), det()),
+      ),
+    ).rejects.toThrow(InternalError);
+
+    // The stalled SAR request reached the server once; the POA&M is never attempted.
+    expect(received).toHaveLength(1);
+  });
+});
+
+describe("createOscalHttpTransport — default SSRF guard (CR-01)", () => {
+  test("rejects a loopback destination even when the config is built directly (bypassing the schema)", async () => {
+    // No second arg: this exercises the REAL production default (`assertSafePublicUrlResolved`),
+    // proving `deliver` stays safe for a config object that never went through
+    // `OscalDeliveryConfigSchema.parse()` — the exact gap CR-01 closed.
+    const bypassedConfig: OscalDeliveryConfig = {
+      destinationUrl: "https://localhost:9/oscal/ingest",
+    };
+
+    await expect(
+      createOscalHttpTransport(bypassedConfig).deliver(
+        toOscalBundle(fixtureManifest(), det()),
+      ),
+    ).rejects.toThrow();
   });
 });
