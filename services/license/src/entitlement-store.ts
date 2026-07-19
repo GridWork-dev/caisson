@@ -865,6 +865,12 @@ export interface ExtendUpdatesWindowInput {
    *  refund can un-extend exactly this renewal. Omitted / "" for a single-line renewal or a driver
    *  with no per-line data; a whole-transaction refund reverses by `purchase_id` alone regardless. */
   lineItemId?: string;
+  /** The renewal tenor in years (RENEWAL_BOOK's multi-year lever / `renewalYears()`, R6 rider) —
+   *  defaults to 1 (12 months) when omitted, matching every pre-multi-year renewal row. Integer
+   *  years only; the window extends by `12 * years` months in ONE step (not `years` stacked
+   *  single-year extensions), so a lapsed-window renewal only backfills one base window, same as
+   *  today's 1-year case. */
+  years?: number;
 }
 
 /**
@@ -884,22 +890,35 @@ export interface ExtendUpdatesWindowInput {
  * but grants written under the pre-0257 vocabulary store the LEGACY id (`ai-kit`, `bundle`, …).
  * The match spans the whole alias group so a legacy buyer's renewal extends their legacy-keyed
  * grant instead of fail-closed-throwing on the canonical spelling.
+ *
+ * MULTI-YEAR lever (R6 rider): `input.years` (default 1) multiplies the extension to `12 * years`
+ * months in ONE `make_interval` step — a 2-year renewal stacks 24 months onto the remaining window
+ * exactly like the 1-year case stacks 12, never two separate 12-month stacks. FAIL-CLOSED on a
+ * non-positive-integer `years` (a malformed RENEWAL_BOOK row must never silently extend by zero
+ * or a fractional amount).
  */
 export async function extendUpdatesWindow(
   tx: TenantExecutor,
   input: ExtendUpdatesWindowInput,
 ): Promise<number> {
+  const years = input.years ?? 1;
+  if (!Number.isInteger(years) || years < 1) {
+    throw new ConfigError(
+      `extendUpdatesWindow years must be a positive integer, got ${years}`,
+    );
+  }
+  const months = 12 * years;
   const r = await tx.query<{ id: string }>(
     `UPDATE entitlement_grant
        SET updates_expires_at =
              GREATEST(now(), COALESCE(updates_expires_at, granted_at + interval '12 months'))
-             + interval '12 months'
+             + make_interval(months => $3::int)
      WHERE account_id = $1
        AND entitlement_id = ANY($2::text[])
        AND source_kind = 'one_time'
        AND status = 'active'
      RETURNING id`,
-    [input.accountId, entitlementIdAliasGroup(input.entitlementId)],
+    [input.accountId, entitlementIdAliasGroup(input.entitlementId), months],
   );
   if (r.rows.length === 0) {
     throw new ConfigError(

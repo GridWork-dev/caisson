@@ -29,6 +29,7 @@ export {
   parseRenewalBook,
   isRenewalPrice,
   resolveRenewal,
+  renewalYears,
 } from "./renewals.ts";
 export type { RenewalBookEntry } from "./renewals.ts";
 

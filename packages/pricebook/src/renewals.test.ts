@@ -8,6 +8,7 @@ import {
   RENEWAL_BOOK,
   isRenewalPrice,
   parseRenewalBook,
+  renewalYears,
   resolveRenewal,
 } from "./renewals.ts";
 
@@ -128,5 +129,35 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
       resolveRenewal("pri_01kxvpjp4hga6v33nbx6nn0yw1").renewsEntitlement,
     ).toBe("agent-trajectory");
     expect(Object.keys(RENEWAL_BOOK).length).toBe(29);
+  });
+});
+
+describe("multi-year renewal lever (R6 rider — mechanism only)", () => {
+  test("renewalYears defaults an unset row to 1 — every existing RENEWAL_BOOK row is untouched", () => {
+    for (const entry of Object.values(RENEWAL_BOOK)) {
+      expect(entry.years).toBeUndefined();
+      expect(renewalYears(entry)).toBe(1);
+    }
+  });
+
+  test("a pre-existing 1-year row (no `years` field) still parses under the strict schema (append-only)", () => {
+    expect(() =>
+      parseRenewalBook({ pri_x: { renewsEntitlement: "compliance" } }),
+    ).not.toThrow();
+  });
+
+  test("an explicit multi-year row parses and renewalYears reads it back", () => {
+    const book = parseRenewalBook({
+      pri_x: { renewsEntitlement: "compliance", years: 2 },
+    });
+    expect(renewalYears(resolveRenewal("pri_x", book))).toBe(2);
+  });
+
+  test("years is bounded to the backlog's 2-or-3 tenor (0, 4, and non-integer years all reject)", () => {
+    for (const years of [0, 4, 1.5]) {
+      expect(() =>
+        parseRenewalBook({ pri_x: { renewsEntitlement: "compliance", years } }),
+      ).toThrow();
+    }
   });
 });
