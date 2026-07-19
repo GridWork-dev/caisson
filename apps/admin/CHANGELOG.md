@@ -1,5 +1,18 @@
 # @caisson/admin
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [2229209]
+- Updated dependencies [8ff4c62]
+  - @caisson/registry-schema@0.5.5
+  - @caisson/platform-reads@0.2.5
+  - @caisson/credits@0.5.7
+  - @caisson/service-license@0.0.15
+  - @caisson/platform-migrations@0.2.8
+  - @caisson/demo-registry@0.2.8
+
 ## 0.0.13
 
 ### Patch Changes

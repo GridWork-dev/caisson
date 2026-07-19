@@ -1,5 +1,12 @@
 # @caisson/cli
 
+## 0.7.3
+
+### Patch Changes
+
+- Updated dependencies [2229209]
+  - @caisson/registry-schema@0.5.5
+
 ## 0.7.2
 
 ### Patch Changes
