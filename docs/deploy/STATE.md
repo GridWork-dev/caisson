@@ -8,6 +8,25 @@ grounds:
 
 # Deploy log
 
+## 2026-07-19 (PM) — Wave rides v2026.07.19 + v2026.07.19.1 + Worker redeploys
+
+Two further train rides the same day, both delivered:
+
+- **v2026.07.19 (the lock-hash ride, `028e5ca9`): FIRST fully green end-to-end train** —
+  readiness, publish (12 uploaded + 37 present), mirror-sync, deploy-railway, all legs on
+  Blacksmith. 12 sidecar rows carry lockHash from this ride on.
+- **v2026.07.19.1 (the wave ride, `a49d82fd`)**: OSCAL live-push transport
+  (compliance-core 0.5.0) + the multi-year renewal lever mechanism (pricebook 0.7.0) +
+  the lock-hash annotate refinement + two repack refreshes. Publish leg green
+  (5 uploaded + 44 present); the train run shows red only because its watch loop hit a
+  network reset AFTER the publish succeeded — mirror-sync dispatched manually, green.
+- **Worker redeployed twice** (`3002077a` after .19, `f3952684` after .19.1); kernel
+  packument serving `latest: 0.5.2` verified after each.
+- Guard lesson recorded: the lock-hash short-circuit mass-flagged identical-byte rows
+  (whole-lock hash moves every consume) — refined to annotate-on-mismatch (PR #290);
+  platform-reads hit its fourth resolution-drift repack (terminal cure if it recurs:
+  scoped isolatedDeclarations).
+
 ## 2026-07-19 — Agent-trajectory release train v2026.07.18.3 + Worker redeploy (`31917e36`)
 
 The agent-trajectory deploy tail (operator-approved; picker locks in ADR-0365). Four tags
