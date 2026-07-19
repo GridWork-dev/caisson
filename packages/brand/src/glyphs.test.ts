@@ -1,5 +1,5 @@
 // Extraction-integrity check: the bespoke glyph set is the brand's registrable IP, so a dropped or
-// renamed glyph is a real regression (the kit renders `null` for an unregistered name). Pins the 22
+// renamed glyph is a real regression (the kit renders `null` for an unregistered name). Pins the 34
 // domain names + that each entry is a render function, and that the lockup exports survive the move.
 import { describe, expect, test } from "bun:test";
 
@@ -28,10 +28,22 @@ const EXPECTED_NAMES = [
   "edition-ai-kit",
   "edition-local-ai",
   "edition-agent-dev",
+  "agent-trajectory",
+  "tool-exec",
+  "org-controls",
+  "compliance-core",
+  "billing-orchestration",
+  "ui-pro",
+  "local-inference",
+  "local-privacy",
+  "local-sync",
+  "frameworks-pack",
+  "signing-primitive",
+  "credits",
 ] as const;
 
 describe("@caisson/brand glyph set", () => {
-  test("exports exactly the 22 bespoke domain glyphs", () => {
+  test("exports exactly the 34 bespoke domain glyphs", () => {
     expect(Object.keys(brandGlyphs).sort()).toEqual([...EXPECTED_NAMES].sort());
   });
 
