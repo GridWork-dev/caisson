@@ -83,6 +83,7 @@ const configWithKey: Config = {
   cadenceGithubMs: 1,
   cadenceAnalyticsMs: 1,
   cadenceErrorMs: 1,
+  cadenceDepDigestMs: 1,
   competitorUrls: [],
   githubOrg: "caisson-sh",
   posthogApiHost: "https://us.posthog.com",

@@ -29,6 +29,7 @@ const config: Config = {
   cadenceGithubMs: 1_000,
   cadenceAnalyticsMs: 1_000,
   cadenceErrorMs: 1_000,
+  cadenceDepDigestMs: 1_000,
   competitorUrls: [],
   githubOrg: "caisson-sh",
   posthogApiHost: "https://us.posthog.com",

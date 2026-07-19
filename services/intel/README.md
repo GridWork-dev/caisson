@@ -1,14 +1,16 @@
 # @caisson/service-intel
 
 The standing operator intelligence daemon. It watches a fixed set of external signals —
-compliance-framework updates, competitor pages, GitHub traction, product analytics, and
-production errors — detects a change cheaply and deterministically first (a content hash, a
-release-version compare, or a set difference — zero tokens spent), and appends the result as a
-durable finding in the admin database's `intel` schema. An optional LLM enrichment pass can run
-on top of a detected change, but it is off by default: every cadence tick that finds nothing
-changed spends no tokens at all. Production-error signal additionally routes through
-`@caisson/alerting` (dedup / rate-cap / quiet-hours) to the operator's Telegram bridge and an
-auto-filed Linear issue.
+compliance-framework updates, competitor pages, GitHub traction, product analytics, production
+errors, and (ADR-0369) this repo's own dependency/toolchain pins — detects a change cheaply and
+deterministically first (a content hash, a release-version compare, or a set difference — zero
+tokens spent), and appends the result as a durable finding in the admin database's `intel`
+schema. An optional LLM enrichment pass can run on top of a detected change, but it is off by
+default: every cadence tick that finds nothing changed spends no tokens at all. Production-error
+and dep-digest signal additionally route through `@caisson/alerting` to the operator's Telegram
+bridge and an auto-filed Linear issue (`error` through the full dedup/rate-cap/quiet-hours
+pipeline; `dep-digest` through the lighter immediate-delivery path — its own watch_state dedup
+already guarantees each event alerts once).
 
 This is a producer only. It pushes findings into Postgres over an authed connection string; it
 never accepts an inbound API call beyond a loopback health check. The admin control-plane app
@@ -17,19 +19,20 @@ work and is not part of this service.
 
 ## What it watches
 
-| watcher      | default cadence | detects                                                                                                                               |
-| ------------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `compliance` | 24h             | NIST OSCAL + oscal-content release bumps, EU AI Act (EUR-Lex + AI Office guidance) content changes, new HHS OCR breach-portal entries |
-| `soc2`       | 30d             | AICPA SOC 2 resources-page content changes                                                                                            |
-| `competitor` | 24h             | content changes on a configured list of competitor pages                                                                              |
-| `github`     | 12h             | star/fork gains across the `caisson-sh` org's public repos                                                                            |
-| `analytics`  | 24h             | a daily rollup from PostHog + Plausible (always emits one dated row)                                                                  |
-| `error`      | 15m             | new or spiking PostHog error-tracking groups, routed through the alerting pipeline                                                    |
+| watcher      | default cadence | detects                                                                                                                                                                                                                                                                           |
+| ------------ | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compliance` | 24h             | NIST OSCAL + oscal-content release bumps, EU AI Act (EUR-Lex + AI Office guidance) content changes, new HHS OCR breach-portal entries                                                                                                                                             |
+| `soc2`       | 30d             | AICPA SOC 2 resources-page content changes                                                                                                                                                                                                                                        |
+| `competitor` | 24h             | content changes on a configured list of competitor pages                                                                                                                                                                                                                          |
+| `github`     | 12h             | star/fork gains across the `caisson-sh` org's public repos                                                                                                                                                                                                                        |
+| `analytics`  | 24h             | a daily rollup from PostHog + Plausible (always emits one dated row)                                                                                                                                                                                                              |
+| `error`      | 15m             | new or spiking PostHog error-tracking groups, routed through the alerting pipeline                                                                                                                                                                                                |
+| `dep-digest` | 7d              | ADR-0369: stalled Renovate PRs (>14d open), toolchain/pinned-dep major bumps (typescript/tsc-native/next/zod/turbo/react/better-auth) + bun releases against npm/GitHub, release-age ("held") annotation, direct buyer-impact — routed through the alerting pipeline like `error` |
 
 Every watcher is also independently runnable without the scheduler:
 
 ```
-bun run src/cli.ts run <compliance|soc2|competitor|github|analytics|error>
+bun run src/cli.ts run <compliance|soc2|competitor|github|analytics|error|dep-digest>
 ```
 
 This is the seam a Claude Code Routine or a hosted cloud agent can drive on its own cadence in
@@ -56,7 +59,7 @@ optional and its watcher leg self-skips (fail-soft, not fail-closed) when absent
 | `INTEL_HEALTHZ_PORT` / `INTEL_HEALTHZ_HOST`                                                                | `8791` / `0.0.0.0`                          | the local health endpoint bind                                                                                                                  |
 | `INTEL_SCHEDULER_ENABLED`                                                                                  | `true`                                      | the internal per-watcher interval scheduler                                                                                                     |
 | `INTEL_MIGRATE_ON_BOOT`                                                                                    | `false`                                     | apply the schema migration at boot — dev/local convenience only; the production runtime role is DML-only and can't run it (see Deploying below) |
-| `INTEL_CADENCE_*_MS` (six vars, one per watcher)                                                           | see table above                             | per-watcher interval override                                                                                                                   |
+| `INTEL_CADENCE_*_MS` (seven vars, one per watcher)                                                         | see table above                             | per-watcher interval override                                                                                                                   |
 | `INTEL_COMPETITOR_URLS`                                                                                    | —                                           | comma-separated competitor page list (data, not code)                                                                                           |
 | `INTEL_GITHUB_ORG`                                                                                         | `caisson-sh`                                | the GitHub org whose public repos are watched                                                                                                   |
 | `GITHUB_TOKEN`                                                                                             | —                                           | raises the GitHub API rate limit; unauthenticated works too                                                                                     |
