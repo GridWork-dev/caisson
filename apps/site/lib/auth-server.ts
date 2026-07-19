@@ -23,6 +23,14 @@ import { Pool } from "pg";
 import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
 import { magicLink } from "better-auth/plugins";
+import type { BetterAuthOptions } from "better-auth/types";
+// ADR-0366: better-auth exposes no public `database`-construction subpath (its own internal
+// `getAdapter` reaches into this same package), so the session-token wrap depends on it
+// directly, pinned to better-auth's OWN exact version below — the two ship in lockstep upstream.
+import {
+  createKyselyAdapter,
+  kyselyAdapter,
+} from "@better-auth/kysely-adapter";
 import {
   type CaptureEmailer,
   type Emailer,
@@ -31,6 +39,7 @@ import {
 } from "@caisson/email";
 import { resolveSocialProviders } from "./auth-config.ts";
 import { SESSION_HINT_COOKIE_NAME } from "./session-hint-cookie.ts";
+import { wrapSessionAdapter } from "./session-adapter.ts";
 
 export { SESSION_HINT_COOKIE_NAME } from "./session-hint-cookie.ts";
 
@@ -115,16 +124,53 @@ function resolveEmailer(): Emailer | CaptureEmailer {
  * against an in-memory database with a capture transport, exercising the real magic-link →
  * session flow without a live Postgres. `emailer` is injected; `baseURL` is optional (better-auth
  * infers it from the request when absent).
+ *
+ * `hmacKey` (ADR-0366) is REQUIRED and checked here too (construction-time fail-closed), not just
+ * by `getAuth()`'s env read below — any other caller that forgets it gets the same loud throw
+ * instead of a silent raw-token fallback. The session-token adapter wrap (`session-adapter.ts`)
+ * is built from the SAME `database` here via `createKyselyAdapter`/`kyselyAdapter` (the exact
+ * dialect-detection better-auth itself uses internally), so it works against both a real `pg.Pool`
+ * (production) and the in-memory `bun:sqlite` double used by this app's own tests — a hand-rolled
+ * `PostgresDialect` would only work against the former and break the latter.
+ *
+ * NOTE for callers that also run `getMigrations(auth.options)` (schema DDL, e.g.
+ * `deploy-migrate.ts`): `auth.options.database` below is the WRAPPED adapter FACTORY, which
+ * `getMigrations`'s own dialect detection cannot introspect (it only recognizes a raw
+ * Pool/Dialect/Kysely shape). Substitute the raw `database` value back in for that call:
+ * `getMigrations({ ...auth.options, database })`. Schema DDL is unaffected by the session-token
+ * wrap either way — this is purely about `createKyselyAdapter`'s dialect-detection reach.
  */
-export function createAuth(params: {
+export async function createAuth(params: {
   database: Pool;
   secret: string;
   emailer: Emailer;
+  hmacKey: string;
   baseURL?: string | undefined;
 }) {
-  const { database, secret, emailer, baseURL } = params;
-  return betterAuth({
+  const { database, secret, emailer, baseURL, hmacKey } = params;
+  if (hmacKey.trim().length === 0) {
+    throw new Error(
+      "SESSION_TOKEN_HMAC_KEY is required to construct the auth runtime (ADR-0366) — refusing to start rather than fall back to storing raw session tokens.",
+    );
+  }
+  // Safe partial cast: `createKyselyAdapter` reads only `config.database` (verified against
+  // `@better-auth/kysely-adapter`'s source) — the rest of `BetterAuthOptions` is irrelevant to
+  // dialect detection.
+  const { kysely, databaseType, transaction } = await createKyselyAdapter({
     database,
+  } as BetterAuthOptions);
+  if (!kysely) {
+    throw new Error(
+      "session-adapter: failed to initialize the database adapter for the ADR-0366 session-token wrap.",
+    );
+  }
+  const baseAdapterFactory = kyselyAdapter(kysely, {
+    type: databaseType ?? "postgres",
+    transaction,
+  });
+  return betterAuth({
+    database: (options: BetterAuthOptions) =>
+      wrapSessionAdapter(baseAdapterFactory(options), hmacKey),
     secret,
     basePath: "/api/auth",
     ...(baseURL !== undefined && baseURL.length > 0 ? { baseURL } : {}),
@@ -182,10 +228,13 @@ export function createAuth(params: {
   });
 }
 
-type AuthInstance = ReturnType<typeof createAuth>;
+type AuthInstance = Awaited<ReturnType<typeof createAuth>>;
 
-// `undefined` = not yet resolved this process; `null` = resolved-but-unavailable (no DB/secret).
-let cached: AuthInstance | null | undefined;
+// `undefined` = not yet resolved this process; a resolved promise carries `null` for
+// resolved-but-unavailable (no DB/secret). `createAuth` is now async (ADR-0366: it awaits
+// `createKyselyAdapter` to build the session-token-wrapped adapter), so the cache holds the
+// in-flight/settled PROMISE itself, not its result — every caller `await`s the same one.
+let cached: Promise<AuthInstance | null> | undefined;
 
 /**
  * The process-wide better-auth instance, or `null` when the runtime is not configured for
@@ -193,7 +242,7 @@ let cached: AuthInstance | null | undefined;
  * unavailable" — the route handler answers 503, `getSession` returns no session. Resolved once and
  * cached (one Postgres pool per process).
  */
-export function getAuth(): AuthInstance | null {
+export function getAuth(): Promise<AuthInstance | null> {
   if (cached !== undefined) return cached;
   const url = process.env.DATABASE_URL?.trim();
   const secret = process.env.BETTER_AUTH_SECRET?.trim();
@@ -203,8 +252,19 @@ export function getAuth(): AuthInstance | null {
     secret === undefined ||
     secret.length === 0
   ) {
-    cached = null;
+    cached = Promise.resolve(null);
     return cached;
+  }
+  const hmacKey = process.env.SESSION_TOKEN_HMAC_KEY?.trim();
+  if (hmacKey === undefined || hmacKey.length === 0) {
+    // Fail-closed (ADR-0366): DATABASE_URL + BETTER_AUTH_SECRET ARE configured (this would
+    // otherwise be a live auth runtime), so a missing HMAC key is an operator misconfiguration,
+    // never a silent "sign-in unavailable" degrade or a raw-token fallback. Throwing here surfaces
+    // loudly (a crashed boot / a failed health check) instead of masking a forgotten env var as an
+    // ordinary DB-down outage.
+    throw new Error(
+      "SESSION_TOKEN_HMAC_KEY is required once DATABASE_URL/BETTER_AUTH_SECRET are configured (ADR-0366) — refusing to start auth with raw session-token storage.",
+    );
   }
   const pool = new Pool({ connectionString: url });
   pool.on("error", (err) => {
@@ -214,6 +274,7 @@ export function getAuth(): AuthInstance | null {
     database: pool,
     secret,
     emailer: resolveEmailer(),
+    hmacKey,
     baseURL: process.env.BETTER_AUTH_URL?.trim(),
   });
   return cached;

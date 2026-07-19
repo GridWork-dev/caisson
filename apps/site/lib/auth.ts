@@ -45,7 +45,7 @@ export const ACTIVE_ACCOUNT_COOKIE = "cs_active_account";
  * layer trusts for RLS (`withTenant`, ADR-0005).
  */
 export async function getSession(): Promise<SessionContext | null> {
-  const auth = getAuth();
+  const auth = await getAuth();
   if (auth === null) return null;
   try {
     const result = await auth.api.getSession({ headers: await headers() });

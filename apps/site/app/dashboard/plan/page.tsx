@@ -74,7 +74,7 @@ export default async function DashboardPlanPage() {
   let discordLinked = false;
   if (discordConfigured) {
     try {
-      const auth = getAuth();
+      const auth = await getAuth();
       const accounts =
         auth === null
           ? []
