@@ -123,6 +123,7 @@ export function AppShell({
         data-collapsed={collapsed ? "" : undefined}
       >
         {/* A nav-item click closes the mobile drawer (no-op on desktop). */}
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- delegation only: the click bubbles from the interactive NavLink <a> children below, which are already keyboard-triggerable (Enter fires a click natively) */}
         <nav className="cs-shell__nav" onClick={closeMobileNav}>
           {nav.map((item) => (
             <NavLink

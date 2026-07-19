@@ -126,7 +126,11 @@ function useAskAi(
 
 export interface AskAiPanelProps {
   readonly surface: AskSurface;
-  readonly autoFocus?: boolean;
+  /** Focus the question input once, on mount — named apart from the native `autoFocus` DOM
+   *  attribute since this imperatively `.focus()`s a ref in an effect rather than setting the
+   *  attribute, and it's only ever passed when the panel mounts from an explicit user action
+   *  (opening a details toggle or switching a dialog tab), never on initial page load. */
+  readonly focusOnOpen?: boolean;
 }
 
 /**
@@ -135,15 +139,15 @@ export interface AskAiPanelProps {
  * fail-safes as an escalation CTA — ADR-0080). Used by BOTH day-one placements (F3): the docs-sidebar
  * widget and the ⌘K "Ask AI" tab.
  */
-export function AskAiPanel({ surface, autoFocus = false }: AskAiPanelProps) {
+export function AskAiPanel({ surface, focusOnOpen = false }: AskAiPanelProps) {
   const turnstile = useTurnstile();
   const { state, ask, reset } = useAskAi(surface, turnstile.getToken);
   const [question, setQuestion] = useState("");
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    if (autoFocus) inputRef.current?.focus();
-  }, [autoFocus]);
+    if (focusOnOpen) inputRef.current?.focus();
+  }, [focusOnOpen]);
 
   const busy = state.status === "loading" || state.status === "streaming";
   const terminal =
