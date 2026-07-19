@@ -5,22 +5,8 @@ import { describe, expect, test } from "bun:test";
 
 import { GLOSSARY_TERMS } from "./glossary";
 import { MODULE_MARKS } from "./marks";
-import { MODULE_PAGES, type ModulePageRecord } from "./module-pages";
+import { MODULE_PAGES } from "./module-pages";
 import { MODULE_PRICES } from "./pricing";
-
-/** Flatten every prose string a record renders — the surface where an inclusion/composition claim
- *  could land. Excludes `artifact.code` (real package code, not a claim) and slugs/ids/labels. */
-function proseStrings(r: ModulePageRecord): string[] {
-  return [
-    r.metaTitle,
-    r.metaDescription,
-    r.heroOneLiner,
-    r.definition,
-    ...r.included.flatMap((i) => [i.title, i.body]),
-    ...r.faq.flatMap((f) => [f.question, f.answer]),
-    r.sells.note,
-  ];
-}
 
 describe("MODULE_PAGES (depth-page records)", () => {
   test("every depth-page record is a real sellable module (subset of the catalog)", () => {
