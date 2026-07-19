@@ -303,10 +303,31 @@ export function checkDownOnly(pkgs: Pkg[]): Finding[] {
 }
 
 /**
+ * `packages/` members that are internal engineering plumbing and will NEVER enter the sold
+ * registry index — each one's own package.json `description` already says so in prose; this set
+ * just makes that an enforced, auditable fact instead of a manifest-pending warning nobody will
+ * ever clear. NOT inferred from `private: true` (several sellable modules may set that too for
+ * unrelated npm-publish-prevention reasons) — every entry here is a deliberate opt-in with its
+ * own one-line rationale, so a real future module can't slip past `manifest-pending` by accident.
+ */
+const NEVER_PUBLISHED = new Set([
+  // The private brand layer (glyphs/wordmark) — apps consume it directly, never a registry SKU.
+  "@caisson/brand",
+  // Internal cross-package component-demo catalog for apps/admin + the site's /ui gallery.
+  "@caisson/demo-registry",
+  // The ordered platform migration chain — internal engineering plumbing, not a buyer module.
+  "@caisson/platform-migrations",
+  // Internal audit/validate harness (ADR-0134) — non-blocking engineering tooling, not sellable.
+  "@caisson/audit-harness",
+]);
+
+/**
  * A `packages/` member that ships code must declare an SPDX license now (ADR-0023 — every module
  * is licensed). The `manifest.ts` is the registry-publish declaration that lands at P5 (ADR-0021
  * T5.1b backfill), so its absence is a WARN pre-publish, not a build-blocking error — the manifest
- * becomes mandatory at the registry-ingress (publish) step, which this same gate guards.
+ * becomes mandatory at the registry-ingress (publish) step, which this same gate guards. A
+ * NEVER_PUBLISHED package is exempt from that warn (it will never reach publish to clear it) but
+ * still faces the `license-required` error above — internal code still needs a real SPDX license.
  */
 export function checkDeclarations(pkgs: Pkg[]): Finding[] {
   const findings: Finding[] = [];
@@ -319,7 +340,7 @@ export function checkDeclarations(pkgs: Pkg[]): Finding[] {
         pkg: p.name,
         message: `shipped module has no SPDX \`license\` in package.json (ADR-0020/0023).`,
       });
-    if (!p.manifestPath)
+    if (!p.manifestPath && !NEVER_PUBLISHED.has(p.name))
       findings.push({
         severity: "warn",
         rule: "manifest-pending",

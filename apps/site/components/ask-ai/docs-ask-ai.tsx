@@ -30,7 +30,7 @@ export function DocsAskAi() {
         <ChevronDown className={styles.chevron} size={16} aria-hidden="true" />
       </summary>
       <div className={styles.docsBody}>
-        {opened && <AskAiPanel surface="docs" autoFocus />}
+        {opened && <AskAiPanel surface="docs" focusOnOpen />}
       </div>
     </details>
   );

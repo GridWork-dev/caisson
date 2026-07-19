@@ -107,6 +107,7 @@ export function MediaCarousel({
   }
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- arrow-key nav is delegated: it only fires via bubbling from the already-focusable prev/next <button>s below, never makes this group itself a tab stop
     <div
       className={styles.carousel}
       role="group"

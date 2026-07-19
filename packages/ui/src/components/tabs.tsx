@@ -83,6 +83,7 @@ export function Tabs({
       data-orientation={orientation}
       {...rest}
     >
+      {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus -- W3C APG roving-tabindex pattern: the tablist container is deliberately NOT a tab stop, only the active `role="tab"` button below carries tabIndex 0 (others -1); adding a tabIndex here would give the tablist two stops instead of one */}
       <div
         role="tablist"
         aria-orientation={orientation}
