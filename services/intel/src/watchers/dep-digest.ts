@@ -9,9 +9,15 @@
 //   c. Release-age annotation — a newer version published < 7 days ago reads as "held", not
 //      "available" (mirrors a minimumReleaseAge posture without asserting the repo's Renovate
 //      config sets one).
-//   d. Buyer-impact lite — which packages/* directly declare a flagged dep (transitive mapping
-//      is deliberately out of scope v1; apps/* is likewise out of scope beyond the one
-//      better-auth manifest fetch below).
+//   d. Buyer-impact — which packages/* declare a flagged dep, split direct vs transitive-only
+//      (v2). Direct declarations still come from the packages/*/package.json fan-out (below).
+//      Transitive reach is resolved from `bun.lock`: every workspace's own dependency block PLUS
+//      every resolved npm package's `dependencies`/`optionalDependencies`/`peerDependencies` form
+//      one name-keyed graph; a reverse walk from the flagged dep's name collects every workspace
+//      package whose closure contains it. apps/* stays out of scope (matching v1 — apps aren't
+//      sold modules) beyond the one better-auth manifest fetch below. Failure-tolerant: a
+//      `bun.lock` fetch/parse failure degrades this leg to v1's direct-only mapping (noted in the
+//      finding body) — it never blocks the toolchain/pinned-dep leg itself.
 //
 // Each finding is deduped through watch_state per distinct "event" (a specific latest-version +
 // held/available state, or a specific stalled PR number) — a stable week emits nothing. Findings
@@ -231,9 +237,39 @@ export function evaluateTrackedDep(
   };
 }
 
+/** Buyer-impact for one flagged dep: packages/* that declare it directly, and packages/* that
+ *  only carry it transitively (via another workspace package or a resolved npm dependency).
+ *  `transitiveOnly: null` means the bun.lock leg failed/degraded this run — the direct list is
+ *  still trustworthy (it never depended on bun.lock), only the transitive half is unknown. */
+export interface BuyerImpact {
+  direct: readonly string[];
+  transitiveOnly: readonly string[] | null;
+}
+
+const MAX_LISTED_PACKAGES = 12;
+
+/** Caps a package list so a Linear description never becomes a wall of names. */
+function formatPackageList(names: readonly string[]): string {
+  if (names.length <= MAX_LISTED_PACKAGES) return names.join(", ");
+  const shown = names.slice(0, MAX_LISTED_PACKAGES).join(", ");
+  return `${shown}, and ${String(names.length - MAX_LISTED_PACKAGES)} more`;
+}
+
+function buyerImpactNote(impact: BuyerImpact): string {
+  const directPart =
+    impact.direct.length > 0 ? formatPackageList(impact.direct) : "none";
+  const transitivePart =
+    impact.transitiveOnly === null
+      ? "unavailable this run (bun.lock fetch/parse failed — degraded to direct-only)"
+      : impact.transitiveOnly.length > 0
+        ? formatPackageList(impact.transitiveOnly)
+        : "none";
+  return ` Direct: ${directPart} · Transitive-only: ${transitivePart}.`;
+}
+
 function depBumpFinding(
   ev: TrackedDepEvaluation,
-  affectedPackages: readonly string[],
+  impact: BuyerImpact,
 ): Finding {
   const verb = ev.held ? "held" : "available";
   const heldNote =
@@ -246,12 +282,8 @@ function depBumpFinding(
       0,
       300,
     );
-  const affectedNote =
-    affectedPackages.length > 0
-      ? ` Declared directly by: ${affectedPackages.join(", ")}.`
-      : " No packages/* declare it directly (checked v1 direct-only — transitive is out of scope).";
   const body =
-    `${ev.dep.label} is pinned at ${ev.currentVersion}; ${ev.latestVersion} is ${verb}${heldNote}.${affectedNote}`.slice(
+    `${ev.dep.label} is pinned at ${ev.currentVersion}; ${ev.latestVersion} is ${verb}${heldNote}.${buyerImpactNote(impact)}`.slice(
       0,
       10_000,
     );
@@ -269,7 +301,9 @@ function depBumpFinding(
       latest: ev.latestVersion,
       held: ev.held,
       ...(ev.heldUntilMs !== undefined ? { heldUntilMs: ev.heldUntilMs } : {}),
-      affectedPackages: [...affectedPackages],
+      affectedPackages: [...impact.direct],
+      transitiveOnlyPackages:
+        impact.transitiveOnly === null ? null : [...impact.transitiveOnly],
     },
   };
 }
@@ -285,10 +319,12 @@ function eventIdOf(ev: TrackedDepEvaluation): string {
   return `${ev.latestVersion}:${ev.held ? "held" : "available"}`;
 }
 
+const EMPTY_IMPACT: BuyerImpact = { direct: [], transitiveOnly: [] };
+
 export function detectDepFindings(
   evaluations: readonly (TrackedDepEvaluation | null)[],
   prevAlerted: Record<string, string>,
-  affectedByDep: Readonly<Record<string, readonly string[]>>,
+  affectedByDep: Readonly<Record<string, BuyerImpact>>,
 ): { findings: Finding[]; nextState: Record<string, string> } {
   const findings: Finding[] = [];
   const nextState: Record<string, string> = {};
@@ -297,7 +333,9 @@ export function detectDepFindings(
     const key = depStateKey(ev.dep.key);
     const eventId = eventIdOf(ev);
     if (prevAlerted[key] === eventId) continue;
-    findings.push(depBumpFinding(ev, affectedByDep[ev.dep.key] ?? []));
+    findings.push(
+      depBumpFinding(ev, affectedByDep[ev.dep.key] ?? EMPTY_IMPACT),
+    );
     nextState[key] = eventId;
   }
   return { findings, nextState };
@@ -504,6 +542,158 @@ export function affectedPackagesFor(
 }
 
 // ============================================================================================
+// Pure: bun.lock parsing + transitive workspace-reachability (leg d, v2)
+// ============================================================================================
+
+/** bun.lock is plain JSON plus trailing commas before `}`/`]` (no comments observed in this
+ *  repo's lockfile) — stripping exactly that is enough to hand it to `JSON.parse`. A real JSONC
+ *  parser is more than this needs; if bun ever starts emitting comments, this degrades to the
+ *  null return below (caught by the failure-tolerant leg, never a throw). */
+export function parseBunLockText(raw: string): unknown | null {
+  try {
+    return JSON.parse(raw.replace(/,(\s*[}\]])/g, "$1"));
+  } catch {
+    return null;
+  }
+}
+
+const LockWorkspaceEntry = z
+  .object({
+    name: z.string().optional(),
+    dependencies: z.record(z.string(), z.string()).optional(),
+    devDependencies: z.record(z.string(), z.string()).optional(),
+    peerDependencies: z.record(z.string(), z.string()).optional(),
+  })
+  .passthrough();
+
+const LockPackageMeta = z
+  .object({
+    dependencies: z.record(z.string(), z.string()).optional(),
+    optionalDependencies: z.record(z.string(), z.string()).optional(),
+    peerDependencies: z.record(z.string(), z.string()).optional(),
+  })
+  .passthrough();
+
+const LockFileSchema = z
+  .object({
+    workspaces: z.record(z.string(), LockWorkspaceEntry),
+    packages: z.record(z.string(), z.array(z.unknown()).min(1)),
+  })
+  .passthrough();
+
+/** Same buyer-impact scope as v1's direct leg — `packages/<name>` only, never `apps/*` or
+ *  `tooling/*`. */
+const PACKAGES_WORKSPACE_RE = /^packages\/[^/]+$/;
+
+export interface WorkspaceReachability {
+  /** Every graph node's direct dependency names, keyed by the name other nodes reference it by
+   *  (a workspace's own package name, or an npm package's — possibly aliased, e.g. "tsc-native" —
+   *  bun.lock key). One shared keyspace: workspace-to-workspace and npm-resolved edges both land
+   *  here, so a single reverse walk crosses both without special-casing. */
+  edges: ReadonlyMap<string, ReadonlySet<string>>;
+  /** The subset of node names that are packages/* workspace packages (the buyer-facing set). */
+  scopedWorkspaceNames: ReadonlySet<string>;
+}
+
+function depNamesOf(rec: Record<string, string> | undefined): string[] {
+  return rec === undefined ? [] : Object.keys(rec);
+}
+
+/** Parses a decoded bun.lock JSON value into the name-keyed dependency graph. Returns null on any
+ *  shape mismatch (a lockfile format change) rather than throwing — the caller degrades to
+ *  direct-only. */
+export function buildWorkspaceReachability(
+  raw: unknown,
+): WorkspaceReachability | null {
+  const parsed = LockFileSchema.safeParse(raw);
+  if (!parsed.success) return null;
+
+  const edges = new Map<string, Set<string>>();
+  const scopedWorkspaceNames = new Set<string>();
+
+  for (const [path, entry] of Object.entries(parsed.data.workspaces)) {
+    if (entry.name === undefined) continue;
+    edges.set(
+      entry.name,
+      new Set([
+        ...depNamesOf(entry.dependencies),
+        ...depNamesOf(entry.devDependencies),
+        ...depNamesOf(entry.peerDependencies),
+      ]),
+    );
+    if (PACKAGES_WORKSPACE_RE.test(path)) scopedWorkspaceNames.add(entry.name);
+  }
+
+  for (const [key, tuple] of Object.entries(parsed.data.packages)) {
+    if (edges.has(key)) continue; // a workspace already supplied this name's edges above.
+    const meta = LockPackageMeta.safeParse(tuple[2]);
+    if (!meta.success) continue; // a bare `["name@workspace:path"]` entry (no meta) — skip.
+    edges.set(
+      key,
+      new Set([
+        ...depNamesOf(meta.data.dependencies),
+        ...depNamesOf(meta.data.optionalDependencies),
+        ...depNamesOf(meta.data.peerDependencies),
+      ]),
+    );
+  }
+
+  return { edges, scopedWorkspaceNames };
+}
+
+/** Which packages/* workspace packages have `declaredKey` anywhere in their dependency closure —
+ *  a reverse BFS from the flagged dep's name over the inverted edge graph. Includes packages that
+ *  declare it directly too; the caller subtracts the direct set to get "transitive-only". */
+export function transitiveWorkspaceReach(
+  reach: WorkspaceReachability,
+  declaredKey: string,
+): string[] {
+  const reverse = new Map<string, Set<string>>();
+  for (const [parent, children] of reach.edges) {
+    for (const child of children) {
+      let parents = reverse.get(child);
+      if (parents === undefined) {
+        parents = new Set();
+        reverse.set(child, parents);
+      }
+      parents.add(parent);
+    }
+  }
+
+  const visited = new Set<string>([declaredKey]);
+  const queue: string[] = [declaredKey];
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    if (cur === undefined) break;
+    for (const parent of reverse.get(cur) ?? []) {
+      if (visited.has(parent)) continue;
+      visited.add(parent);
+      queue.push(parent);
+    }
+  }
+  visited.delete(declaredKey);
+
+  return [...visited]
+    .filter((name) => reach.scopedWorkspaceNames.has(name))
+    .sort();
+}
+
+/** Builds the direct + transitive-only `BuyerImpact` for one flagged dep. `reach === null` means
+ *  the bun.lock leg is degraded — transitive-only is reported unavailable, never guessed. */
+export function buyerImpactFor(
+  declaredKey: string,
+  direct: readonly string[],
+  reach: WorkspaceReachability | null,
+): BuyerImpact {
+  if (reach === null) return { direct, transitiveOnly: null };
+  const directSet = new Set(direct);
+  const transitiveOnly = transitiveWorkspaceReach(reach, declaredKey).filter(
+    (name) => !directSet.has(name),
+  );
+  return { direct, transitiveOnly };
+}
+
+// ============================================================================================
 // Pure: registry-response parsing
 // ============================================================================================
 
@@ -559,15 +749,15 @@ const GithubContentsFile = z.object({
   encoding: z.string(),
 });
 
-/** Fetch one file's JSON body via the GitHub contents API — never a local path, the daemon is
- *  containerized and does not carry this repo's working tree. */
-async function fetchGithubJsonFile(
+/** Fetch one file's decoded text body via the GitHub contents API — never a local path, the
+ *  daemon is containerized and does not carry this repo's working tree. */
+async function fetchGithubTextFile(
   fetchImpl: Fetcher,
   org: string,
   repo: string,
   path: string,
   token: string | undefined,
-): Promise<unknown> {
+): Promise<string> {
   const raw = await fetchJson<unknown>(
     fetchImpl,
     `https://api.github.com/repos/${org}/${repo}/contents/${path}`,
@@ -577,9 +767,43 @@ async function fetchGithubJsonFile(
   if (!parsed.success || parsed.data.encoding !== "base64") {
     throw new Error(`unexpected contents-API response shape for ${path}`);
   }
+  return Buffer.from(parsed.data.content, "base64").toString("utf8");
+}
+
+async function fetchGithubJsonFile(
+  fetchImpl: Fetcher,
+  org: string,
+  repo: string,
+  path: string,
+  token: string | undefined,
+): Promise<unknown> {
   return JSON.parse(
-    Buffer.from(parsed.data.content, "base64").toString("utf8"),
+    await fetchGithubTextFile(fetchImpl, org, repo, path, token),
   );
+}
+
+/** Fetches + parses `bun.lock` into the transitive-reachability graph (leg d, v2). Failure-
+ *  tolerant by design: any fetch error, an unparseable lockfile, or an unexpected shape all
+ *  collapse to `null` — the caller degrades to v1 direct-only rather than losing the whole leg. */
+async function fetchWorkspaceReachability(
+  fetchImpl: Fetcher,
+  org: string,
+  repo: string,
+  token: string | undefined,
+): Promise<WorkspaceReachability | null> {
+  try {
+    const text = await fetchGithubTextFile(
+      fetchImpl,
+      org,
+      repo,
+      "bun.lock",
+      token,
+    );
+    const json = parseBunLockText(text);
+    return json === null ? null : buildWorkspaceReachability(json);
+  } catch {
+    return null;
+  }
 }
 
 async function fetchOpenPrsRaw(
@@ -786,10 +1010,11 @@ export const depDigestWatcher: Watcher = {
         (e): e is TrackedDepEvaluation => e !== null,
       );
 
-      // buyer-impact-lite only fires the git-trees + per-package fan-out when something is
+      // buyer-impact only fires the git-trees fan-out + bun.lock fetch when something is
       // actually flagged — a quiet week makes zero extra GitHub calls beyond the two manifests.
-      let affectedByDep: Record<string, readonly string[]> = {};
+      let affectedByDep: Record<string, BuyerImpact> = {};
       if (flagged.length > 0) {
+        let directByDep: Record<string, readonly string[]> = {};
         try {
           const paths = await fetchPackagesManifestPaths(
             fetchImpl,
@@ -815,7 +1040,7 @@ export const depDigestWatcher: Watcher = {
               // one package's manifest fetch failing must not drop the rest of the fan-out.
             }
           }
-          affectedByDep = Object.fromEntries(
+          directByDep = Object.fromEntries(
             flagged.map((e) => [
               e.dep.key,
               affectedPackagesFor(e.dep.declaredKey, workspaceManifests),
@@ -823,10 +1048,39 @@ export const depDigestWatcher: Watcher = {
           );
         } catch (err) {
           logger.warn(
-            "dep-digest: buyer-impact leg failed — findings will omit affected packages",
+            "dep-digest: direct buyer-impact leg failed — findings will omit direct packages",
             { err: err instanceof Error ? err.message : String(err) },
           );
         }
+
+        // The transitive half is a separate try: a bun.lock hiccup degrades findings to
+        // direct-only (per depBumpFinding's `transitiveOnly: null` note) rather than dropping
+        // the direct list this leg just computed above.
+        let reach: WorkspaceReachability | null = null;
+        try {
+          reach = await fetchWorkspaceReachability(
+            fetchImpl,
+            org,
+            REPO_NAME,
+            token,
+          );
+        } catch (err) {
+          logger.warn(
+            "dep-digest: transitive buyer-impact leg failed — degrading to direct-only",
+            { err: err instanceof Error ? err.message : String(err) },
+          );
+        }
+
+        affectedByDep = Object.fromEntries(
+          flagged.map((e) => [
+            e.dep.key,
+            buyerImpactFor(
+              e.dep.declaredKey,
+              directByDep[e.dep.key] ?? [],
+              reach,
+            ),
+          ]),
+        );
       }
 
       const prevDepState = await store.getWatchState(
