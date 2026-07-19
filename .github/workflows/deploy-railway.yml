@@ -34,8 +34,8 @@ jobs:
   deploy:
     # Blacksmith-only fleet (operator directive 2026-07-19, ADR-0365 lock-1 provision): the last
     # hosted job followed the rest after the free-minute exhaustion made it a permanent zero-step
-    # red. The prod-cred-off-the-fleet posture is moot while the leg is inert (RAILWAY_TOKEN unset);
-    # reassess if the token is ever armed.
+    # red. Operator lock ADR-0367: this job STAYS on Blacksmith even once RAILWAY_TOKEN arms —
+    # VM-per-job isolation + a Railway-scoped revocable deploy credential is the accepted posture.
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 25
     steps:
