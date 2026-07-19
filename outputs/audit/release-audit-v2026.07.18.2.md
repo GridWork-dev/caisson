@@ -1,4 +1,4 @@
-# R4 release audit — v2026.07.18.1
+# R4 release audit — v2026.07.18.2
 
 Window: `v2026.07.17.5..737365d2` (PRs #274-#284). Fresh cumulative pass per the release
 checklist convention — every substantive PR in the window also passed its own in-session
