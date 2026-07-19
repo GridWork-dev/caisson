@@ -14,6 +14,7 @@ export const FINDING_SOURCES = [
   "github",
   "analytics",
   "error",
+  "dep-digest",
 ] as const;
 export type FindingSource = (typeof FINDING_SOURCES)[number];
 

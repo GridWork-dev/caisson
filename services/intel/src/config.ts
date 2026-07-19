@@ -71,6 +71,7 @@ const ConfigSchema = strictObject({
   cadenceGithubMs: cadenceMs(12 * HOUR),
   cadenceAnalyticsMs: cadenceMs(DAY),
   cadenceErrorMs: cadenceMs(15 * 60_000),
+  cadenceDepDigestMs: cadenceMs(7 * DAY),
 
   competitorUrls: z
     .string()
@@ -125,6 +126,7 @@ export function loadConfig(env: Env = process.env): Config {
     cadenceGithubMs: env.INTEL_CADENCE_GITHUB_MS,
     cadenceAnalyticsMs: env.INTEL_CADENCE_ANALYTICS_MS,
     cadenceErrorMs: env.INTEL_CADENCE_ERROR_MS,
+    cadenceDepDigestMs: env.INTEL_CADENCE_DEP_DIGEST_MS,
     competitorUrls: env.INTEL_COMPETITOR_URLS,
     githubOrg: env.INTEL_GITHUB_ORG,
     githubToken: env.GITHUB_TOKEN,
