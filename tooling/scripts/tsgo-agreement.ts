@@ -72,10 +72,15 @@ export function expandWorkspaceDirs(
   return [...dirs].sort();
 }
 
-const TSC_USAGE_RE = /\btsc\b/;
+// Matches "tsc" or "tscn" as a whole word — ADR-0368's cutover swapped every package's
+// build/check script from the classic `tsc -p ...` to the native-compiler launcher `tscn -p
+// ...`, so a `tsc`-only pattern silently stopped matching any package post-cutover (a real bug:
+// dts-drift-check.ts, which reuses discoverTscPackages below, would otherwise "discover" zero
+// packages and report a false PASS on every PR).
+const TSC_USAGE_RE = /\btscn?\b/;
 
 /** A package is in scope when it has a tsconfig.json AND its build/check script actually invokes
- *  tsc (skips `next build` apps and non-TS packages like tooling/eslint-config). */
+ *  tsc/tscn (skips `next build` apps and non-TS packages like tooling/eslint-config). */
 export function discoverTscPackages(repoRoot: string): PackageCandidate[] {
   const dirs = expandWorkspaceDirs(readWorkspaceGlobs(repoRoot), repoRoot);
   const out: PackageCandidate[] = [];

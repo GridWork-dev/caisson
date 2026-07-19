@@ -2,6 +2,7 @@
 import { analyticsWatcher } from "./analytics.ts";
 import { competitorWatcher } from "./competitor.ts";
 import { complianceWatcher } from "./compliance.ts";
+import { depDigestWatcher } from "./dep-digest.ts";
 import { errorTriageWatcher } from "./error-triage.ts";
 import { githubWatcher } from "./github.ts";
 import { soc2Watcher } from "./soc2.ts";
@@ -14,6 +15,7 @@ export const WATCHERS: readonly Watcher[] = [
   githubWatcher,
   analyticsWatcher,
   errorTriageWatcher,
+  depDigestWatcher,
 ];
 
 export function findWatcher(name: string): Watcher | undefined {
