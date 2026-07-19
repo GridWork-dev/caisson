@@ -37,7 +37,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!isSameOrigin(request)) {
     return new Response(null, { status: 403 });
   }
-  const auth = getAuth();
+  const auth = await getAuth();
   if (auth !== null) {
     try {
       // Revokes the session row server-side (better-auth reads the session token off the request
