@@ -325,7 +325,6 @@ function checkSiblingChurn(opts: {
   const { sidecar, skipKeys, packageDirFor, packFn, stagingDir } = opts;
   const runLockHash = currentLockHash();
   const siblingMismatches: string[] = [];
-  const lockDrifted: string[] = [];
   for (const key of Object.keys(sidecar.tarballs)) {
     if (skipKeys.has(key)) continue; // freshly (re-)recorded this run
     const { slug, version } = candidatePackageKey(key);
@@ -337,42 +336,29 @@ function checkSiblingChurn(opts: {
       .parse(JSON.parse(readFileSync(pkgJsonPath, "utf8")));
     if (rawPackage.version !== version) continue; // superseded historical version
     const recorded = sidecar.tarballs[key] as TarballDist;
-    // Lock-drift short-circuit (ADR-0365 / CAISSON-127): a row recorded under a different
-    // dependency resolution cannot be expected to byte-reproduce here — packs rewrite resolved
-    // versions into package.json and dists can inline external types. Demand the own-version
-    // bump directly instead of surfacing a confusing byte-diff. Rows without a recorded hash
-    // (pre-ADR) keep the re-pack-and-compare path.
-    if (
-      recorded.lockHash !== undefined &&
-      runLockHash !== undefined &&
-      recorded.lockHash !== runLockHash
-    ) {
-      lockDrifted.push(
-        `${key} (recorded under bun.lock sha256 ${recorded.lockHash.slice(0, 12)}…, this tree resolves ${runLockHash.slice(0, 12)}…)`,
-      );
-      continue;
-    }
+    // ADR-0365 / CAISSON-127 refinement (2026-07-19): the recorded lockHash covers the WHOLE
+    // bun.lock, and workspace version bumps legitimately change it every consume — so it can
+    // NEVER gate the re-pack (a short-circuit here mass-flags rows whose bytes are identical).
+    // Always re-pack and byte-compare; the hash's job is to make a REAL mismatch's cause
+    // legible (dependency-resolution drift vs a source edit).
     const bytes = packFn(packageDir, slug, version, stagingDir);
     const dist = computeTarballDist(bytes, slug, version);
     if (dist.shasum !== recorded.shasum || dist.size !== recorded.size) {
+      const lockNote =
+        recorded.lockHash !== undefined &&
+        runLockHash !== undefined &&
+        recorded.lockHash !== runLockHash
+          ? ` — recorded under bun.lock sha256 ${recorded.lockHash.slice(0, 12)}…, this tree resolves ${runLockHash.slice(0, 12)}… (dependency-resolution drift)`
+          : "";
       siblingMismatches.push(
-        `${key} (recorded=${recorded.shasum}/${String(recorded.size)}B, would-be=${dist.shasum}/${String(dist.size)}B)`,
+        `${key} (recorded=${recorded.shasum}/${String(recorded.size)}B, would-be=${dist.shasum}/${String(dist.size)}B)${lockNote}`,
       );
     }
   }
-  if (lockDrifted.length > 0 || siblingMismatches.length > 0) {
-    const sections: string[] = [];
-    if (lockDrifted.length > 0) {
-      sections.push(
-        `lock-drift: these recorded rows were packed under a different dependency resolution (bun.lock changed since recording). Fix: add a changeset bumping each package's OWN version in this release so a fresh row is recorded under the current lock:\n  - ${lockDrifted.join("\n  - ")}`,
-      );
-    }
-    if (siblingMismatches.length > 0) {
-      sections.push(
-        `sibling-churn: these already-recorded rows no longer re-pack to their advertised bytes from this tree — a workspace dependency's resolved version changed since the row was recorded. Fix: add a changeset bumping each package's OWN version in this release so a fresh row is recorded, else the release fails at the publish/tag byte-gate:\n  - ${siblingMismatches.join("\n  - ")}`,
-      );
-    }
-    throw new Error(sections.join("\n"));
+  if (siblingMismatches.length > 0) {
+    throw new Error(
+      `sibling-churn: these already-recorded rows no longer re-pack to their advertised bytes from this tree — a workspace dependency's resolved version changed since the row was recorded. Fix: add a changeset bumping each package's OWN version in this release so a fresh row is recorded, else the release fails at the publish/tag byte-gate:\n  - ${siblingMismatches.join("\n  - ")}`,
+    );
   }
 }
 
