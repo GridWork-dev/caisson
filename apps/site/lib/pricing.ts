@@ -406,6 +406,33 @@ export function renewalAmount(entitlementId: string): number | null {
   return n < 9 ? null : n - ((n - 9) % 10);
 }
 
+/** Multi-year renewal display price (R6 rider — mechanism only, no baked discount or displayed
+ *  SKU: the operator sets `discountBps` and picks which SKUs get a multi-year row at SHIP).
+ *  `base` is the SKU's 1-year renewal price (`renewalAmount`'s output, whole USD); `years` the
+ *  tenor bought at once; `discountBps` the extra basis-points-off-the-naive-total the operator
+ *  commits — REQUIRED, never defaulted, so no discount number ships without an explicit call-site
+ *  value. Floors the discounted total to the nearest whole dollar ending in 9 (same
+ *  floor-to-nearest-X9 convention as `renewalAmount`, so a multi-year price never breaks the
+ *  site's ladder aesthetic) and returns null below the $9 floor — same number-free posture as
+ *  `renewalAmount` for an input too small to reach an X9 point. */
+export function multiYearRenewalAmount(
+  base: number,
+  years: number,
+  discountBps: number,
+): number | null {
+  // Fail-closed on any non-finite or negative input (the !(x >= bound) NaN-safe form): a NaN or a
+  // negative-discount typo must yield null, never a NaN price or a silently inflated one.
+  if (
+    !(Number.isFinite(base) && Number.isFinite(years)) ||
+    !(discountBps >= 0 && discountBps <= 10_000)
+  ) {
+    return null;
+  }
+  const naive = base * years;
+  const n = Math.floor((naive * (10_000 - discountBps)) / 10_000);
+  return !(n >= 9) ? null : n - ((n - 9) % 10);
+}
+
 /** Priority-support response-time commitment (ADR-0278 Track K, price-agnostic plumbing, fifth-sitting
  *  picker 2026-07-07): the ONE config source every surface describing the SKU reads from, so the
  *  number never drifts and — while `null` — never invents one. Operator-owned: `null` until the

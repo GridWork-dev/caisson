@@ -15,13 +15,27 @@ import { z } from "zod";
 import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
 
 /** Append-only version stamp — a renewal-row change bumps this, never edits it in place (ADR-0006). */
-export const RENEWAL_BOOK_VERSION = "2026-07-18.1";
+export const RENEWAL_BOOK_VERSION = "2026-07-19.1";
 
 export const renewalBookEntrySchema = strictObject({
   /** The purchased id (edition/bundle/module slug) whose updates window this price renews. */
   renewsEntitlement: z.string().trim().min(1).max(128),
+  /** Multi-year renewal lever (R6 rider, mechanism only — Kickoff D-track): how many years of
+   *  updates-window ONE purchase of this SKU grants (12 * years months, `extendUpdatesWindow`).
+   *  OPTIONAL and left unset on every 1-year row (append-only, ADR-0006 — no existing row needs
+   *  editing); `renewalYears()` below reads the 1-year default for an unset row. Capped at 3 —
+   *  the backlog names "2 or 3 years"; raise the bound in the same commit that needs a longer tenor.
+   */
+  years: z.number().int().min(1).max(3).optional(),
 });
 export type RenewalBookEntry = z.infer<typeof renewalBookEntrySchema>;
+
+/** Resolve a renewal row's tenor in years, defaulting an unset field to 1 — the single place
+ *  every consumer (the fulfillment mapper, a future display surface) reads the lever from, so the
+ *  "1 default" behavior can't drift between call sites. */
+export function renewalYears(entry: RenewalBookEntry): number {
+  return entry.years ?? 1;
+}
 
 /**
  * `providerPriceId -> RenewalBookEntry`. One renewal SKU per renewable edition/module (the same
