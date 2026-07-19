@@ -1,20 +1,18 @@
 name: aeo-probe
 
-# The monthly AI-citation probe loop (ADR-0254, gap #9). Runs tooling/scripts/aeo-probe.ts
-# against 18 canonical questions x 3 OpenRouter-routed engines (~$1.20/run in tokens), then
-# commits the resulting dated snapshot section in docs/gtm/aeo-citation-tracking.md back to
-# main. Blacksmith VM-per-job (ADR-0326) — this job's write scope is one docs file via the
-# built-in ephemeral GITHUB_TOKEN, not a cross-repo/prod credential (contrast
-# publish.yml/mirror-sync.yml, which stay hosted because they hold R2/cross-repo-PAT creds).
+# The AI-citation probe loop (ADR-0254, gap #9). Runs tooling/scripts/aeo-probe.ts against 18
+# canonical questions x 3 OpenRouter-routed engines (~$1.20/run in tokens), then commits the
+# resulting dated snapshot section in docs/gtm/aeo-citation-tracking.md back to main.
+# Blacksmith VM-per-job (ADR-0326) — this job's write scope is one docs file via the built-in
+# ephemeral GITHUB_TOKEN, not a cross-repo/prod credential (contrast publish.yml/mirror-sync.yml,
+# which stay hosted because they hold R2/cross-repo-PAT creds).
 #
-# STAYS INERT UNTIL ARMED: OPENROUTER_API_KEY is not yet a repo secret. The guard step reads
-# it and skips every real step when absent, so the job runs as a GREEN no-op (mirrors
-# mirror-sync.yml's arm-check idiom) rather than failing — this workflow must never go red
-# just because the operator hasn't set the secret yet.
+# OPERATING MODE (as of 2026-07-19): local operator-key runs are the normal cadence — the
+# operator runs the probe by hand with their own OPENROUTER_API_KEY, so the monthly `schedule`
+# trigger was removed. This workflow_dispatch path stays as a dispatch-armed fallback: it will
+# run in CI (and commit the snapshot) if OPENROUTER_API_KEY is ever set as a repo secret; until
+# then the guard step below keeps it a GREEN no-op rather than a red failure.
 on:
-  schedule:
-    # 06:00 UTC on the 1st of each month.
-    - cron: "0 6 1 * *"
   workflow_dispatch:
     inputs:
       dry_run:
