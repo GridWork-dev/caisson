@@ -17,21 +17,20 @@ export const MODULE_MARKS: Record<string, IconName> = {
   "local-store": "local-store",
   "agent-kernel": "agent-kernel",
   "agent-runner": "agent-runner",
-  // The ADR-0368 depth-page wave: mapped to fitting lucide glyphs (the BUNDLE_MARKS reuse
-  // precedent) so every depth page carries a stable mark today; bespoke glyphs are a future
-  // design-kickoff upgrade, not a blocker.
-  "agent-trajectory": "git-branch",
-  "tool-exec": "terminal",
-  "org-controls": "users",
-  "compliance-core": "scale",
-  "billing-orchestration": "wallet",
-  "ui-pro": "glyphs",
-  "local-inference": "cpu",
-  "local-privacy": "shield",
-  "local-sync": "server",
-  "frameworks-pack": "book",
-  "signing-primitive": "key",
-  credits: "gauge",
+  // The newest depth-page wave, now on bespoke domain glyphs (the F6 bespoke set they were
+  // temporarily standing in for with generic lucide marks).
+  "agent-trajectory": "agent-trajectory",
+  "tool-exec": "tool-exec",
+  "org-controls": "org-controls",
+  "compliance-core": "compliance-core",
+  "billing-orchestration": "billing-orchestration",
+  "ui-pro": "ui-pro",
+  "local-inference": "local-inference",
+  "local-privacy": "local-privacy",
+  "local-sync": "local-sync",
+  "frameworks-pack": "frameworks-pack",
+  "signing-primitive": "signing-primitive",
+  credits: "credits",
 };
 
 /** Bundle id → bespoke mark. The persona bundles reuse the edition-era glyphs their personas kept
