@@ -1,0 +1,73 @@
+{
+  "slug": "compliance-updates",
+  "final": {
+    "slug": "compliance-updates",
+    "metaTitle": "Compliance Updates — Renew Your Updates Window | Caisson",
+    "metaDescription": "A $1,499/yr subscription that stamps a coverage horizon onto your Compliance bundle license, extending the per-entitlement updates window the registry Worker enforces on every pull at the edge.",
+    "heroOneLiner": "Compliance Updates is the $1,499/yr subscription that keeps your Compliance license pulling new package versions — cancel it and the code you own keeps running, just frozen at its last covered release.",
+    "definition": "Compliance Updates is the annual subscription that keeps a Compliance bundle license current with new package versions. Each paid cycle stamps a coverage horizon that computeUpdatesWindows folds into the buyer's per-entitlement updates window; the registry Worker's resolveGate and windowFilterEntry enforce it at the edge, so a version published after the window lapses is fail-closed invisible. It renews reach, never rewrites the code you already own.",
+    "included": [
+      {
+        "title": "Every paid cycle stamps a coverage horizon",
+        "body": "upsertSubscriptionGrants() writes a subscription-sourced grant keyed to the Paddle subscription id on each granting invoice, setting updates_expires_at = now() + one cadence for the compliance entitlement — the mechanism the code comments still call the Compliance-Updates re-grant mirror."
+      },
+      {
+        "title": "computeUpdatesWindows folds the most-favorable bound",
+        "body": "computeUpdatesWindows() reads the account's active one_time grants (updates_expires_at, or granted_at + 12 months) and takes the MAX against any live subscription coverage horizon — an active Compliance Updates subscription extends the window past what the original one-time bundle purchase alone would cover."
+      },
+      {
+        "title": "resolveGate resolves the per-module window at the edge",
+        "body": "The registry Worker's resolveGate() reads the signed license's updatesWindows claim, expands the caller's purchased ids against the index, and folds the MOST FAVORABLE window per module — owning a module both à la carte and via the subscription-covered bundle applies whichever bound is later."
+      },
+      {
+        "title": "windowFilterEntry enforces fail-closed on every pull",
+        "body": "windowFilterEntry() keeps only versions with publishedAt at or before the resolved cutoff and recomputes latest to the newest survivor; a module with zero in-window versions returns null — indistinguishable from a module the caller never bought."
+      },
+      {
+        "title": "Cancelling doesn't touch code you already pulled",
+        "body": "The window mechanism only gates future registry reads, not local files: cancelling stops new coverage-horizon stamps, so a framework-mapping release published after your window closes won't pull — but nothing revokes or breaks the version already sitting in node_modules."
+      }
+    ],
+    "artifact": {
+      "label": "windowFilterEntry — the per-module version cutoff a lapsed subscription trips",
+      "lang": "ts",
+      "file": "registry/worker/handler.ts",
+      "code": "/**\n * Narrow a COMMERCIAL module entry to the versions inside the caller's updates window\n * (ADR-0244/0255): keep `publishedAt <= cutoff`, recompute `latest` to the newest IN-WINDOW version\n * (the index `latest` if it survived, else the max `publishedAt` survivor). Returns `null` when NO\n * version is in-window — the caller was never entitled to any published version, indistinguishable\n * from unentitled (fail-closed, ADR-0076). An unparseable bound filters everything (fail-closed). The\n * caller decides applicability: base/community modules are NEVER window-filtered (the window\n * governs entitled commercial pulls only). `cutoff` is the per-module MOST-FAVORABLE ISO instant the\n * caller (`resolveGate`) already resolved — this function itself has no notion of entitlement ids.\n */\nexport function windowFilterEntry(\n  entry: ModuleEntry,\n  cutoff: string,\n): ModuleEntry | null {\n  const bound = Date.parse(cutoff);\n  const versions = entry.versions.filter(\n    (v) => Date.parse(v.publishedAt) <= bound,\n  );\n  let newest = versions[0];\n  if (newest === undefined) return null;\n  for (const v of versions) {\n    if (Date.parse(v.publishedAt) > Date.parse(newest.publishedAt)) newest = v;\n  }\n  const latest = versions.some((v) => v.version === entry.latest)\n    ? entry.latest\n    : newest.version;\n  return { ...entry, latest, versions };\n}",
+      "annotations": [
+        "versions.filter keeps only publishedAt <= cutoff — releases newer than your window aren't truncated to a stale pointer, they're dropped from the response entirely.",
+        "newest recomputes latest to the newest IN-WINDOW survivor, falling back off entry.latest the moment the index's real newest release falls outside your cutoff.",
+        "Returns null when nothing survives the filter — the caller reads exactly like a module they never bought, the same fail-closed 404 (ADR-0076)."
+      ]
+    },
+    "faq": [
+      {
+        "question": "Is Compliance Updates the same as the Compliance bundle?",
+        "answer": "No. The Compliance bundle ($1,049, one-time) is the code; Compliance Updates ($1,499/yr) is the subscription that keeps its control mappings and evidence packs current as regulations change, by extending your license's per-entitlement updates window so new package versions keep pulling from the private registry."
+      },
+      {
+        "question": "What does the subscription actually do, mechanically?",
+        "answer": "Each paid cycle stamps a coverage horizon on your account's compliance entitlement grant; computeUpdatesWindows folds that horizon into the window the registry Worker enforces at the edge (resolveGate + windowFilterEntry) — so a version published while your subscription is active stays pullable, one published after it lapses does not."
+      },
+      {
+        "question": "What happens if I cancel?",
+        "answer": "You keep everything you already pulled — cancelling only stops new coverage-horizon stamps going forward. The audit chain, WORM store, and every field-crypto or compliance-core version already installed keeps running unrevoked; only future framework-mapping releases stop reaching you."
+      },
+      {
+        "question": "Does this make my organization SOC 2 or HIPAA compliant?",
+        "answer": "No — no module or subscription makes an organization compliant; that determination is your organization's and its auditor's to make. Compliance Updates keeps the technical control mappings and evidence-pack generation current as SOC 2, HIPAA, and EU AI Act frameworks revise. The administrative controls and the audit itself remain yours."
+      }
+    ],
+    "relatedGlossary": [
+      "software-entitlement",
+      "offline-license-verification",
+      "ed25519-license-keys"
+    ],
+    "sells": {
+      "edition": "Compliance",
+      "note": "Sold standalone only at $1,499/yr — a subscription, not a bundle member; no one-time purchase includes it. It layers onto an owned Compliance bundle license ($1,049, one-time) or à-la-carte compliance modules already purchased — without an active one_time grant to extend, the subscription's coverage horizon has nothing to stamp."
+    },
+    "sourceNotes": "apps/site/lib/pricing.ts:469-476 (compliance-updates PLAN_PRICES entry, amount 1499, unit:\"year\", from:false) · apps/site/lib/pricing.ts:64-72 (BUNDLE_PRICES compliance, amount 1049, unit:\"once\") · packages/pricebook/src/plans.ts:121-126 (PLAN_BOOK row pri_01kwd76cwytyyy4yhd9ch0m935: planTag compliance_updates, cadence:\"year\", entitlements:[\"compliance\"]) · services/license/src/apply-billing-event.ts:211-226 (upsertSubscriptionGrants called on each granting invoice with plan.entitlements) · services/license/src/entitlement-store.ts:520-552 (upsertSubscriptionGrants: updates_expires_at = now() + $7::interval, GREATEST upsert) · services/license/src/apply-billing-event.ts:261-266 (comment: \"the Compliance-Updates re-grant mirror made dynamic\") · services/license/src/entitlement-store.ts:740-763 (subscriptionCoverageHorizons reads max(updates_expires_at) over source_kind='subscription') · services/license/src/entitlement-store.ts:783-809 (computeUpdatesWindows folds one_time bound via COALESCE(updates_expires_at, granted_at + 12 months) with subscription horizon via MAX) · registry/worker/handler.ts:132-192 (resolveGate per-module most-favorable window fold) · registry/worker/handler.ts:197-224 (windowFilterEntry, the artifact source, exact match) · registry/worker/entitlement-filter.ts:44-54 (updatesWindows claim off verified license; absent/null → empty map = unbounded) · apps/site/app/(marketing)/marketplace/(hub)/plans/page.tsx:50-93 (buyer-facing FAQ + SUB_META copy: \"not the Compliance bundle\", \"Auto-updating control mappings — SOC 2, HIPAA, EU AI Act\", cancel keeps what you own) · knowledge/decisions/ADR-0080-copy-messaging-expansion.md:31-35 (honesty law: ships the technical controls / generates the evidence, never \"makes you SOC 2/HIPAA compliant\") · apps/site/lib/glossary.ts:1405 + records for offline-license-verification & ed25519-license-keys (all three relatedGlossary slugs exist)."
+  },
+  "cuts": [],
+  "verdict": "clean"
+}
