@@ -37,7 +37,7 @@ jobs:
     # untouched or half-written; the daily cron still covers that case on its own cadence). Non-
     # workflow_run events (schedule, dispatch) always run.
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
-    # STAYS GitHub-hosted: this job reads R2 credentials, same posture as publish.yml. `aws` CLI is
+    # Blacksmith per ADR-0365 (fleet-only sweep; R2 read creds accepted, same posture as publish.yml). `aws` CLI is
     # preinstalled on ubuntu-latest.
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
