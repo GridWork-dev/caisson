@@ -32,7 +32,11 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # holds the prod Railway token → hosted (a prod deploy cred stays off the fleet)
+    # Blacksmith-only fleet (operator directive 2026-07-19, ADR-0365 lock-1 provision): the last
+    # hosted job followed the rest after the free-minute exhaustion made it a permanent zero-step
+    # red. The prod-cred-off-the-fleet posture is moot while the leg is inert (RAILWAY_TOKEN unset);
+    # reassess if the token is ever armed.
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 25
     steps:
       # Inert-until-armed guard: `secrets` can't be referenced in a job/step `if:`, so map RAILWAY_TOKEN
