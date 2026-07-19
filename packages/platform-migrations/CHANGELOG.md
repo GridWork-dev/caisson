@@ -1,5 +1,11 @@
 # @caisson/platform-migrations
 
+## 0.2.9
+
+### Patch Changes
+
+- @caisson/service-license@0.0.16
+
 ## 0.2.8
 
 ### Patch Changes

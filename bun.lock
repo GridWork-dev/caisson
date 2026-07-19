@@ -23,7 +23,7 @@
     },
     "apps/admin": {
       "name": "@caisson/admin",
-      "version": "0.0.14",
+      "version": "0.0.15",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
         "@caisson/audit-worm": "workspace:*",
@@ -139,7 +139,7 @@
     },
     "apps/compliance": {
       "name": "@caisson/app-compliance",
-      "version": "0.0.13",
+      "version": "0.0.14",
       "dependencies": {
         "@caisson/audit-worm": "workspace:*",
         "@caisson/compliance": "workspace:*",
@@ -192,7 +192,7 @@
     },
     "apps/site": {
       "name": "@caisson/site",
-      "version": "0.2.11",
+      "version": "0.2.12",
       "dependencies": {
         "@caisson/ai-kit": "workspace:*",
         "@caisson/ai-meter": "workspace:*",
@@ -660,7 +660,7 @@
     },
     "packages/compliance": {
       "name": "@caisson/compliance",
-      "version": "0.5.7",
+      "version": "0.5.8",
       "dependencies": {
         "@caisson/alerting": "workspace:*",
         "@caisson/audit-worm": "workspace:*",
@@ -684,7 +684,7 @@
     },
     "packages/compliance-core": {
       "name": "@caisson/compliance-core",
-      "version": "0.4.2",
+      "version": "0.5.0",
       "dependencies": {
         "@caisson/field-crypto": "workspace:*",
         "@caisson/frameworks-pack": "workspace:*",
@@ -1115,7 +1115,7 @@
     },
     "packages/platform-migrations": {
       "name": "@caisson/platform-migrations",
-      "version": "0.2.8",
+      "version": "0.2.9",
       "dependencies": {
         "@caisson/ai-meter": "workspace:*",
         "@caisson/auth": "workspace:*",
@@ -1142,7 +1142,7 @@
     },
     "packages/platform-reads": {
       "name": "@caisson/platform-reads",
-      "version": "0.2.5",
+      "version": "0.2.6",
       "dependencies": {
         "@caisson/tenancy-rls": "workspace:*",
       },
@@ -1157,7 +1157,7 @@
     },
     "packages/pricebook": {
       "name": "@caisson/pricebook",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
@@ -1253,7 +1253,7 @@
     },
     "packages/signing-primitive": {
       "name": "@caisson/signing-primitive",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@noble/curves": "2.2.0",
@@ -1370,7 +1370,7 @@
     },
     "registry": {
       "name": "@caisson/registry",
-      "version": "0.0.17",
+      "version": "0.0.18",
       "dependencies": {
         "@caisson/license-verify": "workspace:*",
         "@caisson/pricebook": "workspace:*",
@@ -1444,7 +1444,7 @@
     },
     "services/license": {
       "name": "@caisson/service-license",
-      "version": "0.0.15",
+      "version": "0.0.16",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
         "@caisson/alerting": "workspace:*",

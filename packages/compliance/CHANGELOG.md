@@ -1,5 +1,14 @@
 # @caisson/compliance
 
+## 0.5.8
+
+### Patch Changes
+
+- Updated dependencies [a6fc7a2]
+- Updated dependencies [302b521]
+  - @caisson/compliance-core@0.5.0
+  - @caisson/signing-primitive@0.3.4
+
 ## 0.5.7
 
 ### Patch Changes

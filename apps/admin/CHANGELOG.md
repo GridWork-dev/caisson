@@ -1,5 +1,14 @@
 # @caisson/admin
 
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [098fe54]
+  - @caisson/platform-reads@0.2.6
+  - @caisson/service-license@0.0.16
+  - @caisson/platform-migrations@0.2.9
+
 ## 0.0.14
 
 ### Patch Changes

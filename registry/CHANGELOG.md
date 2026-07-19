@@ -1,5 +1,16 @@
 # @caisson/registry
 
+## 0.0.18
+
+### Patch Changes
+
+- 7574a00: Release-integrity refinement: a recorded artifact's build-resolution stamp now annotates a
+  real checksum mismatch instead of gating the verification — routine internal version bumps
+  no longer flag artifacts whose bytes are unchanged. No behavioral change to what can be
+  published.
+- Updated dependencies [2bda239]
+  - @caisson/pricebook@0.7.0
+
 ## 0.0.17
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @caisson/app-compliance
 
+## 0.0.14
+
+### Patch Changes
+
+- @caisson/compliance@0.5.8
+
 ## 0.0.13
 
 ### Patch Changes
