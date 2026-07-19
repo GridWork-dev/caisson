@@ -8,6 +8,23 @@ grounds:
 
 # Deploy log
 
+## 2026-07-19 (late PM) — Full fleet redeploy at `655bb26a`: hash-at-rest live
+
+All five Railway services rebuilt from main `655bb26a` (`railway up --detach`, all
+SUCCESS): site · admin · license · docs · support-bot. Carries PR #292 (ADR-0366
+session-token hash-at-rest) as the only code delta since the previous wave.
+
+- **`SESSION_TOKEN_HMAC_KEY` armed**: provisioned this sitting (env store +
+  `caisson-site` Railway var, hash-parity verified, value never displayed; 1Password
+  vault copy backlogged to the next env-management session). Site boot passed the
+  fail-closed key check — caisson.sh 200.
+- **Cutover proven**: `session` table reads 0 raw-token rows post-deploy (0 hashed /
+  0 raw — empty pre-launch; the invariant "no raw tokens at rest" holds from here on).
+- Probes: caisson.sh 200 · /trust 200 · admin.caisson.sh 200 · license /health 200 ·
+  support-bot /health 200.
+- **Registry Worker NOT redeployed — deliberate**: `registry/` + `registry-schema`
+  untouched since the `f3952684` deploy (verified by diff); index unchanged.
+
 ## 2026-07-19 (PM) — Wave rides v2026.07.19 + v2026.07.19.1 + Worker redeploys
 
 Two further train rides the same day, both delivered:
