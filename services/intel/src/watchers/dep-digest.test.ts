@@ -3,6 +3,8 @@ import {
   TRACKED_DEPS,
   affectedPackagesFor,
   buildDepManifests,
+  buildWorkspaceReachability,
+  buyerImpactFor,
   compareVersions,
   currentVersionOf,
   depDigestFindingToAlertEvent,
@@ -14,17 +16,20 @@ import {
   isDepFlagged,
   majorOf,
   normalizeVersionSpec,
+  parseBunLockText,
   parseBunRelease,
   parseNpmRegistryResponse,
   parsePackageJson,
   parseRenovatePrs,
   releaseAgeNote,
   toWorkspacePackageManifest,
+  transitiveWorkspaceReach,
 } from "./dep-digest.ts";
 import type {
   NpmPackageInfo,
   TrackedDep,
   TrackedDepEvaluation,
+  WorkspaceReachability,
 } from "./dep-digest.ts";
 import { logger } from "../logger.ts";
 import { InMemoryStore } from "../store.ts";
@@ -181,17 +186,36 @@ describe("detectDepFindings", () => {
     expect(detectDepFindings([null], {}, {}).findings).toEqual([]);
   });
 
-  test("affectedPackages rides the payload when supplied", () => {
+  test("direct + transitive-only packages ride the payload when supplied", () => {
     const { findings } = detectDepFindings(
       [evalOf(false)],
       {},
-      { zod: ["@caisson/kernel", "@caisson/ui"] },
+      {
+        zod: {
+          direct: ["@caisson/kernel", "@caisson/ui"],
+          transitiveOnly: ["@caisson/audit-worm"],
+        },
+      },
     );
     expect(findings[0]?.payload.affectedPackages).toEqual([
       "@caisson/kernel",
       "@caisson/ui",
     ]);
+    expect(findings[0]?.payload.transitiveOnlyPackages).toEqual([
+      "@caisson/audit-worm",
+    ]);
     expect(findings[0]?.body).toContain("@caisson/kernel");
+    expect(findings[0]?.body).toContain("@caisson/audit-worm");
+  });
+
+  test("a null transitiveOnly (bun.lock leg degraded) notes it as unavailable, not empty", () => {
+    const { findings } = detectDepFindings(
+      [evalOf(false)],
+      {},
+      { zod: { direct: ["@caisson/kernel"], transitiveOnly: null } },
+    );
+    expect(findings[0]?.payload.transitiveOnlyPackages).toBeNull();
+    expect(findings[0]?.body).toContain("unavailable this run");
   });
 });
 
@@ -360,6 +384,103 @@ describe("manifest parsing + buyer-impact-lite", () => {
   });
 });
 
+describe("bun.lock parsing + transitive workspace-reachability", () => {
+  test("parseBunLockText tolerates bun.lock's trailing commas", () => {
+    const text = `{
+      "lockfileVersion": 1,
+      "workspaces": {
+        "": { "name": "root", },
+      },
+      "packages": {},
+    }`;
+    const parsed = parseBunLockText(text) as {
+      workspaces: { "": { name: string } };
+    };
+    expect(parsed.workspaces[""].name).toBe("root");
+  });
+
+  test("parseBunLockText returns null on genuinely broken JSON rather than throwing", () => {
+    expect(parseBunLockText("{ not json at all")).toBeNull();
+  });
+
+  // Fixture graph: kernel declares zod directly; ui pulls it only via workspace:kernel; wrapper
+  // pulls it only via an external npm package's resolved dependency; apps/site declares it
+  // directly too but sits outside the packages/* buyer scope entirely.
+  const FIXTURE_LOCK = {
+    workspaces: {
+      "packages/kernel": {
+        name: "@caisson/kernel",
+        dependencies: { zod: "^4.0.0" },
+      },
+      "packages/ui": {
+        name: "@caisson/ui",
+        dependencies: { "@caisson/kernel": "workspace:*" },
+      },
+      "packages/wrapper": {
+        name: "@caisson/wrapper",
+        dependencies: { "some-npm-lib": "^1.0.0" },
+      },
+      "apps/site": {
+        name: "@caisson/site",
+        dependencies: { zod: "^4.0.0" },
+      },
+    },
+    packages: {
+      "@caisson/kernel": ["@caisson/kernel@workspace:packages/kernel"],
+      "@caisson/ui": ["@caisson/ui@workspace:packages/ui"],
+      "@caisson/wrapper": ["@caisson/wrapper@workspace:packages/wrapper"],
+      "@caisson/site": ["@caisson/site@workspace:apps/site"],
+      zod: ["zod@4.4.3", "", {}, "sha512-x"],
+      "some-npm-lib": [
+        "some-npm-lib@1.0.0",
+        "",
+        { dependencies: { zod: "^4.0.0" } },
+        "sha512-y",
+      ],
+    },
+  };
+
+  test("buildWorkspaceReachability scopes to packages/* and reads dependency-name edges", () => {
+    const reach = buildWorkspaceReachability(FIXTURE_LOCK);
+    expect(reach?.scopedWorkspaceNames.has("@caisson/kernel")).toBe(true);
+    expect(reach?.scopedWorkspaceNames.has("@caisson/site")).toBe(false); // apps/* excluded
+    expect(reach?.edges.get("@caisson/kernel")?.has("zod")).toBe(true);
+    expect(reach?.edges.get("some-npm-lib")?.has("zod")).toBe(true);
+  });
+
+  test("buildWorkspaceReachability returns null on an unexpected shape", () => {
+    expect(buildWorkspaceReachability({ nope: true })).toBeNull();
+  });
+
+  test("transitiveWorkspaceReach crosses both workspace-to-workspace and npm-resolved edges", () => {
+    const reach = buildWorkspaceReachability(
+      FIXTURE_LOCK,
+    ) as WorkspaceReachability;
+    expect(transitiveWorkspaceReach(reach, "zod")).toEqual([
+      "@caisson/kernel",
+      "@caisson/ui",
+      "@caisson/wrapper",
+    ]);
+  });
+
+  test("buyerImpactFor splits direct vs transitive-only", () => {
+    const reach = buildWorkspaceReachability(
+      FIXTURE_LOCK,
+    ) as WorkspaceReachability;
+    const impact = buyerImpactFor("zod", ["@caisson/kernel"], reach);
+    expect(impact.direct).toEqual(["@caisson/kernel"]);
+    expect(impact.transitiveOnly).toEqual(["@caisson/ui", "@caisson/wrapper"]);
+  });
+
+  test("buyerImpactFor with reach=null (degraded) reports transitiveOnly as null, not empty", () => {
+    const impact = buyerImpactFor("zod", ["@caisson/kernel"], null);
+    expect(impact).toEqual({
+      direct: ["@caisson/kernel"],
+      transitiveOnly: null,
+    });
+  });
+});
+
 describe("registry response parsing", () => {
   test("parseNpmRegistryResponse reads dist-tags.latest + its publish time", () => {
     const info = parseNpmRegistryResponse({
@@ -460,6 +581,27 @@ const ROOT_PKG = {
 const TSCONFIG_PKG = { dependencies: { "tsc-native": "npm:typescript@7.0.2" } };
 const SITE_PKG = { dependencies: { "better-auth": "1.6.23" } };
 
+// bun.lock fixture (leg d, v2): ui carries zod only transitively, via its workspace dependency
+// on kernel — kernel is the only package/*.json that declares zod directly (matches ROOT_PKG /
+// the git-trees + per-package fixtures above), so ui should land in transitive-only.
+const BUN_LOCK_FIXTURE = {
+  workspaces: {
+    "packages/kernel": {
+      name: "@caisson/kernel",
+      dependencies: { zod: "^4.0.0" },
+    },
+    "packages/ui": {
+      name: "@caisson/ui",
+      dependencies: { "@caisson/kernel": "workspace:*" },
+    },
+  },
+  packages: {
+    "@caisson/kernel": ["@caisson/kernel@workspace:packages/kernel"],
+    "@caisson/ui": ["@caisson/ui@workspace:packages/ui"],
+    zod: ["zod@4.4.3", "", {}, "sha512-x"],
+  },
+};
+
 function buildFetch(): Fecher {
   const seen = new Set<string>();
   const impl = (async (input: string | URL | Request) => {
@@ -504,6 +646,11 @@ function buildFetch(): Fecher {
         JSON.stringify(b64Json({ name: "@caisson/ui", dependencies: {} })),
         { status: 200 },
       );
+    }
+    if (url.endsWith("/contents/bun.lock")) {
+      return new Response(JSON.stringify(b64Json(BUN_LOCK_FIXTURE)), {
+        status: 200,
+      });
     }
     if (url.includes("registry.npmjs.org/zod")) {
       return new Response(
@@ -553,9 +700,37 @@ describe("depDigestWatcher.run (fixture-injected fetchImpl)", () => {
     expect(first).toHaveLength(1);
     expect(first[0]?.payload.dep).toBe("zod");
     expect(first[0]?.payload.affectedPackages).toEqual(["@caisson/kernel"]);
+    // ui declares no deps directly (fixture package.json above) but depends on kernel via
+    // workspace:*, and kernel carries zod — so ui is transitive-only, per BUN_LOCK_FIXTURE.
+    expect(first[0]?.payload.transitiveOnlyPackages).toEqual(["@caisson/ui"]);
+    expect(first[0]?.body).toContain("Transitive-only: @caisson/ui");
 
     const second = await depDigestWatcher.run(ctx);
     expect(second).toEqual([]);
+  });
+
+  test("a bun.lock fetch failure degrades to direct-only without dropping the finding", async () => {
+    const store = new InMemoryStore();
+    const noLockFetch = (async (input: string | URL | Request) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.endsWith("/contents/bun.lock"))
+        return new Response("not found", { status: 404 });
+      return buildFetch()(input);
+    }) as unknown as Fecher;
+
+    const ctx: WatcherCtx = {
+      config: BASE_CONFIG,
+      store,
+      fetchImpl: noLockFetch,
+      now: () => 2_000_000_000_000,
+      logger,
+    };
+
+    const findings = await depDigestWatcher.run(ctx);
+    const zodFinding = findings.find((f) => f.payload.dep === "zod");
+    expect(zodFinding?.payload.affectedPackages).toEqual(["@caisson/kernel"]);
+    expect(zodFinding?.payload.transitiveOnlyPackages).toBeNull();
+    expect(zodFinding?.body).toContain("Transitive-only: unavailable this run");
   });
 
   test("no tracked dep flagged (all current) yields zero findings — a quiet week", async () => {
