@@ -60,8 +60,11 @@ export interface GlossaryTerm {
 // All 32 ADR-0235-locked terms: batch 1 (renderer + hub + the full 10-term compliance cluster +
 // two pilots, Fork C) followed by batches 2-3 (security, licensing, ai-infra remainders; the two
 // cross-cutting terms fold into compliance/ai-infra since the SPEC's binding cluster union has no
-// fifth value). Copy is adversarially verified per Fork B — do not rewrite; a typo fix is fine,
-// a claim change is not. `related` entries are curated same-cluster slugs (Fork D).
+// fifth value), plus the AEO/Kickoff-J additions and the ADR-0367 expansion batch (7 terms over
+// the post-0235 shipped surfaces: TSA, Rekor, evidence receipts, crosswalk, signed anchors,
+// agent trajectory, token hash-at-rest). Copy is adversarially verified per Fork B — do not
+// rewrite; a typo fix is fine, a claim change is not. `related` entries are curated same-cluster
+// slugs (Fork D).
 export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
   {
     slug: "worm-audit-log",
@@ -2325,6 +2328,460 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       ctaHref: "/frameworks/eu-ai-act/article-50",
     },
     related: ["worm-audit-log", "hash-chain-audit-trail", "compliance-as-code"],
+  },
+  {
+    slug: "rfc-3161-timestamping",
+    term: "RFC 3161 timestamping",
+    cluster: "compliance",
+    definition:
+      "RFC 3161 timestamping is an IETF-standard protocol where a trusted third-party authority (TSA) cryptographically attests that a piece of data existed at a specific time, without seeing the data itself — only its hash. Caisson's audit-worm package submits each periodic audit-chain anchor's hash to a TSA and stores the signed token as a private, verifiable receipt.",
+    artifact: {
+      label:
+        "TsaAnchorLog.submit: DER-encode a TimeStampReq over the anchor's hash, POST it, verify the response attests the exact imprint",
+      lang: "ts",
+      code: 'export class TsaAnchorLog implements TrustedTimestampLog {\n  async submit(anchorBytes: Uint8Array): Promise<TimestampReceipt> {\n    const imprint = createHash("sha256").update(anchorBytes).digest();\n    const reqBer = buildTimeStampReqBer(imprint, this.#reqPolicy);\n    const resp = await fetchWithTimeout(\n      this.#url,\n      {\n        method: "POST",\n        headers: {\n          "content-type": "application/timestamp-query",\n          accept: "application/timestamp-reply",\n        },\n        body: reqBer,\n      },\n      { timeoutMs: this.#timeoutMs },\n    );\n    if (!resp.ok) {\n      throw new ValidationError("TSA request failed", { status: resp.status });\n    }\n    const respDer = new Uint8Array(await resp.arrayBuffer());\n    return parseTimeStampResp(respDer, imprint, this.#url);\n  }\n}\n\n// Build the DER TimeStampReq (RFC-3161): version 1, sha256 imprint, certReq, random nonce.\nfunction buildTimeStampReqBer(\n  imprint: Uint8Array,\n  reqPolicy: string | undefined,\n): ArrayBuffer {\n  const messageImprint = new MessageImprint({\n    hashAlgorithm: new AlgorithmIdentifier({\n      algorithmId: SHA256_OID,\n      algorithmParams: new Null(),\n    }),\n    hashedMessage: new OctetString({ valueHex: imprint }),\n  });\n  const req = new TimeStampReq({\n    version: 1,\n    messageImprint,\n    certReq: true,\n    nonce: new Integer({ valueHex: randomBytes(16) }),\n    ...(reqPolicy !== undefined ? { reqPolicy } : {}),\n  });\n  return req.toSchema().toBER();\n}',
+    },
+    properties: [
+      {
+        title: "Imprint-only egress, never the data",
+        body: "submit() sends fetchWithTimeout only a DER TimeStampReq whose messageImprint is sha256(anchorBytes) — the anchor is already just {length, tipHash, genesisHash}, so the TSA never sees payload or PII, only a hash of a hash.",
+      },
+      {
+        title: "The response is checked, not just trusted",
+        body: "parseTimeStampResp requires a granted PKIStatus, walks the CMS SignedData to the signed TSTInfo, and constant-time compares (safeEqualFixed) the TSA's attested messageImprint against the one submitted — a TSA that signs the wrong imprint fails the receipt outright rather than being recorded as valid.",
+      },
+      {
+        title: "A private receipt, not a public one",
+        body: "This is v1's only grade, trusted-timestamped: the token proves timing to whoever holds the tenant's own WORM store. Caisson never markets a TSA receipt as externally verifiable — that stronger claim (externally-transparent) is reserved for the separate public-log target (Rekor/OTS), which a TSA receipt can never silently become.",
+      },
+      {
+        title: "Full CMS verification on read-back, not a structural parse",
+        body: "verifyExternal's TSA path re-parses the stored token as CMS DER, verifies the SignedData signature over TSTInfo, confirms the signing cert carries the id-kp-timeStamping EKU, and — when the deployment configured trust anchors — validates the certificate chain, surfacing chainValidated: false rather than upgrading the claim when no root was configured.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is RFC 3161 timestamping?",
+        answer:
+          "It's an IETF protocol (RFC 3161) for getting a signed proof from a timestamping authority (TSA) that a hash existed at a given time, without exposing the underlying data. Caisson uses it to timestamp audit-chain anchors, so a stored anchor carries independent, third-party proof of when it was sealed.",
+      },
+      {
+        question:
+          "Does an RFC 3161 timestamp prove to an outside party that our records weren't rewritten?",
+        answer:
+          "Not on its own. A TSA receipt is stored back in the buyer's own WORM store, so it's trusted-timestamped, not externally-transparent — a receipt that lives in the trust domain it's supposed to check can't prove anything to someone who doesn't trust that domain. Caisson's public-log grade (Rekor/OpenTimestamps) is the separate, stricter tier for that claim, and the two are never conflated in code or copy.",
+      },
+      {
+        question:
+          "Does RFC 3161 timestamping make our audit trail SOC 2 or HIPAA compliant?",
+        answer:
+          "No. It ships a technical control — independently-attested, tamper-evident timing evidence over your audit chain — and generates the receipt an auditor can examine; it doesn't itself constitute a compliance certification, and the org controls and audit engagement remain yours.",
+      },
+      {
+        question: "Which timestamping authority does Caisson use?",
+        answer:
+          "None hardcoded — TsaAnchorLog takes the TSA url as deployment config (any RFC 3161-compliant authority, public or private), never a module constant, so a buyer can point it at their own TSA.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel:
+        "See how the Compliance edition ships RFC 3161 external anchoring",
+      ctaHref: "/compliance",
+    },
+    related: ["worm-audit-log", "audit-evidence-bundle"],
+  },
+  {
+    slug: "transparency-log",
+    term: "Transparency log",
+    cluster: "compliance",
+    definition:
+      "A transparency log is a public, append-only Merkle-tree ledger (the Certificate-Transparency model formalized in RFC-6962) where a signed checkpoint plus an inclusion proof lets anyone verify an entry landed, without trusting the log's operator. Caisson's audit-worm package submits each audit-chain anchor to Sigstore's Rekor v2 log over ed25519ph, then verifies the resulting receipt fully offline against the embedded checkpoint key.",
+    artifact: {
+      label:
+        "verifyRekorReceipt — fail-closed, fully offline: checkpoint signature + RFC-6962 inclusion proof + leaf-digest binding, zero network",
+      lang: "ts",
+      code: 'export function verifyRekorReceipt(\n  receipt: TransparencyReceipt,\n  anchorBytes: Uint8Array,\n): RekorVerifyResult {\n  // ...embedded log key parsed from receipt.logPublicKey (DER SPKI)...\n\n  const cp = parseCheckpoint(receipt.checkpoint);\n  if (cp === null) return fail("checkpoint envelope is malformed");\n  if (cp.origin !== receipt.origin) {\n    return fail("checkpoint origin does not match the receipt origin");\n  }\n\n  // (1) find the log\'s own signature line (keyHash-bound) and verify it.\n  const expectKeyHash = sha256(\n    new TextEncoder().encode(cp.origin),\n    Uint8Array.of(0x0a, 0x01),\n    rawLogPub,\n  ).subarray(0, 4);\n  const ownSig = cp.sigLines.find(\n    (s) =>\n      s.name === cp.origin &&\n      s.blob.length === 68 &&\n      bytesEqual(s.blob.subarray(0, 4), expectKeyHash),\n  );\n  if (ownSig === undefined) return fail("no matching log checkpoint signature");\n  if (!edVerify(null, cp.signedText, logKey, ownSig.blob.subarray(4))) {\n    return fail("checkpoint signature did not verify");\n  }\n\n  // (2) RFC-6962 inclusion proof against the VERIFIED checkpoint root + tree size.\n  const leafHash = sha256(Uint8Array.of(LEAF_PREFIX), leaf);\n  if (!verifyInclusion(BigInt(receipt.logIndex), cp.treeSize, leafHash, proof, cp.rootHash)) {\n    return fail("inclusion proof does not reconstruct the checkpoint root");\n  }\n\n  // (3) leaf digest must equal SHA-512(anchorBytes) under SHA2_512 — binds THIS receipt to THIS anchor.\n  const leafData = leafBodySchema.parse(\n    JSON.parse(new TextDecoder().decode(leaf)),\n  ).spec.hashedRekordV002.data;\n  if (leafData.algorithm !== "SHA2_512") {\n    return fail("leaf digest algorithm is not SHA2_512");\n  }\n  const expectedDigestB64 = createHash("sha512").update(anchorBytes).digest("base64");\n  if (!safeEqualFixed(leafData.digest, expectedDigestB64)) {\n    return fail("leaf digest does not match SHA-512 of the current anchor bytes");\n  }\n\n  return { ok: true, logIndex: receipt.logIndex };\n}',
+    },
+    properties: [
+      {
+        title: "Two independent proofs compose, both required",
+        body: "verifyRekorReceipt fails closed unless BOTH hold: the log's checkpoint signature verifies against the receipt-embedded Ed25519 key (the log attests a root), and an RFC-6962 inclusion proof reconstructs that exact root from the leaf (the entry is under that root). Either check alone would be forgeable; together they aren't.",
+      },
+      {
+        title: "The receipt is self-contained — it outlives its shard",
+        body: "Rekor shards retire roughly every six months and v2 dropped online proof retrieval, but WORM receipts are retained for years. So the receipt snapshots the checkpoint-signing key and origin at submit time and verifies with zero network and no TUF freshness check — a years-old receipt against a since-retired shard still verifies.",
+      },
+      {
+        title: "Never a hardcoded shard, never a non-ed25519ph signer",
+        body: "resolveWriteUrl reads the write URL from a deployment-supplied SigningConfig and asserts https at call time; RekorAnchorLog's constructor throws if the injected signer's algorithm isn't exactly \"ed25519ph\" (hashedrekord rejects plain Ed25519). Both are runtime refusals, not documentation.",
+      },
+      {
+        title: "Public egress requires an explicit, unforgeable opt-in",
+        body: "RekorAnchorLog's constructor throws unless it receives a branded IrreversiblePublicityOptIn, which only irreversiblePublicityOptIn() can mint — and only by echoing the exact PUBLICITY_ACKNOWLEDGEMENT string. A public-log submission can't happen by default or by accident.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is a transparency log?",
+        answer:
+          "A transparency log is a public, append-only Merkle-tree ledger where every entry carries a cryptographic inclusion proof against a periodically signed checkpoint (tree head) — the model Certificate Transparency formalized in RFC-6962. Caisson's audit-worm package submits each audit-chain anchor to Sigstore's Rekor v2 log this way, so the log operator itself can't quietly drop or rewrite an entry.",
+      },
+      {
+        question:
+          "How is anchoring to Rekor different from Caisson's WORM audit log?",
+        answer:
+          "The WORM audit log's tamper-evidence lives in the buyer's own trust domain — a hash chain plus a write-once object store only the buyer's deployment controls. Rekor anchoring composes a third, independent leg: the chain's periodic anchor is also committed to a public log outside Caisson's or the buyer's control, so compromising both the DB and the WORM store still can't rewrite history without also forging a public checkpoint.",
+      },
+      {
+        question:
+          "Does public transparency-log anchoring make Caisson SOC 2 or HIPAA compliant?",
+        answer:
+          "No. It ships the technical control auditors examine — a publicly, independently verifiable timestamp and inclusion proof for the audit chain's integrity — and generates evidence for the audit; it doesn't itself constitute a compliance certification.",
+      },
+      {
+        question: "Is any tenant data exposed by anchoring to a public log?",
+        answer:
+          "No payload or PII leaves the deployment. The submission carries the anchor's SHA-512 digest, a detached signature, and the public key — never the audited records themselves, and the anchor bytes are hashes only. But submission is irreversible and the entry's existence, timing, and rough volume become publicly visible, which is why Caisson requires an explicit, typed opt-in acknowledgement before RekorAnchorLog will even construct.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel:
+        "See how the Compliance edition ships public transparency-log anchoring",
+      ctaHref: "/compliance",
+    },
+    related: [
+      "worm-audit-log",
+      "hash-chain-audit-trail",
+      "audit-evidence-bundle",
+      "s3-object-lock",
+    ],
+  },
+  {
+    slug: "evidence-receipt",
+    term: "Evidence receipt",
+    cluster: "compliance",
+    definition:
+      "An evidence receipt is a versioned proof bundle for one audit-log entry — raw material a verifier recomputes, never a verdict it's asked to trust. Caisson's kernel builds one per row from the entry's hash-chain link and its per-length WORM anchor behind the admin proof endpoint, classifying the row into one of six fail-closed verification states.",
+    artifact: {
+      label:
+        "buildRowReceipt — a versioned proof bundle carrying raw material, not a trusted verdict",
+      lang: "ts",
+      code: "export function buildRowReceipt(input: {\n  entry: AuditChainEntry;\n  anchorForRow: AuditChainAnchor;\n  redacted: boolean;\n  checks: VerifyLegs;\n  verifiedAt: string;\n  includeAnchorProvenance?: boolean;\n}): RowReceipt {\n  const { entry, anchorForRow, redacted, checks, verifiedAt, includeAnchorProvenance } = input;\n  const anchor: {\n    length: number;\n    tipHash: string;\n    genesisHash?: string;\n    sig?: string;\n    keyId?: string;\n  } = { length: anchorForRow.length, tipHash: anchorForRow.tipHash };\n  if (includeAnchorProvenance === true) {\n    if (anchorForRow.genesisHash !== undefined) anchor.genesisHash = anchorForRow.genesisHash;\n    if (anchorForRow.sig !== undefined) anchor.sig = anchorForRow.sig;\n    if (anchorForRow.keyId !== undefined) anchor.keyId = anchorForRow.keyId;\n  }\n  return {\n    v: ROW_RECEIPT_VERSION,\n    seq: entry.seq,\n    hash: entry.hash,\n    prevHash: entry.prevHash,\n    anchor,\n    raw: { prevHash: entry.prevHash, payload: entry.payload },\n    redacted,\n    checks,\n    verifiedAt,\n  };\n}",
+    },
+    properties: [
+      {
+        title: "Raw material, not a verdict",
+        body: "The receipt's checks and verifiedAt fields are derived, untrusted display material — a standalone verifier ignores them and recomputes both legs itself from raw.prevHash and raw.payload, the only fields it actually trusts.",
+      },
+      {
+        title: "Six fail-closed states, never a false 'verified'",
+        body: "classifyRowState maps the recompute legs to one of verified, anchor-confirmed-original-not-disclosed, tampered, unverifiable, pending, or genesis; any leg that's inconclusive for a reason other than redaction resolves to unverifiable, never to verified.",
+      },
+      {
+        title: "Redaction is marked, not hidden",
+        body: "For a row with a secret-bearing payload, the admin proof endpoint masks the field server-side before the receipt is built, so raw.payload can never recompute the original hash — the receipt sets redacted: true and the row can only earn anchor-confirmed-original-not-disclosed, never verified.",
+      },
+      {
+        title: "Versioned so the shape can change safely",
+        body: "Every receipt carries v: ROW_RECEIPT_VERSION (currently 1), the schema version the kernel bumps on any change to the raw proof material's shape, so the proof-material layout a verifier reads is explicitly declared rather than assumed.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is an evidence receipt?",
+        answer:
+          "A portable, versioned proof object for a single audit-log row: the raw hash-chain link plus its per-length WORM anchor, packaged so anyone can recompute the row's verification state independently instead of trusting a server-reported verdict.",
+      },
+      {
+        question:
+          "Can I verify an evidence receipt without trusting Caisson's server?",
+        answer:
+          "Yes — the receipt ships raw.prevHash and raw.payload, and a standalone verifier recomputes the link hash and anchor-equality checks itself via WebCrypto; the receipt's own checks field is display-only and is never the source of the rendered state.",
+      },
+      {
+        question: "Does a redacted row still get an evidence receipt?",
+        answer:
+          "Yes, but honestly weaker: the payload is masked before the receipt is built, so the client can't recompute the original hash and the row is classified anchor-confirmed-original-not-disclosed rather than verified — the anchor still confirms the stored (redacted) hash matches what was committed.",
+      },
+      {
+        question: "Does an evidence receipt make us SOC 2 or HIPAA compliant?",
+        answer:
+          "No. It ships the technical control an auditor examines for tamper-evidence and generates the evidence for that check; it does not itself constitute a compliance certification.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel:
+        "See how the Compliance edition ships per-row evidence receipts",
+      ctaHref: "/compliance",
+    },
+    related: [
+      "worm-audit-log",
+      "hash-chain-audit-trail",
+      "audit-evidence-bundle",
+      "transparency-log",
+    ],
+  },
+  {
+    slug: "compliance-crosswalk",
+    term: "Compliance crosswalk",
+    cluster: "compliance",
+    definition:
+      "A compliance crosswalk maps one technical control to every regulatory framework requirement it genuinely addresses, so evidence gathered once counts across SOC 2, PCI DSS, GDPR, ISO 27001, and NIST 800-53 instead of being re-proven per regime. Caisson's computeCrosswalkRollup joins canonical controls to these regime crosswalks, deriving each cell's claim mechanically from evidence status and review depth, never editorially.",
+    artifact: {
+      label:
+        "computeCrosswalkRollup — each cell's claim is derived mechanically, never editorially",
+      lang: "ts",
+      code: 'const cells: CrosswalkRollupCell[] = [];\nfor (const { framework, reference, contributions } of byRef.values()) {\n  const canonicalControlIds = [\n    ...new Set(contributions.map((c) => c.controlId)),\n  ].sort(cmp);\n  const status = contributions.reduce<ControlStatus>(\n    (acc, c) => worstStatus(acc, c.status),\n    "ready",\n  );\n\n  const allReady = contributions.every((c) => c.status === "ready");\n  const allReviewed = contributions.every((c) =>\n    isReviewedAndFresh(c.verification),\n  );\n  const regimeId = FRAMEWORK_LABEL_TO_REGIME[framework];\n  const regime =\n    regimeId === undefined\n      ? undefined\n      : input.regimeCrosswalks.find((rc) => rc.regime === regimeId);\n  const regimeRow = regime?.rows.find((r) => r.control === reference);\n  const regimeImplements = regimeRow?.claim === "implements";\n\n  const claim: "maps-to" | "implements" =\n    allReady && allReviewed && regimeImplements ? "implements" : "maps-to";',
+    },
+    properties: [
+      {
+        title: "Restates, never originates",
+        body: "A cell only promotes to implements when every contributing canonical control is ready, every crosswalk reference it draws on carries a reviewed-or-better, non-stale verification record, AND the matching regime-crosswalk row (where one exists) is already implements — any one gap and the cell defaults to maps-to.",
+      },
+      {
+        title: "A pure join over existing pointers, not a new catalog",
+        body: "computeCrosswalkRollup takes catalogs, controlStatuses, and regimeCrosswalks as injected input and walks each canonical control's own crosswalk[] array — the dual-catalog OSCAL spine ADR-0333 first wrote as a deferred fork was descoped from v1's rollup because this pointer join already answered the evidenced demand.",
+      },
+      {
+        title: "Five regimes, two join shapes",
+        body: "SOC 2, PCI DSS, GDPR, ISO 27001, and NIST 800-53 all live in regimeCrosswalks. ISO and NIST rows join by canonicalControlId instead of a crosswalk[] pointer, but that join never attaches a verification record, so it can't single-handedly promote a cell to implements.",
+      },
+      {
+        title: "Deterministic and OLIR-flagged",
+        body: "Cells sort by (framework, reference) regardless of input order, and any contribution seeded from NIST's OLIR SP 800-53 <-> ISO/IEC 27001:2022 mapping carries a note repeating NIST's own subjective/incomplete warning rather than a stronger claim.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is a compliance crosswalk?",
+        answer:
+          "It's a mapping from one technical control to every regulatory framework requirement that control genuinely addresses, so evidence gathered once for SOC 2 also counts toward PCI DSS, GDPR, ISO 27001, or NIST 800-53 wherever the overlap is real. Caisson computes it as a pure join over each framework pack's existing crosswalk[] pointers — it never generates a second mapping catalog to keep in sync.",
+      },
+      {
+        question:
+          "Does mapping a control across five frameworks mean I'm compliant with all of them?",
+        answer:
+          "No. The rollup ships the technical control each requirement calls for and generates the evidence pointer an auditor examines; compliance status is your assessor's judgment across people, process, and technology for each regime, not a claim the crosswalk itself makes.",
+      },
+      {
+        question:
+          "What's the difference between 'maps-to' and 'implements' in Caisson's crosswalk?",
+        answer:
+          "'maps-to' means a Caisson mechanism addresses the same requirement's domain — the default, and the only claim any ISO 27001 or NIST 800-53 row can carry under the current legal gate. 'implements' requires three things at once: every contributing control is ready, every reference is reviewed-or-better and non-stale, and the framework's own regime-crosswalk row is already implements.",
+      },
+      {
+        question:
+          "Does the NIST 800-53 crosswalk mean Caisson is FedRAMP-ready?",
+        answer:
+          "No. Every nist80053Crosswalk row is capped at maps-to and cites bare 800-53 control identifiers as factual references; Caisson holds no ATO and makes no FedRAMP-readiness claim from the crosswalk's existence. The rollup makes the mapping visible, not the authorization.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel:
+        "See how the Compliance bundle ships the cross-framework crosswalk rollup",
+      ctaHref: "/compliance",
+    },
+    related: [
+      "control-to-code-mapping",
+      "oscal",
+      "oscal-export-typescript",
+      "audit-evidence-bundle",
+    ],
+  },
+  {
+    slug: "signed-audit-anchor",
+    term: "Signed audit anchor",
+    cluster: "security",
+    definition:
+      "A signed audit anchor is a per-length audit-chain commitment carrying a cryptographic signature, so a client verifies the chain's integrity against a pinned public key instead of trusting the serving API. Caisson's audit-worm package signs every anchor at mint with a dedicated Ed25519 key — domain-separated from the license-issuer key — stored alongside the existing WORM anchor.",
+    artifact: {
+      label:
+        "AuditChainStore.append: sign the anchor's canonical core at mint with the dedicated Ed25519 signer, stored alongside",
+      lang: "ts",
+      code: 'const entries = await loadEntries(tx, accountId);\nconst anchor = anchorChain(entries);\n\n// Sign the anchor\'s CANONICAL CORE bytes at mint when a signer is configured.\n// `sig`+`keyId` are stored ALONGSIDE the core (additive optional fields), so legacy unsigned\n// anchors stay structurally valid and the signed core stays byte-identical to the unsigned form.\nlet anchorToStore: AuditChainAnchor = anchor;\nif (this.signer !== undefined) {\n  const sigBytes = await this.signer.sign(encodeAnchor(anchor));\n  anchorToStore = {\n    ...anchor,\n    sig: Buffer.from(sigBytes).toString("base64"),\n    keyId: this.signer.keyId,\n  };\n}\n\n// The trusted commitment lands in WORM under a LENGTH-keyed, write-once key.\nawait this.store.put(\n  anchorKey(accountId, anchor.length),\n  encodeStoredAnchor(anchorToStore),\n  { retainUntil, contentType: "application/json" },\n);',
+    },
+    properties: [
+      {
+        title: "A dedicated key, domain-separated from the license issuer",
+        body: "The anchor-signing identity is a separate Ed25519 keypair from the license-issuer key, loaded from its own env var and held as an opaque KeyObject that never enumerates, logs, or JSON-serializes: an anchor-key compromise can't forge a license, and rotating the license key can't invalidate anchor-verification history.",
+      },
+      {
+        title: "Signed additively — legacy anchors stay valid",
+        body: "sig and keyId are stored alongside the existing {length, tipHash} core as optional fields, never a chain-format break: an anchor minted before a signer was configured stays structurally valid, and the signed core is byte-identical to the unsigned form.",
+      },
+      {
+        title: "Verified against a pinned key, never the serving API",
+        body: "The client and offline pack verifier check the signature with WebCrypto against a public key baked into the bundle out-of-band — never read from the row response — so a compromised or malicious API can forge a self-consistent payload/hash/anchor triple but can't forge a signature that verifies against that pinned key.",
+      },
+      {
+        title: "Fail-safe on 'can't check', never on 'didn't check'",
+        body: "A missing signature, no pinned key, or a keyId mismatch resolves to na, not fail — an unchecked signature never earns the tamper flag. Only a signature that positively fails to verify against the pinned key classifies the row tampered, the same fail-closed direction as the other two verification legs.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is a signed audit anchor?",
+        answer:
+          "A signed audit anchor is a per-length commitment over an audit chain (length + tip hash) that also carries an Ed25519 signature, minted at append time. It lets a client or offline verifier check the chain's integrity against a public key it already trusts, instead of trusting whatever the row-serving API happens to return.",
+      },
+      {
+        question:
+          "Why sign the anchor instead of just trusting the API that serves it?",
+        answer:
+          "Because the API is exactly what a compromise would control. Without a signature, a malicious or breached API can return a self-consistent (payload, hash, anchor) triple that recomputes clean. A signature over the anchor's core, checked against a key pinned out-of-band in the client bundle, is a trust root the row-serving API itself cannot forge.",
+      },
+      {
+        question:
+          "Does the anchor-signing key double as the software-license key?",
+        answer:
+          "No — they're deliberately separate Ed25519 keypairs. Domain separation means an anchor-signing key compromise can't be used to forge a software license, and rotating the license key never invalidates anchor-verification history.",
+      },
+      {
+        question:
+          "Does a signed audit anchor alone make us SOC 2 or HIPAA compliant?",
+        answer:
+          "No. It ships the technical tamper-evidence control an auditor checks for and generates verifiable signature evidence for every anchor; it doesn't itself constitute a compliance certification, which still depends on your organization's administrative controls and the audit process.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel: "See how audit-worm signs every anchor with a dedicated key",
+      ctaHref: "/marketplace/modules/audit-worm",
+    },
+    related: [
+      "fail-closed",
+      "token-hash-at-rest",
+      "per-tenant-encryption-keys",
+    ],
+  },
+  {
+    slug: "agent-trajectory",
+    term: "Agent trajectory",
+    cluster: "ai-infra",
+    definition:
+      "An agent trajectory is the complete, ordered record of what an AI agent run did: every model call, tool proposal, approval, and result, in sequence. Caisson's agent-trajectory package makes that record append-only and engine-neutral — eleven strict event kinds folding into one deterministic projection, with prompt and tool bodies carried only as sha256 digest references, never inlined.",
+    artifact: {
+      label:
+        "createMemoryTrajectoryStore().append: idempotent on (runId, seq), ConflictError on a rewrite or a gap",
+      lang: "ts",
+      code: 'async append(event: TrajectoryEvent): Promise<void> {\n  const parsed = parseStrict(TrajectoryEvent, event);\n  const log = runs.get(parsed.runId) ?? [];\n  const expected = log.length; // the next free (0-based) seq slot for this run\n\n  if (parsed.seq === expected) {\n    log.push(parsed);\n    runs.set(parsed.runId, log);\n    return;\n  }\n\n  if (parsed.seq < expected) {\n    // Already-recorded slot: idempotent iff byte-identical (both sides are schema-parsed, so key\n    // order is schema-determined and JSON.stringify is a canonical equality), else a rewrite.\n    const existing = log[parsed.seq];\n    if (existing !== undefined && stableEqual(existing, parsed)) return;\n    throw new ConflictError(\n      "append-only: seq already recorded with different content",\n      { runId: parsed.runId, seq: parsed.seq },\n    );\n  }\n\n  // parsed.seq > expected — a gap; append-only forbids skipping a slot.\n  throw new ConflictError("append-only: seq gap", {\n    runId: parsed.runId,\n    seq: parsed.seq,\n    expected,\n  });\n}',
+    },
+    properties: [
+      {
+        title: "Eleven event kinds, one strict schema",
+        body: "TrajectoryEvent is a Zod discriminatedUnion over run.started, run.finished, step.started/finished, model.call, model.usage, tool.proposed/approved/denied/result, and checkpoint — each payload .strict() so an unknown field is rejected at the boundary, not silently carried.",
+      },
+      {
+        title: "Sensitive bodies never inline, only referenced",
+        body: "Prompt text, tool arguments, tool results, and checkpoint state each carry only a DigestRef ({ digest: sha256-hex, byteLength, encRef? }); the trajectory log itself is safe to persist, replay, and anchor without ever holding the bodies it points at.",
+      },
+      {
+        title: "Append rejects rewrites and gaps, not just duplicates",
+        body: "append() treats seq as a monotonic 0-based per-run sequence: a repeat of an already-recorded slot with byte-identical content is a no-op (safe retry), a different event at that slot throws ConflictError, and a seq past the next free slot throws as a gap — three distinct outcomes, not one generic reject.",
+      },
+      {
+        title:
+          "Replay folds to a byte-identical projection regardless of arrival order",
+        body: "project() sorts events by seq before folding, so a shuffled batch (out-of-order stream delivery) resolves to the same canonical RunProjection every time — the step tree, per-billing-status usage totals, and checkpoint marks are a pure function of the log, never of wall-clock or map-iteration order.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is an agent trajectory?",
+        answer:
+          "The ordered event log of one AI agent run: every step it entered, every model call and its usage, every tool it proposed, whether that tool was approved or denied, and the result. Caisson's agent-trajectory package pins this to eleven closed event kinds validated by one Zod discriminatedUnion schema, so a trajectory is a typed contract, not a free-form transcript.",
+      },
+      {
+        question:
+          "Does an agent trajectory log expose the actual prompts and tool outputs?",
+        answer:
+          "No, not inline. Prompt text, tool argument bodies, tool result bodies, and checkpoint state are each carried only as a DigestRef — a sha256 digest, a byte length, and an optional pointer to an encrypted store — never as raw content in the event itself, so the log can be persisted or anchored without leaking what it references.",
+      },
+      {
+        question:
+          "Can a trajectory event log be edited or replayed with a different outcome later?",
+        answer:
+          "No. append() enforces a gapless, rewrite-free seq per run: an already-recorded slot only accepts a byte-identical retry, anything else throws ConflictError, and project() always folds the same sorted event set to the same output, so replaying a stored trajectory can't drift from what was originally recorded.",
+      },
+      {
+        question: "Is an agent trajectory log itself a compliance control?",
+        answer:
+          "It's the technical substrate an audit trail for agent activity is built on: a strict, append-only record of what the agent did and why a tool call was approved or denied. Caisson ships that substrate and lets it feed an evidence pack; it doesn't itself constitute a SOC 2 or HIPAA certification.",
+      },
+    ],
+    sells: {
+      edition: "Agentic-Dev",
+      ctaLabel:
+        "See how agent-trajectory records every governed run, append-only",
+      ctaHref: "/agentic-dev",
+    },
+    related: ["governed-agents", "ai-guardrails", "mcp-server"],
+  },
+  {
+    slug: "token-hash-at-rest",
+    term: "Token hashing at rest",
+    cluster: "security",
+    definition:
+      "Token hashing at rest means a session token is never stored as its raw, replayable value — only a derived lookup key sits in the database. Caisson's auth package derives an HMAC-SHA-256 lookup key from the raw token, and the site's better-auth adapter wrap swaps every session query to that key, fail-closed if the HMAC key is missing.",
+    artifact: {
+      label:
+        "deriveTokenLookupKey — the raw token never lands in the database, only its HMAC-SHA-256 lookup key",
+      lang: "ts",
+      code: 'import { createHmac } from "node:crypto";\n\n/**\n * HMAC-SHA-256 of `rawToken` keyed by `hmacKey`, hex-encoded (64 lowercase hex characters).\n * Deterministic — same inputs always produce the same lookup key, so it doubles as an indexed\n * database lookup value. The key never touches the database: a Postgres dump alone cannot be\n * reversed back into a usable session cookie without `hmacKey`.\n */\nexport function deriveTokenLookupKey(\n  rawToken: string,\n  hmacKey: string,\n): string {\n  return createHmac("sha256", hmacKey).update(rawToken).digest("hex");\n}',
+    },
+    properties: [
+      {
+        title: "One derived value, no schema change",
+        body: "Instead of adding a second column for a hashed value, the HMAC-SHA-256 lookup key replaces the raw token directly in the existing session.token column better-auth already unique-indexes — a plain indexed equality match on the lookup key, no new migration.",
+      },
+      {
+        title: "The adapter wrap is the single write/read seam",
+        body: "wrapSessionAdapter attaches at the one construction site in auth-server.ts and only intercepts the session model's token field — every other model, and every session query that doesn't touch token, passes straight through to the underlying better-auth adapter untouched.",
+      },
+      {
+        title: "Throws loudly on an unrecognized query shape, never guesses",
+        body: "rewriteTokenWhere only rewrites the two where-clause shapes better-auth's session queries build today (a single eq/string value or an in/string-array value); a future better-auth upgrade that changes that shape hits an explicit throw instead of silently producing a broken or unhashed lookup.",
+      },
+      {
+        title: "Fail-closed boot, not a raw-token fallback",
+        body: "getAuth() throws before starting if DATABASE_URL and BETTER_AUTH_SECRET are configured but SESSION_TOKEN_HMAC_KEY is missing — a forgotten env var crashes boot loudly instead of quietly falling back to storing raw tokens.",
+      },
+    ],
+    faq: [
+      {
+        question: "What does it mean to hash a session token at rest?",
+        answer:
+          "The value stored in the database is a derived lookup key, not the raw bearer token a browser presents on each request — so a database leak alone can't be replayed as a live session. Caisson derives that key with HMAC-SHA-256 keyed by a secret that never touches the database, so reversing a dump back into a usable cookie also requires that separate key.",
+      },
+      {
+        question:
+          "Does hashing the token at rest need a timingSafeEqual comparison?",
+        answer:
+          "No — there's no application-level secret comparison in this design at all. The database does a plain indexed equality lookup on the HMAC key itself, so there's nothing for timingSafeEqual to guard here; that guard matters when code directly compares two raw secret strings, which this design never does.",
+      },
+      {
+        question:
+          "Does hashing session tokens at rest make Caisson SOC 2 or HIPAA compliant?",
+        answer:
+          "No. It ships the technical control those frameworks expect for credential protection at rest, and the fail-closed boot behavior is evidence an auditor can examine; it is not itself a certification.",
+      },
+      {
+        question:
+          "What happens to existing logged-in sessions when this ships?",
+        answer:
+          "A hard cutover: legacy raw-token session rows are dropped or invalidated at deploy and every signed-in session ends. Caisson accepted that pre-launch — there are no real buyer sessions yet to preserve — rather than ship a more complex dual-read migration path.",
+      },
+    ],
+    sells: {
+      edition: "Base (auth, Apache-2.0, free)",
+      ctaLabel: "Read how @caisson/auth hashes session tokens at rest",
+      ctaHref: "/docs/base/auth",
+    },
+    related: ["fail-closed", "row-level-security", "field-level-encryption"],
   },
 ];
 
