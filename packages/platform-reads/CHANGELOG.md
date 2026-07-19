@@ -1,5 +1,12 @@
 # @caisson/platform-reads
 
+## 0.2.6
+
+### Patch Changes
+
+- 098fe54: Rebuilt against this release's refreshed dependency resolution so the published artifact
+  matches its recorded checksum exactly. No functional changes.
+
 ## 0.2.5
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @caisson/service-license
 
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [2bda239]
+  - @caisson/pricebook@0.7.0
+
 ## 0.0.15
 
 ### Patch Changes
