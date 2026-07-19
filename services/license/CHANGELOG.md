@@ -1,5 +1,15 @@
 # @caisson/service-license
 
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [2229209]
+  - @caisson/registry-schema@0.5.5
+  - @caisson/credits@0.5.7
+  - @caisson/license-issue@1.0.3
+  - @caisson/pricebook@0.6.1
+
 ## 0.0.14
 
 ### Patch Changes

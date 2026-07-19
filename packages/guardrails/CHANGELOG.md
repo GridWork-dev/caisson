@@ -1,5 +1,12 @@
 # @caisson/guardrails
 
+## 0.4.8
+
+### Patch Changes
+
+- 8ff4c62: Rebuilt against this release's refreshed dependency resolution so the published artifact
+  matches its recorded checksum exactly. No functional changes.
+
 ## 0.4.7
 
 ### Patch Changes

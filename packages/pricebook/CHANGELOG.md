@@ -1,5 +1,12 @@
 # @caisson/pricebook
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [2229209]
+  - @caisson/registry-schema@0.5.5
+
 ## 0.6.0
 
 ### Minor Changes

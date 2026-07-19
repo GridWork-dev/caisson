@@ -1,5 +1,12 @@
 # @caisson/ai-evals
 
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies [2229209]
+  - @caisson/agent-trajectory@0.3.3
+
 ## 0.4.2
 
 ### Patch Changes

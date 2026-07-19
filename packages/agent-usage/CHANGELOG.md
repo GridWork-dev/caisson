@@ -1,5 +1,13 @@
 # @caisson/agent-usage
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [2229209]
+  - @caisson/agent-trajectory@0.3.3
+  - @caisson/ai-meter@1.0.7
+
 ## 0.2.2
 
 ### Patch Changes

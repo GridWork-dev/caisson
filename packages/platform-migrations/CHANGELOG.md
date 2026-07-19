@@ -1,5 +1,13 @@
 # @caisson/platform-migrations
 
+## 0.2.8
+
+### Patch Changes
+
+- @caisson/credits@0.5.7
+- @caisson/service-license@0.0.15
+- @caisson/ai-meter@1.0.7
+
 ## 0.2.7
 
 ### Patch Changes
