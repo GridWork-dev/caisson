@@ -52,7 +52,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     # STAYS GitHub-hosted: this job holds R2 write credentials. Write/publish privilege belongs
     # on a clean hosted runner, not third-party compute (ADR-0326). `aws` CLI is preinstalled.
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     environment: release # ADR-0327 rider 2 (definition-first; free-plan protection rules can't enforce yet)
     env:
