@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Advisory reconciliation for Codex production browser audit findings.",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tscn -p tsconfig.json",
     "lint": "eslint src",
     "test": "bun test ./src"
   },

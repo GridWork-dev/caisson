@@ -39,7 +39,7 @@
     "caisson-gate": "./src/gate.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && mkdir -p dist/evidence && cp src/evidence/standalone-verifier.mjs dist/evidence/standalone-verifier.mjs",
+    "build": "tscn -p tsconfig.json && mkdir -p dist/evidence && cp src/evidence/standalone-verifier.mjs dist/evidence/standalone-verifier.mjs",
     "lint": "eslint src",
     "test": "bun test ./src"
   },
