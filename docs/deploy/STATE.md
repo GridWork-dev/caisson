@@ -8,6 +8,34 @@ grounds:
 
 # Deploy log
 
+## 2026-07-19 — Agent-trajectory release train v2026.07.18.3 + Worker redeploy (`31917e36`)
+
+The agent-trajectory deploy tail (operator-approved; picker locks in ADR-0365). Four tags
+to land one release — the full lineage lives in `docs/releases/v2026.07.18.3-checklist.md`:
+byte-gate repair (kernel@0.5.2 sidecar re-record) → GitHub free-org Actions minutes
+EXHAUSTED mid-ride (2,003/2,000; ubuntu-latest jobs died zero-step) → train legs moved to
+Blacksmith → a sot freshness cascade fixed at the fourth tag.
+
+- **Train ride v2026.07.18.3 (run 29681287040): readiness green, publish leg green — R2
+  upload 44 uploaded + 5 already present (49/49 byte-verified at the tag), mirror-sync
+  green (caisson-oss stays PRIVATE), npm leg unarmed (ADR-0329).** The train run shows
+  red only from the dispatched deploy-railway leg — the designed-inert, deliberately
+  still-hosted job, quota-killed (zero-step). Delivered: agent-trajectory 0.3.x + its
+  bundle membership, kernel 0.5.2, the full-catalog re-version, agent-usage index entry.
+- **Registry Worker redeployed** (`bunx wrangler deploy`, version `e9854324`) off main at
+  the tag content — serves the new index: kernel packument `latest: 0.5.2` verified live;
+  commercial packuments stay constant-time 404 unauthenticated (agent-trajectory probe).
+- **caisson-site + caisson-license redeploys BLOCKED by a Railway incident** (builds die
+  at `scheduling build on Metal builder "builder-sskgan"`; status page: degraded /
+  investigating). Retry when the incident clears — content is pre-launch-dormant (pricing
+  page rows + webhook purchase/renewal books for the new price ids). Sandbox Paddle
+  prices for agent-trajectory ($49 + $19 renewal) created via
+  `tools/paddle-catalog-recreate.ts`.
+- Follow-ups merged same sitting (PR #285): lockHash row provenance (CAISSON-127),
+  Blacksmith sweep of quality/intel-eval + version-pr + r2-parity-probe (intel-eval's
+  reds were quota kills, not eval regressions), R4 P3 comment fixes. Changesets pending
+  for the next consume.
+
 ## 2026-07-17 (night, close-out) — Worker redeploy off the audit-fix merges (`97c9924a`)
 
 The DEPLOY tail of the audit-follow-up chain, per the operator's "proceed through audit
