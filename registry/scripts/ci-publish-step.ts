@@ -52,6 +52,20 @@ import {
 export const SIDECAR_PATH = join(import.meta.dir, "..", "tarballs.json");
 /** Where `bun pm pack` output is staged for the R2 upload step (keyed dirs `<slug>/<slug>-<v>.tgz`). */
 export const STAGING_DIR = join(import.meta.dir, "..", ".tarball-staging");
+/** Repo-root `bun.lock` — the dependency resolution every `bun pm pack` rewrite runs under. */
+export const LOCKFILE_PATH = join(import.meta.dir, "..", "..", "bun.lock");
+
+/**
+ * SHA-256 of the lockfile governing this run's packs (ADR-0365 / CAISSON-127). Undefined when the
+ * lockfile is absent (isolated test fixtures) — rows then record without provenance, keeping the
+ * pre-ADR shape.
+ */
+export function currentLockHash(
+  path: string = LOCKFILE_PATH,
+): string | undefined {
+  if (!existsSync(path)) return undefined;
+  return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
 
 // Local strict schema (the write boundary). The Worker owns the READ schema; keeping the write
 // shape here avoids a scripts→worker layering dependency. Both mirror `{key,shasum,integrity,size,meta}`.
@@ -79,6 +93,14 @@ const SidecarDist = z
     integrity: z.string().min(1),
     size: z.number().int().nonnegative(),
     meta: PackumentMeta.optional(),
+    /** SHA-256 of the repo-root `bun.lock` the row was recorded under (ADR-0365 / CAISSON-127).
+     *  `bun pm pack` rewrites resolved dependency versions into the packed package.json, so a row's
+     *  bytes are only reproducible under the same resolution. Provenance, not content: excluded
+     *  from the publish byte-equality compare. Absent on pre-ADR rows. */
+    lockHash: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .optional(),
   })
   .strict();
 const Sidecar = z
@@ -301,7 +323,9 @@ function checkSiblingChurn(opts: {
   stagingDir: string;
 }): void {
   const { sidecar, skipKeys, packageDirFor, packFn, stagingDir } = opts;
+  const runLockHash = currentLockHash();
   const siblingMismatches: string[] = [];
+  const lockDrifted: string[] = [];
   for (const key of Object.keys(sidecar.tarballs)) {
     if (skipKeys.has(key)) continue; // freshly (re-)recorded this run
     const { slug, version } = candidatePackageKey(key);
@@ -313,6 +337,21 @@ function checkSiblingChurn(opts: {
       .parse(JSON.parse(readFileSync(pkgJsonPath, "utf8")));
     if (rawPackage.version !== version) continue; // superseded historical version
     const recorded = sidecar.tarballs[key] as TarballDist;
+    // Lock-drift short-circuit (ADR-0365 / CAISSON-127): a row recorded under a different
+    // dependency resolution cannot be expected to byte-reproduce here — packs rewrite resolved
+    // versions into package.json and dists can inline external types. Demand the own-version
+    // bump directly instead of surfacing a confusing byte-diff. Rows without a recorded hash
+    // (pre-ADR) keep the re-pack-and-compare path.
+    if (
+      recorded.lockHash !== undefined &&
+      runLockHash !== undefined &&
+      recorded.lockHash !== runLockHash
+    ) {
+      lockDrifted.push(
+        `${key} (recorded under bun.lock sha256 ${recorded.lockHash.slice(0, 12)}…, this tree resolves ${runLockHash.slice(0, 12)}…)`,
+      );
+      continue;
+    }
     const bytes = packFn(packageDir, slug, version, stagingDir);
     const dist = computeTarballDist(bytes, slug, version);
     if (dist.shasum !== recorded.shasum || dist.size !== recorded.size) {
@@ -321,10 +360,19 @@ function checkSiblingChurn(opts: {
       );
     }
   }
-  if (siblingMismatches.length > 0) {
-    throw new Error(
-      `sibling-churn: these already-recorded rows no longer re-pack to their advertised bytes from this tree — a workspace dependency's resolved version changed since the row was recorded. Fix: add a changeset bumping each package's OWN version in this release so a fresh row is recorded, else the release fails at the publish/tag byte-gate:\n  - ${siblingMismatches.join("\n  - ")}`,
-    );
+  if (lockDrifted.length > 0 || siblingMismatches.length > 0) {
+    const sections: string[] = [];
+    if (lockDrifted.length > 0) {
+      sections.push(
+        `lock-drift: these recorded rows were packed under a different dependency resolution (bun.lock changed since recording). Fix: add a changeset bumping each package's OWN version in this release so a fresh row is recorded under the current lock:\n  - ${lockDrifted.join("\n  - ")}`,
+      );
+    }
+    if (siblingMismatches.length > 0) {
+      sections.push(
+        `sibling-churn: these already-recorded rows no longer re-pack to their advertised bytes from this tree — a workspace dependency's resolved version changed since the row was recorded. Fix: add a changeset bumping each package's OWN version in this release so a fresh row is recorded, else the release fails at the publish/tag byte-gate:\n  - ${siblingMismatches.join("\n  - ")}`,
+      );
+    }
+    throw new Error(sections.join("\n"));
   }
 }
 
@@ -427,7 +475,11 @@ export function refreshVersionCandidateTarballs(
       throw new Error(`candidate package identity does not match ${key}`);
     }
     const bytes = packFn(packageDir, slug, version, stagingDir);
-    candidateSidecar.tarballs[key] = computeTarballDist(bytes, slug, version);
+    const refreshLockHash = currentLockHash();
+    candidateSidecar.tarballs[key] = {
+      ...computeTarballDist(bytes, slug, version),
+      ...(refreshLockHash !== undefined ? { lockHash: refreshLockHash } : {}),
+    };
     process.stdout.write(
       `registry/ci-publish-step: securely re-packed + re-recorded ${key}\n`,
     );
@@ -514,7 +566,11 @@ export function recordTarballs(
     }
     const slug = manifest.id.slice("@caisson/".length);
     const bytes = packFn(packageDir, slug, manifest.version, stagingDir);
-    sidecar.tarballs[key] = computeTarballDist(bytes, slug, manifest.version);
+    const recordLockHash = currentLockHash();
+    sidecar.tarballs[key] = {
+      ...computeTarballDist(bytes, slug, manifest.version),
+      ...(recordLockHash !== undefined ? { lockHash: recordLockHash } : {}),
+    };
     recorded++;
     process.stdout.write(
       `registry/ci-publish-step: ${replaceKeys.has(key) ? "re-packed + re-recorded" : "packed + recorded"} ${key} → ${sidecar.tarballs[key]?.key} (${sidecar.tarballs[key]?.size} bytes)\n`,
@@ -752,15 +808,25 @@ function verifyForPublish(opts: VerifyForPublishOpts): PublishStepResult {
   // the upgrade path is a one-off operator re-record of affected rows, not a silent skip.
   const mismatches: string[] = [];
   let staged = 0;
+  const publishLockHash = currentLockHash();
   for (const { manifest, packageDir } of loaded) {
     const key = `${manifest.id}@${manifest.version}`;
     const row = sidecar.tarballs[key] as TarballDist; // presence proven in (1)
     const slug = manifest.id.slice("@caisson/".length);
     const bytes = packFn(packageDir, slug, manifest.version, stagingDir);
     const dist = computeTarballDist(bytes, slug, manifest.version);
-    if (!isDeepStrictEqual(dist, row)) {
+    // `lockHash` is record-time provenance, not tarball content — excluded from the byte-equality
+    // compare (ADR-0365). On a mismatch it names the cause when the resolutions differ.
+    const { lockHash: recordedLockHash, ...rowContent } = row;
+    if (!isDeepStrictEqual(dist, rowContent)) {
+      const lockNote =
+        recordedLockHash !== undefined &&
+        publishLockHash !== undefined &&
+        recordedLockHash !== publishLockHash
+          ? " — recorded under a DIFFERENT bun.lock resolution (lock-hash drift); bump the package's own version to re-record"
+          : "";
       mismatches.push(
-        `${key}: packed distribution record does not exactly match sidecar (packed=${dist.shasum}/${dist.size}B, recorded=${row.shasum}/${row.size}B)`,
+        `${key}: packed distribution record does not exactly match sidecar (packed=${dist.shasum}/${dist.size}B, recorded=${row.shasum}/${row.size}B)${lockNote}`,
       );
       continue;
     }

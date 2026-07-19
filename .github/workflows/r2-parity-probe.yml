@@ -39,7 +39,7 @@ jobs:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     # STAYS GitHub-hosted: this job reads R2 credentials, same posture as publish.yml. `aws` CLI is
     # preinstalled on ubuntu-latest.
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     environment: release
     steps:

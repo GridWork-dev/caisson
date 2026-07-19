@@ -50,6 +50,9 @@ const TarballDist = z
     size: z.number().int().nonnegative(),
     // Optional so a pre-meta sidecar row (or a package with no deps) still parses.
     meta: PackumentMeta.optional(),
+    // Record-time bun.lock provenance (ADR-0365) — CI-writer diagnostic only; the Worker
+    // tolerates and ignores it.
+    lockHash: z.string().optional(),
   })
   .strict();
 

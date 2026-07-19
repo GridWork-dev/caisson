@@ -80,9 +80,9 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the SAME change that first indexes its package — its bare slug then resolves through the
  * ordinary indexed-module branch below.
  *
- * Currently reserved: `agent-usage` (the usage-adapter primitive, created unpublished per the
- * ADR-0351 rider-3 publish-last rule; graduates at its first consume exactly as agent-trajectory
- * did). Prior graduations: `agent-trajectory` graduated 2026-07-17 — the slice-1 changeset
+ * Currently reserved: nothing — `agent-usage` graduated at the 2026-07-18 full-catalog consume
+ * (its first index entry), leaving the set empty per the rule above.
+ * Prior graduations: `agent-trajectory` graduated 2026-07-17 — the slice-1 changeset
  * consume auto-ledgered/indexed `@caisson/agent-trajectory@0.2.0`, so per the rule above its
  * reservation left in the change that acknowledged that first index entry. Index presence is NOT
  * sellability: it stays `sellable: false`, carries no PRICE_AUTHORITY row, and joins no bundle
