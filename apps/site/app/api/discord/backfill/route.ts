@@ -28,7 +28,7 @@ export async function POST(): Promise<NextResponse> {
   }
 
   const config = loadDiscordGrantConfig();
-  const auth = getAuth();
+  const auth = await getAuth();
   if (config === null || auth === null) {
     return NextResponse.json({ ok: true, pushed: false });
   }
