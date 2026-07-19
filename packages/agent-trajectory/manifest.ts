@@ -21,8 +21,9 @@
 //
 // PUBLISH (S5, ADR-0361/0362): `sellable: false` is REMOVED here — the encRef wrap of `parked_state`
 // (this same slice) was the named precondition (ADR-0361) blocking sale, so the package is sellable
-// as of this version. It carries NO standalone SKU (bundle-only, the identical treatment already
-// given to sibling primitives `agent-kernel`/`agent-runner`, also `priceCents: 4900`) — but it is
+// as of this version. Since 2026-07-18 (PR #283) it ALSO carries a standalone $49 SKU — priced in
+// the pricebook + site catalog with the identical treatment as sibling primitives
+// `agent-kernel`/`agent-runner` (also `priceCents: 4900`). Originally shipped here bundle-only; it was
 // deliberately NOT yet added to `packages/agentic-dev/manifest.ts`'s `members` map. `foldEditionMembers`
 // (`packages/cli/src/meter.ts`) writes member pins VERBATIM into a buyer's generated scaffold, so a
 // member pin must name the wrap-bearing sellable version specifically, not merely a real published
