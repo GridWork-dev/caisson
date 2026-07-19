@@ -16,7 +16,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tscn -p tsconfig.json",
     "lint": "eslint src",
     "test": "bun test ./src",
     "eval": "bun run ./src/eval.cli.ts"

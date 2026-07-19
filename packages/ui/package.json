@@ -33,7 +33,7 @@
     "./styles/tokens.css": "./styles/tokens.css"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tscn -p tsconfig.json",
     "lint": "eslint src",
     "test": "bun test ./src",
     "gen:tokens": "bun run scripts/gen-tokens-css.ts",

@@ -21,7 +21,7 @@
     "./ui": "./src/ui/index.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig.ui.json",
+    "build": "tscn -p tsconfig.json && tscn -p tsconfig.ui.json",
     "lint": "eslint src",
     "test": "bun test ./src",
     "test:live": "bun test ./live"

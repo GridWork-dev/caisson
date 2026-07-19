@@ -1,0 +1,57 @@
+---
+"@caisson/agent-dev": patch
+"@caisson/agent-kernel": patch
+"@caisson/agent-runner": patch
+"@caisson/agent-trajectory": patch
+"@caisson/agent-usage": patch
+"@caisson/ai-config": patch
+"@caisson/ai-evals": patch
+"@caisson/ai-kit": patch
+"@caisson/ai-meter": patch
+"@caisson/alerting": patch
+"@caisson/analytics": patch
+"@caisson/audit-harness": patch
+"@caisson/audit-worm": patch
+"@caisson/auth": patch
+"@caisson/billing-orchestration": patch
+"@caisson/billing": patch
+"@caisson/brand": patch
+"@caisson/cli": patch
+"@caisson/compliance-core": patch
+"@caisson/compliance": patch
+"@caisson/credits": patch
+"@caisson/demo-registry": patch
+"@caisson/ds-manifest": patch
+"@caisson/email": patch
+"@caisson/field-crypto": patch
+"@caisson/frameworks-pack": patch
+"@caisson/guardrails": patch
+"@caisson/jobs": patch
+"@caisson/kernel": patch
+"@caisson/license-issue": patch
+"@caisson/license-verify": patch
+"@caisson/local-ai": patch
+"@caisson/local-inference": patch
+"@caisson/local-privacy": patch
+"@caisson/local-store": patch
+"@caisson/local-sync": patch
+"@caisson/mcp-server": patch
+"@caisson/migrate": patch
+"@caisson/observability": patch
+"@caisson/org-controls": patch
+"@caisson/platform-migrations": patch
+"@caisson/platform-reads": patch
+"@caisson/pricebook": patch
+"@caisson/prompt-registry": patch
+"@caisson/rate-limit": patch
+"@caisson/registry-schema": patch
+"@caisson/retention-runner": patch
+"@caisson/signing-primitive": patch
+"@caisson/tenancy-rls": patch
+"@caisson/tool-exec": patch
+"@caisson/ui-pro": patch
+"@caisson/ui": patch
+"@caisson/registry": patch
+---
+
+Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
