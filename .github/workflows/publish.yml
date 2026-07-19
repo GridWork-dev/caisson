@@ -50,7 +50,7 @@ concurrency:
 jobs:
   publish-and-index:
     if: github.ref == 'refs/heads/main'
-    # STAYS GitHub-hosted: this job holds R2 write credentials. Write/publish privilege belongs
+    # Blacksmith per ADR-0365 (fleet-only sweep; R2 write creds accepted on VM-per-job runners). Write/publish privilege belongs
     # on a clean hosted runner, not third-party compute (ADR-0326). `aws` CLI is preinstalled.
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
