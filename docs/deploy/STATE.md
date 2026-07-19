@@ -8,6 +8,23 @@ grounds:
 
 # Deploy log
 
+## 2026-07-19 (late night) — caisson-site redeploy at `e07319f9`: 23 module depth pages live
+
+Single-service delta deploy carrying PRs #294 + #295 (ADR-0368). First attempt FAILED at
+the runtime stage after a clean image build (the same transient Railway class as the
+morning incident); the immediate retry deployed SUCCESS — the killed-deploy-may-have-landed
+rule checked, only one live deployment.
+
+- 12 new module depth pages (MODULE_PAGES 11 → 23) + the ai-evals bundle-membership truth
+  fix + lucide marks for the new slugs. Probes: agent-trajectory · credits · ui-pro ·
+  compliance-core · ai-evals module pages all 200, `/healthz` 200.
+- `compliance-updates` depth page STRUCK at content review (subscription anchor, not a
+  catalog module); record archived under `outputs/research/`.
+- The tsgo cutover (#294) rides in the same image: the site's dependency packages compiled
+  through the native TS-7 `tscn` bin inside the Railway build (40/40 tasks, ~50s).
+- Pending changesets now: auth minor + site patch ×3 + the 53-package cutover patch — all
+  accumulate for the next train per the standing lock.
+
 ## 2026-07-19 (night) — caisson-site redeploy at `8f07b011`: 43-term glossary live
 
 Single-service delta deploy (`railway up --service caisson-site --detach`, SUCCESS)
