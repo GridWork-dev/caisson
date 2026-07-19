@@ -23,6 +23,7 @@ import {
 } from "./build-index";
 import {
   computeTarballDist,
+  currentLockHash,
   defaultPack,
   findManifestPaths,
   isPrivatePackage,
@@ -32,6 +33,19 @@ import {
   runPublishStep,
   writeSidecar,
 } from "./ci-publish-step";
+
+/** A freshly RECORDED row: dist fields + the run's lock-hash provenance stamp (ADR-0365). */
+function recordedDist(
+  bytes: Uint8Array,
+  slug: string,
+  version: string,
+): ReturnType<typeof computeTarballDist> {
+  const lockHash = currentLockHash();
+  return {
+    ...computeTarballDist(bytes, slug, version),
+    ...(lockHash !== undefined ? { lockHash } : {}),
+  };
+}
 
 /** A minimally-valid ModuleManifest fixture (recordTarballs reads only id + version). */
 function mkManifest(id: string, version: string): ModuleManifest {
@@ -420,7 +434,7 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       const sidecar = readSidecar(path);
       const kernel = sidecar.tarballs["@caisson/kernel@1.0.0"];
       expect(kernel).toEqual(
-        computeTarballDist(Buffer.from("kernel-bytes"), "kernel", "1.0.0"),
+        recordedDist(Buffer.from("kernel-bytes"), "kernel", "1.0.0"),
       );
       expect(sidecar.tarballs["@caisson/auth@2.0.0"]?.key).toBe(
         "auth/auth-2.0.0.tgz",
@@ -492,7 +506,7 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       const sidecar = readSidecar(path);
       expect(sidecar.tarballs[historicalKey]).toEqual(historical);
       expect(sidecar.tarballs[versionPrKey]).toEqual(
-        computeTarballDist(Buffer.from("fresh-kernel"), "kernel", "2.0.0"),
+        recordedDist(Buffer.from("fresh-kernel"), "kernel", "2.0.0"),
       );
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -607,7 +621,7 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       );
       // The sidecar now carries the backfilled row.
       expect(readSidecar(sidecarPath).tarballs["@caisson/demo@1.0.0"]).toEqual(
-        computeTarballDist(Buffer.from("demo-bytes"), "demo", "1.0.0"),
+        recordedDist(Buffer.from("demo-bytes"), "demo", "1.0.0"),
       );
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -671,7 +685,7 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
 
       expect(result.tarballsRecorded).toBe(1);
       expect(readSidecar(sidecarPath).tarballs["@caisson/demo@2.0.0"]).toEqual(
-        computeTarballDist(Buffer.from("fresh"), "demo", "2.0.0"),
+        recordedDist(Buffer.from("fresh"), "demo", "2.0.0"),
       );
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -843,7 +857,7 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       const sidecar = readSidecar(join(registryDir, "tarballs.json"));
       expect(sidecar.tarballs[historicalKey]).toEqual(historical);
       expect(sidecar.tarballs[candidateKey]).toEqual(
-        computeTarballDist(freshBytes, "demo", "2.0.0"),
+        recordedDist(freshBytes, "demo", "2.0.0"),
       );
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -986,6 +1000,67 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       expect(refreshed).toBe(0); // no new keys, and no sibling drift
     } finally {
       rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("lock-drift (ADR-0365): a row recorded under a different bun.lock is never re-packed — the error demands the own-version bump directly", () => {
+    const f = mkSiblingFixture("sibling-lock-drift", "1.0.0");
+    // Rewrite the candidate sidecar row with a lockHash that cannot match the live repo lock.
+    const key = "@caisson/auth@1.0.0";
+    const sidecarPath = join(f.candidateRoot, "registry", "tarballs.json");
+    const sidecar = readSidecar(sidecarPath);
+    const row = sidecar.tarballs[key];
+    if (row === undefined) throw new Error("fixture row missing");
+    sidecar.tarballs[key] = { ...row, lockHash: "0".repeat(64) };
+    writeSidecar(sidecar, sidecarPath);
+    writeSidecar(sidecar, f.baseSidecarPath); // keep base/candidate historically identical
+    let packed = 0;
+    try {
+      expect(() =>
+        refreshVersionCandidateTarballs({
+          candidateRoot: f.candidateRoot,
+          baseLedgerPath: f.baseLedgerPath,
+          baseSidecarPath: f.baseSidecarPath,
+          stagingDir: join(f.dir, "staging"),
+          packFn: () => {
+            packed++;
+            return f.originalBytes;
+          },
+        }),
+      ).toThrow(/lock-drift.*bump/s);
+      expect(packed).toBe(0); // short-circuited — the drifted row is never re-packed
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("lock-hash recording (ADR-0365): a freshly recorded row carries the current repo lock hash", () => {
+    const dir = tmpDir("record-lock-hash");
+    const sidecarPath = join(dir, "tarballs.json");
+    const bytes = tgzWithPackageJson({
+      name: "@caisson/auth",
+      version: "1.0.0",
+    });
+    try {
+      recordTarballs(
+        [
+          {
+            manifest: mkManifest("@caisson/auth", "1.0.0"),
+            packageDir: dir, // unused by the stub packFn
+          },
+        ],
+        {
+          dryRun: false,
+          sidecarPath,
+          stagingDir: join(dir, "staging"),
+          packFn: () => bytes,
+        },
+      );
+      const row = readSidecar(sidecarPath).tarballs["@caisson/auth@1.0.0"];
+      expect(row?.lockHash).toBe(currentLockHash());
+      expect(row?.lockHash).toMatch(/^[0-9a-f]{64}$/); // the repo lockfile exists under bun test
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 

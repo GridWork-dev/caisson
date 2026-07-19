@@ -569,7 +569,9 @@ async function runSteps(
     }));
     const estUsage = estimateUsage(estMessages, opts.maxOutputTokens);
     const est = computeCost(estUsage, priceEntry, conversion);
-    if (state.creditsSpent + est.credits > opts.creditBudget) {
+    // Fail-closed form: a NaN on either side must trip the guard, so the comparison asserts the
+    // SAFE condition and negates it (the `!(x <= bound)` class) rather than testing overflow.
+    if (!(state.creditsSpent + est.credits <= opts.creditBudget)) {
       await engine.append("step.finished", {
         stepId,
         status: "error",

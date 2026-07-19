@@ -42,7 +42,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     # STAYS GitHub-hosted (ADR-0326): this job holds contents:write + pull-requests:write.
     # Write privilege belongs on a clean hosted runner, not third-party compute.
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     environment: release # ADR-0327 rider 2: the release-family boundary (definition-first; free-plan protection rules can't enforce yet)
     permissions:
@@ -141,7 +141,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'release/version-')
     # STAYS GitHub-hosted: this job commits to a release branch with contents:write.
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     environment: release
     permissions:
