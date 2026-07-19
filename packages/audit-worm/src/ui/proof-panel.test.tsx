@@ -79,7 +79,6 @@ function receipt(
 async function settle(until?: () => boolean): Promise<void> {
   const maxPasses = until === undefined ? 3 : 200;
   for (let i = 0; i < maxPasses; i += 1) {
-    // eslint-disable-next-line no-await-in-loop -- deliberately sequential settle passes
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));
     });
