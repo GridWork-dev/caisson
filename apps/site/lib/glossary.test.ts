@@ -8,11 +8,12 @@ import { GLOSSARY_TERMS, glossaryPageSpec } from "./glossary";
 // (CAISSON-29 / D5, 2026-07-07) added 3 long-tail explainers (WORM-for-SaaS, OSCAL-export-from-TS,
 // multi-tenant-RLS-for-compliance) as the new operator lock Fork A requires ("never add without a
 // new lock"); eu-ai-act-article-50 landed via the Kickoff-J picker (CAISSON-79); ADR-0367 locked
-// the 7-term expansion batch (TSA/Rekor/receipt/crosswalk/anchor/trajectory/token-hash, 2026-07-19).
+// the 7-term expansion batch (TSA/Rekor/receipt/crosswalk/anchor/trajectory/token-hash) and the
+// batch-3 mechanism terms (outbox/idempotency/canonical-json/AAD/redaction/injection/replay, both 2026-07-19).
 // This pins the current total; a drift in either direction is a bug.
 describe("GLOSSARY_TERMS — data lint", () => {
-  test("all 43 locked terms ship (SPEC Task 5 gate, ADR-0235 Fork A + CAISSON-29 + CAISSON-79 + the ADR-0367 expansion batch)", () => {
-    expect(GLOSSARY_TERMS.length).toBe(43);
+  test("all 50 locked terms ship (SPEC Task 5 gate, ADR-0235 Fork A + CAISSON-29 + CAISSON-79 + the ADR-0367 expansion batch)", () => {
+    expect(GLOSSARY_TERMS.length).toBe(50);
   });
 
   test("every slug is unique", () => {

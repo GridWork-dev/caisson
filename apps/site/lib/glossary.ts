@@ -60,7 +60,7 @@ export interface GlossaryTerm {
 // All 32 ADR-0235-locked terms: batch 1 (renderer + hub + the full 10-term compliance cluster +
 // two pilots, Fork C) followed by batches 2-3 (security, licensing, ai-infra remainders; the two
 // cross-cutting terms fold into compliance/ai-infra since the SPEC's binding cluster union has no
-// fifth value), plus the AEO/Kickoff-J additions and the ADR-0367 expansion batch (7 terms over
+// fifth value), plus the AEO/Kickoff-J additions the ADR-0367 expansion batch, and the batch-3 mechanism terms (7 more over
 // the post-0235 shipped surfaces: TSA, Rekor, evidence receipts, crosswalk, signed anchors,
 // agent trajectory, token hash-at-rest). Copy is adversarially verified per Fork B — do not
 // rewrite; a typo fix is fine, a claim change is not. `related` entries are curated same-cluster
@@ -2782,6 +2782,456 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       ctaHref: "/docs/base/auth",
     },
     related: ["fail-closed", "row-level-security", "field-level-encryption"],
+  },
+  {
+    slug: "durable-outbox",
+    term: "Durable outbox",
+    cluster: "compliance",
+    definition:
+      "A durable outbox persists delivery intent in the database before any external call, so a crash between the call and the write can't silently drop or duplicate work. Caisson's anchor-outbox package writes a pending row before every external-anchoring submission, then guards each state transition, so a lost response resolves to an operator reconciliation state instead of a blind duplicate retry.",
+    artifact: {
+      label:
+        "AnchorOutbox.enqueuePending — persist intent before egress, idempotent on the natural key",
+      lang: "ts",
+      code: "async enqueuePending(key: AnchorOutboxKey): Promise<AnchorOutboxRow> {\n  const k = parseStrict(anchorOutboxKeySchema, key);\n  return withTenant(this.#db, k.accountId, async (tx) => {\n    await tx.query(\n      `INSERT INTO anchor_outbox (id, account_id, target, anchor_length, anchor_digest, state)\n       VALUES ($1, $2, $3, $4, $5, 'pending')\n       ON CONFLICT (account_id, target, anchor_length, anchor_digest) DO NOTHING`,\n      [randomUUID(), k.accountId, k.target, k.anchorLength, k.anchorDigest],\n    );\n    const row = await selectRow(tx, k);\n    if (row === null) {\n      throw new InternalError(\"anchor_outbox row vanished after enqueue\", {\n        accountId: k.accountId,\n      });\n    }\n    return toRow(row);\n  });\n}",
+    },
+    properties: [
+      {
+        title: "Intent persisted before egress",
+        body: "enqueuePending writes a pending row to Postgres before any network call is made, and markSubmitted writes submitted before the submit() call resolves — the crash window always closes on the side of a recorded intent, never a silent gap.",
+      },
+      {
+        title: "State transitions are DB-guarded, not app-trusted",
+        body: 'Every transition is an UPDATE … WHERE state = ANY(from) RETURNING id; an empty result throws ConflictError instead of forcing the write. markSubmitted\'s only valid `from` is pending, so "no second submit" is structural, not a convention.',
+      },
+      {
+        title: "Response loss resolves to reconcile, never a blind retry",
+        body: "When a submitted row's receipt never lands, markNeedsReconcile moves it to a terminal needs_reconcile state for an operator to resolve — closing the ambiguity without risking a duplicate submission to an external, often append-only, target.",
+      },
+      {
+        title: "Tenant-scoped by default, admin-readable for sweeps",
+        body: "Every method runs under withTenant so a row can never be read or written outside its own account; the cross-tenant reconcile sweep the operator control plane needs rides a separate, explicitly granted admin_write policy on the same table.",
+      },
+    ],
+    faq: [
+      {
+        question:
+          "What happens if the anchoring service crashes right after the TSA or log accepts the submission?",
+        answer:
+          "The row stays submitted, not receipted. A reconcile sweep finds it stuck in that state and surfaces it to the operator as needs_reconcile — the response-loss window between acceptance and a durable receipt is closed by a human decision, not a guess.",
+      },
+      {
+        question: "Why doesn't a failed submission just retry automatically?",
+        answer:
+          "Because the target can be a public transparency log or TSA: a blind retry after a lost response risks minting a second, irrevocable entry, which is worse than a delayed checkpoint. markNeedsReconcile surfaces the ambiguous case instead of resubmitting it.",
+      },
+      {
+        question: "Can the same anchor submission be sent twice by mistake?",
+        answer:
+          "No — each state transition is a DB-guarded UPDATE that only fires from its expected prior state (e.g. markSubmitted only runs from pending), so a row already submitted or receipted structurally can't be re-submitted.",
+      },
+      {
+        question: "Does the durable outbox itself prove compliance?",
+        answer:
+          "No. It ships the technical control for reliable, non-duplicating delivery of anchor submissions and generates the state history an auditor can examine; it doesn't itself constitute a certification.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel:
+        "See how the Compliance edition anchors every checkpoint with a durable outbox",
+      ctaHref: "/compliance",
+    },
+    related: ["worm-audit-log", "rfc-3161-timestamping", "transparency-log"],
+  },
+  {
+    slug: "idempotency-key",
+    term: "Idempotency key",
+    cluster: "licensing",
+    definition:
+      "An idempotency key is a caller-supplied token that lets a retried request apply its effect at most once. Caisson's credits ledger and Paddle webhook handler both claim the key via INSERT ON CONFLICT DO NOTHING RETURNING: a fresh key runs the grant or debit, a replay returns the same balance with zero new writes, so a resent webhook never double-grants.",
+    artifact: {
+      label:
+        "processEvent in packages/billing-orchestration/src/idempotency.ts: claim the key once via ON CONFLICT DO NOTHING RETURNING, skip fn on replay",
+      lang: "ts",
+      code: 'async function claim(tx: TenantExecutor, eventKey: string): Promise<boolean> {\n  const { rows } = await tx.query<{ event_key: string }>(\n    `INSERT INTO billing_processed_event (event_key, account_id)\n       VALUES ($1, current_setting($2, true))\n     ON CONFLICT (event_key) DO NOTHING\n     RETURNING event_key`,\n    [eventKey, TENANT_GUC],\n  );\n  return rows.length === 1;\n}\n\n/** OUTER layer: run `fn` for `sourceEventId` exactly once across re-deliveries. */\nexport async function processEvent(\n  tx: TenantExecutor,\n  sourceEventId: string,\n  fn: () => Promise<void>,\n): Promise<ProcessResult> {\n  assertValidSourceEventId(sourceEventId, "processEvent");\n  const fresh = await claim(tx, sourceEventId);\n  if (!fresh) return { alreadyProcessed: true };\n  await fn();\n  return { alreadyProcessed: false };\n}',
+    },
+    properties: [
+      {
+        title: "One INSERT, atomic claim-or-skip",
+        body: "Both layers use the same primitive: INSERT ... ON CONFLICT DO NOTHING RETURNING. A fresh key inserts and returns a row; a duplicate key returns zero rows instead of raising, so the caller checks row count rather than catching a unique-violation exception.",
+      },
+      {
+        title: "Dual-layer coverage: DB writes and side-effects",
+        body: "The credits ledger's UNIQUE (source_event_id, event_type) index makes the money write itself idempotent. billing-orchestration's processEvent/withIdempotentSideEffect add an outer claim over the whole handler and a per-effect claim, so a detached post-commit push (Discord role grant, a confirmation email) also fires at most once across re-deliveries.",
+      },
+      {
+        title: "Commits atomically with the work it guards",
+        body: "Every claim runs inside the same withTenant transaction as the grant or debit it protects: if the guarded work throws, the claim rolls back too, so the next delivery retries cleanly instead of finding a stale claim with no matching effect.",
+      },
+      {
+        title: "Caller picks the key shape, mutually exclusive",
+        body: "credits.ts's idemColumns() requires exactly one of sourceEventId (a provider event/invoice/payment id) or idempotencyKey (a caller-chosen per-account key) — never both, never neither — so every ledger row always has one clear identity to dedupe on.",
+      },
+    ],
+    faq: [
+      {
+        question:
+          "How does Caisson stop a resent Paddle webhook from granting credits twice?",
+        answer:
+          "Two layers, both keyed on Paddle's stable ids. The outer processEvent() claims the delivery's event_id once per webhook.ts call, skipping the whole handler on a re-delivery; the inner credit_event ledger separately claims grant()/debit()'s sourceEventId (an invoice or payment id) via ON CONFLICT DO NOTHING, so even a bypass of the outer claim can't double-grant.",
+      },
+      {
+        question:
+          "What happens if I retry a credits API call after a timeout with no response?",
+        answer:
+          "Supply the same idempotencyKey (or sourceEventId) on the retry. insertEvent's INSERT ON CONFLICT DO NOTHING RETURNING returns zero rows for the duplicate, grant()/debit() report { idempotent: true } with the account's current balance, and no second ledger row or wallet change happens.",
+      },
+      {
+        question:
+          "Can two different events accidentally collide on the same idempotency key?",
+        answer:
+          "Caisson's outer claim table shares one namespace between whole-event keys and per-side-effect keys (`${sourceEventId}:${sideEffect}`), so assertValidSourceEventId rejects any sourceEventId containing a colon outright — it would alias a composite side-effect key. A key must also be non-empty; a blank key would collapse every unattributed event onto one row.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See how Caisson prices usage with prepaid credits",
+      ctaHref: "/marketplace/plans",
+    },
+    related: [
+      "credit-based-billing",
+      "offline-license-verification",
+      "ed25519-license-keys",
+      "software-entitlement",
+    ],
+  },
+  {
+    slug: "canonical-json",
+    term: "Canonical JSON",
+    cluster: "security",
+    definition:
+      "Canonical JSON is a deterministic serialization where semantically-equal payloads with different key orders produce identical bytes, so a hash or signature over the value is reproducible everywhere. Caisson's kernel canonicalize sorts object keys recursively, keeps array order, and rejects non-finite numbers, feeding every audit-chain hash, signed anchor, and license claim signature.",
+    artifact: {
+      label:
+        "canonicalize — sortValue recursively sorts keys, preserves array order, rejects non-finite numbers, then JSON.stringify",
+      lang: "ts",
+      code: 'function sortValue(value: JsonValue): JsonValue {\n  if (value === null || typeof value !== "object") {\n    if (typeof value === "number" && !Number.isFinite(value)) {\n      throw new Error(\n        `audit-chain: non-finite number is not canonicalizable: ${String(value)}`,\n      );\n    }\n    return value;\n  }\n  if (Array.isArray(value)) return value.map(sortValue);\n  const obj = value as { readonly [key: string]: JsonValue };\n  const out: { [key: string]: JsonValue } = {};\n  for (const key of Object.keys(obj).sort()) {\n    out[key] = sortValue(obj[key] as JsonValue);\n  }\n  return out;\n}\n\nexport function canonicalize(value: JsonValue): string {\n  return JSON.stringify(sortValue(value));\n}',
+    },
+    properties: [
+      {
+        title: "One function, every hash and signature in the platform",
+        body: "canonicalize is imported directly by audit-chain's hashChainLink and contentHash, the evidence pack's receipt hashing, migration-assembly's cumulative hash, license-issue's issueLicense (which signs canonicalize(parsedClaims) into the wire token), and license-verify's verifyLicense — one serialization primitive backs every place Caisson hashes or signs a JSON payload, with no second codepath that could quietly drift from it.",
+      },
+      {
+        title: "Format conformance, not just signature conformance",
+        body: "license-verify's verifyLicense checks the Ed25519 signature first, then re-canonicalizes the parsed claims and rejects the token outright if the signed bytes aren't byte-identical to that canonical form — a token can't be re-serialized with different key order or whitespace and still verify, even carrying an authentic signature.",
+      },
+      {
+        title: "Non-finite numbers throw instead of silently serializing",
+        body: "sortValue rejects Infinity and NaN with a thrown error rather than letting JSON.stringify silently print them as null; a value that can't round-trip through canonical bytes never gets hashed or signed as though it could.",
+      },
+      {
+        title:
+          "A frozen algorithm — any byte change invalidates every stored hash",
+        body: "canonical.ts documents its own output as the single source of canonical bytes for the chain hash: recursive key sort, kept array order, JSON.stringify. Any change to that algorithm is a chain-format break, because it would silently invalidate every hash already computed and stored.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is canonical JSON?",
+        answer:
+          "Canonical JSON is a deterministic serialization rule that guarantees two objects with the same keys and values, but written or transmitted in a different order, produce byte-identical output. Caisson's kernel implements it by sorting object keys recursively before JSON.stringify, so a hash or signature taken over the result is reproducible regardless of how the original payload was assembled or transmitted.",
+      },
+      {
+        question: "Can a license token verify with its claim keys reordered?",
+        answer:
+          "No. Caisson's verifier checks the Ed25519 signature first, then re-canonicalizes the parsed claims and compares that against the exact bytes that were signed; a payload re-serialized in a different key order fails the format-conformance check even though the same JSON value would produce a valid signature elsewhere.",
+      },
+      {
+        question: "What happens if a value contains Infinity or NaN?",
+        answer:
+          "canonicalize throws rather than silently serializing it. Those aren't valid JSON values, naive JSON.stringify would print them as null, and letting that pass could make two different in-memory values hash identically. The function refuses to canonicalize anything that can't round-trip.",
+      },
+      {
+        question:
+          "Does canonical serialization by itself make an audit trail compliant?",
+        answer:
+          "No. It's the deterministic-hashing primitive underneath the audit chain and license verification, not a compliance control on its own. It ships the technical guarantee that a hash or signature is reproducible and generates the evidence downstream controls rely on; it doesn't itself constitute a SOC 2 or HIPAA certification.",
+      },
+    ],
+    sells: {
+      edition: "Base (kernel, Apache-2.0, free)",
+      ctaLabel: "Read how the kernel canonicalizes every hash and signature",
+      ctaHref: "/docs/base/kernel",
+    },
+    related: [
+      "signed-audit-anchor",
+      "token-hash-at-rest",
+      "fail-closed",
+      "additional-authenticated-data",
+    ],
+  },
+  {
+    slug: "additional-authenticated-data",
+    term: "Additional authenticated data (AAD)",
+    cluster: "security",
+    definition:
+      "Additional authenticated data (AAD) is data an AEAD cipher authenticates but never encrypts, so altering it breaks decryption even though it stays in the clear. Caisson's field-crypto module binds tenant id, key version, and column identity into every ciphertext's AAD, adding the row id as a fourth element on regulated fields so a relocated row fails to decrypt too.",
+    artifact: {
+      label:
+        "buildAad — conditional construction: an omitted rowId stays byte-identical to the legacy 3-tuple, present it becomes a row-bound 4-tuple",
+      lang: "ts",
+      code: 'export function buildAad(\n  tenantId: string,\n  keyVersion: number,\n  columnContext: string,\n  rowId?: string,\n): Buffer {\n  // Conditional construction: omitting `rowId` must yield the SAME bytes as the legacy 3-tuple —\n  // pushing `undefined` would serialize as `null` and break every existing ciphertext + golden.\n  const tuple =\n    rowId === undefined\n      ? [tenantId, keyVersion, columnContext]\n      : [tenantId, keyVersion, columnContext, rowId];\n  return Buffer.from(JSON.stringify(tuple), "utf8");\n}',
+    },
+    properties: [
+      {
+        title: "Authenticated, never hidden",
+        body: "GCM authenticates the AAD bytes but does not encrypt them — buildAad's tenant/key-version/column tuple travels alongside the ciphertext in the clear. Tampering with any element, or moving the ciphertext under different metadata, makes the AEAD authentication tag fail to verify on decrypt.",
+      },
+      {
+        title: "Two honest paths: 3-tuple and row-bound 4-tuple",
+        body: "The transparent encryptedColumn Drizzle customType (column.ts) sees only the cell value, never the row's primary key, so it stays on the tenant/keyVersion/column 3-tuple with no cross-row tamper-evidence — for low-sensitivity fields only. encryptField/decryptField (encrypt-field.ts) require the caller to pass the row's stable crypto.randomUUID() PK as a fourth AAD element; SEC/HIPAA columns must use this row-bound path.",
+      },
+      {
+        title: "The rowId must be minted before the INSERT",
+        body: "encryptField's AAD is computed at encrypt time, before the row exists in the database — a DB-generated serial/identity PK is assigned only after the INSERT, too late to bind. encrypt-field.ts requires a client-minted crypto.randomUUID() PK instead, and assertRowId rejects a blank one up front rather than binding a degenerate identity.",
+      },
+      {
+        title: "A JSON tuple, not a delimiter-joined string",
+        body: "The AAD is JSON.stringify([tenantId, keyVersion, columnContext, rowId?]) — JSON's own quoting and escaping separate the fields, so there's no delimiter for a crafted value to inject and no ambiguity about where one element ends and the next begins.",
+      },
+    ],
+    faq: [
+      {
+        question:
+          "What is additional authenticated data (AAD) in AEAD encryption?",
+        answer:
+          "AAD is metadata an AEAD cipher like AES-GCM authenticates alongside the ciphertext without encrypting it — it travels in the clear, but any change to it makes the authentication tag fail to verify. Caisson uses it to bind a ciphertext to the exact tenant, key version, and column it was written under.",
+      },
+      {
+        question:
+          "Does Caisson's AAD stop a ciphertext being moved to a different row?",
+        answer:
+          "Only on the row-bound path. encryptField/decryptField add the row's crypto.randomUUID() PK as a fourth AAD element, so relocating that ciphertext to another row of the same tenant/column/key-version fails to decrypt. The transparent encryptedColumn Drizzle type never sees a row id, so it stays on the 3-tuple and carries no cross-row guarantee — it's scoped to low-sensitivity fields only.",
+      },
+      {
+        question: "Can someone read the AAD without the decryption key?",
+        answer:
+          "Yes — AAD is authenticated, not confidential, so the tenant id, key version, and column context are visible alongside the ciphertext by design. Those values (an id, a version number, a column name) aren't secrets themselves, and the AES-256-GCM key that actually protects the plaintext stays separately gated behind field-crypto's provider.",
+      },
+      {
+        question:
+          "Does AAD binding alone satisfy a HIPAA or SOC 2 encryption control?",
+        answer:
+          "No single primitive does. AAD binding ships the technical control regulators check for — a ciphertext cryptographically tied to its tenant, column, and, on regulated fields, its row — and generates the evidence field-crypto's tests exercise. Certification is your organization's and its auditor's determination, not a property of the code.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel:
+        "See how field-crypto binds every ciphertext to its tenant, column, and row",
+      ctaHref: "/marketplace/modules/field-crypto",
+    },
+    related: [
+      "field-level-encryption",
+      "envelope-encryption",
+      "per-tenant-encryption-keys",
+      "row-level-security",
+    ],
+  },
+  {
+    slug: "pii-redaction",
+    term: "PII redaction",
+    cluster: "ai-infra",
+    definition:
+      "PII redaction strips personally identifiable information from text before it reaches an LLM provider or a log, so raw values never leave the trust boundary. Caisson's guardrails package detects email addresses, US Social Security numbers, Luhn-valid credit card numbers, and phone numbers, then masks, hashes, or reversibly tokenizes each match: four regex-based detector classes, not exhaustive PII coverage.",
+    artifact: {
+      label:
+        "redactPii: mask → [KIND], hash → [KIND:12-hex] — irreversible, matches returned as metadata only",
+      lang: "ts",
+      code: 'export type RedactMode = "mask" | "hash";\nexport type PiiMode = RedactMode | "tokenize";\n\n/**\n * Irreversibly redact every PII hit. `mask` → `[KIND]`; `hash` → `[KIND:<12-hex>]` (stable per\n * value). Returns the redacted text plus metadata-only matches (no raw value re-exposed downstream).\n */\nexport function redactPii(\n  text: string,\n  mode: RedactMode,\n): { redacted: string; matches: PiiMatch[] } {\n  const matches = detectPii(text);\n  const replace =\n    mode === "mask"\n      ? (m: PiiMatch): string => `[${m.kind.toUpperCase()}]`\n      : (m: PiiMatch): string =>\n          `[${m.kind.toUpperCase()}:${sha256Hex(m.value).slice(0, 12)}]`;\n  return { redacted: rewrite(text, matches, replace), matches };\n}',
+    },
+    properties: [
+      {
+        title: "Four regex-based detector classes, deterministically resolved",
+        body: "detectPii runs an email, SSN, Luhn-validated credit-card, and phone regex over the text, then resolves any overlapping matches by earliest start, then longest span, then kind name — so the same input always redacts identically across runs.",
+      },
+      {
+        title: "Three modes behind one detector",
+        body: "redactPii covers mask (`[KIND]`) and hash (`[KIND:<12-hex>]`, stable per value so equal inputs correlate without exposure); tokenizePii is the third mode, sealing the original via field-crypto instead of replacing it with a fixed placeholder.",
+      },
+      {
+        title: "Tokenize is the sole reversible path",
+        body: "tokenizePii seals each hit with field-crypto's sealField under a bound AAD column context and swaps in an opaque `[[PII:kind:i]]` placeholder; detokenizePii opens the envelope under the same tenant context to restore it, and silently skips any placeholder a provider dropped rather than re-injecting it blind.",
+      },
+      {
+        title: "A separate path redacts secret-bearing keys, not PII text",
+        body: "@caisson/kernel's redactValue walks an object and masks any property whose key name matches a secret allowlist (password, token, apiKey, and similar) — a different mechanism for structured payloads, kept distinct from pii.ts's free-text PII detection.",
+      },
+    ],
+    faq: [
+      {
+        question: "What PII does Caisson's redaction actually detect?",
+        answer:
+          "Four regex-based detector classes: email addresses, US Social Security numbers (3-2-4), credit card numbers validated with a Luhn check, and phone numbers. It does not detect names, physical addresses, IP addresses, or non-US ID formats — this is a bounded detector set, not exhaustive PII coverage.",
+      },
+      {
+        question:
+          "What's the difference between mask, hash, and tokenize mode?",
+        answer:
+          "Mask replaces a hit with a fixed class placeholder like [EMAIL]; hash replaces it with a placeholder plus a stable 12-hex SHA-256 prefix, so equal values map to equal tokens without exposing the original. Both are irreversible. Tokenize is the third, reversible mode.",
+      },
+      {
+        question: "Can a redacted value be recovered later?",
+        answer:
+          "Only in tokenize mode. The original is sealed via field-crypto's sealField into an opaque placeholder and restored with detokenizePii's openField call under the same tenant context — the redact-before-egress, restore-on-return round trip. Mask and hash mode discard the original; there is nothing to recover.",
+      },
+      {
+        question: "Does PII redaction alone make us HIPAA or GDPR compliant?",
+        answer:
+          "No. It ships the technical control that keeps personal data out of prompts, logs, and provider egress, and it generates evidence of that control operating; it does not itself constitute a certification or a compliance program.",
+      },
+    ],
+    sells: {
+      edition: "AI Production Kit",
+      ctaLabel: "See how guardrails redact PII before every inference call",
+      ctaHref: "/marketplace/modules/guardrails",
+    },
+    related: [
+      "ai-guardrails",
+      "governed-agents",
+      "llm-eval-gate",
+      "mcp-server",
+    ],
+  },
+  {
+    slug: "prompt-injection",
+    term: "Prompt injection",
+    cluster: "ai-infra",
+    definition:
+      "Prompt injection is text crafted to hijack an LLM's instructions, an attack class no vendor has solved. Caisson makes no detection claim: `@caisson/guardrails` runs a fail-closed moderator plus an unconditional secret-shape gate on every input/output leg, and the agent runtime parks any `approvalRequired` tool call for external approval before it executes, so a hijacked model can't spend or act unchecked.",
+    artifact: {
+      label:
+        "runToolCallBatch: an approvalRequired tool never executes on the model's say-so — it parks a durable snapshot and waits",
+      lang: "ts",
+      code: 'if (impl.approvalRequired === true) {\n  if (engine.runState === undefined) {\n    await engine.append("step.finished", {\n      stepId,\n      status: "error",\n      errorCode: "tool",\n    });\n    throw new LoopFailure(\n      "tool",\n      `tool "${call.toolName}" requires approval but no runState store was configured`,\n    );\n  }\n  const parkedState: ParkedState = {\n    stepId,\n    calls,\n    callIndex: i,\n    messages: [...state.messages],\n    stepsUsed: state.stepsUsed,\n    creditsSpent: state.creditsSpent,\n  };\n  await engine.runState.park({\n    runId: engine.runId,\n    toolCallId,\n    resumeSeq: engine.currentSeq(),\n    parkedState,\n  });\n  throw new LoopParked(toolCallId);\n}',
+    },
+    properties: [
+      {
+        title: "A gated tool call parks, it never runs on the model's word",
+        body: "runToolCallBatch checks impl.approvalRequired before executing any proposed tool call. A gated call appends tool.proposed, records a resumable ParkedState snapshot via RunStateStore.park, and throws LoopParked instead of calling impl.execute — so a model steered by injected text can propose a dangerous call but cannot make it happen without a separate approveToolCall decision.",
+      },
+      {
+        title:
+          "The credential-shape gate runs unconditionally, injection or not",
+        body: "guard.ts's moderate() calls looksLikeSecret(text) before any moderator, on both the input and output leg, with no policy field to disable it — an injected instruction that tries to get the model to echo out a credential still hits this gate on the way out.",
+      },
+      {
+        title: "A moderator outage still fails closed",
+        body: "moderateWithDeadline races the configured Moderator against a timeout; a driver throw, rejection, or deadline miss blocks the call unless the policy explicitly sets failOpen: true — a moderator failure can't be used as the injection vector to slip an unmoderated prompt through.",
+      },
+      {
+        title: "An approved call executes exactly once, even under a race",
+        body: "resumeToolLoop re-validates the pending approval in SQL via RunStateStore.claimResume, a CAS: two concurrent resumes of the same approval can't both execute the tool, and a mismatched or already-claimed toolCallId throws ConflictError before any tool or model logic runs.",
+      },
+    ],
+    faq: [
+      {
+        question: "Does Caisson detect prompt injection attempts?",
+        answer:
+          'No — Caisson makes no detection claim. GuardCategory carries an "injection" class in the schema for a custom Moderator to report, but the shipped drivers never emit it. The real containment is structural: fail-closed input/output gates and a tool-approval park, not a classifier that spots the attack.',
+      },
+      {
+        question:
+          "If an attacker gets a prompt to override the model's instructions, what stops it from taking action?",
+        answer:
+          "The tool-approval gate. Any LoopTool marked approvalRequired never executes from runToolCallBatch — the call parks (tool.proposed appended, a durable snapshot recorded) and the run waits for an external approveToolCall/denyToolCall decision, so a hijacked model can propose a call but can't execute one unsupervised.",
+      },
+      {
+        question:
+          "Can an injected prompt make the model exfiltrate an API key or credential?",
+        answer:
+          "The credential-shape scan runs unconditionally on both legs before any moderator call — looksLikeSecret has no policy switch to disable it, so a credential-shaped span in the model's own output is blocked at the same chokepoint every input passes through, live moderator or not.",
+      },
+      {
+        question:
+          "What happens if the content moderator is down when a malicious prompt comes through?",
+        answer:
+          "The call blocks. guard.ts fails closed by default: a moderator timeout, thrown error, or rejection is treated as a block, not a pass-through, unless the policy explicitly opts into failOpen: true.",
+      },
+    ],
+    sells: {
+      edition: "AI Production Kit",
+      ctaLabel: "See how guardrails gate every inference call",
+      ctaHref: "/marketplace/modules/guardrails",
+    },
+    related: ["ai-guardrails", "governed-agents"],
+  },
+  {
+    slug: "deterministic-replay",
+    term: "Deterministic replay",
+    cluster: "ai-infra",
+    definition:
+      "Deterministic replay means folding the same event log always produces the same byte-identical result, regardless of arrival order. Caisson's agent-trajectory package sorts every event by seq before folding into a RunProjection, so a shuffled batch resolves to one canonical output — the shape evals score and the audit chain anchors, safe to persist without the raw bodies it references.",
+    artifact: {
+      label:
+        "project(): sort-by-seq fold to a byte-identical RunProjection, regardless of arrival order",
+      lang: "ts",
+      code: 'export function project(events: readonly TrajectoryEvent[]): RunProjection {\n  const ordered = [...events].sort((a, b) => a.seq - b.seq);\n  const runId = ordered[0]?.runId ?? "";\n\n  let status: RunProjection["status"] = "pending";\n  // Key order is the projection\'s byte order: metered → priced → estimated → unsupported\n  const usageTotals: Record<BillingStatus, UsageTotal> = {\n    metered: zeroTotal(),\n    priced: zeroTotal(),\n    estimated: zeroTotal(),\n    unsupported: zeroTotal(),\n  };\n  const checkpoints: CheckpointMark[] = [];\n\n  for (const e of ordered) {\n    switch (e.kind) {\n      case "step.finished": {\n        const node = nodes.get(e.payload.stepId);\n        if (node !== undefined) node.status = e.payload.status;\n        break;\n      }\n      // ... run.*/step.*/model.*/checkpoint each fold their own slice\n    }\n  }\n\n  return { runId, status, steps: roots, usageTotals, checkpoints };\n}',
+    },
+    properties: [
+      {
+        title: "Sort-by-seq before fold, every time",
+        body: "Both project() and projectToolCalls open with the same line — [...events].sort((a, b) => a.seq - b.seq) — before folding anything, so a shuffled batch (out-of-order stream delivery) resolves to one canonical result instead of drifting with delivery order.",
+      },
+      {
+        title: "Fixed key order makes the output byte-comparable",
+        body: "RunProjection's fields are always written in the same order (runId, status, steps, usageTotals, checkpoints) and usageTotals always carries all four billingStatus bands in a fixed sequence, so JSON.stringify of two projections of the same log is byte-identical, not merely deep-equal.",
+      },
+      {
+        title: "Two independent projections over the same log",
+        body: "project() folds run/step/usage/checkpoint state into a RunProjection; projectToolCalls folds tool.proposed/approved/denied/result into a scored tool-call list. They read the same sorted event log but never share mutable state, so adding the tool-call fold didn't change one byte of project()'s existing output.",
+      },
+      {
+        title: "Digest-ref payloads mean replay never needs raw bodies",
+        body: "Prompt text, tool arguments, and tool results live in the log only as a DigestRef ({ digest, byteLength, encRef? }); both folds reconstruct the run's shape and outcomes from the log alone, so a trajectory is safe to replay, score, or anchor without ever re-fetching the sensitive content it points at.",
+      },
+    ],
+    faq: [
+      {
+        question: 'What makes a replay of an AI agent run "deterministic"?',
+        answer:
+          "The same input events always fold to the same output, no matter what order they arrived in. Caisson's project() sorts every event by seq before folding, and builds the result object in a fixed key order, so JSON.stringify of two projections of the same log is byte-identical.",
+      },
+      {
+        question:
+          "Why does replay sort events by seq instead of trusting arrival order?",
+        answer:
+          "Because a stream can redeliver out of order — a retried batch, a shuffled queue — and the fold has to be a pure function of the log, never of wall-clock or map-iteration order. Sorting by the append-only store's gapless seq first is what makes two replays of the same run always agree.",
+      },
+      {
+        question:
+          "Does replay need the raw prompt and tool-call bodies to reconstruct a run?",
+        answer:
+          "No. Prompt text, tool arguments, and tool results are each carried in the event log only as a DigestRef — a sha256 digest and byte length, never inline — so project() and projectToolCalls fold the step tree, usage totals, and tool outcomes from the log alone, without ever holding the sensitive bodies it points at.",
+      },
+      {
+        question: "Do tool-call events change what project() outputs?",
+        answer:
+          "No. projectToolCalls is a separate, sibling fold over tool.proposed/approved/denied/result into a scored-consumable list per toolCallId — it doesn't touch project() or RunProjection, so every existing project() input keeps its existing byte-identical output.",
+      },
+    ],
+    sells: {
+      edition: "Agentic-Dev",
+      ctaLabel: "See how Agentic-Dev replays every governed run byte-for-byte",
+      ctaHref: "/agentic-dev",
+    },
+    related: [
+      "agent-trajectory",
+      "governed-agents",
+      "llm-eval-gate",
+      "token-hash-at-rest",
+    ],
   },
 ];
 
