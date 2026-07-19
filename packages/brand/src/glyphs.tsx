@@ -5,7 +5,7 @@
 // the kit floor ships no bespoke glyphs of its own. Server-safe (plain SVG, no framework import).
 import type { IconGlyph, RegisteredIconName } from "@caisson/ui/components";
 
-/** The 22 bespoke domain glyphs, keyed by the @caisson/ui registry name contract. */
+/** The 34 bespoke domain glyphs, keyed by the @caisson/ui registry name contract. */
 export const brandGlyphs: Record<RegisteredIconName, IconGlyph> = {
   // Row-level security: a table whose locked row admits only the keyed tenant.
   rls: (p) => (
@@ -694,6 +694,367 @@ export const brandGlyphs: Record<RegisteredIconName, IconGlyph> = {
         rx="0.6"
         fill="currentColor"
       />
+    </svg>
+  ),
+  // Agent trajectory: an append-only run record — step-dots along a replayable path that branches once.
+  "agent-trajectory": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path
+        d="M4 18h13"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M10.5 18l3.5-4.5H18"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="4" cy="18" r="1.5" fill="currentColor" />
+      <circle cx="10.5" cy="18" r="1.5" fill="currentColor" />
+      <circle cx="17" cy="18" r="1.5" fill="currentColor" />
+      <circle cx="18" cy="13.5" r="1.5" fill="currentColor" />
+    </svg>
+  ),
+  // Governed tool execution: a prompt chevron and cursor sealed inside a terminal frame with a title rail.
+  "tool-exec": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="14"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M3 8.5h18"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        opacity="0.5"
+      />
+      <path
+        d="M7 11.5l3 2.3-3 2.3"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12.5 16h4.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
+  // Cross-tenant admin controls: a row of tenant panels governed by one admin key held above them.
+  "org-controls": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="3"
+        y="13"
+        width="5"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="9.5"
+        y="13"
+        width="5"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="16"
+        y="13"
+        width="5"
+        height="6"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle cx="12" cy="6" r="2.4" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M12 8.4v2.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11 10h2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
+  // Compliance core: nested evidence layers wrapped around one verified OSCAL center.
+  "compliance-core": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="3"
+        y="3"
+        width="18"
+        height="18"
+        rx="3"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="7"
+        y="7"
+        width="10"
+        height="10"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        opacity="0.55"
+      />
+      <path
+        d="M9.6 12l1.7 1.7 3.1-3.4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  // Billing orchestration: a subscription cycle that grants one credit unit each turn.
+  "billing-orchestration": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path
+        d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M17.5 3.5v3.5H14"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.7" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M12 10.6v2.8M10.6 12h2.8"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
+  // Premium component tier: an elevated component card raised above the base panel.
+  "ui-pro": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="8"
+        y="8"
+        width="12"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        opacity="0.5"
+      />
+      <rect
+        x="4"
+        y="4"
+        width="12"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M4 8.3h12"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        opacity="0.6"
+      />
+      <circle cx="7.3" cy="6.1" r="0.9" fill="currentColor" />
+    </svg>
+  ),
+  // On-device inference: a compute chip processing a live signal pulse.
+  "local-inference": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="6"
+        y="6"
+        width="12"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M4 10h2M4 14h2M18 10h2M18 14h2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.5 12.5h1.5l1.5-3 2 5 1.5-2h1.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  // On-device privacy: data guarded by a shield resident inside the chip.
+  "local-privacy": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="6"
+        y="6"
+        width="12"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M4 10h2M4 14h2M18 10h2M18 14h2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 8l3.2 1.3v2.4c0 2.1-1.5 3.2-3.2 3.9-1.7-0.7-3.2-1.8-3.2-3.9V9.3z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  // Local-first sync: records exchanged both ways from the on-device chip.
+  "local-sync": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="6"
+        y="6"
+        width="12"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M4 10h2M4 14h2M18 10h2M18 14h2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9 11.5h4.5l-1.4-1.4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15 14.5h-4.5l1.4 1.4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  // Frameworks pack: multiple compliance frameworks tiled into one registry, one verified.
+  "frameworks-pack": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="4"
+        y="4"
+        width="7"
+        height="7"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="13"
+        y="4"
+        width="7"
+        height="7"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="4"
+        y="13"
+        width="7"
+        height="7"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="13"
+        y="13"
+        width="7"
+        height="7"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M14.8 16.6l1.3 1.3 2.3-2.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  // Ed25519 signing primitive: a key laying down a signature flourish.
+  "signing-primitive": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <circle cx="7.5" cy="8.5" r="3" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M9.6 10.6l5 5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12.8 13.8l1.5-1.5M14.6 15.6l1.5-1.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4 19.5q2.5-2 4.5 0t4.5-0.4t3-0.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.7"
+      />
+    </svg>
+  ),
+  // Integer credit ledger: usage rows posted beside one credit unit token.
+  credits: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path
+        d="M4 7.5h8M4 12h8M4 16.5h5.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <circle cx="17" cy="14" r="3" stroke="currentColor" strokeWidth="2" />
+      <circle cx="17" cy="14" r="0.9" fill="currentColor" />
     </svg>
   ),
 };

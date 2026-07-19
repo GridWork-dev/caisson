@@ -108,7 +108,19 @@ export type RegisteredIconName =
   | "edition-compliance"
   | "edition-ai-kit"
   | "edition-local-ai"
-  | "edition-agent-dev";
+  | "edition-agent-dev"
+  | "agent-trajectory"
+  | "tool-exec"
+  | "org-controls"
+  | "compliance-core"
+  | "billing-orchestration"
+  | "ui-pro"
+  | "local-inference"
+  | "local-privacy"
+  | "local-sync"
+  | "frameworks-pack"
+  | "signing-primitive"
+  | "credits";
 
 /** A bespoke glyph: the render-function shape the registry stores and `<Icon>` invokes. */
 export type IconGlyph = (
