@@ -8,6 +8,12 @@ grounds:
 
 # Deploy log
 
+## 2026-07-19 (late night, second) — caisson-site redeploy at `cd48b89d`: bespoke marks live
+
+Delta deploy (SUCCESS first attempt) carrying PR #296: the 12 lucide placeholder marks
+became bespoke brand glyphs (family 22 → 34; design-lane authored, all seams in lockstep).
+Probes 200. Changeset (ui/brand/site patch) accumulates with the rest.
+
 ## 2026-07-19 (late night) — caisson-site redeploy at `e07319f9`: 23 module depth pages live
 
 Single-service delta deploy carrying PRs #294 + #295 (ADR-0368). First attempt FAILED at
