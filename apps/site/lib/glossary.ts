@@ -694,7 +694,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     artifact: {
       label: "buildTenantPolicySql — FORCE RLS + tenant-column policy",
       lang: "ts",
-      code: 'export interface TenantPolicyOptions {\n  /** The tenant-key column. Default `account_id`. */\n  column?: string;\n  /** The role policies apply to (it must NOT be a superuser / BYPASSRLS). Default `app`. */\n  role?: string;\n}\n\n/**\n * SQL that makes `table` fail-closed tenant-isolated: ENABLE + **FORCE** RLS, GRANT CRUD to the\n * app role, and a policy that admits a row only when its tenant column equals the bound GUC.\n * Emitted into the table\'s migration (ADR-0014) so a tenant table can never ship without it.\n */\nexport function buildTenantPolicySql(\n  table: string,\n  { column = "account_id", role = "app" }: TenantPolicyOptions = {},\n): string {\n  return [\n    `ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;`,\n    `ALTER TABLE ${table} FORCE ROW LEVEL SECURITY;`,\n    `GRANT SELECT, INSERT, UPDATE, DELETE ON ${table} TO ${role};`,\n    `CREATE POLICY ${table}_tenant_isolation ON ${table}`,\n    `  USING (${column} = current_setting(\'${TENANT_GUC}\', true))`,\n    `  WITH CHECK (${column} = current_setting(\'${TENANT_GUC}\', true));`,\n  ].join("\\n");\n}',
+      code: "export interface TenantPolicyOptions {\n  /** The tenant-key column. Default `account_id`. */\n  column?: string;\n  /** The role policies apply to (it must NOT be a superuser / BYPASSRLS). Default `app`. */\n  role?: string;\n}\n\n/**\n * SQL that makes `table` fail-closed tenant-isolated: ENABLE + **FORCE** RLS, GRANT CRUD to the\n * app role, and a policy that admits a row only when its tenant column equals the bound GUC.\n * Emitted into the table's migration (ADR-0014) so a tenant table can never ship without it.\n *\n * The GUC read is wrapped in `NULLIF(..., '')` (pgbouncer/pooler hardening): a pooled connection\n * that resets custom GUCs to `''` instead of fully unsetting them would otherwise compare\n * `column = ''`. `NULLIF` folds `''` to `NULL` first, so the comparison is always `NULL` (deny).\n */\nexport function buildTenantPolicySql(\n  table: string,\n  { column = \"account_id\", role = \"app\" }: TenantPolicyOptions = {},\n): string {\n  const guc = `NULLIF(current_setting('${TENANT_GUC}', true), '')`;\n  return [\n    `ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;`,\n    `ALTER TABLE ${table} FORCE ROW LEVEL SECURITY;`,\n    `GRANT SELECT, INSERT, UPDATE, DELETE ON ${table} TO ${role};`,\n    `CREATE POLICY ${table}_tenant_isolation ON ${table}`,\n    `  USING (${column} = ${guc})`,\n    `  WITH CHECK (${column} = ${guc});`,\n  ].join(\"\\n\");\n}",
     },
     properties: [
       {
@@ -711,7 +711,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Admin writes get their own role, not a bypass",
-        body: "The operator mutation surface runs as a separate admin_write role with its own USING(true) policy scoped TO admin_write only — RLS OR-combines permissive policies per role, so admin_write can see every tenant while app's isolation is untouched.",
+        body: "The operator mutation surface runs as a separate admin_write role with its own USING(true) policy scoped TO admin_write only — RLS OR-combines permissive policies per role, so admin_write can see every tenant while app's isolation is untouched. That admin-write layer ships in the commercial @caisson/org-controls package (ADR-0257); the free tenancy-rls package carries the buyer tenant-isolation floor itself.",
       },
     ],
     faq: [
@@ -925,7 +925,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Does multi-tenant isolation alone make us SOC 2 or HIPAA compliant?",
         answer:
-          "No. It ships the technical control SOC 2 CC6.1 and HIPAA 164.312(a)(1) require for logical access control and generates the isolation proof as a test in the suite, but that control alone is not a compliance certification. The Compliance edition composes it with the audit chain and evidence pack an audit needs.",
+          "No. It ships the technical control SOC 2 CC6.1 requires for logical access control and generates the isolation proof as a test in the suite, but that control alone is not a compliance certification. The Compliance edition composes it with the audit chain and evidence pack an audit needs.",
       },
     ],
     sells: {
@@ -991,7 +991,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Does field-level encryption alone make us HIPAA or SOC 2 compliant?",
         answer:
-          "No. Field-level encryption ships the technical control HIPAA 164.312(a)(2)(iv) and SOC 2 CC6.1 expect for data protection and generates the evidence an auditor checks; the certification itself still depends on your organization's administrative controls and the audit process, which Caisson does not perform for you.",
+          "No. The row-bound encryptField path (AAD binds tenant, key version, column, AND row id) ships the technical control HIPAA 164.312(a)(2)(iv) and SOC 2 CC6.1 expect for regulated columns and generates the evidence an auditor checks; the transparent encryptedColumn shown above stays on a 3-tuple AAD and is scoped to low-sensitivity fields. The certification itself still depends on your organization's administrative controls and the audit process, which Caisson does not perform for you.",
       },
     ],
     sells: {
@@ -1020,7 +1020,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     properties: [
       {
         title: "One KMS port, four drop-in backends",
-        body: "KmsClient exposes just three methods (generateDataKey, decryptDataKey, scheduleKeyDeletion), so AWS KMS (awsKmsClient, wired), GCP KMS, Azure Key Vault, and HashiCorp Vault Transit all drop in behind the same interface; the field-crypto column and envelope format never know which one is live.",
+        body: "KmsClient exposes just three methods (generateDataKey, decryptDataKey, scheduleKeyDeletion). AWS KMS and GCP KMS drivers ship today (createAwsKmsClient, createGcpKmsClient — both live-tested); Azure Key Vault or Vault Transit would slot behind the same three-method port, but no driver for them ships yet. The field-crypto column and envelope format never know which backend is live.",
       },
       {
         title: "Only the wrapped DEK ever touches storage",
@@ -1076,7 +1076,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Crypto-shredding",
     cluster: "security",
     definition:
-      "Crypto-shredding is cryptographic erasure: destroying a scope's encryption key so every ciphertext it protects becomes permanently unrecoverable, satisfying GDPR and CCPA right-to-erasure requests without deleting rows from an immutable audit chain. Caisson's field-crypto module schedules KEK deletion through a scope tied to one tenant, never a shared key, and mints an audit record carrying no PII.",
+      "Crypto-shredding is cryptographic erasure: destroying a scope's encryption key so every ciphertext it protects becomes unrecoverable, the technical control GDPR and CCPA right-to-erasure requests point at, without deleting rows from an immutable audit chain. Caisson's field-crypto module schedules KEK deletion through a scope tied to one tenant, never a shared key, and mints an audit record carrying no PII.",
     artifact: {
       label:
         "cryptoShred(): destroy the scope's KEK through the KMS port, mint the erasure.crypto-shred audit payload (no PII)",
@@ -1140,7 +1140,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "BYOK (bring your own key)",
     cluster: "security",
     definition:
-      "BYOK (bring your own key) lets a tenant supply its own AI provider API key instead of the shared lane, encrypted at rest under a per-tenant field-crypto envelope. Caisson's ai-kit resolves the key at inference time inside a tenant-scoped RLS transaction, debits zero credits on a BYOK-backed call, and never logs or persists the key in the clear.",
+      "BYOK (bring your own key) lets a tenant supply its own AI provider API key instead of the shared lane, encrypted at rest under a per-tenant field-crypto envelope. Caisson's ai-kit resolves the key at inference time inside a tenant-scoped RLS transaction, debits zero credits only on allowlisted BYOK-covered actions, and never logs or persists the key in the clear.",
     artifact: {
       label:
         "putTenantProviderKey: seals a tenant's own provider key into its field-crypto envelope, upsert not append",
@@ -1277,7 +1277,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       label:
         "verifyLicenseWithKey: every failure path (bad signature, unparsable claims, an expired token) resolves to the free community tier, never a thrown error",
       lang: "ts",
-      code: 'export function verifyLicenseWithKey(\n  token: string | null | undefined,\n  publicKey: KeyObject,\n  now: Date = new Date(),\n): VerifiedLicense {\n  if (token === null || token === undefined || token === "") {\n    return COMMUNITY;\n  }\n  try {\n    const decoded = decodeToken(token);\n    const signedBytes = Buffer.from(decoded.payload, "utf8");\n\n    // Asymmetric verify over the EXACT signed bytes (Ed25519: algorithm = null). `crypto.verify`,\n    // not `timingSafeEqual`: a signature check is not a secret comparison (ADR-0010).\n    if (!cryptoVerify(null, signedBytes, publicKey, decoded.signature)) {\n      return COMMUNITY;\n    }\n\n    const parsed = licenseClaimsSchema.safeParse(\n      JSON.parse(decoded.payload) as unknown,\n    );\n    if (!parsed.success) {\n      return COMMUNITY;\n    }\n    const claims = parsed.data;\n\n    // ... format-conformance (canonicalize(claims) === decoded.payload) and expiry checks follow,\n    // each failing safe to COMMUNITY too ...\n\n    return { valid: true, tier: claims.tier, entitlements: claims.entitlements, claims };\n  } catch {\n    // Any unexpected throw (JSON parse, codec edge, crypto) → community. The verifier never raises.\n    return COMMUNITY;\n  }\n}',
+      code: 'export function verifyLicenseWithKey(\n  token: string | null | undefined,\n  publicKey: KeyObject,\n  now: Date = new Date(),\n): VerifiedLicense {\n  if (token === null || token === undefined || token === "") {\n    return COMMUNITY;\n  }\n  try {\n    const decoded = decodeToken(token);\n    const signedBytes = Buffer.from(decoded.payload, "utf8");\n\n    // Asymmetric verify over the EXACT signed bytes (Ed25519: algorithm = null). `crypto.verify`,\n    // not `timingSafeEqual`: a signature check is not a secret comparison (ADR-0010).\n    if (!cryptoVerify(null, signedBytes, publicKey, decoded.signature)) {\n      return COMMUNITY;\n    }\n\n    const parsed = licenseClaimsSchema.safeParse(\n      JSON.parse(decoded.payload) as unknown,\n    );\n    if (!parsed.success) {\n      return COMMUNITY;\n    }\n    const claims = parsed.data;\n\n    // ... format-conformance (canonicalize(claims) === decoded.payload) and expiry checks follow,\n    // each failing safe to COMMUNITY too ...\n\n    return {\n      valid: true,\n      tier: claims.tier,\n      entitlements: claims.entitlements,\n      eval: claims.eval === true, // the eval-license discriminator (watermarking, no-redistribution)\n      claims,\n    };\n  } catch {\n    // Any unexpected throw (JSON parse, codec edge, crypto) → community. The verifier never raises.\n    return COMMUNITY;\n  }\n}',
     },
     properties: [
       {
@@ -1408,7 +1408,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       label:
         "makeLicenseEntitlementResolver: verify the license token, check the edge revocation deny-set, return the entitlement ids or null",
       lang: "ts",
-      code: 'export function makeLicenseEntitlementResolver(\n  getDenied: () => ReadonlySet<string>,\n  verify: (token: string) => VerifiedLicense = verifyLicense,\n): (request: Request) => readonly string[] | null {\n  return (request: Request): readonly string[] | null => {\n    const header = request.headers.get("authorization");\n    if (header === null) return null;\n    const match = BEARER_RE.exec(header.trim());\n    const token = match?.[1];\n    if (token === undefined) return null;\n    const verified = verify(token);\n    if (!verified.valid || verified.claims === null) return null;\n    // Edge revocation gate: an operator-revoked license id resolves to community, base-only.\n    if (getDenied().has(verified.claims.licenseId)) return null;\n    return verified.entitlements;\n  };\n}',
+      code: 'export function makeLicenseEntitlementResolver(\n  getDenied: () => ReadonlySet<string>,\n  verify: (token: string) => VerifiedLicense = verifyLicense,\n): (request: Request) => ResolvedLicense | null {\n  return (request: Request): ResolvedLicense | null => {\n    const header = request.headers.get("authorization");\n    if (header === null) return null;\n    const match = BEARER_RE.exec(header.trim());\n    const token = match?.[1];\n    if (token === undefined) return null;\n    const verified = verify(token);\n    if (!verified.valid || verified.claims === null) return null;\n    // Edge revocation gate: an operator-revoked license id resolves to community, base-only.\n    if (getDenied().has(verified.claims.licenseId)) return null;\n    // The signed per-entitlement updates windows + entitledSince snapshots ride along; an\n    // absent/null claim normalizes to the empty map (every entitlement unbounded / grandfathered).\n    return {\n      entitlements: verified.entitlements,\n      updatesWindows: verified.claims.updatesWindows ?? {},\n      entitledSince: verified.claims.entitledSince ?? {},\n    };\n  };\n}',
     },
     properties: [
       {
@@ -1474,7 +1474,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       label:
         "debit() in packages/credits/src/credits.ts: atomic ledger insert + wallet decrement; an insufficient balance throws and rolls both back",
       lang: "ts",
-      code: "export async function debit(\n  tx: TenantExecutor,\n  input: DebitInput,\n): Promise<CreditResult> {\n  assertPositiveInt(input.amount);\n  // ... idempotency + feature-tag resolution elided\n  const fresh = await insertEvent(tx, {\n    accountId: input.accountId,\n    eventType: input.eventType,\n    amount: -input.amount,\n    // ...\n  });\n  if (!fresh) return { balance: await balance(tx, input.accountId), idempotent: true };\n  const updated = await tx.query<{ balance: number }>(\n    `UPDATE credit_wallet SET balance = balance - $2\n     WHERE account_id = $1 AND balance >= $2\n     RETURNING balance`,\n    [input.accountId, input.amount],\n  );\n  if (updated.rows.length === 0) {\n    // Insufficient: rolls back the transaction, a failed debit leaves no trace (ADR-0007).\n    throw new InsufficientCreditsError(input.amount, await balance(tx, input.accountId));\n  }\n  return { balance: updated.rows[0]?.balance ?? 0, idempotent: false };\n}",
+      code: "export async function debit(\n  tx: TenantExecutor,\n  input: DebitInput,\n): Promise<CreditResult> {\n  assertPositiveInt(input.amount);\n  // ... elided: idempotency + feature-tag resolution, the per-account SELECT ... FOR UPDATE\n  // wallet row lock, and the FIFO walk over unexpired grants (unexpiredGrantsFifo +\n  // insertConsumption) that throws InsufficientCreditsError when grants cannot cover the debit ...\n  const fresh = await insertEvent(tx, {\n    accountId: input.accountId,\n    eventType: input.eventType,\n    amount: -input.amount,\n    // ...\n  });\n  if (!fresh) return { balance: await balance(tx, input.accountId), idempotent: true };\n  const updated = await tx.query<{ balance: number }>(\n    `UPDATE credit_wallet SET balance = balance - $2\n     WHERE account_id = $1 AND balance >= $2\n     RETURNING balance`,\n    [input.accountId, input.amount],\n  );\n  if (updated.rows.length === 0) {\n    // Insufficient: rolls back the transaction, a failed debit leaves no trace (ADR-0007).\n    throw new InsufficientCreditsError(input.amount, await balance(tx, input.accountId));\n  }\n  return { balance: updated.rows[0]?.balance ?? 0, idempotent: false };\n}",
     },
     properties: [
       {
@@ -1543,11 +1543,11 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     properties: [
       {
         title: "Reuses the index Worker's entitlement math, not a second gate",
-        body: "entitledSet() runs the same baseModuleIds() union expandEntitlements() computation the read-only index route already runs; the npm surface doesn't reimplement license checking, it calls the injected resolveEntitlements against the same offline-Ed25519 verify.",
+        body: "resolveGate() runs the same baseModuleIds() union expandEntitlements() computation the read-only index route already runs; the npm surface doesn't reimplement license checking, it calls the injected resolveEntitlements against the same offline-Ed25519 verify.",
       },
       {
         title: "No-existence-leak gating",
-        body: "gateStatus() returns 401 (retry with a token) when the request carries no Authorization header, and 404 (indistinguishable from an unknown package) when it does and still isn't entitled, so a probe can never learn whether an unpurchased module even exists (D3, ADR-0076).",
+        body: "gateStatus() returns 401 (retry with a token) when the request carries no Authorization header, and 404 (indistinguishable from an unknown package) when it does and still isn't entitled, so a probe can never learn whether an unpurchased module even exists (the D3 no-existence-leak lock, ADR-0223).",
       },
       {
         title: "Real abbreviated packuments, not a redirect",
@@ -1906,7 +1906,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       label:
         "hybridSearch fuses the vector KNN leg and the FTS5 leg by Reciprocal Rank Fusion (RRF_K=60), degrading to FTS5-only when the vec leg is empty",
       lang: "ts",
-      code: "  hybridSearch(opts: HybridSearchOptions): SearchHit[] {\n    const limit = opts.limit ?? 10;\n    const legLimit = Math.max(limit * 8, 50);\n\n    const vecRanks = this.vecLeg(opts.queryVector, legLimit);\n    const ftsRanks = this.ftsLeg(opts.queryText, legLimit);\n\n    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs.\n    const fused = new Map<number, number>();\n    for (const [rowid, rank] of vecRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n    for (const [rowid, rank] of ftsRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n\n    const ranked = [...fused.entries()]\n      // score descending; deterministic tie-break by rowid ascending (stable, env-free).\n      .sort((a, b) => b[1] - a[1] || a[0] - b[0])\n      .slice(0, limit);\n    if (ranked.length === 0) return [];\n\n    return ranked.map(([rowid, score]) => ({ id: this.docId(rowid), score }));\n  }",
+      code: '  hybridSearch(opts: HybridSearchOptions): SearchHit[] {\n    const limit = opts.limit ?? 10;\n    const legLimit = Math.max(limit * 8, 50);\n    const ftsWeight = opts.ftsWeight ?? 1;\n    if (!Number.isFinite(ftsWeight) || ftsWeight <= 0) {\n      throw new ValidationError("ftsWeight must be a positive finite number", {\n        received: ftsWeight,\n      });\n    }\n\n    const vecRanks = this.vecLeg(opts.queryVector, legLimit);\n    const ftsRanks = this.ftsLeg(opts.queryText, legLimit);\n\n    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs. The\n    // FTS contribution is scaled by `ftsWeight` (default 1 — the symmetric classic form).\n    const fused = new Map<number, number>();\n    for (const [rowid, rank] of vecRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n    for (const [rowid, rank] of ftsRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + ftsWeight / (RRF_K + rank));\n\n    const ranked = [...fused.entries()]\n      // score descending; deterministic tie-break by rowid ascending (stable, env-free).\n      .sort((a, b) => b[1] - a[1] || a[0] - b[0])\n      .slice(0, limit);\n    if (ranked.length === 0) return [];\n\n    return ranked.map(([rowid, score]) => ({ id: this.docId(rowid), score }));\n  }',
     },
     properties: [
       {
@@ -1915,7 +1915,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "One fixed formula, not a tunable blend",
-        body: "Fusion is Reciprocal Rank Fusion at the standard RRF_K=60: every leg a document appears in contributes 1/(60+rank), summed across legs, then ranked descending with a deterministic rowid tie-break. There is no relevance-scoring knob to mistune and no environment-dependent ordering.",
+        body: "Fusion is Reciprocal Rank Fusion at the standard RRF_K=60: every leg a document appears in contributes 1/(60+rank), summed across legs, then ranked descending with a deterministic rowid tie-break. One lever exists — ftsWeight (default 1, the symmetric classic form) scales the FTS leg when exact-term evidence should outrank semantic neighborhood; a non-positive value throws rather than guesses. Ordering never depends on the environment.",
       },
       {
         title: "The embedder is a port, never a bundled model",
@@ -1947,7 +1947,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "How does local-store rank results across a vector search and a keyword search?",
         answer:
-          "By Reciprocal Rank Fusion. Each leg's rank contributes 1/(RRF_K + rank), with RRF_K=60, summed per document across whichever legs ran. It is a fixed formula, not a tunable score blend, so identical inputs always produce the identical fused ranking.",
+          "By Reciprocal Rank Fusion. Each leg's rank contributes 1/(RRF_K + rank), with RRF_K=60, summed per document across whichever legs ran; the single tuning lever is ftsWeight, which scales the FTS leg's contribution (default 1). The formula is deterministic — identical inputs and weight always produce the identical fused ranking.",
       },
     ],
     sells: {
@@ -2123,7 +2123,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "A six-year retention floor by default",
-        body: "Each anchor carries a retain-until date computed from the audit-worm retention floor (six years, matching HIPAA §164.316(b)(2) and SEC 17a-4), and retention only ever extends — evidence can't be disposed early.",
+        body: "Each anchor carries a retain-until date computed from the audit-worm retention default (seven years, above the six-year floor HIPAA §164.316(b)(2) and SEC 17a-4 set), and retention only ever extends — evidence can't be disposed early.",
       },
     ],
     faq: [
@@ -2167,7 +2167,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       label:
         "assembleOscalEvidenceBundle — manifest -> signed AP + SAR + POA&M as a path->bytes map",
       lang: "ts",
-      code: "// From an evidence-pack manifest — authors the OSCAL Assessment Plan, SAR, and POA&M,\n// then signs the manifest. Pin the `now` + `newId` seams for byte-identical output.\nconst bundle = await assembleOscalEvidenceBundle(manifest, signer, {\n  now: () => runAt,\n  newId: seededUuid,\n});\n\n// bundle.files is a { relativePath -> canonical UTF-8 bytes } map — write it straight out:\n//   ./assessment-plan/soc2.json  ./sar.json  ./poam.json  ./manifest.json  ./manifest.sig\nfor (const [path, bytes] of Object.entries(bundle.files)) {\n  await writeFile(join(outDir, path), bytes);\n}",
+      code: "// From an evidence-pack manifest — authors the OSCAL Assessment Plan, SAR, and POA&M,\n// then signs the manifest. Pin the `now` + `newId` seams for byte-identical output.\nconst bundle = await assembleOscalEvidenceBundle(manifest, signer, {\n  now: runAt,\n  newId: seededUuid,\n});\n\n// bundle.files is a { relativePath -> canonical UTF-8 bytes } map — write it straight out:\n//   ./assessment-plan/soc2.json  ./sar.json  ./poam.json  ./manifest.json  ./manifest.sig\nfor (const [path, bytes] of Object.entries(bundle.files)) {\n  await writeFile(join(outDir, path), bytes);\n}",
     },
     properties: [
       {
@@ -2286,7 +2286,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       label:
         "Record the Article 50 disclosure as a tamper-evident audit event — a verifiable answer to “did disclosure fire for this session?”",
       lang: "ts",
-      code: '// The disclosure surface is your UI; the RECORD that it fired is audit-chain evidence.\n// append() canonicalizes the payload, hash-chains it onto the tenant\'s tip, and mints a\n// write-once WORM anchor in the same call — so the disclosure log can\'t be quietly edited.\nawait chainStore.append(accountId, {\n  event: "ai.disclosure.shown",\n  clause: "eu-ai-act/art-50-1",\n  surface: "support-chat",\n  sessionId,\n  disclosureVersion: "2026-07-10", // the versioned copy shown to the user\n});\n\n// Later — for the evidence bundle, or a regulator\'s question:\nconst result = await chainStore.verify(accountId);\n// → { ok: true, length, tip } — tamper, truncation, or rewrite each surface here.',
+      code: '// The disclosure surface is your UI; the RECORD that it fired is audit-chain evidence.\n// append() canonicalizes the payload, hash-chains it onto the tenant\'s tip, and mints a\n// write-once WORM anchor in the same call — so the disclosure log can\'t be quietly edited.\nawait chainStore.append(accountId, {\n  event: "ai.disclosure.shown",\n  clause: "eu-ai-act/art-50-1",\n  surface: "support-chat",\n  sessionId,\n  disclosureVersion: "2026-07-10", // the versioned copy shown to the user\n});\n\n// Later — for the evidence bundle, or a regulator\'s question:\nconst result = await chainStore.verify(accountId);\n// → { valid: true, brokenAt: null } — a non-null brokenAt surfaces tamper, insert, reorder,\n// or truncation.',
     },
     properties: [
       {
