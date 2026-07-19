@@ -8,6 +8,14 @@ grounds:
 
 # Deploy log
 
+## 2026-07-19 (post-midnight) — dep-digest watcher live in the local intel daemon
+
+`caisson-intel` rebuilt (`docker compose up -d --build`, healthy) at main `ad9b1e03`
+(PR #297, ADR-0369): the weekly `dep-digest` watcher registered and ran its first sweep on
+boot — 1 finding, delivered end-to-end as Linear draft CAISSON-129 (the deliberate
+typescript API-dep <7 hold, with the buyer-impact package list; dedup keeps it a one-time
+marker). toolchain-advisory workflow retired; declaration drift now bump-gated in PR CI.
+
 ## 2026-07-19 (late night, second) — caisson-site redeploy at `cd48b89d`: bespoke marks live
 
 Delta deploy (SUCCESS first attempt) carrying PR #296: the 12 lucide placeholder marks
