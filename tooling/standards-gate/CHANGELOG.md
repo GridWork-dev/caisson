@@ -1,5 +1,12 @@
 # @caisson/standards-gate
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [2229209]
+  - @caisson/registry-schema@0.5.5
+
 ## 0.0.13
 
 ### Patch Changes

@@ -1,5 +1,22 @@
 # @caisson/site
 
+## 0.2.11
+
+### Patch Changes
+
+- Updated dependencies [2229209]
+- Updated dependencies [8ff4c62]
+  - @caisson/ai-kit@0.5.3
+  - @caisson/registry-schema@0.5.5
+  - @caisson/platform-reads@0.2.5
+  - @caisson/cli@0.7.3
+  - @caisson/credits@0.5.7
+  - @caisson/pricebook@0.6.1
+  - @caisson/service-license@0.0.15
+  - @caisson/ai-meter@1.0.7
+  - @caisson/platform-migrations@0.2.8
+  - @caisson/demo-registry@0.2.8
+
 ## 0.2.10
 
 ### Patch Changes

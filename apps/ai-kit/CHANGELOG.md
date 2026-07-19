@@ -1,5 +1,17 @@
 # @caisson/ai-kit-app
 
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies [8ff4c62]
+- Updated dependencies [2229209]
+  - @caisson/guardrails@0.4.8
+  - @caisson/ai-kit@0.5.3
+  - @caisson/credits@0.5.7
+  - @caisson/mcp-server@0.6.3
+  - @caisson/ai-meter@1.0.7
+
 ## 0.0.16
 
 ### Patch Changes

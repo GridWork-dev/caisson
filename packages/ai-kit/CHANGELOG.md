@@ -1,5 +1,22 @@
 # @caisson/ai-kit
 
+## 0.5.3
+
+### Patch Changes
+
+- 2229209: Release integrity hardening: every recorded package artifact now carries the dependency
+  resolution it was built under, so a resolution change between releases is reported as a
+  precise "republish this package" notice instead of a checksum mismatch. The agent loop's
+  credit-budget guard is restated in fail-closed form, and stale documentation comments in
+  the registry schema and the agent-trajectory manifest are corrected. No behavioral
+  changes to published APIs.
+- Updated dependencies [8ff4c62]
+- Updated dependencies [2229209]
+  - @caisson/guardrails@0.4.8
+  - @caisson/agent-trajectory@0.3.3
+  - @caisson/credits@0.5.7
+  - @caisson/ai-meter@1.0.7
+
 ## 0.5.2
 
 ### Patch Changes
