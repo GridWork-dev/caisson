@@ -27,7 +27,15 @@
 // UUID minting is a SEAM (`newId`, default `crypto.randomUUID`). With both injected, the output is
 // byte-stable and canonicalizable — so an export can be golden-fixtured or content-hashed downstream.
 import { randomUUID } from "node:crypto";
-import { ValidationError } from "@caisson/kernel";
+import { z } from "zod";
+import {
+  assertSafePublicUrl,
+  assertSafePublicUrlResolved,
+  fetchWithTimeout,
+  InternalError,
+  strictObject,
+  ValidationError,
+} from "@caisson/kernel";
 import type { EvidencePackManifest, ManifestControl } from "./pack-format.ts";
 
 /**
@@ -549,21 +557,138 @@ export function toOscalBundle(
   };
 }
 
-// --- the un-wired transport seam -----------------------------------------------------------------
+// --- the transport seam (live as of the OSCAL-push wave) ------------------------------------------
 
 /**
  * The OSCAL delivery port. A relying party may want the bundle PUSHED to a GRC platform's OSCAL
  * ingest endpoint rather than handed back as JSON.
  *
- * UN-WIRED LIVE SEAM (ADR-0047 ethos / SPEC "export = un-wired seam"): there is NO live
- * implementation in v1, and NO call site reaches a network. A future implementation of this port
- * delivers `bundle` to its sink.
- *
- * // A live implementation would wire a real OSCAL transport here — POST each document to the GRC endpoint over
- * //   `fetchWithTimeout(url, init, ms)` (NEVER the native `AbortSignal.timeout` helper on Bun),
- * //   Bearer-gated, validating each body against the official OSCAL JSON schema before send, and
- * //   resolving a real `import-ap`/`import-ssp` href. None of that runs on the CI path.
+ * `createOscalHttpTransport` below is the live implementation: a neutral HTTPS-POST adapter (no
+ * vendor-specific GRC protocol — the backlog row that opened this seam names no concrete GRC
+ * platform, so this ships the OSCAL-ecosystem-conventional shape and stops there; a vendor-specific
+ * dialect is a follow-on fork once a real buyer names their ingest endpoint).
  */
 export interface OscalExportTransport {
   deliver(bundle: OscalExportBundle): Promise<void>;
+}
+
+/**
+ * Live delivery config. `destinationUrl` is validated https-only + non-private/non-loopback at
+ * construction (`assertSafePublicUrl` — the same kernel SSRF-literal guard `@caisson/alerting`'s
+ * webhook/Slack/Telegram channels use for buyer-supplied destinations) AND re-checked (DNS-resolved)
+ * at the fetch seam inside `postOscalDocument`, so `deliver` stays safe even for a config object
+ * built directly rather than through this schema — the same "guard at both seams" idiom alerting's
+ * webhook/Slack/Telegram/Discord channels use.
+ */
+export const OscalDeliveryConfigSchema = strictObject({
+  destinationUrl: z.string().superRefine((value, ctx) => {
+    try {
+      assertSafePublicUrl(value);
+    } catch (err) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: err instanceof Error ? err.message : "invalid URL",
+      });
+    }
+  }),
+  /** Optional Bearer credential for the GRC endpoint. */
+  bearerToken: z.string().min(1).optional(),
+  /** Optional per-request timeout override (ms), threaded to `fetchWithTimeout`. */
+  timeoutMs: z.number().int().positive().optional(),
+});
+export type OscalDeliveryConfig = z.infer<typeof OscalDeliveryConfigSchema>;
+
+/** The fetch-seam SSRF re-check `postOscalDocument` runs before every POST. Defaults to the real
+ * kernel guard; a caller (tests only — see oscal-export.test.ts) may inject a stub that accepts a
+ * loopback destination without weakening the production default. */
+export type AssertDestinationSafe = (url: string) => Promise<void>;
+
+/** OSCAL-ecosystem-conventional media types — mirrors this file's own
+ * `application/oscal-assessment-plan+json` naming (full-word, hyphen-separated). */
+const OSCAL_MEDIA_TYPE = {
+  assessmentResults: "application/oscal-assessment-results+json",
+  poam: "application/oscal-poam+json",
+} as const;
+
+/** POST one OSCAL document to the configured destination. Re-runs the resolved SSRF guard
+ * immediately before the fetch (the alerting idiom — a config object can be built without parsing
+ * `OscalDeliveryConfigSchema`). Single attempt — no retry storm; a caller that wants retries owns
+ * that policy. Fails closed — on a non-2xx OR on the fetch itself throwing (timeout/DNS/redirect) —
+ * with a typed `InternalError` carrying only the document label + a coarse cause classification,
+ * never the response body or a raw stack (a GRC ingest error can echo submitted tenant/control
+ * content, and a raw stack can leak host/path detail). */
+async function postOscalDocument(
+  config: OscalDeliveryConfig,
+  document: unknown,
+  mediaType: string,
+  label: string,
+  assertDestinationSafe: AssertDestinationSafe,
+): Promise<void> {
+  await assertDestinationSafe(config.destinationUrl);
+
+  const headers: Record<string, string> = { "content-type": mediaType };
+  if (config.bearerToken !== undefined) {
+    headers.authorization = `Bearer ${config.bearerToken}`;
+  }
+
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      config.destinationUrl,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify(document),
+        // No redirect past the validated destination — mirrors the alerting transports' SSRF rationale.
+        redirect: "error",
+      },
+      config.timeoutMs !== undefined ? { timeoutMs: config.timeoutMs } : {},
+    );
+  } catch (err) {
+    throw new InternalError("OSCAL export delivery failed", {
+      document: label,
+      cause: err instanceof Error ? err.name : "unknown_error",
+    });
+  }
+  if (!res.ok) {
+    throw new InternalError("OSCAL export delivery failed", {
+      document: label,
+      status: res.status,
+    });
+  }
+}
+
+/**
+ * Live implementation of {@link OscalExportTransport}: POSTs the SAR then the POA&M to the
+ * configured GRC ingest endpoint over {@link fetchWithTimeout} (never a bare `fetch`), Bearer-gated
+ * when `bearerToken` is configured. Fails closed on the first non-2xx or transport error — the POA&M
+ * is not sent if the SAR delivery failed, and no partial-delivery retry is attempted.
+ *
+ * `assertDestinationSafe` defaults to the real kernel {@link assertSafePublicUrlResolved} guard
+ * (DNS-resolved, so a public name that rebinds to a private/metadata address is caught too); the
+ * override exists purely for tests to exercise a real loopback server without weakening what
+ * production actually calls.
+ */
+export function createOscalHttpTransport(
+  config: OscalDeliveryConfig,
+  assertDestinationSafe: AssertDestinationSafe = assertSafePublicUrlResolved,
+): OscalExportTransport {
+  return {
+    async deliver(bundle: OscalExportBundle): Promise<void> {
+      await postOscalDocument(
+        config,
+        bundle.assessmentResults,
+        OSCAL_MEDIA_TYPE.assessmentResults,
+        "assessment-results",
+        assertDestinationSafe,
+      );
+      await postOscalDocument(
+        config,
+        bundle.planOfActionAndMilestones,
+        OSCAL_MEDIA_TYPE.poam,
+        "poam",
+        assertDestinationSafe,
+      );
+    },
+  };
 }
