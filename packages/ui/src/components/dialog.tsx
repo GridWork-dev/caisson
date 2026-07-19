@@ -89,6 +89,7 @@ export function Dialog({
   }, [open]);
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- native <dialog>, not a div: Escape already closes it (onClose below); onClick only detects a backdrop click (target === the dialog itself, never a panel child)
     <dialog
       ref={ref}
       className={className ? `cs-dialog ${className}` : "cs-dialog"}

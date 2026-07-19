@@ -114,7 +114,7 @@ export default function DefaultSearchDialog(props: SharedProps) {
           </>
         ) : (
           <div className={styles.askTab}>
-            <AskAiPanel surface="palette" autoFocus />
+            <AskAiPanel surface="palette" focusOnOpen />
           </div>
         )}
       </SearchDialogContent>
