@@ -17,6 +17,7 @@ import {
   MODULE_PRICES,
   moduleCatalogSubtotal,
   modulesByBundle,
+  multiYearRenewalAmount,
   PERSONA_BUNDLE_IDS,
   PLAN_PRICES,
   priceById,
@@ -136,6 +137,53 @@ describe("renewalAmount (ADR-0260 §5 40%-X9 ladder)", () => {
   test("unknown ids stay number-free (null)", () => {
     expect(renewalAmount("not-a-real-sku")).toBeNull();
     expect(renewalAmount("")).toBeNull();
+  });
+});
+
+describe("multiYearRenewalAmount (R6 rider — mechanism only, floors to the nearest X9 like renewalAmount)", () => {
+  test("fail-closed on non-finite or out-of-range inputs — null, never NaN or an inflated price", () => {
+    expect(multiYearRenewalAmount(Number.NaN, 2, 1_000)).toBeNull();
+    expect(multiYearRenewalAmount(79, Number.NaN, 1_000)).toBeNull();
+    expect(multiYearRenewalAmount(79, 2, Number.NaN)).toBeNull();
+    expect(multiYearRenewalAmount(79, 2, -500)).toBeNull(); // negative-discount typo must not inflate
+    expect(multiYearRenewalAmount(79, 2, 10_001)).toBeNull();
+    expect(multiYearRenewalAmount(Number.POSITIVE_INFINITY, 2, 0)).toBeNull();
+  });
+
+  test("floors the discounted naive-total (base*years) to the nearest X9, matching renewalAmount's ladder convention", () => {
+    // base=79 (ai-meter's 1-year renewal), 2 years, 10% off the naive total:
+    // naive=158 -> *0.90=142.2 -> floor 142 -> nearest X9 at-or-below is 139.
+    expect(multiYearRenewalAmount(79, 2, 1_000)).toBe(139);
+    // base=419 (compliance), 3 years, 15% off: naive=1257 -> *0.85=1068.45 -> floor 1068 -> X9 1059.
+    expect(multiYearRenewalAmount(419, 3, 1_500)).toBe(1059);
+  });
+
+  test("zero discountBps still floors the naive total to the nearest X9 (no discount != no rounding)", () => {
+    // naive=158, 0% off -> floor 158 -> nearest X9 at-or-below is 149.
+    expect(multiYearRenewalAmount(79, 2, 0)).toBe(149);
+  });
+
+  test("every result is a positive integer ending in 9, at most the discounted naive total", () => {
+    for (const [base, years, bps] of [
+      [79, 2, 1_000],
+      [59, 2, 500],
+      [39, 3, 2_000],
+      [819, 2, 1_000],
+    ] as const) {
+      const r = multiYearRenewalAmount(base, years, bps);
+      const naive = base * years;
+      const discounted = Math.floor((naive * (10_000 - bps)) / 10_000);
+      expect(r).not.toBeNull();
+      expect(Number.isInteger(r)).toBe(true);
+      expect((r ?? 0) % 10).toBe(9);
+      expect(r ?? 0).toBeLessThanOrEqual(discounted);
+      expect((r ?? 0) + 10).toBeGreaterThan(discounted);
+    }
+  });
+
+  test("a too-small discounted total stays number-free (null), same posture as renewalAmount", () => {
+    expect(multiYearRenewalAmount(5, 1, 0)).toBeNull(); // naive 5, floors below the $9 floor
+    expect(multiYearRenewalAmount(79, 2, 10_000)).toBeNull(); // 100% off -> naive*0 = 0
   });
 });
 

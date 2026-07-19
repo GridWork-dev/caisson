@@ -21,6 +21,7 @@ import {
 import { ConfigError, asCredits, type Credits } from "@caisson/kernel";
 import {
   isRenewalPrice,
+  renewalYears,
   resolvePlan,
   resolvePurchase,
   resolveRenewal,
@@ -336,8 +337,9 @@ export async function applyBillingEvent(
         const renewedEntitlementIds = new Set<string>();
         for (const line of ev.lineItems) {
           // Updates-RENEWAL line (ADR-0244/0251): a renewal SKU grants NO entitlement and NO credits —
-          // it EXTENDS the buyer's updates window on the entitlement it renews (+12 months, per
-          // (account, entitlement) pair). extendUpdatesWindow is fail-closed: renewing an entitlement
+          // it EXTENDS the buyer's updates window on the entitlement it renews (+12 months per year of
+          // tenor — renewalYears() reads the RENEWAL_BOOK row's multi-year lever, R6 rider, default 1
+          // — per (account, entitlement) pair). extendUpdatesWindow is fail-closed: renewing an entitlement
           // with no active one_time grant throws → the webhook returns non-2xx and Paddle retries —
           // a renewal never silently mints a grant. A price id lives in exactly ONE book (pricebook
           // test), so this branch can never shadow a real purchase row. Renewal lines stay out of
@@ -351,6 +353,9 @@ export async function applyBillingEvent(
               // Record the LINE so a per-line refund of this exact renewal can un-extend it
               // (ADR-0251 Consequences). A whole-transaction refund reverses by paymentId regardless.
               lineItemId: line.itemId,
+              // Multi-year lever (R6 rider): a RENEWAL_BOOK row's `years` (default 1) extends the
+              // window by `12 * years` months in one step (renewalYears() reads the "1" default).
+              years: renewalYears(renewal),
             });
             renewedEntitlementIds.add(renewal.renewsEntitlement);
             continue;

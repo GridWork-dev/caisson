@@ -507,6 +507,61 @@ describe("updates windows (ADR-0244/0255 per-entitlement)", () => {
     expect(after["local-ai"]).toBe(before["local-ai"]);
   });
 
+  test("multi-year lever (R6 rider): years=2 stacks 24 months in ONE step, not two 12-month stacks", async () => {
+    const acct = "acct_win_multiyear";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_my1",
+        source: onetime("pay_my1"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z");
+    // Baseline window end = 2027-01-05. A 2-year renewal bought mid-window stacks the full 24
+    // months onto that end (GREATEST(now(), base-end) + 24mo), exactly like the 1-year case stacks
+    // 12 — never two separate 12-month steps, which would land on the same instant here anyway
+    // (2027-01-05 + 24mo == 2027-01-05 + 12mo + 12mo) but must NOT silently drop to a single
+    // 12-month extension if `years` were ignored.
+    const extended = await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_my_renew",
+        years: 2,
+      }),
+    );
+    expect(extended).toBe(1);
+    const after = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    expect(after.compliance).toBe("2029-01-05T00:00:00.000Z");
+  });
+
+  test("extendUpdatesWindow FAILS CLOSED on a non-positive-integer years (malformed RENEWAL_BOOK row)", async () => {
+    const acct = "acct_win_badyears";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_badyears",
+        source: onetime("pay_badyears"),
+      }),
+    );
+    for (const years of [0, -1, 1.5]) {
+      await expect(
+        withTenant(tp.pg, acct, (tx) =>
+          extendUpdatesWindow(tx, {
+            accountId: acct,
+            entitlementId: "compliance",
+            sourceEventId: "pay_badyears_renew",
+            years,
+          }),
+        ),
+      ).rejects.toThrow(/years must be a positive integer/);
+    }
+  });
+
   test("extendUpdatesWindow FAILS CLOSED on zero active one_time rows (never mints a grant)", async () => {
     // No grant at all.
     await expect(
