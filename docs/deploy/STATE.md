@@ -8,6 +8,17 @@ grounds:
 
 # Deploy log
 
+## 2026-07-19 (night) — caisson-site redeploy at `8f07b011`: 43-term glossary live
+
+Single-service delta deploy (`railway up --service caisson-site --detach`, SUCCESS)
+carrying PR #293 (ADR-0367): the 7-term glossary expansion batch + the 16-fix content
+audit over the existing 36 pages. Site-only content change — the rest of the fleet
+stays at `655bb26a` (no code delta for those services), Worker untouched.
+
+- Probes: `/glossary/rfc-3161-timestamping` 200 · `/glossary/token-hash-at-rest` 200.
+- Pending changesets (auth minor + site patch ×2) accumulate per the ADR-0367 lock;
+  they ride the next train.
+
 ## 2026-07-19 (late PM) — Full fleet redeploy at `655bb26a`: hash-at-rest live
 
 All five Railway services rebuilt from main `655bb26a` (`railway up --detach`, all

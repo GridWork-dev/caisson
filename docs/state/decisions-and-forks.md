@@ -1,7 +1,7 @@
 ---
-updated: 2026-07-18
+updated: 2026-07-19
 status: live
-adr_ceiling: 0366
+adr_ceiling: 0367
 ---
 
 # Decisions & Forks — live board
