@@ -1003,9 +1003,11 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
     }
   });
 
-  test("lock-drift (ADR-0365): a row recorded under a different bun.lock is never re-packed — the error demands the own-version bump directly", () => {
-    const f = mkSiblingFixture("sibling-lock-drift", "1.0.0");
-    // Rewrite the candidate sidecar row with a lockHash that cannot match the live repo lock.
+  test("lock-hash annotation (ADR-0365 refined): a stale lockHash alone never fails a row whose bytes still reproduce", () => {
+    const f = mkSiblingFixture("sibling-lock-stale-ok", "1.0.0");
+    // Rewrite the candidate sidecar row with a lockHash that cannot match the live repo lock —
+    // workspace version bumps move the whole-lock hash every consume, so a stale hash with
+    // identical bytes MUST pass (the 2026-07-19 mass-false-positive class).
     const key = "@caisson/auth@1.0.0";
     const sidecarPath = join(f.candidateRoot, "registry", "tarballs.json");
     const sidecar = readSidecar(sidecarPath);
@@ -1014,7 +1016,35 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
     sidecar.tarballs[key] = { ...row, lockHash: "0".repeat(64) };
     writeSidecar(sidecar, sidecarPath);
     writeSidecar(sidecar, f.baseSidecarPath); // keep base/candidate historically identical
-    let packed = 0;
+    try {
+      const refreshed = refreshVersionCandidateTarballs({
+        candidateRoot: f.candidateRoot,
+        baseLedgerPath: f.baseLedgerPath,
+        baseSidecarPath: f.baseSidecarPath,
+        stagingDir: join(f.dir, "staging"),
+        packFn: () => f.originalBytes, // reproduces the recorded bytes exactly
+      });
+      expect(refreshed).toBe(0); // stale hash + identical bytes → clean pass
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
+
+  test("lock-hash annotation (ADR-0365 refined): a REAL byte drift under a different lock cites the resolution drift in the error", () => {
+    const f = mkSiblingFixture("sibling-lock-drift-cited", "1.0.0");
+    const key = "@caisson/auth@1.0.0";
+    const sidecarPath = join(f.candidateRoot, "registry", "tarballs.json");
+    const sidecar = readSidecar(sidecarPath);
+    const row = sidecar.tarballs[key];
+    if (row === undefined) throw new Error("fixture row missing");
+    sidecar.tarballs[key] = { ...row, lockHash: "0".repeat(64) };
+    writeSidecar(sidecar, sidecarPath);
+    writeSidecar(sidecar, f.baseSidecarPath);
+    const churned = tgzWithPackageJson({
+      name: "@caisson/auth",
+      version: "1.0.0",
+      dependencies: { "@caisson/kernel": "9.9.9" },
+    });
     try {
       expect(() =>
         refreshVersionCandidateTarballs({
@@ -1022,13 +1052,9 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
           baseLedgerPath: f.baseLedgerPath,
           baseSidecarPath: f.baseSidecarPath,
           stagingDir: join(f.dir, "staging"),
-          packFn: () => {
-            packed++;
-            return f.originalBytes;
-          },
+          packFn: () => churned,
         }),
-      ).toThrow(/lock-drift.*bump/s);
-      expect(packed).toBe(0); // short-circuited — the drifted row is never re-packed
+      ).toThrow(/sibling-churn[\s\S]*dependency-resolution drift/);
     } finally {
       rmSync(f.dir, { recursive: true, force: true });
     }
