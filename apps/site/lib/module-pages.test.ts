@@ -77,17 +77,21 @@ describe("MODULE_PAGES (depth-page records)", () => {
     }
   });
 
-  test("no record claims the edition or bundle grants ai-evals (standalone-only)", () => {
-    // The registry members map is the entitlement truth (see pricing.test.ts). The ai-evals
-    // record itself must state standalone-ness; sibling records may NEVER name ai-evals/evals in
-    // any prose field — a composition claim ("ships with the eval harness") would naturally land
-    // in `included[].body` or `faq`, not just `sells.note`, so the lint scans every prose string.
-    const aiEvals = MODULE_PAGES.find((r) => r.slug === "ai-evals");
-    expect(aiEvals?.sells.note).toContain("no persona bundle includes it");
+  test("every sells note's bundle-membership claims match the pricing truth", () => {
+    // The registry members map is the entitlement truth (see pricing.test.ts). This lint replaced
+    // the pre-fold-in "ai-evals is standalone-only" prose ban: ai-evals JOINED the ai-production
+    // bundle at the members-fold republish, and the depth page's note pinned the stale claim for
+    // weeks — a live entitlement-honesty defect. The generalized pin: a record whose catalog row
+    // carries no bundles may not say a persona bundle includes it, and a record whose catalog row
+    // IS bundled must not claim standalone-only.
     for (const r of MODULE_PAGES) {
-      if (r.slug === "ai-evals") continue;
-      for (const text of proseStrings(r)) {
-        expect(/\bai-evals\b|\bevals\b/i.test(text)).toBe(false);
+      const price = MODULE_PRICES.find((m) => m.id === r.slug);
+      const bundled = (price?.bundles ?? []).length > 0;
+      const claimsNoBundle = /no persona bundle (includes|grants) it/i.test(
+        r.sells.note,
+      );
+      if (bundled) {
+        expect(`${r.slug}: ${claimsNoBundle}`).toBe(`${r.slug}: false`);
       }
     }
   });

@@ -1,4 +1,5 @@
-// The 11 standalone-module depth-page records (ADR-0237 F2) — generated 2026-07-03 from the
+// The 23 standalone-module depth-page records (ADR-0237 F2; the 13-record ADR-0368 wave joined
+// 2026-07-19 via the same adversarial workflow) — the original 11 generated 2026-07-03 from the
 // adversarially-reviewed copy workflow output, with the entitlement-honesty overrides applied
 // (ai-evals is standalone-only: no edition or bundle grants it — registry members map truth,
 // pinned by pricing.test.ts). Checked-in source from here on: edit records in place; keep every
@@ -487,7 +488,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: [],
     sells: {
       edition: "ai-kit",
-      note: "Sold standalone at $199 — no persona bundle includes it (standalone by design), so it stays its own line on any stack. It pairs with the AI-Production bundle's metering and guardrails to gate CI on regression.",
+      note: "Sold standalone at $199, and included in the AI-Production bundle alongside ai-meter, guardrails, and prompt-registry — and in Everything, which carries every sellable module by construction.",
     },
   },
   {
@@ -864,6 +865,969 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     sells: {
       edition: "Agentic-Dev",
       note: `$49 à la carte, or included in the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel.`,
+    },
+  },
+  {
+    slug: "agent-trajectory",
+    metaTitle: "Agent Trajectory — Append-Only Run Log | Caisson",
+    metaDescription:
+      "An append-only event contract for every agent step, tool proposal, approval, and spend — sensitive bodies referenced by digest, paused-run state encrypted at rest, replay byte-identical every time.",
+    heroOneLiner:
+      "Every step, tool proposal, approval, and dollar an agent run touches, appended once and replayed byte-identical — never a mutable log an incident review can't trust.",
+    definition:
+      "agent-trajectory is the append-only event contract a governed agent run writes into: eleven event kinds spanning run, step, model call, tool proposal/approval/result, and checkpoint, each Zod-`.strict()`-validated. Sensitive bodies — prompts, tool args, tool results — never inline; they're carried only as a sha256 `DigestRef`. A deterministic `project()` folds any event order into one byte-identical projection, and a park/approve/deny state machine holds paused runs with their snapshot encrypted at rest.",
+    included: [
+      {
+        title: "Eleven-kind closed event vocabulary",
+        body: "EVENT_KINDS fixes the whole vocabulary — run.started/finished, step.started/finished, model.call, model.usage, tool.proposed/approved/denied/result, checkpoint. TrajectoryEvent is a Zod discriminatedUnion keyed on kind, each variant .strict(), so an unknown field or a made-up kind is rejected at the boundary, not silently stored.",
+      },
+      {
+        title: "Sensitive bodies never inline — DigestRef only",
+        body: "The rendered prompt on model.call, the tool arguments on tool.proposed, the tool output on tool.result, and the serialized state on checkpoint are all typed DigestRef — a sha256 digest, a byte length, and an optional encRef pointer. The trajectory log itself is safe to persist, replay, and anchor without ever holding the bodies it references.",
+      },
+      {
+        title: "Append-only store, idempotent and gap-rejecting",
+        body: "createMemoryTrajectoryStore()'s append() enforces a monotonic 0-based seq per run: re-appending a byte-identical event at an already-recorded seq is a no-op (safe retry), a different event at that seq throws ConflictError, and a seq beyond the next free slot throws too — no rewrites, no gaps.",
+      },
+      {
+        title: "billingStatus honesty bands, enforced by schema",
+        body: "Every model.usage event carries billingStatus: metered | priced | estimated | unsupported. A superRefine enforces the honesty: credits can only be nonzero on metered or priced events, and priceBookVersion provenance is only legal on priced — an estimated adapter output can never masquerade as a charge.",
+      },
+      {
+        title: "Deterministic replay: project() and projectToolCalls()",
+        body: "project() sorts by seq before folding, so a shuffled batch always resolves to the same RunProjection — step tree, per-band usage totals, checkpoints — with JSON.stringify byte-identical across runs. projectToolCalls() is the sibling fold an eval scorer reads: one entry per toolCallId with its proposal, approval/denial, and result.",
+      },
+      {
+        title: "Paused-run state, encrypted at rest",
+        body: "createPgRunStateStore()'s park() seals the caller's opaque parkedState through @caisson/field-crypto's encryptField before it reaches the row, keyed to the run's own primary key as the row-binding identity; claimResume() is the only path that opens it back. deny() and finish() null the snapshot out on every terminal transition — a run that will never resume keeps no plaintext around.",
+      },
+    ],
+    artifact: {
+      label:
+        "The billingStatus honesty refine — credits can't lie about their own grade",
+      lang: "ts",
+      file: "packages/agent-trajectory/src/schema.ts",
+      code: '  .strict()\n  .superRefine((v, ctx) => {\n    // The previously comment-only invariant, now enforced (ADR-0360 U-4): credit claims are only\n    // legal on billing-grade bands; provenance only decorates the band it explains.\n    if (\n      v.credits > 0 &&\n      v.billingStatus !== "metered" &&\n      v.billingStatus !== "priced"\n    ) {\n      ctx.addIssue({\n        code: z.ZodIssueCode.custom,\n        path: ["credits"],\n        message: `credits must be 0 when billingStatus is "${v.billingStatus}" (only metered/priced carry credit claims)`,\n      });\n    }\n    if (v.priceBookVersion !== undefined && v.billingStatus !== "priced") {\n      ctx.addIssue({\n        code: z.ZodIssueCode.custom,\n        path: ["priceBookVersion"],\n        message: `priceBookVersion is only valid on billingStatus "priced" (got "${v.billingStatus}")`,\n      });\n    }\n  });',
+      annotations: [
+        "superRefine rejects a nonzero credits value on any billingStatus other than metered or priced — an estimated adapter's token count can never be smuggled in as a charge.",
+        "priceBookVersion is only legal on a priced event — the schema itself pins provenance to the band it explains, not left to caller discipline.",
+      ],
+    },
+    faq: [
+      {
+        question:
+          "Can two agent runners double-write the same event and corrupt the log?",
+        answer:
+          "No — append() is idempotent on (runId, seq): re-appending the exact same event at an already-recorded seq is a safe no-op. A different event at that seq throws ConflictError as a rewrite, and a seq past the next free slot throws as a gap, so the log stays a strict, ordered append-only sequence under retry.",
+      },
+      {
+        question:
+          "Does the trajectory log ever store my prompts or tool output?",
+        answer:
+          "No — prompts (model.call), tool arguments (tool.proposed), tool results (tool.result), and checkpoint state are all typed as DigestRef: a sha256 digest, a byte length, and an optional pointer to where the encrypted bytes actually live. The trajectory itself carries no key material and no raw bodies, so it's safe to persist, replay, and anchor on its own.",
+      },
+      {
+        question:
+          "Does agent-trajectory make our agent spend auditable for SOC 2?",
+        answer:
+          "It ships the technical control: an append-only, idempotent event log of every tool proposal, approval, and usage event, with a deterministic replay a reviewer can re-derive byte-for-byte from the raw events. Whether that satisfies a specific SOC 2 control is your auditor's call — the module gives you the tamper-evident record to point at, not the certification.",
+      },
+      {
+        question:
+          "What happens to a paused run's state if it gets denied instead of approved?",
+        answer:
+          "deny() and finish() both null out the stored parkedState on the same transition that makes the run terminal — a denied or finished run keeps no snapshot around to leak. While a run is genuinely parked, that snapshot sits sealed through field-crypto's row-bound encryptField, keyed to the run's own id, so it can't be decrypted if copied to another row.",
+      },
+    ],
+    relatedGlossary: [
+      "agent-trajectory",
+      "governed-agents",
+      "fail-closed",
+      "per-tenant-encryption-keys",
+    ],
+    sells: {
+      edition: "Agentic-Dev",
+      note: "$49 à la carte, or included in the Agentic-Dev bundle alongside agent-kernel, agent-runner, and local-store — and in the Everything bundle, which carries every sellable module by construction.",
+    },
+  },
+  {
+    slug: "tool-exec",
+    metaTitle: "Tool-Exec Gate — Default-Deny Command Allowlist | Caisson",
+    metaDescription:
+      "A default-deny allowlist maps a logical command name to a real executable and a Zod-strict argv schema — validated before spawn, passed to execFile as an array, never a shell string, with a propose/execute split for external approval.",
+    heroOneLiner:
+      "A default-deny allowlist maps every command an agent is allowed to run — call anything not on it, and NotFoundError refuses the call before a process ever spawns.",
+    definition:
+      "tool-exec is Caisson's governed tool-call gate, composed live into the Agentic-Dev edition surface: a default-deny allowlist maps a logical command name to a real executable and a Zod-`.strict()` argv schema, validated with parseStrict before spawn and passed to execFile as an array — never a shell string. A two-phase propose/execute split lets an external approval step run between validation and the actual spawn.",
+    included: [
+      {
+        title: "Default-deny allowlist, fail-closed",
+        body: "createToolExec builds its registry from config.allowlist — a name not registered there throws NotFoundError before anything spawns. An empty allowlist refuses every call; there's no wildcard escape hatch.",
+      },
+      {
+        title: "Argv arrays, never a shell",
+        body: "Each CommandSpec pairs a logical name with the real executable and a Zod argsSchema producing string[]; parseStrict validates the caller's args into that exact argv array before defaultExecFn spawns it via execFile — execSync, exec, and shell: true are never used anywhere in the package.",
+      },
+      {
+        title: "Two-phase propose/execute for external approval",
+        body: "propose() runs the same allowlist lookup and Zod validation as run() but returns a serializable ProposedToolCall without spawning — park it in your own approval store. execute() re-checks the name is still allowlisted to the same command (defense against the allowlist changing between propose and execute) but never re-validates args.",
+      },
+      {
+        title: "Bounded output, always a provenance record",
+        body: "Every call returns an ExecResult — command, args, exitCode, stdout, stderr, ok, and an at timestamp from an injectable now(). bound() caps stdout/stderr at 64KB before Node's own maxBuffer would throw; a spawn failure resolves exitCode: -1 instead of throwing, so the caller always gets a record.",
+      },
+      {
+        title: "Injectable spawn seam for hermetic tests",
+        body: "The default spawn path (execFile, no shell) is swappable via config.execFn — the suite injects a fakeExecFn double that records calls and returns canned output, so the allowlist and validation logic are exercised without ever spawning a real process.",
+      },
+    ],
+    artifact: {
+      label:
+        "createToolExec — run(): allowlist lookup, Zod validation, spawn (no exec on failure)",
+      lang: "ts",
+      file: "packages/tool-exec/src/tool-exec.ts",
+      code: '    async run(\n      name: string,\n      args: unknown,\n      reason?: string,\n    ): Promise<ExecResult> {\n      const spec = registry.get(name);\n      if (spec === undefined) {\n        throw new NotFoundError(`No command registered for "${name}"`, {\n          command: name,\n        });\n      }\n      const validatedArgs = parseStrict(spec.argsSchema, args);\n      return spawn(spec.command, validatedArgs, reason);\n    },',
+      annotations: [
+        "registry.get(name) is the default-deny lookup — a name not in config.allowlist throws NotFoundError before parseStrict or spawn ever run.",
+        "parseStrict validates args against the allowlisted CommandSpec's own argsSchema — a bad shape throws ValidationError, still before anything spawns.",
+        "spawn() only ever receives validatedArgs, the Zod-checked argv array — never the caller's raw args and never a shell string.",
+      ],
+    },
+    faq: [
+      {
+        question:
+          "Can an agent break out of the allowlist and run an arbitrary command?",
+        answer:
+          "No — createToolExec's registry only recognizes names explicitly listed in config.allowlist; an unregistered name throws NotFoundError before anything spawns, and an empty allowlist refuses every call. There's no wildcard or fallback path around it.",
+      },
+      {
+        question: "Does tool-exec ever run a command through a shell?",
+        answer:
+          "Never. Each registered CommandSpec resolves to a real executable path plus a Zod argsSchema producing a string[]; the default ExecFn calls node:child_process's execFile with that array directly. execSync, exec, and shell: true are never used anywhere in the package — the source header comment states this as the design invariant.",
+      },
+      {
+        question:
+          "How do I gate a call behind human or policy approval before it actually runs?",
+        answer:
+          "Call propose() instead of run(). It does the identical allowlist lookup and Zod validation but returns a serializable ProposedToolCall without spawning anything, so you can park it in your own approval store. execute() re-checks the name is still allowlisted to the same command — defense against the allowlist changing in between — but never re-validates args, since propose already did.",
+      },
+      {
+        question:
+          "What stops a hung or output-flooding command from taking down the caller?",
+        answer:
+          "Every call gets a 30-second default timeout (config.timeoutMs to override) and bound() caps stdout/stderr at 64KB before Node's own maxBuffer would throw. A timeout or spawn failure (ENOENT, a non-numeric error.code) resolves with exitCode: -1 rather than throwing, so the caller always gets a provenance record to inspect, never an uncaught exception.",
+      },
+    ],
+    relatedGlossary: [
+      "fail-closed",
+      "governed-agents",
+      "mcp-server",
+      "agent-trajectory",
+    ],
+    sells: {
+      edition: "agentic-dev",
+      note: 'Sold standalone at $99, or composed as a real workspace:* dependency of @caisson/agent-dev (packages/agent-dev/package.json) inside the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel, agent-runner, and the local hybrid-memory store.',
+    },
+  },
+  {
+    slug: "org-controls",
+    metaTitle: "Org Controls — Cross-Tenant Admin-Write RLS | Caisson",
+    metaDescription:
+      "The commercial cross-tenant admin-write RLS layer — a separate admin_write Postgres role, one role-scoped policy — plus WorkOS SSO, a Clerk verifier, and owner-gated member management, carved out of the open tenancy-rls floor.",
+    heroOneLiner:
+      "admin_write is a second Postgres role your buyer-facing tenant-isolation policy never matches — so your own operator control plane can write across every tenant without the app role ever gaining that reach.",
+    definition:
+      "org-controls is the cross-tenant admin-write RLS layer carved out of the open tenancy-rls floor, plus the org-plan surfaces around it: WorkOS SSO sign-in, a Clerk session-verification driver, and the owner-gated multi-user membership surface. The free tenancy-rls package still enforces the buyer app role's fail-closed single-tenant isolation; this paid layer adds the separate admin_write role your own operator control plane mutates through.",
+    included: [
+      {
+        title: "Cross-tenant write policy, DB-separated on purpose",
+        body: "buildAdminWritePolicySql grants SELECT/INSERT/UPDATE (no DELETE) to admin_write and adds a role-scoped TO admin_write USING (true) WITH CHECK (true) permissive policy alongside the table's existing app tenant-isolation policy — RLS OR-combines them by role, so admin_write reaches every tenant while app never matches this policy. buildAdminSelectPolicySql is the narrower read-only twin for tables the control plane only ever reads.",
+      },
+      {
+        title: "withAdminWrite — the one seam every mutation writes through",
+        body: "withAdminWrite opens a transaction, runs the same fail-closed SUPERUSER/BYPASSRLS role pre-flight withTenant uses (deliberately duplicated here per ADR-0257 §1.3 rather than widening the open tenancy-rls surface), then SET LOCAL ROLE admin_write for the transaction's life — never the connection pool directly.",
+      },
+      {
+        title: "Owner-gated multi-user membership",
+        body: "assertCanManageMembers gates addAccountMember and removeAccountMember to the owner role — a seat cannot manage members or billing. removeAccountMember additionally refuses self-removal and refuses removing a second owner, so this control can never lock an account's owner out or let one owner unilaterally eject a co-owner.",
+      },
+      {
+        title: "WorkOS SSO sign-in",
+        body: "createWorkosSsoProvider builds the AuthKit/SSO authorization URL and exchanges the callback code for a Zod-strict-validated {userId, email} profile over api.workos.com — a framework-agnostic transport seam apps/site wires into better-auth. A failed exchange never echoes the response body, since it can carry the client secret or user PII.",
+      },
+      {
+        title: "Clerk session-verification driver",
+        body: "createClerkSessionVerifier verifies a Clerk session JWT (networkless when jwtKey is supplied, live JWKS fetch otherwise) and clerkClaimsToSessionContext maps its claims onto the kernel's SessionContext. An active Organization with no role claim maps to the least-privileged seat, never the owner default — closing a privilege-escalation path a reshaped custom token could otherwise open.",
+      },
+      {
+        title: "Fail-closed entitlement gate",
+        body: "holdsOrgControls is the predicate the /dashboard/members surfaces gate through: an empty active-entitlement set denies by default, and it accepts either the bare org-controls purchase id or the full @caisson/org-controls module id — correct whichever form a standalone purchase or bundle grant carries.",
+      },
+    ],
+    artifact: {
+      label:
+        "buildAdminWritePolicySql — the cross-tenant write policy, scoped to one role",
+      lang: "ts",
+      file: "packages/org-controls/src/admin-write.ts",
+      code: '/**\n * SQL that lets the `admin_write` role INSERT/UPDATE/SELECT every row of `table` cross-tenant,\n * WITHOUT widening what any other role sees. Emitted ALONGSIDE the table\'s existing\n * `buildTenantPolicySql` output (which stays the `app` tenant-isolation floor): a\n * `GRANT SELECT, INSERT, UPDATE ... TO admin_write` (no DELETE — the mutation surface soft-revokes,\n * never hard-deletes) plus a `TO admin_write USING (true) WITH CHECK (true)` policy. RLS\n * OR-combines permissive policies, but each is role-scoped, so `admin_write` sees/writes every\n * tenant while `app` never matches this policy and stays isolated. Applied to the production\n * database at deploy time, mirroring the read-only counterpart policy builder.\n */\nexport function buildAdminWritePolicySql(\n  table: string,\n  { role = ADMIN_WRITE_ROLE }: AdminWritePolicyOptions = {},\n): string {\n  return [\n    // Idempotent so re-running DEPLOY provisioning never errors: GRANT is a no-op when already held,\n    // and DROP POLICY IF EXISTS clears any prior policy before CREATE (Postgres has no\n    // CREATE POLICY IF NOT EXISTS). The policy body is fixed, so drop-then-create is safe to repeat.\n    `GRANT SELECT, INSERT, UPDATE ON ${table} TO ${role};`,\n    `DROP POLICY IF EXISTS ${table}_admin_write ON ${table};`,\n    `CREATE POLICY ${table}_admin_write ON ${table}`,\n    `  TO ${role}`,\n    `  USING (true)`,\n    `  WITH CHECK (true);`,\n  ].join("\\n");\n}',
+      annotations: [
+        "USING (true) WITH CHECK (true) is scoped TO admin_write only — RLS OR-combines permissive policies, so this cross-tenant grant never widens what the app role's own tenant-isolation policy already sees.",
+        "GRANT SELECT, INSERT, UPDATE deliberately omits DELETE — the operator mutation surface this policy backs soft-revokes a row, it never hard-deletes through admin_write.",
+        "DROP POLICY IF EXISTS runs before CREATE POLICY so buildAdminWritePolicySql is safe to re-run at every DEPLOY — Postgres has no CREATE POLICY IF NOT EXISTS.",
+      ],
+    },
+    faq: [
+      {
+        question:
+          "Does the admin_write role bypass tenant isolation for ordinary buyer requests too?",
+        answer:
+          "No — admin_write is a completely separate Postgres role from app, and withAdminWrite is the only seam that ever assumes it. Every buyer request still runs under the app role's own TO app tenant-isolation policy; RLS OR-combines permissive policies by role, so a TO admin_write policy never matches app and never widens what a buyer connection sees.",
+      },
+      {
+        question:
+          "If the write policy is USING (true) WITH CHECK (true) across every tenant, what stops a bug from touching more than one account per call?",
+        answer:
+          "The database policy is unconditional on purpose — there's no per-request GUC to bind. The one-account-per-call bound is enforced at the app layer instead: every mutation function takes exactly one target account id and filters on it, gated by the caller's own authentication check and written to a dual audit log. That's a deliberate, disclosed tradeoff, not an oversight.",
+      },
+      {
+        question:
+          "Can a seat manage other members, or reach the admin-write surface?",
+        answer:
+          "No. assertCanManageMembers gates addAccountMember and removeAccountMember to the owner role before any query runs, and removeAccountMember separately refuses self-removal and refuses removing a second owner — so no owner-gated action can lock the account's own owner out or let one owner unilaterally eject another.",
+      },
+      {
+        question:
+          "Does the admin-write role split make our access-control posture SOC 2 compliant?",
+        answer:
+          "No single module does that. org-controls ships the technical control an auditor checks for role-based access segregation — a DB-enforced split between the buyer app role and the cross-tenant admin_write role, gated by a fail-closed guard that refuses to run as SUPERUSER or BYPASSRLS — not a certification. Compliance status is your organization's and your auditor's call.",
+      },
+    ],
+    relatedGlossary: [
+      "row-level-security",
+      "multi-tenant-isolation",
+      "fail-closed",
+    ],
+    sells: {
+      edition: "platform",
+      note: "Sold standalone at $249 — no persona bundle grants it (ADR-0257 §1.3 carve puts it beside billing-orchestration and ui-pro as a `bundles: []` platform SKU), so it's a deliberate standalone line on any stack; it's included only by construction inside the ${bundlePrice(\"everything\")} Everything bundle, the sole bundle that carries every sellable SKU (ADR-0258).",
+    },
+  },
+  {
+    slug: "compliance-core",
+    metaTitle: "Compliance Evidence Packs — Flag-Never-Guess | Caisson",
+    metaDescription:
+      "generateEvidencePack refuses to assemble a pack while any control's evidence is unresolved, then produces a byte-stable, SHA-256-verifiable ZIP with a cross-framework crosswalk rollup and an OSCAL catalog export.",
+    heroOneLiner:
+      "generateEvidencePack won't produce a pack while any control's evidence is unresolved — what it does hand you is a byte-stable, SHA-256-verifiable ZIP.",
+    definition:
+      "compliance-core is Caisson's evidence engine: generateEvidencePack composes typed EvidenceCollector results into a deterministic, byte-stable evidence pack, refusing to assemble anything while a control's evidence stays unresolved (flag-never-guess). computeCrosswalkRollup joins every framework pack's crosswalk pointers into one cross-framework view, and toOscalCatalog exports the canonical control catalog as a merged OSCAL document.",
+    included: [
+      {
+        title: "Flag-never-guess pack generation",
+        body: "generateEvidencePack scans every control for an unresolved collector result before assembling anything; if any exist it throws EvidencePackBlockedError (HTTP 422) carrying the full BLOCKED-case report. The throw runs before any assembly and the module touches no filesystem, so a partial pack is structurally impossible, not just policy.",
+      },
+      {
+        title: "Deterministic, byte-stable archive",
+        body: "buildDeterministicZip fixes every entry to the 1980-epoch DOS mtime, name-sorts entries, and pins the deflate level over canonicalize()'d contents, so identical evidence always serializes to the identical SHA-256 on EvidencePack.sha256 — regardless of when or by whom it was generated. The injected now clock is stamped only on the generatedAt envelope field, never hashed into the body.",
+      },
+      {
+        title: "Cross-framework evidence rollup",
+        body: 'computeCrosswalkRollup joins every framework pack\'s crosswalk[] pointers into one flat cell list. A cell renders claim: "implements" only when every contributing control is ready, every contributing verification is reviewed/expert-reviewed and non-stale, and a matching regime-crosswalk row already claims implements — anything short of that defaults to maps-to, mechanically, never editorially.',
+      },
+      {
+        title: "Pluggable EvidenceCollector contract, mandatory reasons",
+        body: "EvidenceCollector.collect(fact) is pure — no I/O, no clock, no DB. passResult ships a satisfied check; flaggedResult and unresolvedResult both throw ValidationError on an empty reason, so a recorded deficiency can never reach a pack without a stated cause.",
+      },
+      {
+        title: "Detached external-anchor grade tagging",
+        body: "buildExternalAnchorEntry attaches the newest anchor receipt as its own archive entry plus a trusted-timestamped or externally-transparent grade tag on the result envelope — never a field in the canonical manifest.json (the receipt is non-deterministic; hashing it would break byte-stability). anchorGradePhrase keeps a private RFC-3161 receipt from ever claiming the public-transparency language reserved for the externally-transparent grade.",
+      },
+      {
+        title: "OSCAL catalog export, deduped and sorted",
+        body: "toOscalCatalog merges every shipped framework pack's controls into one OSCAL catalog document, dedupes a canonical control shared verbatim across multiple packs to a single entry (OSCAL forbids duplicate ids), and sorts groups and controls lexicographically so the same catalog input always produces byte-identical output.",
+      },
+    ],
+    artifact: {
+      label:
+        "generateEvidencePack — the flag-never-guess scan, before any assembly runs",
+      lang: "ts",
+      file: "packages/compliance-core/src/evidence/generate.ts",
+      code: 'export function generateEvidencePack(\n  input: GenerateEvidencePackInput,\n): EvidencePack {\n  // PHASE 1 — flag-never-guess. Scan EVERY control for unresolved evidence before assembling\n  // anything; refuse the whole pack if any is found. No filesystem touch here → no partial pack.\n  const unresolved: Array<{\n    controlId: string;\n    collectorId: string;\n    reason: string | undefined;\n  }> = [];\n  for (const control of input.controls) {\n    for (const result of control.evidence) {\n      if (result.status === "unresolved") {\n        unresolved.push({\n          controlId: control.controlId,\n          collectorId: result.item.collectorId,\n          reason: result.reason,\n        });\n      }\n    }\n  }\n  if (unresolved.length > 0) {\n    const sortedUnresolved = [...unresolved].sort(\n      (a, b) =>\n        cmp(a.controlId, b.controlId) || cmp(a.collectorId, b.collectorId),\n    );\n    const report = parseEvidencePackBlocked({\n      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,\n      tenantId: input.tenantId,\n      framework: input.framework,\n      blocked: true,\n      unresolved: sortedUnresolved,\n    });\n    throw new EvidencePackBlockedError(report);\n  }',
+      annotations: [
+        "The scan over input.controls runs BEFORE any assembly starts — every control is checked for an unresolved result first, so a partial pack is never even started.",
+        "EvidencePackBlockedError carries the full sorted report (every unresolved controlId + collectorId), not just a boolean — the caller sees exactly what's missing.",
+        "sortedUnresolved is deterministically ordered by cmp() — the same set of gaps always reports in the same order, run to run.",
+      ],
+    },
+    faq: [
+      {
+        question:
+          "Does generating an evidence pack make us SOC 2 or HIPAA compliant?",
+        answer:
+          "No — no module makes an organization compliant; that determination is your organization's and its auditor's to make. compliance-core generates the evidence a control's readiness is judged from: it refuses to assemble a pack at all while any control's evidence is unresolved, rather than guessing a passing status.",
+      },
+      {
+        question:
+          "What happens if a control's evidence is missing when I try to generate a pack?",
+        answer:
+          "generateEvidencePack throws EvidencePackBlockedError (422) before touching a filesystem — no partial pack is produced. The error carries a full report of every unresolved controlId and collectorId, sorted deterministically, so you know exactly what's missing before retrying.",
+      },
+      {
+        question:
+          "Can I re-run the generator and get a different pack for the same evidence?",
+        answer:
+          "No. buildDeterministicZip fixes entry mtimes to the 1980 ZIP epoch, sorts entries by name, and pins the deflate level over canonicalized bytes — the same collector results always produce the identical archive SHA-256. The generation clock (now) is stamped only on the result envelope, never hashed into the body.",
+      },
+      {
+        question:
+          'Does a crosswalk rollup cell claiming "implements" mean Caisson verified that mapping?',
+        answer:
+          "It means the mapping cleared a mechanical bar: every contributing canonical control is ready, every contributing crosswalk reference carries a reviewed-or-better, non-stale verification record, and a matching regime-crosswalk row already claims implements. Anything short of that — including any reference seeded from NIST's own OLIR mapping, which NIST itself calls subjective and incomplete — renders as the weaker maps-to, never upgraded editorially.",
+      },
+    ],
+    relatedGlossary: [
+      "oscal",
+      "control-to-code-mapping",
+      "compliance-crosswalk",
+      "audit-evidence-bundle",
+    ],
+    sells: {
+      edition: "Compliance",
+      note: "Sold standalone at $299, or as one of the carved primitives composing the $1,049 Compliance bundle alongside frameworks-pack, signing-primitive, audit-worm, field-crypto, and retention-runner.",
+    },
+  },
+  {
+    slug: "billing-orchestration",
+    metaTitle: "Billing Orchestration — One Port, Four Providers | Caisson",
+    metaDescription:
+      "One BillingProvider port drives Paddle, Stripe, LemonSqueezy, and Polar. A dual-layer idempotency claim table settles a re-delivered webhook — and its credit grant — exactly once.",
+    heroOneLiner:
+      "One BillingProvider port normalizes Paddle, Stripe, LemonSqueezy, and Polar into one event stream — a subscription renewal grants credits exactly once, a mid-cycle charge never over-grants.",
+    definition:
+      "Billing orchestration is Caisson's multi-provider commerce seam: one BillingProvider port (createPaddleBilling, createStripeBilling, plus LemonSqueezy and Polar drivers) normalizes checkout, webhook signature verification, and event parsing across all four providers into one domain event stream. A dual-layer idempotency claim table makes a re-delivered webhook — and its downstream credit grant — settle exactly once, never twice.",
+    included: [
+      {
+        title: "One port, four provider drivers",
+        body: "createStripeBilling and createPaddleBilling ship in this package's index.ts alongside createLemonSqueezyBilling and createPolarBilling — all four hand-rolled over each provider's plain REST API (no vendor SDK) behind the one BillingProvider port from @caisson/billing. Paddle is the live platform merchant of record; the LemonSqueezy and Polar drivers are dormant until you construct them with your own credentials.",
+      },
+      {
+        title: "Envelope shape checked before the mapper ever runs",
+        body: "createStripeBilling and createPaddleBilling both parseStrict the raw webhook body against StripeEventSchema / PaddleEventSchema after signature verification — a missing or wrong-typed id/type/data is rejected before parseStripeEvent or parsePaddleEvent ever reads it. PaddleEventSchema stops short of .strict() on purpose: a strict envelope rejected every real Paddle delivery in live verification, so only the top-level shape is pinned.",
+      },
+      {
+        title: "A renewal grants once, a mid-cycle charge never over-grants",
+        body: "parsePaddleEvent reads the transaction's origin field: subscription_recurring maps to billingReason \"subscription_cycle\" (a renewal), while subscription_charge — a mid-cycle addon or top-up on the same subscription — passes through as its own non-granting reason instead of being read as another cycle. Only a reason inside services/license's GRANTING_REASONS ever triggers a credit grant; an absent or unrecognized origin falls through unmapped and grants nothing.",
+      },
+      {
+        title: "A re-delivered webhook settles exactly once",
+        body: "processEvent claims a sourceEventId once via an INSERT ... ON CONFLICT DO NOTHING on billing_processed_event; a re-delivery finds the claim and skips the grant function entirely — and with it the detached post-commit Discord role push, which is gated on that same outer claim. withIdempotentSideEffect claims a composite ${sourceEventId}:${sideEffect} key so a named transactional side effect fires at most once across retries, on top of the credit ledger's own UNIQUE(source_event_id, event_type) constraint.",
+      },
+      {
+        title: "The claim table is tenant-scoped, not just event-scoped",
+        body: "billing_processed_event binds account_id from the tenant GUC on insert and runs under buildTenantPolicySql's force-RLS policy; a CHECK (account_id <> '') rejects a claim attempted outside withTenant rather than letting it land under a shared blank tenant.",
+      },
+      {
+        title: "Integer money at every provider boundary",
+        body: "readMoneyMinorUnits rounds LemonSqueezy's numeric money fields — which can carry sub-cent artifacts from currency-rate conversion (e.g. 1499.985) — to the nearest integer minor unit before the amount enters the domain event. Every driver's amountTotal reaches the credit-grant seam as an integer, never a float.",
+      },
+    ],
+    artifact: {
+      label:
+        "parsePaddleEvent's invoice.paid mapping — a renewal grants, a mid-cycle charge doesn't",
+      lang: "ts",
+      file: "packages/billing-orchestration/src/paddle-events.ts",
+      code: '      if (txnId === "") return null;\n      return {\n        type: "invoice.paid",\n        sourceEventId: event.event_id,\n        accountId,\n        amountTotal: readGrandTotal(obj),\n        currency: readString(obj.currency_code, "usd"),\n        subscriptionId,\n        priceId: readItemPriceId(obj),\n        // Paddle\'s `origin` says HOW the charge arose (verified against developer.paddle.com\'s\n        // transaction.completed reference + the subscription-created/renewed simulator scenarios,\n        // 2026-07-01), mapped onto the billingReason vocabulary the cycle->grant gate\n        // (services/license GRANTING_REASONS) recognizes:\n        //   web | api                → the subscription\'s FIRST charge (Paddle.js checkout / an\n        //                              API-created transaction, e.g. provider.ts createCheckout)\n        //                              → "subscription_create" (grants)\n        //   subscription_recurring   → a renewal cycle → "subscription_cycle" (grants)\n        //   subscription_charge      → a MID-CYCLE one-time charge FOR the subscription\n        //                              (addon/topup) — NOT the first charge (the earlier reading);\n        //                              granting the plan\'s cycle allotment here would OVER-grant,\n        //                              so it passes through as its own non-granting reason\n        //   subscription_update / subscription_payment_method_change → proration / $0\n        //                              method-change transactions — non-granting (the SD-1\n        //                              next-cycle rule)\n        // An absent origin passes through as "" — not in GRANTING_REASONS, so it grants nothing\n        // (fail-closed; Paddle documents `origin` as always present on a transaction).\n        billingReason: ((): string => {\n          const origin = readString(obj.origin);\n          if (origin === "subscription_recurring") return "subscription_cycle";\n          if (origin === "web" || origin === "api")\n            return "subscription_create";\n          return origin;\n        })(),',
+      annotations: [
+        "origin drives billingReason — subscription_recurring becomes subscription_cycle (a renewal, grants), while subscription_charge passes through unmapped so a mid-cycle addon charge never triggers the plan's cycle credit grant.",
+        "An absent or unrecognized origin falls through as the raw string, which never matches services/license's GRANTING_REASONS — fail-closed to no grant rather than a guessed one.",
+        "Paddle fires this same transaction.completed event for both a subscription's first charge and every renewal — there is no separate per-cycle webhook, so origin is the only signal this mapper has.",
+      ],
+    },
+    faq: [
+      {
+        question:
+          "Does a mid-cycle top-up charge grant the subscription's monthly credit allotment a second time?",
+        answer:
+          "No. parsePaddleEvent reads the transaction's origin field: subscription_recurring maps to \"subscription_cycle\" (a renewal — grants), while subscription_charge — a mid-cycle addon or top-up — passes through as its own non-granting reason instead of being read as another cycle renewal. Only a reason in services/license's GRANTING_REASONS ever triggers a credit grant.",
+      },
+      {
+        question:
+          "What stops a re-delivered webhook from granting credits twice?",
+        answer:
+          "Two layers. The credit ledger is already idempotent — its UNIQUE(source_event_id, event_type) index makes a duplicate grant a no-op. This package adds an outer claim table on top: processEvent claims a sourceEventId once, so a re-delivery skips the grant function entirely — and with it the detached post-commit Discord role push, which is gated on that same outer claim. withIdempotentSideEffect adds a per-effect claim for a transactional side effect so it fires at most once across retries.",
+      },
+      {
+        question:
+          "Do I need four different provider SDKs to use all four drivers?",
+        answer:
+          "No SDK at all — createStripeBilling, createPaddleBilling, createLemonSqueezyBilling, and createPolarBilling are each hand-rolled over the provider's plain REST API behind the one BillingProvider port, so swapping the merchant of record is a new driver, not a rewrite. Paddle is the live platform MoR; the LemonSqueezy and Polar drivers are dormant until you construct them with your own credentials.",
+      },
+      {
+        question: "How does it handle a provider's fractional money field?",
+        answer:
+          "It rounds it. LemonSqueezy's numeric amount fields can carry sub-cent artifacts from currency-rate conversion (e.g. 1499.985); readMoneyMinorUnits rounds every amount to the nearest integer minor unit before it enters the domain event — money and credits are integer units everywhere in Caisson, never floats.",
+      },
+    ],
+    relatedGlossary: [
+      "credit-based-billing",
+      "fail-closed",
+      "row-level-security",
+    ],
+    sells: {
+      edition: "platform",
+      note: "Sold standalone at $99 — no persona bundle includes it (a platform SKU, standalone by design); it's part of the Everything bundle, the whole catalog in one purchase.",
+    },
+  },
+  {
+    slug: "ui-pro",
+    metaTitle: "UI Pro — Zero-Radix Interactive Components | Caisson",
+    metaDescription:
+      "Fourteen commercial React components on the open @caisson/ui floor: Tooltip/Popover/Menu hand-rolled with zero Radix and zero @floating-ui, plus a filterable/groupable/virtualized data grid, a hash-chain audit timeline, and redaction-aware payload and diff viewers.",
+    heroOneLiner:
+      "The interactive layer @caisson/ui doesn't ship — Tooltip, Popover, and Menu hand-rolled against zero Radix and zero @floating-ui, plus the data grid, hash-chain audit timeline, and diff viewer a real dashboard needs.",
+    definition:
+      "ui-pro is the commercial component tier built on the open @caisson/ui floor: a hand-rolled, zero-Radix, zero-@floating-ui interactive layer (Tooltip, Popover, Menu) plus eleven sellable data surfaces — an advanced data grid, virtualized tree, ops/coverage matrix, hash-chain audit timeline, redaction-aware payload and diff viewers, type-to-confirm, date-range picker, charts, kanban board, and command palette.",
+    included: [
+      {
+        title: "Tooltip, Popover, Menu — zero Radix, zero @floating-ui",
+        body: "Popover and Menu render their own trigger <button>, portal their panel with react-dom's createPortal, and position it with the package's own computeFloatingPosition — a pure flip-and-clamp function shared through the useFloatingPosition hook by all three interactive primitives (ADR-0291). Menu follows the WAI-ARIA Menu Button pattern (role=\"menu\", roving tabindex, Up/Down/Home/End); Popover follows the APG disclosure-with-portal pattern (explicit focus-in on open, focus-return on every keyboard-initiated close).",
+      },
+      {
+        title: "DataTablePro — filter, group, aggregate, export, virtualize",
+        body: "DataTablePro composes the open kit's own Button and Select, then drives the pure lib/table-ops.ts transforms — applyFilters, sortRows, groupRows, aggregate, toCsv, compareCells — plus lib/virtual.ts's windowRange for row virtualization. The transforms are exported standalone (DataTableProColumn, SavedView) so the filtering/grouping/CSV logic is unit-testable and reusable server-side, not locked inside the component.",
+      },
+      {
+        title: "AuditTimeline — renders a hash-chain verification result",
+        body: "AuditTimeline takes AuditEntry rows extending lib/audit-chain.ts's ChainEntry, and an optional anchor-derived statuses prop of six-state badges (wired to @caisson/kernel's per-row verifier, ADR-0331/0344). shortHash formats the display; chainIntact and verifyChain are exported for a caller to run the actual chain check — the component displays a verdict, it doesn't compute one.",
+      },
+      {
+        title:
+          "PayloadViewer redacts by default; DiffViewer redacts on request",
+        body: "PayloadViewer falls back to lib/redact.ts's DEFAULT_REDACT_KEYS and uses isRedactedKey/redactValue (the predicate now re-exported from @caisson/kernel, ADR-0331) whenever the caller doesn't supply its own key list — masking is on out of the box. DiffViewer's JSON mode only redacts when the caller passes its own redactKeys set, which it threads into lib/diff.ts's diffJson (that module calls redactValue internally); DiffViewer imports no default key list itself, and its plain text-line diff mode has no redaction path at all — so a support or audit screen stays unmasked unless the integrator wires redactKeys explicitly.",
+      },
+      {
+        title:
+          "TypeToConfirm, DateRangePicker, charts, CommandPalette, KanbanBoard",
+        body: "Rounding out the eleven: TypeToConfirm gates a destructive action behind an exact-text match; DateRangePicker ships standardPresets (thisMonth, lastNDays, fiscalQuarter, billingCycle...) from lib/date-presets.ts; AreaChart/BarChart/LineChart/Sparkline read lib/charts.ts's linearScale/areaPath/linePath/niceTicks; CommandPalette runs lib/fuzzy.ts's fuzzyFilter/fuzzyMatch; KanbanBoard drives lib/board.ts's columnCards/moveCard.",
+      },
+    ],
+    artifact: {
+      label:
+        "computeFloatingPosition — the zero-Radix flip-and-clamp math under Tooltip/Popover/Menu",
+      lang: "ts",
+      file: "packages/ui-pro/src/lib/position.ts",
+      code: "/**\n * Computes a viewport-relative `{top, left}` (paired with `position: fixed`, matching\n * `getBoundingClientRect`'s coordinate space) for a panel anchored to `trigger` on the\n * `preferred` side. Flips to the opposite side if the preferred side would overflow the viewport\n * and the opposite side fits better; otherwise falls back to `preferred` unfit. Both axes are then\n * clamped into `[gap, viewport - panel - gap]` — cheap insurance on the axis that already fit (a\n * no-op there) and the only thing keeping the *main* axis on-screen when neither placement fit.\n * A panel taller/wider than the viewport can still get clamped to `gap` on both ends and overflow\n * regardless — coordinates alone can't shrink it, so panels also carry their own\n * `max-height`/`overflow-y: auto` (see `.cs-popover`/`.cs-menu`) as the belt-and-braces.\n */\nexport function computeFloatingPosition(\n  trigger: Rect,\n  panel: Size,\n  viewport: Size,\n  preferred: Placement = \"bottom\",\n  gap = 8,\n): FloatingPosition {\n  const placement = fits(preferred, trigger, panel, viewport, gap)\n    ? preferred\n    : fits(OPPOSITE[preferred], trigger, panel, viewport, gap)\n      ? OPPOSITE[preferred]\n      : preferred;\n\n  const { top, left } = place(placement, trigger, panel, gap);\n\n  const clampedLeft = Math.min(\n    Math.max(left, gap),\n    Math.max(gap, viewport.width - panel.width - gap),\n  );\n  const clampedTop = Math.min(\n    Math.max(top, gap),\n    Math.max(gap, viewport.height - panel.height - gap),\n  );\n\n  return { top: clampedTop, left: clampedLeft, placement };\n}",
+      annotations: [
+        "computeFloatingPosition is the entire positioning engine — a pure, unit-tested function with no @floating-ui and no Radix import anywhere in the file",
+        "the OPPOSITE-indexed fits() call is the flip logic: try the preferred side, fall back to the opposite side, or give up and let the clamp save it",
+        "clampedLeft/clampedTop are the belt-and-braces — even an unfit placement gets pinned inside the viewport instead of rendering off-screen",
+      ],
+    },
+    faq: [
+      {
+        question:
+          "Why hand-roll Popover/Menu instead of shipping on Radix like most component libraries?",
+        answer:
+          "Zero runtime dependency and one shared positioning primitive. computeFloatingPosition is a ~35-line pure function — no @floating-ui, no Radix — and useFloatingPosition wires the same math to a single hook that Popover, Menu, and Tooltip all reuse, so there's one focus-management and one positioning implementation to audit instead of a vendor's.",
+      },
+      {
+        question:
+          "Does the audit timeline verify anything itself, or just display it?",
+        answer:
+          "It displays a verification result computed elsewhere — AuditTimeline takes an optional anchor-derived statuses prop (six-state badges wired to @caisson/kernel's per-row verifier) and its own lib/audit-chain.ts exports chainIntact and verifyChain for a caller to run the check. The component itself holds no hashing or WORM-anchor logic; it renders whatever chain state you hand it.",
+      },
+      {
+        question:
+          "Does DataTablePro replace @caisson/ui's basic table, or is it a separate thing?",
+        answer:
+          "Separate tier by design (ADR-0259's market-line split): the open @caisson/ui floor keeps a basic table with single sort/filter/pagination; DataTablePro adds the filter builder, grouping/aggregation, column pin/hide, CSV export, and row virtualization on top — and it composes the open kit's own Button and Select rather than duplicating them.",
+      },
+      {
+        question: "Which edition or bundle does ui-pro come with?",
+        answer:
+          'No persona bundle — buying Compliance, AI-Production, Local-first, Agentic-Dev, or Provenance never silently includes it (standalone placement, no persona-bundle membership at v1), and buying it never silently requires one of them. The whole-catalog Everything bundle is the one exception: it grants every sellable module by construction, ui-pro included — pinned by a registry test literally named "ui-pro is IN the Everything membership."',
+      },
+    ],
+    relatedGlossary: ["hash-chain-audit-trail", "signed-audit-anchor"],
+    sells: {
+      edition: "none",
+      note: "Sold standalone at $129 — no persona bundle grants it (standalone placement, no persona-bundle membership at v1), so it stays its own line on Compliance, AI-Production, Local-first, Agentic-Dev, and Provenance. The whole-catalog Everything bundle does include it, like every sellable module. It's the interactive layer each persona bundle's own dashboards reach for — Compliance's audit views, AI-Production's model-quality consoles — without ever being one of their bundle line items.",
+    },
+  },
+  {
+    slug: "local-inference",
+    metaTitle: "On-Device Inference — Hash-Verified ONNX | Caisson",
+    metaDescription:
+      "On-device ONNX embeddings via transformers.js, every model file SHA-256-verified, plus a metered hosted lane (OpenRouter, Azure OpenAI, Bedrock) that's off unless you allowlist its host.",
+    heroOneLiner:
+      "A hash-verified ONNX model runs inference on-device with zero egress by default — the hosted lane switches on only when you name its host in the privacy allowlist.",
+    definition:
+      "local-inference implements one InferenceBackend port two ways: OnnxEmbeddingBackend runs a MiniLM-class ONNX model on-device via transformers.js, every fetched model file SHA-256-verified before use; RentedInferenceBackend calls a hosted provider (OpenRouter, Azure OpenAI, Bedrock) only once its host is allowlisted in the privacy gate, metering every call. A deterministic stub backs CI — the live paths are proven, never exercised in tests.",
+    included: [
+      {
+        title: "Hash-verified model load, fail closed on mismatch",
+        body: "OnnxEmbeddingBackend's guarded fetch checks every pinned file's SHA-256 digest against the integrity map in OnnxBackendConfig with the constant-time safeEqualFixed before the bytes reach transformers.js; resolveConfig refuses to construct the backend at all with zero hash-pins.",
+      },
+      {
+        title: "One egress chokepoint, two purpose-bound sink kinds",
+        body: "Both backends route through the shared EgressGuard's assertAllowedFor — the ONNX backend allowlists only modelHost under the model-fetch sink kind, the rented backend only its endpoint under rented-backend — so a host sanctioned for one purpose can never receive traffic meant for the other.",
+      },
+      {
+        title: "Rented inference is off by default",
+        body: 'RentedInferenceBackend\'s constructor calls guard.assertAllowedFor(endpoint, "rented-backend") before it will even build, and re-asserts the same gate on every embed/complete call — a zero-egress privacy policy makes construction itself throw, with no silent hosted fallback.',
+      },
+      {
+        title: "Every rented call meters exactly once",
+        body: "#emitMeter builds one UsageMetering record — integer quantity, a fresh idempotencyKey per call — and hands it to the buyer-wired MeterSink before the result returns; if the sink throws, the call fails, because a paid call that can't be recorded must not silently succeed.",
+      },
+      {
+        title: "Four wire dialects, one RentedTransport port",
+        body: "createLiveRentedTransport speaks a first-party /embed + /complete wire; createOpenRouterRentedTransport, createAzureOpenAIRentedTransport, and createBedrockRentedTransport map the same port onto OpenRouter, Azure OpenAI, and Bedrock — every response re-validated against the strict RentedEmbedResponse/RentedCompleteResponse shape regardless of which one answered.",
+      },
+      {
+        title: "Deterministic stub, byte-identical in CI",
+        body: "StubInferenceBackend seeds a mulberry32 PRNG from the SHA-256 of the input text, so identical text always embeds to the byte-identical vector and CI never touches a model or a socket — the same InferenceBackend port the live backends implement, so swapping to production changes zero call sites.",
+      },
+    ],
+    artifact: {
+      label: "RentedInferenceBackend constructor — off by default, provably",
+      lang: "ts",
+      file: "packages/local-inference/src/rented-backend.ts",
+      code: '  constructor(config: RentedBackendConfig) {\n    const dim = config.dim ?? EMBEDDING_DIM;\n    if (!Number.isInteger(dim) || dim <= 0) {\n      throw new ValidationError(\n        "rented backend dim must be a positive integer",\n        { received: dim },\n      );\n    }\n    assertNonEmpty(config.tenantId, "tenantId");\n    assertNonEmpty(config.feature, "feature");\n    assertNonEmpty(config.model, "model");\n\n    // OFF BY DEFAULT. `assertAllowedFor` throws unless the endpoint is HTTPS, the host\n    // is on the privacy allowlist (a zero-egress default policy fails closed), AND the sanctioned\n    // sink KIND is `rented-backend` specifically — a host allowlisted only for the model fetch\n    // can never double as a hosted-inference egress.\n    const url = config.guard.assertAllowedFor(\n      config.endpoint,\n      "rented-backend",\n    );\n\n    this.dim = dim;\n    this.model = config.model;\n    this.#endpoint = url;\n    this.#guard = config.guard;\n    this.#transport = config.transport;\n    this.#meter = config.meter;\n    this.#tenantId = config.tenantId;\n    this.#feature = config.feature;\n  }',
+      annotations: [
+        "assertAllowedFor throws right here, at construction, unless the endpoint is HTTPS and allowlisted under the rented-backend sink kind specifically — a host sanctioned only for the model fetch can't double as a hosted-inference egress.",
+        "The guard check runs before any field is assigned — throw here and `this.#endpoint`, `this.#guard`, and the rest of the private state are never set, so there's no partially-built instance and no silent hosted fallback to fall into.",
+        "The dim/EMBEDDING_DIM guard runs before assertAllowedFor is ever called, so a misconfigured embedding width fails closed before the privacy gate is even consulted.",
+      ],
+    },
+    faq: [
+      {
+        question: "Does local-inference ever send my data off the device?",
+        answer:
+          "Not unless you opt in. OnnxEmbeddingBackend runs entirely on-device — its guarded fetch chokepoint allows only the pinned modelHost under the model-fetch sink kind, and that's for fetching the model itself, never the text you embed. RentedInferenceBackend is a separate class that refuses to even construct until you allowlist a host under the rented-backend sink kind in the privacy gate.",
+      },
+      {
+        question:
+          "How do I know the on-device model hasn't been tampered with?",
+        answer:
+          "Every model file transformers.js fetches is SHA-256-hash-verified against the integrity map in OnnxBackendConfig before it reaches the runtime. resolveConfig refuses to build the backend at all if you supply zero hash-pins, and a mismatched file throws InternalError instead of loading.",
+      },
+      {
+        question:
+          "What if I want a hosted model — GPT- or Claude-class quality instead of MiniLM?",
+        answer:
+          "Wire RentedInferenceBackend with one of the shipped transports — createLiveRentedTransport, createOpenRouterRentedTransport, createAzureOpenAIRentedTransport, or createBedrockRentedTransport — or your own RentedTransport implementation. Every call still routes through the same egress guard and emits one metered UsageMetering record before it returns.",
+      },
+      {
+        question: "Does this module bill me, or just wire the meter?",
+        answer:
+          "It wires the shape only. #emitMeter builds an integer-quantity, idempotency-keyed UsageMetering record and hands it to whatever MeterSink you provide — the package never imports @caisson/credits or touches a ledger; your billing integration supplies the sink that calls credits.debit.",
+      },
+    ],
+    relatedGlossary: ["fail-closed", "byok", "llm-cost-control"],
+    sells: {
+      edition: "local-first",
+      note: "On-device inference is the InferenceBackend seam inside the $629 Local-first bundle, alongside local vector search and the privacy egress gate. Buy it standalone ($249) to add hash-verified on-device embeddings — with an optional metered hosted lane — to any stack without the rest of the bundle.",
+    },
+  },
+  {
+    slug: "local-privacy",
+    metaTitle: "Privacy Egress Gate — Zero-Egress by Default | Caisson",
+    metaDescription:
+      "A closed-enum PrivacyPolicy plus EgressGuard wrapping the kernel fetchWithTimeout chokepoint: an empty allowlist blocks every host, and only two sanctioned sink kinds can ever be reachable.",
+    heroOneLiner:
+      "An empty allowlist blocks every outbound host by default — a request only egresses if a typed sink names the exact host and why.",
+    definition:
+      "local-privacy is the Local-first edition's runtime egress boundary: a closed-enum PrivacyPolicy (Zod .strict(), \"local-only\" the sole mode) declares zero-egress-by-default, and EgressGuard enforces it in front of the kernel's fetchWithTimeout chokepoint. A host must be allowlisted for one of exactly two sanctioned sink kinds — model-fetch or rented-backend — before a socket ever opens; an empty or omitted allowlist blocks everything.",
+    included: [
+      {
+        title: "Closed-enum policy, not a config flag",
+        body: 'privacyPolicySchema is a strictObject over privacyModeSchema (PRIVACY_MODES has exactly one member, "local-only") and a bounded allowlist (max 16 entries, default []). There is deliberately no "hosted" mode in the enum — introducing one takes an ADR and a schema change, not a config edit. ZERO_EGRESS_POLICY is the frozen air-gap default: local-only with an empty allowlist.',
+      },
+      {
+        title: "Two sanctioned sink kinds, exact-match hosts",
+        body: "SANCTIONED_SINK_KINDS closes the reachable-for-a-reason set to model-fetch (the first-run ONNX model download) and rented-backend (the opt-in metered hosted-inference host). egressSinkSchema validates each entry against HOSTNAME_RE and normalizes it (trim + lowercase) — matching is exact-string against url.hostname, never a suffix or wildcard.",
+      },
+      {
+        title: "Blocked before a socket opens",
+        body: "EgressGuard.assertAllowed rejects a non-https scheme, a malformed URL, or a host absent from the allowlist — all as fail-closed AuthzError/ValidationError thrown before fetchWithTimeout is ever reached. The thrown error's details carry only host and scheme, never the full URL, so a blocked path or query holding a token or PII is never captured in the error.",
+      },
+      {
+        title:
+          "Purpose-bound sinks — a rented-backend Bearer can't reach the model host",
+        body: "assertAllowedFor / fetchAs require a host to be allowlisted for a specific kind, not just present on the list. A host sanctioned only for model-fetch throws AuthzError if a rented-backend credentialed request targets it, and vice versa — each sink kind exists for exactly one credentialed surface.",
+      },
+      {
+        title: "guardedFetch — install as another runtime's outbound hook",
+        body: "The guard exposes itself as a bare (input, init) => Promise<Response> — the shape transformers.js's env.fetch accepts — so an on-device model loader can be handed the guard directly and cannot egress out of band. @caisson/local-inference's rented-backend transport calls guard.fetchAs(\"rented-backend\", ...) the same way, a real workspace:* dependency, not just a manifest listing.",
+      },
+      {
+        title: "Defensive re-parse at construction",
+        body: "The EgressGuard constructor re-runs parsePrivacyPolicy on the policy it's given, so a hand-built or deserialized policy object that bypassed parsePrivacyPolicy at the boundary still fails closed on a bad host, unknown kind, or unknown mode before the guard's host map is even built.",
+      },
+    ],
+    artifact: {
+      label:
+        "EgressGuard.assertAllowed — the fail-closed check every outbound request passes through first",
+      lang: "ts",
+      file: "packages/local-privacy/src/egress-guard.ts",
+      code: '  assertAllowed(input: string | URL): URL {\n    let url: URL;\n    try {\n      url = input instanceof URL ? input : new URL(input);\n    } catch {\n      throw new ValidationError("egress blocked: malformed URL");\n    }\n    if (url.protocol !== "https:") {\n      // Non-https never egresses — blocks http:, and data:/file:/javascript: smuggling.\n      throw new AuthzError("egress blocked: non-https scheme", {\n        scheme: url.protocol,\n      });\n    }\n    const host = url.hostname.toLowerCase();\n    if (!this.#allow.has(host)) {\n      // Empty allowlist ⇒ this branch always fires ⇒ zero egress. No host is implicit.\n      throw new AuthzError(\n        "egress blocked: host not on the privacy allowlist (fail-closed-to-offline)",\n        { host, privacy: this.#policy.privacy },\n      );\n    }\n    return url;\n  }',
+      annotations: [
+        'url.protocol !== "https:" runs before the allowlist lookup — http:, data:, file:, and javascript: schemes are blocked outright, not just non-allowlisted hosts.',
+        "this.#allow.has(host) checks a Map built once at construction from the policy's allowlist — with an empty allowlist this is always false, so every call falls through to the AuthzError (zero egress by default).",
+        "The thrown AuthzError's details carry only host and privacy, never the input URL's path or query — where a token or PII could otherwise leak into a caught error.",
+      ],
+    },
+    faq: [
+      {
+        question:
+          "Does local-privacy make my app HIPAA or GDPR compliant on its own?",
+        answer:
+          "No — no module makes an organization compliant; that determination is your organization's and its auditor's to make. local-privacy ships the technical control both frameworks point at for data locality: a default-deny egress boundary and cryptographic proof, via a thrown AuthzError, that an unlisted host is unreachable — not a policy statement that data stays local.",
+      },
+      {
+        question: "What happens if I don't configure an allowlist at all?",
+        answer:
+          "Every outbound host is blocked. allowlist defaults to [] in privacyPolicySchema, and ZERO_EGRESS_POLICY — local-only with an empty allowlist — is the air-gap baseline the edition installs unless a deployer explicitly opts a sanctioned sink in. There is no implicit host and no silent fallback to a hosted provider.",
+      },
+      {
+        question:
+          "Can a rented-backend API credential accidentally reach the model-download host, or vice versa?",
+        answer:
+          "No. assertAllowedFor and fetchAs require the host to be allowlisted for the specific kind requested — a host sanctioned only for model-fetch throws AuthzError on a rented-backend call, naming the required and actual kinds (never the full URL). Purpose-binding is enforced per call, not just per host.",
+      },
+      {
+        question: "Does this replace fetchWithTimeout, or sit in front of it?",
+        answer:
+          "It wraps it. EgressGuard.fetch calls assertAllowed first and only then delegates to the kernel's fetchWithTimeout — the one audited outbound chokepoint (the native AbortSignal timeout is forbidden on Bun). A blocked request never reaches fetchWithTimeout, so no socket opens and no bytes leave the device.",
+      },
+    ],
+    relatedGlossary: ["fail-closed", "hipaa-technical-safeguards"],
+    sells: {
+      edition: "local-first",
+      note: "Sold standalone at $99, or as one of the three local-first primitives — alongside local-sync and local-inference — composing the $629 Local-first bundle. It's a real workspace:* dependency of @caisson/local-inference's rented-backend transport (not just a manifest listing), which routes every credentialed request through guard.fetchAs before it's built.",
+    },
+  },
+  {
+    slug: "local-sync",
+    metaTitle: "Local Sync — Deterministic Offline Merge | Caisson",
+    metaDescription:
+      "A per-tenant changeset log, a non-forgeable hybrid logical clock, and an order-independent last-writer-wins merge — tombstones persist across sync rounds so a stale edit can never resurrect a deleted row.",
+    heroOneLiner:
+      "Two replicas can merge in either order and land on the exact same result — a row a later delete won never resurrects from a stale peer's edit.",
+    definition:
+      "local-sync is Caisson's two-way offline sync engine: a per-tenant changeset log captures every local mutation, a hybrid logical clock — a wall-clock hint plus a non-forgeable replica id and monotonic counter — stamps each change, and a pure last-writer-wins merge converges any set of replicas to one identical result. Tombstones persist across sync rounds, so a stale peer edit can never resurrect a row a later delete already won.",
+    included: [
+      {
+        title: "Per-tenant changeset capture, replica-stamped",
+        body: "ChangesetLog.open binds one instance to exactly one tenant's already-open SQLite file: on first use it mints a randomUUID() replica id and persists it in sync_meta; on re-open it asserts the file's stored tenant matches and throws TenancyError rather than re-pointing the file to a different tenant. recordUpsert and recordDelete mirror every local write into sync_changelog; capture(sinceSeq) packages everything past a watermark into a Changeset.",
+      },
+      {
+        title: "Fail-closed changeset validation at the boundary",
+        body: "parseChangeset runs an untrusted, peer-supplied payload through changesetSchema — a strictObject that rejects unknown keys — before anything touches local state. A superRefine cross-field check enforces that an upsert entry MUST carry values and a delete entry MUST NOT, and rejects any entry whose seq exceeds the changeset's own until watermark.",
+      },
+      {
+        title: "A non-forgeable hybrid logical clock",
+        body: "stampFromEntry derives an HlcStamp — physical (the updatedAt wall-clock hint), node (the originating replicaId), counter (the per-replica seq) — for every captured change. compareStamps is a strict total order over the three: physical first, then node, then counter, so a peer can bias the physical leg by skewing its clock but can never forge another replica's node to win a tie.",
+      },
+      {
+        title: "Order-independent LWW merge, no resurrection by construction",
+        body: "reconcileReplicas folds every changeset's entries into one winners Map keyed by (table, pk), keeping only the entry whose compareStamps result is greatest — a winning delete is simply never pushed into the returned rows, so a losing concurrent upsert can't resurrect it. The result is sorted by (table, pk), so reconcileReplicas([A, B]) and reconcileReplicas([B, A]) serialize byte-equal.",
+      },
+      {
+        title: "Tombstones persist across sync rounds",
+        body: "reconcileWithTombstones composes reconcileReplicas rather than reimplementing it: it replays a persisted Tombstone set as synthetic delete Changesets so a stale, lower-stamped upsert from a batch that no longer carries the original delete still loses. advanceTombstones folds prior tombstones and new entries into the greatest-stamped delete per key; a strictly-greater upsert legitimately re-creates the row and drops out of the set.",
+      },
+      {
+        title: "Horizon-gated GC, and a cross-tenant merge fails closed",
+        body: "gcTombstones drops a tombstone only once stamp.physical crosses a horizon the caller must set below the slowest replica's un-synced-edit lag — collect earlier and a still-pending stale upsert could resurrect the row. Both reconcileReplicas and reconcileWithTombstones throw TenancyError the moment two changesets don't share one tenantId, defense-in-depth over the file-per-tenant boundary ChangesetLog.assertApplicable already enforces at the transport edge.",
+      },
+    ],
+    artifact: {
+      label: "reconcileReplicas — the pure, order-independent LWW merge core",
+      lang: "ts",
+      file: "packages/local-sync/src/reconcile.ts",
+      code: 'export function reconcileReplicas(\n  changesets: readonly Changeset[],\n): ReconciledRow[] {\n  // Defense-in-depth: all replicas must belong to the same tenant file (the ADR-0073 partition).\n  let tenantId: string | undefined;\n  for (const cs of changesets) {\n    if (tenantId === undefined) {\n      tenantId = cs.tenantId;\n    } else if (cs.tenantId !== tenantId) {\n      throw new TenancyError("cannot reconcile changesets across tenants", {\n        reason: "tenant-partition",\n      });\n    }\n  }\n\n  // LWW register per (table, pk): keep the change with the greatest HLC stamp.\n  const winners = new Map<string, Map<string, Winner>>();\n  for (const cs of changesets) {\n    for (const entry of cs.entries) {\n      const stamp = stampFromEntry(entry, cs.replicaId);\n      let byPk = winners.get(entry.table);\n      if (byPk === undefined) {\n        byPk = new Map<string, Winner>();\n        winners.set(entry.table, byPk);\n      }\n      const current = byPk.get(entry.pk);\n      if (current === undefined || compareStamps(stamp, current.stamp) > 0) {\n        byPk.set(entry.pk, { entry, stamp });\n      }\n    }\n  }\n\n  // Materialize the live set: a winning delete is a tombstone (excluded — no resurrection by a loser).\n  const rows: ReconciledRow[] = [];\n  for (const [table, byPk] of winners) {\n    for (const [pk, winner] of byPk) {\n      const { entry } = winner;\n      if (entry.op === "upsert" && entry.values !== null) {\n        rows.push({ table, pk, values: entry.values });\n      }\n    }\n  }\n\n  // Total-order the live set by (table, pk) so divergent replicas serialize byte-equal.\n  rows.sort((a, b) =>\n    a.table < b.table\n      ? -1\n      : a.table > b.table\n        ? 1\n        : a.pk < b.pk\n          ? -1\n          : a.pk > b.pk\n            ? 1\n            : 0,\n  );\n  return rows;\n}',
+      annotations: [
+        "The winners Map keeps only the entry whose compareStamps result is greatest per (table, pk) — the HLC total order is the only comparator, so a skewed peer clock can't decide a tie the node/counter tiebreak already settled.",
+        'A winning delete is never pushed into rows — only entry.op === "upsert" reaches the returned set, so a tombstone is excluded by construction rather than filtered out after the fact.',
+        "rows.sort orders purely by table then pk with no dependency on changeset input order, which is what makes reconcileReplicas([A, B]) and reconcileReplicas([B, A]) serialize byte-identical.",
+      ],
+    },
+    faq: [
+      {
+        question:
+          "What happens if two offline devices edit the same row before either has synced?",
+        answer:
+          "Whichever edit has the greatest HLC stamp wins — physical (the updatedAt wall-clock hint) first, then the originating replicaId, then the per-replica seq — and reconcileReplicas keeps only that entry per (table, pk). The result never depends on merge order: reconcileReplicas([A, B]) and reconcileReplicas([B, A]) produce the exact same row.",
+      },
+      {
+        question:
+          "Can a row I deleted come back if an old, un-synced device finally syncs in?",
+        answer:
+          "No, unless that device's edit genuinely postdates the delete. reconcileWithTombstones persists the greatest-stamped delete per (table, pk) as a Tombstone and replays it as a synthetic delete on every later merge, so a stale upsert whose HLC stamp is lower than the tombstone's still loses. Only a strictly-greater-stamped upsert legitimately re-creates the row.",
+      },
+      {
+        question:
+          "Does two-way sync depend on the devices' clocks being in sync?",
+        answer:
+          "No. updatedAt is only an ordering hint, never the sole authority — compareStamps breaks an exact-physical tie with the non-forgeable replicaId, then the per-replica seq. A skewed or forged wall clock can bias which of two truly concurrent edits looks newer, but it can never make the merge non-deterministic or let a peer impersonate another replica's tiebreak.",
+      },
+      {
+        question:
+          "If two tenants both use this, can one tenant's sync data ever land in another tenant's local file?",
+        answer:
+          "No. ChangesetLog binds one instance to one already-open SQLite file and asserts the file's stored tenant id on every re-open; assertApplicable rejects an inbound changeset whose tenantId doesn't match before any entry is integrated. reconcileReplicas and reconcileWithTombstones re-check the same invariant as defense-in-depth and throw TenancyError rather than silently merging across the boundary.",
+      },
+    ],
+    relatedGlossary: ["fail-closed", "multi-tenant-isolation"],
+    sells: {
+      edition: "local-first",
+      note: 'Local sync is the offline-convergence engine inside the ${bundlePrice("local-first")} Local-first bundle, alongside on-device inference and the privacy egress gate. Buy it standalone at $199 to add two-way sync to any stack without the rest of the bundle.',
+    },
+  },
+  {
+    slug: "frameworks-pack",
+    metaTitle: "Frameworks Pack — Compliance Control Crosswalks | Caisson",
+    metaDescription:
+      "An own-authored canonical control registry plus five regime crosswalks (SOC 2, PCI DSS, GDPR, ISO 27001, NIST 800-53) whose implements/maps-to claim is enforced by the type, not a convention.",
+    heroOneLiner:
+      "A canonical control library where an `implements` claim without a linkable proof pointer fails to typecheck.",
+    definition:
+      "frameworks-pack is Caisson's clean-room control library: defineFramework builds three own-authored packs — SOC 2 TSC, HIPAA Security, and the EU AI Act's high-risk obligations — plus five regime crosswalks (SOC 2, PCI DSS, GDPR, ISO 27001, NIST 800-53) whose rows are typed implements only behind a proof pointer and maps-to everywhere else, the NIST 800-53 rows checked against a vendored, hash-pinned rev5 OSCAL catalog.",
+    included: [
+      {
+        title: "Fail-closed control registry",
+        body: "defineControl and defineFramework run every control through Zod's parseStrict at author time: canonicalControlId must match the uppercase dotted-segment pattern, crosswalk references must be unique on (framework, reference), and control ids must be unique within a Framework — an authoring mistake throws at module load, not at render time.",
+      },
+      {
+        title:
+          "Three own-authored framework packs, canonical ids shared across them",
+        body: "soc2Tsc, hipaaSecurity, and euAiAct are separately exported Framework catalogs. Where a control is the same underlying requirement across frameworks — GOVERNANCE.SECURITY-RESPONSIBILITY appears in both soc2Tsc and hipaaSecurity — the pack reuses the exact canonical id verbatim instead of minting a duplicate, so one control can be crosswalked from more than one regime.",
+      },
+      {
+        title: "Claim honesty enforced by the type, not a lint rule",
+        body: "RegimeCrosswalkRow is a Zod discriminatedUnion on claim: the implementsRow branch requires a proof: ProofPointer field: an implements row with no linkable test/CI/live-verification/oscal-conformance artifact does not typecheck. Every mapsToRow, by contrast, carries no proof field to fabricate.",
+      },
+      {
+        title: "NIST SP 800-53 rev5, vendored byte-exact and hash-pinned",
+        body: "NIST_CATALOG_PIN records the upstream commit SHA, the catalog's own internal OSCAL version (1.2.2), and a SHA-256 of the committed JSON bytes. extractControlIds walks the parsed catalog (base controls plus nested enhancements) into a control-id set every nist80053Crosswalk row is checked to exist against — a row citing a control the catalog doesn't have is a bug, not a typo left in prose.",
+      },
+      {
+        title:
+          "NIST IR 8278A relationship vocabulary, capped at maps-to structurally",
+        body: "nist80053Crosswalk rows carry NIST's own relationship (subset-of/intersects-with/equal/superset-of/not-related-to), rationale, and strength fields — the vocabulary an OLIR mapping actually uses — while defineNist80053Crosswalk throws if any row is missing its required canonicalControlId, and no row on this crosswalk can ever carry a proof field, so it can never promote to implements.",
+      },
+    ],
+    artifact: {
+      label:
+        "RegimeCrosswalkRow — the claim discriminated union that makes an unproven `implements` a type error",
+      lang: "ts",
+      file: "packages/frameworks-pack/src/crosswalks/regime-crosswalk.ts",
+      code: '/**\n * An assertive row: the mechanism implements a technical control a live repo artifact proves. `proof`\n * is REQUIRED (the discriminated union makes an `implements` row without it a type error).\n */\nconst implementsRow = strictObject({\n  claim: z.literal("implements"),\n  ...rowBase,\n  proof: ProofPointer,\n});\n\n/** A conservative row: the mechanism maps to (shares a domain with) the requirement. No proof. */\nconst mapsToRow = strictObject({\n  claim: z.literal("maps-to"),\n  ...rowBase,\n});\n\n/** One crosswalk row — assertive (`implements` + proof) or conservative (`maps-to`), by `claim`. */\nexport const RegimeCrosswalkRow = z.discriminatedUnion("claim", [\n  implementsRow,\n  mapsToRow,\n]);\nexport type RegimeCrosswalkRow = z.infer<typeof RegimeCrosswalkRow>;',
+      annotations: [
+        "implementsRow spreads proof: ProofPointer into the schema itself — an implements claim with no linkable test/CI/live-verification artifact fails validation, it isn't a reviewer's judgment call.",
+        "mapsToRow has no proof field at all, so a conservative row literally cannot carry a fabricated pointer — the two branches of RegimeCrosswalkRow enforce honesty by omission as much as by requirement.",
+        "...rowBase spreads buyerResponsibility into both branches, so every row — implements or maps-to — is required to state what Caisson does not cover.",
+      ],
+    },
+    faq: [
+      {
+        question:
+          "Does buying frameworks-pack make our system SOC 2 or HIPAA compliant?",
+        answer:
+          "No — no module makes an organization compliant; that determination is your organization's and its auditor's. frameworks-pack ships the technical-control crosswalk both frameworks point at: an own-authored canonical control mapped to the regime's requirement id, with a proof pointer wherever the claim is implements rather than maps-to.",
+      },
+      {
+        question:
+          "What's the difference between an implements row and a maps-to row?",
+        answer:
+          "implements is used only where a live test, CI check, live-verification harness, or OSCAL conformance artifact in this repo proves the named technical control, and the row carries a proof pointer to it — enforced by RegimeCrosswalkRow's discriminated union, not editorial judgment. Everywhere else the row is maps-to: the mechanism addresses the same domain, but nothing in this repo asserts the requirement is satisfied.",
+      },
+      {
+        question:
+          "Is vendoring the NIST SP 800-53 catalog verbatim actually legal to ship?",
+        answer:
+          "Yes — usnistgov/oscal-content is CC0 1.0 Universal (public domain), so the catalog JSON is committed byte-exact and hash-pinned via NIST_CATALOG_PIN. The SOC 2, HIPAA, PCI DSS, GDPR, and ISO 27001 material is different: those packs never copy the framework's own text, only bare requirement-id citations (e.g. CC6.1) pointing at Caisson's own clean-room control prose.",
+      },
+      {
+        question:
+          "Do I need @caisson/compliance-core to use this, or does it work on its own?",
+        answer:
+          "frameworks-pack depends on nothing but @caisson/kernel and zod — you get the framework catalogs, the five regime crosswalks, and the vendored NIST catalog as typed data on their own. compliance-core is the separate carve that renders these catalogs into an OSCAL export and the SOC 2/HIPAA evidence pack; both ship in the Compliance bundle.",
+      },
+    ],
+    relatedGlossary: [
+      "compliance-crosswalk",
+      "control-to-code-mapping",
+      "oscal",
+      "eu-ai-act-article-50",
+    ],
+    sells: {
+      edition: "compliance",
+      note: "Sold standalone at $249, or as the framework/crosswalk layer of the Compliance bundle alongside compliance-core (the evidence-pack generator that renders against these catalogs) and signing-primitive.",
+    },
+  },
+  {
+    slug: "signing-primitive",
+    metaTitle: "Signing Primitive — Detached Ed25519 + RFC-3161 | Caisson",
+    metaDescription:
+      "A detached Ed25519 signature over a canonical, chain-anchored evidence manifest — per-tenant key, optional RFC-3161 countersign, and a deployment Ed25519ph key for Rekor anchoring.",
+    heroOneLiner:
+      "Your evidence, signed under your own per-tenant Ed25519 key — never Caisson's — so any third party verifies it without touching your secrets.",
+    definition:
+      "signing-primitive produces a detached Ed25519 signature over a canonical, chain-anchored evidence manifest, bound to the WORM audit chain's tip hash and signed under a per-tenant key that is deliberately distinct from the Caisson license-issuer key. An optional RFC-3161 timestamp countersigns the signature, and a separate deployment-level Ed25519ph signer anchors receipts into Sigstore Rekor's public transparency log.",
+    included: [
+      {
+        title: "Per-tenant Ed25519Signer, never the license key",
+        body: "Ed25519Signer holds a 32-byte tenant seed in a private #secretKey field, never logged or serialized; construction throws ValidationError on an empty keyId or a wrong-length key. It is deliberately distinct from Caisson's own license-issuer key — a buyer proves provenance of their own evidence with their own identity.",
+      },
+      {
+        title: "Detached, bound to the chain tip",
+        body: "evidenceSignablePayload concatenates canonicalize(manifest) with manifest.chainAnchor.tipHash before signing; signEvidencePack signs that exact payload and returns the signature BESIDE the manifest, so the canonical body stays byte-stable and golden-fixturable. Move the WORM chain tip and the same signature no longer verifies.",
+      },
+      {
+        title: "Fail-closed verify, never throws",
+        body: "verifyEvidenceSignature returns false — never throws — on an unknown algorithm, malformed hex, a wrong-length key or signature, a tampered manifest, or a moved chain tip. A forgery, a corrupt field, and a driver error all collapse to the same denial.",
+      },
+      {
+        title: "Optional RFC-3161 countersignature",
+        body: "signEvidencePack takes an optional TimestampAuthority; StubTimestampAuthority is the network-free test double shipped for CI, and timestampCountersignsSignature recomputes sha256(signature) to confirm a token actually attests to THIS signature. The live TSA transport is a documented un-wired seam — no live network call runs in CI.",
+      },
+      {
+        title: "Constant-time signature compare",
+        body: "signaturesEqual wraps @caisson/kernel's safeEqualFixed so comparing two hex signatures never leaks how many leading bytes matched — the same timing-safe discipline the kernel's secret comparisons use elsewhere.",
+      },
+      {
+        title: "Deployment-level Ed25519ph key for Rekor anchoring",
+        body: "Ed25519PhSigner.fromEnv loads a base64 32-byte seed from CAISSON_REKOR_ANCHORING_KEY (never the per-tenant key) and signs with @noble/curves' ed25519ph — the RFC-8032 §5.1 prehash variant Rekor v2's hashedrekord endpoint requires, since a pure Ed25519 signature would be handed only a digest and re-hash it.",
+      },
+    ],
+    artifact: {
+      label:
+        "signEvidencePack — the detached signature over canonicalize(manifest) ∥ chainAnchor.tipHash",
+      lang: "ts",
+      file: "packages/signing-primitive/src/sign.ts",
+      code: "export async function signEvidencePack(\n  signer: Signer,\n  manifest: SignableManifest,\n  options?: SignEvidencePackOptions,\n): Promise<EvidenceSignature> {\n  const payload = evidenceSignablePayload(manifest);\n  const [publicKeyBytes, signatureBytes] = await Promise.all([\n    signer.publicKey(),\n    signer.sign(payload),\n  ]);\n  if (signatureBytes.length !== ED25519_SIGNATURE_BYTES) {\n    throw new ValidationError(\n      `detached signature must be ${String(ED25519_SIGNATURE_BYTES)} bytes, got ${String(signatureBytes.length)}`,\n    );\n  }\n  if (publicKeyBytes.length !== ED25519_PUBLIC_BYTES) {\n    throw new ValidationError(\n      `ed25519 public key must be ${String(ED25519_PUBLIC_BYTES)} bytes, got ${String(publicKeyBytes.length)}`,\n    );\n  }\n  const base: EvidenceSignature = {\n    algorithm: signer.algorithm,\n    keyId: signer.keyId,\n    publicKey: toHex(publicKeyBytes),\n    signature: toHex(signatureBytes),\n  };\n  if (options?.timestampAuthority === undefined) return base;\n  const timestamp =\n    await options.timestampAuthority.countersign(signatureBytes);\n  return { ...base, timestamp };\n}",
+      annotations: [
+        "Promise.all runs signer.publicKey() and signer.sign(payload) concurrently — the key and the signature are two independent async calls, not a serial round-trip.",
+        "signatureBytes and publicKeyBytes are length-checked against ED25519_SIGNATURE_BYTES/ED25519_PUBLIC_BYTES before either is hex-encoded — a malformed signer output throws instead of shipping a corrupt EvidenceSignature.",
+        "options?.timestampAuthority?.countersign only runs when a TSA was supplied — the base EvidenceSignature with no timestamp field is already a complete, valid return.",
+      ],
+    },
+    faq: [
+      {
+        question: "Does the signature prove we're SOC 2 or HIPAA compliant?",
+        answer:
+          "No — no module makes an organization compliant; that determination is your organization's and its auditor's to make. signing-primitive ships the technical control an auditor checks for provenance: a detached Ed25519 signature under your own tenant key, bound to the WORM chain's tip hash, and generates the evidence a third party can verify without ever holding your secret.",
+      },
+      {
+        question: "Does this use the same key as the Caisson license?",
+        answer:
+          "No, by design. Ed25519Signer holds a per-tenant seed that's distinct from Caisson's own license-issuer key — a buyer proves provenance of their own evidence with their own identity, never Caisson's. The two keys sign for different trust models and are never interchangeable.",
+      },
+      {
+        question:
+          "What happens if someone tampers with the evidence pack after signing?",
+        answer:
+          "verifyEvidenceSignature fails closed — it returns false, never throws — the moment the manifest body or the bound chain tip changes, because evidenceSignablePayload hashes both into the exact bytes the signature covers. A tampered manifest, a moved chain tip, or a forged public key all fail verification the same way.",
+      },
+      {
+        question:
+          "Is this the same signature Sigstore Rekor accepts for external anchoring?",
+        answer:
+          "Not the per-tenant one. Rekor v2's hashedrekord endpoint rejects a pure Ed25519 signature — it's handed only a digest and would re-hash it. Ed25519PhSigner is a separate deployment-level key using ed25519ph (the RFC-8032 prehash variant) specifically for that anchoring path; the per-tenant Ed25519Signer stays the evidence-signing identity.",
+      },
+    ],
+    relatedGlossary: [
+      "signed-audit-anchor",
+      "rfc-3161-timestamping",
+      "transparency-log",
+      "evidence-receipt",
+    ],
+    sells: {
+      edition: "Compliance",
+      note: "Sold standalone at $199, or as one of the primitives composing two bundles: the Compliance bundle and the Provenance bundle (alongside audit-worm and field-crypto) — the same package either way, never a promise of it.",
+    },
+  },
+  {
+    slug: "credits",
+    metaTitle: "Credits — Integer Wallet, FIFO Ledger, 402 Gate | Caisson",
+    metaDescription:
+      "An integer credit wallet with an append-only ledger: FOR UPDATE row locking, FIFO grant consumption, idempotent grant/debit, and a 402 gate on an empty balance.",
+    heroOneLiner:
+      "debit() locks the wallet row, drains unexpired grants oldest-first, and 402s before a cent of paid work runs — the ledger only ever writes what actually happened.",
+    definition:
+      "Credits is Caisson's integer credit wallet: grant() appends to an append-only credit_event ledger and upserts the wallet, while debit() takes a FOR UPDATE wallet-row lock and drains unexpired grants oldest-first through grant_consumption. A short balance throws InsufficientCreditsError (402) before the debit lands — the transaction rolls back with nothing recorded. Idempotent on a caller key or provider event id; grants expire on a schedule with a T-30d notice sweep.",
+    included: [
+      {
+        title: "FOR UPDATE row lock, then FIFO",
+        body: "debit() locks the credit_wallet row FOR UPDATE before it ever reads a grant, so two concurrent debits for the same account serialize instead of racing to consume the same grant remainder — the same lock clawback() and sweepExpiredGrants() take before they touch the wallet.",
+      },
+      {
+        title: "FIFO grant consumption via grant_consumption",
+        body: "unexpiredGrantsFifo() walks a tenant's unexpired grants oldest-first (created_at ASC, expires_at ASC, id ASC) and debit() splits one charge across as many grants as it needs, writing one grant_consumption row per grant it draws from — a grant's remaining balance is always amount minus the sum of its consumption rows, never a mutated column.",
+      },
+      {
+        title: "Idempotent by construction",
+        body: "idemColumns() requires exactly one of sourceEventId or idempotencyKey on every grant/debit/clawback call, and insertEvent() writes through ON CONFLICT DO NOTHING RETURNING — a retried call returns { idempotent: true } off the existing row instead of raising a conflict that would poison the surrounding transaction.",
+      },
+      {
+        title: "402 fail-closed on either floor",
+        body: "debit() checks two floors and 402s on the tighter one — the FIFO-derived unexpired remaining and the raw credit_wallet.balance aggregate — throwing InsufficientCreditsError and rolling back the whole transaction with nothing recorded. spendableBalance() reads the same min() of both floors, so a displayed balance never promises more than a debit will actually cover.",
+      },
+      {
+        title: "Clawback and expiry, both bounded to the live balance",
+        body: "clawback() reclaims min(amount, currentBalance) of a refunded purchase's unspent credits — never pushing the wallet negative — and sweepExpiredGrants() burns each expired grant's residue as an explicit expiry_debit event bounded the same way, so expired value is consumed by a ledger row, never silently excluded from a read.",
+      },
+      {
+        title: "A generic feature-meter envelope, registry-validated",
+        body: "feature_grant and feature_debit carry a feature tag that featureColumn() validates against FeatureTagSchema before the ledger insert — an unregistered or misspelled tag throws with no row written, so a new metered action never mints a silent, unvalidated meter.",
+      },
+    ],
+    artifact: {
+      label: "debit() — lock, walk FIFO, 402 before a cent moves",
+      lang: "ts",
+      file: "packages/credits/src/credits.ts",
+      code: "export async function debit(\n  tx: TenantExecutor,\n  input: DebitInput,\n): Promise<CreditResult> {\n  assertPositiveInt(input.amount);\n  const idem = idemColumns(input);\n  const feature = featureColumn(input.eventType, input.feature);\n  const fresh = await insertEvent(tx, {\n    accountId: input.accountId,\n    eventType: input.eventType,\n    amount: -input.amount,\n    feature,\n    rounding: input.rounding,\n    ...idem,\n  });\n  if (fresh === null)\n    return { balance: await balance(tx, input.accountId), idempotent: true };\n\n  // Per-account debit serialization — must precede the FIFO read (see the function comment).\n  // A missing wallet row (never granted) locks nothing and falls through to the 402 below.\n  await tx.query(\n    `SELECT balance FROM credit_wallet WHERE account_id = $1 FOR UPDATE`,\n    [input.accountId],\n  );\n\n  const grants = await unexpiredGrantsFifo(tx, input.accountId);\n  let toCover: number = input.amount;\n  for (const g of grants) {\n    if (toCover === 0) break;\n    const take = Math.min(g.remaining, toCover);\n    await insertConsumption(tx, {\n      accountId: input.accountId,\n      grantEventId: g.id,\n      debitEventId: fresh,\n      amount: take,\n    });\n    toCover -= take;\n  }\n  if (toCover > 0) {\n    // Unexpired remaining can't cover it — 402 with the SPENDABLE total (not the raw wallet\n    // aggregate, which may still carry not-yet-swept expired residue). Throwing rolls back the\n    // event + consumption inserts above — a failed debit leaves no trace.\n    throw new InsufficientCreditsError(input.amount, input.amount - toCover);\n  }\n\n  const updated = await tx.query<{ balance: number }>(\n    `UPDATE credit_wallet SET balance = balance - $2\n     WHERE account_id = $1 AND balance >= $2\n     RETURNING balance`,\n    [input.accountId, input.amount],\n  );\n  if (updated.rows.length === 0) {\n    // Insufficient wallet aggregate (e.g. a clawback outran the per-grant remainders): same\n    // rollback semantics — nothing recorded.\n    throw new InsufficientCreditsError(\n      input.amount,\n      await balance(tx, input.accountId),\n    );\n  }\n  return { balance: updated.rows[0]?.balance ?? 0, idempotent: false };\n}",
+      annotations: [
+        "The `SELECT ... FOR UPDATE` on `credit_wallet` runs before the FIFO read — it serializes concurrent debits per account so two calls can never consume the same grant remainder.",
+        "`unexpiredGrantsFifo` returns grants oldest-first; the loop walks them until `toCover` reaches zero, splitting one debit across multiple grants when a single grant's remainder falls short.",
+        "A short balance throws `InsufficientCreditsError` and the whole transaction rolls back — the `insertEvent` and `insertConsumption` calls above never survive to be visible.",
+      ],
+    },
+    faq: [
+      {
+        question: "What happens when a debit would overdraw the balance?",
+        answer:
+          "debit() throws InsufficientCreditsError (HTTP 402) and nothing is recorded — the FOR UPDATE lock and the ledger insert both run inside the same transaction, so a failed debit rolls back cleanly with no orphaned event or partial grant_consumption row.",
+      },
+      {
+        question:
+          "Can two concurrent requests both spend the same last credit?",
+        answer:
+          "No. debit() locks the credit_wallet row FOR UPDATE before it reads the account's unexpired grants, so a second concurrent debit for the same account blocks until the first commits or rolls back — it can never observe stale grant remainders.",
+      },
+      {
+        question:
+          "Does a retried network request double-charge a debit or double-grant a purchase?",
+        answer:
+          "No. Every grant/debit/clawback call supplies exactly one of sourceEventId or idempotencyKey (idemColumns enforces this), and insertEvent writes through ON CONFLICT DO NOTHING RETURNING — a retried call returns the already-applied result (idempotent: true) instead of inserting a second ledger row.",
+      },
+      {
+        question: "What happens to unspent credits when a grant expires?",
+        answer:
+          "sweepExpiredGrants() burns each expired grant's residue as an explicit expiry_debit ledger event — not a silent exclusion from balance — bounded to the live wallet balance the same way clawback() is. sweepExpiryNotices() emails a T-30d warning first, gated by a one-row-per-grant credit_expiry_notice marker so the notice only ever fires once.",
+      },
+    ],
+    relatedGlossary: [
+      "credit-based-billing",
+      "fail-closed",
+      "row-level-security",
+    ],
+    sells: {
+      edition: "ai-production",
+      note: "Sold standalone at $149, or bundled into the $739 AI-Production bundle alongside ai-meter, ai-evals, guardrails, and prompt-registry — the same wallet ai-meter's reserve()/reconcile() grant() and debit() against directly.",
     },
   },
 ];
