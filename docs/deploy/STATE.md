@@ -25,12 +25,15 @@ Blacksmith → a sot freshness cascade fixed at the fourth tag.
 - **Registry Worker redeployed** (`bunx wrangler deploy`, version `e9854324`) off main at
   the tag content — serves the new index: kernel packument `latest: 0.5.2` verified live;
   commercial packuments stay constant-time 404 unauthenticated (agent-trajectory probe).
-- **caisson-site + caisson-license redeploys BLOCKED by a Railway incident** (builds die
-  at `scheduling build on Metal builder "builder-sskgan"`; status page: degraded /
-  investigating). Retry when the incident clears — content is pre-launch-dormant (pricing
-  page rows + webhook purchase/renewal books for the new price ids). Sandbox Paddle
-  prices for agent-trajectory ($49 + $19 renewal) created via
+- **caisson-site + caisson-license redeployed** (`railway up`, SUCCESS on the third
+  attempt — the first two died at `scheduling build on Metal builder`, a Railway
+  degraded-performance incident, cleared ~09:45Z). Probes: site `/healthz` 200 +
+  `/marketplace` serves agent-trajectory; license `/health` 200 (new purchase/renewal
+  books live). Sandbox Paddle prices for agent-trajectory ($49 + $19 renewal) created via
   `tools/paddle-catalog-recreate.ts`.
+- **Blacksmith-only runner posture landed** (operator directive): `deploy-railway` — the
+  last hosted job — flipped (`585dfc81`); the next main push ran ALL workflows green
+  including intel-eval on Blacksmith, confirming its three reds were quota kills.
 - Follow-ups merged same sitting (PR #285): lockHash row provenance (CAISSON-127),
   Blacksmith sweep of quality/intel-eval + version-pr + r2-parity-probe (intel-eval's
   reds were quota kills, not eval regressions), R4 P3 comment fixes. Changesets pending
