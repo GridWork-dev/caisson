@@ -28,8 +28,9 @@ on:
 # so operator/host secrets are architecturally unreachable and nothing persists between jobs
 # (any cache below is network-backed, never local-disk). The quality macos matrix leg stays
 # on the Mac mini (`[self-hosted, gw-macos-arm64]`, $0). Credential-bearing jobs
-# (publish/deploy-railway/mirror-sync/release-train) stay `ubuntu-latest` — prod tokens never
-# ride third-party runners. MANUAL fallback if Blacksmith is down: flip the affected job's
+# (publish/deploy-railway/mirror-sync/release-train) moved to Blacksmith too (2026-07-19,
+# ADR-0365 — free-org Actions minutes exhausted; operator lock: deploy-railway STAYS on
+# Blacksmith even once RAILWAY_TOKEN arms). MANUAL fallback if Blacksmith is down: flip the affected job's
 # `runs-on` back to `ubuntu-latest` (one line). Posture doc: docs/operations.md.
 
 concurrency:
