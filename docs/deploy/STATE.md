@@ -35,13 +35,17 @@ The ADR-0373 arming executed end-to-end in one sitting (checklists
   pin re-capture, RIDER3 prune, and the deploy.sh Worker build-surface fix.
 - **Registry Worker redeployed** (`655a9b0c`) at the merge commit — serves the COMPLIANCE_GAP
   membership timeline; the fixed deploy.sh built all three workspace deps cleanly.
-- **caisson-site deploy BLOCKED — Railway Metal-builder platform incident (recurrence):** 10
-  `railway up` attempts 20:30–22:05Z all died at `scheduling build on Metal builder` (two
-  distinct builders, zero Dockerfile steps — platform-side, same class as the 2026-07-19
-  incident that cleared same-day; staff-confirmed known issue on station.railway.com). Hourly
-  retries armed. Until it lands, the live site shows the pre-reprice $1,049 while Paddle
-  sandbox charges $1,449 — pre-launch SANDBOX window, zero real buyers, disclosed here and on
-  the tracker.
+- **caisson-site redeployed** (image `5e46a81b`, `Deploy complete`) at main `108a358a` after a
+  self-inflicted 10-failure detour: `railway up` was run from `apps/site`, uploading only that
+  subtree while `railway.toml`'s `dockerfilePath` is repo-root-relative — the builder aborted
+  with `couldn't locate the dockerfile` before any build step, surfacing only the misleading
+  `scheduling build on Metal builder` line (initially misdiagnosed as the 2026-07-19 platform
+  incident recurring; the operator-supplied dashboard build log showed the real cause).
+  **The command must run from the repo root** (the railway.toml header says so; memory #380).
+  Verified live: `/compliance` shows $1,449 + "Thirteen packages" with the composed-10 vs
+  standalone-3 copy; all 26 module cards render buyable on `/marketplace` including the three
+  debuts at $199/$279/$149; healthz 200. Known content gap (not a bug — links are conditional):
+  no MODULE_PAGES depth records for the three yet → CAISSON-134.
 
 The close-out picker's execution (PRs #312/#313, both squash-merged green same sitting):
 
