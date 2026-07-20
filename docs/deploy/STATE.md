@@ -8,7 +8,40 @@ grounds:
 
 # Deploy log
 
-## 2026-07-20 (second wave) — stranded-version delist live + audit fix batch + site redeploy
+## 2026-07-20 (third wave) — compliance-gap SKU arming: two trains + catalog debut
+
+The ADR-0373 arming executed end-to-end in one sitting (checklists
+`docs/releases/v2026.07.20.{2,3}-checklist.md`, audit
+`outputs/audit/release-audit-v2026.07.20.3.md`):
+
+- **v2026.07.20.2** (tag `5b37fb0e`, consume 1 = the sellable flip + bundle join, PR #316):
+  readiness 9/9, train ALL GREEN. **Registry Worker redeployed** (`42f33702`) post-train;
+  r2-parity re-dispatched manually (workflow_run stays suppressed for GITHUB_TOKEN-dispatched
+  trains): 293/294, sole miss = the known agent-trajectory 0.3.0 stranded row.
+- **Consume 2** (PR #317, merged `8b728f95`, 18 checks green) — sibling churn predicted locally
+  and the signing-primitive repack changeset PRE-landed on main, so the version PR came out
+  clean first round. Index truth verified: three SKUs sellable at the locked prices,
+  compliance 13 / everything 34 members at 0.2.0 pins.
+- **v2026.07.20.3** (tag `b1be281f` at the attestation commit): local byte-gate proof green
+  before tagging, readiness 9/9, train ALL GREEN. **Registry Worker redeployed** (`0dcd2c49`);
+  r2-parity 300/301 — same sole stranded-row residual. Mirror private, npm leg unarmed.
+- **Catalog-debut PR #318 squash-merged** (`108a358a`; main CI 4/4 green) after a two-audit
+  SHIP pass — opus review (P0 compliance-page composed-vs-standalone honesty + 4 nits, all
+  fixed) and a fable money-seam audit (**PASS, no blockers**; its LOW — a silent fail-open in
+  the new pricebook-agreement gate — fixed in-PR with a visible warn + smoke tests). Ships the
+  pricebook books + COMPLIANCE_GAP join instants, the $1,449 site display + three MODULE_PRICES
+  rows, Paddle sandbox wiring (3 products + 6 prices minted via the recreate tool; both
+  existing compliance prices PATCHed in place — price ids stable, no dashboard edit), leaf-set
+  pin re-capture, RIDER3 prune, and the deploy.sh Worker build-surface fix.
+- **Registry Worker redeployed** (`655a9b0c`) at the merge commit — serves the COMPLIANCE_GAP
+  membership timeline; the fixed deploy.sh built all three workspace deps cleanly.
+- **caisson-site deploy BLOCKED — Railway Metal-builder platform incident (recurrence):** 10
+  `railway up` attempts 20:30–22:05Z all died at `scheduling build on Metal builder` (two
+  distinct builders, zero Dockerfile steps — platform-side, same class as the 2026-07-19
+  incident that cleared same-day; staff-confirmed known issue on station.railway.com). Hourly
+  retries armed. Until it lands, the live site shows the pre-reprice $1,049 while Paddle
+  sandbox charges $1,449 — pre-launch SANDBOX window, zero real buyers, disclosed here and on
+  the tracker.
 
 The close-out picker's execution (PRs #312/#313, both squash-merged green same sitting):
 
