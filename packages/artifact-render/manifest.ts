@@ -6,12 +6,15 @@
 // trust-page generator (`@caisson/trust-page`) share one legal-gate + redaction implementation
 // instead of each re-deriving the banned-claim-word regex and the field-allowlist mechanics.
 //
-// NEVER PUBLISHED (`package.json` carries `private: true`, the `@caisson/license-issue` precedent):
-// this is internal render plumbing, never sold standalone — it ships only as substrate other
-// commercial packages compose. `sellable: false` (the platform-reads/pricebook precedent) additionally
-// exempts it from ever needing a PRICE_AUTHORITY row; `priceCents` stays at the documented pre-launch
-// placeholder anchor (4900) since no price is locked. Dependencies are DOWN-ONLY (ADR-0003): this sits
-// on the kernel's validation floor alone.
+// PUBLISHED, NEVER SOLD (`sellable: false` — the platform-reads/pricebook precedent, flipped from
+// the never-published posture at the 2026-07-20 arming round): published consumers
+// (`@caisson/compliance-core`'s SoA render target, `@caisson/trust-page`) declare a runtime
+// dependency on this package, so a buyer install must be able to resolve its tarball — a private
+// dependency of a published package is an unresolvable range (the W1-sandbox install-break class).
+// `sellable: false` keeps it off every storefront surface and exempts it from ever needing a
+// PRICE_AUTHORITY row; `priceCents` stays at the documented placeholder anchor (4900) since no
+// standalone price exists. Dependencies are DOWN-ONLY (ADR-0003): this sits on the kernel's
+// validation floor alone.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
