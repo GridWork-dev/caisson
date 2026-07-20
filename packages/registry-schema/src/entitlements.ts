@@ -80,12 +80,13 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the SAME change that first indexes its package — its bare slug then resolves through the
  * ordinary indexed-module branch below.
  *
- * Currently reserved: the 2026-07-20 compliance-gap arming quartet — `access-review`,
- * `risk-register`, `trust-page` (prices locked at the pricing round; publish-armed this cut,
- * sellable + bundle membership flip in the post-publish PR once their first index entries
- * exist) and `artifact-render` (published-never-sold render substrate, the
- * platform-reads/pricebook posture — reserved only for this publishing-gap window). Each slug
- * leaves in the change that acknowledges its first index entry, per the rule above.
+ * Currently reserved: none. The 2026-07-20 compliance-gap arming quartet — `access-review`,
+ * `risk-register`, `trust-page`, and `artifact-render` (published-never-sold render substrate,
+ * the platform-reads/pricebook posture) — graduated in this same version cut: the cut created
+ * their first index entries (each at 0.2.0), so per the rule above their reservations leave in
+ * the change that acknowledges those entries. Index presence is not sellability: the three SKUs
+ * stay `sellable: false` until the post-publish membership PR flips them, and artifact-render
+ * is never sold.
  * `agent-usage` graduated at the 2026-07-18 full-catalog consume (its first index entry).
  * Prior graduations: `agent-trajectory` graduated 2026-07-17 — the slice-1 changeset
  * consume auto-ledgered/indexed `@caisson/agent-trajectory@0.2.0`, so per the rule above its
@@ -99,12 +100,7 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the same commit that creates its purchase row (or its package).
  */
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
-  new Set<string>([
-    "access-review",
-    "risk-register",
-    "trust-page",
-    "artifact-render",
-  ]);
+  new Set<string>([]);
 // agent-usage graduated 2026-07-18: indexed (sellable:false) by the agent-runtime consume,
 // so grants resolve via the index; it stays unsellable and in no bundle until its own
 // publish gate (operator lock). agent-trajectory graduated earlier, at its first index entry.

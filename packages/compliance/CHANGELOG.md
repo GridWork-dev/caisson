@@ -1,5 +1,18 @@
 # @caisson/compliance
 
+## 0.5.10
+
+### Patch Changes
+
+- Updated dependencies [dd94186]
+- Updated dependencies [fa79938]
+- Updated dependencies [ff2cc46]
+- Updated dependencies [0f2215e]
+- Updated dependencies [31d59fd]
+  - @caisson/compliance-core@0.6.0
+  - @caisson/frameworks-pack@0.6.0
+  - @caisson/signing-primitive@0.3.6
+
 ## 0.5.9
 
 ### Patch Changes
