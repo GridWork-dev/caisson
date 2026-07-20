@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-19
+updated: 2026-07-20
 status: live
 grounds:
   - docs/build-state.md
@@ -7,6 +7,40 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-07-20 — v2026.07.20.1 release train GREEN + deploy tail (Worker · site · intel)
+
+The v2026.07.20 tag's first ride FAILED CLOSED at the publish byte gate (`@caisson/kernel@0.5.3`
+packed ≠ recorded — the release-branch refresh recorded the row under a bun.lock resolution the
+squashed tag tree doesn't reproduce; the known lock-sensitive kernel-pack class). Repair per the
+gate's prescription: row re-recorded from a pristine frozen-lockfile worktree at the tag, the
+FULL byte gate then proven locally (`ci-publish-step --mode publish`, exit 0, every package
+byte-verified), successor tag `v2026.07.20.1` cut at the attestation commit `c30d6153` on the
+pre-wave chain (CI attached via throwaway-base PR #311, closed unmerged; readiness 9/9 local).
+**Train run 29744131724: ALL LEGS GREEN** — readiness, publish child 29744179767 (byte gate +
+R2 upload), mirror-sync, deploy-railway (inert no-op). Deploy tail executed same sitting:
+
+- **Registry Worker** redeployed (`registry/worker/deploy.sh`, version `7f4c0e35`): serves the
+  consumed index — `@caisson/kernel` `dist-tags.latest` `0.5.2 → 0.5.3` verified live at
+  `registry.caisson.sh`; `kernel-0.5.3.tgz` 200 from R2 (71,535 bytes). Brief propagation lag
+  (~1 min) showed the prior version — re-probe before diagnosing.
+- **caisson-site** redeployed (`railway up -y --service caisson-site --ci`, image `a05eeb86`,
+  `Deploy complete`) at main `1a78b64e`: glossary at 50 terms + the /updates coverage-window
+  section live. Probe 200.
+- **caisson-intel** rebuilt (`docker compose up -d --build`) for dep-digest transitive v2.
+- r2-parity probe re-dispatched post-upload (run 29745214071): **61 advisory misses,
+  byte-identical to the pre-ride set — leg 1 healed NOTHING, and that is structural.** Every
+  miss is a MID-CHAIN version (kernel-0.5.1, mcp-server-0.6.0/0.6.1, platform-reads-0.2.2/0.2.3,
+  pricebook-0.5.5/0.5.6, …): a consume not followed by a ride before the next consume strands
+  the intermediate version — the publish leg stages only the tag tree's CURRENT versions, so a
+  superseded version's tarball can never upload from any later train (the ride-after-consume
+  rule's permanent consequence). Zero buyer impact today (`latest` coverage green; the stranded
+  versions 404 and were never installable). Remediation forked on the tracker: version-delist
+  prune of the 61 (the established machinery) vs per-consume-commit backfill — operator's call.
+- The dud `v2026.07.20` tag + GitHub Release await operator deletion (tag mutation stays
+  operator-only). The compliance wave (PRs #304-#307) is merged on main but NOT in this tag —
+  its packages ride the next consume; the three new SKUs stay reserved-unpublished pending the
+  pricing round.
 
 ## 2026-07-19 (post-midnight) — dep-digest watcher live in the local intel daemon
 
