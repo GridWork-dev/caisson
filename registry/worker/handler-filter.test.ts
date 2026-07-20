@@ -402,20 +402,17 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
     // graduation holds: a source-manifest membership only realizes in the index at the next
     // consume (ADR-0178 lesson) — agent-trajectory rode exactly this path (excepted at its
     // encRef first-publish, auto-graduated when the version PR re-ledgered everything with
-    // it). The three reserved compliance SKUs (access-review, risk-register, trust-page)
-    // are mid-flight on the same two-consume arming: first-published sellable:false with no
-    // membership, joining Compliance + Everything at the sellable-flip consume, at which
-    // point the filter auto-stops excepting them. agent-usage stays indexed sellable:false
-    // with no membership until its own publish gate (2026-07-18 operator lock), and
-    // artifact-render is the published-never-sold render substrate (a dependency, not an
-    // entitlement) — both stay excepted indefinitely. Any OTHER module missing from
-    // everything's members and NOT named here still fails the guard.
+    // it), and the three compliance-gap SKUs (access-review, risk-register, trust-page)
+    // completed the same two-consume arming 2026-07-20: their names auto-expired when the
+    // sellable-flip consume granted everything membership, and they are now PRUNED from the
+    // allowlist entirely. agent-usage stays indexed sellable:false with no membership until
+    // its own publish gate (2026-07-18 operator lock), and artifact-render is the
+    // published-never-sold render substrate (a dependency, not an entitlement) — both stay
+    // excepted indefinitely. Any OTHER module missing from everything's members and NOT
+    // named here still fails the guard.
     const RIDER3_UNPUBLISHED = new Set([
       "@caisson/agent-trajectory",
       "@caisson/agent-usage",
-      "@caisson/access-review",
-      "@caisson/risk-register",
-      "@caisson/trust-page",
       "@caisson/artifact-render",
     ]);
     const everything = realIndex.modules.find(

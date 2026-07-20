@@ -44,6 +44,10 @@ export const SKU_RETAIL: Readonly<Record<string, number>> = {
   "field-crypto": 199,
   alerting: 149,
   "retention-runner": 199,
+  // Compliance-gap SKUs (first prices, the 2026-07-20 pricing round)
+  "access-review": 199,
+  "risk-register": 279,
+  "trust-page": 149,
   // AI-Production members (+ credits fold-in, ADR-0258 §2)
   "ai-meter": 199,
   "ai-evals": 199,
@@ -69,7 +73,9 @@ export const SKU_RETAIL: Readonly<Record<string, number>> = {
 /** Each bundle's retail (integer USD, ADR-0258 final numbers) — the `bundle − owned` base of an F8
  *  upgrade quote. Keyed by the shared `BundleId` vocabulary (ADR-0257 — never re-keyed). */
 export const BUNDLE_RETAIL: Readonly<Record<BundleId, number>> = {
-  compliance: 1049,
+  // Repriced 1049 -> 1449 at the 2026-07-20 pricing round as the three compliance-gap
+  // members joined (~70% of the enlarged member subtotal, the same below-sum band).
+  compliance: 1449,
   "ai-production": 739,
   "local-first": 629,
   "agentic-dev": 329,
@@ -83,6 +89,7 @@ const GENESIS = "2026-06-01T00:00:00.000Z"; // original edition members (ADR-002
 const STAGE2 = "2026-07-01T00:00:00.000Z"; // Stage-2 harvest members (alerting/retention/tool-exec/agent-runner)
 const CATALOG_REWORK = "2026-07-06T00:00:00.000Z"; // ADR-0257/0258 carves, fold-ins, net-new bundles
 const AGENT_RUNTIME = "2026-07-18T00:00:00.000Z"; // agent-runtime wave: agent-trajectory joins agentic-dev
+const COMPLIANCE_GAP = "2026-07-20T00:00:00.000Z"; // compliance-gap SKUs join (access-review/risk-register/trust-page)
 
 /**
  * F7 bundle-membership TIMELINE: `bundleId → (memberSku → ISO join instant)`. A member's join date
@@ -104,6 +111,9 @@ export const BUNDLE_MEMBERSHIP_BOOK: Readonly<
     "field-crypto": GENESIS,
     alerting: STAGE2,
     "retention-runner": STAGE2,
+    "access-review": COMPLIANCE_GAP,
+    "risk-register": COMPLIANCE_GAP,
+    "trust-page": COMPLIANCE_GAP,
   },
   "ai-production": {
     "ai-meter": GENESIS,

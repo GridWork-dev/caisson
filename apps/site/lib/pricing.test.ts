@@ -113,11 +113,11 @@ describe("formatPrice / formatUsd", () => {
 describe("renewalAmount (ADR-0260 §5 40%-X9 ladder)", () => {
   test("matches the locked ladder points", () => {
     // The ADR's worked examples: $199→$79 · $149→$59 · $129→$49 · $99→$39 · $49→$19, plus the
-    // six bundle prices ($1,049→$419 · $739→$289 · $629→$249 · $329→$129 · $399→$159 · $2,059→$819).
+    // six bundle prices ($1,449→$579 · $739→$289 · $629→$249 · $329→$129 · $399→$159 · $2,059→$819).
     expect(renewalAmount("ai-meter")).toBe(79); // $199
     expect(renewalAmount("guardrails")).toBe(59); // $149
     expect(renewalAmount("prompt-registry")).toBe(39); // $99
-    expect(renewalAmount("compliance")).toBe(419); // $1,049
+    expect(renewalAmount("compliance")).toBe(579); // $1,449
     expect(renewalAmount("everything")).toBe(819); // $2,059
   });
 
@@ -238,13 +238,13 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
   });
 
   test("the compliance member set nudges to the compliance bundle, never Everything", () => {
-    // Seven compliance members sum to $1,443 vs the $1,049 bundle (saves $394); Everything at
-    // $2,059 is dearer than the selection, so the persona bundle wins.
+    // Ten compliance members sum to $2,070 vs the $1,449 bundle (saves $621); Everything at
+    // $2,059 is dearer than the $1,449 persona bundle, so the persona bundle wins.
     const ids = modulesByBundle("compliance").map((m) => m.id);
     const s = buildStackSummary(ids);
-    expect(s.total).toBe(1443);
+    expect(s.total).toBe(2070);
     expect(s.upgrade?.target).toBe("compliance");
-    expect(s.upgrade?.saves).toBe(1443 - 1049);
+    expect(s.upgrade?.saves).toBe(2070 - 1449);
   });
 
   test("no offer when a la carte is already the cheapest path", () => {
