@@ -140,7 +140,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/agent-runner@0.1.2": {
       "key": "agent-runner/agent-runner-0.1.2.tgz",
@@ -256,7 +256,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/agent-trajectory@0.2.0": {
       "key": "agent-trajectory/agent-trajectory-0.2.0.tgz",
@@ -340,7 +340,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/agent-usage@0.2.0": {
       "key": "agent-usage/agent-usage-0.2.0.tgz",
@@ -407,7 +407,7 @@
           "@caisson/kernel": "0.5.3"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/agentic-dev@0.2.1": {
       "key": "agentic-dev/agentic-dev-0.2.1.tgz",
@@ -510,7 +510,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/ai-evals@0.2.1": {
       "key": "ai-evals/ai-evals-0.2.1.tgz",
@@ -616,7 +616,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/ai-kit@0.2.2": {
       "key": "ai-kit/ai-kit-0.2.2.tgz",
@@ -833,7 +833,7 @@
           "react-dom": "^19.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/ai-production@0.2.1": {
       "key": "ai-production/ai-production-0.2.1.tgz",
@@ -937,7 +937,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/analytics@0.2.0": {
       "key": "analytics/analytics-0.2.0.tgz",
@@ -993,7 +993,7 @@
           "@caisson/kernel": "0.5.3"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/audit-worm@0.2.2": {
       "key": "audit-worm/audit-worm-0.2.2.tgz",
@@ -1179,7 +1179,7 @@
           "react-dom": "^19.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/auth@0.2.2": {
       "key": "auth/auth-0.2.2.tgz",
@@ -1264,7 +1264,7 @@
           "@caisson/tenancy-rls": "0.5.5"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/billing-orchestration@0.3.0": {
       "key": "billing-orchestration/billing-orchestration-0.3.0.tgz",
@@ -1335,7 +1335,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/billing@0.4.0": {
       "key": "billing/billing-0.4.0.tgz",
@@ -1422,7 +1422,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/cli@0.2.2": {
       "key": "cli/cli-0.2.2.tgz",
@@ -1640,8 +1640,8 @@
     },
     "@caisson/cli@0.7.4": {
       "key": "cli/cli-0.7.4.tgz",
-      "shasum": "7cb391382dac0aa6a0d16e50f11d72f6d3a40b38",
-      "integrity": "sha512-qSPwpJix7ZncflO1AzeLK51HjvE5dL+ofemnJVGiUYkd9+Gr4Y9num43VfNYRrySPb3KGgR4mh3bGl99mt2axw==",
+      "shasum": "8a215c6cbc2ddd742b2da55db2e64cb4fa7a293e",
+      "integrity": "sha512-E4+2nFBUQTMp7hV8pD2UtsxxbfwCk34T41Dzud6vIJ94n+9y9fFMWpnRPoEvjf9HmaLuOjDcomIcdE67fQKwHQ==",
       "size": 24630,
       "meta": {
         "dependencies": {
@@ -1664,7 +1664,7 @@
           "node": ">=20.12.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/compliance-core@0.2.2": {
       "key": "compliance-core/compliance-core-0.2.2.tgz",
@@ -1778,7 +1778,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/compliance@0.3.0": {
       "key": "compliance/compliance-0.3.0.tgz",
@@ -2007,7 +2007,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/credits@0.3.1": {
       "key": "credits/credits-0.3.1.tgz",
@@ -2140,7 +2140,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/ds-manifest@0.2.0": {
       "key": "ds-manifest/ds-manifest-0.2.0.tgz",
@@ -2177,7 +2177,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/email@0.2.2": {
       "key": "email/email-0.2.2.tgz",
@@ -2278,7 +2278,7 @@
           "react-dom": "^19.2.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/everything@0.2.3": {
       "key": "everything/everything-0.2.3.tgz",
@@ -2400,7 +2400,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/frameworks-pack@0.3.0": {
       "key": "frameworks-pack/frameworks-pack-0.3.0.tgz",
@@ -2473,7 +2473,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/guardrails@0.3.1": {
       "key": "guardrails/guardrails-0.3.1.tgz",
@@ -2592,7 +2592,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/jobs@0.3.0": {
       "key": "jobs/jobs-0.3.0.tgz",
@@ -2719,7 +2719,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/kernel@0.4.0": {
       "key": "kernel/kernel-0.4.0.tgz",
@@ -2807,8 +2807,8 @@
     },
     "@caisson/kernel@0.5.3": {
       "key": "kernel/kernel-0.5.3.tgz",
-      "shasum": "074b01fd5786e2d98ca11e80781e7ccb9fa79e22",
-      "integrity": "sha512-K9grntLemQPtRvknqgdvFzbpl1mBdfGQB5Q7Z5er34cv9ak/y+QDEGIF8XF+YFcRKNvxOz1yjI+fydZZ3zcDIA==",
+      "shasum": "1afce9fba3edea5e2aa7f177c9ae573d9e4f2956",
+      "integrity": "sha512-SQMgUr8Es4h4oCBPUSKtyC4m82DN8tiEhCPdqxL9dwA2ohK6MZ5Pj9Ps+Dsq0p1BlbaYjW1naj3zWC9bqh+j8Q==",
       "size": 71535,
       "meta": {
         "dependencies": {
@@ -2818,7 +2818,7 @@
           "caisson-gate": "./src/gate.ts"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/license-verify@0.2.2": {
       "key": "license-verify/license-verify-0.2.2.tgz",
@@ -2903,7 +2903,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/local-ai@0.2.2": {
       "key": "local-ai/local-ai-0.2.2.tgz",
@@ -3009,7 +3009,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/local-privacy@0.1.2": {
       "key": "local-privacy/local-privacy-0.1.2.tgz",
@@ -3070,7 +3070,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/local-store@0.2.2": {
       "key": "local-store/local-store-0.2.2.tgz",
@@ -3187,7 +3187,7 @@
           "react-dom": "^19.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/local-sync@0.1.2": {
       "key": "local-sync/local-sync-0.1.2.tgz",
@@ -3248,7 +3248,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/mcp-server@0.2.2": {
       "key": "mcp-server/mcp-server-0.2.2.tgz",
@@ -3448,7 +3448,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/migrate@0.2.2": {
       "key": "migrate/migrate-0.2.2.tgz",
@@ -3547,7 +3547,7 @@
           "pg": "^8.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/observability@0.2.2": {
       "key": "observability/observability-0.2.2.tgz",
@@ -3724,7 +3724,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/org-controls@0.3.0": {
       "key": "org-controls/org-controls-0.3.0.tgz",
@@ -3800,7 +3800,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/platform-reads@0.1.3": {
       "key": "platform-reads/platform-reads-0.1.3.tgz",
@@ -3913,7 +3913,7 @@
           "@caisson/tenancy-rls": "0.5.5"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/pricebook@0.3.1": {
       "key": "pricebook/pricebook-0.3.1.tgz",
@@ -4044,7 +4044,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/prompt-registry@0.2.2": {
       "key": "prompt-registry/prompt-registry-0.2.2.tgz",
@@ -4161,7 +4161,7 @@
           "react-dom": "^19.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/provenance@0.2.1": {
       "key": "provenance/provenance-0.2.1.tgz",
@@ -4234,7 +4234,7 @@
           "@caisson/tenancy-rls": "0.5.5"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/registry-schema@0.2.1": {
       "key": "registry-schema/registry-schema-0.2.1.tgz",
@@ -4313,7 +4313,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/retention-runner@0.1.10": {
       "key": "retention-runner/retention-runner-0.1.10.tgz",
@@ -4353,7 +4353,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/retention-runner@0.1.3": {
       "key": "retention-runner/retention-runner-0.1.3.tgz",
@@ -4528,7 +4528,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/tenancy-rls@0.3.1": {
       "key": "tenancy-rls/tenancy-rls-0.3.1.tgz",
@@ -4613,7 +4613,7 @@
           "pg": "^8.16.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/tool-exec@0.1.3": {
       "key": "tool-exec/tool-exec-0.1.3.tgz",
@@ -4710,7 +4710,7 @@
           "zod": "^4.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/ui-pro@0.2.0": {
       "key": "ui-pro/ui-pro-0.2.0.tgz",
@@ -4795,7 +4795,7 @@
           "react-dom": "^19.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     },
     "@caisson/ui@0.3.0": {
       "key": "ui/ui-0.3.0.tgz",
@@ -4863,7 +4863,7 @@
           "react-dom": "^19.0.0"
         }
       },
-      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
+      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
     }
   }
 }
