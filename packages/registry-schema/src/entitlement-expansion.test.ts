@@ -113,20 +113,15 @@ describe("per-module bare-slug purchase-id form", () => {
   });
 
   test("RESERVED_MODULE_ENTITLEMENT_IDS holds exactly the open publishing-gap reservations", () => {
-    // The 2026-07-20 compliance-gap arming quartet is publish-armed but not yet indexed — each
-    // slug graduates (drops from this pin) in the change acknowledging its first index entry,
-    // the exact path agent-usage took 2026-07-18, agent-trajectory 2026-07-17 (indexed @ 0.2.0
-    // by the slice-1 consume), ui-pro (2026-07-07), and alerting/retention-runner before it.
-    // Index presence is not sellability: the three gap SKUs' sellable/price flip and bundle
-    // membership land in the post-publish PR; artifact-render stays sellable:false forever
-    // (published-never-sold render substrate). The fail-soft branch stays covered by the
-    // temp-root fixture suite in tooling/standards-gate catalog-checks.
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([
-      "access-review",
-      "artifact-render",
-      "risk-register",
-      "trust-page",
-    ]);
+    // Currently none open. The 2026-07-20 compliance-gap arming quartet (access-review,
+    // risk-register, trust-page, artifact-render) graduated in the version cut that created
+    // their first index entries — the exact path agent-usage took 2026-07-18, agent-trajectory
+    // 2026-07-17, ui-pro 2026-07-07, and alerting/retention-runner before it. Index presence
+    // is not sellability: the three gap SKUs' sellable/price flip and bundle membership land
+    // in the post-publish PR; artifact-render stays sellable:false forever (published-never-
+    // sold render substrate). The fail-soft branch stays covered by the temp-root fixture
+    // suite in tooling/standards-gate catalog-checks.
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([]);
   });
 
   test("with the reservation gone, an unindexed ui-pro fails closed like any unknown id", () => {

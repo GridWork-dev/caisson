@@ -3748,9 +3748,9 @@
     },
     "@caisson/registry-schema@0.5.7": {
       "key": "registry-schema/registry-schema-0.5.7.tgz",
-      "shasum": "057797f6ca1888915a9e3720dd8f8dfe7fece8c1",
-      "integrity": "sha512-BD6rt3ZZCRkyJrpydLPLRbpUICin3RRPDMDjb0blBmh4QSHhKY3I9s+RQjrT+IisDdXseBGOC37cmwxNx85f0A==",
-      "size": 41211,
+      "shasum": "04625c523813808d9295a5a1aff37ad2357ec27a",
+      "integrity": "sha512-JNj78k8/b39SZVw0NbU6HE404amJnfNgCDi+3N54jpJfnzKF1R+ahnRI8wn/3BQrG0IjewhzF9Whk9Qs3yofUQ==",
+      "size": 41172,
       "meta": {
         "dependencies": {
           "zod": "^4.0.0"
