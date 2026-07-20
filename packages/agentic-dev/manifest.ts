@@ -16,13 +16,14 @@ export default defineModule({
   priceCents: 32900,
   license: pkg.license,
   members: {
-    "@caisson/agentic-dev": "0.2.1",
+    "@caisson/agentic-dev": "0.2.3",
     "@caisson/agent-kernel": "0.6.0",
     "@caisson/agent-runner": "0.2.0",
-    // agent-trajectory joins at the version CARRYING the encrypted-parked-state wrap (0.3.0,
-    // ledgered by the 2026-07-18 consume) — a member pin must name the wrap-bearing sellable
-    // version, never merely a real published one (the pre-encRef 0.2.0 must never compose).
-    "@caisson/agent-trajectory": "0.3.0",
+    // agent-trajectory pins a wrap-bearing sellable version (post-0.3.0 encRef line — the
+    // pre-encRef 0.2.0 must never compose). Repointed 0.3.0 -> 0.3.4 (2026-07-20): 0.3.0's
+    // tarball was a consume-superseded stranding the registry prune retires once no served
+    // member pin names it; 0.3.4 is published, uploaded, and carries the same wrap.
+    "@caisson/agent-trajectory": "0.3.4",
     "@caisson/ai-config": "0.3.2",
     "@caisson/kernel": "0.5.0",
     "@caisson/local-store": "1.0.1",

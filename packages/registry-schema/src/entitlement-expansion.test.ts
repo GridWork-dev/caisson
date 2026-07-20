@@ -112,15 +112,21 @@ describe("per-module bare-slug purchase-id form", () => {
     expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
   });
 
-  test("RESERVED_MODULE_ENTITLEMENT_IDS is empty — every reservation has graduated", () => {
-    // agent-usage graduated 2026-07-18: the agent-runtime consume auto-ledgered/indexed it
-    // (sellable:false), so the reservation dropped in the change acknowledging that entry —
-    // the exact path agent-trajectory took 2026-07-17 (indexed @ 0.2.0 by the slice-1
-    // consume), ui-pro (2026-07-07), and alerting/retention-runner before it. Index presence
-    // is not sellability: agent-usage stays priced nowhere and in no bundle members map until
-    // its own publish gate (2026-07-18 operator lock). The fail-soft branch stays covered by
-    // the temp-root fixture suite in tooling/standards-gate catalog-checks.
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual([]);
+  test("RESERVED_MODULE_ENTITLEMENT_IDS holds exactly the open publishing-gap reservations", () => {
+    // The 2026-07-20 compliance-gap arming quartet is publish-armed but not yet indexed — each
+    // slug graduates (drops from this pin) in the change acknowledging its first index entry,
+    // the exact path agent-usage took 2026-07-18, agent-trajectory 2026-07-17 (indexed @ 0.2.0
+    // by the slice-1 consume), ui-pro (2026-07-07), and alerting/retention-runner before it.
+    // Index presence is not sellability: the three gap SKUs' sellable/price flip and bundle
+    // membership land in the post-publish PR; artifact-render stays sellable:false forever
+    // (published-never-sold render substrate). The fail-soft branch stays covered by the
+    // temp-root fixture suite in tooling/standards-gate catalog-checks.
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([
+      "access-review",
+      "artifact-render",
+      "risk-register",
+      "trust-page",
+    ]);
   });
 
   test("with the reservation gone, an unindexed ui-pro fails closed like any unknown id", () => {
