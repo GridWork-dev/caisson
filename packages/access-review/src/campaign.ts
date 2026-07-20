@@ -18,6 +18,7 @@
 import { randomUUID } from "node:crypto";
 import {
   ConflictError,
+  InternalError,
   NotFoundError,
   ValidationError,
   parseStrict,
@@ -106,6 +107,22 @@ function toCampaign(row: CampaignRow): AccessReviewCampaign {
   };
 }
 
+/** Normalizes the jsonb `reviewees` column to a real array. A `TenantExecutor` that decodes jsonb
+ *  to a JSON string rather than a parsed value (a driver difference, not something this module
+ *  controls) would otherwise degrade `row.reviewees.includes(...)` to SUBSTRING matching — a
+ *  roster bypass, since `"user"` is a substring of `"user-1"`. Normalize once here, at the single
+ *  choke point every caller reads the roster through; anything else fails closed, never guessed. */
+function normalizeReviewees(value: unknown): string[] {
+  if (Array.isArray(value)) return value as string[];
+  if (typeof value === "string") {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed as string[];
+  }
+  throw new InternalError(
+    "access-review: reviewees column did not decode to an array",
+  );
+}
+
 /** Loads one campaign row inside the caller's own tenant scope. Throws `NotFoundError` if absent
  *  — fail-closed, never treat a missing campaign as anything else. */
 async function selectCampaignRow(
@@ -124,7 +141,7 @@ async function selectCampaignRow(
       campaignId,
     });
   }
-  return row;
+  return { ...row, reviewees: normalizeReviewees(row.reviewees) };
 }
 
 /**
@@ -180,10 +197,20 @@ export async function openCampaign(
 
 /**
  * Record one reviewer decision. Fail-closed: refuses (`ValidationError`) a reviewee outside the
- * campaign's frozen roster, and refuses (`ConflictError`) a decision against an already-closed
- * campaign — decisions never land after the evidentiary close record. A reviewer may revise an
- * earlier decision before the campaign closes; the chain keeps every append,
- * `scanCampaignDecisions` takes the LATEST by sequence.
+ * campaign's frozen roster, and refuses (`ConflictError`) a decision against a campaign this read
+ * observes as already closed. A reviewer may revise an earlier decision before the campaign
+ * closes; the chain keeps every append, `scanCampaignDecisions` takes the LATEST by sequence.
+ *
+ * BEST-EFFORT, not atomic with `closeCampaign`: the `closed_at` check above is a plain read, not
+ * a CAS against `closeCampaign`'s own UPDATE+append. A decision racing a close at the deadline
+ * boundary can still interleave — this function's read observes `closed_at IS NULL`,
+ * `closeCampaign` then commits its UPDATE and appends the `campaign.closed` record, and only
+ * THEN does this function's own chain append land, after the close record. Nothing in the schema
+ * blocks a post-close chain append; the residual is app-level. It does not resurrect an
+ * already-reported `unresolved` reviewee — `scanCampaignDecisions` runs once, from the entries
+ * `closeCampaign` loaded at close time, so a decision landing after that scan is simply absent
+ * from it. Same class of residual the impersonation kernel's torn-begin note documents for
+ * `openCampaign` below.
  */
 export async function recordDecision(
   deps: CampaignDeps,
@@ -264,7 +291,10 @@ export function scanCampaignDecisions(
   reviewees: readonly string[],
 ): CampaignDecisionScan {
   const decisions = new Map<string, ReviewDecision>();
-  for (const entry of entries) {
+  // "Latest wins" depends on seq-ascending iteration order — sort defensively rather than trust
+  // the caller's ordering (entries is fully in memory already, so this is one cheap pass).
+  const bySeq = [...entries].sort((a, b) => a.seq - b.seq);
+  for (const entry of bySeq) {
     const decision = decisionFromEntry(entry, campaignId);
     if (decision !== null)
       decisions.set(decision.revieweeId, decision.decision);
@@ -279,6 +309,15 @@ export function scanCampaignDecisions(
  * window with reviewees left to decide. Sets `closed_at` (the column-scoped write, mirroring
  * `impersonation_session.ended_at`), then appends the `campaign.closed` record carrying the
  * unresolved list as-is — never auto-approved.
+ *
+ * TORN-CLOSE RESIDUAL: the `closed_at` UPDATE and the `campaign.closed` chain append are two
+ * separate operations, not one transaction (`chain.append` opens its OWN tenant scope, same as
+ * every other chain write in this module). If the append fails after the UPDATE has committed,
+ * the campaign is left TERMINALLY closed in Postgres — `closed_at` is set, `recordDecision`
+ * refuses any further decision against it — with NO close record on the chain, and this module
+ * has no re-drive path for that gap. The failure surfaces to the caller; nothing here retries or
+ * reconciles it. Same torn-write posture `openCampaign` documents for its own insert-then-append
+ * order.
  */
 export async function closeCampaign(
   deps: CampaignDeps,

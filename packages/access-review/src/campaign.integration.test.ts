@@ -214,6 +214,27 @@ describe("access-review campaign lifecycle — real Postgres + the real audit-wo
     ).rejects.toThrow(ValidationError);
   });
 
+  test("a substring of a roster entry is refused, never treated as a roster match", async () => {
+    // Guards against the roster check degrading to substring matching (e.g. a driver that hands
+    // back the jsonb column as a JSON string instead of a parsed array) — "user" must never be
+    // accepted just because "user-1" is on the roster.
+    const account = randomUUID();
+    const campaign = await openCampaign(deps, {
+      accountId: account,
+      reviewerId: "reviewer-5",
+      reviewees: ["user-1"],
+      deadlineMs: ONE_DAY_MS,
+    });
+    await expect(
+      recordDecision(deps, {
+        accountId: account,
+        campaignId: campaign.id,
+        revieweeId: "user",
+        decision: "approve",
+      }),
+    ).rejects.toThrow(ValidationError);
+  });
+
   test("the schedule.ts tasks run open + close end-to-end over a real JobQueue", async () => {
     const account = randomUUID();
     const queue = createInMemoryQueue([
