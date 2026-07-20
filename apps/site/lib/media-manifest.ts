@@ -48,7 +48,10 @@ export type DiagramKey =
   | "agent-lifecycle-fsm"
   | "runner-env-scrub"
   | "trajectory-run-record"
-  | "retention-erasure";
+  | "retention-erasure"
+  | "access-review-campaign"
+  | "risk-register-residual"
+  | "trust-page-redaction";
 
 /** The live-rendered kit components wired into a media slide (ADR-0308 full-depth, extending
  *  ADR-0290). A catalog module earns a `component` slide only when it genuinely ships a showable
@@ -110,6 +113,9 @@ const DIAGRAM_ORDER: readonly DiagramKey[] = [
   "runner-env-scrub",
   "trajectory-run-record",
   "retention-erasure",
+  "access-review-campaign",
+  "risk-register-residual",
+  "trust-page-redaction",
 ];
 
 const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
@@ -155,6 +161,12 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
     "Every step, tool proposal, approval, and spend appends to the run's event log — sensitive bodies referenced by digest, a paused run's resume material encrypted at rest — and project() replays the same log to the same projection every time.",
   "retention-erasure":
     "One validated erasure request fans out to every registered target with per-target error isolation — a failing store lands in its own result, never aborting the others — then exactly one reason-tagged audit row is written.",
+  "access-review-campaign":
+    "An access-review campaign opens over an imported membership snapshot; each reviewee gets a WORM-logged approve/revoke attestation; and the campaign closes only once every reviewee has decided or the deadline passes — any reviewee left undecided is flagged unresolved, never auto-approved.",
+  "risk-register-residual":
+    "A risk entry's residual is always the computed product of its likelihood and impact rating — never a value the caller supplies — and a register snapshot builds into a byte-stable risk-treatment-plan artifact.",
+  "trust-page-redaction":
+    "Every evidence-pack fact crosses an allowlist-based redaction gate before either output renders — a field absent from the allowlist never reaches the page, in HTML or JSON, no exceptions.",
 };
 
 // Which entries carry which authored diagram (`kind:slug`). Mapped to the top entries whose shipped
@@ -199,6 +211,9 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
   "runner-env-scrub": new Set(["module:agent-runner"]),
   "trajectory-run-record": new Set(["module:agent-trajectory"]),
   "retention-erasure": new Set(["module:retention-runner"]),
+  "access-review-campaign": new Set(["module:access-review"]),
+  "risk-register-residual": new Set(["module:risk-register"]),
+  "trust-page-redaction": new Set(["module:trust-page"]),
 };
 
 /** Which modules carry a live-component slide, and the honest one-line caption for each (ADR-0308

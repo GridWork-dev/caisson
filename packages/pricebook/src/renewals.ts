@@ -86,6 +86,11 @@ export const RENEWAL_BOOK: Record<string, RenewalBookEntry> = {
   // price created via tools/paddle-catalog-recreate.ts (its own marker-carrying "Updates
   // Renewal" parent; the earlier hand-built parent keeps the pre-existing rows above).
   pri_01kxvpjp4hga6v33nbx6nn0yw1: { renewsEntitlement: "agent-trajectory" },
+  // The compliance-gap trio joined the catalog 2026-07-20 (SKU-arming wave) — sandbox
+  // renewal prices created via tools/paddle-catalog-recreate.ts.
+  pri_01ky0fgqtdyankb7fh999ak7xc: { renewsEntitlement: "access-review" },
+  pri_01ky0fgqw89n4wrjysw4sgcray: { renewsEntitlement: "risk-register" },
+  pri_01ky0fgqy145zagcq0n3btxr5k: { renewsEntitlement: "trust-page" },
 };
 
 /** Validate a renewal-book override at a boundary (Zod `.strict()` per row). */

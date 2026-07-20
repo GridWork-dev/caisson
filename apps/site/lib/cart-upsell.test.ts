@@ -30,7 +30,7 @@ function bundle(id: string, amount: number): CartItem {
 describe("bestBundleUpsell", () => {
   test("empty / no-module cart → no suggestion", () => {
     expect(bestBundleUpsell([])).toBeUndefined();
-    expect(bestBundleUpsell([bundle("compliance", 1049)])).toBeUndefined();
+    expect(bestBundleUpsell([bundle("compliance", 1449)])).toBeUndefined();
   });
 
   test("overlap below 60% of the bundle price → no suggestion", () => {
@@ -39,28 +39,35 @@ describe("bestBundleUpsell", () => {
   });
 
   test("overlap ≥ 60% of the bundle price → suggests that bundle with pay-more delta", () => {
-    // Compliance ($1049): compliance-core 299 + frameworks-pack 249 + field-crypto 199 = 747.
-    // 747 ≥ 60% of 1049 (629.4) → qualifies; delta = 1049 - 747 = 302 (pay more for the whole bundle).
+    // Compliance ($1449): compliance-core 299 + frameworks-pack 249 + field-crypto 199 +
+    // retention-runner 199 + alerting 149 = 1095. 1095 ≥ 60% of 1449 (869.4) → qualifies;
+    // delta = 1449 - 1095 = 354 (pay more for the whole bundle). retention-runner/alerting
+    // (not signing-primitive) keep Provenance's overlap at field-crypto alone (199 < 239.4),
+    // so Compliance is the only qualifier.
     const u = bestBundleUpsell([
       mod("compliance-core"),
       mod("frameworks-pack"),
       mod("field-crypto"),
+      mod("retention-runner"),
+      mod("alerting"),
     ]);
     expect(u?.bundleId).toBe("compliance");
-    expect(u?.overlapSum).toBe(747);
-    expect(u?.bundlePrice).toBe(1049);
-    expect(u?.delta).toBe(302);
-    expect(u?.memberCount).toBe(3);
+    expect(u?.overlapSum).toBe(1095);
+    expect(u?.bundlePrice).toBe(1449);
+    expect(u?.delta).toBe(354);
+    expect(u?.memberCount).toBe(5);
     expect([...(u?.memberItemIds ?? [])].sort()).toEqual([
+      "module:alerting",
       "module:compliance-core",
       "module:field-crypto",
       "module:frameworks-pack",
+      "module:retention-runner",
     ]);
   });
 
   test("a bundle already in the cart is never suggested", () => {
     const cart = [
-      bundle("compliance", 1049),
+      bundle("compliance", 1449),
       mod("compliance-core"),
       mod("frameworks-pack"),
       mod("field-crypto"),
@@ -71,7 +78,7 @@ describe("bestBundleUpsell", () => {
   test("picks the bundle the cart covers best when the threshold gates the others", () => {
     // signing-primitive 199 + audit-worm 149 + field-crypto 199 = 547.
     // Provenance ($399): all three are members, overlap 547 ≥ 239.4 → qualifies, coverage 547/547 = 1.
-    // Compliance ($1049): the same 547 is < 629.4 → gated out. Result must be provenance.
+    // Compliance ($1449): the same 547 is < 869.4 → gated out. Result must be provenance.
     const u = bestBundleUpsell([
       mod("signing-primitive"),
       mod("audit-worm"),

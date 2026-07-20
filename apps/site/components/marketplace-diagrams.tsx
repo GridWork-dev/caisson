@@ -1092,6 +1092,64 @@ function RetentionErasure() {
   );
 }
 
+/** @caisson/access-review — the campaign lifecycle (src/campaign.ts): open over an imported
+ *  membership snapshot, each reviewee gets a WORM-logged approve/revoke attestation onto the
+ *  tenant's existing audit chain, and close only once every reviewee has decided or the
+ *  deadline passes — never both, never neither — with any undecided reviewee flagged unresolved,
+ *  never auto-approved. */
+function AccessReviewCampaign() {
+  return (
+    <StageFlow
+      title="An access-review campaign opens over an imported membership snapshot; each reviewee gets a WORM-logged approve/revoke attestation; and the campaign closes only once every reviewee has decided or the deadline passes — any reviewee left undecided is flagged unresolved, never auto-approved."
+      bar="access-review-campaign.svg"
+      stages={[
+        { head: "snapshot", sub: "imported roster" },
+        { head: "attest", sub: "approve · revoke", tone: "accent" },
+        { head: "WORM log", sub: "audit-worm chain", tone: "accent" },
+        { head: "close", sub: "unresolved flagged", tone: "danger" },
+      ]}
+      note="complete or past deadline — never both, never neither"
+    />
+  );
+}
+
+/** @caisson/risk-register — the scored register (src/model.ts + src/treatment-plan.ts): a risk
+ *  entry's residual is ALWAYS the computed product of its likelihood and impact rating, never a
+ *  caller-supplied value, and a register snapshot builds into a byte-stable risk-treatment-plan
+ *  artifact. */
+function RiskRegisterResidual() {
+  return (
+    <StageFlow
+      title="A risk entry's residual is always the computed product of its likelihood and impact rating — never a value the caller supplies — and a register snapshot builds into a byte-stable risk-treatment-plan artifact."
+      bar="risk-register-residual.svg"
+      stages={[
+        { head: "risk entry", sub: "likelihood x impact" },
+        { head: "residual", sub: "computed, not freeform", tone: "accent" },
+        { head: "treatment plan", sub: "evidence artifact", tone: "success" },
+      ]}
+      note="an operator override is its own chained exception, never a silent edit"
+    />
+  );
+}
+
+/** @caisson/trust-page — the redaction boundary (src/facts.ts + src/render.ts): every evidence-pack
+ *  fact crosses the same allowlist-based redaction (@caisson/artifact-render) before either output
+ *  renders — a field absent from the allowlist never reaches the page, in HTML or JSON. */
+function TrustPageRedaction() {
+  return (
+    <StageFlow
+      title="Every evidence-pack fact crosses an allowlist-based redaction gate before either output renders — a field absent from the allowlist never reaches the page, in HTML or JSON, no exceptions."
+      bar="trust-page-redaction.svg"
+      stages={[
+        { head: "evidence pack", sub: "posture + crosswalk" },
+        { head: "allowlist redact", sub: "default-deny", tone: "accent" },
+        { head: "trust page", sub: "static HTML + JSON", tone: "success" },
+      ]}
+      note="the default allowlist ships aggregate posture only — no tenant id, no raw chain hash"
+    />
+  );
+}
+
 const DIAGRAMS: Record<DiagramKey, () => React.ReactElement> = {
   "rls-deny": RlsDeny,
   "audit-chain": AuditChain,
@@ -1114,6 +1172,9 @@ const DIAGRAMS: Record<DiagramKey, () => React.ReactElement> = {
   "runner-env-scrub": RunnerEnvScrub,
   "trajectory-run-record": TrajectoryRunRecord,
   "retention-erasure": RetentionErasure,
+  "access-review-campaign": AccessReviewCampaign,
+  "risk-register-residual": RiskRegisterResidual,
+  "trust-page-redaction": TrustPageRedaction,
 };
 
 export function MarketplaceDiagram({ name }: { name: DiagramKey }) {
