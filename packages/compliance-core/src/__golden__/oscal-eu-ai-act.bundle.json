@@ -72,7 +72,7 @@
             {
               "uuid": "00000000-0000-4000-8000-000000000006",
               "title": "RISK-MANAGEMENT.AI-REGISTER / substrate.ai-risk-register",
-              "description": "all 2 AI risks are assessed and mitigated",
+              "description": "all 2 AI risks are assessed with a treatment plan on record",
               "methods": [
                 "EXAMINE"
               ],
@@ -118,7 +118,7 @@
             {
               "uuid": "00000000-0000-4000-8000-000000000007",
               "title": "RISK-MANAGEMENT.AI-REGISTER — AI risk register maintained",
-              "description": "A risk register enumerates each AI lane's risks; every entry is assessed and mitigated over the lifecycle.",
+              "description": "A risk register enumerates each AI lane's risks; every entry is assessed with a treatment plan on record over the lifecycle.",
               "target": {
                 "type": "objective-id",
                 "target-id": "RISK-MANAGEMENT.AI-REGISTER",
@@ -213,7 +213,7 @@
         {
           "uuid": "00000000-0000-4000-8000-000000000013",
           "title": "RISK-MANAGEMENT.AI-REGISTER / substrate.ai-risk-register",
-          "description": "all 2 AI risks are assessed and mitigated",
+          "description": "all 2 AI risks are assessed with a treatment plan on record",
           "methods": [
             "EXAMINE"
           ],

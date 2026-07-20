@@ -8,7 +8,14 @@
 // `modulePageSpec` (module-page-spec.tsx) turns a record into the PageSpec the shared
 // <PageSections> renderer consumes; the buy rail is page chrome, not a section.
 
-import { bundlePrice } from "./pricing";
+import { bundlePrice, formatUsd, moduleAmount } from "./pricing";
+
+/** A module's standalone display price straight from the canonical catalog — never a
+ *  hand-typed literal (the depth-page prose figures drifted silently when literal, and two
+ *  notes even shipped non-interpolating quotes rendering raw source). */
+function modulePrice(slug: string): string {
+  return formatUsd(moduleAmount(slug));
+}
 
 /** One artifact proof block: real package code, cited by file. */
 export interface ModulePageArtifact {
@@ -114,7 +121,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["hipaa-technical-safeguards", "row-level-security"],
     sells: {
       edition: "Compliance",
-      note: `Sold standalone at $199, or as one of the primitives composing the ${bundlePrice("compliance")} Compliance bundle alongside audit-worm, retention-runner, and the alert pipeline.`,
+      note: `Sold standalone at ${modulePrice("field-crypto")}, or as one of the primitives composing the ${bundlePrice("compliance")} Compliance bundle alongside audit-worm, retention-runner, and the alert pipeline.`,
     },
   },
   {
@@ -264,7 +271,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["worm-retention-policy", "row-level-security"],
     sells: {
       edition: "Compliance",
-      note: `@caisson/compliance composes retention-runner at runtime as a real workspace:* dependency (ADR-0205) — buy it standalone at $199 or get it inside the ${bundlePrice("compliance")} Compliance bundle.`,
+      note: `@caisson/compliance composes retention-runner at runtime as a real workspace:* dependency (ADR-0205) — buy it standalone at ${modulePrice("retention-runner")} or get it inside the ${bundlePrice("compliance")} Compliance bundle.`,
     },
   },
   {
@@ -341,7 +348,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["soc2-audit-log", "control-to-code-mapping"],
     sells: {
       edition: "Compliance",
-      note: "Alerting is a real workspace:* dependency that the Compliance bundle re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at $149 or get it composed into Compliance.",
+      note: `Alerting is a real workspace:* dependency that the Compliance bundle re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at ${modulePrice("alerting")} or get it composed into Compliance.`,
     },
   },
   {
@@ -488,7 +495,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: [],
     sells: {
       edition: "ai-kit",
-      note: "Sold standalone at $199, and included in the AI-Production bundle alongside ai-meter, guardrails, and prompt-registry — and in Everything, which carries every sellable module by construction.",
+      note: `Sold standalone at ${modulePrice("ai-evals")}, and included in the AI-Production bundle alongside ai-meter, guardrails, and prompt-registry — and in Everything, which carries every sellable module by construction.`,
     },
   },
   {
@@ -563,7 +570,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: [],
     sells: {
       edition: "ai-kit",
-      note: `Guardrails ships inside the ${bundlePrice("ai-production")} AI-Production bundle (with ai-meter and prompt-registry) or standalone at $149.`,
+      note: `Guardrails ships inside the ${bundlePrice("ai-production")} AI-Production bundle (with ai-meter and prompt-registry) or standalone at ${modulePrice("guardrails")}.`,
     },
   },
   {
@@ -640,7 +647,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["row-level-security"],
     sells: {
       edition: "ai-kit",
-      note: `Prompt registry is one of the modules composing the ${bundlePrice("ai-production")} AI-Production bundle — the inference gateway resolves every promptRef through it before rendering and metering a call. Buy it standalone at $99, or get it with ai-meter and guardrails in the bundle, or in the ${bundlePrice("everything")} Everything bundle — the whole catalog, one purchase.`,
+      note: `Prompt registry is one of the modules composing the ${bundlePrice("ai-production")} AI-Production bundle — the inference gateway resolves every promptRef through it before rendering and metering a call. Buy it standalone at ${modulePrice("prompt-registry")}, or get it with ai-meter and guardrails in the bundle, or in the ${bundlePrice("everything")} Everything bundle — the whole catalog, one purchase.`,
     },
   },
   {
@@ -714,7 +721,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: [],
     sells: {
       edition: "local-first",
-      note: `Local vector store is the retrieval engine inside the ${bundlePrice("local-first")} Local-first bundle, alongside on-device inference and the privacy gate. Buy it standalone ($99) to add hybrid search to any stack without the rest of the bundle.`,
+      note: `Local vector store is the retrieval engine inside the ${bundlePrice("local-first")} Local-first bundle, alongside on-device inference and the privacy gate. Buy it standalone (${modulePrice("local-store")}) to add hybrid search to any stack without the rest of the bundle.`,
     },
   },
   {
@@ -788,7 +795,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["hash-chain-audit-trail"],
     sells: {
       edition: "agentic-dev",
-      note: `Agent kernel ($199) and agent-runner ($49) are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the bundle for the assembled loop.`,
+      note: `Agent kernel (${modulePrice("agent-kernel")}) and agent-runner (${modulePrice("agent-runner")}) are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the bundle for the assembled loop.`,
     },
   },
   {
@@ -864,7 +871,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: [],
     sells: {
       edition: "Agentic-Dev",
-      note: `$49 à la carte, or included in the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel.`,
+      note: `${modulePrice("agent-runner")} à la carte, or included in the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel.`,
     },
   },
   {
@@ -947,7 +954,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "Agentic-Dev",
-      note: "$49 à la carte, or included in the Agentic-Dev bundle alongside agent-kernel, agent-runner, and local-store — and in the Everything bundle, which carries every sellable module by construction.",
+      note: `${modulePrice("agent-trajectory")} à la carte, or included in the Agentic-Dev bundle alongside agent-kernel, agent-runner, and local-store — and in the Everything bundle, which carries every sellable module by construction.`,
     },
   },
   {
@@ -1026,7 +1033,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "agentic-dev",
-      note: 'Sold standalone at $99, or composed as a real workspace:* dependency of @caisson/agent-dev (packages/agent-dev/package.json) inside the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel, agent-runner, and the local hybrid-memory store.',
+      note: `Sold standalone at ${modulePrice("tool-exec")}, or composed as a real workspace:* dependency of @caisson/agent-dev (packages/agent-dev/package.json) inside the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel, agent-runner, and the local hybrid-memory store.`,
     },
   },
   {
@@ -1109,7 +1116,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "platform",
-      note: "Sold standalone at $249 — no persona bundle grants it (ADR-0257 §1.3 carve puts it beside billing-orchestration and ui-pro as a `bundles: []` platform SKU), so it's a deliberate standalone line on any stack; it's included only by construction inside the ${bundlePrice(\"everything\")} Everything bundle, the sole bundle that carries every sellable SKU (ADR-0258).",
+      note: `Sold standalone at ${modulePrice("org-controls")} — no persona bundle grants it (ADR-0257 §1.3 carve puts it beside billing-orchestration and ui-pro as a \`bundles: []\` platform SKU), so it's a deliberate standalone line on any stack; it's included only by construction inside the ${bundlePrice("everything")} Everything bundle, the sole bundle that carries every sellable SKU (ADR-0258).`,
     },
   },
   {
@@ -1193,7 +1200,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "Compliance",
-      note: "Sold standalone at $299, or as one of the carved primitives composing the $1,049 Compliance bundle alongside frameworks-pack, signing-primitive, audit-worm, field-crypto, and retention-runner.",
+      note: `Sold standalone at ${modulePrice("compliance-core")}, or as one of the carved primitives composing the ${bundlePrice("compliance")} Compliance bundle alongside frameworks-pack, signing-primitive, audit-worm, field-crypto, and retention-runner.`,
     },
   },
   {
@@ -1275,7 +1282,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "platform",
-      note: "Sold standalone at $99 — no persona bundle includes it (a platform SKU, standalone by design); it's part of the Everything bundle, the whole catalog in one purchase.",
+      note: `Sold standalone at ${modulePrice("billing-orchestration")} — no persona bundle includes it (a platform SKU, standalone by design); it's part of the Everything bundle, the whole catalog in one purchase.`,
     },
   },
   {
@@ -1351,7 +1358,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["hash-chain-audit-trail", "signed-audit-anchor"],
     sells: {
       edition: "none",
-      note: "Sold standalone at $129 — no persona bundle grants it (standalone placement, no persona-bundle membership at v1), so it stays its own line on Compliance, AI-Production, Local-first, Agentic-Dev, and Provenance. The whole-catalog Everything bundle does include it, like every sellable module. It's the interactive layer each persona bundle's own dashboards reach for — Compliance's audit views, AI-Production's model-quality consoles — without ever being one of their bundle line items.",
+      note: `Sold standalone at ${modulePrice("ui-pro")} — no persona bundle grants it (standalone placement, no persona-bundle membership at v1), so it stays its own line on Compliance, AI-Production, Local-first, Agentic-Dev, and Provenance. The whole-catalog Everything bundle does include it, like every sellable module. It's the interactive layer each persona bundle's own dashboards reach for — Compliance's audit views, AI-Production's model-quality consoles — without ever being one of their bundle line items.`,
     },
   },
   {
@@ -1427,7 +1434,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["fail-closed", "byok", "llm-cost-control"],
     sells: {
       edition: "local-first",
-      note: "On-device inference is the InferenceBackend seam inside the $629 Local-first bundle, alongside local vector search and the privacy egress gate. Buy it standalone ($249) to add hash-verified on-device embeddings — with an optional metered hosted lane — to any stack without the rest of the bundle.",
+      note: `On-device inference is the InferenceBackend seam inside the ${bundlePrice("local-first")} Local-first bundle, alongside local vector search and the privacy egress gate. Buy it standalone (${modulePrice("local-inference")}) to add hash-verified on-device embeddings — with an optional metered hosted lane — to any stack without the rest of the bundle.`,
     },
   },
   {
@@ -1505,7 +1512,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["fail-closed", "hipaa-technical-safeguards"],
     sells: {
       edition: "local-first",
-      note: "Sold standalone at $99, or as one of the three local-first primitives — alongside local-sync and local-inference — composing the $629 Local-first bundle. It's a real workspace:* dependency of @caisson/local-inference's rented-backend transport (not just a manifest listing), which routes every credentialed request through guard.fetchAs before it's built.",
+      note: `Sold standalone at ${modulePrice("local-privacy")}, or as one of the three local-first primitives — alongside local-sync and local-inference — composing the ${bundlePrice("local-first")} Local-first bundle. It's a real workspace:* dependency of @caisson/local-inference's rented-backend transport (not just a manifest listing), which routes every credentialed request through guard.fetchAs before it's built.`,
     },
   },
   {
@@ -1583,7 +1590,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["fail-closed", "multi-tenant-isolation"],
     sells: {
       edition: "local-first",
-      note: 'Local sync is the offline-convergence engine inside the ${bundlePrice("local-first")} Local-first bundle, alongside on-device inference and the privacy egress gate. Buy it standalone at $199 to add two-way sync to any stack without the rest of the bundle.',
+      note: `Local sync is the offline-convergence engine inside the ${bundlePrice("local-first")} Local-first bundle, alongside on-device inference and the privacy egress gate. Buy it standalone at ${modulePrice("local-sync")} to add two-way sync to any stack without the rest of the bundle.`,
     },
   },
   {
@@ -1665,7 +1672,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "compliance",
-      note: "Sold standalone at $249, or as the framework/crosswalk layer of the Compliance bundle alongside compliance-core (the evidence-pack generator that renders against these catalogs) and signing-primitive.",
+      note: `Sold standalone at ${modulePrice("frameworks-pack")}, or as the framework/crosswalk layer of the Compliance bundle alongside compliance-core (the evidence-pack generator that renders against these catalogs) and signing-primitive.`,
     },
   },
   {
@@ -1747,7 +1754,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "Compliance",
-      note: "Sold standalone at $199, or as one of the primitives composing two bundles: the Compliance bundle and the Provenance bundle (alongside audit-worm and field-crypto) — the same package either way, never a promise of it.",
+      note: `Sold standalone at ${modulePrice("signing-primitive")}, or as one of the primitives composing two bundles: the Compliance bundle and the Provenance bundle (alongside audit-worm and field-crypto) — the same package either way, never a promise of it.`,
     },
   },
   {
@@ -1827,7 +1834,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "ai-production",
-      note: "Sold standalone at $149, or bundled into the $739 AI-Production bundle alongside ai-meter, ai-evals, guardrails, and prompt-registry — the same wallet ai-meter's reserve()/reconcile() grant() and debit() against directly.",
+      note: `Sold standalone at ${modulePrice("credits")}, or bundled into the ${bundlePrice("ai-production")} AI-Production bundle alongside ai-meter, ai-evals, guardrails, and prompt-registry — the same wallet ai-meter's reserve()/reconcile() grant() and debit() against directly.`,
     },
   },
 ];

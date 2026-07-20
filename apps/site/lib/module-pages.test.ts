@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { GLOSSARY_TERMS } from "./glossary";
 import { MODULE_MARKS } from "./marks";
 import { MODULE_PAGES } from "./module-pages";
-import { MODULE_PRICES } from "./pricing";
+import { BUNDLE_PRICES, MODULE_PRICES } from "./pricing";
 
 describe("MODULE_PAGES (depth-page records)", () => {
   test("every depth-page record is a real sellable module (subset of the catalog)", () => {
@@ -78,6 +78,29 @@ describe("MODULE_PAGES (depth-page records)", () => {
       );
       if (bundled) {
         expect(`${r.slug}: ${claimsNoBundle}`).toBe(`${r.slug}: false`);
+      }
+    }
+  });
+
+  test("every dollar figure in a sells note is a catalog-derived amount, and nothing renders raw source", () => {
+    // The 19 standalone figures were literal strings and three notes shipped in non-interpolating
+    // quotes, rendering raw `${bundlePrice("…")}` on the live page. The notes now derive via
+    // modulePrice()/bundlePrice(); this pins both failure modes: a `${` surviving to the rendered
+    // string is the quote bug, and a rendered dollar figure that is no catalog amount is drift.
+    const catalogAmounts = new Set<string>(
+      MODULE_PRICES.map((m) => `$${m.amount.toLocaleString("en-US")}`),
+    );
+    for (const b of BUNDLE_PRICES) {
+      catalogAmounts.add(`$${b.amount.toLocaleString("en-US")}`);
+    }
+    for (const r of MODULE_PAGES) {
+      expect(`${r.slug}: ${r.sells.note.includes("${")}`).toBe(
+        `${r.slug}: false`,
+      );
+      for (const fig of r.sells.note.match(/\$\d{1,3}(?:,\d{3})*/g) ?? []) {
+        expect(`${r.slug}: ${fig} known=${catalogAmounts.has(fig)}`).toBe(
+          `${r.slug}: ${fig} known=true`,
+        );
       }
     }
   });
