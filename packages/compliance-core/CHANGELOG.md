@@ -1,5 +1,42 @@
 # @caisson/compliance-core
 
+## 0.6.0
+
+### Minor Changes
+
+- dd94186: Compliance evidence packs can now be re-run on a schedule instead of only on demand. A new drift
+  monitor re-executes your registered evidence collectors, compares the fresh results against the
+  last run, and flags exactly which controls changed status. Buyers can accept a known, named gap for
+  a limited time (with an expiry and a required reason) so an already-acknowledged issue doesn't
+  re-alert on every run — but a genuinely new or different problem on that same control still alerts,
+  even while an acceptance is active. Every scheduled run is committed to the existing tamper-evident
+  audit trail, so the history of compliance posture over time is itself verifiable, not just the
+  latest snapshot.
+- ff2cc46: Adds an ISO/IEC 27001:2022 Statement of Applicability generator. A new pure function turns
+  the shipped ISO 27001 crosswalk plus a per-control evidence-status map into applicability
+  rows (control, applicable, justification, status, evidence pointer); a control with no
+  crosswalk row is always marked unresolved rather than guessed. The rows can be rendered
+  into an OSCAL component-definition document, validated against the official schema, and
+  attached to a generated evidence pack as an additional, clearly separated section that
+  never changes the pack's existing signed contents.
+
+### Patch Changes
+
+- fa79938: The EU AI Act risk-register evidence collector now runs on the shared risk-register model instead
+  of its own bespoke shape, with no change to what it reports: an empty register is still unresolved,
+  and a risk with no treatment plan on record is still flagged. Existing evidence packs are unaffected.
+- 0f2215e: The AI risk-register collector's evidence wording now says exactly what it verifies: a
+  treatment plan is on record for every risk. The previous "assessed and mitigated" phrasing
+  overclaimed — a recorded plan is not proof its measures are in force, and evidence language
+  must never say more than the traversal can attest. Golden evidence fixtures re-baselined to the
+  corrected wording; verdict logic is unchanged.
+- Updated dependencies [ff2cc46]
+- Updated dependencies [fa79938]
+- Updated dependencies [ff2cc46]
+  - @caisson/artifact-render@0.2.0
+  - @caisson/risk-register@0.2.0
+  - @caisson/frameworks-pack@0.6.0
+
 ## 0.5.1
 
 ### Patch Changes

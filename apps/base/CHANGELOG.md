@@ -1,5 +1,12 @@
 # @caisson/app-base
 
+## 0.0.19
+
+### Patch Changes
+
+- @caisson/credits@0.5.9
+- @caisson/mcp-server@0.6.5
+
 ## 0.0.18
 
 ### Patch Changes

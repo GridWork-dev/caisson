@@ -1,5 +1,12 @@
 # @caisson/ai-kit
 
+## 0.5.5
+
+### Patch Changes
+
+- @caisson/credits@0.5.9
+- @caisson/ai-meter@1.0.9
+
 ## 0.5.4
 
 ### Patch Changes
