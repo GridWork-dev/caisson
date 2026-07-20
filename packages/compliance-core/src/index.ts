@@ -30,6 +30,10 @@ export * from "./evidence/oscal-assessment-plan.ts";
 // The generated OSCAL catalog expression of the caisson canonical control catalog (SPEC
 // oscal-spine (a), ADR-0363/ADR-0364).
 export * from "./evidence/oscal-catalog-export.ts";
+// The OSCAL `component-definition` expression of the ISO/IEC 27001:2022 Statement of Applicability —
+// renders `@caisson/frameworks-pack`'s `SoaRow[]` through `@caisson/artifact-render`'s citation-row
+// seam into an OSCAL document.
+export * from "./evidence/oscal-iso27001-soa.ts";
 
 // --- Control<->collector binding table (PLAN Group E) — a derived artifact, not a config layer. --
 export * from "./evidence/binding-table.ts";

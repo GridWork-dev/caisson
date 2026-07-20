@@ -502,6 +502,21 @@
         "typescript": "catalog:",
       },
     },
+    "packages/artifact-render": {
+      "name": "@caisson/artifact-render",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/audit-harness": {
       "name": "@caisson/audit-harness",
       "version": "1.0.1",
@@ -706,6 +721,7 @@
       "name": "@caisson/compliance-core",
       "version": "0.5.1",
       "dependencies": {
+        "@caisson/artifact-render": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
         "@caisson/frameworks-pack": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -1339,6 +1355,23 @@
         "typescript": "catalog:",
       },
     },
+    "packages/trust-page": {
+      "name": "@caisson/trust-page",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/artifact-render": "workspace:*",
+        "@caisson/compliance-core": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/frameworks-pack": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/ui": {
       "name": "@caisson/ui",
       "version": "0.6.2",
@@ -1791,6 +1824,8 @@
 
     "@caisson/app-compliance": ["@caisson/app-compliance@workspace:apps/compliance"],
 
+    "@caisson/artifact-render": ["@caisson/artifact-render@workspace:packages/artifact-render"],
+
     "@caisson/audit-harness": ["@caisson/audit-harness@workspace:packages/audit-harness"],
 
     "@caisson/audit-worm": ["@caisson/audit-worm@workspace:packages/audit-worm"],
@@ -1900,6 +1935,8 @@
     "@caisson/testing": ["@caisson/testing@workspace:tooling/testing"],
 
     "@caisson/tool-exec": ["@caisson/tool-exec@workspace:packages/tool-exec"],
+
+    "@caisson/trust-page": ["@caisson/trust-page@workspace:packages/trust-page"],
 
     "@caisson/tsconfig": ["@caisson/tsconfig@workspace:tooling/tsconfig"],
 

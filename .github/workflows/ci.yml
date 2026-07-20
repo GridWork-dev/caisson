@@ -236,3 +236,8 @@ jobs:
       - name: validate the vendored NIST SP 800-53 rev5 catalog (corruption check, binding req 1)
         run: |
           oscal-cli validate --disable-constraint-validation packages/frameworks-pack/src/vendor/nist-800-53-rev5-catalog.json
+      - name: generate + validate the ISO/IEC 27001:2022 Statement of Applicability (component-definition, v1.2.2)
+        run: |
+          cd packages/compliance-core
+          bun run scripts/gen-iso27001-soa-for-ci.ts /tmp/caisson-iso27001-soa.oscal.json
+          oscal-cli validate --disable-constraint-validation /tmp/caisson-iso27001-soa.oscal.json

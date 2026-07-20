@@ -101,6 +101,15 @@ export interface GenerateEvidencePackInput {
    * pack still generates normally with no external-anchor entry.
    */
   readonly externalAnchor?: ExternalAnchorAttachment;
+  /**
+   * Optionally, a pre-rendered ISO/IEC 27001:2022 Statement-of-Applicability artifact (SPEC piece 2:
+   * "evidence pack additive section") — build it with `buildIso27001SoaArchiveEntry(toOscalIso27001Soa(...))`.
+   * Attached DETACHED, exactly like `externalAnchor`: an extra archive entry (`soa/iso-27001.json`),
+   * NEVER a field merged into the canonical manifest body — this generator is framework-agnostic and
+   * does not know what an SoA is, only that it is bytes under a name. Absence is normal: the SoA is
+   * ISO-27001-specific and optional for every other framework pack.
+   */
+  readonly iso27001Soa?: { readonly name: string; readonly data: Uint8Array };
 }
 
 /** The generated pack: the canonical body, its bytes, the deterministic archive + digest, and the edge clock. */
@@ -373,6 +382,7 @@ function buildArchiveEntries(
     readonly data: Uint8Array;
     readonly grade: AnchorGrade;
   },
+  iso27001Soa?: { readonly name: string; readonly data: Uint8Array },
 ): ArchiveFile[] {
   const enc = new TextEncoder();
   const files: ArchiveFile[] = [
@@ -390,6 +400,9 @@ function buildArchiveEntries(
   }
   if (external !== undefined) {
     files.push({ name: external.name, data: external.data });
+  }
+  if (iso27001Soa !== undefined) {
+    files.push({ name: iso27001Soa.name, data: iso27001Soa.data });
   }
   return files;
 }
@@ -475,7 +488,12 @@ export function generateEvidencePack(
       : undefined;
   const canonicalManifest = canonicalize(toJson(manifest));
   const archive = buildDeterministicZip(
-    buildArchiveEntries(manifest, canonicalManifest, external),
+    buildArchiveEntries(
+      manifest,
+      canonicalManifest,
+      external,
+      input.iso27001Soa,
+    ),
   );
   const sha256 = createHash("sha256").update(archive).digest("hex");
 
