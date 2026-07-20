@@ -10,6 +10,7 @@ import {
   checkCatalogParity,
   checkOrphanSku,
   checkPriceCoverage,
+  checkPricebookPriceAgreement,
   checkReservedIdsStaleness,
   PRICE_AUTHORITY,
 } from "./checks";
@@ -53,6 +54,10 @@ describe("catalog gate checks — the committed tree", () => {
     // The check flagged alerting + retention-runner while they were still reserved; catalog-rework W5
     // cleared them from RESERVED_MODULE_ENTITLEMENT_IDS, so a clean tree now has nothing to flag.
     expect(checkReservedIdsStaleness(ROOT)).toEqual([]);
+  });
+
+  test("pricebook-price-agreement: every PRICE_AUTHORITY row agrees with the pricebook — and the import path resolves (a moved/broken upgrades.ts turns this red via the warn finding)", async () => {
+    expect(await checkPricebookPriceAgreement(pkgs)).toEqual([]);
   });
 
   test("the eight catalog-rework carves carry a PRICE_AUTHORITY row", () => {
@@ -160,6 +165,79 @@ describe("checkPriceCoverage", () => {
       manifestPath: join(dir, "does-not-exist.ts"),
     });
     expect(await checkPriceCoverage([p])).toEqual([]);
+  });
+});
+
+// ─── pricebook-price-agreement failure paths (temp-dir pricebook fixture) ─────────────────────────
+describe("checkPricebookPriceAgreement", () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "gate-pricebook-agreement-"));
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  /**
+   * A fixture pricebook Pkg whose src/upgrades.ts mirrors the real PRICE_AUTHORITY in SKU_RETAIL
+   * (BUNDLE_RETAIL empty — with no manifests in the fixture pkg set, nothing is exempted and every
+   * row routes through SKU_RETAIL). `over` drifts a slug's dollars; `null` drops the row entirely.
+   */
+  function fixturePricebook(over: Record<string, number | null> = {}): Pkg {
+    const rows = Object.entries(PRICE_AUTHORITY)
+      .map(([id, { cents }]) => {
+        const slug = id.replace("@caisson/", "");
+        const dollars = slug in over ? over[slug] : cents / 100;
+        return dollars == null ? null : `  "${slug}": ${dollars},`;
+      })
+      .filter((r) => r !== null)
+      .join("\n");
+    mkdirSync(join(dir, "src"), { recursive: true });
+    writeFileSync(
+      join(dir, "src", "upgrades.ts"),
+      `export const SKU_RETAIL: Record<string, number> = {\n${rows}\n};\nexport const BUNDLE_RETAIL: Record<string, number> = {};\n`,
+    );
+    return pkg({ name: "@caisson/pricebook", license: COMMERCIAL, dir });
+  }
+
+  test("a fixture book mirroring PRICE_AUTHORITY exactly is green", async () => {
+    expect(await checkPricebookPriceAgreement([fixturePricebook()])).toEqual(
+      [],
+    );
+  });
+
+  test("a drifted dollars value is an error (known-drift smoke: the check actually fires)", async () => {
+    const f = await checkPricebookPriceAgreement([
+      fixturePricebook({ "audit-worm": 999 }),
+    ]);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.severity).toBe("error");
+    expect(f[0]?.rule).toBe("pricebook-price-agreement");
+    expect(f[0]?.pkg).toBe("@caisson/audit-worm");
+    expect(f[0]?.message).toContain("disagrees");
+  });
+
+  test("a missing row is an error (silent $0 upgrade credit)", async () => {
+    const f = await checkPricebookPriceAgreement([
+      fixturePricebook({ "audit-worm": null }),
+    ]);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.message).toContain("no SKU_RETAIL/BUNDLE_RETAIL row");
+  });
+
+  test("an unimportable pricebook degrades to a VISIBLE warn, never a silent pass", async () => {
+    const f = await checkPricebookPriceAgreement([
+      pkg({
+        name: "@caisson/pricebook",
+        license: COMMERCIAL,
+        dir: join(dir, "does-not-exist"),
+      }),
+    ]);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.severity).toBe("warn");
+    expect(f[0]?.message).toContain("could not be imported");
+  });
+
+  test("no pricebook in the pkg set is out of scope", async () => {
+    expect(await checkPricebookPriceAgreement([])).toEqual([]);
   });
 });
 

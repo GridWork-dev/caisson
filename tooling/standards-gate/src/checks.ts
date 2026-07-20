@@ -593,8 +593,10 @@ export function checkOrphanSku(pkgs: Pkg[]): Finding[] {
  * bridged the two, so a manifest reprice could leave the pricebook (and therefore the site display,
  * upgrade quotes, and renewal math) silently on the old number while every gate stayed green. This
  * check closes the bridge: for every PRICE_AUTHORITY row, the pricebook's SKU_RETAIL (modules) or
- * BUNDLE_RETAIL (bundles) entry must exist and agree at dollars * 100 === cents. Degrades to a skip
- * when the pricebook can't be imported (pre-install pass — post-install is authoritative).
+ * BUNDLE_RETAIL (bundles) entry must exist and agree at dollars * 100 === cents. Degrades to a
+ * VISIBLE warn when the pricebook can't be imported (legitimate pre-install; post-install it means
+ * the bridge is not running) — a silent skip here would false-PASS the exact drift class this
+ * check exists to catch.
  */
 export async function checkPricebookPriceAgreement(
   pkgs: Pkg[],
@@ -608,7 +610,15 @@ export async function checkPricebookPriceAgreement(
   try {
     books = await import(join(pricebook.dir, "src", "upgrades.ts"));
   } catch {
-    return []; // unresolvable pre-install — post-install pass is authoritative
+    return [
+      {
+        severity: "warn",
+        rule: "pricebook-price-agreement",
+        pkg: "@caisson/pricebook",
+        message:
+          "src/upgrades.ts could not be imported — expected pre-install only; post-install this means the price-agreement bridge is NOT running (fix the import path).",
+      },
+    ];
   }
   const sku = books.SKU_RETAIL ?? {};
   const bundles = books.BUNDLE_RETAIL ?? {};
