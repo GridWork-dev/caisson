@@ -188,7 +188,7 @@ function aiRiskRegisterControl(): ControlInput {
     title: "AI risk register maintained",
     family: "Risk Management",
     statement:
-      "A risk register enumerates each AI lane's risks; every entry is assessed and mitigated over the lifecycle.",
+      "A risk register enumerates each AI lane's risks; every entry is assessed with a treatment plan on record over the lifecycle.",
     crosswalk: [],
     evidence: [evidenceFrom(result)],
     readiness: "ready",

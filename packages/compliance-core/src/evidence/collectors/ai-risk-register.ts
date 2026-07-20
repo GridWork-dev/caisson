@@ -40,7 +40,11 @@ export interface AiRiskRegisterCollectorOptions {
 
 const DEFAULT_CONTROL_ID = "RISK-MANAGEMENT.AI-LIFECYCLE";
 const COLLECTOR_ID = "substrate.ai-risk-register";
-const TITLE = "AI risk register assessed and mitigated (EU AI Act Art. 9)";
+// WR-03: this collector verifies a treatment plan is ON RECORD — it cannot verify the plan's
+// measures are IN FORCE. Every operator-visible string below says exactly that; "mitigated"
+// would overclaim what a register traversal can attest.
+const TITLE =
+  "AI risk register assessed with treatment plans on record (EU AI Act Art. 9)";
 
 /** An entry is adequately managed iff it carries a recorded treatment plan — every entry reaching
  *  this collector is already rated (a structural property of `RiskEntry` membership). */
@@ -99,7 +103,7 @@ export function aiRiskRegisterCollector(
           collectorId: COLLECTOR_ID,
           controlId,
           title: TITLE,
-          summary: `all ${String(entryCount)} AI risks are assessed and mitigated`,
+          summary: `all ${String(entryCount)} AI risks are assessed with a treatment plan on record`,
           facts,
           manualSlots,
         });
@@ -110,11 +114,11 @@ export function aiRiskRegisterCollector(
           collectorId: COLLECTOR_ID,
           controlId,
           title: TITLE,
-          summary: `${String(deficientRisks.length)} of ${String(entryCount)} AI risks are unassessed or unmitigated`,
+          summary: `${String(deficientRisks.length)} of ${String(entryCount)} AI risks have no treatment plan on record`,
           facts,
           manualSlots,
         },
-        `AI risks missing a completed assessment or mitigation: ${deficientRisks.join(", ")}`,
+        `AI risks with no treatment plan on record: ${deficientRisks.join(", ")}`,
       );
     },
   };
