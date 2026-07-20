@@ -691,6 +691,7 @@
         "@caisson/field-crypto": "workspace:*",
         "@caisson/frameworks-pack": "workspace:*",
         "@caisson/kernel": "workspace:*",
+        "@caisson/risk-register": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -1242,6 +1243,23 @@
       "version": "0.1.11",
       "dependencies": {
         "@caisson/jobs": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/risk-register": {
+      "name": "@caisson/risk-register",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/audit-worm": "workspace:*",
+        "@caisson/frameworks-pack": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
       },
@@ -1840,6 +1858,8 @@
     "@caisson/registry-schema": ["@caisson/registry-schema@workspace:packages/registry-schema"],
 
     "@caisson/retention-runner": ["@caisson/retention-runner@workspace:packages/retention-runner"],
+
+    "@caisson/risk-register": ["@caisson/risk-register@workspace:packages/risk-register"],
 
     "@caisson/service-betterstack-adapter": ["@caisson/service-betterstack-adapter@workspace:services/betterstack-adapter"],
 
