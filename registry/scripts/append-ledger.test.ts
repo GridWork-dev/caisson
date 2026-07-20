@@ -30,10 +30,15 @@ describe("registry ledger appender (ADR-0021/0069)", () => {
       const raw = readFileSync(LEDGER_PATH, "utf8");
       const lines = raw.split("\n").filter((l) => l.trim().length > 0);
 
+      // Module-level delists only (version === undefined, ADR-0359): a version-delist does not
+      // retire the id, so a later publish of that module is legal and eligible here.
       const delistedIds = new Set(
         lines
-          .map((l) => JSON.parse(l) as { op?: string; id: string })
-          .filter((e) => e.op === "delist")
+          .map(
+            (l) =>
+              JSON.parse(l) as { op?: string; id: string; version?: string },
+          )
+          .filter((e) => e.op === "delist" && e.version === undefined)
           .map((e) => e.id),
       );
       // The re-appended line lands at the END of the tmp ledger, so it must not be a publish of a
