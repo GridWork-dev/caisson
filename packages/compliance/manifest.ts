@@ -7,7 +7,10 @@
 // Paid + LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050).
 //
 // `priceCents: 104900` is the locked Compliance bundle price ($1,049, ADR-0258 — supersedes the
-// ADR-0227 $799 edition price); it must stay a positive integer (ADR-0007). Evidence generation is
+// ADR-0227 $799 edition price); it must stay a positive integer (ADR-0007). The 2026-07-20
+// pricing round locked a reprice to $1,449 as the three compliance-gap members join — that flip
+// lands in the post-publish membership PR (a members pin must name an already-published version,
+// so the gap modules publish first). Evidence generation is
 // FREE in v1 (no @caisson/credits dependency): the bundle composes the WORM/crypto primitives
 // directly.
 import pkg from "./package.json";
