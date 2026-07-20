@@ -5,9 +5,9 @@
 // buyer hosts anywhere to show prospects their compliance posture. Pure, un-wired-seam (ADR-0047):
 // no auth, no hosted comments, no sign-off — permanent non-goals, never scaffolded here.
 //
-// SKU posture: PUBLISH-ARMED at the 2026-07-20 pricing round (price locked at $149, Compliance
-// membership locked) — this cut publishes as `sellable: false` substrate; the post-publish flip
-// sets `sellable`/`priceCents` and the bundle members maps pin the version this cut publishes.
+// SKU posture: SELLABLE at $149 (the 2026-07-20 pricing round; first published 0.2.0 as
+// sellable:false substrate, flipped here in the post-publish membership cut). A member of the
+// Compliance and Everything bundles.
 // Dependencies are DOWN-ONLY (ADR-0003): the generator consumes the evidence-pack shape
 // from `@caisson/compliance-core` and renders through `@caisson/artifact-render`, never the reverse.
 import pkg from "./package.json";
@@ -18,8 +18,8 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
-  sellable: false,
+  priceCents: 14900,
+  sellable: true,
   license: pkg.license,
   dependencies: [
     "@caisson/artifact-render",

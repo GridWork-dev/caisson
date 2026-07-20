@@ -416,8 +416,9 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
  * reprices a module — `checkManifestPriceAgreement` below fails the gate on any drift from here.
  */
 export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
-  // Compliance bundle at the six-bundle price (was 79900/ADR-0227 as an edition; CAISSON-24 flip).
-  "@caisson/compliance": { cents: 104900, adr: "ADR-0258" },
+  // Compliance bundle repriced as the three compliance-gap members joined (was 104900/ADR-0258;
+  // before that 79900/ADR-0227 as an edition).
+  "@caisson/compliance": { cents: 144900, adr: "ADR-0373" },
   "@caisson/audit-worm": { cents: 14900, adr: "ADR-0129" },
   // Local-first bundle repriced to the 3-way-carve sum-anchored $629 (was $349/ADR-0240).
   "@caisson/local-ai": { cents: 62900, adr: "ADR-0258" },
@@ -437,6 +438,10 @@ export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   "@caisson/tool-exec": { cents: 9900, adr: "ADR-0260" },
   // ui-pro first publish (2026-07-07): trued to the live catalog $129 standalone (ADR-0259 band).
   "@caisson/ui-pro": { cents: 12900, adr: "ADR-0259" },
+  // The 2026-07-20 compliance-gap SKUs (first prices; sellable flip in the membership cut).
+  "@caisson/access-review": { cents: 19900, adr: "ADR-0373" },
+  "@caisson/risk-register": { cents: 27900, adr: "ADR-0373" },
+  "@caisson/trust-page": { cents: 14900, adr: "ADR-0373" },
 };
 
 /**
