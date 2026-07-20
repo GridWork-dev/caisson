@@ -5,9 +5,9 @@
 // rather than a plain edit, and a risk-treatment-plan evidence artifact. The EU-AI-Act evidence
 // collector in the compliance evidence engine now runs on an instance of this model.
 //
-// SKU posture: PUBLISH-ARMED at the 2026-07-20 pricing round (price locked at $279, Compliance
-// membership locked) — this cut publishes as `sellable: false` substrate; the post-publish flip
-// sets `sellable`/`priceCents` and the bundle members maps pin the version this cut publishes.
+// SKU posture: SELLABLE at $279 (the 2026-07-20 pricing round; first published 0.2.0 as
+// sellable:false substrate, flipped here in the post-publish membership cut). A member of the
+// Compliance and Everything bundles.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -16,8 +16,8 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
-  sellable: false,
+  priceCents: 27900,
+  sellable: true,
   license: pkg.license,
   dependencies: [
     "@caisson/audit-worm",

@@ -2,11 +2,9 @@
 // on id/version/license/dependencies. `kind: "primitive"` — a shared compliance primitive, not an
 // edition or a bundle meta.
 //
-// SKU posture: PUBLISH-ARMED at the 2026-07-20 pricing round (price locked at $199, Compliance
-// membership locked) — this cut publishes the package as `sellable: false` substrate so a real
-// version exists on the served surface; the post-publish flip sets `sellable`/`priceCents` and
-// the bundle members maps pin the version this cut publishes (a members pin must name an
-// already-published version). The v2 GitHub-org connector is the named repricing trigger.
+// SKU posture: SELLABLE at $199 (the 2026-07-20 pricing round; first published 0.2.0 as
+// sellable:false substrate, flipped here in the post-publish membership cut). A member of the
+// Compliance and Everything bundles. The v2 GitHub-org connector is the named repricing trigger.
 // Commercial under open-core (LicenseRef-Caisson-Commercial at `paid`).
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
@@ -16,8 +14,8 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
-  sellable: false,
+  priceCents: 19900,
+  sellable: true,
   license: pkg.license,
   dependencies: ["@caisson/jobs", "@caisson/kernel", "@caisson/tenancy-rls"],
   golden: null,

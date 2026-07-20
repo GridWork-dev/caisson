@@ -6,11 +6,10 @@
 // package carries real composition code, so `dependencies` stays populated (down-only, ADR-0003).
 // Paid + LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050).
 //
-// `priceCents: 104900` is the locked Compliance bundle price ($1,049, ADR-0258 — supersedes the
-// ADR-0227 $799 edition price); it must stay a positive integer (ADR-0007). The 2026-07-20
-// pricing round locked a reprice to $1,449 as the three compliance-gap members join — that flip
-// lands in the post-publish membership PR (a members pin must name an already-published version,
-// so the gap modules publish first). Evidence generation is
+// `priceCents: 144900` is the locked Compliance bundle price ($1,449, the 2026-07-20 pricing
+// round — supersedes the ADR-0258 $1,049 as the three compliance-gap members join; ~70% of the
+// enlarged member subtotal, the same below-sum ratio band); it must stay a positive integer
+// (ADR-0007). Evidence generation is
 // FREE in v1 (no @caisson/credits dependency): the bundle composes the WORM/crypto primitives
 // directly.
 import pkg from "./package.json";
@@ -21,7 +20,7 @@ export default defineModule({
   version: pkg.version,
   kind: "bundle",
   tier: "paid",
-  priceCents: 104900,
+  priceCents: 144900,
   license: pkg.license,
   // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
   // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).
@@ -63,6 +62,11 @@ export default defineModule({
     // Operational-compliance primitives folded into the Compliance bundle (ADR-0178).
     "@caisson/alerting": "0.2.1",
     "@caisson/retention-runner": "0.1.8",
+    // The 2026-07-20 compliance-gap join: the three reserved SKUs enter at their first
+    // published version (the two-consume arming — publish first, membership after).
+    "@caisson/access-review": "0.2.0",
+    "@caisson/risk-register": "0.2.0",
+    "@caisson/trust-page": "0.2.0",
   },
   golden: "src/__golden__",
   description:
