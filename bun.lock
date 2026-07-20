@@ -502,6 +502,21 @@
         "typescript": "catalog:",
       },
     },
+    "packages/artifact-render": {
+      "name": "@caisson/artifact-render",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/audit-harness": {
       "name": "@caisson/audit-harness",
       "version": "1.0.1",
@@ -706,6 +721,7 @@
       "name": "@caisson/compliance-core",
       "version": "0.5.1",
       "dependencies": {
+        "@caisson/artifact-render": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
         "@caisson/frameworks-pack": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -1790,6 +1806,8 @@
     "@caisson/app-base": ["@caisson/app-base@workspace:apps/base"],
 
     "@caisson/app-compliance": ["@caisson/app-compliance@workspace:apps/compliance"],
+
+    "@caisson/artifact-render": ["@caisson/artifact-render@workspace:packages/artifact-render"],
 
     "@caisson/audit-harness": ["@caisson/audit-harness@workspace:packages/audit-harness"],
 
