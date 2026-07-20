@@ -8,6 +8,23 @@ grounds:
 
 # Deploy log
 
+## 2026-07-20 (second wave) — stranded-version delist live + audit fix batch + site redeploy
+
+The close-out picker's execution (PRs #312/#313, both squash-merged green same sitting):
+
+- **Registry Worker redeployed** (version `e2221ad1`) serving the pruned index — 60 stranded
+  mid-chain versions delisted append-only; live spot-check: kernel packument now lists only
+  uploaded versions (0.5.1/0.4.2 gone, `latest 0.5.3` intact). The re-dispatched r2-parity
+  probe (run 29749913921) converged **61 → 1 miss** — exactly the carved-out member-pinned
+  version, which delists in a follow-up prune after the next consume repoints the
+  agentic-dev/everything bundle pins.
+- **caisson-site redeployed** (image `622a5db0`, `Deploy complete`) at main `0f2215e7` carrying
+  the #313 fix batch: catalog-derived depth-page prices AND the three pages that had been
+  rendering raw template source (tool-exec · org-controls · local-sync) — all three verified
+  200 with zero raw-source remnants live.
+- The dud `v2026.07.20` tag + GitHub Release deleted (operator-authorized at the picker);
+  `v2026.07.20.1` is the sole `.20` tag and Latest.
+
 ## 2026-07-20 — v2026.07.20.1 release train GREEN + deploy tail (Worker · site · intel)
 
 The v2026.07.20 tag's first ride FAILED CLOSED at the publish byte gate (`@caisson/kernel@0.5.3`
