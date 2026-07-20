@@ -614,7 +614,9 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
   // catalog + grants use. `everything` re-captured again after the ui-pro first publish to pin
   // @caisson/ui-pro's entry into the explicit leaf set. Re-captured 2026-07-18: @caisson/agent-trajectory
   // joined the agentic-dev and everything members maps (the agent-runtime consume), so it is now in
-  // both leaf sets.
+  // both leaf sets. Re-captured 2026-07-20: the compliance-gap trio (@caisson/access-review,
+  // @caisson/risk-register, @caisson/trust-page) joined the compliance and everything members
+  // maps (the SKU-arming consume), so all three now appear in both leaf sets.
   const REAL_INDEX = join(
     dirname(fileURLToPath(import.meta.url)),
     "..",
@@ -625,6 +627,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
   );
   const BUNDLE_EXPANSIONS: Readonly<Record<string, readonly string[]>> = {
     compliance: [
+      "@caisson/access-review",
       "@caisson/alerting",
       "@caisson/audit-worm",
       "@caisson/compliance",
@@ -633,8 +636,10 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/frameworks-pack",
       "@caisson/kernel",
       "@caisson/retention-runner",
+      "@caisson/risk-register",
       "@caisson/signing-primitive",
       "@caisson/tenancy-rls",
+      "@caisson/trust-page",
     ],
     "ai-production": [
       "@caisson/ai-config",
@@ -675,6 +680,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
     // — the open Apache base (kernel/tenancy-rls/ai-config/local-store/…) stays absent by design
     // (it ships free via the Worker's free-view floor, never as a grant).
     everything: [
+      "@caisson/access-review",
       "@caisson/agent-kernel",
       "@caisson/agent-runner",
       "@caisson/agent-trajectory",
@@ -703,8 +709,10 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/prompt-registry",
       "@caisson/provenance",
       "@caisson/retention-runner",
+      "@caisson/risk-register",
       "@caisson/signing-primitive",
       "@caisson/tool-exec",
+      "@caisson/trust-page",
       "@caisson/ui-pro",
     ],
   };

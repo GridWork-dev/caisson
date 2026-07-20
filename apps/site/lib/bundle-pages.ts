@@ -53,10 +53,10 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     hero: {
       eyebrow: "Compliance-grade infrastructure for regulated SaaS",
       title: "Audit-ready from the first commit.",
-      lede: "Compliance composes ten packages into one bundle: tenant isolation that fails closed, evidence that can't be overwritten, and a tamper-evident log that proves it. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck.",
+      lede: "Compliance composes thirteen packages into one bundle: tenant isolation that fails closed, evidence that can't be overwritten, and a tamper-evident log that proves it. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck.",
     },
     definition:
-      "Compliance composes ten @caisson/* packages into one bundle: fail-closed tenant isolation, an append-only audit chain over S3 Object-Lock WORM, per-tenant field encryption, alerting, a retention runner, and the evidence-pack generator that maps live controls to named SOC 2 and HIPAA clauses. Own the source, and wire it in before your first customer shares a row.",
+      "Compliance composes thirteen @caisson/* packages into one bundle: fail-closed tenant isolation, an append-only audit chain over S3 Object-Lock WORM, per-tenant field encryption, alerting, a retention runner, an access-review campaign engine, an AI risk register, a buyer-facing trust page, and the evidence-pack generator that maps live controls to named SOC 2 and HIPAA clauses. Own the source, and wire it in before your first customer shares a row.",
     members: [
       {
         id: "kernel",
@@ -118,6 +118,24 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         oneLiner:
           "Detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots — a signature a third party can verify without your keys.",
       },
+      {
+        id: "access-review",
+        name: "Access reviews",
+        oneLiner:
+          "Audit-prep access campaigns: import a membership snapshot, record each reviewer's attested approve/revoke decision onto the audit chain, and close with every undecided reviewee flagged unresolved — never auto-approved.",
+      },
+      {
+        id: "risk-register",
+        name: "AI risk register",
+        oneLiner:
+          "Likelihood x impact risk scoring with a computed, never freeform, residual; an operator override is its own chained exception, and every entry crosswalks into your framework packs.",
+      },
+      {
+        id: "trust-page",
+        name: "Trust page",
+        oneLiner:
+          "A self-contained public trust page rendered from your evidence pack through allowlist-based redaction — a field absent from the allowlist never reaches the page, no exceptions.",
+      },
     ],
     faq: [
       {
@@ -128,7 +146,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "Which packages does the bundle actually compose?",
         answer:
-          "Ten real workspace dependencies, wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. Nothing on this page is a manifest claim without composed code behind it.",
+          "Ten real workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. Access reviews, the AI risk register, and the trust-page generator are three further modules included in the same purchase — each ships as its own standalone package rather than a dependency the bundle's factory composes. Nothing on this page is a manifest claim without composed code behind it.",
       },
       {
         question: "Do I own the source?",

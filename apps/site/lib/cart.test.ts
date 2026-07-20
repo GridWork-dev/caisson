@@ -241,7 +241,7 @@ describe("cartUpgrade (Everything nudge, ADR-0193/0258)", () => {
   test("no suggestion when a bundle is already in the cart", () => {
     expect(
       cartUpgrade(
-        [line("bundle", "compliance", 1049), line("module", "ui-pro", 129)],
+        [line("bundle", "compliance", 1449), line("module", "ui-pro", 129)],
         everything,
       ),
     ).toBeUndefined();

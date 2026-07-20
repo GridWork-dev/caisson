@@ -4,9 +4,8 @@ Audit-prep access-review campaigns — a reviewer attests, per user, that access
 appropriate, and every decision is WORM-logged so an auditor can prove the review actually
 happened. ADR-0371 (module lock).
 
-**SKU posture:** a reserved, sold-unpublished catalog id (`sellable: false`) — this module is
-registered in the registry but is not yet purchasable and does not appear on the site. It joins a
-bundle's composition at a later publish gate.
+**SKU posture:** SELLABLE at $199 — a standalone catalog entry and a member of the Compliance
+and Everything bundles.
 
 ## What it gives you
 

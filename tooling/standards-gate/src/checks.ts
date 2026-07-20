@@ -587,6 +587,74 @@ export function checkOrphanSku(pkgs: Pkg[]): Finding[] {
   return findings;
 }
 
+/**
+ * pricebook-price-agreement (2026-07-20, the SKU-arming audit's structural finding). PRICE_AUTHORITY
+ * pins manifests, and the site's displayed prices are test-pinned to the pricebook — but nothing
+ * bridged the two, so a manifest reprice could leave the pricebook (and therefore the site display,
+ * upgrade quotes, and renewal math) silently on the old number while every gate stayed green. This
+ * check closes the bridge: for every PRICE_AUTHORITY row, the pricebook's SKU_RETAIL (modules) or
+ * BUNDLE_RETAIL (bundles) entry must exist and agree at dollars * 100 === cents. Degrades to a
+ * VISIBLE warn when the pricebook can't be imported (legitimate pre-install; post-install it means
+ * the bridge is not running) — a silent skip here would false-PASS the exact drift class this
+ * check exists to catch.
+ */
+export async function checkPricebookPriceAgreement(
+  pkgs: Pkg[],
+): Promise<Finding[]> {
+  const pricebook = pkgs.find((p) => p.name === "@caisson/pricebook");
+  if (!pricebook) return [];
+  let books: {
+    SKU_RETAIL?: Record<string, number>;
+    BUNDLE_RETAIL?: Record<string, number>;
+  };
+  try {
+    books = await import(join(pricebook.dir, "src", "upgrades.ts"));
+  } catch {
+    return [
+      {
+        severity: "warn",
+        rule: "pricebook-price-agreement",
+        pkg: "@caisson/pricebook",
+        message:
+          "src/upgrades.ts could not be imported — expected pre-install only; post-install this means the price-agreement bridge is NOT running (fix the import path).",
+      },
+    ];
+  }
+  const sku = books.SKU_RETAIL ?? {};
+  const bundles = books.BUNDLE_RETAIL ?? {};
+  const byName = new Map(pkgs.map((p) => [p.name, p]));
+  const findings: Finding[] = [];
+  for (const [id, { cents }] of Object.entries(PRICE_AUTHORITY)) {
+    const slug = id.replace(/^@caisson\//, "");
+    // Mirror checkPriceCoverage's exemptions: a dissolved edition meta (delisted, never
+    // upgrade-credited) and sellable:false substrate owe no pricebook row. Bundles and
+    // sellable modules do.
+    const pkg = byName.get(id);
+    const m = pkg ? await loadCatalogManifest(pkg) : null;
+    if (m?.kind === "edition" || m?.sellable === false) continue;
+    const isBundle = slug in bundles;
+    const dollars = isBundle ? bundles[slug] : sku[slug];
+    if (dollars === undefined) {
+      findings.push({
+        severity: "error",
+        rule: "pricebook-price-agreement",
+        pkg: id,
+        message: `PRICE_AUTHORITY locks ${id} at ${cents} cents but the pricebook carries no SKU_RETAIL/BUNDLE_RETAIL row for "${slug}" — without one, upgrade quotes credit $0 for it (silent overcharge).`,
+      });
+      continue;
+    }
+    if (dollars * 100 !== cents) {
+      findings.push({
+        severity: "error",
+        rule: "pricebook-price-agreement",
+        pkg: id,
+        message: `pricebook ${isBundle ? "BUNDLE_RETAIL" : "SKU_RETAIL"}.${slug} = $${dollars} disagrees with PRICE_AUTHORITY's ${cents} cents — reprice both surfaces in the same change.`,
+      });
+    }
+  }
+  return findings;
+}
+
 /** The registry index entry shape this file reads (a lean projection — members map only). */
 interface IndexEntry {
   id: string;
