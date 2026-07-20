@@ -1,5 +1,27 @@
 # @caisson/site
 
+## 0.2.14
+
+### Patch Changes
+
+- 0f2215e: Module depth-page prose prices now derive from the canonical catalog instead of hand-typed
+  literals, so a future price change can never silently desync the page copy. This also fixes
+  three pages (governed tool execution, org controls, local sync) that rendered raw template
+  source instead of the intended bundle price. A data-lint now pins both failure modes.
+- Updated dependencies [0f2215e]
+- Updated dependencies [d0e6b5c]
+- Updated dependencies [31d59fd]
+  - @caisson/cli@0.7.5
+  - @caisson/platform-reads@0.2.8
+  - @caisson/registry-schema@0.5.7
+  - @caisson/ai-kit@0.5.5
+  - @caisson/credits@0.5.9
+  - @caisson/pricebook@0.7.2
+  - @caisson/service-license@0.0.18
+  - @caisson/ai-meter@1.0.9
+  - @caisson/platform-migrations@0.2.11
+  - @caisson/demo-registry@0.2.10
+
 ## 0.2.13
 
 ### Patch Changes

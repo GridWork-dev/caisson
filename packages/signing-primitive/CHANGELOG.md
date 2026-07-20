@@ -1,5 +1,11 @@
 # @caisson/signing-primitive
 
+## 0.3.6
+
+### Patch Changes
+
+- 31d59fd: Rebuilt against current dependency resolutions; no source changes.
+
 ## 0.3.5
 
 ### Patch Changes
