@@ -1,6 +1,6 @@
 # SPEC-stub drafts — compliance-gap module candidates (draft register)
 
-**Status: DRAFT — operator-lock required before any PLAN.** Produced by the CAISSON-76
+**Status: PROMOTED 2026-07-20 — all five stubs locked as full SPECs by ADR-0371** (see `outputs/specs/{compliance-drift-monitor,access-review-campaigns,general-risk-register,iso-soa-generator,trust-page-generator}/SPEC.md`; this register is retained as the research-round record). Produced by the CAISSON-76
 category-wide research round (companion briefing:
 `outputs/research/auditkit-gap-category-sweep-2026-07-19.md`). Each stub is pre-SPEC: Goal /
 Current state / Scope / Non-goals / Forks needing an operator lock. None are locked; none may be
