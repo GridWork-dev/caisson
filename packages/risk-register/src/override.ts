@@ -26,8 +26,15 @@ export interface RecordResidualOverrideInput {
   readonly chain: Pick<AuditChainStore, "append">;
   readonly accountId: string;
   readonly riskId: string;
-  /** The value `computeResidual()` derived for this risk — carried forward untouched, never
-   *  recomputed here, so the record always states exactly what it is overriding. */
+  /**
+   * The value `computeResidual()` derived for this risk — carried forward untouched, never
+   * recomputed here, so the record always states exactly what it is overriding. The caller MUST
+   * pass the real `entry.residual` here: this module can confirm the value is SHAPED like a
+   * Residual (`isResidual`, 1-25 integer) but cannot verify it is the value computeResidual()
+   * actually produced for this risk's likelihood/impact — that trust boundary sits with the
+   * caller, not here. A reader that needs the true computed value re-derives it from likelihood
+   * and impact rather than trusting a carried `computed` field (see `buildRiskTreatmentPlan`).
+   */
   readonly computed: Residual;
   /** The operator's override judgment, expressed on the SAME likelihood x impact scale the
    *  computed score lives on — never a bare arbitrary number. */
@@ -83,14 +90,27 @@ export async function recordResidualOverride(
       "risk-register: an override requires a non-empty riskId",
     );
   }
+  // Bound at write time, matching the treatment-plan read schema exactly (who max 200, why max
+  // 2000): the chain is append-only, so an over-long value that slipped past here would be
+  // PERMANENTLY stuck on the chain and break every later artifact build for this tenant.
   if (who.trim().length === 0) {
     throw new ValidationError(
       "risk-register: an override requires a recorded who",
     );
   }
+  if (who.trim().length > 200) {
+    throw new ValidationError(
+      "risk-register: override who must be 200 characters or fewer",
+    );
+  }
   if (why.trim().length === 0) {
     throw new ValidationError(
       "risk-register: an override requires a recorded why",
+    );
+  }
+  if (why.trim().length > 2000) {
+    throw new ValidationError(
+      "risk-register: override why must be 2000 characters or fewer",
     );
   }
   if (!isResidual(computed)) {

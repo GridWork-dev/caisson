@@ -130,6 +130,26 @@ describe("recordResidualOverride", () => {
     ).rejects.toThrow();
   });
 
+  test("rejects an over-long why before it ever reaches the chain", async () => {
+    const chain = fakeChain();
+    await expect(
+      recordResidualOverride({
+        chain,
+        accountId: "tenant-acme",
+        riskId: "R-1",
+        computed: computeResidual("possible", "major"),
+        overrideLikelihood: "unlikely",
+        overrideImpact: "minor",
+        who: "compliance-lead@example.com",
+        why: "x".repeat(2001),
+        now: new Date(),
+      }),
+    ).rejects.toThrow();
+    // The bound is checked BEFORE the append — an over-long why must never land on the
+    // append-only chain, where it could never be remediated.
+    expect(chain.entries).toHaveLength(0);
+  });
+
   test("evidence-gap: a chain append failure fails the whole call loudly", async () => {
     const failing: Pick<AuditChainStore, "append"> = {
       append: () => {

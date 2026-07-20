@@ -60,6 +60,25 @@ describe("buildRiskTreatmentPlan", () => {
     expect(plan.summary.overriddenCount).toBe(1);
   });
 
+  test("a cast-forged residual is re-derived, never trusted off the entry", () => {
+    const entry = risk("R-1", "plan");
+    // Simulate a bypassed type brand (an unsafe cast landing a tampered residual on an otherwise
+    // valid entry) — the artifact row must never carry this value forward.
+    const forged = {
+      ...entry,
+      residual: 999 as unknown as typeof entry.residual,
+    };
+    const { plan } = buildRiskTreatmentPlan({
+      tenantId: "tenant-acme",
+      risks: [forged],
+    });
+    const row = plan.risks[0];
+    expect(row?.computedResidual).toBe(
+      computeResidual(entry.likelihood, entry.impact),
+    );
+    expect(row?.computedResidual).not.toBe(999);
+  });
+
   test("canonicalizes to byte-stable output for identical register state", () => {
     const { canonicalPlan: first } = buildRiskTreatmentPlan({
       tenantId: "tenant-acme",

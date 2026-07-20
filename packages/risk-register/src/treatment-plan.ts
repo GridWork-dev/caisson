@@ -11,7 +11,12 @@ import {
   type JsonValue,
 } from "@caisson/kernel";
 import { CrosswalkReference } from "@caisson/frameworks-pack";
-import { Impact, Likelihood, type RiskEntry } from "./model.ts";
+import {
+  computeResidual,
+  Impact,
+  Likelihood,
+  type RiskEntry,
+} from "./model.ts";
 import type { RiskResidualOverrideRecord } from "./override.ts";
 
 export const RISK_TREATMENT_PLAN_FORMAT_VERSION = "1" as const;
@@ -147,6 +152,10 @@ export function buildRiskTreatmentPlan(
     input.overridesByRiskId ?? new Map();
   const rows: z.input<typeof treatmentPlanRow>[] = input.risks.map((r) => {
     const ov = overrides.get(r.riskId);
+    // Re-derive from likelihood/impact rather than trusting `r.residual` — a cast-forged entry
+    // (bypassing model.ts's type brand) could otherwise carry a tampered residual straight into
+    // a compliance artifact. Every blessed entry re-derives to the same value it already carried.
+    const computed = computeResidual(r.likelihood, r.impact);
     // Conditionally OMIT the key rather than set it to `undefined` — the schema's `overrideOf` is
     // an optional field (present-or-absent), and this tree's `exactOptionalPropertyTypes` rejects
     // an explicit `undefined` value for one (mirrors @caisson/audit-worm's chain-store convention).
@@ -155,8 +164,8 @@ export function buildRiskTreatmentPlan(
       subject: r.subject,
       likelihood: r.likelihood,
       impact: r.impact,
-      computedResidual: r.residual,
-      effectiveResidual: ov === undefined ? r.residual : ov.override,
+      computedResidual: computed,
+      effectiveResidual: ov === undefined ? computed : ov.override,
       ...(ov === undefined
         ? {}
         : {
