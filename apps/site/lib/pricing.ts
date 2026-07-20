@@ -65,10 +65,10 @@ export const BUNDLE_PRICES: readonly (PriceAnchor & { id: BundleId })[] = [
   {
     id: "compliance",
     label: "Compliance",
-    amount: 1049,
+    amount: 1449,
     unit: "once",
     from: false,
-    note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, and the framework + signing carves.",
+    note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, access reviews, the AI risk register, a buyer trust page, and the framework + signing carves.",
   },
   {
     id: "ai-production",
@@ -170,6 +170,31 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     bundles: ["compliance"],
     blurb:
       "Deduped, rate-capped alert delivery with quiet hours and an audit trail: the SOC 2 CC7.2 alerting control your compliance program can point to.",
+  },
+  // Compliance-gap SKUs (first prices, the 2026-07-20 pricing round).
+  {
+    id: "access-review",
+    label: "Access reviews",
+    amount: 199,
+    bundles: ["compliance"],
+    blurb:
+      "Audit-prep access-review campaigns: import a membership snapshot, record per-reviewee attested approve/revoke decisions into the WORM log, and close with every undecided reviewee flagged — never auto-approved.",
+  },
+  {
+    id: "risk-register",
+    label: "AI risk register",
+    amount: 279,
+    bundles: ["compliance"],
+    blurb:
+      "Likelihood x impact risk scoring with a computed residual, operator overrides recorded as chained exceptions, crosswalks into your framework packs, and a treatment-plan evidence artifact.",
+  },
+  {
+    id: "trust-page",
+    label: "Trust page",
+    amount: 149,
+    bundles: ["compliance"],
+    blurb:
+      "A self-contained trust page built from your evidence pack through allowlist-based redaction: host it anywhere to show prospects your compliance posture.",
   },
   // ---- AI Production Kit ----
   {
@@ -464,7 +489,7 @@ export const PLAN_PRICES: readonly PriceAnchor[] = [
     amount: MODULE_MIN_AMOUNT,
     unit: "once",
     from: true,
-    note: "Take a single module à la carte — 22 standalone modules across the catalog.",
+    note: "Take a single module à la carte — 26 standalone modules across the catalog.",
   },
   {
     id: "compliance-updates",

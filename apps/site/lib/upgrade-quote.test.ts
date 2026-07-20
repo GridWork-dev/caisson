@@ -10,8 +10,8 @@ describe("bundleUpgradeQuote — F8 self-serve upgrade crediting (ADR-0247 F8 / 
     expect(q.upgradePrice).toBe(q.bundleRetail);
   });
 
-  test("crediting matrix across owned sets (Compliance $1,049)", () => {
-    // [owned bare slugs] → expected credit off the $1,049 Compliance bundle.
+  test("crediting matrix across owned sets (Compliance $1,449)", () => {
+    // [owned bare slugs] → expected credit off the $1,449 Compliance bundle.
     const cases: ReadonlyArray<readonly [readonly string[], number]> = [
       [["field-crypto"], 199],
       [["field-crypto", "audit-worm"], 348],
@@ -22,12 +22,12 @@ describe("bundleUpgradeQuote — F8 self-serve upgrade crediting (ADR-0247 F8 / 
     for (const [owned, credit] of cases) {
       const q = bundleUpgradeQuote("compliance", owned);
       expect(q.credit).toBe(credit);
-      expect(q.upgradePrice).toBe(1049 - credit);
+      expect(q.upgradePrice).toBe(1449 - credit);
     }
   });
 
   test("owning enough members floors the upgrade price at $0 (never negative)", () => {
-    // Every priced Compliance member: sum (1,443) exceeds the $1,049 retail → floored to 0.
+    // Every priced Compliance member: sum (2,070) exceeds the $1,449 retail → floored to 0.
     const allMembers = [
       "compliance-core",
       "frameworks-pack",
@@ -36,6 +36,9 @@ describe("bundleUpgradeQuote — F8 self-serve upgrade crediting (ADR-0247 F8 / 
       "field-crypto",
       "alerting",
       "retention-runner",
+      "access-review",
+      "risk-register",
+      "trust-page",
     ];
     expect(bundleUpgradeQuote("compliance", allMembers).upgradePrice).toBe(0);
   });

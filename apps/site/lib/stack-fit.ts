@@ -36,6 +36,9 @@ export const MODULE_DB_POSTURE: Record<string, DbPosture> = {
   // agent-trajectory ships PG-backed trajectory/run-state stores on tenancy-rls (memory impls
   // exist for tests, but the durable posture is Postgres).
   "agent-trajectory": "postgres",
+  // access-review ships its own RLS'd Postgres table (access_review_campaign, ENABLE + FORCE
+  // ROW LEVEL SECURITY) and schedules its open/close tasks through @caisson/jobs → pg-boss.
+  "access-review": "postgres",
   // SQLite / on-device — no server database.
   "local-store": "sqlite",
   "local-sync": "sqlite",
@@ -51,6 +54,12 @@ export const MODULE_DB_POSTURE: Record<string, DbPosture> = {
   "local-privacy": "none",
   "tool-exec": "none",
   "ui-pro": "none",
+  // risk-register is pure in-process scoring (computeResidual) plus a byte-stable artifact
+  // builder; overrides append onto a CALLER-injected audit chain it does not own or migrate.
+  "risk-register": "none",
+  // trust-page is a pure render function (no I/O, no clock) over a caller-supplied evidence-pack
+  // manifest — it ships no table and no migration of its own.
+  "trust-page": "none",
 };
 
 export interface PostureGroup {

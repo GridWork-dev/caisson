@@ -26,6 +26,7 @@ import {
   checkManifestPriceAgreement,
   checkPriceCoverage,
   checkOrphanSku,
+  checkPricebookPriceAgreement,
   checkCatalogParity,
   checkReservedIdsStaleness,
   checkCopyPaste,
@@ -52,6 +53,7 @@ async function main(): Promise<number> {
     ...(await checkManifestPriceAgreement(pkgs)), // manifest.priceCents vs the locked-ADR PRICE_AUTHORITY map
     ...(await checkPriceCoverage(pkgs)), // every sellable commercial SKU with a locked price has a PRICE_AUTHORITY row
     ...checkOrphanSku(pkgs), // no PRICE_AUTHORITY row without a real on-disk manifested package
+    ...(await checkPricebookPriceAgreement(pkgs)), // PRICE_AUTHORITY ↔ pricebook SKU_RETAIL/BUNDLE_RETAIL agreement
     ...(await checkCatalogParity(root)), // site catalog ↔ registry members map + PRICE_AUTHORITY agreement
     ...checkReservedIdsStaleness(root), // WARN: a reserved entitlement id that is now indexed (stale)
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
