@@ -21,6 +21,7 @@
     "test": "bun test ./src ./scripts"
   },
   "dependencies": {
+    "@caisson/artifact-render": "workspace:*",
     "@caisson/field-crypto": "workspace:*",
     "@caisson/frameworks-pack": "workspace:*",
     "@caisson/kernel": "workspace:*",

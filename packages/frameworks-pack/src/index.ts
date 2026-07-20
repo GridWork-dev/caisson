@@ -20,6 +20,9 @@ export * from "./crosswalks/regime-crosswalk.ts";
 export * from "./crosswalks/regimes.ts";
 export * from "./crosswalks/nist-800-53.ts";
 
+// --- ISO/IEC 27001:2022 Statement of Applicability (SoA) row computation — pure, flag-never-guess. -
+export * from "./soa/iso-27001-soa.ts";
+
 // --- Vendored NIST SP 800-53 rev5 OSCAL catalog (SPEC oscal-spine, ADR-0363/0364) — the pinned
 // source bundle + control-id existence surface the nist80053Crosswalk is checked against.
 export * from "./vendor/nist-catalog-pin.ts";

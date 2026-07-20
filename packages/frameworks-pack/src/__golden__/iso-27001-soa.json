@@ -1,0 +1,57 @@
+[
+  {
+    "control": "A.5.15",
+    "applicable": "applicable",
+    "justification": "Logical and physical access to information and other associated assets is governed by rules derived from business and security requirements.",
+    "status": "ready",
+    "evidencePointer": "ACCESS-CONTROL.LOGICAL"
+  },
+  {
+    "control": "A.5.37",
+    "applicable": "applicable",
+    "justification": "Operating procedures and records for information-security-relevant processes are documented, retained, and made available to those who need them.",
+    "status": "ready",
+    "evidencePointer": "GOVERNANCE.DOCUMENTATION"
+  },
+  {
+    "control": "A.8.10",
+    "applicable": "applicable",
+    "justification": "Information held in systems, devices, or storage media is deleted once it is no longer required, so it cannot be recovered.",
+    "status": "gap",
+    "evidencePointer": "DATA-PROTECTION.DISPOSAL"
+  },
+  {
+    "control": "A.8.15",
+    "applicable": "applicable",
+    "justification": "Activity logs are produced, retained, and protected from unauthorized access or alteration so that events remain reviewable.",
+    "status": "ready",
+    "evidencePointer": "AUDIT.IMMUTABLE-LOG"
+  },
+  {
+    "control": "A.8.16",
+    "applicable": "applicable",
+    "justification": "Systems are monitored for anomalous behavior so that potential security events are identified and can be acted on.",
+    "status": "ready",
+    "evidencePointer": "SYSTEM-OPERATIONS.DETECTION"
+  },
+  {
+    "control": "A.8.24",
+    "applicable": "applicable",
+    "justification": "The use of cryptography to protect information is governed by defined rules, including key management practices.",
+    "status": "ready",
+    "evidencePointer": "DATA-PROTECTION.ENCRYPTION"
+  },
+  {
+    "control": "A.8.5",
+    "applicable": "applicable",
+    "justification": "Access is granted only after a secure authentication procedure verifies the identity of the person or entity requesting it.",
+    "status": "unresolved",
+    "evidencePointer": "AUTHENTICATION.ENTITY"
+  },
+  {
+    "control": "A.9.99",
+    "applicable": "unresolved",
+    "justification": "No Caisson crosswalk row maps this control to a shipped technical mechanism; applicability is not resolved by this generator and remains the buyer's own ISMS scoping decision.",
+    "status": "unresolved"
+  }
+]
