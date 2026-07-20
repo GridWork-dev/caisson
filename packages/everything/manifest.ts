@@ -32,6 +32,11 @@ export default defineModule({
   // SKU + ui-pro, every pin a real published version.
   members: {
     "@caisson/everything": "0.2.5",
+    // The 2026-07-20 compliance-gap join: three new sellable SKUs enter at their first
+    // published version (the two-consume arming — publish first, membership after).
+    "@caisson/access-review": "0.2.0",
+    "@caisson/risk-register": "0.2.0",
+    "@caisson/trust-page": "0.2.0",
     "@caisson/agent-kernel": "0.6.0",
     "@caisson/agent-runner": "0.2.0",
     // agent-trajectory pins an encRef-bearing version — same rule as the agentic-dev pin: never
