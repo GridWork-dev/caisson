@@ -154,7 +154,7 @@ describe("multiYearRenewalAmount (R6 rider — mechanism only, floors to the nea
     // base=79 (ai-meter's 1-year renewal), 2 years, 10% off the naive total:
     // naive=158 -> *0.90=142.2 -> floor 142 -> nearest X9 at-or-below is 139.
     expect(multiYearRenewalAmount(79, 2, 1_000)).toBe(139);
-    // base=419 (compliance), 3 years, 15% off: naive=1257 -> *0.85=1068.45 -> floor 1068 -> X9 1059.
+    // base=419 (an arbitrary input; compliance itself renews at 579), 3 years, 15% off: naive=1257 -> *0.85=1068.45 -> floor 1068 -> X9 1059.
     expect(multiYearRenewalAmount(419, 3, 1_500)).toBe(1059);
   });
 

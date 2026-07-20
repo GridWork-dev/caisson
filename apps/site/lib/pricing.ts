@@ -489,7 +489,7 @@ export const PLAN_PRICES: readonly PriceAnchor[] = [
     amount: MODULE_MIN_AMOUNT,
     unit: "once",
     from: true,
-    note: "Take a single module à la carte — 22 standalone modules across the catalog.",
+    note: "Take a single module à la carte — 26 standalone modules across the catalog.",
   },
   {
     id: "compliance-updates",
