@@ -93,6 +93,11 @@ export interface ComplianceSnapshotRunResult {
  * flagged-facing transition not suppressed by a live accepted deviation, then persist the new
  * snapshot for next time. Anchoring happens BEFORE alert delivery, so a failed/slow alert channel
  * never skips the WORM commitment for an already-generated pack.
+ *
+ * First run (no persisted snapshot yet — `loadPreviousSnapshot` returns `null`): nothing has
+ * "regressed" from a last-known-good state that never existed, so the alert loop is skipped
+ * entirely — a pre-existing flagged control does NOT fire an alert burst. The pack is still
+ * generated, anchored, and the snapshot is still persisted, so run 2 diffs against real state.
  */
 export async function runComplianceSnapshotOnce(
   payload: SnapshotTaskPayload,
@@ -103,11 +108,22 @@ export async function runComplianceSnapshotOnce(
 
   const pack = await deps.generateSnapshot(payload.accountId, now);
   const currentSnapshot = snapshotFromManifest(pack.manifest);
-  const previousSnapshot =
-    (await deps.loadPreviousSnapshot(payload.accountId)) ?? [];
+  // Capture first-run-ness BEFORE coercing to [] — a null previous snapshot means there is no
+  // last-known-good to have regressed FROM, so run 1 must never fire an alert burst for
+  // pre-existing flagged controls (nothing "regressed"; it was always that way).
+  const prior = await deps.loadPreviousSnapshot(payload.accountId);
+  const previousSnapshot = prior ?? [];
   const transitions = diffSnapshots(previousSnapshot, currentSnapshot);
   const deviations = await deps.loadDeviations(payload.accountId);
-  const deviationByControl = new Map(deviations.map((d) => [d.controlId, d]));
+  // Group by controlId — a control may carry more than one ACTIVE deviation (e.g. two collectors
+  // each separately accepted); collapsing to one via last-wins let a legitimately-accepted second
+  // deviation fail to suppress depending on array order (WR-02).
+  const deviationsByControl = new Map<string, AcceptedDeviation[]>();
+  for (const d of deviations) {
+    const list = deviationsByControl.get(d.controlId);
+    if (list === undefined) deviationsByControl.set(d.controlId, [d]);
+    else list.push(d);
+  }
 
   // Anchor EVERY run, unconditionally — exactly one chain append + one outbox row (SPEC item 5).
   const anchor = await deps.anchorSink.appendSnapshotDigest(
@@ -116,20 +132,23 @@ export async function runComplianceSnapshotOnce(
   );
   await deps.anchorSink.enqueueOutboxRow(payload.accountId, anchor);
 
-  for (const transition of transitions) {
-    if (transition.to !== "flagged") continue;
-    const deviation = deviationByControl.get(transition.controlId);
-    if (isTransitionSuppressed(transition, deviation, now)) continue;
-    const event = buildDriftAlertEvent({
-      id: newId(),
-      tenantId: payload.accountId,
-      recipient: deps.alertRecipient,
-      controlId: transition.controlId,
-      collectorId: transition.collectorId,
-      reason: transition.toReason ?? "evidence regressed to flagged",
-      now,
-    });
-    await deliverToAll(event, deps.alertChannels);
+  if (prior !== null) {
+    for (const transition of transitions) {
+      if (transition.to !== "flagged") continue;
+      const candidates = deviationsByControl.get(transition.controlId) ?? [];
+      if (candidates.some((d) => isTransitionSuppressed(transition, d, now)))
+        continue;
+      const event = buildDriftAlertEvent({
+        id: newId(),
+        tenantId: payload.accountId,
+        recipient: deps.alertRecipient,
+        controlId: transition.controlId,
+        collectorId: transition.collectorId,
+        reason: transition.toReason ?? "evidence regressed to flagged",
+        now,
+      });
+      await deliverToAll(event, deps.alertChannels);
+    }
   }
 
   await deps.persistSnapshot(payload.accountId, currentSnapshot);

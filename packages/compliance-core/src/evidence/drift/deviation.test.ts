@@ -44,20 +44,27 @@ describe("acceptDeviation", () => {
     expect(deviation.baseline).toEqual({ [COLLECTOR_ID]: ACCEPTED_REASON });
   });
 
-  test("a control with no flagged evidence has nothing to accept — fails closed", () => {
+  test("a control with no flagged evidence yields a legal, inert deviation (empty baseline)", () => {
     const passingSnapshot: ComplianceSnapshot = [
       { controlId: CONTROL_ID, collectorId: COLLECTOR_ID, status: "pass" },
     ];
-    expect(() =>
-      acceptDeviation({
-        id: "dev-2",
-        controlId: CONTROL_ID,
-        reason: "n/a",
-        acceptor: "compliance@buyer.example",
-        expiresAt: "2027-01-01T00:00:00.000Z",
-        snapshot: passingSnapshot,
-      }),
-    ).not.toThrow(); // parses fine — baseline is legitimately empty (no flagged rows)
+    const deviation = acceptDeviation({
+      id: "dev-2",
+      controlId: CONTROL_ID,
+      reason: "n/a",
+      acceptor: "compliance@buyer.example",
+      expiresAt: "2027-01-01T00:00:00.000Z",
+      snapshot: passingSnapshot,
+    });
+    expect(deviation.baseline).toEqual({});
+    // An empty baseline matches nothing — it never suppresses any transition.
+    expect(
+      isTransitionSuppressed(
+        regressionTransition(),
+        deviation,
+        new Date("2026-08-01T00:00:00.000Z"),
+      ),
+    ).toBe(false);
   });
 
   test("a malformed expiresAt fails closed (ValidationError)", () => {

@@ -26,15 +26,20 @@ export const acceptedDeviationSchema = strictObject({
    * time (see `acceptDeviation`). A control may carry more than one flagged evidence item; every one
    * present at acceptance is in the baseline.
    */
-  baseline: z.record(z.string(), z.string()),
+  baseline: z.record(
+    z.string().trim().min(1).max(200),
+    z.string().trim().min(1).max(2000),
+  ),
 });
 export type AcceptedDeviation = z.infer<typeof acceptedDeviationSchema>;
 
 /**
  * Build an accepted deviation, DERIVING `baseline` from the current `snapshot`'s flagged rows for
  * `controlId` — never hand-supplied, so a deviation can't be minted against a gap that doesn't
- * actually exist. Fails closed (`ValidationError`) when the control has no flagged evidence to
- * accept — there is nothing to grant a deviation against.
+ * actually exist. When the control has no flagged evidence at acceptance time, `baseline` is
+ * legitimately empty — this is NOT rejected: it is a valid, inert deviation. An empty baseline
+ * matches nothing, so `isTransitionSuppressed` always returns `false` for it (there is nothing to
+ * suppress against); it only becomes load-bearing once a matching flagged reason is accepted.
  */
 export function acceptDeviation(input: {
   readonly id: string;

@@ -26,6 +26,7 @@ import {
 const ACCOUNT_ID = "tenant-drift-1";
 const CONTROL_ID = "DATA-PROTECTION.DISPOSAL";
 const COLLECTOR_ID = "substrate.worm-retention-floor";
+const COLLECTOR_ID_2 = "substrate.some-other-collector";
 
 /** Build a one-control evidence pack; `status` drives whether that control's sole evidence item
  *  passes or is flagged with `reason`. Reuses the real generator so the fixture is representative. */
@@ -65,6 +66,52 @@ function buildPack(
   });
 }
 
+/** A one-control, TWO-collector evidence pack (WR-02): `statusA`/`statusB` drive each collector's
+ *  own evidence item independently, so a control can carry two distinct active gaps at once. */
+function buildTwoCollectorPack(
+  now: Date,
+  a: { status: "pass" | "flagged"; reason?: string },
+  b: { status: "pass" | "flagged"; reason?: string },
+): EvidencePack {
+  function item(collectorId: string, status: "pass" | "flagged") {
+    return {
+      collectorId,
+      controlId: CONTROL_ID,
+      title: "WORM retention meets the legal floor",
+      summary: "retention posture",
+      facts: { ok: status === "pass" },
+      manualSlots: [],
+    };
+  }
+  return generateEvidencePack({
+    tenantId: ACCOUNT_ID,
+    framework: { id: "soc2-tsc", title: "SOC 2", version: "2024.1" },
+    chainAnchor: { length: 1, tipHash: "a".repeat(64) },
+    crosswalkRollup: { cells: [] },
+    controls: [
+      {
+        controlId: CONTROL_ID,
+        title: "Data disposal",
+        family: "Data Protection",
+        statement: "WORM retention meets the legal floor",
+        crosswalk: [],
+        evidence: [
+          a.status === "pass"
+            ? passResult(item(COLLECTOR_ID, "pass"))
+            : flaggedResult(item(COLLECTOR_ID, "flagged"), a.reason ?? "gap A"),
+          b.status === "pass"
+            ? passResult(item(COLLECTOR_ID_2, "pass"))
+            : flaggedResult(
+                item(COLLECTOR_ID_2, "flagged"),
+                b.reason ?? "gap B",
+              ),
+        ],
+      },
+    ],
+    now,
+  });
+}
+
 /** An in-memory fake wiring every dep — records every call for assertions. */
 function fakeDeps(): {
   deps: Parameters<typeof runComplianceSnapshotOnce>[1];
@@ -72,7 +119,7 @@ function fakeDeps(): {
   anchorAppends: Array<{ accountId: string; digest: string }>;
   outboxRows: Array<{ accountId: string; anchor: SnapshotAnchorResult }>;
   snapshots: Map<string, ComplianceSnapshot>;
-  deviations: Map<string, AcceptedDeviation>;
+  deviations: Map<string, AcceptedDeviation[]>;
   nextPack: { current: EvidencePack | null };
 } {
   const delivered: DriftAlertEvent[] = [];
@@ -80,7 +127,7 @@ function fakeDeps(): {
   const outboxRows: Array<{ accountId: string; anchor: SnapshotAnchorResult }> =
     [];
   const snapshots = new Map<string, ComplianceSnapshot>();
-  const deviations = new Map<string, AcceptedDeviation>();
+  const deviations = new Map<string, AcceptedDeviation[]>();
   const nextPack: { current: EvidencePack | null } = { current: null };
   let anchorLength = 0;
 
@@ -106,8 +153,7 @@ function fakeDeps(): {
       snapshots.set(accountId, snapshot);
     },
     async loadDeviations(accountId: string) {
-      const d = deviations.get(accountId);
-      return d === undefined ? [] : [d];
+      return deviations.get(accountId) ?? [];
     },
     alertChannels: [captureChannel],
     alertRecipient: "compliance@buyer.example",
@@ -246,8 +292,7 @@ describe("runComplianceSnapshotOnce — regression alerting + deviation suppress
         reason: knownGapReason,
       },
     ];
-    deviations.set(
-      ACCOUNT_ID,
+    deviations.set(ACCOUNT_ID, [
       acceptDeviation({
         id: "dev-1",
         controlId: CONTROL_ID,
@@ -256,7 +301,7 @@ describe("runComplianceSnapshotOnce — regression alerting + deviation suppress
         expiresAt: "2027-01-01T00:00:00.000Z",
         snapshot: flaggedSnapshotForBaseline,
       }),
-    );
+    ]);
 
     nextPack.current = buildPack(
       new Date("2026-08-02T00:00:00.000Z"),
@@ -280,8 +325,7 @@ describe("runComplianceSnapshotOnce — regression alerting + deviation suppress
     await runComplianceSnapshotOnce({ accountId: ACCOUNT_ID }, deps);
 
     const acceptedReason = "retain_until short of the floor";
-    deviations.set(
-      ACCOUNT_ID,
+    deviations.set(ACCOUNT_ID, [
       acceptDeviation({
         id: "dev-1",
         controlId: CONTROL_ID,
@@ -297,7 +341,7 @@ describe("runComplianceSnapshotOnce — regression alerting + deviation suppress
           },
         ],
       }),
-    );
+    ]);
 
     // A DIFFERENT, unaccepted flagged reason — a genuine new/worse gap.
     nextPack.current = buildPack(
@@ -321,8 +365,7 @@ describe("runComplianceSnapshotOnce — regression alerting + deviation suppress
 
     const knownGapReason = "retain_until short of the floor";
     // Already-expired relative to the injected `now` (2026-08-01) the fake deps always return.
-    deviations.set(
-      ACCOUNT_ID,
+    deviations.set(ACCOUNT_ID, [
       acceptDeviation({
         id: "dev-1",
         controlId: CONTROL_ID,
@@ -338,7 +381,7 @@ describe("runComplianceSnapshotOnce — regression alerting + deviation suppress
           },
         ],
       }),
-    );
+    ]);
     // Reset the "previous" snapshot back to passing so this run again produces a pass -> flagged
     // transition (simulating: the gap recurred after the deviation's window lapsed).
     snapshots.set(ACCOUNT_ID, [
@@ -357,5 +400,130 @@ describe("runComplianceSnapshotOnce — regression alerting + deviation suppress
 
     expect(result.transitions).toHaveLength(1);
     expect(delivered).toHaveLength(1); // expired -> not suppressed
+  });
+});
+
+describe("runComplianceSnapshotOnce — multiple active deviations on one control (WR-02)", () => {
+  async function runWithOrder(
+    order: "a-then-b" | "b-then-a",
+  ): Promise<DriftAlertEvent[]> {
+    const { deps, delivered, deviations, nextPack } = fakeDeps();
+
+    nextPack.current = buildTwoCollectorPack(
+      new Date("2026-08-01T00:00:00.000Z"),
+      { status: "pass" },
+      { status: "pass" },
+    );
+    await runComplianceSnapshotOnce({ accountId: ACCOUNT_ID }, deps);
+
+    const reasonA = "gap A — accepted";
+    const reasonB = "gap B — accepted";
+    // Two SEPARATE acceptances, each against a snapshot carrying only its own collector's gap —
+    // mirroring two independent accept actions, each with its own narrow baseline.
+    const devA = acceptDeviation({
+      id: "dev-a",
+      controlId: CONTROL_ID,
+      reason: "accepted gap A",
+      acceptor: "compliance@buyer.example",
+      expiresAt: "2027-01-01T00:00:00.000Z",
+      snapshot: [
+        {
+          controlId: CONTROL_ID,
+          collectorId: COLLECTOR_ID,
+          status: "flagged",
+          reason: reasonA,
+        },
+      ],
+    });
+    const devB = acceptDeviation({
+      id: "dev-b",
+      controlId: CONTROL_ID,
+      reason: "accepted gap B",
+      acceptor: "compliance@buyer.example",
+      expiresAt: "2027-01-01T00:00:00.000Z",
+      snapshot: [
+        {
+          controlId: CONTROL_ID,
+          collectorId: COLLECTOR_ID_2,
+          status: "flagged",
+          reason: reasonB,
+        },
+      ],
+    });
+    deviations.set(
+      ACCOUNT_ID,
+      order === "a-then-b" ? [devA, devB] : [devB, devA],
+    );
+
+    nextPack.current = buildTwoCollectorPack(
+      new Date("2026-08-02T00:00:00.000Z"),
+      { status: "flagged", reason: reasonA },
+      { status: "flagged", reason: reasonB },
+    );
+    await runComplianceSnapshotOnce({ accountId: ACCOUNT_ID }, deps);
+
+    return delivered;
+  }
+
+  test("both collectors' regressions are suppressed regardless of deviation array order (a-then-b)", async () => {
+    expect(await runWithOrder("a-then-b")).toHaveLength(0);
+  });
+
+  test("both collectors' regressions are suppressed regardless of deviation array order (b-then-a)", async () => {
+    expect(await runWithOrder("b-then-a")).toHaveLength(0);
+  });
+});
+
+describe("runComplianceSnapshotOnce — first run never alerts on pre-existing gaps (WR-03)", () => {
+  test("a flagged first-run pack yields zero deliveries but still anchors once and persists", async () => {
+    const { deps, delivered, anchorAppends, outboxRows, snapshots, nextPack } =
+      fakeDeps();
+
+    nextPack.current = buildPack(
+      new Date("2026-08-01T00:00:00.000Z"),
+      "flagged",
+      "pre-existing gap, never previously seen",
+    );
+    const result = await runComplianceSnapshotOnce(
+      { accountId: ACCOUNT_ID },
+      deps,
+    );
+
+    expect(delivered).toHaveLength(0);
+    expect(anchorAppends).toHaveLength(1);
+    expect(outboxRows).toHaveLength(1);
+    expect(snapshots.get(ACCOUNT_ID)?.[0]?.status).toBe("flagged");
+    expect(result.transitions.some((t) => t.to === "flagged")).toBe(true);
+  });
+
+  test("a NEW collector appearing flagged on a later run still alerts (no from === absent gate)", async () => {
+    const { deps, delivered, nextPack } = fakeDeps();
+
+    nextPack.current = buildPack(new Date("2026-08-01T00:00:00.000Z"), "pass");
+    await runComplianceSnapshotOnce({ accountId: ACCOUNT_ID }, deps); // run 1: baseline
+
+    nextPack.current = buildPack(new Date("2026-08-02T00:00:00.000Z"), "pass");
+    await runComplianceSnapshotOnce({ accountId: ACCOUNT_ID }, deps); // run 2: still clean
+
+    // Run 3 introduces a brand-new collector, straight to flagged (from: "absent" -> "flagged").
+    nextPack.current = buildTwoCollectorPack(
+      new Date("2026-08-03T00:00:00.000Z"),
+      { status: "pass" },
+      {
+        status: "flagged",
+        reason: "a brand new collector, flagged from birth",
+      },
+    );
+    const result = await runComplianceSnapshotOnce(
+      { accountId: ACCOUNT_ID },
+      deps,
+    );
+
+    const newCollectorTransition = result.transitions.find(
+      (t) => t.collectorId === COLLECTOR_ID_2,
+    );
+    expect(newCollectorTransition?.from).toBe("absent");
+    expect(newCollectorTransition?.to).toBe("flagged");
+    expect(delivered).toHaveLength(1); // prior !== null (this is run 3) -> alerts normally
   });
 });
