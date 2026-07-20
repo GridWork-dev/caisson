@@ -43,8 +43,10 @@ function sortedEntries(facts: FlatFacts): Array<[string, unknown]> {
 }
 
 /** One citation row per crosswalk-rollup cell — Caisson's own product-mapping content, never tenant
- *  data (framework/reference/claim/status only). Justification is own-authored, readiness-language-safe
- *  prose built from the cell's already-safe enum fields (never the buyer's free text). */
+ *  data (framework/reference/claim/status/evidencePointer, the last being the cell's own
+ *  canonicalControlIds joined — see the CROSSWALK_ROLLUP_ROWS_KEY doc in facts.ts). Justification is
+ *  own-authored, readiness-language-safe prose built from the cell's already-safe enum fields (never
+ *  the buyer's free text); `renderCitationRow` also gates `control` + `claim` (defense in depth). */
 function crosswalkRollupRows(manifest: EvidencePackManifest): CitationRow[] {
   return manifest.crosswalkRollup.cells.map((cell) =>
     renderCitationRow({

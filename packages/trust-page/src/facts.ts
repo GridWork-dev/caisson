@@ -12,7 +12,9 @@ import type { FlatFacts } from "@caisson/artifact-render";
  * The sentinel allowlist entry (not a fact key) that gates whether the crosswalk-rollup citation-row
  * table renders at all. The rollup cells are Caisson's own product-mapping content (framework,
  * reference, claim, status — never tenant-private data), but the allowlist rule is absolute: absent
- * from the allowlist, it renders nothing, so even this coarse-grained section is opt-in.
+ * from the allowlist, it renders nothing, so even this coarse-grained section is opt-in. NOTE: opting
+ * in also exposes each cell's `canonicalControlIds` — the internal Caisson canonical control id(s),
+ * e.g. `AUDIT.IMMUTABLE-LOG` — via the rendered row's `evidencePointer` field in the JSON output.
  */
 export const CROSSWALK_ROLLUP_ROWS_KEY = "crosswalkRollup.rows";
 

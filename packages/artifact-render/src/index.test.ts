@@ -104,6 +104,23 @@ describe("renderCitationRow", () => {
     ).toThrow(ValidationError);
   });
 
+  test("rejects a banned claim word in control or claim too, not just justification (WR-02)", () => {
+    expect(() =>
+      renderCitationRow({
+        control: "certified vendor A.5.15",
+        claim: "applicable",
+        justification: "fine",
+      }),
+    ).toThrow(ValidationError);
+    expect(() =>
+      renderCitationRow({
+        control: "A.5.15",
+        claim: "verified",
+        justification: "fine",
+      }),
+    ).toThrow(ValidationError);
+  });
+
   test("rejects an out-of-bounds field", () => {
     expect(() =>
       renderCitationRow({

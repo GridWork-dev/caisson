@@ -22,7 +22,10 @@
 // control id regardless of input order, so the same row set always produces byte-identical output.
 import { randomUUID } from "node:crypto";
 import { canonicalize, ValidationError, type JsonValue } from "@caisson/kernel";
-import { renderCitationRow } from "@caisson/artifact-render";
+import {
+  assertReadinessLanguage,
+  renderCitationRow,
+} from "@caisson/artifact-render";
 import type { SoaRow } from "@caisson/frameworks-pack";
 import {
   CAISSON_OSCAL_NS,
@@ -108,6 +111,9 @@ export function toOscalIso27001Soa(
       "oscal ISO 27001 SoA export requires at least one row",
     );
   }
+  // Caller-supplied prose gates through the same claim filter every citation row carries below —
+  // a document title is a claim surface too (a caller could otherwise stamp "ISO 27001 certified").
+  assertReadinessLanguage(options.title, "oscal ISO 27001 SoA options.title");
   const newId = options.newId ?? randomUUID;
   const lastModified = options.now.toISOString();
 

@@ -23,10 +23,15 @@ export type CitationRow = z.infer<typeof citationRowSchema>;
 
 /**
  * Build one validated citation row. Fails closed (throws `ValidationError`) on an out-of-bounds field
- * or on `justification` using a banned claim word. Deterministic — no clock, no id minting.
+ * or on `control`, `claim`, or `justification` using a banned claim word — every free-text-ish field,
+ * not just the prose one, so a future caller building `control`/`claim` from tenant-derived data
+ * (rather than a fixed enum/id) can't smuggle a claim past this shared seam. Deterministic — no
+ * clock, no id minting.
  */
 export function renderCitationRow(input: CitationRowInput): CitationRow {
   const row = parseStrict(citationRowSchema, input);
+  assertReadinessLanguage(row.control, "citation row control");
+  assertReadinessLanguage(row.claim, "citation row claim");
   assertReadinessLanguage(row.justification, "citation row justification");
   return row;
 }

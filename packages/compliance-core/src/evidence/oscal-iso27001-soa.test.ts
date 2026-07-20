@@ -144,6 +144,18 @@ describe("toOscalIso27001Soa — component-definition shape", () => {
     expect(() => toOscalIso27001Soa([], det())).toThrow(ValidationError);
   });
 
+  test("fails closed on a banned-claim-word title (WR-01)", () => {
+    expect(() =>
+      toOscalIso27001Soa(
+        rows(),
+        det({
+          title:
+            "Caisson ISO/IEC 27001:2022 certified Statement of Applicability",
+        }),
+      ),
+    ).toThrow(ValidationError);
+  });
+
   test("no title/description/prop value claims compliant/certified/verified (ADR-0080)", () => {
     const doc = toOscalIso27001Soa(rows(), det());
     const forbidden = /\b(compliant|certified|verified)\b/i;

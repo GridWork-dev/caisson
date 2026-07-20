@@ -32,15 +32,18 @@ function main(): void {
     return;
   }
 
-  // Every control the shipped crosswalk covers, all marked "ready" — a representative CI smoke
-  // fixture, not a real tenant's evidence run (a real run supplies its own scope + statuses).
+  // Every control the shipped crosswalk covers, all marked "ready", PLUS one out-of-scope control
+  // (A.9.99, not a real Annex A id) — a representative CI smoke fixture, not a real tenant's
+  // evidence run (a real run supplies its own scope + statuses). The extra id is WR-03: without it
+  // the unresolved-requirement shape (no crosswalk row -> applicable: "unresolved") never reaches
+  // the schema-validated CI fixture, so a shape regression there would go undetected.
   const controlStatuses = new Map<string, ControlEvidenceStatus>(
     iso27001Crosswalk.rows
       .filter((row) => row.canonicalControlId !== undefined)
       .map((row) => [row.canonicalControlId as string, "ready" as const]),
   );
   const rows = computeIso27001SoaRows({
-    controlIds: iso27001Crosswalk.rows.map((row) => row.control),
+    controlIds: [...iso27001Crosswalk.rows.map((row) => row.control), "A.9.99"],
     crosswalk: iso27001Crosswalk,
     controlStatuses,
   });
