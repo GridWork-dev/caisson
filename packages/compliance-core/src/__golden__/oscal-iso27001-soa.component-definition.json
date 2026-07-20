@@ -1,0 +1,199 @@
+{
+  "component-definition": {
+    "uuid": "00000000-0000-4000-8000-000000000009",
+    "metadata": {
+      "title": "Caisson ISO/IEC 27001:2022 Statement of Applicability",
+      "last-modified": "2026-07-19T00:00:00.000Z",
+      "version": "2026.1",
+      "oscal-version": "1.2.2"
+    },
+    "components": [
+      {
+        "uuid": "00000000-0000-4000-8000-000000000010",
+        "type": "software",
+        "title": "Caisson technical-control mapping",
+        "description": "The Caisson technical mechanisms mapped against ISO/IEC 27001:2022 Annex A, expressed as an OSCAL Statement of Applicability.",
+        "control-implementations": [
+          {
+            "uuid": "00000000-0000-4000-8000-000000000011",
+            "source": "urn:caisson:crosswalk:iso-27001-annex-a",
+            "description": "Caisson technical-control crosswalk against ISO/IEC 27001:2022 Annex A.",
+            "implemented-requirements": [
+              {
+                "uuid": "00000000-0000-4000-8000-000000000001",
+                "control-id": "A.5.15",
+                "description": "Logical and physical access to information and other associated assets is governed by rules derived from business and security requirements.",
+                "props": [
+                  {
+                    "name": "caisson-soa-applicability",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "applicable"
+                  },
+                  {
+                    "name": "caisson-soa-status",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "gap"
+                  },
+                  {
+                    "name": "caisson-evidence-pointer",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "ACCESS-CONTROL.LOGICAL"
+                  }
+                ]
+              },
+              {
+                "uuid": "00000000-0000-4000-8000-000000000002",
+                "control-id": "A.5.37",
+                "description": "Operating procedures and records for information-security-relevant processes are documented, retained, and made available to those who need them.",
+                "props": [
+                  {
+                    "name": "caisson-soa-applicability",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "applicable"
+                  },
+                  {
+                    "name": "caisson-soa-status",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "ready"
+                  },
+                  {
+                    "name": "caisson-evidence-pointer",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "GOVERNANCE.DOCUMENTATION"
+                  }
+                ]
+              },
+              {
+                "uuid": "00000000-0000-4000-8000-000000000003",
+                "control-id": "A.8.10",
+                "description": "Information held in systems, devices, or storage media is deleted once it is no longer required, so it cannot be recovered.",
+                "props": [
+                  {
+                    "name": "caisson-soa-applicability",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "applicable"
+                  },
+                  {
+                    "name": "caisson-soa-status",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "ready"
+                  },
+                  {
+                    "name": "caisson-evidence-pointer",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "DATA-PROTECTION.DISPOSAL"
+                  }
+                ]
+              },
+              {
+                "uuid": "00000000-0000-4000-8000-000000000004",
+                "control-id": "A.8.15",
+                "description": "Activity logs are produced, retained, and protected from unauthorized access or alteration so that events remain reviewable.",
+                "props": [
+                  {
+                    "name": "caisson-soa-applicability",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "applicable"
+                  },
+                  {
+                    "name": "caisson-soa-status",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "ready"
+                  },
+                  {
+                    "name": "caisson-evidence-pointer",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "AUDIT.IMMUTABLE-LOG"
+                  }
+                ]
+              },
+              {
+                "uuid": "00000000-0000-4000-8000-000000000005",
+                "control-id": "A.8.16",
+                "description": "Systems are monitored for anomalous behavior so that potential security events are identified and can be acted on.",
+                "props": [
+                  {
+                    "name": "caisson-soa-applicability",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "applicable"
+                  },
+                  {
+                    "name": "caisson-soa-status",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "ready"
+                  },
+                  {
+                    "name": "caisson-evidence-pointer",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "SYSTEM-OPERATIONS.DETECTION"
+                  }
+                ]
+              },
+              {
+                "uuid": "00000000-0000-4000-8000-000000000006",
+                "control-id": "A.8.24",
+                "description": "The use of cryptography to protect information is governed by defined rules, including key management practices.",
+                "props": [
+                  {
+                    "name": "caisson-soa-applicability",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "applicable"
+                  },
+                  {
+                    "name": "caisson-soa-status",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "ready"
+                  },
+                  {
+                    "name": "caisson-evidence-pointer",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "DATA-PROTECTION.ENCRYPTION"
+                  }
+                ]
+              },
+              {
+                "uuid": "00000000-0000-4000-8000-000000000007",
+                "control-id": "A.8.5",
+                "description": "Access is granted only after a secure authentication procedure verifies the identity of the person or entity requesting it.",
+                "props": [
+                  {
+                    "name": "caisson-soa-applicability",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "applicable"
+                  },
+                  {
+                    "name": "caisson-soa-status",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "ready"
+                  },
+                  {
+                    "name": "caisson-evidence-pointer",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "AUTHENTICATION.ENTITY"
+                  }
+                ]
+              },
+              {
+                "uuid": "00000000-0000-4000-8000-000000000008",
+                "control-id": "A.9.99",
+                "description": "No Caisson crosswalk row maps this control to a shipped technical mechanism; applicability is not resolved by this generator and remains the buyer's own ISMS scoping decision.",
+                "props": [
+                  {
+                    "name": "caisson-soa-applicability",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "unresolved"
+                  },
+                  {
+                    "name": "caisson-soa-status",
+                    "ns": "https://caisson.sh/ns/oscal",
+                    "value": "unresolved"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

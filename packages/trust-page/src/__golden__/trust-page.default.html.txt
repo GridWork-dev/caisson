@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trust &amp; compliance posture</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 3rem auto; padding: 0 1rem; line-height: 1.5; }
+  h1 { font-size: 1.5rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid currentColor; }
+  .facts dt { font-weight: 600; }
+  .facts dd { margin: 0 0 0.75rem 0; }
+</style>
+</head>
+<body>
+<h1>Trust &amp; compliance posture</h1>
+<dl class="facts">
+<dt>framework.title</dt><dd>SOC 2 — Trust Services Criteria</dd>
+<dt>framework.version</dt><dd>2024.1</dd>
+<dt>summary.controlsReady</dt><dd>1</dd>
+<dt>summary.controlsWithGaps</dt><dd>0</dd>
+<dt>summary.posture</dt><dd>1 of 1 controls evidence-ready; no gaps recorded.</dd>
+<dt>summary.totalControls</dt><dd>1</dd>
+</dl>
+
+</body>
+</html>

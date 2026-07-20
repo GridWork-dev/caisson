@@ -7,8 +7,10 @@
 // `priceCents: 29900` is the locked standalone price for this carve ($299, ADR-0252); it must stay a
 // positive integer (ADR-0007). Dependencies are DOWN-ONLY (ADR-0003): the engine consumes the kernel
 // integrity floor, the framework catalogs it runs against, the field-crypto primitive its policy
-// collector inspects, and the generalized risk model its EU-AI-Act risk-register collector now runs
-// on — the Compliance edition composes this engine, never the reverse.
+// collector inspects, the generalized risk model its EU-AI-Act risk-register collector now runs
+// on, and the shared `@caisson/artifact-render` render seam its ISO 27001
+// Statement-of-Applicability export renders through — the Compliance edition composes this engine,
+// never the reverse.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -20,6 +22,7 @@ export default defineModule({
   priceCents: 29900,
   license: pkg.license,
   dependencies: [
+    "@caisson/artifact-render",
     "@caisson/field-crypto",
     "@caisson/frameworks-pack",
     "@caisson/kernel",
@@ -28,5 +31,5 @@ export default defineModule({
   golden: "src/__golden__",
   stability: "alpha",
   description:
-    "The compliance evidence engine: typed collectors, a deterministic canonical evidence-pack format and generator that refuses to emit when any control's evidence is unresolved, and OSCAL exports (assessment plan, assessment results, plan of action and milestones, XML round-trip).",
+    "The compliance evidence engine: typed collectors, a deterministic canonical evidence-pack format and generator that refuses to emit when any control's evidence is unresolved, an ISO/IEC 27001:2022 Statement-of-Applicability export, and OSCAL exports (assessment plan, assessment results, plan of action and milestones, catalog, SoA).",
 });

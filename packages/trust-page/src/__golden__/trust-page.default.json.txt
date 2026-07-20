@@ -1,0 +1,11 @@
+{
+  "facts": {
+    "framework.title": "SOC 2 — Trust Services Criteria",
+    "framework.version": "2024.1",
+    "summary.controlsReady": 1,
+    "summary.controlsWithGaps": 0,
+    "summary.posture": "1 of 1 controls evidence-ready; no gaps recorded.",
+    "summary.totalControls": 1
+  },
+  "crosswalk": []
+}
