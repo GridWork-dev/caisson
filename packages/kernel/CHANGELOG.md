@@ -1,5 +1,11 @@
 # @caisson/kernel
 
+## 0.5.3
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+
 ## 0.5.2
 
 ### Patch Changes

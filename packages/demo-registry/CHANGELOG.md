@@ -1,5 +1,24 @@
 # @caisson/demo-registry
 
+## 0.2.9
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- 16de8df: Declares each package's type-check-only `build` task as producing no cacheable output (`outputs: []`), clearing the five stale "no output files found" warnings from a clean turbo build. No behavior change.
+- Updated dependencies [bd071c9]
+- Updated dependencies [cd48b89]
+- Updated dependencies [bd071c9]
+- Updated dependencies [c36b9e2]
+  - @caisson/audit-worm@2.1.4
+  - @caisson/ui@0.6.2
+  - @caisson/ai-meter@1.0.8
+  - @caisson/audit-harness@1.0.1
+  - @caisson/license-issue@1.0.4
+  - @caisson/local-store@1.0.4
+  - @caisson/prompt-registry@1.0.4
+  - @caisson/ui-pro@0.3.3
+
 ## 0.2.8
 
 ### Patch Changes

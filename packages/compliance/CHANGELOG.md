@@ -1,5 +1,23 @@
 # @caisson/compliance
 
+## 0.5.9
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- Updated dependencies [bd071c9]
+- Updated dependencies [c36b9e2]
+  - @caisson/audit-worm@2.1.4
+  - @caisson/alerting@0.2.4
+  - @caisson/compliance-core@0.5.1
+  - @caisson/field-crypto@0.3.5
+  - @caisson/frameworks-pack@0.5.3
+  - @caisson/kernel@0.5.3
+  - @caisson/migrate@0.2.9
+  - @caisson/retention-runner@0.1.12
+  - @caisson/signing-primitive@0.3.5
+  - @caisson/tenancy-rls@0.5.5
+
 ## 0.5.8
 
 ### Patch Changes

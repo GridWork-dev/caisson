@@ -1,5 +1,19 @@
 # @caisson/local-ai
 
+## 0.2.10
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- Updated dependencies [c36b9e2]
+  - @caisson/field-crypto@0.3.5
+  - @caisson/kernel@0.5.3
+  - @caisson/license-verify@0.3.5
+  - @caisson/local-inference@0.1.6
+  - @caisson/local-privacy@0.1.6
+  - @caisson/local-store@1.0.4
+  - @caisson/local-sync@0.1.6
+
 ## 0.2.9
 
 ### Patch Changes

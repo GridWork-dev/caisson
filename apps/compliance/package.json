@@ -1,6 +1,6 @@
 {
   "name": "@caisson/app-compliance",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
