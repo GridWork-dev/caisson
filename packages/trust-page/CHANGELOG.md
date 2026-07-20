@@ -1,5 +1,18 @@
 # @caisson/trust-page
 
+## 0.3.0
+
+### Minor Changes
+
+- 1c5c137: The trust page is now sold à la carte at $149 and included in the Compliance and
+  Everything bundles: a self-contained static trust page built from an evidence pack
+  through allowlist-based redaction, hostable anywhere to show prospects a compliance
+  posture.
+
+### Patch Changes
+
+- @caisson/compliance-core@0.6.1
+
 ## 0.2.0
 
 ### Minor Changes

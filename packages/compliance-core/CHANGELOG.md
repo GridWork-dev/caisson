@@ -1,5 +1,12 @@
 # @caisson/compliance-core
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [1c5c137]
+  - @caisson/risk-register@0.3.0
+
 ## 0.6.0
 
 ### Minor Changes

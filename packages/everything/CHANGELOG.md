@@ -1,5 +1,13 @@
 # @caisson/everything
 
+## 0.3.0
+
+### Minor Changes
+
+- 1c5c137: The Everything bundle now includes the three new compliance modules — access reviews,
+  the risk register, and the buyer trust page — as members. The bundle price is
+  unchanged; its computed savings against the à-la-carte catalog improve.
+
 ## 0.2.6
 
 ### Patch Changes

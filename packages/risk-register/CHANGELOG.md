@@ -1,5 +1,14 @@
 # @caisson/risk-register
 
+## 0.3.0
+
+### Minor Changes
+
+- 1c5c137: The risk register is now sold à la carte at $279 and included in the Compliance and
+  Everything bundles: likelihood x impact scoring with a computed residual, operator
+  overrides recorded as chained exceptions, crosswalks into shipped framework packs,
+  and a risk-treatment-plan evidence artifact.
+
 ## 0.2.0
 
 ### Minor Changes
