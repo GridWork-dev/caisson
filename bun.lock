@@ -139,7 +139,7 @@
     },
     "apps/compliance": {
       "name": "@caisson/app-compliance",
-      "version": "0.0.16",
+      "version": "0.0.17",
       "dependencies": {
         "@caisson/audit-worm": "workspace:*",
         "@caisson/compliance": "workspace:*",
@@ -265,7 +265,7 @@
     },
     "packages/access-review": {
       "name": "@caisson/access-review",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@caisson/jobs": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -695,7 +695,7 @@
     },
     "packages/compliance": {
       "name": "@caisson/compliance",
-      "version": "0.5.10",
+      "version": "0.6.0",
       "dependencies": {
         "@caisson/alerting": "workspace:*",
         "@caisson/audit-worm": "workspace:*",
@@ -719,7 +719,7 @@
     },
     "packages/compliance-core": {
       "name": "@caisson/compliance-core",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "dependencies": {
         "@caisson/artifact-render": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
@@ -826,7 +826,7 @@
     },
     "packages/everything": {
       "name": "@caisson/everything",
-      "version": "0.2.6",
+      "version": "0.3.0",
     },
     "packages/field-crypto": {
       "name": "@caisson/field-crypto",
@@ -1292,7 +1292,7 @@
     },
     "packages/risk-register": {
       "name": "@caisson/risk-register",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@caisson/audit-worm": "workspace:*",
         "@caisson/frameworks-pack": "workspace:*",
@@ -1309,7 +1309,7 @@
     },
     "packages/signing-primitive": {
       "name": "@caisson/signing-primitive",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@noble/curves": "2.2.0",
@@ -1359,7 +1359,7 @@
     },
     "packages/trust-page": {
       "name": "@caisson/trust-page",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@caisson/artifact-render": "workspace:*",
         "@caisson/compliance-core": "workspace:*",
