@@ -1,5 +1,14 @@
 # @caisson/access-review
 
+## 0.3.0
+
+### Minor Changes
+
+- 1c5c137: Access reviews are now sold à la carte at $199 and included in the Compliance and
+  Everything bundles: audit-prep review campaigns over an imported membership snapshot,
+  with per-reviewee attested approve/revoke decisions recorded into the WORM log and
+  undecided reviewees flagged, never auto-approved.
+
 ## 0.2.0
 
 ### Minor Changes
