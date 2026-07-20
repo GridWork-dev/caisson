@@ -16,4 +16,5 @@ import {
 ```
 
 Commercial module. Consumes `@caisson/kernel`, the framework catalogs in `@caisson/frameworks-pack`,
-and `@caisson/field-crypto` — down-only, composed by the Compliance edition, never the reverse.
+`@caisson/field-crypto`, and `@caisson/risk-register` (the generalized model the EU-AI-Act
+risk-register collector runs on) — down-only, composed by the Compliance edition, never the reverse.

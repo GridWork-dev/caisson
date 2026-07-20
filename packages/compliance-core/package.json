@@ -24,6 +24,7 @@
     "@caisson/field-crypto": "workspace:*",
     "@caisson/frameworks-pack": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/risk-register": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

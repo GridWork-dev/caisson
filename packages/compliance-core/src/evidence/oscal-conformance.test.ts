@@ -19,6 +19,7 @@ import {
 import type { CollectorResult } from "./collector.ts";
 import { fieldCryptoPolicyCollector } from "./collectors/field-crypto-policy.ts";
 import { aiRiskRegisterCollector } from "./collectors/ai-risk-register.ts";
+import { defineRiskEntry } from "@caisson/risk-register";
 import { toOscalAssessmentPlan } from "./oscal-assessment-plan.ts";
 import {
   OSCAL_VERSION,
@@ -160,18 +161,26 @@ function aiRiskRegisterControl(): ControlInput {
     controlId: "RISK-MANAGEMENT.AI-REGISTER",
   }).collect({
     entries: [
-      {
+      defineRiskEntry({
         riskId: "R-1",
         subject: "default lane (openai/gpt-4o)",
-        assessed: true,
-        mitigated: true,
-      },
-      {
+        likelihood: "possible",
+        impact: "moderate",
+        treatmentPlan: "Mitigation in force for this lane.",
+        owner: "ai-safety@example.com",
+        evidenceDigest: "a".repeat(64),
+        crosswalk: [],
+      }),
+      defineRiskEntry({
         riskId: "R-2",
         subject: "vision lane (anthropic/claude)",
-        assessed: true,
-        mitigated: true,
-      },
+        likelihood: "possible",
+        impact: "moderate",
+        treatmentPlan: "Mitigation in force for this lane.",
+        owner: "ai-safety@example.com",
+        evidenceDigest: "a".repeat(64),
+        crosswalk: [],
+      }),
     ],
   });
   return {
