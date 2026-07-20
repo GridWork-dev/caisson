@@ -2807,8 +2807,8 @@
     },
     "@caisson/kernel@0.5.3": {
       "key": "kernel/kernel-0.5.3.tgz",
-      "shasum": "1afce9fba3edea5e2aa7f177c9ae573d9e4f2956",
-      "integrity": "sha512-SQMgUr8Es4h4oCBPUSKtyC4m82DN8tiEhCPdqxL9dwA2ohK6MZ5Pj9Ps+Dsq0p1BlbaYjW1naj3zWC9bqh+j8Q==",
+      "shasum": "074b01fd5786e2d98ca11e80781e7ccb9fa79e22",
+      "integrity": "sha512-K9grntLemQPtRvknqgdvFzbpl1mBdfGQB5Q7Z5er34cv9ak/y+QDEGIF8XF+YFcRKNvxOz1yjI+fydZZ3zcDIA==",
       "size": 71535,
       "meta": {
         "dependencies": {
@@ -2818,7 +2818,7 @@
           "caisson-gate": "./src/gate.ts"
         }
       },
-      "lockHash": "8cc61860b31518f8000c75a59a03af647c47ef7bb46f15de3dc2292861137a61"
+      "lockHash": "3dd4d2edee2b0d873209531aa364e12ecff41faded4428badf4cedaf7af5fd05"
     },
     "@caisson/license-verify@0.2.2": {
       "key": "license-verify/license-verify-0.2.2.tgz",
