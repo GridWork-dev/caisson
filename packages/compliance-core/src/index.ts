@@ -33,3 +33,16 @@ export * from "./evidence/oscal-catalog-export.ts";
 
 // --- Control<->collector binding table (PLAN Group E) — a derived artifact, not a config layer. --
 export * from "./evidence/binding-table.ts";
+
+// --- Compliance drift monitor (ADR-0371) — scheduled re-run of the registered collectors, a
+// deterministic previous-vs-current snapshot diff, accepted-deviation alert suppression, and
+// every-run WORM anchoring. Composed from ports STRUCTURALLY compatible with @caisson/jobs'
+// TaskDefinition, @caisson/alerting's AlertChannel, and @caisson/audit-worm's chain+outbox seam —
+// compliance-core stays dependency-free of all three (the same precedent `external-anchor.ts`
+// already set for @caisson/audit-worm), so a caller with those real packages wires them in directly.
+export * from "./evidence/drift/types.ts";
+export * from "./evidence/drift/diff.ts";
+export * from "./evidence/drift/deviation.ts";
+export * from "./evidence/drift/alert-sink.ts";
+export * from "./evidence/drift/anchor-sink.ts";
+export * from "./evidence/drift/schedule.ts";

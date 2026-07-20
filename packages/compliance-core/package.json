@@ -27,7 +27,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@caisson/alerting": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
+    "@caisson/jobs": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "eslint": "catalog:",
