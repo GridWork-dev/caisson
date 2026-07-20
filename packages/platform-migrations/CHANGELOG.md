@@ -1,5 +1,20 @@
 # @caisson/platform-migrations
 
+## 0.2.10
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- Updated dependencies [c36b9e2]
+- Updated dependencies [b8b14b4]
+  - @caisson/ai-meter@1.0.8
+  - @caisson/auth@0.4.0
+  - @caisson/billing-orchestration@0.3.4
+  - @caisson/credits@0.5.8
+  - @caisson/kernel@0.5.3
+  - @caisson/migrate@0.2.9
+  - @caisson/service-license@0.0.17
+
 ## 0.2.9
 
 ### Patch Changes

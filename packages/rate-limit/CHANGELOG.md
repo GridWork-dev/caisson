@@ -1,5 +1,14 @@
 # @caisson/rate-limit
 
+## 0.1.7
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- Updated dependencies [c36b9e2]
+  - @caisson/kernel@0.5.3
+  - @caisson/tenancy-rls@0.5.5
+
 ## 0.1.6
 
 ### Patch Changes

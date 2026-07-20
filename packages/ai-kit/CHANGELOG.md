@@ -1,5 +1,22 @@
 # @caisson/ai-kit
 
+## 0.5.4
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- Updated dependencies [c36b9e2]
+  - @caisson/agent-trajectory@0.3.4
+  - @caisson/ai-config@0.3.5
+  - @caisson/ai-meter@1.0.8
+  - @caisson/credits@0.5.8
+  - @caisson/field-crypto@0.3.5
+  - @caisson/guardrails@0.4.9
+  - @caisson/jobs@0.6.3
+  - @caisson/kernel@0.5.3
+  - @caisson/prompt-registry@1.0.4
+  - @caisson/tenancy-rls@0.5.5
+
 ## 0.5.3
 
 ### Patch Changes

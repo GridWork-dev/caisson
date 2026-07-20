@@ -1,5 +1,51 @@
 # @caisson/site
 
+## 0.2.13
+
+### Patch Changes
+
+- cd48b89: Bespoke catalog marks for the twelve newest module pages replace the temporary generic icons: agent-trajectory, tool-exec, org-controls, compliance-core, billing-orchestration, ui-pro, local-inference, local-privacy, local-sync, frameworks-pack, signing-primitive, and credits now each carry a purpose-drawn domain glyph in the same line-icon family as the rest of the catalog, so every module reads as part of one designed set across the nav, cards, and depth-page heroes.
+- 3caa1e7: Glossary: seven new mechanism terms — durable outbox, idempotency key, canonical JSON, additional authenticated data, PII redaction, prompt injection, and deterministic replay — each grounded in the shipped implementation with real code artifacts. The glossary now covers fifty terms.
+- 8f07b01: Glossary: seven new terms covering the recently shipped compliance and agent surfaces — RFC 3161 timestamping, transparency log, evidence receipt, compliance crosswalk, signed audit anchor, agent trajectory, and token hashing at rest — plus an accuracy pass over all existing glossary pages: code artifacts regenerated from current shipped source and several claims scoped precisely to what ships (shipped KMS drivers, the admin-write package boundary, the encryptedColumn vs encryptField grade split, BYOK credit coverage, retention default vs floor).
+- e07319f: Marketplace: twelve new module depth pages — agent-trajectory, tool-exec, org-controls, compliance-core, billing-orchestration, ui-pro, local-inference, local-privacy, local-sync, frameworks-pack, signing-primitive, and credits — each with real code artifacts, capability grids, and buyer FAQs; every sold standalone module now carries a full page. Also fixes the ai-evals page to state its real bundle membership (it is included in the AI-Production bundle) and adds catalog marks for the new pages.
+- b8b14b4: Session tokens are now stored hashed at rest: buyer session cookies are looked up by an
+  HMAC-SHA-256 lookup key instead of the raw bearer token, so a database export alone is no
+  longer a usable session credential. This ships as a one-time hard cutover — every
+  currently-signed-in buyer is signed out and simply signs back in.
+- d6e9c14: The /updates page now explains how Compliance Updates coverage windows work: what each renewal cycle stamps, how the registry resolves your most favorable window across owned licenses and an active subscription, and what happens (and doesn't happen) to already-pulled code if you cancel.
+- Updated dependencies [bd071c9]
+- Updated dependencies [cd48b89]
+- Updated dependencies [bd071c9]
+- Updated dependencies [c36b9e2]
+- Updated dependencies [b8b14b4]
+- Updated dependencies [16de8df]
+  - @caisson/audit-worm@2.1.4
+  - @caisson/ui@0.6.2
+  - @caisson/brand@0.1.4
+  - @caisson/ai-kit@0.5.4
+  - @caisson/ai-meter@1.0.8
+  - @caisson/auth@0.4.0
+  - @caisson/billing@0.6.4
+  - @caisson/cli@0.7.4
+  - @caisson/credits@0.5.8
+  - @caisson/demo-registry@0.2.9
+  - @caisson/email@0.5.3
+  - @caisson/field-crypto@0.3.5
+  - @caisson/kernel@0.5.3
+  - @caisson/local-store@1.0.4
+  - @caisson/migrate@0.2.9
+  - @caisson/observability@0.3.4
+  - @caisson/org-controls@0.3.4
+  - @caisson/platform-migrations@0.2.10
+  - @caisson/platform-reads@0.2.7
+  - @caisson/pricebook@0.7.1
+  - @caisson/prompt-registry@1.0.4
+  - @caisson/rate-limit@0.1.7
+  - @caisson/registry-schema@0.5.6
+  - @caisson/tenancy-rls@0.5.5
+  - @caisson/ui-pro@0.3.3
+  - @caisson/service-license@0.0.17
+
 ## 0.2.12
 
 ### Patch Changes

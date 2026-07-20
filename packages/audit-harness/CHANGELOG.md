@@ -1,5 +1,15 @@
 # @caisson/audit-harness
 
+## 1.0.1
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- Updated dependencies [cd48b89]
+- Updated dependencies [bd071c9]
+- Updated dependencies [c36b9e2]
+  - @caisson/ui@0.6.2
+
 ## 1.0.0
 
 ### Minor Changes

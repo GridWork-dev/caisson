@@ -1,5 +1,16 @@
 # @caisson/org-controls
 
+## 0.3.4
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- Updated dependencies [c36b9e2]
+- Updated dependencies [b8b14b4]
+  - @caisson/auth@0.4.0
+  - @caisson/kernel@0.5.3
+  - @caisson/tenancy-rls@0.5.5
+
 ## 0.3.3
 
 ### Patch Changes

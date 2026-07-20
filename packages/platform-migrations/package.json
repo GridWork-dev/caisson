@@ -1,6 +1,6 @@
 {
   "name": "@caisson/platform-migrations",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",

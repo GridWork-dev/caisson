@@ -1,5 +1,13 @@
 # @caisson/brand
 
+## 0.1.4
+
+### Patch Changes
+
+- cd48b89: Bespoke catalog marks for the twelve newest module pages replace the temporary generic icons: agent-trajectory, tool-exec, org-controls, compliance-core, billing-orchestration, ui-pro, local-inference, local-privacy, local-sync, frameworks-pack, signing-primitive, and credits now each carry a purpose-drawn domain glyph in the same line-icon family as the rest of the catalog, so every module reads as part of one designed set across the nav, cards, and depth-page heroes.
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- 16de8df: Declares each package's type-check-only `build` task as producing no cacheable output (`outputs: []`), clearing the five stale "no output files found" warnings from a clean turbo build. No behavior change.
+
 ## 0.1.3
 
 ### Patch Changes
