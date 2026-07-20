@@ -1,5 +1,19 @@
 # @caisson/mcp-server
 
+## 0.6.4
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- Updated dependencies [cd48b89]
+- Updated dependencies [bd071c9]
+- Updated dependencies [c36b9e2]
+  - @caisson/ui@0.6.2
+  - @caisson/ai-config@0.3.5
+  - @caisson/ds-manifest@0.2.2
+  - @caisson/kernel@0.5.3
+  - @caisson/registry-schema@0.5.6
+
 ## 0.6.3
 
 ### Patch Changes

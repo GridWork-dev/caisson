@@ -1,5 +1,26 @@
 # @caisson/service-intel
 
+## 0.0.6
+
+### Patch Changes
+
+- 3820d6f: `dep-digest` watcher: buyer-impact packages now split into direct vs transitive-only. A
+  dependency bump finding used to list only packages that declare the affected dependency in their
+  own manifest; it now also resolves `bun.lock` to find packages that only pull the dependency in
+  through another internal package or a resolved third-party package, and lists those separately.
+  If the lockfile lookup fails for any reason, the finding falls back to the direct-only list with
+  a note, so the watcher never drops a finding over it.
+- ad9b1e0: New weekly `dep-digest` watcher: flags stalled Renovate PRs, available toolchain/pinned-dependency
+  upgrades (including the exact-pinned better-auth session adapter and the native TypeScript
+  compiler pin), and new bun releases, holding a bump for a short window after publish before
+  reporting it as actionable. Each finding lists which internal packages depend on the affected
+  dependency directly. Alerts route through the same Telegram/Linear delivery path production error
+  findings already use. Private service — versioned, not published.
+- Updated dependencies [c36b9e2]
+  - @caisson/alerting@0.2.4
+  - @caisson/kernel@0.5.3
+  - @caisson/observability@0.3.4
+
 ## 0.0.5
 
 ### Patch Changes

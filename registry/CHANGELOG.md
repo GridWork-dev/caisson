@@ -1,5 +1,15 @@
 # @caisson/registry
 
+## 0.0.19
+
+### Patch Changes
+
+- c36b9e2: Builds now compile with the native TypeScript 7 compiler. The emitted type declarations are unchanged in API; some inferred type members appear in a different order in .d.ts files. Aggregate compile time drops roughly sevenfold.
+- Updated dependencies [c36b9e2]
+  - @caisson/license-verify@0.3.5
+  - @caisson/pricebook@0.7.1
+  - @caisson/registry-schema@0.5.6
+
 ## 0.0.18
 
 ### Patch Changes
