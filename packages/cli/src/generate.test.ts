@@ -464,7 +464,7 @@ describe("generate — framework templates (ADR-0287)", () => {
       "@caisson/credits": "0.2.0",
       "@caisson/field-crypto": "0.1.0",
       next: "^16.2.9",
-      "@caisson/kernel": "^0.4.2",
+      "@caisson/kernel": "^0.5.3",
     });
     expect(parsed.devDependencies).toMatchObject({
       typescript: "^5.6.0",
