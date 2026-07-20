@@ -1,13 +1,20 @@
-// src/evidence/collectors/ai-risk-register.ts — EU-AI-Act risk-register evidence (ADR-0058, ADR-0181,
-// ADR-0011). EU AI Act Art. 9: a high-risk AI system runs a documented risk-management system — every
-// identified risk is ASSESSED and has MITIGATION measures in force, over the system's lifecycle.
+// src/evidence/collectors/ai-risk-register.ts — EU-AI-Act risk-register evidence. EU AI Act Art. 9:
+// a high-risk AI system runs a documented risk-management system — every identified risk is rated
+// and has a mitigation measure in force, over the system's lifecycle.
 //
-// Pure, like `rls-force`/`worm-retention`: it imports nothing but the collector contract. The register
-// itself is traversed from the `ai-config` risk store AT THE EDGE (walking the configured AI lanes /
-// models and their recorded risk assessments) and handed in as a fact — keeping the collector
-// deterministic and free of any store/DB import. Fail-closed / flag-never-guess (ADR-0058):
+// An instance of the generalized risk model (`@caisson/risk-register`): the register traversed here
+// is a set of scored `RiskEntry` rows. Under that model, being rated (likelihood + impact recorded,
+// residual computed) is a structural property of register membership — you cannot add an entry
+// without scoring it — so "every risk has been assessed" now follows from the register existing at
+// all, and the collector's remaining question is whether a treatment plan is on record for each one.
+//
+// Pure, like `rls-force`/`worm-retention`: the register itself is traversed from the `ai-config`
+// risk store AT THE EDGE (walking the configured AI lanes / models and their recorded risk scores)
+// and handed in as a fact — keeping the collector deterministic and free of any store/DB import.
+// Fail-closed / flag-never-guess:
 //   - an empty register → `unresolved` (no risk-management system to attest);
-//   - any entry that is not assessed, or assessed-but-unmitigated → `flagged` (a real Art. 9 gap).
+//   - any entry with no treatment plan on record → `flagged` (a real Art. 9 gap).
+import type { RiskEntry } from "@caisson/risk-register";
 import {
   flaggedResult,
   passResult,
@@ -17,19 +24,11 @@ import {
   type ManualAttachmentSlot,
 } from "../collector.ts";
 
-/** One risk-register entry, traversed from the ai-config risk store at the edge. */
-export interface AiRiskEntryFact {
-  /** Stable risk id (register key). */
-  readonly riskId: string;
-  /** What the risk concerns — the AI lane / model / provider it was raised against. */
-  readonly subject: string;
-  /** A documented risk assessment has been performed for this entry. */
-  readonly assessed: boolean;
-  /** At least one mitigation measure is recorded and in force for this risk. */
-  readonly mitigated: boolean;
-}
+/** The base fact: the AI risk register in scope for the tenant/system — an instance of the
+ *  generalized `@caisson/risk-register` model. Kept as a named alias for callers already typed
+ *  against the collector's original field name. */
+export type AiRiskEntryFact = RiskEntry;
 
-/** The base fact: the AI risk register in scope for the tenant/system. */
 export interface AiRiskRegisterFact {
   readonly entries: readonly AiRiskEntryFact[];
 }
@@ -43,9 +42,10 @@ const DEFAULT_CONTROL_ID = "RISK-MANAGEMENT.AI-LIFECYCLE";
 const COLLECTOR_ID = "substrate.ai-risk-register";
 const TITLE = "AI risk register assessed and mitigated (EU AI Act Art. 9)";
 
-/** An entry is adequately managed iff it has been assessed AND has mitigation in force. */
+/** An entry is adequately managed iff it carries a recorded treatment plan — every entry reaching
+ *  this collector is already rated (a structural property of `RiskEntry` membership). */
 function isManaged(e: AiRiskEntryFact): boolean {
-  return e.assessed && e.mitigated;
+  return e.treatmentPlan !== null;
 }
 
 /** Build the AI risk-register traversal collector. Pure: a register snapshot in, a result out. */

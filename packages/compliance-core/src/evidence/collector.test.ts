@@ -20,10 +20,8 @@ import {
 } from "./collectors/rls-force.ts";
 import { wormRetentionCollector } from "./collectors/worm-retention.ts";
 import { fieldCryptoPolicyCollector } from "./collectors/field-crypto-policy.ts";
-import {
-  aiRiskRegisterCollector,
-  type AiRiskEntryFact,
-} from "./collectors/ai-risk-register.ts";
+import { aiRiskRegisterCollector } from "./collectors/ai-risk-register.ts";
+import { defineRiskEntry, type RiskEntry } from "@caisson/risk-register";
 
 /** A valid AES-256-GCM field-crypto envelope (base64) — the shape a PHI field carries at rest. */
 function encryptedSample(): string {
@@ -36,9 +34,34 @@ function encryptedSample(): string {
   });
 }
 
-/** A managed (assessed + mitigated) AI risk-register entry. */
-function managedRisk(riskId: string, subject: string): AiRiskEntryFact {
-  return { riskId, subject, assessed: true, mitigated: true };
+const RISK_DIGEST = "a".repeat(64);
+
+/** A managed (scored + mitigated) AI risk-register entry. */
+function managedRisk(riskId: string, subject: string): RiskEntry {
+  return defineRiskEntry({
+    riskId,
+    subject,
+    likelihood: "possible",
+    impact: "moderate",
+    treatmentPlan: "Mitigation in force for this lane.",
+    owner: "ai-safety@example.com",
+    evidenceDigest: RISK_DIGEST,
+    crosswalk: [],
+  });
+}
+
+/** A scored but unmitigated AI risk-register entry — no treatment plan on record. */
+function unmitigatedRisk(riskId: string, subject: string): RiskEntry {
+  return defineRiskEntry({
+    riskId,
+    subject,
+    likelihood: "possible",
+    impact: "moderate",
+    treatmentPlan: null,
+    owner: "ai-safety@example.com",
+    evidenceDigest: RISK_DIGEST,
+    crosswalk: [],
+  });
 }
 
 /** A minimal evidence item for exercising the result constructors directly. */
@@ -315,12 +338,12 @@ describe("aiRiskRegisterCollector (EU AI Act Art. 9)", () => {
     expect(r.item.facts.deficientRisks).toEqual([]);
   });
 
-  test("flags an unassessed or unmitigated risk (deficient ids sorted)", () => {
+  test("flags an unmitigated risk (deficient ids sorted)", () => {
     const r = collector.collect({
       entries: [
         managedRisk("R-2", "lane-a"),
-        { riskId: "R-3", subject: "lane-b", assessed: true, mitigated: false },
-        { riskId: "R-1", subject: "lane-c", assessed: false, mitigated: false },
+        unmitigatedRisk("R-3", "lane-b"),
+        unmitigatedRisk("R-1", "lane-c"),
       ],
     });
     expect(r.status).toBe("flagged");

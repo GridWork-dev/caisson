@@ -6,8 +6,9 @@
 //
 // `priceCents: 29900` is the locked standalone price for this carve ($299, ADR-0252); it must stay a
 // positive integer (ADR-0007). Dependencies are DOWN-ONLY (ADR-0003): the engine consumes the kernel
-// integrity floor, the framework catalogs it runs against, and the field-crypto primitive its policy
-// collector inspects — the Compliance edition composes this engine, never the reverse.
+// integrity floor, the framework catalogs it runs against, the field-crypto primitive its policy
+// collector inspects, and the generalized risk model its EU-AI-Act risk-register collector now runs
+// on — the Compliance edition composes this engine, never the reverse.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -22,6 +23,7 @@ export default defineModule({
     "@caisson/field-crypto",
     "@caisson/frameworks-pack",
     "@caisson/kernel",
+    "@caisson/risk-register",
   ],
   golden: "src/__golden__",
   stability: "alpha",
