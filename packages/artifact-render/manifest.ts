@@ -6,11 +6,12 @@
 // trust-page generator (`@caisson/trust-page`) share one legal-gate + redaction implementation
 // instead of each re-deriving the banned-claim-word regex and the field-allowlist mechanics.
 //
-// `sellable: false` (the platform-reads/pricebook precedent): this is internal render plumbing, never
-// sold standalone — it ships only as substrate other commercial packages compose. `priceCents` is a
-// PLACEHOLDER (the standards-gate still requires a positive integer for a paid/commercial manifest;
-// `sellable: false` exempts it from needing a PRICE_AUTHORITY row). Dependencies are DOWN-ONLY
-// (ADR-0003): this sits on the kernel's validation floor alone.
+// NEVER PUBLISHED (`package.json` carries `private: true`, the `@caisson/license-issue` precedent):
+// this is internal render plumbing, never sold standalone — it ships only as substrate other
+// commercial packages compose. `sellable: false` (the platform-reads/pricebook precedent) additionally
+// exempts it from ever needing a PRICE_AUTHORITY row; `priceCents` stays at the documented pre-launch
+// placeholder anchor (4900) since no price is locked. Dependencies are DOWN-ONLY (ADR-0003): this sits
+// on the kernel's validation floor alone.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -19,7 +20,7 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  priceCents: 2900,
+  priceCents: 4900,
   sellable: false,
   license: pkg.license,
   dependencies: ["@caisson/kernel"],

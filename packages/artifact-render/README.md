@@ -24,5 +24,6 @@ Consumed by the ISO 27001 Statement of Applicability generator (`@caisson/framew
 `@caisson/compliance-core`) and the buyer trust-page generator (`@caisson/trust-page`), so both share
 one legal-gate + redaction implementation rather than two divergent copies.
 
-Commercial module, internal render plumbing — never sold standalone (`sellable: false`). Sits on
-`@caisson/kernel` alone — down-only, composed by other commercial packages, never the reverse.
+Commercial module, internal render plumbing — never sold standalone (`sellable: false`) and never
+published (`private: true`). Sits on `@caisson/kernel` alone — down-only, composed by other
+commercial packages, never the reverse.

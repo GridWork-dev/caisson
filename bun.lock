@@ -1355,6 +1355,23 @@
         "typescript": "catalog:",
       },
     },
+    "packages/trust-page": {
+      "name": "@caisson/trust-page",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/artifact-render": "workspace:*",
+        "@caisson/compliance-core": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/frameworks-pack": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/ui": {
       "name": "@caisson/ui",
       "version": "0.6.2",
@@ -1918,6 +1935,8 @@
     "@caisson/testing": ["@caisson/testing@workspace:tooling/testing"],
 
     "@caisson/tool-exec": ["@caisson/tool-exec@workspace:packages/tool-exec"],
+
+    "@caisson/trust-page": ["@caisson/trust-page@workspace:packages/trust-page"],
 
     "@caisson/tsconfig": ["@caisson/tsconfig@workspace:tooling/tsconfig"],
 
