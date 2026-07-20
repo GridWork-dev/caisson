@@ -11,8 +11,9 @@ grounds:
 
 Pay-as-you-go probe loop through the already-sanctioned OpenRouter credential — no
 subscription tracker (Peec/Otterly/Ahrefs Brand Radar all rejected at pre-launch volume,
-per ADR-0254). Monthly cadence, ~$1.20/run in tokens. Script: `tooling/scripts/aeo-probe.ts`.
-Workflow: `.github/workflows/aeo-probe.yml` (monthly cron + manual dispatch).
+per ADR-0254). Dispatch-only cadence — local operator-key runs, ~$1.20/run in tokens (ADR-0370;
+the monthly cron was removed 2026-07-19). Script: `tooling/scripts/aeo-probe.ts`.
+Workflow: `.github/workflows/aeo-probe.yml` (manual `workflow_dispatch` only).
 
 This doc is the single canonical query list — it doubles as `gw-aeo-strategist`'s
 `category queries` briefing input (`claude/agents/gw-aeo-strategist.md` Inputs). Amend by
@@ -241,11 +242,12 @@ grounding was used for that call, and — when the DataForSEO leg is armed — a
 
 ## Cadence + cost
 
-Monthly (`.github/workflows/aeo-probe.yml`, `schedule: cron`), matching `gw-aeo-strategist`'s
-existing per-launch + quarterly dispatch cadence. ~54 calls/run (18 questions × 3 engines) ×
-~$0.022/call ≈ **$1.20/run ≈ $1.20/mo**. Weekly is available (`bun tooling/scripts/aeo-probe.ts`
-run ad hoc) at ~$5.20/mo if launch-week trend-watching is worth the extra spend — not wired
-as a second cron, run manually via `workflow_dispatch` if needed.
+Dispatch-only (ADR-0370, 2026-07-19 — the monthly cron is removed). The canonical run is
+LOCAL with the env-store OpenRouter key (`bun tooling/scripts/aeo-probe.ts`); the workflow
+remains `workflow_dispatch`-only for an on-box-less fallback, and the GitHub-secret copy of
+the key is deliberately never provisioned. ~54 calls/run (18 questions × 3 engines) ×
+~$0.022/call ≈ **$1.20/run**. Run per-launch + quarterly (matching `gw-aeo-strategist`),
+plus ad hoc during launch week if trend-watching is worth the spend.
 
 ## Results destination (both sinks, per ADR-0254 Decision 3)
 
