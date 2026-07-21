@@ -60,14 +60,22 @@ const DARK_STYLES = `
 }
 `;
 
+const DEFAULT_FOOTER_NOTE =
+  "This is a transactional email triggered by an action on your account, not a marketing message.";
+
 export function EmailLayout({
   preview,
   heading,
   children,
+  footerNote = DEFAULT_FOOTER_NOTE,
 }: {
   preview: string;
   heading: string;
   children: ReactNode;
+  /** What kind of email this is, stated honestly (ADR-0082 truth floor) — a scheduled
+   *  nurture/lifecycle send is not "triggered by an action on your account," so it MUST pass its
+   *  own accurate note rather than inherit the transactional default. */
+  footerNote?: string;
 }): React.ReactElement {
   return (
     <Html>
@@ -125,8 +133,8 @@ export function EmailLayout({
             className="em-footer"
             style={{ fontSize: 12, color: BRAND_COLOR.fgMuted, margin: 0 }}
           >
-            Caisson — fail-closed by construction. This is a transactional email
-            triggered by an action on your account, not a marketing message.
+            Caisson, fail-closed by construction. {footerNote} Questions? Email
+            support@caisson.sh.
           </Text>
         </Container>
       </Body>

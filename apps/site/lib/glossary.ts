@@ -342,7 +342,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Bundled and hash-bound, not linked to a dead URL",
-        body: "ADR-0231 authors a real per-framework Assessment-Plan and ships it inside the same signed bundle as the SAR and POA&M, referenced by a relative rlink with a SHA-256 hashes[] binding — replacing an earlier caisson.sh link that was never actually served.",
+        body: "Caisson authors a real per-framework Assessment-Plan and ships it inside the same signed bundle as the SAR and POA&M, referenced by a relative rlink with a SHA-256 hashes[] binding, replacing an earlier caisson.sh link that was never actually served.",
       },
     ],
     faq: [
@@ -354,7 +354,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Does Caisson generate an OSCAL Assessment Plan?",
         answer:
-          "Yes — each framework ships a real OSCAL v1.2.2 assessment-plan document, bundled alongside the Security Assessment Results and referenced by a relative, SHA-256-hashed rlink (ADR-0231), not a placeholder.",
+          "Yes. Each framework ships a real OSCAL v1.2.2 assessment-plan document, bundled alongside the Security Assessment Results and referenced by a relative, SHA-256-hashed rlink, not a placeholder.",
       },
       {
         question: "Does an OSCAL export mean we're SOC 2 or HIPAA compliant?",
@@ -365,7 +365,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "What OSCAL version does Caisson target, and does it emit XML too?",
         answer:
-          "v1.2.2, locked by ADR-0179 as the single oscal-cli validate conformance target. JSON is the canonical, byte-stable output; an XML sibling is produced by shelling out to NIST's own oscal-cli converter (never a hand-rolled serializer).",
+          "v1.2.2, the single oscal-cli validate conformance target. JSON is the canonical, byte-stable output; an XML sibling is produced by shelling out to NIST's own oscal-cli converter (never a hand-rolled serializer).",
       },
     ],
     sells: {
@@ -714,7 +714,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Admin writes get their own role, not a bypass",
-        body: "The operator mutation surface runs as a separate admin_write role with its own USING(true) policy scoped TO admin_write only — RLS OR-combines permissive policies per role, so admin_write can see every tenant while app's isolation is untouched. That admin-write layer ships in the commercial @caisson/org-controls package (ADR-0257); the free tenancy-rls package carries the buyer tenant-isolation floor itself.",
+        body: "The operator mutation surface runs as a separate admin_write role with its own USING(true) policy scoped TO admin_write only. RLS OR-combines permissive policies per role, so admin_write can see every tenant while app's isolation is untouched. That admin-write layer ships in the commercial @caisson/org-controls package; the free tenancy-rls package carries the buyer tenant-isolation floor itself.",
       },
     ],
     faq: [
@@ -1165,7 +1165,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Owner-gated write, allowlisted zero cost",
-        body: "POST /api/byok requires session.role === \"owner\" (ADR-0208, closing a bypass where any seat could rotate the org's shared key); reads stay seat-visible. resolveActionCost zeroes an inference action's credit cost only when that action is explicitly marked BYOK-covered (ADR-0198); an unclassified action still meters, fail-metered by default.",
+        body: "POST /api/byok requires session.role === \"owner\" (closing a bypass where any seat could rotate the org's shared key); reads stay seat-visible. resolveActionCost zeroes an inference action's credit cost only when that action is explicitly marked BYOK-covered; an unclassified action still meters, fail-metered by default.",
       },
     ],
     faq: [
@@ -2053,7 +2053,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Rate-limited before every dispatch, not just auth-gated",
-        body: "The ADR-0112 checkRateLimit hook is awaited before any tool handler runs, for both base and edition tools. A genuine over-limit throws a 429, but a rate-limit store fault fails open (resolves and alerts) so an infrastructure blip never locks out a paying buyer.",
+        body: "The checkRateLimit hook is awaited before any tool handler runs, for both base and edition tools. A genuine over-limit throws a 429, but a rate-limit store fault fails open (resolves and alerts) so an infrastructure blip never locks out a paying buyer.",
       },
       {
         title: "One core, two transports",
@@ -2199,7 +2199,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "What OSCAL version does the export target?",
         answer:
-          "OSCAL v1.2.2, locked (ADR-0179) as the single oscal-cli validate conformance target. JSON is the canonical, byte-stable output; the optional XML sibling is produced by shelling out to NIST's own oscal-cli converter so both validate against the same version.",
+          "OSCAL v1.2.2, the single oscal-cli validate conformance target. JSON is the canonical, byte-stable output; the optional XML sibling is produced by shelling out to NIST's own oscal-cli converter so both validate against the same version.",
       },
       {
         question: "Does exporting OSCAL mean I'm FedRAMP or SOC 2 authorized?",

@@ -271,7 +271,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["worm-retention-policy", "row-level-security"],
     sells: {
       edition: "Compliance",
-      note: `@caisson/compliance composes retention-runner at runtime as a real workspace:* dependency (ADR-0205) — buy it standalone at ${modulePrice("retention-runner")} or get it inside the ${bundlePrice("compliance")} Compliance bundle.`,
+      note: `@caisson/compliance composes retention-runner directly at runtime, not a manifest listing. Buy it standalone at ${modulePrice("retention-runner")} or get it inside the ${bundlePrice("compliance")} Compliance bundle.`,
     },
   },
   {
@@ -342,13 +342,13 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Can I buy the alerting module standalone, or only inside Compliance?",
         answer:
-          "Standalone, $149. It's also a real workspace:* dependency of the Compliance bundle, re-exported from its entry point (\"export * from '@caisson/alerting'\") rather than just listed on a manifest — buying Compliance gets you the same package, not a promise of it.",
+          "Standalone, $149. It's also composed directly into the Compliance bundle, re-exported from its entry point (\"export * from '@caisson/alerting'\") rather than just listed on a manifest — buying Compliance gets you the same package, not a promise of it.",
       },
     ],
     relatedGlossary: ["soc2-audit-log", "control-to-code-mapping"],
     sells: {
       edition: "Compliance",
-      note: `Alerting is a real workspace:* dependency that the Compliance bundle re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at ${modulePrice("alerting")} or get it composed into Compliance.`,
+      note: `Alerting is composed directly into the Compliance bundle and re-exported at runtime, not a manifest-only listing. Buy it standalone at ${modulePrice("alerting")} or get it composed into Compliance.`,
     },
   },
   {
@@ -1033,7 +1033,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "agentic-dev",
-      note: `Sold standalone at ${modulePrice("tool-exec")}, or composed as a real workspace:* dependency of @caisson/agent-dev (packages/agent-dev/package.json) inside the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel, agent-runner, and the local hybrid-memory store.`,
+      note: `Sold standalone at ${modulePrice("tool-exec")}, or composed directly into @caisson/agent-dev inside the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel, agent-runner, and the local hybrid-memory store.`,
     },
   },
   {
@@ -1116,7 +1116,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "platform",
-      note: `Sold standalone at ${modulePrice("org-controls")} — no persona bundle grants it (ADR-0257 §1.3 carve puts it beside billing-orchestration and ui-pro as a \`bundles: []\` platform SKU), so it's a deliberate standalone line on any stack; it's included only by construction inside the ${bundlePrice("everything")} Everything bundle, the sole bundle that carries every sellable SKU (ADR-0258).`,
+      note: `Sold standalone at ${modulePrice("org-controls")}. No persona bundle grants it, so it's a deliberate standalone line on any stack; it's included only by construction inside the ${bundlePrice("everything")} Everything bundle, the one bundle that carries every sellable module.`,
     },
   },
   {
@@ -1347,7 +1347,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does DataTablePro replace @caisson/ui's basic table, or is it a separate thing?",
         answer:
-          "Separate tier by design (ADR-0259's market-line split): the open @caisson/ui floor keeps a basic table with single sort/filter/pagination; DataTablePro adds the filter builder, grouping/aggregation, column pin/hide, CSV export, and row virtualization on top — and it composes the open kit's own Button and Select rather than duplicating them.",
+          "Separate tier by design: the open @caisson/ui floor keeps a basic table with single sort/filter/pagination; DataTablePro adds the filter builder, grouping/aggregation, column pin/hide, CSV export, and row virtualization on top, and it composes the open kit's own Button and Select rather than duplicating them.",
       },
       {
         question: "Which edition or bundle does ui-pro come with?",
@@ -1466,7 +1466,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "guardedFetch — install as another runtime's outbound hook",
-        body: "The guard exposes itself as a bare (input, init) => Promise<Response> — the shape transformers.js's env.fetch accepts — so an on-device model loader can be handed the guard directly and cannot egress out of band. @caisson/local-inference's rented-backend transport calls guard.fetchAs(\"rented-backend\", ...) the same way, a real workspace:* dependency, not just a manifest listing.",
+        body: "The guard exposes itself as a bare (input, init) => Promise<Response>, the shape transformers.js's env.fetch accepts, so an on-device model loader can be handed the guard directly and cannot egress out of band. @caisson/local-inference's rented-backend transport calls guard.fetchAs(\"rented-backend\", ...) the same way, composed directly, not just a manifest listing.",
       },
       {
         title: "Defensive re-parse at construction",
@@ -1512,7 +1512,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["fail-closed", "hipaa-technical-safeguards"],
     sells: {
       edition: "local-first",
-      note: `Sold standalone at ${modulePrice("local-privacy")}, or as one of the three local-first primitives — alongside local-sync and local-inference — composing the ${bundlePrice("local-first")} Local-first bundle. It's a real workspace:* dependency of @caisson/local-inference's rented-backend transport (not just a manifest listing), which routes every credentialed request through guard.fetchAs before it's built.`,
+      note: `Sold standalone at ${modulePrice("local-privacy")}, or as one of the three local-first primitives (alongside local-sync and local-inference) composing the ${bundlePrice("local-first")} Local-first bundle. It's composed directly into @caisson/local-inference's rented-backend transport, not just a manifest listing, which routes every credentialed request through guard.fetchAs before it's built.`,
     },
   },
   {
@@ -1521,7 +1521,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     metaDescription:
       "A per-tenant changeset log, a non-forgeable hybrid logical clock, and an order-independent last-writer-wins merge — tombstones persist across sync rounds so a stale edit can never resurrect a deleted row.",
     heroOneLiner:
-      "Two replicas can merge in either order and land on the exact same result — a row a later delete won never resurrects from a stale peer's edit.",
+      "Two replicas can merge in either order and land on the exact same result: a stale peer's edit can never resurrect a row a later delete already won.",
     definition:
       "local-sync is Caisson's two-way offline sync engine: a per-tenant changeset log captures every local mutation, a hybrid logical clock — a wall-clock hint plus a non-forgeable replica id and monotonic counter — stamps each change, and a pure last-writer-wins merge converges any set of replicas to one identical result. Tombstones persist across sync rounds, so a stale peer edit can never resurrect a row a later delete already won.",
     included: [
