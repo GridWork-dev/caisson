@@ -62,7 +62,7 @@ export default function TermsPage() {
           caisson.sh and to product-update communications we send you. Your
           rights to use Caisson software are defined exclusively by the
           Commercial License Agreement (
-          <a href="/legal/license" style={{ color: "var(--cs-accent)" }}>
+          <a href="/legal/license" className="cs-link">
             see License
           </a>
           ) and the purchase record or entitlement you receive at checkout.
@@ -82,7 +82,7 @@ export default function TermsPage() {
           Caisson is a commercially available software library. Prices shown on
           the site are the current listed prices for each bundle and module. A
           purchase grants you a{" "}
-          <a href="/legal/license" style={{ color: "var(--cs-accent)" }}>
+          <a href="/legal/license" className="cs-link">
             LicenseRef-Caisson-Commercial
           </a>{" "}
           license: buy once, build unlimited products — you may not resell or
@@ -181,7 +181,7 @@ export default function TermsPage() {
           payment, calculates and remits applicable sales tax and VAT, and
           issues your order receipt. The Caisson software itself remains
           licensed to you by Caisson Software LLC under the{" "}
-          <a href="/legal/eula" style={{ color: "var(--cs-accent)" }}>
+          <a href="/legal/eula" className="cs-link">
             Commercial License Agreement
           </a>
           . Paddle&apos;s own buyer terms — including which Paddle entity is the
@@ -189,7 +189,7 @@ export default function TermsPage() {
           <a
             href="https://www.paddle.com/legal/buyer-terms"
             rel="noreferrer"
-            style={{ color: "var(--cs-accent)" }}
+            className="cs-link"
           >
             paddle.com/legal/buyer-terms
           </a>{" "}
@@ -210,18 +210,11 @@ export default function TermsPage() {
           approved refund is returned to your original payment method, where
           possible, within 14 days of approval. To request a refund, contact us
           at{" "}
-          <a
-            href="mailto:admin@caisson.sh"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>{" "}
           with your order number, or contact Paddle directly through{" "}
-          <a
-            href="https://paddle.net"
-            rel="noreferrer"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="https://paddle.net" rel="noreferrer" className="cs-link">
             paddle.net
           </a>
           .
@@ -240,10 +233,7 @@ export default function TermsPage() {
           For questions about your order, license, or a refund request that
           Paddle&apos;s own support cannot resolve, contact Caisson Software LLC
           at{" "}
-          <a
-            href="mailto:admin@caisson.sh"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>
           .
@@ -256,7 +246,7 @@ export default function TermsPage() {
           Plausible Analytics (cookieless, PII-free analytics). Your use of this
           site involves processing governed by those providers&apos; terms to
           the extent described in our{" "}
-          <a href="/legal/privacy" style={{ color: "var(--cs-accent)" }}>
+          <a href="/legal/privacy" className="cs-link">
             Privacy Policy
           </a>
           .
@@ -352,10 +342,7 @@ export default function TermsPage() {
           <br />
           Atlanta, Georgia, USA
           <br />
-          <a
-            href="mailto:admin@caisson.sh"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>
         </p>
