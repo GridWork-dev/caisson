@@ -230,6 +230,27 @@ kbd,
   color: var(--cs-success);
 }
 
+/* Shiki-highlighted code (glossary + marketplace code artifacts). Emitted by the site's
+ * <CodeHighlight> via fumadocs' Shiki with `defaultColor: false`, so each token span carries both
+ * `--shiki-light` and `--shiki-dark` custom props and NO `color` — this picks the right one per
+ * theme. Theme-FOLLOWING per ADR-0374 lock 1 (retires the always-dark law): the light Shiki theme
+ * paints on the light code surface, the dark theme on the dark surface. Mirrors the 3-prong theme
+ * resolution in tokens.css (dark is the un-attributed default). */
+.cs-shiki span {
+  color: var(--shiki-dark);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .cs-shiki span {
+    color: var(--shiki-light);
+  }
+}
+[data-theme="light"] .cs-shiki span {
+  color: var(--shiki-light);
+}
+[data-theme="dark"] .cs-shiki span {
+  color: var(--shiki-dark);
+}
+
 /* ===== Elevation + glow utilities (ADR-0078 §7) — the deliberate raised step ===== */
 .cs-elevate-sm {
   box-shadow: var(--cs-shadow-sm);

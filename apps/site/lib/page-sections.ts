@@ -77,6 +77,10 @@ export interface ControlMapSection {
 export interface CodeArtifactSection {
   kind: "codeArtifact";
   code: string;
+  /** Shiki language for syntax highlighting. Omit for a code node that is already tinted (a
+   *  hand-authored `cs-tok` snippet) or plain-text; present → the render arm highlights the string
+   *  server-side via <CodeHighlight>. */
+  lang?: string;
   label?: string;
   status?: ReactNode;
   notes?: readonly string[];

@@ -3327,6 +3327,7 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       kind: "codeArtifact",
       label: term.artifact.label,
       code: term.artifact.code,
+      lang: term.artifact.lang,
     },
     {
       kind: "featureGrid",
