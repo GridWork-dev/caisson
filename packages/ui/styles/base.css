@@ -230,6 +230,17 @@ kbd,
   color: var(--cs-success);
 }
 
+/* Inline `code` inside prose (glossary definitions, feature-card bodies). Theme-following tonal
+ * chip: a step-up surface + hairline so a code identifier reads as code without a loud box. */
+.cs-code-inline {
+  font-family: var(--cs-font-mono);
+  font-size: 0.9em;
+  background: var(--cs-surface-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  padding: 0.1em 0.35em;
+}
+
 /* Shiki-highlighted code (glossary + marketplace code artifacts). Emitted by the site's
  * <CodeHighlight> via fumadocs' Shiki with `defaultColor: false`, so each token span carries both
  * `--shiki-light` and `--shiki-dark` custom props and NO `color` — this picks the right one per

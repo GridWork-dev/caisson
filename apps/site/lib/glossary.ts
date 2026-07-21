@@ -5,9 +5,31 @@
 //
 // `GLOSSARY_TERMS` is compile-time-static in-repo source (ADR-0002 carve-out, renderer SPEC §4) —
 // no Zod parse layer; every term is type-checked at build, not validated at runtime.
-import { createElement } from "react";
+import { createElement, Fragment, type ReactNode } from "react";
 
 import type { PageSection, PageSpec } from "./page-sections";
+
+/**
+ * Render inline `` `code` `` markdown in glossary prose as styled `<code>` (visual-audit: the
+ * backticks were shipping as literal grave-accent glyphs). Deliberately tiny — only paired single
+ * backticks, no other markdown — because that is the entire syntax glossary prose uses; a full
+ * markdown parser would be overkill for one construct. Segments at odd split indices are the code
+ * spans. Plain string in, plain string out when there are no backticks (keeps meta/JSON-LD callers,
+ * which pass the raw field, unaffected — this runs only on the visible lede/body).
+ */
+export function renderInlineCode(text: string): ReactNode {
+  const parts = text.split(/`([^`]+)`/);
+  if (parts.length === 1) return text;
+  return createElement(
+    Fragment,
+    null,
+    ...parts.map((seg, i) =>
+      i % 2 === 1
+        ? createElement("code", { key: i, className: "cs-code-inline" }, seg)
+        : seg,
+    ),
+  );
+}
 
 export type GlossaryCluster =
   "compliance" | "security" | "licensing" | "ai-infra";
@@ -3310,7 +3332,7 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       kind: "hero",
       eyebrow: "Glossary",
       title: term.term,
-      lede: term.definition,
+      lede: renderInlineCode(term.definition),
       ctas: breadcrumbNav(term),
     },
     {
@@ -3332,7 +3354,10 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
     {
       kind: "featureGrid",
       eyebrow: "How it holds",
-      items: term.properties.map((p) => ({ title: p.title, body: p.body })),
+      items: term.properties.map((p) => ({
+        title: p.title,
+        body: renderInlineCode(p.body),
+      })),
     },
     {
       kind: "faq",
