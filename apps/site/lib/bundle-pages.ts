@@ -78,7 +78,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     slug: "compliance",
     metaTitle: "Compliance",
     metaDescription:
-      "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one bundle and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
+      "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner, composed into one bundle and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
     hero: {
       eyebrow: "Compliance-grade infrastructure for regulated SaaS",
       title: "Audit-ready from the first commit.",
@@ -97,7 +97,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "tenancy-rls",
         name: "Tenancy RLS",
         oneLiner:
-          "Fail-closed row-level security — every tenant table enables AND forces RLS, so a query with no tenant context returns nothing.",
+          "Fail-closed row-level security, every tenant table enables AND forces RLS, so a query with no tenant context returns nothing.",
       },
       {
         id: "field-crypto",
@@ -109,7 +109,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "audit-worm",
         name: "Audit chain + WORM",
         oneLiner:
-          "Append-only SHA-256 audit chain plus an S3 Object-Lock WORM adapter — evidence storage tampering breaks the chain and is provable.",
+          "Append-only SHA-256 audit chain plus an S3 Object-Lock WORM adapter, evidence storage tampering breaks the chain and is provable.",
       },
       {
         id: "migrate",
@@ -121,13 +121,13 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "alerting",
         name: "Alert pipeline",
         oneLiner:
-          "Deduped, rate-capped alert delivery with quiet hours and an audit trail — the SOC 2 CC7.2 alerting control.",
+          "Deduped, rate-capped alert delivery with quiet hours and an audit trail, the SOC 2 CC7.2 alerting control.",
       },
       {
         id: "retention-runner",
         name: "Retention runner",
         oneLiner:
-          "Policy-driven data retention on a schedule — expiry and legal-hold, enforced automatically, not by a recurring calendar reminder.",
+          "Policy-driven data retention on a schedule, expiry and legal-hold, enforced automatically, not by a recurring calendar reminder.",
       },
       {
         id: "compliance-core",
@@ -139,19 +139,19 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "frameworks-pack",
         name: "Frameworks pack",
         oneLiner:
-          "SOC 2, HIPAA, and EU AI Act control mappings with OSCAL v1.2.2 export — the clause-to-control catalog the evidence packs render against.",
+          "SOC 2, HIPAA, and EU AI Act control mappings with OSCAL v1.2.2 export, the clause-to-control catalog the evidence packs render against.",
       },
       {
         id: "signing-primitive",
         name: "Signing primitive",
         oneLiner:
-          "Detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots — a signature a third party can verify without your keys.",
+          "Detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots, a signature a third party can verify without your keys.",
       },
       {
         id: "access-review",
         name: "Access reviews",
         oneLiner:
-          "Audit-prep access campaigns: import a membership snapshot, record each reviewer's attested approve/revoke decision onto the audit chain, and close with every undecided reviewee flagged unresolved — never auto-approved.",
+          "Audit-prep access campaigns: import a membership snapshot, record each reviewer's attested approve/revoke decision onto the audit chain, and close with every undecided reviewee flagged unresolved, never auto-approved.",
       },
       {
         id: "risk-register",
@@ -163,24 +163,24 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "trust-page",
         name: "Trust page",
         oneLiner:
-          "A self-contained public trust page rendered from your evidence pack through allowlist-based redaction — a field absent from the allowlist never reaches the page, no exceptions.",
+          "A self-contained public trust page rendered from your evidence pack through allowlist-based redaction, a field absent from the allowlist never reaches the page, no exceptions.",
       },
     ],
     faq: [
       {
         question: "Does Caisson make us SOC 2 or HIPAA certified?",
         answer:
-          "No. Caisson ships the technical controls those frameworks require and generates the evidence to prove them. Certification comes from an auditor assessing your whole program — the organizational controls and the audit itself remain yours.",
+          "No. Caisson ships the technical controls those frameworks require and generates the evidence to prove them. Certification comes from an auditor assessing your whole program, the organizational controls and the audit itself remain yours.",
       },
       {
         question: "Which packages does the bundle actually compose?",
         answer:
-          "Ten real workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. Access reviews, the AI risk register, and the trust-page generator are three further modules included in the same purchase — each ships as its own standalone package rather than a dependency the bundle's factory composes. Nothing on this page is a manifest claim without composed code behind it.",
+          "Ten real workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. Access reviews, the AI risk register, and the trust-page generator are three further modules included in the same purchase, each ships as its own standalone package rather than a dependency the bundle's factory composes. Nothing on this page is a manifest claim without composed code behind it.",
       },
       {
         question: "Do I own the source?",
         answer:
-          "Yes. The one-time Compliance license is perpetual — you own the source for the base, the composed packages, and the evidence-pack generator, and it includes 12 months of published framework-mapping updates from your purchase date. An optional Compliance Updates subscription keeps those updates flowing automatically after that; a per-entitlement renewal is the other way to extend the window.",
+          "Yes. The one-time Compliance license is perpetual, you own the source for the base, the composed packages, and the evidence-pack generator, and it includes 12 months of published framework-mapping updates from your purchase date. An optional Compliance Updates subscription keeps those updates flowing automatically after that; a per-entitlement renewal is the other way to extend the window.",
       },
     ],
   },
@@ -194,7 +194,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       lede: "infer() and embed() are the only door to a model in this kit: every call resolves a versioned prompt, reserves against a per-tenant spend cap, crosses a guardrail on the way in and out, and reconciles usage in the same Postgres transaction as the result. Vercel AI SDK v7 sits behind it; your route handler calls infer(lane, input) and never touches a provider SDK directly.",
     },
     definition:
-      "The AI-Production bundle puts one metered gateway between your code and the model: infer() and embed() resolve a versioned prompt, reserve against a per-tenant spend cap, cross input and output guardrails, and reconcile usage in the same Postgres transaction as the result — Vercel AI SDK v7 behind one fail-closed chokepoint.",
+      "The AI-Production bundle puts one metered gateway between your code and the model: infer() and embed() resolve a versioned prompt, reserve against a per-tenant spend cap, cross input and output guardrails, and reconcile usage in the same Postgres transaction as the result. Vercel AI SDK v7 behind one fail-closed chokepoint.",
     members: [
       {
         id: "prompt-registry",
@@ -230,7 +230,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "credits",
         name: "Credits + metering",
         oneLiner:
-          "PG-atomic credit ledger — grant, debit, and spend-cap credits with one integer denomination, fail-closed (402) on an empty balance.",
+          "PG-atomic credit ledger, grant, debit, and spend-cap credits with one integer denomination, fail-closed (402) on an empty balance.",
       },
       {
         id: "ai-config",
@@ -243,7 +243,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "How many developers does the license cover?",
         answer:
-          "Everyone at your organization. The license is per purchasing entity — any personnel you authorize can work with the source. No per-seat pricing, no seat counting. For contrast: a similarly priced competitor tier caps at 5 developer seats (Supastarter Startup, $799, verified 2026-07-10).",
+          "Everyone at your organization. The license is per purchasing entity, any personnel you authorize can work with the source. No per-seat pricing, no seat counting. For contrast: a similarly priced competitor tier caps at 5 developer seats (Supastarter Startup, $799, verified 2026-07-10).",
       },
       {
         question: "What does token metering actually prevent?",
@@ -269,7 +269,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     hero: {
       eyebrow: "Local-first AI · Own the source",
       title: "Your data never leaves the device.",
-      lede: "The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search, sync, and license verification all run against local files — nothing round-trips to a vendor unless you allow it in writing.",
+      lede: "The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search, sync, and license verification all run against local files, nothing round-trips to a vendor unless you allow it in writing.",
     },
     definition:
       "Local-first AI composes on-device ONNX inference, a default-deny privacy egress gate, offline two-way sync, and hybrid sqlite-vec + FTS5 search into one bundle. Inference runs on-device by default; a hosted call is an explicit opt-in, never a default you discover in a network trace. Own the source.",
@@ -296,13 +296,13 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "local-inference",
         name: "@caisson/local-inference",
         oneLiner:
-          "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use — on-device by default.",
+          "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use, on-device by default.",
       },
       {
         id: "local-privacy",
         name: "@caisson/local-privacy",
         oneLiner:
-          "A default-deny egress boundary every payload crosses before it can leave the process — an empty allowlist means zero egress.",
+          "A default-deny egress boundary every payload crosses before it can leave the process, an empty allowlist means zero egress.",
       },
       {
         id: "local-sync",
@@ -321,7 +321,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "How many developers does the license cover?",
         answer:
-          "Everyone at your organization. The license is per purchasing entity — any personnel you authorize can work with the source. No per-seat pricing, no seat counting. For contrast: a similarly priced competitor tier caps at 5 developer seats (Supastarter Startup, $799, verified 2026-07-10).",
+          "Everyone at your organization. The license is per purchasing entity, any personnel you authorize can work with the source. No per-seat pricing, no seat counting. For contrast: a similarly priced competitor tier caps at 5 developer seats (Supastarter Startup, $799, verified 2026-07-10).",
       },
       {
         question: 'Does "own the source" rule out hosted inference?',
@@ -331,14 +331,14 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "What does the on-device model need to run?",
         answer:
-          "The ONNX backend runs a MiniLM-class model via transformers.js. The @huggingface/transformers runtime is an optional peer you install yourself — it is not bundled in the package — and the model weights are first-run-fetched and SHA-256 hash-verified before use. Air-gapped buyers pre-seed the cache and run fully offline.",
+          "The ONNX backend runs a MiniLM-class model via transformers.js. The @huggingface/transformers runtime is an optional peer you install yourself (it is not bundled in the package), and the model weights are first-run-fetched and SHA-256 hash-verified before use. Air-gapped buyers pre-seed the cache and run fully offline.",
       },
       {
         question:
           "Can I buy just the vector store instead of the whole bundle?",
         // ponytail: the $99/$249/$199 figures are MODULE prices (single-sourced checks cover
         // metaDescription; the review scoped FAQ interpolation to bundle-price literals only).
-        answer: `Yes. @caisson/local-store is also sold standalone for $99 — as are on-device inference ($249), the sync engine ($199), and the privacy gate ($99). The full Local-first AI bundle (all seven composed packages, own the source) is ${bundlePrice("local-first")} one-time.`,
+        answer: `Yes. @caisson/local-store is also sold standalone for $99, as are on-device inference ($249), the sync engine ($199), and the privacy gate ($99). The full Local-first AI bundle (all seven composed packages, own the source) is ${bundlePrice("local-first")} one-time.`,
       },
     ],
   },
@@ -351,16 +351,16 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       eyebrow: "Agentic-Dev bundle",
       title:
         "A governed agent lifecycle, plus a sandboxed runner to execute it.",
-      lede: "Agents declare their model lane, their tools, and their blast radius up front. A lifecycle state machine refuses to advance a run that failed verify. And when it's time to actually spawn an agent, the runner builds its child environment from scratch — never a spread of your process env — so a credential you never intended to hand over cannot leak into the sandbox.",
+      lede: "Agents declare their model lane, their tools, and their blast radius up front. A lifecycle state machine refuses to advance a run that failed verify. And when it's time to actually spawn an agent, the runner builds its child environment from scratch, never a spread of your process env, so a credential you never intended to hand over cannot leak into the sandbox.",
     },
     definition:
-      "The Agentic-Dev bundle is a governed-agent kernel plus a sandboxed runner to execute it: a typed agent/skill/rule schema, a guarded 7-act lifecycle that reopens PLAN when VERIFY fails, local hybrid memory, and a default-deny tool-exec gate — with a child environment built from scratch so a credential can't leak into the sandbox.",
+      "The Agentic-Dev bundle is a governed-agent kernel plus a sandboxed runner to execute it: a typed agent/skill/rule schema, a guarded 7-act lifecycle that reopens PLAN when VERIFY fails, local hybrid memory, and a default-deny tool-exec gate, with a child environment built from scratch so a credential can't leak into the sandbox.",
     members: [
       {
         id: "agent-kernel",
         name: "Agent kernel",
         oneLiner:
-          "Typed agent/skill/rule schema plus the guarded 7-act lifecycle FSM and hooks dispatcher — one of the bundle's composed pieces, alongside local memory and the tool-exec gate.",
+          "Typed agent/skill/rule schema plus the guarded 7-act lifecycle FSM and hooks dispatcher, one of the bundle's composed pieces, alongside local memory and the tool-exec gate.",
       },
       {
         id: "agent-runner",
@@ -372,7 +372,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "agent-trajectory",
         name: "Agent trajectory",
         oneLiner:
-          "The governed run record: an append-only, replayable event log of every step, tool proposal, approval, and spend — sensitive bodies by digest, paused runs encrypted at rest, deterministic replay.",
+          "The governed run record: an append-only, replayable event log of every step, tool proposal, approval, and spend, sensitive bodies by digest, paused runs encrypted at rest, deterministic replay.",
       },
       {
         id: "local-store",
@@ -384,14 +384,14 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "tool-exec",
         name: "Sandboxed tool-exec gate",
         oneLiner:
-          "Default-deny allowlist over Zod-strict argv schemas and execFile arg-arrays — an agent never reaches a shell.",
+          "Default-deny allowlist over Zod-strict argv schemas and execFile arg-arrays, an agent never reaches a shell.",
       },
     ],
     faq: [
       {
         question: "What's actually running when an agent executes?",
         answer:
-          "@caisson/agent-runner spawns the agent CLI as a detached subprocess in an isolated worktree with a child environment built from scratch — never a spread of your process env — plus a fixed non-secret passthrough allowlist and only the target provider's key. Every run streams a durable .jsonl transcript and resolves to a structured report of tool calls, files touched, and the final result.",
+          "@caisson/agent-runner spawns the agent CLI as a detached subprocess in an isolated worktree with a child environment built from scratch, never a spread of your process env, plus a fixed non-secret passthrough allowlist and only the target provider's key. Every run streams a durable .jsonl transcript and resolves to a structured report of tool calls, files touched, and the final result.",
       },
       {
         question: "Can I buy just the kernel or just the runner?",
@@ -401,7 +401,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "Does the runner or the kernel ever hold a credential?",
         answer:
-          "No. Construction of the three pieces the bundle factory composes — kernel, memory, tool-exec gate — holds no credential and makes no network or LLM call. The agent runner ships as its own package alongside the bundle; its buildEngineEnv() step is the one place a secret could reach a spawned process, and a ship-blocking leak-guard test attacks it with a polluted parent env and asserts the exact child env key set.",
+          "No. Construction of the three pieces the bundle factory composes (kernel, memory, tool-exec gate) holds no credential and makes no network or LLM call. The agent runner ships as its own package alongside the bundle; its buildEngineEnv() step is the one place a secret could reach a spawned process, and a ship-blocking leak-guard test attacks it with a polluted parent env and asserts the exact child env key set.",
       },
     ],
   },
@@ -409,7 +409,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     slug: "provenance",
     metaTitle: "Provenance",
     metaDescription:
-      "Cryptographic provenance for regulated data: detached Ed25519 + RFC-3161 signing, an append-only SHA-256 WORM audit chain, and per-tenant field encryption — the three primitives that prove a record wasn't tampered with. Own the source.",
+      "Cryptographic provenance for regulated data: detached Ed25519 + RFC-3161 signing, an append-only SHA-256 WORM audit chain, and per-tenant field encryption, the three primitives that prove a record wasn't tampered with. Own the source.",
     hero: {
       eyebrow: "Cryptographic provenance",
       title: "Prove the record wasn't tampered with.",
@@ -424,7 +424,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "field-crypto",
         name: "Field encryption",
         oneLiner:
-          "Per-tenant field encryption via HKDF-SHA256 + AES-256-GCM — a leaked tenant key exposes one tenant, never the table.",
+          "Per-tenant field encryption via HKDF-SHA256 + AES-256-GCM, a leaked tenant key exposes one tenant, never the table.",
       },
       {
         id: "audit-worm",
@@ -436,14 +436,14 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "signing-primitive",
         name: "Signing primitive",
         oneLiner:
-          "Detached Ed25519 + RFC-3161 signing over an evidence bundle or an audit root — a signature a third party verifies without ever touching your keys.",
+          "Detached Ed25519 + RFC-3161 signing over an evidence bundle or an audit root, a signature a third party verifies without ever touching your keys.",
       },
     ],
     faq: [
       {
         question: "How is Provenance different from Compliance?",
         answer:
-          "Provenance is the cryptographic core — signing, the WORM audit chain, and field encryption — the three primitives that prove a record is authentic and untampered. Compliance wraps those in the full regulated-SaaS stack: fail-closed RLS, the evidence-pack generator, the framework mappings, alerting, and retention. Every Provenance module is also in Compliance, so Compliance owners already have it.",
+          "Provenance is the cryptographic core: signing, the WORM audit chain, and field encryption, the three primitives that prove a record is authentic and untampered. Compliance wraps those in the full regulated-SaaS stack: fail-closed RLS, the evidence-pack generator, the framework mappings, alerting, and retention. Every Provenance module is also in Compliance, so Compliance owners already have it.",
       },
       {
         question: "Which packages does the bundle compose?",
@@ -461,14 +461,14 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     slug: "everything",
     metaTitle: "Everything",
     metaDescription:
-      "The Everything bundle — every Caisson bundle and every à-la-carte module, composed on the same audited base, in one perpetual purchase.",
+      "The Everything bundle: every Caisson bundle and every à-la-carte module, composed on the same audited base, in one perpetual purchase.",
     hero: {
       eyebrow: "Everything bundle",
       title: "The whole catalog, one purchase.",
-      lede: "The Everything bundle is exactly what it says: every commercial bundle and every à-la-carte module — the full sellable catalog, composed on the same audited base.",
+      lede: "The Everything bundle is exactly what it says: every commercial bundle and every à-la-carte module, the full sellable catalog, composed on the same audited base.",
     },
     definition:
-      "The Everything bundle is the whole commercial catalog — every bundle and every à-la-carte module, composed on the same audited base, in one perpetual purchase. Only the private brand layer is excluded.",
+      "The Everything bundle is the whole commercial catalog: every bundle and every à-la-carte module, composed on the same audited base, in one perpetual purchase. Only the private brand layer is excluded.",
     // The Everything bundle is the whole catalog by construction; the pop-out renders its catalog
     // savings ladder rather than a fixed member list, so this stays empty.
     members: [],
