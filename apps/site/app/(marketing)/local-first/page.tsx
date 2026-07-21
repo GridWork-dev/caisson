@@ -17,7 +17,7 @@ import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
-import { requireBundlePage } from "@/lib/bundle-pages";
+import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
@@ -242,7 +242,7 @@ export default function LocalFirstPage() {
       <Reveal>
         <Section
           eyebrow="What ships in the box"
-          title="Four composed packages."
+          title={`${spellCount(MEMBER_MODULES.length)} composed packages.`}
           lede="Each member is a real workspace dependency. The commercial ones also carry a standalone price; the Apache-2.0 base ships free with every bundle."
         >
           <FeatureGrid cols={2}>

@@ -15,6 +15,35 @@
 
 import { type BundleId, bundlePrice } from "./pricing";
 
+// Spelled-out counts for composition headings (e.g. "Seven composed packages.") — small, fixed
+// vocabulary matching the site's existing voice ("Thirteen packages, one bundle.", "Five technical
+// controls…"). Never hand-type a count word beside a `.map()`-rendered grid (ADR-0082 F6): always
+// derive it from the same array the grid renders, through this one spot.
+const COUNT_WORDS = [
+  "Zero",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+  "Ten",
+  "Eleven",
+  "Twelve",
+  "Thirteen",
+  "Fourteen",
+  "Fifteen",
+] as const;
+
+/** Spell out a small count (falls back to the numeral past the named list — no product surface
+ *  needs it, but a silent wraparound to "Zero" would be worse than a numeral). */
+export function spellCount(n: number): string {
+  return COUNT_WORDS[n] ?? String(n);
+}
+
 /** One composed member of a bundle — the id (a MODULE_PRICES id or a base-package slug), its display
  *  name as the page renders it, and the customer-facing one-liner. Priced/linked state is derived by
  *  the page (a member with a MODULE_PRICES row shows its price and links to its depth page). */
@@ -367,7 +396,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "Can I buy just the kernel or just the runner?",
         answer:
-          "Yes. The agent kernel and the agent runner are both purchasable à la carte onto your existing Caisson base. The full Agentic-Dev bundle also composes local hybrid memory (sold standalone under the Local-first bundle, not Agentic-Dev) and the tool-exec gate (no standalone SKU at all).",
+          "Yes. Every member of the Agentic-Dev bundle is also purchasable à la carte onto your existing Caisson base: the agent kernel, the agent runner, the trajectory log, local hybrid memory (also a member of the Local-first bundle), and the tool-exec gate.",
       },
       {
         question: "Does the runner or the kernel ever hold a credential?",

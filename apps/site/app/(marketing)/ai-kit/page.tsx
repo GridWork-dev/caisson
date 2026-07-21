@@ -33,7 +33,7 @@ import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
-import { requireBundlePage } from "@/lib/bundle-pages";
+import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { TrackView } from "@/components/track-view";
 
@@ -210,7 +210,7 @@ export default function AiKitPage() {
       {/* ===== Four composed modules ===== */}
       <Section
         eyebrow="What ships in the box"
-        title="Four modules behind one chokepoint."
+        title={`${spellCount(MEMBER_MODULES.length)} modules behind one chokepoint.`}
       >
         <Reveal>
           <FeatureGrid cols={2}>

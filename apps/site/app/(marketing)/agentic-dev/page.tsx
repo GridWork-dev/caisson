@@ -17,7 +17,7 @@ import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
-import { requireBundlePage } from "@/lib/bundle-pages";
+import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import {
   breadcrumb,
@@ -71,9 +71,9 @@ const PIECES = [
     body: "Work moves SPEC → PLAN → EXECUTE → VERIFY → SWEEP → EVAL → SHIP. Transitions are guarded: VERIFY fails, the machine reopens PLAN — SHIP is the only terminal state. The path is the policy.",
   },
   {
-    icon: "database" as const,
-    label: "Local hybrid memory",
-    body: "Recall is vector + full-text over a local store, scoped per project. Reads are always allowed; writes honor a per-session mode. Secrets are never a memory item — they source from env, not recall.",
+    icon: "shield" as const,
+    label: "Governance guards",
+    body: "Every transition guard and hook returns one of three decisions: allow, deny(reason), or mutate(context). A guard never runs an engine — it decides whether policy permits an already-legal move, fail-closed by default.",
   },
   {
     icon: "terminal" as const,
@@ -303,8 +303,8 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           eyebrow="What ships in the box"
-          title="Four composed packages, not one kernel."
-          lede="Each member is a real workspace dependency. The kernel, the runner, and local memory each carry a standalone price; the tool-exec gate has no standalone SKU."
+          title={`${spellCount(MEMBER_MODULES.length)} composed packages, not one kernel.`}
+          lede="Each member is a real workspace dependency, and each one carries its own standalone price: the kernel, the runner, the trajectory log, local memory, and the tool-exec gate."
         >
           <FeatureGrid cols={2}>
             {MEMBER_MODULES.map((m) => (
