@@ -46,8 +46,8 @@ export function AccessRevokedEmail(
         label="View your current entitlements"
       />
       <EmailBody>
-        Anything you still own — a separate purchase, or a still-active
-        subscription — is unaffected. If this was unexpected, reach out through
+        Anything you still own (a separate purchase, or a still-active
+        subscription) is unaffected. If this was unexpected, reach out through
         the support links on your dashboard.
       </EmailBody>
     </EmailLayout>

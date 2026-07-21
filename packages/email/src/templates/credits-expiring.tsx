@@ -26,7 +26,7 @@ export function CreditsExpiringEmail(
       heading="Credits expiring soon"
     >
       <EmailBody>
-        {data.credits} credits expire on {data.expiresOn} — they burn first
+        {data.credits} credits expire on {data.expiresOn}. They burn first
         automatically; top up or use them before then.
       </EmailBody>
       <EmailButton href={data.url} label="View your credits" />
