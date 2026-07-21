@@ -22,8 +22,10 @@
    * one, so a single value works in both themes.
    * ponytail: overlay-scrollbar OSes (macOS default) may still auto-hide the bar; the scroll-shadow
    * is the backstop cue there. Upgrade path = a JS overflow observer if that ever proves too weak. */
-  scrollbar-width: thin;
-  scrollbar-color: var(--cs-border-strong) transparent;
+  /* NB: no `scrollbar-width`/`scrollbar-color` — setting either makes Chromium ignore the
+   * ::-webkit-scrollbar rules below and fall back to a zero-space overlay bar that auto-hides
+   * (invisible in a screenshot and on macOS). The webkit pseudo forces a persistent classic bar
+   * in Chromium/Safari; Firefox keeps its own always-visible scrollbar. */
   background:
     linear-gradient(to right, var(--cs-surface-1), transparent) left center /
       1.75rem 100% no-repeat local,
@@ -31,16 +33,16 @@
       1.75rem 100% no-repeat local,
     radial-gradient(
         farthest-side at left center,
-        oklch(0.5 0.01 220 / 0.3),
+        oklch(0.62 0.02 220 / 0.52),
         transparent
       )
-      left center / 0.6rem 100% no-repeat scroll,
+      left center / 1rem 100% no-repeat scroll,
     radial-gradient(
         farthest-side at right center,
-        oklch(0.5 0.01 220 / 0.3),
+        oklch(0.62 0.02 220 / 0.52),
         transparent
       )
-      right center / 0.6rem 100% no-repeat scroll,
+      right center / 1rem 100% no-repeat scroll,
     var(--cs-surface-1);
 }
 
