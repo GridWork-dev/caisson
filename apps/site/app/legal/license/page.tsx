@@ -232,7 +232,7 @@ export default function LicensePage() {
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
+                alignItems: "flex-start",
                 gap: "var(--cs-space-3)",
               }}
             >
@@ -260,22 +260,22 @@ export default function LicensePage() {
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
+                alignItems: "flex-start",
                 gap: "var(--cs-space-3)",
               }}
             >
-              <span
-                style={{
-                  fontWeight: "var(--cs-weight-medium)",
-                  fontFamily: "var(--cs-font-mono)",
-                  fontSize: "var(--cs-text-sm)",
-                }}
-              >
-                Every @caisson module outside the open Base set — including
-                field-crypto, audit-worm, signing-primitive, credits, and the
-                local-first modules — the registry service, and the six bundles
-                that compose them: Compliance, AI Production, Local-first AI,
-                Agentic-Dev, Provenance, and Everything
+              {/* Plain prose, not the mono/bold "evidence" treatment the sibling card uses for
+                  its `@caisson/*` package list (visual-audit remediation): this span is a
+                  descriptive sentence, not a list of real identifiers, and rendering it in the
+                  same bold monospace blurred the brand's own mono-as-evidence convention
+                  (DESIGN.md §3 — mono reserved for control-ids/proof, not summary phrasing). */}
+              <span style={{ fontSize: "var(--cs-text-sm)" }}>
+                Every <code className="mono">@caisson</code> module outside the
+                open Base set — including field-crypto, audit-worm,
+                signing-primitive, credits, and the local-first modules — the
+                registry service, and the six bundles that compose them:
+                Compliance, AI Production, Local-first AI, Agentic-Dev,
+                Provenance, and Everything.
               </span>
               <StatusChip label="Commercial" tone="muted" />
             </div>

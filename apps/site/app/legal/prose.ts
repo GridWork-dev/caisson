@@ -27,6 +27,10 @@ export const prose = {
     fontSize: "var(--cs-text-lg)",
     lineHeight: "var(--cs-leading-relaxed)",
     maxWidth: "58ch",
+    // Tailwind preflight resets ul/ol to `list-style: none` sitewide; these lists carry no class
+    // to opt back in (visual-audit remediation) — the five "you agree not to" restriction items
+    // and the definitions list were reading as flat indented paragraphs with no scannable marker.
+    listStyleType: "disc",
   } as CSSProperties,
   li: {
     marginBottom: "var(--cs-space-2)",
