@@ -22,7 +22,30 @@ export default async function Page(props: Params) {
   const MDX = page.data.body;
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
+    <DocsPage
+      toc={page.data.toc}
+      full={page.data.full}
+      // A one-segment route (e.g. /docs/agentic-dev) is a bundle's own folder-index page — its
+      // meta.json category title IS its H1 (both "Agentic-Dev"), so fumadocs' auto breadcrumb
+      // just repeats the heading verbatim (visual-audit remediation). Two-plus segment pages
+      // (e.g. /docs/agentic-dev/agent-kernel) keep it: there the breadcrumb ("Agentic-Dev")
+      // usefully differs from the H1 ("agent-kernel"). Standalone one-segment pages with no
+      // enclosing category (getting-started, licensing, refunds) already render no breadcrumb
+      // either way, so this is a no-op for them.
+      breadcrumb={{ enabled: (params.slug?.length ?? 0) !== 1 }}
+      // The root skip link's `href="#main-content"` (apps/site/app/layout.tsx) needs a target +
+      // landmark on the docs subtree, same as every other app-subtree layout (P1-002). Any prop
+      // not in DocsPage's own destructure list falls through to fumadocs' <article id="nd-page"
+      // [grid-area:main]> (the Container slot, docs/layout.tsx no longer wraps it) so the fix
+      // doesn't cost the grid item its grid-area assignment. `role="main"` is explicit rather
+      // than relying on an HTML tag, since <article>'s own implicit role isn't "main".
+      // `tabIndex={-1}` makes the landmark itself the fragment-navigation focus target, so
+      // activating the skip link both scrolls AND moves focus — not just a hash change. The
+      // article's own `id="nd-page"` is overridden by this id, same stable CSS hook either way.
+      id="main-content"
+      role="main"
+      tabIndex={-1}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       {/* cs-prose (visual-audit remediation, WCAG 1.4.1): scopes the underline-by-default link

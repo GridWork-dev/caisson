@@ -14,7 +14,8 @@ bun add @caisson/compliance-core
 ```
 
 Commercial module (`LicenseRef-Caisson-Commercial`). Composed by the Compliance bundle; consumes
-`@caisson/kernel`, `@caisson/frameworks-pack`, and `@caisson/field-crypto` — down-only, per ADR-0003.
+`@caisson/kernel`, `@caisson/frameworks-pack`, and `@caisson/field-crypto` — down-only, never the
+reverse.
 
 ## Flag-never-guess
 
@@ -99,6 +100,6 @@ port (`OscalExportTransport`) — no network call ships in v1.
 
 ## Composition
 
-`compliance-core` is the evidence-engine carve-out of the Compliance bundle (ADR-0246/0257): the
-bundle composes this engine with the framework catalogs (`@caisson/frameworks-pack`) and evidence
-signing, never the reverse.
+`compliance-core` is the evidence-engine carve-out of the Compliance bundle: the bundle composes
+this engine with the framework catalogs (`@caisson/frameworks-pack`) and evidence signing, never
+the reverse.
