@@ -24,7 +24,13 @@ export function CartView() {
 
   if (items.length === 0) {
     return (
-      <div style={{ display: "grid", gap: "var(--cs-space-4)" }}>
+      <div
+        style={{
+          display: "grid",
+          gap: "var(--cs-space-4)",
+          maxWidth: "40rem",
+        }}
+      >
         <CartPrunedNotice />
         <Card>
           <p className="cs-muted">Your cart is empty.</p>

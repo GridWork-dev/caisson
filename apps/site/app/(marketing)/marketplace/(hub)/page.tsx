@@ -20,7 +20,7 @@ import { TruthfulSignals } from "@/components/truthful-signals";
 
 export const metadata = buildMetadata({
   title: "Marketplace",
-  description: `Every Caisson bundle and module on one surface — ${MODULE_PRICES.length} modules composed into six bundles, one-time perpetual pricing. Filter by type, category, or price; preview the media; compare; and build a stack. Own the source, no forced renewal.`,
+  description: `Every Caisson bundle and module on one surface: ${MODULE_PRICES.length} modules composed into six bundles, one-time perpetual pricing. Filter by type, category, or price; preview the media; compare; and build a stack. Own the source, no forced renewal.`,
   path: "/marketplace",
 });
 
@@ -38,7 +38,7 @@ const HUB_FAQ = [
   },
   {
     question: "Can I buy one module without the bundle around it?",
-    answer: `Yes. Each of the ${MODULE_PRICES.length} modules is a standalone one-time purchase — pick what composes onto your base, no bundle required. Every card previews what ships and opens straight to checkout.`,
+    answer: `Yes. Each of the ${MODULE_PRICES.length} modules is a standalone one-time purchase: pick what composes onto your base, no bundle required. Every card previews what ships and opens straight to checkout.`,
   },
 ] as const;
 
@@ -88,7 +88,7 @@ export default function MarketplacePage() {
       <Section
         eyebrow="The catalog"
         title="Browse the whole library in one place."
-        lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and build a stack on the right — the builder points at the bundle that covers your picks for less."
+        lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and build a stack, the running total points at the bundle that covers your picks for less."
       >
         <div
           style={{
@@ -106,7 +106,7 @@ export default function MarketplacePage() {
       <Section
         eyebrow="The open base"
         title="Every bundle sits on this. So can you, for free."
-        lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license — source you own — but the base was always yours."
+        lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license (source you own), but the base was always yours."
         band="surface"
       >
         {/* Static header, base-capability cards cascade in (ADR-0307). */}
