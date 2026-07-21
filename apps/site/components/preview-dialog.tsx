@@ -109,7 +109,7 @@ function moduleViewModel(
         ))}
         {m && m.bundles.length === 0 ? (
           <span className="cs-muted" style={{ fontSize: "var(--cs-text-xs)" }}>
-            Sold standalone — not included in any bundle.
+            Sold standalone: not included in any bundle.
           </span>
         ) : (
           m?.bundles.map((b) => (
@@ -135,7 +135,7 @@ function moduleViewModel(
             <ul className="cs-preview-list">
               {record.included.map((item, i) => (
                 <li key={`${entry.id}-${i}`}>
-                  <strong>{item.title}</strong> — {item.body}
+                  <strong>{item.title}:</strong> {item.body}
                 </li>
               ))}
             </ul>
@@ -212,9 +212,9 @@ function bundleViewModel(
         {isEverything ? (
           <p className="cs-muted cs-preview-def">
             Every à-la-carte module totals {formatUsd(moduleCatalogSubtotal())}.
-            The Everything bundle is the whole commercial catalog — every bundle
-            and every module — for {priceStrOf(entry, anchor)}. One purchase,
-            the whole library.
+            The Everything bundle is the whole commercial catalog (every bundle
+            and every module) for {priceStrOf(entry, anchor)}. One purchase, the
+            whole library.
           </p>
         ) : members.length > 0 ? (
           <ul className="cs-preview-members">
