@@ -111,19 +111,32 @@
  * item's default min-content minimum can still inflate a `minmax(0, …)` track above its floor)
  * so it can never re-blow the now-correct content column. `overflow-wrap` is scoped to the prose
  * body only (never inline code — copy-paste fidelity of shell commands is the product's worst
- * failure mode) via `.prose`'s own text nodes; code/table scroll cues are the existing
- * `.fd-scroll-container` / Shiki figure affordance above. */
+ * failure mode) via `.cs-prose`'s own text nodes; code/table scroll cues are the existing
+ * `.fd-scroll-container` / Shiki figure affordance above. `.cs-prose` is DocsBody's own extra
+ * className (docs/[[...slug]]/page.tsx), layered onto fumadocs' `.prose`. */
 #nd-docs-layout > #main-content {
   grid-area: main;
   min-width: 0;
 }
 
-#main-content .prose {
+.cs-prose {
   overflow-wrap: anywhere;
 }
 
-#main-content .prose :where(code, pre, kbd, samp) {
+.cs-prose :where(code, pre, kbd, samp) {
   overflow-wrap: normal;
+}
+
+/* ===== Docs content links are opt-in-only today: `a { text-decoration: none }` (base.css reset)
+ * leaves every inline prose link color-alone (WCAG 1.4.1) unless a call site remembers `.cs-link`
+ * — no MDX author does, so every docs body link across every route is color-only. Scope the
+ * default inversion to `.cs-prose` (never the whole page — `.cs-prose a` would still catch
+ * fumadocs' own heading self-links otherwise: every h1-h6 wraps its FULL text in an `<a
+ * data-card href="#slug">`, so `[data-card]` is the exact, stable exclusion hook fumadocs already
+ * ships, not a guess). */
+.cs-prose a:not([data-card]) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 /* ===== Docs chrome 44px hit-area pass (browser-audit P2-006). fumadocs' "icon-sm" button recipe

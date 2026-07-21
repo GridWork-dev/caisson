@@ -25,7 +25,10 @@ export default async function Page(props: Params) {
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
-      <DocsBody>
+      {/* cs-prose (visual-audit remediation, WCAG 1.4.1): scopes the underline-by-default link
+          inversion in global.css to real inline prose links only — never the heading self-link
+          anchors fumadocs wraps every h1-h6's own text in ([data-card] excludes those). */}
+      <DocsBody className="cs-prose">
         <MDX
           components={getMDXComponents({ a: createRelativeLink(source, page) })}
         />
