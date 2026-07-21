@@ -126,7 +126,7 @@ export function LoginForm({
       setStatus("error");
       setMessage(
         error.status === 403
-          ? "Verify your email before signing in — check your inbox."
+          ? "Verify your email before signing in. Check your inbox."
           : "Incorrect email or password.",
       );
       return;
