@@ -97,6 +97,35 @@
   font-style: var(--shiki-dark-font-style);
 }
 
+/* ===== Docs mobile shell root-cause fix (visual-audit remediation, ADR-0374 W1 P0).
+ * apps/site/app/docs/layout.tsx wraps fumadocs' page output in <main id="main-content"> for the
+ * P1-002 skip-link landmark fix — but that wrapper sits BETWEEN fumadocs' CSS Grid container
+ * (#nd-docs-layout) and its own `[grid-area:main]` item (article#nd-page): grid-area only takes
+ * effect on a DIRECT child of the grid container, so #nd-page's assignment is now inert and our
+ * unassigned <main> falls back to implicit grid auto-placement instead — dragging the ENTIRE
+ * page's min-content (~900px, every code block/table unwrapped) into column 1
+ * (`minmax(min-content, 1fr)`, the sidebar-rail track) and blowing the whole shell past the
+ * 390px viewport on every docs route (the systemic P0 root: mobile header/hamburger pushed
+ * off-screen, prose/code clipped mid-word, tables vanish instead of scrolling). Reassign the area
+ * explicitly to where fumadocs expects it, and floor the item's own automatic minimum size (an
+ * item's default min-content minimum can still inflate a `minmax(0, …)` track above its floor)
+ * so it can never re-blow the now-correct content column. `overflow-wrap` is scoped to the prose
+ * body only (never inline code — copy-paste fidelity of shell commands is the product's worst
+ * failure mode) via `.prose`'s own text nodes; code/table scroll cues are the existing
+ * `.fd-scroll-container` / Shiki figure affordance above. */
+#nd-docs-layout > #main-content {
+  grid-area: main;
+  min-width: 0;
+}
+
+#main-content .prose {
+  overflow-wrap: anywhere;
+}
+
+#main-content .prose :where(code, pre, kbd, samp) {
+  overflow-wrap: normal;
+}
+
 /* ===== Docs chrome 44px hit-area pass (browser-audit P2-006). fumadocs' "icon-sm" button recipe
  * (search trigger, sidebar toggle, the GitHub link) renders at 34x34 — its own compiled
  * `dist/components/ui/button.js` hardcodes the size via `[&_svg]:size-4.5`, which survives as a
