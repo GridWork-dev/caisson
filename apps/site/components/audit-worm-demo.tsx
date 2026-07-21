@@ -19,7 +19,7 @@ import { MediaFrame } from "./media-frame";
 
 export default function AuditWormDemo() {
   return (
-    <MediaFrame label="ChainViewer">
+    <MediaFrame label="Audit chain">
       <div style={{ padding: "var(--cs-space-6)" }}>
         <ChainViewer
           entries={CHAIN_ENTRIES}

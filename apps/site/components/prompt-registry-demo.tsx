@@ -66,7 +66,7 @@ const VERSIONS: readonly PromptVersion[] = [
 
 export default function PromptRegistryDemo() {
   return (
-    <MediaFrame label="PromptBrowser">
+    <MediaFrame label="Registry browser">
       <div style={{ padding: "var(--cs-space-6)" }}>
         <PromptBrowser versions={VERSIONS} />
       </div>
