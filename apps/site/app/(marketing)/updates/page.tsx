@@ -17,7 +17,6 @@ import {
   faqPage,
 } from "@/lib/jsonld";
 import { CHANGELOG_ENTRIES, FEED_RSS_URL } from "@/lib/changelog";
-import { UpdatesForm } from "@/components/waitlist-form";
 import { bundlePrice, planPrice } from "@/lib/pricing";
 
 // Coverage-window explainer copy (verified against services/license + registry/worker source,
@@ -34,7 +33,7 @@ const COVERAGE_WINDOW_ITEMS = [
   },
   {
     title: "windowFilterEntry enforces it fail-closed, at the edge",
-    body: "The registry Worker keeps only versions published at or before the resolved cutoff on every pull — a module with zero in-window versions returns exactly like one never bought.",
+    body: "The registry Worker keeps only versions published at or before the resolved cutoff on every pull, so a module with zero in-window versions returns exactly like one never bought.",
   },
   {
     title: "Cancelling doesn't touch code you already pulled",
@@ -50,7 +49,7 @@ const COVERAGE_WINDOW_FAQ = [
   {
     question: "Does an active subscription make my organization compliant?",
     answer:
-      "No — no module or subscription makes an organization compliant; that determination is your organization's and its auditor's to make. Compliance Updates keeps the technical control mappings and evidence-pack generation current as frameworks revise. The administrative controls and the audit itself remain yours.",
+      "No. No module or subscription makes an organization compliant; that determination is your organization's and its auditor's to make. Compliance Updates keeps the technical control mappings and evidence-pack generation current as frameworks revise. The administrative controls and the audit itself remain yours.",
   },
 ] as const;
 
@@ -97,27 +96,15 @@ export default function UpdatesPage() {
         as="h1"
         eyebrow="Release history"
         title="Updates"
-        lede="Every Caisson release — dated, versioned, and tagged by what changed — plus a way to follow along."
+        lede="Every Caisson release, dated, versioned, and tagged by what changed, plus a way to follow along."
       >
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "flex-start",
-            gap: "var(--cs-space-6)",
-            marginTop: "var(--cs-space-5)",
-          }}
-        >
-          <div style={{ flex: "1 1 20rem" }}>
-            <UpdatesForm source="updates" />
-          </div>
-          <Button
-            href={FEED_RSS_URL}
-            external
-            variant="ghost"
-            aria-label="Subscribe via RSS"
-          >
-            RSS feed
+        {/* The footer already renders the identical "Product updates" capture on every page
+            (site-wide, SiteFooter -> UpdatesFormLazy) - a second copy of the same form here
+            duplicated it back-to-back on this page (visual-audit id f136990a6a7b2313). The RSS
+            feed is this page's own, distinct follow path. */}
+        <div style={{ marginTop: "var(--cs-space-5)" }}>
+          <Button href={FEED_RSS_URL} external variant="primary">
+            Subscribe via RSS
           </Button>
         </div>
 
@@ -158,7 +145,7 @@ export default function UpdatesPage() {
         <Section
           eyebrow="Coverage window"
           title="What keeps versions pulling"
-          lede="Compliance Updates is the annual subscription that keeps a Compliance bundle license current with new package versions. Each paid cycle stamps a coverage horizon that the registry Worker enforces at the edge, so a version published after the window lapses is fail-closed invisible — it renews reach, never rewrites the code you already own."
+          lede="Compliance Updates is the annual subscription that keeps a Compliance bundle license current with new package versions. Each paid cycle stamps a coverage horizon that the registry Worker enforces at the edge, so a version published after the window lapses is fail-closed invisible: it renews reach, never rewrites the code you already own."
         >
           <FeatureGrid cols={2}>
             {COVERAGE_WINDOW_ITEMS.map((item) => (
@@ -203,7 +190,7 @@ export default function UpdatesPage() {
               href="/marketplace/plans#compliance-updates"
               variant="ghost"
             >
-              Compliance Updates — {planPrice("compliance-updates")}
+              Compliance Updates: {planPrice("compliance-updates")}
             </Button>
           </div>
         </Section>
