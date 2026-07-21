@@ -25,6 +25,7 @@ import {
 } from "@/lib/marketplace-surface";
 import { formatUsd, isBundleId } from "@/lib/pricing";
 import { modulePostureGroup } from "@/lib/stack-fit";
+import type { TruthfulSignal } from "@/lib/trust-signals";
 
 import { PreviewDialog } from "./preview-dialog";
 import { StackRail } from "./stack-rail";
@@ -54,7 +55,11 @@ function toggle<T>(set: ReadonlySet<T>, value: T): Set<T> {
  * `?view=<kind>:<slug>` param (History API, no scroll reset); the legacy `?m=`/`?b=` params still
  * open the right card on load (aliases). Client island — the page shell stays a Server Component.
  */
-export function MarketplaceSurface() {
+export function MarketplaceSurface({
+  signals,
+}: {
+  signals: readonly TruthfulSignal[];
+}) {
   const [type, setType] = useState<TypeFilter>("all");
   const [categories, setCategories] = useState<ReadonlySet<Category>>(
     new Set(),
@@ -349,7 +354,7 @@ export function MarketplaceSurface() {
         <StackRail />
       </div>
 
-      <PreviewDialog viewId={viewId} onClose={closePreview} />
+      <PreviewDialog viewId={viewId} onClose={closePreview} signals={signals} />
 
       <CompareTray
         viewIds={compareIds}

@@ -15,6 +15,8 @@ import {
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { hasModulePage } from "@/lib/module-pages";
 import { BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
+import { truthfulSignals } from "@/lib/trust-signals";
+import { TruthfulSignals } from "@/components/truthful-signals";
 
 export const metadata = buildMetadata({
   title: "Marketplace",
@@ -41,6 +43,7 @@ const HUB_FAQ = [
 ] as const;
 
 export default function MarketplacePage() {
+  const signals = truthfulSignals();
   const breadcrumbNode = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Marketplace", path: "/marketplace" },
@@ -87,7 +90,15 @@ export default function MarketplacePage() {
         title="Browse the whole library in one place."
         lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and build a stack on the right — the builder points at the bundle that covers your picks for less."
       >
-        <MarketplaceSurface />
+        <div
+          style={{
+            marginTop: "var(--cs-space-2)",
+            marginBottom: "var(--cs-space-6)",
+          }}
+        >
+          <TruthfulSignals signals={signals} lead="Check before you buy:" />
+        </div>
+        <MarketplaceSurface signals={signals} />
       </Section>
 
       {/* ===== The open base — "batteries included" under the prices (anxiety-relief beat;
