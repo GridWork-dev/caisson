@@ -20,7 +20,7 @@ import { MODULE_DB_POSTURE, POSTURE_GROUPS, STACK_AXES } from "@/lib/stack-fit";
 export const metadata = buildMetadata({
   title: "Does it fit my stack?",
   description:
-    "The honest adapter matrix: which Caisson modules need Postgres and which don't, the Drizzle and Prisma bridges, better-auth or your own provider, S3 / GCS / R2 WORM backends, the AI-provider lanes, and the MCP transports — verified against the code.",
+    "The honest adapter matrix: which Caisson modules need Postgres and which don't, the Drizzle and Prisma bridges, better-auth or your own provider, S3 / GCS / R2 WORM backends, the AI-provider lanes, and the MCP transports, verified against the code.",
   path: "/stack-fit",
 });
 
@@ -28,12 +28,12 @@ const FAQ = [
   {
     question: "Do I have to switch ORMs to use Caisson?",
     answer:
-      "No. The Drizzle and Prisma bridges route the SQL your query builder already generates through the fail-closed tenant executor — a rename at the call site, not a rewrite. Neither bridge adds a runtime dependency on drizzle-orm or @prisma/client; row-level security still enforces isolation underneath.",
+      "No. The Drizzle and Prisma bridges route the SQL your query builder already generates through the fail-closed tenant executor, a rename at the call site, not a rewrite. Neither bridge adds a runtime dependency on drizzle-orm or @prisma/client; row-level security still enforces isolation underneath.",
   },
   {
     question: "Does every module need Postgres?",
     answer:
-      "No. The tenant-isolation, metering, and ledger modules build on Postgres row-level security by design — that is where the isolation guarantee lives. The local-first modules run on SQLite on-device, and the crypto, in-process, and on-device-inference modules ship no database of their own. The table on this page lists every module's posture.",
+      "No. The tenant-isolation, metering, and ledger modules build on Postgres row-level security by design, that is where the isolation guarantee lives. The local-first modules run on SQLite on-device, and the crypto, in-process, and on-device-inference modules ship no database of their own. The table on this page lists every module's posture.",
   },
   {
     question: "Can I bring my own auth provider?",
@@ -72,7 +72,7 @@ export default function StackFitPage() {
       <Hero
         eyebrow="Stack fit"
         title="Does it fit my stack?"
-        lede="The question that decides a build-vs-buy call — answered honestly, per axis, against the code. Caisson runs on plain Next.js and Postgres, bridges to your ORM, takes your auth provider, and hardcodes no infrastructure. Where a backend has a real limit, it is stated here, not hidden."
+        lede="The question that decides a build-vs-buy call, answered honestly, per axis, against the code. Caisson runs on plain Next.js and Postgres, bridges to your ORM, takes your auth provider, and hardcodes no infrastructure. Where a backend has a real limit, it is stated here, not hidden."
         ctas={
           <>
             <Button href="/docs/cli/create-caisson" variant="primary">
@@ -90,9 +90,12 @@ export default function StackFitPage() {
         <Section
           eyebrow="Adapters"
           title="Six seams, no hardcoded infrastructure."
-          lede="Each row is what actually ships. The seams are ports you swap — an ORM bridge, an auth provider, a storage backend, an AI lane, an MCP transport — not assumptions baked into the source."
+          lede="Each row is what actually ships. The seams are ports you swap (an ORM bridge, an auth provider, a storage backend, an AI lane, an MCP transport) not assumptions baked into the source."
         >
-          <div className="cs-grid" style={{ marginTop: "var(--cs-space-8)" }}>
+          <div
+            className="cs-grid cs-grid--3"
+            style={{ marginTop: "var(--cs-space-8)" }}
+          >
             {STACK_AXES.map((a) => (
               <Reveal as="article" key={a.title}>
                 <Card>
@@ -154,7 +157,7 @@ export default function StackFitPage() {
         <Section
           band="surface"
           eyebrow="Database posture"
-          title="Which modules need Postgres — and which don't."
+          title="Which modules need Postgres, and which don't."
           lede="The base substrate's tenant isolation is Postgres row-level security, so the compliance and multi-tenant story is Postgres. But most modules add a capability without pulling in a database of their own. Here is the honest split."
         >
           <FeatureGrid cols={3}>
@@ -196,7 +199,7 @@ export default function StackFitPage() {
             })}
           </FeatureGrid>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            retention-runner needs Postgres transitively — it schedules through
+            retention-runner needs Postgres transitively, it schedules through
             the pg-boss job queue.{" "}
             <Link href="/marketplace?type=modules" className="cs-link">
               Browse every module
@@ -212,7 +215,7 @@ export default function StackFitPage() {
           title="Don't take our word for the fit. Run it."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
-            <TrialPath />
+            <TrialPath hideStackFitLink />
           </div>
         </Section>
       </Reveal>
