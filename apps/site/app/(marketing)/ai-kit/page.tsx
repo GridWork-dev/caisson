@@ -292,10 +292,11 @@ export default function AiKitPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                The gateway, all four composed modules, and future patch
-                releases, in your own repo as TypeScript source. Scaffold it in
-                with bunx @caisson-sh/cli@latest, or add it to an existing
-                Caisson base.
+                The gateway, all{" "}
+                {spellCount(MEMBER_MODULES.length).toLowerCase()} composed
+                modules, and future patch releases, in your own repo as
+                TypeScript source. Scaffold it in with bunx
+                @caisson-sh/cli@latest, or add it to an existing Caisson base.
               </p>
             </Card>
 
@@ -305,10 +306,10 @@ export default function AiKitPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                The composed modules are also sold individually: prompt-registry
+                The composed modules are also sold individually: prompt registry
                 from {formatUsd(moduleAmount("prompt-registry"))}, guardrails
-                from {formatUsd(moduleAmount("guardrails"))}, ai-meter from{" "}
-                {formatUsd(moduleAmount("ai-meter"))};
+                from {formatUsd(moduleAmount("guardrails"))}, token metering
+                from {formatUsd(moduleAmount("ai-meter"))};
                 {modulePrice && modulePrice.amount !== null ? (
                   <>
                     {" "}
