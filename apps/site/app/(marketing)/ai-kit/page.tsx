@@ -249,7 +249,7 @@ export default function AiKitPage() {
             status={<StatusChip label="enforced at call time" tone="muted" />}
           >
             {
-              "# caisson.ai.toml — checked into your repo, enforced at call time\n\n"
+              "# caisson.ai.toml, checked into your repo, enforced at call time\n\n"
             }
             <span className="cs-tok-muted">{"[caps.default]\n"}</span>
             {"daily_tokens = "}
@@ -361,7 +361,7 @@ export default function AiKitPage() {
         <Section
           eyebrow="Trial path"
           title="Prove fit in week one."
-          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />
