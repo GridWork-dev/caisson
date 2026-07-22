@@ -43,6 +43,20 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
     }
   }, [state]);
 
+  // Sibling-mount race (ADR-0376): two UpdatesForm instances on one page (footer + body,
+  // e.g. /plans) each render the same <Script> — next/script dedupes the tag and only the
+  // FIRST mounter's onLoad fires, so the second form's `turnstileReady` never flipped and
+  // its widget never rendered. Same detect-the-global fallback as ask-ai/use-turnstile.ts.
+  useEffect(() => {
+    if (
+      TURNSTILE_SITE_KEY &&
+      !turnstileReady &&
+      window.turnstile !== undefined
+    ) {
+      setTurnstileReady(true);
+    }
+  }, [turnstileReady]);
+
   useEffect(() => {
     if (
       !TURNSTILE_SITE_KEY ||
@@ -61,6 +75,12 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
       theme: "auto",
       size: "flexible",
     });
+    return () => {
+      if (widgetIdRef.current !== null && window.turnstile !== undefined) {
+        window.turnstile.remove(widgetIdRef.current);
+        widgetIdRef.current = null;
+      }
+    };
   }, [turnstileReady]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
