@@ -76,8 +76,8 @@ export function MarketplaceHeroArtifact() {
   }));
   return (
     <MediaFrame
-      label={`caisson · one base, ${bundles.length} bundles`}
-      ariaLabel={`${bundles.length} Caisson bundles composing onto one Apache-2.0 audited base`}
+      label={`caisson · one base, ${bundles.length} composable bundles`}
+      ariaLabel={`${bundles.length} composable Caisson bundles onto one Apache-2.0 audited base`}
       status={
         <span className={styles.barChip}>
           <span className={styles.dot} />
