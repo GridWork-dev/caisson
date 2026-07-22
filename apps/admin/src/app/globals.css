@@ -182,6 +182,64 @@ p {
   background: var(--cs-surface-2);
 }
 
+/* ---- mobile nav collapse (ADR-0374 [info]: e0817bf3ed27130b, 450dcca1a0936d17,
+   51bc1aaabe5f3590, 7e0714515219721c, a9101e6be4233ec9, a4f11203b0723c0a) ---- */
+
+.admin-nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  color: var(--cs-fg);
+}
+.admin-nav-toggle:hover {
+  background: var(--cs-surface-2);
+}
+
+/* .topbar is `position: sticky`, which (like `relative`) establishes the containing block this
+   panel positions against — it drops directly under the topbar without a separate wrapper. */
+.admin-nav-panel {
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+  padding: var(--cs-space-3) clamp(1.25rem, 0.5rem + 3vw, 3rem);
+  background: var(--cs-surface-1);
+  border-bottom: 1px solid var(--cs-border);
+  box-shadow: 0 12px 24px -12px rgb(0 0 0 / 35%);
+}
+.admin-nav-panel a {
+  padding: 0.65rem 0.7rem;
+  border-radius: var(--cs-radius-md);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-sm);
+}
+.admin-nav-panel a:hover {
+  color: var(--cs-fg);
+  background: var(--cs-surface-2);
+  text-decoration: none;
+}
+.admin-nav-panel a[aria-current="page"] {
+  color: var(--cs-fg);
+  background: var(--cs-surface-2);
+}
+
+@media (max-width: 56.25rem) {
+  .nav--desktop {
+    display: none;
+  }
+  .admin-nav-toggle {
+    display: inline-flex;
+  }
+}
+
 /* ---- type primitives --------------------------------------------------- */
 
 .eyebrow {

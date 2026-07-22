@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -49,8 +49,95 @@ function SignOutButton() {
   );
 }
 
+function isActive(pathname: string, href: string): boolean {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+// Shared between the desktop row and the mobile disclosure panel so the two link lists can't drift.
+function NavLinks({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <>
+      {LINKS.map((l) => (
+        <Link
+          key={l.href}
+          href={l.href}
+          aria-current={isActive(pathname, l.href) ? "page" : undefined}
+          {...(onNavigate ? { onClick: onNavigate } : {})}
+        >
+          {l.label}
+        </Link>
+      ))}
+    </>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
 export function AdminNav() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  // A route change (panel link followed, or back/forward) always closes the panel.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // ADR-0374 (mobile-nav-collapse rows, e.g. e0817bf3ed27130b/a4f11203b0723c0a): the 9-link row
+  // wrapped to 3+ stacked rows at narrow widths with no collapse. Escape-closes-and-returns-focus
+  // is the one piece of behavior a plain <details> panel doesn't give for free, so a button+panel
+  // with explicit aria-expanded (rather than <details>) is the simplest correct fit here.
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        toggleRef.current?.focus();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   // The signed-out /login page must never render the authenticated shell (full nav + sign-out) —
   // there is no session yet to sign out of, and it falsely implies the visitor is already in.
   if (pathname === "/login") return null;
@@ -61,26 +148,34 @@ export function AdminNav() {
           <span className="mark">caisson</span>
           <span className="sub">/ admin</span>
         </Link>
-        <nav className="nav" aria-label="Admin sections">
-          {LINKS.map((l) => {
-            const active =
-              l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                aria-current={active ? "page" : undefined}
-              >
-                {l.label}
-              </Link>
-            );
-          })}
+        <nav className="nav nav--desktop" aria-label="Admin sections">
+          <NavLinks pathname={pathname} />
         </nav>
       </div>
       <div className="row" style={{ gap: "1rem", alignItems: "center" }}>
+        <button
+          type="button"
+          ref={toggleRef}
+          className="admin-nav-toggle"
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? <CloseIcon /> : <MenuIcon />}
+        </button>
         <ThemeToggle />
         <SignOutButton />
       </div>
+      {open && (
+        <nav
+          id={panelId}
+          className="admin-nav-panel"
+          aria-label="Admin sections"
+        >
+          <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} />
+        </nav>
+      )}
     </header>
   );
 }
