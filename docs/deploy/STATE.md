@@ -44,6 +44,22 @@ redeployed** (deployment SUCCESS; edge 307 to CF-Access) at `56e46f1c`. The lock
 standard live re-audit + final ledger reconcile ran as the phase-closing act (see the
 tracker row for the resulting ledger state).
 
+**Lock-4 re-audit tail (same sitting):** the 10-lane live re-audit verified 8 fix
+classes outright and surfaced three real leftovers, fixed and shipped as two micro-PRs —
+PR 323 (`2bfc60e0`: terms EULA link was color-alone, marketplace catalog section
+duplicated the hero accent eyebrow) and PR 324 (`5788b030`: the hero artifact label
+"one base, 5 composable bundles" contradicted the page's own six-bundle lede/facet —
+now "+ Everything", chips unchanged). **caisson-site redeployed** at `5788b030`
+(`Deploy complete`; all three fixes verified live; healthz 200) — note the FIRST
+redeploy attempt at `2bfc60e0` died in the Railway builder during the type-check step
+with no error line (CI had built the identical tree green; builder transient) and never
+touched the live deployment; the `5788b030` deploy superseded it. **Final reconcile:**
+the design-critic ledger closed at **729 rows = 709 fixed · 14 accepted (the
+illustration-placeholder family, owned by the module-schematics kickoff CAISSON-145) ·
+6 open** (curated info-tier findings from the live re-audit: docs touch targets ×2,
+field-crypto headline wrap, home glyph inconsistency, dock-over-footer at exact scroll
+bottom, ai-kit four-vs-seven copy nuance).
+
 ## 2026-07-20 (third wave) — compliance-gap SKU arming: two trains + catalog debut
 
 The ADR-0373 arming executed end-to-end in one sitting (checklists
