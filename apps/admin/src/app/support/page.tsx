@@ -69,8 +69,8 @@ export default async function SupportPage() {
         <p className="eyebrow">caisson · admin</p>
         <h1 className="page-title">Support health</h1>
         <p className="lede">
-          Support-bot escalations, bot liveness, and the Linear Triage inbox —
-          in one place. Escalations read through the same read-only{" "}
+          Support-bot escalations, bot liveness, and the Linear Triage inbox, in
+          one place. Escalations read through the same read-only{" "}
           <span className="mono">admin</span> role as every other business-admin
           view; liveness reads Grafana Cloud Loki (ADR-0206/0316).
         </p>
@@ -95,7 +95,15 @@ export default async function SupportPage() {
         </div>
       </section>
 
-      <Section title={`Escalations (${String(tickets.rows.length)})`}>
+      <Section
+        title={
+          // Root cause (ADR-0374 [high]): a failed read must never assert a count — "(0)" reads
+          // as "confirmed zero escalations," which is false when the read itself failed.
+          tickets.status === "ok"
+            ? `Escalations (${String(tickets.rows.length)})`
+            : "Escalations"
+        }
+      >
         <Escalations status={tickets.status} rows={tickets.rows} />
       </Section>
 
@@ -191,7 +199,7 @@ function Escalations({
     return (
       <p className="muted">
         The read-only <span className="mono">admin</span> role lacks SELECT on{" "}
-        <span className="mono">support_ticket</span> — run{" "}
+        <span className="mono">support_ticket</span>. Run{" "}
         <span className="mono">GRANT SELECT ON support_ticket TO admin</span> as
         a DEPLOY step.
       </p>
@@ -199,9 +207,16 @@ function Escalations({
   }
   if (status === "error") {
     return (
-      <p className="muted">
-        Escalations could not be read right now — a transient database error,
-        not a missing table. Reload to retry.
+      <p className="muted row" style={{ gap: "var(--cs-space-3)" }}>
+        <span>
+          Escalations could not be read right now: a transient database error,
+          not a missing table.
+        </span>
+        {/* A plain nav link (this is a server component) so "reload" is a real control, not just
+         *  copy asking the operator to hit their browser's own reload (ADR-0374 [warn]). */}
+        <a className="btn ghost" href="/support">
+          Reload
+        </a>
       </p>
     );
   }
