@@ -79,7 +79,7 @@ export default async function DashboardCreditsPage() {
         <PlanPurchaseRow
           priceId={CREDIT_PACK_PRICE_ID}
           accountId={session.accountId}
-          label="5,000 credits — $49"
+          label="5,000 credits: $49"
           owned={false}
         />
       )}
@@ -93,7 +93,7 @@ export default async function DashboardCreditsPage() {
           value={<MoneyCell value={expiring.credits} unit="credits" />}
           icon="alert"
           tone="warning"
-          hint={`Expire ${expiring.soonestExpiresAt.slice(0, 10)} — they burn first automatically; top up or use them.`}
+          hint={`Expire ${expiring.soonestExpiresAt.slice(0, 10)}. They burn first automatically; top up or use them.`}
         />
       ) : null}
 

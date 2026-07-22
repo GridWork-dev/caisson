@@ -75,23 +75,23 @@ export const POSTURE_GROUPS: readonly PostureGroup[] = [
     posture: "postgres",
     icon: "database",
     heading: "Requires Postgres",
-    note: "Built on the fail-closed RLS base or the pg-boss job queue, or shipping their own RLS'd Postgres tables (field-crypto's key-version store, alerting's audit trail). Postgres by design — that is where the isolation guarantee lives.",
+    note: "Built on the fail-closed RLS base or the pg-boss job queue, or shipping their own RLS'd Postgres tables (field-crypto's key-version store, alerting's audit trail). Postgres by design, that is where the isolation guarantee lives.",
   },
   {
     posture: "sqlite",
     icon: "cpu",
     heading: "Runs on SQLite, on-device",
-    note: "A single SQLite file per tenant (bun:sqlite + sqlite-vec), on the device — no server database, no vector-cloud vendor in the loop.",
+    note: "A single SQLite file per tenant (bun:sqlite + sqlite-vec), on the device, no server database, no vector-cloud vendor in the loop.",
   },
   {
     posture: "none",
     icon: "check",
     heading: "No database of its own",
-    note: "Crypto, in-process logic, or on-device inference — these add a capability without pulling in a database. They run over a handle you inject or over no store at all.",
+    note: "Crypto, in-process logic, or on-device inference, these add a capability without pulling in a database. They run over a handle you inject or over no store at all.",
   },
 ];
 
-/** The DB-posture group for a module id, or undefined for an unmapped id — the single-source the
+/** The DB-posture group for a module id, or undefined for an unmapped id, the single-source the
  *  marketplace cards + viewer read so a module's honest database classification (from /stack-fit)
  *  shows at the point of purchase, not only on the standalone page (ADR-0285 §2). */
 export function modulePostureGroup(id: string): PostureGroup | undefined {
@@ -109,7 +109,7 @@ export interface StackAxis {
   fit: string;
   /** The concrete, shipped options. */
   supported: readonly string[];
-  /** The honest caveat / how it actually works — always shown. */
+  /** The honest caveat / how it actually works, always shown. */
   note: string;
 }
 
@@ -120,11 +120,11 @@ export const STACK_AXES: readonly StackAxis[] = [
     title: "ORM",
     fit: "Bring your existing Drizzle or Prisma call sites.",
     supported: [
-      "Drizzle bridge — queryDrizzle / execDrizzle",
-      "Prisma bridge — createPrismaBridge",
+      "Drizzle bridge: queryDrizzle / execDrizzle",
+      "Prisma bridge: createPrismaBridge",
       "Raw SQL through the tenant executor",
     ],
-    note: "The bridges route your query builder's generated SQL through the fail-closed tenant executor — a rename at the call site, not a schema rewrite or a switch of ORM. Neither adds a runtime dependency on drizzle-orm or @prisma/client; they bridge the query surface, and RLS still enforces isolation underneath.",
+    note: "The bridges route your query builder's generated SQL through the fail-closed tenant executor, a rename at the call site, not a schema rewrite or a switch of ORM. Neither adds a runtime dependency on drizzle-orm or @prisma/client; they bridge the query surface, and RLS still enforces isolation underneath.",
   },
   {
     icon: "lock",
@@ -135,24 +135,24 @@ export const STACK_AXES: readonly StackAxis[] = [
       "GitHub · Google · Discord OAuth (env-gated)",
       "WorkOS SSO (via org-controls)",
     ],
-    note: "The base depends only on a provider-agnostic SessionProvider port. better-auth is the reference implementation — swap in your own provider without touching the tenancy, billing, or credits packages, which know only the interface.",
+    note: "The base depends only on a provider-agnostic SessionProvider port. better-auth is the reference implementation, swap in your own provider without touching the tenancy, billing, or credits packages, which know only the interface.",
   },
   {
     icon: "worm",
     title: "Object storage & WORM",
     fit: "S3 Object-Lock, Google Cloud Storage, or Cloudflare R2.",
     supported: [
-      "AWS S3 Object-Lock — per-object, GOVERNANCE + COMPLIANCE",
-      "Google Cloud Storage — per-object retention lock",
-      "Cloudflare R2 — bucket-level lock rules",
-      "Local filesystem — for development",
+      "AWS S3 Object-Lock: per-object, GOVERNANCE + COMPLIANCE",
+      "Google Cloud Storage: per-object retention lock",
+      "Cloudflare R2: bucket-level lock rules",
+      "Local filesystem: for development",
     ],
-    note: "One ArtifactStore port, four backends, write-once enforced on each. R2 holds retention at the bucket-lock-rule level rather than per object — the adapter fails closed at construction if the key prefix is not covered by an enabled rule, and refuses a per-object shorten rather than faking it.",
+    note: "One ArtifactStore port, four backends, write-once enforced on each. R2 holds retention at the bucket-lock-rule level rather than per object, the adapter fails closed at construction if the key prefix is not covered by an enabled rule, and refuses a per-object shorten rather than faking it.",
   },
   {
     icon: "gauge",
     title: "AI providers",
-    fit: "OpenRouter, Bedrock, Azure OpenAI, Ollama, and more — behind one gateway.",
+    fit: "OpenRouter, Bedrock, Azure OpenAI, Ollama, and more, behind one gateway.",
     supported: [
       "OpenRouter · AWS Bedrock · Azure OpenAI · Ollama",
       "OpenAI · Anthropic · Google · Groq · Mistral · Together",
@@ -165,8 +165,8 @@ export const STACK_AXES: readonly StackAxis[] = [
     title: "MCP transports",
     fit: "stdio and Streamable HTTP.",
     supported: [
-      "stdio — createStdioMcpServer",
-      "Streamable HTTP — stateless, Bearer + host allowlist",
+      "stdio: createStdioMcpServer",
+      "Streamable HTTP: stateless, Bearer + host allowlist",
     ],
     note: "The HTTP transport is stateless per request with mandatory Bearer auth and a DNS-rebinding host allowlist required at construction. Both transports share one transport-agnostic core; there is no SSE transport.",
   },

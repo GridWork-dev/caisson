@@ -10,7 +10,7 @@ export interface NurtureFollowUpData {
 }
 
 export function nurtureSubject(data: NurtureFollowUpData): string {
-  return `What Caisson ${data.bundle ?? "Compliance"} ships — and what it doesn't`;
+  return `What Caisson ${data.bundle ?? "Compliance"} ships, and what it doesn't`;
 }
 
 export function NurtureFollowUpEmail({
@@ -21,10 +21,11 @@ export function NurtureFollowUpEmail({
   return (
     <EmailLayout
       preview={nurtureSubject({ email, bundle })}
-      heading={`What ${label} ships — and what it doesn't`}
+      heading={`What ${label} ships, and what it doesn't`}
+      footerNote="This is a one-time follow-up about the bundle you evaluated, not a recurring newsletter."
     >
       <EmailBody>
-        A note for {email} — this is the one email we said we'd send, not the
+        A note for {email}: this is the one email we said we'd send, not the
         start of a drip.
       </EmailBody>
       <EmailBody>

@@ -4,6 +4,7 @@
 // "choose a new password" copy above a form that immediately says it can't. Kept minimal — a
 // copy/design polish pass follows separately, same as /login.
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Hero, Section } from "@caisson/ui/components";
 import { Button } from "@/components/button";
 import { buildMetadata } from "@/lib/metadata";
@@ -26,8 +27,17 @@ export default async function ResetPasswordPage({
     return (
       <Hero
         eyebrow="Reset password"
-        title="This reset link is missing its token"
-        lede="It may be malformed or already used. Request a new one below."
+        title="This reset link isn't valid anymore"
+        lede="It may be malformed or already used. Use the button below to request a new one."
+        credentials={
+          <span
+            className="cs-footnote"
+            style={{ color: "var(--cs-danger)" }}
+            role="alert"
+          >
+            No valid reset token was found on this page.
+          </span>
+        }
         ctas={
           <Button href="/forgot-password" variant="primary">
             Request a new reset link
@@ -44,8 +54,15 @@ export default async function ResetPasswordPage({
         title="Choose a new password"
         lede="This link is one-time use. Set a new password to finish resetting your account."
       />
-      <Section eyebrow="Reset" title="New password">
+      {/* No repeated eyebrow/heading here (Section is a plain form wrapper - the Hero
+          above already states the task). */}
+      <Section>
         <ResetPasswordForm token={token} />
+        <p className="cs-muted" style={{ fontSize: "var(--cs-text-sm)" }}>
+          <Link href="/login" className="cs-muted">
+            Back to sign in
+          </Link>
+        </p>
       </Section>
     </>
   );

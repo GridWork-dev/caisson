@@ -6,7 +6,13 @@
 // bounded prop set + voice as purchase-confirmation: buyer name, provider order id, the renewed
 // line(s) with their new updates-window end date, the charged total (integer minor units, ADR-0007),
 // and the dashboard link.
-import { EmailBody, EmailButton, EmailLayout } from "./layout.tsx";
+import {
+  EmailBody,
+  EmailButton,
+  EmailLayout,
+  EmailLink,
+  EmailMono,
+} from "./layout.tsx";
 
 export interface RenewalConfirmationLine {
   /** Human-readable renewed entitlement label (canonical product/bundle name). */
@@ -50,17 +56,17 @@ export function RenewalConfirmationEmail(
       preview={
         data.amountTotalMinor === undefined
           ? `Renewal ${data.orderId}`
-          : `Renewal ${data.orderId} — ${formatMinor(data.amountTotalMinor, data.currency)}`
+          : `Renewal ${data.orderId}: ${formatMinor(data.amountTotalMinor, data.currency)}`
       }
       heading="Renewal confirmed"
     >
       <EmailBody>
-        Thanks, {data.buyerName}. Your renewal order {data.orderId} is
-        confirmed.
+        Thanks, {data.buyerName}. Your renewal order{" "}
+        <EmailMono>{data.orderId}</EmailMono> is confirmed.
       </EmailBody>
       {data.lines.map((line, i) => (
         <EmailBody key={`${line.label}-${String(i)}`}>
-          {line.label} — updates through {line.newWindowEnd}
+          {line.label}: updates through {line.newWindowEnd}
         </EmailBody>
       ))}
       {data.amountTotalMinor === undefined ? null : (
@@ -70,9 +76,11 @@ export function RenewalConfirmationEmail(
       )}
       <EmailButton href={data.dashboardUrl} label="View your dashboard" />
       <EmailBody>
-        Your updates window has been extended. Pull the latest with bunx
-        @caisson-sh/cli@latest using the account on your dashboard. Full terms
-        are in the Caisson EULA at https://caisson.sh/legal/eula.
+        Your updates window has been extended. Pull the latest with{" "}
+        <EmailMono>bunx @caisson-sh/cli@latest</EmailMono> using the account on
+        your dashboard. Full terms are in the{" "}
+        <EmailLink href="https://caisson.sh/legal/eula">Caisson EULA</EmailLink>
+        .
       </EmailBody>
     </EmailLayout>
   );

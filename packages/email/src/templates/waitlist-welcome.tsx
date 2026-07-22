@@ -29,10 +29,11 @@ export function WaitlistWelcomeEmail({
     <EmailLayout
       preview={`You're on the ${label} early-access list`}
       heading="You're on the list"
+      footerNote="This confirms the early-access waitlist request you made; it is not a recurring marketing sequence."
     >
       <EmailBody>
         We received your request for early access to {label} at {email}. We'll
-        reach out when it opens — roughly one email, not a drip.
+        reach out when it opens: roughly one email, not a drip.
       </EmailBody>
       <EmailBody>
         In the meantime, the docs cover the architecture, the module contracts,

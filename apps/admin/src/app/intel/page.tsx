@@ -129,18 +129,25 @@ export default async function IntelPage({
           <p className="muted">
             The <span className="mono">intel</span> schema, its triage columns
             (migration 0002), or the <span className="mono">admin</span>{" "}
-            role&apos;s cross-schema grant is missing on this database — the
+            role&apos;s cross-schema grant is missing on this database. The
             intel DEPLOY step hasn&apos;t run yet. Findings render here once it
             has.
           </p>
         </div>
       ) : readStatus === "error" ? (
-        <div className="panel">
-          <p className="section-title">Read failed</p>
-          <p className="muted">
-            Transient database error reading intel findings — reload. The schema
-            is provisioned; this is not a deploy gap.
-          </p>
+        <div className="panel row" style={{ gap: "var(--cs-space-3)" }}>
+          <div>
+            <p className="section-title">Read failed</p>
+            <p className="muted">
+              Transient database error reading intel findings. The schema is
+              provisioned; this is not a deploy gap.
+            </p>
+          </div>
+          {/* A plain nav link (server component) — a real reload control, not just copy asking
+           *  for one (ADR-0374, same class as /support). */}
+          <a className="btn ghost" href="/intel">
+            Reload
+          </a>
         </div>
       ) : null}
 
@@ -186,7 +193,12 @@ export default async function IntelPage({
         ) : null}
       </form>
 
-      <Section title={`Findings (${findings.length})`}>
+      <Section
+        title={
+          // Same honesty rule as /support: a failed/unprovisioned read must never assert a count.
+          readStatus === "ok" ? `Findings (${findings.length})` : "Findings"
+        }
+      >
         <Table
           head={[
             "Severity",
@@ -198,7 +210,13 @@ export default async function IntelPage({
             "Triage",
           ]}
           textColumns={[0, 1, 3, 4, 5]}
-          empty={configured ? "No findings match this filter." : "—"}
+          empty={
+            !configured
+              ? "—"
+              : readStatus !== "ok"
+                ? "Findings could not be read — see the panel above."
+                : "No findings match this filter."
+          }
           rows={findings.map((f) => [
             f.severity,
             f.source,

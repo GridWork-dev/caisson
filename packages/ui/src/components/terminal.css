@@ -26,11 +26,8 @@
   color: var(--cs-fg-muted);
 }
 
-/* Non-scrolling frame around the body — exists only so the scroll-fade ::after below has a
- * containing block that doesn't move when `.cs-terminal__body` scrolls horizontally (a
- * pseudo-element positioned absolute on the scrolling element itself would scroll away with the
- * content). `.cs-terminal`'s own `overflow: hidden` + radius (above) clips the fade's square
- * corners to match, so no extra radius is needed here. */
+/* Kept as the body's layout wrapper; the scroll cue now lives on the scrolling `.cs-terminal__body`
+   itself (see the affordance note below — a fixed pseudo-element could not gate itself on overflow). */
 .cs-terminal__body-frame {
   position: relative;
 }
@@ -44,20 +41,46 @@
   line-height: var(--cs-leading-snug);
   color: var(--cs-fg);
   tab-size: 2;
+
+  /* Scroll affordance (visual-audit remediation) — identical treatment to `.cs-code` in
+   * code-block.css: NEVER soft-wrap (shell copy-paste fidelity), a persistent thin scrollbar that
+   * appears only on overflow, and a background-attachment:local scroll-shadow on both horizontal
+   * edges that shows only while there is off-screen content. The mid-grey shadow reads as a shadow
+   * on the light body and an edge highlight on the dark body, so one value serves both themes.
+   * ponytail: overlay-scrollbar OSes may auto-hide the bar; the scroll-shadow is the backstop. */
+  /* NB: no `scrollbar-width`/`scrollbar-color` — setting either makes Chromium ignore the
+   * ::-webkit-scrollbar rules below and fall back to a zero-space overlay bar that auto-hides
+   * (invisible in a screenshot and on macOS). The webkit pseudo forces a persistent classic bar
+   * in Chromium/Safari; Firefox keeps its own always-visible scrollbar. */
+  background:
+    linear-gradient(to right, var(--cs-surface-1), transparent) left center /
+      1.75rem 100% no-repeat local,
+    linear-gradient(to left, var(--cs-surface-1), transparent) right center /
+      1.75rem 100% no-repeat local,
+    radial-gradient(
+        farthest-side at left center,
+        oklch(0.62 0.02 220 / 0.52),
+        transparent
+      )
+      left center / 1rem 100% no-repeat scroll,
+    radial-gradient(
+        farthest-side at right center,
+        oklch(0.62 0.02 220 / 0.52),
+        transparent
+      )
+      right center / 1rem 100% no-repeat scroll,
+    var(--cs-surface-1);
 }
 
-/* Scroll affordance (visual-audit remediation): same fade-edge treatment as `.cs-code-frame` in
- * code-block.css — a right-edge gradient into the card's own surface color, painted over the
- * body's content so it only reads as "more content" where text actually reaches the edge. */
-.cs-terminal__body-frame::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 2rem;
-  pointer-events: none;
-  background: linear-gradient(to right, transparent, var(--cs-surface-1));
+.cs-terminal__body::-webkit-scrollbar {
+  height: 0.5rem;
+}
+.cs-terminal__body::-webkit-scrollbar-thumb {
+  background: var(--cs-border-strong);
+  border-radius: var(--cs-radius-pill);
+}
+.cs-terminal__body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Forced-colors (Windows high-contrast) — the bordered frame stays visible (the old global

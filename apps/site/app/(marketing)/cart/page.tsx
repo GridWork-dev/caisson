@@ -16,7 +16,7 @@ export default function CartPage() {
     <Section
       eyebrow="Cart"
       title="Review your cart."
-      lede="Add bundles and modules from pricing, then pay for the whole cart in one Paddle checkout, instead of a separate overlay per line."
+      lede="Add bundles and modules from the marketplace, then pay for the whole cart in one checkout instead of a separate purchase per line."
     >
       <div style={{ marginTop: "var(--cs-space-8)" }}>
         <CartView />

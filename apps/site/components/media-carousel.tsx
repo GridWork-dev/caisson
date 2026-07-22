@@ -124,7 +124,9 @@ export function MediaCarousel({
       }}
     >
       <div className={styles.stage}>
-        <Slide slide={current} />
+        <div className={styles.stageContent}>
+          <Slide slide={current} />
+        </div>
         <button
           type="button"
           className={`${styles.nav} ${styles.prev}`}

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { GLOSSARY_TERMS, glossaryPageSpec } from "./glossary";
+import { GLOSSARY_TERMS, glossaryPageSpec, renderInlineCode } from "./glossary";
 
 // Data-lint (glossary SPEC Task 5 verify). ADR-0235 locked the first 32 terms; the AEO program
 // (CAISSON-29 / D5, 2026-07-07) added 3 long-tail explainers (WORM-for-SaaS, OSCAL-export-from-TS,
@@ -25,6 +25,15 @@ describe("GLOSSARY_TERMS — data lint", () => {
     for (const term of GLOSSARY_TERMS) {
       expect(term.artifact.code.trim().length).toBeGreaterThan(0);
     }
+  });
+
+  test("renderInlineCode wraps backtick spans in <code>, leaves plain prose a string", () => {
+    expect(renderInlineCode("no code here")).toBe("no code here");
+    const html = renderToStaticMarkup(
+      renderInlineCode("the `audit-worm` package") as ReactElement,
+    );
+    expect(html).toContain('<code class="cs-code-inline">audit-worm</code>');
+    expect(html).not.toContain("`");
   });
 
   test("every term carries a sells.ctaHref", () => {

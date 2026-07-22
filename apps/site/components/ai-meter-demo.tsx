@@ -46,7 +46,7 @@ const EVENTS: readonly UsageEventDatum[] = [
 
 export default function AiMeterDemo() {
   return (
-    <MediaFrame label="UsageChart">
+    <MediaFrame label="Metered usage">
       <div style={{ padding: "var(--cs-space-6)" }}>
         <UsageChart events={EVENTS} />
       </div>

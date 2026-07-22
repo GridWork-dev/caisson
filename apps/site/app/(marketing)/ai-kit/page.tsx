@@ -33,7 +33,7 @@ import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
-import { requireBundlePage } from "@/lib/bundle-pages";
+import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { TrackView } from "@/components/track-view";
 
@@ -210,7 +210,7 @@ export default function AiKitPage() {
       {/* ===== Four composed modules ===== */}
       <Section
         eyebrow="What ships in the box"
-        title="Four modules behind one chokepoint."
+        title={`${spellCount(MEMBER_MODULES.length)} modules behind one chokepoint.`}
       >
         <Reveal>
           <FeatureGrid cols={2}>
@@ -249,7 +249,7 @@ export default function AiKitPage() {
             status={<StatusChip label="enforced at call time" tone="muted" />}
           >
             {
-              "# caisson.ai.toml — checked into your repo, enforced at call time\n\n"
+              "# caisson.ai.toml, checked into your repo, enforced at call time\n\n"
             }
             <span className="cs-tok-muted">{"[caps.default]\n"}</span>
             {"daily_tokens = "}
@@ -292,10 +292,11 @@ export default function AiKitPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                The gateway, all four composed modules, and future patch
-                releases, in your own repo as TypeScript source. Scaffold it in
-                with bunx @caisson-sh/cli@latest, or add it to an existing
-                Caisson base.
+                The gateway, all{" "}
+                {spellCount(MEMBER_MODULES.length).toLowerCase()} composed
+                modules, and future patch releases, in your own repo as
+                TypeScript source. Scaffold it in with bunx
+                @caisson-sh/cli@latest, or add it to an existing Caisson base.
               </p>
             </Card>
 
@@ -305,10 +306,10 @@ export default function AiKitPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                The composed modules are also sold individually: prompt-registry
+                The composed modules are also sold individually: prompt registry
                 from {formatUsd(moduleAmount("prompt-registry"))}, guardrails
-                from {formatUsd(moduleAmount("guardrails"))}, ai-meter from{" "}
-                {formatUsd(moduleAmount("ai-meter"))};
+                from {formatUsd(moduleAmount("guardrails"))}, token metering
+                from {formatUsd(moduleAmount("ai-meter"))};
                 {modulePrice && modulePrice.amount !== null ? (
                   <>
                     {" "}
@@ -360,7 +361,7 @@ export default function AiKitPage() {
         <Section
           eyebrow="Trial path"
           title="Prove fit in week one."
-          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />

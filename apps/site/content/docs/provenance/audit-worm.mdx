@@ -135,8 +135,7 @@ objects. `S3ArtifactStoreConfig` takes the injected `client`, `bucket`, an optio
 
 `S3ArtifactStore` takes `new`; `R2ArtifactStore.create` and `GcsArtifactStore.create` are async
 factories that verify the bucket's lock capability before the store is usable —
-each refuses to construct against a bucket with no enabled lock rule covering its key prefix
-(ADR-0267):
+each refuses to construct against a bucket with no enabled lock rule covering its key prefix:
 
 ```ts
 import { R2ArtifactStore, createR2LockReader } from "@caisson/audit-worm";

@@ -1,4 +1,4 @@
-import { EmptyState, Icon, MetricStat } from "@caisson/ui/components";
+import { Button, EmptyState, Icon, MetricStat } from "@caisson/ui/components";
 import type { IconName } from "@caisson/ui/components";
 
 import {
@@ -163,6 +163,7 @@ function ConfiguredOps({ snapshot }: { snapshot: OpsSnapshot }) {
         title="Recent traces"
         traces={recent}
         nowMs={nowMs}
+        deepLink={openAll}
         emptyTitle="No traces in the window"
         emptyDescription="The backend is configured but reported no traces in the last 30 minutes. Traffic will populate this as services emit spans."
       />
@@ -244,7 +245,7 @@ function TraceSection({
             target="_blank"
             rel="noreferrer noopener"
           >
-            <Icon name="arrow" /> View in Grafana
+            <Icon name="arrow" /> Open in Grafana
           </a>
         ) : null}
       </div>
@@ -257,7 +258,7 @@ function TraceSection({
           />
         </div>
       ) : (
-        <ul className="board">
+        <ul className="board board--capped">
           {traces.map((t) => {
             const link = grafanaExploreUrl(t.traceId);
             const inner = (
@@ -370,7 +371,7 @@ function LogsPanel({ logs }: { logs: LogsSnapshot }) {
           <select
             name="logService"
             defaultValue={logs.service ?? ""}
-            style={{ padding: 6 }}
+            className="text-input"
           >
             <option value="">All services</option>
             {serviceOptions.map((s) => (
@@ -391,9 +392,9 @@ function LogsPanel({ logs }: { logs: LogsSnapshot }) {
             Errors only
           </span>
         </label>
-        <button type="submit" style={{ padding: "6px 12px" }}>
+        <Button type="submit" variant="primary" size="sm">
           Apply
-        </button>
+        </Button>
         {filtered ? (
           <a
             href="/ops"
@@ -426,7 +427,7 @@ function LogsPanel({ logs }: { logs: LogsSnapshot }) {
           />
         </div>
       ) : (
-        <ul className="board">
+        <ul className="board board--capped">
           {logs.lines.map((l, i) => (
             <li key={i} className="board-row">
               <LogRow line={l} nowMs={logs.window.toMs} />

@@ -2,7 +2,6 @@
 // Honest framing: Caisson GENERATES the technical evidence Annex IV requires.
 // Whether a system meets EU AI Act obligations is a legal determination — not
 // something a codebase starter can certify. Never claim compliance.
-import { UpdatesForm } from "@/components/waitlist-form";
 import {
   Button,
   Card,
@@ -211,12 +210,12 @@ export default function EuAiActPage() {
       {/* ===== Honesty boundary (ADR-0080 §3 — non-negotiable) ===== */}
       <Section eyebrow="What this is, and isn't" band="tint">
         <Card accent>
+          {/* cs-grid--2 (not an inline 1fr 1fr) so this collapses to one column below the
+              48rem rung, matching the same honesty-boundary card on build-vs-buy (id
+              3ed806fbf8b1065f). */}
           <div
-            style={{
-              display: "grid",
-              gap: "var(--cs-space-6)",
-              gridTemplateColumns: "1fr 1fr",
-            }}
+            className="cs-grid cs-grid--2"
+            style={{ gap: "var(--cs-space-6)" }}
           >
             <div>
               <p
@@ -464,8 +463,8 @@ export default function EuAiActPage() {
         >
           <p className="cs-lede" style={{ maxWidth: "72ch" }}>
             The EU AI Act&rsquo;s transparency obligations (Regulation (EU)
-            2024/1689, Article 50) apply from August 2, 2026 — confirmed unmoved
-            by the Digital Omnibus amendment (independent reporting through
+            2024/1689, Article 50) apply from August 2, 2026 (confirmed unmoved
+            by the Digital Omnibus amendment, independent reporting through
             2026-07-07). They cover AI systems that interact with people
             regardless of risk class: users must be told they are interacting
             with AI, and generated content must carry machine-readable marking.
@@ -478,7 +477,7 @@ export default function EuAiActPage() {
             Caisson supplies is the evidence discipline behind it: disclosure
             events logged to the tamper-evident audit chain, configuration
             versioned in your repo, and the dated evidence bundle that shows the
-            obligation was met — the same record-keeping spine the Annex IV map
+            obligation was met, the same record-keeping spine the Annex IV map
             above uses.
           </p>
           <div
@@ -514,9 +513,6 @@ export default function EuAiActPage() {
           <Button href="/docs" variant="ghost">
             Read the docs
           </Button>
-        </div>
-        <div style={{ marginTop: "var(--cs-space-6)" }}>
-          <UpdatesForm source="eu-ai-act" />
         </div>
       </Section>
     </>
