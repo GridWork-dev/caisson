@@ -88,7 +88,7 @@
   :root:not([data-theme="dark"]) {
     /* colour — semantic + functional (light, OS-seeded) */
   --cs-bg: oklch(0.99 0.003 220);
-  --cs-surface-1: oklch(0.975 0.005 220);
+  --cs-surface-1: oklch(0.965 0.005 220);
   --cs-surface-2: oklch(0.95 0.006 220);
   --cs-border: oklch(0.88 0.008 220);
   --cs-border-strong: oklch(0.80 0.010 220);
@@ -117,7 +117,7 @@
 [data-theme="light"] {
   /* colour — semantic + functional (light); shared type/scale inherited from :root */
   --cs-bg: oklch(0.99 0.003 220);
-  --cs-surface-1: oklch(0.975 0.005 220);
+  --cs-surface-1: oklch(0.965 0.005 220);
   --cs-surface-2: oklch(0.95 0.006 220);
   --cs-border: oklch(0.88 0.008 220);
   --cs-border-strong: oklch(0.80 0.010 220);
