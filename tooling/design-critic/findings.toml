@@ -168,7 +168,7 @@ workflow = "visual-audit"
 surface = "legal__terms"
 title = "Footer column header \\\"Resources\\\" renders with broken/uneven letter-spacing compared to sibling headers \\\"Editions\\\" and \\\"Marketplace\\\" in the same footer row: at native resolution the monospace tracking is visibly irregular (a wide gap concentrated before the final \\\"s\\\" on desktop, wider throughout on mobile), while the other three column headers render as tight uniform monospace — present identically in all 4 screenshots (light/dark, mobile/desktop), pointing to a stray class or flex-gap bug isolated to that one label"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "06e5c885cbb9b575"
@@ -240,7 +240,7 @@ workflow = "visual-audit"
 surface = "updates"
 title = "Subscribe button silently disabled while Turnstile is verifying"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "0ac876b17354cb13"
@@ -256,7 +256,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__local-store"
 title = "Console log with NaN formatting artifact fires on load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "0b7b300c83d4b1b1"
@@ -352,7 +352,7 @@ workflow = "visual-audit"
 surface = "build-vs-buy"
 title = "Styled console write emits NaN on load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "124e1b8e982913cf"
@@ -816,7 +816,7 @@ workflow = "visual-audit"
 surface = "interaction__marketplace-search-filtered"
 title = "Hidden console log emits NaN on load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "2713e2250bf804f6"
@@ -848,7 +848,7 @@ workflow = "visual-audit"
 surface = "legal__privacy"
 title = "No in-page table of contents or jump-nav on the long single-column legal document"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "294da7a78c3e706d"
@@ -872,7 +872,7 @@ workflow = "visual-audit"
 surface = "compliance"
 title = "Hidden console message with NaN interpolation on load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "2acb493f7f75c08d"
@@ -1043,6 +1043,14 @@ severity = "warn"
 status = "fixed"
 
 [[finding]]
+id = "339fac6d0355fa71"
+workflow = "live-reaudit-2026-07-22"
+surface = "marketplace"
+title = "Fixed bottom stack dock overlaps footer content at exact full-page scroll on mobile"
+severity = "info"
+status = "open"
+
+[[finding]]
 id = "33a08c359cdf094f"
 workflow = "visual-audit"
 surface = "admin__business__ledger"
@@ -1072,7 +1080,7 @@ workflow = "visual-audit"
 surface = "motion__doors-hover-lift"
 title = "Injected script logs a hidden styled NaN console banner on load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "35c2f1984b2bab4c"
@@ -1152,7 +1160,7 @@ workflow = "visual-audit"
 surface = "legal__eula"
 title = "Desktop (1280w) leaves the entire right ~35% of the viewport empty for the whole 9801px page — the text/card column caps out around x=1186 with nothing placed to its right (no sticky in-page TOC, no secondary content), while the alternating background bands still run full-bleed. For a 16-section legal document this is a real missed wayfinding opportunity (no jump-nav to find e.g. 'Limitation of liability') and reads as an unfinished two-column layout rather than a deliberate single-column choice."
 severity = "warn"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "389f9e64eb93980f"
@@ -1504,7 +1512,7 @@ workflow = "visual-audit"
 surface = "motion__seal-on-proof-chips"
 title = "Hidden console message emits NaN on every page load"
 severity = "warn"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "471daee123a28d3e"
@@ -1872,7 +1880,7 @@ workflow = "visual-audit"
 surface = "legal__license"
 title = "Desktop leaves ~40% right column empty with no jump-nav for a multi-section legal doc"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "5758d2538a2932e7"
@@ -1904,7 +1912,7 @@ workflow = "visual-audit"
 surface = "procurement"
 title = "Styled console emission with NaN recorded on page load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "58bd2691a53e402d"
@@ -2224,7 +2232,7 @@ workflow = "visual-audit"
 surface = "interaction__popout-media-carousel-next"
 title = "Recorded console line is third-party Cloudflare Turnstile noise, not an app defect"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "6621dd903929379f"
@@ -2376,7 +2384,7 @@ workflow = "visual-audit"
 surface = "legal__eula"
 title = "No in-page table of contents or jump-nav for a 17-section legal document"
 severity = "warn"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "6c6f06c2238937dd"
@@ -2504,7 +2512,7 @@ workflow = "visual-audit"
 surface = "agentic-dev"
 title = "Invisible `%c%d ... NaN` console message fires on page load"
 severity = "warn"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "72be035e733292bf"
@@ -2584,7 +2592,7 @@ workflow = "visual-audit"
 surface = "popout__module-agent-kernel"
 title = "Cloudflare Turnstile challenge-script console noise recorded on popout load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "78abfbef9c0af0eb"
@@ -2656,7 +2664,7 @@ workflow = "visual-audit"
 surface = "preview__emails"
 title = "Footer newsletter signup's Cloudflare Turnstile widget is broken on both desktop captures (light and dark): it shows a raw, unbranded 'Unable to connect to website / Troubleshoot' error box between the email field and the consent checkbox, right at the point of the form's primary action — and it's absent entirely on the mobile captures, so the form's behavior and appearance differ by viewport."
 severity = "high"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "7b1e7f5630a0f04b"
@@ -2832,7 +2840,7 @@ workflow = "visual-audit"
 surface = "partners"
 title = "Styled console.error with NaN argument fires on page load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "81c4b23977be5e1b"
@@ -2904,7 +2912,7 @@ workflow = "visual-audit"
 surface = "interaction__mobile-nav-open"
 title = "Styled console log emits NaN on load (site-wide, external — not nav-specific)"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "84680ed650fb934e"
@@ -3168,7 +3176,7 @@ workflow = "visual-audit"
 surface = "interaction__cart-with-item"
 title = "Console logs a NaN-formatted styled message on load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "90dae8496f16987a"
@@ -3216,7 +3224,7 @@ workflow = "visual-audit"
 surface = "compare__create-t3-app"
 title = "Recorded console error is documented third-party Turnstile noise, not a defect"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "92a0d6184d76279c"
@@ -3499,6 +3507,14 @@ severity = "info"
 status = "fixed"
 
 [[finding]]
+id = "9e391d57ed7e2457"
+workflow = "live-reaudit-2026-07-22"
+surface = "docs"
+title = "Header Open Search and Open Sidebar buttons are 34x34px, under the 44px touch-target floor"
+severity = "info"
+status = "open"
+
+[[finding]]
 id = "9eb829c795537a64"
 workflow = "visual-audit"
 surface = "local-first"
@@ -3675,6 +3691,14 @@ severity = "high"
 status = "fixed"
 
 [[finding]]
+id = "a5f30568a56cde31"
+workflow = "live-reaudit-2026-07-22"
+surface = "home"
+title = "Adjacent hash-chain demo lines mix U+2016 double-vertical-bar and ASCII pipes for the same concatenation concept"
+severity = "info"
+status = "open"
+
+[[finding]]
 id = "a6349db12f24f89f"
 workflow = "visual-audit"
 surface = "glossary__soc2-audit-log"
@@ -3728,7 +3752,7 @@ workflow = "visual-audit"
 surface = "legal__terms"
 title = "Footer 'Resources' column header shows an anomalous gap before its final 's'"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a791d5721cb017f6"
@@ -3744,7 +3768,7 @@ workflow = "visual-audit"
 surface = "motion__living-chain-mid-build"
 title = "Hidden styled console log emits a NaN on page load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "a86f92c7ec290680"
@@ -3779,12 +3803,28 @@ severity = "info"
 status = "fixed"
 
 [[finding]]
+id = "aa012e86fe27aa22"
+workflow = "live-reaudit-2026-07-22"
+surface = "docs"
+title = "Inline copy anchor and copy text icon buttons are 24x24px, under the 44px touch-target floor, repeated throughout doc body content"
+severity = "info"
+status = "open"
+
+[[finding]]
 id = "aa8eb5c053e86a2f"
 workflow = "visual-audit"
 surface = "marketplace__modules__ai-evals"
 title = "Code sample panel ('The fail-closed regression compare — packages/ai-evals/src/baseline.ts') clips every line on mobile (390w) with no scroll affordance: 'compareToBaselin', 'RegressionFind', 'run.thre', 'baseline.evals[r', 'no committed base' all cut mid-token, no fade/scrollbar hint that content continues — the page's single real proof artifact is functionally unreadable on mobile in both light and dark"
 severity = "high"
 status = "fixed"
+
+[[finding]]
+id = "ab8a1fdce96672b9"
+workflow = "live-reaudit-2026-07-22"
+surface = "marketplace__modules__field-crypto"
+title = "Code panel headline wraps to two lines at desktop, breaking the single-line artifact-bar rhythm"
+severity = "info"
+status = "open"
 
 [[finding]]
 id = "abaab9a0f9f563c5"
@@ -4259,6 +4299,14 @@ severity = "warn"
 status = "fixed"
 
 [[finding]]
+id = "be9396caa0f69bf4"
+workflow = "live-reaudit-2026-07-22"
+surface = "ai-kit"
+title = "Lede names four other packages behind the gateway while the composition section counts seven modules, with no reconciling sentence between them"
+severity = "info"
+status = "open"
+
+[[finding]]
 id = "bfa0623c1a0da74c"
 workflow = "visual-audit"
 surface = "marketplace__modules__local-store"
@@ -4296,7 +4344,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__retention-runner"
 title = "In light mode, the feature-card and code-block chrome (~RGB 243-248) sit only about a 1% lightness step from the page background (~RGB 250-253), so the 2x2 feature-card grid and code panel rely entirely on a faint 1px hairline border for definition against the page"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "c0fc7d3f938aaca5"
@@ -5160,7 +5208,7 @@ workflow = "visual-audit"
 surface = "admin__catalog__signature"
 title = "Two stacked global theme toggles (AdminNav + CatalogNav)"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e3ac8cb0dfa997ab"
@@ -5504,7 +5552,7 @@ workflow = "visual-audit"
 surface = "motion__living-chain-verdict"
 title = "Invisible-styled console marker logs a NaN on load"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "f5ba7ca18f5eb413"
@@ -5608,7 +5656,7 @@ workflow = "visual-audit"
 surface = "admin__catalog__foundations"
 title = "Desktop layout orphans Panel C and leaves the lower-right quadrant empty"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "fa24df7ded300b65"
