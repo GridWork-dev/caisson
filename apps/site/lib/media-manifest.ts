@@ -20,7 +20,14 @@ import { BUNDLE_MARKS, moduleMark } from "./marks";
 import { MODULE_PAGES } from "./module-pages";
 import { type BundleId, BUNDLE_PRICES, isBundleId } from "./pricing";
 
-export type SlideKind = "diagram" | "component" | "code-artifact" | "image";
+export type SlideKind =
+  "diagram" | "poke" | "component" | "code-artifact" | "image";
+
+/** The interactive "poke" slides (ADR-0378 lock 2) — the one slide kind that genuinely owns
+ *  interactive state: a deterministic in-browser run of the module's shipped mechanism (real
+ *  WebCrypto / the package's own pure math, golden-pinned), with a tamper control and the
+ *  client-side trust line. Flagship four first; the class rigs extend this union. */
+export type PokeKey = "field-crypto" | "audit-worm" | "ai-meter" | "guardrails";
 
 /** The authored token-styled diagram set (ADR-0285 §3 / ADR-0290) — each depicts SHIPPED behaviour
  *  only (copy law ADR-0080). The three original mechanism diagrams, the eight ADR-0290 additions,
@@ -88,6 +95,8 @@ export interface MediaSlide {
   /** kind === "diagram" — a bundle composition slide (the modules→bundle→base pattern) instead of
    *  an authored SVG. Mutually exclusive with `diagram`. */
   compositionBundle?: BundleId;
+  /** kind === "poke" — which interactive poke to render. */
+  poke?: PokeKey;
   /** kind === "component" — which live kit component to render. */
   component?: ComponentKey;
   /** kind === "code-artifact" — the item's real depth-page artifact (module-pages.ts), resolved
@@ -292,6 +301,55 @@ const MODULE_COMPONENTS: Readonly<
   },
 };
 
+/** Which modules carry an interactive poke slide (ADR-0378 lock 1 — the proof-triad floor).
+ *  Captions are honest: they name what actually computes, never assert. */
+const MODULE_POKES: Readonly<
+  Record<string, { poke: PokeKey; caption: string }>
+> = {
+  "field-crypto": {
+    poke: "field-crypto",
+    caption:
+      "Seal a value as one tenant and watch every other tenant fail to open it: real HKDF-SHA256 and AES-256-GCM running in your browser, the same derivation the package ships.",
+  },
+  "audit-worm": {
+    poke: "audit-worm",
+    caption:
+      "Append entries, then edit history: the SHA-256 chain verdict flips at the broken link, and a cut tail fails against the anchor even when the surviving prefix hashes clean.",
+  },
+  "ai-meter": {
+    poke: "ai-meter",
+    caption:
+      "Reserve before you spend, reconcile to actual usage, and trip the breaker: the package's own integer micro-USD math against the bundled price book.",
+  },
+  guardrails: {
+    poke: "guardrails",
+    caption:
+      "Type something the boundary should stop: live PII detection with the package's real redaction modes, and a moderator outage that blocks fail-closed.",
+  },
+};
+
+/** Bundles borrow the hero member's poke VERBATIM (ADR-0378 lock 1 — borrow, never fork): the same
+ *  component the module page renders, one manifest line per bundle. */
+const BUNDLE_POKES: Readonly<
+  Record<string, { poke: PokeKey; caption: string }>
+> = {
+  compliance: {
+    poke: "field-crypto",
+    caption:
+      "The bundle's hero member under your cursor: field encryption sealed live and cross-tenant opens failing, exactly as the field-crypto module page proves it.",
+  },
+  "ai-production": {
+    poke: "ai-meter",
+    caption:
+      "The bundle's hero member under your cursor: reserve, reconcile, and breaker-trip in the package's own integer math, exactly as the ai-meter module page proves it.",
+  },
+  provenance: {
+    poke: "audit-worm",
+    caption:
+      "The bundle's hero member under your cursor: edit history and watch the chain verdict flip, exactly as the audit-worm module page proves it.",
+  },
+};
+
 /** The entry's mark, for the placeholder slide and the card glyph. */
 function entryMark(kind: "bundle" | "module", id: string): IconName {
   if (kind === "bundle") {
@@ -315,13 +373,16 @@ export interface MediaSlidesOptions {
    *  the identical code twice. Card viewer / preview dialog omit this (code-artifact is the only
    *  place they show the code). */
   omitCodeArtifact?: boolean;
+  /** Hoist the poke to slide 1 (ADR-0378 lock 1: the card viewer leads with the poke — the only
+   *  slide kind that stops a scrolling buyer mid-gesture; depth pages lead with the sheet). */
+  leadWithPoke?: boolean;
 }
 
-/** The ordered media slides for one entry (ADR-0290 / ADR-0308). Preference order: a bundle leads
- *  with its composition slide; a module leads with its live component (MODULE_COMPONENTS — the
- *  modules that ship a showable @caisson/ui surface), then its real code artifact (module-pages.ts),
- *  then any authored mechanism diagrams that target it — so a full-depth module carries all three
- *  kinds. If none apply, the brand placeholder is slide 1 so every entry has at least one slide. */
+/** The ordered media slides for one entry (ADR-0378 lock 1, refining ADR-0290/0308). Module order:
+ *  bespoke schematic sheet → poke → live component → code artifact (unless omitted) → remaining
+ *  mechanism diagrams. Bundle order: strata sheet → composition → the hero member's borrowed poke →
+ *  remaining diagrams. `leadWithPoke` hoists the poke to slide 1 for the card viewer. If nothing
+ *  applies, the brand placeholder is slide 1 so every entry has at least one slide. */
 export function mediaSlides(
   kind: "bundle" | "module",
   id: string,
@@ -330,6 +391,25 @@ export function mediaSlides(
   const viewId = `${kind}:${id}`;
   const slides: MediaSlide[] = [];
 
+  const targeted = DIAGRAM_ORDER.filter((key) =>
+    DIAGRAM_TARGETS[key].has(viewId),
+  );
+  const sheets = targeted.filter((key) => key.startsWith("schematic-"));
+  const mechanisms = targeted.filter((key) => !key.startsWith("schematic-"));
+  const diagramSlide = (key: DiagramKey): MediaSlide => ({
+    kind: "diagram",
+    diagram: key,
+    caption: DIAGRAM_CAPTIONS[key],
+  });
+
+  const pokeEntry = (kind === "module" ? MODULE_POKES : BUNDLE_POKES)[id];
+  const pokeSlide: MediaSlide | null = pokeEntry
+    ? { kind: "poke", poke: pokeEntry.poke, caption: pokeEntry.caption }
+    : null;
+
+  // The bespoke sheet leads (depth pages lead with the sheet — ADR-0378).
+  for (const key of sheets) slides.push(diagramSlide(key));
+
   if (kind === "bundle" && isBundleId(id)) {
     slides.push({
       kind: "diagram",
@@ -337,6 +417,8 @@ export function mediaSlides(
       caption: bundleCompositionCaption(id),
     });
   }
+
+  if (pokeSlide) slides.push(pokeSlide);
 
   if (kind === "module") {
     const comp = MODULE_COMPONENTS[id];
@@ -364,13 +446,13 @@ export function mediaSlides(
     }
   }
 
-  for (const key of DIAGRAM_ORDER) {
-    if (DIAGRAM_TARGETS[key].has(viewId)) {
-      slides.push({
-        kind: "diagram",
-        diagram: key,
-        caption: DIAGRAM_CAPTIONS[key],
-      });
+  for (const key of mechanisms) slides.push(diagramSlide(key));
+
+  if (options?.leadWithPoke && pokeSlide) {
+    const at = slides.indexOf(pokeSlide);
+    if (at > 0) {
+      slides.splice(at, 1);
+      slides.unshift(pokeSlide);
     }
   }
 

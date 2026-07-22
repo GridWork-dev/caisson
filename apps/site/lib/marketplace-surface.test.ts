@@ -96,15 +96,17 @@ describe("media manifest", () => {
       fieldCrypto.some((s) => s.diagram === "schematic-field-crypto"),
     ).toBe(true);
     expect(fieldCrypto.some((s) => s.diagram === "rls-deny")).toBe(false);
-    // compliance leads with its bundle-composition slide, then the ADR-0377 cross-section
-    // strata, then its 3 mechanism diagrams.
+    // ADR-0378 bundle order: the cross-section strata sheet leads, then the composition
+    // slide, then the borrowed hero-member poke, then the 3 mechanism diagrams.
     const compliance = mediaSlides("bundle", "compliance");
     expect(
       compliance.filter((s) => s.kind === "diagram" && s.diagram !== undefined)
         .length,
     ).toBe(4);
-    expect(compliance[0]?.compositionBundle).toBe("compliance");
-    expect(compliance[1]?.diagram).toBe("schematic-compliance");
+    expect(compliance[0]?.diagram).toBe("schematic-compliance");
+    expect(compliance[1]?.compositionBundle).toBe("compliance");
+    expect(compliance[2]?.kind).toBe("poke");
+    expect(compliance[2]?.poke).toBe("field-crypto");
   });
 
   test("code-artifact slides render a real depth-page artifact and count toward the MEDIA facet", () => {
@@ -124,7 +126,7 @@ describe("media manifest", () => {
     expect(entryHasMedia("module", "prompt-registry")).toBe(true);
   });
 
-  test("ADR-0308 full-depth: each module that ships a showable @caisson/ui surface leads with its component slide", () => {
+  test("ADR-0308 full-depth: each module that ships a showable @caisson/ui surface carries its component slide (after any sheet + poke, ADR-0378)", () => {
     const expected: Record<string, string> = {
       "ui-pro": "ui-pro",
       "audit-worm": "audit-worm",
@@ -135,22 +137,55 @@ describe("media manifest", () => {
     };
     for (const [id, key] of Object.entries(expected)) {
       const slides = mediaSlides("module", id);
+      const sheetOrPoke = new Set(["poke"]);
+      const lead = slides.findIndex(
+        (s) =>
+          !sheetOrPoke.has(s.kind) &&
+          !(s.kind === "diagram" && s.diagram?.startsWith("schematic-")),
+      );
       expect(
-        slides[0]?.kind === "component" && slides[0]?.component === key,
-        `module:${id} must lead with its ${key} component slide`,
+        slides[lead]?.kind === "component" && slides[lead]?.component === key,
+        `module:${id} must carry its ${key} component slide directly after sheet/poke`,
       ).toBe(true);
     }
-    // A backend-only module (no showable surface) legitimately carries no component slide.
+    // A backend-only module with no showable @caisson/ui surface carries no component slide —
+    // field-crypto's interactive slide is its ADR-0378 poke, not a kit component.
     expect(
       mediaSlides("module", "field-crypto").some((s) => s.kind === "component"),
     ).toBe(false);
   });
 
-  test("every bundle leads with a real composition slide naming its own member modules", () => {
+  test("ADR-0378: the flagship modules carry their poke after the sheet, and the depth order is sheet then poke", () => {
+    const flagships: Record<string, string> = {
+      "field-crypto": "field-crypto",
+      "audit-worm": "audit-worm",
+      "ai-meter": "ai-meter",
+      guardrails: "guardrails",
+    };
+    for (const [id, key] of Object.entries(flagships)) {
+      const slides = mediaSlides("module", id, { omitCodeArtifact: true });
+      expect(slides[0]?.kind, `module:${id} leads with its sheet or poke`).toBe(
+        slides[0]?.diagram?.startsWith("schematic-") ? "diagram" : "poke",
+      );
+      const pokeAt = slides.findIndex((s) => s.kind === "poke");
+      expect(pokeAt >= 0 && slides[pokeAt]?.poke === key).toBe(true);
+    }
+    // The card viewer hoists the poke to slide 1 (leadWithPoke).
+    const viewer = mediaSlides("module", "field-crypto", {
+      omitCodeArtifact: true,
+      leadWithPoke: true,
+    });
+    expect(viewer[0]?.kind).toBe("poke");
+  });
+
+  test("every bundle carries a real composition slide naming its own member modules", () => {
+    // ADR-0378: a bundle with a bespoke strata sheet leads with the sheet; the composition
+    // slide follows. Bundles without a sheet yet still lead with the composition.
     for (const b of BUNDLE_PRICES) {
       const slides = mediaSlides("bundle", b.id);
-      expect(slides[0]?.kind).toBe("diagram");
-      expect(slides[0]?.compositionBundle).toBe(b.id);
+      const comp = slides.findIndex((s) => s.compositionBundle !== undefined);
+      expect(comp === 0 || comp === 1).toBe(true);
+      expect(slides[comp]?.compositionBundle).toBe(b.id);
     }
     // Everything reuses the whole-catalog hero artifact (no per-module bundles[] members to list).
     const everything = mediaSlides("bundle", "everything");

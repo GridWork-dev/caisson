@@ -8,7 +8,7 @@ import { CodeBlock, Icon } from "@/components";
 import { BundleCompositionSlide } from "@/components/marketplace-hero-artifact";
 import { MarketplaceDiagram } from "@/components/marketplace-diagrams";
 import { MediaPlaceholder } from "@/components/media-placeholder";
-import type { ComponentKey, MediaSlide } from "@/lib/media-manifest";
+import type { ComponentKey, MediaSlide, PokeKey } from "@/lib/media-manifest";
 
 import styles from "./media-carousel.module.css";
 
@@ -43,6 +43,28 @@ const COMPONENT_SLIDES: Record<ComponentKey, ComponentType> = {
   }),
 };
 
+// The interactive poke slides (ADR-0378 lock 2) — the one slide kind that owns interactive state.
+// Same lazy client-only loading discipline as COMPONENT_SLIDES; keyed by PokeKey so the manifest
+// stays the single source of which entry shows which poke.
+const POKE_SLIDES: Record<PokeKey, ComponentType> = {
+  "field-crypto": dynamic(() => import("./poke/field-crypto-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "audit-worm": dynamic(() => import("./poke/audit-worm-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "ai-meter": dynamic(() => import("./poke/ai-meter-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  guardrails: dynamic(() => import("./poke/guardrails-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+};
+
 function Slide({ slide }: { slide: MediaSlide }) {
   switch (slide.kind) {
     case "diagram":
@@ -50,6 +72,11 @@ function Slide({ slide }: { slide: MediaSlide }) {
         return <BundleCompositionSlide bundleId={slide.compositionBundle} />;
       }
       return slide.diagram ? <MarketplaceDiagram name={slide.diagram} /> : null;
+    case "poke": {
+      if (!slide.poke) return null;
+      const PokeSlide = POKE_SLIDES[slide.poke];
+      return <PokeSlide />;
+    }
     case "component": {
       if (!slide.component) return null;
       const ComponentSlide = COMPONENT_SLIDES[slide.component];
@@ -114,6 +141,9 @@ export function MediaCarousel({
       aria-roledescription="carousel"
       aria-label={label}
       onKeyDown={(e) => {
+        // A poke slide owns its keyboard interaction (ADR-0378): arrow keys inside a [data-poke]
+        // subtree drive the poke's inputs, never slide navigation.
+        if ((e.target as HTMLElement).closest?.("[data-poke]")) return;
         if (e.key === "ArrowRight") {
           e.preventDefault();
           go(1);
