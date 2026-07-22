@@ -12,10 +12,15 @@ This ADR records the locks; the `fix/vr-residuals` batch implements locks 1 and 
 
 ## Locks
 
-1. **Open-row trio → FIXED NOW.** The footer "Resources" letter-spacing anomaly (one
-   bug, two ledger rows), the AdminNav+CatalogNav stacked theme toggles (merged to
-   one), and the admin foundations page's orphaned Panel C desktop layout ship in the
-   residual batch. Ledger open count target after the next reconcile: 0.
+1. **Open-row trio → FIXED NOW.** Recon amendment (same sitting): two of the three were
+   already fixed by the ADR-0374 wave itself and their ledger rows were stale opens —
+   the footer "Resources" letter-spacing (the `.cs-footer-heading` rule replaced the
+   borrowed inline-flex `.cs-status`, per-character advance verified uniform) and the
+   CatalogNav duplicate theme toggle (removed in the wave; AdminNav carries the one
+   global toggle). Both flip at the lock-4 reconcile. The one real fix, shipped in the
+   residual batch: the admin foundations page's orphaned Panel C (auto-fit minmax sat on
+   the exact 3-column threshold at ~1280px; now an explicit 3-up grid for the fixed
+   A/B/C set). Ledger open count target after the next reconcile: 0.
 2. **Illustration placeholders → FULL DESIGN KICKOFF.** The 14 accepted
    empty-blueprint-slot rows are answered with a proper design-track kickoff: a bespoke
    blueprint/cross-section schematic system per DESIGN.md §5 across the remaining
