@@ -21,7 +21,7 @@ const LINKS = [
 export function CatalogNav() {
   const pathname = usePathname();
   return (
-    <header className="topbar">
+    <header className="topbar topbar--static">
       <div className="row" style={{ gap: "1.5rem" }}>
         <Link href="/catalog" className="brand" aria-label="Caisson Catalog">
           <span className="mark">caisson</span>

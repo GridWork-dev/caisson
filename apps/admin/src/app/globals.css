@@ -133,6 +133,13 @@ p {
   border-bottom: 1px solid var(--cs-border);
 }
 
+/* A second `.topbar` nested under a section (e.g. CatalogNav under the root AdminNav) — only
+ * ONE header can own the sticky top:0 slot without the two overlapping on scroll. The nested one
+ * stays put in normal flow instead of also pinning. */
+.topbar--static {
+  position: static;
+}
+
 .brand {
   display: inline-flex;
   align-items: baseline;
