@@ -5,6 +5,17 @@
 # NOT listed here (fixed by real bumps in root package.json `overrides`, so osv stops reporting them):
 #   systeminformation  CVE-2025-68154 / CVE-2026-26280 / CVE-2026-26318 / CVE-2026-44724  -> >=5.31.6
 #   ws                 CVE-2026-45736 / CVE-2026-48779                                     -> >=8.21.0
+#   sharp              GHSA-f88m-g3jw-g9cj (inherited libvips CVEs), via next's optional
+#                      peer dep                                                            -> >=0.35.0
+#   @hono/node-server  GHSA-frvp-7c67-39w9 (serve-static path traversal, Windows-only) +
+#                      GHSA-9mqv-5hh9-4cgg (upgradeWebSocket DoS, unreachable — we never call
+#                      upgradeWebSocket), via @modelcontextprotocol/sdk; only getRequestListener()
+#                      is used (stable, unchanged in v2 per upstream release notes: "public API
+#                      stays the same")                                                    -> >=2.0.10
+#   engine.io          GHSA-r635-g3xr-vw7x, via @trigger.dev/core's socket.io@4.7.4 pin
+#                      (~6.5.2 range) — deduped onto the same 6.6.9 already used by the
+#                      socket.io@4.8.3 path elsewhere in the tree                           -> >=6.6.7
+#   fast-uri           GHSA-v2hh-gcrm-f6hx, via ajv@8.20.0 (already allows ^3.0.1)          -> >=3.1.4
 #
 # Every id below has a matching dated row in docs/security/tooling-playbook.md (Accepted findings).
 

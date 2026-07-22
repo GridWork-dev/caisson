@@ -192,7 +192,16 @@ scan.sh change; each entry carries a reasoned statement (an accept, never a blan
 
 **Fixed by bump (NOT accepted)** — root `package.json` `overrides`, so both scanners simply stop
 reporting them: `systeminformation` 5.23.8 → `^5.31.6` (CVE-2025-68154 / -2026-26280 / -2026-26318 /
--2026-44724) and `ws` 8.17.1+8.18.0 → `^8.21.0` (CVE-2026-45736 / -2026-48779).
+-2026-44724) and `ws` 8.17.1+8.18.0 → `^8.21.0` (CVE-2026-45736 / -2026-48779). Also (2026-07-22):
+`sharp` 0.34.5 → `^0.35.0` (GHSA-f88m-g3jw-g9cj, via next's optional peer dep); `@hono/node-server`
+1.19.14 → `^2.0.10` (GHSA-frvp-7c67-39w9 + GHSA-9mqv-5hh9-4cgg, via `@modelcontextprotocol/sdk` —
+major bump, verified safe: only the stable `getRequestListener()` export is used, `upgradeWebSocket`
+is never called so the DoS advisory isn't even reachable, and upstream's v2 release notes confirm
+the public API is unchanged); `engine.io` 6.5.5 → `^6.6.9` (GHSA-r635-g3xr-vw7x, deduped onto the
+same version already used by the `socket.io@4.8.3` path, displacing the stale `socket.io@4.7.4` pin
+nested under `@trigger.dev/core`); `fast-uri` 3.1.3 → `^3.1.4` (GHSA-v2hh-gcrm-f6hx, via `ajv`, which
+already allows the fix). `@hono/node-server@2.0.10` and `fast-uri@3.1.4` are both inside the 7-day
+`minimumReleaseAge` window as of 2026-07-22 — dated excludes in `bunfig.toml`, removed once aged.
 
 **Accepted (SPEC-security-scan-findings-triage, ADR-0315):**
 
