@@ -11,7 +11,11 @@
 import { highlight } from "fumadocs-core/highlight";
 import type { ReactNode } from "react";
 
-const THEMES = { light: "github-light", dark: "github-dark" } as const;
+import { caissonShikiThemes } from "@/lib/shiki-caisson-theme";
+
+// Caisson's own theme pair (ADR-0374 Decision 2) — the identical pair the docs pipeline uses
+// (source.config.ts), so glossary/marketplace samples read in the brand palette, theme-following.
+const THEMES = caissonShikiThemes;
 
 export async function CodeHighlight({
   code,
