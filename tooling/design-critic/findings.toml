@@ -1048,7 +1048,7 @@ workflow = "live-reaudit-2026-07-22"
 surface = "marketplace"
 title = "Fixed bottom stack dock overlaps footer content at exact full-page scroll on mobile"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "33a08c359cdf094f"
@@ -3512,7 +3512,7 @@ workflow = "live-reaudit-2026-07-22"
 surface = "docs"
 title = "Header Open Search and Open Sidebar buttons are 34x34px, under the 44px touch-target floor"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "9eb829c795537a64"
@@ -3696,7 +3696,7 @@ workflow = "live-reaudit-2026-07-22"
 surface = "home"
 title = "Adjacent hash-chain demo lines mix U+2016 double-vertical-bar and ASCII pipes for the same concatenation concept"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a6349db12f24f89f"
@@ -3808,7 +3808,7 @@ workflow = "live-reaudit-2026-07-22"
 surface = "docs"
 title = "Inline copy anchor and copy text icon buttons are 24x24px, under the 44px touch-target floor, repeated throughout doc body content"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "aa8eb5c053e86a2f"
@@ -3824,7 +3824,7 @@ workflow = "live-reaudit-2026-07-22"
 surface = "marketplace__modules__field-crypto"
 title = "Code panel headline wraps to two lines at desktop, breaking the single-line artifact-bar rhythm"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "abaab9a0f9f563c5"
@@ -4304,7 +4304,7 @@ workflow = "live-reaudit-2026-07-22"
 surface = "ai-kit"
 title = "Lede names four other packages behind the gateway while the composition section counts seven modules, with no reconciling sentence between them"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "bfa0623c1a0da74c"
