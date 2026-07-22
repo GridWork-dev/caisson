@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { ThemeToggle } from "@caisson/ui/components";
-
 // The catalog-section sub-nav (the absorbed design studio's topbar, extended with the live
-// component + email catalog), rendered under the root AdminNav by catalog/layout.tsx. Signature is
-// intentionally absent — the four-beat sketches are deferred (the only deferred surface); the route
-// still exists but is unlinked until the direction is reworked.
+// component + email catalog), rendered under the root AdminNav by catalog/layout.tsx. No theme
+// toggle of its own (ADR-0374 [warn]): AdminNav above already renders the one global toggle — a
+// second one here was a redundant, disconnected-looking control on every catalog/* page. Signature
+// is intentionally absent — the four-beat sketches are deferred (the only deferred surface); the
+// route still exists but is unlinked until the direction is reworked.
 const LINKS = [
   { href: "/catalog", label: "Overview" },
   { href: "/catalog/foundations", label: "Foundations" },
@@ -45,7 +45,6 @@ export function CatalogNav() {
           })}
         </nav>
       </div>
-      <ThemeToggle />
     </header>
   );
 }
