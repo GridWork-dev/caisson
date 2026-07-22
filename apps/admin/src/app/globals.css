@@ -32,8 +32,11 @@ body {
   /* Root 6 (ADR-0374 visual audit): no page-level guard meant a wide nowrap table (or any other
    * overflowing content) could push the whole page past the viewport on mobile. The table itself
    * scrolls via `.panel`'s own `overflow-x` below; this is the last-resort backstop so a miss
-   * there clips instead of widening the page. */
-  overflow-x: hidden;
+   * there clips instead of widening the page. `clip`, not `hidden` (audit round 2, F5): `hidden`
+   * establishes a new scroll container on the axis, which can break `position: sticky` anchoring
+   * for descendants (the topbar) that expect html/body to stay a plain non-scrolling ancestor;
+   * `clip` still clips the overflow without creating that scroll container. */
+  overflow-x: clip;
 }
 
 [data-theme="light"] {
