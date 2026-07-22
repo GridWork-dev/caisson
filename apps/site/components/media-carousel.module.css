@@ -15,14 +15,32 @@
 
 /* min-width: 0 (here and above): as a grid/flex item the carousel must shrink to its container —
  * a wide slide (a code pre, a diagram frame) must scroll inside its own surface, never expand the
- * carousel past the dialog and push the nav arrows / page count out of view. */
+ * carousel past the dialog and push the nav arrows / page count out of view.
+ *
+ * max-height + .stageContent's own scroll (browser-audit hit-area overhang regression): a bundle
+ * composition slide with many member chips (Compliance: 13, one column at mobile widths) can run
+ * well past a viewport's remaining height. `.nav`'s `top: 50%` centers against `.stage`'s own box
+ * — if that box just grows to fit content, the arrows drift down with it, past the visible portion
+ * of a scrolling ancestor (the preview dialog's `.cs-preview-body`) and land under its fixed
+ * footer, where `elementFromPoint` resolves to the footer instead of the arrow. Capping `.stage`
+ * and scrolling ONLY its content wrapper keeps `.nav`'s containing block a fixed, bounded size —
+ * the arrows stay put at its true visible center — while the full (never clipped) chip list still
+ * scrolls into view. Sized generously (not the tighter `.cs-terminal__body` code-region cap) so an
+ * ordinary live-component slide (~580px at mobile) isn't forced to scroll unnecessarily. */
 .stage {
   position: relative;
   min-width: 0;
+  max-height: min(70vh, 36rem);
 }
 
 .stage > * {
   max-width: 100%;
+}
+
+.stageContent {
+  min-width: 0;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 /* Prev/next controls — pinned to the stage edges, centered vertically. */
