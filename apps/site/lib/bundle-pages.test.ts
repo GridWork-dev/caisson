@@ -79,6 +79,14 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
     }
   });
 
+  test("the ai-production lede's member count matches the members it enumerates", () => {
+    // The lede's closing sentence says "all seven modules below" and names each one; a member
+    // add/remove would silently desync it (the four-vs-seven class the live re-audit caught).
+    const record = bundlePageRecord("ai-production");
+    expect(record?.members.length).toBe(7);
+    expect(record?.hero.lede).toContain("all seven modules");
+  });
+
   test("provenance members mirror modulesByBundle ids + labels (rendered from the record)", () => {
     const record = bundlePageRecord("provenance");
     const members = modulesByBundle("provenance");

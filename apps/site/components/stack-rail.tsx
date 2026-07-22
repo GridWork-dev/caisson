@@ -112,7 +112,7 @@ export function StackRail() {
           itemised body upward on tap, instead of the desktop rail trailing below all the catalog
           cards with no sticky total. Always rendered; CSS-only visibility (no hydration mismatch,
           the mobile-buy-bar.css convention). */}
-      <details className={styles.stackDock}>
+      <details className={styles.stackDock} data-stack-dock="">
         <summary className={styles.stackDockSummary}>
           <span className={styles.stackDockLabel}>
             <span className={styles.railTitle}>Your stack</span>

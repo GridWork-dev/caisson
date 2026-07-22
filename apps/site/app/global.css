@@ -173,17 +173,38 @@
  * literal Tailwind class token in the DOM and is the only stable hook available without forking
  * the library (no `className`/size prop reaches this deep). Same invisible centered pseudo-element
  * pattern as the rest of the sweep — visual size is untouched, only the click/tap catchment grows. */
-[class*="size-4.5"] {
+/* live-reaudit-2026-07-22: the heading Copy-Anchor-Link button ships with NO class attribute and
+ * the code-block copy button's classes carry no size token, so both escaped the [class*="size-4.5"]
+ * hook and still measured 24x24 — the aria-label (which toggles Copy Text/Copied Text) is their
+ * only stable hook. Same invisible catchment, same 44px floor. */
+[class*="size-4.5"],
+button[aria-label="Copy Anchor Link"],
+button[aria-label="Copy Text"],
+button[aria-label="Copied Text"] {
   position: relative;
 }
 
-[class*="size-4.5"]::before {
+[class*="size-4.5"]::before,
+button[aria-label="Copy Anchor Link"]::before,
+button[aria-label="Copy Text"]::before,
+button[aria-label="Copied Text"]::before {
   content: "";
   position: absolute;
   inset: 50% auto auto 50%;
   width: 2.75rem;
   height: 2.75rem;
   transform: translate(-50%, -50%);
+}
+
+/* live-reaudit-2026-07-22: the marketplace mobile stack dock (fixed, bottom-0) clears the picker
+ * surface via that module's own `.surface` padding, but the shared footer FOLLOWS the surface in
+ * flow, so at exact full-page scroll the collapsed dock bar sat over the footer's last rows. The
+ * dock is always-rendered on its page (never conditionally mounted), so `body:has()` is a reliable
+ * page gate; clearance applies only below the dock's own 56.25rem cutover. */
+@media (max-width: 56.25rem) {
+  body:has([data-stack-dock]) .cs-footer {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ===== Reset re-assert — base.css already sets these, but it loads BEFORE the Tailwind/Fumadocs

@@ -191,7 +191,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     hero: {
       eyebrow: "AI-Production bundle",
       title: "One gateway between your code and the model.",
-      lede: "infer() and embed() are the only door to a model in this kit: every call resolves a versioned prompt, reserves against a per-tenant spend cap, crosses a guardrail on the way in and out, and reconciles usage in the same Postgres transaction as the result. Vercel AI SDK v7 sits behind it; your route handler calls infer(lane, input) and never touches a provider SDK directly.",
+      lede: "infer() and embed() are the only door to a model in this kit: every call resolves a versioned prompt, reserves against a per-tenant spend cap, crosses a guardrail on the way in and out, and reconciles usage in the same Postgres transaction as the result. Vercel AI SDK v7 sits behind it; your route handler calls infer(lane, input) and never touches a provider SDK directly. That door fronts all seven modules below: versioned prompts, metering, guardrails, and AI config on the call path; field encryption, the eval harness, and the credit ledger securing the data, the model swaps, and the spend behind it.",
     },
     definition:
       "The AI-Production bundle puts one metered gateway between your code and the model: infer() and embed() resolve a versioned prompt, reserve against a per-tenant spend cap, cross input and output guardrails, and reconcile usage in the same Postgres transaction as the result. Vercel AI SDK v7 behind one fail-closed chokepoint.",
