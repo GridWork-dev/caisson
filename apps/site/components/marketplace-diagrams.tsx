@@ -2,6 +2,11 @@ import type { DiagramKey } from "@/lib/media-manifest";
 
 import { MediaFrame } from "./media-frame";
 import styles from "./marketplace-diagrams.module.css";
+import {
+  AuditWormSheet,
+  ComplianceCrossSection,
+  FieldCryptoSheet,
+} from "./schematics";
 
 // Authored media-carousel diagrams (ADR-0285 §3, restyled onto the ADR-0290 standardized template) —
 // the homepage's diagram language (per-tenant RLS deny-flow, audit-chain hash flow, WORM anchor
@@ -1151,6 +1156,9 @@ function TrustPageRedaction() {
 }
 
 const DIAGRAMS: Record<DiagramKey, () => React.ReactElement> = {
+  "schematic-field-crypto": FieldCryptoSheet,
+  "schematic-audit-worm": AuditWormSheet,
+  "schematic-compliance": ComplianceCrossSection,
   "rls-deny": RlsDeny,
   "audit-chain": AuditChain,
   "worm-lifecycle": WormLifecycle,

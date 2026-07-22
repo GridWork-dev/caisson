@@ -28,6 +28,12 @@ export type SlideKind = "diagram" | "component" | "code-artifact" | "image";
  *  for the modules whose only slide was their code artifact — which the depth page omits (WR-03),
  *  leaving the bare placeholder. */
 export type DiagramKey =
+  // The ADR-0377 bespoke schematics (blueprint sheets for modules, cross-section strata for
+  // bundles — the hybrid direction). Pilot trio first; the remaining surfaces land after the
+  // operator's pilot review.
+  | "schematic-field-crypto"
+  | "schematic-audit-worm"
+  | "schematic-compliance"
   | "rls-deny"
   | "audit-chain"
   | "worm-lifecycle"
@@ -92,6 +98,10 @@ export interface MediaSlide {
 }
 
 const DIAGRAM_ORDER: readonly DiagramKey[] = [
+  // Schematics lead their page's diagram set (ADR-0377).
+  "schematic-field-crypto",
+  "schematic-audit-worm",
+  "schematic-compliance",
   "rls-deny",
   "audit-chain",
   "worm-lifecycle",
@@ -119,6 +129,12 @@ const DIAGRAM_ORDER: readonly DiagramKey[] = [
 ];
 
 const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
+  "schematic-field-crypto":
+    "The package in blueprint: HKDF-SHA256 derives a distinct key per tenant, the AEAD gate binds tenant/key-version/column as authenticated data, and the self-describing envelope's byte layout means old key versions decrypt forever.",
+  "schematic-audit-worm":
+    "The package in blueprint: every append mints a length-keyed anchor into write-once S3 Object-Lock storage, and verify() treats that store as the trusted length oracle, so a cut tail fails even when the surviving prefix hashes clean.",
+  "schematic-compliance":
+    "The bundle in cross-section: commercial members at the module seam, composing onto the Apache-2.0 kernel and fail-closed RLS base, on Postgres and S3 Object-Lock bedrock; nine of the thirteen pinned members drawn.",
   "rls-deny":
     "Per-tenant isolation, fail-closed: a query that never set the tenant context returns zero rows, never everything.",
   "audit-chain":
@@ -173,26 +189,29 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
 // behaviour each diagram actually depicts — the compliance/provenance seam, plus the eight new
 // single-target mechanism diagrams.
 const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
-  "rls-deny": new Set([
-    "bundle:compliance",
-    "module:compliance-core",
-    "module:field-crypto",
-  ]),
+  // ADR-0377 pilots: a module's bespoke sheet REPLACES the shared generic diagram(s) on that
+  // module's own page (the sheet tells the page-specific story the shared diagram only gestured
+  // at); the shared diagrams keep their OTHER targets. The compliance strata ADDS to the bundle's
+  // set — the composition chip slide and the mechanism diagrams stay until the pilot review says
+  // otherwise.
+  "schematic-field-crypto": new Set(["module:field-crypto"]),
+  "schematic-audit-worm": new Set(["module:audit-worm"]),
+  "schematic-compliance": new Set(["bundle:compliance"]),
+  // module:field-crypto moved to its bespoke sheet (ADR-0377) — rls-deny stays the isolation
+  // story for the compliance seam pages.
+  "rls-deny": new Set(["bundle:compliance", "module:compliance-core"]),
+  // module:audit-worm moved to its bespoke sheet (ADR-0377).
   "audit-chain": new Set([
     "bundle:compliance",
     "bundle:provenance",
-    "module:audit-worm",
     "module:signing-primitive",
   ]),
   // NOT module:retention-runner — the diagram depicts audit-worm's evidence lifecycle (write/
   // chain/anchor/verify + Object-Lock), not retention sweeps or erasure; showing it on the
   // erasure module's buy surface misrepresents what ships (ADR-0082 artifacts-true-to-built).
   // retention-runner carries its own bespoke `retention-erasure` diagram below.
-  "worm-lifecycle": new Set([
-    "bundle:compliance",
-    "bundle:provenance",
-    "module:audit-worm",
-  ]),
+  // module:audit-worm moved to its bespoke sheet (ADR-0377).
+  "worm-lifecycle": new Set(["bundle:compliance", "bundle:provenance"]),
   "credits-ledger": new Set(["module:credits"]),
   "local-sync-merge": new Set(["module:local-sync"]),
   "local-inference-egress": new Set(["module:local-inference"]),

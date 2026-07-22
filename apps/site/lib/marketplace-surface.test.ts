@@ -89,16 +89,22 @@ describe("media manifest", () => {
   });
 
   test("field-crypto and the compliance bundle carry authored diagrams", () => {
+    // field-crypto's diagram is its bespoke blueprint sheet (ADR-0377 pilot) — the shared
+    // rls-deny generic no longer targets this page.
+    const fieldCrypto = mediaSlides("module", "field-crypto");
     expect(
-      mediaSlides("module", "field-crypto").some((s) => s.kind === "diagram"),
+      fieldCrypto.some((s) => s.diagram === "schematic-field-crypto"),
     ).toBe(true);
-    // compliance now leads with its bundle-composition slide, then its 3 mechanism diagrams.
+    expect(fieldCrypto.some((s) => s.diagram === "rls-deny")).toBe(false);
+    // compliance leads with its bundle-composition slide, then the ADR-0377 cross-section
+    // strata, then its 3 mechanism diagrams.
     const compliance = mediaSlides("bundle", "compliance");
     expect(
       compliance.filter((s) => s.kind === "diagram" && s.diagram !== undefined)
         .length,
-    ).toBe(3);
+    ).toBe(4);
     expect(compliance[0]?.compositionBundle).toBe("compliance");
+    expect(compliance[1]?.diagram).toBe("schematic-compliance");
   });
 
   test("code-artifact slides render a real depth-page artifact and count toward the MEDIA facet", () => {
