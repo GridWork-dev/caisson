@@ -79,6 +79,22 @@ kbd,
   font-feature-settings: "ss01", "zero";
 }
 
+/* A bare text `<input>` on an admin GET-search/verify form (no design-system Input primitive
+ * exists yet in @caisson/ui) — token-styled so it reads as part of the app, not the browser's
+ * default gray control. Kept to the tokens the rest of the kit already reads (`var(--cs-*)`). */
+.text-input {
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  color: var(--cs-fg);
+  font-size: var(--cs-text-sm);
+}
+.text-input:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 1px;
+}
+
 h1,
 h2,
 h3 {
