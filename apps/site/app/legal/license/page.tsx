@@ -9,6 +9,7 @@ import {
 } from "@/lib/base-substrate";
 import { faqPage, serializeJsonLd } from "@/lib/jsonld";
 import { prose } from "../prose";
+import { LegalToc, type LegalTocItem } from "../toc";
 
 export const metadata = buildMetadata({
   title: "License",
@@ -46,11 +47,21 @@ const FAQ_ITEMS = [
   },
 ];
 
+const TOC: readonly LegalTocItem[] = [
+  { id: "the-licensing-model", label: "The licensing model" },
+  { id: "what-you-may-do", label: "What you may do" },
+  { id: "how-the-license-is-delivered", label: "How the license is delivered" },
+  { id: "which-license-applies-where", label: "Which license applies where" },
+  { id: "common-questions", label: "Common questions" },
+  { id: "licensing-questions", label: "Licensing questions" },
+];
+
 export default function LicensePage() {
   const ldFaq = faqPage(FAQ_ITEMS);
 
   return (
     <>
+      <LegalToc items={TOC} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(ldFaq) }}
@@ -90,7 +101,7 @@ export default function LicensePage() {
       </Section>
 
       {/* Overview */}
-      <Section title="The licensing model">
+      <Section id="the-licensing-model" title="The licensing model">
         <p style={prose.paragraph}>
           Caisson ships two tracks. The <strong>Base substrate</strong> (
           {baseSubstrateList()}, and the generator tooling: {baseToolingList()})
@@ -109,7 +120,7 @@ export default function LicensePage() {
       </Section>
 
       {/* Commercial license */}
-      <Section title="What you may do" band="tint">
+      <Section id="what-you-may-do" title="What you may do" band="tint">
         <p style={prose.paragraph}>
           Under the Caisson Commercial License, purchasing an entitlement grants
           you a{" "}
@@ -178,7 +189,10 @@ export default function LicensePage() {
       </Section>
 
       {/* Entitlement mechanics */}
-      <Section title="How the license is delivered">
+      <Section
+        id="how-the-license-is-delivered"
+        title="How the license is delivered"
+      >
         <p style={prose.paragraph}>
           Caisson uses an offline Ed25519 license key for entitlement
           verification. When you purchase:
@@ -214,7 +228,10 @@ export default function LicensePage() {
       </Section>
 
       {/* Per-module clarity */}
-      <Section title="Which license applies where">
+      <Section
+        id="which-license-applies-where"
+        title="Which license applies where"
+      >
         <p style={prose.paragraph}>
           Two licenses, split by package. The Base substrate is Apache-2.0, open
           source; the commercial modules and the bundles that compose them ship
@@ -291,12 +308,12 @@ export default function LicensePage() {
       </Section>
 
       {/* FAQ (visible + JSON-LD) */}
-      <Section title="Common questions" band="tint">
+      <Section id="common-questions" title="Common questions" band="tint">
         <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-6)" }} />
       </Section>
 
       {/* Contact */}
-      <Section title="Licensing questions">
+      <Section id="licensing-questions" title="Licensing questions">
         <p style={prose.paragraph}>
           For licensing questions, volume pricing, transfer requests, or EULA
           negotiation:
