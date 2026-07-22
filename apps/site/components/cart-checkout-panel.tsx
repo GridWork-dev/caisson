@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 // The /fetch subpath is the client-safe cut of the kernel (fetch.ts is pure, no server-only
 // imports) — mirrors `discord-connect.tsx`'s own client-side fetchWithTimeout usage.
 import { fetchWithTimeout } from "@caisson/kernel/fetch";
@@ -74,13 +75,13 @@ export function CartCheckoutPanel({
       // The Paddle overlay owns the rest of the flow once it opens — the cart clears on the
       // `checkout.completed` event (the useEffect above), not here.
       if (!opened) {
-        setError("Checkout is unavailable right now — please try again.");
+        setError("Checkout is unavailable right now. Please try again.");
       }
     } catch {
       // G6: getPaddle() now surfaces a load/init failure instead of silently poisoning the
       // session — give the buyer a real, actionable message instead of a button that just reverts.
       setError(
-        "Checkout failed to load — check your connection or ad-blocker, then try again.",
+        "Checkout failed to load. Check your connection or ad-blocker, then try again.",
       );
     } finally {
       setOpening(false);
@@ -99,14 +100,16 @@ export function CartCheckoutPanel({
           Checkout
         </h1>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-2)" }}>
-          {items.length} item{items.length === 1 ? "" : "s"} — one Paddle
-          checkout for the whole cart.
+          {items.length === 0
+            ? "Nothing in your cart yet."
+            : `${String(items.length)} item${items.length === 1 ? "" : "s"}. One Paddle checkout for the whole cart.`}
         </p>
       </div>
 
       {items.length === 0 ? (
         <p className="cs-muted">
-          Your cart is empty. Head to the marketplace to add a bundle or a
+          Your cart is empty. Head to the{" "}
+          <Link href="/marketplace">marketplace</Link> to add a bundle or a
           module.
         </p>
       ) : (
