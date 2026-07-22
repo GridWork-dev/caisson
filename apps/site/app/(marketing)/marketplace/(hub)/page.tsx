@@ -104,7 +104,6 @@ export default function MarketplacePage() {
       {/* ===== The open base — "batteries included" under the prices (anxiety-relief beat;
           ADR-0094 open-core made visible at purchase time) ===== */}
       <Section
-        eyebrow="The open base"
         title="Every bundle sits on this. So can you, for free."
         lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license (source you own), but the base was always yours."
         band="surface"
@@ -149,7 +148,7 @@ export default function MarketplacePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqPage(HUB_FAQ)) }}
       />
-      <Section eyebrow="FAQ" title="Buying, briefly.">
+      <Section title="Buying, briefly.">
         <Faq items={HUB_FAQ} defaultOpenFirst />
       </Section>
     </>

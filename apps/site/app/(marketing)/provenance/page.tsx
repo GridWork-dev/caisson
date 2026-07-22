@@ -223,7 +223,7 @@ export default function ProvenancePage() {
       {/* ===== What it composes ===== */}
       <Reveal>
         <Section
-          eyebrow="What it composes"
+          title="What it composes"
           lede="The Provenance bundle is a real runtime composition of three @caisson/* packages, not marketing copy: signing-primitive (detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots), audit-worm (the append-only SHA-256 audit chain plus the S3 Object-Lock WORM adapter), and field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption). Every member is a workspace dependency re-exported through the bundle's own entry point, and every one is also a member of Compliance, so a Compliance owner already holds the whole set."
         />
       </Reveal>
@@ -239,7 +239,6 @@ export default function ProvenancePage() {
       {/* ===== The three composed packages ===== */}
       <Reveal>
         <Section
-          eyebrow="The composition"
           title="Three packages, one bundle."
           lede="Each member is a real workspace dependency, not a manifest claim. Each is also sold standalone, so you can take exactly the primitive you need."
         >
@@ -259,7 +258,6 @@ export default function ProvenancePage() {
       {/* ===== The four controls (evidence cards) ===== */}
       <Reveal>
         <Section
-          eyebrow="What ships in the box"
           title="Four primitives, each with its proof."
           lede="No diagrams standing in for behaviour. The artifact carries the claim, a signature, a chain root, a denied delete, a refused cross-tenant decrypt."
         >
@@ -306,7 +304,6 @@ export default function ProvenancePage() {
       {/* ===== Who it's for ===== */}
       <Reveal>
         <Section
-          eyebrow="Who it's for"
           title="Teams that have to prove a record, not just store it."
           lede="Teams where the question isn't 'do you have the data' but 'can you prove it wasn't changed', regulated records, legal holds, model-output audit trails, evidence you may have to defend years later. Provenance gives you a signature, a tamper-evident chain, and sealed-at-rest fields, so the proof travels with the artifact."
           band="tint"
@@ -330,7 +327,7 @@ export default function ProvenancePage() {
 
       {/* ===== FAQ ===== */}
       <Reveal>
-        <Section eyebrow="Questions" title="What an auditor asks first.">
+        <Section title="What an auditor asks first.">
           <Faq items={FAQ} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
       </Reveal>
@@ -338,7 +335,6 @@ export default function ProvenancePage() {
       {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
       <Reveal>
         <Section
-          eyebrow="Trial path"
           title="Prove fit in week one."
           lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
@@ -351,7 +347,6 @@ export default function ProvenancePage() {
       {/* ===== How it ships ===== */}
       <Reveal>
         <Section
-          eyebrow="How Provenance is sold"
           title="Own the source, or take a single primitive."
           band="surface"
         >

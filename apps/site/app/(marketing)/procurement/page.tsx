@@ -113,7 +113,7 @@ export default function ProcurementPage() {
       />
 
       {/* ===== The boundary statement ===== */}
-      <Section band="tint" eyebrow="The boundary">
+      <Section band="tint">
         <Card accent>
           <p
             style={{
@@ -139,10 +139,7 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== Technical controls ===== */}
-      <Section
-        eyebrow="Technical controls"
-        title="Compliance bundle: what it ships."
-      >
+      <Section title="Compliance bundle: what it ships.">
         <div
           className="cs-grid cs-grid--2"
           style={{ marginTop: "var(--cs-space-8)" }}
@@ -191,11 +188,7 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== Who you're buying from ===== */}
-      <Section
-        band="tint"
-        eyebrow="Who you're buying from"
-        title="The entity and the licensing relationship."
-      >
+      <Section band="tint" title="The entity and the licensing relationship.">
         <p className="cs-lede">
           Caisson is licensed to you by Caisson Software LLC, based in Atlanta,
           Georgia. That&rsquo;s the party behind the software: it owns the
@@ -216,10 +209,7 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== Invoicing & merchant of record ===== */}
-      <Section
-        eyebrow="Invoicing & billing"
-        title="Paddle is the merchant of record."
-      >
+      <Section title="Paddle is the merchant of record.">
         <p className="cs-lede">
           Every order runs through Paddle.com, Caisson&rsquo;s merchant of
           record. Paddle collects payment, calculates and remits sales tax and
@@ -259,11 +249,7 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== Documentation requests ===== */}
-      <Section
-        band="tint"
-        eyebrow="Documentation requests"
-        title="How to request security and tax docs."
-      >
+      <Section band="tint" title="How to request security and tax docs.">
         <p className="cs-lede">
           We respond to documented requests from security reviewers and
           procurement teams within 5 business days.
@@ -332,12 +318,12 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== FAQ ===== */}
-      <Section eyebrow="Procurement FAQ" title="Common questions.">
+      <Section title="Common questions.">
         <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-8)" }} />
       </Section>
 
       {/* ===== Contact nudge ===== */}
-      <Section band="surface" eyebrow="Get started">
+      <Section band="surface" title="Get started">
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-5)" }}>
           For security documentation, procurement questionnaires, W-9 requests,
           or to discuss the technical controls in detail, email{" "}

@@ -186,7 +186,7 @@ export default function LocalFirstPage() {
         }
         credentials={
           <StatusChip
-            tone="accent"
+            tone="muted"
             label={`Own the source · ${bundlePrice("local-first")}`}
             dot
           />
@@ -201,17 +201,17 @@ export default function LocalFirstPage() {
                 'import {\n  TenantFieldCrypto,\n} from\n  "@caisson/field-crypto"\n\n'
               }
             </span>
-            <span className="cs-tok-accent">{"const"}</span>
+            <span className="cs-tok-muted">{"const"}</span>
             {" env = "}
-            <span className="cs-tok-accent">{"await\n  "}</span>
+            <span className="cs-tok-muted">{"await\n  "}</span>
             {'fc.encryptField(\n  tenant, "record", "notes")\n'}
             <span className="cs-tok-muted">
               {"// v1 · aes-256-gcm ·\n// per-tenant key ·\n// AAD-bound  "}
             </span>
             <span className="cs-tok-success">{"← sealed\n// at rest\n\n"}</span>
-            <span className="cs-tok-accent">{"await"}</span>
+            <span className="cs-tok-muted">{"await"}</span>
             {" fc.decryptField(\n  otherTenant, env, "}
-            <span className="cs-tok-accent">{'"notes"'}</span>
+            <span className="cs-tok-muted">{'"notes"'}</span>
             {")\n"}
             <span className="cs-tok-muted">
               {"// cross-tenant key —\n// open "}
@@ -224,7 +224,6 @@ export default function LocalFirstPage() {
 
       {/* ===== The compute seam ===== */}
       <Section
-        eyebrow="The compute seam"
         title="On-device by default, hosted by opt-in."
         lede="@caisson/local-ai composes local-store, license-verify, field-crypto, and kernel, then adds an InferenceBackend port on top. The default backend runs on-device: a MiniLM-class ONNX model via transformers.js, first-run-fetched and SHA-256 hash-verified before it touches your data. Want hosted inference sometimes? The same interface has opt-in rented transports for OpenRouter, Azure OpenAI, and AWS Bedrock, each metered and egress-guarded, each off until you turn it on."
         band="tint"
@@ -241,7 +240,6 @@ export default function LocalFirstPage() {
       {/* ===== Four composed packages ===== */}
       <Reveal>
         <Section
-          eyebrow="What ships in the box"
           title={`${spellCount(MEMBER_MODULES.length)} composed packages.`}
           lede="Each member is a real workspace dependency. The commercial ones also carry a standalone price; the Apache-2.0 base ships free with every bundle."
         >
@@ -256,7 +254,6 @@ export default function LocalFirstPage() {
       {/* ===== Four pieces (capability overview) ===== */}
       <Reveal>
         <Section
-          eyebrow="What's in the bundle"
           title="Four pieces. All on the device."
           lede="Each piece does its job without a network. Compose them, or take a single module, the data path never widens past the disk."
         >
@@ -291,7 +288,6 @@ export default function LocalFirstPage() {
       {/* ===== Zero egress by default ===== */}
       <Reveal>
         <Section
-          eyebrow="Zero egress by default"
           title="The only mode is local-only."
           lede="The privacy policy is a closed schema, not a toggle: the only mode is local-only, and there is no hosted mode to accidentally flip, because the enum does not have one (widening it takes a deliberate code change, not a config edit). An allowlist is the sole way a host becomes reachable, and only two sink kinds are sanctioned: the model-download host for first-run ONNX fetches, and the rented-backend host for the opt-in hosted lane. Leave the allowlist empty and egress is zero, the air-gap default."
         />
@@ -300,7 +296,6 @@ export default function LocalFirstPage() {
       {/* ===== Fail-closed by construction, real built substrate ===== */}
       <Reveal>
         <Section
-          eyebrow="Default-deny, by construction"
           title="Fail-closed is how the base already behaves."
           lede="Default-deny is not a promise, it is how the base substrate behaves today. A cross-tenant read is refused at the database, fail-closed by construction. The privacy gate extends that same posture to network egress: hosts are deny-listed by default, allowed only in a typed config."
         >
@@ -332,7 +327,6 @@ export default function LocalFirstPage() {
       {/* ===== Search, sync, and licensing, all local ===== */}
       <Reveal>
         <Section
-          eyebrow="Search, sync, and licensing"
           title="All local."
           lede="@caisson/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails, semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the bundle ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up, plus offline Ed25519 license verification that checks the signature locally with no phone-home and no remote kill switch."
           band="surface"
@@ -342,7 +336,6 @@ export default function LocalFirstPage() {
       {/* ===== On-device vector search (illustrative shape) ===== */}
       <Reveal>
         <Section
-          eyebrow="On-device vector search"
           title="Semantic recall that never round-trips."
           lede="sqlite-vec holds the ANN index next to your rows. A query is a statement against a local file, no API key, no vector vendor, no embeddings shipped off the box to be indexed by someone else. The shape below is illustrative."
         >
@@ -379,7 +372,6 @@ export default function LocalFirstPage() {
       {/* ===== Who it's for, and how it ships ===== */}
       <Reveal>
         <Section
-          eyebrow="Who it's for, and how it ships"
           title="Own the source. Run it on your machine."
           lede="This bundle is for teams that cannot send data off the device: regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson bundle ships: bunx @caisson-sh/cli@latest scaffolds the base, then you add Local-first AI. Two of its composed packages (kernel and license-verify) are Apache-2.0; local-store, field-crypto, local-inference, local-privacy, and local-sync are the commercial layer the bundle license covers."
           band="tint"
@@ -388,10 +380,7 @@ export default function LocalFirstPage() {
 
       {/* ===== FAQ ===== */}
       <Reveal>
-        <Section
-          eyebrow="Common questions"
-          title="Questions procurement asks first."
-        >
+        <Section title="Questions procurement asks first.">
           <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
       </Reveal>
@@ -399,7 +388,6 @@ export default function LocalFirstPage() {
       {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
       <Reveal>
         <Section
-          eyebrow="Trial path"
           title="Prove fit in week one."
           lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
@@ -411,7 +399,7 @@ export default function LocalFirstPage() {
 
       {/* ===== Get started ===== */}
       <Reveal>
-        <Section eyebrow="Get started" title="Own the source." band="surface">
+        <Section title="Own the source." band="surface">
           <Terminal
             label="install"
             status={<StatusChip tone="muted" label="scaffold" />}
