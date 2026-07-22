@@ -16,9 +16,16 @@ import styles from "./marketplace-hero-artifact.module.css";
 // so it can never drift from the real catalog. No external assets — every glyph is an inline kit
 // <Icon> (the site CSP blocks remote hosts).
 //
-// The base-slab capabilities are real, single-sourced facts about the open substrate (Apache-2.0;
-// Postgres RLS · WORM · audit chain), matching the homepage's honest-artifact floor (ADR-0082).
-const BASE_FACTS = ["Postgres RLS", "WORM", "audit chain", "metering"] as const;
+// The base-slab capabilities are real, single-sourced facts about the open Apache-2.0 substrate
+// (BASE_PACKAGES, apps/site/lib/base-substrate.ts), matching the homepage's honest-artifact floor
+// (ADR-0082). WORM/audit-chain/metering are commercial-package capabilities (audit-worm/ai-meter),
+// NOT part of the free base — an audit-round F2 finding (ADR-0374) against the prior list.
+const BASE_FACTS = [
+  "Postgres RLS",
+  "auth + orgs",
+  "billing seams",
+  "typed migrations",
+] as const;
 
 interface ComposeItem {
   key: string;
