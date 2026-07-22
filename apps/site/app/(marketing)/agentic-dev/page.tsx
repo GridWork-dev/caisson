@@ -285,7 +285,6 @@ export default function AgenticDevPage() {
 
       {/* ===== What it composes ===== */}
       <Section
-        eyebrow="What it composes"
         title="A governed kernel, not a wrapper."
         lede="@caisson/agent-kernel is one of the pieces the Agentic-Dev bundle composes together as peers, alongside local memory and the tool-exec gate, all built on the same open @caisson/kernel base every bundle shares. It carries a typed agent/skill/rule schema with a reference-integrity validator (a ghost cross-ref throws before anything runs), the 7-act lifecycle FSM (SPEC → PLAN → EXECUTE → VERIFY → SWEEP → EVAL → SHIP, with a failed VERIFY reopening PLAN and SHIP as the only terminal state), governance guards, and the hooks dispatcher that fires lifecycle events without handing a hook a credential the kernel didn't give it."
         band="tint"
@@ -302,7 +301,6 @@ export default function AgenticDevPage() {
       {/* ===== Four composed packages ===== */}
       <Reveal>
         <Section
-          eyebrow="What ships in the box"
           title={`${spellCount(MEMBER_MODULES.length)} composed packages, not one kernel.`}
           lede="Each member is a real workspace dependency, and each one carries its own standalone price: the kernel, the runner, the trajectory log, local memory, and the tool-exec gate."
         >
@@ -317,7 +315,6 @@ export default function AgenticDevPage() {
       {/* ===== Inside the agent-kernel package ===== */}
       <Reveal>
         <Section
-          eyebrow="Inside the agent-kernel package"
           title="Four parts, each a declared seam."
           lede="No part is a black box. Each is a file you can read, diff, and gate in review before an agent ever runs."
         >
@@ -345,7 +342,6 @@ export default function AgenticDevPage() {
       {/* ===== The lifecycle: a state machine, not a checklist ===== */}
       <Reveal>
         <Section
-          eyebrow="The lifecycle"
           title="A state machine, not a checklist."
           lede="VERIFY failing reopens PLAN. There is no shortcut to SHIP. The machine owns the path, the engineer does not override it inline."
           band="surface"
@@ -380,7 +376,6 @@ export default function AgenticDevPage() {
       {/* ===== Spawns agents, not just scaffolds them ===== */}
       <Reveal>
         <Section
-          eyebrow="The agent runner"
           title="Spawns agents, not just scaffolds them."
           lede="@caisson/agent-runner spawns a headless coding-agent CLI as a detached subprocess in an isolated worktree, streams an auditable .jsonl transcript that survives the launcher exiting, and parses it into a structured run report (tool calls, files touched, final result). The child environment is built from scratch (never spread from process.env) with a fixed non-secret passthrough allowlist and only the target provider's key, so a secret sitting in your shell has no path into the sandbox. Provider-agnostic: name the binary, the env-var names for the endpoint and key, the model, and an argv template; a worked Claude Code CLI profile ships as the reference. It ships as its own package alongside the bundle, not wired into the kernel's lifecycle."
         >
@@ -391,7 +386,6 @@ export default function AgenticDevPage() {
       {/* ===== Local memory and a sandboxed exec gate ===== */}
       <Reveal>
         <Section
-          eyebrow="Memory and the exec gate"
           title="Local memory, and a sandboxed exec gate."
           lede="@caisson/local-store gives the bundle hybrid vector + full-text recall (vec0 + FTS5 with reciprocal-rank fusion, an FTS-only offline floor when no embedder is wired) scoped per tenant at the file level. @caisson/tool-exec is the governed tool-execution gate composed alongside it: default-deny allowlist, Zod-strict argv schemas, execFile arg-arrays (never a shell) so an agent that wants to run a command only gets the ones you explicitly allowed. Neither piece makes an LLM call or imports a vendor SDK; the composed bundle holds no credential of its own."
           band="surface"
@@ -401,7 +395,6 @@ export default function AgenticDevPage() {
       {/* ===== Connect over MCP (SYNTHESIS §6 Tier-1 row 9) ===== */}
       <Reveal>
         <Section
-          eyebrow="Connect over MCP"
           title="Where your agent connects."
           lede="Most kits ship an MCP server now; the difference is what it lets an agent do. @caisson/mcp-server ships in the open Base substrate (every plan gets it, not just Agentic-Dev) and it treats the agent as a principal: four stages on every call, in order, the same server the buyer dashboard and any MCP-speaking agent client connect through."
         >
@@ -429,7 +422,6 @@ export default function AgenticDevPage() {
       {/* ===== Framing: governed, not magic ===== */}
       <Reveal>
         <Section
-          eyebrow="The framing"
           title="A governed kernel, not autonomous magic."
           lede="The kernel does not make agents smarter. It makes them accountable: every dispatch declares its lane and its boundary, the kernel holds the credentials, and the lifecycle owns the path to ship."
         >
@@ -475,7 +467,6 @@ export default function AgenticDevPage() {
       {/* ===== Licensing ===== */}
       <Reveal>
         <Section
-          eyebrow="How it ships"
           title="A composition of the same base."
           lede="Agentic-Dev is a composition of the same open Caisson base every bundle shares, not a fork. Buy it outright, take a piece à la carte, or subscribe for credits and updates."
           band="tint"
@@ -530,7 +521,7 @@ export default function AgenticDevPage() {
 
       {/* ===== FAQ ===== */}
       <Reveal>
-        <Section eyebrow="Questions" title="Common questions." band="surface">
+        <Section title="Common questions." band="surface">
           <Faq items={FAQS} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
       </Reveal>
@@ -538,7 +529,6 @@ export default function AgenticDevPage() {
       {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
       <Reveal>
         <Section
-          eyebrow="Trial path"
           title="Prove fit in week one."
           lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
@@ -549,7 +539,7 @@ export default function AgenticDevPage() {
       </Reveal>
 
       {/* ===== Get started ===== */}
-      <Section eyebrow="Get started" id="get-started">
+      <Section id="get-started">
         <h2 className="cs-section-title">Ship governed agents.</h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
           Buy the bundle outright and own the source, or take the kernel or the

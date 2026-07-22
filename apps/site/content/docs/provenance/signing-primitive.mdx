@@ -1,13 +1,13 @@
 ---
 title: signing-primitive
-description: Per-tenant evidence signing — a detached Ed25519 signature over a canonical, chain-anchored manifest body, with an optional RFC-3161 trusted-timestamp countersignature and a fail-closed verify path.
+description: Per-tenant evidence signing, a detached Ed25519 signature over a canonical, chain-anchored manifest body, with an optional RFC-3161 trusted-timestamp countersignature and a fail-closed verify path.
 ---
 
 `@caisson/signing-primitive` signs an evidence pack with a key that belongs to the tenant,
 not to Caisson. It produces a detached Ed25519 signature over the canonicalized manifest
 body concatenated with the audit chain's tip hash. The signature is detached, so the signed
 body stays byte-stable and independently verifiable, and the per-tenant identity is
-deliberately distinct from the Caisson license-issuer key — a buyer proves the provenance of
+deliberately distinct from the Caisson license-issuer key, a buyer proves the provenance of
 their own evidence with their own identity.
 
 ## Install
@@ -18,17 +18,17 @@ bun add @caisson/signing-primitive
 
 ## What it does
 
-- **Per-tenant detached signing** — `signEvidencePack` signs `canonicalize(manifest) ∥
+- **Per-tenant detached signing**: `signEvidencePack` signs `canonicalize(manifest) ∥
 chainAnchor.tipHash` with an `Ed25519Signer` scoped to the tenant. The signature is
   detached and never injected into the body, so the manifest stays byte-identical after
   signing.
-- **Optional trusted timestamp** — supply a `TimestampAuthority` and the signature is
+- **Optional trusted timestamp**: supply a `TimestampAuthority` and the signature is
   countersigned with an RFC-3161 token, attesting the instant the signature existed.
-- **Fail-closed verify** — `verifyEvidenceSignature` reuses one shared Ed25519 primitive and
+- **Fail-closed verify**: `verifyEvidenceSignature` reuses one shared Ed25519 primitive and
   returns `false` on an unknown algorithm, malformed hex, or wrong-length key or signature. A
   forgery never passes as valid, and a malformed signing result throws rather than emitting a
   bad signature.
-- **Timing-safe compares** — `signaturesEqual` and `timestampCountersignsSignature` compare
+- **Timing-safe compares**: `signaturesEqual` and `timestampCountersignsSignature` compare
   hex signatures and RFC-3161 message imprints with a constant-time equality, so neither leaks
   how many leading bytes matched.
 
@@ -36,7 +36,7 @@ chainAnchor.tipHash` with an `Ed25519Signer` scoped to the tenant. The signature
 
 The signing key is the tenant's, held per tenant and never the license-issuer key. The
 signature covers the manifest and the WORM audit-chain tip together, so a signature is bound
-to the exact evidence state it was produced over — re-anchoring the chain or editing the
+to the exact evidence state it was produced over, re-anchoring the chain or editing the
 manifest invalidates it:
 
 ```ts
@@ -59,7 +59,7 @@ if (!ok) {
 }
 ```
 
-`manifest` only needs to structurally satisfy `SignableManifest` — a `chainAnchor.tipHash`
+`manifest` only needs to structurally satisfy `SignableManifest`: a `chainAnchor.tipHash`
 field. The evidence-pack manifest produced by `@caisson/compliance-core` matches it; this
 package never imports that generator, so the signing surface stands alone.
 
@@ -69,7 +69,7 @@ The RFC-3161 countersignature is reached through a `TimestampAuthority` port. It
 that a signature existed at a point in time, layered on top of the Ed25519 signature, never
 replacing it. A live authority implements `countersign(signature)` by POSTing a DER
 `TimeStampReq` (message imprint `sha256(signature)`) over `fetchWithTimeout` and parsing
-the response — the port is stable, so it slots in without touching call sites.
+the response, the port is stable, so it slots in without touching call sites.
 
 ```ts
 import {
@@ -96,49 +96,49 @@ const tsa = new StubTimestampAuthority({ now: new Date("2026-01-01") });
 
 ## API reference
 
-- **`Ed25519Signer(keyId, secretKey)`** — the base `Signer`. `secretKey` must be a 32-byte
+- **`Ed25519Signer(keyId, secretKey)`**: the base `Signer`. `secretKey` must be a 32-byte
   seed; construction throws on an empty `keyId` or a wrong-length key. `publicKey()` and
   `sign(payload)` are async; the seed is a private field, never enumerable or logged.
-- **`Signer`** — the signing-identity port (`keyId`, `algorithm`, `publicKey()`, `sign()`).
-  A buyer-supplied KMS asymmetric-sign implementation is a drop-in of this same interface —
+- **`Signer`**: the signing-identity port (`keyId`, `algorithm`, `publicKey()`, `sign()`).
+  A buyer-supplied KMS asymmetric-sign implementation is a drop-in of this same interface:
   the secret key never leaves the HSM.
-- **`signEvidencePack(signer, manifest, options?)`** — returns an `EvidenceSignature`
+- **`signEvidencePack(signer, manifest, options?)`**: returns an `EvidenceSignature`
   (`algorithm`, `keyId`, `publicKey`, `signature`, optional `timestamp`). Throws on a
   malformed signing result rather than emitting a bad signature.
-- **`verifyEvidenceSignature(manifest, signature)`** — `Promise<boolean>`, fails closed.
-- **`evidenceSignablePayload(manifest)`** — the exact `Uint8Array` that gets signed:
+- **`verifyEvidenceSignature(manifest, signature)`**: `Promise<boolean>`, fails closed.
+- **`evidenceSignablePayload(manifest)`**: the exact `Uint8Array` that gets signed:
   `canonicalize(manifest)` concatenated with `manifest.chainAnchor.tipHash`. Exposed so a
   caller can hash or log the signed payload without re-deriving it.
-- **`TimestampAuthority` / `TimestampToken` / `StubTimestampAuthority`** — the RFC-3161
+- **`TimestampAuthority` / `TimestampToken` / `StubTimestampAuthority`**: the RFC-3161
   countersign port, its token shape, and the CI-safe test double.
-- **`signaturesEqual(a, b)`** — timing-safe hex-signature compare.
-- **`timestampCountersignsSignature(token, signature)`** — recomputes `sha256(signature)`
+- **`signaturesEqual(a, b)`**: timing-safe hex-signature compare.
+- **`timestampCountersignsSignature(token, signature)`**: recomputes `sha256(signature)`
   and timing-safe compares it against `token.messageImprint`, confirming a timestamp token
   actually countersigns *this* signature rather than a different one.
 
 ## Configuration
 
-There is no env-based configuration — every input is a constructor or call argument, not a
+There is no env-based configuration, every input is a constructor or call argument, not a
 read environment variable:
 
-- **`Ed25519Signer(keyId, secretKey)`** — `secretKey` is a 32-byte seed you provision per
+- **`Ed25519Signer(keyId, secretKey)`**: `secretKey` is a 32-byte seed you provision per
   tenant and pass in directly; the module never reads or derives a
   key from the environment. Construction throws on an empty `keyId` or a wrong-length key,
   so a misconfigured signer fails at construction, not at first sign.
-- **`SignEvidencePackOptions.timestampAuthority`** — optional; omit it and
+- **`SignEvidencePackOptions.timestampAuthority`**: optional; omit it and
   `signEvidencePack` returns a signature with no `timestamp` field. Supply any
   `TimestampAuthority` implementation (a live RFC-3161 client or `StubTimestampAuthority`
   for tests) to add the countersignature.
-- **`StubTimestampAuthority({ authority?, now? })`** — both fields default (`"urn:caisson:test-tsa"`,
+- **`StubTimestampAuthority({ authority?, now? })`**: both fields default (`"urn:caisson:test-tsa"`,
   epoch); only meant for tests, never wired to a live TSA.
 
 ## Composition
 
 `@caisson/signing-primitive` depends only on `@caisson/kernel` (`canonicalize`,
-`safeEqualFixed`) — dependencies are down-only, so it never imports the evidence generator
+`safeEqualFixed`), dependencies are down-only, so it never imports the evidence generator
 or an edition. The **Compliance** and **Provenance** bundles compose it alongside
 `@caisson/compliance-core` and `@caisson/audit-worm` to sign the evidence packs those
 packages produce.
 
-Sold standalone at $199 or bundled — check current bundle composition and pricing on the
+Sold standalone at $199 or bundled, check current bundle composition and pricing on the
 [marketplace](/marketplace).

@@ -6,14 +6,14 @@ description: Provider-agnostic session contract, an EdDSA-signed account JWT, an
 `@caisson/auth` is provider-agnostic: it defines the session contract the rest of the base
 depends on, a short-lived **EdDSA-signed** account JWT for verifying a caller across services, and
 multi-user account membership over row-level security. [better-auth](https://better-auth.com),
-self-hosted, is the reference session provider — wired at the app layer, not re-exported from this
+self-hosted, is the reference session provider, wired at the app layer, not re-exported from this
 package. There is no third-party identity tenant holding your users.
 
 ## The contract
 
 Auth defines two seams. A same-process read (a dashboard route) resolves a `SessionContext`
 straight from the session provider. A cross-plane call carries a short-lived EdDSA account JWT
-that the receiving service verifies against the issuer's Ed25519 public key — no shared secret, no
+that the receiving service verifies against the issuer's Ed25519 public key, no shared secret, no
 network round trip:
 
 ```ts
@@ -31,7 +31,7 @@ const session: SessionContext = verifyAccountJwt(token, issuerPublicKey);
 requireSession(session);
 ```
 
-`session.accountId` is the claim [`tenancy-rls`](/docs/base/tenancy-rls)'s `withTenant` reads —
+`session.accountId` is the claim [`tenancy-rls`](/docs/base/tenancy-rls)'s `withTenant` reads:
 auth is the only producer of that claim, tenancy-rls the only consumer. That single seam is why a
 request can cross from the control plane to the data plane without a shared-secret handshake.
 
@@ -39,12 +39,12 @@ request can cross from the control plane to the data plane without a shared-secr
 
 ### Session contract
 
-- **`SessionContext`** — `{ userId, accountId, role }`. `accountId` is the only value the data
+- **`SessionContext`**: `{ userId, accountId, role }`. `accountId` is the only value the data
   layer trusts for RLS.
-- **`Role`** — `"owner" | "seat"`.
-- **`SessionProvider`** — the interface a runtime implements to resolve a request to a session.
+- **`Role`**: `"owner" | "seat"`.
+- **`SessionProvider`**: the interface a runtime implements to resolve a request to a session.
   better-auth is the reference implementation; nothing downstream depends on it directly.
-- **`requireSession(ctx)`** — guards a protected route. Throws `AuthnError` (401) on `null`,
+- **`requireSession(ctx)`**: guards a protected route. Throws `AuthnError` (401) on `null`,
   otherwise returns the session unchanged.
 
 ```ts
@@ -65,14 +65,14 @@ function requireSession(ctx: SessionContext | null): SessionContext;
 
 ### Account JWT
 
-- **`generateAccountKeyPair()`** — generates an Ed25519 keypair. The issuer holds the private
+- **`generateAccountKeyPair()`**: generates an Ed25519 keypair. The issuer holds the private
   key; every verifying service holds only the public key.
-- **`signAccountJwt(claims, privateKey, options?)`** — mints an EdDSA-signed token. Default TTL
+- **`signAccountJwt(claims, privateKey, options?)`**: mints an EdDSA-signed token. Default TTL
   is 900 seconds (15 minutes); `now` is overridable for tests.
-- **`verifyAccountJwt(token, publicKey, options?)`** — verifies the signature, expiry, and claim
+- **`verifyAccountJwt(token, publicKey, options?)`**: verifies the signature, expiry, and claim
   shape, and returns the `SessionContext` the token asserts. A malformed token, a bad signature, a
   token signed by a different key, and an expired `exp` all collapse to the same generic
-  `AuthnError("Invalid token")` (401) — the verifier never leaks _why_ a token failed, so a caller
+  `AuthnError("Invalid token")` (401), the verifier never leaks _why_ a token failed, so a caller
   can't use the error to probe for a valid key or a near-expiry window.
 
 ```ts
@@ -107,13 +107,13 @@ function verifyAccountJwt(
 
 ### Account membership
 
-- **`resolveUserAccounts(db, userId)`** — every account a signed-in user belongs to, scoped by
+- **`resolveUserAccounts(db, userId)`**: every account a signed-in user belongs to, scoped by
   RLS (`withUser`) so a user reads only their own memberships. Ordered oldest-first, so the
   personal account (created at first sign-in) sorts first.
-- **`ensurePersonalAccount(db, userId)`** — guarantees a user has at least a personal account
-  (`accountId === userId`, role `owner`). Idempotent — a second call is a no-op — and runs
+- **`ensurePersonalAccount(db, userId)`**: guarantees a user has at least a personal account
+  (`accountId === userId`, role `owner`). Idempotent (a second call is a no-op) and runs
   account-scoped so the RLS `WITH CHECK` is satisfied.
-- **`selectActiveAccount(memberships, requestedAccountId?)`** — pure selection: honors
+- **`selectActiveAccount(memberships, requestedAccountId?)`**: pure selection: honors
   `requestedAccountId` when it names one of the caller's own memberships, else falls back to the
   personal account, else the first (oldest) membership. Returns `null` only when the caller has no
   memberships.
@@ -138,15 +138,15 @@ function selectActiveAccount(
 ): AccountMembership | null;
 ```
 
-`Transactor` is [`tenancy-rls`](/docs/base/tenancy-rls)'s driver surface — the same one
+`Transactor` is [`tenancy-rls`](/docs/base/tenancy-rls)'s driver surface, the same one
 `withTenant` and `withUser` accept.
 
 ### Schema
 
-- **`ACCOUNT_MEMBER_SCHEMA_SQL`** — the DDL for the `account_member` table: primary key
+- **`ACCOUNT_MEMBER_SCHEMA_SQL`**: the DDL for the `account_member` table: primary key
   `(account_id, user_id)`, a `role` check constraint, and a **dual-GUC** RLS policy. A read passes
-  when either the tenant GUC (`withTenant` — an owner listing their account's members) or the user
-  GUC (`withUser` — a signed-in user resolving their own memberships) matches; a write requires the
+  when either the tenant GUC (`withTenant`: an owner listing their account's members) or the user
+  GUC (`withUser`: a signed-in user resolving their own memberships) matches; a write requires the
   tenant GUC, so a seat can't insert a membership row into an account they don't already hold.
   Emit it into a migration the same way any other base package ships its schema constant.
 
@@ -163,7 +163,7 @@ const ACCOUNT_MEMBER_SCHEMA_SQL: string;
   </Card>
   <Card title="MCP server" href="/docs/base/mcp-server">
     Buyer tool calls authenticate with their own per-buyer Bearer token
-    (timing-safe compared) — a separate credential from this package's EdDSA
+    (timing-safe compared), a separate credential from this package's EdDSA
     JWT.
   </Card>
 </Cards>

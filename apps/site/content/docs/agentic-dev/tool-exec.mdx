@@ -1,6 +1,6 @@
 ---
 title: tool-exec
-description: Governed tool-call / sandboxed-exec primitive — a default-deny command allowlist, Zod-strict argv validation, and execFile arg-arrays only, never a shell.
+description: Governed tool-call / sandboxed-exec primitive, a default-deny command allowlist, Zod-strict argv validation, and execFile arg-arrays only, never a shell.
 ---
 
 `@caisson/tool-exec` is the security floor Agentic-Dev's tool layer stands on: a governed gate
@@ -9,18 +9,18 @@ anything unregistered is refused before anything spawns.
 
 ## What it does
 
-- **Default-deny command allowlist.** `createToolExec({ allowlist })` — an empty or absent
+- **Default-deny command allowlist.** `createToolExec({ allowlist })`: an empty or absent
   allowlist refuses every call, fail-closed. An unregistered name throws `NotFoundError` before a
   process is spawned.
 - **`execFile` arg-arrays only.** Never `execSync`/`exec`/`shell: true`, never a concatenated
   command string. Each registered command declares a real executable plus a Zod-`.strict()`
   schema its args must satisfy; args are validated with `parseStrict` and the validated result
-  becomes the exact argv array passed to `execFile` — no agent-supplied value ever reaches a shell.
+  becomes the exact argv array passed to `execFile`: no agent-supplied value ever reaches a shell.
 - **Structured argument provenance.** Every call returns `{ command, args, exitCode, stdout,
-  stderr, ok, reason?, at }` — a plain-data audit record, output bounded to 64KB. A non-zero exit
+  stderr, ok, reason?, at }`, a plain-data audit record, output bounded to 64KB. A non-zero exit
   resolves in the record rather than throwing; only an unregistered name or a schema failure throws.
 - **Everything injected.** `cwd`, `timeoutMs`, the spawn seam (`execFn`), and the clock (`now`) are
-  all config — no module-level secrets or constants for endpoints or executables.
+  all config, no module-level secrets or constants for endpoints or executables.
 
 ## Install
 
@@ -56,19 +56,19 @@ A name not on the allowlist, or args that fail the schema, throw before any proc
 
 `ToolExecConfig`:
 
-- `allowlist: CommandSpec[]` — required. Each entry is `{ name, command, argsSchema }`.
-- `cwd?: string` — defaults to `process.cwd()`.
-- `timeoutMs?: number` — defaults to `30_000`.
-- `execFn?: ExecFn` — inject a spawn double for tests; defaults to a real `execFile` call.
-- `now?: () => number` — inject a clock for testable provenance timestamps; defaults to `Date.now`.
+- `allowlist: CommandSpec[]`: required. Each entry is `{ name, command, argsSchema }`.
+- `cwd?: string`: defaults to `process.cwd()`.
+- `timeoutMs?: number`: defaults to `30_000`.
+- `execFn?: ExecFn`: inject a spawn double for tests; defaults to a real `execFile` call.
+- `now?: () => number`: inject a clock for testable provenance timestamps; defaults to `Date.now`.
 
 ## Composition
 
-`tool-exec` depends on `@caisson/kernel` for `NotFoundError` and `parseStrict` — the same
+`tool-exec` depends on `@caisson/kernel` for `NotFoundError` and `parseStrict`: the same
 default-deny and schema-validation primitives the rest of the base substrate uses, so a tool call's
 failure modes look like every other kernel-governed boundary. It's the gate Agentic-Dev's agent
 kernel and agent-runner reach for whenever a running agent needs to touch a real executable.
 
-<Callout type="info" title="Commercial — Agentic-Dev">
+<Callout type="info" title="Commercial, Agentic-Dev">
   `@caisson/tool-exec` ships under the Agentic-Dev bundle license.
 </Callout>

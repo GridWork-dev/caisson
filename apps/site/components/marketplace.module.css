@@ -476,6 +476,87 @@
   display: grid;
 }
 
+/* ---- one-surface mobile stack dock (< 900px, ADR-0374 675b100583dd38f8) — the desktop `.rail`
+ *      was reachable only after all 32 catalog cards with no sticky total. A native <details>
+ *      bottom-docked bar replaces it below the breakpoint: `column-reverse` keeps the summary bar
+ *      flush against the viewport bottom edge while the expanded body grows upward above it, no JS
+ *      state needed. 900px (56.25rem) is off the ADR-0100/0101 rem ladder on purpose — the same
+ *      documented exception the module depth-page template's own 900px cutover takes
+ *      (packages/ui mobile-buy-bar.css). Always rendered (never conditionally mounted), same
+ *      no-hydration-mismatch rule the rest of the kit's mobile chrome follows. */
+.stackDock {
+  display: none;
+}
+
+@media (max-width: 56.25rem) {
+  .surface {
+    /* Clears the fixed dock bar so it never overlaps the last card / page footer. */
+    padding-bottom: var(--cs-space-20);
+  }
+  .surface .rail {
+    display: none;
+  }
+  .stackDock {
+    display: flex;
+    flex-direction: column-reverse;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 42;
+    background: var(--cs-surface-1);
+    border-top: 1px solid var(--cs-border);
+    box-shadow: var(--cs-shadow-lg);
+  }
+}
+
+.stackDockSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-4);
+  padding: var(--cs-space-3) var(--cs-space-4);
+  padding-bottom: calc(var(--cs-space-3) + env(safe-area-inset-bottom, 0px));
+  cursor: pointer;
+  list-style: none;
+}
+.stackDockSummary::-webkit-details-marker {
+  display: none;
+}
+
+.stackDockLabel {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cs-space-2);
+  min-width: 0;
+}
+
+/* Chevron marker — the Accordion primitive's own trick (packages/ui accordion.css): a rotated
+ * bordered corner, no icon dependency. Points up by default (more to see above); flips when open. */
+.stackDockChevron {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--cs-border-strong);
+  border-bottom: 2px solid var(--cs-border-strong);
+  transform: rotate(-135deg);
+  transition: transform var(--cs-duration-fast) var(--cs-ease-out);
+}
+.stackDock[open] .stackDockChevron {
+  transform: rotate(45deg);
+}
+
+.stackDockBody {
+  padding: 0 var(--cs-space-4) var(--cs-space-4);
+  max-height: 60vh;
+  overflow-y: auto;
+  border-top: 1px solid var(--cs-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stackDockChevron {
+    transition: none;
+  }
+}
+
 @media (max-width: 48rem) {
   .build {
     grid-template-columns: 1fr;

@@ -11,18 +11,18 @@ operator control plane mutates through. Buyer session **resolution** stays in th
 
 ## What it does
 
-- **WorkOS SSO** (`createWorkosSsoProvider`) — a framework-agnostic AuthKit/SSO transport
+- **WorkOS SSO** (`createWorkosSsoProvider`), a framework-agnostic AuthKit/SSO transport
   seam: builds the authorization URL, exchanges the callback code for the user's id + email.
   Config is injected, never read from env by the package.
-- **Clerk session verification** (`createClerkSessionVerifier`) — verifies a Clerk session
+- **Clerk session verification** (`createClerkSessionVerifier`), verifies a Clerk session
   token against Clerk's JWKS via `@clerk/backend`, then maps the claims onto the kernel's
   `SessionContext`. Networkless when you supply `jwtKey`.
 - **Owner-gated membership** (`listAccountMembers` / `addAccountMember` /
-  `removeAccountMember` / `assertCanManageMembers`) — invite and remove seats on a shared
+  `removeAccountMember` / `assertCanManageMembers`), invite and remove seats on a shared
   account, owner-only.
-- **Admin-write RLS** (`withAdminWrite` + the policy builders) — the cross-tenant write role
+- **Admin-write RLS** (`withAdminWrite` + the policy builders), the cross-tenant write role
   an operator control plane mutates through, DB-separated from the buyer `app` role.
-- **Entitlement gate** (`holdsOrgControls`) — the fail-closed predicate gating the module's
+- **Entitlement gate** (`holdsOrgControls`), the fail-closed predicate gating the module's
   own surfaces.
 
 ## Install
@@ -31,7 +31,7 @@ operator control plane mutates through. Buyer session **resolution** stays in th
 bun add @caisson/org-controls
 ```
 
-## Quickstart — WorkOS SSO
+## Quickstart, WorkOS SSO
 
 ```ts
 import { createWorkosSsoProvider } from "@caisson/org-controls";
@@ -61,7 +61,7 @@ const session = await verifier.verifySession(clerkToken); // -> SessionContext
 
 An active Clerk Organization maps to `accountId`/`role`; with no Organization active, the
 session falls back to the personal-account convention (`accountId === userId`, role
-`"owner"`). This mapping is stateless — route the verified `userId` through `@caisson/auth`'s
+`"owner"`). This mapping is stateless, route the verified `userId` through `@caisson/auth`'s
 `resolveUserAccounts`/`selectActiveAccount` when you need the DB-authoritative multi-account
 resolution instead.
 
@@ -92,7 +92,7 @@ await withAdminWrite(db, async (tx) => {
 });
 ```
 
-`withAdminWrite` refuses a SUPERUSER/BYPASSRLS role before it ever assumes it — a
+`withAdminWrite` refuses a SUPERUSER/BYPASSRLS role before it ever assumes it, a
 misconfigured role fails closed rather than silently widening access.
 
 ## Entitlement gate
@@ -105,15 +105,15 @@ if (!holdsOrgControls(activeEntitlementIds)) {
 }
 ```
 
-`activeEntitlementIds` must already be filtered to active grants — the predicate never reads
+`activeEntitlementIds` must already be filtered to active grants, the predicate never reads
 the database itself, and an empty set denies.
 
 ## Composing with the base
 
 org-controls composes DOWN onto `@caisson/auth`, `@caisson/tenancy-rls`, and
-`@caisson/kernel` — buyer session resolution and buyer tenant isolation are never
+`@caisson/kernel`: buyer session resolution and buyer tenant isolation are never
 reimplemented here, only extended: the owner-only MANAGE surface and the cross-tenant
 admin-write role sit beside those open primitives, never in place of them.
 
 org-controls is a $249 standalone commercial module (also included in the Everything
-bundle) — gate access to its surfaces with `holdsOrgControls`.
+bundle), gate access to its surfaces with `holdsOrgControls`.

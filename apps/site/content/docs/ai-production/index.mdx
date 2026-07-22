@@ -1,6 +1,6 @@
 ---
 title: AI-Production
-description: The production-rigor layer for AI features — token metering with spend caps, a CI eval gate, PII/moderation guardrails, and a versioned prompt registry.
+description: The production-rigor layer for AI features, token metering with spend caps, a CI eval gate, PII/moderation guardrails, and a versioned prompt registry.
 ---
 
 The **AI-Production** bundle is the layer between "the model call works in dev" and "the model
@@ -19,23 +19,23 @@ HTTP/1.1 402 Payment Required
 }
 ```
 
-The cap is enforced before the provider is called, in integer credit units, fail-closed — over
+The cap is enforced before the provider is called, in integer credit units, fail-closed, over
 budget returns `402`, never an unbounded charge.
 
 ## What's in the bundle
 
-- **[ai-meter](/docs/ai-production/ai-meter)** — Postgres-atomic reserve/reconcile token
+- **[ai-meter](/docs/ai-production/ai-meter)**: Postgres-atomic reserve/reconcile token
   metering, per-tenant spend caps, and a circuit breaker. Integer credits only, no floats.
-- **[ai-evals](/docs/ai-production/ai-evals)** — a regression gate for prompt and model changes:
+- **[ai-evals](/docs/ai-production/ai-evals)**: a regression gate for prompt and model changes:
   `defineEval()` scores a dataset, `gateAgainstBaseline()` fails the build on a real score drop.
-- **[guardrails](/docs/ai-production/guardrails)** — a fail-closed guard around every model call:
+- **[guardrails](/docs/ai-production/guardrails)**: a fail-closed guard around every model call:
   PII redaction, a swappable moderator, and an unconditional secret-shape gate.
-- **[prompt-registry](/docs/ai-production/prompt-registry)** — append-only prompt versioning
+- **[prompt-registry](/docs/ai-production/prompt-registry)**: append-only prompt versioning
   with a mutable alias pointer, so promoting or rolling back a prompt is a pointer move, not a
   redeploy.
-- **[credits](/docs/ai-production/credits)** — the integer credit wallet the spend caps debit
+- **[credits](/docs/ai-production/credits)**: the integer credit wallet the spend caps debit
   against: append-only ledger, debit-before-spend, fail-closed `402` on an empty balance.
-- **[field-crypto](/docs/provenance/field-crypto)** — per-tenant field encryption, shared with
+- **[field-crypto](/docs/provenance/field-crypto)**: per-tenant field encryption, shared with
   the Compliance, Local-first, and Provenance bundles, for any prompt input or output you store.
 
 ## Install
@@ -47,7 +47,7 @@ cd caisson-app
 bun install
 ```
 
-`--edition ai-production` auto-selects the AI-Production bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+`--edition ai-production` auto-selects the AI-Production bundle's current modules, the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
 
 ## How it composes
 
@@ -70,11 +70,11 @@ wallet is the ledger the spend cap debits against.
 
 AI-Production reads the tenant id from `@caisson/tenancy-rls`'s bound context, so a spend cap is
 never checked against the wrong tenant's budget. Guardrails and the eval harness run independent
-of billing — wire `@caisson/billing` separately if a spend cap should also gate a subscription
+of billing, wire `@caisson/billing` separately if a spend cap should also gate a subscription
 tier.
 
 ## Entitlement
 
 AI-Production is a commercial bundle (`LicenseRef-Caisson-Commercial`). Buy the bundle, or any
-member module à la carte — a purchase grants the module's entitlement id, checked offline against
+member module à la carte, a purchase grants the module's entitlement id, checked offline against
 the license.

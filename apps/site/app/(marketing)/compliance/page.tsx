@@ -247,7 +247,7 @@ export default function CompliancePage() {
       {/* ===== What it composes ===== */}
       <Reveal>
         <Section
-          eyebrow="What it composes"
+          title="What it composes"
           lede="The Compliance bundle's core is a real runtime composition of ten @caisson/* packages, not a bundle of marketing copy: kernel (typed config, the SHA-256 chain primitive, append-only versioning), tenancy-rls (the fail-closed RLS guard), field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption), audit-worm (the append-only audit chain plus the S3 Object-Lock WORM adapter), migrate (the one migration assembler and runner, forward-only and checksum-drift-safe), alerting plus retention-runner (deduped alert delivery and policy-driven data retention), and the three carves, compliance-core (the evidence engine), frameworks-pack (the SOC 2 and HIPAA control mappings, PCI DSS and GDPR crosswalk exports, and OSCAL export), and signing-primitive (detached Ed25519 + RFC-3161 signing). alerting and retention-runner are wired in as real workspace dependencies and re-exported through the bundle's own index, not asserted in a manifest and left uncomposed. The purchase also includes three standalone compliance modules that run beside the composed core: access-review (attested access-review campaigns), risk-register (the AI risk register), and trust-page (the customer-facing trust page)."
         />
       </Reveal>
@@ -263,7 +263,6 @@ export default function CompliancePage() {
       {/* ===== The thirteen member packages ===== */}
       <Reveal>
         <Section
-          eyebrow="The composition"
           title="Thirteen packages, one bundle."
           lede="Ten members form the composed runtime core, real workspace dependencies, not manifest claims. The other three are standalone compliance modules included in the same purchase. The ones also sold standalone carry their own price."
         >
@@ -278,7 +277,6 @@ export default function CompliancePage() {
       {/* ===== Who it's for ===== */}
       <Reveal>
         <Section
-          eyebrow="Who it's for"
           title="Teams that need the controls before the first customer, not after."
           lede="Teams building regulated SaaS (HIPAA, SOC 2, or both) who need the technical access and integrity controls in place before the first customer shares a row, not backfilled after a pen test or a procurement questionnaire flags the gap. Retrofitting RLS, WORM, and an audit chain into a live multi-tenant database is a migration with customer data on the line; wiring them in on day one is a schema decision."
           band="tint"
@@ -343,7 +341,6 @@ export default function CompliancePage() {
       {/* ===== The five controls (evidence cards) ===== */}
       <Reveal>
         <Section
-          eyebrow="What ships in the box"
           title="Five technical controls, each with its proof."
           lede="No diagrams standing in for behaviour. The artifact carries the claim, and each control names the framework clause it satisfies."
         >
@@ -404,7 +401,6 @@ export default function CompliancePage() {
       {/* ===== Honesty boundary: technical vs administrative ===== */}
       <Reveal>
         <Section
-          eyebrow="The honesty boundary"
           title="Caisson ships the controls. Your auditor signs the certificate."
           lede="Caisson ships the technical controls SOC 2 CC6.x / CC7.2 and HIPAA §164.312 require, and generates the dated evidence bundle mapped to those named controls. It does not (and cannot) make you certified: the administrative controls (HR, vendor management, incident response) and the audit engagement itself stay with you and your auditor."
           band="surface"
@@ -484,7 +480,6 @@ export default function CompliancePage() {
       {/* ===== How it's proven: the real CI conformance gate + precise scope ===== */}
       <Reveal>
         <Section
-          eyebrow="How compliance is proven"
           title="The evidence format is schema-checked in CI, on every push."
           lede="Not a claim you take on trust: every push runs an OSCAL conformance gate. The evidence pack is exported to NIST OSCAL v1.2.2 and round-tripped JSON → XML → schema-validate against the published OSCAL schema, so a malformed or drifted export fails the build before it ships."
           band="tint"
@@ -528,21 +523,14 @@ export default function CompliancePage() {
 
       {/* ===== FAQ (visible + JSON-LD) ===== */}
       <Reveal>
-        <Section
-          eyebrow="Procurement questions"
-          title="What a security review asks first."
-        >
+        <Section title="What a security review asks first.">
           <Faq items={FAQ} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
       </Reveal>
 
       {/* ===== Pricing / how it ships ===== */}
       <Reveal>
-        <Section
-          eyebrow="How Compliance is sold"
-          title="Own the source, or track the frameworks."
-          band="tint"
-        >
+        <Section title="Own the source, or track the frameworks." band="tint">
           <Card accent className="cs-elevate-md">
             <div
               style={{
@@ -604,7 +592,6 @@ export default function CompliancePage() {
       {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
       <Reveal>
         <Section
-          eyebrow="Trial path"
           title="Prove fit in week one."
           lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
@@ -615,7 +602,7 @@ export default function CompliancePage() {
       </Reveal>
 
       {/* ===== Get started ===== */}
-      <Section eyebrow="Get started" title="Start fail-closed.">
+      <Section title="Start fail-closed.">
         <div style={{ maxWidth: "36rem", marginTop: "var(--cs-space-6)" }}>
           <Terminal
             label="shell"
