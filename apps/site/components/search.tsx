@@ -68,6 +68,17 @@ export default function DefaultSearchDialog(props: SharedProps) {
     >
       <SearchDialogOverlay />
       <SearchDialogContent
+        onOpenAutoFocus={(event) => {
+          // The Ask-AI tab (ADR-0234) added a tablist BEFORE the input, so Radix's default "focus
+          // the first tabbable on open" landed on the Search TAB button, not the query field
+          // (browser-audit 9ffeca4b, warn). Redirect first focus to the search input. The Ask tab
+          // keeps its own AskAiPanel focusOnOpen, so only override for the search tab.
+          if (tab !== "search") return;
+          event.preventDefault();
+          (event.currentTarget as HTMLElement | null)
+            ?.querySelector<HTMLInputElement>("input")
+            ?.focus();
+        }}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           triggerRef.current?.focus();
