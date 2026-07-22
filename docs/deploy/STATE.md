@@ -33,6 +33,17 @@ The full ADR-0374/0375 visual-remediation phase merged and deployed in one sitti
   (RAILWAY_TOKEN still unset — arms at cutover C2); manual `railway up` remains the
   real deploy path.
 
+**Same-day residual batch (ADR-0376, PR 322 squash-merged `56e46f1c`):** the residual
+picker's locks 1+3 built and deployed the same sitting — legal "On this page" jump-nav
+rail (rendered-geometry proof green pre-merge), waitlist Turnstile `onReady`
+sibling-mount fix, harness third-party console filter, light `surface-1` L step
+(contrast matrix 60/60), admin foundations explicit 3-up grid. Opus SHIP review PASS
+(two P3s applied in-branch); CI 16/16 green. **caisson-site redeployed** (`Deploy
+complete`; TOC rail + section ids verified live, healthz 200) and **caisson-admin
+redeployed** (deployment SUCCESS; edge 307 to CF-Access) at `56e46f1c`. The lock-4
+standard live re-audit + final ledger reconcile ran as the phase-closing act (see the
+tracker row for the resulting ledger state).
+
 ## 2026-07-20 (third wave) — compliance-gap SKU arming: two trains + catalog debut
 
 The ADR-0373 arming executed end-to-end in one sitting (checklists

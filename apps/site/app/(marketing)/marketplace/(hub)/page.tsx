@@ -86,7 +86,6 @@ export default function MarketplacePage() {
 
       {/* ===== The catalog — one surface ===== */}
       <Section
-        eyebrow="The catalog"
         title="Browse the whole library in one place."
         lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and build a stack, the running total points at the bundle that covers your picks for less."
       >
