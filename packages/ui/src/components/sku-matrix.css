@@ -74,6 +74,25 @@
   width: 50%;
 }
 
+/* A compare table's value-column headers are competitor names, uppercased — some are a single long
+ * token ("SECUREFRAME", "TURBOSTARTER", "COMP AI") that cannot break at a word boundary, so at 390px
+ * the even fixed-layout split cramped the column below the word's width and `overflow-wrap: break-word`
+ * snapped the header MID-WORD (visual-audit dc77edb2, high). Floor the exactly-3-col table's width so
+ * those headers fit on one line and any real overflow scrolls inside `.cs-matrix__wrap` (the sticky
+ * first column + fade cue already there) — the same "table scrolls, never breaks a word" contract the
+ * wide matrix and the admin read-tables use, instead of wrapping in place which can't help a lone long
+ * word. On a >=34rem container `width: 100%` still wins, so tablet/desktop are unaffected. */
+.cs-matrix:has(thead th:nth-child(3)):not(:has(thead th:nth-child(4))) {
+  min-width: 34rem;
+}
+
+/* Headers never break mid-word regardless of the width floor above — wrap only at real word
+ * boundaries. Body cells keep `overflow-wrap: break-word` (set on th/td above) so a long identifier
+ * token in a value cell still wraps inside its column rather than widening the table. */
+.cs-matrix thead th {
+  overflow-wrap: normal;
+}
+
 /* Sticky first column (row labels) — the anchor while the wrap scrolls horizontally on mobile.
  * Needs an opaque background or the scrolled columns show through; both current callers sit on
  * the plain page background (same reasoning as the `.cs-matrix__frame::after` fade). */
