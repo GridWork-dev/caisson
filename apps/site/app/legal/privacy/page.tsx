@@ -1,6 +1,7 @@
 import { buildMetadata } from "@/lib/metadata";
 import { Card, Section } from "@/components";
 import { prose } from "../prose";
+import { LegalToc, type LegalTocItem } from "../toc";
 
 export const metadata = buildMetadata({
   title: "Privacy Policy",
@@ -9,9 +10,25 @@ export const metadata = buildMetadata({
   path: "/legal/privacy",
 });
 
+const TOC: readonly LegalTocItem[] = [
+  { id: "what-we-collect", label: "What we collect" },
+  { id: "why-we-collect-it", label: "Why we collect it" },
+  { id: "lawful-basis-for-processing", label: "Lawful basis for processing" },
+  { id: "how-long-we-keep-it", label: "How long we keep it" },
+  { id: "where-your-data-lives", label: "Where your data lives" },
+  {
+    id: "access-erasure-and-portability",
+    label: "Access, erasure, and portability",
+  },
+  { id: "changes-to-this-policy", label: "Changes to this policy" },
+  { id: "get-in-touch", label: "Get in touch" },
+];
+
 export default function PrivacyPage() {
   return (
     <>
+      <LegalToc items={TOC} />
+
       {/* Page header */}
       <Section eyebrow="Legal" title="Privacy Policy" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
@@ -44,7 +61,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* What we collect */}
-      <Section title="What we collect">
+      <Section id="what-we-collect" title="What we collect">
         <h3 style={prose.h3}>Email address</h3>
         <p style={prose.paragraph}>
           When you subscribe to product updates or complete a purchase on this
@@ -101,7 +118,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Why we collect it */}
-      <Section title="Why we collect it" band="tint">
+      <Section id="why-we-collect-it" title="Why we collect it" band="tint">
         <h3 style={prose.h3}>
           Email: product updates and account communications
         </h3>
@@ -124,7 +141,10 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Lawful basis */}
-      <Section title="Lawful basis for processing">
+      <Section
+        id="lawful-basis-for-processing"
+        title="Lawful basis for processing"
+      >
         <p style={prose.paragraph}>
           For users in the European Economic Area (EEA) or the United Kingdom,
           processing is carried out on the following bases:
@@ -159,7 +179,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Retention */}
-      <Section title="How long we keep it" band="tint">
+      <Section id="how-long-we-keep-it" title="How long we keep it" band="tint">
         <p style={prose.paragraph}>
           We retain product-update subscriber email addresses until one of the
           following occurs:
@@ -189,7 +209,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Data location */}
-      <Section title="Where your data lives">
+      <Section id="where-your-data-lives" title="Where your data lives">
         <h3 style={prose.h3}>Payment and order data: Paddle</h3>
         <p style={prose.paragraph}>
           Purchases are processed by Paddle, acting as merchant of record and
@@ -237,7 +257,11 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Your rights */}
-      <Section title="Access, erasure, and portability" band="tint">
+      <Section
+        id="access-erasure-and-portability"
+        title="Access, erasure, and portability"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           If you are in the EEA, UK, or another jurisdiction with data
           protection rights, you have the following rights with respect to
@@ -283,7 +307,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Changes */}
-      <Section title="Changes to this policy">
+      <Section id="changes-to-this-policy" title="Changes to this policy">
         <p style={prose.paragraph}>
           We will post material changes to this page and update the &ldquo;Last
           updated&rdquo; date. If the change materially affects how we use your
@@ -294,7 +318,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Contact */}
-      <Section title="Get in touch" band="tint">
+      <Section id="get-in-touch" title="Get in touch" band="tint">
         <p style={prose.paragraph}>
           Caisson Software LLC
           <br />

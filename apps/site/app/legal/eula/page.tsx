@@ -1,6 +1,7 @@
 import { buildMetadata } from "@/lib/metadata";
 import { Card, Section } from "@/components";
 import { prose } from "../prose";
+import { LegalToc, type LegalTocItem } from "../toc";
 
 export const metadata = buildMetadata({
   title: "EULA",
@@ -9,9 +10,38 @@ export const metadata = buildMetadata({
   path: "/legal/eula",
 });
 
+const TOC: readonly LegalTocItem[] = [
+  { id: "parties-and-definitions", label: "Parties and definitions" },
+  { id: "license-grant", label: "License grant" },
+  { id: "restrictions", label: "Restrictions" },
+  {
+    id: "entitlement-and-offline-verification",
+    label: "Entitlement and offline verification",
+  },
+  { id: "fees-and-payment", label: "Fees and payment" },
+  { id: "term-and-termination", label: "Term and termination" },
+  {
+    id: "vendor-continuity",
+    label: "Vendor continuity and self-maintenance",
+  },
+  { id: "disclaimer-of-warranties", label: "Disclaimer of warranties" },
+  { id: "limitation-of-liability", label: "Limitation of liability" },
+  { id: "indemnification", label: "Indemnification" },
+  { id: "intellectual-property", label: "Intellectual property" },
+  { id: "confidentiality", label: "Confidentiality" },
+  { id: "assignment-and-transfer", label: "Assignment and transfer" },
+  { id: "governing-law-and-disputes", label: "Governing law and disputes" },
+  { id: "entire-agreement", label: "Entire agreement" },
+  {
+    id: "licensing-and-legal-questions",
+    label: "Licensing and legal questions",
+  },
+];
+
 export default function EulaPage() {
   return (
     <>
+      <LegalToc items={TOC} />
       {/* Page header */}
       <Section eyebrow="Legal" title="End User License Agreement" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
@@ -50,7 +80,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 1. Parties & definitions */}
-      <Section title="Parties and definitions">
+      <Section id="parties-and-definitions" title="Parties and definitions">
         <p style={prose.paragraph}>
           This End User License Agreement (&ldquo;Agreement&rdquo; or
           &ldquo;EULA&rdquo;) is between Caisson Software LLC, a Georgia limited
@@ -117,7 +147,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 2. License grant */}
-      <Section title="License grant" band="tint">
+      <Section id="license-grant" title="License grant" band="tint">
         <p style={prose.paragraph}>
           Subject to your compliance with this Agreement and full payment of
           applicable fees, Caisson grants you a{" "}
@@ -138,7 +168,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 3. Restrictions */}
-      <Section title="Restrictions">
+      <Section id="restrictions" title="Restrictions">
         <p style={prose.paragraph}>
           The license granted above is subject to the following restrictions.
           You agree not to:
@@ -175,7 +205,11 @@ export default function EulaPage() {
       </Section>
 
       {/* 4. Entitlement & offline verification */}
-      <Section title="Entitlement and offline verification" band="tint">
+      <Section
+        id="entitlement-and-offline-verification"
+        title="Entitlement and offline verification"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           Your Order generates an Entitlement record and a signed Ed25519
           offline license key covering the modules and bundles purchased. The
@@ -197,7 +231,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 5. Fees & payment */}
-      <Section title="Fees and payment">
+      <Section id="fees-and-payment" title="Fees and payment">
         <p style={prose.paragraph}>
           Fees are as displayed on caisson.sh at the time of your Order and are
           processed through our merchant of record, who handles payment
@@ -246,7 +280,11 @@ export default function EulaPage() {
       </Section>
 
       {/* 6. Term & termination */}
-      <Section title="Term and termination" band="tint">
+      <Section
+        id="term-and-termination"
+        title="Term and termination"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           This Agreement is effective from the date of your Order and continues
           until terminated as described below. The license grant for the
@@ -364,7 +402,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 7. Warranty disclaimer */}
-      <Section title="Disclaimer of warranties">
+      <Section id="disclaimer-of-warranties" title="Disclaimer of warranties">
         <Card style={{ marginTop: "var(--cs-space-4)" }}>
           <p style={{ ...prose.paragraph, marginTop: 0, ...prose.conspicuous }}>
             The Software is provided &ldquo;as is&rdquo; and &ldquo;as
@@ -387,7 +425,11 @@ export default function EulaPage() {
       </Section>
 
       {/* 8. Limitation of liability */}
-      <Section title="Limitation of liability" band="tint">
+      <Section
+        id="limitation-of-liability"
+        title="Limitation of liability"
+        band="tint"
+      >
         <Card style={{ marginTop: "var(--cs-space-4)" }}>
           <p style={{ ...prose.paragraph, marginTop: 0, ...prose.conspicuous }}>
             To the maximum extent permitted by applicable law, in no event will
@@ -420,7 +462,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 9. Indemnification */}
-      <Section title="Indemnification">
+      <Section id="indemnification" title="Indemnification">
         <p style={prose.paragraph}>
           You agree to indemnify, defend, and hold harmless Caisson and its
           officers, directors, employees, and contractors from any claim, loss,
@@ -438,7 +480,11 @@ export default function EulaPage() {
       </Section>
 
       {/* 10. Intellectual property */}
-      <Section title="Intellectual property" band="tint">
+      <Section
+        id="intellectual-property"
+        title="Intellectual property"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           Caisson and its licensors retain all right, title, and interest in and
           to the Software, including all intellectual property rights therein.
@@ -462,7 +508,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 11. Confidentiality */}
-      <Section title="Confidentiality">
+      <Section id="confidentiality" title="Confidentiality">
         <p style={prose.paragraph}>
           The Software&apos;s non-public source code, and any non-public
           technical or business information Caisson shares with you in
@@ -483,7 +529,11 @@ export default function EulaPage() {
       </Section>
 
       {/* 12. Assignment & transfer */}
-      <Section title="Assignment and transfer" band="tint">
+      <Section
+        id="assignment-and-transfer"
+        title="Assignment and transfer"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           You may not assign or transfer this Agreement or your license without
           Caisson&apos;s prior written consent, except that you may transfer
@@ -500,7 +550,10 @@ export default function EulaPage() {
       </Section>
 
       {/* 13. Governing law */}
-      <Section title="Governing law and disputes">
+      <Section
+        id="governing-law-and-disputes"
+        title="Governing law and disputes"
+      >
         <p style={prose.paragraph}>
           This Agreement is governed by and construed in accordance with the
           laws of the State of Georgia, United States, without regard to its
@@ -519,7 +572,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 14. Entire agreement */}
-      <Section title="Entire agreement" band="tint">
+      <Section id="entire-agreement" title="Entire agreement" band="tint">
         <p style={prose.paragraph}>
           This Agreement, together with your Order confirmation and any
           applicable module- or bundle-specific terms referenced in your
@@ -542,7 +595,10 @@ export default function EulaPage() {
       </Section>
 
       {/* 15. Contact */}
-      <Section title="Licensing and legal questions">
+      <Section
+        id="licensing-and-legal-questions"
+        title="Licensing and legal questions"
+      >
         <p style={prose.paragraph}>
           For questions about this Agreement, transfer requests, or enterprise
           terms:
