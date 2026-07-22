@@ -130,7 +130,7 @@ export function AppShell({
             // identity (also the collapsed-state tooltip/aria-label — see AppShellNavItem),
             // while `href` is caller-supplied routing data with no uniqueness guarantee (a
             // placeholder demo nav with repeated `href: "#"` duplicated this key and produced
-            // the classic React "two children with the same key" warning — CAISSON-141).
+            // the classic React "two children with the same key" warning).
             <NavLink
               key={item.label}
               item={item}
