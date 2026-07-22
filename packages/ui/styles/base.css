@@ -17,6 +17,17 @@ html {
   color-scheme: dark;
 }
 
+/* ADR-0374: OS-seed prong for `color-scheme` — an unpinned light-OS visitor gets native UA chrome
+ * (form controls, scrollbars) flipped light to match the token cascade, instead of the dark default
+ * showing through under light --cs-* tokens. Kit-level root of the same 3-prong gap the site's
+ * global.css re-assert also carries (that re-assert wins on the site; this covers every other kit
+ * consumer). Mirrors the tokens.css `:root:not([data-theme="dark"])` OS-seed selector. */
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) {
+    color-scheme: light;
+  }
+}
+
 [data-theme="light"] {
   color-scheme: light;
 }

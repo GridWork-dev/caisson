@@ -193,6 +193,17 @@ html {
   color-scheme: dark;
 }
 
+/* ADR-0374: `color-scheme` (native UA chrome — form-control fill, scrollbars, date pickers) had only
+ * two prongs — this dark default + the `[data-theme="light"]` pin below — never an OS-seed prong. An
+ * UNPINNED visitor whose OS prefers light got the --cs-* tokens correctly flipped light (tokens.css's
+ * documented 3-prong cascade) while native widgets stayed dark-chromed underneath. This third prong
+ * closes the same gap the token cascade already closes, mirroring apps/admin's globals.css. */
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) {
+    color-scheme: light;
+  }
+}
+
 [data-theme="light"] {
   color-scheme: light;
 }
@@ -370,6 +381,20 @@ kbd,
   padding-block: var(--cs-space-16);
   color: var(--cs-fg-muted);
   font-size: var(--cs-text-sm);
+}
+
+/* Footer group headings (Bundles / Marketplace / Resources / Legal / Product updates). These were
+ * borrowing `.cs-status` — a live-status "glyph + label" component (`display: inline-flex` + `gap`) —
+ * as a plain-text heading. inline-flex keeps the trailing letter-spacing a normal block heading trims
+ * at line end, so a header read looser/less even than the accompanying link list (visual-audit
+ * 06bd6da4 / a72c0f97). A purpose-built block heading normalizes every column header identically. */
+.cs-footer-heading {
+  display: block;
+  margin-bottom: var(--cs-space-3);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  color: var(--cs-fg-muted);
 }
 
 /* `minmax(0, 1fr)` (not bare `1fr`, same reasoning as `.cs-hero__lead`/`.cs-hero__artifact` in
