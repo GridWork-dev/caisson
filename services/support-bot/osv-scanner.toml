@@ -2,7 +2,7 @@
 # ADR-0315). osv-scanner config does NOT propagate from the repo root into child directories, so
 # the accept for a finding in this dir's uv.lock must live here, beside the lockfile. See the
 # matching dated row in docs/security/tooling-playbook.md (Accepted findings).
-
-[[IgnoredVulns]]
-id = "CVE-2025-71176"
-reason = "pytest 8.4.2, a DEV-ONLY test dependency (never shipped in the support-bot runtime image). The advisory is a local predictable-tmpdir-path DoS — not remotely reachable. The only fix is pytest 9.x (major), outside the deliberately-pinned `pytest>=8.3,<9` range and requiring a coupled pytest-asyncio major bump; deferred rather than bumped under the shared checkout. Accepted 2026-07-10."
+#
+# No active ignores. CVE-2025-71176 (pytest <9, dev-only tmpdir DoS) was accepted 2026-07-10 while
+# pinned `pytest>=8.3,<9`; pytest is now 9.1.1 (fixed), so the accept was removed as stale —
+# osv-scanner warns on an unused ignore entry.

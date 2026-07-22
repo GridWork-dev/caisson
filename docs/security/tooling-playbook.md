@@ -192,7 +192,16 @@ scan.sh change; each entry carries a reasoned statement (an accept, never a blan
 
 **Fixed by bump (NOT accepted)** — root `package.json` `overrides`, so both scanners simply stop
 reporting them: `systeminformation` 5.23.8 → `^5.31.6` (CVE-2025-68154 / -2026-26280 / -2026-26318 /
--2026-44724) and `ws` 8.17.1+8.18.0 → `^8.21.0` (CVE-2026-45736 / -2026-48779).
+-2026-44724) and `ws` 8.17.1+8.18.0 → `^8.21.0` (CVE-2026-45736 / -2026-48779). Also (2026-07-22):
+`sharp` 0.34.5 → `^0.35.0` (GHSA-f88m-g3jw-g9cj, via next's optional peer dep); `@hono/node-server`
+1.19.14 → `^2.0.10` (GHSA-frvp-7c67-39w9 + GHSA-9mqv-5hh9-4cgg, via `@modelcontextprotocol/sdk` —
+major bump, verified safe: only the stable `getRequestListener()` export is used, `upgradeWebSocket`
+is never called so the DoS advisory isn't even reachable, and upstream's v2 release notes confirm
+the public API is unchanged); `engine.io` 6.5.5 → `^6.6.9` (GHSA-r635-g3xr-vw7x, deduped onto the
+same version already used by the `socket.io@4.8.3` path, displacing the stale `socket.io@4.7.4` pin
+nested under `@trigger.dev/core`); `fast-uri` 3.1.3 → `^3.1.4` (GHSA-v2hh-gcrm-f6hx, via `ajv`, which
+already allows the fix). `@hono/node-server@2.0.10` and `fast-uri@3.1.4` are both inside the 7-day
+`minimumReleaseAge` window as of 2026-07-22 — dated excludes in `bunfig.toml`, removed once aged.
 
 **Accepted (SPEC-security-scan-findings-triage, ADR-0315):**
 
@@ -203,7 +212,6 @@ reporting them: `systeminformation` 5.23.8 → `^5.31.6` (CVE-2025-68154 / -2026
 | CVE-2026-8769                  | `@ai-sdk/provider-utils` 3.0.27/28, `bun.lock` (osv)                          | No fixed version published. Re-evaluate when a fix ships.                                                                                                                                                                                | 2026-07-10 |
 | CVE-2026-54285                 | `@opentelemetry/core` 2.0.1, `bun.lock` (osv)                                 | trigger.dev-nested; main OTel suite already on fixed 2.8.0. Header over-allocation bounded by Node's 16KB header cap; forcing 2.8.0 risks trigger.dev telemetry.                                                                         | 2026-07-10 |
 | CVE-2026-45772, CVE-2026-45773 | `turbo` 2.5.8, `bun.lock` (osv)                                               | ACE only when running turbo in an UNTRUSTED repo with malicious `.yarnrc.yml`; our CI runs the trusted first-party repo only. Fix 2.9.14 → Renovate.                                                                                     | 2026-07-10 |
-| CVE-2025-71176                 | `pytest` 8.4.2, `services/support-bot/uv.lock` (osv)                          | Dev-only test dep, local tmpdir DoS. Only fix is pytest 9 (major), outside the pinned `<9` range + coupled pytest-asyncio bump.                                                                                                          | 2026-07-10 |
 | AVD-DS-0002                    | `services/docs/Dockerfile` (trivy misconfig)                                  | Container must enter as root to chown the root-owned Railway volume mount, then drops to uid 1000 `bun` via setpriv (entrypoint + healthcheck). Effective runtime user is non-root; `USER bun` would break the chown + the setpriv drop. | 2026-07-10 |
 | github-pat, private-key        | `packages/local-store/src/golden.ts` + `__golden__/scrub.json` (trivy secret) | Golden scrub fixtures: deliberately-unsafe fake credentials that are the INPUT to the secret-scrubber's golden-file regression. Security-floor carve-out for test files exercising deliberately unsafe input.                            | 2026-07-10 |
 
