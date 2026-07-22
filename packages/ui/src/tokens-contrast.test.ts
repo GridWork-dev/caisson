@@ -1,17 +1,27 @@
 import { describe, expect, test } from "bun:test";
-import { formatHex, parse, toGamut, wcagContrast } from "culori";
+import { clampRgb, formatHex, parse, toGamut, wcagContrast } from "culori";
 
 /**
- * Browser-equivalent contrast (visual-audit): our tokens are authored in OKLCH, but a browser
- * gamut-maps every out-of-sRGB OKLCH into the display gamut before painting — and the clamped
- * colour has a different luminance than the ideal OKLCH. Computing `wcagContrast` on the raw OKLCH
- * string therefore checks a colour the user never sees; a value can pass the gate at 4.6:1 raw and
- * render at 4.4:1. Map each token to its sRGB hex first (culori `toGamut`, the same chroma-reducing
- * clamp browsers use) so the gate asserts what actually ships.
+ * Browser-equivalent contrast (ADR-0374 Decision 1): our tokens are authored in OKLCH, but a browser
+ * gamut-maps every out-of-sRGB OKLCH into the display gamut before painting — and the clamped colour
+ * has a different luminance than the ideal OKLCH. Computing `wcagContrast` on the raw OKLCH string
+ * therefore checks a colour the user never sees; a value can pass the gate at 4.6:1 raw and render at
+ * 4.4:1. Map each token to its rendered sRGB hex first, then score.
+ *
+ * There is no single "the browser's gamut map": the naive per-channel clip (`clampRgb`) and the CSS
+ * Color 4 chroma-reducing search (`toGamut`) disagree on an out-of-gamut colour (e.g. the light accent
+ * → #007491 vs #00728a, 4.413 vs 4.568 against accent-tint). Anchoring the gate to ONE method would
+ * re-create the exact blind spot this fix closes, one layer up — so the gate asserts the MIN of BOTH
+ * mappings (kimi-k3 amendment): a pairing must clear its threshold under whichever a real engine picks.
  */
-const gamutHex = (c: string) => formatHex(toGamut("rgb", "oklch")(parse(c)!));
+const toGamutFn = toGamut("rgb", "oklch");
+const hexClamp = (c: string) => formatHex(clampRgb(parse(c)!));
+const hexCss4 = (c: string) => formatHex(toGamutFn(parse(c)!));
 const contrast = (fg: string, bg: string) =>
-  wcagContrast(gamutHex(fg), gamutHex(bg));
+  Math.min(
+    wcagContrast(hexClamp(fg), hexClamp(bg)),
+    wcagContrast(hexCss4(fg), hexCss4(bg)),
+  );
 
 import {
   darkTheme,
