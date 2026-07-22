@@ -128,7 +128,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
     },
     light: {
       bg: "oklch(0.99 0.003 160)",
-      surface1: "oklch(0.975 0.005 160)",
+      surface1: "oklch(0.965 0.005 160)",
       surface2: "oklch(0.95 0.006 160)",
       border: "oklch(0.88 0.008 160)",
       borderStrong: "oklch(0.80 0.010 160)",
@@ -171,7 +171,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
     },
     light: {
       bg: "oklch(0.99 0.002 235)",
-      surface1: "oklch(0.975 0.003 235)",
+      surface1: "oklch(0.965 0.003 235)",
       surface2: "oklch(0.95 0.004 235)",
       border: "oklch(0.88 0.006 235)",
       borderStrong: "oklch(0.80 0.008 235)",

@@ -43,20 +43,6 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
     }
   }, [state]);
 
-  // Sibling-mount race (ADR-0376): two UpdatesForm instances on one page (footer + body,
-  // e.g. /plans) each render the same <Script> — next/script dedupes the tag and only the
-  // FIRST mounter's onLoad fires, so the second form's `turnstileReady` never flipped and
-  // its widget never rendered. Same detect-the-global fallback as ask-ai/use-turnstile.ts.
-  useEffect(() => {
-    if (
-      TURNSTILE_SITE_KEY &&
-      !turnstileReady &&
-      window.turnstile !== undefined
-    ) {
-      setTurnstileReady(true);
-    }
-  }, [turnstileReady]);
-
   useEffect(() => {
     if (
       !TURNSTILE_SITE_KEY ||
@@ -197,10 +183,15 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
       />
       {TURNSTILE_SITE_KEY && (
         <>
+          {/* onReady, not onLoad (ADR-0376 sibling-mount race): two UpdatesForm instances
+              on one page (footer + body, e.g. /plans) render the same <Script> — next/script
+              dedupes the tag and fires onLoad only for the FIRST mounter, so the second
+              form's widget never rendered. onReady fires per-instance, on mount and after
+              the deduped script loads, covering fresh loads and client-side re-nav both. */}
           <Script
             src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
             strategy="afterInteractive"
-            onLoad={() => setTurnstileReady(true)}
+            onReady={() => setTurnstileReady(true)}
           />
           {/* No aria-label: it's prohibited on a role-less div (axe aria-prohibited-attr);
               the Turnstile iframe injected here names itself. */}
