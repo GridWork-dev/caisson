@@ -15,7 +15,18 @@ export default function NotFound() {
   return (
     <>
       <SiteNav />
-      <main id="main-content">
+      {/* Center the terse 404 content in the viewport instead of pinning it to the top with a large
+          empty region down to the footer (visual-audit dead-space). Left-aligned copy stays (dev-kit
+          register); only the vertical void is filled. */}
+      <main
+        id="main-content"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          minHeight: "70vh",
+        }}
+      >
         <Section flush>
           <p
             className="cs-eyebrow"

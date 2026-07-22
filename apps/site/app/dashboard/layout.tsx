@@ -54,7 +54,7 @@ export default async function DashboardLayout({
   // mobile off-canvas drawer, so a mobile user can always reach it even when the topbar is tight.
   const signOutForm = (
     <form action="/api/auth/sign-out" method="post" style={{ margin: 0 }}>
-      <Button type="submit" variant="ghost">
+      <Button type="submit" variant="ghost" style={{ whiteSpace: "nowrap" }}>
         Sign out
       </Button>
     </form>
@@ -108,7 +108,7 @@ export default async function DashboardLayout({
             fontFamily: "var(--cs-font-mono)",
           }}
         >
-          {session.accountId}
+          Account: {session.accountId}
         </span>
       )}
       {signOutForm}

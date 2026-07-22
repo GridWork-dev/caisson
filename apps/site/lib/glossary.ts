@@ -5,9 +5,31 @@
 //
 // `GLOSSARY_TERMS` is compile-time-static in-repo source (ADR-0002 carve-out, renderer SPEC §4) —
 // no Zod parse layer; every term is type-checked at build, not validated at runtime.
-import { createElement } from "react";
+import { createElement, Fragment, type ReactNode } from "react";
 
 import type { PageSection, PageSpec } from "./page-sections";
+
+/**
+ * Render inline `` `code` `` markdown in glossary prose as styled `<code>` (visual-audit: the
+ * backticks were shipping as literal grave-accent glyphs). Deliberately tiny — only paired single
+ * backticks, no other markdown — because that is the entire syntax glossary prose uses; a full
+ * markdown parser would be overkill for one construct. Segments at odd split indices are the code
+ * spans. Plain string in, plain string out when there are no backticks (keeps meta/JSON-LD callers,
+ * which pass the raw field, unaffected — this runs only on the visible lede/body).
+ */
+export function renderInlineCode(text: string): ReactNode {
+  const parts = text.split(/`([^`]+)`/);
+  if (parts.length === 1) return text;
+  return createElement(
+    Fragment,
+    null,
+    ...parts.map((seg, i) =>
+      i % 2 === 1
+        ? createElement("code", { key: i, className: "cs-code-inline" }, seg)
+        : seg,
+    ),
+  );
+}
 
 export type GlossaryCluster =
   "compliance" | "security" | "licensing" | "ai-infra";
@@ -137,17 +159,17 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Append-only audit log",
     cluster: "compliance",
     definition:
-      "An append-only audit log lets entries be inserted but never altered or deleted — enforced at the database-privilege level, not just app code. Caisson hash-chains each entry to its predecessor in the kernel, then the Compliance edition's audit-worm package anchors the chain's length and tip hash write-once to WORM storage, so tampering, reordering, or truncation each surface on verify.",
+      "An append-only audit log lets entries be inserted but never altered or deleted, enforced at the database-privilege level, not just app code. Caisson hash-chains each entry to its predecessor in the kernel, then the Compliance edition's audit-worm package anchors the chain's length and tip hash write-once to WORM storage, so tampering, reordering, or truncation each surface on verify.",
     artifact: {
       label:
-        "verifyChain — recompute + compare each link, return the first broken index",
+        "verifyChain: recompute + compare each link, return the first broken index",
       lang: "ts",
-      code: "export function verifyChain(\n  entries: readonly AuditChainEntry[],\n  anchor?: AuditChainAnchor,\n): ChainVerification {\n  for (let i = 0; i < entries.length; i++) {\n    const entry = entries[i] as AuditChainEntry;\n    const expectedPrev =\n      i === 0 ? null : (entries[i - 1] as AuditChainEntry).hash;\n    if (entry.seq !== i) return { valid: false, brokenAt: i };\n    if (entry.prevHash !== expectedPrev) return { valid: false, brokenAt: i };\n    if (entry.hash !== hashChainLink(entry.prevHash, entry.payload)) {\n      return { valid: false, brokenAt: i };\n    }\n  }",
+      code: "export function verifyChain(\n  entries: readonly AuditChainEntry[],\n  anchor?: AuditChainAnchor,\n): ChainVerification {\n  for (let i = 0; i < entries.length; i++) {\n    const entry = entries[i] as AuditChainEntry;\n    const expectedPrev =\n      i === 0 ? null : (entries[i - 1] as AuditChainEntry).hash;\n    if (entry.seq !== i) return { valid: false, brokenAt: i };\n    if (entry.prevHash !== expectedPrev) return { valid: false, brokenAt: i };\n    if (entry.hash !== hashChainLink(entry.prevHash, entry.payload)) {\n      return { valid: false, brokenAt: i };\n    }\n  }\n  // Internal consistency alone can't see a truncated tail or a wholesale rewrite;\n  // a trusted WORM anchor catches both by asserting the committed length and tip.\n  if (anchor !== undefined) {\n    if (entries.length !== anchor.length) {\n      return { valid: false, brokenAt: Math.min(entries.length, anchor.length) };\n    }\n    const tip = entries[entries.length - 1] as AuditChainEntry;\n    if (tip.hash !== anchor.tipHash) {\n      return { valid: false, brokenAt: entries.length - 1 };\n    }\n  }\n  return { valid: true, brokenAt: null };\n}",
     },
     properties: [
       {
         title: "Immutable by privilege, not convention",
-        body: "The audit_chain_entry table's migration grants the app role SELECT + INSERT only — UPDATE and DELETE are never granted, and FORCE ROW LEVEL SECURITY holds even for the table owner. A compromised or buggy query can append a row; it cannot rewrite or drop one.",
+        body: "The audit_chain_entry table's migration grants the app role SELECT + INSERT only, UPDATE and DELETE are never granted, and FORCE ROW LEVEL SECURITY holds even for the table owner. A compromised or buggy query can append a row; it cannot rewrite or drop one.",
       },
       {
         title: "Each entry hashes over its predecessor",
@@ -155,7 +177,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "A WORM anchor catches what the chain alone can't",
-        body: "Internal consistency doesn't prove completeness — a truncated tail or a wholesale-rewritten chain can still verify clean on its own. Every append mints a {length, tipHash, genesisHash} commitment and writes it write-once to WORM object storage, so a length or tip mismatch on read-back proves truncation or rewrite.",
+        body: "Internal consistency doesn't prove completeness, a truncated tail or a wholesale-rewritten chain can still verify clean on its own. Every append mints a {length, tipHash, genesisHash} commitment and writes it write-once to WORM object storage, so a length or tip mismatch on read-back proves truncation or rewrite.",
       },
       {
         title: "No forked chains under concurrent writes",
@@ -172,19 +194,19 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           'What actually makes an audit trail immutable, versus just "we don\'t UPDATE it"?',
         answer:
-          "Three independent mechanisms: the DB grant withholds UPDATE/DELETE entirely, the hash chain makes any interior tamper recompute-detectable, and a WORM-stored anchor (length + tip hash) catches tail truncation or a full rewrite — the one failure mode a self-consistent chain can't see on its own.",
+          "Three independent mechanisms: the DB grant withholds UPDATE/DELETE entirely, the hash chain makes any interior tamper recompute-detectable, and a WORM-stored anchor (length + tip hash) catches tail truncation or a full rewrite, the one failure mode a self-consistent chain can't see on its own.",
       },
       {
         question:
           "Can someone truncate the tail of the log and have it still look valid?",
         answer:
-          "A truncated chain is still internally self-consistent — every remaining hash still recomputes — so no, an append-only log without an external anchor can't catch that on its own. Caisson closes the gap with a trusted {length, tipHash} commitment written to WORM storage after every append; verify checks the DB's current length against it.",
+          "A truncated chain is still internally self-consistent (every remaining hash still recomputes) so no, an append-only log without an external anchor can't catch that on its own. Caisson closes the gap with a trusted {length, tipHash} commitment written to WORM storage after every append; verify checks the DB's current length against it.",
       },
       {
         question:
           "Does an append-only audit log make us SOC 2 or HIPAA compliant?",
         answer:
-          "No — it ships the technical control (tamper-evident, privilege-enforced logging) and generates the evidence an auditor asks for; it does not itself constitute compliance. SOC 2 CC7.2 and HIPAA 164.312(b) both expect this class of control, and this is what satisfies the control, not the certification.",
+          "No, it ships the technical control (tamper-evident, privilege-enforced logging) and generates the evidence an auditor asks for; it does not itself constitute compliance. SOC 2 CC7.2 and HIPAA 164.312(b) both expect this class of control, and this is what satisfies the control, not the certification.",
       },
     ],
     sells: {
@@ -207,7 +229,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A tamper-evident hash chain is an append-only audit sequence where each entry's hash commits to the prior entry's hash plus its own payload, so editing, reordering, or deleting any interior entry breaks every hash computed after it. Verification recomputes the chain end to end and reports the first index where it breaks.",
     artifact: {
       label:
-        "hashChainLink() — the chain-link hash: SHA-256 over [prevHash, payload]",
+        "hashChainLink(): the chain-link hash: SHA-256 over [prevHash, payload]",
       lang: "ts",
       code: 'export function hashChainLink(\n  prevHash: string | null,\n  payload: JsonValue,\n): string {\n  return createHash("sha256")\n    .update(canonicalize([prevHash, payload]))\n    .digest("hex");\n}',
     },
@@ -218,7 +240,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Deterministic canonicalization",
-        body: "canonicalize() recursively sorts object keys before hashing, so two payloads that differ only in key order produce the identical hash. The chain is reproducible across machines, languages, and JSON serializers — the hash input, not just the algorithm, is load-bearing.",
+        body: "canonicalize() recursively sorts object keys before hashing, so two payloads that differ only in key order produce the identical hash. The chain is reproducible across machines, languages, and JSON serializers, the hash input, not just the algorithm, is load-bearing.",
       },
       {
         title: "Pinpoints the first break",
@@ -257,26 +279,26 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "S3 Object Lock is AWS S3's built-in WORM control: GOVERNANCE mode blocks delete/overwrite except for a privileged bypass caller; COMPLIANCE mode blocks it for everyone, including AWS account root, until a retain-until date. Caisson's audit-worm store writes every artifact with a conditional write-once PUT and a matching ObjectLockMode + retain-until date, so the S3 lock provably matches the database row.",
     artifact: {
       label:
-        "S3ArtifactStore.put — conditional write-once PUT + Object-Lock retention date",
+        "S3ArtifactStore.put: conditional write-once PUT + Object-Lock retention date",
       lang: "ts",
       code: 'assertSafeKey(key);\nconst command = new PutObjectCommand({\n  Bucket: this.bucket,\n  Key: key,\n  Body: body,\n  ContentLength: body.byteLength,\n  // Write-once: S3 fails a conditional PUT to an existing key with 412 (TM-H).\n  IfNoneMatch: "*",\n  // Retention lock: object date == DB `retain_until` (ADR-0051/0054).\n  ObjectLockMode: this.mode,\n  ObjectLockRetainUntilDate: opts.retainUntil,\n});\ntry {\n  await this.client.send(command);\n} catch (err) {\n  // 412 Precondition Failed == the key already holds an immutable object (WORM violation).\n  if (httpStatusOf(err) === 412) throw new ArtifactExistsError(key);\n  throw err;\n}',
     },
     properties: [
       {
         title: "Write-once PUT enforces WORM before any lock check",
-        body: 'Every put() is a conditional PutObjectCommand with IfNoneMatch: "*" — S3 answers 412 on an existing key, which the store maps to ArtifactExistsError. No overwrite code path exists independent of the lock itself.',
+        body: 'Every put() is a conditional PutObjectCommand with IfNoneMatch: "*", S3 answers 412 on an existing key, which the store maps to ArtifactExistsError. No overwrite code path exists independent of the lock itself.',
       },
       {
         title: "COMPLIANCE mode sits behind a three-belt fail-closed gate",
-        body: 'assertComplianceAllowed refuses COMPLIANCE under a test runner, refuses it outside NODE_ENV === "production", and refuses it without a typed IrreversibleComplianceOptIn naming the exact bucket — all three checked at construction, before any S3 call.',
+        body: 'assertComplianceAllowed refuses COMPLIANCE under a test runner, refuses it outside NODE_ENV === "production", and refuses it without a typed IrreversibleComplianceOptIn naming the exact bucket, all three checked at construction, before any S3 call.',
       },
       {
         title: "Retention only ever extends or escalates, never shortens",
-        body: "extendRetention rejects any date not strictly later than the current lock; escalateToCompliance rejects any date earlier than the current lock. Both read the authoritative lock via GetObjectRetention first — HeadObject silently omits lock fields without s3:GetObjectRetention, which would fail open.",
+        body: "extendRetention rejects any date not strictly later than the current lock; escalateToCompliance rejects any date earlier than the current lock. Both read the authoritative lock via GetObjectRetention first, HeadObject silently omits lock fields without s3:GetObjectRetention, which would fail open.",
       },
       {
         title: "The S3 lock date is the database row's date",
-        body: "ObjectLockRetainUntilDate is set to the caller's opts.retainUntil on every write, and metaFrom projects it straight back out on get/head — so the retain-until an auditor reads off the S3 object is the same value stored in the DB row, not a derived approximation.",
+        body: "ObjectLockRetainUntilDate is set to the caller's opts.retainUntil on every write, and metaFrom projects it straight back out on get/head, so the retain-until an auditor reads off the S3 object is the same value stored in the DB row, not a derived approximation.",
       },
     ],
     faq: [
@@ -284,23 +306,23 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "What's the difference between GOVERNANCE and COMPLIANCE Object Lock mode?",
         answer:
-          "GOVERNANCE is bypassable by an IAM caller holding s3:BypassGovernanceRetention; COMPLIANCE is not — not even the AWS account root can shorten or delete it before the retain-until date. Caisson's audit-worm store picks one mode per bucket (one evidence class) and gates COMPLIANCE behind a typed, explicit opt-in that's refused outside a production deployment.",
+          "GOVERNANCE is bypassable by an IAM caller holding s3:BypassGovernanceRetention; COMPLIANCE is not, not even the AWS account root can shorten or delete it before the retain-until date. Caisson's audit-worm store picks one mode per bucket (one evidence class) and gates COMPLIANCE behind a typed, explicit opt-in that's refused outside a production deployment.",
       },
       {
         question: "Does S3 Object Lock alone make us SOC 2 or HIPAA compliant?",
         answer:
-          "No — Object Lock ships the technical retention control that SOC 2 CC7.x system-operations criteria and HIPAA 164.312(c) integrity requirements check for, and generates the evidence that it's in force. Compliance status is an audit conclusion your assessor reaches; the control is one input to that, not a certification.",
+          "No, Object Lock ships the technical retention control that SOC 2 CC7.x system-operations criteria and HIPAA 164.312(c) integrity requirements check for, and generates the evidence that it's in force. Compliance status is an audit conclusion your assessor reaches; the control is one input to that, not a certification.",
       },
       {
         question: "Can a retention lock be shortened or deleted once it's set?",
         answer:
-          "No path in audit-worm shortens a lock or removes COMPLIANCE mode. extendRetention only accepts a strictly-later date and escalateToCompliance only moves GOVERNANCE→COMPLIANCE at an equal-or-later date — both read the current lock via GetObjectRetention first, then refuse anything earlier with a ValidationError before any S3 write (PutObjectRetention) runs.",
+          "No path in audit-worm shortens a lock or removes COMPLIANCE mode. extendRetention only accepts a strictly-later date and escalateToCompliance only moves GOVERNANCE→COMPLIANCE at an equal-or-later date, both read the current lock via GetObjectRetention first, then refuse anything earlier with a ValidationError before any S3 write (PutObjectRetention) runs.",
       },
       {
         question:
           "Does Object Lock require anything on the S3 bucket beyond writing the API calls?",
         answer:
-          "Yes — Object Lock must be enabled on the bucket itself (at creation, with versioning) before any PutObjectRetention call takes effect. Caisson's store assumes an Object-Lock-enabled bucket and fails closed on the application side (write-once PUT, typed COMPLIANCE opt-in) rather than depending on bucket config alone.",
+          "Yes, Object Lock must be enabled on the bucket itself (at creation, with versioning) before any PutObjectRetention call takes effect. Caisson's store assumes an Object-Lock-enabled bucket and fails closed on the application side (write-once PUT, typed COMPLIANCE opt-in) rather than depending on bucket config alone.",
       },
     ],
     sells: {
@@ -320,52 +342,52 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "OSCAL",
     cluster: "compliance",
     definition:
-      "OSCAL is NIST's machine-readable format (XML or JSON) for security control catalogs, System Security Plans, and Assessment Results — the interchange layer FedRAMP and GRC tools expect. Caisson's Compliance edition maps each signed evidence pack into OSCAL v1.2.2 Security Assessment Results and Plan-of-Action-and-Milestones documents, bundled alongside a per-framework Assessment Plan and a SHA-256 integrity binding.",
+      "OSCAL is NIST's machine-readable format (XML or JSON) for security control catalogs, System Security Plans, and Assessment Results, the interchange layer FedRAMP and GRC tools expect. Caisson's Compliance edition maps each signed evidence pack into OSCAL v1.2.2 Security Assessment Results and Plan-of-Action-and-Milestones documents, bundled alongside a per-framework Assessment Plan and a SHA-256 integrity binding.",
     artifact: {
       label:
-        "toOscalAssessmentResults — readiness maps to satisfied/not-satisfied, gap reason recorded not guessed",
+        "toOscalAssessmentResults: readiness maps to satisfied/not-satisfied, gap reason recorded not guessed",
       lang: "ts",
       code: 'const target: OscalFindingTarget =\n  control.readiness === "ready"\n    ? {\n        type: "objective-id",\n        "target-id": control.controlId,\n        status: { state: "satisfied" },\n      }\n    : {\n        type: "objective-id",\n        "target-id": control.controlId,\n        status: { state: "not-satisfied", remarks: gapReason(control) },\n      };\nfindings.push({\n  uuid: newId(),\n  title: `${control.controlId} — ${control.title}`,\n  description: control.statement,\n  target,\n  "related-observations": related,\n});',
     },
     properties: [
       {
         title: "Two documents, one mapping",
-        body: 'The Security Assessment Results (SAR) gets one finding per control plus one observation per evidence item; the Plan of Action & Milestones (POA&M) gets one poam-item per gap control, referencing only the flagged evidence — a clean pack ships zero GAP poam-items, only a single truthful "no open remediation items" entry, which NIST\'s OSCAL schema requires (poam-items is min-1).',
+        body: 'The Security Assessment Results (SAR) gets one finding per control plus one observation per evidence item; the Plan of Action & Milestones (POA&M) gets one poam-item per gap control, referencing only the flagged evidence, a clean pack ships zero GAP poam-items, only a single truthful "no open remediation items" entry, which NIST\'s OSCAL schema requires (poam-items is min-1).',
       },
       {
         title: "Deterministic, not generative",
-        body: "The wall-clock `now` and the UUID source `newId` are both injected seams — `newId` defaults to `crypto.randomUUID`, so raw output is non-deterministic unless a seam is pinned. With the UUID seam pinned, the same evidence pack canonicalizes to byte-identical OSCAL output — the same discipline the signed evidence pack and the WORM audit chain already run on.",
+        body: "The wall-clock `now` and the UUID source `newId` are both injected seams (`newId` defaults to `crypto.randomUUID`, so raw output is non-deterministic unless a seam is pinned. With the UUID seam pinned, the same evidence pack canonicalizes to byte-identical OSCAL output) the same discipline the signed evidence pack and the WORM audit chain already run on.",
       },
       {
         title: "Flag-never-guess carries over",
-        body: "A not-satisfied finding's `remarks` is the flagged evidence's recorded reason (gapReason()), never an inferred explanation — the canonical manifest it maps from has no unresolved evidence by construction.",
+        body: "A not-satisfied finding's `remarks` is the flagged evidence's recorded reason (gapReason()), never an inferred explanation, the canonical manifest it maps from has no unresolved evidence by construction.",
       },
       {
         title: "Bundled and hash-bound, not linked to a dead URL",
-        body: "ADR-0231 authors a real per-framework Assessment-Plan and ships it inside the same signed bundle as the SAR and POA&M, referenced by a relative rlink with a SHA-256 hashes[] binding — replacing an earlier caisson.sh link that was never actually served.",
+        body: "Caisson authors a real per-framework Assessment-Plan and ships it inside the same signed bundle as the SAR and POA&M, referenced by a relative rlink with a SHA-256 hashes[] binding, replacing an earlier caisson.sh link that was never actually served.",
       },
     ],
     faq: [
       {
         question: "What is OSCAL?",
         answer:
-          "OSCAL (the Open Security Controls Assessment Language) is NIST's JSON/XML schema for control catalogs, security plans, and assessment results — built so a GRC tool or a FedRAMP reviewer can ingest evidence directly instead of a human re-keying a PDF.",
+          "OSCAL (the Open Security Controls Assessment Language) is NIST's JSON/XML schema for control catalogs, security plans, and assessment results, built so a GRC tool or a FedRAMP reviewer can ingest evidence directly instead of a human re-keying a PDF.",
       },
       {
         question: "Does Caisson generate an OSCAL Assessment Plan?",
         answer:
-          "Yes — each framework ships a real OSCAL v1.2.2 assessment-plan document, bundled alongside the Security Assessment Results and referenced by a relative, SHA-256-hashed rlink (ADR-0231), not a placeholder.",
+          "Yes. Each framework ships a real OSCAL v1.2.2 assessment-plan document, bundled alongside the Security Assessment Results and referenced by a relative, SHA-256-hashed rlink, not a placeholder.",
       },
       {
         question: "Does an OSCAL export mean we're SOC 2 or HIPAA compliant?",
         answer:
-          "No. The OSCAL bundle is the evidence assessment and gap register — satisfied/not-satisfied per control, POA&M items for any gap — not a compliance certification; it ships the technical readiness picture the framework's own controls require, not a compliance guarantee.",
+          "No. The OSCAL bundle is the evidence assessment and gap register (satisfied/not-satisfied per control, POA&M items for any gap) not a compliance certification; it ships the technical readiness picture the framework's own controls require, not a compliance guarantee.",
       },
       {
         question:
           "What OSCAL version does Caisson target, and does it emit XML too?",
         answer:
-          "v1.2.2, locked by ADR-0179 as the single oscal-cli validate conformance target. JSON is the canonical, byte-stable output; an XML sibling is produced by shelling out to NIST's own oscal-cli converter (never a hand-rolled serializer).",
+          "v1.2.2, the single oscal-cli validate conformance target. JSON is the canonical, byte-stable output; an XML sibling is produced by shelling out to NIST's own oscal-cli converter (never a hand-rolled serializer).",
       },
     ],
     sells: {
@@ -387,26 +409,26 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "Control-to-code mapping links a compliance requirement (a SOC 2 Trust Services Criterion, a HIPAA technical safeguard) to the specific code that implements it and the evidence proving that code runs. Caisson's Compliance edition ships this as a canonical control registry crosswalked to CC6.x / 164.312 citations, with key controls wired to live evidence collectors.",
     artifact: {
       label:
-        "soc2Tsc control — one canonical control crosswalked to both SOC 2 CC6.1 and HIPAA 164.312(d)",
+        "soc2Tsc control: one canonical control crosswalked to both SOC 2 CC6.1 and HIPAA 164.312(d)",
       lang: "ts",
       code: '{\n  id: "ACCESS-CONTROL.MFA",\n  title: "Multi-factor authentication for privileged access",\n  family: "Access Control",\n  statement:\n    "Privileged access to production systems and the tenant data plane requires a second " +\n    "authentication factor beyond a password; single-factor privileged sessions are denied.",\n  crosswalk: [\n    { framework: "SOC2-TSC", reference: "CC6.1" },\n    {\n      framework: "HIPAA-Security",\n      reference: "164.312(d)",\n      note: "Person-or-entity authentication strengthened by a second factor.",\n    },\n  ],\n},',
     },
     properties: [
       {
         title: "Clean-room control, crosswalked not copied",
-        body: "CanonicalControl (registry/control.ts) is own-authored Caisson prose with a `crosswalk` array of `{framework, reference}` pointers — bare requirement IDs like `CC6.1` or `164.312(d)`, never the licensed AICPA/SCF criteria text. Crosswalk entries are validated unique on (framework, reference) at author time.",
+        body: "CanonicalControl (registry/control.ts) is own-authored Caisson prose with a `crosswalk` array of `{framework, reference}` pointers, bare requirement IDs like `CC6.1` or `164.312(d)`, never the licensed AICPA/SCF criteria text. Crosswalk entries are validated unique on (framework, reference) at author time.",
       },
       {
         title: "Evidence collectors pin to a controlId",
-        body: "Each EvidenceCollector declares the controlId it evidences (e.g. fieldCryptoPolicyCollector defaults to DATA-PROTECTION.PHI-ENCRYPTION) and turns a live at-rest sample into a pass/flagged/unresolved verdict — fail-closed: zero PHI fields inspected returns unresolved, never a guessed pass.",
+        body: "Each EvidenceCollector declares the controlId it evidences (e.g. fieldCryptoPolicyCollector defaults to DATA-PROTECTION.PHI-ENCRYPTION) and turns a live at-rest sample into a pass/flagged/unresolved verdict, fail-closed: zero PHI fields inspected returns unresolved, never a guessed pass.",
       },
       {
         title: "Greppable code-to-ADR trail",
-        body: 'Control-bearing code carries a one-line `Control: ADR-NNNN — <policy name>` docstring (the soc2Tsc pack cites ADR-0057), so `grep -rn "Control: ADR-" packages/*/src` is the auditor\'s control-to-code index with no separate spreadsheet to drift.',
+        body: 'Control-bearing code carries a one-line `Control: ADR-NNNN, <policy name>` docstring (the soc2Tsc pack cites ADR-0057), so `grep -rn "Control: ADR-" packages/*/src` is the auditor\'s control-to-code index with no separate spreadsheet to drift.',
       },
       {
         title: "Goldens pin the policy revision",
-        body: "Golden fixtures capturing control-logic output carry a `policyVersion` field naming the ADR/catalog version the fixture was blessed under, so a drifted golden shows which policy revision the last-blessed evidence belongs to — the code-to-evidence leg of the trail.",
+        body: "Golden fixtures capturing control-logic output carry a `policyVersion` field naming the ADR/catalog version the fixture was blessed under, so a drifted golden shows which policy revision the last-blessed evidence belongs to, the code-to-evidence leg of the trail.",
       },
     ],
     faq: [
@@ -429,7 +451,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Can one control satisfy both SOC 2 and HIPAA?",
         answer:
-          "Yes — a canonical control's crosswalk array can carry references to multiple frameworks. ACCESS-CONTROL.MFA, for example, crosswalks to SOC 2 CC6.1 and HIPAA 164.312(d) from the same own-authored requirement, so one implementation evidences two frameworks at once.",
+          "Yes, a canonical control's crosswalk array can carry references to multiple frameworks. ACCESS-CONTROL.MFA, for example, crosswalks to SOC 2 CC6.1 and HIPAA 164.312(d) from the same own-authored requirement, so one implementation evidences two frameworks at once.",
       },
     ],
     sells: {
@@ -448,7 +470,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Audit evidence bundle",
     cluster: "compliance",
     definition:
-      "An audit evidence bundle is a generated package that ties each compliance control to the artifact proving it holds — logs, config, chain anchors — cited against the exact clause it satisfies. Caisson's version is a signed, deterministic ZIP: byte-stable manifest, fail-closed on any missing evidence, readiness derived from the evidence itself, never asserted.",
+      "An audit evidence bundle is a generated package that ties each compliance control to the artifact proving it holds (logs, config, chain anchors) cited against the exact clause it satisfies. Caisson's version is a signed, deterministic ZIP: byte-stable manifest, fail-closed on any missing evidence, readiness derived from the evidence itself, never asserted.",
     artifact: {
       label:
         "generateEvidencePack - flag-never-guess: refuse the whole pack on any unresolved evidence",
@@ -458,43 +480,43 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     properties: [
       {
         title: "Fail-closed, not fail-open",
-        body: "generateEvidencePack() scans every control for an unresolved collector result before assembling anything. If even one exists, it throws EvidencePackBlockedError with a structured report of exactly what's missing — no partial or best-effort pack is ever produced.",
+        body: "generateEvidencePack() scans every control for an unresolved collector result before assembling anything. If even one exists, it throws EvidencePackBlockedError with a structured report of exactly what's missing, no partial or best-effort pack is ever produced.",
       },
       {
         title: "Readiness is derived, never asserted",
-        body: 'A control\'s readiness ("ready"/"gap") is computed from its evidence items — gap iff any item is flagged — both when the generator builds it and again when pack-format\'s Zod schema re-validates it. The caller cannot inject a readiness value that disagrees with the evidence.',
+        body: 'A control\'s readiness ("ready"/"gap") is computed from its evidence items (gap iff any item is flagged) both when the generator builds it and again when pack-format\'s Zod schema re-validates it. The caller cannot inject a readiness value that disagrees with the evidence.',
       },
       {
         title: "Byte-stable and signable",
-        body: "The wall clock is injected only onto the outer envelope (generatedAt) and never enters the canonical body. Controls are id-sorted, evidence is collector-id-sorted, and the ZIP writer uses fixed 1980-epoch mtimes and a fixed deflate level — so identical evidence always canonicalizes and archives to the identical SHA-256, independent of who ran it or when.",
+        body: "The wall clock is injected only onto the outer envelope (generatedAt) and never enters the canonical body. Controls are id-sorted, evidence is collector-id-sorted, and the ZIP writer uses fixed 1980-epoch mtimes and a fixed deflate level, so identical evidence always canonicalizes and archives to the identical SHA-256, independent of who ran it or when.",
       },
       {
         title: "Bound to the audit chain, not a standalone claim",
-        body: 'Every pack pins a chainAnchor {length, tipHash} from the WORM audit chain, and its posture copy is regex-checked to reject the words "compliant"/"certified" — the bundle states control-evidence readiness only, never an audit opinion.',
+        body: 'Every pack pins a chainAnchor {length, tipHash} from the WORM audit chain, and its posture copy is regex-checked to reject the words "compliant"/"certified", the bundle states control-evidence readiness only, never an audit opinion.',
       },
     ],
     faq: [
       {
         question: "What's in a Caisson audit evidence bundle?",
         answer:
-          "A signed ZIP: a canonical manifest.json (controls, crosswalk citations, evidence, derived readiness), one JSON file per control under controls/, and a plain-text auditor-summary.txt — plus the WORM chain anchor the pack is bound to.",
+          "A signed ZIP: a canonical manifest.json (controls, crosswalk citations, evidence, derived readiness), one JSON file per control under controls/, and a plain-text auditor-summary.txt, plus the WORM chain anchor the pack is bound to.",
       },
       {
         question:
           "Does generating an evidence bundle mean we're SOC 2 or HIPAA compliant?",
         answer:
-          'No. The bundle ships the technical controls and evidence a framework\'s clauses require and states control-evidence readiness only — it is explicitly not an attestation or audit opinion, and the schema itself rejects any "compliant"/"certified" language in the output.',
+          'No. The bundle ships the technical controls and evidence a framework\'s clauses require and states control-evidence readiness only, it is explicitly not an attestation or audit opinion, and the schema itself rejects any "compliant"/"certified" language in the output.',
       },
       {
         question: "What happens if evidence for a control is missing?",
         answer:
-          "The generator refuses the entire bundle rather than shipping a partial one — flag-never-guess. It throws a structured BLOCKED report naming every control and collector still unresolved, so nothing gets handed to an auditor with a silent gap.",
+          "The generator refuses the entire bundle rather than shipping a partial one, flag-never-guess. It throws a structured BLOCKED report naming every control and collector still unresolved, so nothing gets handed to an auditor with a silent gap.",
       },
       {
         question:
           "Can the same evidence produce a different bundle each time it's generated?",
         answer:
-          "No. Controls and evidence are sorted deterministically and the ZIP is built with fixed timestamps and compression settings, so identical underlying evidence always hashes to the same SHA-256 — a property an auditor can independently re-verify.",
+          "No. Controls and evidence are sorted deterministically and the ZIP is built with fixed timestamps and compression settings, so identical underlying evidence always hashes to the same SHA-256, a property an auditor can independently re-verify.",
       },
     ],
     sells: {
@@ -569,25 +591,25 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "HIPAA technical safeguards",
     cluster: "compliance",
     definition:
-      "HIPAA technical safeguards are the five standards in 45 CFR §164.312 — access control (unique IDs, emergency access, auto-logoff, encryption), audit controls, integrity, authentication, and transmission security — protecting ePHI in information systems. Caisson's Compliance edition crosswalks every §164.312 citation to an own-authored canonical control, backing what it implements in code: fail-closed RLS, field encryption, the WORM audit log.",
+      "HIPAA technical safeguards are the five standards in 45 CFR §164.312 (access control (unique IDs, emergency access, auto-logoff, encryption), audit controls, integrity, authentication, and transmission security) protecting ePHI in information systems. Caisson's Compliance edition crosswalks every §164.312 citation to an own-authored canonical control, backing what it implements in code: fail-closed RLS, field encryption, the WORM audit log.",
     artifact: {
       label:
-        "hipaaSecurity control pack — 164.312(b) audit controls crosswalked to the WORM audit log",
+        "hipaaSecurity control pack: 164.312(b) audit controls crosswalked to the WORM audit log",
       lang: "ts",
       code: '{\n  id: "AUDIT.CONTROLS",\n  title: "Audit controls over ePHI systems",\n  family: "Technical Safeguards",\n  statement:\n    "Hardware, software, or procedural mechanisms record and examine activity in systems that " +\n    "contain or use ePHI, so that access and changes are attributable and reviewable.",\n  crosswalk: [\n    { framework: "HIPAA-Security", reference: "164.312(b)" },\n    {\n      framework: "SOC2-TSC",\n      reference: "CC7.2",\n      note: "Satisfied by the immutable audit log.",\n    },\n  ],\n},',
     },
     properties: [
       {
         title: "Own-authored, not ingested",
-        body: "hipaa-security.ts is clean-room Caisson prose validated at module load — no NIST 800-66 or SCF (CC-BY-ND) text is copied or paraphrased. Crosswalk references carry only the bare CFR citation id (e.g. 164.312(b)), a factual pointer to the safeguard, never its regulatory text.",
+        body: "hipaa-security.ts is clean-room Caisson prose validated at module load, no NIST 800-66 or SCF (CC-BY-ND) text is copied or paraphrased. Crosswalk references carry only the bare CFR citation id (e.g. 164.312(b)), a factual pointer to the safeguard, never its regulatory text.",
       },
       {
         title: "One canonical control, many framework crosswalks",
-        body: "Canonical control ids are framework-agnostic and shared across packs — AUDIT.CONTROLS crosswalks to both HIPAA 164.312(b) and SOC 2 CC7.2 in the same entry, so one control satisfies two frameworks' evidence requirements without duplicating logic.",
+        body: "Canonical control ids are framework-agnostic and shared across packs, AUDIT.CONTROLS crosswalks to both HIPAA 164.312(b) and SOC 2 CC7.2 in the same entry, so one control satisfies two frameworks' evidence requirements without duplicating logic.",
       },
       {
         title: "Flag-never-guess evidence",
-        body: "A collector never infers a passing status it can't evidence: passResult requires a satisfied automated check, flaggedResult/unresolvedResult mandate a recorded reason, and unresolved evidence hard-blocks the pack — no partial pack ships silently.",
+        body: "A collector never infers a passing status it can't evidence: passResult requires a satisfied automated check, flaggedResult/unresolvedResult mandate a recorded reason, and unresolved evidence hard-blocks the pack, no partial pack ships silently.",
       },
       {
         title: "Six-year retention floor",
@@ -598,23 +620,23 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "What does HIPAA §164.312 actually require?",
         answer:
-          "Five standards: Access Control (a) — with unique user ID (a)(2)(i), emergency access (a)(2)(ii), auto-logoff (a)(2)(iii), and encryption/decryption (a)(2)(iv) as its implementation specifications — plus Audit controls (b), Integrity (c), Person or entity authentication (d), and Transmission security (e). Caisson's hipaa-security.ts pack crosswalks every one of these CFR citations to an own-authored canonical control.",
+          "Five standards: Access Control (a) (with unique user ID (a)(2)(i), emergency access (a)(2)(ii), auto-logoff (a)(2)(iii), and encryption/decryption (a)(2)(iv) as its implementation specifications) plus Audit controls (b), Integrity (c), Person or entity authentication (d), and Transmission security (e). Caisson's hipaa-security.ts pack crosswalks every one of these CFR citations to an own-authored canonical control.",
       },
       {
         question: "Does Caisson make us HIPAA compliant?",
         answer:
-          "No — no product makes an organization compliant; that's a determination your organization and its auditor make. Caisson ships the technical controls §164.312 requires (fail-closed tenancy RLS, per-tenant field encryption, an immutable audit log) and generates the evidence pack that documents them.",
+          "No, no product makes an organization compliant; that's a determination your organization and its auditor make. Caisson ships the technical controls §164.312 requires (fail-closed tenancy RLS, per-tenant field encryption, an immutable audit log) and generates the evidence pack that documents them.",
       },
       {
         question: "How are HIPAA audit controls (164.312(b)) satisfied?",
         answer:
-          "The AUDIT.CONTROLS canonical control crosswalks 164.312(b) to Caisson's WORM audit log — a hash-chained, append-only record where every access and change to ePHI is attributable and reviewable, with a chain-verify collector producing the evidence item at pack-generation time.",
+          "The AUDIT.CONTROLS canonical control crosswalks 164.312(b) to Caisson's WORM audit log, a hash-chained, append-only record where every access and change to ePHI is attributable and reviewable, with a chain-verify collector producing the evidence item at pack-generation time.",
       },
       {
         question:
           "Is the HIPAA control text copied from a third-party catalog?",
         answer:
-          "No. Every statement and guidance string is clean-room, Caisson-authored prose (ADR-0057). Only the bare CFR citation identifiers (e.g. 164.312(a)(2)(i)) are used as crosswalk pointers — the regulation itself is public law, never NIST 800-66 or SCF text.",
+          "No. Every statement and guidance string is clean-room, Caisson-authored prose (ADR-0057). Only the bare CFR citation identifiers (e.g. 164.312(a)(2)(i)) are used as crosswalk pointers, the regulation itself is public law, never NIST 800-66 or SCF text.",
       },
     ],
     sells: {
@@ -693,51 +715,51 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Row-Level Security (RLS)",
     cluster: "security",
     definition:
-      "Row-level security (RLS) is a Postgres feature that filters every query at the database layer so a session only sees rows a policy predicate admits — typically scoped to a tenant id. Caisson's tenancy-rls module makes it fail-closed: FORCE RLS plus a withTenant wrapper mean a query with no bound tenant context returns zero rows, never another tenant's data.",
+      "Row-level security (RLS) is a Postgres feature that filters every query at the database layer so a session only sees rows a policy predicate admits, typically scoped to a tenant id. Caisson's tenancy-rls module makes it fail-closed: FORCE RLS plus a withTenant wrapper mean a query with no bound tenant context returns zero rows, never another tenant's data.",
     artifact: {
-      label: "buildTenantPolicySql — FORCE RLS + tenant-column policy",
+      label: "buildTenantPolicySql, FORCE RLS + tenant-column policy",
       lang: "ts",
       code: "export interface TenantPolicyOptions {\n  /** The tenant-key column. Default `account_id`. */\n  column?: string;\n  /** The role policies apply to (it must NOT be a superuser / BYPASSRLS). Default `app`. */\n  role?: string;\n}\n\n/**\n * SQL that makes `table` fail-closed tenant-isolated: ENABLE + **FORCE** RLS, GRANT CRUD to the\n * app role, and a policy that admits a row only when its tenant column equals the bound GUC.\n * Emitted into the table's migration (ADR-0014) so a tenant table can never ship without it.\n *\n * The GUC read is wrapped in `NULLIF(..., '')` (pgbouncer/pooler hardening): a pooled connection\n * that resets custom GUCs to `''` instead of fully unsetting them would otherwise compare\n * `column = ''`. `NULLIF` folds `''` to `NULL` first, so the comparison is always `NULL` (deny).\n */\nexport function buildTenantPolicySql(\n  table: string,\n  { column = \"account_id\", role = \"app\" }: TenantPolicyOptions = {},\n): string {\n  const guc = `NULLIF(current_setting('${TENANT_GUC}', true), '')`;\n  return [\n    `ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;`,\n    `ALTER TABLE ${table} FORCE ROW LEVEL SECURITY;`,\n    `GRANT SELECT, INSERT, UPDATE, DELETE ON ${table} TO ${role};`,\n    `CREATE POLICY ${table}_tenant_isolation ON ${table}`,\n    `  USING (${column} = ${guc})`,\n    `  WITH CHECK (${column} = ${guc});`,\n  ].join(\"\\n\");\n}",
     },
     properties: [
       {
         title: "FORCE closes the owner loophole",
-        body: "Plain ENABLE ROW LEVEL SECURITY still lets the table owner bypass the policy. buildTenantPolicySql always emits FORCE ROW LEVEL SECURITY too, so the policy applies even to that connection — only a genuine superuser or BYPASSRLS role escapes it.",
+        body: "Plain ENABLE ROW LEVEL SECURITY still lets the table owner bypass the policy. buildTenantPolicySql always emits FORCE ROW LEVEL SECURITY too, so the policy applies even to that connection, only a genuine superuser or BYPASSRLS role escapes it.",
       },
       {
         title: "withTenant is the sole entry point",
-        body: "withTenant opens a transaction, binds the app.current_account GUC, then drops to the non-superuser app role before running the callback. A code path that forgets withTenant entirely never sets the GUC, so the policy predicate compares against null and the query returns nothing — fail-closed by construction.",
+        body: "withTenant opens a transaction, binds the app.current_account GUC, then drops to the non-superuser app role before running the callback. A code path that forgets withTenant entirely never sets the GUC, so the policy predicate compares against null and the query returns nothing, fail-closed by construction.",
       },
       {
         title: "The role itself is verified, not assumed",
-        body: "assertRoleNotPrivileged queries pg_roles once per (connection, role) and throws before ever SET LOCAL ROLE-ing into it if that role turns out to be SUPERUSER or BYPASSRLS — a misconfigured role can't silently reopen cross-tenant access with zero runtime signal.",
+        body: "assertRoleNotPrivileged queries pg_roles once per (connection, role) and throws before ever SET LOCAL ROLE-ing into it if that role turns out to be SUPERUSER or BYPASSRLS, a misconfigured role can't silently reopen cross-tenant access with zero runtime signal.",
       },
       {
         title: "Admin writes get their own role, not a bypass",
-        body: "The operator mutation surface runs as a separate admin_write role with its own USING(true) policy scoped TO admin_write only — RLS OR-combines permissive policies per role, so admin_write can see every tenant while app's isolation is untouched. That admin-write layer ships in the commercial @caisson/org-controls package (ADR-0257); the free tenancy-rls package carries the buyer tenant-isolation floor itself.",
+        body: "The operator mutation surface runs as a separate admin_write role with its own USING(true) policy scoped TO admin_write only. RLS OR-combines permissive policies per role, so admin_write can see every tenant while app's isolation is untouched. That admin-write layer ships in the commercial @caisson/org-controls package; the free tenancy-rls package carries the buyer tenant-isolation floor itself.",
       },
     ],
     faq: [
       {
         question: "What is Postgres row-level security?",
         answer:
-          "Row-level security is a native Postgres feature (since 9.5) that attaches a filter predicate to a table so every SELECT, UPDATE, and DELETE only touches rows the predicate admits — enforced inside the database engine itself, not in application code that can be skipped or gotten wrong.",
+          "Row-level security is a native Postgres feature (since 9.5) that attaches a filter predicate to a table so every SELECT, UPDATE, and DELETE only touches rows the predicate admits, enforced inside the database engine itself, not in application code that can be skipped or gotten wrong.",
       },
       {
         question:
           "Does turning on RLS stop a forgotten tenant filter from leaking data?",
         answer:
-          "Not by default — plain ENABLE ROW LEVEL SECURITY still lets the table owner bypass it. Caisson's tenancy-rls module adds FORCE ROW LEVEL SECURITY plus a privileged-role guard, so a query that never binds a tenant context matches nothing instead of returning every tenant's rows.",
+          "Not by default, plain ENABLE ROW LEVEL SECURITY still lets the table owner bypass it. Caisson's tenancy-rls module adds FORCE ROW LEVEL SECURITY plus a privileged-role guard, so a query that never binds a tenant context matches nothing instead of returning every tenant's rows.",
       },
       {
         question: "How does multi-tenant RLS work in Caisson?",
         answer:
-          "Every tenant table carries a policy comparing its account_id column to a Postgres GUC (app.current_account); withTenant is the only function that sets that GUC, inside a transaction, running as a role verified to be non-superuser — a path that skips withTenant has no GUC bound and reads zero rows.",
+          "Every tenant table carries a policy comparing its account_id column to a Postgres GUC (app.current_account); withTenant is the only function that sets that GUC, inside a transaction, running as a role verified to be non-superuser, a path that skips withTenant has no GUC bound and reads zero rows.",
       },
       {
         question: "Does RLS alone make us SOC 2 or HIPAA compliant?",
         answer:
-          "No — RLS ships the technical access control SOC2 CC6.x and HIPAA 164.312(a) require and generates the isolation proof as a test in the suite, but that control alone isn't compliance. The Compliance edition composes it with the audit chain, WORM evidence, and OSCAL mapping into the full evidence pack an audit needs.",
+          "No, RLS ships the technical access control SOC2 CC6.x and HIPAA 164.312(a) require and generates the isolation proof as a test in the suite, but that control alone isn't compliance. The Compliance edition composes it with the audit chain, WORM evidence, and OSCAL mapping into the full evidence pack an audit needs.",
       },
     ],
     sells: {
@@ -1023,7 +1045,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     properties: [
       {
         title: "One KMS port, four drop-in backends",
-        body: "KmsClient exposes just three methods (generateDataKey, decryptDataKey, scheduleKeyDeletion). AWS KMS and GCP KMS drivers ship today (createAwsKmsClient, createGcpKmsClient — both live-tested); Azure Key Vault or Vault Transit would slot behind the same three-method port, but no driver for them ships yet. The field-crypto column and envelope format never know which backend is live.",
+        body: "KmsClient exposes just three methods (generateDataKey, decryptDataKey, scheduleKeyDeletion). AWS KMS and GCP KMS drivers ship today (createAwsKmsClient, createGcpKmsClient, both live-tested); Azure Key Vault or Vault Transit would slot behind the same three-method port, but no driver for them ships yet. The field-crypto column and envelope format never know which backend is live.",
       },
       {
         title: "Only the wrapped DEK ever touches storage",
@@ -1165,7 +1187,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Owner-gated write, allowlisted zero cost",
-        body: "POST /api/byok requires session.role === \"owner\" (ADR-0208, closing a bypass where any seat could rotate the org's shared key); reads stay seat-visible. resolveActionCost zeroes an inference action's credit cost only when that action is explicitly marked BYOK-covered (ADR-0198); an unclassified action still meters, fail-metered by default.",
+        body: "POST /api/byok requires session.role === \"owner\" (closing a bypass where any seat could rotate the org's shared key); reads stay seat-visible. resolveActionCost zeroes an inference action's credit cost only when that action is explicitly marked BYOK-covered; an unclassified action still meters, fail-metered by default.",
       },
     ],
     faq: [
@@ -1918,7 +1940,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "One fixed formula, not a tunable blend",
-        body: "Fusion is Reciprocal Rank Fusion at the standard RRF_K=60: every leg a document appears in contributes 1/(60+rank), summed across legs, then ranked descending with a deterministic rowid tie-break. One lever exists — ftsWeight (default 1, the symmetric classic form) scales the FTS leg when exact-term evidence should outrank semantic neighborhood; a non-positive value throws rather than guesses. Ordering never depends on the environment.",
+        body: "Fusion is Reciprocal Rank Fusion at the standard RRF_K=60: every leg a document appears in contributes 1/(60+rank), summed across legs, then ranked descending with a deterministic rowid tie-break. One lever exists, ftsWeight (default 1, the symmetric classic form) scales the FTS leg when exact-term evidence should outrank semantic neighborhood; a non-positive value throws rather than guesses. Ordering never depends on the environment.",
       },
       {
         title: "The embedder is a port, never a bundled model",
@@ -1950,7 +1972,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "How does local-store rank results across a vector search and a keyword search?",
         answer:
-          "By Reciprocal Rank Fusion. Each leg's rank contributes 1/(RRF_K + rank), with RRF_K=60, summed per document across whichever legs ran; the single tuning lever is ftsWeight, which scales the FTS leg's contribution (default 1). The formula is deterministic — identical inputs and weight always produce the identical fused ranking.",
+          "By Reciprocal Rank Fusion. Each leg's rank contributes 1/(RRF_K + rank), with RRF_K=60, summed per document across whichever legs ran; the single tuning lever is ftsWeight, which scales the FTS leg's contribution (default 1). The formula is deterministic, identical inputs and weight always produce the identical fused ranking.",
       },
     ],
     sells: {
@@ -2053,7 +2075,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Rate-limited before every dispatch, not just auth-gated",
-        body: "The ADR-0112 checkRateLimit hook is awaited before any tool handler runs, for both base and edition tools. A genuine over-limit throws a 429, but a rate-limit store fault fails open (resolves and alerts) so an infrastructure blip never locks out a paying buyer.",
+        body: "The checkRateLimit hook is awaited before any tool handler runs, for both base and edition tools. A genuine over-limit throws a 429, but a rate-limit store fault fails open (resolves and alerts) so an infrastructure blip never locks out a paying buyer.",
       },
       {
         title: "One core, two transports",
@@ -2104,17 +2126,17 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "WORM audit logs for SaaS",
     cluster: "compliance",
     definition:
-      "WORM audit logs for a SaaS are tamper-evident activity records your application appends but can never rewrite — enforced by storage, not app convention. Caisson's @caisson/audit-worm gives each tenant a hash-chained log and mints a write-once S3 Object-Lock anchor on every append, so a single call from a request handler records the event and its integrity proof together.",
+      "WORM audit logs for a SaaS are tamper-evident activity records your application appends but can never rewrite, enforced by storage, not app convention. Caisson's @caisson/audit-worm gives each tenant a hash-chained log and mints a write-once S3 Object-Lock anchor on every append, so a single call from a request handler records the event and its integrity proof together.",
     artifact: {
       label:
-        "AuditChainStore — one append() call records the event AND mints its WORM anchor, tenant-scoped",
+        "AuditChainStore: one append() call records the event AND mints its WORM anchor, tenant-scoped",
       lang: "ts",
       code: '// One store per process; each request appends under the caller\'s tenant id.\nconst audit = new AuditChainStore({ db, store: s3WormStore });\n\n// In a request handler — one call records the event AND mints a fresh WORM anchor,\n// both inside the same tenant-scoped transaction (never a separate anchoring job).\nconst { entry, anchor } = await audit.append(accountId, {\n  action: "invoice.exported",\n  actor: session.userId,\n  target: invoiceId,\n});\n// A truncate-then-replay for entry.seq collides on the write-once anchor key -> ConflictError.',
     },
     properties: [
       {
         title: "One call, two independent guarantees",
-        body: "append() writes the chain entry and mints the length-keyed WORM anchor over the result before it returns — in the same transaction. You never run a separate nightly anchoring job that could be skipped, and the DB grant (no UPDATE/DELETE) and the write-once object are two controls, so neither has to hold alone.",
+        body: "append() writes the chain entry and mints the length-keyed WORM anchor over the result before it returns, in the same transaction. You never run a separate nightly anchoring job that could be skipped, and the DB grant (no UPDATE/DELETE) and the write-once object are two controls, so neither has to hold alone.",
       },
       {
         title: "Tenant-scoped by construction",
@@ -2126,31 +2148,31 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "A six-year retention floor by default",
-        body: "Each anchor carries a retain-until date computed from the audit-worm retention default (seven years, above the six-year floor HIPAA §164.316(b)(2) and SEC 17a-4 set), and retention only ever extends — evidence can't be disposed early.",
+        body: "Each anchor carries a retain-until date computed from the audit-worm retention default (seven years, above the six-year floor HIPAA §164.316(b)(2) and SEC 17a-4 set), and retention only ever extends, evidence can't be disposed early.",
       },
     ],
     faq: [
       {
         question: "How do I add a tamper-evident audit log to my SaaS?",
         answer:
-          "Construct an AuditChainStore with your Postgres transactor and a WORM object store, then call append(accountId, event) from each request handler you want on the record. That one call hash-chains the entry and writes a write-once anchor to WORM storage, so both the log and its integrity proof land together — no separate service or nightly job.",
+          "Construct an AuditChainStore with your Postgres transactor and a WORM object store, then call append(accountId, event) from each request handler you want on the record. That one call hash-chains the entry and writes a write-once anchor to WORM storage, so both the log and its integrity proof land together, no separate service or nightly job.",
       },
       {
         question:
           "Do I need a blockchain or a third-party service for WORM audit logging?",
         answer:
-          "No. Caisson's audit-worm runs on your own Postgres plus an S3 Object-Lock bucket you already control. The chain is a SHA-256 hash chain; the immutability comes from the database withholding UPDATE/DELETE and S3 refusing to overwrite a write-once key — no external ledger and no vendor in the trust path.",
+          "No. Caisson's audit-worm runs on your own Postgres plus an S3 Object-Lock bucket you already control. The chain is a SHA-256 hash chain; the immutability comes from the database withholding UPDATE/DELETE and S3 refusing to overwrite a write-once key, no external ledger and no vendor in the trust path.",
       },
       {
         question:
           "Does a WORM audit log make my SaaS SOC 2 or HIPAA compliant?",
         answer:
-          "No — it ships the technical control SOC 2 CC7.2 and HIPAA 164.312(b) check for (a tamper-evident, immutable record of activity) and generates the evidence an auditor examines. Compliance is your assessor's conclusion across people, process, and technology; the log is one input to it, never a certification.",
+          "No, it ships the technical control SOC 2 CC7.2 and HIPAA 164.312(b) check for (a tamper-evident, immutable record of activity) and generates the evidence an auditor examines. Compliance is your assessor's conclusion across people, process, and technology; the log is one input to it, never a certification.",
       },
       {
         question: "Where do the audit entries actually live?",
         answer:
-          "The entries are rows in an append-only audit_chain_entry table (the app role holds SELECT + INSERT only, never UPDATE/DELETE), and each append also writes a small length-keyed anchor object — {length, tipHash, genesisHash} — to your WORM bucket. Reads verify the DB chain against that trusted anchor.",
+          "The entries are rows in an append-only audit_chain_entry table (the app role holds SELECT + INSERT only, never UPDATE/DELETE), and each append also writes a small length-keyed anchor object ({length, tipHash, genesisHash}) to your WORM bucket. Reads verify the DB chain against that trusted anchor.",
       },
     ],
     sells: {
@@ -2165,10 +2187,10 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "OSCAL export from a TypeScript stack",
     cluster: "compliance",
     definition:
-      "OSCAL export from a TypeScript stack means generating NIST's machine-readable assessment documents — Security Assessment Results, POA&M, and Assessment Plan — directly from your Node codebase, no Java re-keying. Caisson's Compliance bundle authors OSCAL v1.2.2 JSON from a signed evidence-pack manifest with assembleOscalEvidenceBundle, deterministic given a pinned clock and id seam, and emits an XML sibling through NIST's own oscal-cli.",
+      "OSCAL export from a TypeScript stack means generating NIST's machine-readable assessment documents (Security Assessment Results, POA&M, and Assessment Plan) directly from your Node codebase, no Java re-keying. Caisson's Compliance bundle authors OSCAL v1.2.2 JSON from a signed evidence-pack manifest with assembleOscalEvidenceBundle, deterministic given a pinned clock and id seam, and emits an XML sibling through NIST's own oscal-cli.",
     artifact: {
       label:
-        "assembleOscalEvidenceBundle — manifest -> signed AP + SAR + POA&M as a path->bytes map",
+        "assembleOscalEvidenceBundle: manifest -> signed AP + SAR + POA&M as a path->bytes map",
       lang: "ts",
       code: "// From an evidence-pack manifest — authors the OSCAL Assessment Plan, SAR, and POA&M,\n// then signs the manifest. Pin the `now` + `newId` seams for byte-identical output.\nconst bundle = await assembleOscalEvidenceBundle(manifest, signer, {\n  now: runAt,\n  newId: seededUuid,\n});\n\n// bundle.files is a { relativePath -> canonical UTF-8 bytes } map — write it straight out:\n//   ./assessment-plan/soc2.json  ./sar.json  ./poam.json  ./manifest.json  ./manifest.sig\nfor (const [path, bytes] of Object.entries(bundle.files)) {\n  await writeFile(join(outDir, path), bytes);\n}",
     },
@@ -2179,37 +2201,37 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Deterministic given a pinned seam",
-        body: "The wall-clock now and the UUID source newId are injected; pin them and the same evidence pack canonicalizes to byte-identical OSCAL every run — so the export is safe to diff and re-verify in CI, not a fresh blob each time.",
+        body: "The wall-clock now and the UUID source newId are injected; pin them and the same evidence pack canonicalizes to byte-identical OSCAL every run, so the export is safe to diff and re-verify in CI, not a fresh blob each time.",
       },
       {
         title: "Satisfied/not-satisfied is derived, gaps recorded not guessed",
-        body: "Each control's OSCAL finding maps from the evidence pack's own readiness — a not-satisfied finding's remarks is the flagged evidence's recorded reason (gapReason), never an inferred explanation — and a clean pack ships the single truthful no-open-items POA&M entry the schema requires.",
+        body: "Each control's OSCAL finding maps from the evidence pack's own readiness (a not-satisfied finding's remarks is the flagged evidence's recorded reason (gapReason), never an inferred explanation) and a clean pack ships the single truthful no-open-items POA&M entry the schema requires.",
       },
       {
         title: "An XML sibling from NIST's own converter",
-        body: "When XML is required, it's produced by shelling out to NIST's oscal-cli converter, never a hand-rolled serializer — so the XML validates against the same conformance target (v1.2.2) the JSON does.",
+        body: "When XML is required, it's produced by shelling out to NIST's oscal-cli converter, never a hand-rolled serializer, so the XML validates against the same conformance target (v1.2.2) the JSON does.",
       },
     ],
     faq: [
       {
         question: "Can I generate OSCAL from a Node or TypeScript codebase?",
         answer:
-          "Yes. Caisson's Compliance bundle authors OSCAL v1.2.2 documents in TypeScript and emits canonical JSON straight from your build — assembleOscalEvidenceBundle turns a signed evidence-pack manifest into the Assessment Plan, SAR, and POA&M as a path-to-bytes map you write to disk or a bucket. No Java toolchain and no manual re-keying.",
+          "Yes. Caisson's Compliance bundle authors OSCAL v1.2.2 documents in TypeScript and emits canonical JSON straight from your build, assembleOscalEvidenceBundle turns a signed evidence-pack manifest into the Assessment Plan, SAR, and POA&M as a path-to-bytes map you write to disk or a bucket. No Java toolchain and no manual re-keying.",
       },
       {
         question: "What OSCAL version does the export target?",
         answer:
-          "OSCAL v1.2.2, locked (ADR-0179) as the single oscal-cli validate conformance target. JSON is the canonical, byte-stable output; the optional XML sibling is produced by shelling out to NIST's own oscal-cli converter so both validate against the same version.",
+          "OSCAL v1.2.2, the single oscal-cli validate conformance target. JSON is the canonical, byte-stable output; the optional XML sibling is produced by shelling out to NIST's own oscal-cli converter so both validate against the same version.",
       },
       {
         question: "Does exporting OSCAL mean I'm FedRAMP or SOC 2 authorized?",
         answer:
-          "No. The OSCAL bundle is the evidence assessment and gap register — satisfied/not-satisfied per control, POA&M items for any gap — in the format FedRAMP and GRC tools expect. It ships the technical readiness picture the framework requires; the authorization decision is your assessor's, not the export's.",
+          "No. The OSCAL bundle is the evidence assessment and gap register (satisfied/not-satisfied per control, POA&M items for any gap) in the format FedRAMP and GRC tools expect. It ships the technical readiness picture the framework requires; the authorization decision is your assessor's, not the export's.",
       },
       {
         question: "Is the OSCAL output stable enough to diff in CI?",
         answer:
-          "Yes, once you pin the injected now and newId seams. The documents are id-sorted and canonicalized, so identical evidence produces byte-identical OSCAL — a property CI can re-verify and a reviewer can independently reproduce, rather than a fresh non-deterministic blob per run.",
+          "Yes, once you pin the injected now and newId seams. The documents are id-sorted and canonicalized, so identical evidence produces byte-identical OSCAL, a property CI can re-verify and a reviewer can independently reproduce, rather than a fresh non-deterministic blob per run.",
       },
     ],
     sells: {
@@ -2224,29 +2246,29 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Multi-tenant RLS for compliance",
     cluster: "security",
     definition:
-      "Multi-tenant RLS for compliance is enforcing tenant isolation inside Postgres itself — a row-level-security policy the database applies to every query — so a forgotten WHERE clause can't leak another tenant's data. Caisson's @caisson/tenancy-rls makes it fail-closed: FORCE row-level security plus a withTenant wrapper mean an unscoped query returns zero rows, and the isolation ships as a test.",
+      "Multi-tenant RLS for compliance is enforcing tenant isolation inside Postgres itself (a row-level-security policy the database applies to every query) so a forgotten WHERE clause can't leak another tenant's data. Caisson's @caisson/tenancy-rls makes it fail-closed: FORCE row-level security plus a withTenant wrapper mean an unscoped query returns zero rows, and the isolation ships as a test.",
     artifact: {
       label:
-        "withTenant — the sole entry point: bind the tenant GUC, drop to the non-superuser app role, fail closed",
+        "withTenant: the sole entry point: bind the tenant GUC, drop to the non-superuser app role, fail closed",
       lang: "ts",
       code: '// The sole entry point for a tenant query. Skip it and the policy predicate sees no bound\n// tenant -> zero rows returned, never another tenant\'s data (fail-closed by construction).\nexport async function withTenant<T>(\n  db: Transactor,\n  accountId: string,\n  fn: (tx: TenantExecutor) => Promise<T>,\n): Promise<T> {\n  if (accountId.length === 0) {\n    throw new TenancyError("Refusing to run a tenant query without an account id");\n  }\n  return db.transaction(async (tx) => {\n    await tx.query(`SELECT set_config($1, $2, true)`, [TENANT_GUC, accountId]);\n    await ensureRoleGuard(db, tx, "app"); // refuses a SUPERUSER / BYPASSRLS role\n    await tx.exec(`SET LOCAL ROLE app`);\n    return fn(tx);\n  });\n}',
     },
     properties: [
       {
         title: "FORCE RLS, not just ENABLE",
-        body: "Plain ENABLE ROW LEVEL SECURITY still lets the table owner bypass the policy. buildTenantPolicySql always emits FORCE ROW LEVEL SECURITY too, so the isolation applies even to the owning connection — only a genuine superuser or BYPASSRLS role escapes it.",
+        body: "Plain ENABLE ROW LEVEL SECURITY still lets the table owner bypass the policy. buildTenantPolicySql always emits FORCE ROW LEVEL SECURITY too, so the isolation applies even to the owning connection, only a genuine superuser or BYPASSRLS role escapes it.",
       },
       {
         title: "withTenant is the sole entry point",
-        body: "withTenant binds the tenant GUC, verifies then drops to the non-superuser app role, and runs your callback. A code path that forgets it never sets the GUC, so the policy predicate compares against null and the query returns nothing — a leak becomes zero rows, not another tenant's data.",
+        body: "withTenant binds the tenant GUC, verifies then drops to the non-superuser app role, and runs your callback. A code path that forgets it never sets the GUC, so the policy predicate compares against null and the query returns nothing, a leak becomes zero rows, not another tenant's data.",
       },
       {
         title: "The role is verified, not assumed",
-        body: "ensureRoleGuard queries pg_roles once per connection and throws before SET ROLE if the app role turns out to be SUPERUSER or BYPASSRLS — a misconfigured role can't silently reopen cross-tenant access with no runtime signal.",
+        body: "ensureRoleGuard queries pg_roles once per connection and throws before SET ROLE if the app role turns out to be SUPERUSER or BYPASSRLS, a misconfigured role can't silently reopen cross-tenant access with no runtime signal.",
       },
       {
         title: "The control is also the evidence",
-        body: "A cross-tenant read returning zero rows is an assertion in the test suite that runs every build, and the RLS-force evidence collector turns that live check into a pass/flag input for the SOC 2 CC6.x / HIPAA 164.312(a) evidence pack — the isolation proves itself.",
+        body: "A cross-tenant read returning zero rows is an assertion in the test suite that runs every build, and the RLS-force evidence collector turns that live check into a pass/flag input for the SOC 2 CC6.x / HIPAA 164.312(a) evidence pack, the isolation proves itself.",
       },
     ],
     faq: [
@@ -2259,7 +2281,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Is application-level tenant filtering enough for a compliance audit?",
         answer:
-          "It's the control most likely to fail: one forgotten WHERE clause leaks every tenant's rows, and there's no engine-level backstop. Row-level security moves the predicate into Postgres so it applies to every SELECT, UPDATE, and DELETE regardless of the query — an auditor can see the isolation is enforced by the database, not by hoping every query got it right.",
+          "It's the control most likely to fail: one forgotten WHERE clause leaks every tenant's rows, and there's no engine-level backstop. Row-level security moves the predicate into Postgres so it applies to every SELECT, UPDATE, and DELETE regardless of the query, an auditor can see the isolation is enforced by the database, not by hoping every query got it right.",
       },
       {
         question: "Does RLS alone make me SOC 2 or HIPAA compliant?",
@@ -2269,7 +2291,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "What happens if my connection pooler resets the tenant GUC?",
         answer:
-          "The policy read is wrapped in NULLIF(current_setting(...), '') so a pooled connection that resets the custom GUC to an empty string is treated as no tenant bound — the predicate matches nothing and the query returns zero rows. A pooler quirk degrades to fail-closed, never to a cross-tenant read.",
+          "The policy read is wrapped in NULLIF(current_setting(...), '') so a pooled connection that resets the custom GUC to an empty string is treated as no tenant bound, the predicate matches nothing and the query returns zero rows. A pooler quirk degrades to fail-closed, never to a cross-tenant read.",
       },
     ],
     sells: {
@@ -2284,17 +2306,17 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "EU AI Act Article 50",
     cluster: "compliance",
     definition:
-      "EU AI Act Article 50 is the regulation's transparency chapter, enforceable from August 2, 2026: AI systems interacting with people must disclose it, and generated content must carry machine-readable marking — regardless of risk class. The obligation is disclosure-shaped; proving you met it needs a tamper-evident record that disclosure actually fired.",
+      "EU AI Act Article 50 is the regulation's transparency chapter, enforceable from August 2, 2026: AI systems interacting with people must disclose it, and generated content must carry machine-readable marking, regardless of risk class. The obligation is disclosure-shaped; proving you met it needs a tamper-evident record that disclosure actually fired.",
     artifact: {
       label:
-        "Record the Article 50 disclosure as a tamper-evident audit event — a verifiable answer to “did disclosure fire for this session?”",
+        "Record the Article 50 disclosure as a tamper-evident audit event, a verifiable answer to “did disclosure fire for this session?”",
       lang: "ts",
       code: '// The disclosure surface is your UI; the RECORD that it fired is audit-chain evidence.\n// append() canonicalizes the payload, hash-chains it onto the tenant\'s tip, and mints a\n// write-once WORM anchor in the same call — so the disclosure log can\'t be quietly edited.\nawait chainStore.append(accountId, {\n  event: "ai.disclosure.shown",\n  clause: "eu-ai-act/art-50-1",\n  surface: "support-chat",\n  sessionId,\n  disclosureVersion: "2026-07-10", // the versioned copy shown to the user\n});\n\n// Later — for the evidence bundle, or a regulator\'s question:\nconst result = await chainStore.verify(accountId);\n// → { valid: true, brokenAt: null } — a non-null brokenAt surfaces tamper, insert, reorder,\n// or truncation.',
     },
     properties: [
       {
         title: "It applies to ordinary products, not just high-risk systems",
-        body: "Unlike the Annex III high-risk regime, Article 50 covers any AI system that interacts directly with people — a SaaS chatbot, a support agent, a content generator. From August 2, 2026 (a date confirmed unmoved by the Digital Omnibus amendment, per reporting through 2026-07-07), the disclosure obligations are enforceable law.",
+        body: "Unlike the Annex III high-risk regime, Article 50 covers any AI system that interacts directly with people, a SaaS chatbot, a support agent, a content generator. From August 2, 2026 (a date confirmed unmoved by the Digital Omnibus amendment, per reporting through 2026-07-07), the disclosure obligations are enforceable law.",
       },
       {
         title: "The obligation is disclosure; the audit question is proof",
@@ -2302,24 +2324,24 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Marking happens at the generation boundary",
-        body: "Article 50(2) requires machine-readable marking of synthetic audio, image, video, and text. Applying the marking where content is generated — and versioning that configuration in the repo — keeps the control testable in CI instead of a per-feature afterthought.",
+        body: "Article 50(2) requires machine-readable marking of synthetic audio, image, video, and text. Applying the marking where content is generated (and versioning that configuration in the repo) keeps the control testable in CI instead of a per-feature afterthought.",
       },
     ],
     faq: [
       {
         question: "Does Article 50 apply to my SaaS chatbot?",
         answer:
-          "If the chatbot interacts directly with people, yes — regardless of whether your system is high-risk. Users must be informed they are interacting with AI unless that is obvious from context to a reasonably well-informed person (Art. 50(1)). Generated-content marking (Art. 50(2)) applies separately if you produce synthetic content.",
+          "If the chatbot interacts directly with people, yes, regardless of whether your system is high-risk. Users must be informed they are interacting with AI unless that is obvious from context to a reasonably well-informed person (Art. 50(1)). Generated-content marking (Art. 50(2)) applies separately if you produce synthetic content.",
       },
       {
         question: "When does Article 50 become enforceable?",
         answer:
-          "August 2, 2026 — the AI Act's general application date. Independent reporting through 2026-07-07 confirmed it was not extended by the Digital Omnibus amendment. Penalties for transparency violations reach €15M or 3% of worldwide annual turnover, whichever is higher (Art. 99(4)).",
+          "August 2, 2026, the AI Act's general application date. Independent reporting through 2026-07-07 confirmed it was not extended by the Digital Omnibus amendment. Penalties for transparency violations reach €15M or 3% of worldwide annual turnover, whichever is higher (Art. 99(4)).",
       },
       {
         question: "Does Caisson make my product Article 50 compliant?",
         answer:
-          "No — the disclosure UI is your product surface and the legal determination is yours. Caisson ships the evidence discipline behind the obligation: disclosure events recorded to a tamper-evident, WORM-anchored audit chain and packaged into dated evidence bundles, so the record of disclosure is verifiable rather than asserted.",
+          "No, the disclosure UI is your product surface and the legal determination is yours. Caisson ships the evidence discipline behind the obligation: disclosure events recorded to a tamper-evident, WORM-anchored audit chain and packaged into dated evidence bundles, so the record of disclosure is verifiable rather than asserted.",
       },
     ],
     sells: {
@@ -2334,7 +2356,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "RFC 3161 timestamping",
     cluster: "compliance",
     definition:
-      "RFC 3161 timestamping is an IETF-standard protocol where a trusted third-party authority (TSA) cryptographically attests that a piece of data existed at a specific time, without seeing the data itself — only its hash. Caisson's audit-worm package submits each periodic audit-chain anchor's hash to a TSA and stores the signed token as a private, verifiable receipt.",
+      "RFC 3161 timestamping is an IETF-standard protocol where a trusted third-party authority (TSA) cryptographically attests that a piece of data existed at a specific time, without seeing the data itself, only its hash. Caisson's audit-worm package submits each periodic audit-chain anchor's hash to a TSA and stores the signed token as a private, verifiable receipt.",
     artifact: {
       label:
         "TsaAnchorLog.submit: DER-encode a TimeStampReq over the anchor's hash, POST it, verify the response attests the exact imprint",
@@ -2344,19 +2366,19 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     properties: [
       {
         title: "Imprint-only egress, never the data",
-        body: "submit() sends fetchWithTimeout only a DER TimeStampReq whose messageImprint is sha256(anchorBytes) — the anchor is already just {length, tipHash, genesisHash}, so the TSA never sees payload or PII, only a hash of a hash.",
+        body: "submit() sends fetchWithTimeout only a DER TimeStampReq whose messageImprint is sha256(anchorBytes), the anchor is already just {length, tipHash, genesisHash}, so the TSA never sees payload or PII, only a hash of a hash.",
       },
       {
         title: "The response is checked, not just trusted",
-        body: "parseTimeStampResp requires a granted PKIStatus, walks the CMS SignedData to the signed TSTInfo, and constant-time compares (safeEqualFixed) the TSA's attested messageImprint against the one submitted — a TSA that signs the wrong imprint fails the receipt outright rather than being recorded as valid.",
+        body: "parseTimeStampResp requires a granted PKIStatus, walks the CMS SignedData to the signed TSTInfo, and constant-time compares (safeEqualFixed) the TSA's attested messageImprint against the one submitted, a TSA that signs the wrong imprint fails the receipt outright rather than being recorded as valid.",
       },
       {
         title: "A private receipt, not a public one",
-        body: "This is v1's only grade, trusted-timestamped: the token proves timing to whoever holds the tenant's own WORM store. Caisson never markets a TSA receipt as externally verifiable — that stronger claim (externally-transparent) is reserved for the separate public-log target (Rekor/OTS), which a TSA receipt can never silently become.",
+        body: "This is v1's only grade, trusted-timestamped: the token proves timing to whoever holds the tenant's own WORM store. Caisson never markets a TSA receipt as externally verifiable, that stronger claim (externally-transparent) is reserved for the separate public-log target (Rekor/OTS), which a TSA receipt can never silently become.",
       },
       {
         title: "Full CMS verification on read-back, not a structural parse",
-        body: "verifyExternal's TSA path re-parses the stored token as CMS DER, verifies the SignedData signature over TSTInfo, confirms the signing cert carries the id-kp-timeStamping EKU, and — when the deployment configured trust anchors — validates the certificate chain, surfacing chainValidated: false rather than upgrading the claim when no root was configured.",
+        body: "verifyExternal's TSA path re-parses the stored token as CMS DER, verifies the SignedData signature over TSTInfo, confirms the signing cert carries the id-kp-timeStamping EKU, and (when the deployment configured trust anchors) validates the certificate chain, surfacing chainValidated: false rather than upgrading the claim when no root was configured.",
       },
     ],
     faq: [
@@ -2369,18 +2391,18 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Does an RFC 3161 timestamp prove to an outside party that our records weren't rewritten?",
         answer:
-          "Not on its own. A TSA receipt is stored back in the buyer's own WORM store, so it's trusted-timestamped, not externally-transparent — a receipt that lives in the trust domain it's supposed to check can't prove anything to someone who doesn't trust that domain. Caisson's public-log grade (Rekor/OpenTimestamps) is the separate, stricter tier for that claim, and the two are never conflated in code or copy.",
+          "Not on its own. A TSA receipt is stored back in the buyer's own WORM store, so it's trusted-timestamped, not externally-transparent, a receipt that lives in the trust domain it's supposed to check can't prove anything to someone who doesn't trust that domain. Caisson's public-log grade (Rekor/OpenTimestamps) is the separate, stricter tier for that claim, and the two are never conflated in code or copy.",
       },
       {
         question:
           "Does RFC 3161 timestamping make our audit trail SOC 2 or HIPAA compliant?",
         answer:
-          "No. It ships a technical control — independently-attested, tamper-evident timing evidence over your audit chain — and generates the receipt an auditor can examine; it doesn't itself constitute a compliance certification, and the org controls and audit engagement remain yours.",
+          "No. It ships a technical control (independently-attested, tamper-evident timing evidence over your audit chain) and generates the receipt an auditor can examine; it doesn't itself constitute a compliance certification, and the org controls and audit engagement remain yours.",
       },
       {
         question: "Which timestamping authority does Caisson use?",
         answer:
-          "None hardcoded — TsaAnchorLog takes the TSA url as deployment config (any RFC 3161-compliant authority, public or private), never a module constant, so a buyer can point it at their own TSA.",
+          "None hardcoded, TsaAnchorLog takes the TSA url as deployment config (any RFC 3161-compliant authority, public or private), never a module constant, so a buyer can point it at their own TSA.",
       },
     ],
     sells: {
@@ -2399,7 +2421,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A transparency log is a public, append-only Merkle-tree ledger (the Certificate-Transparency model formalized in RFC-6962) where a signed checkpoint plus an inclusion proof lets anyone verify an entry landed, without trusting the log's operator. Caisson's audit-worm package submits each audit-chain anchor to Sigstore's Rekor v2 log over ed25519ph, then verifies the resulting receipt fully offline against the embedded checkpoint key.",
     artifact: {
       label:
-        "verifyRekorReceipt — fail-closed, fully offline: checkpoint signature + RFC-6962 inclusion proof + leaf-digest binding, zero network",
+        "verifyRekorReceipt: fail-closed, fully offline: checkpoint signature + RFC-6962 inclusion proof + leaf-digest binding, zero network",
       lang: "ts",
       code: 'export function verifyRekorReceipt(\n  receipt: TransparencyReceipt,\n  anchorBytes: Uint8Array,\n): RekorVerifyResult {\n  // ...embedded log key parsed from receipt.logPublicKey (DER SPKI)...\n\n  const cp = parseCheckpoint(receipt.checkpoint);\n  if (cp === null) return fail("checkpoint envelope is malformed");\n  if (cp.origin !== receipt.origin) {\n    return fail("checkpoint origin does not match the receipt origin");\n  }\n\n  // (1) find the log\'s own signature line (keyHash-bound) and verify it.\n  const expectKeyHash = sha256(\n    new TextEncoder().encode(cp.origin),\n    Uint8Array.of(0x0a, 0x01),\n    rawLogPub,\n  ).subarray(0, 4);\n  const ownSig = cp.sigLines.find(\n    (s) =>\n      s.name === cp.origin &&\n      s.blob.length === 68 &&\n      bytesEqual(s.blob.subarray(0, 4), expectKeyHash),\n  );\n  if (ownSig === undefined) return fail("no matching log checkpoint signature");\n  if (!edVerify(null, cp.signedText, logKey, ownSig.blob.subarray(4))) {\n    return fail("checkpoint signature did not verify");\n  }\n\n  // (2) RFC-6962 inclusion proof against the VERIFIED checkpoint root + tree size.\n  const leafHash = sha256(Uint8Array.of(LEAF_PREFIX), leaf);\n  if (!verifyInclusion(BigInt(receipt.logIndex), cp.treeSize, leafHash, proof, cp.rootHash)) {\n    return fail("inclusion proof does not reconstruct the checkpoint root");\n  }\n\n  // (3) leaf digest must equal SHA-512(anchorBytes) under SHA2_512 — binds THIS receipt to THIS anchor.\n  const leafData = leafBodySchema.parse(\n    JSON.parse(new TextDecoder().decode(leaf)),\n  ).spec.hashedRekordV002.data;\n  if (leafData.algorithm !== "SHA2_512") {\n    return fail("leaf digest algorithm is not SHA2_512");\n  }\n  const expectedDigestB64 = createHash("sha512").update(anchorBytes).digest("base64");\n  if (!safeEqualFixed(leafData.digest, expectedDigestB64)) {\n    return fail("leaf digest does not match SHA-512 of the current anchor bytes");\n  }\n\n  return { ok: true, logIndex: receipt.logIndex };\n}',
     },
@@ -2409,8 +2431,8 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         body: "verifyRekorReceipt fails closed unless BOTH hold: the log's checkpoint signature verifies against the receipt-embedded Ed25519 key (the log attests a root), and an RFC-6962 inclusion proof reconstructs that exact root from the leaf (the entry is under that root). Either check alone would be forgeable; together they aren't.",
       },
       {
-        title: "The receipt is self-contained — it outlives its shard",
-        body: "Rekor shards retire roughly every six months and v2 dropped online proof retrieval, but WORM receipts are retained for years. So the receipt snapshots the checkpoint-signing key and origin at submit time and verifies with zero network and no TUF freshness check — a years-old receipt against a since-retired shard still verifies.",
+        title: "The receipt is self-contained, it outlives its shard",
+        body: "Rekor shards retire roughly every six months and v2 dropped online proof retrieval, but WORM receipts are retained for years. So the receipt snapshots the checkpoint-signing key and origin at submit time and verifies with zero network and no TUF freshness check, a years-old receipt against a since-retired shard still verifies.",
       },
       {
         title: "Never a hardcoded shard, never a non-ed25519ph signer",
@@ -2418,31 +2440,31 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Public egress requires an explicit, unforgeable opt-in",
-        body: "RekorAnchorLog's constructor throws unless it receives a branded IrreversiblePublicityOptIn, which only irreversiblePublicityOptIn() can mint — and only by echoing the exact PUBLICITY_ACKNOWLEDGEMENT string. A public-log submission can't happen by default or by accident.",
+        body: "RekorAnchorLog's constructor throws unless it receives a branded IrreversiblePublicityOptIn, which only irreversiblePublicityOptIn() can mint, and only by echoing the exact PUBLICITY_ACKNOWLEDGEMENT string. A public-log submission can't happen by default or by accident.",
       },
     ],
     faq: [
       {
         question: "What is a transparency log?",
         answer:
-          "A transparency log is a public, append-only Merkle-tree ledger where every entry carries a cryptographic inclusion proof against a periodically signed checkpoint (tree head) — the model Certificate Transparency formalized in RFC-6962. Caisson's audit-worm package submits each audit-chain anchor to Sigstore's Rekor v2 log this way, so the log operator itself can't quietly drop or rewrite an entry.",
+          "A transparency log is a public, append-only Merkle-tree ledger where every entry carries a cryptographic inclusion proof against a periodically signed checkpoint (tree head), the model Certificate Transparency formalized in RFC-6962. Caisson's audit-worm package submits each audit-chain anchor to Sigstore's Rekor v2 log this way, so the log operator itself can't quietly drop or rewrite an entry.",
       },
       {
         question:
           "How is anchoring to Rekor different from Caisson's WORM audit log?",
         answer:
-          "The WORM audit log's tamper-evidence lives in the buyer's own trust domain — a hash chain plus a write-once object store only the buyer's deployment controls. Rekor anchoring composes a third, independent leg: the chain's periodic anchor is also committed to a public log outside Caisson's or the buyer's control, so compromising both the DB and the WORM store still can't rewrite history without also forging a public checkpoint.",
+          "The WORM audit log's tamper-evidence lives in the buyer's own trust domain, a hash chain plus a write-once object store only the buyer's deployment controls. Rekor anchoring composes a third, independent leg: the chain's periodic anchor is also committed to a public log outside Caisson's or the buyer's control, so compromising both the DB and the WORM store still can't rewrite history without also forging a public checkpoint.",
       },
       {
         question:
           "Does public transparency-log anchoring make Caisson SOC 2 or HIPAA compliant?",
         answer:
-          "No. It ships the technical control auditors examine — a publicly, independently verifiable timestamp and inclusion proof for the audit chain's integrity — and generates evidence for the audit; it doesn't itself constitute a compliance certification.",
+          "No. It ships the technical control auditors examine (a publicly, independently verifiable timestamp and inclusion proof for the audit chain's integrity) and generates evidence for the audit; it doesn't itself constitute a compliance certification.",
       },
       {
         question: "Is any tenant data exposed by anchoring to a public log?",
         answer:
-          "No payload or PII leaves the deployment. The submission carries the anchor's SHA-512 digest, a detached signature, and the public key — never the audited records themselves, and the anchor bytes are hashes only. But submission is irreversible and the entry's existence, timing, and rough volume become publicly visible, which is why Caisson requires an explicit, typed opt-in acknowledgement before RekorAnchorLog will even construct.",
+          "No payload or PII leaves the deployment. The submission carries the anchor's SHA-512 digest, a detached signature, and the public key, never the audited records themselves, and the anchor bytes are hashes only. But submission is irreversible and the entry's existence, timing, and rough volume become publicly visible, which is why Caisson requires an explicit, typed opt-in acknowledgement before RekorAnchorLog will even construct.",
       },
     ],
     sells: {
@@ -2463,17 +2485,17 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Evidence receipt",
     cluster: "compliance",
     definition:
-      "An evidence receipt is a versioned proof bundle for one audit-log entry — raw material a verifier recomputes, never a verdict it's asked to trust. Caisson's kernel builds one per row from the entry's hash-chain link and its per-length WORM anchor behind the admin proof endpoint, classifying the row into one of six fail-closed verification states.",
+      "An evidence receipt is a versioned proof bundle for one audit-log entry, raw material a verifier recomputes, never a verdict it's asked to trust. Caisson's kernel builds one per row from the entry's hash-chain link and its per-length WORM anchor behind the admin proof endpoint, classifying the row into one of six fail-closed verification states.",
     artifact: {
       label:
-        "buildRowReceipt — a versioned proof bundle carrying raw material, not a trusted verdict",
+        "buildRowReceipt: a versioned proof bundle carrying raw material, not a trusted verdict",
       lang: "ts",
       code: "export function buildRowReceipt(input: {\n  entry: AuditChainEntry;\n  anchorForRow: AuditChainAnchor;\n  redacted: boolean;\n  checks: VerifyLegs;\n  verifiedAt: string;\n  includeAnchorProvenance?: boolean;\n}): RowReceipt {\n  const { entry, anchorForRow, redacted, checks, verifiedAt, includeAnchorProvenance } = input;\n  const anchor: {\n    length: number;\n    tipHash: string;\n    genesisHash?: string;\n    sig?: string;\n    keyId?: string;\n  } = { length: anchorForRow.length, tipHash: anchorForRow.tipHash };\n  if (includeAnchorProvenance === true) {\n    if (anchorForRow.genesisHash !== undefined) anchor.genesisHash = anchorForRow.genesisHash;\n    if (anchorForRow.sig !== undefined) anchor.sig = anchorForRow.sig;\n    if (anchorForRow.keyId !== undefined) anchor.keyId = anchorForRow.keyId;\n  }\n  return {\n    v: ROW_RECEIPT_VERSION,\n    seq: entry.seq,\n    hash: entry.hash,\n    prevHash: entry.prevHash,\n    anchor,\n    raw: { prevHash: entry.prevHash, payload: entry.payload },\n    redacted,\n    checks,\n    verifiedAt,\n  };\n}",
     },
     properties: [
       {
         title: "Raw material, not a verdict",
-        body: "The receipt's checks and verifiedAt fields are derived, untrusted display material — a standalone verifier ignores them and recomputes both legs itself from raw.prevHash and raw.payload, the only fields it actually trusts.",
+        body: "The receipt's checks and verifiedAt fields are derived, untrusted display material, a standalone verifier ignores them and recomputes both legs itself from raw.prevHash and raw.payload, the only fields it actually trusts.",
       },
       {
         title: "Six fail-closed states, never a false 'verified'",
@@ -2481,7 +2503,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Redaction is marked, not hidden",
-        body: "For a row with a secret-bearing payload, the admin proof endpoint masks the field server-side before the receipt is built, so raw.payload can never recompute the original hash — the receipt sets redacted: true and the row can only earn anchor-confirmed-original-not-disclosed, never verified.",
+        body: "For a row with a secret-bearing payload, the admin proof endpoint masks the field server-side before the receipt is built, so raw.payload can never recompute the original hash, the receipt sets redacted: true and the row can only earn anchor-confirmed-original-not-disclosed, never verified.",
       },
       {
         title: "Versioned so the shape can change safely",
@@ -2498,12 +2520,12 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Can I verify an evidence receipt without trusting Caisson's server?",
         answer:
-          "Yes — the receipt ships raw.prevHash and raw.payload, and a standalone verifier recomputes the link hash and anchor-equality checks itself via WebCrypto; the receipt's own checks field is display-only and is never the source of the rendered state.",
+          "Yes, the receipt ships raw.prevHash and raw.payload, and a standalone verifier recomputes the link hash and anchor-equality checks itself via WebCrypto; the receipt's own checks field is display-only and is never the source of the rendered state.",
       },
       {
         question: "Does a redacted row still get an evidence receipt?",
         answer:
-          "Yes, but honestly weaker: the payload is masked before the receipt is built, so the client can't recompute the original hash and the row is classified anchor-confirmed-original-not-disclosed rather than verified — the anchor still confirms the stored (redacted) hash matches what was committed.",
+          "Yes, but honestly weaker: the payload is masked before the receipt is built, so the client can't recompute the original hash and the row is classified anchor-confirmed-original-not-disclosed rather than verified, the anchor still confirms the stored (redacted) hash matches what was committed.",
       },
       {
         question: "Does an evidence receipt make us SOC 2 or HIPAA compliant?",
@@ -2532,18 +2554,18 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A compliance crosswalk maps one technical control to every regulatory framework requirement it genuinely addresses, so evidence gathered once counts across SOC 2, PCI DSS, GDPR, ISO 27001, and NIST 800-53 instead of being re-proven per regime. Caisson's computeCrosswalkRollup joins canonical controls to these regime crosswalks, deriving each cell's claim mechanically from evidence status and review depth, never editorially.",
     artifact: {
       label:
-        "computeCrosswalkRollup — each cell's claim is derived mechanically, never editorially",
+        "computeCrosswalkRollup: each cell's claim is derived mechanically, never editorially",
       lang: "ts",
       code: 'const cells: CrosswalkRollupCell[] = [];\nfor (const { framework, reference, contributions } of byRef.values()) {\n  const canonicalControlIds = [\n    ...new Set(contributions.map((c) => c.controlId)),\n  ].sort(cmp);\n  const status = contributions.reduce<ControlStatus>(\n    (acc, c) => worstStatus(acc, c.status),\n    "ready",\n  );\n\n  const allReady = contributions.every((c) => c.status === "ready");\n  const allReviewed = contributions.every((c) =>\n    isReviewedAndFresh(c.verification),\n  );\n  const regimeId = FRAMEWORK_LABEL_TO_REGIME[framework];\n  const regime =\n    regimeId === undefined\n      ? undefined\n      : input.regimeCrosswalks.find((rc) => rc.regime === regimeId);\n  const regimeRow = regime?.rows.find((r) => r.control === reference);\n  const regimeImplements = regimeRow?.claim === "implements";\n\n  const claim: "maps-to" | "implements" =\n    allReady && allReviewed && regimeImplements ? "implements" : "maps-to";',
     },
     properties: [
       {
         title: "Restates, never originates",
-        body: "A cell only promotes to implements when every contributing canonical control is ready, every crosswalk reference it draws on carries a reviewed-or-better, non-stale verification record, AND the matching regime-crosswalk row (where one exists) is already implements — any one gap and the cell defaults to maps-to.",
+        body: "A cell only promotes to implements when every contributing canonical control is ready, every crosswalk reference it draws on carries a reviewed-or-better, non-stale verification record, AND the matching regime-crosswalk row (where one exists) is already implements, any one gap and the cell defaults to maps-to.",
       },
       {
         title: "A pure join over existing pointers, not a new catalog",
-        body: "computeCrosswalkRollup takes catalogs, controlStatuses, and regimeCrosswalks as injected input and walks each canonical control's own crosswalk[] array — the dual-catalog OSCAL spine ADR-0333 first wrote as a deferred fork was descoped from v1's rollup because this pointer join already answered the evidenced demand.",
+        body: "computeCrosswalkRollup takes catalogs, controlStatuses, and regimeCrosswalks as injected input and walks each canonical control's own crosswalk[] array, the dual-catalog OSCAL spine ADR-0333 first wrote as a deferred fork was descoped from v1's rollup because this pointer join already answered the evidenced demand.",
       },
       {
         title: "Five regimes, two join shapes",
@@ -2558,7 +2580,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "What is a compliance crosswalk?",
         answer:
-          "It's a mapping from one technical control to every regulatory framework requirement that control genuinely addresses, so evidence gathered once for SOC 2 also counts toward PCI DSS, GDPR, ISO 27001, or NIST 800-53 wherever the overlap is real. Caisson computes it as a pure join over each framework pack's existing crosswalk[] pointers — it never generates a second mapping catalog to keep in sync.",
+          "It's a mapping from one technical control to every regulatory framework requirement that control genuinely addresses, so evidence gathered once for SOC 2 also counts toward PCI DSS, GDPR, ISO 27001, or NIST 800-53 wherever the overlap is real. Caisson computes it as a pure join over each framework pack's existing crosswalk[] pointers, it never generates a second mapping catalog to keep in sync.",
       },
       {
         question:
@@ -2570,7 +2592,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "What's the difference between 'maps-to' and 'implements' in Caisson's crosswalk?",
         answer:
-          "'maps-to' means a Caisson mechanism addresses the same requirement's domain — the default, and the only claim any ISO 27001 or NIST 800-53 row can carry under the current legal gate. 'implements' requires three things at once: every contributing control is ready, every reference is reviewed-or-better and non-stale, and the framework's own regime-crosswalk row is already implements.",
+          "'maps-to' means a Caisson mechanism addresses the same requirement's domain, the default, and the only claim any ISO 27001 or NIST 800-53 row can carry under the current legal gate. 'implements' requires three things at once: every contributing control is ready, every reference is reviewed-or-better and non-stale, and the framework's own regime-crosswalk row is already implements.",
       },
       {
         question:
@@ -2597,7 +2619,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Signed audit anchor",
     cluster: "security",
     definition:
-      "A signed audit anchor is a per-length audit-chain commitment carrying a cryptographic signature, so a client verifies the chain's integrity against a pinned public key instead of trusting the serving API. Caisson's audit-worm package signs every anchor at mint with a dedicated Ed25519 key — domain-separated from the license-issuer key — stored alongside the existing WORM anchor.",
+      "A signed audit anchor is a per-length audit-chain commitment carrying a cryptographic signature, so a client verifies the chain's integrity against a pinned public key instead of trusting the serving API. Caisson's audit-worm package signs every anchor at mint with a dedicated Ed25519 key (domain-separated from the license-issuer key) stored alongside the existing WORM anchor.",
     artifact: {
       label:
         "AuditChainStore.append: sign the anchor's canonical core at mint with the dedicated Ed25519 signer, stored alongside",
@@ -2610,16 +2632,16 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         body: "The anchor-signing identity is a separate Ed25519 keypair from the license-issuer key, loaded from its own env var and held as an opaque KeyObject that never enumerates, logs, or JSON-serializes: an anchor-key compromise can't forge a license, and rotating the license key can't invalidate anchor-verification history.",
       },
       {
-        title: "Signed additively — legacy anchors stay valid",
+        title: "Signed additively, legacy anchors stay valid",
         body: "sig and keyId are stored alongside the existing {length, tipHash} core as optional fields, never a chain-format break: an anchor minted before a signer was configured stays structurally valid, and the signed core is byte-identical to the unsigned form.",
       },
       {
         title: "Verified against a pinned key, never the serving API",
-        body: "The client and offline pack verifier check the signature with WebCrypto against a public key baked into the bundle out-of-band — never read from the row response — so a compromised or malicious API can forge a self-consistent payload/hash/anchor triple but can't forge a signature that verifies against that pinned key.",
+        body: "The client and offline pack verifier check the signature with WebCrypto against a public key baked into the bundle out-of-band (never read from the row response) so a compromised or malicious API can forge a self-consistent payload/hash/anchor triple but can't forge a signature that verifies against that pinned key.",
       },
       {
         title: "Fail-safe on 'can't check', never on 'didn't check'",
-        body: "A missing signature, no pinned key, or a keyId mismatch resolves to na, not fail — an unchecked signature never earns the tamper flag. Only a signature that positively fails to verify against the pinned key classifies the row tampered, the same fail-closed direction as the other two verification legs.",
+        body: "A missing signature, no pinned key, or a keyId mismatch resolves to na, not fail, an unchecked signature never earns the tamper flag. Only a signature that positively fails to verify against the pinned key classifies the row tampered, the same fail-closed direction as the other two verification legs.",
       },
     ],
     faq: [
@@ -2638,7 +2660,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Does the anchor-signing key double as the software-license key?",
         answer:
-          "No — they're deliberately separate Ed25519 keypairs. Domain separation means an anchor-signing key compromise can't be used to forge a software license, and rotating the license key never invalidates anchor-verification history.",
+          "No, they're deliberately separate Ed25519 keypairs. Domain separation means an anchor-signing key compromise can't be used to forge a software license, and rotating the license key never invalidates anchor-verification history.",
       },
       {
         question:
@@ -2663,7 +2685,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Agent trajectory",
     cluster: "ai-infra",
     definition:
-      "An agent trajectory is the complete, ordered record of what an AI agent run did: every model call, tool proposal, approval, and result, in sequence. Caisson's agent-trajectory package makes that record append-only and engine-neutral — eleven strict event kinds folding into one deterministic projection, with prompt and tool bodies carried only as sha256 digest references, never inlined.",
+      "An agent trajectory is the complete, ordered record of what an AI agent run did: every model call, tool proposal, approval, and result, in sequence. Caisson's agent-trajectory package makes that record append-only and engine-neutral, eleven strict event kinds folding into one deterministic projection, with prompt and tool bodies carried only as sha256 digest references, never inlined.",
     artifact: {
       label:
         "createMemoryTrajectoryStore().append: idempotent on (runId, seq), ConflictError on a rewrite or a gap",
@@ -2673,7 +2695,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     properties: [
       {
         title: "Eleven event kinds, one strict schema",
-        body: "TrajectoryEvent is a Zod discriminatedUnion over run.started, run.finished, step.started/finished, model.call, model.usage, tool.proposed/approved/denied/result, and checkpoint — each payload .strict() so an unknown field is rejected at the boundary, not silently carried.",
+        body: "TrajectoryEvent is a Zod discriminatedUnion over run.started, run.finished, step.started/finished, model.call, model.usage, tool.proposed/approved/denied/result, and checkpoint, each payload .strict() so an unknown field is rejected at the boundary, not silently carried.",
       },
       {
         title: "Sensitive bodies never inline, only referenced",
@@ -2681,12 +2703,12 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Append rejects rewrites and gaps, not just duplicates",
-        body: "append() treats seq as a monotonic 0-based per-run sequence: a repeat of an already-recorded slot with byte-identical content is a no-op (safe retry), a different event at that slot throws ConflictError, and a seq past the next free slot throws as a gap — three distinct outcomes, not one generic reject.",
+        body: "append() treats seq as a monotonic 0-based per-run sequence: a repeat of an already-recorded slot with byte-identical content is a no-op (safe retry), a different event at that slot throws ConflictError, and a seq past the next free slot throws as a gap, three distinct outcomes, not one generic reject.",
       },
       {
         title:
           "Replay folds to a byte-identical projection regardless of arrival order",
-        body: "project() sorts events by seq before folding, so a shuffled batch (out-of-order stream delivery) resolves to the same canonical RunProjection every time — the step tree, per-billing-status usage totals, and checkpoint marks are a pure function of the log, never of wall-clock or map-iteration order.",
+        body: "project() sorts events by seq before folding, so a shuffled batch (out-of-order stream delivery) resolves to the same canonical RunProjection every time, the step tree, per-billing-status usage totals, and checkpoint marks are a pure function of the log, never of wall-clock or map-iteration order.",
       },
     ],
     faq: [
@@ -2699,7 +2721,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Does an agent trajectory log expose the actual prompts and tool outputs?",
         answer:
-          "No, not inline. Prompt text, tool argument bodies, tool result bodies, and checkpoint state are each carried only as a DigestRef — a sha256 digest, a byte length, and an optional pointer to an encrypted store — never as raw content in the event itself, so the log can be persisted or anchored without leaking what it references.",
+          "No, not inline. Prompt text, tool argument bodies, tool result bodies, and checkpoint state are each carried only as a DigestRef (a sha256 digest, a byte length, and an optional pointer to an encrypted store) never as raw content in the event itself, so the log can be persisted or anchored without leaking what it references.",
       },
       {
         question:
@@ -2726,21 +2748,21 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Token hashing at rest",
     cluster: "security",
     definition:
-      "Token hashing at rest means a session token is never stored as its raw, replayable value — only a derived lookup key sits in the database. Caisson's auth package derives an HMAC-SHA-256 lookup key from the raw token, and the site's better-auth adapter wrap swaps every session query to that key, fail-closed if the HMAC key is missing.",
+      "Token hashing at rest means a session token is never stored as its raw, replayable value, only a derived lookup key sits in the database. Caisson's auth package derives an HMAC-SHA-256 lookup key from the raw token, and the site's better-auth adapter wrap swaps every session query to that key, fail-closed if the HMAC key is missing.",
     artifact: {
       label:
-        "deriveTokenLookupKey — the raw token never lands in the database, only its HMAC-SHA-256 lookup key",
+        "deriveTokenLookupKey: the raw token never lands in the database, only its HMAC-SHA-256 lookup key",
       lang: "ts",
       code: 'import { createHmac } from "node:crypto";\n\n/**\n * HMAC-SHA-256 of `rawToken` keyed by `hmacKey`, hex-encoded (64 lowercase hex characters).\n * Deterministic — same inputs always produce the same lookup key, so it doubles as an indexed\n * database lookup value. The key never touches the database: a Postgres dump alone cannot be\n * reversed back into a usable session cookie without `hmacKey`.\n */\nexport function deriveTokenLookupKey(\n  rawToken: string,\n  hmacKey: string,\n): string {\n  return createHmac("sha256", hmacKey).update(rawToken).digest("hex");\n}',
     },
     properties: [
       {
         title: "One derived value, no schema change",
-        body: "Instead of adding a second column for a hashed value, the HMAC-SHA-256 lookup key replaces the raw token directly in the existing session.token column better-auth already unique-indexes — a plain indexed equality match on the lookup key, no new migration.",
+        body: "Instead of adding a second column for a hashed value, the HMAC-SHA-256 lookup key replaces the raw token directly in the existing session.token column better-auth already unique-indexes, a plain indexed equality match on the lookup key, no new migration.",
       },
       {
         title: "The adapter wrap is the single write/read seam",
-        body: "wrapSessionAdapter attaches at the one construction site in auth-server.ts and only intercepts the session model's token field — every other model, and every session query that doesn't touch token, passes straight through to the underlying better-auth adapter untouched.",
+        body: "wrapSessionAdapter attaches at the one construction site in auth-server.ts and only intercepts the session model's token field, every other model, and every session query that doesn't touch token, passes straight through to the underlying better-auth adapter untouched.",
       },
       {
         title: "Throws loudly on an unrecognized query shape, never guesses",
@@ -2748,20 +2770,20 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Fail-closed boot, not a raw-token fallback",
-        body: "getAuth() throws before starting if DATABASE_URL and BETTER_AUTH_SECRET are configured but SESSION_TOKEN_HMAC_KEY is missing — a forgotten env var crashes boot loudly instead of quietly falling back to storing raw tokens.",
+        body: "getAuth() throws before starting if DATABASE_URL and BETTER_AUTH_SECRET are configured but SESSION_TOKEN_HMAC_KEY is missing, a forgotten env var crashes boot loudly instead of quietly falling back to storing raw tokens.",
       },
     ],
     faq: [
       {
         question: "What does it mean to hash a session token at rest?",
         answer:
-          "The value stored in the database is a derived lookup key, not the raw bearer token a browser presents on each request — so a database leak alone can't be replayed as a live session. Caisson derives that key with HMAC-SHA-256 keyed by a secret that never touches the database, so reversing a dump back into a usable cookie also requires that separate key.",
+          "The value stored in the database is a derived lookup key, not the raw bearer token a browser presents on each request, so a database leak alone can't be replayed as a live session. Caisson derives that key with HMAC-SHA-256 keyed by a secret that never touches the database, so reversing a dump back into a usable cookie also requires that separate key.",
       },
       {
         question:
           "Does hashing the token at rest need a timingSafeEqual comparison?",
         answer:
-          "No — there's no application-level secret comparison in this design at all. The database does a plain indexed equality lookup on the HMAC key itself, so there's nothing for timingSafeEqual to guard here; that guard matters when code directly compares two raw secret strings, which this design never does.",
+          "No, there's no application-level secret comparison in this design at all. The database does a plain indexed equality lookup on the HMAC key itself, so there's nothing for timingSafeEqual to guard here; that guard matters when code directly compares two raw secret strings, which this design never does.",
       },
       {
         question:
@@ -2773,7 +2795,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "What happens to existing logged-in sessions when this ships?",
         answer:
-          "A hard cutover: legacy raw-token session rows are dropped or invalidated at deploy and every signed-in session ends. Caisson accepted that pre-launch — there are no real buyer sessions yet to preserve — rather than ship a more complex dual-read migration path.",
+          "A hard cutover: legacy raw-token session rows are dropped or invalidated at deploy and every signed-in session ends. Caisson accepted that pre-launch (there are no real buyer sessions yet to preserve) rather than ship a more complex dual-read migration path.",
       },
     ],
     sells: {
@@ -2791,14 +2813,14 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A durable outbox persists delivery intent in the database before any external call, so a crash between the call and the write can't silently drop or duplicate work. Caisson's anchor-outbox package writes a pending row before every external-anchoring submission, then guards each state transition, so a lost response resolves to an operator reconciliation state instead of a blind duplicate retry.",
     artifact: {
       label:
-        "AnchorOutbox.enqueuePending — persist intent before egress, idempotent on the natural key",
+        "AnchorOutbox.enqueuePending: persist intent before egress, idempotent on the natural key",
       lang: "ts",
       code: "async enqueuePending(key: AnchorOutboxKey): Promise<AnchorOutboxRow> {\n  const k = parseStrict(anchorOutboxKeySchema, key);\n  return withTenant(this.#db, k.accountId, async (tx) => {\n    await tx.query(\n      `INSERT INTO anchor_outbox (id, account_id, target, anchor_length, anchor_digest, state)\n       VALUES ($1, $2, $3, $4, $5, 'pending')\n       ON CONFLICT (account_id, target, anchor_length, anchor_digest) DO NOTHING`,\n      [randomUUID(), k.accountId, k.target, k.anchorLength, k.anchorDigest],\n    );\n    const row = await selectRow(tx, k);\n    if (row === null) {\n      throw new InternalError(\"anchor_outbox row vanished after enqueue\", {\n        accountId: k.accountId,\n      });\n    }\n    return toRow(row);\n  });\n}",
     },
     properties: [
       {
         title: "Intent persisted before egress",
-        body: "enqueuePending writes a pending row to Postgres before any network call is made, and markSubmitted writes submitted before the submit() call resolves — the crash window always closes on the side of a recorded intent, never a silent gap.",
+        body: "enqueuePending writes a pending row to Postgres before any network call is made, and markSubmitted writes submitted before the submit() call resolves, the crash window always closes on the side of a recorded intent, never a silent gap.",
       },
       {
         title: "State transitions are DB-guarded, not app-trusted",
@@ -2806,7 +2828,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Response loss resolves to reconcile, never a blind retry",
-        body: "When a submitted row's receipt never lands, markNeedsReconcile moves it to a terminal needs_reconcile state for an operator to resolve — closing the ambiguity without risking a duplicate submission to an external, often append-only, target.",
+        body: "When a submitted row's receipt never lands, markNeedsReconcile moves it to a terminal needs_reconcile state for an operator to resolve, closing the ambiguity without risking a duplicate submission to an external, often append-only, target.",
       },
       {
         title: "Tenant-scoped by default, admin-readable for sweeps",
@@ -2818,7 +2840,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "What happens if the anchoring service crashes right after the TSA or log accepts the submission?",
         answer:
-          "The row stays submitted, not receipted. A reconcile sweep finds it stuck in that state and surfaces it to the operator as needs_reconcile — the response-loss window between acceptance and a durable receipt is closed by a human decision, not a guess.",
+          "The row stays submitted, not receipted. A reconcile sweep finds it stuck in that state and surfaces it to the operator as needs_reconcile, the response-loss window between acceptance and a durable receipt is closed by a human decision, not a guess.",
       },
       {
         question: "Why doesn't a failed submission just retry automatically?",
@@ -2828,7 +2850,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Can the same anchor submission be sent twice by mistake?",
         answer:
-          "No — each state transition is a DB-guarded UPDATE that only fires from its expected prior state (e.g. markSubmitted only runs from pending), so a row already submitted or receipted structurally can't be re-submitted.",
+          "No, each state transition is a DB-guarded UPDATE that only fires from its expected prior state (e.g. markSubmitted only runs from pending), so a row already submitted or receipted structurally can't be re-submitted.",
       },
       {
         question: "Does the durable outbox itself prove compliance?",
@@ -2871,7 +2893,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Caller picks the key shape, mutually exclusive",
-        body: "credits.ts's idemColumns() requires exactly one of sourceEventId (a provider event/invoice/payment id) or idempotencyKey (a caller-chosen per-account key) — never both, never neither — so every ledger row always has one clear identity to dedupe on.",
+        body: "credits.ts's idemColumns() requires exactly one of sourceEventId (a provider event/invoice/payment id) or idempotencyKey (a caller-chosen per-account key) (never both, never neither) so every ledger row always has one clear identity to dedupe on.",
       },
     ],
     faq: [
@@ -2891,7 +2913,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Can two different events accidentally collide on the same idempotency key?",
         answer:
-          "Caisson's outer claim table shares one namespace between whole-event keys and per-side-effect keys (`${sourceEventId}:${sideEffect}`), so assertValidSourceEventId rejects any sourceEventId containing a colon outright — it would alias a composite side-effect key. A key must also be non-empty; a blank key would collapse every unattributed event onto one row.",
+          "Caisson's outer claim table shares one namespace between whole-event keys and per-side-effect keys (`${sourceEventId}:${sideEffect}`), so assertValidSourceEventId rejects any sourceEventId containing a colon outright, it would alias a composite side-effect key. A key must also be non-empty; a blank key would collapse every unattributed event onto one row.",
       },
     ],
     sells: {
@@ -2913,18 +2935,18 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "Canonical JSON is a deterministic serialization where semantically-equal payloads with different key orders produce identical bytes, so a hash or signature over the value is reproducible everywhere. Caisson's kernel canonicalize sorts object keys recursively, keeps array order, and rejects non-finite numbers, feeding every audit-chain hash, signed anchor, and license claim signature.",
     artifact: {
       label:
-        "canonicalize — sortValue recursively sorts keys, preserves array order, rejects non-finite numbers, then JSON.stringify",
+        "canonicalize: sortValue recursively sorts keys, preserves array order, rejects non-finite numbers, then JSON.stringify",
       lang: "ts",
       code: 'function sortValue(value: JsonValue): JsonValue {\n  if (value === null || typeof value !== "object") {\n    if (typeof value === "number" && !Number.isFinite(value)) {\n      throw new Error(\n        `audit-chain: non-finite number is not canonicalizable: ${String(value)}`,\n      );\n    }\n    return value;\n  }\n  if (Array.isArray(value)) return value.map(sortValue);\n  const obj = value as { readonly [key: string]: JsonValue };\n  const out: { [key: string]: JsonValue } = {};\n  for (const key of Object.keys(obj).sort()) {\n    out[key] = sortValue(obj[key] as JsonValue);\n  }\n  return out;\n}\n\nexport function canonicalize(value: JsonValue): string {\n  return JSON.stringify(sortValue(value));\n}',
     },
     properties: [
       {
         title: "One function, every hash and signature in the platform",
-        body: "canonicalize is imported directly by audit-chain's hashChainLink and contentHash, the evidence pack's receipt hashing, migration-assembly's cumulative hash, license-issue's issueLicense (which signs canonicalize(parsedClaims) into the wire token), and license-verify's verifyLicense — one serialization primitive backs every place Caisson hashes or signs a JSON payload, with no second codepath that could quietly drift from it.",
+        body: "canonicalize is imported directly by audit-chain's hashChainLink and contentHash, the evidence pack's receipt hashing, migration-assembly's cumulative hash, license-issue's issueLicense (which signs canonicalize(parsedClaims) into the wire token), and license-verify's verifyLicense, one serialization primitive backs every place Caisson hashes or signs a JSON payload, with no second codepath that could quietly drift from it.",
       },
       {
         title: "Format conformance, not just signature conformance",
-        body: "license-verify's verifyLicense checks the Ed25519 signature first, then re-canonicalizes the parsed claims and rejects the token outright if the signed bytes aren't byte-identical to that canonical form — a token can't be re-serialized with different key order or whitespace and still verify, even carrying an authentic signature.",
+        body: "license-verify's verifyLicense checks the Ed25519 signature first, then re-canonicalizes the parsed claims and rejects the token outright if the signed bytes aren't byte-identical to that canonical form, a token can't be re-serialized with different key order or whitespace and still verify, even carrying an authentic signature.",
       },
       {
         title: "Non-finite numbers throw instead of silently serializing",
@@ -2932,7 +2954,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title:
-          "A frozen algorithm — any byte change invalidates every stored hash",
+          "A frozen algorithm, any byte change invalidates every stored hash",
         body: "canonical.ts documents its own output as the single source of canonical bytes for the chain hash: recursive key sort, kept array order, JSON.stringify. Any change to that algorithm is a chain-format break, because it would silently invalidate every hash already computed and stored.",
       },
     ],
@@ -2979,26 +3001,26 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "Additional authenticated data (AAD) is data an AEAD cipher authenticates but never encrypts, so altering it breaks decryption even though it stays in the clear. Caisson's field-crypto module binds tenant id, key version, and column identity into every ciphertext's AAD, adding the row id as a fourth element on regulated fields so a relocated row fails to decrypt too.",
     artifact: {
       label:
-        "buildAad — conditional construction: an omitted rowId stays byte-identical to the legacy 3-tuple, present it becomes a row-bound 4-tuple",
+        "buildAad: conditional construction: an omitted rowId stays byte-identical to the legacy 3-tuple, present it becomes a row-bound 4-tuple",
       lang: "ts",
       code: 'export function buildAad(\n  tenantId: string,\n  keyVersion: number,\n  columnContext: string,\n  rowId?: string,\n): Buffer {\n  // Conditional construction: omitting `rowId` must yield the SAME bytes as the legacy 3-tuple —\n  // pushing `undefined` would serialize as `null` and break every existing ciphertext + golden.\n  const tuple =\n    rowId === undefined\n      ? [tenantId, keyVersion, columnContext]\n      : [tenantId, keyVersion, columnContext, rowId];\n  return Buffer.from(JSON.stringify(tuple), "utf8");\n}',
     },
     properties: [
       {
         title: "Authenticated, never hidden",
-        body: "GCM authenticates the AAD bytes but does not encrypt them — buildAad's tenant/key-version/column tuple travels alongside the ciphertext in the clear. Tampering with any element, or moving the ciphertext under different metadata, makes the AEAD authentication tag fail to verify on decrypt.",
+        body: "GCM authenticates the AAD bytes but does not encrypt them, buildAad's tenant/key-version/column tuple travels alongside the ciphertext in the clear. Tampering with any element, or moving the ciphertext under different metadata, makes the AEAD authentication tag fail to verify on decrypt.",
       },
       {
         title: "Two honest paths: 3-tuple and row-bound 4-tuple",
-        body: "The transparent encryptedColumn Drizzle customType (column.ts) sees only the cell value, never the row's primary key, so it stays on the tenant/keyVersion/column 3-tuple with no cross-row tamper-evidence — for low-sensitivity fields only. encryptField/decryptField (encrypt-field.ts) require the caller to pass the row's stable crypto.randomUUID() PK as a fourth AAD element; SEC/HIPAA columns must use this row-bound path.",
+        body: "The transparent encryptedColumn Drizzle customType (column.ts) sees only the cell value, never the row's primary key, so it stays on the tenant/keyVersion/column 3-tuple with no cross-row tamper-evidence, for low-sensitivity fields only. encryptField/decryptField (encrypt-field.ts) require the caller to pass the row's stable crypto.randomUUID() PK as a fourth AAD element; SEC/HIPAA columns must use this row-bound path.",
       },
       {
         title: "The rowId must be minted before the INSERT",
-        body: "encryptField's AAD is computed at encrypt time, before the row exists in the database — a DB-generated serial/identity PK is assigned only after the INSERT, too late to bind. encrypt-field.ts requires a client-minted crypto.randomUUID() PK instead, and assertRowId rejects a blank one up front rather than binding a degenerate identity.",
+        body: "encryptField's AAD is computed at encrypt time, before the row exists in the database, a DB-generated serial/identity PK is assigned only after the INSERT, too late to bind. encrypt-field.ts requires a client-minted crypto.randomUUID() PK instead, and assertRowId rejects a blank one up front rather than binding a degenerate identity.",
       },
       {
         title: "A JSON tuple, not a delimiter-joined string",
-        body: "The AAD is JSON.stringify([tenantId, keyVersion, columnContext, rowId?]) — JSON's own quoting and escaping separate the fields, so there's no delimiter for a crafted value to inject and no ambiguity about where one element ends and the next begins.",
+        body: "The AAD is JSON.stringify([tenantId, keyVersion, columnContext, rowId?]), JSON's own quoting and escaping separate the fields, so there's no delimiter for a crafted value to inject and no ambiguity about where one element ends and the next begins.",
       },
     ],
     faq: [
@@ -3006,24 +3028,24 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "What is additional authenticated data (AAD) in AEAD encryption?",
         answer:
-          "AAD is metadata an AEAD cipher like AES-GCM authenticates alongside the ciphertext without encrypting it — it travels in the clear, but any change to it makes the authentication tag fail to verify. Caisson uses it to bind a ciphertext to the exact tenant, key version, and column it was written under.",
+          "AAD is metadata an AEAD cipher like AES-GCM authenticates alongside the ciphertext without encrypting it, it travels in the clear, but any change to it makes the authentication tag fail to verify. Caisson uses it to bind a ciphertext to the exact tenant, key version, and column it was written under.",
       },
       {
         question:
           "Does Caisson's AAD stop a ciphertext being moved to a different row?",
         answer:
-          "Only on the row-bound path. encryptField/decryptField add the row's crypto.randomUUID() PK as a fourth AAD element, so relocating that ciphertext to another row of the same tenant/column/key-version fails to decrypt. The transparent encryptedColumn Drizzle type never sees a row id, so it stays on the 3-tuple and carries no cross-row guarantee — it's scoped to low-sensitivity fields only.",
+          "Only on the row-bound path. encryptField/decryptField add the row's crypto.randomUUID() PK as a fourth AAD element, so relocating that ciphertext to another row of the same tenant/column/key-version fails to decrypt. The transparent encryptedColumn Drizzle type never sees a row id, so it stays on the 3-tuple and carries no cross-row guarantee, it's scoped to low-sensitivity fields only.",
       },
       {
         question: "Can someone read the AAD without the decryption key?",
         answer:
-          "Yes — AAD is authenticated, not confidential, so the tenant id, key version, and column context are visible alongside the ciphertext by design. Those values (an id, a version number, a column name) aren't secrets themselves, and the AES-256-GCM key that actually protects the plaintext stays separately gated behind field-crypto's provider.",
+          "Yes, AAD is authenticated, not confidential, so the tenant id, key version, and column context are visible alongside the ciphertext by design. Those values (an id, a version number, a column name) aren't secrets themselves, and the AES-256-GCM key that actually protects the plaintext stays separately gated behind field-crypto's provider.",
       },
       {
         question:
           "Does AAD binding alone satisfy a HIPAA or SOC 2 encryption control?",
         answer:
-          "No single primitive does. AAD binding ships the technical control regulators check for — a ciphertext cryptographically tied to its tenant, column, and, on regulated fields, its row — and generates the evidence field-crypto's tests exercise. Certification is your organization's and its auditor's determination, not a property of the code.",
+          "No single primitive does. AAD binding ships the technical control regulators check for (a ciphertext cryptographically tied to its tenant, column, and, on regulated fields, its row) and generates the evidence field-crypto's tests exercise. Certification is your organization's and its auditor's determination, not a property of the code.",
       },
     ],
     sells: {
@@ -3047,14 +3069,14 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "PII redaction strips personally identifiable information from text before it reaches an LLM provider or a log, so raw values never leave the trust boundary. Caisson's guardrails package detects email addresses, US Social Security numbers, Luhn-valid credit card numbers, and phone numbers, then masks, hashes, or reversibly tokenizes each match: four regex-based detector classes, not exhaustive PII coverage.",
     artifact: {
       label:
-        "redactPii: mask → [KIND], hash → [KIND:12-hex] — irreversible, matches returned as metadata only",
+        "redactPii: mask → [KIND], hash → [KIND:12-hex], irreversible, matches returned as metadata only",
       lang: "ts",
       code: 'export type RedactMode = "mask" | "hash";\nexport type PiiMode = RedactMode | "tokenize";\n\n/**\n * Irreversibly redact every PII hit. `mask` → `[KIND]`; `hash` → `[KIND:<12-hex>]` (stable per\n * value). Returns the redacted text plus metadata-only matches (no raw value re-exposed downstream).\n */\nexport function redactPii(\n  text: string,\n  mode: RedactMode,\n): { redacted: string; matches: PiiMatch[] } {\n  const matches = detectPii(text);\n  const replace =\n    mode === "mask"\n      ? (m: PiiMatch): string => `[${m.kind.toUpperCase()}]`\n      : (m: PiiMatch): string =>\n          `[${m.kind.toUpperCase()}:${sha256Hex(m.value).slice(0, 12)}]`;\n  return { redacted: rewrite(text, matches, replace), matches };\n}',
     },
     properties: [
       {
         title: "Four regex-based detector classes, deterministically resolved",
-        body: "detectPii runs an email, SSN, Luhn-validated credit-card, and phone regex over the text, then resolves any overlapping matches by earliest start, then longest span, then kind name — so the same input always redacts identically across runs.",
+        body: "detectPii runs an email, SSN, Luhn-validated credit-card, and phone regex over the text, then resolves any overlapping matches by earliest start, then longest span, then kind name, so the same input always redacts identically across runs.",
       },
       {
         title: "Three modes behind one detector",
@@ -3066,14 +3088,14 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "A separate path redacts secret-bearing keys, not PII text",
-        body: "@caisson/kernel's redactValue walks an object and masks any property whose key name matches a secret allowlist (password, token, apiKey, and similar) — a different mechanism for structured payloads, kept distinct from pii.ts's free-text PII detection.",
+        body: "@caisson/kernel's redactValue walks an object and masks any property whose key name matches a secret allowlist (password, token, apiKey, and similar), a different mechanism for structured payloads, kept distinct from pii.ts's free-text PII detection.",
       },
     ],
     faq: [
       {
         question: "What PII does Caisson's redaction actually detect?",
         answer:
-          "Four regex-based detector classes: email addresses, US Social Security numbers (3-2-4), credit card numbers validated with a Luhn check, and phone numbers. It does not detect names, physical addresses, IP addresses, or non-US ID formats — this is a bounded detector set, not exhaustive PII coverage.",
+          "Four regex-based detector classes: email addresses, US Social Security numbers (3-2-4), credit card numbers validated with a Luhn check, and phone numbers. It does not detect names, physical addresses, IP addresses, or non-US ID formats, this is a bounded detector set, not exhaustive PII coverage.",
       },
       {
         question:
@@ -3084,7 +3106,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Can a redacted value be recovered later?",
         answer:
-          "Only in tokenize mode. The original is sealed via field-crypto's sealField into an opaque placeholder and restored with detokenizePii's openField call under the same tenant context — the redact-before-egress, restore-on-return round trip. Mask and hash mode discard the original; there is nothing to recover.",
+          "Only in tokenize mode. The original is sealed via field-crypto's sealField into an opaque placeholder and restored with detokenizePii's openField call under the same tenant context, the redact-before-egress, restore-on-return round trip. Mask and hash mode discard the original; there is nothing to recover.",
       },
       {
         question: "Does PII redaction alone make us HIPAA or GDPR compliant?",
@@ -3112,23 +3134,23 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "Prompt injection is text crafted to hijack an LLM's instructions, an attack class no vendor has solved. Caisson makes no detection claim: `@caisson/guardrails` runs a fail-closed moderator plus an unconditional secret-shape gate on every input/output leg, and the agent runtime parks any `approvalRequired` tool call for external approval before it executes, so a hijacked model can't spend or act unchecked.",
     artifact: {
       label:
-        "runToolCallBatch: an approvalRequired tool never executes on the model's say-so — it parks a durable snapshot and waits",
+        "runToolCallBatch: an approvalRequired tool never executes on the model's say-so, it parks a durable snapshot and waits",
       lang: "ts",
       code: 'if (impl.approvalRequired === true) {\n  if (engine.runState === undefined) {\n    await engine.append("step.finished", {\n      stepId,\n      status: "error",\n      errorCode: "tool",\n    });\n    throw new LoopFailure(\n      "tool",\n      `tool "${call.toolName}" requires approval but no runState store was configured`,\n    );\n  }\n  const parkedState: ParkedState = {\n    stepId,\n    calls,\n    callIndex: i,\n    messages: [...state.messages],\n    stepsUsed: state.stepsUsed,\n    creditsSpent: state.creditsSpent,\n  };\n  await engine.runState.park({\n    runId: engine.runId,\n    toolCallId,\n    resumeSeq: engine.currentSeq(),\n    parkedState,\n  });\n  throw new LoopParked(toolCallId);\n}',
     },
     properties: [
       {
         title: "A gated tool call parks, it never runs on the model's word",
-        body: "runToolCallBatch checks impl.approvalRequired before executing any proposed tool call. A gated call appends tool.proposed, records a resumable ParkedState snapshot via RunStateStore.park, and throws LoopParked instead of calling impl.execute — so a model steered by injected text can propose a dangerous call but cannot make it happen without a separate approveToolCall decision.",
+        body: "runToolCallBatch checks impl.approvalRequired before executing any proposed tool call. A gated call appends tool.proposed, records a resumable ParkedState snapshot via RunStateStore.park, and throws LoopParked instead of calling impl.execute, so a model steered by injected text can propose a dangerous call but cannot make it happen without a separate approveToolCall decision.",
       },
       {
         title:
           "The credential-shape gate runs unconditionally, injection or not",
-        body: "guard.ts's moderate() calls looksLikeSecret(text) before any moderator, on both the input and output leg, with no policy field to disable it — an injected instruction that tries to get the model to echo out a credential still hits this gate on the way out.",
+        body: "guard.ts's moderate() calls looksLikeSecret(text) before any moderator, on both the input and output leg, with no policy field to disable it, an injected instruction that tries to get the model to echo out a credential still hits this gate on the way out.",
       },
       {
         title: "A moderator outage still fails closed",
-        body: "moderateWithDeadline races the configured Moderator against a timeout; a driver throw, rejection, or deadline miss blocks the call unless the policy explicitly sets failOpen: true — a moderator failure can't be used as the injection vector to slip an unmoderated prompt through.",
+        body: "moderateWithDeadline races the configured Moderator against a timeout; a driver throw, rejection, or deadline miss blocks the call unless the policy explicitly sets failOpen: true, a moderator failure can't be used as the injection vector to slip an unmoderated prompt through.",
       },
       {
         title: "An approved call executes exactly once, even under a race",
@@ -3139,19 +3161,19 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Does Caisson detect prompt injection attempts?",
         answer:
-          'No — Caisson makes no detection claim. GuardCategory carries an "injection" class in the schema for a custom Moderator to report, but the shipped drivers never emit it. The real containment is structural: fail-closed input/output gates and a tool-approval park, not a classifier that spots the attack.',
+          'No, Caisson makes no detection claim. GuardCategory carries an "injection" class in the schema for a custom Moderator to report, but the shipped drivers never emit it. The real containment is structural: fail-closed input/output gates and a tool-approval park, not a classifier that spots the attack.',
       },
       {
         question:
           "If an attacker gets a prompt to override the model's instructions, what stops it from taking action?",
         answer:
-          "The tool-approval gate. Any LoopTool marked approvalRequired never executes from runToolCallBatch — the call parks (tool.proposed appended, a durable snapshot recorded) and the run waits for an external approveToolCall/denyToolCall decision, so a hijacked model can propose a call but can't execute one unsupervised.",
+          "The tool-approval gate. Any LoopTool marked approvalRequired never executes from runToolCallBatch, the call parks (tool.proposed appended, a durable snapshot recorded) and the run waits for an external approveToolCall/denyToolCall decision, so a hijacked model can propose a call but can't execute one unsupervised.",
       },
       {
         question:
           "Can an injected prompt make the model exfiltrate an API key or credential?",
         answer:
-          "The credential-shape scan runs unconditionally on both legs before any moderator call — looksLikeSecret has no policy switch to disable it, so a credential-shaped span in the model's own output is blocked at the same chokepoint every input passes through, live moderator or not.",
+          "The credential-shape scan runs unconditionally on both legs before any moderator call, looksLikeSecret has no policy switch to disable it, so a credential-shaped span in the model's own output is blocked at the same chokepoint every input passes through, live moderator or not.",
       },
       {
         question:
@@ -3172,7 +3194,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Deterministic replay",
     cluster: "ai-infra",
     definition:
-      "Deterministic replay means folding the same event log always produces the same byte-identical result, regardless of arrival order. Caisson's agent-trajectory package sorts every event by seq before folding into a RunProjection, so a shuffled batch resolves to one canonical output — the shape evals score and the audit chain anchors, safe to persist without the raw bodies it references.",
+      "Deterministic replay means folding the same event log always produces the same byte-identical result, regardless of arrival order. Caisson's agent-trajectory package sorts every event by seq before folding into a RunProjection, so a shuffled batch resolves to one canonical output, the shape evals score and the audit chain anchors, safe to persist without the raw bodies it references.",
     artifact: {
       label:
         "project(): sort-by-seq fold to a byte-identical RunProjection, regardless of arrival order",
@@ -3182,7 +3204,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     properties: [
       {
         title: "Sort-by-seq before fold, every time",
-        body: "Both project() and projectToolCalls open with the same line — [...events].sort((a, b) => a.seq - b.seq) — before folding anything, so a shuffled batch (out-of-order stream delivery) resolves to one canonical result instead of drifting with delivery order.",
+        body: "Both project() and projectToolCalls open with the same line ([...events].sort((a, b) => a.seq - b.seq)) before folding anything, so a shuffled batch (out-of-order stream delivery) resolves to one canonical result instead of drifting with delivery order.",
       },
       {
         title: "Fixed key order makes the output byte-comparable",
@@ -3207,18 +3229,18 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Why does replay sort events by seq instead of trusting arrival order?",
         answer:
-          "Because a stream can redeliver out of order — a retried batch, a shuffled queue — and the fold has to be a pure function of the log, never of wall-clock or map-iteration order. Sorting by the append-only store's gapless seq first is what makes two replays of the same run always agree.",
+          "Because a stream can redeliver out of order (a retried batch, a shuffled queue) and the fold has to be a pure function of the log, never of wall-clock or map-iteration order. Sorting by the append-only store's gapless seq first is what makes two replays of the same run always agree.",
       },
       {
         question:
           "Does replay need the raw prompt and tool-call bodies to reconstruct a run?",
         answer:
-          "No. Prompt text, tool arguments, and tool results are each carried in the event log only as a DigestRef — a sha256 digest and byte length, never inline — so project() and projectToolCalls fold the step tree, usage totals, and tool outcomes from the log alone, without ever holding the sensitive bodies it points at.",
+          "No. Prompt text, tool arguments, and tool results are each carried in the event log only as a DigestRef (a sha256 digest and byte length, never inline) so project() and projectToolCalls fold the step tree, usage totals, and tool outcomes from the log alone, without ever holding the sensitive bodies it points at.",
       },
       {
         question: "Do tool-call events change what project() outputs?",
         answer:
-          "No. projectToolCalls is a separate, sibling fold over tool.proposed/approved/denied/result into a scored-consumable list per toolCallId — it doesn't touch project() or RunProjection, so every existing project() input keeps its existing byte-identical output.",
+          "No. projectToolCalls is a separate, sibling fold over tool.proposed/approved/denied/result into a scored-consumable list per toolCallId, it doesn't touch project() or RunProjection, so every existing project() input keeps its existing byte-identical output.",
       },
     ],
     sells: {
@@ -3236,7 +3258,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
 ];
 
 /** Resolve a term's curated `related` slugs against GLOSSARY_TERMS, dropping anything that
- *  doesn't (yet) resolve — a later batch's slug landing early would otherwise 404. */
+ *  doesn't (yet) resolve, a later batch's slug landing early would otherwise 404. */
 function resolveRelated(term: GlossaryTerm): GlossaryTerm[] {
   if (!term.related || term.related.length === 0) return [];
   return term.related
@@ -3244,14 +3266,14 @@ function resolveRelated(term: GlossaryTerm): GlossaryTerm[] {
     .filter((t): t is GlossaryTerm => t !== undefined);
 }
 
-/** related-terms — a curated same-cluster link list (Fork D). Rendered as a plain "section" (not
+/** related-terms, a curated same-cluster link list (Fork D). Rendered as a plain "section" (not
  *  a bespoke component, ADR-0099) so the links read as normal crawlable prose. */
 function relatedTermsSection(term: GlossaryTerm): PageSection | undefined {
   const related = resolveRelated(term);
   if (related.length === 0) return undefined;
   return {
     kind: "section",
-    eyebrow: "See also",
+    title: "See also",
     children: createElement(
       "ul",
       {
@@ -3264,18 +3286,32 @@ function relatedTermsSection(term: GlossaryTerm): PageSection | undefined {
           gap: "var(--cs-space-3)",
         },
       },
-      related.map((t) =>
+      related.map((t, i) =>
         createElement(
           "li",
-          { key: t.slug },
+          {
+            key: t.slug,
+            style: {
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--cs-space-3)",
+            },
+          },
+          i > 0 &&
+            createElement(
+              "span",
+              { "aria-hidden": true, className: "cs-muted" },
+              "·",
+            ),
           createElement(
             "a",
+            // `.cs-link` (packages/ui base.css, visual-audit remediation) - accent color +
+            // underline, never color-alone, so the link reads as clickable at a glance (ids
+            // 12b142a42cc26ae0, 250763cdc31a690a). A middot separates adjacent terms so a
+            // flex-wrap line break never reads as ambiguous run-on text (id 5bdfaa87d40e655e).
             {
               href: `/glossary/${t.slug}`,
-              // Match the site's existing inline-link convention (e.g. ai-kit/procurement/
-              // homepage body copy): inline `color` beats the base.css `a { color: inherit }`
-              // reset on specificity without needing a new class or !important.
-              style: { color: "var(--cs-link)" },
+              className: "cs-link",
             },
             t.term,
           ),
@@ -3285,7 +3321,7 @@ function relatedTermsSection(term: GlossaryTerm): PageSection | undefined {
   };
 }
 
-/** breadcrumbNav — the on-page "Glossary / <term>" trail mirroring the JSON-LD breadcrumb the
+/** breadcrumbNav, the on-page "Glossary / <term>" trail mirroring the JSON-LD breadcrumb the
  *  route already emits. Reuses <Hero>'s `ctas` slot the same way the module depth page's
  *  breadcrumb does (marketplace/modules/[slug]/page.tsx), with `cs-link` (not a bare `<a>`) so
  *  the link reads as interactive under the `a { color: inherit }` reset (base.css). */
@@ -3301,7 +3337,7 @@ function breadcrumbNav(term: GlossaryTerm) {
 
 /**
  * Builder: GlossaryTerm -> the standard ordered PageSection[] + PageMeta (glossary SPEC §Per-page
- * data shape). One CALLER of the generic `<PageSections>` renderer — the standard order lives
+ * data shape). One CALLER of the generic `<PageSections>` renderer, the standard order lives
  * here, not in the renderer, which stays a plain switch.
  */
 export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
@@ -3310,28 +3346,32 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       kind: "hero",
       eyebrow: "Glossary",
       title: term.term,
-      lede: term.definition,
+      lede: renderInlineCode(term.definition),
       ctas: breadcrumbNav(term),
     },
     {
-      // No `title` here on purpose: the H1 (hero, above) already carries the term name and its
-      // full definition as the lede — a second heading with the identical text is a copy-rules
-      // restated-heading bug (no new information). `title` is optional on <Section> (renders
-      // nothing when omitted, packages/ui/src/components/section.tsx), so the eyebrow alone
-      // stands as the lead-in label for the code artifact that follows (ADR-0242: varied from
-      // the bare "Definition" repeat, since the hero above already covers the definition).
+      // A real `title` (not a bare eyebrow span, visual-audit id 4476f9e39dbf758c) - and no
+      // eyebrow here, since the Hero above already carries the page's one deliberate accent
+      // slot (DESIGN.md §8; stacking a same-treatment eyebrow on every section down the page
+      // was the "4 of 6 sections" consistency bug, ids 51e4212806fd77f4/1e35c8aa0357490f/
+      // d8698756ac39b74d/646117e2b08810da/094a40b39f668ad2 across every glossary term page -
+      // fixed once here since every term page shares this one builder).
       kind: "section",
-      eyebrow: "In code",
+      title: "In code",
     },
     {
       kind: "codeArtifact",
       label: term.artifact.label,
       code: term.artifact.code,
+      lang: term.artifact.lang,
     },
     {
       kind: "featureGrid",
-      eyebrow: "How it holds",
-      items: term.properties.map((p) => ({ title: p.title, body: p.body })),
+      title: "How it holds",
+      items: term.properties.map((p) => ({
+        title: p.title,
+        body: renderInlineCode(p.body),
+      })),
     },
     {
       kind: "faq",

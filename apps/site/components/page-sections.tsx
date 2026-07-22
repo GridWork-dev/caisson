@@ -7,6 +7,8 @@ import { Fragment, type ReactNode } from "react";
 
 import type { PageSection } from "@/lib/page-sections";
 
+import { CodeHighlight } from "./code-highlight";
+
 import {
   Button,
   Card,
@@ -76,10 +78,13 @@ function renderSection(section: PageSection, key: number): ReactNode {
     }
 
     case "codeArtifact": {
-      const { kind: _kind, notes, ...codeBlockProps } = section;
+      const { kind: _kind, notes, lang, code, ...codeBlockProps } = section;
+      // A `lang` means the `code` is a plain string to highlight server-side (glossary + module
+      // artifacts); without it the code is already a tinted/plain node and passes through.
+      const codeNode = lang ? <CodeHighlight code={code} lang={lang} /> : code;
       return (
         <Section key={key}>
-          <CodeBlock {...codeBlockProps} frame />
+          <CodeBlock {...codeBlockProps} code={codeNode} frame />
           {notes && notes.length > 0 && (
             <ol
               className="cs-muted"

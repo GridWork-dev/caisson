@@ -21,11 +21,17 @@ $ bun install
 export interface TrialPathProps {
   /** Compact form for the module/bundle pop-out dialogs (tighter, no code block). */
   compact?: boolean;
+  /** Drop the "Does it fit my stack?" CTA - set on /stack-fit itself, where that link would
+   *  point back at the page it's already on (visual-audit id 4b81e9b67e1aebe9). */
+  hideStackFitLink?: boolean;
 }
 
 /** The trial-path strip: scaffold the audited base and deploy it on your own stack before you
  *  commit. `compact` renders the dialog-sized form; the default renders the full page form. */
-export function TrialPath({ compact = false }: TrialPathProps) {
+export function TrialPath({
+  compact = false,
+  hideStackFitLink = false,
+}: TrialPathProps) {
   if (compact) {
     return (
       <div
@@ -82,9 +88,11 @@ export function TrialPath({ compact = false }: TrialPathProps) {
         <Button href="/docs/cli/create-caisson" variant="primary">
           How the generator works
         </Button>
-        <Button href="/stack-fit" variant="ghost">
-          Does it fit my stack?
-        </Button>
+        {!hideStackFitLink && (
+          <Button href="/stack-fit" variant="ghost">
+            Does it fit my stack?
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -66,7 +66,7 @@ export default function PrivacyPage() {
           <a
             href="https://www.cloudflare.com/privacypolicy/"
             rel="noreferrer"
-            style={{ color: "var(--cs-accent)" }}
+            className="cs-link"
           >
             Cloudflare&apos;s privacy policy
           </a>{" "}
@@ -77,11 +77,7 @@ export default function PrivacyPage() {
         <h3 style={prose.h3}>Cookieless page-view analytics</h3>
         <p style={prose.paragraph}>
           We use{" "}
-          <a
-            href="https://plausible.io"
-            rel="noreferrer"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="https://plausible.io" rel="noreferrer" className="cs-link">
             Plausible Analytics
           </a>{" "}
           to understand aggregate traffic patterns. Plausible is cookieless by
@@ -205,7 +201,7 @@ export default function PrivacyPage() {
           <a
             href="https://www.paddle.com/legal/privacy"
             rel="noreferrer"
-            style={{ color: "var(--cs-accent)" }}
+            className="cs-link"
           >
             Paddle&apos;s own privacy policy
           </a>
@@ -215,11 +211,7 @@ export default function PrivacyPage() {
         <h3 style={prose.h3}>Email — Resend</h3>
         <p style={prose.paragraph}>
           Email addresses are stored and managed by{" "}
-          <a
-            href="https://resend.com"
-            rel="noreferrer"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="https://resend.com" rel="noreferrer" className="cs-link">
             Resend
           </a>
           , a transactional email infrastructure provider. Resend is a US-based
@@ -284,10 +276,7 @@ export default function PrivacyPage() {
         </ul>
         <p style={{ marginTop: "var(--cs-space-5)", ...prose.paragraph }}>
           To exercise any of these rights, email{" "}
-          <a
-            href="mailto:admin@caisson.sh"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>{" "}
           with the subject line &ldquo;Data request — [right you are
@@ -315,16 +304,13 @@ export default function PrivacyPage() {
           <br />
           Atlanta, Georgia, USA
           <br />
-          <a
-            href="mailto:admin@caisson.sh"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>
         </p>
         <p style={{ marginTop: "var(--cs-space-5)", ...prose.paragraph }}>
           For general questions about the product, use{" "}
-          <a href="/docs" style={{ color: "var(--cs-accent)" }}>
+          <a href="/docs" className="cs-link">
             the docs
           </a>{" "}
           or the contact link in the site footer.

@@ -32,8 +32,13 @@ export interface AdrEntry {
 export interface ForksBoard {
   /** The paragraph directly under the H1 (the board's own description). */
   intro: string;
-  /** The prose under `## Open …` — the operator's live "what's blocking" note. */
+  /** The prose under `## Open …`, flattened — kept only as a presence check / fallback for
+   *  when that section isn't a table (see `openRows`). */
   openSummary: string;
+  /** The `## Open …` table's body rows (Item, State), markdown syntax stripped per cell — one
+   *  row per fork, not the whole table flattened into a single prose wall. Empty if the section
+   *  isn't a pipe table. */
+  openRows: string[][];
   /** Every `##` section title in file order — the trail of locked/closed decision rounds. */
   sections: string[];
 }
@@ -141,18 +146,69 @@ function stripEmphasis(s: string): string {
   return s.replace(/\*\*/g, "").replace(/^_+/, "").replace(/_+$/, "").trim();
 }
 
-function loadForksBoard(root: string | null): ForksBoard {
-  const empty: ForksBoard = { intro: "", openSummary: "", sections: [] };
-  if (!root) return empty;
-  let text: string;
-  try {
-    text = readFileSync(
-      join(root, "docs", "state", "decisions-and-forks.md"),
-      "utf8",
+/** Strip inline markdown noise from one table cell — backticks, bold, strikethrough, and
+ *  `[label](url)` links collapse to plain text. Enough to read the board's own table cleanly as
+ *  structured rows instead of one flattened prose wall (CAISSON-141); a real markdown renderer
+ *  stays out of scope per this module's dependency-free contract. */
+function stripCellMarkup(s: string): string {
+  return s
+    .replace(/`([^`]*)`/g, "$1")
+    .replace(/\*\*([^*]*)\*\*/g, "$1")
+    .replace(/~~([^~]*)~~/g, "$1")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .trim();
+}
+
+function isPipeLine(line: string): boolean {
+  return line.startsWith("|") && line.endsWith("|") && line.length > 1;
+}
+
+/** Parse a GFM pipe table's body rows (every line's cells, header + `---` separator skipped).
+ *  Pure — exported so a hermetic test can drive it without touching the repo tree. */
+export function parsePipeTableRows(lines: readonly string[]): string[][] {
+  const tableLines = lines.map((l) => l.trim()).filter(isPipeLine);
+  // [0] = header row, [1] = the `---` separator row — both skipped; [2..] = data.
+  return tableLines
+    .slice(2)
+    .map((line) => line.slice(1, -1).split("|").map(stripCellMarkup));
+}
+
+/** Extract every pipe table's data rows from a section body, dropping CLOSED forks (first cell
+ *  starts with `~~`, the source's own strikethrough-on-lock convention) — checked against the RAW
+ *  cell text, before `parsePipeTableRows` strips the `~~` markers off for display (CAISSON F7:
+ *  filtering after stripping can no longer tell a closed row from an open one). Tables are found
+ *  as contiguous runs of pipe lines so multiple `### ` subsection tables in the same body are each
+ *  parsed on their own header+separator, rather than one subsection's header leaking into the
+ *  next's data. Pure — exported so a hermetic test can drive it without touching the repo tree. */
+export function extractOpenTableRows(body: readonly string[]): string[][] {
+  const trimmed = body.map((l) => l.trim());
+  const rows: string[][] = [];
+  let i = 0;
+  while (i < trimmed.length) {
+    // Non-null assertion: i is bounded by the `while` condition just checked, but
+    // noUncheckedIndexedAccess can't see it.
+    const line = trimmed[i]!;
+    if (!isPipeLine(line)) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j < trimmed.length && isPipeLine(trimmed[j]!)) j++;
+    const tableLines = trimmed.slice(i, j);
+    const openDataLines = tableLines.slice(2).filter((l) => {
+      const firstCell = (l.slice(1, -1).split("|")[0] ?? "").trim();
+      return !firstCell.startsWith("~~");
+    });
+    rows.push(
+      ...parsePipeTableRows([...tableLines.slice(0, 2), ...openDataLines]),
     );
-  } catch {
-    return empty;
+    i = j;
   }
+  return rows;
+}
+
+/** Pure parser — exported so a hermetic test can drive it without touching the repo tree. */
+export function parseForksBoard(text: string): ForksBoard {
   const lines = text.split(/\r?\n/);
 
   const sections: string[] = [];
@@ -174,17 +230,42 @@ function loadForksBoard(root: string | null): ForksBoard {
         )
       : "";
 
-  // openSummary: the prose under the `## Open …` header, up to the next header of any level.
+  // The `## Open …` section body, up to the next H2 — NOT the next header of any level (F7 fix):
+  // the real board nests genuinely-open fork tables under `### ` subsections (e.g. "Provider-
+  // optimization forks, round 2"), and stopping at the first `#` of any depth dropped every one
+  // of them from `openRows`.
   const openIdx = lines.findIndex((l) => /^##\s+Open\b/i.test(l));
   let openSummary = "";
+  let openRows: string[][] = [];
   if (openIdx >= 0) {
     const rest = lines.slice(openIdx + 1);
-    const nextHeader = rest.findIndex((l) => /^#/.test(l));
-    const body = (nextHeader >= 0 ? rest.slice(0, nextHeader) : rest).join(" ");
-    openSummary = stripEmphasis(body.replace(/\s+/g, " "));
+    const nextH2 = rest.findIndex((l) => /^##\s/.test(l));
+    const body = nextH2 >= 0 ? rest.slice(0, nextH2) : rest;
+    openSummary = stripEmphasis(body.join(" ").replace(/\s+/g, " "));
+    openRows = extractOpenTableRows(body);
   }
 
-  return { intro, openSummary, sections };
+  return { intro, openSummary, openRows, sections };
+}
+
+function loadForksBoard(root: string | null): ForksBoard {
+  const empty: ForksBoard = {
+    intro: "",
+    openSummary: "",
+    openRows: [],
+    sections: [],
+  };
+  if (!root) return empty;
+  let text: string;
+  try {
+    text = readFileSync(
+      join(root, "docs", "state", "decisions-and-forks.md"),
+      "utf8",
+    );
+  } catch {
+    return empty;
+  }
+  return parseForksBoard(text);
 }
 
 const ROOT = findRepoRoot();

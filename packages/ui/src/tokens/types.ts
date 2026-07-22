@@ -37,6 +37,21 @@ export interface FunctionalTokens {
   info: string;
 }
 
+/**
+ * Code-syntax colours (ADR-0374 Decision 2) — a dedicated per-mode scale for automatic token
+ * highlighting, decoupled from the status vocabulary so a hand-wrapped `.cs-tok-*` callout never
+ * shares a hue with an ambient string literal. Per-mode like `FunctionalTokens` (the dark set fails
+ * AA on light surfaces), emitted into each theme block by the generator, NOT part of `SemanticTheme`
+ * (not a runtime-overridable role). The docs/glossary Shiki themes bake the gamut-mapped sRGB hex of
+ * these OKLCH values; everything else in a sample renders in `--cs-fg`, comments in `--cs-fg-muted`.
+ */
+export interface CodeTokens {
+  /** string literals + attribute values */
+  codeString: string;
+  /** keyword / keyword.control / storage */
+  codeKeyword: string;
+}
+
 /** A palette direction shown in `/design/foundations`. */
 export interface AccentCandidate {
   id: "a" | "b" | "c";

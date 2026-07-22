@@ -37,7 +37,7 @@ import {
 
 export const metadata = buildMetadata({
   description:
-    "One audited Postgres base for regulated and production SaaS — fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, and six composable bundles you compose, never fork.",
+    "One audited Postgres base for regulated and production SaaS: fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, and six composable bundles you compose, never fork.",
   path: "/",
 });
 
@@ -46,7 +46,7 @@ export const metadata = buildMetadata({
 const homeJsonLd = softwareApplication({
   name: "Caisson",
   description:
-    "Composable infrastructure for regulated and production SaaS on one audited Postgres base — fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, token metering, on-device inference, and signed provenance, in six bundles.",
+    "Composable infrastructure for regulated and production SaaS on one audited Postgres base: fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, token metering, on-device inference, and signed provenance, in six bundles.",
   url: SITE_URL,
 });
 
@@ -56,21 +56,21 @@ const EVIDENCE = [
   {
     icon: "rls",
     label: "Fail-closed RLS",
-    body: "Postgres row-level security with FORCE — a query that never set the tenant context returns nothing, never everything. Cross-tenant isolation is a test in CI, not a convention you hope each developer remembers.",
+    body: "Postgres row-level security with FORCE. A query that never set the tenant context returns nothing, never everything. Cross-tenant isolation is a test in CI, not a convention you hope each developer remembers.",
     proof: "ALTER TABLE invoices FORCE ROW LEVEL SECURITY;",
     maps: "SOC 2 CC6.1 · HIPAA §164.312(a)(1)",
   },
   {
     icon: "worm",
     label: "WORM storage",
-    body: "S3 Object-Lock in compliance mode. Inside the retention window an evidence object cannot be overwritten or deleted — not by an application bug, not by an operator, not by a leaked root key.",
+    body: "S3 Object-Lock in compliance mode. Inside the retention window an evidence object cannot be overwritten or deleted: not by an application bug, not by an operator, not by a leaked root key.",
     proof: "ObjectLockMode: COMPLIANCE · Retain: 7y",
     maps: "SOC 2 CC7.2 · HIPAA §164.312(c)(1)",
   },
   {
     icon: "audit-chain",
     label: "Append-only audit chain",
-    body: "Every privileged action commits SHA-256 over the previous hash plus its own payload. Tampering with any historical row breaks every link after it — and the break is detectable, provable, and exportable.",
+    body: "Every privileged action commits SHA-256 over the previous hash plus its own payload. Tampering with any historical row breaks every link after it, and the break is detectable, provable, and exportable.",
     proof: "sha256(prev ‖ payload) — verifyChain() over every row",
     maps: "SOC 2 CC7.2 · HIPAA §164.312(b)",
   },
@@ -124,7 +124,7 @@ export default function HomePage() {
           in (stagger) — the first "showcase" beat of the authored rhythm (ADR-0307). ===== */}
       <Section
         eyebrow="What ships in the box"
-        title="Prevention at the application layer — with the receipts."
+        title="Prevention at the application layer, with the receipts."
         lede="Each control ships with a live artifact you can read, run, and hand to an auditor. No diagrams standing in for behaviour."
       >
         <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
@@ -171,7 +171,7 @@ export default function HomePage() {
         <Section
           eyebrow="The repository is the artifact"
           title="Real paths. Real code. No screenshots."
-          lede="The structure of this page is the structure of the codebase. Every path is a real directory; every snippet is copied verbatim from the file its header names — the honest-artifact floor, not a mockup."
+          lede="The structure of this page is the structure of the codebase. Every path is a real directory; every snippet is copied verbatim from the file its header names (the honest-artifact floor, not a mockup)."
         >
           <RepoArtifact />
         </Section>
@@ -184,7 +184,7 @@ export default function HomePage() {
         <Section
           eyebrow="How the guarantees hold"
           title="The boundary and the evidence trail, drawn to real behaviour."
-          lede="Two diagrams of shipped behaviour — the fail-closed isolation boundary and the write-to-verify evidence lifecycle. Nothing aspirational: this is what the RLS, audit-chain, and WORM modules already do."
+          lede="Two diagrams of shipped behaviour: the fail-closed isolation boundary and the write-to-verify evidence lifecycle. Nothing aspirational, this is what the RLS, audit-chain, and WORM modules already do."
           band="surface"
         >
           <Reveal
@@ -254,8 +254,8 @@ export default function HomePage() {
           the Bundles cards below reuse it (ADR-0237 F5) ===== */}
       <Section
         eyebrow="How to buy"
-        title="Module, bundle, or plan — same catalog, three shapes."
-        lede="Every price on this site now carries one of three labels. Pick the shape that fits and open the marketplace to browse the rest. Whatever the shape, support is included — a real person on email and Discord, business-days response, with every license."
+        title="Module, bundle, or plan: same catalog, three shapes."
+        lede="Every price on this site now carries one of three labels. Pick the shape that fits and open the marketplace to browse the rest. Whatever the shape, support is included: a real person on email and Discord, business-days response, with every license."
       >
         <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
           <Card>
@@ -281,7 +281,7 @@ export default function HomePage() {
               {HOW_TO_BUY_MODULE_PRICE}
             </p>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              A single package sold on its own — field encryption, the eval
+              A single package sold on its own: field encryption, the eval
               harness, the agent runner. Every module, priced à la carte.
             </p>
             <div style={{ marginTop: "var(--cs-space-6)" }}>
@@ -315,9 +315,9 @@ export default function HomePage() {
               {HOW_TO_BUY_BUNDLE_RANGE}
             </p>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              Compliance, AI-Production, Local-first, Agentic-Dev, or Provenance
-              — each composes the same audited base, never a fork. Everything
-              takes the whole catalog at {bundlePrice("everything")}.
+              Compliance, AI-Production, Local-first, Agentic-Dev, or
+              Provenance, each composes the same audited base, never a fork.
+              Everything takes the whole catalog at {bundlePrice("everything")}.
             </p>
             <div style={{ marginTop: "var(--cs-space-6)" }}>
               <Button href="/marketplace" variant="ghost">
@@ -361,9 +361,9 @@ export default function HomePage() {
           </Card>
         </Reveal>
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-          Whatever you buy, the code you own is perpetual — no phone-home, no
+          Whatever you buy, the code you own is perpetual: no phone-home, no
           kill switch. Even if Caisson the company stopped operating, the
-          versions you hold keep working — read the{" "}
+          versions you hold keep working. Read the{" "}
           <Link href="/legal/eula#vendor-continuity" className="cs-link">
             continuity terms
           </Link>
@@ -387,7 +387,7 @@ export default function HomePage() {
         id="bundles"
         eyebrow="Bundles"
         title="Six bundles, one audited base."
-        lede="Compliance leads; every bundle — Provenance and the whole-catalog Everything included — draws from the same audited base, never a fork."
+        lede="Compliance leads; every bundle (Provenance and the whole-catalog Everything included) draws from the same audited base, never a fork."
         band="surface"
       >
         <Reveal
@@ -435,7 +435,7 @@ export default function HomePage() {
                 label={`${bundlePrice("local-first")} · ${modulesByBundle("local-first").length} modules`}
               />
             }
-            line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Own the source."
+            line="Compute seam, privacy gate, and on-device vector search. Your data stays on-device by default. Own the source."
             proof="egress: blocked at the privacy gate"
           />
           <BundleCard
@@ -480,7 +480,7 @@ export default function HomePage() {
                 label={`${bundlePrice("everything")} · all ${MODULE_PRICES.length} modules`}
               />
             }
-            line="Every bundle and every module, including the platform capabilities no persona bundle carries — one purchase, the whole library."
+            line="Every bundle and every module, including the platform capabilities no persona bundle carries: one purchase, the whole library."
             proof={`save ${formatUsd(everythingSavings())} vs ${formatUsd(moduleCatalogSubtotal())} à la carte`}
           />
         </Reveal>
@@ -512,8 +512,8 @@ export default function HomePage() {
       <Reveal>
         <Section
           eyebrow="Bundle builder"
-          title="Build your own stack — watch the running total."
-          lede="Pick the modules you need and see the total. When your picks total more than a bundle covers, the builder points at the cheaper path — the arithmetic, not a fabricated discount. Every figure reads from the committed catalog."
+          title="Build your own stack. Watch the running total."
+          lede="Pick the modules you need and see the total. When your picks total more than a bundle covers, the builder points at the cheaper path (the arithmetic, not a fabricated discount). Every figure reads from the committed catalog."
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <StackBuilderLazy />
@@ -559,7 +559,7 @@ export default function HomePage() {
               }}
             >
               Caisson is a software product, built and backed by the maintainer at
-              GridWork Digital — a named engineer, not a ticket queue. Buy a
+              GridWork Digital (a named engineer, not a ticket queue). Buy a
               license and you get a direct line to the engineer who builds it.
             </p>
             <p
@@ -568,7 +568,7 @@ export default function HomePage() {
             >
               The honesty boundary is fixed: Caisson ships the technical
               controls and generates the evidence. Your organizational controls
-              and the audit itself remain yours — we never imply a certification
+              and the audit itself remain yours. We never imply a certification
               we don&rsquo;t hold.
             </p>
           </Card>
@@ -580,7 +580,7 @@ export default function HomePage() {
       <Section
         eyebrow="Built in the open"
         title="No logo wall yet. Here's what you can check instead."
-        lede="We're early — no logo wall to point at yet, and we'd rather say that than fake one. Here's what you can verify instead: the base is open source you can read, the changelog is public, the source ships to you to audit — and every UI module card in the marketplace renders its real component, live."
+        lede="We're early. No logo wall to point at yet, and we'd rather say that than fake one. Here's what you can verify instead: the base is open source you can read, the changelog is public, the source ships to you to audit, and every UI module card in the marketplace renders its real component, live."
         band="surface"
       >
         <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
@@ -590,10 +590,10 @@ export default function HomePage() {
               Open Apache-2.0 Base
             </div>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              15 base packages — the kernel, auth, tenant isolation, billing,
-              and the generator tooling — ship under Apache-2.0. Read them,
-              audit them, and share them: the base is peer-reviewable by the
-              license every buyer receives it under.
+              15 base packages (the kernel, auth, tenant isolation, billing, and
+              the generator tooling) ship under Apache-2.0. Read them, audit
+              them, and share them: the base is peer-reviewable by the license
+              every buyer receives it under.
             </p>
             <div style={{ marginTop: "var(--cs-space-5)" }}>
               <Button href="/legal/license" variant="ghost">
@@ -606,7 +606,7 @@ export default function HomePage() {
               <Icon name="git-branch" size="lg" />A public changelog
             </div>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              Every release is logged in the open, in plain English — what
+              Every release is logged in the open, in plain English: what
               shipped, release by release. No private roadmap you have to take
               on faith, and the buyer dashboard shows your own live
               updates-window.
@@ -625,7 +625,7 @@ export default function HomePage() {
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
               A limited first cohort of design partners gets discounted access
               in exchange for a citable case study and a direct line to the
-              engineer. A reference partnership — not a waitlist.
+              engineer. A reference partnership, not a waitlist.
             </p>
             <div style={{ marginTop: "var(--cs-space-5)" }}>
               <Button href="/partners" variant="ghost">

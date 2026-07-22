@@ -17,6 +17,17 @@ html {
   color-scheme: dark;
 }
 
+/* ADR-0374: OS-seed prong for `color-scheme` — an unpinned light-OS visitor gets native UA chrome
+ * (form controls, scrollbars) flipped light to match the token cascade, instead of the dark default
+ * showing through under light --cs-* tokens. Kit-level root of the same 3-prong gap the site's
+ * global.css re-assert also carries (that re-assert wins on the site; this covers every other kit
+ * consumer). Mirrors the tokens.css `:root:not([data-theme="dark"])` OS-seed selector. */
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) {
+    color-scheme: light;
+  }
+}
+
 [data-theme="light"] {
   color-scheme: light;
 }
@@ -228,6 +239,38 @@ kbd,
 }
 .cs-tok-success {
   color: var(--cs-success);
+}
+
+/* Inline `code` inside prose (glossary definitions, feature-card bodies). Theme-following tonal
+ * chip: a step-up surface + hairline so a code identifier reads as code without a loud box. */
+.cs-code-inline {
+  font-family: var(--cs-font-mono);
+  font-size: 0.9em;
+  background: var(--cs-surface-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  padding: 0.1em 0.35em;
+}
+
+/* Shiki-highlighted code (glossary + marketplace code artifacts). Emitted by the site's
+ * <CodeHighlight> via fumadocs' Shiki with `defaultColor: false`, so each token span carries both
+ * `--shiki-light` and `--shiki-dark` custom props and NO `color` — this picks the right one per
+ * theme. Theme-FOLLOWING per ADR-0374 lock 1 (retires the always-dark law): the light Shiki theme
+ * paints on the light code surface, the dark theme on the dark surface. Mirrors the 3-prong theme
+ * resolution in tokens.css (dark is the un-attributed default). */
+.cs-shiki span {
+  color: var(--shiki-dark);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .cs-shiki span {
+    color: var(--shiki-light);
+  }
+}
+[data-theme="light"] .cs-shiki span {
+  color: var(--shiki-light);
+}
+[data-theme="dark"] .cs-shiki span {
+  color: var(--shiki-dark);
 }
 
 /* ===== Elevation + glow utilities (ADR-0078 §7) — the deliberate raised step ===== */

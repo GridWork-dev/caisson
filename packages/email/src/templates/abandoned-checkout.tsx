@@ -5,7 +5,7 @@
 // abandoned checkout by `services/license`'s abandoned-checkout sweep (the append-only
 // `checkout_abandonment_notice` marker gates the send). The discount block (env-gated,
 // `resolveAbandonedCheckoutDiscount`) is one plain sentence + the code — still no urgency framing.
-import { EmailBody, EmailButton, EmailLayout } from "./layout.tsx";
+import { EmailBody, EmailButton, EmailLayout, EmailLink } from "./layout.tsx";
 
 export interface AbandonedCheckoutLine {
   label: string;
@@ -38,7 +38,7 @@ export function AbandonedCheckoutEmail(
       heading="Your cart is still here"
     >
       <EmailBody>
-        Hi {data.buyerName}. You started checkout but didn't finish — your cart
+        Hi {data.buyerName}. You started checkout but didn't finish: your cart
         is still here, whenever you're ready.
       </EmailBody>
       {data.lines.map((line, i) => (
@@ -47,7 +47,8 @@ export function AbandonedCheckoutEmail(
       <EmailButton href={data.url} label="Return to cart" />
       {data.discountLabel !== undefined && data.discountUrl !== undefined && (
         <EmailBody>
-          {data.discountLabel} if you complete checkout at {data.discountUrl}.
+          {data.discountLabel} if you complete checkout at{" "}
+          <EmailLink href={data.discountUrl}>this link</EmailLink>.
         </EmailBody>
       )}
     </EmailLayout>

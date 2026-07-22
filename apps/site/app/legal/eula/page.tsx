@@ -40,7 +40,7 @@ export default function EulaPage() {
             This End User License Agreement is being finalized with legal
             counsel and may be updated before the first sale. It is provided
             here for reference. The{" "}
-            <a href="/legal/license" style={{ color: "var(--cs-accent)" }}>
+            <a href="/legal/license" className="cs-link">
               License page
             </a>{" "}
             is a plain-language summary only — this document is the binding
@@ -210,7 +210,7 @@ export default function EulaPage() {
           covered by an unconditional 14-day money-back guarantee: request a
           refund within 14 days for any reason and the merchant of record
           returns your payment. See the{" "}
-          <a href="/legal/terms" style={{ color: "var(--cs-accent)" }}>
+          <a href="/legal/terms" className="cs-link">
             Terms of Use
           </a>{" "}
           for the full refund policy.
@@ -522,7 +522,7 @@ export default function EulaPage() {
           regarding the Software, and supersedes all prior or contemporaneous
           understandings regarding its subject matter. Where the plain-language
           summary at{" "}
-          <a href="/legal/license" style={{ color: "var(--cs-accent)" }}>
+          <a href="/legal/license" className="cs-link">
             /legal/license
           </a>{" "}
           and this Agreement conflict, this Agreement governs.
@@ -547,10 +547,7 @@ export default function EulaPage() {
           <br />
           Atlanta, Georgia, USA
           <br />
-          <a
-            href="mailto:admin@caisson.sh"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>
         </p>

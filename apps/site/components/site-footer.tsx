@@ -86,23 +86,13 @@ export function SiteFooter() {
             , free to use. Bundles and modules are commercial.
           </p>
           <div style={{ marginTop: "var(--cs-space-6)" }}>
-            <div
-              className="cs-status"
-              style={{ marginBottom: "var(--cs-space-3)" }}
-            >
-              Product updates
-            </div>
+            <div className="cs-footer-heading">Product updates</div>
             <UpdatesFormLazy source="footer" />
           </div>
         </div>
         {COLS.map((col) => (
           <nav key={col.heading} aria-label={col.heading}>
-            <div
-              className="cs-status"
-              style={{ marginBottom: "var(--cs-space-3)" }}
-            >
-              {col.heading}
-            </div>
+            <div className="cs-footer-heading">{col.heading}</div>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {col.links.map((l) => (
                 <li key={l.href} style={{ marginBottom: "var(--cs-space-2)" }}>

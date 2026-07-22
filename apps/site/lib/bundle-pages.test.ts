@@ -3,7 +3,7 @@
 // content-free. Keeps the pop-out and the standalone pages reading the same non-drifting source.
 import { describe, expect, test } from "bun:test";
 
-import { BUNDLE_PAGES, bundlePageRecord } from "./bundle-pages";
+import { BUNDLE_PAGES, bundlePageRecord, spellCount } from "./bundle-pages";
 import {
   bundlePrice,
   BUNDLE_PRICES,
@@ -107,5 +107,15 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
         .sort();
       expect(recordedSellable).toEqual(real);
     }
+  });
+
+  test("every bundle's member count spells out correctly, and out-of-range falls back to a numeral", () => {
+    for (const r of BUNDLE_PAGES) {
+      if (r.slug === "everything") continue;
+      expect(spellCount(r.members.length)).not.toBe(String(r.members.length));
+    }
+    expect(spellCount(0)).toBe("Zero");
+    expect(spellCount(13)).toBe("Thirteen");
+    expect(spellCount(16)).toBe("16");
   });
 });

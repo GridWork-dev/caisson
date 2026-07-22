@@ -47,7 +47,7 @@ on the machine unless you wire an explicit egress.
 
 `agent-kernel` imports no vendor SDK and runs no LLM — it is composition mechanism only, and both
 the base `@caisson/cli`/`@caisson/mcp-server` and this bundle's curated content consume it
-down-only (ADR-0022, ADR-0065). The same kernel underpins the `create-caisson` generator and the
+down-only. The same kernel underpins the `create-caisson` generator and the
 buyer-facing MCP server, so the rules that govern your own workflow are the rules that govern code
 generation.
 
