@@ -86,7 +86,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
     ],
     artifact: {
-      label: "TenantFieldCrypto.decryptField, the isolation proof",
+      label: "decryptField(), the isolation proof",
       lang: "ts",
       file: "packages/field-crypto/src/crypto.ts",
       code: '  /**\n   * Decrypt a stored envelope for `tenantId`. The key version + algorithm come FROM the envelope\n   * (self-describing, ADR-0046), so a value written under an older version still decrypts after\n   * rotation. Throws on tamper, an AAD mismatch, or a cross-tenant key (the isolation proof).\n   */\n  async decryptField(\n    tenantId: string,\n    stored: string,\n    columnContext: string,\n  ): Promise<string> {\n    const env = parseEnvelope(stored);\n    const key = await this.provider.keyFor(tenantId, env.keyVersion);\n    const aad = buildAad(tenantId, env.keyVersion, columnContext);\n    const cipher = cipherForAlg(env.algId);\n    const plaintext = cipher.decrypt(\n      key,\n      { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },\n      aad,\n    );\n    return plaintext.toString("utf8");\n  }',

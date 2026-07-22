@@ -86,7 +86,7 @@ export function LifecycleDiagram() {
       <li className={styles.stage}>
         <div className={styles.stageHead}>2 · audit chain</div>
         <div className={styles.stageSub}>
-          sha256(prev, payload) — append-only, one break cascades
+          sha256(prev ‖ payload) — append-only, one break cascades
         </div>
       </li>
       <li className={styles.stage}>
