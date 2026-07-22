@@ -43,7 +43,7 @@ const ENTRIES: readonly LedgerEntry[] = [
 
 export default function CreditsDemo() {
   return (
-    <MediaFrame label="LedgerList">
+    <MediaFrame label="Credit ledger">
       <div
         style={{
           display: "grid",

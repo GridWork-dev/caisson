@@ -75,9 +75,13 @@ export function ForgotPasswordForm(): React.ReactElement {
       </Button>
       {message !== "" ? (
         <p
-          className="cs-muted"
+          className={status === "error" ? "cs-footnote" : "cs-muted"}
           role={status === "error" ? "alert" : "status"}
-          style={{ fontSize: "var(--cs-text-sm)", margin: 0 }}
+          style={{
+            fontSize: "var(--cs-text-sm)",
+            margin: 0,
+            color: status === "error" ? "var(--cs-danger)" : undefined,
+          }}
         >
           {message}
         </p>

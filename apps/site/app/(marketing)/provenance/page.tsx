@@ -117,19 +117,19 @@ const CONTROLS: readonly {
   {
     icon: "key",
     title: "Detached signing",
-    body: "Sign an evidence bundle or an audit root with a detached Ed25519 signature and an RFC-3161 timestamp. The signature travels with the artifact; a verifier checks it with your public key alone — the private key never leaves your side of the boundary.",
+    body: "Sign an evidence bundle or an audit root with a detached Ed25519 signature and an RFC-3161 timestamp. The signature travels with the artifact; a verifier checks it with your public key alone, the private key never leaves your side of the boundary.",
     proof: "caisson evidence verify pack.json  →  sig ✓ · tsa ✓ · root 2c9f…b7",
   },
   {
     icon: "audit-chain",
     title: "Append-only audit chain",
-    body: "Each audit row commits SHA-256 over the previous hash plus its own payload. Tampering with any historical row breaks every link after it — and the break is detectable, provable, and exportable for an auditor.",
+    body: "Each audit row commits SHA-256 over the previous hash plus its own payload. Tampering with any historical row breaks every link after it, and the break is detectable, provable, and exportable for an auditor.",
     proof: "caisson audit verify  →  41984 rows · 0 breaks · root 2c9f…b7",
   },
   {
     icon: "worm",
     title: "WORM evidence storage",
-    body: "Evidence buckets ship with S3 Object Lock in COMPLIANCE mode and a default retention. Inside the window an object cannot be overwritten or deleted — not by a bug, not by an operator, not by a leaked root key.",
+    body: "Evidence buckets ship with S3 Object Lock in COMPLIANCE mode and a default retention. Inside the window an object cannot be overwritten or deleted, not by a bug, not by an operator, not by a leaked root key.",
     proof: "delete-object  →  AccessDenied: WORM-protected until 2033-06-27Z",
   },
   {
@@ -224,7 +224,7 @@ export default function ProvenancePage() {
       <Reveal>
         <Section
           eyebrow="What it composes"
-          lede="The Provenance bundle is a real runtime composition of three @caisson/* packages, not marketing copy: signing-primitive (detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots), audit-worm (the append-only SHA-256 audit chain plus the S3 Object-Lock WORM adapter), and field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption). Every member is a workspace dependency re-exported through the bundle's own entry point — and every one is also a member of Compliance, so a Compliance owner already holds the whole set."
+          lede="The Provenance bundle is a real runtime composition of three @caisson/* packages, not marketing copy: signing-primitive (detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots), audit-worm (the append-only SHA-256 audit chain plus the S3 Object-Lock WORM adapter), and field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption). Every member is a workspace dependency re-exported through the bundle's own entry point, and every one is also a member of Compliance, so a Compliance owner already holds the whole set."
         />
       </Reveal>
 
@@ -241,7 +241,7 @@ export default function ProvenancePage() {
         <Section
           eyebrow="The composition"
           title="Three packages, one bundle."
-          lede="Each member is a real workspace dependency — not a manifest claim. Each is also sold standalone, so you can take exactly the primitive you need."
+          lede="Each member is a real workspace dependency, not a manifest claim. Each is also sold standalone, so you can take exactly the primitive you need."
         >
           <FeatureGrid cols={3}>
             {record.members.map((m) => (
@@ -261,7 +261,7 @@ export default function ProvenancePage() {
         <Section
           eyebrow="What ships in the box"
           title="Four primitives, each with its proof."
-          lede="No diagrams standing in for behaviour. The artifact carries the claim — a signature, a chain root, a denied delete, a refused cross-tenant decrypt."
+          lede="No diagrams standing in for behaviour. The artifact carries the claim, a signature, a chain root, a denied delete, a refused cross-tenant decrypt."
         >
           <div className="cs-grid" style={{ marginTop: "var(--cs-space-8)" }}>
             {CONTROLS.map((c, i) => (
@@ -308,7 +308,7 @@ export default function ProvenancePage() {
         <Section
           eyebrow="Who it's for"
           title="Teams that have to prove a record, not just store it."
-          lede="Teams where the question isn't 'do you have the data' but 'can you prove it wasn't changed' — regulated records, legal holds, model-output audit trails, evidence you may have to defend years later. Provenance gives you a signature, a tamper-evident chain, and sealed-at-rest fields, so the proof travels with the artifact."
+          lede="Teams where the question isn't 'do you have the data' but 'can you prove it wasn't changed', regulated records, legal holds, model-output audit trails, evidence you may have to defend years later. Provenance gives you a signature, a tamper-evident chain, and sealed-at-rest fields, so the proof travels with the artifact."
           band="tint"
         >
           <Card accent className="cs-elevate-md">
@@ -340,7 +340,7 @@ export default function ProvenancePage() {
         <Section
           eyebrow="Trial path"
           title="Prove fit in week one."
-          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />

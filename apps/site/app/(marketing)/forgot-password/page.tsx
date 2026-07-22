@@ -1,6 +1,7 @@
 // Forgot-password entry point (better-auth email+password, ADR-0015 extension). Kept minimal —
 // a copy/design polish pass follows separately, same as /login.
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Hero, Section } from "@caisson/ui/components";
 import { buildMetadata } from "@/lib/metadata";
 import { ForgotPasswordForm } from "./forgot-password-form";
@@ -25,8 +26,15 @@ export default function ForgotPasswordPage(): React.ReactElement {
         title="Reset your password"
         lede="Enter the email on your account and we'll send a one-time reset link."
       />
-      <Section eyebrow="Reset" title="Send a reset link">
+      {/* No repeated eyebrow/heading here (visual-audit id 58bd2691a53e402d) - the Hero above
+          already states the task; this Section is a plain form wrapper. */}
+      <Section>
         <ForgotPasswordForm />
+        <p className="cs-muted" style={{ fontSize: "var(--cs-text-sm)" }}>
+          <Link href="/login" className="cs-muted">
+            Back to sign in
+          </Link>
+        </p>
       </Section>
     </>
   );

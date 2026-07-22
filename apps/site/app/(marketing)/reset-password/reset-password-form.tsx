@@ -41,7 +41,7 @@ export function ResetPasswordForm({
       return;
     }
     setStatus("done");
-    setMessage("Password updated — you can sign in now.");
+    setMessage("Password updated. You can sign in now.");
     setTimeout(() => router.push("/login"), 1500);
   }
 
@@ -85,9 +85,13 @@ export function ResetPasswordForm({
       </Button>
       {message !== "" ? (
         <p
-          className="cs-muted"
+          className={status === "error" ? "cs-footnote" : "cs-muted"}
           role={status === "error" ? "alert" : "status"}
-          style={{ fontSize: "var(--cs-text-sm)", margin: 0 }}
+          style={{
+            fontSize: "var(--cs-text-sm)",
+            margin: 0,
+            color: status === "error" ? "var(--cs-danger)" : undefined,
+          }}
         >
           {message}
         </p>

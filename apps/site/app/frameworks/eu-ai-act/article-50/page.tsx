@@ -40,7 +40,7 @@ const OBLIGATIONS = [
   {
     clause: "Art. 50(1)",
     who: "Providers",
-    what: "AI systems intended to interact directly with people must be designed so those people are informed they are interacting with AI — unless that is obvious to a reasonably well-informed person from the context.",
+    what: "AI systems intended to interact directly with people must be designed so those people are informed they are interacting with AI, unless that is obvious to a reasonably well-informed person from the context.",
   },
   {
     clause: "Art. 50(2)",
@@ -63,7 +63,7 @@ const FAQ = [
   {
     question: "Does Article 50 apply to my SaaS chatbot or AI agent?",
     answer:
-      "If your product's AI interacts directly with people — a chatbot, a support agent, an AI feature that converses — Article 50(1) applies regardless of whether the system is high-risk: the person must be informed they are interacting with AI, unless that is already obvious from context to a reasonably well-informed person. If your product generates synthetic content, Article 50(2)'s machine-readable marking also applies.",
+      "If your product's AI interacts directly with people (a chatbot, a support agent, an AI feature that converses), Article 50(1) applies regardless of whether the system is high-risk: the person must be informed they are interacting with AI, unless that is already obvious from context to a reasonably well-informed person. If your product generates synthetic content, Article 50(2)'s machine-readable marking also applies.",
   },
   {
     question: "Was the August 2, 2026 date delayed?",
@@ -78,14 +78,14 @@ const FAQ = [
   {
     question: "Does Caisson make my product Article 50 compliant?",
     answer:
-      "No — and no codebase can. The disclosure surface is your product's UI, and whether it satisfies Article 50 is a legal determination. What Caisson ships is the evidence discipline behind the obligation: disclosure events recorded to a tamper-evident, hash-chained audit trail, configuration versioned in your repo, and a dated evidence bundle — so when someone asks whether disclosure fired for a given interaction, the answer is a verifiable record, not a recollection.",
+      "No, and no codebase can. The disclosure surface is your product's UI, and whether it satisfies Article 50 is a legal determination. What Caisson ships is the evidence discipline behind the obligation: disclosure events recorded to a tamper-evident, hash-chained audit trail, configuration versioned in your repo, and a dated evidence bundle, so when someone asks whether disclosure fired for a given interaction, the answer is a verifiable record, not a recollection.",
   },
 ] as const;
 
 const articleLd = techArticle({
   headline: "EU AI Act Article 50: the August 2, 2026 transparency obligations",
   description:
-    "What EU AI Act Article 50 requires of chatbots, agents, and generated content from August 2, 2026 — and the tamper-evident record-keeping that proves the obligation was met.",
+    "What EU AI Act Article 50 requires of chatbots, agents, and generated content from August 2, 2026, and the tamper-evident record-keeping that proves the obligation was met.",
   url: `${SITE_URL}/frameworks/eu-ai-act/article-50`,
 });
 const breadcrumbLd = breadcrumb([
@@ -118,7 +118,7 @@ export default function Article50Page() {
         lede={
           <>
             From that date, AI systems that interact with people must disclose
-            it, and generated content must carry machine-readable marking —
+            it, and generated content must carry machine-readable marking,
             regardless of risk class. Here is what Article 50 requires, who it
             covers, and the record that proves you met it.
           </>
@@ -146,7 +146,7 @@ export default function Article50Page() {
       <Section
         eyebrow="The short answer"
         title="Transparency, for every AI system that talks to people."
-        lede="Article 50 is the EU AI Act's transparency chapter. Unlike the high-risk obligations (Annex III systems), it applies to ordinary products: a SaaS chatbot, an AI support agent, a content generator. The obligations are disclosure-shaped — tell people they are talking to AI, mark what AI generated — and they apply from August 2, 2026, a date confirmed unmoved by the Digital Omnibus amendment (reporting through 2026-07-07)."
+        lede="Article 50 is the EU AI Act's transparency chapter. Unlike the high-risk obligations (Annex III systems), it applies to ordinary products: a SaaS chatbot, an AI support agent, a content generator. The obligations are disclosure-shaped (tell people they are talking to AI, mark what AI generated) and they apply from August 2, 2026, a date confirmed unmoved by the Digital Omnibus amendment (reporting through 2026-07-07)."
         band="tint"
       />
 
@@ -155,7 +155,7 @@ export default function Article50Page() {
         <Section
           eyebrow="What it requires"
           title="Four obligations, two roles."
-          lede="A factual paraphrase — the regulation's text governs. Provider = who builds/places the system on the market; deployer = who uses it under their authority."
+          lede="A factual paraphrase, the regulation's text governs. Provider = who builds/places the system on the market; deployer = who uses it under their authority."
         >
           <div className="cs-matrix__frame">
             <div className="cs-matrix__wrap">
@@ -195,14 +195,7 @@ export default function Article50Page() {
           title="Three surfaces, one record."
           band="surface"
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
-              gap: "var(--cs-space-4)",
-            }}
-          >
+          <div className="cs-grid cs-grid--3">
             <Card>
               <p style={{ fontWeight: 500, marginBottom: "var(--cs-space-2)" }}>
                 1. The disclosure surface
@@ -210,7 +203,7 @@ export default function Article50Page() {
               <p className="cs-muted">
                 An unambiguous &ldquo;you are interacting with AI&rdquo;
                 affordance in the conversational UI. This is your product
-                surface — design it once, version it in the repo.
+                surface, design it once, version it in the repo.
               </p>
             </Card>
             <Card>
@@ -219,9 +212,8 @@ export default function Article50Page() {
               </p>
               <p className="cs-muted">
                 Generated audio, image, video, and text outputs carry detectable
-                artificial-origin marking (Art. 50(2)) — metadata or
-                watermarking appropriate to the medium, applied at the
-                generation boundary.
+                artificial-origin marking (Art. 50(2)), metadata or watermarking
+                appropriate to the medium, applied at the generation boundary.
               </p>
             </Card>
             <Card>
@@ -233,8 +225,8 @@ export default function Article50Page() {
                 given interaction, a screenshot is a recollection. Caisson
                 records disclosure events to a hash-chained, tamper-evident
                 audit trail anchored write-once outside your database, and
-                packages them into a dated evidence bundle — a verifiable
-                answer, not an assertion.
+                packages them into a dated evidence bundle, a verifiable answer,
+                not an assertion.
               </p>
             </Card>
           </div>
@@ -254,19 +246,18 @@ export default function Article50Page() {
         <Section eyebrow="The dates" title="How the AI Act phases in.">
           <ul className="cs-lede" style={{ paddingLeft: "var(--cs-space-5)" }}>
             <li style={{ marginBottom: "var(--cs-space-2)" }}>
-              <strong>August 1, 2024</strong> — Regulation (EU) 2024/1689 enters
+              <strong>August 1, 2024</strong>: Regulation (EU) 2024/1689 enters
               into force.
             </li>
             <li style={{ marginBottom: "var(--cs-space-2)" }}>
-              <strong>February 2, 2025</strong> — prohibited-practice bans
-              apply.
+              <strong>February 2, 2025</strong>: prohibited-practice bans apply.
             </li>
             <li style={{ marginBottom: "var(--cs-space-2)" }}>
-              <strong>August 2, 2025</strong> — general-purpose AI model
+              <strong>August 2, 2025</strong>: general-purpose AI model
               obligations apply.
             </li>
             <li style={{ marginBottom: "var(--cs-space-2)" }}>
-              <strong>August 2, 2026</strong> — the general application date:
+              <strong>August 2, 2026</strong>: the general application date.
               Article 50 transparency obligations and the bulk of the high-risk
               regime become enforceable. Confirmed not extended by the Digital
               Omnibus amendment (independent reporting through 2026-07-07).
@@ -287,7 +278,7 @@ export default function Article50Page() {
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
           The audit chain, evidence bundles, and versioned configuration that
           give Article 50 disclosure a verifiable record ship in the Compliance
-          bundle — wired and testable from day one.
+          bundle, wired and testable from day one.
         </p>
         <div className="cs-cta-row">
           <Button href="/compliance" variant="primary">

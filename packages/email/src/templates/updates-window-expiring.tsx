@@ -47,7 +47,7 @@ export function UpdatesWindowExpiringEmail(
       </EmailBody>
       <EmailButton href={data.url} label="Renew updates" />
       <EmailBody>
-        What you already installed keeps working — this only affects versions
+        What you already installed keeps working: this only affects versions
         published after the window ends.
       </EmailBody>
     </EmailLayout>

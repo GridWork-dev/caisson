@@ -52,13 +52,13 @@ export interface ModulePageRecord {
 export const MODULE_PAGES: readonly ModulePageRecord[] = [
   {
     slug: "field-crypto",
-    metaTitle: "Field Encryption — Per-Tenant AES-256-GCM | Caisson",
+    metaTitle: "Field Encryption, Per-Tenant AES-256-GCM | Caisson",
     metaDescription:
       "A distinct HKDF-SHA256 key per tenant, a self-describing AES-256-GCM envelope, and AAD that refuses a ciphertext moved across tenants, columns, or rows.",
     heroOneLiner:
-      "One key per tenant, derived not stored — a ciphertext moved to another tenant fails to decrypt, provably.",
+      "One key per tenant, derived not stored, a ciphertext moved to another tenant fails to decrypt, provably.",
     definition:
-      "field-crypto derives a distinct AES-256-GCM key per tenant with HKDF-SHA256, seals values into a self-describing envelope, and binds tenant, column, and row identity into the AEAD's additional authenticated data — so a ciphertext copied to another tenant, column, or row fails to decrypt. A pluggable KMS seam and crypto-shred erasure ship in the same package.",
+      "field-crypto derives a distinct AES-256-GCM key per tenant with HKDF-SHA256, seals values into a self-describing envelope, and binds tenant, column, and row identity into the AEAD's additional authenticated data, so a ciphertext copied to another tenant, column, or row fails to decrypt. A pluggable KMS seam and crypto-shred erasure ship in the same package.",
     included: [
       {
         title: "Fail-closed on every read and write",
@@ -66,56 +66,56 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Per-tenant key, derived not stored",
-        body: "deriveTenantKey() runs HKDF-SHA256 over a 32-byte MASTER_FIELD_KEY and a 32-byte FIELD_CRYPTO_SALT, folding the tenant id and key version into the HKDF info string. There is no key table to back up or leak — DerivedKeyProvider re-derives the key on demand.",
+        body: "deriveTenantKey() runs HKDF-SHA256 over a 32-byte MASTER_FIELD_KEY and a 32-byte FIELD_CRYPTO_SALT, folding the tenant id and key version into the HKDF info string. There is no key table to back up or leak, DerivedKeyProvider re-derives the key on demand.",
       },
       {
         title: "AAD binds tenant, column, and row",
-        body: "buildAad() serializes a JSON tuple — tenant id, key version, column context, and, for row-bound fields, the row's UUID — as GCM's additional authenticated data. Relocate the ciphertext to another tenant, column, or row and decryption fails as an AEAD authentication error, never a silent wrong-plaintext read.",
+        body: "buildAad() serializes a JSON tuple (tenant id, key version, column context, and, for row-bound fields, the row's UUID) as GCM's additional authenticated data. Relocate the ciphertext to another tenant, column, or row and decryption fails as an AEAD authentication error, never a silent wrong-plaintext read.",
       },
       {
         title: "Self-describing envelope survives rotation",
-        body: "serializeEnvelope() packs format version, algorithm id, and key version ahead of the nonce, ciphertext, and tag into one base64 string; parseEnvelope() reads the version back off the value itself. KeyVersionRegistry.rotate() bumps a tenant forward with no bulk re-encrypt job — older envelopes keep decrypting under the version they were written with.",
+        body: "serializeEnvelope() packs format version, algorithm id, and key version ahead of the nonce, ciphertext, and tag into one base64 string; parseEnvelope() reads the version back off the value itself. KeyVersionRegistry.rotate() bumps a tenant forward with no bulk re-encrypt job, older envelopes keep decrypting under the version they were written with.",
       },
       {
         title: "KMS envelope encryption behind one port",
-        body: "KmsKeyProvider wraps a per-tenant data-encryption key under a KMS-held key-encryption key that never leaves the KMS — only the wrapped DEK is persisted. awsKmsClient() is the wired AWS driver; the same three-method KmsClient port is the seam a GCP, Azure Key Vault, or Vault Transit driver drops into.",
+        body: "KmsKeyProvider wraps a per-tenant data-encryption key under a KMS-held key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. awsKmsClient() is the wired AWS driver; the same three-method KmsClient port is the seam a GCP, Azure Key Vault, or Vault Transit driver drops into.",
       },
       {
         title: "Crypto-shred erasure without breaking the audit chain",
-        body: "cryptoShred() schedules KEK deletion through the KMS port and mints an erasure.crypto-shred audit payload that carries no PII. Every ciphertext under that key becomes permanently unrecoverable while the WORM-anchored hash chain's committed bytes never change — verifyChain still passes after the shred.",
+        body: "cryptoShred() schedules KEK deletion through the KMS port and mints an erasure.crypto-shred audit payload that carries no PII. Every ciphertext under that key becomes permanently unrecoverable while the WORM-anchored hash chain's committed bytes never change, verifyChain still passes after the shred.",
       },
     ],
     artifact: {
-      label: "TenantFieldCrypto.decryptField — the isolation proof",
+      label: "TenantFieldCrypto.decryptField, the isolation proof",
       lang: "ts",
       file: "packages/field-crypto/src/crypto.ts",
       code: '  /**\n   * Decrypt a stored envelope for `tenantId`. The key version + algorithm come FROM the envelope\n   * (self-describing, ADR-0046), so a value written under an older version still decrypts after\n   * rotation. Throws on tamper, an AAD mismatch, or a cross-tenant key (the isolation proof).\n   */\n  async decryptField(\n    tenantId: string,\n    stored: string,\n    columnContext: string,\n  ): Promise<string> {\n    const env = parseEnvelope(stored);\n    const key = await this.provider.keyFor(tenantId, env.keyVersion);\n    const aad = buildAad(tenantId, env.keyVersion, columnContext);\n    const cipher = cipherForAlg(env.algId);\n    const plaintext = cipher.decrypt(\n      key,\n      { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },\n      aad,\n    );\n    return plaintext.toString("utf8");\n  }',
       annotations: [
-        "parseEnvelope reads the key version back off the stored value itself, so a ciphertext written under an older version still decrypts after rotation — no migration job, no lookup table.",
-        "buildAad binds tenant and column identity into the AEAD's additional authenticated data — decrypt under the wrong tenant or column and cipher.decrypt throws, it never returns the wrong plaintext.",
+        "parseEnvelope reads the key version back off the stored value itself, so a ciphertext written under an older version still decrypts after rotation, no migration job, no lookup table.",
+        "buildAad binds tenant and column identity into the AEAD's additional authenticated data, decrypt under the wrong tenant or column and cipher.decrypt throws, it never returns the wrong plaintext.",
       ],
     },
     faq: [
       {
         question: "Does field encryption make us HIPAA or SOC 2 compliant?",
         answer:
-          "No — no module makes an organization compliant; that determination is your organization's and its auditor's to make. field-crypto ships the technical control both frameworks point at for data at rest: a distinct key per tenant and cryptographic proof, not a policy statement, that a ciphertext can't cross tenant boundaries.",
+          "No, no module makes an organization compliant; that determination is your organization's and its auditor's to make. field-crypto ships the technical control both frameworks point at for data at rest: a distinct key per tenant and cryptographic proof, not a policy statement, that a ciphertext can't cross tenant boundaries.",
       },
       {
         question: "What happens when I rotate a tenant's key?",
         answer:
-          "KeyVersionRegistry.rotate() bumps the tenant to the next version; new writes encrypt under it immediately. There's no bulk re-encrypt job — every envelope carries its own key_version, so a value written under an older version keeps decrypting until its next write lazily re-encrypts it under the current one.",
+          "KeyVersionRegistry.rotate() bumps the tenant to the next version; new writes encrypt under it immediately. There's no bulk re-encrypt job, every envelope carries its own key_version, so a value written under an older version keeps decrypting until its next write lazily re-encrypts it under the current one.",
       },
       {
         question: "Can I use our own KMS instead of the derived key?",
         answer:
-          "Yes. FieldKeyProvider is a two-method port — keyFor and currentVersion. DerivedKeyProvider (HKDF, zero infra) is the default; KmsKeyProvider wraps a per-tenant DEK under AWS KMS today through awsKmsClient(). GCP, Azure Key Vault, and Vault Transit map cleanly onto the same three-method KmsClient port — implement it to plug them in.",
+          "Yes. FieldKeyProvider is a two-method port (keyFor and currentVersion. DerivedKeyProvider (HKDF, zero infra) is the default; KmsKeyProvider wraps a per-tenant DEK under AWS KMS today through awsKmsClient(). GCP, Azure Key Vault, and Vault Transit map cleanly onto the same three-method KmsClient port) implement it to plug them in.",
       },
       {
         question:
           "How does this handle a GDPR or CCPA erasure request without breaking our immutable audit log?",
         answer:
-          "cryptoShred() destroys the tenant or subject's key-encryption key through the KMS port, so every ciphertext under it becomes permanently unrecoverable — while the append-only WORM chain never mutates, because it only ever committed the ciphertext envelope, never plaintext. The chain's verifyChain() still passes after a shred.",
+          "cryptoShred() destroys the tenant or subject's key-encryption key through the KMS port, so every ciphertext under it becomes permanently unrecoverable, while the append-only WORM chain never mutates, because it only ever committed the ciphertext envelope, never plaintext. The chain's verifyChain() still passes after a shred.",
       },
     ],
     relatedGlossary: ["hipaa-technical-safeguards", "row-level-security"],
@@ -126,7 +126,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "audit-worm",
-    metaTitle: "Audit Chain + WORM — append-only audit log | Caisson",
+    metaTitle: "Audit Chain + WORM, append-only audit log | Caisson",
     metaDescription:
       "Append-only SHA-256 audit chain with a write-once WORM anchor per entry, plus an S3 Object-Lock store. Tamper, truncation, and rewrite all surface on verify.",
     heroOneLiner:
@@ -162,8 +162,8 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       file: "packages/audit-worm/src/chain-store.ts",
       code: "  async verify(accountId: string): Promise<ChainVerification> {\n    return withTenant(this.db, accountId, async (tx) => {\n      const entries = await loadEntries(tx, accountId);\n\n      // Truncation guard (TM-I): the WORM store is the trusted length oracle. An anchor for a length\n      // past what the DB can now produce means the tail was dropped — invalid even if the surviving\n      // prefix is internally consistent (which, being a true prefix, it always is).\n      const beyond = await this.store.head(\n        anchorKey(accountId, entries.length + 1),\n      );\n      if (beyond !== null) {\n        return { valid: false, brokenAt: entries.length };\n      }\n      if (entries.length === 0) {\n        return { valid: true, brokenAt: null };\n      }\n\n      const anchorObj = await this.store.get(\n        anchorKey(accountId, entries.length),\n      );\n      const anchor = decodeAnchor(anchorObj.body);\n      return verifyChain(entries, anchor);\n    });\n  }",
       annotations: [
-        "The truncation guard checks for a WORM anchor ONE PAST the DB's current length — that catches a cut tail even though the surviving rows still hash together as a clean prefix.",
-        "entries.length === 0 short-circuits to a valid empty chain — a brand-new tenant never has to special-case verify.",
+        "The truncation guard checks for a WORM anchor ONE PAST the DB's current length, that catches a cut tail even though the surviving rows still hash together as a clean prefix.",
+        "entries.length === 0 short-circuits to a valid empty chain, a brand-new tenant never has to special-case verify.",
       ],
     },
     faq: [
@@ -203,25 +203,25 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "retention-runner",
-    metaTitle: "Retention Runner — CCPA/GDPR Erasure Module | Caisson",
+    metaTitle: "Retention Runner, CCPA/GDPR Erasure Module | Caisson",
     metaDescription:
-      "The right-to-erasure runner in Caisson's Compliance bundle: multi-store erasure, per-target failure isolation, one audit row per run — scheduled or on request.",
+      "The right-to-erasure runner in Caisson's Compliance bundle: multi-store erasure, per-target failure isolation, one audit row per run, scheduled or on request.",
     heroOneLiner:
-      "One erasure request, every store, one audit row — even when a target fails.",
+      "One erasure request, every store, one audit row, even when a target fails.",
     definition:
       "Retention runner is Caisson's CCPA/GDPR right-to-erasure module: `runErasure` fans one subject's erasure out across every registered store (object storage, cascade DB, orphan sweep), isolates each target's failure so one broken store never blocks the others, and writes exactly one reason-tagged audit row per run.",
     included: [
       {
         title: "Three reference erasure targets",
-        body: "createObjectStorageTarget, createCascadeDbTarget, and createOrphanSweepTarget each take an injected minimal client (purge / cascadeDelete / sweep) — the real S3 or Postgres client is a documented seam, never a package dependency. No aws-sdk or pg import ships in retention-runner itself.",
+        body: "createObjectStorageTarget, createCascadeDbTarget, and createOrphanSweepTarget each take an injected minimal client (purge / cascadeDelete / sweep), the real S3 or Postgres client is a documented seam, never a package dependency. No aws-sdk or pg import ships in retention-runner itself.",
       },
       {
         title: "Per-target error isolation",
-        body: "eraseOne catches every target's throw into a TargetResult ({ target, ok, error? }) instead of letting it propagate. runErasure runs all targets and always returns a full result set — a failing object-storage purge doesn't stop the cascade DB delete from running.",
+        body: "eraseOne catches every target's throw into a TargetResult ({ target, ok, error? }) instead of letting it propagate. runErasure runs all targets and always returns a full result set, a failing object-storage purge doesn't stop the cascade DB delete from running.",
       },
       {
         title: "One reason-tagged audit row per run",
-        body: "erasureReasonSchema is a closed Zod enum — auto_90d, ccpa_request, or operator_manual; an unrecognized reason fails parseStrict before any target runs. The row lands in retention_audit (migration 0001), and migration 0002 adds FORCE ROW LEVEL SECURITY scoped to app.current_account so one tenant's erasure history can't leak into another's query.",
+        body: "erasureReasonSchema is a closed Zod enum, auto_90d, ccpa_request, or operator_manual; an unrecognized reason fails parseStrict before any target runs. The row lands in retention_audit (migration 0001), and migration 0002 adds FORCE ROW LEVEL SECURITY scoped to app.current_account so one tenant's erasure history can't leak into another's query.",
       },
       {
         title: "Recurring auto_90d sweep on @caisson/jobs",
@@ -229,18 +229,18 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Deterministic, testable runs",
-        body: "runErasure takes an injected now: () => number clock (defaults to Date.now) instead of calling the real clock inline — every test in run-erasure.test.ts pins a fixed timestamp and asserts the exact audit row written.",
+        body: "runErasure takes an injected now: () => number clock (defaults to Date.now) instead of calling the real clock inline, every test in run-erasure.test.ts pins a fixed timestamp and asserts the exact audit row written.",
       },
     ],
     artifact: {
       label:
-        "runErasure — validate, fan out with isolation, write one audit row",
+        "runErasure, validate, fan out with isolation, write one audit row",
       lang: "ts",
       file: "packages/retention-runner/src/run-erasure.ts",
       code: "export async function runErasure(\n  request: ErasureRequest,\n  targets: ErasureTarget[],\n  sink: RetentionAuditSink,\n  now: () => number = Date.now,\n): Promise<RetentionRunResult> {\n  const { subjectId, tenantId, reason } = parseStrict(\n    erasureRequestSchema,\n    request,\n  );\n\n  const results = await Promise.all(\n    targets.map((target) => eraseOne(target, subjectId, tenantId)),\n  );\n\n  const row: RetentionRunResult = {\n    subjectId,\n    tenantId,\n    reason,\n    results,\n    at: now(),\n  };\n  await sink.record(row);\n  return row;\n}",
       annotations: [
-        "parseStrict validates the request before any target runs — an unrecognized reason never gets partway through an erasure.",
-        "Promise.all over eraseOne means every target attempts erasure independently — one target's throw doesn't cancel or block the others.",
+        "parseStrict validates the request before any target runs, an unrecognized reason never gets partway through an erasure.",
+        "Promise.all over eraseOne means every target attempts erasure independently, one target's throw doesn't cancel or block the others.",
       ],
     },
     faq: [
@@ -248,7 +248,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does retention runner delete data automatically, or do I trigger it myself?",
         answer:
-          "Both. auto_90d is the recurring scheduled sweep — enqueueAutoSweep puts one job per subject due for erasure onto a @caisson/jobs queue. ccpa_request and operator_manual are one-shot calls straight into runErasure with no queue involved, for a subject request or an operator-initiated erasure.",
+          "Both. auto_90d is the recurring scheduled sweep, enqueueAutoSweep puts one job per subject due for erasure onto a @caisson/jobs queue. ccpa_request and operator_manual are one-shot calls straight into runErasure with no queue involved, for a subject request or an operator-initiated erasure.",
       },
       {
         question:
@@ -259,30 +259,30 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Is the erasure audit log itself tenant-isolated?",
         answer:
-          "Yes. Migration 0002 enables FORCE ROW LEVEL SECURITY on retention_audit with a policy scoped to app.current_account — a query that never binds a tenant context returns zero rows, not another tenant's erasure history.",
+          "Yes. Migration 0002 enables FORCE ROW LEVEL SECURITY on retention_audit with a policy scoped to app.current_account, a query that never binds a tenant context returns zero rows, not another tenant's erasure history.",
       },
       {
         question:
           "Does running retention runner make us GDPR or CCPA compliant?",
         answer:
-          "No single module does that. Retention runner ships the erasure execution and the audit row proving a subject's data was purged across every registered store — it's the technical control an auditor checks for, generated as evidence, not a compliance certificate.",
+          "No single module does that. Retention runner ships the erasure execution and the audit row proving a subject's data was purged across every registered store, it's the technical control an auditor checks for, generated as evidence, not a compliance certificate.",
       },
     ],
     relatedGlossary: ["worm-retention-policy", "row-level-security"],
     sells: {
       edition: "Compliance",
-      note: `@caisson/compliance composes retention-runner at runtime as a real workspace:* dependency (ADR-0205) — buy it standalone at ${modulePrice("retention-runner")} or get it inside the ${bundlePrice("compliance")} Compliance bundle.`,
+      note: `@caisson/compliance composes retention-runner directly at runtime, not a manifest listing. Buy it standalone at ${modulePrice("retention-runner")} or get it inside the ${bundlePrice("compliance")} Compliance bundle.`,
     },
   },
   {
     slug: "alerting",
-    metaTitle: "Alerting — the SOC 2 CC7.2 alert pipeline | Caisson",
+    metaTitle: "Alerting, the SOC 2 CC7.2 alert pipeline | Caisson",
     metaDescription:
-      "Deduped, rate-capped, quiet-hours alert delivery to email, webhook, Slack, and Telegram, with a structured audit row per outcome — the SOC 2 CC7.2 control.",
+      "Deduped, rate-capped, quiet-hours alert delivery to email, webhook, Slack, and Telegram, with a structured audit row per outcome, the SOC 2 CC7.2 control.",
     heroOneLiner:
-      "Five deterministic stages between an event and a delivered alert — dedup, rate-cap, quiet hours, multi-channel send, one audit row.",
+      "Five deterministic stages between an event and a delivered alert, dedup, rate-cap, quiet hours, multi-channel send, one audit row.",
     definition:
-      "The alerting module is Caisson's SOC 2 CC7.2 alert-delivery control: a five-stage pipeline — dedup, rate-cap-to-digest, IANA-timezone quiet hours with a critical override, multi-channel delivery (email, webhook, Slack, Telegram), then a structured audit row — that runs deterministically because every dependency, including the clock, is injected.",
+      "The alerting module is Caisson's SOC 2 CC7.2 alert-delivery control: a five-stage pipeline (dedup, rate-cap-to-digest, IANA-timezone quiet hours with a critical override, multi-channel delivery (email, webhook, Slack, Telegram), then a structured audit row) that runs deterministically because every dependency, including the clock, is injected.",
     included: [
       {
         title: "Dedup on an open incident's key",
@@ -290,11 +290,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Rate-cap to a digest, never a drop",
-        body: 'rateCap() checks the recipient\'s recent send count against a per-event-type RateCapPolicy; once the window\'s maxPerWindow is reached the outcome flips to "digest" instead of "deliver" — noisy alert types back off, they don\'t vanish.',
+        body: 'rateCap() checks the recipient\'s recent send count against a per-event-type RateCapPolicy; once the window\'s maxPerWindow is reached the outcome flips to "digest" instead of "deliver", noisy alert types back off, they don\'t vanish.',
       },
       {
         title: "IANA-timezone quiet hours, critical overrides",
-        body: 'quietHours() resolves the recipient\'s local hour via Intl.DateTimeFormat (no timezone database dependency) and holds delivery inside the configured window — except a "critical" severity event always delivers, no matter the hour.',
+        body: 'quietHours() resolves the recipient\'s local hour via Intl.DateTimeFormat (no timezone database dependency) and holds delivery inside the configured window, except a "critical" severity event always delivers, no matter the hour.',
       },
       {
         title: "Four delivery channels behind one port, isolated",
@@ -306,25 +306,25 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "One structured audit row per outcome",
-        body: "processAlert() always calls auditSink.record() exactly once — delivered, suppressed, held, or digested — into a plain, RLS-forced Postgres table (alert_audit_log), explicitly not the hash-chained WORM audit-worm product; the two are kept deliberately distinct.",
+        body: "processAlert() always calls auditSink.record() exactly once (delivered, suppressed, held, or digested) into a plain, RLS-forced Postgres table (alert_audit_log), explicitly not the hash-chained WORM audit-worm product; the two are kept deliberately distinct.",
       },
     ],
     artifact: {
       label:
-        "processAlert — five stages, short-circuit at the first non-deliver outcome, exactly one audit row either way",
+        "processAlert, five stages, short-circuit at the first non-deliver outcome, exactly one audit row either way",
       lang: "ts",
       file: "packages/alerting/src/orchestrator.ts",
       code: 'export async function processAlert(\n  event: AlertEvent,\n  deps: ProcessAlertDeps,\n): Promise<ProcessAlertResult> {\n  if (dedup(event, deps.openIncidents)) {\n    return finish(event, deps, "suppressed", []);\n  }\n\n  if (rateCap(event, deps.recentCount, deps.ratePolicy) === "digest") {\n    return finish(event, deps, "digested", []);\n  }\n\n  if (\n    quietHours(event, deps.recipientTz, deps.quietPolicy, deps.now) === "hold"\n  ) {\n    return finish(event, deps, "held", []);\n  }\n\n  const deliveries = await deliverAll(event, deps.channels);\n  return finish(event, deps, "delivered", deliveries);\n}',
       annotations: [
-        "Each stage — dedup, rateCap, quietHours — can short-circuit to its own finish() outcome before a channel is ever touched.",
-        "deliverAll only runs after all three gates pass, and finish() fires on every path — the audit row is written whether or not anything actually delivered.",
+        "Each stage (dedup, rateCap, quietHours) can short-circuit to its own finish() outcome before a channel is ever touched.",
+        "deliverAll only runs after all three gates pass, and finish() fires on every path, the audit row is written whether or not anything actually delivered.",
       ],
     },
     faq: [
       {
         question: "What SOC 2 control does the alerting module satisfy?",
         answer:
-          "CC7.2 — detection of, and response to, unauthorized or anomalous changes. The pipeline routes a qualifying event through dedup, rate-cap, and quiet hours to a real channel and writes one audit row per outcome. That ships the technical control; it doesn't make you SOC 2 compliant on its own — compliance status is your auditor's call.",
+          "CC7.2 (detection of, and response to, unauthorized or anomalous changes. The pipeline routes a qualifying event through dedup, rate-cap, and quiet hours to a real channel and writes one audit row per outcome. That ships the technical control; it doesn't make you SOC 2 compliant on its own) compliance status is your auditor's call.",
       },
       {
         question:
@@ -336,24 +336,24 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "What happens if Slack is down but email and webhook are configured?",
         answer:
-          'deliverAll() runs every configured channel through Promise.all and catches each one\'s throw into its own failed DeliveryResult — a down Slack webhook returns { channel: "slack", ok: false, error }, while email and webhook still deliver. One channel failing never aborts the others.',
+          'deliverAll() runs every configured channel through Promise.all and catches each one\'s throw into its own failed DeliveryResult, a down Slack webhook returns { channel: "slack", ok: false, error }, while email and webhook still deliver. One channel failing never aborts the others.',
       },
       {
         question:
           "Can I buy the alerting module standalone, or only inside Compliance?",
         answer:
-          "Standalone, $149. It's also a real workspace:* dependency of the Compliance bundle, re-exported from its entry point (\"export * from '@caisson/alerting'\") rather than just listed on a manifest — buying Compliance gets you the same package, not a promise of it.",
+          "Standalone, $149. It's also composed directly into the Compliance bundle, re-exported from its entry point (\"export * from '@caisson/alerting'\") rather than just listed on a manifest, buying Compliance gets you the same package, not a promise of it.",
       },
     ],
     relatedGlossary: ["soc2-audit-log", "control-to-code-mapping"],
     sells: {
       edition: "Compliance",
-      note: `Alerting is a real workspace:* dependency that the Compliance bundle re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at ${modulePrice("alerting")} or get it composed into Compliance.`,
+      note: `Alerting is composed directly into the Compliance bundle and re-exported at runtime, not a manifest-only listing. Buy it standalone at ${modulePrice("alerting")} or get it composed into Compliance.`,
     },
   },
   {
     slug: "ai-meter",
-    metaTitle: "Token Metering — @caisson/ai-meter | Caisson",
+    metaTitle: "Token Metering, @caisson/ai-meter | Caisson",
     metaDescription:
       "PG-atomic reserve/reconcile token metering for LLM calls: per-tenant spend caps, a circuit breaker, and a MinHash dedup gate. Integer credits only, no floats.",
     heroOneLiner:
@@ -389,7 +389,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       file: "packages/ai-meter/src/meter.ts",
       code: "/**\n * Atomic running-spend mutation, returning the new total. A non-negative `amount` upserts (the window\n * row may not exist yet — the reservation creates it). A negative `amount` (a reconcile refund) is a\n * plain UPDATE on the row the reservation already created: `ON CONFLICT` only arbitrates UNIQUE\n * violations, so a negative VALUES tuple would trip the `spent >= 0` CHECK during the insert attempt\n * BEFORE the conflict resolves — the UPDATE instead evaluates the CHECK on the resulting (>= 0) row.\n */\nasync function bumpSpend(\n  tx: TenantExecutor,\n  accountId: string,\n  scope: string,\n  key: string,\n  amount: number,\n): Promise<number> {\n  if (amount >= 0) {\n    const r = await tx.query<{ spent: number }>(\n      `INSERT INTO ${TENANT_SPEND_WINDOW_TABLE} (account_id, scope, unit, window_key, spent)\n         VALUES ($1, $2, $3, $4, $5)\n       ON CONFLICT (account_id, scope, unit, window_key)\n         DO UPDATE SET spent = ${TENANT_SPEND_WINDOW_TABLE}.spent + EXCLUDED.spent,\n                       updated_at = now()\n         RETURNING spent`,\n      [accountId, scope, SPEND_UNIT, key, amount],\n    );\n    return r.rows[0]?.spent ?? amount;",
       annotations: [
-        "A non-negative amount runs as an upsert (ON CONFLICT ... DO UPDATE) — the spend-window row may not exist yet when the very first reservation for that key lands.",
+        "A non-negative amount runs as an upsert (ON CONFLICT ... DO UPDATE), the spend-window row may not exist yet when the very first reservation for that key lands.",
         "The doc comment explains the ordering trick: a negative refund evaluates the spent >= 0 CHECK on the UPDATE path, never the INSERT path, so a refund can't trip the constraint before the conflict resolves.",
       ],
     },
@@ -424,21 +424,21 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "ai-evals",
-    metaTitle: "Eval Harness Module — Regression Gate for LLM Code",
+    metaTitle: "Eval Harness Module, Regression Gate for LLM Code",
     metaDescription:
-      "A CI eval harness that fails the build on a real score regression against a committed baseline — cassette-replayed judges, no live model call in CI.",
+      "A CI eval harness that fails the build on a real score regression against a committed baseline, cassette-replayed judges, no live model call in CI.",
     heroOneLiner:
       "Regression-grade evals that run in CI, not in prod. A model swap fails the build first, not a customer's session.",
     definition:
-      "@caisson/ai-evals is a regression gate for prompt and model changes: defineEval() scores a version-bound dataset through a grader taxonomy, then compareToBaseline() fails the build if the mean score, any individual scorer, or a Wilson confidence floor drops below the committed baseline — offline and deterministic, no live provider call inside CI.",
+      "@caisson/ai-evals is a regression gate for prompt and model changes: defineEval() scores a version-bound dataset through a grader taxonomy, then compareToBaseline() fails the build if the mean score, any individual scorer, or a Wilson confidence floor drops below the committed baseline, offline and deterministic, no live provider call inside CI.",
     included: [
       {
         title: "Version-bound eval runs",
-        body: 'defineEval({ name, promptVersionId, cases, scorers, threshold }) grades every case with every scorer and returns a deterministic EvalRun. Each dataset carries a promptVersionId FK, so a score is always attributable to one immutable prompt version — never a floating "current prompt."',
+        body: 'defineEval({ name, promptVersionId, cases, scorers, threshold }) grades every case with every scorer and returns a deterministic EvalRun. Each dataset carries a promptVersionId FK, so a score is always attributable to one immutable prompt version, never a floating "current prompt."',
       },
       {
         title: "Six graders, two classes",
-        body: "Deterministic exactGrader/regexGrader/jsonShapeGrader/schemaGrader run pure, offline, no model. judgeGrader routes through the Judge port for model-graded scoring. injectionGrader is its own fail-closed substring-denial class that a graded input can never talk its way past — an empty rubric throws instead of silently passing.",
+        body: "Deterministic exactGrader/regexGrader/jsonShapeGrader/schemaGrader run pure, offline, no model. judgeGrader routes through the Judge port for model-graded scoring. injectionGrader is its own fail-closed substring-denial class that a graded input can never talk its way past, an empty rubric throws instead of silently passing.",
       },
       {
         title: "Committed-baseline regression gate",
@@ -446,15 +446,15 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Offline judge via cassette replay",
-        body: "cassetteJudge() replays recorded verdicts from a committed cassette — zero network, zero provider secret, in CI. An unrecorded case id is a hard cassette-miss error, not a silent pass. recordingJudge() wraps a real local judge to mint a fresh cassette for review before it's committed.",
+        body: "cassetteJudge() replays recorded verdicts from a committed cassette, zero network, zero provider secret, in CI. An unrecorded case id is a hard cassette-miss error, not a silent pass. recordingJudge() wraps a real local judge to mint a fresh cassette for review before it's committed.",
       },
       {
         title: "Wilson confidence floor and exit classifier",
-        body: "wilsonLowerBound() threads an opt-in confidence floor into the baseline gate so a small lucky-draw sample can't pass as reliable. classifyExit() tags WHY a run exited — error, timeout, budget-exhausted, refusal, empty-output — as a signal orthogonal to pass/fail.",
+        body: "wilsonLowerBound() threads an opt-in confidence floor into the baseline gate so a small lucky-draw sample can't pass as reliable. classifyExit() tags WHY a run exited (error, timeout, budget-exhausted, refusal, empty-output) as a signal orthogonal to pass/fail.",
       },
       {
         title: "Reflexivity queue for judge/human disagreement",
-        body: "captureDisagreement() enqueues a case only when the model verdict and a human verdict disagree; consolidateReflexivityQueue() dedupes and caps the list for operator review. Nothing here auto-writes a committed dataset — merging a candidate back in stays a human act.",
+        body: "captureDisagreement() enqueues a case only when the model verdict and a human verdict disagree; consolidateReflexivityQueue() dedupes and caps the list for operator review. Nothing here auto-writes a committed dataset, merging a candidate back in stays a human act.",
       },
     ],
     artifact: {
@@ -464,14 +464,14 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       code: 'export function compareToBaseline(\n  run: EvalRun,\n  baseline: BaselineFile,\n): BaselineComparison {\n  const findings: RegressionFinding[] = [];\n\n  if (run.score + EPS < run.threshold) {\n    findings.push({\n      kind: "below-threshold",\n      actual: run.score,\n      baseline: run.threshold,\n      detail: `score ${run.score} < threshold ${run.threshold}`,\n    });\n  }\n\n  const prior = baseline.evals[run.name];\n  if (prior === undefined) {\n    findings.push({\n      kind: "missing-baseline",\n      actual: run.score,\n      detail: `no committed baseline for eval "${run.name}" — bless to record it`,\n    });\n    return { eval: run.name, passed: false, findings, blessed: false };\n  }',
       annotations: [
         "The EPS tolerance on the threshold compare (run.score + EPS < run.threshold) avoids a false regression from float rounding noise, not just a strict less-than.",
-        "A missing baseline returns its own missing-baseline finding immediately — it's never silently treated as a pass.",
+        "A missing baseline returns its own missing-baseline finding immediately, it's never silently treated as a pass.",
       ],
     },
     faq: [
       {
         question: "Does the eval gate call a live model in CI?",
         answer:
-          'No. Model-graded scorers route through cassetteJudge(), which replays a recorded verdict from a committed cassette file — zero network call, zero provider secret. An unrecorded case id is a hard error ("cassette miss"), not a silent pass. A live judge only runs locally, wrapped in recordingJudge() to mint the cassette you then commit.',
+          'No. Model-graded scorers route through cassetteJudge(), which replays a recorded verdict from a committed cassette file, zero network call, zero provider secret. An unrecorded case id is a hard error ("cassette miss"), not a silent pass. A live judge only runs locally, wrapped in recordingJudge() to mint the cassette you then commit.',
       },
       {
         question:
@@ -483,19 +483,19 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "What happens the first time I add a new eval with no baseline yet?",
         answer:
-          'It fails closed. compareToBaseline() returns a "missing-baseline" finding rather than treating an absent entry as a pass — bless it once to record the starting baseline, same as any other eval.',
+          'It fails closed. compareToBaseline() returns a "missing-baseline" finding rather than treating an absent entry as a pass, bless it once to record the starting baseline, same as any other eval.',
       },
       {
         question:
           "Does this eval gate get wired into CI on the app I generate?",
         answer:
-          "No. The eval CLI runs as a distinct turbo eval task inside this monorepo only — it is never injected into a generated buyer repo as a required CI job. You own your own eval cadence once you generate.",
+          "No. The eval CLI runs as a distinct turbo eval task inside this monorepo only, it is never injected into a generated buyer repo as a required CI job. You own your own eval cadence once you generate.",
       },
     ],
     relatedGlossary: [],
     sells: {
       edition: "ai-kit",
-      note: `Sold standalone at ${modulePrice("ai-evals")}, and included in the AI-Production bundle alongside ai-meter, guardrails, and prompt-registry — and in Everything, which carries every sellable module by construction.`,
+      note: `Sold standalone at ${modulePrice("ai-evals")}, and included in the AI-Production bundle alongside ai-meter, guardrails, and prompt-registry, and in Everything, which carries every sellable module by construction.`,
     },
   },
   {
@@ -504,17 +504,17 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     metaDescription:
       "A fail-closed guard around every model call: PII redaction (mask, hash, or tokenize), a swappable moderator, and an unconditional secret-shape gate.",
     heroOneLiner:
-      "The chokepoint between your app and the model — moderate, redact, and block, fail-closed by default.",
+      "The chokepoint between your app and the model, moderate, redact, and block, fail-closed by default.",
     definition:
       "Guardrails is the fail-closed input/output guard around a model call: guardInput moderates then redacts PII on the way in, guardOutput moderates on the way out, and either leg throws a 422 GuardrailError on a block instead of letting a moderator outage pass content through silently. A swappable Moderator port (local regex, provider, or custom) backs the moderation call; an unconditional secret-shape gate runs before it on either leg, no opt-out.",
     included: [
       {
         title: "Fail-closed by default",
-        body: "guardInput and guardOutput throw GuardrailError (HTTP 422) on any block. A moderator outage or timeout fails closed unless the policy explicitly sets failOpen: true — the default protects the request, not the moderator's uptime.",
+        body: "guardInput and guardOutput throw GuardrailError (HTTP 422) on any block. A moderator outage or timeout fails closed unless the policy explicitly sets failOpen: true, the default protects the request, not the moderator's uptime.",
       },
       {
         title: "Unconditional secret-shape gate",
-        body: 'Before either leg reaches a moderator, guard.ts checks looksLikeSecret(text) and blocks category "secret" with no policy field and no opt-out (ADR-0215) — a leaked credential never gets a moderation call, live or not.',
+        body: 'Before either leg reaches a moderator, guard.ts checks looksLikeSecret(text) and blocks category "secret" with no policy field and no opt-out (ADR-0215), a leaked credential never gets a moderation call, live or not.',
       },
       {
         title: "Swappable Moderator port",
@@ -526,21 +526,21 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "FTC “4 Ps” dark-pattern evaluator",
-        body: "evaluateFtc4P scores marketing/UI copy against five rule classes — false urgency, forced continuity, confirmshaming, opt-out enrollment, drip pricing — charted across four dimensions (prominence, presentation, placement, proximity). Wrap it as a Moderator with ftc4pModerator to gate guardOutput on your own copy.",
+        body: "evaluateFtc4P scores marketing/UI copy against five rule classes (false urgency, forced continuity, confirmshaming, opt-out enrollment, drip pricing) charted across four dimensions (prominence, presentation, placement, proximity). Wrap it as a Moderator with ftc4pModerator to gate guardOutput on your own copy.",
       },
       {
         title: "Metadata-only blocked event",
-        body: "Every block emits a guardrail.blocked event to the kernel EventSink carrying blockId, stage, category, policy, and failClosed — never the flagged text. The emit is fire-and-forget: a telemetry-sink failure can't mask or delay the block itself.",
+        body: "Every block emits a guardrail.blocked event to the kernel EventSink carrying blockId, stage, category, policy, and failClosed, never the flagged text. The emit is fire-and-forget: a telemetry-sink failure can't mask or delay the block itself.",
       },
     ],
     artifact: {
       label:
-        "moderate() — the secret-shape gate, then a fail-closed moderator race under a deadline",
+        "moderate(), the secret-shape gate, then a fail-closed moderator race under a deadline",
       lang: "ts",
       file: "packages/guardrails/src/guard.ts",
       code: '  // Unconditional credential-shape gate (ADR-0215) — runs BEFORE the (possibly outaged/provider)\n  // moderator, reusing the ONE `looksLikeSecret` predicate (kernel). No policy field, no opt-out: a\n  // raw credential in either leg never reaches a moderator call, live or not.\n  if (looksLikeSecret(text)) block(stage, "secret", false, policy, rt);\n  let result: ModerationResult;\n  try {\n    result = await moderateWithDeadline(\n      policy.moderator,\n      text,\n      policy.timeoutMs ?? DEFAULT_TIMEOUT_MS,\n    );\n  } catch {\n    // Outage / timeout / driver throw → fail-closed unless the operator explicitly opted out.\n    if (policy.failOpen === true) return;\n    block(stage, "moderation", true, policy, rt);\n  }\n  if (result.flagged) block(stage, result.category, false, policy, rt);',
       annotations: [
-        "looksLikeSecret runs before the moderator call, live or not — a leaked credential never becomes a moderation API call.",
+        "looksLikeSecret runs before the moderator call, live or not, a leaked credential never becomes a moderation API call.",
         "The try/catch around moderateWithDeadline is where fail-closed lives: only an explicit failOpen: true on the policy lets an outage pass content through instead of blocking.",
       ],
     },
@@ -549,7 +549,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "What happens if the moderator times out or the provider is down?",
         answer:
-          "The call fails closed: moderateWithDeadline races the moderator against a timeoutMs deadline (2,000ms by default), and a rejection — outage, timeout, or driver throw — blocks the request unless the policy explicitly sets failOpen: true.",
+          "The call fails closed: moderateWithDeadline races the moderator against a timeoutMs deadline (2,000ms by default), and a rejection (outage, timeout, or driver throw) blocks the request unless the policy explicitly sets failOpen: true.",
       },
       {
         question: "Does guardrails call an LLM to moderate content?",
@@ -564,7 +564,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Does it catch leaked API keys, not just PII or profanity?",
         answer:
-          'Yes. guard.ts runs looksLikeSecret(text) as an unconditional gate — category "secret" — before either leg reaches the configured moderator. There is no policy field to disable it.',
+          'Yes. guard.ts runs looksLikeSecret(text) as an unconditional gate (category "secret") before either leg reaches the configured moderator. There is no policy field to disable it.',
       },
     ],
     relatedGlossary: [],
@@ -575,48 +575,48 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "prompt-registry",
-    metaTitle: "Prompt Registry — Versioned Prompts | Caisson",
+    metaTitle: "Prompt Registry, Versioned Prompts | Caisson",
     metaDescription:
       "Append-only prompt versioning with name@version and name@alias addressing, a mutable alias pointer for zero-redeploy promotion, and injection-safe rendering.",
     heroOneLiner:
       "Prompts hardcoded three layers deep in a route handler, versioned like everything else that ships.",
     definition:
-      "Prompt registry is a package that stores prompt templates as append-only versions and resolves them by name@version or name@alias. Every edit mints a new row instead of mutating one — the database revokes UPDATE and DELETE outright — and a mutable alias pointer (prod, canary) lets you promote a prompt to production without a redeploy or touching a version row.",
+      "Prompt registry is a package that stores prompt templates as append-only versions and resolves them by name@version or name@alias. Every edit mints a new row instead of mutating one (the database revokes UPDATE and DELETE outright) and a mutable alias pointer (prod, canary) lets you promote a prompt to production without a redeploy or touching a version row.",
     included: [
       {
         title: "Append-only versioning, not a mutable prompts table",
-        body: "registerPrompt derives the current tip from the kernel's versioning chain and supersedes it — the first call to a name is v1, each later call is tip.version + 1. A concurrent mint of the same (name, version) hits the unique index and throws ConflictError instead of silently overwriting.",
+        body: "registerPrompt derives the current tip from the kernel's versioning chain and supersedes it, the first call to a name is v1, each later call is tip.version + 1. A concurrent mint of the same (name, version) hits the unique index and throws ConflictError instead of silently overwriting.",
       },
       {
         title: "name@version and name@alias addressing",
-        body: "parsePromptRef reads a bare name as the current tip, a numeric suffix as an exact version, and anything else as an alias. resolvePrompt takes that parsed reference straight to the matching row — one function call from a string ref to an immutable PromptVersion.",
+        body: "parsePromptRef reads a bare name as the current tip, a numeric suffix as an exact version, and anything else as an alias. resolvePrompt takes that parsed reference straight to the matching row, one function call from a string ref to an immutable PromptVersion.",
       },
       {
         title: "Promote without a redeploy",
-        body: "setAlias points prod or canary at a specific version number. It resolves the target version first, so an alias can never point at a version that doesn't exist, and it only ever writes the prompt_alias pointer row — the version rows themselves are never touched.",
+        body: "setAlias points prod or canary at a specific version number. It resolves the target version first, so an alias can never point at a version that doesn't exist, and it only ever writes the prompt_alias pointer row, the version rows themselves are never touched.",
       },
       {
         title: "Injection-safe rendering, not string interpolation",
-        body: "renderPrompt validates raw vars against the version's own varSpec (a strict Zod schema — unknown vars rejected, missing vars fail), then substitutes {{name}} placeholders in a single non-recursive pass. Every inserted value is brace-escaped, so a variable's own content can never open a new placeholder or forge a message role.",
+        body: "renderPrompt validates raw vars against the version's own varSpec (a strict Zod schema, unknown vars rejected, missing vars fail), then substitutes {{name}} placeholders in a single non-recursive pass. Every inserted value is brace-escaped, so a variable's own content can never open a new placeholder or forge a message role.",
       },
       {
         title: "Every table is tenant-isolated by default",
-        body: "prompt_version and prompt_alias both go through buildTenantPolicySql (force-RLS), and every registry function takes a TenantExecutor — a query outside a withTenant scope sees nothing, not an empty result you have to remember to check for.",
+        body: "prompt_version and prompt_alias both go through buildTenantPolicySql (force-RLS), and every registry function takes a TenantExecutor, a query outside a withTenant scope sees nothing, not an empty result you have to remember to check for.",
       },
       {
         title: "The render contract is pinned, not just tested",
-        body: "The single-pass, brace-escaped rendering behavior is locked against a golden fixture (src/__golden__/render.json) — a change to the substitution logic that shifts the output has to update the fixture deliberately, it can't drift silently through a passing test suite.",
+        body: "The single-pass, brace-escaped rendering behavior is locked against a golden fixture (src/__golden__/render.json), a change to the substitution logic that shifts the output has to update the fixture deliberately, it can't drift silently through a passing test suite.",
       },
     ],
     artifact: {
       label:
-        "renderContent — single-pass substitution, brace-escaped, re-checked against the content cap after escaping",
+        "renderContent, single-pass substitution, brace-escaped, re-checked against the content cap after escaping",
       lang: "ts",
       file: "packages/prompt-registry/src/render.ts",
       code: 'function renderContent(template: string, vars: Record<string, string>): string {\n  const rendered = template.replace(PLACEHOLDER_RE, (_match, name: string) => {\n    const value = vars[name];\n    if (value === undefined) {\n      // A placeholder with no bound variable is a template/schema mismatch — never emit it raw.\n      throw new ValidationError("Unbound prompt variable", { name });\n    }\n    return escapeValue(value);\n  });\n  // Escaping can inflate a value (every `{`/`}` doubles), and several per-cap-bounded values can\n  // still sum past the cap in one template — re-check the rendered total, not just each input.\n  if (rendered.length > MAX_CONTENT_LENGTH) {\n    throw new ValidationError(\n      "Rendered prompt content exceeds the content cap",\n      {\n        length: rendered.length,\n        max: MAX_CONTENT_LENGTH,\n      },\n    );\n  }\n  return rendered;\n}',
       annotations: [
-        "escapeValue runs on every substituted value — a variable's own content can never forge a new {{placeholder}} or escape into the surrounding template.",
-        "The length check runs AFTER escaping, not before — escaping can inflate a value, so the cap has to catch the real rendered total, not the pre-escape input.",
+        "escapeValue runs on every substituted value, a variable's own content can never forge a new {{placeholder}} or escape into the surrounding template.",
+        "The length check runs AFTER escaping, not before, escaping can inflate a value, so the cap has to catch the real rendered total, not the pre-escape input.",
       ],
     },
     faq: [
@@ -629,48 +629,48 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "How do I roll a prompt back to a previous version?",
         answer:
-          'Point the alias at it — setAlias(tx, { accountId, name, alias: "prod", version: 3 }) moves the prod pointer back to version 3. Nothing is deleted or re-inserted; the version 4 row that\'s no longer live stays exactly where it is for as long as you keep it.',
+          'Point the alias at it, setAlias(tx, { accountId, name, alias: "prod", version: 3 }) moves the prod pointer back to version 3. Nothing is deleted or re-inserted; the version 4 row that\'s no longer live stays exactly where it is for as long as you keep it.',
       },
       {
         question:
           "What happens if I pass a variable the template doesn't declare, or forget one it does?",
         answer:
-          "renderPrompt compiles the version's varSpec into a strict Zod object schema before touching the template — an unknown key is rejected, a missing required key fails validation, and both happen before any substitution runs.",
+          "renderPrompt compiles the version's varSpec into a strict Zod object schema before touching the template, an unknown key is rejected, a missing required key fails validation, and both happen before any substitution runs.",
       },
       {
         question:
           "Does this run as a hosted service or is it a library I call from my own code?",
         answer:
-          "It's a library — a TenantExecutor-scoped API you import and call directly, the same primitive the AI Production Kit's inference gateway resolves prompt refs through before every model call. There's no standalone prompt-registry server or HTTP route; you own the calling code.",
+          "It's a library, a TenantExecutor-scoped API you import and call directly, the same primitive the AI Production Kit's inference gateway resolves prompt refs through before every model call. There's no standalone prompt-registry server or HTTP route; you own the calling code.",
       },
     ],
     relatedGlossary: ["row-level-security"],
     sells: {
       edition: "ai-kit",
-      note: `Prompt registry is one of the modules composing the ${bundlePrice("ai-production")} AI-Production bundle — the inference gateway resolves every promptRef through it before rendering and metering a call. Buy it standalone at ${modulePrice("prompt-registry")}, or get it with ai-meter and guardrails in the bundle, or in the ${bundlePrice("everything")} Everything bundle — the whole catalog, one purchase.`,
+      note: `Prompt registry is one of the modules composing the ${bundlePrice("ai-production")} AI-Production bundle (the inference gateway resolves every promptRef through it before rendering and metering a call. Buy it standalone at ${modulePrice("prompt-registry")}, or get it with ai-meter and guardrails in the bundle, or in the ${bundlePrice("everything")} Everything bundle) the whole catalog, one purchase.`,
     },
   },
   {
     slug: "local-store",
-    metaTitle: "Local Vector Store — Hybrid FTS5 + sqlite-vec | Caisson",
+    metaTitle: "Local Vector Store, Hybrid FTS5 + sqlite-vec | Caisson",
     metaDescription:
       "A local canonical store for hybrid retrieval: sqlite-vec KNN fused with FTS5 by Reciprocal Rank Fusion, one SQLite file per tenant, no vector cloud involved.",
     heroOneLiner:
-      "Hybrid vector + full-text search that runs on disk, in one SQLite file per tenant — nothing shipped to a vector cloud.",
+      "Hybrid vector + full-text search that runs on disk, in one SQLite file per tenant, nothing shipped to a vector cloud.",
     definition:
-      "Local vector store is Caisson's on-disk hybrid retrieval engine: sqlite-vec (vec0) for KNN and SQLite FTS5 for text, fused by Reciprocal Rank Fusion (RRF_K=60). It runs FTS5-only with no embedder configured — the vector leg degrades cleanly on any backend fault. Tenant isolation is physical: one SQLite file per tenant, not a shared table with a filter.",
+      "Local vector store is Caisson's on-disk hybrid retrieval engine: sqlite-vec (vec0) for KNN and SQLite FTS5 for text, fused by Reciprocal Rank Fusion (RRF_K=60). It runs FTS5-only with no embedder configured, the vector leg degrades cleanly on any backend fault. Tenant isolation is physical: one SQLite file per tenant, not a shared table with a filter.",
     included: [
       {
         title: "RRF hybrid search",
-        body: "LocalStore.hybridSearch runs the vec0 KNN leg and the FTS5 leg independently, then fuses them by Reciprocal Rank Fusion (RRF_K=60). Either leg can come up empty — a missing query vector, an empty query, or a vec backend fault — and the other still returns results.",
+        body: "LocalStore.hybridSearch runs the vec0 KNN leg and the FTS5 leg independently, then fuses them by Reciprocal Rank Fusion (RRF_K=60). Either leg can come up empty (a missing query vector, an empty query, or a vec backend fault) and the other still returns results.",
       },
       {
         title: "File-per-tenant isolation",
-        body: "tenantDbPath and openTenantDb resolve one SQLite file per tenant under a root directory. The path is rejected fail-closed on traversal, null bytes, absolute paths, or path separators before anything is opened — a cross-tenant query is not expressible, because a connection only ever holds one tenant's file.",
+        body: "tenantDbPath and openTenantDb resolve one SQLite file per tenant under a root directory. The path is rejected fail-closed on traversal, null bytes, absolute paths, or path separators before anything is opened, a cross-tenant query is not expressible, because a connection only ever holds one tenant's file.",
       },
       {
         title: "Pluggable embedder port, no bundled model",
-        body: "Embedder is an interface the bundle wires — this package never calls a model or opens a socket. embedOrSkip treats an absent embedder as a first-class mode: retrieval runs on the FTS5 floor alone, not an error, not a silent default model.",
+        body: "Embedder is an interface the bundle wires, this package never calls a model or opens a socket. embedOrSkip treats an absent embedder as a first-class mode: retrieval runs on the FTS5 floor alone, not an error, not a silent default model.",
       },
       {
         title: "Cloud-egress secret scrub",
@@ -678,7 +678,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Dedup-on-write + retention GC",
-        body: "decideWrite hashes normalized content per scope and reinforces an existing duplicate (resets its recency, slides its TTL) instead of writing a second row. planGc then evicts in order — expired, decayed below a score floor, or over a per-scope cap — as a pure function of items, config, and now.",
+        body: "decideWrite hashes normalized content per scope and reinforces an existing duplicate (resets its recency, slides its TTL) instead of writing a second row. planGc then evicts in order (expired, decayed below a score floor, or over a per-scope cap) as a pure function of items, config, and now.",
       },
       {
         title: "Validated memory-item boundary",
@@ -686,36 +686,35 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
     ],
     artifact: {
-      label:
-        "LocalStore.hybridSearch — vec0 KNN + FTS5 fused by RRF (RRF_K=60)",
+      label: "LocalStore.hybridSearch, vec0 KNN + FTS5 fused by RRF (RRF_K=60)",
       lang: "ts",
       file: "packages/local-store/src/store.ts",
       code: "  hybridSearch(opts: HybridSearchOptions): SearchHit[] {\n    const limit = opts.limit ?? 10;\n    const legLimit = Math.max(limit * 8, 50);\n\n    const vecRanks = this.vecLeg(opts.queryVector, legLimit);\n    const ftsRanks = this.ftsLeg(opts.queryText, legLimit);\n\n    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs.\n    const fused = new Map<number, number>();\n    for (const [rowid, rank] of vecRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n    for (const [rowid, rank] of ftsRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n\n    const ranked = [...fused.entries()]\n      // score descending; deterministic tie-break by rowid ascending (stable, env-free).\n      .sort((a, b) => b[1] - a[1] || a[0] - b[0])\n      .slice(0, limit);\n    if (ranked.length === 0) return [];\n\n    return ranked.map(([rowid, score]) => ({ id: this.docId(rowid), score }));\n  }",
       annotations: [
-        "The fused map sums 1/(RRF_K + rank) across both legs — a doc that only hits in the vector leg or only the FTS5 leg still scores, it isn't dropped for missing the other.",
-        "The sort's tie-break is a.rowid - b.rowid — deterministic ranking with no dependence on wall-clock time or run-to-run ordering.",
+        "The fused map sums 1/(RRF_K + rank) across both legs, a doc that only hits in the vector leg or only the FTS5 leg still scores, it isn't dropped for missing the other.",
+        "The sort's tie-break is a.rowid - b.rowid, deterministic ranking with no dependence on wall-clock time or run-to-run ordering.",
       ],
     },
     faq: [
       {
         question: "Does local-store need a vector database service?",
         answer:
-          "No. It's bun:sqlite plus the sqlite-vec extension (vec0) on disk — one file per tenant, no separate database to run or pay for.",
+          "No. It's bun:sqlite plus the sqlite-vec extension (vec0) on disk, one file per tenant, no separate database to run or pay for.",
       },
       {
         question: "Do I have to bring my own embedding model?",
         answer:
-          "Yes. Embedder is an interface the bundle or your app wires — local-store bundles no model and never calls one. With no embedder configured, retrieval runs on the FTS5 leg alone, which is a documented zero-config mode, not a degraded one.",
+          "Yes. Embedder is an interface the bundle or your app wires, local-store bundles no model and never calls one. With no embedder configured, retrieval runs on the FTS5 leg alone, which is a documented zero-config mode, not a degraded one.",
       },
       {
         question: "How is tenant data kept apart?",
         answer:
-          "Physically. tenantDbPath resolves one SQLite file per tenant under a root directory and rejects traversal, null-byte, absolute, or separator-bearing tenant ids before any file is opened — there's no shared table a filter could get wrong.",
+          "Physically. tenantDbPath resolves one SQLite file per tenant under a root directory and rejects traversal, null-byte, absolute, or separator-bearing tenant ids before any file is opened, there's no shared table a filter could get wrong.",
       },
       {
         question: "Is it safe to point this at a cloud embedding API?",
         answer:
-          "createCloudEmbedder scrubs every text through scrubForEgress before it leaves the box — PEM blocks, URL passwords, secret-named fields, and bare token shapes are redacted to a constant sentinel first, and the transport is fetchWithTimeout with an injectable seam for tests.",
+          "createCloudEmbedder scrubs every text through scrubForEgress before it leaves the box, PEM blocks, URL passwords, secret-named fields, and bare token shapes are redacted to a constant sentinel first, and the transport is fetchWithTimeout with an injectable seam for tests.",
       },
     ],
     relatedGlossary: [],
@@ -726,7 +725,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "agent-kernel",
-    metaTitle: "Agent Kernel — Governed Agent Lifecycle FSM | Caisson",
+    metaTitle: "Agent Kernel, Governed Agent Lifecycle FSM | Caisson",
     metaDescription:
       "Agent Kernel: the agent/skill/rule schema, seven-act lifecycle FSM, and hooks dispatcher behind Caisson's Agentic-Dev bundle. No vendor SDK, $199 standalone.",
     heroOneLiner:
@@ -765,8 +764,8 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       file: "packages/agent-kernel/src/lifecycle.ts",
       code: '/**\n * Legal forward adjacency. The two branch edges:\n *   - `verify → plan` — a failed goal-backward verify opens a fresh PLAN cycle (does not SHIP).\n *   - `sweep → ship` — an untagged phase skips EVAL straight to SHIP.\n * An EVAL regression is a fail-stop (no edge out of `eval` but `ship`); `ship` is terminal.\n */\nconst TRANSITIONS: Record<Act, readonly Act[]> = {\n  spec: ["plan"],\n  plan: ["execute"],\n  execute: ["verify"],\n  verify: ["sweep", "plan"],\n  sweep: ["eval", "ship"],\n  eval: ["ship"],\n  ship: [],\n};',
       annotations: [
-        "verify is the only act with two outgoing edges — a failed VERIFY reopens plan, it has no edge to ship.",
-        "ship: [] — an empty adjacency list makes SHIP a hard terminal state in the type itself, not just a documented convention.",
+        "verify is the only act with two outgoing edges, a failed VERIFY reopens plan, it has no edge to ship.",
+        "ship: [], an empty adjacency list makes SHIP a hard terminal state in the type itself, not just a documented convention.",
       ],
     },
     faq: [
@@ -789,18 +788,18 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question:
           "Does buying agent-kernel alone get me the sandboxed agent runner too?",
-        answer: `No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the bundle for the assembled loop.`,
+        answer: `No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI, with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the bundle for the assembled loop.`,
       },
     ],
     relatedGlossary: ["hash-chain-audit-trail"],
     sells: {
       edition: "agentic-dev",
-      note: `Agent kernel (${modulePrice("agent-kernel")}) and agent-runner (${modulePrice("agent-runner")}) are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the bundle for the assembled loop.`,
+      note: `Agent kernel (${modulePrice("agent-kernel")}) and agent-runner (${modulePrice("agent-runner")}) are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI, with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the bundle for the assembled loop.`,
     },
   },
   {
     slug: "agent-runner",
-    metaTitle: "Agent Runner — Sandboxed, Governed Agent Execution",
+    metaTitle: "Agent Runner, Sandboxed, Governed Agent Execution",
     metaDescription:
       "Agent Runner spawns a headless coding agent in an isolated worktree with a scrubbed, from-scratch env and streams an auditable .jsonl transcript of every run.",
     heroOneLiner:
@@ -810,15 +809,15 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Env built from scratch, not inherited",
-        body: "buildEngineEnv() never spreads process.env. It starts from an empty object, copies only the PASSTHROUGH_KEYS allowlist (PATH, LANG, LC_ALL, LC_CTYPE, TERM, TZ, TMPDIR), then adds the target provider's routing vars and the one auth key the caller passed in — nothing else reaches the child.",
+        body: "buildEngineEnv() never spreads process.env. It starts from an empty object, copies only the PASSTHROUGH_KEYS allowlist (PATH, LANG, LC_ALL, LC_CTYPE, TERM, TZ, TMPDIR), then adds the target provider's routing vars and the one auth key the caller passed in, nothing else reaches the child.",
       },
       {
         title: "Provider-agnostic profile",
-        body: "ProviderConfig is a Zod-validated {binary, baseUrlEnv, authEnv, model, configDirEnv, modelEnv, args} shape — no vendor is hardcoded. The shipped CLAUDE_CLI_PROFILE runs the Claude Code CLI headless in stream-json mode with --strict-mcp-config, so no MCP server can be smuggled into the sandbox.",
+        body: "ProviderConfig is a Zod-validated {binary, baseUrlEnv, authEnv, model, configDirEnv, modelEnv, args} shape, no vendor is hardcoded. The shipped CLAUDE_CLI_PROFILE runs the Claude Code CLI headless in stream-json mode with --strict-mcp-config, so no MCP server can be smuggled into the sandbox.",
       },
       {
         title: "Whole-token argv templating",
-        body: "The {task} and {model} placeholders in a provider's args are substituted only when they are an entire argv element, never spliced into a larger string — a hostile task string can't add, split, or merge argv entries, and there's no shell in the spawn path to inject into.",
+        body: "The {task} and {model} placeholders in a provider's args are substituted only when they are an entire argv element, never spliced into a larger string, a hostile task string can't add, split, or merge argv entries, and there's no shell in the spawn path to inject into.",
       },
       {
         title: "Detached, isolated worktree spawn",
@@ -826,7 +825,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "A structured report, not a raw log",
-        body: "summarize() walks the stream-json events into a tool-call count, the file set an Edit/Write/MultiEdit/NotebookEdit tool touched, and the last assistant text. finalReport() adds status, timestamps, binary, and model — the shape a caller reviews before trusting the diff.",
+        body: "summarize() walks the stream-json events into a tool-call count, the file set an Edit/Write/MultiEdit/NotebookEdit tool touched, and the last assistant text. finalReport() adds status, timestamps, binary, and model, the shape a caller reviews before trusting the diff.",
       },
       {
         title: "Fail-closed run registry",
@@ -835,13 +834,13 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     artifact: {
       label:
-        "buildEngineEnv — the child env built from scratch, never spread from process.env",
+        "buildEngineEnv, the child env built from scratch, never spread from process.env",
       lang: "ts",
       file: "packages/agent-runner/src/agent-runner.ts",
       code: '  const env: Record<string, string> = {};\n  for (const key of PASSTHROUGH_KEYS) {\n    const value = parentEnv[key];\n    if (typeof value === "string" && value.length > 0) env[key] = value;\n  }\n  // Isolation + provider routing only — no secret beyond the one provider key.\n  env["HOME"] = opts.home;\n  env[opts.provider.baseUrlEnv] = opts.baseUrl;\n  env[opts.provider.authEnv] = opts.authKey;\n  if (opts.provider.configDirEnv !== undefined) {\n    env[opts.provider.configDirEnv] = opts.configDir;\n  }\n  if (opts.provider.modelEnv !== undefined) {\n    env[opts.provider.modelEnv] = opts.provider.model;\n  }\n  // Hygiene for CLIs that honor these conventions: no self-update, no telemetry from the sandbox.\n  env["DISABLE_AUTOUPDATER"] = "1";\n  env["DISABLE_TELEMETRY"] = "1";\n  env["DISABLE_ERROR_REPORTING"] = "1";\n  return env;',
       annotations: [
-        "The env object starts empty — PASSTHROUGH_KEYS is the only thing ever copied from the parent process, never a blanket process.env spread.",
-        "Only the ONE target-provider auth key the caller passed in (opts.authKey) is added — every other secret sitting in the parent shell has no path into the child.",
+        "The env object starts empty, PASSTHROUGH_KEYS is the only thing ever copied from the parent process, never a blanket process.env spread.",
+        "Only the ONE target-provider auth key the caller passed in (opts.authKey) is added, every other secret sitting in the parent shell has no path into the child.",
       ],
     },
     faq: [
@@ -849,23 +848,23 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does the sandboxed subprocess ever see my API keys or other secrets?",
         answer:
-          "No — buildEngineEnv() builds the child's environment from an empty object; it never spreads process.env. Only a fixed non-secret allowlist (PATH, LANG, LC_ALL, LC_CTYPE, TERM, TZ, TMPDIR) plus the one target-provider auth key the caller explicitly passes in reach the subprocess. The leak-guard test plants eight secret canaries — OPENROUTER_API_KEY, GITHUB_TOKEN, AWS_SECRET_ACCESS_KEY, and five more — into a polluted parent env and asserts none of them appear in the returned child env, by key or value. A separate end-to-end test proves the same holds for a real spawned subprocess: it plants its own canary into the actual transcript the child writes and asserts that canary never shows up there either.",
+          "No. buildEngineEnv() builds the child's environment from an empty object; it never spreads process.env. Only a fixed non-secret allowlist (PATH, LANG, LC_ALL, LC_CTYPE, TERM, TZ, TMPDIR) plus the one target-provider auth key the caller explicitly passes in reach the subprocess. The leak-guard test plants eight secret canaries (OPENROUTER_API_KEY, GITHUB_TOKEN, AWS_SECRET_ACCESS_KEY, and five more) into a polluted parent env and asserts none of them appear in the returned child env, by key or value. A separate end-to-end test proves the same holds for a real spawned subprocess: it plants its own canary into the actual transcript the child writes and asserts that canary never shows up there either.",
       },
       {
         question: "Which agent CLI does it run?",
         answer:
-          "Whichever one you configure — ProviderConfig is a {binary, baseUrlEnv, authEnv, model} shape, not a hardcoded vendor. The package ships one worked profile, CLAUDE_CLI_PROFILE, which runs the Claude Code CLI headless in stream-json mode with --strict-mcp-config so no MCP server, credentialed or not, loads into the sandbox.",
+          "Whichever one you configure, ProviderConfig is a {binary, baseUrlEnv, authEnv, model} shape, not a hardcoded vendor. The package ships one worked profile, CLAUDE_CLI_PROFILE, which runs the Claude Code CLI headless in stream-json mode with --strict-mcp-config so no MCP server, credentialed or not, loads into the sandbox.",
       },
       {
-        question: "What does the caller get back — just a log file?",
+        question: "What does the caller get back, just a log file?",
         answer:
-          "The transcript is a durable .jsonl on disk, but you don't parse it yourself: tail() returns compact incremental events, status() reports running/done/killed/error plus a live summary, and finalReport() returns one RunReport — result text, files touched, tool-call count, binary, model, and timestamps.",
+          "The transcript is a durable .jsonl on disk, but you don't parse it yourself: tail() returns compact incremental events, status() reports running/done/killed/error plus a live summary, and finalReport() returns one RunReport, result text, files touched, tool-call count, binary, model, and timestamps.",
       },
       {
         question:
           "Who commits the diff, opens the PR, or deploys after the agent finishes?",
         answer:
-          "The caller, always. Agent Runner's contract stops at the worktree: the subprocess produces a diff and a transcript inside the worktree you gave it, and never touches git, opens a PR, or reaches a deploy target — that stays the orchestrator's job, one call site away.",
+          "The caller, always. Agent Runner's contract stops at the worktree: the subprocess produces a diff and a transcript inside the worktree you gave it, and never touches git, opens a PR, or reaches a deploy target, that stays the orchestrator's job, one call site away.",
       },
     ],
     relatedGlossary: [],
@@ -876,48 +875,48 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "agent-trajectory",
-    metaTitle: "Agent Trajectory — Append-Only Run Log | Caisson",
+    metaTitle: "Agent Trajectory, Append-Only Run Log | Caisson",
     metaDescription:
-      "An append-only event contract for every agent step, tool proposal, approval, and spend — sensitive bodies referenced by digest, paused-run state encrypted at rest, replay byte-identical every time.",
+      "An append-only event contract for every agent step, tool proposal, approval, and spend, sensitive bodies referenced by digest, paused-run state encrypted at rest, replay byte-identical every time.",
     heroOneLiner:
-      "Every step, tool proposal, approval, and dollar an agent run touches, appended once and replayed byte-identical — never a mutable log an incident review can't trust.",
+      "Every step, tool proposal, approval, and dollar an agent run touches, appended once and replayed byte-identical, never a mutable log an incident review can't trust.",
     definition:
-      "agent-trajectory is the append-only event contract a governed agent run writes into: eleven event kinds spanning run, step, model call, tool proposal/approval/result, and checkpoint, each Zod-`.strict()`-validated. Sensitive bodies — prompts, tool args, tool results — never inline; they're carried only as a sha256 `DigestRef`. A deterministic `project()` folds any event order into one byte-identical projection, and a park/approve/deny state machine holds paused runs with their snapshot encrypted at rest.",
+      "agent-trajectory is the append-only event contract a governed agent run writes into: eleven event kinds spanning run, step, model call, tool proposal/approval/result, and checkpoint, each Zod-`.strict()`-validated. Sensitive bodies (prompts, tool args, tool results) never inline; they're carried only as a sha256 `DigestRef`. A deterministic `project()` folds any event order into one byte-identical projection, and a park/approve/deny state machine holds paused runs with their snapshot encrypted at rest.",
     included: [
       {
         title: "Eleven-kind closed event vocabulary",
-        body: "EVENT_KINDS fixes the whole vocabulary — run.started/finished, step.started/finished, model.call, model.usage, tool.proposed/approved/denied/result, checkpoint. TrajectoryEvent is a Zod discriminatedUnion keyed on kind, each variant .strict(), so an unknown field or a made-up kind is rejected at the boundary, not silently stored.",
+        body: "EVENT_KINDS fixes the whole vocabulary, run.started/finished, step.started/finished, model.call, model.usage, tool.proposed/approved/denied/result, checkpoint. TrajectoryEvent is a Zod discriminatedUnion keyed on kind, each variant .strict(), so an unknown field or a made-up kind is rejected at the boundary, not silently stored.",
       },
       {
-        title: "Sensitive bodies never inline — DigestRef only",
-        body: "The rendered prompt on model.call, the tool arguments on tool.proposed, the tool output on tool.result, and the serialized state on checkpoint are all typed DigestRef — a sha256 digest, a byte length, and an optional encRef pointer. The trajectory log itself is safe to persist, replay, and anchor without ever holding the bodies it references.",
+        title: "Sensitive bodies never inline, DigestRef only",
+        body: "The rendered prompt on model.call, the tool arguments on tool.proposed, the tool output on tool.result, and the serialized state on checkpoint are all typed DigestRef, a sha256 digest, a byte length, and an optional encRef pointer. The trajectory log itself is safe to persist, replay, and anchor without ever holding the bodies it references.",
       },
       {
         title: "Append-only store, idempotent and gap-rejecting",
-        body: "createMemoryTrajectoryStore()'s append() enforces a monotonic 0-based seq per run: re-appending a byte-identical event at an already-recorded seq is a no-op (safe retry), a different event at that seq throws ConflictError, and a seq beyond the next free slot throws too — no rewrites, no gaps.",
+        body: "createMemoryTrajectoryStore()'s append() enforces a monotonic 0-based seq per run: re-appending a byte-identical event at an already-recorded seq is a no-op (safe retry), a different event at that seq throws ConflictError, and a seq beyond the next free slot throws too, no rewrites, no gaps.",
       },
       {
         title: "billingStatus honesty bands, enforced by schema",
-        body: "Every model.usage event carries billingStatus: metered | priced | estimated | unsupported. A superRefine enforces the honesty: credits can only be nonzero on metered or priced events, and priceBookVersion provenance is only legal on priced — an estimated adapter output can never masquerade as a charge.",
+        body: "Every model.usage event carries billingStatus: metered | priced | estimated | unsupported. A superRefine enforces the honesty: credits can only be nonzero on metered or priced events, and priceBookVersion provenance is only legal on priced, an estimated adapter output can never masquerade as a charge.",
       },
       {
         title: "Deterministic replay: project() and projectToolCalls()",
-        body: "project() sorts by seq before folding, so a shuffled batch always resolves to the same RunProjection — step tree, per-band usage totals, checkpoints — with JSON.stringify byte-identical across runs. projectToolCalls() is the sibling fold an eval scorer reads: one entry per toolCallId with its proposal, approval/denial, and result.",
+        body: "project() sorts by seq before folding, so a shuffled batch always resolves to the same RunProjection (step tree, per-band usage totals, checkpoints) with JSON.stringify byte-identical across runs. projectToolCalls() is the sibling fold an eval scorer reads: one entry per toolCallId with its proposal, approval/denial, and result.",
       },
       {
         title: "Paused-run state, encrypted at rest",
-        body: "createPgRunStateStore()'s park() seals the caller's opaque parkedState through @caisson/field-crypto's encryptField before it reaches the row, keyed to the run's own primary key as the row-binding identity; claimResume() is the only path that opens it back. deny() and finish() null the snapshot out on every terminal transition — a run that will never resume keeps no plaintext around.",
+        body: "createPgRunStateStore()'s park() seals the caller's opaque parkedState through @caisson/field-crypto's encryptField before it reaches the row, keyed to the run's own primary key as the row-binding identity; claimResume() is the only path that opens it back. deny() and finish() null the snapshot out on every terminal transition, a run that will never resume keeps no plaintext around.",
       },
     ],
     artifact: {
       label:
-        "The billingStatus honesty refine — credits can't lie about their own grade",
+        "The billingStatus honesty refine, credits can't lie about their own grade",
       lang: "ts",
       file: "packages/agent-trajectory/src/schema.ts",
       code: '  .strict()\n  .superRefine((v, ctx) => {\n    // The previously comment-only invariant, now enforced (ADR-0360 U-4): credit claims are only\n    // legal on billing-grade bands; provenance only decorates the band it explains.\n    if (\n      v.credits > 0 &&\n      v.billingStatus !== "metered" &&\n      v.billingStatus !== "priced"\n    ) {\n      ctx.addIssue({\n        code: z.ZodIssueCode.custom,\n        path: ["credits"],\n        message: `credits must be 0 when billingStatus is "${v.billingStatus}" (only metered/priced carry credit claims)`,\n      });\n    }\n    if (v.priceBookVersion !== undefined && v.billingStatus !== "priced") {\n      ctx.addIssue({\n        code: z.ZodIssueCode.custom,\n        path: ["priceBookVersion"],\n        message: `priceBookVersion is only valid on billingStatus "priced" (got "${v.billingStatus}")`,\n      });\n    }\n  });',
       annotations: [
-        "superRefine rejects a nonzero credits value on any billingStatus other than metered or priced — an estimated adapter's token count can never be smuggled in as a charge.",
-        "priceBookVersion is only legal on a priced event — the schema itself pins provenance to the band it explains, not left to caller discipline.",
+        "superRefine rejects a nonzero credits value on any billingStatus other than metered or priced, an estimated adapter's token count can never be smuggled in as a charge.",
+        "priceBookVersion is only legal on a priced event, the schema itself pins provenance to the band it explains, not left to caller discipline.",
       ],
     },
     faq: [
@@ -925,25 +924,25 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Can two agent runners double-write the same event and corrupt the log?",
         answer:
-          "No — append() is idempotent on (runId, seq): re-appending the exact same event at an already-recorded seq is a safe no-op. A different event at that seq throws ConflictError as a rewrite, and a seq past the next free slot throws as a gap, so the log stays a strict, ordered append-only sequence under retry.",
+          "No, append() is idempotent on (runId, seq): re-appending the exact same event at an already-recorded seq is a safe no-op. A different event at that seq throws ConflictError as a rewrite, and a seq past the next free slot throws as a gap, so the log stays a strict, ordered append-only sequence under retry.",
       },
       {
         question:
           "Does the trajectory log ever store my prompts or tool output?",
         answer:
-          "No — prompts (model.call), tool arguments (tool.proposed), tool results (tool.result), and checkpoint state are all typed as DigestRef: a sha256 digest, a byte length, and an optional pointer to where the encrypted bytes actually live. The trajectory itself carries no key material and no raw bodies, so it's safe to persist, replay, and anchor on its own.",
+          "No, prompts (model.call), tool arguments (tool.proposed), tool results (tool.result), and checkpoint state are all typed as DigestRef: a sha256 digest, a byte length, and an optional pointer to where the encrypted bytes actually live. The trajectory itself carries no key material and no raw bodies, so it's safe to persist, replay, and anchor on its own.",
       },
       {
         question:
           "Does agent-trajectory make our agent spend auditable for SOC 2?",
         answer:
-          "It ships the technical control: an append-only, idempotent event log of every tool proposal, approval, and usage event, with a deterministic replay a reviewer can re-derive byte-for-byte from the raw events. Whether that satisfies a specific SOC 2 control is your auditor's call — the module gives you the tamper-evident record to point at, not the certification.",
+          "It ships the technical control: an append-only, idempotent event log of every tool proposal, approval, and usage event, with a deterministic replay a reviewer can re-derive byte-for-byte from the raw events. Whether that satisfies a specific SOC 2 control is your auditor's call, the module gives you the tamper-evident record to point at, not the certification.",
       },
       {
         question:
           "What happens to a paused run's state if it gets denied instead of approved?",
         answer:
-          "deny() and finish() both null out the stored parkedState on the same transition that makes the run terminal — a denied or finished run keeps no snapshot around to leak. While a run is genuinely parked, that snapshot sits sealed through field-crypto's row-bound encryptField, keyed to the run's own id, so it can't be decrypted if copied to another row.",
+          "deny() and finish() both null out the stored parkedState on the same transition that makes the run terminal, a denied or finished run keeps no snapshot around to leak. While a run is genuinely parked, that snapshot sits sealed through field-crypto's row-bound encryptField, keyed to the run's own id, so it can't be decrypted if copied to another row.",
       },
     ],
     relatedGlossary: [
@@ -954,50 +953,50 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "Agentic-Dev",
-      note: `${modulePrice("agent-trajectory")} à la carte, or included in the Agentic-Dev bundle alongside agent-kernel, agent-runner, and local-store — and in the Everything bundle, which carries every sellable module by construction.`,
+      note: `${modulePrice("agent-trajectory")} à la carte, or included in the Agentic-Dev bundle alongside agent-kernel, agent-runner, and local-store, and in the Everything bundle, which carries every sellable module by construction.`,
     },
   },
   {
     slug: "tool-exec",
-    metaTitle: "Tool-Exec Gate — Default-Deny Command Allowlist | Caisson",
+    metaTitle: "Tool-Exec Gate, Default-Deny Command Allowlist | Caisson",
     metaDescription:
-      "A default-deny allowlist maps a logical command name to a real executable and a Zod-strict argv schema — validated before spawn, passed to execFile as an array, never a shell string, with a propose/execute split for external approval.",
+      "A default-deny allowlist maps a logical command name to a real executable and a Zod-strict argv schema, validated before spawn, passed to execFile as an array, never a shell string, with a propose/execute split for external approval.",
     heroOneLiner:
-      "A default-deny allowlist maps every command an agent is allowed to run — call anything not on it, and NotFoundError refuses the call before a process ever spawns.",
+      "A default-deny allowlist maps every command an agent is allowed to run, call anything not on it, and NotFoundError refuses the call before a process ever spawns.",
     definition:
-      "tool-exec is Caisson's governed tool-call gate, composed live into the Agentic-Dev edition surface: a default-deny allowlist maps a logical command name to a real executable and a Zod-`.strict()` argv schema, validated with parseStrict before spawn and passed to execFile as an array — never a shell string. A two-phase propose/execute split lets an external approval step run between validation and the actual spawn.",
+      "tool-exec is Caisson's governed tool-call gate, composed live into the Agentic-Dev edition surface: a default-deny allowlist maps a logical command name to a real executable and a Zod-`.strict()` argv schema, validated with parseStrict before spawn and passed to execFile as an array, never a shell string. A two-phase propose/execute split lets an external approval step run between validation and the actual spawn.",
     included: [
       {
         title: "Default-deny allowlist, fail-closed",
-        body: "createToolExec builds its registry from config.allowlist — a name not registered there throws NotFoundError before anything spawns. An empty allowlist refuses every call; there's no wildcard escape hatch.",
+        body: "createToolExec builds its registry from config.allowlist, a name not registered there throws NotFoundError before anything spawns. An empty allowlist refuses every call; there's no wildcard escape hatch.",
       },
       {
         title: "Argv arrays, never a shell",
-        body: "Each CommandSpec pairs a logical name with the real executable and a Zod argsSchema producing string[]; parseStrict validates the caller's args into that exact argv array before defaultExecFn spawns it via execFile — execSync, exec, and shell: true are never used anywhere in the package.",
+        body: "Each CommandSpec pairs a logical name with the real executable and a Zod argsSchema producing string[]; parseStrict validates the caller's args into that exact argv array before defaultExecFn spawns it via execFile, execSync, exec, and shell: true are never used anywhere in the package.",
       },
       {
         title: "Two-phase propose/execute for external approval",
-        body: "propose() runs the same allowlist lookup and Zod validation as run() but returns a serializable ProposedToolCall without spawning — park it in your own approval store. execute() re-checks the name is still allowlisted to the same command (defense against the allowlist changing between propose and execute) but never re-validates args.",
+        body: "propose() runs the same allowlist lookup and Zod validation as run() but returns a serializable ProposedToolCall without spawning, park it in your own approval store. execute() re-checks the name is still allowlisted to the same command (defense against the allowlist changing between propose and execute) but never re-validates args.",
       },
       {
         title: "Bounded output, always a provenance record",
-        body: "Every call returns an ExecResult — command, args, exitCode, stdout, stderr, ok, and an at timestamp from an injectable now(). bound() caps stdout/stderr at 64KB before Node's own maxBuffer would throw; a spawn failure resolves exitCode: -1 instead of throwing, so the caller always gets a record.",
+        body: "Every call returns an ExecResult, command, args, exitCode, stdout, stderr, ok, and an at timestamp from an injectable now(). bound() caps stdout/stderr at 64KB before Node's own maxBuffer would throw; a spawn failure resolves exitCode: -1 instead of throwing, so the caller always gets a record.",
       },
       {
         title: "Injectable spawn seam for hermetic tests",
-        body: "The default spawn path (execFile, no shell) is swappable via config.execFn — the suite injects a fakeExecFn double that records calls and returns canned output, so the allowlist and validation logic are exercised without ever spawning a real process.",
+        body: "The default spawn path (execFile, no shell) is swappable via config.execFn, the suite injects a fakeExecFn double that records calls and returns canned output, so the allowlist and validation logic are exercised without ever spawning a real process.",
       },
     ],
     artifact: {
       label:
-        "createToolExec — run(): allowlist lookup, Zod validation, spawn (no exec on failure)",
+        "createToolExec, run(): allowlist lookup, Zod validation, spawn (no exec on failure)",
       lang: "ts",
       file: "packages/tool-exec/src/tool-exec.ts",
       code: '    async run(\n      name: string,\n      args: unknown,\n      reason?: string,\n    ): Promise<ExecResult> {\n      const spec = registry.get(name);\n      if (spec === undefined) {\n        throw new NotFoundError(`No command registered for "${name}"`, {\n          command: name,\n        });\n      }\n      const validatedArgs = parseStrict(spec.argsSchema, args);\n      return spawn(spec.command, validatedArgs, reason);\n    },',
       annotations: [
-        "registry.get(name) is the default-deny lookup — a name not in config.allowlist throws NotFoundError before parseStrict or spawn ever run.",
-        "parseStrict validates args against the allowlisted CommandSpec's own argsSchema — a bad shape throws ValidationError, still before anything spawns.",
-        "spawn() only ever receives validatedArgs, the Zod-checked argv array — never the caller's raw args and never a shell string.",
+        "registry.get(name) is the default-deny lookup, a name not in config.allowlist throws NotFoundError before parseStrict or spawn ever run.",
+        "parseStrict validates args against the allowlisted CommandSpec's own argsSchema, a bad shape throws ValidationError, still before anything spawns.",
+        "spawn() only ever receives validatedArgs, the Zod-checked argv array, never the caller's raw args and never a shell string.",
       ],
     },
     faq: [
@@ -1005,18 +1004,18 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Can an agent break out of the allowlist and run an arbitrary command?",
         answer:
-          "No — createToolExec's registry only recognizes names explicitly listed in config.allowlist; an unregistered name throws NotFoundError before anything spawns, and an empty allowlist refuses every call. There's no wildcard or fallback path around it.",
+          "No, createToolExec's registry only recognizes names explicitly listed in config.allowlist; an unregistered name throws NotFoundError before anything spawns, and an empty allowlist refuses every call. There's no wildcard or fallback path around it.",
       },
       {
         question: "Does tool-exec ever run a command through a shell?",
         answer:
-          "Never. Each registered CommandSpec resolves to a real executable path plus a Zod argsSchema producing a string[]; the default ExecFn calls node:child_process's execFile with that array directly. execSync, exec, and shell: true are never used anywhere in the package — the source header comment states this as the design invariant.",
+          "Never. Each registered CommandSpec resolves to a real executable path plus a Zod argsSchema producing a string[]; the default ExecFn calls node:child_process's execFile with that array directly. execSync, exec, and shell: true are never used anywhere in the package, the source header comment states this as the design invariant.",
       },
       {
         question:
           "How do I gate a call behind human or policy approval before it actually runs?",
         answer:
-          "Call propose() instead of run(). It does the identical allowlist lookup and Zod validation but returns a serializable ProposedToolCall without spawning anything, so you can park it in your own approval store. execute() re-checks the name is still allowlisted to the same command — defense against the allowlist changing in between — but never re-validates args, since propose already did.",
+          "Call propose() instead of run(). It does the identical allowlist lookup and Zod validation but returns a serializable ProposedToolCall without spawning anything, so you can park it in your own approval store. execute() re-checks the name is still allowlisted to the same command (defense against the allowlist changing in between) but never re-validates args, since propose already did.",
       },
       {
         question:
@@ -1033,54 +1032,54 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "agentic-dev",
-      note: `Sold standalone at ${modulePrice("tool-exec")}, or composed as a real workspace:* dependency of @caisson/agent-dev (packages/agent-dev/package.json) inside the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel, agent-runner, and the local hybrid-memory store.`,
+      note: `Sold standalone at ${modulePrice("tool-exec")}, or composed directly into @caisson/agent-dev inside the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel, agent-runner, and the local hybrid-memory store.`,
     },
   },
   {
     slug: "org-controls",
-    metaTitle: "Org Controls — Cross-Tenant Admin-Write RLS | Caisson",
+    metaTitle: "Org Controls, Cross-Tenant Admin-Write RLS | Caisson",
     metaDescription:
-      "The commercial cross-tenant admin-write RLS layer — a separate admin_write Postgres role, one role-scoped policy — plus WorkOS SSO, a Clerk verifier, and owner-gated member management, carved out of the open tenancy-rls floor.",
+      "The commercial cross-tenant admin-write RLS layer (a separate admin_write Postgres role, one role-scoped policy) plus WorkOS SSO, a Clerk verifier, and owner-gated member management, carved out of the open tenancy-rls floor.",
     heroOneLiner:
-      "admin_write is a second Postgres role your buyer-facing tenant-isolation policy never matches — so your own operator control plane can write across every tenant without the app role ever gaining that reach.",
+      "admin_write is a second Postgres role your buyer-facing tenant-isolation policy never matches, so your own operator control plane can write across every tenant without the app role ever gaining that reach.",
     definition:
       "org-controls is the cross-tenant admin-write RLS layer carved out of the open tenancy-rls floor, plus the org-plan surfaces around it: WorkOS SSO sign-in, a Clerk session-verification driver, and the owner-gated multi-user membership surface. The free tenancy-rls package still enforces the buyer app role's fail-closed single-tenant isolation; this paid layer adds the separate admin_write role your own operator control plane mutates through.",
     included: [
       {
         title: "Cross-tenant write policy, DB-separated on purpose",
-        body: "buildAdminWritePolicySql grants SELECT/INSERT/UPDATE (no DELETE) to admin_write and adds a role-scoped TO admin_write USING (true) WITH CHECK (true) permissive policy alongside the table's existing app tenant-isolation policy — RLS OR-combines them by role, so admin_write reaches every tenant while app never matches this policy. buildAdminSelectPolicySql is the narrower read-only twin for tables the control plane only ever reads.",
+        body: "buildAdminWritePolicySql grants SELECT/INSERT/UPDATE (no DELETE) to admin_write and adds a role-scoped TO admin_write USING (true) WITH CHECK (true) permissive policy alongside the table's existing app tenant-isolation policy, RLS OR-combines them by role, so admin_write reaches every tenant while app never matches this policy. buildAdminSelectPolicySql is the narrower read-only twin for tables the control plane only ever reads.",
       },
       {
-        title: "withAdminWrite — the one seam every mutation writes through",
-        body: "withAdminWrite opens a transaction, runs the same fail-closed SUPERUSER/BYPASSRLS role pre-flight withTenant uses (deliberately duplicated here per ADR-0257 §1.3 rather than widening the open tenancy-rls surface), then SET LOCAL ROLE admin_write for the transaction's life — never the connection pool directly.",
+        title: "withAdminWrite, the one seam every mutation writes through",
+        body: "withAdminWrite opens a transaction, runs the same fail-closed SUPERUSER/BYPASSRLS role pre-flight withTenant uses (deliberately duplicated here per ADR-0257 §1.3 rather than widening the open tenancy-rls surface), then SET LOCAL ROLE admin_write for the transaction's life, never the connection pool directly.",
       },
       {
         title: "Owner-gated multi-user membership",
-        body: "assertCanManageMembers gates addAccountMember and removeAccountMember to the owner role — a seat cannot manage members or billing. removeAccountMember additionally refuses self-removal and refuses removing a second owner, so this control can never lock an account's owner out or let one owner unilaterally eject a co-owner.",
+        body: "assertCanManageMembers gates addAccountMember and removeAccountMember to the owner role, a seat cannot manage members or billing. removeAccountMember additionally refuses self-removal and refuses removing a second owner, so this control can never lock an account's owner out or let one owner unilaterally eject a co-owner.",
       },
       {
         title: "WorkOS SSO sign-in",
-        body: "createWorkosSsoProvider builds the AuthKit/SSO authorization URL and exchanges the callback code for a Zod-strict-validated {userId, email} profile over api.workos.com — a framework-agnostic transport seam apps/site wires into better-auth. A failed exchange never echoes the response body, since it can carry the client secret or user PII.",
+        body: "createWorkosSsoProvider builds the AuthKit/SSO authorization URL and exchanges the callback code for a Zod-strict-validated {userId, email} profile over api.workos.com, a framework-agnostic transport seam apps/site wires into better-auth. A failed exchange never echoes the response body, since it can carry the client secret or user PII.",
       },
       {
         title: "Clerk session-verification driver",
-        body: "createClerkSessionVerifier verifies a Clerk session JWT (networkless when jwtKey is supplied, live JWKS fetch otherwise) and clerkClaimsToSessionContext maps its claims onto the kernel's SessionContext. An active Organization with no role claim maps to the least-privileged seat, never the owner default — closing a privilege-escalation path a reshaped custom token could otherwise open.",
+        body: "createClerkSessionVerifier verifies a Clerk session JWT (networkless when jwtKey is supplied, live JWKS fetch otherwise) and clerkClaimsToSessionContext maps its claims onto the kernel's SessionContext. An active Organization with no role claim maps to the least-privileged seat, never the owner default, closing a privilege-escalation path a reshaped custom token could otherwise open.",
       },
       {
         title: "Fail-closed entitlement gate",
-        body: "holdsOrgControls is the predicate the /dashboard/members surfaces gate through: an empty active-entitlement set denies by default, and it accepts either the bare org-controls purchase id or the full @caisson/org-controls module id — correct whichever form a standalone purchase or bundle grant carries.",
+        body: "holdsOrgControls is the predicate the /dashboard/members surfaces gate through: an empty active-entitlement set denies by default, and it accepts either the bare org-controls purchase id or the full @caisson/org-controls module id, correct whichever form a standalone purchase or bundle grant carries.",
       },
     ],
     artifact: {
       label:
-        "buildAdminWritePolicySql — the cross-tenant write policy, scoped to one role",
+        "buildAdminWritePolicySql, the cross-tenant write policy, scoped to one role",
       lang: "ts",
       file: "packages/org-controls/src/admin-write.ts",
       code: '/**\n * SQL that lets the `admin_write` role INSERT/UPDATE/SELECT every row of `table` cross-tenant,\n * WITHOUT widening what any other role sees. Emitted ALONGSIDE the table\'s existing\n * `buildTenantPolicySql` output (which stays the `app` tenant-isolation floor): a\n * `GRANT SELECT, INSERT, UPDATE ... TO admin_write` (no DELETE — the mutation surface soft-revokes,\n * never hard-deletes) plus a `TO admin_write USING (true) WITH CHECK (true)` policy. RLS\n * OR-combines permissive policies, but each is role-scoped, so `admin_write` sees/writes every\n * tenant while `app` never matches this policy and stays isolated. Applied to the production\n * database at deploy time, mirroring the read-only counterpart policy builder.\n */\nexport function buildAdminWritePolicySql(\n  table: string,\n  { role = ADMIN_WRITE_ROLE }: AdminWritePolicyOptions = {},\n): string {\n  return [\n    // Idempotent so re-running DEPLOY provisioning never errors: GRANT is a no-op when already held,\n    // and DROP POLICY IF EXISTS clears any prior policy before CREATE (Postgres has no\n    // CREATE POLICY IF NOT EXISTS). The policy body is fixed, so drop-then-create is safe to repeat.\n    `GRANT SELECT, INSERT, UPDATE ON ${table} TO ${role};`,\n    `DROP POLICY IF EXISTS ${table}_admin_write ON ${table};`,\n    `CREATE POLICY ${table}_admin_write ON ${table}`,\n    `  TO ${role}`,\n    `  USING (true)`,\n    `  WITH CHECK (true);`,\n  ].join("\\n");\n}',
       annotations: [
-        "USING (true) WITH CHECK (true) is scoped TO admin_write only — RLS OR-combines permissive policies, so this cross-tenant grant never widens what the app role's own tenant-isolation policy already sees.",
-        "GRANT SELECT, INSERT, UPDATE deliberately omits DELETE — the operator mutation surface this policy backs soft-revokes a row, it never hard-deletes through admin_write.",
-        "DROP POLICY IF EXISTS runs before CREATE POLICY so buildAdminWritePolicySql is safe to re-run at every DEPLOY — Postgres has no CREATE POLICY IF NOT EXISTS.",
+        "USING (true) WITH CHECK (true) is scoped TO admin_write only, RLS OR-combines permissive policies, so this cross-tenant grant never widens what the app role's own tenant-isolation policy already sees.",
+        "GRANT SELECT, INSERT, UPDATE deliberately omits DELETE, the operator mutation surface this policy backs soft-revokes a row, it never hard-deletes through admin_write.",
+        "DROP POLICY IF EXISTS runs before CREATE POLICY so buildAdminWritePolicySql is safe to re-run at every DEPLOY, Postgres has no CREATE POLICY IF NOT EXISTS.",
       ],
     },
     faq: [
@@ -1088,25 +1087,25 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does the admin_write role bypass tenant isolation for ordinary buyer requests too?",
         answer:
-          "No — admin_write is a completely separate Postgres role from app, and withAdminWrite is the only seam that ever assumes it. Every buyer request still runs under the app role's own TO app tenant-isolation policy; RLS OR-combines permissive policies by role, so a TO admin_write policy never matches app and never widens what a buyer connection sees.",
+          "No, admin_write is a completely separate Postgres role from app, and withAdminWrite is the only seam that ever assumes it. Every buyer request still runs under the app role's own TO app tenant-isolation policy; RLS OR-combines permissive policies by role, so a TO admin_write policy never matches app and never widens what a buyer connection sees.",
       },
       {
         question:
           "If the write policy is USING (true) WITH CHECK (true) across every tenant, what stops a bug from touching more than one account per call?",
         answer:
-          "The database policy is unconditional on purpose — there's no per-request GUC to bind. The one-account-per-call bound is enforced at the app layer instead: every mutation function takes exactly one target account id and filters on it, gated by the caller's own authentication check and written to a dual audit log. That's a deliberate, disclosed tradeoff, not an oversight.",
+          "The database policy is unconditional on purpose, there's no per-request GUC to bind. The one-account-per-call bound is enforced at the app layer instead: every mutation function takes exactly one target account id and filters on it, gated by the caller's own authentication check and written to a dual audit log. That's a deliberate, disclosed tradeoff, not an oversight.",
       },
       {
         question:
           "Can a seat manage other members, or reach the admin-write surface?",
         answer:
-          "No. assertCanManageMembers gates addAccountMember and removeAccountMember to the owner role before any query runs, and removeAccountMember separately refuses self-removal and refuses removing a second owner — so no owner-gated action can lock the account's own owner out or let one owner unilaterally eject another.",
+          "No. assertCanManageMembers gates addAccountMember and removeAccountMember to the owner role before any query runs, and removeAccountMember separately refuses self-removal and refuses removing a second owner, so no owner-gated action can lock the account's own owner out or let one owner unilaterally eject another.",
       },
       {
         question:
           "Does the admin-write role split make our access-control posture SOC 2 compliant?",
         answer:
-          "No single module does that. org-controls ships the technical control an auditor checks for role-based access segregation — a DB-enforced split between the buyer app role and the cross-tenant admin_write role, gated by a fail-closed guard that refuses to run as SUPERUSER or BYPASSRLS — not a certification. Compliance status is your organization's and your auditor's call.",
+          "No single module does that. org-controls ships the technical control an auditor checks for role-based access segregation (a DB-enforced split between the buyer app role and the cross-tenant admin_write role, gated by a fail-closed guard that refuses to run as SUPERUSER or BYPASSRLS) not a certification. Compliance status is your organization's and your auditor's call.",
       },
     ],
     relatedGlossary: [
@@ -1116,16 +1115,16 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "platform",
-      note: `Sold standalone at ${modulePrice("org-controls")} — no persona bundle grants it (ADR-0257 §1.3 carve puts it beside billing-orchestration and ui-pro as a \`bundles: []\` platform SKU), so it's a deliberate standalone line on any stack; it's included only by construction inside the ${bundlePrice("everything")} Everything bundle, the sole bundle that carries every sellable SKU (ADR-0258).`,
+      note: `Sold standalone at ${modulePrice("org-controls")}. No persona bundle grants it, so it's a deliberate standalone line on any stack; it's included only by construction inside the ${bundlePrice("everything")} Everything bundle, the one bundle that carries every sellable module.`,
     },
   },
   {
     slug: "compliance-core",
-    metaTitle: "Compliance Evidence Packs — Flag-Never-Guess | Caisson",
+    metaTitle: "Compliance Evidence Packs, Flag-Never-Guess | Caisson",
     metaDescription:
       "generateEvidencePack refuses to assemble a pack while any control's evidence is unresolved, then produces a byte-stable, SHA-256-verifiable ZIP with a cross-framework crosswalk rollup and an OSCAL catalog export.",
     heroOneLiner:
-      "generateEvidencePack won't produce a pack while any control's evidence is unresolved — what it does hand you is a byte-stable, SHA-256-verifiable ZIP.",
+      "generateEvidencePack won't produce a pack while any control's evidence is unresolved, what it does hand you is a byte-stable, SHA-256-verifiable ZIP.",
     definition:
       "compliance-core is Caisson's evidence engine: generateEvidencePack composes typed EvidenceCollector results into a deterministic, byte-stable evidence pack, refusing to assemble anything while a control's evidence stays unresolved (flag-never-guess). computeCrosswalkRollup joins every framework pack's crosswalk pointers into one cross-framework view, and toOscalCatalog exports the canonical control catalog as a merged OSCAL document.",
     included: [
@@ -1135,19 +1134,19 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Deterministic, byte-stable archive",
-        body: "buildDeterministicZip fixes every entry to the 1980-epoch DOS mtime, name-sorts entries, and pins the deflate level over canonicalize()'d contents, so identical evidence always serializes to the identical SHA-256 on EvidencePack.sha256 — regardless of when or by whom it was generated. The injected now clock is stamped only on the generatedAt envelope field, never hashed into the body.",
+        body: "buildDeterministicZip fixes every entry to the 1980-epoch DOS mtime, name-sorts entries, and pins the deflate level over canonicalize()'d contents, so identical evidence always serializes to the identical SHA-256 on EvidencePack.sha256, regardless of when or by whom it was generated. The injected now clock is stamped only on the generatedAt envelope field, never hashed into the body.",
       },
       {
         title: "Cross-framework evidence rollup",
-        body: 'computeCrosswalkRollup joins every framework pack\'s crosswalk[] pointers into one flat cell list. A cell renders claim: "implements" only when every contributing control is ready, every contributing verification is reviewed/expert-reviewed and non-stale, and a matching regime-crosswalk row already claims implements — anything short of that defaults to maps-to, mechanically, never editorially.',
+        body: 'computeCrosswalkRollup joins every framework pack\'s crosswalk[] pointers into one flat cell list. A cell renders claim: "implements" only when every contributing control is ready, every contributing verification is reviewed/expert-reviewed and non-stale, and a matching regime-crosswalk row already claims implements, anything short of that defaults to maps-to, mechanically, never editorially.',
       },
       {
         title: "Pluggable EvidenceCollector contract, mandatory reasons",
-        body: "EvidenceCollector.collect(fact) is pure — no I/O, no clock, no DB. passResult ships a satisfied check; flaggedResult and unresolvedResult both throw ValidationError on an empty reason, so a recorded deficiency can never reach a pack without a stated cause.",
+        body: "EvidenceCollector.collect(fact) is pure, no I/O, no clock, no DB. passResult ships a satisfied check; flaggedResult and unresolvedResult both throw ValidationError on an empty reason, so a recorded deficiency can never reach a pack without a stated cause.",
       },
       {
         title: "Detached external-anchor grade tagging",
-        body: "buildExternalAnchorEntry attaches the newest anchor receipt as its own archive entry plus a trusted-timestamped or externally-transparent grade tag on the result envelope — never a field in the canonical manifest.json (the receipt is non-deterministic; hashing it would break byte-stability). anchorGradePhrase keeps a private RFC-3161 receipt from ever claiming the public-transparency language reserved for the externally-transparent grade.",
+        body: "buildExternalAnchorEntry attaches the newest anchor receipt as its own archive entry plus a trusted-timestamped or externally-transparent grade tag on the result envelope, never a field in the canonical manifest.json (the receipt is non-deterministic; hashing it would break byte-stability). anchorGradePhrase keeps a private RFC-3161 receipt from ever claiming the public-transparency language reserved for the externally-transparent grade.",
       },
       {
         title: "OSCAL catalog export, deduped and sorted",
@@ -1156,14 +1155,14 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     artifact: {
       label:
-        "generateEvidencePack — the flag-never-guess scan, before any assembly runs",
+        "generateEvidencePack, the flag-never-guess scan, before any assembly runs",
       lang: "ts",
       file: "packages/compliance-core/src/evidence/generate.ts",
       code: 'export function generateEvidencePack(\n  input: GenerateEvidencePackInput,\n): EvidencePack {\n  // PHASE 1 — flag-never-guess. Scan EVERY control for unresolved evidence before assembling\n  // anything; refuse the whole pack if any is found. No filesystem touch here → no partial pack.\n  const unresolved: Array<{\n    controlId: string;\n    collectorId: string;\n    reason: string | undefined;\n  }> = [];\n  for (const control of input.controls) {\n    for (const result of control.evidence) {\n      if (result.status === "unresolved") {\n        unresolved.push({\n          controlId: control.controlId,\n          collectorId: result.item.collectorId,\n          reason: result.reason,\n        });\n      }\n    }\n  }\n  if (unresolved.length > 0) {\n    const sortedUnresolved = [...unresolved].sort(\n      (a, b) =>\n        cmp(a.controlId, b.controlId) || cmp(a.collectorId, b.collectorId),\n    );\n    const report = parseEvidencePackBlocked({\n      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,\n      tenantId: input.tenantId,\n      framework: input.framework,\n      blocked: true,\n      unresolved: sortedUnresolved,\n    });\n    throw new EvidencePackBlockedError(report);\n  }',
       annotations: [
-        "The scan over input.controls runs BEFORE any assembly starts — every control is checked for an unresolved result first, so a partial pack is never even started.",
-        "EvidencePackBlockedError carries the full sorted report (every unresolved controlId + collectorId), not just a boolean — the caller sees exactly what's missing.",
-        "sortedUnresolved is deterministically ordered by cmp() — the same set of gaps always reports in the same order, run to run.",
+        "The scan over input.controls runs BEFORE any assembly starts, every control is checked for an unresolved result first, so a partial pack is never even started.",
+        "EvidencePackBlockedError carries the full sorted report (every unresolved controlId + collectorId), not just a boolean, the caller sees exactly what's missing.",
+        "sortedUnresolved is deterministically ordered by cmp(), the same set of gaps always reports in the same order, run to run.",
       ],
     },
     faq: [
@@ -1171,25 +1170,25 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does generating an evidence pack make us SOC 2 or HIPAA compliant?",
         answer:
-          "No — no module makes an organization compliant; that determination is your organization's and its auditor's to make. compliance-core generates the evidence a control's readiness is judged from: it refuses to assemble a pack at all while any control's evidence is unresolved, rather than guessing a passing status.",
+          "No, no module makes an organization compliant; that determination is your organization's and its auditor's to make. compliance-core generates the evidence a control's readiness is judged from: it refuses to assemble a pack at all while any control's evidence is unresolved, rather than guessing a passing status.",
       },
       {
         question:
           "What happens if a control's evidence is missing when I try to generate a pack?",
         answer:
-          "generateEvidencePack throws EvidencePackBlockedError (422) before touching a filesystem — no partial pack is produced. The error carries a full report of every unresolved controlId and collectorId, sorted deterministically, so you know exactly what's missing before retrying.",
+          "generateEvidencePack throws EvidencePackBlockedError (422) before touching a filesystem, no partial pack is produced. The error carries a full report of every unresolved controlId and collectorId, sorted deterministically, so you know exactly what's missing before retrying.",
       },
       {
         question:
           "Can I re-run the generator and get a different pack for the same evidence?",
         answer:
-          "No. buildDeterministicZip fixes entry mtimes to the 1980 ZIP epoch, sorts entries by name, and pins the deflate level over canonicalized bytes — the same collector results always produce the identical archive SHA-256. The generation clock (now) is stamped only on the result envelope, never hashed into the body.",
+          "No. buildDeterministicZip fixes entry mtimes to the 1980 ZIP epoch, sorts entries by name, and pins the deflate level over canonicalized bytes, the same collector results always produce the identical archive SHA-256. The generation clock (now) is stamped only on the result envelope, never hashed into the body.",
       },
       {
         question:
           'Does a crosswalk rollup cell claiming "implements" mean Caisson verified that mapping?',
         answer:
-          "It means the mapping cleared a mechanical bar: every contributing canonical control is ready, every contributing crosswalk reference carries a reviewed-or-better, non-stale verification record, and a matching regime-crosswalk row already claims implements. Anything short of that — including any reference seeded from NIST's own OLIR mapping, which NIST itself calls subjective and incomplete — renders as the weaker maps-to, never upgraded editorially.",
+          "It means the mapping cleared a mechanical bar: every contributing canonical control is ready, every contributing crosswalk reference carries a reviewed-or-better, non-stale verification record, and a matching regime-crosswalk row already claims implements. Anything short of that (including any reference seeded from NIST's own OLIR mapping, which NIST itself calls subjective and incomplete) renders as the weaker maps-to, never upgraded editorially.",
       },
     ],
     relatedGlossary: [
@@ -1205,29 +1204,29 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "billing-orchestration",
-    metaTitle: "Billing Orchestration — One Port, Four Providers | Caisson",
+    metaTitle: "Billing Orchestration, One Port, Four Providers | Caisson",
     metaDescription:
-      "One BillingProvider port drives Paddle, Stripe, LemonSqueezy, and Polar. A dual-layer idempotency claim table settles a re-delivered webhook — and its credit grant — exactly once.",
+      "One BillingProvider port drives Paddle, Stripe, LemonSqueezy, and Polar. A dual-layer idempotency claim table settles a re-delivered webhook (and its credit grant) exactly once.",
     heroOneLiner:
-      "One BillingProvider port normalizes Paddle, Stripe, LemonSqueezy, and Polar into one event stream — a subscription renewal grants credits exactly once, a mid-cycle charge never over-grants.",
+      "One BillingProvider port normalizes Paddle, Stripe, LemonSqueezy, and Polar into one event stream, a subscription renewal grants credits exactly once, a mid-cycle charge never over-grants.",
     definition:
-      "Billing orchestration is Caisson's multi-provider commerce seam: one BillingProvider port (createPaddleBilling, createStripeBilling, plus LemonSqueezy and Polar drivers) normalizes checkout, webhook signature verification, and event parsing across all four providers into one domain event stream. A dual-layer idempotency claim table makes a re-delivered webhook — and its downstream credit grant — settle exactly once, never twice.",
+      "Billing orchestration is Caisson's multi-provider commerce seam: one BillingProvider port (createPaddleBilling, createStripeBilling, plus LemonSqueezy and Polar drivers) normalizes checkout, webhook signature verification, and event parsing across all four providers into one domain event stream. A dual-layer idempotency claim table makes a re-delivered webhook (and its downstream credit grant) settle exactly once, never twice.",
     included: [
       {
         title: "One port, four provider drivers",
-        body: "createStripeBilling and createPaddleBilling ship in this package's index.ts alongside createLemonSqueezyBilling and createPolarBilling — all four hand-rolled over each provider's plain REST API (no vendor SDK) behind the one BillingProvider port from @caisson/billing. Paddle is the live platform merchant of record; the LemonSqueezy and Polar drivers are dormant until you construct them with your own credentials.",
+        body: "createStripeBilling and createPaddleBilling ship in this package's index.ts alongside createLemonSqueezyBilling and createPolarBilling, all four hand-rolled over each provider's plain REST API (no vendor SDK) behind the one BillingProvider port from @caisson/billing. Paddle is the live platform merchant of record; the LemonSqueezy and Polar drivers are dormant until you construct them with your own credentials.",
       },
       {
         title: "Envelope shape checked before the mapper ever runs",
-        body: "createStripeBilling and createPaddleBilling both parseStrict the raw webhook body against StripeEventSchema / PaddleEventSchema after signature verification — a missing or wrong-typed id/type/data is rejected before parseStripeEvent or parsePaddleEvent ever reads it. PaddleEventSchema stops short of .strict() on purpose: a strict envelope rejected every real Paddle delivery in live verification, so only the top-level shape is pinned.",
+        body: "createStripeBilling and createPaddleBilling both parseStrict the raw webhook body against StripeEventSchema / PaddleEventSchema after signature verification, a missing or wrong-typed id/type/data is rejected before parseStripeEvent or parsePaddleEvent ever reads it. PaddleEventSchema stops short of .strict() on purpose: a strict envelope rejected every real Paddle delivery in live verification, so only the top-level shape is pinned.",
       },
       {
         title: "A renewal grants once, a mid-cycle charge never over-grants",
-        body: "parsePaddleEvent reads the transaction's origin field: subscription_recurring maps to billingReason \"subscription_cycle\" (a renewal), while subscription_charge — a mid-cycle addon or top-up on the same subscription — passes through as its own non-granting reason instead of being read as another cycle. Only a reason inside services/license's GRANTING_REASONS ever triggers a credit grant; an absent or unrecognized origin falls through unmapped and grants nothing.",
+        body: "parsePaddleEvent reads the transaction's origin field: subscription_recurring maps to billingReason \"subscription_cycle\" (a renewal), while subscription_charge (a mid-cycle addon or top-up on the same subscription) passes through as its own non-granting reason instead of being read as another cycle. Only a reason inside services/license's GRANTING_REASONS ever triggers a credit grant; an absent or unrecognized origin falls through unmapped and grants nothing.",
       },
       {
         title: "A re-delivered webhook settles exactly once",
-        body: "processEvent claims a sourceEventId once via an INSERT ... ON CONFLICT DO NOTHING on billing_processed_event; a re-delivery finds the claim and skips the grant function entirely — and with it the detached post-commit Discord role push, which is gated on that same outer claim. withIdempotentSideEffect claims a composite ${sourceEventId}:${sideEffect} key so a named transactional side effect fires at most once across retries, on top of the credit ledger's own UNIQUE(source_event_id, event_type) constraint.",
+        body: "processEvent claims a sourceEventId once via an INSERT ... ON CONFLICT DO NOTHING on billing_processed_event; a re-delivery finds the claim and skips the grant function entirely, and with it the detached post-commit Discord role push, which is gated on that same outer claim. withIdempotentSideEffect claims a composite ${sourceEventId}:${sideEffect} key so a named transactional side effect fires at most once across retries, on top of the credit ledger's own UNIQUE(source_event_id, event_type) constraint.",
       },
       {
         title: "The claim table is tenant-scoped, not just event-scoped",
@@ -1235,19 +1234,19 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Integer money at every provider boundary",
-        body: "readMoneyMinorUnits rounds LemonSqueezy's numeric money fields — which can carry sub-cent artifacts from currency-rate conversion (e.g. 1499.985) — to the nearest integer minor unit before the amount enters the domain event. Every driver's amountTotal reaches the credit-grant seam as an integer, never a float.",
+        body: "readMoneyMinorUnits rounds LemonSqueezy's numeric money fields (which can carry sub-cent artifacts from currency-rate conversion (e.g. 1499.985)) to the nearest integer minor unit before the amount enters the domain event. Every driver's amountTotal reaches the credit-grant seam as an integer, never a float.",
       },
     ],
     artifact: {
       label:
-        "parsePaddleEvent's invoice.paid mapping — a renewal grants, a mid-cycle charge doesn't",
+        "parsePaddleEvent's invoice.paid mapping, a renewal grants, a mid-cycle charge doesn't",
       lang: "ts",
       file: "packages/billing-orchestration/src/paddle-events.ts",
       code: '      if (txnId === "") return null;\n      return {\n        type: "invoice.paid",\n        sourceEventId: event.event_id,\n        accountId,\n        amountTotal: readGrandTotal(obj),\n        currency: readString(obj.currency_code, "usd"),\n        subscriptionId,\n        priceId: readItemPriceId(obj),\n        // Paddle\'s `origin` says HOW the charge arose (verified against developer.paddle.com\'s\n        // transaction.completed reference + the subscription-created/renewed simulator scenarios,\n        // 2026-07-01), mapped onto the billingReason vocabulary the cycle->grant gate\n        // (services/license GRANTING_REASONS) recognizes:\n        //   web | api                → the subscription\'s FIRST charge (Paddle.js checkout / an\n        //                              API-created transaction, e.g. provider.ts createCheckout)\n        //                              → "subscription_create" (grants)\n        //   subscription_recurring   → a renewal cycle → "subscription_cycle" (grants)\n        //   subscription_charge      → a MID-CYCLE one-time charge FOR the subscription\n        //                              (addon/topup) — NOT the first charge (the earlier reading);\n        //                              granting the plan\'s cycle allotment here would OVER-grant,\n        //                              so it passes through as its own non-granting reason\n        //   subscription_update / subscription_payment_method_change → proration / $0\n        //                              method-change transactions — non-granting (the SD-1\n        //                              next-cycle rule)\n        // An absent origin passes through as "" — not in GRANTING_REASONS, so it grants nothing\n        // (fail-closed; Paddle documents `origin` as always present on a transaction).\n        billingReason: ((): string => {\n          const origin = readString(obj.origin);\n          if (origin === "subscription_recurring") return "subscription_cycle";\n          if (origin === "web" || origin === "api")\n            return "subscription_create";\n          return origin;\n        })(),',
       annotations: [
-        "origin drives billingReason — subscription_recurring becomes subscription_cycle (a renewal, grants), while subscription_charge passes through unmapped so a mid-cycle addon charge never triggers the plan's cycle credit grant.",
-        "An absent or unrecognized origin falls through as the raw string, which never matches services/license's GRANTING_REASONS — fail-closed to no grant rather than a guessed one.",
-        "Paddle fires this same transaction.completed event for both a subscription's first charge and every renewal — there is no separate per-cycle webhook, so origin is the only signal this mapper has.",
+        "origin drives billingReason, subscription_recurring becomes subscription_cycle (a renewal, grants), while subscription_charge passes through unmapped so a mid-cycle addon charge never triggers the plan's cycle credit grant.",
+        "An absent or unrecognized origin falls through as the raw string, which never matches services/license's GRANTING_REASONS, fail-closed to no grant rather than a guessed one.",
+        "Paddle fires this same transaction.completed event for both a subscription's first charge and every renewal, there is no separate per-cycle webhook, so origin is the only signal this mapper has.",
       ],
     },
     faq: [
@@ -1255,24 +1254,24 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does a mid-cycle top-up charge grant the subscription's monthly credit allotment a second time?",
         answer:
-          "No. parsePaddleEvent reads the transaction's origin field: subscription_recurring maps to \"subscription_cycle\" (a renewal — grants), while subscription_charge — a mid-cycle addon or top-up — passes through as its own non-granting reason instead of being read as another cycle renewal. Only a reason in services/license's GRANTING_REASONS ever triggers a credit grant.",
+          "No. parsePaddleEvent reads the transaction's origin field: subscription_recurring maps to \"subscription_cycle\" (a renewal, grants), while subscription_charge (a mid-cycle addon or top-up) passes through as its own non-granting reason instead of being read as another cycle renewal. Only a reason in services/license's GRANTING_REASONS ever triggers a credit grant.",
       },
       {
         question:
           "What stops a re-delivered webhook from granting credits twice?",
         answer:
-          "Two layers. The credit ledger is already idempotent — its UNIQUE(source_event_id, event_type) index makes a duplicate grant a no-op. This package adds an outer claim table on top: processEvent claims a sourceEventId once, so a re-delivery skips the grant function entirely — and with it the detached post-commit Discord role push, which is gated on that same outer claim. withIdempotentSideEffect adds a per-effect claim for a transactional side effect so it fires at most once across retries.",
+          "Two layers. The credit ledger is already idempotent (its UNIQUE(source_event_id, event_type) index makes a duplicate grant a no-op. This package adds an outer claim table on top: processEvent claims a sourceEventId once, so a re-delivery skips the grant function entirely) and with it the detached post-commit Discord role push, which is gated on that same outer claim. withIdempotentSideEffect adds a per-effect claim for a transactional side effect so it fires at most once across retries.",
       },
       {
         question:
           "Do I need four different provider SDKs to use all four drivers?",
         answer:
-          "No SDK at all — createStripeBilling, createPaddleBilling, createLemonSqueezyBilling, and createPolarBilling are each hand-rolled over the provider's plain REST API behind the one BillingProvider port, so swapping the merchant of record is a new driver, not a rewrite. Paddle is the live platform MoR; the LemonSqueezy and Polar drivers are dormant until you construct them with your own credentials.",
+          "No SDK at all, createStripeBilling, createPaddleBilling, createLemonSqueezyBilling, and createPolarBilling are each hand-rolled over the provider's plain REST API behind the one BillingProvider port, so swapping the merchant of record is a new driver, not a rewrite. Paddle is the live platform MoR; the LemonSqueezy and Polar drivers are dormant until you construct them with your own credentials.",
       },
       {
         question: "How does it handle a provider's fractional money field?",
         answer:
-          "It rounds it. LemonSqueezy's numeric amount fields can carry sub-cent artifacts from currency-rate conversion (e.g. 1499.985); readMoneyMinorUnits rounds every amount to the nearest integer minor unit before it enters the domain event — money and credits are integer units everywhere in Caisson, never floats.",
+          "It rounds it. LemonSqueezy's numeric amount fields can carry sub-cent artifacts from currency-rate conversion (e.g. 1499.985); readMoneyMinorUnits rounds every amount to the nearest integer minor unit before it enters the domain event, money and credits are integer units everywhere in Caisson, never floats.",
       },
     ],
     relatedGlossary: [
@@ -1282,35 +1281,35 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "platform",
-      note: `Sold standalone at ${modulePrice("billing-orchestration")} — no persona bundle includes it (a platform SKU, standalone by design); it's part of the Everything bundle, the whole catalog in one purchase.`,
+      note: `Sold standalone at ${modulePrice("billing-orchestration")}, no persona bundle includes it (a platform SKU, standalone by design); it's part of the Everything bundle, the whole catalog in one purchase.`,
     },
   },
   {
     slug: "ui-pro",
-    metaTitle: "UI Pro — Zero-Radix Interactive Components | Caisson",
+    metaTitle: "UI Pro, Zero-Radix Interactive Components | Caisson",
     metaDescription:
       "Fourteen commercial React components on the open @caisson/ui floor: Tooltip/Popover/Menu hand-rolled with zero Radix and zero @floating-ui, plus a filterable/groupable/virtualized data grid, a hash-chain audit timeline, and redaction-aware payload and diff viewers.",
     heroOneLiner:
-      "The interactive layer @caisson/ui doesn't ship — Tooltip, Popover, and Menu hand-rolled against zero Radix and zero @floating-ui, plus the data grid, hash-chain audit timeline, and diff viewer a real dashboard needs.",
+      "The interactive layer @caisson/ui doesn't ship, Tooltip, Popover, and Menu hand-rolled against zero Radix and zero @floating-ui, plus the data grid, hash-chain audit timeline, and diff viewer a real dashboard needs.",
     definition:
-      "ui-pro is the commercial component tier built on the open @caisson/ui floor: a hand-rolled, zero-Radix, zero-@floating-ui interactive layer (Tooltip, Popover, Menu) plus eleven sellable data surfaces — an advanced data grid, virtualized tree, ops/coverage matrix, hash-chain audit timeline, redaction-aware payload and diff viewers, type-to-confirm, date-range picker, charts, kanban board, and command palette.",
+      "ui-pro is the commercial component tier built on the open @caisson/ui floor: a hand-rolled, zero-Radix, zero-@floating-ui interactive layer (Tooltip, Popover, Menu) plus eleven sellable data surfaces, an advanced data grid, virtualized tree, ops/coverage matrix, hash-chain audit timeline, redaction-aware payload and diff viewers, type-to-confirm, date-range picker, charts, kanban board, and command palette.",
     included: [
       {
-        title: "Tooltip, Popover, Menu — zero Radix, zero @floating-ui",
-        body: "Popover and Menu render their own trigger <button>, portal their panel with react-dom's createPortal, and position it with the package's own computeFloatingPosition — a pure flip-and-clamp function shared through the useFloatingPosition hook by all three interactive primitives (ADR-0291). Menu follows the WAI-ARIA Menu Button pattern (role=\"menu\", roving tabindex, Up/Down/Home/End); Popover follows the APG disclosure-with-portal pattern (explicit focus-in on open, focus-return on every keyboard-initiated close).",
+        title: "Tooltip, Popover, Menu, zero Radix, zero @floating-ui",
+        body: "Popover and Menu render their own trigger <button>, portal their panel with react-dom's createPortal, and position it with the package's own computeFloatingPosition, a pure flip-and-clamp function shared through the useFloatingPosition hook by all three interactive primitives (ADR-0291). Menu follows the WAI-ARIA Menu Button pattern (role=\"menu\", roving tabindex, Up/Down/Home/End); Popover follows the APG disclosure-with-portal pattern (explicit focus-in on open, focus-return on every keyboard-initiated close).",
       },
       {
-        title: "DataTablePro — filter, group, aggregate, export, virtualize",
-        body: "DataTablePro composes the open kit's own Button and Select, then drives the pure lib/table-ops.ts transforms — applyFilters, sortRows, groupRows, aggregate, toCsv, compareCells — plus lib/virtual.ts's windowRange for row virtualization. The transforms are exported standalone (DataTableProColumn, SavedView) so the filtering/grouping/CSV logic is unit-testable and reusable server-side, not locked inside the component.",
+        title: "DataTablePro, filter, group, aggregate, export, virtualize",
+        body: "DataTablePro composes the open kit's own Button and Select, then drives the pure lib/table-ops.ts transforms (applyFilters, sortRows, groupRows, aggregate, toCsv, compareCells) plus lib/virtual.ts's windowRange for row virtualization. The transforms are exported standalone (DataTableProColumn, SavedView) so the filtering/grouping/CSV logic is unit-testable and reusable server-side, not locked inside the component.",
       },
       {
-        title: "AuditTimeline — renders a hash-chain verification result",
-        body: "AuditTimeline takes AuditEntry rows extending lib/audit-chain.ts's ChainEntry, and an optional anchor-derived statuses prop of six-state badges (wired to @caisson/kernel's per-row verifier, ADR-0331/0344). shortHash formats the display; chainIntact and verifyChain are exported for a caller to run the actual chain check — the component displays a verdict, it doesn't compute one.",
+        title: "AuditTimeline, renders a hash-chain verification result",
+        body: "AuditTimeline takes AuditEntry rows extending lib/audit-chain.ts's ChainEntry, and an optional anchor-derived statuses prop of six-state badges (wired to @caisson/kernel's per-row verifier, ADR-0331/0344). shortHash formats the display; chainIntact and verifyChain are exported for a caller to run the actual chain check, the component displays a verdict, it doesn't compute one.",
       },
       {
         title:
           "PayloadViewer redacts by default; DiffViewer redacts on request",
-        body: "PayloadViewer falls back to lib/redact.ts's DEFAULT_REDACT_KEYS and uses isRedactedKey/redactValue (the predicate now re-exported from @caisson/kernel, ADR-0331) whenever the caller doesn't supply its own key list — masking is on out of the box. DiffViewer's JSON mode only redacts when the caller passes its own redactKeys set, which it threads into lib/diff.ts's diffJson (that module calls redactValue internally); DiffViewer imports no default key list itself, and its plain text-line diff mode has no redaction path at all — so a support or audit screen stays unmasked unless the integrator wires redactKeys explicitly.",
+        body: "PayloadViewer falls back to lib/redact.ts's DEFAULT_REDACT_KEYS and uses isRedactedKey/redactValue (the predicate now re-exported from @caisson/kernel, ADR-0331) whenever the caller doesn't supply its own key list (masking is on out of the box. DiffViewer's JSON mode only redacts when the caller passes its own redactKeys set, which it threads into lib/diff.ts's diffJson (that module calls redactValue internally); DiffViewer imports no default key list itself, and its plain text-line diff mode has no redaction path at all) so a support or audit screen stays unmasked unless the integrator wires redactKeys explicitly.",
       },
       {
         title:
@@ -1320,14 +1319,14 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     artifact: {
       label:
-        "computeFloatingPosition — the zero-Radix flip-and-clamp math under Tooltip/Popover/Menu",
+        "computeFloatingPosition, the zero-Radix flip-and-clamp math under Tooltip/Popover/Menu",
       lang: "ts",
       file: "packages/ui-pro/src/lib/position.ts",
       code: "/**\n * Computes a viewport-relative `{top, left}` (paired with `position: fixed`, matching\n * `getBoundingClientRect`'s coordinate space) for a panel anchored to `trigger` on the\n * `preferred` side. Flips to the opposite side if the preferred side would overflow the viewport\n * and the opposite side fits better; otherwise falls back to `preferred` unfit. Both axes are then\n * clamped into `[gap, viewport - panel - gap]` — cheap insurance on the axis that already fit (a\n * no-op there) and the only thing keeping the *main* axis on-screen when neither placement fit.\n * A panel taller/wider than the viewport can still get clamped to `gap` on both ends and overflow\n * regardless — coordinates alone can't shrink it, so panels also carry their own\n * `max-height`/`overflow-y: auto` (see `.cs-popover`/`.cs-menu`) as the belt-and-braces.\n */\nexport function computeFloatingPosition(\n  trigger: Rect,\n  panel: Size,\n  viewport: Size,\n  preferred: Placement = \"bottom\",\n  gap = 8,\n): FloatingPosition {\n  const placement = fits(preferred, trigger, panel, viewport, gap)\n    ? preferred\n    : fits(OPPOSITE[preferred], trigger, panel, viewport, gap)\n      ? OPPOSITE[preferred]\n      : preferred;\n\n  const { top, left } = place(placement, trigger, panel, gap);\n\n  const clampedLeft = Math.min(\n    Math.max(left, gap),\n    Math.max(gap, viewport.width - panel.width - gap),\n  );\n  const clampedTop = Math.min(\n    Math.max(top, gap),\n    Math.max(gap, viewport.height - panel.height - gap),\n  );\n\n  return { top: clampedTop, left: clampedLeft, placement };\n}",
       annotations: [
-        "computeFloatingPosition is the entire positioning engine — a pure, unit-tested function with no @floating-ui and no Radix import anywhere in the file",
+        "computeFloatingPosition is the entire positioning engine, a pure, unit-tested function with no @floating-ui and no Radix import anywhere in the file",
         "the OPPOSITE-indexed fits() call is the flip logic: try the preferred side, fall back to the opposite side, or give up and let the clamp save it",
-        "clampedLeft/clampedTop are the belt-and-braces — even an unfit placement gets pinned inside the viewport instead of rendering off-screen",
+        "clampedLeft/clampedTop are the belt-and-braces, even an unfit placement gets pinned inside the viewport instead of rendering off-screen",
       ],
     },
     faq: [
@@ -1335,41 +1334,41 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Why hand-roll Popover/Menu instead of shipping on Radix like most component libraries?",
         answer:
-          "Zero runtime dependency and one shared positioning primitive. computeFloatingPosition is a ~35-line pure function — no @floating-ui, no Radix — and useFloatingPosition wires the same math to a single hook that Popover, Menu, and Tooltip all reuse, so there's one focus-management and one positioning implementation to audit instead of a vendor's.",
+          "Zero runtime dependency and one shared positioning primitive. computeFloatingPosition is a ~35-line pure function (no @floating-ui, no Radix) and useFloatingPosition wires the same math to a single hook that Popover, Menu, and Tooltip all reuse, so there's one focus-management and one positioning implementation to audit instead of a vendor's.",
       },
       {
         question:
           "Does the audit timeline verify anything itself, or just display it?",
         answer:
-          "It displays a verification result computed elsewhere — AuditTimeline takes an optional anchor-derived statuses prop (six-state badges wired to @caisson/kernel's per-row verifier) and its own lib/audit-chain.ts exports chainIntact and verifyChain for a caller to run the check. The component itself holds no hashing or WORM-anchor logic; it renders whatever chain state you hand it.",
+          "It displays a verification result computed elsewhere, AuditTimeline takes an optional anchor-derived statuses prop (six-state badges wired to @caisson/kernel's per-row verifier) and its own lib/audit-chain.ts exports chainIntact and verifyChain for a caller to run the check. The component itself holds no hashing or WORM-anchor logic; it renders whatever chain state you hand it.",
       },
       {
         question:
           "Does DataTablePro replace @caisson/ui's basic table, or is it a separate thing?",
         answer:
-          "Separate tier by design (ADR-0259's market-line split): the open @caisson/ui floor keeps a basic table with single sort/filter/pagination; DataTablePro adds the filter builder, grouping/aggregation, column pin/hide, CSV export, and row virtualization on top — and it composes the open kit's own Button and Select rather than duplicating them.",
+          "Separate tier by design: the open @caisson/ui floor keeps a basic table with single sort/filter/pagination; DataTablePro adds the filter builder, grouping/aggregation, column pin/hide, CSV export, and row virtualization on top, and it composes the open kit's own Button and Select rather than duplicating them.",
       },
       {
         question: "Which edition or bundle does ui-pro come with?",
         answer:
-          'No persona bundle — buying Compliance, AI-Production, Local-first, Agentic-Dev, or Provenance never silently includes it (standalone placement, no persona-bundle membership at v1), and buying it never silently requires one of them. The whole-catalog Everything bundle is the one exception: it grants every sellable module by construction, ui-pro included — pinned by a registry test literally named "ui-pro is IN the Everything membership."',
+          'No persona bundle (buying Compliance, AI-Production, Local-first, Agentic-Dev, or Provenance never silently includes it (standalone placement, no persona-bundle membership at v1), and buying it never silently requires one of them. The whole-catalog Everything bundle is the one exception: it grants every sellable module by construction, ui-pro included) pinned by a registry test literally named "ui-pro is IN the Everything membership."',
       },
     ],
     relatedGlossary: ["hash-chain-audit-trail", "signed-audit-anchor"],
     sells: {
       edition: "none",
-      note: `Sold standalone at ${modulePrice("ui-pro")} — no persona bundle grants it (standalone placement, no persona-bundle membership at v1), so it stays its own line on Compliance, AI-Production, Local-first, Agentic-Dev, and Provenance. The whole-catalog Everything bundle does include it, like every sellable module. It's the interactive layer each persona bundle's own dashboards reach for — Compliance's audit views, AI-Production's model-quality consoles — without ever being one of their bundle line items.`,
+      note: `Sold standalone at ${modulePrice("ui-pro")}, no persona bundle grants it (standalone placement, no persona-bundle membership at v1), so it stays its own line on Compliance, AI-Production, Local-first, Agentic-Dev, and Provenance. The whole-catalog Everything bundle does include it, like every sellable module. It's the interactive layer each persona bundle's own dashboards reach for (Compliance's audit views, AI-Production's model-quality consoles) without ever being one of their bundle line items.`,
     },
   },
   {
     slug: "local-inference",
-    metaTitle: "On-Device Inference — Hash-Verified ONNX | Caisson",
+    metaTitle: "On-Device Inference, Hash-Verified ONNX | Caisson",
     metaDescription:
       "On-device ONNX embeddings via transformers.js, every model file SHA-256-verified, plus a metered hosted lane (OpenRouter, Azure OpenAI, Bedrock) that's off unless you allowlist its host.",
     heroOneLiner:
-      "A hash-verified ONNX model runs inference on-device with zero egress by default — the hosted lane switches on only when you name its host in the privacy allowlist.",
+      "A hash-verified ONNX model runs inference on-device with zero egress by default, the hosted lane switches on only when you name its host in the privacy allowlist.",
     definition:
-      "local-inference implements one InferenceBackend port two ways: OnnxEmbeddingBackend runs a MiniLM-class ONNX model on-device via transformers.js, every fetched model file SHA-256-verified before use; RentedInferenceBackend calls a hosted provider (OpenRouter, Azure OpenAI, Bedrock) only once its host is allowlisted in the privacy gate, metering every call. A deterministic stub backs CI — the live paths are proven, never exercised in tests.",
+      "local-inference implements one InferenceBackend port two ways: OnnxEmbeddingBackend runs a MiniLM-class ONNX model on-device via transformers.js, every fetched model file SHA-256-verified before use; RentedInferenceBackend calls a hosted provider (OpenRouter, Azure OpenAI, Bedrock) only once its host is allowlisted in the privacy gate, metering every call. A deterministic stub backs CI, the live paths are proven, never exercised in tests.",
     included: [
       {
         title: "Hash-verified model load, fail closed on mismatch",
@@ -1377,33 +1376,33 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "One egress chokepoint, two purpose-bound sink kinds",
-        body: "Both backends route through the shared EgressGuard's assertAllowedFor — the ONNX backend allowlists only modelHost under the model-fetch sink kind, the rented backend only its endpoint under rented-backend — so a host sanctioned for one purpose can never receive traffic meant for the other.",
+        body: "Both backends route through the shared EgressGuard's assertAllowedFor (the ONNX backend allowlists only modelHost under the model-fetch sink kind, the rented backend only its endpoint under rented-backend) so a host sanctioned for one purpose can never receive traffic meant for the other.",
       },
       {
         title: "Rented inference is off by default",
-        body: 'RentedInferenceBackend\'s constructor calls guard.assertAllowedFor(endpoint, "rented-backend") before it will even build, and re-asserts the same gate on every embed/complete call — a zero-egress privacy policy makes construction itself throw, with no silent hosted fallback.',
+        body: 'RentedInferenceBackend\'s constructor calls guard.assertAllowedFor(endpoint, "rented-backend") before it will even build, and re-asserts the same gate on every embed/complete call, a zero-egress privacy policy makes construction itself throw, with no silent hosted fallback.',
       },
       {
         title: "Every rented call meters exactly once",
-        body: "#emitMeter builds one UsageMetering record — integer quantity, a fresh idempotencyKey per call — and hands it to the buyer-wired MeterSink before the result returns; if the sink throws, the call fails, because a paid call that can't be recorded must not silently succeed.",
+        body: "#emitMeter builds one UsageMetering record (integer quantity, a fresh idempotencyKey per call) and hands it to the buyer-wired MeterSink before the result returns; if the sink throws, the call fails, because a paid call that can't be recorded must not silently succeed.",
       },
       {
         title: "Four wire dialects, one RentedTransport port",
-        body: "createLiveRentedTransport speaks a first-party /embed + /complete wire; createOpenRouterRentedTransport, createAzureOpenAIRentedTransport, and createBedrockRentedTransport map the same port onto OpenRouter, Azure OpenAI, and Bedrock — every response re-validated against the strict RentedEmbedResponse/RentedCompleteResponse shape regardless of which one answered.",
+        body: "createLiveRentedTransport speaks a first-party /embed + /complete wire; createOpenRouterRentedTransport, createAzureOpenAIRentedTransport, and createBedrockRentedTransport map the same port onto OpenRouter, Azure OpenAI, and Bedrock, every response re-validated against the strict RentedEmbedResponse/RentedCompleteResponse shape regardless of which one answered.",
       },
       {
         title: "Deterministic stub, byte-identical in CI",
-        body: "StubInferenceBackend seeds a mulberry32 PRNG from the SHA-256 of the input text, so identical text always embeds to the byte-identical vector and CI never touches a model or a socket — the same InferenceBackend port the live backends implement, so swapping to production changes zero call sites.",
+        body: "StubInferenceBackend seeds a mulberry32 PRNG from the SHA-256 of the input text, so identical text always embeds to the byte-identical vector and CI never touches a model or a socket, the same InferenceBackend port the live backends implement, so swapping to production changes zero call sites.",
       },
     ],
     artifact: {
-      label: "RentedInferenceBackend constructor — off by default, provably",
+      label: "RentedInferenceBackend constructor, off by default, provably",
       lang: "ts",
       file: "packages/local-inference/src/rented-backend.ts",
       code: '  constructor(config: RentedBackendConfig) {\n    const dim = config.dim ?? EMBEDDING_DIM;\n    if (!Number.isInteger(dim) || dim <= 0) {\n      throw new ValidationError(\n        "rented backend dim must be a positive integer",\n        { received: dim },\n      );\n    }\n    assertNonEmpty(config.tenantId, "tenantId");\n    assertNonEmpty(config.feature, "feature");\n    assertNonEmpty(config.model, "model");\n\n    // OFF BY DEFAULT. `assertAllowedFor` throws unless the endpoint is HTTPS, the host\n    // is on the privacy allowlist (a zero-egress default policy fails closed), AND the sanctioned\n    // sink KIND is `rented-backend` specifically — a host allowlisted only for the model fetch\n    // can never double as a hosted-inference egress.\n    const url = config.guard.assertAllowedFor(\n      config.endpoint,\n      "rented-backend",\n    );\n\n    this.dim = dim;\n    this.model = config.model;\n    this.#endpoint = url;\n    this.#guard = config.guard;\n    this.#transport = config.transport;\n    this.#meter = config.meter;\n    this.#tenantId = config.tenantId;\n    this.#feature = config.feature;\n  }',
       annotations: [
-        "assertAllowedFor throws right here, at construction, unless the endpoint is HTTPS and allowlisted under the rented-backend sink kind specifically — a host sanctioned only for the model fetch can't double as a hosted-inference egress.",
-        "The guard check runs before any field is assigned — throw here and `this.#endpoint`, `this.#guard`, and the rest of the private state are never set, so there's no partially-built instance and no silent hosted fallback to fall into.",
+        "assertAllowedFor throws right here, at construction, unless the endpoint is HTTPS and allowlisted under the rented-backend sink kind specifically, a host sanctioned only for the model fetch can't double as a hosted-inference egress.",
+        "The guard check runs before any field is assigned, throw here and `this.#endpoint`, `this.#guard`, and the rest of the private state are never set, so there's no partially-built instance and no silent hosted fallback to fall into.",
         "The dim/EMBEDDING_DIM guard runs before assertAllowedFor is ever called, so a misconfigured embedding width fails closed before the privacy gate is even consulted.",
       ],
     },
@@ -1411,7 +1410,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Does local-inference ever send my data off the device?",
         answer:
-          "Not unless you opt in. OnnxEmbeddingBackend runs entirely on-device — its guarded fetch chokepoint allows only the pinned modelHost under the model-fetch sink kind, and that's for fetching the model itself, never the text you embed. RentedInferenceBackend is a separate class that refuses to even construct until you allowlist a host under the rented-backend sink kind in the privacy gate.",
+          "Not unless you opt in. OnnxEmbeddingBackend runs entirely on-device, its guarded fetch chokepoint allows only the pinned modelHost under the model-fetch sink kind, and that's for fetching the model itself, never the text you embed. RentedInferenceBackend is a separate class that refuses to even construct until you allowlist a host under the rented-backend sink kind in the privacy gate.",
       },
       {
         question:
@@ -1421,52 +1420,52 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         question:
-          "What if I want a hosted model — GPT- or Claude-class quality instead of MiniLM?",
+          "What if I want a hosted model, GPT- or Claude-class quality instead of MiniLM?",
         answer:
-          "Wire RentedInferenceBackend with one of the shipped transports — createLiveRentedTransport, createOpenRouterRentedTransport, createAzureOpenAIRentedTransport, or createBedrockRentedTransport — or your own RentedTransport implementation. Every call still routes through the same egress guard and emits one metered UsageMetering record before it returns.",
+          "Wire RentedInferenceBackend with one of the shipped transports (createLiveRentedTransport, createOpenRouterRentedTransport, createAzureOpenAIRentedTransport, or createBedrockRentedTransport) or your own RentedTransport implementation. Every call still routes through the same egress guard and emits one metered UsageMetering record before it returns.",
       },
       {
         question: "Does this module bill me, or just wire the meter?",
         answer:
-          "It wires the shape only. #emitMeter builds an integer-quantity, idempotency-keyed UsageMetering record and hands it to whatever MeterSink you provide — the package never imports @caisson/credits or touches a ledger; your billing integration supplies the sink that calls credits.debit.",
+          "It wires the shape only. #emitMeter builds an integer-quantity, idempotency-keyed UsageMetering record and hands it to whatever MeterSink you provide, the package never imports @caisson/credits or touches a ledger; your billing integration supplies the sink that calls credits.debit.",
       },
     ],
     relatedGlossary: ["fail-closed", "byok", "llm-cost-control"],
     sells: {
       edition: "local-first",
-      note: `On-device inference is the InferenceBackend seam inside the ${bundlePrice("local-first")} Local-first bundle, alongside local vector search and the privacy egress gate. Buy it standalone (${modulePrice("local-inference")}) to add hash-verified on-device embeddings — with an optional metered hosted lane — to any stack without the rest of the bundle.`,
+      note: `On-device inference is the InferenceBackend seam inside the ${bundlePrice("local-first")} Local-first bundle, alongside local vector search and the privacy egress gate. Buy it standalone (${modulePrice("local-inference")}) to add hash-verified on-device embeddings (with an optional metered hosted lane) to any stack without the rest of the bundle.`,
     },
   },
   {
     slug: "local-privacy",
-    metaTitle: "Privacy Egress Gate — Zero-Egress by Default | Caisson",
+    metaTitle: "Privacy Egress Gate, Zero-Egress by Default | Caisson",
     metaDescription:
       "A closed-enum PrivacyPolicy plus EgressGuard wrapping the kernel fetchWithTimeout chokepoint: an empty allowlist blocks every host, and only two sanctioned sink kinds can ever be reachable.",
     heroOneLiner:
-      "An empty allowlist blocks every outbound host by default — a request only egresses if a typed sink names the exact host and why.",
+      "An empty allowlist blocks every outbound host by default, a request only egresses if a typed sink names the exact host and why.",
     definition:
-      "local-privacy is the Local-first edition's runtime egress boundary: a closed-enum PrivacyPolicy (Zod .strict(), \"local-only\" the sole mode) declares zero-egress-by-default, and EgressGuard enforces it in front of the kernel's fetchWithTimeout chokepoint. A host must be allowlisted for one of exactly two sanctioned sink kinds — model-fetch or rented-backend — before a socket ever opens; an empty or omitted allowlist blocks everything.",
+      "local-privacy is the Local-first edition's runtime egress boundary: a closed-enum PrivacyPolicy (Zod .strict(), \"local-only\" the sole mode) declares zero-egress-by-default, and EgressGuard enforces it in front of the kernel's fetchWithTimeout chokepoint. A host must be allowlisted for one of exactly two sanctioned sink kinds (model-fetch or rented-backend) before a socket ever opens; an empty or omitted allowlist blocks everything.",
     included: [
       {
         title: "Closed-enum policy, not a config flag",
-        body: 'privacyPolicySchema is a strictObject over privacyModeSchema (PRIVACY_MODES has exactly one member, "local-only") and a bounded allowlist (max 16 entries, default []). There is deliberately no "hosted" mode in the enum — introducing one takes an ADR and a schema change, not a config edit. ZERO_EGRESS_POLICY is the frozen air-gap default: local-only with an empty allowlist.',
+        body: 'privacyPolicySchema is a strictObject over privacyModeSchema (PRIVACY_MODES has exactly one member, "local-only") and a bounded allowlist (max 16 entries, default []). There is deliberately no "hosted" mode in the enum, introducing one takes an ADR and a schema change, not a config edit. ZERO_EGRESS_POLICY is the frozen air-gap default: local-only with an empty allowlist.',
       },
       {
         title: "Two sanctioned sink kinds, exact-match hosts",
-        body: "SANCTIONED_SINK_KINDS closes the reachable-for-a-reason set to model-fetch (the first-run ONNX model download) and rented-backend (the opt-in metered hosted-inference host). egressSinkSchema validates each entry against HOSTNAME_RE and normalizes it (trim + lowercase) — matching is exact-string against url.hostname, never a suffix or wildcard.",
+        body: "SANCTIONED_SINK_KINDS closes the reachable-for-a-reason set to model-fetch (the first-run ONNX model download) and rented-backend (the opt-in metered hosted-inference host). egressSinkSchema validates each entry against HOSTNAME_RE and normalizes it (trim + lowercase), matching is exact-string against url.hostname, never a suffix or wildcard.",
       },
       {
         title: "Blocked before a socket opens",
-        body: "EgressGuard.assertAllowed rejects a non-https scheme, a malformed URL, or a host absent from the allowlist — all as fail-closed AuthzError/ValidationError thrown before fetchWithTimeout is ever reached. The thrown error's details carry only host and scheme, never the full URL, so a blocked path or query holding a token or PII is never captured in the error.",
+        body: "EgressGuard.assertAllowed rejects a non-https scheme, a malformed URL, or a host absent from the allowlist, all as fail-closed AuthzError/ValidationError thrown before fetchWithTimeout is ever reached. The thrown error's details carry only host and scheme, never the full URL, so a blocked path or query holding a token or PII is never captured in the error.",
       },
       {
         title:
-          "Purpose-bound sinks — a rented-backend Bearer can't reach the model host",
-        body: "assertAllowedFor / fetchAs require a host to be allowlisted for a specific kind, not just present on the list. A host sanctioned only for model-fetch throws AuthzError if a rented-backend credentialed request targets it, and vice versa — each sink kind exists for exactly one credentialed surface.",
+          "Purpose-bound sinks, a rented-backend Bearer can't reach the model host",
+        body: "assertAllowedFor / fetchAs require a host to be allowlisted for a specific kind, not just present on the list. A host sanctioned only for model-fetch throws AuthzError if a rented-backend credentialed request targets it, and vice versa, each sink kind exists for exactly one credentialed surface.",
       },
       {
-        title: "guardedFetch — install as another runtime's outbound hook",
-        body: "The guard exposes itself as a bare (input, init) => Promise<Response> — the shape transformers.js's env.fetch accepts — so an on-device model loader can be handed the guard directly and cannot egress out of band. @caisson/local-inference's rented-backend transport calls guard.fetchAs(\"rented-backend\", ...) the same way, a real workspace:* dependency, not just a manifest listing.",
+        title: "guardedFetch, install as another runtime's outbound hook",
+        body: "The guard exposes itself as a bare (input, init) => Promise<Response>, the shape transformers.js's env.fetch accepts, so an on-device model loader can be handed the guard directly and cannot egress out of band. @caisson/local-inference's rented-backend transport calls guard.fetchAs(\"rented-backend\", ...) the same way, composed directly, not just a manifest listing.",
       },
       {
         title: "Defensive re-parse at construction",
@@ -1475,14 +1474,14 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     artifact: {
       label:
-        "EgressGuard.assertAllowed — the fail-closed check every outbound request passes through first",
+        "EgressGuard.assertAllowed, the fail-closed check every outbound request passes through first",
       lang: "ts",
       file: "packages/local-privacy/src/egress-guard.ts",
       code: '  assertAllowed(input: string | URL): URL {\n    let url: URL;\n    try {\n      url = input instanceof URL ? input : new URL(input);\n    } catch {\n      throw new ValidationError("egress blocked: malformed URL");\n    }\n    if (url.protocol !== "https:") {\n      // Non-https never egresses — blocks http:, and data:/file:/javascript: smuggling.\n      throw new AuthzError("egress blocked: non-https scheme", {\n        scheme: url.protocol,\n      });\n    }\n    const host = url.hostname.toLowerCase();\n    if (!this.#allow.has(host)) {\n      // Empty allowlist ⇒ this branch always fires ⇒ zero egress. No host is implicit.\n      throw new AuthzError(\n        "egress blocked: host not on the privacy allowlist (fail-closed-to-offline)",\n        { host, privacy: this.#policy.privacy },\n      );\n    }\n    return url;\n  }',
       annotations: [
-        'url.protocol !== "https:" runs before the allowlist lookup — http:, data:, file:, and javascript: schemes are blocked outright, not just non-allowlisted hosts.',
-        "this.#allow.has(host) checks a Map built once at construction from the policy's allowlist — with an empty allowlist this is always false, so every call falls through to the AuthzError (zero egress by default).",
-        "The thrown AuthzError's details carry only host and privacy, never the input URL's path or query — where a token or PII could otherwise leak into a caught error.",
+        'url.protocol !== "https:" runs before the allowlist lookup, http:, data:, file:, and javascript: schemes are blocked outright, not just non-allowlisted hosts.',
+        "this.#allow.has(host) checks a Map built once at construction from the policy's allowlist, with an empty allowlist this is always false, so every call falls through to the AuthzError (zero egress by default).",
+        "The thrown AuthzError's details carry only host and privacy, never the input URL's path or query, where a token or PII could otherwise leak into a caught error.",
       ],
     },
     faq: [
@@ -1490,40 +1489,40 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does local-privacy make my app HIPAA or GDPR compliant on its own?",
         answer:
-          "No — no module makes an organization compliant; that determination is your organization's and its auditor's to make. local-privacy ships the technical control both frameworks point at for data locality: a default-deny egress boundary and cryptographic proof, via a thrown AuthzError, that an unlisted host is unreachable — not a policy statement that data stays local.",
+          "No (no module makes an organization compliant; that determination is your organization's and its auditor's to make. local-privacy ships the technical control both frameworks point at for data locality: a default-deny egress boundary and cryptographic proof, via a thrown AuthzError, that an unlisted host is unreachable) not a policy statement that data stays local.",
       },
       {
         question: "What happens if I don't configure an allowlist at all?",
         answer:
-          "Every outbound host is blocked. allowlist defaults to [] in privacyPolicySchema, and ZERO_EGRESS_POLICY — local-only with an empty allowlist — is the air-gap baseline the edition installs unless a deployer explicitly opts a sanctioned sink in. There is no implicit host and no silent fallback to a hosted provider.",
+          "Every outbound host is blocked. allowlist defaults to [] in privacyPolicySchema, and ZERO_EGRESS_POLICY (local-only with an empty allowlist) is the air-gap baseline the edition installs unless a deployer explicitly opts a sanctioned sink in. There is no implicit host and no silent fallback to a hosted provider.",
       },
       {
         question:
           "Can a rented-backend API credential accidentally reach the model-download host, or vice versa?",
         answer:
-          "No. assertAllowedFor and fetchAs require the host to be allowlisted for the specific kind requested — a host sanctioned only for model-fetch throws AuthzError on a rented-backend call, naming the required and actual kinds (never the full URL). Purpose-binding is enforced per call, not just per host.",
+          "No. assertAllowedFor and fetchAs require the host to be allowlisted for the specific kind requested, a host sanctioned only for model-fetch throws AuthzError on a rented-backend call, naming the required and actual kinds (never the full URL). Purpose-binding is enforced per call, not just per host.",
       },
       {
         question: "Does this replace fetchWithTimeout, or sit in front of it?",
         answer:
-          "It wraps it. EgressGuard.fetch calls assertAllowed first and only then delegates to the kernel's fetchWithTimeout — the one audited outbound chokepoint (the native AbortSignal timeout is forbidden on Bun). A blocked request never reaches fetchWithTimeout, so no socket opens and no bytes leave the device.",
+          "It wraps it. EgressGuard.fetch calls assertAllowed first and only then delegates to the kernel's fetchWithTimeout, the one audited outbound chokepoint (the native AbortSignal timeout is forbidden on Bun). A blocked request never reaches fetchWithTimeout, so no socket opens and no bytes leave the device.",
       },
     ],
     relatedGlossary: ["fail-closed", "hipaa-technical-safeguards"],
     sells: {
       edition: "local-first",
-      note: `Sold standalone at ${modulePrice("local-privacy")}, or as one of the three local-first primitives — alongside local-sync and local-inference — composing the ${bundlePrice("local-first")} Local-first bundle. It's a real workspace:* dependency of @caisson/local-inference's rented-backend transport (not just a manifest listing), which routes every credentialed request through guard.fetchAs before it's built.`,
+      note: `Sold standalone at ${modulePrice("local-privacy")}, or as one of the three local-first primitives (alongside local-sync and local-inference) composing the ${bundlePrice("local-first")} Local-first bundle. It's composed directly into @caisson/local-inference's rented-backend transport, not just a manifest listing, which routes every credentialed request through guard.fetchAs before it's built.`,
     },
   },
   {
     slug: "local-sync",
-    metaTitle: "Local Sync — Deterministic Offline Merge | Caisson",
+    metaTitle: "Local Sync, Deterministic Offline Merge | Caisson",
     metaDescription:
-      "A per-tenant changeset log, a non-forgeable hybrid logical clock, and an order-independent last-writer-wins merge — tombstones persist across sync rounds so a stale edit can never resurrect a deleted row.",
+      "A per-tenant changeset log, a non-forgeable hybrid logical clock, and an order-independent last-writer-wins merge, tombstones persist across sync rounds so a stale edit can never resurrect a deleted row.",
     heroOneLiner:
-      "Two replicas can merge in either order and land on the exact same result — a row a later delete won never resurrects from a stale peer's edit.",
+      "Two replicas can merge in either order and land on the exact same result: a stale peer's edit can never resurrect a row a later delete already won.",
     definition:
-      "local-sync is Caisson's two-way offline sync engine: a per-tenant changeset log captures every local mutation, a hybrid logical clock — a wall-clock hint plus a non-forgeable replica id and monotonic counter — stamps each change, and a pure last-writer-wins merge converges any set of replicas to one identical result. Tombstones persist across sync rounds, so a stale peer edit can never resurrect a row a later delete already won.",
+      "local-sync is Caisson's two-way offline sync engine: a per-tenant changeset log captures every local mutation, a hybrid logical clock (a wall-clock hint plus a non-forgeable replica id and monotonic counter) stamps each change, and a pure last-writer-wins merge converges any set of replicas to one identical result. Tombstones persist across sync rounds, so a stale peer edit can never resurrect a row a later delete already won.",
     included: [
       {
         title: "Per-tenant changeset capture, replica-stamped",
@@ -1531,15 +1530,15 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Fail-closed changeset validation at the boundary",
-        body: "parseChangeset runs an untrusted, peer-supplied payload through changesetSchema — a strictObject that rejects unknown keys — before anything touches local state. A superRefine cross-field check enforces that an upsert entry MUST carry values and a delete entry MUST NOT, and rejects any entry whose seq exceeds the changeset's own until watermark.",
+        body: "parseChangeset runs an untrusted, peer-supplied payload through changesetSchema (a strictObject that rejects unknown keys) before anything touches local state. A superRefine cross-field check enforces that an upsert entry MUST carry values and a delete entry MUST NOT, and rejects any entry whose seq exceeds the changeset's own until watermark.",
       },
       {
         title: "A non-forgeable hybrid logical clock",
-        body: "stampFromEntry derives an HlcStamp — physical (the updatedAt wall-clock hint), node (the originating replicaId), counter (the per-replica seq) — for every captured change. compareStamps is a strict total order over the three: physical first, then node, then counter, so a peer can bias the physical leg by skewing its clock but can never forge another replica's node to win a tie.",
+        body: "stampFromEntry derives an HlcStamp (physical (the updatedAt wall-clock hint), node (the originating replicaId), counter (the per-replica seq)) for every captured change. compareStamps is a strict total order over the three: physical first, then node, then counter, so a peer can bias the physical leg by skewing its clock but can never forge another replica's node to win a tie.",
       },
       {
         title: "Order-independent LWW merge, no resurrection by construction",
-        body: "reconcileReplicas folds every changeset's entries into one winners Map keyed by (table, pk), keeping only the entry whose compareStamps result is greatest — a winning delete is simply never pushed into the returned rows, so a losing concurrent upsert can't resurrect it. The result is sorted by (table, pk), so reconcileReplicas([A, B]) and reconcileReplicas([B, A]) serialize byte-equal.",
+        body: "reconcileReplicas folds every changeset's entries into one winners Map keyed by (table, pk), keeping only the entry whose compareStamps result is greatest, a winning delete is simply never pushed into the returned rows, so a losing concurrent upsert can't resurrect it. The result is sorted by (table, pk), so reconcileReplicas([A, B]) and reconcileReplicas([B, A]) serialize byte-equal.",
       },
       {
         title: "Tombstones persist across sync rounds",
@@ -1547,17 +1546,17 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Horizon-gated GC, and a cross-tenant merge fails closed",
-        body: "gcTombstones drops a tombstone only once stamp.physical crosses a horizon the caller must set below the slowest replica's un-synced-edit lag — collect earlier and a still-pending stale upsert could resurrect the row. Both reconcileReplicas and reconcileWithTombstones throw TenancyError the moment two changesets don't share one tenantId, defense-in-depth over the file-per-tenant boundary ChangesetLog.assertApplicable already enforces at the transport edge.",
+        body: "gcTombstones drops a tombstone only once stamp.physical crosses a horizon the caller must set below the slowest replica's un-synced-edit lag, collect earlier and a still-pending stale upsert could resurrect the row. Both reconcileReplicas and reconcileWithTombstones throw TenancyError the moment two changesets don't share one tenantId, defense-in-depth over the file-per-tenant boundary ChangesetLog.assertApplicable already enforces at the transport edge.",
       },
     ],
     artifact: {
-      label: "reconcileReplicas — the pure, order-independent LWW merge core",
+      label: "reconcileReplicas, the pure, order-independent LWW merge core",
       lang: "ts",
       file: "packages/local-sync/src/reconcile.ts",
       code: 'export function reconcileReplicas(\n  changesets: readonly Changeset[],\n): ReconciledRow[] {\n  // Defense-in-depth: all replicas must belong to the same tenant file (the ADR-0073 partition).\n  let tenantId: string | undefined;\n  for (const cs of changesets) {\n    if (tenantId === undefined) {\n      tenantId = cs.tenantId;\n    } else if (cs.tenantId !== tenantId) {\n      throw new TenancyError("cannot reconcile changesets across tenants", {\n        reason: "tenant-partition",\n      });\n    }\n  }\n\n  // LWW register per (table, pk): keep the change with the greatest HLC stamp.\n  const winners = new Map<string, Map<string, Winner>>();\n  for (const cs of changesets) {\n    for (const entry of cs.entries) {\n      const stamp = stampFromEntry(entry, cs.replicaId);\n      let byPk = winners.get(entry.table);\n      if (byPk === undefined) {\n        byPk = new Map<string, Winner>();\n        winners.set(entry.table, byPk);\n      }\n      const current = byPk.get(entry.pk);\n      if (current === undefined || compareStamps(stamp, current.stamp) > 0) {\n        byPk.set(entry.pk, { entry, stamp });\n      }\n    }\n  }\n\n  // Materialize the live set: a winning delete is a tombstone (excluded — no resurrection by a loser).\n  const rows: ReconciledRow[] = [];\n  for (const [table, byPk] of winners) {\n    for (const [pk, winner] of byPk) {\n      const { entry } = winner;\n      if (entry.op === "upsert" && entry.values !== null) {\n        rows.push({ table, pk, values: entry.values });\n      }\n    }\n  }\n\n  // Total-order the live set by (table, pk) so divergent replicas serialize byte-equal.\n  rows.sort((a, b) =>\n    a.table < b.table\n      ? -1\n      : a.table > b.table\n        ? 1\n        : a.pk < b.pk\n          ? -1\n          : a.pk > b.pk\n            ? 1\n            : 0,\n  );\n  return rows;\n}',
       annotations: [
-        "The winners Map keeps only the entry whose compareStamps result is greatest per (table, pk) — the HLC total order is the only comparator, so a skewed peer clock can't decide a tie the node/counter tiebreak already settled.",
-        'A winning delete is never pushed into rows — only entry.op === "upsert" reaches the returned set, so a tombstone is excluded by construction rather than filtered out after the fact.',
+        "The winners Map keeps only the entry whose compareStamps result is greatest per (table, pk), the HLC total order is the only comparator, so a skewed peer clock can't decide a tie the node/counter tiebreak already settled.",
+        'A winning delete is never pushed into rows, only entry.op === "upsert" reaches the returned set, so a tombstone is excluded by construction rather than filtered out after the fact.',
         "rows.sort orders purely by table then pk with no dependency on changeset input order, which is what makes reconcileReplicas([A, B]) and reconcileReplicas([B, A]) serialize byte-identical.",
       ],
     },
@@ -1566,7 +1565,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "What happens if two offline devices edit the same row before either has synced?",
         answer:
-          "Whichever edit has the greatest HLC stamp wins — physical (the updatedAt wall-clock hint) first, then the originating replicaId, then the per-replica seq — and reconcileReplicas keeps only that entry per (table, pk). The result never depends on merge order: reconcileReplicas([A, B]) and reconcileReplicas([B, A]) produce the exact same row.",
+          "Whichever edit has the greatest HLC stamp wins (physical (the updatedAt wall-clock hint) first, then the originating replicaId, then the per-replica seq) and reconcileReplicas keeps only that entry per (table, pk). The result never depends on merge order: reconcileReplicas([A, B]) and reconcileReplicas([B, A]) produce the exact same row.",
       },
       {
         question:
@@ -1578,7 +1577,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does two-way sync depend on the devices' clocks being in sync?",
         answer:
-          "No. updatedAt is only an ordering hint, never the sole authority — compareStamps breaks an exact-physical tie with the non-forgeable replicaId, then the per-replica seq. A skewed or forged wall clock can bias which of two truly concurrent edits looks newer, but it can never make the merge non-deterministic or let a peer impersonate another replica's tiebreak.",
+          "No. updatedAt is only an ordering hint, never the sole authority, compareStamps breaks an exact-physical tie with the non-forgeable replicaId, then the per-replica seq. A skewed or forged wall clock can bias which of two truly concurrent edits looks newer, but it can never make the merge non-deterministic or let a peer impersonate another replica's tiebreak.",
       },
       {
         question:
@@ -1595,22 +1594,22 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "frameworks-pack",
-    metaTitle: "Frameworks Pack — Compliance Control Crosswalks | Caisson",
+    metaTitle: "Frameworks Pack, Compliance Control Crosswalks | Caisson",
     metaDescription:
       "An own-authored canonical control registry plus five regime crosswalks (SOC 2, PCI DSS, GDPR, ISO 27001, NIST 800-53) whose implements/maps-to claim is enforced by the type, not a convention.",
     heroOneLiner:
       "A canonical control library where an `implements` claim without a linkable proof pointer fails to typecheck.",
     definition:
-      "frameworks-pack is Caisson's clean-room control library: defineFramework builds three own-authored packs — SOC 2 TSC, HIPAA Security, and the EU AI Act's high-risk obligations — plus five regime crosswalks (SOC 2, PCI DSS, GDPR, ISO 27001, NIST 800-53) whose rows are typed implements only behind a proof pointer and maps-to everywhere else, the NIST 800-53 rows checked against a vendored, hash-pinned rev5 OSCAL catalog.",
+      "frameworks-pack is Caisson's clean-room control library: defineFramework builds three own-authored packs (SOC 2 TSC, HIPAA Security, and the EU AI Act's high-risk obligations) plus five regime crosswalks (SOC 2, PCI DSS, GDPR, ISO 27001, NIST 800-53) whose rows are typed implements only behind a proof pointer and maps-to everywhere else, the NIST 800-53 rows checked against a vendored, hash-pinned rev5 OSCAL catalog.",
     included: [
       {
         title: "Fail-closed control registry",
-        body: "defineControl and defineFramework run every control through Zod's parseStrict at author time: canonicalControlId must match the uppercase dotted-segment pattern, crosswalk references must be unique on (framework, reference), and control ids must be unique within a Framework — an authoring mistake throws at module load, not at render time.",
+        body: "defineControl and defineFramework run every control through Zod's parseStrict at author time: canonicalControlId must match the uppercase dotted-segment pattern, crosswalk references must be unique on (framework, reference), and control ids must be unique within a Framework, an authoring mistake throws at module load, not at render time.",
       },
       {
         title:
           "Three own-authored framework packs, canonical ids shared across them",
-        body: "soc2Tsc, hipaaSecurity, and euAiAct are separately exported Framework catalogs. Where a control is the same underlying requirement across frameworks — GOVERNANCE.SECURITY-RESPONSIBILITY appears in both soc2Tsc and hipaaSecurity — the pack reuses the exact canonical id verbatim instead of minting a duplicate, so one control can be crosswalked from more than one regime.",
+        body: "soc2Tsc, hipaaSecurity, and euAiAct are separately exported Framework catalogs. Where a control is the same underlying requirement across frameworks (GOVERNANCE.SECURITY-RESPONSIBILITY appears in both soc2Tsc and hipaaSecurity) the pack reuses the exact canonical id verbatim instead of minting a duplicate, so one control can be crosswalked from more than one regime.",
       },
       {
         title: "Claim honesty enforced by the type, not a lint rule",
@@ -1618,24 +1617,24 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "NIST SP 800-53 rev5, vendored byte-exact and hash-pinned",
-        body: "NIST_CATALOG_PIN records the upstream commit SHA, the catalog's own internal OSCAL version (1.2.2), and a SHA-256 of the committed JSON bytes. extractControlIds walks the parsed catalog (base controls plus nested enhancements) into a control-id set every nist80053Crosswalk row is checked to exist against — a row citing a control the catalog doesn't have is a bug, not a typo left in prose.",
+        body: "NIST_CATALOG_PIN records the upstream commit SHA, the catalog's own internal OSCAL version (1.2.2), and a SHA-256 of the committed JSON bytes. extractControlIds walks the parsed catalog (base controls plus nested enhancements) into a control-id set every nist80053Crosswalk row is checked to exist against, a row citing a control the catalog doesn't have is a bug, not a typo left in prose.",
       },
       {
         title:
           "NIST IR 8278A relationship vocabulary, capped at maps-to structurally",
-        body: "nist80053Crosswalk rows carry NIST's own relationship (subset-of/intersects-with/equal/superset-of/not-related-to), rationale, and strength fields — the vocabulary an OLIR mapping actually uses — while defineNist80053Crosswalk throws if any row is missing its required canonicalControlId, and no row on this crosswalk can ever carry a proof field, so it can never promote to implements.",
+        body: "nist80053Crosswalk rows carry NIST's own relationship (subset-of/intersects-with/equal/superset-of/not-related-to), rationale, and strength fields (the vocabulary an OLIR mapping actually uses) while defineNist80053Crosswalk throws if any row is missing its required canonicalControlId, and no row on this crosswalk can ever carry a proof field, so it can never promote to implements.",
       },
     ],
     artifact: {
       label:
-        "RegimeCrosswalkRow — the claim discriminated union that makes an unproven `implements` a type error",
+        "RegimeCrosswalkRow, the claim discriminated union that makes an unproven `implements` a type error",
       lang: "ts",
       file: "packages/frameworks-pack/src/crosswalks/regime-crosswalk.ts",
       code: '/**\n * An assertive row: the mechanism implements a technical control a live repo artifact proves. `proof`\n * is REQUIRED (the discriminated union makes an `implements` row without it a type error).\n */\nconst implementsRow = strictObject({\n  claim: z.literal("implements"),\n  ...rowBase,\n  proof: ProofPointer,\n});\n\n/** A conservative row: the mechanism maps to (shares a domain with) the requirement. No proof. */\nconst mapsToRow = strictObject({\n  claim: z.literal("maps-to"),\n  ...rowBase,\n});\n\n/** One crosswalk row — assertive (`implements` + proof) or conservative (`maps-to`), by `claim`. */\nexport const RegimeCrosswalkRow = z.discriminatedUnion("claim", [\n  implementsRow,\n  mapsToRow,\n]);\nexport type RegimeCrosswalkRow = z.infer<typeof RegimeCrosswalkRow>;',
       annotations: [
-        "implementsRow spreads proof: ProofPointer into the schema itself — an implements claim with no linkable test/CI/live-verification artifact fails validation, it isn't a reviewer's judgment call.",
-        "mapsToRow has no proof field at all, so a conservative row literally cannot carry a fabricated pointer — the two branches of RegimeCrosswalkRow enforce honesty by omission as much as by requirement.",
-        "...rowBase spreads buyerResponsibility into both branches, so every row — implements or maps-to — is required to state what Caisson does not cover.",
+        "implementsRow spreads proof: ProofPointer into the schema itself, an implements claim with no linkable test/CI/live-verification artifact fails validation, it isn't a reviewer's judgment call.",
+        "mapsToRow has no proof field at all, so a conservative row literally cannot carry a fabricated pointer, the two branches of RegimeCrosswalkRow enforce honesty by omission as much as by requirement.",
+        "...rowBase spreads buyerResponsibility into both branches, so every row (implements or maps-to) is required to state what Caisson does not cover.",
       ],
     },
     faq: [
@@ -1643,25 +1642,25 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does buying frameworks-pack make our system SOC 2 or HIPAA compliant?",
         answer:
-          "No — no module makes an organization compliant; that determination is your organization's and its auditor's. frameworks-pack ships the technical-control crosswalk both frameworks point at: an own-authored canonical control mapped to the regime's requirement id, with a proof pointer wherever the claim is implements rather than maps-to.",
+          "No, no module makes an organization compliant; that determination is your organization's and its auditor's. frameworks-pack ships the technical-control crosswalk both frameworks point at: an own-authored canonical control mapped to the regime's requirement id, with a proof pointer wherever the claim is implements rather than maps-to.",
       },
       {
         question:
           "What's the difference between an implements row and a maps-to row?",
         answer:
-          "implements is used only where a live test, CI check, live-verification harness, or OSCAL conformance artifact in this repo proves the named technical control, and the row carries a proof pointer to it — enforced by RegimeCrosswalkRow's discriminated union, not editorial judgment. Everywhere else the row is maps-to: the mechanism addresses the same domain, but nothing in this repo asserts the requirement is satisfied.",
+          "implements is used only where a live test, CI check, live-verification harness, or OSCAL conformance artifact in this repo proves the named technical control, and the row carries a proof pointer to it, enforced by RegimeCrosswalkRow's discriminated union, not editorial judgment. Everywhere else the row is maps-to: the mechanism addresses the same domain, but nothing in this repo asserts the requirement is satisfied.",
       },
       {
         question:
           "Is vendoring the NIST SP 800-53 catalog verbatim actually legal to ship?",
         answer:
-          "Yes — usnistgov/oscal-content is CC0 1.0 Universal (public domain), so the catalog JSON is committed byte-exact and hash-pinned via NIST_CATALOG_PIN. The SOC 2, HIPAA, PCI DSS, GDPR, and ISO 27001 material is different: those packs never copy the framework's own text, only bare requirement-id citations (e.g. CC6.1) pointing at Caisson's own clean-room control prose.",
+          "Yes, usnistgov/oscal-content is CC0 1.0 Universal (public domain), so the catalog JSON is committed byte-exact and hash-pinned via NIST_CATALOG_PIN. The SOC 2, HIPAA, PCI DSS, GDPR, and ISO 27001 material is different: those packs never copy the framework's own text, only bare requirement-id citations (e.g. CC6.1) pointing at Caisson's own clean-room control prose.",
       },
       {
         question:
           "Do I need @caisson/compliance-core to use this, or does it work on its own?",
         answer:
-          "frameworks-pack depends on nothing but @caisson/kernel and zod — you get the framework catalogs, the five regime crosswalks, and the vendored NIST catalog as typed data on their own. compliance-core is the separate carve that renders these catalogs into an OSCAL export and the SOC 2/HIPAA evidence pack; both ship in the Compliance bundle.",
+          "frameworks-pack depends on nothing but @caisson/kernel and zod, you get the framework catalogs, the five regime crosswalks, and the vendored NIST catalog as typed data on their own. compliance-core is the separate carve that renders these catalogs into an OSCAL export and the SOC 2/HIPAA evidence pack; both ship in the Compliance bundle.",
       },
     ],
     relatedGlossary: [
@@ -1677,17 +1676,17 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "signing-primitive",
-    metaTitle: "Signing Primitive — Detached Ed25519 + RFC-3161 | Caisson",
+    metaTitle: "Signing Primitive, Detached Ed25519 + RFC-3161 | Caisson",
     metaDescription:
-      "A detached Ed25519 signature over a canonical, chain-anchored evidence manifest — per-tenant key, optional RFC-3161 countersign, and a deployment Ed25519ph key for Rekor anchoring.",
+      "A detached Ed25519 signature over a canonical, chain-anchored evidence manifest, per-tenant key, optional RFC-3161 countersign, and a deployment Ed25519ph key for Rekor anchoring.",
     heroOneLiner:
-      "Your evidence, signed under your own per-tenant Ed25519 key — never Caisson's — so any third party verifies it without touching your secrets.",
+      "Your evidence, signed under your own per-tenant Ed25519 key (never Caisson's) so any third party verifies it without touching your secrets.",
     definition:
       "signing-primitive produces a detached Ed25519 signature over a canonical, chain-anchored evidence manifest, bound to the WORM audit chain's tip hash and signed under a per-tenant key that is deliberately distinct from the Caisson license-issuer key. An optional RFC-3161 timestamp countersigns the signature, and a separate deployment-level Ed25519ph signer anchors receipts into Sigstore Rekor's public transparency log.",
     included: [
       {
         title: "Per-tenant Ed25519Signer, never the license key",
-        body: "Ed25519Signer holds a 32-byte tenant seed in a private #secretKey field, never logged or serialized; construction throws ValidationError on an empty keyId or a wrong-length key. It is deliberately distinct from Caisson's own license-issuer key — a buyer proves provenance of their own evidence with their own identity.",
+        body: "Ed25519Signer holds a 32-byte tenant seed in a private #secretKey field, never logged or serialized; construction throws ValidationError on an empty keyId or a wrong-length key. It is deliberately distinct from Caisson's own license-issuer key, a buyer proves provenance of their own evidence with their own identity.",
       },
       {
         title: "Detached, bound to the chain tip",
@@ -1695,55 +1694,55 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Fail-closed verify, never throws",
-        body: "verifyEvidenceSignature returns false — never throws — on an unknown algorithm, malformed hex, a wrong-length key or signature, a tampered manifest, or a moved chain tip. A forgery, a corrupt field, and a driver error all collapse to the same denial.",
+        body: "verifyEvidenceSignature returns false (never throws) on an unknown algorithm, malformed hex, a wrong-length key or signature, a tampered manifest, or a moved chain tip. A forgery, a corrupt field, and a driver error all collapse to the same denial.",
       },
       {
         title: "Optional RFC-3161 countersignature",
-        body: "signEvidencePack takes an optional TimestampAuthority; StubTimestampAuthority is the network-free test double shipped for CI, and timestampCountersignsSignature recomputes sha256(signature) to confirm a token actually attests to THIS signature. The live TSA transport is a documented un-wired seam — no live network call runs in CI.",
+        body: "signEvidencePack takes an optional TimestampAuthority; StubTimestampAuthority is the network-free test double shipped for CI, and timestampCountersignsSignature recomputes sha256(signature) to confirm a token actually attests to THIS signature. The live TSA transport is a documented un-wired seam, no live network call runs in CI.",
       },
       {
         title: "Constant-time signature compare",
-        body: "signaturesEqual wraps @caisson/kernel's safeEqualFixed so comparing two hex signatures never leaks how many leading bytes matched — the same timing-safe discipline the kernel's secret comparisons use elsewhere.",
+        body: "signaturesEqual wraps @caisson/kernel's safeEqualFixed so comparing two hex signatures never leaks how many leading bytes matched, the same timing-safe discipline the kernel's secret comparisons use elsewhere.",
       },
       {
         title: "Deployment-level Ed25519ph key for Rekor anchoring",
-        body: "Ed25519PhSigner.fromEnv loads a base64 32-byte seed from CAISSON_REKOR_ANCHORING_KEY (never the per-tenant key) and signs with @noble/curves' ed25519ph — the RFC-8032 §5.1 prehash variant Rekor v2's hashedrekord endpoint requires, since a pure Ed25519 signature would be handed only a digest and re-hash it.",
+        body: "Ed25519PhSigner.fromEnv loads a base64 32-byte seed from CAISSON_REKOR_ANCHORING_KEY (never the per-tenant key) and signs with @noble/curves' ed25519ph, the RFC-8032 §5.1 prehash variant Rekor v2's hashedrekord endpoint requires, since a pure Ed25519 signature would be handed only a digest and re-hash it.",
       },
     ],
     artifact: {
       label:
-        "signEvidencePack — the detached signature over canonicalize(manifest) ∥ chainAnchor.tipHash",
+        "signEvidencePack, the detached signature over canonicalize(manifest) ∥ chainAnchor.tipHash",
       lang: "ts",
       file: "packages/signing-primitive/src/sign.ts",
       code: "export async function signEvidencePack(\n  signer: Signer,\n  manifest: SignableManifest,\n  options?: SignEvidencePackOptions,\n): Promise<EvidenceSignature> {\n  const payload = evidenceSignablePayload(manifest);\n  const [publicKeyBytes, signatureBytes] = await Promise.all([\n    signer.publicKey(),\n    signer.sign(payload),\n  ]);\n  if (signatureBytes.length !== ED25519_SIGNATURE_BYTES) {\n    throw new ValidationError(\n      `detached signature must be ${String(ED25519_SIGNATURE_BYTES)} bytes, got ${String(signatureBytes.length)}`,\n    );\n  }\n  if (publicKeyBytes.length !== ED25519_PUBLIC_BYTES) {\n    throw new ValidationError(\n      `ed25519 public key must be ${String(ED25519_PUBLIC_BYTES)} bytes, got ${String(publicKeyBytes.length)}`,\n    );\n  }\n  const base: EvidenceSignature = {\n    algorithm: signer.algorithm,\n    keyId: signer.keyId,\n    publicKey: toHex(publicKeyBytes),\n    signature: toHex(signatureBytes),\n  };\n  if (options?.timestampAuthority === undefined) return base;\n  const timestamp =\n    await options.timestampAuthority.countersign(signatureBytes);\n  return { ...base, timestamp };\n}",
       annotations: [
-        "Promise.all runs signer.publicKey() and signer.sign(payload) concurrently — the key and the signature are two independent async calls, not a serial round-trip.",
-        "signatureBytes and publicKeyBytes are length-checked against ED25519_SIGNATURE_BYTES/ED25519_PUBLIC_BYTES before either is hex-encoded — a malformed signer output throws instead of shipping a corrupt EvidenceSignature.",
-        "options?.timestampAuthority?.countersign only runs when a TSA was supplied — the base EvidenceSignature with no timestamp field is already a complete, valid return.",
+        "Promise.all runs signer.publicKey() and signer.sign(payload) concurrently, the key and the signature are two independent async calls, not a serial round-trip.",
+        "signatureBytes and publicKeyBytes are length-checked against ED25519_SIGNATURE_BYTES/ED25519_PUBLIC_BYTES before either is hex-encoded, a malformed signer output throws instead of shipping a corrupt EvidenceSignature.",
+        "options?.timestampAuthority?.countersign only runs when a TSA was supplied, the base EvidenceSignature with no timestamp field is already a complete, valid return.",
       ],
     },
     faq: [
       {
         question: "Does the signature prove we're SOC 2 or HIPAA compliant?",
         answer:
-          "No — no module makes an organization compliant; that determination is your organization's and its auditor's to make. signing-primitive ships the technical control an auditor checks for provenance: a detached Ed25519 signature under your own tenant key, bound to the WORM chain's tip hash, and generates the evidence a third party can verify without ever holding your secret.",
+          "No, no module makes an organization compliant; that determination is your organization's and its auditor's to make. signing-primitive ships the technical control an auditor checks for provenance: a detached Ed25519 signature under your own tenant key, bound to the WORM chain's tip hash, and generates the evidence a third party can verify without ever holding your secret.",
       },
       {
         question: "Does this use the same key as the Caisson license?",
         answer:
-          "No, by design. Ed25519Signer holds a per-tenant seed that's distinct from Caisson's own license-issuer key — a buyer proves provenance of their own evidence with their own identity, never Caisson's. The two keys sign for different trust models and are never interchangeable.",
+          "No, by design. Ed25519Signer holds a per-tenant seed that's distinct from Caisson's own license-issuer key, a buyer proves provenance of their own evidence with their own identity, never Caisson's. The two keys sign for different trust models and are never interchangeable.",
       },
       {
         question:
           "What happens if someone tampers with the evidence pack after signing?",
         answer:
-          "verifyEvidenceSignature fails closed — it returns false, never throws — the moment the manifest body or the bound chain tip changes, because evidenceSignablePayload hashes both into the exact bytes the signature covers. A tampered manifest, a moved chain tip, or a forged public key all fail verification the same way.",
+          "verifyEvidenceSignature fails closed (it returns false, never throws) the moment the manifest body or the bound chain tip changes, because evidenceSignablePayload hashes both into the exact bytes the signature covers. A tampered manifest, a moved chain tip, or a forged public key all fail verification the same way.",
       },
       {
         question:
           "Is this the same signature Sigstore Rekor accepts for external anchoring?",
         answer:
-          "Not the per-tenant one. Rekor v2's hashedrekord endpoint rejects a pure Ed25519 signature — it's handed only a digest and would re-hash it. Ed25519PhSigner is a separate deployment-level key using ed25519ph (the RFC-8032 prehash variant) specifically for that anchoring path; the per-tenant Ed25519Signer stays the evidence-signing identity.",
+          "Not the per-tenant one. Rekor v2's hashedrekord endpoint rejects a pure Ed25519 signature, it's handed only a digest and would re-hash it. Ed25519PhSigner is a separate deployment-level key using ed25519ph (the RFC-8032 prehash variant) specifically for that anchoring path; the per-tenant Ed25519Signer stays the evidence-signing identity.",
       },
     ],
     relatedGlossary: [
@@ -1754,77 +1753,77 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "Compliance",
-      note: `Sold standalone at ${modulePrice("signing-primitive")}, or as one of the primitives composing two bundles: the Compliance bundle and the Provenance bundle (alongside audit-worm and field-crypto) — the same package either way, never a promise of it.`,
+      note: `Sold standalone at ${modulePrice("signing-primitive")}, or as one of the primitives composing two bundles: the Compliance bundle and the Provenance bundle (alongside audit-worm and field-crypto), the same package either way, never a promise of it.`,
     },
   },
   {
     slug: "credits",
-    metaTitle: "Credits — Integer Wallet, FIFO Ledger, 402 Gate | Caisson",
+    metaTitle: "Credits, Integer Wallet, FIFO Ledger, 402 Gate | Caisson",
     metaDescription:
       "An integer credit wallet with an append-only ledger: FOR UPDATE row locking, FIFO grant consumption, idempotent grant/debit, and a 402 gate on an empty balance.",
     heroOneLiner:
-      "debit() locks the wallet row, drains unexpired grants oldest-first, and 402s before a cent of paid work runs — the ledger only ever writes what actually happened.",
+      "debit() locks the wallet row, drains unexpired grants oldest-first, and 402s before a cent of paid work runs, the ledger only ever writes what actually happened.",
     definition:
-      "Credits is Caisson's integer credit wallet: grant() appends to an append-only credit_event ledger and upserts the wallet, while debit() takes a FOR UPDATE wallet-row lock and drains unexpired grants oldest-first through grant_consumption. A short balance throws InsufficientCreditsError (402) before the debit lands — the transaction rolls back with nothing recorded. Idempotent on a caller key or provider event id; grants expire on a schedule with a T-30d notice sweep.",
+      "Credits is Caisson's integer credit wallet: grant() appends to an append-only credit_event ledger and upserts the wallet, while debit() takes a FOR UPDATE wallet-row lock and drains unexpired grants oldest-first through grant_consumption. A short balance throws InsufficientCreditsError (402) before the debit lands, the transaction rolls back with nothing recorded. Idempotent on a caller key or provider event id; grants expire on a schedule with a T-30d notice sweep.",
     included: [
       {
         title: "FOR UPDATE row lock, then FIFO",
-        body: "debit() locks the credit_wallet row FOR UPDATE before it ever reads a grant, so two concurrent debits for the same account serialize instead of racing to consume the same grant remainder — the same lock clawback() and sweepExpiredGrants() take before they touch the wallet.",
+        body: "debit() locks the credit_wallet row FOR UPDATE before it ever reads a grant, so two concurrent debits for the same account serialize instead of racing to consume the same grant remainder, the same lock clawback() and sweepExpiredGrants() take before they touch the wallet.",
       },
       {
         title: "FIFO grant consumption via grant_consumption",
-        body: "unexpiredGrantsFifo() walks a tenant's unexpired grants oldest-first (created_at ASC, expires_at ASC, id ASC) and debit() splits one charge across as many grants as it needs, writing one grant_consumption row per grant it draws from — a grant's remaining balance is always amount minus the sum of its consumption rows, never a mutated column.",
+        body: "unexpiredGrantsFifo() walks a tenant's unexpired grants oldest-first (created_at ASC, expires_at ASC, id ASC) and debit() splits one charge across as many grants as it needs, writing one grant_consumption row per grant it draws from, a grant's remaining balance is always amount minus the sum of its consumption rows, never a mutated column.",
       },
       {
         title: "Idempotent by construction",
-        body: "idemColumns() requires exactly one of sourceEventId or idempotencyKey on every grant/debit/clawback call, and insertEvent() writes through ON CONFLICT DO NOTHING RETURNING — a retried call returns { idempotent: true } off the existing row instead of raising a conflict that would poison the surrounding transaction.",
+        body: "idemColumns() requires exactly one of sourceEventId or idempotencyKey on every grant/debit/clawback call, and insertEvent() writes through ON CONFLICT DO NOTHING RETURNING, a retried call returns { idempotent: true } off the existing row instead of raising a conflict that would poison the surrounding transaction.",
       },
       {
         title: "402 fail-closed on either floor",
-        body: "debit() checks two floors and 402s on the tighter one — the FIFO-derived unexpired remaining and the raw credit_wallet.balance aggregate — throwing InsufficientCreditsError and rolling back the whole transaction with nothing recorded. spendableBalance() reads the same min() of both floors, so a displayed balance never promises more than a debit will actually cover.",
+        body: "debit() checks two floors and 402s on the tighter one (the FIFO-derived unexpired remaining and the raw credit_wallet.balance aggregate) throwing InsufficientCreditsError and rolling back the whole transaction with nothing recorded. spendableBalance() reads the same min() of both floors, so a displayed balance never promises more than a debit will actually cover.",
       },
       {
         title: "Clawback and expiry, both bounded to the live balance",
-        body: "clawback() reclaims min(amount, currentBalance) of a refunded purchase's unspent credits — never pushing the wallet negative — and sweepExpiredGrants() burns each expired grant's residue as an explicit expiry_debit event bounded the same way, so expired value is consumed by a ledger row, never silently excluded from a read.",
+        body: "clawback() reclaims min(amount, currentBalance) of a refunded purchase's unspent credits (never pushing the wallet negative) and sweepExpiredGrants() burns each expired grant's residue as an explicit expiry_debit event bounded the same way, so expired value is consumed by a ledger row, never silently excluded from a read.",
       },
       {
         title: "A generic feature-meter envelope, registry-validated",
-        body: "feature_grant and feature_debit carry a feature tag that featureColumn() validates against FeatureTagSchema before the ledger insert — an unregistered or misspelled tag throws with no row written, so a new metered action never mints a silent, unvalidated meter.",
+        body: "feature_grant and feature_debit carry a feature tag that featureColumn() validates against FeatureTagSchema before the ledger insert, an unregistered or misspelled tag throws with no row written, so a new metered action never mints a silent, unvalidated meter.",
       },
     ],
     artifact: {
-      label: "debit() — lock, walk FIFO, 402 before a cent moves",
+      label: "debit(), lock, walk FIFO, 402 before a cent moves",
       lang: "ts",
       file: "packages/credits/src/credits.ts",
       code: "export async function debit(\n  tx: TenantExecutor,\n  input: DebitInput,\n): Promise<CreditResult> {\n  assertPositiveInt(input.amount);\n  const idem = idemColumns(input);\n  const feature = featureColumn(input.eventType, input.feature);\n  const fresh = await insertEvent(tx, {\n    accountId: input.accountId,\n    eventType: input.eventType,\n    amount: -input.amount,\n    feature,\n    rounding: input.rounding,\n    ...idem,\n  });\n  if (fresh === null)\n    return { balance: await balance(tx, input.accountId), idempotent: true };\n\n  // Per-account debit serialization — must precede the FIFO read (see the function comment).\n  // A missing wallet row (never granted) locks nothing and falls through to the 402 below.\n  await tx.query(\n    `SELECT balance FROM credit_wallet WHERE account_id = $1 FOR UPDATE`,\n    [input.accountId],\n  );\n\n  const grants = await unexpiredGrantsFifo(tx, input.accountId);\n  let toCover: number = input.amount;\n  for (const g of grants) {\n    if (toCover === 0) break;\n    const take = Math.min(g.remaining, toCover);\n    await insertConsumption(tx, {\n      accountId: input.accountId,\n      grantEventId: g.id,\n      debitEventId: fresh,\n      amount: take,\n    });\n    toCover -= take;\n  }\n  if (toCover > 0) {\n    // Unexpired remaining can't cover it — 402 with the SPENDABLE total (not the raw wallet\n    // aggregate, which may still carry not-yet-swept expired residue). Throwing rolls back the\n    // event + consumption inserts above — a failed debit leaves no trace.\n    throw new InsufficientCreditsError(input.amount, input.amount - toCover);\n  }\n\n  const updated = await tx.query<{ balance: number }>(\n    `UPDATE credit_wallet SET balance = balance - $2\n     WHERE account_id = $1 AND balance >= $2\n     RETURNING balance`,\n    [input.accountId, input.amount],\n  );\n  if (updated.rows.length === 0) {\n    // Insufficient wallet aggregate (e.g. a clawback outran the per-grant remainders): same\n    // rollback semantics — nothing recorded.\n    throw new InsufficientCreditsError(\n      input.amount,\n      await balance(tx, input.accountId),\n    );\n  }\n  return { balance: updated.rows[0]?.balance ?? 0, idempotent: false };\n}",
       annotations: [
-        "The `SELECT ... FOR UPDATE` on `credit_wallet` runs before the FIFO read — it serializes concurrent debits per account so two calls can never consume the same grant remainder.",
+        "The `SELECT ... FOR UPDATE` on `credit_wallet` runs before the FIFO read, it serializes concurrent debits per account so two calls can never consume the same grant remainder.",
         "`unexpiredGrantsFifo` returns grants oldest-first; the loop walks them until `toCover` reaches zero, splitting one debit across multiple grants when a single grant's remainder falls short.",
-        "A short balance throws `InsufficientCreditsError` and the whole transaction rolls back — the `insertEvent` and `insertConsumption` calls above never survive to be visible.",
+        "A short balance throws `InsufficientCreditsError` and the whole transaction rolls back, the `insertEvent` and `insertConsumption` calls above never survive to be visible.",
       ],
     },
     faq: [
       {
         question: "What happens when a debit would overdraw the balance?",
         answer:
-          "debit() throws InsufficientCreditsError (HTTP 402) and nothing is recorded — the FOR UPDATE lock and the ledger insert both run inside the same transaction, so a failed debit rolls back cleanly with no orphaned event or partial grant_consumption row.",
+          "debit() throws InsufficientCreditsError (HTTP 402) and nothing is recorded, the FOR UPDATE lock and the ledger insert both run inside the same transaction, so a failed debit rolls back cleanly with no orphaned event or partial grant_consumption row.",
       },
       {
         question:
           "Can two concurrent requests both spend the same last credit?",
         answer:
-          "No. debit() locks the credit_wallet row FOR UPDATE before it reads the account's unexpired grants, so a second concurrent debit for the same account blocks until the first commits or rolls back — it can never observe stale grant remainders.",
+          "No. debit() locks the credit_wallet row FOR UPDATE before it reads the account's unexpired grants, so a second concurrent debit for the same account blocks until the first commits or rolls back, it can never observe stale grant remainders.",
       },
       {
         question:
           "Does a retried network request double-charge a debit or double-grant a purchase?",
         answer:
-          "No. Every grant/debit/clawback call supplies exactly one of sourceEventId or idempotencyKey (idemColumns enforces this), and insertEvent writes through ON CONFLICT DO NOTHING RETURNING — a retried call returns the already-applied result (idempotent: true) instead of inserting a second ledger row.",
+          "No. Every grant/debit/clawback call supplies exactly one of sourceEventId or idempotencyKey (idemColumns enforces this), and insertEvent writes through ON CONFLICT DO NOTHING RETURNING, a retried call returns the already-applied result (idempotent: true) instead of inserting a second ledger row.",
       },
       {
         question: "What happens to unspent credits when a grant expires?",
         answer:
-          "sweepExpiredGrants() burns each expired grant's residue as an explicit expiry_debit ledger event — not a silent exclusion from balance — bounded to the live wallet balance the same way clawback() is. sweepExpiryNotices() emails a T-30d warning first, gated by a one-row-per-grant credit_expiry_notice marker so the notice only ever fires once.",
+          "sweepExpiredGrants() burns each expired grant's residue as an explicit expiry_debit ledger event (not a silent exclusion from balance) bounded to the live wallet balance the same way clawback() is. sweepExpiryNotices() emails a T-30d warning first, gated by a one-row-per-grant credit_expiry_notice marker so the notice only ever fires once.",
       },
     ],
     relatedGlossary: [
@@ -1834,7 +1833,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "ai-production",
-      note: `Sold standalone at ${modulePrice("credits")}, or bundled into the ${bundlePrice("ai-production")} AI-Production bundle alongside ai-meter, ai-evals, guardrails, and prompt-registry — the same wallet ai-meter's reserve()/reconcile() grant() and debit() against directly.`,
+      note: `Sold standalone at ${modulePrice("credits")}, or bundled into the ${bundlePrice("ai-production")} AI-Production bundle alongside ai-meter, ai-evals, guardrails, and prompt-registry, the same wallet ai-meter's reserve()/reconcile() grant() and debit() against directly.`,
     },
   },
 ];

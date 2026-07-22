@@ -13,19 +13,14 @@ import { PageSections } from "@/components/page-sections";
 import { TrackView } from "@/components/track-view";
 import { mediaSlides } from "@/lib/media-manifest";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
-import { bundleLabel, bundlePagePath } from "@/components/marketplace";
+import { bundleLabel } from "@/components/marketplace";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { breadcrumb, faqPage, moduleSoftwareApplication } from "@/lib/jsonld";
 import { JsonLdScript } from "@/lib/jsonld-script";
 import { buildMetadata } from "@/lib/metadata";
 import { MODULE_PAGES, type ModulePageRecord } from "@/lib/module-pages";
 import type { PageSection } from "@/lib/page-sections";
-import {
-  bundlePriceById,
-  formatUsd,
-  MODULE_PRICES,
-  type ModulePrice,
-} from "@/lib/pricing";
+import { formatUsd, MODULE_PRICES, type ModulePrice } from "@/lib/pricing";
 import styles from "./depth.module.css";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -160,30 +155,11 @@ function BuyRail({
           {catalogItem && (
             <AddToCartButton item={toCartItem(catalogItem)} variant="primary" />
           )}
+          {/* record.sells.note is authored per-module and always already states the
+              bundle/price relationship (or standalone-only status) — a second,
+              auto-generated "Or composed into..." line here just repeated the same
+              fact back-to-back on every module page (visual-audit remediation). */}
           <p className="cs-footnote">{record.sells.note}</p>
-          {price.bundles.length === 0 ? (
-            <p className="cs-footnote">
-              Standalone module: only the whole-catalog Everything bundle
-              includes it.
-            </p>
-          ) : (
-            <p className="cs-footnote">
-              Or composed into{" "}
-              {price.bundles.map((b, i) => {
-                const anchor = bundlePriceById(b);
-                return (
-                  <span key={b}>
-                    {i > 0 && (i === price.bundles.length - 1 ? " or " : ", ")}
-                    <Link href={bundlePagePath(b)}>
-                      the {bundleLabel(b)} bundle
-                    </Link>
-                    {anchor?.amount != null && ` (${formatUsd(anchor.amount)})`}
-                  </span>
-                );
-              })}
-              .
-            </p>
-          )}
           {related.length > 0 && (
             <div>
               <div
@@ -195,7 +171,9 @@ function BuyRail({
               <ul className={styles.railList}>
                 {related.map((t) => (
                   <li key={t.slug}>
-                    <Link href={`/glossary/${t.slug}`}>{t.term}</Link>
+                    <Link className="cs-link" href={`/glossary/${t.slug}`}>
+                      {t.term}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -259,9 +237,13 @@ export default async function ModuleDepthPage(props: Params) {
         lede={record.heroOneLiner}
         ctas={
           <nav aria-label="Breadcrumb" className="cs-footnote">
-            <Link href="/marketplace">Marketplace</Link>
+            <Link className="cs-link" href="/marketplace">
+              Marketplace
+            </Link>
             {" / "}
-            <Link href="/marketplace?type=modules">Modules</Link>
+            <Link className="cs-link" href="/marketplace?type=modules">
+              Modules
+            </Link>
             {" / "}
             <span aria-current="page">{price.label}</span>
           </nav>
