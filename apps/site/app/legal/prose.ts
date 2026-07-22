@@ -35,4 +35,14 @@ export const prose = {
   li: {
     marginBottom: "var(--cs-space-2)",
   } as CSSProperties,
+  /** Conspicuous clause paragraph (warranty disclaimer / liability limitation) — UCC-style
+   *  conspicuousness via bold weight + a bordered surface band, sentence case (visual-audit
+   *  16c4ef8a3d0a72c6/a2760c0e4071c659: full-paragraph ALL-CAPS is unreadable at body size and
+   *  color-alone/caps-alone signaling isn't a real emphasis channel). Pair with a plain `<Card>`
+   *  wrapper (border + surface-1, no accent) for the "distinct surface band" half of the treatment.
+   */
+  conspicuous: {
+    fontWeight: "var(--cs-weight-semibold)",
+    lineHeight: "var(--cs-leading-relaxed)",
+  } as CSSProperties,
 };

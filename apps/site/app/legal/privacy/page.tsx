@@ -5,7 +5,7 @@ import { prose } from "../prose";
 export const metadata = buildMetadata({
   title: "Privacy Policy",
   description:
-    "How Caisson collects and handles personal data on caisson.sh — product-update email, purchase account communications, cookieless analytics, and your rights under GDPR.",
+    "How Caisson collects and handles personal data on caisson.sh: product-update email, purchase account communications, cookieless analytics, and your rights under GDPR.",
   path: "/legal/privacy",
 });
 
@@ -44,7 +44,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* What we collect */}
-      <Section eyebrow="Data" title="What we collect">
+      <Section title="What we collect">
         <h3 style={prose.h3}>Email address</h3>
         <p style={prose.paragraph}>
           When you subscribe to product updates or complete a purchase on this
@@ -52,7 +52,7 @@ export default function PrivacyPage() {
           personally identifying information we ask for at the point of sign-up.
           Purchase checkout collects the additional information necessary to
           process payment and deliver your license entitlement. Payment is
-          processed by Paddle, our merchant of record — we do not receive or
+          processed by Paddle, our merchant of record; we do not receive or
           store your payment card details.
         </p>
 
@@ -93,7 +93,7 @@ export default function PrivacyPage() {
         <p style={prose.paragraph}>
           Questions submitted to the on-site Ask-AI widget are stored to improve
           the product and its documentation. The stored record is the question
-          text, the date, and whether it was answered — never your IP address,
+          text, the date, and whether it was answered: never your IP address,
           account identity, or the generated answer. The widget carries the same
           notice where you type: do not include secrets or personal data in a
           question. Stored questions are hard-deleted after 90 days.
@@ -101,9 +101,9 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Why we collect it */}
-      <Section eyebrow="Purpose" title="Why we collect it" band="tint">
+      <Section title="Why we collect it" band="tint">
         <h3 style={prose.h3}>
-          Email — product updates and account communications
+          Email: product updates and account communications
         </h3>
         <p style={prose.paragraph}>
           We collect your email address to send you product-update notifications
@@ -112,10 +112,10 @@ export default function PrivacyPage() {
           license entitlements, and support correspondence. We will not send
           marketing email unrelated to Caisson, sell your address, or share it
           with third parties except as required to operate these communications
-          (Resend — see Data location, below).
+          (Resend, see Data location, below).
         </p>
 
-        <h3 style={prose.h3}>Analytics — aggregate site improvement</h3>
+        <h3 style={prose.h3}>Analytics: aggregate site improvement</h3>
         <p style={prose.paragraph}>
           Aggregate, anonymous page-view data helps us understand which
           documentation and marketing pages are useful. No individual is
@@ -124,33 +124,33 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Lawful basis */}
-      <Section eyebrow="GDPR" title="Lawful basis for processing">
+      <Section title="Lawful basis for processing">
         <p style={prose.paragraph}>
           For users in the European Economic Area (EEA) or the United Kingdom,
           processing is carried out on the following bases:
         </p>
         <ul style={prose.list}>
           <li style={prose.li}>
-            <strong>Email address (product updates) — consent.</strong> You
+            <strong>Email address (product updates): consent.</strong> You
             provided your address by submitting the product-updates form, having
             been told at the point of submission that signing up means
             occasional product email. You may withdraw consent at any time by
             requesting deletion of your address (see Your rights, below).
           </li>
           <li style={prose.li}>
-            <strong>Email address (purchase / account) — contract.</strong>{" "}
+            <strong>Email address (purchase / account): contract.</strong>{" "}
             Processing is necessary to perform the contract of sale, deliver
             your license entitlement, and respond to support requests.
           </li>
           <li style={prose.li}>
             <strong>
-              Cloudflare infrastructure metadata — legitimate interest.
+              Cloudflare infrastructure metadata: legitimate interest.
             </strong>{" "}
             Routing and security processing is necessary to deliver the site
             securely. No alternative exists that does not involve a CDN.
           </li>
           <li style={prose.li}>
-            <strong>Plausible analytics — legitimate interest.</strong>{" "}
+            <strong>Plausible analytics: legitimate interest.</strong>{" "}
             Cookieless, PII-free aggregate analytics carry a minimal privacy
             impact while providing a legitimate operational benefit. You may
             object by using a content blocker that targets plausible.io.
@@ -159,7 +159,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Retention */}
-      <Section eyebrow="Retention" title="How long we keep it" band="tint">
+      <Section title="How long we keep it" band="tint">
         <p style={prose.paragraph}>
           We retain product-update subscriber email addresses until one of the
           following occurs:
@@ -189,15 +189,15 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Data location */}
-      <Section eyebrow="Infrastructure" title="Where your data lives">
-        <h3 style={prose.h3}>Payment and order data — Paddle</h3>
+      <Section title="Where your data lives">
+        <h3 style={prose.h3}>Payment and order data: Paddle</h3>
         <p style={prose.paragraph}>
           Purchases are processed by Paddle, acting as merchant of record and
           reseller. Paddle collects the billing and payment information
           necessary to complete your order, calculate and remit applicable sales
           tax and VAT, and issue your order receipt; we do not receive or store
-          your payment card details. Paddle&apos;s handling of this data —
-          including which Paddle entity processes your order — is governed by{" "}
+          your payment card details. Paddle&apos;s handling of this data
+          (including which Paddle entity processes your order) is governed by{" "}
           <a
             href="https://www.paddle.com/legal/privacy"
             rel="noreferrer"
@@ -208,7 +208,7 @@ export default function PrivacyPage() {
           .
         </p>
 
-        <h3 style={prose.h3}>Email — Resend</h3>
+        <h3 style={prose.h3}>Email: Resend</h3>
         <p style={prose.paragraph}>
           Email addresses are stored and managed by{" "}
           <a href="https://resend.com" rel="noreferrer" className="cs-link">
@@ -220,7 +220,7 @@ export default function PrivacyPage() {
           if you require a DPA.
         </p>
 
-        <h3 style={prose.h3}>Site — Railway + Cloudflare</h3>
+        <h3 style={prose.h3}>Site: Railway + Cloudflare</h3>
         <p style={prose.paragraph}>
           Caisson.sh is served by Railway. Cloudflare remains in front as DNS
           and reverse proxy across Cloudflare&apos;s global edge network.
@@ -228,7 +228,7 @@ export default function PrivacyPage() {
           data processing terms apply to request metadata processed at the edge.
         </p>
 
-        <h3 style={prose.h3}>Analytics — Plausible</h3>
+        <h3 style={prose.h3}>Analytics: Plausible</h3>
         <p style={prose.paragraph}>
           Plausible Analytics is EU-based and stores aggregate data on servers
           in the EU. Because no PII is collected, no cross-border transfer
@@ -237,11 +237,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Your rights */}
-      <Section
-        eyebrow="Your rights"
-        title="Access, erasure, and portability"
-        band="tint"
-      >
+      <Section title="Access, erasure, and portability" band="tint">
         <p style={prose.paragraph}>
           If you are in the EEA, UK, or another jurisdiction with data
           protection rights, you have the following rights with respect to
@@ -279,7 +275,7 @@ export default function PrivacyPage() {
           <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>{" "}
-          with the subject line &ldquo;Data request — [right you are
+          with the subject line &ldquo;Data request: [right you are
           exercising]&rdquo;. We will respond within 30 days. If you are
           unsatisfied with our response, you have the right to lodge a complaint
           with your local supervisory authority.
@@ -287,7 +283,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Changes */}
-      <Section eyebrow="Updates" title="Changes to this policy">
+      <Section title="Changes to this policy">
         <p style={prose.paragraph}>
           We will post material changes to this page and update the &ldquo;Last
           updated&rdquo; date. If the change materially affects how we use your
@@ -298,7 +294,7 @@ export default function PrivacyPage() {
       </Section>
 
       {/* Contact */}
-      <Section eyebrow="Contact" title="Get in touch" band="tint">
+      <Section title="Get in touch" band="tint">
         <p style={prose.paragraph}>
           Caisson Software LLC
           <br />
