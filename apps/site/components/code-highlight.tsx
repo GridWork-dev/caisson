@@ -26,6 +26,13 @@ export async function CodeHighlight({
 }): Promise<ReactNode> {
   return highlight(code, {
     lang,
+    // An unrecognized `lang` (typo, a language Shiki doesn't bundle) degrades to plaintext
+    // instead of throwing in this Server Component. NOTE: fumadocs-core's actual option name is
+    // `fallbackLanguage` (HighlightHastOptions, not `defaultLanguage`) -- it already defaults to
+    // "text" internally, which is functionally identical to "plaintext" (both are Shiki's
+    // hard-coded no-grammar plain-text ids, isPlainLang), so this is explicit belt-and-suspenders
+    // rather than a behavior change.
+    fallbackLanguage: "plaintext",
     engine: "js",
     defaultColor: false,
     themes: THEMES,
