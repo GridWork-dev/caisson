@@ -24,7 +24,7 @@ export default function WordmarkPage() {
           The mark, built properly.
         </h1>
         <p className="lede">
-          Three high-craft takes on the caisson identity — a pressurized chamber
+          Three high-craft takes on the caisson identity: a pressurized chamber
           under a cold waterline, holding a single instrument light. Filled
           two-tone steel and a real glow, not four outline strokes. Pick one; it
           becomes the kit mark, the favicon, and a locked ADR.
@@ -41,7 +41,7 @@ export default function WordmarkPage() {
           <Glyph style={{ width: 64, height: 64 }} />
           <Glyph style={{ width: 20, height: 20 }} />
           <p className="muted" style={{ fontSize: "var(--cs-text-sm)" }}>
-            Two open strokes — a waterline over a chamber. Legible, but reads as
+            Two open strokes: a waterline over a chamber. Legible, but reads as
             a wireframe, not a mark. This is what we are replacing.
           </p>
         </div>
@@ -170,7 +170,7 @@ export default function WordmarkPage() {
       <hr className="divider" />
       <p className="muted" style={{ fontSize: "var(--cs-text-sm)" }}>
         Pick by silhouette at 16px first (the tab favicon is the hardest test),
-        then by feel at 64. Say the letter — A · B · C — or ask for a blend;
+        then by feel at 64. Say the letter (A · B · C) or ask for a blend;
         nothing locks until you call it.
       </p>
     </div>

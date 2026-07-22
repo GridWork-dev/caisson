@@ -66,8 +66,8 @@ export default async function AffiliatesPage() {
         <p className="lede">
           Every attributed order (a redeemed affiliate code, joined by{" "}
           <span className="mono">discount_id</span>), the commission payable at
-          each code&rsquo;s stamped rate, and refund clawback alerts. Read-only
-          — the report FLAGS a clawback, it never moves money (ADR-0294/0302).
+          each code&rsquo;s stamped rate, and refund clawback alerts. Read-only:
+          the report flags a clawback, it never moves money (ADR-0294/0302).
         </p>
       </section>
 
@@ -84,7 +84,7 @@ export default async function AffiliatesPage() {
       <p className="muted" style={{ fontSize: "0.82em", maxWidth: "80ch" }}>
         Orders placed before the affiliate-attribution column shipped
         (2026-07-10) carry no <span className="mono">discount_id</span> and are
-        not attributed here — this report covers attributed orders only.
+        not attributed here. This report covers attributed orders only.
         Commission is <strong>{usd(totalCommission)}</strong> payable across all
         affiliates; <strong>{usd(totalClawback)}</strong> is a refund clawback
         alert to net manually against a prior payout.

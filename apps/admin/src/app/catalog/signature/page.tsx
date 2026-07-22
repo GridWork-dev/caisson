@@ -62,8 +62,8 @@ export default function SignaturePage() {
           The signature, sketched.
         </h1>
         <p className="lede">
-          The marketing &ldquo;wow&rdquo; is one four-beat narrative —{" "}
-          <strong>deny → chain → hold → sign</strong> — rendered entirely as
+          The marketing &ldquo;wow&rdquo; is one four-beat narrative:{" "}
+          <strong>deny → chain → hold → sign</strong>, rendered entirely as
           tokenized CSS + inline SVG (ADR-0102, no video pipeline). Phase 2
           builds the motion on the site; these are the stills that lock the
           direction.
@@ -106,7 +106,7 @@ export default function SignaturePage() {
         <p className="muted" style={{ maxWidth: "64ch" }}>
           A pressurized steel caisson sunk in cold harbor water: the working
           chamber holds the boundary while the water bears down. The metaphor is
-          load-bearing — chamber = the tenant boundary, the airlock = the
+          load-bearing: chamber = the tenant boundary, the airlock = the
           fail-closed gate, the shaft = the append-only audit chain rising to
           the surface as evidence.
         </p>
@@ -141,9 +141,9 @@ export default function SignaturePage() {
       <hr className="divider" />
       <p className="muted" style={{ fontSize: "var(--cs-text-sm)" }}>
         Honesty boundary (ADR-0080 §3): every beat shows evidence Caisson{" "}
-        <em>generates</em> — a hash chain, a signed manifest — never a claim
-        that Caisson is itself certified. Deny + Sign render as motion in Phase
-        2 (Deny evolves the shipped <code>home-hero-motion</code>).
+        <em>generates</em> (a hash chain, a signed manifest), never a claim that
+        Caisson is itself certified. Deny + Sign render as motion in Phase 2
+        (Deny evolves the shipped <code>home-hero-motion</code>).
       </p>
     </div>
   );

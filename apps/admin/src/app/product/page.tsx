@@ -25,8 +25,8 @@ export default async function ProductPage() {
           Product analytics, from PostHog.
         </h1>
         <p className="lede">
-          Server-side PostHog Query API panels — purchase events and the
-          support-answer confidence distribution — read live per request. The
+          Server-side PostHog Query API panels (purchase events and the
+          support-answer confidence distribution) read live per request. The
           project carries near-zero traffic today; panels show an honest{" "}
           <span className="mono">no events yet</span> state until real events
           land.
