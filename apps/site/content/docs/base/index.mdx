@@ -1,46 +1,46 @@
 ---
 title: Base substrate
-description: The open-core Apache-2.0 substrate every bundle sits on — kernel, auth, tenancy RLS, billing, UI tokens, jobs, email, AI config, and the MCP server — plus the commercial Platform tier.
+description: The open-core Apache-2.0 substrate every bundle sits on (kernel, auth, tenancy RLS, billing, UI tokens, jobs, email, AI config, and the MCP server) plus the commercial Platform tier.
 ---
 
 The **Base substrate** is the open-core floor every Caisson bundle composes on. It is Apache-2.0,
-installs without a license, and carries the load-bearing contracts — the typed error hierarchy,
-fail-closed tenancy, the billing port, the token floor — that the commercial modules extend but
+installs without a license, and carries the load-bearing contracts, the typed error hierarchy,
+fail-closed tenancy, the billing port, the token floor, that the commercial modules extend but
 never fork.
 
 ## What's in the base
 
-- **[kernel](/docs/base/kernel)** — the typed `CaissonError` hierarchy, the credit-gate and
+- **[kernel](/docs/base/kernel)**: the typed `CaissonError` hierarchy, the credit-gate and
   tenancy-denial error shapes, and the one standards gate every package ships through.
-- **[auth](/docs/base/auth)** — self-hosted better-auth that owns its Drizzle tables, with an
+- **[auth](/docs/base/auth)**: self-hosted better-auth that owns its Drizzle tables, with an
   EdDSA-signed JWT and a JWKS cross-plane seam.
-- **[tenancy-rls](/docs/base/tenancy-rls)** — fail-closed multi-tenant Postgres RLS: a query with
+- **[tenancy-rls](/docs/base/tenancy-rls)**: fail-closed multi-tenant Postgres RLS: a query with
   no tenant context returns nothing.
-- **[billing](/docs/base/billing)** — Stripe, Paddle, LemonSqueezy, and Polar behind a
+- **[billing](/docs/base/billing)**: Stripe, Paddle, LemonSqueezy, and Polar behind a
   `BillingProvider` port, with HMAC raw-body webhook verification.
-- **[ai-config](/docs/base/ai-config)** — provider-agnostic AI configuration with agent-assisted
+- **[ai-config](/docs/base/ai-config)**: provider-agnostic AI configuration with agent-assisted
   setup.
-- **[mcp-server](/docs/base/mcp-server)** — the buyer-facing MCP server, auth-gated and
+- **[mcp-server](/docs/base/mcp-server)**: the buyer-facing MCP server, auth-gated and
   entitlement-scoped.
-- **[ui](/docs/base/ui)** — a typed token floor: `--cs-*` OKLCH tokens, one light and one dark
+- **[ui](/docs/base/ui)**: a typed token floor: `--cs-*` OKLCH tokens, one light and one dark
   theme.
-- **[jobs](/docs/base/jobs)** — a Trigger.dev job port with test drivers; billing and credit
+- **[jobs](/docs/base/jobs)**: a Trigger.dev job port with test drivers; billing and credit
   side-effects are enqueued, not inline.
-- **[email](/docs/base/email)** — a Resend email port with a test driver.
+- **[email](/docs/base/email)**: a Resend email port with a test driver.
 
-The generator and its tooling — `create-caisson`, the CLI, `@caisson/migrate`, and
-`license-verify` — are part of the same open set; start at
+The generator and its tooling, `create-caisson`, the CLI, `@caisson/migrate`, and
+`license-verify`: are part of the same open set; start at
 [create-caisson](/docs/cli/create-caisson).
 
 ## The Platform tier
 
 Three commercial modules extend the base without living in a persona bundle:
 
-- **[org-controls](/docs/base/org-controls)** — WorkOS SSO, the owner-gated multi-user surface,
+- **[org-controls](/docs/base/org-controls)**: WorkOS SSO, the owner-gated multi-user surface,
   and the admin-write RLS layer.
-- **[billing-orchestration](/docs/base/billing-orchestration)** — the full verify → parse →
+- **[billing-orchestration](/docs/base/billing-orchestration)**: the full verify → parse →
   checkout → idempotency flow composed on the open `BillingProvider` port.
-- **[ui-pro](/docs/base/ui-pro)** — the commercial component tier on the open `@caisson/ui` token
+- **[ui-pro](/docs/base/ui-pro)**: the commercial component tier on the open `@caisson/ui` token
   floor: DataTablePro, OpsMatrix, AuditTimeline, CommandPalette, charts, and the interactive
   primitives.
 
@@ -48,4 +48,4 @@ Three commercial modules extend the base without living in a persona bundle:
 
 The base packages are Apache-2.0 and never depend "up" on a commercial module. The Platform tier
 is commercial (`LicenseRef-Caisson-Commercial`) and requires a valid Caisson entitlement to
-install from the registry — the same model as every bundle module.
+install from the registry, the same model as every bundle module.

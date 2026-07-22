@@ -1,6 +1,6 @@
 ---
 title: Jobs
-description: A Trigger.dev job port with test drivers — billing and credit side-effects are enqueued, not inline.
+description: A Trigger.dev job port with test drivers, billing and credit side-effects are enqueued, not inline.
 ---
 
 `@caisson/jobs` is the background-work port. [Trigger.dev](https://trigger.dev) (self-hostable) is
@@ -10,7 +10,7 @@ assert on job behavior without a queue.
 ## The contract
 
 **Billing and credit side-effects are enqueued, never run inline** in a request handler. A webhook
-returns fast, and the money-moving work runs as a job — so a dropped connection mid-request never
+returns fast, and the money-moving work runs as a job, so a dropped connection mid-request never
 leaves a half-applied charge or a half-granted credit.
 
 ```ts
@@ -33,7 +33,7 @@ The same `queue.enqueue` call runs against the in-memory driver (the test driver
 
 ### The job port
 
-Every driver — in-memory, Trigger.dev, pg-boss, BullMQ — implements the same one-method
+Every driver (in-memory, Trigger.dev, pg-boss, BullMQ) implements the same one-method
 contract. The credit and billing side-effects depend only on this port, so swapping the driver
 never touches a call site.
 
@@ -52,7 +52,7 @@ interface EnqueueOptions {
 }
 ```
 
-`idempotencyKey` dedupes a _retry_ of the same logical job — each driver has its own mechanism
+`idempotencyKey` dedupes a _retry_ of the same logical job, each driver has its own mechanism
 (an in-memory `Set`, a derived pg-boss/BullMQ job id, Trigger.dev's native option). `singletonKey`
 suppresses _overlap_ instead: at most one job with that key queued or active at once, the guard
 for a recurring job whose previous run hasn't finished.
@@ -67,7 +67,7 @@ function defineTask<T>(
 
 Defines a typed task. `T` is inferred from `schema`, so a handler/schema mismatch is a compile
 error. Every driver validates an incoming payload against this same `.strict()` schema before the
-handler runs — a bad payload throws `ValidationError`, never a silent pass-through.
+handler runs, a bad payload throws `ValidationError`, never a silent pass-through.
 
 ```ts
 interface TaskDefinition<T> {
@@ -77,7 +77,7 @@ interface TaskDefinition<T> {
 }
 ```
 
-`defineTask`'s return type — the registry entry every driver (`createInMemoryQueue`,
+`defineTask`'s return type, the registry entry every driver (`createInMemoryQueue`,
 `createTriggerJobQueue`, and the rest) takes an array of.
 
 ```ts
@@ -101,9 +101,9 @@ interface QueueState {
 ```
 
 `work(name)` is the claim side of the port, resolved against the same task registry `enqueue`
-uses — it throws `NotFoundError` for an unregistered name. `JobLedger` is an optional visibility
+uses, it throws `NotFoundError` for an unregistered name. `JobLedger` is an optional visibility
 read: a driver only implements it if it can answer truthfully. Not every driver consumes for real
-or reports state — see below.
+or reports state, see below.
 
 ### The test driver
 
@@ -114,11 +114,11 @@ function createInMemoryQueue(
 ```
 
 The driver `bun run check` runs against. `enqueue` looks up the task by name (`NotFoundError` if
-unregistered), validates the payload, then **awaits the handler synchronously** — no queue, no
-network, no timing race — so a test asserts "this event enqueued that task with that payload" in
+unregistered), validates the payload, then **awaits the handler synchronously**: no queue, no
+network, no timing race, so a test asserts "this event enqueued that task with that payload" in
 a plain `await`. `idempotencyKey` dedupe is a `Set` keyed on `name\0key`; `singletonKey` overlap
 suppression is a second `Set` tracking in-flight keys, released only once the handler settles. A
-handler that throws increments a per-name failure counter read back through `getQueueState` —
+handler that throws increments a per-name failure counter read back through `getQueueState`:
 `queuedCount` and `activeCount` are always `0` (an honest zero, not a faked pending count: there's
 no backlog to poll in-memory). `work(name)` resolves a `WorkHandle` for port symmetry only; its
 `stop()` is a no-op.
@@ -146,17 +146,17 @@ interface TriggerClient {
 }
 ```
 
-The production driver. Registering `tasks` also registers each one as a real Trigger.dev `task()`
-— `name` becomes the task id and `handler` becomes its `run`, validated against the identical
+The production driver. Registering `tasks` also registers each one as a real Trigger.dev `task()`:
+`name` becomes the task id and `handler` becomes its `run`, validated against the identical
 schema the in-memory driver uses. Trigger.dev's hosted platform is the actual consumer; there's no
 local "start consuming" call in the SDK, so `work()` exists only for port symmetry and its
 `stop()` is a no-op.
 
-`enqueue` validates locally first — a bad payload throws `ValidationError` before anything leaves
-the process — then calls `tasks.trigger()`. `idempotencyKey` passes straight through as
+`enqueue` validates locally first, a bad payload throws `ValidationError` before anything leaves
+the process, then calls `tasks.trigger()`. `idempotencyKey` passes straight through as
 Trigger.dev's native option. `singletonKey` is **not** mapped: Trigger.dev's hosted scheduler owns
 overlap for scheduled tasks, and faking client-side suppression would be a lie the driver refuses
-to tell. Construction is fail-closed — calling `createTriggerJobQueue` without a `secretKey` and
+to tell. Construction is fail-closed, calling `createTriggerJobQueue` without a `secretKey` and
 without an injected `client` throws `ConfigError` immediately, not on the first `enqueue`. This
 driver implements no `JobLedger`: Trigger.dev exposes no local queue-state read.
 
@@ -170,7 +170,7 @@ function withAdvisoryXactLock<T>(
 ): Promise<T>;
 ```
 
-A Postgres transaction-scoped advisory lock for a check-then-enqueue critical section —
+A Postgres transaction-scoped advisory lock for a check-then-enqueue critical section:
 "enqueue a digest only if none is pending and the last one fired over an hour ago" is a
 read-then-write race two workers can both pass. `withAdvisoryXactLock` issues
 `pg_advisory_xact_lock` before running `fn`, keyed by a stable id derived internally from

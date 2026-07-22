@@ -4,7 +4,7 @@ description: The typed CaissonError hierarchy, the credit-gate and tenancy-denia
 ---
 
 `@caisson/kernel` is the shared spine every package imports. It defines a typed `CaissonError`
-hierarchy — each failure has a stable, documented shape instead of an ad-hoc string — and hosts the
+hierarchy (each failure has a stable, documented shape instead of an ad-hoc string) and hosts the
 **one standards/conformance gate** every package ships through.
 
 ## The contract
@@ -12,7 +12,7 @@ hierarchy — each failure has a stable, documented shape instead of an ad-hoc s
 Two error shapes are load-bearing across the base:
 
 - The **credit gate** raises a **`402`** with a documented body, not a bare `500`.
-- A **tenancy denial returns `404`**, not `403` — refusing to confirm a row exists _is_ the policy. There
+- A **tenancy denial returns `404`**, not `403`: refusing to confirm a row exists _is_ the policy. There
   is no existence leak to probe.
 
 ```ts
@@ -46,12 +46,12 @@ $ bun run check   # build · lint · test — every package, one gate
 
 ## API reference
 
-The rest of `@caisson/kernel`'s exports, grouped by concern — pure functions, typed errors,
+The rest of `@caisson/kernel`'s exports, grouped by concern, pure functions, typed errors,
 and Zod schemas; none of it touches the network or a database on its own.
 
 ### Errors
 
-`CaissonError` is the abstract base every subclass extends — a stable `code`, a mapped
+`CaissonError` is the abstract base every subclass extends, a stable `code`, a mapped
 `httpStatus`, and `details` allowlisted per subclass, never a raw stack or SQL string.
 
 | Class                      | HTTP | `code`                 |
@@ -94,7 +94,7 @@ function verifyBearer(
 ): void; // throws AuthnError
 ```
 
-Never `===` on a secret. `safeEqualVariable` hashes both sides to 32 bytes first — a raw
+Never `===` on a secret. `safeEqualVariable` hashes both sides to 32 bytes first, a raw
 variable-length `timingSafeEqual` throws on a length mismatch, itself a timing leak.
 `verifyBearer` fails closed on a blank `expected` secret.
 
@@ -217,7 +217,7 @@ at the sink. `OtelPostgresEventSink` posts one OTLP/HTTP log record per event an
 | `evidencePackSchema`   | a WORM-anchored compliance evidence bundle                                      |
 | `usageMeteringSchema`  | one metered unit against a feature tag                                          |
 | `evalResultSchema`     | one eval-suite run outcome                                                      |
-| `guardrailBlockSchema` | one guardrail block — `stage`/`category`/policy only, never the flagged content |
+| `guardrailBlockSchema` | one guardrail block, `stage`/`category`/policy only, never the flagged content |
 
 ### Migration assembly
 
@@ -243,7 +243,7 @@ function unwrapMoney(
 ): number;
 ```
 
-Branded `number` types, zero runtime cost — a cents value can no longer pass silently where
+Branded `number` types, zero runtime cost, a cents value can no longer pass silently where
 credits are expected. `unwrapMoney` is an identity no-op marking where a value exits to SQL.
 
 ```ts
@@ -256,7 +256,7 @@ function centsToCreditsProvenance(
 ): RoundedMoney<Cents, Credits>; // { raw: Cents; mode: "up" | "down"; result: Credits }
 ```
 
-`centsToCredits` always rounds down — never over-crediting a buyer. `centsToCreditsProvenance`
+`centsToCredits` always rounds down, never over-crediting a buyer. `centsToCreditsProvenance`
 returns the same result plus a `{ raw, mode }` audit record a ledger write can persist; for this
 conversion `mode` is always `"down"` at runtime, though the declared type admits both directions.
 

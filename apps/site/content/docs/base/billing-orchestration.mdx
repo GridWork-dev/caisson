@@ -10,14 +10,14 @@ idempotency flow for Stripe, Paddle, LemonSqueezy, and Polar.
 
 ## What it does
 
-- **Four checkout drivers** — `createStripeBilling`, `createPaddleBilling`,
+- **Four checkout drivers**: `createStripeBilling`, `createPaddleBilling`,
   `createLemonSqueezyBilling`, `createPolarBilling`, each returning a `BillingProvider`:
   `verifyAndParse` (signature check + envelope validation + domain mapping) and `createCheckout`
   (REST checkout/transaction creation).
-- **Provider → domain event parsers** — `parseStripeEvent`, `parsePaddleEvent`,
+- **Provider → domain event parsers**: `parseStripeEvent`, `parsePaddleEvent`,
   `parseLemonSqueezyEvent`, `parsePolarEvent` map each provider's native webhook shape onto the one
   `DomainBillingEvent` union the rest of the platform reads.
-- **Dual-layer webhook idempotency** — `processEvent` claims a whole event exactly once;
+- **Dual-layer webhook idempotency**: `processEvent` claims a whole event exactly once;
   `withIdempotentSideEffect` claims one named side-effect of an event, so a redelivered webhook
   never double-fires a non-DB effect (a Discord role push, a receipt email) even though the credit
   ledger is already idempotent on its own.
@@ -51,7 +51,7 @@ const { url } = await billing.createCheckout({
 });
 ```
 
-LemonSqueezy and Polar drivers are dormant until you supply credentials — `createLemonSqueezyBilling`
+LemonSqueezy and Polar drivers are dormant until you supply credentials, `createLemonSqueezyBilling`
 and `createPolarBilling` throw a `ConfigError` at construction time if `apiKey`/`storeId` or
 `accessToken`/`webhookSecret` are missing, so a misconfigured driver never gets constructed silently.
 
@@ -89,7 +89,7 @@ await withTenant(tx, accountId, async () => {
 ```
 
 Both run inside the caller's `withTenant` transaction, so a claim only persists once the work it
-guards has durably committed — a mid-transaction throw rolls back the claim too, and the next
+guards has durably committed, a mid-transaction throw rolls back the claim too, and the next
 delivery retries cleanly.
 
 ## Configuration
@@ -102,12 +102,12 @@ delivery retries cleanly.
 | `createPolarBilling`        | `accessToken`, `webhookSecret`; optional `env` (`sandbox` \| `production`, default `production`)      |
 
 `PROCESSED_EVENT_SCHEMA_SQL` ships the idempotency claim table as a checksum-pinned migration
-string — apply it as a new platform migration file, the same convention every other kernel-owned
+string, apply it as a new platform migration file, the same convention every other kernel-owned
 schema string follows.
 
 ## Composing with the base
 
-Every driver satisfies the identical open `BillingProvider` port from `@caisson/billing` — swapping
+Every driver satisfies the identical open `BillingProvider` port from `@caisson/billing`: swapping
 providers is a new driver, not a rewrite of call sites. The idempotency claim table is tenant-owned:
 `processEvent`/`withIdempotentSideEffect` bind `account_id` from the `@caisson/tenancy-rls` tenant
 GUC, so a claim attempted outside `withTenant` fails a non-blank `CHECK` instead of landing under a

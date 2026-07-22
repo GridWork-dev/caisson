@@ -1,10 +1,10 @@
 ---
 title: UI
-description: A typed token floor — --cs-* OKLCH tokens, one light and one dark theme.
+description: A typed token floor, --cs-* OKLCH tokens, one light and one dark theme.
 ---
 
 `@caisson/ui` is the typed token floor and the styled component kit built on it. It ships a set of
-`--cs-*` custom properties in **OKLCH**, delivered as exactly two themes — one light, one dark — plus
+`--cs-*` custom properties in **OKLCH**, delivered as exactly two themes (one light, one dark) plus
 a catalog of components (Button, Card, Hero, Terminal, DataTable, and more) that read those tokens.
 This docs site renders on those same tokens and components.
 
@@ -28,11 +28,11 @@ component tree.
 
 `@caisson/ui` has three entry points: `@caisson/ui/tokens` (the raw token contract),
 `@caisson/ui/theme` (compose and apply a theme at runtime), and `@caisson/ui/components`
-(the styled kit, transpiled from raw `.tsx` — set `transpilePackages: ["@caisson/ui"]` in
+(the styled kit, transpiled from raw `.tsx`: set `transpilePackages: ["@caisson/ui"]` in
 `next.config`). `./styles/tokens.css` and `./styles/base.css` are exported for direct
 `<link>`/`@import` use outside a bundler that resolves `.css` imports.
 
-### Tokens — `@caisson/ui/tokens`
+### Tokens, `@caisson/ui/tokens`
 
 ```ts
 const foundation: Foundation; // type scale, weight, line-height, tracking, 4px space,
@@ -57,7 +57,7 @@ modal/drawer backdrop veil). `semanticThemeToCssVars`/`semanticCssLines` are the
 `--cs-*` mapping consumed by both the build-time CSS generator and the runtime theme API
 below, so the two can't drift apart.
 
-### Theme — `@caisson/ui/theme`
+### Theme, `@caisson/ui/theme`
 
 ```ts
 function createTheme(options?: {
@@ -82,18 +82,18 @@ const DEFAULT_PRESET_ID: "caisson";
 ```
 
 `createTheme` throws on an unknown preset id (the error names the registered ones) and on
-an override with an unrecognized key or an empty-string token value — every token value is
+an override with an unrecognized key or an empty-string token value, every token value is
 also denylist-validated against `{ } < > ;`, because `applyTheme`/`themeToCssText`
 interpolate it raw into a `<style>` block. `registerPreset` is append-only by id:
 re-registering an existing id with a different shape throws instead of silently swapping
 every consumer already resolved to it. `applyTheme` is a no-op with no `document`
-(SSR) — render `themeToCssText()` into a `<style>` tag server-side instead for a
+(SSR), render `themeToCssText()` into a `<style>` tag server-side instead for a
 flash-free first paint.
 
-### Components — `@caisson/ui/components`
+### Components, `@caisson/ui/components`
 
 Every component follows one recipe: Radix only where real behavior is needed (`asChild`
-polymorphism in `Button`/`FormField` — `Dialog`'s focus trap comes from the native
+polymorphism in `Button`/`FormField`: `Dialog`'s focus trap comes from the native
 `<dialog>` element instead), co-located CSS reading only `var(--cs-*)`, variants as
 `data-*` attributes (no theme branching in JS), and, where the component exposes one,
 `forwardRef` on its single DOM root. `Button` is the reference shape:
@@ -115,18 +115,18 @@ const Button: ForwardRefExoticComponent<
 >;
 ```
 
-**Marketing & layout** — purely presentational, server-safe (no `"use client"`):
+**Marketing & layout**: purely presentational, server-safe (no `"use client"`):
 
 | Component         | Props                            | Behavior                                                                                                                                                                   |
 | ----------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Section`         | `SectionProps`                   | Eyebrow/title/lede block with a toned `band` (`tint`/`surface`) and an optional `flush` hairline.                                                                          |
-| `Hero`            | `HeroProps`                      | Split marketing header — eyebrow/title/lede/ctas/credentials plus an `artifact` slot (typically a `Terminal`).                                                             |
-| `Card`            | `CardProps`                      | Presentational panel — no navigation or toggle behavior of its own.                                                                                                        |
+| `Hero`            | `HeroProps`                      | Split marketing header, eyebrow/title/lede/ctas/credentials plus an `artifact` slot (typically a `Terminal`).                                                             |
+| `Card`            | `CardProps`                      | Presentational panel, no navigation or toggle behavior of its own.                                                                                                        |
 | `Faq`             | `FaqProps`, `FaqItem`            | Native `<details>`/`<summary>` disclosure list.                                                                                                                            |
 | `FeatureGrid`     | `FeatureGridProps`               | Responsive feature-card grid.                                                                                                                                              |
-| `Terminal`        | `TerminalProps`                  | Framed evidence artifact — chrome bar + monospace body.                                                                                                                    |
+| `Terminal`        | `TerminalProps`                  | Framed evidence artifact, chrome bar + monospace body.                                                                                                                    |
 | `CodeBlock`       | `CodeBlockProps`                 | `<pre>` code surface; `frame` wraps it in `Terminal` chrome instead.                                                                                                       |
-| `StatusChip`      | `StatusChipProps`                | Glyph + label status pill — never color-alone.                                                                                                                             |
+| `StatusChip`      | `StatusChipProps`                | Glyph + label status pill, never color-alone.                                                                                                                             |
 | `CredentialStrip` | `CredentialStripProps`           | Compliance-framework name strip.                                                                                                                                           |
 | `BundleCard`      | `BundleCardProps`                | Featured bundle link card.                                                                                                                                                 |
 | `SkuMatrix`       | `SkuMatrixProps`, `SkuMatrixRow` | Feature-by-bundle comparison matrix.                                                                                                                                       |
@@ -134,7 +134,7 @@ const Button: ForwardRefExoticComponent<
 | `MobileBuyBar`    | `MobileBuyBarProps`              | Sticky mobile price + purchase bar.                                                                                                                                        |
 | `ThemeToggle`     | `ThemeToggleProps`               | Dark/light pin toggle. Pairs with `THEME_STORAGE_KEY` + `themeInitScript` (inline in the root layout `<head>`) for a flash-free first paint that otherwise follows the OS. |
 
-**Dashboard shell & data** — the buyer-dashboard data-app surface:
+**Dashboard shell & data**: the buyer-dashboard data-app surface:
 
 | Component                  | Props                                               | Behavior                                                                                                                        |
 | -------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -148,7 +148,7 @@ const Button: ForwardRefExoticComponent<
 | `MoneyCell`                | `MoneyCellProps`                                    | Renders an integer cent/credit value via `formatMoneyCellValue(value, unit?, opts?)`, which throws on a non-safe-integer input. |
 | `LedgerList` / `LedgerRow` | `LedgerListProps` / `LedgerRowProps`, `LedgerEntry` | Signed credit-ledger transaction rows. `formatLedgerTimestamp(iso)` formats the entry time.                                     |
 | `StatusPill`               | `StatusPillProps`, `EntitlementStatus`              | `active`/`expired`/`revoked`/`pending` lifecycle pill.                                                                          |
-| `EmptyState`               | `EmptyStateProps`                                   | The calm "nothing here yet" affordance — `DataTable`'s default empty render.                                                    |
+| `EmptyState`               | `EmptyStateProps`                                   | The calm "nothing here yet" affordance, `DataTable`'s default empty render.                                                    |
 | `ErrorState`               | `ErrorStateProps`                                   | The calm failed-fetch affordance.                                                                                               |
 | `LoadingState`             | `LoadingStateProps`                                 | Skeleton standing in for a `table`/`stat`/`list`/`block` layout, sized to avoid layout shift.                                   |
 | `FormField`                | `FormFieldProps`                                    | Label + control + helper/error, wired to the control via Radix `Slot`.                                                          |
@@ -157,27 +157,27 @@ const Button: ForwardRefExoticComponent<
 
 | Component               | Props                             | Behavior                                                                                                                                                                        |
 | ----------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Dialog`                | `DialogProps`                     | Modal or edge-`drawer` on the native `<dialog>` — `showModal()` gives focus-trap, inert background, Escape-to-close, and focus-return for free.                                 |
+| `Dialog`                | `DialogProps`                     | Modal or edge-`drawer` on the native `<dialog>`: `showModal()` gives focus-trap, inert background, Escape-to-close, and focus-return for free.                                 |
 | `ConfirmDialog`         | `ConfirmDialogProps`              | Confirm/cancel prompt on `Dialog`; `tone: "danger"` tints the confirm action for a destructive step.                                                                            |
 | `Toast` / `ToastRegion` | `ToastProps` / `ToastRegionProps` | Transient notification. `danger`/`warning` announce assertively (`role="alert"`); `info`/`success` politely (`role="status"`). Mount toasts inside one `ToastRegion` per stack. |
 
-**Form & interactive primitives** — hand-rolled, zero extra dependency:
+**Form & interactive primitives**: hand-rolled, zero extra dependency:
 
 | Component   | Props                             | Behavior                                                                                            |
 | ----------- | --------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `Badge`     | `BadgeProps`                      | Compact solid-fill tag — text only, no icon/dot slot.                                               |
+| `Badge`     | `BadgeProps`                      | Compact solid-fill tag, text only, no icon/dot slot.                                               |
 | `Checkbox`  | `CheckboxProps`                   | Real `<input type="checkbox">` under a CSS-drawn check mark.                                        |
 | `Radio`     | `RadioProps`                      | Real `<input type="radio">` under a CSS-drawn dot.                                                  |
 | `Switch`    | `SwitchProps`                     | `<button role="switch" aria-checked>` for an immediate-effect setting (not a form value).           |
 | `Accordion` | `AccordionProps`, `AccordionItem` | Native `<details>`/`<summary>` list; `type="single"` gets mutual exclusivity from `<details name>`. |
-| `Tabs`      | `TabsProps`, `TabItem`            | WAI-ARIA tablist — roving `tabindex`, arrow-key + Home/End navigation, disabled tabs skipped.       |
+| `Tabs`      | `TabsProps`, `TabItem`            | WAI-ARIA tablist, roving `tabindex`, arrow-key + Home/End navigation, disabled tabs skipped.       |
 
 **Icons:**
 
 | Export          | Signature                                                             | Behavior                                                                                                 |
 | --------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `Icon`          | `ForwardRefExoticComponent<IconProps & RefAttributes<SVGSVGElement>>` | Renders a Lucide glyph by name, or a bespoke glyph registered via `registerIcons`.                       |
-| `registerIcons` | `(glyphs: Partial<Record<RegisteredIconName, IconGlyph>>) => void`    | Populates the bespoke-glyph registry. The open kit ships no bespoke art — the consuming app supplies it. |
+| `registerIcons` | `(glyphs: Partial<Record<RegisteredIconName, IconGlyph>>) => void`    | Populates the bespoke-glyph registry. The open kit ships no bespoke art, the consuming app supplies it. |
 
 ## Related
 
