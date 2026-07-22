@@ -5,7 +5,7 @@ import Link from "next/link";
 // The /fetch subpath is the client-safe cut of the kernel (fetch.ts is pure, no server-only
 // imports) — mirrors `discord-connect.tsx`'s own client-side fetchWithTimeout usage.
 import { fetchWithTimeout } from "@caisson/kernel/fetch";
-import { Button } from "@caisson/ui/components";
+import { Button, EmptyState } from "@caisson/ui/components";
 
 import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import {
@@ -99,19 +99,25 @@ export function CartCheckoutPanel({
         >
           Checkout
         </h1>
-        <p className="cs-muted" style={{ marginTop: "var(--cs-space-2)" }}>
-          {items.length === 0
-            ? "Nothing in your cart yet."
-            : `${String(items.length)} item${items.length === 1 ? "" : "s"}. One Paddle checkout for the whole cart.`}
-        </p>
+        {items.length > 0 ? (
+          <p className="cs-muted" style={{ marginTop: "var(--cs-space-2)" }}>
+            {items.length} item{items.length === 1 ? "" : "s"}. One Paddle
+            checkout for the whole cart.
+          </p>
+        ) : null}
       </div>
 
       {items.length === 0 ? (
-        <p className="cs-muted">
-          Your cart is empty. Head to the{" "}
-          <Link href="/marketplace">marketplace</Link> to add a bundle or a
-          module.
-        </p>
+        <EmptyState
+          icon="cart"
+          title="Your cart is empty"
+          description="Add a bundle or a module from the marketplace to start a checkout."
+          action={
+            <Button asChild variant="primary">
+              <Link href="/marketplace">Browse the marketplace</Link>
+            </Button>
+          }
+        />
       ) : (
         <>
           <ul
