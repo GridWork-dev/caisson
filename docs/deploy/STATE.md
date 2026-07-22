@@ -8,6 +8,31 @@ grounds:
 
 # Deploy log
 
+## 2026-07-22 — visual-remediation phase closeout: wave + CVE bumps + ADR-0375 closeout live (site · admin)
+
+The full ADR-0374/0375 visual-remediation phase merged and deployed in one sitting:
+
+- **Merges (all squash, main CI green):** PR #319 the overnight ADR-0374 wave (`6d1c8051`,
+  73 commits folded from the W1–W4 worktree lanes), PR #320 the four osv-scanner CVE dep
+  bumps restoring the `deterministic` gate (`280f09d8`), PR #321 the ADR-0375 closeout —
+  four operator locks: em-dash copy law, one-accent-eyebrow-per-page, legal
+  bold+contrast conspicuousness, component tail (`af54102c`). #321 needed one CI round-trip:
+  the rebased branch rode the wave's changesets pre-squash, so a branch-local
+  site+admin patch changeset was added for the `--since=main` presence gate.
+- **caisson-site redeployed** (image `aca16ed6`, `Deploy complete`) at main `af54102c`,
+  `railway up` from the repo root per convention. Verified live: healthz 200;
+  `/legal/terms` renders the conspicuous clauses sentence-case bold ("provided "as is"
+  and "as available"", "Disclaimer of warranties" headings, zero residual ALL-CAPS walls).
+- **caisson-admin redeployed** (deployment `9fca73b7` SUCCESS, image `848e6d57`) at the
+  same SHA — first deploy carrying the mobile nav collapse disclosure. Edge answers 307
+  to the CF-Access login as designed (permanent operator gate). Note: the CLI stream
+  ended at `image push` without a `Deploy complete` line — completion confirmed via
+  `railway deployment list` (status SUCCESS), not the stream.
+- **Linear:** CAISSON-135…143 all moved to Done (the nine visual-audit + ADR-0374 items).
+- The `deploy-railway` workflow run on the #319 merge push was an **inert no-op**
+  (RAILWAY_TOKEN still unset — arms at cutover C2); manual `railway up` remains the
+  real deploy path.
+
 ## 2026-07-20 (third wave) — compliance-gap SKU arming: two trains + catalog debut
 
 The ADR-0373 arming executed end-to-end in one sitting (checklists
