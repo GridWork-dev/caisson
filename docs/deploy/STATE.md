@@ -8,6 +8,23 @@ grounds:
 
 # Deploy log
 
+## 2026-07-22 — open-row sextet live (site) + schematics kickoff opened (ADR-0377)
+
+The six open live-reaudit ledger rows fixed, merged (PR 325 squash, `78a3b8fa`, CI 15
+pass / 3 path-skips, opus SHIP review CLEAN with one P3 test-pin applied in-branch) and
+**caisson-site redeployed** (deployment `bdf577b8` SUCCESS, `Deploy complete` clean
+first try) with operator deploy approval via the picker. Live-verified with geometry
+proofs: docs copy buttons carry the 44px `::before` catchment (measured 44×44 over the
+24px button; the 34px header-button row was already catchmented by the P2-006 pass —
+closed as already-mitigated), field-crypto terminal headline holds one line at 1440w,
+home chain notation unified on `‖` (4/4 occurrences), marketplace dock clears the
+footer's last row by 19px at full mobile scroll (footer pad 72px), ai-kit lede
+reconciliation sentence live. Ledger reconciled: **729 rows = 715 fixed / 14 accepted /
+0 open** — the open class empty for the first time; the 14 accepted stay owned by the
+module-schematics kickoff (CAISSON-145), whose direction locked the same sitting
+(ADR-0377: hybrid — blueprint sheets for modules, cross-section strata for bundles).
+Lane litter `apps/site/outputs/admin-shots.ts` swept (gitignored but eslint-scanned).
+
 ## 2026-07-22 — visual-remediation phase closeout: wave + CVE bumps + ADR-0375 closeout live (site · admin)
 
 The full ADR-0374/0375 visual-remediation phase merged and deployed in one sitting:
