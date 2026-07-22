@@ -268,7 +268,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     metaDescription: `Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson bundle (${bundlePrice("local-first")} one-time, own the source).`,
     hero: {
       eyebrow: "Local-first AI · Own the source",
-      title: "Your data never leaves the device.",
+      title: "Your data stays on the device by default.",
       lede: "The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search, sync, and license verification all run against local files, nothing round-trips to a vendor unless you allow it in writing.",
     },
     definition:

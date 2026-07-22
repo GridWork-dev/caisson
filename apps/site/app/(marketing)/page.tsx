@@ -435,7 +435,7 @@ export default function HomePage() {
                 label={`${bundlePrice("local-first")} · ${modulesByBundle("local-first").length} modules`}
               />
             }
-            line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Own the source."
+            line="Compute seam, privacy gate, and on-device vector search. Your data stays on-device by default. Own the source."
             proof="egress: blocked at the privacy gate"
           />
           <BundleCard

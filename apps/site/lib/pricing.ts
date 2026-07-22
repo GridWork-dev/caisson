@@ -84,7 +84,7 @@ export const BUNDLE_PRICES: readonly (PriceAnchor & { id: BundleId })[] = [
     amount: 629,
     unit: "once",
     from: false,
-    note: "On-device inference, a privacy egress gate, and local vector search: your data never leaves the device.",
+    note: "On-device inference, a privacy egress gate, and local vector search: data stays on device unless you explicitly enable a hosted transport.",
   },
   {
     id: "agentic-dev",

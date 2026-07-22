@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 
 export const dynamic = "force-static";
-export const alt = "Caisson Local-first AI — your data never leaves the device";
+export const alt =
+  "Caisson Local-first AI — your data stays on-device by default";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
