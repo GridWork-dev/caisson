@@ -65,8 +65,10 @@ export default function TermsPage() {
             are being finalized with legal counsel and may be updated. The
             controlling document for any purchase is the Commercial License
             Agreement (&ldquo;EULA&rdquo;), available at{" "}
-            <Link href="/legal/eula">caisson.sh/legal/eula</Link> and provided
-            at checkout.
+            <Link href="/legal/eula" className="cs-link">
+              caisson.sh/legal/eula
+            </Link>{" "}
+            and provided at checkout.
           </p>
         </Card>
       </Section>
