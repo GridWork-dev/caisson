@@ -144,8 +144,14 @@
  * article runs ~85-90ch at the docs body's font-size — over both this skill's 65-75ch cap and
  * Caisson's own committed 52-75ch rule (DESIGN.md §3). `min()` only ever narrows, never widens,
  * past fumadocs' existing cap; `:not([data-full])` leaves full-width docs pages (wide tables/
- * diagrams) at their own wider `max-w-[1168px]` untouched. */
-#main-content:not([data-full="true"]) {
+ * diagrams) at their own wider `max-w-[1168px]` untouched.
+ *
+ * Scoped under `#nd-docs-layout` (fumadocs' own grid container id — docs/[[...slug]]/page.tsx's
+ * `<article id="main-content">` is its descendant), NOT bare `#main-content` (P1 regression,
+ * ADR-0374 audit round 2): `app/(marketing)/layout.tsx` ALSO renders `<main id="main-content">`
+ * with no `#nd-docs-layout` ancestor, so the unscoped id selector was collapsing every
+ * marketing/legal/glossary page to this 900px reading column too. */
+#nd-docs-layout #main-content:not([data-full="true"]) {
   max-width: min(900px, 75ch);
 }
 
