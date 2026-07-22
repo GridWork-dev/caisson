@@ -126,8 +126,13 @@ export function AppShell({
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- delegation only: the click bubbles from the interactive NavLink <a> children below, which are already keyboard-triggerable (Enter fires a click natively) */}
         <nav className="cs-shell__nav" onClick={closeMobileNav}>
           {nav.map((item) => (
+            // Keyed by `label`, not `href`: the label is the item's visible + accessible
+            // identity (also the collapsed-state tooltip/aria-label — see AppShellNavItem),
+            // while `href` is caller-supplied routing data with no uniqueness guarantee (a
+            // placeholder demo nav with repeated `href: "#"` duplicated this key and produced
+            // the classic React "two children with the same key" warning — CAISSON-141).
             <NavLink
-              key={item.href}
+              key={item.label}
               item={item}
               collapsed={collapsed}
               renderNavItem={renderNavItem}

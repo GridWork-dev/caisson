@@ -295,6 +295,15 @@
   overflow: auto;
   background: var(--cs-bg);
   outline: none;
+  /* Root 5 (ADR-0374 visual audit): every page rendered flush to chrome — no consumer added its
+   * own wrapper padding, so the gutter belongs here, once, at the shell level. */
+  padding: clamp(1.25rem, 0.75rem + 2vw, 2.5rem);
+}
+
+/* Opt-out for full-bleed content (e.g. a wide table) — a direct child cancels the shell's own
+ * gutter with a matching negative margin instead of the shell needing per-page config. */
+.cs-shell__main > .cs-shell__bleed {
+  margin: clamp(-2.5rem, -0.75rem - 2vw, -1.25rem);
 }
 
 /* ── Mobile: off-canvas sidebar drawer ────────────────────────────────────────── */
