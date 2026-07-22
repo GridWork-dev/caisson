@@ -15,6 +15,27 @@ html {
   color-scheme: dark;
 }
 
+/* ADR-0374 [high]: `color-scheme` (native UA form-control chrome — search-input fill, scrollbars,
+ * etc.) only had TWO prongs here (this dark default + the `[data-theme="light"]` pin below), never
+ * an OS-seed prong — so an UNPINNED visitor whose OS prefers light got the app's own `--cs-*`
+ * tokens correctly flipped light (tokens.css / apply-theme.ts's documented 3-prong cascade) while
+ * native widgets stayed dark-chromed underneath. Third prong closes the same gap for `color-scheme`
+ * that the token cascade already closes for colors. */
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) {
+    color-scheme: light;
+  }
+}
+
+html,
+body {
+  /* Root 6 (ADR-0374 visual audit): no page-level guard meant a wide nowrap table (or any other
+   * overflowing content) could push the whole page past the viewport on mobile. The table itself
+   * scrolls via `.panel`'s own `overflow-x` below; this is the last-resort backstop so a miss
+   * there clips instead of widening the page. */
+  overflow-x: hidden;
+}
+
 [data-theme="light"] {
   color-scheme: light;
 }
@@ -167,6 +188,9 @@ p {
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-lg);
   padding: clamp(1rem, 0.6rem + 1.5vw, 1.75rem);
+  /* Root 6 (ADR-0374 visual audit): every `.admin-table` (nowrap th/td) is a direct child of a
+   * `.panel` — scroll the table's own container, never the page (the html/body guard above). */
+  overflow-x: auto;
 }
 .panel.is-rec {
   border-color: color-mix(in oklab, var(--cs-accent) 55%, var(--cs-border));
@@ -351,6 +375,60 @@ p {
 }
 .board-link.is-static .board-arrow {
   display: none;
+}
+
+/* ADR-0374 [high]: the ADR trail row is a 4-col grid (num/title/chip/date) inside `.board`,
+ * which itself clips overflow (`.board { overflow: hidden }` above) — on mobile the auto-sized
+ * trailing columns had no room and the chip + date silently clipped. Collapse to a 2-col grid:
+ * num+title on row 1, chip+date on row 2 — nothing needs to shrink past its content. */
+@media (max-width: 40rem) {
+  .board-link--adr-row {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "num main"
+      "chip date";
+    row-gap: var(--cs-space-2);
+  }
+  .board-link--adr-row .board-num {
+    grid-area: num;
+  }
+  .board-link--adr-row .board-main {
+    grid-area: main;
+  }
+  .board-link--adr-row .board-chip {
+    grid-area: chip;
+  }
+  .board-link--adr-row .board-date {
+    grid-area: date;
+    justify-self: end;
+  }
+}
+
+/* ---- forks board — open-fork rows (ADR-0374 [high]: was one flattened markdown-table wall) --- */
+
+.fork-rows {
+  list-style: none;
+  padding: 0;
+  margin-top: var(--cs-space-3);
+  display: grid;
+  gap: var(--cs-space-3);
+}
+.fork-row {
+  padding-top: var(--cs-space-3);
+  border-top: 1px solid var(--cs-border);
+  display: grid;
+  gap: var(--cs-space-1);
+}
+.fork-row:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+.fork-row-item {
+  font-weight: var(--cs-weight-medium);
+}
+.fork-row-state {
+  font-size: var(--cs-text-sm);
+  line-height: var(--cs-leading-relaxed);
 }
 
 /* ---- candidate preview (foundations) ---------------------------------- */

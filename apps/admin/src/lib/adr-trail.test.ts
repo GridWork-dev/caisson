@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { ADR_CEILING, ADR_TRAIL, parseAdrContent } from "./adr-trail";
+import {
+  ADR_CEILING,
+  ADR_TRAIL,
+  FORKS_BOARD,
+  parseAdrContent,
+  parsePipeTableRows,
+} from "./adr-trail";
 
 describe("parseAdrContent", () => {
   test("extracts number, title, status word, and date from a plain Status: header", () => {
@@ -30,6 +36,38 @@ describe("parseAdrContent", () => {
     expect(
       parseAdrContent("# Not an ADR\n\nStatus: accepted\n", "x.md"),
     ).toBeNull();
+  });
+});
+
+describe("parsePipeTableRows", () => {
+  test("strips the header + separator rows and inline markdown noise per cell", () => {
+    const lines = [
+      "intro paragraph, not a table line",
+      "| Item | State |",
+      "| --- | --- |",
+      "| **Railway PITR** | Declined at the picker |",
+      "| ~~**old fork**~~ LOCKED → **ADR-0104** | See `notes.md` and [the memo](https://x/y) |",
+    ];
+    const rows = parsePipeTableRows(lines);
+    expect(rows).toEqual([
+      ["Railway PITR", "Declined at the picker"],
+      ["old fork LOCKED → ADR-0104", "See notes.md and the memo"],
+    ]);
+  });
+
+  test("returns empty for a non-table body", () => {
+    expect(parsePipeTableRows(["just some prose", "more prose"])).toEqual([]);
+  });
+});
+
+describe("FORKS_BOARD.openRows (baked from the real repo at build time)", () => {
+  test("every row has exactly 2 cells and no leftover pipe-table syntax", () => {
+    for (const row of FORKS_BOARD.openRows) {
+      expect(row.length).toBe(2);
+      for (const cell of row) {
+        expect(cell).not.toMatch(/\*\*|~~|`|\|/);
+      }
+    }
   });
 });
 
