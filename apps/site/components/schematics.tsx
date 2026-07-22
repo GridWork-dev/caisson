@@ -1,5 +1,6 @@
 import { MediaFrame } from "./media-frame";
 import styles from "./schematics.module.css";
+import { fit } from "./svg-fit";
 
 // Bespoke module/bundle schematics (ADR-0377, executing the ADR-0376 lock-2 kickoff): the hybrid
 // direction — blueprint linework sheets for module pages, cross-section strata for bundle pages —
@@ -18,20 +19,6 @@ import styles from "./schematics.module.css";
 
 const VIEW_W = 340;
 const VIEW_H = 190;
-
-/** Approximate mono advance width (em) — same margin convention as marketplace-diagrams.tsx. */
-const CHAR_W = 0.72;
-
-/** SVG `textLength` clamp: squeeze a label that would paint past its box instead of overflowing. */
-function fit(
-  text: string,
-  fontPx: number,
-  maxW: number,
-): { textLength: number; lengthAdjust: "spacingAndGlyphs" } | undefined {
-  return text.length * fontPx * CHAR_W > maxW
-    ? { textLength: maxW, lengthAdjust: "spacingAndGlyphs" }
-    : undefined;
-}
 
 /** Pin stroke width in device px — the hairline-linework signature of the schematic register. */
 const HAIRLINE = { vectorEffect: "non-scaling-stroke" } as const;
@@ -208,7 +195,7 @@ function ByteStrip({
   return (
     <g>
       {rendered.map((c) => (
-        <g key={c.label}>
+        <g key={c.at}>
           <rect
             x={c.at}
             y={y}
@@ -339,84 +326,70 @@ export function FieldCryptoSheet() {
       title="field-crypto: HKDF per-tenant derivation into the AEAD gate, and the self-describing envelope byte layout"
       bar="packages/field-crypto · derivation, gate, envelope"
     >
-      {/* derivation flow */}
-      <SNode x={12} y={14} w={92} h={22} head="MASTER_FIELD_KEY" />
-      <Flow x1={104} y1={25} x2={122} y2={25} />
-      <SNode x={122} y={14} w={74} h={22} head="HKDF-SHA256" />
-      <Flow x1={196} y1={25} x2={214} y2={25} />
-      <SNode x={214} y={14} w={82} h={22} head="tenant key · v3" />
-      <text
-        x={122}
-        y={48}
-        className={styles.note}
-        {...fit("info: caisson-field-crypto:v3:<tenant>", 8, 176)}
-      >
-        info: caisson-field-crypto:v3:&lt;tenant&gt;
+      {/* derivation flow — the master key folds into the HKDF node's sub (kimi pass: fewer
+          top-row nodes; every string sized to fit its budget unsqueezed at the 9/10px scale) */}
+      <SNode
+        x={12}
+        y={14}
+        w={158}
+        h={26}
+        head="HKDF-SHA256"
+        sub="MASTER_FIELD_KEY · salt"
+      />
+      <Flow x1={170} y1={27} x2={188} y2={27} />
+      <SNode x={188} y={16} w={110} h={22} head="tenant key · v3" />
+      <text x={12} y={54} className={styles.note}>
+        caisson-field-crypto:v3:&lt;tenant&gt;
       </text>
-      <circle cx={306} cy={25} r={3} className={styles.port} {...HAIRLINE} />
-      <text x={310} y={10} className={styles.portLabel} textAnchor="end">
+      <circle cx={308} cy={27} r={3} className={styles.port} {...HAIRLINE} />
+      <text x={312} y={10} className={styles.portLabel} textAnchor="end">
         keyFor(tenant, v)
       </text>
       {/* the key drops into the gate */}
-      <Flow x1={255} y1={36} x2={255} y2={62} />
+      <Flow x1={243} y1={38} x2={243} y2={62} />
       {/* the ONE accent element: the AEAD isolation gate */}
       <Boundary
         x={100}
         y={62}
         w={204}
         h={54}
-        label="AeadCipher · the isolation gate"
+        label="AeadCipher · isolation gate"
       />
-      <SNode x={158} y={78} w={86} h={20} head="AES-256-GCM" />
-      <text
-        x={252}
-        y={106}
-        className={styles.subDanger}
-        {...fit("wrong tenant / column: throws", 8, 100)}
-      >
-        wrong tenant / column: throws
+      <SNode x={158} y={80} w={88} h={20} head="AES-256-GCM" />
+      <text x={202} y={111} className={styles.subDanger}>
+        wrong AAD ⇒ throws
       </text>
-      <text x={12} y={78} className={styles.note}>
+      <text x={12} y={80} className={styles.note}>
         plaintext
       </text>
-      <Flow x1={54} y1={82} x2={98} y2={82} />
-      <text x={12} y={96} className={styles.note}>
+      <Flow x1={72} y1={84} x2={98} y2={84} />
+      <text x={12} y={98} className={styles.note}>
         AAD: tenant ‖
       </text>
-      <text
-        x={12}
-        y={106}
-        className={styles.note}
-        {...fit("key_ver ‖ column", 8, 82)}
-      >
-        key_ver ‖ column
+      <text x={12} y={108} className={styles.note}>
+        key_ver ‖ col
       </text>
-      <Flow x1={78} y1={101} x2={98} y2={101} />
+      <Flow x1={90} y1={103} x2={98} y2={103} />
       {/* ciphertext drops to the envelope */}
-      <Flow x1={202} y1={116} x2={202} y2={130} />
+      <Flow x1={202} y1={116} x2={202} y2={128} />
       {/* the envelope byte layout, dimensioned */}
       <ByteStrip
         x={12}
-        y={132}
+        y={130}
         h={20}
         cells={[
-          { label: "ver", w: 26, measure: "1 B" },
-          { label: "alg", w: 26, measure: "1 B" },
-          { label: "key_ver", w: 42, measure: "2 B" },
-          { label: "nonce", w: 50, measure: "12 B" },
-          { label: "ciphertext", w: 116, measure: "n B" },
-          { label: "tag", w: 42, measure: "16 B" },
+          { label: "ver", w: 28, measure: "1 B" },
+          { label: "alg", w: 28, measure: "1 B" },
+          { label: "key_ver", w: 52, measure: "2 B" },
+          { label: "nonce", w: 46, measure: "12 B" },
+          { label: "ciphertext", w: 110, measure: "n B" },
+          { label: "tag", w: 38, measure: "16 B" },
         ]}
       />
-      <text
-        x={12}
-        y={182}
-        className={styles.note}
-        {...fit("self-describing · old key versions decrypt forever", 8, 192)}
-      >
-        self-describing · old key versions decrypt forever
+      <text x={12} y={181} className={styles.note}>
+        old keys decrypt forever
       </text>
-      <TitleBlock x={212} y={170} w={116} text="field-crypto · sheet 1/1" />
+      <TitleBlock x={188} y={168} w={140} text="FIELD-CRYPTO · 1/1" />
     </Sheet>
   );
 }
@@ -432,46 +405,34 @@ export function AuditWormSheet() {
       title="audit-worm: each append mints a length-keyed anchor into write-once storage; verify uses the WORM store as the trusted length oracle"
       bar="packages/audit-worm · chain, anchor, truncation guard"
     >
-      <SNode x={12} y={14} w={78} h={22} head="append(entry)" />
-      <Flow x1={90} y1={25} x2={108} y2={25} />
-      <SNode
-        x={108}
-        y={14}
-        w={92}
-        h={22}
-        head="chainEntry"
-        sub="canonicalize · kernel"
-      />
-      <Flow x1={200} y1={25} x2={218} y2={25} />
-      <SNode x={218} y={14} w={92} h={22} head="anchorChain · N" />
+      <SNode x={12} y={14} w={66} h={26} head="append()" />
+      <Flow x1={78} y1={27} x2={92} y2={27} />
+      <SNode x={92} y={14} w={92} h={26} head="chainEntry" sub="canonicalize" />
+      <Flow x1={184} y1={27} x2={198} y2={27} />
+      <SNode x={198} y={16} w={116} h={22} head="anchorChain · N" />
       {/* the anchor crosses the write-once boundary */}
-      <Flow x1={264} y1={36} x2={264} y2={56} />
+      <Flow x1={256} y1={38} x2={256} y2={56} />
       {/* the ONE accent element: the write-once boundary */}
       <Boundary
-        x={178}
+        x={143}
         y={56}
-        w={150}
+        w={185}
         h={52}
-        label="S3 Object-Lock · write-once"
+        label="S3 Object-Lock: write-once"
       />
       <SNode
-        x={192}
+        x={162}
         y={74}
-        w={122}
+        w={148}
         h={26}
-        head="anchor · key(acct, N)"
+        head="WORM anchor · N"
         sub="IfNoneMatch:* → 412"
       />
       {/* verify reads the oracle */}
       <SNode x={12} y={68} w={70} h={22} head="verify()" />
-      <Flow x1={176} y1={90} x2={84} y2={90} />
-      <text
-        x={88}
-        y={104}
-        className={styles.note}
-        {...fit("the trusted length oracle", 8, 100)}
-      >
-        the trusted length oracle
+      <Flow x1={141} y1={90} x2={84} y2={90} />
+      <text x={88} y={104} className={styles.note}>
+        length oracle
       </text>
       {/* the chain rows + the truncation case */}
       {[0, 1, 2, 3].map((i) => (
@@ -495,31 +456,16 @@ export function AuditWormSheet() {
           ) : null}
         </g>
       ))}
-      <text
-        x={192}
-        y={132}
-        className={styles.noteDanger}
-        {...fit("anchor for N+1 ⇒ tail was cut", 8, 136)}
-      >
-        anchor for N+1 ⇒ tail was cut
+      <text x={192} y={132} className={styles.noteDanger}>
+        anchor N+1 ⇒ tail cut
       </text>
-      <text
-        x={12}
-        y={156}
-        className={styles.noteDanger}
-        {...fit("a clean-hashing prefix still fails verify", 8, 190)}
-      >
-        a clean-hashing prefix still fails verify
+      <text x={12} y={156} className={styles.noteDanger}>
+        clean prefix fails verify
       </text>
-      <text
-        x={12}
-        y={170}
-        className={styles.note}
-        {...fit("table grants SELECT + INSERT only", 8, 190)}
-      >
-        table grants SELECT + INSERT only
+      <text x={12} y={170} className={styles.note}>
+        grants SELECT + INSERT only
       </text>
-      <TitleBlock x={212} y={170} w={116} text="audit-worm · sheet 1/1" />
+      <TitleBlock x={198} y={168} w={130} text="AUDIT-WORM · 1/1" />
     </Sheet>
   );
 }
@@ -548,7 +494,7 @@ export function ComplianceCrossSection() {
         x={8}
         y={18}
         width={308}
-        height={78}
+        height={86}
         className={styles.bandSeam}
         {...HAIRLINE}
       />
@@ -563,60 +509,50 @@ export function ComplianceCrossSection() {
       <text x={14} y={30} className={styles.bandLabelAccent}>
         MODULE SEAM · THE BUNDLE
       </text>
-      <Chip x={14} y={36} w={88} label="compliance-core" />
-      <Chip x={108} y={36} w={94} label="signing-primitive" />
-      <Chip x={208} y={36} w={90} label="frameworks-pack" />
-      <Chip x={14} y={58} w={54} label="alerting" />
-      <Chip x={72} y={58} w={84} label="retention-runner" />
-      <Chip x={160} y={58} w={60} label="audit-worm" />
-      <Chip x={224} y={58} w={70} label="field-crypto" />
-      <text
-        x={14}
-        y={90}
-        className={styles.note}
-        {...fit(
-          "evidence engine · Ed25519 signer · SOC2-TSC / HIPAA catalogs",
-          8,
-          294,
-        )}
-      >
-        evidence engine · Ed25519 signer · SOC2-TSC / HIPAA catalogs
-      </text>
+      {/* 7 seam chips over three rows — every label at full 9px advance, no squeezing (the
+          kimi squeeze ban); the prose note the band carried is cut per the note discipline. */}
+      <Chip x={14} y={36} w={104} label="compliance-core" />
+      <Chip x={124} y={36} w={118} label="signing-primitive" />
+      <Chip x={14} y={58} w={104} label="frameworks-pack" />
+      <Chip x={124} y={58} w={112} label="retention-runner" />
+      <Chip x={14} y={80} w={66} label="alerting" />
+      <Chip x={86} y={80} w={72} label="audit-worm" />
+      <Chip x={164} y={80} w={86} label="field-crypto" />
       {/* base band */}
       <rect
         x={8}
-        y={96}
+        y={104}
         width={308}
-        height={42}
+        height={38}
         className={styles.bandBase}
         {...HAIRLINE}
       />
-      <text x={14} y={108} className={styles.bandLabel}>
+      <text x={14} y={116} className={styles.bandLabel}>
         BASE SUBSTRATE · APACHE-2.0
       </text>
-      <Chip x={14} y={114} w={140} label="kernel · the chain algebra" onBase />
-      <Chip x={162} y={114} w={136} label="tenancy-rls · FORCE RLS" onBase />
+      <Chip x={14} y={122} w={52} label="kernel" onBase />
+      <Chip x={72} y={122} w={158} label="tenancy-rls · FORCE RLS" onBase />
       {/* bedrock */}
       <rect
         x={8}
-        y={138}
+        y={142}
         width={308}
-        height={32}
+        height={28}
         className={styles.bandBedrock}
         {...HAIRLINE}
       />
-      <text x={14} y={150} className={styles.bandLabel}>
+      <text x={14} y={159} className={styles.bandLabel}>
         BEDROCK
       </text>
-      <Chip x={70} y={152} w={60} label="Postgres" onBase />
-      <Chip x={138} y={152} w={96} label="S3 Object-Lock" onBase />
-      {Array.from({ length: 6 }, (_, i) => (
+      <Chip x={94} y={148} w={66} label="Postgres" onBase />
+      <Chip x={166} y={148} w={98} label="S3 Object-Lock" onBase />
+      {Array.from({ length: 5 }, (_, i) => (
         <line
           key={i}
-          x1={244 + i * 12}
-          y1={168}
-          x2={256 + i * 12}
-          y2={144}
+          x1={270 + i * 10}
+          y1={166}
+          x2={280 + i * 10}
+          y2={146}
           className={styles.hatch}
           {...HAIRLINE}
         />
@@ -632,8 +568,8 @@ export function ComplianceCrossSection() {
       />
       {[
         { y: 13, label: "0" },
-        { y: 96, label: "-1" },
-        { y: 138, label: "-2" },
+        { y: 104, label: "-1" },
+        { y: 142, label: "-2" },
         { y: 170, label: "-3" },
       ].map((t) => (
         <g key={t.label}>

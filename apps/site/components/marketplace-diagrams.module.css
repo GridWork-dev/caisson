@@ -6,6 +6,10 @@
 .svgFrame {
   width: 100%;
   aspect-ratio: 16 / 9;
+  /* Contain, never clip (pilot-review fix, same rule as schematics.module.css .sheetFrame): the
+   * carousel stage caps at min(70vh, 36rem); height-capping the aspect box lets the SVG letterbox
+   * down instead of the stage scroll-clipping the diagram's bottom edge. */
+  max-height: min(58vh, 30rem);
   display: grid;
   place-items: center;
   background:

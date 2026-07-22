@@ -128,6 +128,21 @@ const DIAGRAM_ORDER: readonly DiagramKey[] = [
   "trust-page-redaction",
 ];
 
+/** Exhaustiveness backstop (SHIP review P3-2): DIAGRAM_ORDER is a plain array TypeScript can't
+ *  check against the union — a key missing here would silently never render. The keyed Records
+ *  below ARE checked, so their key count is the truth; fail the module load on drift. */
+function assertDiagramOrderExhaustive(
+  targets: Record<DiagramKey, unknown>,
+): void {
+  const order = new Set(DIAGRAM_ORDER);
+  const keys = Object.keys(targets);
+  if (order.size !== DIAGRAM_ORDER.length || order.size !== keys.length) {
+    throw new Error(
+      `DIAGRAM_ORDER is out of sync with the DiagramKey set (${DIAGRAM_ORDER.length} ordered, ${keys.length} keyed)`,
+    );
+  }
+}
+
 const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
   "schematic-field-crypto":
     "The package in blueprint: HKDF-SHA256 derives a distinct key per tenant, the AEAD gate binds tenant/key-version/column as authenticated data, and the self-describing envelope's byte layout means old key versions decrypt forever.",
@@ -234,6 +249,8 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
   "risk-register-residual": new Set(["module:risk-register"]),
   "trust-page-redaction": new Set(["module:trust-page"]),
 };
+
+assertDiagramOrderExhaustive(DIAGRAM_TARGETS);
 
 /** Which modules carry a live-component slide, and the honest one-line caption for each (ADR-0308
  *  full-depth). The `component` is the live surface the carousel renders; the caption is the visible

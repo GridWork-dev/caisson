@@ -9,6 +9,11 @@
 .sheetFrame {
   width: 100%;
   aspect-ratio: 16 / 9;
+  /* Contain, never clip (pilot-review fix): the carousel stage caps at min(70vh, 36rem) and a
+   * full-width 16:9 body can exceed the remainder under the chrome bar — without this cap the
+   * stage scroll-CLIPS the sheet's bottom rows. Height-capped, the inner SVG letterboxes down
+   * (preserveAspectRatio meet) and the full drawing stays visible; the grid ground fills the box. */
+  max-height: min(58vh, 30rem);
   display: grid;
   place-items: center;
   background:
@@ -83,29 +88,29 @@
 }
 
 .sub {
-  font-size: 8px;
+  font-size: 9px;
   text-anchor: middle;
   fill: var(--cs-fg-muted);
 }
 
 .subDanger {
-  font-size: 8px;
+  font-size: 9px;
   text-anchor: middle;
   fill: var(--cs-danger);
 }
 
 .note {
-  font-size: 8px;
+  font-size: 9px;
   fill: var(--cs-fg-muted);
 }
 
 .noteDanger {
-  font-size: 8px;
+  font-size: 9px;
   fill: var(--cs-danger);
 }
 
 .portLabel {
-  font-size: 8px;
+  font-size: 9px;
   fill: var(--cs-fg-muted);
 }
 
@@ -124,7 +129,7 @@
 }
 
 .cellLabel {
-  font-size: 8.5px;
+  font-size: 9px;
   text-anchor: middle;
   fill: var(--cs-fg);
 }
@@ -135,7 +140,7 @@
 }
 
 .dimLabel {
-  font-size: 8px;
+  font-size: 8.5px;
   text-anchor: middle;
   fill: var(--cs-fg-muted);
 }
@@ -149,7 +154,8 @@
 }
 
 .titleBlockText {
-  font-size: 8px;
+  font-size: 10px;
+  font-weight: 700;
   fill: var(--cs-fg-muted);
 }
 
@@ -180,14 +186,14 @@
 }
 
 .bandLabel {
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.1em;
   fill: var(--cs-fg-muted);
 }
 
 .bandLabelAccent {
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.1em;
   fill: var(--cs-accent);
@@ -206,7 +212,7 @@
 }
 
 .chipLabel {
-  font-size: 8.5px;
+  font-size: 9px;
   text-anchor: middle;
   fill: var(--cs-fg);
 }
@@ -222,7 +228,7 @@
 }
 
 .gaugeLabel {
-  font-size: 8px;
+  font-size: 8.5px;
   text-anchor: end;
   fill: var(--cs-fg-muted);
 }

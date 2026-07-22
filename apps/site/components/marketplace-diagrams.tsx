@@ -7,6 +7,7 @@ import {
   ComplianceCrossSection,
   FieldCryptoSheet,
 } from "./schematics";
+import { fit } from "./svg-fit";
 
 // Authored media-carousel diagrams (ADR-0285 §3, restyled onto the ADR-0290 standardized template) —
 // the homepage's diagram language (per-tenant RLS deny-flow, audit-chain hash flow, WORM anchor
@@ -19,23 +20,6 @@ import {
 
 const VIEW_W = 340;
 const VIEW_H = 190;
-
-/** Approximate mono advance width (em) — 0.72 leaves margin over the measured ~0.69 render
- *  (and over JetBrains Mono's nominal 0.6) so a fallback-font paint never overflows. */
-const CHAR_W = 0.72;
-
-/** SVG `textLength` clamp: squeeze a label that would paint past its box instead of overflowing
- *  it (the retention-runner audit finding — sub text spilling out of its node). A label that fits
- *  renders untouched. */
-function fit(
-  text: string,
-  fontPx: number,
-  maxW: number,
-): { textLength: number; lengthAdjust: "spacingAndGlyphs" } | undefined {
-  return text.length * fontPx * CHAR_W > maxW
-    ? { textLength: maxW, lengthAdjust: "spacingAndGlyphs" }
-    : undefined;
-}
 
 /** Footnote text pinned inside the viewBox — clamps instead of painting past the right edge. */
 function Note({
