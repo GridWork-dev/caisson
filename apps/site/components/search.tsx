@@ -15,7 +15,7 @@ import {
   type SharedProps,
 } from "fumadocs-ui/components/dialog/search";
 import { Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { AskAiPanel } from "./ask-ai/ask-ai-panel";
 import styles from "./search.module.css";
@@ -43,14 +43,6 @@ export default function DefaultSearchDialog(props: SharedProps) {
   // every dismissal path (Escape, the close button, backdrop click all funnel through Radix's
   // `onCloseAutoFocus`).
   const triggerRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    if (props.open) {
-      triggerRef.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-    }
-  }, [props.open]);
 
   const openAsk = (): void => {
     setTab("ask");
@@ -69,6 +61,18 @@ export default function DefaultSearchDialog(props: SharedProps) {
       <SearchDialogOverlay />
       <SearchDialogContent
         onOpenAutoFocus={(event) => {
+          // Capture the pre-open trigger synchronously, right here, before Radix's own default
+          // autofocus (or the redirect below) ever moves focus off it — a race condition, not the
+          // preventDefault below, is what onOpenAutoFocus exists to let a consumer get ahead of.
+          // A useEffect keyed on `open` ran too late: Radix's own focus-scope effect (which fires
+          // this same callback) had already relocated focus by the time that effect's turn came
+          // up in React's bottom-up passive-effect flush, so `document.activeElement` was already
+          // the about-to-unmount query input, not the real trigger (browser-audit 9ffeca4b).
+          triggerRef.current =
+            document.activeElement instanceof HTMLElement
+              ? document.activeElement
+              : null;
+
           // The Ask-AI tab (ADR-0234) added a tablist BEFORE the input, so Radix's default "focus
           // the first tabbable on open" landed on the Search TAB button, not the query field
           // (browser-audit 9ffeca4b, warn). Redirect first focus to the search input. The Ask tab
@@ -81,7 +85,12 @@ export default function DefaultSearchDialog(props: SharedProps) {
         }}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          triggerRef.current?.focus();
+          // Only restore to an element still in the document — the captured trigger can have
+          // unmounted (e.g. a mobile-drawer trigger closed alongside the dialog) by the time this
+          // fires, and .focus() on a detached node is a silent no-op that leaves focus on <body>.
+          if (triggerRef.current?.isConnected) {
+            triggerRef.current.focus();
+          }
         }}
       >
         <div
