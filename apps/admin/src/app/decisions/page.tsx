@@ -29,7 +29,7 @@ function roundGlyph(section: string): {
 export default function DecisionsPage() {
   // Newest ADR first — the operator scans recent decisions; the baked array is ascending by number.
   const trail = [...ADR_TRAIL].reverse();
-  const { intro, openSummary, sections } = FORKS_BOARD;
+  const { intro, openSummary, openRows, sections } = FORKS_BOARD;
 
   return (
     <div className="shell stack" style={{ gap: "var(--cs-space-12)" }}>
@@ -71,18 +71,20 @@ export default function DecisionsPage() {
           <ul className="board">
             {trail.map((e) => (
               <li key={e.number} className="board-row">
-                <div className="board-link is-static">
-                  <span className="mono muted">
+                <div className="board-link is-static board-link--adr-row">
+                  <span className="mono muted board-num">
                     ADR-{String(e.number).padStart(4, "0")}
                   </span>
                   <span className="board-main">
                     <span className="board-title">{e.title}</span>
                   </span>
-                  <StatusChip
-                    label={e.status || "—"}
-                    tone={STATUS_TONE[e.status] ?? "muted"}
-                  />
-                  <span className="mono muted">{e.date ?? ""}</span>
+                  <span className="board-chip">
+                    <StatusChip
+                      label={e.status || "—"}
+                      tone={STATUS_TONE[e.status] ?? "muted"}
+                    />
+                  </span>
+                  <span className="mono muted board-date">{e.date ?? ""}</span>
                 </div>
               </li>
             ))}
@@ -103,10 +105,25 @@ export default function DecisionsPage() {
               icon="circle-dot"
             />
           </div>
-          <p className="panel-blurb">
-            {openSummary ||
-              "Forks board not present at build time — nothing baked."}
-          </p>
+          {openRows.length > 0 ? (
+            <ul className="fork-rows">
+              {openRows.map((row) => (
+                // No stable id in the source table — the item text (row[0]) is itself the
+                // natural unique key, same reasoning as the AppShell nav-label fix above.
+                <li key={row[0]} className="fork-row">
+                  <span className="fork-row-item">{row[0]}</span>
+                  {row[1] ? (
+                    <span className="fork-row-state muted">{row[1]}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="panel-blurb">
+              {openSummary ||
+                "Forks board not present at build time — nothing baked."}
+            </p>
+          )}
         </div>
 
         {sections.length > 0 ? (

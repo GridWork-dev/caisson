@@ -319,7 +319,7 @@ export const CONCEPTS = [
     id: "cross-section",
     name: "Cross-section",
     blurb:
-      "The caisson as a diving bell breaching the waterline — a domed steel cap, walls flaring to an open skirt, the working chamber holding one light. The literal metaphor, built. Richest at 32+.",
+      "The caisson as a diving bell breaching the waterline: a domed steel cap, walls flaring to an open skirt, the working chamber holding one light. The literal metaphor, built. Richest at 32+.",
     Mark: MarkCrossSection,
   },
   {
@@ -333,7 +333,7 @@ export const CONCEPTS = [
     id: "instrument",
     name: "Instrument",
     blurb:
-      "A steel iris, the one light at dead centre — the most abstract, premium read. “A single instrument light holds under load.”",
+      "A steel iris, the one light at dead centre: the most abstract, premium read. “A single instrument light holds under load.”",
     Mark: MarkInstrument,
   },
 ] as const;

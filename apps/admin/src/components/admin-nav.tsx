@@ -51,6 +51,9 @@ function SignOutButton() {
 
 export function AdminNav() {
   const pathname = usePathname();
+  // The signed-out /login page must never render the authenticated shell (full nav + sign-out) —
+  // there is no session yet to sign out of, and it falsely implies the visitor is already in.
+  if (pathname === "/login") return null;
   return (
     <header className="topbar">
       <div className="row" style={{ gap: "1.5rem" }}>

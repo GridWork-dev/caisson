@@ -1,6 +1,7 @@
 import type { ChainVerification, AuditChainEntry } from "@caisson/kernel";
 import { ChainViewer } from "@caisson/audit-worm/ui";
 import { wormAnchorAccount } from "@caisson/service-license";
+import { Button } from "@caisson/ui/components";
 import { adminDbConfigured } from "@/lib/admin-db";
 import { getAdminMutationDeps } from "@/lib/admin-mutations-runtime";
 
@@ -67,12 +68,12 @@ export default async function AuditPage({
           name="account"
           defaultValue={targetAccountId}
           placeholder="Target account id"
-          className="mono"
-          style={{ padding: 6, minWidth: 320 }}
+          className="mono text-input"
+          style={{ minWidth: 320 }}
         />
-        <button type="submit" style={{ padding: "6px 12px" }}>
+        <Button type="submit" variant="primary" size="sm">
           Verify chain
-        </button>
+        </Button>
       </form>
 
       {loadError !== null ? (

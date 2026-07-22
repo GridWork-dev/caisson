@@ -38,8 +38,20 @@ const SECTIONS: Section[] = [
     href: "/business",
   },
   {
+    title: "Product",
+    desc: "Adoption and purchase analytics over PostHog: funnels, plan mix, and recent purchases.",
+    state: "ready",
+    href: "/product",
+  },
+  {
+    title: "Support",
+    desc: "Escalations from the support bot, with the underlying transcript and account context.",
+    state: "ready",
+    href: "/support",
+  },
+  {
     title: "Intel",
-    desc: "Standing compliance findings from the intel daemon — SOC2/framework monitoring, ranked by severity.",
+    desc: "Standing compliance findings from the intel daemon, framework monitoring ranked by severity.",
     state: "ready",
     href: "/intel",
   },
@@ -75,8 +87,8 @@ export default function OverviewPage() {
           One operator cockpit for the whole fleet.
         </h1>
         <p className="lede">
-          Ops, business state, the live architecture, the decisions record, and
-          the catalog — the four surfaces you used to toggle between, collapsed
+          Ops, business, product, support, intel, architecture, decisions, and
+          the catalog: every surface you used to toggle between, collapsed
           behind one Access-gated app that is also the source of truth it
           describes.
         </p>
