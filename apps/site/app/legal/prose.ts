@@ -42,7 +42,9 @@ export const prose = {
    *  wrapper (border + surface-1, no accent) for the "distinct surface band" half of the treatment.
    */
   conspicuous: {
-    fontWeight: "var(--cs-weight-semibold)",
+    // Bold, not semibold: conspicuousness is legally load-bearing and the recorded
+    // decision says bold weight — match it exactly; counsel reviews this treatment.
+    fontWeight: "var(--cs-weight-bold)",
     lineHeight: "var(--cs-leading-relaxed)",
   } as CSSProperties,
 };

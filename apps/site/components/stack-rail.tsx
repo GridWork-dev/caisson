@@ -128,7 +128,14 @@ export function StackRail() {
               </span>
             )}
           </span>
-          <span className={`cs-num ${styles.totalNum}`}>
+          {/* aria-live on the always-visible total: with the dock collapsed, an add/remove
+              must still announce the new running total (WCAG 4.1.3) — the body's own live
+              region only exists while the details is expanded. */}
+          <span
+            className={`cs-num ${styles.totalNum}`}
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {formatUsd(subtotal)}
           </span>
           <span className={styles.stackDockChevron} aria-hidden="true" />

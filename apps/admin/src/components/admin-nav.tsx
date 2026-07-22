@@ -138,6 +138,18 @@ export function AdminNav() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
+  // Crossing to desktop hides the toggle (globals.css 56.25rem) — an open panel would be
+  // stranded with no visible control to close it, so close it on the media-query flip.
+  useEffect(() => {
+    if (!open) return;
+    const mq = window.matchMedia("(min-width: 56.25rem)");
+    function onChange(e: MediaQueryListEvent) {
+      if (e.matches) setOpen(false);
+    }
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [open]);
+
   // The signed-out /login page must never render the authenticated shell (full nav + sign-out) —
   // there is no session yet to sign out of, and it falsely implies the visitor is already in.
   if (pathname === "/login") return null;
