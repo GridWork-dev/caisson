@@ -6,6 +6,8 @@
  */
 import {
   accentCandidates,
+  codeTokensDark,
+  codeTokensLight,
   functional,
   functionalDark,
   functionalLight,
@@ -40,6 +42,7 @@ const type: TypeCandidate = requireCandidate(
 export const darkTheme: SemanticTheme = palette.dark;
 export const lightTheme: SemanticTheme = palette.light;
 export { functional, functionalDark, functionalLight };
+export { codeTokensDark, codeTokensLight };
 
 /**
  * Locked font stacks. Wrapped in the `next/font` CSS variables the site sets on <html>

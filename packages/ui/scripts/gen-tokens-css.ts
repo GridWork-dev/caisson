@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url";
 import { semanticCssLines } from "../src/tokens/css-vars";
 import { foundation } from "../src/tokens/foundation";
 import {
+  codeTokensDark,
+  codeTokensLight,
   darkTheme,
   fonts,
   functionalDark,
@@ -16,7 +18,11 @@ import {
   lightTheme,
   selected,
 } from "../src/tokens/theme";
-import type { FunctionalTokens, SemanticTheme } from "../src/tokens/types";
+import type {
+  CodeTokens,
+  FunctionalTokens,
+  SemanticTheme,
+} from "../src/tokens/types";
 
 // Semantic role -> CSS var suffix mapping lives in ../src/tokens/css-vars.ts (shared with the
 // runtime theme API, ../src/theme/apply-theme.ts) so the two can never drift apart.
@@ -33,6 +39,17 @@ function functionalBlock(fn: FunctionalTokens): string {
     `  --cs-warning: ${fn.warning};`,
     `  --cs-danger: ${fn.danger};`,
     `  --cs-info: ${fn.info};`,
+  ].join("\n");
+}
+
+// Code-syntax tokens are per-mode too (ADR-0374 Decision 2) — the automatic-highlight scale for the
+// docs/glossary Shiki path, kept out of the status vocabulary. Emitted with the semantic block in
+// each theme block, same as functional/status.
+function codeBlock(code: CodeTokens): string {
+  return [
+    "  /* code syntax (ADR-0374) */",
+    `  --cs-code-string: ${code.codeString};`,
+    `  --cs-code-keyword: ${code.codeKeyword};`,
   ].join("\n");
 }
 
@@ -78,6 +95,7 @@ const css = `/* GENERATED — packages/ui/scripts/gen-tokens-css.ts. Do not edit
   /* colour — semantic (dark, default) */
 ${semanticBlock(darkTheme)}
 ${functionalBlock(functionalDark)}
+${codeBlock(codeTokensDark)}
 ${sharedBlock()}
 }
 
@@ -87,6 +105,7 @@ ${sharedBlock()}
     /* colour — semantic + functional (light, OS-seeded) */
 ${semanticBlock(lightTheme)}
 ${functionalBlock(functionalLight)}
+${codeBlock(codeTokensLight)}
   }
 }
 
@@ -95,6 +114,7 @@ ${functionalBlock(functionalLight)}
   /* colour — semantic + functional (light); shared type/scale inherited from :root */
 ${semanticBlock(lightTheme)}
 ${functionalBlock(functionalLight)}
+${codeBlock(codeTokensLight)}
 }
 `;
 
