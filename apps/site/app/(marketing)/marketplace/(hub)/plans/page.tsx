@@ -148,7 +148,6 @@ export default function MarketplacePlansPage() {
       <Reveal>
         <Section
           id="why-the-price"
-          eyebrow="Why the price"
           title="The math behind the number."
           lede="Two questions come up before checkout: how do you justify this internally, and why does the number look low for what it replaces. Here's the honest answer to both."
         >
@@ -203,7 +202,6 @@ export default function MarketplacePlansPage() {
       <Section
         id="after-twelve-months"
         band="tint"
-        eyebrow="The one question everyone asks"
         title="What happens after 12 months?"
         lede="The honest answer, up front: the source is yours forever, and only new updates are optional after the first year. Nothing you already own expires, breaks, or gets held hostage to a renewal."
       >
@@ -270,7 +268,6 @@ export default function MarketplacePlansPage() {
       <Reveal>
         <Section
           id="renewal-vs-support"
-          eyebrow="Two different things"
           title="Renewal buys releases. Support is separate, and it's already included."
         >
           <FeatureGrid cols={2}>
@@ -313,7 +310,6 @@ export default function MarketplacePlansPage() {
       {/* ===== Subscription plans ===== */}
       <Section
         id="subscriptions"
-        eyebrow="Subscriptions"
         title="Own the code once. Subscribe only for what moves."
         lede={
           <>
@@ -489,7 +485,6 @@ export default function MarketplacePlansPage() {
       <Reveal>
         <Section
           id="licensing"
-          eyebrow="Licensing"
           title="What's open, what you're paying for."
           lede={
             <>
@@ -512,8 +507,7 @@ export default function MarketplacePlansPage() {
       <Reveal>
         <Section
           id="terms"
-          eyebrow="Before you buy"
-          title="What the license lets you do — and how support works."
+          title="What the license lets you do, and how support works."
         >
           <FeatureGrid cols={2}>
             <Card>
@@ -569,7 +563,7 @@ export default function MarketplacePlansPage() {
         }}
       />
       <Reveal>
-        <Section eyebrow="FAQ" title="Subscriptions, briefly.">
+        <Section title="Subscriptions, briefly.">
           <Faq items={PLANS_FAQ} defaultOpenFirst />
         </Section>
       </Reveal>
@@ -578,7 +572,6 @@ export default function MarketplacePlansPage() {
       <Reveal>
         <Section
           id="get-started"
-          eyebrow="Get started"
           title="Start building on the audited substrate."
           lede="The base is built and tested. Pick a module or a bundle, scaffold a project, and own the source from day one."
         >

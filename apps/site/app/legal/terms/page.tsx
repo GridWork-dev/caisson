@@ -50,7 +50,7 @@ export default function TermsPage() {
       </Section>
 
       {/* Acceptance */}
-      <Section eyebrow="Agreement" title="Acceptance of terms">
+      <Section title="Acceptance of terms">
         <p style={prose.paragraph}>
           By accessing caisson.sh, purchasing a Caisson software license, or
           subscribing to product updates, you agree to be bound by these Terms
@@ -72,11 +72,7 @@ export default function TermsPage() {
       </Section>
 
       {/* The site and software */}
-      <Section
-        eyebrow="Scope"
-        title="The site and software licenses"
-        band="tint"
-      >
+      <Section title="The site and software licenses" band="tint">
         <h3 style={prose.h3}>Commercial product</h3>
         <p style={prose.paragraph}>
           Caisson is a commercially available software library. Prices shown on
@@ -85,7 +81,7 @@ export default function TermsPage() {
           <a href="/legal/license" className="cs-link">
             LicenseRef-Caisson-Commercial
           </a>{" "}
-          license: buy once, build unlimited products — you may not resell or
+          license: buy once, build unlimited products; you may not resell or
           redistribute the Caisson source or compiled output as a standalone
           library.
         </p>
@@ -109,7 +105,7 @@ export default function TermsPage() {
       </Section>
 
       {/* Acceptable use */}
-      <Section eyebrow="Conduct" title="Acceptable use">
+      <Section title="Acceptable use">
         <p style={prose.paragraph}>
           You agree not to use caisson.sh or any Caisson software to:
         </p>
@@ -142,10 +138,10 @@ export default function TermsPage() {
       </Section>
 
       {/* Intellectual property */}
-      <Section eyebrow="IP" title="Intellectual property" band="tint">
+      <Section title="Intellectual property" band="tint">
         <p style={prose.paragraph}>
-          All content on caisson.sh — including text, code examples, diagrams,
-          the Caisson wordmark and glyph, and the documentation — is owned by
+          All content on caisson.sh (including text, code examples, diagrams,
+          the Caisson wordmark and glyph, and the documentation) is owned by
           Caisson Software LLC or its licensors. All rights reserved.
         </p>
         <p style={prose.paragraph}>
@@ -165,12 +161,9 @@ export default function TermsPage() {
       </Section>
 
       {/* Payment processing, MoR, refunds, third-party services */}
-      <Section
-        eyebrow="Payments"
-        title="Payment processing and third-party services"
-      >
+      <Section title="Payment processing and third-party services">
         <h3 style={prose.h3}>
-          Payment processing — Paddle (Merchant of Record)
+          Payment processing: Paddle (Merchant of Record)
         </h3>
         <p style={prose.paragraph}>
           {PADDLE_MOR_DISCLOSURE} Paddle provides all customer service inquiries
@@ -184,8 +177,8 @@ export default function TermsPage() {
           <a href="/legal/eula" className="cs-link">
             Commercial License Agreement
           </a>
-          . Paddle&apos;s own buyer terms — including which Paddle entity is the
-          seller for your order — are available at{" "}
+          . Paddle&apos;s own buyer terms (including which Paddle entity is the
+          seller for your order) are available at{" "}
           <a
             href="https://www.paddle.com/legal/buyer-terms"
             rel="noreferrer"
@@ -224,8 +217,8 @@ export default function TermsPage() {
           refunded purchase and returns any unused credits it granted; access
           already exercised and credits already spent are not affected. If a
           single order covered more than one bundle or module, tell us which
-          item you are refunding — individual line items can be refunded on
-          their own.
+          item you are refunding: individual line items can be refunded on their
+          own.
         </p>
 
         <h3 style={prose.h3}>Buyer support</h3>
@@ -259,15 +252,17 @@ export default function TermsPage() {
       </Section>
 
       {/* Disclaimer */}
-      <Section eyebrow="Warranty" title="Disclaimer of warranties" band="tint">
-        <p style={prose.paragraph}>
-          THE SITE AND ITS CONTENTS ARE PROVIDED &ldquo;AS IS&rdquo; AND
-          &ldquo;AS AVAILABLE&rdquo; WITHOUT WARRANTY OF ANY KIND. TO THE
-          MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, CAISSON SOFTWARE LLC
-          DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-          LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-          PURPOSE, AND NON-INFRINGEMENT.
-        </p>
+      <Section title="Disclaimer of warranties" band="tint">
+        <Card style={{ marginTop: "var(--cs-space-4)" }}>
+          <p style={{ ...prose.paragraph, marginTop: 0, ...prose.conspicuous }}>
+            The site and its contents are provided &ldquo;as is&rdquo; and
+            &ldquo;as available&rdquo; without warranty of any kind. To the
+            maximum extent permitted by applicable law, Caisson Software LLC
+            disclaims all warranties, express or implied, including but not
+            limited to warranties of merchantability, fitness for a particular
+            purpose, and non-infringement.
+          </p>
+        </Card>
         <p style={prose.paragraph}>
           We do not warrant that the site will be uninterrupted, error-free, or
           free of harmful components. Product details on the site may be updated
@@ -282,28 +277,33 @@ export default function TermsPage() {
       </Section>
 
       {/* Limitation of liability */}
-      <Section eyebrow="Liability" title="Limitation of liability">
-        <p style={prose.paragraph}>
-          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
-          CAISSON SOFTWARE LLC OR ITS OFFICERS, DIRECTORS, EMPLOYEES, OR
-          CONTRACTORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
-          CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATED TO YOUR
-          USE OF THIS SITE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-        </p>
-        <p style={prose.paragraph}>
-          CAISSON SOFTWARE LLC&apos;S TOTAL LIABILITY TO YOU FOR CLAIMS ARISING
-          FROM YOUR USE OF THIS SITE SHALL NOT EXCEED ONE HUNDRED US DOLLARS
-          (USD $100). LIABILITY ARISING FROM THE USE OF CAISSON SOFTWARE IS
-          GOVERNED BY THE COMMERCIAL LICENSE AGREEMENT.
-        </p>
+      <Section title="Limitation of liability">
+        <Card style={{ marginTop: "var(--cs-space-4)" }}>
+          <p style={{ ...prose.paragraph, marginTop: 0, ...prose.conspicuous }}>
+            To the maximum extent permitted by applicable law, in no event shall
+            Caisson Software LLC or its officers, directors, employees, or
+            contractors be liable for any indirect, incidental, special,
+            consequential, or punitive damages arising out of or related to your
+            use of this site, even if advised of the possibility of such
+            damages.
+          </p>
+          <p
+            style={{
+              ...prose.paragraph,
+              ...prose.conspicuous,
+              marginTop: "var(--cs-space-3)",
+            }}
+          >
+            Caisson Software LLC&apos;s total liability to you for claims
+            arising from your use of this site shall not exceed one hundred US
+            dollars (USD $100). Liability arising from the use of Caisson
+            Software is governed by the Commercial License Agreement.
+          </p>
+        </Card>
       </Section>
 
       {/* Governing law */}
-      <Section
-        eyebrow="Jurisdiction"
-        title="Governing law and disputes"
-        band="tint"
-      >
+      <Section title="Governing law and disputes" band="tint">
         <p style={prose.paragraph}>
           These Terms are governed by and construed in accordance with the laws
           of the State of Georgia, United States, without regard to its conflict
@@ -321,7 +321,7 @@ export default function TermsPage() {
       </Section>
 
       {/* Changes */}
-      <Section eyebrow="Updates" title="Changes to these terms">
+      <Section title="Changes to these terms">
         <p style={prose.paragraph}>
           We may update these Terms at any time. Material changes will be posted
           on this page with an updated &ldquo;Last updated&rdquo; date. If you
@@ -333,7 +333,7 @@ export default function TermsPage() {
       </Section>
 
       {/* Contact */}
-      <Section eyebrow="Contact" title="Questions" band="tint">
+      <Section title="Questions" band="tint">
         <p style={prose.paragraph}>
           Questions about these Terms? Contact us at:
         </p>

@@ -44,64 +44,104 @@ export function StackRail() {
     replaceCart([...kept, toCartItem(item)]);
   };
 
-  return (
-    <aside className={styles.rail} aria-label="Your stack">
-      <span className={styles.railTitle}>Your stack</span>
-
-      {items.length === 0 ? (
-        <div className={styles.railEmpty}>
-          <Icon name="inbox" size="lg" />
-          <p>
-            Nothing in your stack yet. Add a module or a bundle to see the
-            running total — and any bundle that would cover your picks for less.
-          </p>
-        </div>
-      ) : (
-        <>
-          <ul className={styles.lines}>
-            {items.map((i) => (
-              <li key={i.id} className={styles.lineItem}>
-                <span className={styles.lineLabel}>{i.label}</span>
-                <span className={styles.linePrice}>{formatUsd(i.amount)}</span>
-                <button
-                  type="button"
-                  className={styles.remove}
-                  onClick={() => removeItem(i.id)}
-                  aria-label={`Remove ${i.label}`}
-                >
-                  <Icon name="x" />
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          <div className={styles.totalRow} role="status" aria-live="polite">
-            <span>Total</span>
-            <span className={styles.totalNum}>{formatUsd(subtotal)}</span>
-          </div>
-
-          {upgrade && (
-            <div className={styles.upgrade}>
-              <p>
-                Your modules add up to {formatUsd(summary.total)} — the{" "}
-                {upgrade.label} covers them for {formatUsd(upgrade.price)}. Save{" "}
-                {formatUsd(upgrade.saves)}.
-              </p>
-              <Button
+  const body =
+    items.length === 0 ? (
+      <div className={styles.railEmpty}>
+        <Icon name="inbox" size="lg" />
+        <p>
+          Nothing in your stack yet. Add a module or a bundle to see the running
+          total — and any bundle that would cover your picks for less.
+        </p>
+      </div>
+    ) : (
+      <>
+        <ul className={styles.lines}>
+          {items.map((i) => (
+            <li key={i.id} className={styles.lineItem}>
+              <span className={styles.lineLabel}>{i.label}</span>
+              <span className={styles.linePrice}>{formatUsd(i.amount)}</span>
+              <button
                 type="button"
-                variant="primary"
-                onClick={() => addUpgrade(upgrade.target)}
+                className={styles.remove}
+                onClick={() => removeItem(i.id)}
+                aria-label={`Remove ${i.label}`}
               >
-                Add {upgrade.label} instead
-              </Button>
-            </div>
-          )}
+                <Icon name="x" />
+              </button>
+            </li>
+          ))}
+        </ul>
 
-          <Button href="/cart" variant="primary">
-            Review &amp; check out
-          </Button>
-        </>
-      )}
-    </aside>
+        <div className={styles.totalRow} role="status" aria-live="polite">
+          <span>Total</span>
+          <span className={styles.totalNum}>{formatUsd(subtotal)}</span>
+        </div>
+
+        {upgrade && (
+          <div className={styles.upgrade}>
+            <p>
+              Your modules add up to {formatUsd(summary.total)} — the{" "}
+              {upgrade.label} covers them for {formatUsd(upgrade.price)}. Save{" "}
+              {formatUsd(upgrade.saves)}.
+            </p>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => addUpgrade(upgrade.target)}
+            >
+              Add {upgrade.label} instead
+            </Button>
+          </div>
+        )}
+
+        <Button href="/cart" variant="primary">
+          Review &amp; check out
+        </Button>
+      </>
+    );
+
+  return (
+    <>
+      <aside className={styles.rail} aria-label="Your stack">
+        <span className={styles.railTitle}>Your stack</span>
+        {body}
+      </aside>
+
+      {/* Mobile bottom dock (< 900px, ADR-0374 675b100583dd38f8): a native <details> summary bar
+          pinned to the viewport bottom — always shows the running total — that expands the same
+          itemised body upward on tap, instead of the desktop rail trailing below all the catalog
+          cards with no sticky total. Always rendered; CSS-only visibility (no hydration mismatch,
+          the mobile-buy-bar.css convention). */}
+      <details className={styles.stackDock}>
+        <summary className={styles.stackDockSummary}>
+          <span className={styles.stackDockLabel}>
+            <span className={styles.railTitle}>Your stack</span>
+            {items.length > 0 && (
+              <span
+                className="cs-num"
+                style={{
+                  fontSize: "var(--cs-text-xs)",
+                  color: "var(--cs-fg-muted)",
+                }}
+              >
+                {items.length} {items.length === 1 ? "item" : "items"}
+              </span>
+            )}
+          </span>
+          {/* aria-live on the always-visible total: with the dock collapsed, an add/remove
+              must still announce the new running total (WCAG 4.1.3) — the body's own live
+              region only exists while the details is expanded. */}
+          <span
+            className={`cs-num ${styles.totalNum}`}
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {formatUsd(subtotal)}
+          </span>
+          <span className={styles.stackDockChevron} aria-hidden="true" />
+        </summary>
+        <div className={styles.stackDockBody}>{body}</div>
+      </details>
+    </>
   );
 }

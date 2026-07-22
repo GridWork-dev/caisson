@@ -223,7 +223,6 @@ content-security-policy: default-src 'self'; …`}
         {/* ===== Product controls (what Caisson generates) ===== */}
         <Section
           band="tint"
-          eyebrow="Controls Caisson generates"
           title="The security your app inherits on day one."
           lede="These are product features, wired and tested into the codebase Caisson generates, not services we run on your behalf. You own the source and the evidence."
         >
@@ -252,7 +251,6 @@ content-security-policy: default-src 'self'; …`}
 
         {/* ===== This site's posture ===== */}
         <Section
-          eyebrow="This site"
           title="How caisson.sh itself is secured."
           lede="A dynamic app widens the attack surface, we keep it deliberately scoped and document exactly what ships."
         >
@@ -279,7 +277,6 @@ content-security-policy: default-src 'self'; …`}
         {/* ===== The shipped CSP, with the honest residual ===== */}
         <Section
           band="surface"
-          eyebrow="Content-Security-Policy"
           title="The policy that ships, including what is not yet locked down."
           lede="We state CSP residuals plainly rather than imply a tighter policy than we run. Trust is the product; over-claiming it would defeat the point."
         >
@@ -325,10 +322,7 @@ content-security-policy: default-src 'self'; …`}
         </Section>
 
         {/* ===== The honesty boundary ===== */}
-        <Section
-          eyebrow="The honesty boundary"
-          title="Caisson generates evidence. It is not an auditor."
-        >
+        <Section title="Caisson generates evidence. It is not an auditor.">
           <div style={{ marginTop: "var(--cs-space-4)" }}>
             <Card accent>
               <p
@@ -359,11 +353,7 @@ content-security-policy: default-src 'self'; …`}
         </Section>
 
         {/* ===== FAQ ===== */}
-        <Section
-          band="tint"
-          eyebrow="Straight answers"
-          title="The questions procurement asks first."
-        >
+        <Section band="tint" title="The questions procurement asks first.">
           {/* Bare <Faq>, matching ai-kit/compliance — a Card wrapper here double-borders the
            * accordion rows (Faq draws its own per-row surface). D8(a) vetoable call. */}
           <Faq items={FAQ} style={{ marginTop: "var(--cs-space-8)" }} />
@@ -371,7 +361,6 @@ content-security-policy: default-src 'self'; …`}
 
         {/* ===== Disclosure CTA ===== */}
         <Section
-          eyebrow="Responsible disclosure"
           title="Found something? Tell us."
           lede="We publish a machine-readable policy and read every report. No bounty program yet, the report still matters."
         >

@@ -9,19 +9,19 @@ allowlist names it, so "on-device" is enforced in code, not promised in a README
 
 ## What's in the bundle
 
-- **[local-inference](/docs/local-first/local-inference)** — the `InferenceBackend` seam over a
+- **[local-inference](/docs/local-first/local-inference)**: the `InferenceBackend` seam over a
   MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use. On-device by
   default; a remote target is an explicit opt-in.
-- **[local-privacy](/docs/local-first/local-privacy)** — the `EgressGuard` runtime wrapper over a
+- **[local-privacy](/docs/local-first/local-privacy)**: the `EgressGuard` runtime wrapper over a
   strict zero-egress `PrivacyPolicy`: every payload crosses it before it can leave the process,
   and an empty allowlist blocks every host.
-- **[local-store](/docs/local-first/local-store)** — hybrid vector + full-text retrieval on disk,
-  one SQLite file per tenant — `sqlite-vec` KNN fused with FTS5 by Reciprocal Rank Fusion, no
+- **[local-store](/docs/local-first/local-store)**: hybrid vector + full-text retrieval on disk,
+  one SQLite file per tenant, `sqlite-vec` KNN fused with FTS5 by Reciprocal Rank Fusion, no
   vector cloud involved.
-- **[local-sync](/docs/local-first/local-sync)** — two-way offline sync for those per-tenant
+- **[local-sync](/docs/local-first/local-sync)**: two-way offline sync for those per-tenant
   SQLite files: a changeset log, a hybrid-logical-clock last-writer-wins merge, and
   tombstone-aware convergence.
-- **[field-crypto](/docs/provenance/field-crypto)** — per-tenant field encryption for anything
+- **[field-crypto](/docs/provenance/field-crypto)**: per-tenant field encryption for anything
   stored in the local database, shared with the Compliance, AI-Production, and Provenance
   bundles.
 
@@ -34,13 +34,13 @@ cd caisson-app
 bun install
 ```
 
-`--edition local-first` auto-selects the Local-first bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+`--edition local-first` auto-selects the Local-first bundle's current modules, the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
 
 ## How it composes
 
 `local-inference` runs embeddings on-device; `local-store` persists and searches the vectors it
 produces; `local-sync` reconciles that same per-tenant SQLite file across devices without a server
-round-trip. `local-privacy`'s `EgressGuard` sits in front of all three — any path that would send a
+round-trip. `local-privacy`'s `EgressGuard` sits in front of all three, any path that would send a
 payload off the device passes through it first, and an empty allowlist blocks every host by
 default. `field-crypto` seals sensitive columns in the local store the same way it seals a
 Postgres column: a per-tenant derived key, never a shared one.
@@ -53,7 +53,7 @@ tenant's data even without a network round-trip to check.
 
 ## Entitlement
 
-Local-first is a commercial bundle (`LicenseRef-Caisson-Commercial`) — own the source, build
+Local-first is a commercial bundle (`LicenseRef-Caisson-Commercial`), own the source, build
 unlimited products, no redistribution of the kit. Buy the bundle, or any member module à la
 carte; a purchase grants the module's entitlement id, checked offline against the license so the
 bundle keeps working on an air-gapped machine.

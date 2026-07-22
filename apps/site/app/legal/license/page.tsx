@@ -37,7 +37,7 @@ const FAQ_ITEMS = [
   {
     question: "Is the license perpetual?",
     answer:
-      "Yes, in two parts. The license itself is perpetual: the version you purchased keeps working, verified offline, for as long as you use it — no expiry, no renewal, no call home. Updates are separate: every purchase includes 12 months of registry updates from your Order date, renewable afterward at 40% of the then-current list price per year. An optional Updates Subscription can layer on top for teams that want continuous access to new package versions across their entitled modules; none of this changes the perpetual license for the version you already own.",
+      "Yes, in two parts. The license itself is perpetual: the version you purchased keeps working, verified offline, for as long as you use it; no expiry, no renewal, no call home. Updates are separate: every purchase includes 12 months of registry updates from your Order date, renewable afterward at 40% of the then-current list price per year. An optional Updates Subscription can layer on top for teams that want continuous access to new package versions across their entitled modules; none of this changes the perpetual license for the version you already own.",
   },
   {
     question: "Does Caisson claim to be SOC 2 certified or HIPAA certified?",
@@ -90,14 +90,14 @@ export default function LicensePage() {
       </Section>
 
       {/* Overview */}
-      <Section eyebrow="Overview" title="The licensing model">
+      <Section title="The licensing model">
         <p style={prose.paragraph}>
           Caisson ships two tracks. The <strong>Base substrate</strong> (
           {baseSubstrateList()}, and the generator tooling: {baseToolingList()})
           is <code className="mono">Apache-2.0</code>, open source, free to use.
-          Every commercial module — the compliance and provenance primitives,
-          the local-first and agentic modules, credits, and the registry service
-          — and every bundle that composes them ship under a single proprietary
+          Every commercial module (the compliance and provenance primitives, the
+          local-first and agentic modules, credits, and the registry service)
+          and every bundle that composes them ship under a single proprietary
           Commercial License (
           <code className="mono">LicenseRef-Caisson-Commercial</code>).
         </p>
@@ -109,7 +109,7 @@ export default function LicensePage() {
       </Section>
 
       {/* Commercial license */}
-      <Section eyebrow="Commercial license" title="What you may do" band="tint">
+      <Section title="What you may do" band="tint">
         <p style={prose.paragraph}>
           Under the Caisson Commercial License, purchasing an entitlement grants
           you a{" "}
@@ -178,7 +178,7 @@ export default function LicensePage() {
       </Section>
 
       {/* Entitlement mechanics */}
-      <Section eyebrow="Mechanics" title="How the license is delivered">
+      <Section title="How the license is delivered">
         <p style={prose.paragraph}>
           Caisson uses an offline Ed25519 license key for entitlement
           verification. When you purchase:
@@ -214,7 +214,7 @@ export default function LicensePage() {
       </Section>
 
       {/* Per-module clarity */}
-      <Section eyebrow="Per module" title="Which license applies where">
+      <Section title="Which license applies where">
         <p style={prose.paragraph}>
           Two licenses, split by package. The Base substrate is Apache-2.0, open
           source; the commercial modules and the bundles that compose them ship
@@ -271,8 +271,8 @@ export default function LicensePage() {
                   (DESIGN.md §3 — mono reserved for control-ids/proof, not summary phrasing). */}
               <span style={{ fontSize: "var(--cs-text-sm)" }}>
                 Every <code className="mono">@caisson</code> module outside the
-                open Base set — including field-crypto, audit-worm,
-                signing-primitive, credits, and the local-first modules — the
+                open Base set (including field-crypto, audit-worm,
+                signing-primitive, credits, and the local-first modules), the
                 registry service, and the six bundles that compose them:
                 Compliance, AI Production, Local-first AI, Agentic-Dev,
                 Provenance, and Everything.
@@ -291,12 +291,12 @@ export default function LicensePage() {
       </Section>
 
       {/* FAQ (visible + JSON-LD) */}
-      <Section eyebrow="Questions" title="Common questions" band="tint">
+      <Section title="Common questions" band="tint">
         <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-6)" }} />
       </Section>
 
       {/* Contact */}
-      <Section eyebrow="Contact" title="Licensing questions">
+      <Section title="Licensing questions">
         <p style={prose.paragraph}>
           For licensing questions, volume pricing, transfer requests, or EULA
           negotiation:

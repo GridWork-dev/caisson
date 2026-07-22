@@ -1,24 +1,24 @@
 ---
 title: Caisson documentation
-description: Compliance-grade infrastructure for regulated SaaS — the manual.
+description: Compliance-grade infrastructure for regulated SaaS, the manual.
 ---
 
 Caisson is a composable monorepo library: an audited base substrate plus six persona bundles
 (Compliance, AI Production, Local-first AI, Agentic-Dev, Provenance, and Everything), a
-`create-caisson` generator, with dedicated support. Bundles are compositions of the same packages —
+`create-caisson` generator, with dedicated support. Bundles are compositions of the same packages,
 never forks.
 
 These docs are the manual: how each package works, how to compose it, and the contract it upholds.
 
 ## Start here
 
-- **[Getting started](/docs/getting-started)** — install the base, wire a tenant, and run the
+- **[Getting started](/docs/getting-started)**: install the base, wire a tenant, and run the
   standards gate.
-- **Base substrate** — `auth`, `tenancy-rls`, `billing`, `credits`, `kernel`, and the rest of the
+- **Base substrate**: `auth`, `tenancy-rls`, `billing`, `credits`, `kernel`, and the rest of the
   table-stakes core, framed under the differentiators.
-- **Compliance** — `compliance`: the config-as-code module registry and the signed evidence-pack
+- **Compliance**: `compliance`: the config-as-code module registry and the signed evidence-pack
   generator.
-- **Provenance** — `signing-primitive`, `audit-worm`, `field-crypto`: the fail-closed data layer
+- **Provenance**: `signing-primitive`, `audit-worm`, `field-crypto`: the fail-closed data layer
   and per-tenant evidence signing.
 
 ## What &ldquo;fail-closed by construction&rdquo; means
@@ -26,13 +26,13 @@ These docs are the manual: how each package works, how to compose it, and the co
 The guarantees are wired and tested before your first customer, not backfilled after your first
 audit:
 
-- **Tenancy** — Postgres row-level security with FORCE. A query with no tenant context returns
+- **Tenancy**: Postgres row-level security with FORCE. A query with no tenant context returns
   nothing.
-- **Evidence** — S3 Object-Lock WORM. Evidence cannot be altered or deleted before retention
+- **Evidence**: S3 Object-Lock WORM. Evidence cannot be altered or deleted before retention
   expires.
-- **Audit** — an append-only SHA-256 chain. Tampering breaks the link, and the break is provable.
+- **Audit**: an append-only SHA-256 chain. Tampering breaks the link, and the break is provable.
 
 <Callout title="Agent-readable">
-  Every page is available as raw markdown for your AI agent — see
+  Every page is available as raw markdown for your AI agent, see
   [`/llms.txt`](/llms.txt) and [`/llms-full.txt`](/llms-full.txt).
 </Callout>

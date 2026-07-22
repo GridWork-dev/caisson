@@ -1,6 +1,6 @@
 ---
 title: ai-meter
-description: PG-atomic reserve/reconcile token metering for LLM calls — per-tenant spend caps, a circuit breaker, and a MinHash dedup gate. Integer credits only, no floats.
+description: PG-atomic reserve/reconcile token metering for LLM calls, per-tenant spend caps, a circuit breaker, and a MinHash dedup gate. Integer credits only, no floats.
 ---
 
 `@caisson/ai-meter` is the money path for metered AI inference: estimate a call's cost
@@ -12,7 +12,7 @@ never a float and never drifts.
 
 - **Estimate → reserve → reconcile.** `reserve()` prices a call from a versioned,
   per-`provider/model` price book and debits the wallet before the provider is ever
-  called — a short wallet or an open circuit breaker fails the call with no spend and no
+  called, a short wallet or an open circuit breaker fails the call with no spend and no
   provider round-trip. `reconcile()` trues the reservation to the provider's reported
   usage: refunds an over-reservation, charges a shortfall, or leaves the ledger untouched
   when the estimate was exact.
@@ -24,10 +24,10 @@ never a float and never drifts.
   provider/model pairs; a buyer can override the whole book or the credit denomination.
   `resolvePriceEntry` throws on an unrecognized provider/model instead of metering at zero.
 - **Idempotent by construction.** Both `reserve()` and `reconcile()` key off the caller's
-  `callId` — a retried call settles exactly once instead of double-charging.
+  `callId`: a retried call settles exactly once instead of double-charging.
 - **A pre-call dedup gate.** `checkDedupGate()` flags a prompt that's near-identical to one
   already in flight (an agent loop rewording a retry, a user re-asking the same question)
-  before the price book ever prices it. Detection only — it never auto-skips a call or
+  before the price book ever prices it. Detection only, it never auto-skips a call or
   moves a credit itself.
 
 ## Quickstart
@@ -79,25 +79,25 @@ await resetBreaker(tx, accountId, "default");
 ## Dedup-before-meter gate
 
 `checkDedupGate` runs a dependency-free MinHash/LSH similarity check against recent calls
-in the same account and scope, ahead of the price-book estimate — a Jaccard similarity
+in the same account and scope, ahead of the price-book estimate, a Jaccard similarity
 above 0.92 returns `duplicate-of` so the caller can choose to skip or reuse the earlier
 result.
 
 ## Configuration
 
 `parsePriceBook` and `parseCreditConversion` validate an operator-supplied price book or
-credit denomination before it replaces `BUNDLED_PRICE_BOOK` / `CREDIT_CONVERSION` — an
+credit denomination before it replaces `BUNDLED_PRICE_BOOK` / `CREDIT_CONVERSION`: an
 invalid override fails closed rather than metering silently at zero.
 
 ## Composing with the base
 
-`ai-meter` is a base primitive — it never imports an edition. It runs on the same
+`ai-meter` is a base primitive, it never imports an edition. It runs on the same
 Postgres-atomic accounting as `@caisson/credits` and is scoped per tenant through
 `@caisson/tenancy-rls`'s `withTenant`. The AI Production Kit's inference gateway composes
 `reserve()`/`reconcile()` around the provider call site; `ai-meter` itself never talks to
 a provider.
 
 <Callout type="info" title="Sold standalone or in AI-Production">
-  Buy `ai-meter` standalone onto the free base, or get it — plus guardrails and the prompt
-  registry — composed into the AI-Production bundle.
+  Buy `ai-meter` standalone onto the free base, or get it, plus guardrails and the prompt
+  registry, composed into the AI-Production bundle.
 </Callout>

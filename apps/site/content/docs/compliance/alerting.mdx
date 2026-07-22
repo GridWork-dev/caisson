@@ -1,30 +1,30 @@
 ---
 title: alerting
-description: A five-stage alert-delivery pipeline — dedup, rate-cap-to-digest, IANA-timezone quiet hours, multi-channel send, one audit row — the SOC 2 CC7.2 control.
+description: A five-stage alert-delivery pipeline (dedup, rate-cap-to-digest, IANA-timezone quiet hours, multi-channel send, one audit row) the SOC 2 CC7.2 control.
 ---
 
 `@caisson/alerting` is Caisson's SOC 2 CC7.2 alert-delivery control: a deterministic
 five-stage pipeline between an event and a delivered alert. Every dependency, including
-the clock, is injected — dedup, rate-cap, quiet hours, delivery, and audit are pure
+the clock, is injected, dedup, rate-cap, quiet hours, delivery, and audit are pure
 functions of their inputs.
 
 ## What it does
 
-- **Dedup on an open incident's key** — `dedup()` suppresses a repeat event while an
+- **Dedup on an open incident's key**: `dedup()` suppresses a repeat event while an
   incident sharing its `dedupeKey` is still open, so a flapping check doesn't re-fire an
   alert that already has a live incident.
-- **Rate-cap to a digest, never a drop** — `rateCap()` checks the recipient's recent send
+- **Rate-cap to a digest, never a drop**: `rateCap()` checks the recipient's recent send
   count against a per-event-type `RateCapPolicy`; once `maxPerWindow` is reached the
-  outcome flips to `"digest"` instead of `"deliver"` — noisy alert types back off, they
+  outcome flips to `"digest"` instead of `"deliver"`: noisy alert types back off, they
   don't vanish.
-- **IANA-timezone quiet hours** — `quietHours()` resolves the recipient's local hour via
+- **IANA-timezone quiet hours**: `quietHours()` resolves the recipient's local hour via
   the stdlib `Intl.DateTimeFormat` (no timezone-database dependency) and holds delivery
   inside the configured window, except a `"critical"` severity event always delivers.
-- **Four delivery channels behind one port** — email, webhook, Slack, and Telegram all
+- **Four delivery channels behind one port**: email, webhook, Slack, and Telegram all
   implement the same `AlertChannel` port; `deliverAll()` runs them via `Promise.all` and
   catches every throw into a failed `DeliveryResult`, so one channel being down never
   blocks the others.
-- **A structured audit row per outcome** — `processAlert()` always calls
+- **A structured audit row per outcome**: `processAlert()` always calls
   `auditSink.record()` exactly once: delivered, suppressed, held, or digested.
 
 ## Install
@@ -79,7 +79,7 @@ export async function processAlert(
 ```
 
 Each stage can short-circuit to its own outcome before a channel is ever touched, and
-`finish()` fires on every path — the audit row is written whether or not anything
+`finish()` fires on every path, the audit row is written whether or not anything
 actually delivered.
 
 ## Drivers
@@ -93,14 +93,14 @@ actually delivered.
 | Telegram | `createTelegramChannel(config)`  | `fetchWithTimeout` POST to a bot-API `sendMessage`.    |
 
 Webhook, Slack, and Telegram config URLs pass `@caisson/kernel`'s `assertSafePublicUrl`
-at the Zod schema boundary and `assertSafePublicUrlResolved` again at the fetch call — a
-DNS-rebinding recheck — and every outbound POST sets `redirect: "error"` so a 3xx can't
+at the Zod schema boundary and `assertSafePublicUrlResolved` again at the fetch call, a
+DNS-rebinding recheck, and every outbound POST sets `redirect: "error"` so a 3xx can't
 hop the request to a private host after the check.
 
 ## Configuration surface
 
 `DEFAULT_EVENT_TYPE_REGISTRY` maps `eventType -> { defaultSeverity, channels,
-ratePolicy }` — a small seed (four event types), not an exhaustive catalog. Extend it
+ratePolicy }`, a small seed (four event types), not an exhaustive catalog. Extend it
 with your own event types per real usage; `AlertEventSchema` is the one Zod `.strict()`
 boundary every stage consumes.
 
@@ -109,7 +109,7 @@ boundary every stage consumes.
 Alerting is a plain package on top of the base substrate: it reuses `@caisson/kernel`'s
 `fetchWithTimeout` and SSRF guards, and delegates its email channel to `@caisson/email`
 rather than opening a second email path. Its audit sink writes to a plain, RLS-forced
-Postgres table (`alert_audit_log`) — explicitly not the hash-chained WORM chain that
+Postgres table (`alert_audit_log`), explicitly not the hash-chained WORM chain that
 `@caisson/audit-worm` owns; the two products stay deliberately distinct.
 
 <Callout type="info" title="A real dependency, not a manifest listing">
