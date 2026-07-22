@@ -218,10 +218,11 @@ export default function FoundationsPage() {
         </div>
       </section>
 
-      <section
-        className="cols"
-        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))" }}
-      >
+      {/* Explicit 3-up: auto-fit minmax(360px) sat on a knife-edge at ~1280px viewports
+          (content width ≈ the exact 3-column threshold), collapsing to 2 columns and
+          orphaning Panel C in an empty lower-right quadrant. The candidate set is a
+          fixed A/B/C decision surface, so the column count is data, not layout. */}
+      <section className="cols foundations-candidates">
         {accentCandidates.map((c) => (
           <CandidatePanel key={c.id} c={c} mode={mode} />
         ))}

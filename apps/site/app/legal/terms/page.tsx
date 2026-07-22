@@ -4,6 +4,7 @@ import { buildMetadata } from "@/lib/metadata";
 import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import { Card, Section } from "@/components";
 import { prose } from "../prose";
+import { LegalToc, type LegalTocItem } from "../toc";
 
 export const metadata = buildMetadata({
   title: "Terms of Use",
@@ -12,9 +13,30 @@ export const metadata = buildMetadata({
   path: "/legal/terms",
 });
 
+const TOC: readonly LegalTocItem[] = [
+  { id: "acceptance-of-terms", label: "Acceptance of terms" },
+  {
+    id: "the-site-and-software-licenses",
+    label: "The site and software licenses",
+  },
+  { id: "acceptable-use", label: "Acceptable use" },
+  { id: "intellectual-property", label: "Intellectual property" },
+  {
+    id: "payment-processing-and-third-party-services",
+    label: "Payment processing and third-party services",
+  },
+  { id: "disclaimer-of-warranties", label: "Disclaimer of warranties" },
+  { id: "limitation-of-liability", label: "Limitation of liability" },
+  { id: "governing-law-and-disputes", label: "Governing law and disputes" },
+  { id: "changes-to-these-terms", label: "Changes to these terms" },
+  { id: "questions", label: "Questions" },
+];
+
 export default function TermsPage() {
   return (
     <>
+      <LegalToc items={TOC} />
+
       {/* Page header */}
       <Section eyebrow="Legal" title="Terms of Use" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
@@ -50,7 +72,7 @@ export default function TermsPage() {
       </Section>
 
       {/* Acceptance */}
-      <Section title="Acceptance of terms">
+      <Section id="acceptance-of-terms" title="Acceptance of terms">
         <p style={prose.paragraph}>
           By accessing caisson.sh, purchasing a Caisson software license, or
           subscribing to product updates, you agree to be bound by these Terms
@@ -72,7 +94,11 @@ export default function TermsPage() {
       </Section>
 
       {/* The site and software */}
-      <Section title="The site and software licenses" band="tint">
+      <Section
+        id="the-site-and-software-licenses"
+        title="The site and software licenses"
+        band="tint"
+      >
         <h3 style={prose.h3}>Commercial product</h3>
         <p style={prose.paragraph}>
           Caisson is a commercially available software library. Prices shown on
@@ -105,7 +131,7 @@ export default function TermsPage() {
       </Section>
 
       {/* Acceptable use */}
-      <Section title="Acceptable use">
+      <Section id="acceptable-use" title="Acceptable use">
         <p style={prose.paragraph}>
           You agree not to use caisson.sh or any Caisson software to:
         </p>
@@ -138,7 +164,11 @@ export default function TermsPage() {
       </Section>
 
       {/* Intellectual property */}
-      <Section title="Intellectual property" band="tint">
+      <Section
+        id="intellectual-property"
+        title="Intellectual property"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           All content on caisson.sh (including text, code examples, diagrams,
           the Caisson wordmark and glyph, and the documentation) is owned by
@@ -161,7 +191,10 @@ export default function TermsPage() {
       </Section>
 
       {/* Payment processing, MoR, refunds, third-party services */}
-      <Section title="Payment processing and third-party services">
+      <Section
+        id="payment-processing-and-third-party-services"
+        title="Payment processing and third-party services"
+      >
         <h3 style={prose.h3}>
           Payment processing: Paddle (Merchant of Record)
         </h3>
@@ -252,7 +285,11 @@ export default function TermsPage() {
       </Section>
 
       {/* Disclaimer */}
-      <Section title="Disclaimer of warranties" band="tint">
+      <Section
+        id="disclaimer-of-warranties"
+        title="Disclaimer of warranties"
+        band="tint"
+      >
         <Card style={{ marginTop: "var(--cs-space-4)" }}>
           <p style={{ ...prose.paragraph, marginTop: 0, ...prose.conspicuous }}>
             The site and its contents are provided &ldquo;as is&rdquo; and
@@ -277,7 +314,7 @@ export default function TermsPage() {
       </Section>
 
       {/* Limitation of liability */}
-      <Section title="Limitation of liability">
+      <Section id="limitation-of-liability" title="Limitation of liability">
         <Card style={{ marginTop: "var(--cs-space-4)" }}>
           <p style={{ ...prose.paragraph, marginTop: 0, ...prose.conspicuous }}>
             To the maximum extent permitted by applicable law, in no event shall
@@ -303,7 +340,11 @@ export default function TermsPage() {
       </Section>
 
       {/* Governing law */}
-      <Section title="Governing law and disputes" band="tint">
+      <Section
+        id="governing-law-and-disputes"
+        title="Governing law and disputes"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           These Terms are governed by and construed in accordance with the laws
           of the State of Georgia, United States, without regard to its conflict
@@ -321,7 +362,7 @@ export default function TermsPage() {
       </Section>
 
       {/* Changes */}
-      <Section title="Changes to these terms">
+      <Section id="changes-to-these-terms" title="Changes to these terms">
         <p style={prose.paragraph}>
           We may update these Terms at any time. Material changes will be posted
           on this page with an updated &ldquo;Last updated&rdquo; date. If you
@@ -333,7 +374,7 @@ export default function TermsPage() {
       </Section>
 
       {/* Contact */}
-      <Section title="Questions" band="tint">
+      <Section id="questions" title="Questions" band="tint">
         <p style={prose.paragraph}>
           Questions about these Terms? Contact us at:
         </p>

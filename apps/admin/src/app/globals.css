@@ -383,6 +383,16 @@ p {
   gap: var(--cs-space-6);
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
+/* The A/B/C accent-fork panels: always 3-up on desktop (fixed 3-item set — auto-fit's
+   2-column midpoint orphaned Panel C), single column once 3-up can't stay readable. */
+.foundations-candidates {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 56.25rem) {
+  .foundations-candidates {
+    grid-template-columns: 1fr;
+  }
+}
 .row {
   display: flex;
   align-items: center;

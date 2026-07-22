@@ -823,3 +823,45 @@ kbd,
     animation: none !important;
   }
 }
+
+/* Legal "On this page" jump-nav rail (ADR-0376 lock 3). The legal docs keep their
+ * deliberate 62ch single-column measure; this rail occupies the container's right dead
+ * space instead of widening the text. Both the rail and the container are CENTER-anchored,
+ * so the rail (left edge +13rem from center) can never overlap the prose column (right
+ * edge ≈ +11.2rem from center) at any viewport — the media floor only guarantees the
+ * rail's own right edge fits. Fixed, not sticky: the band sections are full-bleed
+ * siblings, so there is no shared scroll column to stick within. */
+.legal-toc {
+  display: none;
+}
+@media (min-width: 75rem) {
+  .legal-toc {
+    display: block;
+    position: fixed;
+    top: 7rem;
+    left: calc(50% + 13rem);
+    width: 21rem;
+    max-height: calc(100vh - 9rem);
+    overflow-y: auto;
+    padding-left: var(--cs-space-4);
+    border-left: 1px solid var(--cs-border);
+  }
+  .legal-toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--cs-space-2);
+  }
+  .legal-toc a {
+    font-size: var(--cs-text-sm);
+    color: var(--cs-fg-muted);
+  }
+  .legal-toc a:hover {
+    color: var(--cs-accent);
+  }
+}
+/* Anchored legal sections land below the sticky site header. */
+.cs-section[id] {
+  scroll-margin-top: 6rem;
+}

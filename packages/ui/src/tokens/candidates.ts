@@ -76,7 +76,11 @@ export const accentCandidates: readonly AccentCandidate[] = [
     },
     light: {
       bg: "oklch(0.99 0.003 220)",
-      surface1: "oklch(0.975 0.005 220)",
+      // L 0.975 -> 0.965 (ADR-0376 lock 3, visual-audit retention-tint row): a 0.015 L
+      // step from bg rendered cards at 1.041:1 vs the page — imperceptible as a fill;
+      // only the 1px border read as a surface. 0.965 widens bg->surface1 to 1.075:1 and
+      // evens the ramp (0.99 -> 0.965 -> 0.95). Dark mode already carries a 0.04 gap.
+      surface1: "oklch(0.965 0.005 220)",
       surface2: "oklch(0.95 0.006 220)",
       border: "oklch(0.88 0.008 220)",
       borderStrong: "oklch(0.80 0.010 220)",
@@ -124,7 +128,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
     },
     light: {
       bg: "oklch(0.99 0.003 160)",
-      surface1: "oklch(0.975 0.005 160)",
+      surface1: "oklch(0.965 0.005 160)",
       surface2: "oklch(0.95 0.006 160)",
       border: "oklch(0.88 0.008 160)",
       borderStrong: "oklch(0.80 0.010 160)",
@@ -167,7 +171,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
     },
     light: {
       bg: "oklch(0.99 0.002 235)",
-      surface1: "oklch(0.975 0.003 235)",
+      surface1: "oklch(0.965 0.003 235)",
       surface2: "oklch(0.95 0.004 235)",
       border: "oklch(0.88 0.006 235)",
       borderStrong: "oklch(0.80 0.008 235)",

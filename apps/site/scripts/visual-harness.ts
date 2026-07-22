@@ -487,7 +487,14 @@ async function shootOne(
   const page = await context.newPage();
   const consoleErrors: string[] = [];
   page.on("console", (msg) => {
-    if (msg.type() === "error") consoleErrors.push(msg.text());
+    if (msg.type() !== "error") return;
+    // Same origin-scoped drop as prod-routes.live.test.ts's THIRD_PARTY_CONSOLE_SOURCES:
+    // Turnstile's challenge platform logs deliberate console noise (incl. the hidden
+    // "%c%d"/NaN fingerprinting probe) from its own frames — third-party by source URL,
+    // never keyed on message text. ADR-0376: the whole console-NaN audit family was this.
+    if (/^https:\/\/challenges\.cloudflare\.com\//.test(msg.location().url))
+      return;
+    consoleErrors.push(msg.text());
   });
   page.on("pageerror", (err) => consoleErrors.push(err.message));
   try {
