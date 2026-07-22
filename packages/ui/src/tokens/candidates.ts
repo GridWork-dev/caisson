@@ -65,14 +65,18 @@ export const accentCandidates: readonly AccentCandidate[] = [
       borderStrong: "oklch(0.80 0.010 220)",
       fg: "oklch(0.22 0.015 220)",
       fgMuted: "oklch(0.45 0.018 220)",
-      accent: "oklch(0.50 0.13 215)",
-      accentHover: "oklch(0.48 0.13 215)",
+      // Darkened L 0.50 -> 0.46 (visual-audit): the prior value cleared AA only on the raw OKLCH
+      // luminance; once gamut-mapped into sRGB (what browsers actually paint) the accent-on-tint
+      // pairing sat at 4.57:1 — a razor margin. 0.46 lifts every accent pairing to >=5.4:1 on the
+      // gamut-mapped hexes the contrast gate now checks.
+      accent: "oklch(0.46 0.13 215)",
+      accentHover: "oklch(0.42 0.13 215)",
       onAccent: "oklch(0.99 0.01 220)",
       accentTint: "oklch(0.93 0.03 205)",
-      focus: "oklch(0.50 0.13 215)",
-      link: "oklch(0.50 0.13 215)",
+      focus: "oklch(0.46 0.13 215)",
+      link: "oklch(0.46 0.13 215)",
       glowAccent:
-        "0 0 0 1px oklch(0.50 0.13 215 / 0.28), 0 0 22px oklch(0.50 0.13 215 / 0.16)",
+        "0 0 0 1px oklch(0.46 0.13 215 / 0.28), 0 0 22px oklch(0.46 0.13 215 / 0.16)",
       scrim: "oklch(0.22 0.015 220 / 0.45)",
     },
   },

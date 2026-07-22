@@ -5,9 +5,31 @@
 //
 // `GLOSSARY_TERMS` is compile-time-static in-repo source (ADR-0002 carve-out, renderer SPEC §4) —
 // no Zod parse layer; every term is type-checked at build, not validated at runtime.
-import { createElement } from "react";
+import { createElement, Fragment, type ReactNode } from "react";
 
 import type { PageSection, PageSpec } from "./page-sections";
+
+/**
+ * Render inline `` `code` `` markdown in glossary prose as styled `<code>` (visual-audit: the
+ * backticks were shipping as literal grave-accent glyphs). Deliberately tiny — only paired single
+ * backticks, no other markdown — because that is the entire syntax glossary prose uses; a full
+ * markdown parser would be overkill for one construct. Segments at odd split indices are the code
+ * spans. Plain string in, plain string out when there are no backticks (keeps meta/JSON-LD callers,
+ * which pass the raw field, unaffected — this runs only on the visible lede/body).
+ */
+export function renderInlineCode(text: string): ReactNode {
+  const parts = text.split(/`([^`]+)`/);
+  if (parts.length === 1) return text;
+  return createElement(
+    Fragment,
+    null,
+    ...parts.map((seg, i) =>
+      i % 2 === 1
+        ? createElement("code", { key: i, className: "cs-code-inline" }, seg)
+        : seg,
+    ),
+  );
+}
 
 export type GlossaryCluster =
   "compliance" | "security" | "licensing" | "ai-infra";
@@ -142,7 +164,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       label:
         "verifyChain — recompute + compare each link, return the first broken index",
       lang: "ts",
-      code: "export function verifyChain(\n  entries: readonly AuditChainEntry[],\n  anchor?: AuditChainAnchor,\n): ChainVerification {\n  for (let i = 0; i < entries.length; i++) {\n    const entry = entries[i] as AuditChainEntry;\n    const expectedPrev =\n      i === 0 ? null : (entries[i - 1] as AuditChainEntry).hash;\n    if (entry.seq !== i) return { valid: false, brokenAt: i };\n    if (entry.prevHash !== expectedPrev) return { valid: false, brokenAt: i };\n    if (entry.hash !== hashChainLink(entry.prevHash, entry.payload)) {\n      return { valid: false, brokenAt: i };\n    }\n  }",
+      code: "export function verifyChain(\n  entries: readonly AuditChainEntry[],\n  anchor?: AuditChainAnchor,\n): ChainVerification {\n  for (let i = 0; i < entries.length; i++) {\n    const entry = entries[i] as AuditChainEntry;\n    const expectedPrev =\n      i === 0 ? null : (entries[i - 1] as AuditChainEntry).hash;\n    if (entry.seq !== i) return { valid: false, brokenAt: i };\n    if (entry.prevHash !== expectedPrev) return { valid: false, brokenAt: i };\n    if (entry.hash !== hashChainLink(entry.prevHash, entry.payload)) {\n      return { valid: false, brokenAt: i };\n    }\n  }\n  // Internal consistency alone can't see a truncated tail or a wholesale rewrite;\n  // a trusted WORM anchor catches both by asserting the committed length and tip.\n  if (anchor !== undefined) {\n    if (entries.length !== anchor.length) {\n      return { valid: false, brokenAt: Math.min(entries.length, anchor.length) };\n    }\n    const tip = entries[entries.length - 1] as AuditChainEntry;\n    if (tip.hash !== anchor.tipHash) {\n      return { valid: false, brokenAt: entries.length - 1 };\n    }\n  }\n  return { valid: true, brokenAt: null };\n}",
     },
     properties: [
       {
@@ -3310,7 +3332,7 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       kind: "hero",
       eyebrow: "Glossary",
       title: term.term,
-      lede: term.definition,
+      lede: renderInlineCode(term.definition),
       ctas: breadcrumbNav(term),
     },
     {
@@ -3327,11 +3349,15 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       kind: "codeArtifact",
       label: term.artifact.label,
       code: term.artifact.code,
+      lang: term.artifact.lang,
     },
     {
       kind: "featureGrid",
       eyebrow: "How it holds",
-      items: term.properties.map((p) => ({ title: p.title, body: p.body })),
+      items: term.properties.map((p) => ({
+        title: p.title,
+        body: renderInlineCode(p.body),
+      })),
     },
     {
       kind: "faq",

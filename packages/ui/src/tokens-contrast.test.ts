@@ -1,5 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { wcagContrast } from "culori";
+import { formatHex, parse, toGamut, wcagContrast } from "culori";
+
+/**
+ * Browser-equivalent contrast (visual-audit): our tokens are authored in OKLCH, but a browser
+ * gamut-maps every out-of-sRGB OKLCH into the display gamut before painting — and the clamped
+ * colour has a different luminance than the ideal OKLCH. Computing `wcagContrast` on the raw OKLCH
+ * string therefore checks a colour the user never sees; a value can pass the gate at 4.6:1 raw and
+ * render at 4.4:1. Map each token to its sRGB hex first (culori `toGamut`, the same chroma-reducing
+ * clamp browsers use) so the gate asserts what actually ships.
+ */
+const gamutHex = (c: string) => formatHex(toGamut("rgb", "oklch")(parse(c)!));
+const contrast = (fg: string, bg: string) =>
+  wcagContrast(gamutHex(fg), gamutHex(bg));
 
 import {
   darkTheme,
@@ -66,7 +78,7 @@ const FN_SURFACES: ReadonlyArray<keyof SemanticTheme> = [
 function checkTheme(theme: SemanticTheme, mode: string) {
   for (const p of PAIRS) {
     test(`${mode}: ${p.fg} on ${p.bg} (${p.use}) ≥ ${p.min.toFixed(1)}:1`, () => {
-      const ratio = wcagContrast(theme[p.fg], theme[p.bg]);
+      const ratio = contrast(theme[p.fg], theme[p.bg]);
       expect(ratio).toBeGreaterThanOrEqual(p.min);
     });
   }
@@ -80,7 +92,7 @@ function checkFunctional(
   for (const k of FN_KEYS) {
     for (const s of FN_SURFACES) {
       test(`${mode}: ${k} on ${s} (status text / code token) ≥ 4.5:1`, () => {
-        expect(wcagContrast(fn[k], theme[s])).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(fn[k], theme[s])).toBeGreaterThanOrEqual(4.5);
       });
     }
   }

@@ -93,6 +93,7 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
       kind: "codeArtifact",
       label: `${record.artifact.label}: ${record.artifact.file}`,
       code: record.artifact.code,
+      lang: record.artifact.lang,
       notes: record.artifact.annotations,
     },
     {

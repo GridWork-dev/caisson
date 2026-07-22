@@ -3,7 +3,6 @@
 .cs-code {
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-md);
-  background: var(--cs-surface-1);
   padding: var(--cs-space-5);
   overflow-x: auto;
   font-family: var(--cs-font-mono);
@@ -11,30 +10,55 @@
   line-height: var(--cs-leading-snug);
   color: var(--cs-fg);
   tab-size: 2;
+
+  /* Scroll affordance (visual-audit remediation). NEVER soft-wrap: copy-paste fidelity of shell
+   * commands is load-bearing. The old cue was a right-edge fade INTO the surface colour — invisible,
+   * so clipped code read as a hard clip. Two honest, overflow-only cues replace it:
+   *   1. A persistent thin scrollbar. It is the native "content continues" signal and only appears
+   *      when there is actually overflow, so it never false-signals on short code.
+   *   2. A scroll-shadow on the horizontal edges via the background-attachment:local technique — a
+   *      real edge shadow that shows only while there is off-screen content and hides at each end.
+   * The mid-grey shadow reads as a shadow on the light surface and as an edge highlight on the dark
+   * one, so a single value works in both themes.
+   * ponytail: overlay-scrollbar OSes (macOS default) may still auto-hide the bar; the scroll-shadow
+   * is the backstop cue there. Upgrade path = a JS overflow observer if that ever proves too weak. */
+  /* NB: no `scrollbar-width`/`scrollbar-color` — setting either makes Chromium ignore the
+   * ::-webkit-scrollbar rules below and fall back to a zero-space overlay bar that auto-hides
+   * (invisible in a screenshot and on macOS). The webkit pseudo forces a persistent classic bar
+   * in Chromium/Safari; Firefox keeps its own always-visible scrollbar. */
+  background:
+    linear-gradient(to right, var(--cs-surface-1), transparent) left center /
+      1.75rem 100% no-repeat local,
+    linear-gradient(to left, var(--cs-surface-1), transparent) right center /
+      1.75rem 100% no-repeat local,
+    radial-gradient(
+        farthest-side at left center,
+        oklch(0.62 0.02 220 / 0.52),
+        transparent
+      )
+      left center / 1rem 100% no-repeat scroll,
+    radial-gradient(
+        farthest-side at right center,
+        oklch(0.62 0.02 220 / 0.52),
+        transparent
+      )
+      right center / 1rem 100% no-repeat scroll,
+    var(--cs-surface-1);
 }
 
-/* Scroll affordance (visual-audit remediation): `.cs-code` already scrolls (overflow-x: auto
- * above) — the bug was zero visual cue at scroll-position-zero, reading as a hard clip. The frame
- * clips its own square corners to `.cs-code`'s radius so the fade's edge matches; the fade itself
- * is a right-edge gradient into the card's own surface color, painted OVER the pre's content
- * (::after is the last paint layer) so it reads as "more content" only where text actually reaches
- * it — content that fits never touches the fade, so nothing renders differently when there's
- * nothing to scroll. Lives on a wrapper (not `.cs-code` itself) because a pseudo-element
- * positioned absolute on the scrolling element itself would scroll away with the content;
- * `.cs-code-frame` never scrolls, so the fade stays pinned to the visible edge. */
+.cs-code::-webkit-scrollbar {
+  height: 0.5rem;
+}
+.cs-code::-webkit-scrollbar-thumb {
+  background: var(--cs-border-strong);
+  border-radius: var(--cs-radius-pill);
+}
+.cs-code::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Kept as the layout wrapper for the framed shape; the scroll cue now lives on the scrolling
+   `.cs-code` itself (a fixed pseudo-element could not gate itself on overflow). */
 .cs-code-frame {
-  position: relative;
   border-radius: var(--cs-radius-md);
-  overflow: hidden;
-}
-
-.cs-code-frame::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 2rem;
-  pointer-events: none;
-  background: linear-gradient(to right, transparent, var(--cs-surface-1));
 }
