@@ -37,3 +37,58 @@
   max-height: 70vh;
   overflow-y: auto;
 }
+
+/* ---- touch dismiss (ADR-0374 a6f09d9992509c4c): a real close icon-button alongside the ESC
+   badge — ESC alone means nothing without a physical keyboard. ---- */
+.closeIcon {
+  display: none;
+}
+
+@media (pointer: coarse), (max-width: 40rem) {
+  .closeIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ---- suggested pages (ADR-0374 d81c2b94f6dcd55b) — shown in place of the results list before
+   the first keystroke, so an open palette never renders a bare empty input. ---- */
+.suggestions {
+  padding: var(--cs-space-1) var(--cs-space-3) var(--cs-space-3);
+}
+
+.suggestionsLabel {
+  display: block;
+  padding: var(--cs-space-2) var(--cs-space-2) var(--cs-space-1);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+}
+
+.suggestionsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.suggestionLink {
+  display: block;
+  padding: var(--cs-space-2) var(--cs-space-2);
+  border-radius: var(--cs-radius-md);
+  color: var(--cs-fg);
+  font-size: var(--cs-text-sm);
+}
+
+.suggestionLink:hover {
+  background: var(--cs-surface-2);
+  text-decoration: none;
+}
+
+.suggestionLink:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: -2px;
+}
