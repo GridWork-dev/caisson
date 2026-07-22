@@ -24,12 +24,18 @@ const contrast = (fg: string, bg: string) =>
   );
 
 import {
+  codeTokensDark,
+  codeTokensLight,
   darkTheme,
   functionalDark,
   functionalLight,
   lightTheme,
 } from "./tokens/index";
-import type { FunctionalTokens, SemanticTheme } from "./tokens/index";
+import type {
+  CodeTokens,
+  FunctionalTokens,
+  SemanticTheme,
+} from "./tokens/index";
 
 /**
  * WCAG contrast matrix — ADR-0101 gate #2 (the deterministic design-quality gate that REPLACES the
@@ -108,9 +114,31 @@ function checkFunctional(
   }
 }
 
+// The two code-syntax tokens (ADR-0374 Decision 2: codeString/codeKeyword, baked into
+// shiki-caisson-theme.ts) render as inline syntax-highlight spans on the same bg/surface ramp as
+// everything else — small text, so 4.5:1, same threshold as FN_KEYS above. These sit OUTSIDE both
+// SemanticTheme and FunctionalTokens, so neither matrix above ever reached them (audit round 2,
+// F8: shipped with no contrast gate at all).
+const CODE_KEYS: ReadonlyArray<keyof CodeTokens> = [
+  "codeString",
+  "codeKeyword",
+];
+
+function checkCodeTokens(theme: SemanticTheme, code: CodeTokens, mode: string) {
+  for (const k of CODE_KEYS) {
+    for (const s of FN_SURFACES) {
+      test(`${mode}: ${k} on ${s} (code-syntax token) ≥ 4.5:1`, () => {
+        expect(contrast(code[k], theme[s])).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
+}
+
 describe("WCAG contrast matrix — both modes (ADR-0101 gate #2)", () => {
   checkTheme(darkTheme, "dark");
   checkTheme(lightTheme, "light");
   checkFunctional(darkTheme, functionalDark, "dark");
   checkFunctional(lightTheme, functionalLight, "light");
+  checkCodeTokens(darkTheme, codeTokensDark, "dark");
+  checkCodeTokens(lightTheme, codeTokensLight, "light");
 });
