@@ -76,8 +76,13 @@ export function MarketplaceHeroArtifact() {
   }));
   return (
     <MediaFrame
-      label={`caisson · one base, ${bundles.length} composable bundles`}
-      ariaLabel={`${bundles.length} composable Caisson bundles onto one Apache-2.0 audited base`}
+      // "+ Everything": the page's own lede and type facet count six bundles (Everything
+      // included as a SKU); a bare "5 composable bundles" read as a contradiction two
+      // lines below "six bundles" (post-deploy re-audit, high). The chip list stays 5 —
+      // Everything is the whole-catalog purchase, not a sixth thing composing alongside
+      // the five it contains — so the label names it instead of counting it.
+      label={`caisson · one base, ${bundles.length} composable bundles + Everything`}
+      ariaLabel={`${bundles.length} composable Caisson bundles onto one Apache-2.0 audited base, plus the Everything bundle covering all of them`}
       status={
         <span className={styles.barChip}>
           <span className={styles.dot} />
