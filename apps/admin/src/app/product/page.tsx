@@ -66,7 +66,6 @@ export default async function ProductPage() {
               value={snapshot.purchaseCount.toLocaleString()}
               hint="all time"
               icon="cart"
-              tone={snapshot.purchaseCount > 0 ? "positive" : "default"}
             />
           </section>
 

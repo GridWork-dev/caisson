@@ -66,7 +66,7 @@ export default async function SupportPage() {
   return (
     <div className="shell stack" style={{ gap: "var(--cs-space-10)" }}>
       <section>
-        <p className="eyebrow">caisson · admin</p>
+        <p className="eyebrow">caisson · admin / support</p>
         <h1 className="page-title">Support health</h1>
         <p className="lede">
           Support-bot escalations, bot liveness, and the Linear Triage inbox, in

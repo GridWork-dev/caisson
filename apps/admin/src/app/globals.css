@@ -340,6 +340,12 @@ p {
   border-radius: var(--cs-radius-lg);
   overflow: hidden;
 }
+/* A long near-identical row list (ops traces/logs) — cap the visible height and scroll the
+ * list itself instead of running the whole page long. */
+.board--capped {
+  max-height: 22rem;
+  overflow-y: auto;
+}
 .board-row + .board-row {
   border-top: 1px solid var(--cs-border);
 }
