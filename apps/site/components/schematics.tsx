@@ -17,13 +17,13 @@ import { fit } from "./svg-fit";
 // space; ONE semantic accent element per sheet (the gate / the seam — ADR-0375 restraint);
 // static, framed, one sheet to one claim.
 
-const VIEW_W = 340;
-const VIEW_H = 190;
+export const VIEW_W = 340;
+export const VIEW_H = 190;
 
 /** Pin stroke width in device px — the hairline-linework signature of the schematic register. */
-const HAIRLINE = { vectorEffect: "non-scaling-stroke" } as const;
+export const HAIRLINE = { vectorEffect: "non-scaling-stroke" } as const;
 
-function Sheet({
+export function Sheet({
   title,
   bar,
   children,
@@ -51,7 +51,7 @@ function Sheet({
 }
 
 /** One sharp-cornered blueprint node (rx 2 — drawing register, not UI chrome). */
-function SNode({
+export function SNode({
   x,
   y,
   w,
@@ -101,7 +101,7 @@ function SNode({
 
 /** A flow line with an explicit arrowhead (no marker refs — markers break under `<use>` cloning
  *  and can't ride vector-effect; a drawn head inherits both). Horizontal or vertical. */
-function Flow({
+export function Flow({
   x1,
   y1,
   x2,
@@ -134,7 +134,7 @@ function Flow({
 }
 
 /** The sheet's ONE accent element: a dashed semantic boundary with its label. */
-function Boundary({
+export function Boundary({
   x,
   y,
   w,
@@ -171,7 +171,7 @@ function Boundary({
 }
 
 /** A dimensioned strip: cells with widths, a dimension line beneath, per-cell measure labels. */
-function ByteStrip({
+export function ByteStrip({
   x,
   y,
   h,
@@ -246,7 +246,7 @@ function ByteStrip({
 }
 
 /** The engineering title block, bottom-right corner. */
-function TitleBlock({
+export function TitleBlock({
   x,
   y,
   w,
@@ -280,7 +280,7 @@ function TitleBlock({
 }
 
 /** A strata chip (cross-section vocabulary). */
-function Chip({
+export function Chip({
   x,
   y,
   w,
