@@ -25,17 +25,16 @@
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-sm);
   background: var(--cs-surface-1);
-  border-inline-start-width: 3px;
 }
 
 .row[data-tone="root"] {
-  border-inline-start-color: var(--cs-accent);
+  border-color: var(--cs-accent);
 }
 .row[data-tone="ok"] {
-  border-inline-start-color: var(--cs-success);
+  border-color: var(--cs-success);
 }
 .row[data-tone="fail"] {
-  border-inline-start-color: var(--cs-danger);
+  border-color: var(--cs-danger);
 }
 
 .seq {

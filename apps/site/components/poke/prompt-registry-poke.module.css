@@ -38,12 +38,11 @@
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-sm);
   background: var(--cs-surface-1);
-  border-inline-start-width: 3px;
-  border-inline-start-color: var(--cs-border);
+  border-color: var(--cs-border);
 }
 
 .row[data-tone="prod"] {
-  border-inline-start-color: var(--cs-accent);
+  border-color: var(--cs-accent);
 }
 
 .version {

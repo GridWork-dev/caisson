@@ -18,12 +18,11 @@
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-sm);
   background: var(--cs-surface-1);
-  border-inline-start-width: 3px;
-  border-inline-start-color: var(--cs-accent);
+  border-color: var(--cs-accent);
 }
 
 .grant[data-tone="drained"] {
-  border-inline-start-color: var(--cs-border);
+  border-color: var(--cs-border);
   opacity: 0.6;
 }
 

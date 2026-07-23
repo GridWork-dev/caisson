@@ -12,7 +12,7 @@
 // of facts.ts's flatten + default allowlist and redact.ts's redactToAllowlist, plus a minimal render.ts
 // mirror. Parity is golden-pinned in trust-page-logic.test.ts against
 // packages/trust-page/src/__golden__/trust-page.default.{html,json}.txt and against the real package's
-// own generateTrustPage / flattenManifestFacts / redactToAllowlist (imported by relative path — apps/
+// own generateTrustPage / flattenManifestFacts / redactToAllowlist (imported by relative path, apps/
 // site does not declare @caisson/trust-page or @caisson/artifact-render as dependencies).
 //
 // Scope narrowed for this poke (the redaction gate, not the whole generator): the crosswalk-rollup
@@ -22,7 +22,7 @@
 // golden-parity test below proves this narrowing changes nothing for the paths this poke actually
 // renders.
 
-// ---- The sample payload (packages/trust-page/src/facts.ts flattens a shape like this) ----------
+// The sample payload (packages/trust-page/src/facts.ts flattens a shape like this).
 
 export interface SampleControl {
   readonly controlId: string;
@@ -53,7 +53,7 @@ export interface SampleManifest {
  * packages/trust-page/src/render.test.ts's `fixtureManifest()` exactly, so the default-allowlist
  * render below is byte-identical to the committed golden fixture (trust-page-logic.test.ts checks
  * this). `framework.title` carries a real em dash because that is the literal upstream value the
- * golden fixture was generated from — every OTHER string in this poke avoids the character.
+ * golden fixture was generated from, every OTHER string in this poke avoids the character.
  */
 export const SAMPLE_MANIFEST: SampleManifest = {
   tenantId: "tenant-DO-NOT-LEAK-9f3a2c",
@@ -82,7 +82,7 @@ export const SAMPLE_MANIFEST: SampleManifest = {
 export type FlatFacts = Readonly<Record<string, string | number | boolean>>;
 
 /** Verbatim: facts.ts `flattenManifestFacts` (the crosswalk-rollup rows are out of this poke's
- *  scope — see the file header — so only the scalar manifest fields are flattened). */
+ *  scope, see the file header, so only the scalar manifest fields are flattened). */
 export function flattenManifestFacts(manifest: SampleManifest): FlatFacts {
   const facts: Record<string, string | number | boolean> = {
     tenantId: manifest.tenantId,
@@ -105,7 +105,7 @@ export function flattenManifestFacts(manifest: SampleManifest): FlatFacts {
   return facts;
 }
 
-/** Verbatim: facts.ts `DEFAULT_TRUST_PAGE_ALLOWLIST` — aggregate posture only. */
+/** Verbatim: facts.ts `DEFAULT_TRUST_PAGE_ALLOWLIST`, aggregate posture only. */
 export const DEFAULT_TRUST_PAGE_ALLOWLIST: readonly string[] = [
   "framework.title",
   "framework.version",
@@ -115,7 +115,7 @@ export const DEFAULT_TRUST_PAGE_ALLOWLIST: readonly string[] = [
   "summary.controlsWithGaps",
 ];
 
-/** The full universe of facts this sample manifest can ever produce, in flatten order — every key
+/** The full universe of facts this sample manifest can ever produce, in flatten order, every key
  *  the checkbox list below can toggle. */
 export const ALL_FACT_KEYS: readonly string[] = Object.keys(
   flattenManifestFacts(SAMPLE_MANIFEST),
@@ -124,7 +124,7 @@ export const ALL_FACT_KEYS: readonly string[] = Object.keys(
 /**
  * Verbatim: artifact-render's redact.ts `redactToAllowlist`. A key absent from `allowlist` never
  * reaches the result, no exceptions. A key present in `allowlist` but absent from `facts` (a
- * fabricated or attacker-supplied field name) is just as absent — silently, never an error. That
+ * fabricated or attacker-supplied field name) is just as absent, silently, never an error. That
  * second property is the whole poke's tamper control: widening the allowlist can only surface a
  * fact that was actually captured.
  */
@@ -144,7 +144,7 @@ function cmp(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** Verbatim: render.ts `sortedEntries` — deterministic key order, independent of allowlist order. */
+/** Verbatim: render.ts `sortedEntries`, deterministic key order, independent of allowlist order. */
 function sortedEntries(
   facts: FlatFacts,
 ): Array<[string, string | number | boolean]> {
@@ -195,7 +195,7 @@ function renderFactsSection(facts: FlatFacts): string {
 }
 
 /** Mirrors render.ts `renderHtml` with `renderCrosswalkSection(rows)` fixed at its always-empty
- *  output for this poke's scope — the resulting bytes are identical to the real function whenever
+ *  output for this poke's scope, the resulting bytes are identical to the real function whenever
  *  the crosswalk-rollup key is absent from the allowlist, which golden + parity tests below verify. */
 export function renderHtml(facts: FlatFacts): string {
   return `<!doctype html>
@@ -223,7 +223,7 @@ export interface TrustPageRender {
 
 /** The gate this poke demonstrates, end to end: flatten the sample payload, redact it down to the
  *  caller-supplied allowlist, render both outputs strictly from what survived. Neither output can
- *  ever see a fact the allowlist didn't admit — there is no other path into `renderHtml`/`renderJson`. */
+ *  ever see a fact the allowlist didn't admit, there is no other path into `renderHtml`/`renderJson`. */
 export function renderTrustPage(
   manifest: SampleManifest,
   allowlist: readonly string[],

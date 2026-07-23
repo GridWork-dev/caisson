@@ -54,13 +54,12 @@
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-sm);
   background: var(--cs-surface-2);
-  border-inline-start-width: 3px;
-  border-inline-start-color: var(--cs-border);
+  border-color: var(--cs-border);
   opacity: 0.6;
 }
 
 .queueRow[data-applied="true"] {
-  border-inline-start-color: var(--cs-accent);
+  border-color: var(--cs-accent);
   opacity: 1;
 }
 
@@ -167,12 +166,11 @@
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-sm);
   background: var(--cs-surface-2);
-  border-inline-start-width: 3px;
-  border-inline-start-color: var(--cs-success);
+  border-color: var(--cs-success);
 }
 
 .tombRow {
-  border-inline-start-color: var(--cs-danger);
+  border-color: var(--cs-danger);
 }
 
 .liveRow code,
