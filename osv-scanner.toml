@@ -20,28 +20,12 @@
 # Every id below has a matching dated row in docs/security/tooling-playbook.md (Accepted findings).
 
 [[IgnoredVulns]]
-id = "CVE-2024-47764"
-reason = "cookie <0.7.0, transitive under @trigger.dev/core's socket.io/engine.io (engine.io pins ~0.4.1). Cookie name/path/domain out-of-bounds chars — engine.io generates the sid cookie's attributes itself from static config, never from user input, so unreachable. A global cookie override would force engine.io (~0.4.1) or msw (^1.1.1) off their pinned ranges; deferred to Renovate's pin wave. Accepted 2026-07-10."
-
-[[IgnoredVulns]]
 id = "CVE-2026-41305"
 reason = "postcss <8.5.10. XSS only when postcss stringifies attacker-submitted CSS source; the site build processes only first-party authored CSS, never user-submitted stylesheets. Fix (8.5.10) is a build-critical same-major bump deferred to Renovate rather than a hand-forced override across the shared checkout. Accepted 2026-07-10."
 
 [[IgnoredVulns]]
-id = "CVE-2026-8769"
-reason = "@ai-sdk/provider-utils 3.0.27/3.0.28 — NO fixed version published (osv lists none). Transitive under the @ai-sdk provider drivers in @caisson/ai-kit. Re-evaluate when a fix ships. Accepted 2026-07-10."
-
-[[IgnoredVulns]]
 id = "CVE-2026-54285"
 reason = "@opentelemetry/core 2.0.1, transitive under @trigger.dev/core's pinned OTel instrumentation (the main OTel suite is already on the fixed 2.8.0). Header-propagator over-allocation, practically bounded by Node's 16KB max-http-header-size; forcing the trigger.dev-nested core to 2.8.0 risks breaking trigger.dev runtime telemetry. Accepted 2026-07-10."
-
-[[IgnoredVulns]]
-id = "CVE-2026-45772"
-reason = "turbo 2.5.8 — arbitrary code execution ONLY when running turbo in an UNTRUSTED repository containing a malicious .yarnrc.yml yarnPath. Our CI and local runs execute turbo exclusively against this trusted first-party repo. Fix (2.9.14) is a same-major bump of CI-critical build tooling, deferred to Renovate rather than a hand-bump that would re-resolve the build tool under concurrent builders. Accepted 2026-07-10."
-
-[[IgnoredVulns]]
-id = "CVE-2026-45773"
-reason = "turbo 2.5.8 — same untrusted-repo malicious-yarn-config vector as CVE-2026-45772, same trusted-repo-only usage and same deferral to the Renovate pin wave (fix 2.9.14). Accepted 2026-07-10."
 
 # NOTE: pytest CVE-2025-71176 lives in services/support-bot/uv.lock. osv-scanner config does NOT
 # propagate into child directories (per its docs), so that accept lives in

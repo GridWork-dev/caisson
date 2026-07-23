@@ -68,7 +68,11 @@ function buildViewModel(
   // omitCodeArtifact (ADR-0290 WR-03): the dialog body renders the record's artifact itself as a
   // bounded CodeBlock below, so a code-artifact carousel slide would show the identical code
   // twice — and, unclamped, it filled the whole dialog (CAISSON-68).
-  const slides = mediaSlides(entry.kind, entry.id, { omitCodeArtifact: true });
+  // leadWithPoke (ADR-0378 lock 1): the card viewer leads with the interactive poke.
+  const slides = mediaSlides(entry.kind, entry.id, {
+    omitCodeArtifact: true,
+    leadWithPoke: true,
+  });
   if (entry.kind === "module") return moduleViewModel(entry, slides);
   return bundleViewModel(entry, slides, signals);
 }

@@ -34,7 +34,7 @@ const HUB_FAQ = [
   {
     question: "Where did the Modules and Build tabs go?",
     answer:
-      "They're this one surface now. Filter by type to see just modules or just bundles, add anything to the stack rail on the right to watch the running total, and the builder still points at the bundle that covers your picks for less. Old links redirect here automatically.",
+      "They're this one surface now. Filter by type to see just modules or just bundles, add anything to your cart, and the drawer points at the bundle that covers your picks for less. Old links redirect here automatically.",
   },
   {
     question: "Can I buy one module without the bundle around it?",
@@ -87,7 +87,7 @@ export default function MarketplacePage() {
       {/* ===== The catalog — one surface ===== */}
       <Section
         title="Browse the whole library in one place."
-        lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and build a stack, the running total points at the bundle that covers your picks for less."
+        lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and add anything to your cart, the drawer points at the bundle that covers your picks for less."
       >
         <div
           style={{

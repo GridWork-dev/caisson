@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-import { Button, Card, Checkbox, Icon, Radio, StatusChip } from "@/components";
+import { Popover } from "@caisson/ui-pro/components";
+
+import { Button, Card, Checkbox, Icon, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { useCart } from "@/components/cart-provider";
 import { CompareTray, COMPARE_MAX } from "@/components/compare-tray";
 import {
   bundleCatalogItem,
@@ -28,7 +31,6 @@ import { modulePostureGroup } from "@/lib/stack-fit";
 import type { TruthfulSignal } from "@/lib/trust-signals";
 
 import { PreviewDialog } from "./preview-dialog";
-import { StackRail } from "./stack-rail";
 import styles from "./marketplace.module.css";
 
 type TypeFilter = "all" | "bundles" | "modules";
@@ -48,12 +50,14 @@ function toggle<T>(set: ReadonlySet<T>, value: T): Set<T> {
 }
 
 /**
- * The one-surface marketplace (ADR-0285 §1) — a single faceted grid over BOTH kinds. Merges the two
- * former catalogs (modules + bundles) into one card system: a type/category/price/media facet set +
- * text search, one card-viewer dialog (`PreviewDialog`) over a `{kind,id}` union, one compare tray
- * extended to both kinds, and the persistent cart-aware stack rail. The open card is reflected in a
- * `?view=<kind>:<slug>` param (History API, no scroll reset); the legacy `?m=`/`?b=` params still
- * open the right card on load (aliases). Client island — the page shell stays a Server Component.
+ * The one-surface marketplace (ADR-0285 §1, ADR-0378 lock 3) — a single grid over BOTH kinds. Merges
+ * the two former catalogs (modules + bundles) into one card system: a sticky filter toolbar
+ * (segmented Type control + Category/Price disclosure panels + media toggle + search) over a
+ * Bundles band then a Modules band, one card-viewer dialog (`PreviewDialog`) over a `{kind,id}`
+ * union, and one compare tray extended to both kinds. The 13rem facet rail and 21rem stack rail are
+ * gone; the cart is the one drawer, with a slim summary strip once it is non-empty. The open card is
+ * reflected in a `?view=<kind>:<slug>` param (History API, no scroll reset); the legacy `?m=`/`?b=`
+ * params still open the right card on load (aliases). Client island — the shell stays a Server Component.
  */
 export function MarketplaceSurface({
   signals,
@@ -69,6 +73,11 @@ export function MarketplaceSurface({
   const [demoOnly, setDemoOnly] = useState(false);
   const [viewId, setViewId] = useState<string | null>(null);
   const [compareIds, setCompareIds] = useState<readonly string[]>([]);
+  // Which toolbar disclosure is open — Category / Price on desktop, or the combined Filters panel
+  // on mobile. One shared value so opening one closes the others (the nav-panels convention).
+  const [openPanel, setOpenPanel] = useState<
+    "category" | "price" | "filters" | null
+  >(null);
 
   // Deep-link on load (read imperatively — no useSearchParams, so no Suspense boundary):
   //   ?type=bundles|modules   pre-selects the type facet (e.g. a "Browse modules" CTA);
@@ -218,141 +227,213 @@ export function MarketplaceSurface({
       ? `${TOTAL} bundles and modules`
       : `Showing ${results.length} of ${TOTAL}`;
 
+  const bundleResults = results.filter((e) => e.kind === "bundle");
+  const moduleResults = results.filter((e) => e.kind === "module");
+
+  const renderCard = (e: SurfaceEntry) => (
+    <SurfaceCard
+      key={e.viewId}
+      entry={e}
+      onOpen={openPreview}
+      compareChecked={compareIds.includes(e.viewId)}
+      compareDisabled={
+        compareIds.length >= COMPARE_MAX && !compareIds.includes(e.viewId)
+      }
+      onToggleCompare={toggleCompare}
+    />
+  );
+
+  // The four filter controls, authored once and reused by the desktop toolbar and the mobile
+  // Filters panel. Reusing one element object in two render slots is fine — both read the same
+  // component state, so a toggle in either place updates the single source of truth.
+  const typeSegmented = (
+    <div className={styles.segmented} role="group" aria-label="Type">
+      {TYPE_OPTIONS.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          className={styles.segment}
+          aria-pressed={type === t.id}
+          onClick={() => setType(t.id)}
+        >
+          {t.label}
+          <span className={`cs-num ${styles.segmentCount}`}>
+            {typeCount(t.id)}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+
+  const categoryFieldset = (
+    <fieldset className={styles.fieldset}>
+      <legend className={styles.legend}>Category</legend>
+      {CATEGORIES.map((c) => (
+        <label key={c} className={styles.option}>
+          <Checkbox
+            checked={categories.has(c)}
+            onChange={() => setCategories((prev) => toggle(prev, c))}
+          />
+          <span className={styles.optionLabel}>{categoryLabel(c)}</span>
+          <span className={`cs-num ${styles.count}`}>{categoryCount(c)}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+
+  const priceFieldset = (
+    <fieldset className={styles.fieldset}>
+      <legend className={styles.legend}>Price</legend>
+      {PRICE_BANDS.map((b) => (
+        <label key={b.id} className={styles.option}>
+          <Checkbox
+            checked={bands.has(b.id)}
+            onChange={() => setBands((prev) => toggle(prev, b.id))}
+          />
+          <span className={styles.optionLabel}>{b.label}</span>
+          <span className={`cs-num ${styles.count}`}>{bandCount(b)}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+
+  const mediaToggle = (
+    <label className={styles.mediaToggle}>
+      <Checkbox checked={demoOnly} onChange={() => setDemoOnly((v) => !v)} />
+      <span>Has media</span>
+      <span className={`cs-num ${styles.count}`}>{mediaCount}</span>
+    </label>
+  );
+
+  const searchInput = (
+    <input
+      type="search"
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Search bundles and modules…"
+      aria-label="Search bundles and modules"
+      className={styles.search}
+    />
+  );
+
   return (
     <>
-      <div className={styles.surface}>
-        {/* ===== Facets ===== */}
-        <aside className={styles.facets} aria-label="Filter the catalog">
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>Type</legend>
-            {TYPE_OPTIONS.map((t) => (
-              <label key={t.id} className={styles.option}>
-                <Radio
-                  name="type"
-                  checked={type === t.id}
-                  onChange={() => setType(t.id)}
-                />
-                <span className={styles.optionLabel}>{t.label}</span>
-                <span className={`cs-num ${styles.count}`}>
-                  {typeCount(t.id)}
-                </span>
-              </label>
-            ))}
-          </fieldset>
-
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>Category</legend>
-            {CATEGORIES.map((c) => (
-              <label key={c} className={styles.option}>
-                <Checkbox
-                  checked={categories.has(c)}
-                  onChange={() => setCategories((prev) => toggle(prev, c))}
-                />
-                <span className={styles.optionLabel}>{categoryLabel(c)}</span>
-                <span className={`cs-num ${styles.count}`}>
-                  {categoryCount(c)}
-                </span>
-              </label>
-            ))}
-          </fieldset>
-
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>Price</legend>
-            {PRICE_BANDS.map((b) => (
-              <label key={b.id} className={styles.option}>
-                <Checkbox
-                  checked={bands.has(b.id)}
-                  onChange={() => setBands((prev) => toggle(prev, b.id))}
-                />
-                <span className={styles.optionLabel}>{b.label}</span>
-                <span className={`cs-num ${styles.count}`}>{bandCount(b)}</span>
-              </label>
-            ))}
-          </fieldset>
-
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>Media</legend>
-            <label className={styles.option}>
-              <Checkbox
-                checked={demoOnly}
-                onChange={() => setDemoOnly((v) => !v)}
-              />
-              <span className={styles.optionLabel}>
-                Has a diagram, demo, or video
-              </span>
-              <span className={`cs-num ${styles.count}`}>{mediaCount}</span>
-            </label>
-          </fieldset>
-        </aside>
-
-        {/* ===== Results ===== */}
-        <div className={styles.surfaceMain}>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search bundles and modules…"
-            aria-label="Search bundles and modules"
-            className={styles.search}
-          />
-
-          {chips.length > 0 && (
-            <div className={styles.chips}>
-              {chips.map((c) => (
-                <button
-                  key={c.key}
-                  type="button"
-                  className={styles.chip}
-                  onClick={c.remove}
-                  aria-label={`Remove ${c.label} filter`}
-                >
-                  {c.label}
-                  <Icon name="x" />
-                </button>
-              ))}
-              <button
-                type="button"
-                className={styles.clearAll}
-                onClick={clearAll}
-              >
-                Clear all
-              </button>
-            </div>
-          )}
-
-          <p className={styles.results} role="status" aria-live="polite">
-            {countLabel}
-          </p>
-
-          {results.length === 0 ? (
-            <div className={styles.empty}>
-              <p>Nothing matches those filters.</p>
-              <Button type="button" variant="ghost" onClick={clearAll}>
-                Clear all filters
-              </Button>
-            </div>
-          ) : (
-            <div className="cs-grid cs-grid--2">
-              {results.map((e) => (
-                <SurfaceCard
-                  key={e.viewId}
-                  entry={e}
-                  onOpen={openPreview}
-                  compareChecked={compareIds.includes(e.viewId)}
-                  compareDisabled={
-                    compareIds.length >= COMPARE_MAX &&
-                    !compareIds.includes(e.viewId)
-                  }
-                  onToggleCompare={toggleCompare}
-                />
-              ))}
-            </div>
-          )}
+      {/* ===== Sticky filter toolbar (ADR-0378 lock 3) ===== */}
+      <div className={styles.toolbar}>
+        {/* Desktop: segmented Type + Category / Price disclosures + media toggle, inline. */}
+        <div className={styles.desktopFilters}>
+          {typeSegmented}
+          <Popover
+            trigger={
+              <>
+                {categories.size > 0
+                  ? `Category (${categories.size})`
+                  : "Category"}
+                <Caret />
+              </>
+            }
+            open={openPanel === "category"}
+            onOpenChange={(o) => setOpenPanel(o ? "category" : null)}
+          >
+            {categoryFieldset}
+          </Popover>
+          <Popover
+            trigger={
+              <>
+                {bands.size > 0 ? `Price (${bands.size})` : "Price"}
+                <Caret />
+              </>
+            }
+            open={openPanel === "price"}
+            onOpenChange={(o) => setOpenPanel(o ? "price" : null)}
+          >
+            {priceFieldset}
+          </Popover>
+          {mediaToggle}
         </div>
 
-        {/* ===== Stack rail (cart-aware) ===== */}
-        <StackRail />
+        {/* Mobile: one Filters disclosure holding all four controls. */}
+        <div className={styles.mobileFilters}>
+          <Popover
+            trigger={
+              <>
+                {chips.length > 0 ? `Filters (${chips.length})` : "Filters"}
+                <Caret />
+              </>
+            }
+            open={openPanel === "filters"}
+            onOpenChange={(o) => setOpenPanel(o ? "filters" : null)}
+          >
+            <div className={styles.filtersStack}>
+              {typeSegmented}
+              {categoryFieldset}
+              {priceFieldset}
+              {mediaToggle}
+            </div>
+          </Popover>
+        </div>
+
+        {searchInput}
       </div>
+
+      {/* ===== Chip row + aria-live count (kept) ===== */}
+      {chips.length > 0 && (
+        <div className={styles.chips}>
+          {chips.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              className={styles.chip}
+              onClick={c.remove}
+              aria-label={`Remove ${c.label} filter`}
+            >
+              {c.label}
+              <Icon name="x" />
+            </button>
+          ))}
+          <button type="button" className={styles.clearAll} onClick={clearAll}>
+            Clear all
+          </button>
+        </div>
+      )}
+
+      <p className={styles.results} role="status" aria-live="polite">
+        {countLabel}
+      </p>
+
+      {/* ===== Results — Bundles band, hairline divider, Modules band ===== */}
+      {results.length === 0 ? (
+        <div className={styles.empty}>
+          <p>Nothing matches those filters.</p>
+          <Button type="button" variant="ghost" onClick={clearAll}>
+            Clear all filters
+          </Button>
+        </div>
+      ) : (
+        <>
+          {bundleResults.length > 0 && (
+            <section className={styles.band}>
+              <h3 className={styles.bandHead}>Bundles</h3>
+              <div className="cs-grid cs-grid--3">
+                {bundleResults.map(renderCard)}
+              </div>
+            </section>
+          )}
+          {bundleResults.length > 0 && moduleResults.length > 0 && (
+            <hr className={styles.divider} />
+          )}
+          {moduleResults.length > 0 && (
+            <section className={styles.band}>
+              <h3 className={styles.bandHead}>Modules</h3>
+              <div className="cs-grid cs-grid--3">
+                {moduleResults.map(renderCard)}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+
+      <MarketplaceCartStrip />
 
       <PreviewDialog viewId={viewId} onClose={closePreview} signals={signals} />
 
@@ -362,6 +443,49 @@ export function MarketplaceSurface({
         onClear={() => setCompareIds([])}
       />
     </>
+  );
+}
+
+/** Small down-caret for the toolbar disclosure triggers (mirrors nav-panels' chevron). */
+function Caret() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+/** Slim sticky summary strip, /marketplace only (rendered inside this surface, which only mounts on
+ *  /marketplace). Once the cart is non-empty it shows the line count + subtotal and a Review action
+ *  that opens the one cart drawer — every open routes through the drawer's single view_cart
+ *  chokepoint. Never renders on /cart or /dashboard/cart (this surface isn't on those routes). */
+function MarketplaceCartStrip() {
+  const { items, subtotal, openDrawer } = useCart();
+  if (items.length === 0) return null;
+  return (
+    <div className={styles.cartStrip} role="region" aria-label="Cart summary">
+      <span className={styles.cartStripMeta}>
+        <span className="cs-num">
+          {items.length} {items.length === 1 ? "item" : "items"}
+        </span>
+        <span className={`cs-num ${styles.cartStripTotal}`}>
+          {formatUsd(subtotal)}
+        </span>
+      </span>
+      <Button type="button" variant="primary" onClick={openDrawer}>
+        Review
+      </Button>
+    </div>
   );
 }
 

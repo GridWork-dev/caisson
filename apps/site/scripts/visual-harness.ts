@@ -300,8 +300,8 @@ function interactionShots(): Shot[] {
       name: "popout-media-carousel-next",
       // NOT popoutRoute: the card viewer omits the code-artifact slide (ADR-0290 WR-03), so a
       // module with a single targeting diagram renders the single-slide layout — no nav buttons
-      // to click. audit-worm carries two mechanism diagrams (audit-chain + worm-lifecycle), so
-      // its viewer always has a real carousel.
+      // to click. audit-worm carries its live ChainViewer component slide plus its bespoke
+      // schematic sheet (ADR-0377), so its viewer always has a real carousel.
       route: "/marketplace?view=module:audit-worm",
       fullPage: false,
       // The slide carousel lives in the card-viewer pop-out (module depth pages have no controls).
