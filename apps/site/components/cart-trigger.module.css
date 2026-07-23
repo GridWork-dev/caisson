@@ -10,3 +10,26 @@
   height: 2.75rem;
   transform: translate(-50%, -50%);
 }
+
+/* Count badge pop (ADR-0378 lock 4) — the badge is re-keyed by the cart provider's addPulse, so it
+ * re-mounts and replays this on every add. Compositor-only (transform + opacity), no layout. */
+.badge {
+  animation: cs-badge-pop var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+@keyframes cs-badge-pop {
+  from {
+    transform: scale(0.5);
+    opacity: 0.3;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    animation: none;
+  }
+}

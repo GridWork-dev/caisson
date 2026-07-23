@@ -48,6 +48,9 @@ export function CartDrawer() {
       }}
     >
       <div className={styles.panel}>
+        {/* Grab handle — visible only in the bottom-sheet layout (below 48rem); decorative. */}
+        <div className={styles.grabber} aria-hidden="true" />
+
         <div className={styles.header}>
           <span className="cs-card-title">Cart</span>
           <button
@@ -63,9 +66,14 @@ export function CartDrawer() {
         <CartPrunedNotice />
 
         {items.length === 0 ? (
-          <p className="cs-muted">
-            Your cart is empty. Add a bundle or a module to get started.
-          </p>
+          <>
+            <p className="cs-muted">
+              Your cart is empty. Add a bundle or a module to get started.
+            </p>
+            <Button type="button" variant="ghost" onClick={closeDrawer}>
+              Keep browsing
+            </Button>
+          </>
         ) : (
           <>
             <ul className={styles.lines}>
@@ -92,6 +100,10 @@ export function CartDrawer() {
 
             <Button href="/cart" variant="primary" onClick={closeDrawer}>
               Review cart
+            </Button>
+
+            <Button type="button" variant="ghost" onClick={closeDrawer}>
+              Keep browsing
             </Button>
           </>
         )}
