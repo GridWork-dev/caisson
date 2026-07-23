@@ -12,7 +12,7 @@
 //      concept-only items with neither a showable component nor an artifact. Bundle slides use the
 //      parametrized composition pattern (one component, fed each bundle's real member modules).
 // Where none of those apply, the brand placeholder auto-fills slide 1 — never a fabricated
-// screenshot. All 28 catalog items resolve to real media (ADR-0290) — the placeholder path stays as
+// screenshot. All 32 catalog items resolve to real media (ADR-0290/0378) — the placeholder path stays as
 // the defensive fallback for a future catalog item not yet wired in.
 import type { IconName } from "@caisson/ui/components";
 
