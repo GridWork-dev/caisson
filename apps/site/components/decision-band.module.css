@@ -1,0 +1,75 @@
+/* Decision band (ADR-0378 lock 5) — site-local composition, tokens only, theme-aware by cascade
+ * (no light/dark branching). Card hover + reduced-motion guard mirror marketplace.module.css's
+ * .pickerRow convention. */
+
+.band {
+  display: grid;
+  gap: var(--cs-space-6);
+}
+
+.paths {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--cs-space-5);
+}
+
+/* Stack to one column on tablet/below (lg rung, ADR-0100 ladder). */
+@media (max-width: 48rem) {
+  .paths {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The whole card is the hit target — well over the 2.75rem (44px) floor in both axes. */
+.path {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--cs-space-2);
+  min-height: 2.75rem;
+  padding: var(--cs-space-6);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--cs-duration-fast) var(--cs-ease-out),
+    background var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.path:hover,
+.path:focus-visible {
+  border-color: var(--cs-accent);
+  background: var(--cs-accent-tint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .path {
+    transition: none;
+  }
+}
+
+.persona {
+  margin-top: var(--cs-space-2);
+  font-size: var(--cs-text-lg);
+  font-weight: var(--cs-weight-semibold);
+  letter-spacing: var(--cs-tracking-tight);
+}
+
+.bundleName {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-sm);
+}
+
+.price {
+  margin-top: auto;
+  padding-top: var(--cs-space-4);
+  font-size: var(--cs-text-xl);
+  font-weight: var(--cs-weight-semibold);
+  color: var(--cs-accent);
+}
+
+.fit {
+  margin: 0;
+}

@@ -1,0 +1,166 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-4);
+}
+
+.field {
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.sliderGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--cs-space-4);
+}
+
+.sliderField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+.sliderLabel {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.range {
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding-inline: 0;
+  border: none;
+  background: transparent;
+  accent-color: var(--cs-accent);
+}
+
+.range:focus-visible {
+  outline: 2px solid var(--cs-accent);
+  outline-offset: 2px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.chipsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+}
+
+.outputPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-4);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+}
+
+.findings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.finding {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+  padding: var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-2);
+}
+
+.detail {
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.register {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--cs-space-1) var(--cs-space-3);
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+}
+
+.register dt {
+  color: var(--cs-fg-muted);
+}
+
+.register dd {
+  margin: 0;
+  color: var(--cs-fg);
+}
+
+.bless {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+.blessButton {
+  align-self: flex-start;
+  min-block-size: 2.75rem;
+  padding-inline: var(--cs-space-4);
+  border: 1px solid var(--cs-accent);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-2);
+  color: var(--cs-fg);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+  cursor: pointer;
+}
+
+.blessButton:hover {
+  background: var(--cs-surface-1);
+}
+
+.blessButton:focus-visible {
+  outline: 2px solid var(--cs-accent);
+  outline-offset: 2px;
+}
+
+.blessError {
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-danger);
+}
+
+.blessOk {
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-success);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .outputPanel {
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease;
+  }
+}

@@ -15,8 +15,8 @@ import {
   IsolationDiagram,
   LifecycleDiagram,
 } from "@/components/isolation-diagrams";
+import { DecisionBand } from "@/components/decision-band";
 import { RepoArtifact } from "@/components/repo-artifact";
-import { StackBuilderLazy } from "@/components/stack-builder-lazy";
 import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
@@ -508,21 +508,16 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Bundle-builder calculator (D4c) — the embedded StackBuilder, prices from the SOT ===== */}
+      {/* ===== Decision band (ADR-0378 lock 5) — three persona paths, zero cart chrome ===== */}
       <Reveal>
         <Section
-          eyebrow="Bundle builder"
-          title="Build your own stack. Watch the running total."
-          lede="Pick the modules you need and see the total. When your picks total more than a bundle covers, the builder points at the cheaper path (the arithmetic, not a fabricated discount). Every figure reads from the committed catalog."
+          eyebrow="Pick a path"
+          title="Pick the path. The bundle follows."
+          lede="Three ways in. Each opens the matching bundle's viewer on the marketplace, priced from the same committed catalog every page reads."
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
-            <StackBuilderLazy />
+            <DecisionBand />
           </div>
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            <Link href="/marketplace" className="cs-link">
-              Build your stack on the full marketplace
-            </Link>
-          </p>
         </Section>
       </Reveal>
 

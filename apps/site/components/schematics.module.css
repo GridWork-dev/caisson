@@ -1,0 +1,234 @@
+/* Bespoke module/bundle schematics (ADR-0377, executing the ADR-0376 lock-2 kickoff).
+ * Token-only color (no raw hex, DESIGN.md §2); theme-aware by cascade. Two visual grammars share
+ * this vocabulary: blueprint linework sheets (modules) and cross-section strata (bundles).
+ * The engineering-drawing register comes from three deliberate departures from the
+ * marketplace-diagrams template: a grid-paper ground (the MediaPlaceholder texture, now carrying a
+ * real drawing), hairline strokes pinned in device px via vector-effect (set in the TSX), and
+ * sharp-cornered nodes. Accent budget: ONE semantic accent element per sheet (ADR-0375 restraint). */
+
+.sheetFrame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  /* Contain, never clip (pilot-review fix): the carousel stage caps at min(70vh, 36rem) and a
+   * full-width 16:9 body can exceed the remainder under the chrome bar — without this cap the
+   * stage scroll-CLIPS the sheet's bottom rows. Height-capped, the inner SVG letterboxes down
+   * (preserveAspectRatio meet) and the full drawing stays visible; the grid ground fills the box. */
+  max-height: min(58vh, 30rem);
+  display: grid;
+  place-items: center;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in oklab, var(--cs-border) 55%, transparent) 0 1px,
+      transparent 1px 20px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--cs-border) 55%, transparent) 0 1px,
+      transparent 1px 20px
+    ),
+    var(--cs-surface-2);
+  overflow: hidden;
+  padding: var(--cs-space-4);
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+}
+
+.svg text {
+  font-family: var(--cs-font-mono);
+}
+
+/* ===== Linework (all strokes ride vector-effect: non-scaling-stroke in the TSX) ===== */
+
+.node {
+  fill: var(--cs-surface-1);
+  stroke: var(--cs-border-strong);
+  stroke-width: 1;
+}
+
+.flow {
+  stroke: var(--cs-border-strong);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.flowHead {
+  fill: var(--cs-border-strong);
+}
+
+/* The ONE accent element per sheet: a dashed semantic boundary (the gate / the seam). */
+.boundary {
+  fill: none;
+  stroke: var(--cs-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+}
+
+.boundaryLabel {
+  font-size: 9px;
+  font-weight: 600;
+  fill: var(--cs-accent);
+}
+
+.seamLine {
+  stroke: var(--cs-accent);
+  stroke-width: 1.5;
+}
+
+/* ===== Text roles ===== */
+
+.head {
+  font-size: 10px;
+  font-weight: 600;
+  text-anchor: middle;
+  fill: var(--cs-fg);
+}
+
+.sub {
+  font-size: 9px;
+  text-anchor: middle;
+  fill: var(--cs-fg-muted);
+}
+
+.subDanger {
+  font-size: 9px;
+  text-anchor: middle;
+  fill: var(--cs-danger);
+}
+
+.note {
+  font-size: 9px;
+  fill: var(--cs-fg-muted);
+}
+
+.noteDanger {
+  font-size: 9px;
+  fill: var(--cs-danger);
+}
+
+.portLabel {
+  font-size: 9px;
+  fill: var(--cs-fg-muted);
+}
+
+.port {
+  fill: none;
+  stroke: var(--cs-fg-muted);
+  stroke-width: 1;
+}
+
+/* ===== Dimensioned byte strip (blueprint sheets) ===== */
+
+.cell {
+  fill: var(--cs-surface-1);
+  stroke: var(--cs-border-strong);
+  stroke-width: 1;
+}
+
+.cellLabel {
+  font-size: 9px;
+  text-anchor: middle;
+  fill: var(--cs-fg);
+}
+
+.dim {
+  stroke: var(--cs-fg-muted);
+  stroke-width: 1;
+}
+
+.dimLabel {
+  font-size: 8.5px;
+  text-anchor: middle;
+  fill: var(--cs-fg-muted);
+}
+
+/* ===== Title block (blueprint sheets) ===== */
+
+.titleBlock {
+  fill: var(--cs-surface-1);
+  stroke: var(--cs-border);
+  stroke-width: 1;
+}
+
+.titleBlockText {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--cs-fg-muted);
+}
+
+/* ===== Cross-section strata (bundle sheets) ===== */
+
+.waterline {
+  fill: none;
+  stroke: var(--cs-fg-muted);
+  stroke-width: 1;
+}
+
+.bandSeam {
+  fill: var(--cs-surface-1);
+  stroke: var(--cs-border);
+  stroke-width: 1;
+}
+
+.bandBase {
+  fill: var(--cs-surface-2);
+  stroke: var(--cs-border);
+  stroke-width: 1;
+}
+
+.bandBedrock {
+  fill: var(--cs-bg);
+  stroke: var(--cs-border);
+  stroke-width: 1;
+}
+
+.bandLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  fill: var(--cs-fg-muted);
+}
+
+.bandLabelAccent {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  fill: var(--cs-accent);
+}
+
+.chip {
+  fill: var(--cs-surface-2);
+  stroke: var(--cs-border-strong);
+  stroke-width: 1;
+}
+
+.chipOnBase {
+  fill: var(--cs-surface-1);
+  stroke: var(--cs-border-strong);
+  stroke-width: 1;
+}
+
+.chipLabel {
+  font-size: 9px;
+  text-anchor: middle;
+  fill: var(--cs-fg);
+}
+
+.hatch {
+  stroke: var(--cs-border);
+  stroke-width: 1;
+}
+
+.gauge {
+  stroke: var(--cs-fg-muted);
+  stroke-width: 1;
+}
+
+.gaugeLabel {
+  font-size: 8.5px;
+  text-anchor: end;
+  fill: var(--cs-fg-muted);
+}
