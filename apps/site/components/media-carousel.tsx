@@ -63,6 +63,90 @@ const POKE_SLIDES: Record<PokeKey, ComponentType> = {
     ssr: false,
     loading: () => <MediaPlaceholder icon="boxes" />,
   }),
+  "signing-primitive": dynamic(() => import("./poke/signing-primitive-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  credits: dynamic(() => import("./poke/credits-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "billing-orchestration": dynamic(
+    () => import("./poke/billing-orchestration-poke"),
+    { ssr: false, loading: () => <MediaPlaceholder icon="boxes" /> },
+  ),
+  "tool-exec": dynamic(() => import("./poke/tool-exec-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "local-privacy": dynamic(() => import("./poke/local-privacy-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "org-controls": dynamic(() => import("./poke/org-controls-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "retention-runner": dynamic(() => import("./poke/retention-runner-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "local-store": dynamic(() => import("./poke/local-store-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "local-sync": dynamic(() => import("./poke/local-sync-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "local-inference": dynamic(() => import("./poke/local-inference-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "agent-kernel": dynamic(() => import("./poke/agent-kernel-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "agent-runner": dynamic(() => import("./poke/agent-runner-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "agent-trajectory": dynamic(() => import("./poke/agent-trajectory-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "compliance-core": dynamic(() => import("./poke/compliance-core-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "frameworks-pack": dynamic(() => import("./poke/frameworks-pack-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "access-review": dynamic(() => import("./poke/access-review-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "risk-register": dynamic(() => import("./poke/risk-register-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "trust-page": dynamic(() => import("./poke/trust-page-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  alerting: dynamic(() => import("./poke/alerting-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "ai-evals": dynamic(() => import("./poke/ai-evals-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "prompt-registry": dynamic(() => import("./poke/prompt-registry-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
 };
 
 function Slide({ slide }: { slide: MediaSlide }) {

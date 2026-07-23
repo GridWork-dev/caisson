@@ -518,9 +518,10 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
         await preview.press("Enter");
         // precondition, asserted loudly: if the catalog/media manifest ever trims Compliance to
         // a single slide, fail with THIS message instead of an opaque arrow-locator timeout —
-        // the fix is to point the test at another multi-slide entry.
+        // the fix is to point the test at another multi-slide entry. Scoped to the carousel:
+        // the marketplace filter toolbar carries its own (collapsed-on-mobile) role="group".
         await page
-          .locator('[role="group"]')
+          .locator('[aria-roledescription="carousel"] [role="group"]')
           .first()
           .waitFor({ state: "visible", timeout: 10_000 })
           .catch(() => {

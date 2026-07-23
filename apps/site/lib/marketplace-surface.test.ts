@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { entryHasMedia, mediaSlides } from "./media-manifest";
+import { type DiagramKey, entryHasMedia, mediaSlides } from "./media-manifest";
 import {
   ALL_ENTRIES,
   BUNDLE_ENTRIES,
@@ -89,20 +89,15 @@ describe("media manifest", () => {
   });
 
   test("field-crypto and the compliance bundle carry authored diagrams", () => {
-    // field-crypto's diagram is its bespoke blueprint sheet (ADR-0377 pilot) — the shared
-    // rls-deny generic no longer targets this page.
+    // field-crypto's diagram is its bespoke blueprint sheet (ADR-0377 pilot; the shared
+    // mechanism diagrams retired with the ADR-0378 migrate-all wave).
     const fieldCrypto = mediaSlides("module", "field-crypto");
     expect(
       fieldCrypto.some((s) => s.diagram === "schematic-field-crypto"),
     ).toBe(true);
-    expect(fieldCrypto.some((s) => s.diagram === "rls-deny")).toBe(false);
-    // ADR-0378 bundle order: the cross-section strata sheet leads, then the composition
-    // slide, then the borrowed hero-member poke, then the 3 mechanism diagrams.
+    // ADR-0378 bundle order post-migration: strata sheet → composition → borrowed hero poke.
     const compliance = mediaSlides("bundle", "compliance");
-    expect(
-      compliance.filter((s) => s.kind === "diagram" && s.diagram !== undefined)
-        .length,
-    ).toBe(4);
+    expect(compliance.length).toBe(3);
     expect(compliance[0]?.diagram).toBe("schematic-compliance");
     expect(compliance[1]?.compositionBundle).toBe("compliance");
     expect(compliance[2]?.kind).toBe("poke");
@@ -110,19 +105,20 @@ describe("media manifest", () => {
   });
 
   test("code-artifact slides render a real depth-page artifact and count toward the MEDIA facet", () => {
-    // prompt-registry now leads with its live component (ADR-0308), then its module-pages.ts
-    // artifact, then its mechanism diagram — all three kinds present.
+    // prompt-registry post-ADR-0378: bespoke sheet, then its poke, then the live component,
+    // then its module-pages.ts artifact — all four kinds present.
     const slides = mediaSlides("module", "prompt-registry");
-    expect(slides.length).toBe(3);
+    expect(slides.length).toBe(4);
     expect(slides.map((s) => s.kind)).toEqual([
+      "diagram",
+      "poke",
       "component",
       "code-artifact",
-      "diagram",
     ]);
     const code = slides.find((s) => s.kind === "code-artifact");
     expect(code?.artifact?.file).toBe("packages/prompt-registry/src/render.ts");
     const diagram = slides.find((s) => s.kind === "diagram");
-    expect(diagram?.diagram).toBe("prompt-render-boundary");
+    expect(diagram?.diagram).toBe("schematic-prompt-registry");
     expect(entryHasMedia("module", "prompt-registry")).toBe(true);
   });
 
@@ -179,17 +175,13 @@ describe("media manifest", () => {
   });
 
   test("every bundle carries a real composition slide naming its own member modules", () => {
-    // ADR-0378: a bundle with a bespoke strata sheet leads with the sheet; the composition
-    // slide follows. Bundles without a sheet yet still lead with the composition.
+    // ADR-0378 post-migration: every bundle has its strata sheet at slide 0; the composition
+    // slide follows at slide 1.
     for (const b of BUNDLE_PRICES) {
       const slides = mediaSlides("bundle", b.id);
-      const comp = slides.findIndex((s) => s.compositionBundle !== undefined);
-      expect(comp === 0 || comp === 1).toBe(true);
-      expect(slides[comp]?.compositionBundle).toBe(b.id);
+      expect(slides[0]?.diagram).toBe(`schematic-${b.id}` as DiagramKey);
+      expect(slides[1]?.compositionBundle).toBe(b.id);
     }
-    // Everything reuses the whole-catalog hero artifact (no per-module bundles[] members to list).
-    const everything = mediaSlides("bundle", "everything");
-    expect(everything[0]?.compositionBundle).toBe("everything");
   });
 
   test("every catalog entry has real media — the ADR-0290 28/28 floor", () => {
