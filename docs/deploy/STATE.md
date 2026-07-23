@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-22
+updated: 2026-07-23
 status: live
 grounds:
   - docs/build-state.md
@@ -7,6 +7,21 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-07-23 — ADR-0378 media-overhaul program live (site)
+
+The full program (PR 326 squash, `45784c38`; state batch `0bce43df`) deployed to
+**caisson-site** with operator approval via the continue picker: `railway up` from the
+repo root, deployment `c6b42869` SUCCESS first try. Live-verified: healthz 200; the
+homepage decision band renders and StackBuilder is gone (the two remaining "your stack"
+strings are the locked /stack-fit ghost-link copy); the marketplace toolbar catalog is
+live with the stack dock/rail absent from the payload; module sheets SSR in the page
+HTML; the field-crypto envelope-bench poke MOUNTS client-side in a real browser against
+production (`data-poke` present, seal/key-version/golden-replay controls rendered —
+pokes are ssr:false, so HTML greps cannot see them; browser verification is the proof).
+This deploy also takes **next 16.2.11** live (the 2026-07-23 CVE batch: middleware
+auth-bypass + SSRF x2 + Server Actions DoS fixed in production). The 14 accepted
+ledger rows are now eligible to flip at the next re-audit.
 
 ## 2026-07-22 — open-row sextet live (site) + schematics kickoff opened (ADR-0377)
 
