@@ -17,8 +17,10 @@
   },
   "dependencies": {
     "@better-auth/kysely-adapter": "1.6.23",
+    "@caisson/agent-kernel": "workspace:*",
     "@caisson/ai-kit": "workspace:*",
     "@caisson/ai-meter": "workspace:*",
+    "@caisson/alerting": "workspace:*",
     "@caisson/audit-worm": "workspace:*",
     "@caisson/auth": "workspace:*",
     "@caisson/billing": "workspace:*",

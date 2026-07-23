@@ -1,0 +1,140 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-4);
+}
+
+.field {
+  display: block;
+  margin-block-end: var(--cs-space-1);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.selectWrap {
+  margin-block-end: var(--cs-space-1);
+}
+
+.selectWrap :global(.cs-select__control) {
+  min-block-size: 2.75rem;
+}
+
+.clauseCount {
+  margin: 0;
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.customPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  margin: 0;
+}
+
+.legend {
+  padding: 0 var(--cs-space-1);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.optionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding-inline: var(--cs-space-2);
+}
+
+.input {
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: 0 var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-2);
+  color: var(--cs-fg);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
+
+.outputPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-4);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+}
+
+.controlList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.controlCard {
+  padding: var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-2);
+}
+
+.controlId {
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  font-weight: 600;
+  color: var(--cs-accent);
+}
+
+.controlTitle {
+  margin: var(--cs-space-1) 0 0;
+  font-size: var(--cs-text-sm);
+  color: var(--cs-fg);
+}
+
+.controlFamily {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+}
+
+.controlStatement {
+  margin: var(--cs-space-1) 0 0;
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .outputPanel,
+  .controlCard {
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease;
+  }
+}

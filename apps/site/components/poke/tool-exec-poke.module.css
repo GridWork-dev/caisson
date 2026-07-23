@@ -1,0 +1,130 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-4);
+}
+
+.field {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.input {
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-2);
+  color: var(--cs-fg);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
+
+.optionGroup {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  padding: var(--cs-space-3);
+  margin: 0;
+}
+
+.legend {
+  padding: 0 var(--cs-space-1);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.optionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding-inline: var(--cs-space-2);
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.chipsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+}
+
+.outputPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-4);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+}
+
+.argv {
+  margin: 0;
+  padding: var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-2);
+  color: var(--cs-fg-muted);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+  word-break: break-word;
+}
+
+.argvCommand {
+  color: var(--cs-fg);
+}
+
+.argvArg {
+  color: var(--cs-accent);
+}
+
+.register {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--cs-space-1) var(--cs-space-3);
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+}
+
+.register dt {
+  color: var(--cs-fg-muted);
+}
+
+.register dd {
+  margin: 0;
+  color: var(--cs-fg);
+  word-break: break-word;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .outputPanel {
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease;
+  }
+}

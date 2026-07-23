@@ -195,6 +195,7 @@
       "version": "0.2.14",
       "dependencies": {
         "@better-auth/kysely-adapter": "1.6.23",
+        "@caisson/agent-kernel": "workspace:*",
         "@caisson/ai-kit": "workspace:*",
         "@caisson/ai-meter": "workspace:*",
         "@caisson/audit-worm": "workspace:*",

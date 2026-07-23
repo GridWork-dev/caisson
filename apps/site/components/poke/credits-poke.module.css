@@ -1,0 +1,212 @@
+/* --- grant lines --- */
+.grants {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grant {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) minmax(0, 1fr) minmax(0, 2fr) auto;
+  align-items: center;
+  gap: var(--cs-space-3);
+  padding: 0 var(--cs-space-3);
+  min-block-size: 2.75rem;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-1);
+  border-inline-start-width: 3px;
+  border-inline-start-color: var(--cs-accent);
+}
+
+.grant[data-tone="drained"] {
+  border-inline-start-color: var(--cs-border);
+  opacity: 0.6;
+}
+
+.grantType {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  font-weight: 600;
+  color: var(--cs-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feature {
+  justify-self: start;
+  padding: 0.1rem var(--cs-space-2);
+  border: 1px solid var(--cs-accent);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-accent-tint);
+  color: var(--cs-fg);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  white-space: nowrap;
+}
+
+.featureNone {
+  display: block;
+}
+
+.bar {
+  display: block;
+  block-size: 0.5rem;
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-2);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  block-size: 100%;
+  background: var(--cs-accent);
+}
+
+.amount {
+  justify-self: end;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+  white-space: nowrap;
+}
+
+.amount strong {
+  color: var(--cs-fg);
+}
+
+/* --- wallet readout --- */
+.wallet {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--cs-space-3);
+  margin: 0;
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+}
+
+.walletCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+}
+
+.walletCell dt {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.walletCell dd {
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-md);
+  font-weight: 600;
+  color: var(--cs-fg);
+}
+
+.walletCell dd[data-tone="empty"] {
+  color: var(--cs-danger);
+}
+
+/* --- controls --- */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+}
+
+.action,
+.overdraw,
+.reset {
+  min-block-size: 2.75rem;
+  padding-inline: var(--cs-space-4);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-2);
+  color: var(--cs-fg);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  cursor: pointer;
+}
+
+.overdraw {
+  border-color: var(--cs-danger);
+  color: var(--cs-danger);
+  background: transparent;
+}
+
+.action:hover,
+.reset:hover {
+  border-color: var(--cs-accent);
+}
+
+.overdraw:hover {
+  background: var(--cs-danger);
+  color: var(--cs-surface-1);
+}
+
+/* --- ledger --- */
+.ledger {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+  margin: 0;
+  padding: var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-1);
+  list-style: none;
+}
+
+.ledgerRow {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--cs-space-3);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.ledgerType {
+  color: var(--cs-fg);
+}
+
+.ledgerAmount {
+  color: var(--cs-danger);
+}
+
+.ledgerTrace {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ledgerBalance {
+  justify-self: end;
+  color: var(--cs-fg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .action,
+  .overdraw,
+  .reset,
+  .grant,
+  .barFill {
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease,
+      color 120ms ease,
+      inline-size 160ms ease,
+      opacity 160ms ease;
+  }
+}
