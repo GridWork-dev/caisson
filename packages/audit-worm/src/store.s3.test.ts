@@ -117,7 +117,11 @@ function s3Error(status: number, name: string): S3ServiceException {
 /** A stub GetObject response: a stream that yields `bytes` plus the metadata the store projects. */
 function getOutput(
   bytes: Uint8Array,
-  meta: { ContentType?: string; ObjectLockRetainUntilDate?: Date } = {},
+  meta: {
+    ContentType?: string;
+    ObjectLockRetainUntilDate?: Date;
+    VersionId?: string;
+  } = {},
 ): unknown {
   return {
     Body: { transformToByteArray: async (): Promise<Uint8Array> => bytes },
@@ -232,7 +236,11 @@ describe("S3ArtifactStore.get / head", () => {
   test("targets a caller-recorded version on get and head", async () => {
     const bytes = new Uint8Array([4, 2]);
     const stub = makeS3Stub({
-      get: () => getOutput(bytes, { ObjectLockRetainUntilDate: RETAIN }),
+      get: () =>
+        getOutput(bytes, {
+          ObjectLockRetainUntilDate: RETAIN,
+          VersionId: "s3-version-42",
+        }),
       head: () => ({
         ContentLength: bytes.byteLength,
         ObjectLockRetainUntilDate: RETAIN,
@@ -247,6 +255,28 @@ describe("S3ArtifactStore.get / head", () => {
 
     expect(stub.calls.get[0]?.VersionId).toBe("s3-version-42");
     expect(stub.calls.head[0]?.VersionId).toBe("s3-version-42");
+  });
+
+  test("fails closed when an exact read response reports another version", async () => {
+    const stub = makeS3Stub({
+      get: () =>
+        getOutput(new Uint8Array([4, 2]), {
+          VersionId: "replacement-version",
+        }),
+      head: () => ({
+        ContentLength: 2,
+        VersionId: "replacement-version",
+      }),
+    });
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+    const key = buildArtifactKey(ACCOUNT_A, "versions", "proof.bin");
+
+    await expect(store.get(key, "recorded-version")).rejects.toThrow(
+      /version/i,
+    );
+    await expect(store.head(key, "recorded-version")).rejects.toThrow(
+      /version/i,
+    );
   });
 
   test("get round-trips the body, size, retain date, and content-type", async () => {
@@ -443,7 +473,11 @@ function lockedGovernance(): S3StubBehavior {
     getRetention: () => ({
       Retention: { Mode: "GOVERNANCE", RetainUntilDate: CURRENT },
     }),
-    head: () => ({ ContentLength: 3, ObjectLockRetainUntilDate: LATER }),
+    head: () => ({
+      ContentLength: 3,
+      ObjectLockRetainUntilDate: LATER,
+      VersionId: "s3-version-42",
+    }),
   };
 }
 

@@ -24,12 +24,19 @@ import {
   canonicalize,
   ConflictError,
   isUniqueViolation,
+  NotFoundError,
   ValidationError,
   type JsonValue,
 } from "@caisson/kernel";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 import { LocalArtifactStore } from "./store.local.ts";
-import { buildArtifactKey } from "./store.ts";
+import {
+  buildArtifactKey,
+  type ArtifactMeta,
+  type ArtifactObject,
+  type ArtifactStore,
+  type PutOptions,
+} from "./store.ts";
 import { AuditChainStore, verifyAnchorSignature } from "./chain-store.ts";
 import { Ed25519AnchorSigner } from "./anchor-signer.ts";
 
@@ -54,6 +61,73 @@ function anchorKeyFor(accountId: string, length: number): string {
 
 const FIXED_NOW = (): Date => new Date("2026-06-27T00:00:00.000Z");
 
+/** Versioned-store double whose mutable current pointer can be replaced or deleted independently. */
+class RepointableVersionedStore implements ArtifactStore {
+  readonly #versions = new Map<string, Map<string, ArtifactObject>>();
+  readonly #current = new Map<string, string>();
+  #next = 0;
+
+  async put(
+    key: string,
+    body: Uint8Array,
+    opts: PutOptions,
+  ): Promise<ArtifactMeta> {
+    const versionId = `version-${++this.#next}`;
+    const object: ArtifactObject = {
+      key,
+      size: body.byteLength,
+      versionId,
+      retainUntil: opts.retainUntil,
+      body,
+    };
+    const versions = this.#versions.get(key) ?? new Map();
+    versions.set(versionId, object);
+    this.#versions.set(key, versions);
+    this.#current.set(key, versionId);
+    return object;
+  }
+
+  async get(key: string, versionId?: string): Promise<ArtifactObject> {
+    const selected = versionId ?? this.#current.get(key);
+    const object =
+      selected === undefined
+        ? undefined
+        : this.#versions.get(key)?.get(selected);
+    if (object === undefined) throw new NotFoundError("artifact not found");
+    return object;
+  }
+
+  async head(key: string, versionId?: string): Promise<ArtifactMeta | null> {
+    try {
+      return await this.get(key, versionId);
+    } catch (err) {
+      if (err instanceof NotFoundError) return null;
+      throw err;
+    }
+  }
+
+  async extendRetention(
+    key: string,
+    retainUntil: Date,
+    versionId?: string,
+  ): Promise<ArtifactMeta> {
+    const object = await this.get(key, versionId);
+    return { ...object, retainUntil };
+  }
+
+  replaceCurrent(key: string, body: Uint8Array): void {
+    const versionId = `replacement-${++this.#next}`;
+    const versions = this.#versions.get(key) ?? new Map();
+    versions.set(versionId, { key, size: body.byteLength, versionId, body });
+    this.#versions.set(key, versions);
+    this.#current.set(key, versionId);
+  }
+
+  deleteCurrent(key: string): void {
+    this.#current.delete(key);
+  }
+}
+
 async function seed(
   accountId: string,
   payloads: readonly JsonValue[],
@@ -73,9 +147,13 @@ beforeAll(async () => {
   const m3 = await Bun.file(
     new URL("./migrations/0003_rls_nullif.sql", import.meta.url),
   ).text();
-  migrationSql = m1 + m3;
+  const m4 = await Bun.file(
+    new URL("./migrations/0004_artifact_versions.sql", import.meta.url),
+  ).text();
+  migrationSql = m1 + m3 + m4;
   tp = await newTestPg();
   await tp.exec(m1);
+  await tp.exec(m4);
   tmpDir = await mkdtemp(join(tmpdir(), "audit-worm-chain-"));
   store = new LocalArtifactStore(tmpDir);
   chain = new AuditChainStore({ db: tp.pg, store, now: FIXED_NOW });
@@ -126,6 +204,50 @@ describe("AuditChainStore — append + anchor + verify", () => {
     // Keys deliberately out of order — canonicalize fixes order so hash == read-back hash.
     await chain.append(acct, { z: 1, a: { c: 3, b: 2 }, m: [3, 2, 1] });
     expect(await chain.verify(acct)).toEqual({ valid: true, brokenAt: null });
+  });
+
+  test("verification stays bound to the recorded anchor version after current replacement/delete marker", async () => {
+    const versioned = new RepointableVersionedStore();
+    const exactChain = new AuditChainStore({
+      db: tp.pg,
+      store: versioned,
+      now: FIXED_NOW,
+    });
+    const replacedAccount = randomUUID();
+    await exactChain.append(replacedAccount, { event: "original" });
+    versioned.replaceCurrent(
+      anchorKeyFor(replacedAccount, 1),
+      new TextEncoder().encode('{"length":1,"tipHash":"tampered"}'),
+    );
+    expect(await exactChain.verify(replacedAccount)).toEqual({
+      valid: true,
+      brokenAt: null,
+    });
+
+    const deletedAccount = randomUUID();
+    await exactChain.append(deletedAccount, { event: "original" });
+    versioned.deleteCurrent(anchorKeyFor(deletedAccount, 1));
+    expect(await exactChain.readCurrentAnchor(deletedAccount)).not.toBeNull();
+  });
+
+  test("a versioned legacy anchor without a recorded identity fails closed", async () => {
+    const versioned = new RepointableVersionedStore();
+    const exactChain = new AuditChainStore({
+      db: tp.pg,
+      store: versioned,
+      now: FIXED_NOW,
+    });
+    const accountId = randomUUID();
+    await exactChain.append(accountId, { event: "legacy-anchor" });
+    await tp.exec(`
+      ALTER TABLE worm_artifact_version DISABLE TRIGGER worm_artifact_version_no_delete;
+      DELETE FROM worm_artifact_version WHERE account_id = '${accountId}';
+      ALTER TABLE worm_artifact_version ENABLE TRIGGER worm_artifact_version_no_delete;
+    `);
+
+    expect(exactChain.verify(accountId)).rejects.toThrow(
+      "no recorded provider version identity",
+    );
   });
 
   test("an empty tenant chain verifies vacuously", async () => {

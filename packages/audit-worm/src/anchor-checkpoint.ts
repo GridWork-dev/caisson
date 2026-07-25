@@ -116,12 +116,30 @@ export async function runAnchorCheckpoint(
   };
   const receiptKey = anchorReceiptKey(accountId, current.length, target);
 
-  // Idempotency: the WORM receipt object is the source of truth. Once it exists, every tick skips.
-  if ((await deps.store.head(receiptKey)) !== null)
-    return { status: "skipped" };
+  // Resolve the durable provider identity before any presence check. On versioned backends a key is
+  // only a mutable current pointer; the outbox row binds us to the immutable version put returned.
+  const existing = await deps.outbox.get(key);
+  const receiptVersionId = existing?.receiptVersionId ?? undefined;
+
+  // Idempotency: the exact WORM receipt object is the source of truth. A versioned provider's
+  // current pointer is insufficient unless the outbox durably names the immutable version.
+  const storedReceipt = await deps.store.head(receiptKey, receiptVersionId);
+  if (
+    storedReceipt?.versionId !== undefined &&
+    (receiptVersionId === undefined ||
+      storedReceipt.versionId !== receiptVersionId)
+  ) {
+    if (existing?.state === "receipted") {
+      await deps.outbox.markReceiptIdentityMissing(
+        key,
+        "receipt exists but its provider version identity is missing or mismatched",
+      );
+    }
+    return { status: "needs_reconcile" };
+  }
+  if (storedReceipt !== null) return { status: "skipped" };
 
   // A pre-existing outbox row from an interrupted prior tick decides whether we may (re)submit.
-  const existing = await deps.outbox.get(key);
   if (existing !== null) {
     if (existing.state === "submitted") {
       // The TSA MAY have accepted the imprint — resolve to needs_reconcile, never blind-resubmit.
@@ -166,10 +184,11 @@ export async function runAnchorCheckpoint(
   );
 
   try {
-    await deps.store.put(receiptKey, body, {
+    const meta = await deps.store.put(receiptKey, body, {
       retainUntil,
       contentType: "application/json",
     });
+    await deps.outbox.markReceipted(key, meta.versionId);
   } catch (err) {
     if (err instanceof ArtifactExistsError) {
       // A concurrent tick already wrote the receipt — the anchor is proven; converge to receipted.
@@ -184,7 +203,6 @@ export async function runAnchorCheckpoint(
     return { status: "needs_reconcile" };
   }
 
-  await deps.outbox.markReceipted(key);
   return { status: "receipted", receiptKey };
 }
 

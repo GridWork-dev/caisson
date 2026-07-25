@@ -21,7 +21,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { InternalError, ValidationError } from "@caisson/kernel";
-import { buildArtifactKey } from "./store.ts";
+import { buildArtifactKey, type ArtifactStore } from "./store.ts";
 import { LocalArtifactStore } from "./store.local.ts";
 import {
   COMPLIANCE_ACKNOWLEDGEMENT,
@@ -43,8 +43,11 @@ beforeAll(async () => {
   const migrationSql = await Bun.file(
     new URL("./migrations/0001_audit_chain.sql", import.meta.url),
   ).text();
+  const versionIdentitySql = await Bun.file(
+    new URL("./migrations/0004_artifact_versions.sql", import.meta.url),
+  ).text();
   tp = await newTestPg();
-  await tp.exec(migrationSql);
+  await tp.exec(migrationSql + versionIdentitySql);
   tmpDir = await mkdtemp(join(tmpdir(), "audit-worm-escalation-"));
   store = new LocalArtifactStore(tmpDir);
   chain = new AuditChainStore({ db: tp.pg, store, now: FIXED_NOW });
@@ -56,6 +59,38 @@ afterAll(async () => {
 });
 
 describe("escalateRetention (ADR-0202 — chain-evidenced, fail-closed)", () => {
+  test("a versioned artifact requires its durably recorded identity", async () => {
+    const acct = randomUUID();
+    const key = buildArtifactKey(acct, "evidence", "versioned.bin");
+    await store.put(key, new Uint8Array([4]), { retainUntil: RETAIN });
+    const versionedStore: ArtifactStore = {
+      put: store.put.bind(store),
+      get: store.get.bind(store),
+      head: async (artifactKey, versionId) => {
+        void versionId;
+        const meta = await store.head(artifactKey);
+        return meta === null ? null : { ...meta, versionId: "provider-v1" };
+      },
+      extendRetention: async (artifactKey, retainUntil, versionId) => {
+        void versionId;
+        return {
+          ...(await store.extendRetention(artifactKey, retainUntil)),
+          versionId: "provider-v1",
+        };
+      },
+    };
+
+    await expect(
+      escalateRetention({
+        store: versionedStore,
+        chain,
+        accountId: acct,
+        key,
+        retainUntil: LATER,
+      }),
+    ).rejects.toThrow("recorded provider version identity");
+  });
+
   test("a successful extend appends exactly ONE verifiable retention.escalated record", async () => {
     const acct = randomUUID();
     const key = buildArtifactKey(acct, "evidence", "pack.bin");

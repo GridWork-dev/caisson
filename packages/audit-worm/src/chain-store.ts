@@ -33,6 +33,7 @@ import {
   canonicalize,
   chainEntry,
   ConflictError,
+  InternalError,
   isUniqueViolation,
   NotFoundError,
   strictObject,
@@ -51,6 +52,7 @@ import {
 } from "@caisson/tenancy-rls";
 import {
   ArtifactExistsError,
+  assertValidArtifactVersionId,
   buildArtifactKey,
   type ArtifactStore,
 } from "./store.ts";
@@ -196,6 +198,58 @@ async function loadEntries(
   return res.rows.map(toEntry);
 }
 
+async function recordArtifactVersion(
+  tx: TenantExecutor,
+  accountId: string,
+  key: string,
+  versionId: string | undefined,
+): Promise<void> {
+  if (versionId === undefined) return;
+  assertValidArtifactVersionId(versionId);
+  await tx.query(
+    `INSERT INTO worm_artifact_version (id, account_id, artifact_key, version_id)
+     VALUES ($1, $2, $3, $4)`,
+    [randomUUID(), accountId, key, versionId],
+  );
+}
+
+async function recordedArtifactVersion(
+  tx: TenantExecutor,
+  accountId: string,
+  key: string,
+): Promise<string | undefined> {
+  const result = await tx.query<{ version_id: string }>(
+    `SELECT version_id FROM worm_artifact_version
+      WHERE account_id = $1 AND artifact_key = $2`,
+    [accountId, key],
+  );
+  const versionId = result.rows[0]?.version_id;
+  if (versionId !== undefined) assertValidArtifactVersionId(versionId);
+  return versionId;
+}
+
+function assertRecordedArtifactVersion(
+  key: string,
+  recordedVersionId: string | undefined,
+  returnedVersionId: string | undefined,
+): void {
+  if (returnedVersionId !== undefined && recordedVersionId === undefined) {
+    throw new InternalError(
+      "versioned WORM artifact has no recorded provider version identity",
+      { key },
+    );
+  }
+  if (
+    recordedVersionId !== undefined &&
+    returnedVersionId !== recordedVersionId
+  ) {
+    throw new InternalError(
+      "WORM artifact provider version does not match its recorded identity",
+      { key },
+    );
+  }
+}
+
 export interface AuditChainStoreOptions {
   /** A transactor over the tenant DB (PGlite, node-postgres, Drizzle) — appends run under RLS. */
   readonly db: Transactor;
@@ -220,6 +274,8 @@ export interface AuditChainStoreOptions {
 export interface AppendResult {
   readonly entry: AuditChainEntry;
   readonly anchor: AuditChainAnchor;
+  /** Exact provider identity durably recorded for this anchor, when the backend is versioned. */
+  readonly anchorVersionId?: string;
 }
 
 /**
@@ -337,15 +393,19 @@ export class AuditChainStore {
       // The trusted commitment lands in WORM under a LENGTH-keyed, write-once key. A second anchor
       // for the same length (a truncate-then-re-append, a replay) hits the existing immutable object
       // → ArtifactExistsError → ConflictError: the original tip can never be overwritten.
+      const key = anchorKey(accountId, anchor.length);
+      let anchorVersionId: string | undefined;
       try {
-        await this.store.put(
-          anchorKey(accountId, anchor.length),
+        const meta = await this.store.put(
+          key,
           encodeStoredAnchor(anchorToStore),
           {
             retainUntil,
             contentType: "application/json",
           },
         );
+        anchorVersionId = meta.versionId;
+        await recordArtifactVersion(tx, accountId, key, anchorVersionId);
       } catch (err) {
         if (err instanceof ArtifactExistsError) {
           throw new ConflictError(
@@ -356,7 +416,9 @@ export class AuditChainStore {
         throw err;
       }
 
-      return { entry, anchor: anchorToStore };
+      return anchorVersionId === undefined
+        ? { entry, anchor: anchorToStore }
+        : { entry, anchor: anchorToStore, anchorVersionId };
     });
   }
 
@@ -378,9 +440,13 @@ export class AuditChainStore {
       // Truncation guard: the WORM store is the trusted length oracle. An anchor for a length
       // past what the DB can now produce means the tail was dropped — invalid even if the surviving
       // prefix is internally consistent (which, being a true prefix, it always is).
-      const beyond = await this.store.head(
-        anchorKey(accountId, entries.length + 1),
+      const beyondKey = anchorKey(accountId, entries.length + 1);
+      const beyondVersion = await recordedArtifactVersion(
+        tx,
+        accountId,
+        beyondKey,
       );
+      const beyond = await this.store.head(beyondKey, beyondVersion);
       if (beyond !== null) {
         return { valid: false, brokenAt: entries.length };
       }
@@ -388,9 +454,10 @@ export class AuditChainStore {
         return { valid: true, brokenAt: null };
       }
 
-      const anchorObj = await this.store.get(
-        anchorKey(accountId, entries.length),
-      );
+      const key = anchorKey(accountId, entries.length);
+      const versionId = await recordedArtifactVersion(tx, accountId, key);
+      const anchorObj = await this.store.get(key, versionId);
+      assertRecordedArtifactVersion(key, versionId, anchorObj.versionId);
       const anchor = decodeAnchor(anchorObj.body);
       return verifyChain(entries, anchor);
     });
@@ -413,9 +480,10 @@ export class AuditChainStore {
     return withTenant(this.db, accountId, async (tx) => {
       const entries = await loadEntries(tx, accountId);
       if (entries.length === 0) return null;
-      const anchorObj = await this.store.get(
-        anchorKey(accountId, entries.length),
-      );
+      const key = anchorKey(accountId, entries.length);
+      const versionId = await recordedArtifactVersion(tx, accountId, key);
+      const anchorObj = await this.store.get(key, versionId);
+      assertRecordedArtifactVersion(key, versionId, anchorObj.versionId);
       const anchor = decodeAnchor(anchorObj.body);
       return { length: entries.length, anchorBytes: encodeAnchor(anchor) };
     });
@@ -459,7 +527,10 @@ export class AuditChainStore {
       // Fork f: one WORM GET — the per-length anchor minted when this row was the tip.
       let anchorForRow: AuditChainAnchor;
       try {
-        const anchorObj = await this.store.get(anchorKey(accountId, seq + 1));
+        const key = anchorKey(accountId, seq + 1);
+        const versionId = await recordedArtifactVersion(tx, accountId, key);
+        const anchorObj = await this.store.get(key, versionId);
+        assertRecordedArtifactVersion(key, versionId, anchorObj.versionId);
         anchorForRow = decodeAnchor(anchorObj.body);
       } catch (err) {
         if (err instanceof NotFoundError) {

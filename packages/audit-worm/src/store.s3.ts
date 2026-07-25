@@ -279,6 +279,7 @@ export class S3ArtifactStore implements ArtifactStore {
         key,
       });
     }
+    this.assertRequestedVersion(key, versionId, output.VersionId);
     const body = await output.Body.transformToByteArray();
     return { ...this.metaFrom(key, body.byteLength, output), body };
   }
@@ -296,6 +297,7 @@ export class S3ArtifactStore implements ArtifactStore {
       );
       const size =
         typeof output.ContentLength === "number" ? output.ContentLength : 0;
+      this.assertRequestedVersion(key, versionId, output.VersionId);
       return this.metaFrom(key, size, output);
     } catch (err) {
       if (httpStatusOf(err) === 404) return null;
@@ -439,6 +441,20 @@ export class S3ArtifactStore implements ArtifactStore {
     const meta = await this.head(key, versionId);
     if (meta === null) throw new NotFoundError("artifact not found", { key });
     return meta;
+  }
+
+  private assertRequestedVersion(
+    key: string,
+    requested: string | undefined,
+    returned: string | undefined,
+  ): void {
+    if (requested === undefined) return;
+    if (returned !== requested) {
+      throw new InternalError(
+        "audit-worm: S3 exact-version response did not match the recorded object version",
+        { key, requestedVersionId: requested, returnedVersionId: returned },
+      );
+    }
   }
 
   /** Project an S3 get/head response into the port's `ArtifactMeta` (retention + content-type). */

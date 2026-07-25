@@ -42,6 +42,7 @@ const COMPOSED_TABLES = [
   "field_wrapped_dek",
   "audit_chain_entry",
   "locked_version",
+  "worm_artifact_version",
   "impersonation_session",
 ] as const;
 
@@ -97,8 +98,9 @@ describe("assembled sequence (ADR-0070, TM-O)", () => {
       "0003_audit_chain.sql",
       "0004_versions.sql",
       "0005_rls_nullif.sql",
-      "0006_impersonation_session.sql",
-      "0007_impersonation_session_rls_nullif.sql",
+      "0006_artifact_versions.sql",
+      "0007_impersonation_session.sql",
+      "0008_impersonation_session_rls_nullif.sql",
     ]);
     expect(assembly.sequence.map((m) => m.sourcePackage)).toEqual([
       "@caisson/field-crypto",
@@ -106,15 +108,18 @@ describe("assembled sequence (ADR-0070, TM-O)", () => {
       "@caisson/audit-worm",
       "@caisson/audit-worm",
       "@caisson/audit-worm",
+      "@caisson/audit-worm",
       "@caisson/compliance",
       "@caisson/compliance",
     ]);
-    expect(assembly.sequence.map((m) => m.seq)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(assembly.sequence.map((m) => m.seq)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8,
+    ]);
   });
 
   test("stamps ONE schema_version checksum ledger over the merged set (ADR-0014)", () => {
     expect(assembly.ledger.map((l) => l.version)).toEqual([
-      1, 2, 3, 4, 5, 6, 7,
+      1, 2, 3, 4, 5, 6, 7, 8,
     ]);
     expect(assembly.ledger.map((l) => l.filename)).toEqual(
       assembly.sequence.map((m) => m.filename),
@@ -134,7 +139,7 @@ describe("assembled sequence (ADR-0070, TM-O)", () => {
 
 describe("ordered apply + ledger (PGlite)", () => {
   test("applies the full ordered sequence on a fresh DB, recording the ledger", async () => {
-    expect(firstRun.applied).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(firstRun.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     expect(firstRun.skipped).toEqual([]);
 
     const rows = await tp.query<{ version: number; checksum: string }>(
@@ -160,7 +165,7 @@ describe("ordered apply + ledger (PGlite)", () => {
   test("re-running the assembled apply is idempotent — every version skipped", async () => {
     const second = await runMigrations(assembly, pgApplier(tp));
     expect(second.applied).toEqual([]);
-    expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 });
 

@@ -257,6 +257,7 @@ export class GcsArtifactStore implements ArtifactStore {
       });
     }
     const resource = await readJson<GcsObjectResource>(res);
+    this.assertRequestedGeneration(key, versionId, resource.generation);
     return this.metaFromResource(key, resource);
   }
 
@@ -309,10 +310,22 @@ export class GcsArtifactStore implements ArtifactStore {
       });
     }
     const resource = await readJson<GcsObjectResource>(res);
-    return {
-      ...this.metaFromResource(key, resource),
-      retainUntil: newRetainUntil,
-    };
+    this.assertRequestedGeneration(key, versionId, resource.generation);
+    const applied =
+      resource.retention?.retainUntilTime === undefined
+        ? Number.NaN
+        : new Date(resource.retention.retainUntilTime).getTime();
+    if (!(applied >= newRetainUntil.getTime())) {
+      throw new InternalError(
+        "audit-worm: GCS retention PATCH did not apply the requested retention",
+        {
+          key,
+          requested: newRetainUntil.toISOString(),
+          applied: resource.retention?.retainUntilTime,
+        },
+      );
+    }
+    return this.metaFromResource(key, resource);
   }
 
   private objectUrl(
@@ -336,6 +349,20 @@ export class GcsArtifactStore implements ArtifactStore {
     const meta = await this.head(key, versionId);
     if (meta === null) throw new NotFoundError("artifact not found", { key });
     return meta;
+  }
+
+  private assertRequestedGeneration(
+    key: string,
+    requested: string | undefined,
+    returned: string | undefined,
+  ): void {
+    if (requested === undefined) return;
+    if (returned !== requested) {
+      throw new InternalError(
+        "audit-worm: GCS exact-version response generation did not match the recorded generation",
+        { key, requestedGeneration: requested, returnedGeneration: returned },
+      );
+    }
   }
 
   private metaFromResource(

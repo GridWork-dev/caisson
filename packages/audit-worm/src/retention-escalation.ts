@@ -26,6 +26,7 @@ export interface ComplianceEscalator {
     key: string,
     retainUntil: Date,
     optIn: IrreversibleComplianceOptIn,
+    versionId?: string,
   ): Promise<ArtifactMeta>;
 }
 
@@ -53,6 +54,8 @@ export interface EscalateRetentionInput {
   readonly accountId: string;
   /** Must sit under `accountId`'s prefix — a cross-tenant escalation is refused fail-closed. */
   readonly key: string;
+  /** Exact provider identity recorded from put; versioned production callers should always pass it. */
+  readonly versionId?: string;
   readonly retainUntil: Date;
   /** Present ⇒ escalate GOVERNANCE→COMPLIANCE (the store must expose {@link ComplianceEscalator}). */
   readonly compliance?: { readonly optIn: IrreversibleComplianceOptIn };
@@ -80,7 +83,8 @@ export interface EscalateRetentionResult {
 export async function escalateRetention(
   input: EscalateRetentionInput,
 ): Promise<EscalateRetentionResult> {
-  const { store, chain, accountId, key, retainUntil, compliance } = input;
+  const { store, chain, accountId, key, versionId, retainUntil, compliance } =
+    input;
   const safe = assertSafeKey(key);
   if (safe.accountId !== accountId) {
     throw new ValidationError(
@@ -96,29 +100,64 @@ export async function escalateRetention(
   }
 
   // `from` for the evidence record — the retention BEFORE the change (null = none recorded).
-  const before = await store.head(key);
+  const before = await store.head(key, versionId);
+  if (before?.versionId !== undefined && versionId === undefined) {
+    throw new ValidationError(
+      "audit-worm: versioned artifact requires its recorded provider version identity",
+      { key },
+    );
+  }
+  if (
+    before?.versionId !== undefined &&
+    versionId !== undefined &&
+    before.versionId !== versionId
+  ) {
+    throw new InternalError(
+      "audit-worm: recorded provider version identity does not match the stored artifact",
+      { key, versionId, storedVersionId: before.versionId },
+    );
+  }
   const from = before?.retainUntil?.toISOString() ?? null;
 
   let meta: ArtifactMeta;
   let mode: RetentionMode | null;
   if (compliance !== undefined && canEscalateToCompliance(store)) {
-    meta = await store.escalateToCompliance(key, retainUntil, compliance.optIn);
+    meta = await store.escalateToCompliance(
+      key,
+      retainUntil,
+      compliance.optIn,
+      versionId,
+    );
     mode = "COMPLIANCE";
   } else {
-    meta = await store.extendRetention(key, retainUntil);
+    meta = await store.extendRetention(key, retainUntil, versionId);
     mode = declaredMode(store);
   }
+  if (
+    versionId !== undefined &&
+    meta.versionId !== undefined &&
+    meta.versionId !== versionId
+  ) {
+    throw new InternalError(
+      "audit-worm: retention was applied to an unexpected provider version identity",
+      { key, versionId, retainedVersionId: meta.versionId },
+    );
+  }
   const to = (meta.retainUntil ?? retainUntil).toISOString();
+  const retainedVersionId = meta.versionId ?? versionId;
+  const payload: {
+    kind: string;
+    key: string;
+    versionId?: string;
+    from: string | null;
+    to: string;
+    mode: RetentionMode | null;
+  } = { kind: "retention.escalated", key, from, to, mode };
+  if (retainedVersionId !== undefined) payload.versionId = retainedVersionId;
 
   let evidence: AppendResult;
   try {
-    evidence = await chain.append(accountId, {
-      kind: "retention.escalated",
-      key,
-      from,
-      to,
-      mode,
-    });
+    evidence = await chain.append(accountId, payload);
   } catch (err) {
     throw new InternalError(
       "audit-worm: retention change applied but the chain append failed — evidence gap; reconcile the chain before trusting this escalation",

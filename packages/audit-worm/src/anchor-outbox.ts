@@ -21,6 +21,7 @@
 //   markReceipted   submitted → receipted (terminal — the WORM receipt is durable)
 //   markFailed      pending|submitted → failed (terminal)
 //   markNeedsReconcile submitted → needs_reconcile (terminal — surfaced, never blind-retried)
+//   markReceiptIdentityMissing receipted → needs_reconcile (legacy repair only: object identity absent)
 // Transitions are DB-guarded (`… AND state IN (<from>) RETURNING id`): a `submitted` row can never be
 // re-submitted because markSubmitted only fires from `pending`. "No second submit" is structural.
 import { randomUUID } from "node:crypto";
@@ -30,6 +31,7 @@ import {
   type TenantExecutor,
   type Transactor,
 } from "@caisson/tenancy-rls";
+import { assertValidArtifactVersionId } from "./store.ts";
 import {
   anchorOutboxKeySchema,
   anchorOutboxRowSchema,
@@ -57,10 +59,15 @@ CREATE TABLE IF NOT EXISTS anchor_outbox (
   state         text        NOT NULL DEFAULT 'pending'
     CHECK (state IN ('pending','submitted','receipted','failed','needs_reconcile')),
   last_error    text,
+  receipt_version_id text,
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT anchor_outbox_key_uniq UNIQUE (account_id, target, anchor_length, anchor_digest)
 );
+
+-- Existing deployments already have anchor_outbox; add the exact receipt identity append-only.
+ALTER TABLE anchor_outbox
+  ADD COLUMN IF NOT EXISTS receipt_version_id text;
 
 -- Cross-tenant reconcile sweeps look up stuck rows by state (e.g. needs_reconcile / submitted).
 CREATE INDEX IF NOT EXISTS anchor_outbox_state_idx ON anchor_outbox (state);
@@ -91,6 +98,7 @@ interface AnchorOutboxDbRow {
   readonly anchor_digest: string;
   readonly state: string;
   readonly last_error: string | null;
+  readonly receipt_version_id: string | null;
   readonly created_at: Date | string;
   readonly updated_at: Date | string;
 }
@@ -104,12 +112,13 @@ function toRow(r: AnchorOutboxDbRow): AnchorOutboxRow {
     anchorDigest: r.anchor_digest,
     state: r.state,
     lastError: r.last_error,
+    receiptVersionId: r.receipt_version_id,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   });
 }
 
-const SELECT_COLS = `id, account_id, target, anchor_length, anchor_digest, state, last_error, created_at, updated_at`;
+const SELECT_COLS = `id, account_id, target, anchor_length, anchor_digest, state, last_error, receipt_version_id, created_at, updated_at`;
 
 async function selectRow(
   tx: TenantExecutor,
@@ -175,8 +184,20 @@ export class AnchorOutbox {
   }
 
   /** submitted → receipted (terminal: the WORM receipt is durably written). */
-  async markReceipted(key: AnchorOutboxKey): Promise<void> {
-    await this.#transition(key, ["submitted"], "receipted", null);
+  async markReceipted(
+    key: AnchorOutboxKey,
+    receiptVersionId?: string,
+  ): Promise<void> {
+    if (receiptVersionId !== undefined) {
+      assertValidArtifactVersionId(receiptVersionId);
+    }
+    await this.#transition(
+      key,
+      ["submitted"],
+      "receipted",
+      null,
+      receiptVersionId,
+    );
   }
 
   /** pending|submitted → failed (terminal). `error` is a short, non-secret message. */
@@ -193,6 +214,18 @@ export class AnchorOutbox {
   }
 
   /**
+   * Legacy repair: a row marked receipted before provider version identities were persisted cannot
+   * prove which immutable object was accepted. Demote it to reconciliation instead of trusting the
+   * provider's mutable current pointer.
+   */
+  async markReceiptIdentityMissing(
+    key: AnchorOutboxKey,
+    error: string,
+  ): Promise<void> {
+    await this.#transition(key, ["receipted"], "needs_reconcile", error);
+  }
+
+  /**
    * Guarded transition: UPDATE only when the row is in an expected `from` state, proven by
    * `RETURNING id` (an empty result = the state moved underneath, so we refuse rather than force it).
    * This is what makes "no second submit" structural — markSubmitted's only `from` is `pending`, so a
@@ -203,17 +236,21 @@ export class AnchorOutbox {
     from: readonly AnchorOutboxState[],
     to: AnchorOutboxState,
     lastError: string | null,
+    receiptVersionId?: string,
   ): Promise<void> {
     const k = parseStrict(anchorOutboxKeySchema, key);
     await withTenant(this.#db, k.accountId, async (tx) => {
       const res = await tx.query<{ id: string }>(
-        `UPDATE anchor_outbox SET state = $1, last_error = $2, updated_at = now()
-          WHERE account_id = $3 AND target = $4 AND anchor_length = $5 AND anchor_digest = $6
-            AND state = ANY($7::text[])
+        `UPDATE anchor_outbox
+            SET state = $1, last_error = $2,
+                receipt_version_id = COALESCE($3, receipt_version_id), updated_at = now()
+          WHERE account_id = $4 AND target = $5 AND anchor_length = $6 AND anchor_digest = $7
+            AND state = ANY($8::text[])
         RETURNING id`,
         [
           to,
           lastError,
+          receiptVersionId ?? null,
           k.accountId,
           k.target,
           k.anchorLength,

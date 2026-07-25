@@ -262,6 +262,7 @@ export const anchorOutboxRowSchema = strictObject({
   anchorDigest: z.string().regex(/^[0-9a-f]{64}$/),
   state: anchorOutboxStateSchema,
   lastError: z.string().nullable(),
+  receiptVersionId: z.string().min(1).nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });

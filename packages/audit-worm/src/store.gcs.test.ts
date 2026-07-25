@@ -245,6 +245,28 @@ describe("GcsArtifactStore.get / head", () => {
     }
   });
 
+  test("fails closed when exact-version metadata reports a different generation", async () => {
+    const { transport } = makeGcsStub(
+      router({
+        onObjectGet: () =>
+          json({
+            generation: "replacement-generation",
+            size: "2",
+            retention: {
+              mode: "Unlocked",
+              retainUntilTime: RETAIN.toISOString(),
+            },
+          }),
+      }),
+    );
+    const store = await GcsArtifactStore.create({ transport, bucket: BUCKET });
+    const key = buildArtifactKey(ACCOUNT_A, "versions", "proof.bin");
+
+    await expect(store.head(key, "recorded-generation")).rejects.toThrow(
+      /generation/i,
+    );
+  });
+
   test("get round-trips the body, size, retain date, and content-type", async () => {
     const bytes = new Uint8Array([10, 20, 30]);
     const { transport } = makeGcsStub(
@@ -411,6 +433,55 @@ describe("GcsArtifactStore.extendRetention (extend-only)", () => {
     for (const call of objectCalls) {
       expect(new URL(call.url).searchParams.get("generation")).toBe(generation);
     }
+  });
+
+  test("fails closed when PATCH reports another generation or under-applies retention", async () => {
+    const generation = "1742000000000042";
+    const makeStore = async (
+      patch: Record<string, unknown>,
+    ): Promise<GcsArtifactStore> => {
+      const { transport } = makeGcsStub(
+        router({
+          onObjectGet: () =>
+            json({
+              generation,
+              size: "3",
+              retention: {
+                mode: "Unlocked",
+                retainUntilTime: CURRENT.toISOString(),
+              },
+            }),
+          onPatch: () => json(patch),
+        }),
+      );
+      return GcsArtifactStore.create({ transport, bucket: BUCKET });
+    };
+
+    await expect(
+      (
+        await makeStore({
+          generation: "replacement-generation",
+          size: "3",
+          retention: {
+            mode: "Unlocked",
+            retainUntilTime: LATER.toISOString(),
+          },
+        })
+      ).extendRetention(key, LATER, generation),
+    ).rejects.toThrow(/generation/i);
+
+    await expect(
+      (
+        await makeStore({
+          generation,
+          size: "3",
+          retention: {
+            mode: "Unlocked",
+            retainUntilTime: CURRENT.toISOString(),
+          },
+        })
+      ).extendRetention(key, LATER, generation),
+    ).rejects.toThrow(/retention/i);
   });
 
   test.each([

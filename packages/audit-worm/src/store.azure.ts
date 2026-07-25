@@ -245,6 +245,7 @@ export class AzureBlobArtifactStore implements ArtifactStore {
     assertSafeKey(key);
     if (versionId !== undefined) assertValidArtifactVersionId(versionId);
     const properties = await this.readPropertiesOrThrow(key, versionId);
+    this.assertRequestedVersion(key, versionId, properties.versionId);
     const recordedVersionId = requiredProviderVersionId(
       properties.versionId,
       key,
@@ -273,6 +274,7 @@ export class AzureBlobArtifactStore implements ArtifactStore {
     if (versionId !== undefined) assertValidArtifactVersionId(versionId);
     const properties = await this.readProperties(key, versionId);
     if (properties === null) return null;
+    this.assertRequestedVersion(key, versionId, properties.versionId);
     const recordedVersionId = requiredProviderVersionId(
       properties.versionId,
       key,
@@ -289,6 +291,7 @@ export class AzureBlobArtifactStore implements ArtifactStore {
     assertValidRetainUntil(newRetainUntil);
     if (versionId !== undefined) assertValidArtifactVersionId(versionId);
     const current = await this.readPropertiesOrThrow(key, versionId);
+    this.assertRequestedVersion(key, versionId, current.versionId);
     const recordedVersionId = requiredProviderVersionId(current.versionId, key);
     const currentRetainUntil = current.immutabilityPolicyExpiresOn;
     if (
@@ -397,6 +400,20 @@ export class AzureBlobArtifactStore implements ArtifactStore {
           applied: applied?.toISOString(),
           mode: properties.immutabilityPolicyMode,
         },
+      );
+    }
+  }
+
+  private assertRequestedVersion(
+    key: string,
+    requested: string | undefined,
+    returned: string | undefined,
+  ): void {
+    if (requested === undefined) return;
+    if (returned !== requested) {
+      throw new InternalError(
+        "audit-worm: Azure exact-version response did not match the recorded blob version",
+        { key, requestedVersionId: requested, returnedVersionId: returned },
       );
     }
   }

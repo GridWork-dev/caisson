@@ -60,14 +60,15 @@ END $$;`;
  */
 export const PG_IDENTIFIER_RE = /^[a-z_][a-z0-9_]*$/;
 
-function auditChainMigrationSql(): string {
-  return readFileSync(
-    join(
-      import.meta.dir,
-      "../../../packages/audit-worm/src/migrations/0001_audit_chain.sql",
-    ),
-    "utf8",
+export function auditWormMigrationSql(): string {
+  const migrationRoot = join(
+    import.meta.dir,
+    "../../../packages/audit-worm/src/migrations",
   );
+  return [
+    readFileSync(join(migrationRoot, "0001_audit_chain.sql"), "utf8"),
+    readFileSync(join(migrationRoot, "0004_artifact_versions.sql"), "utf8"),
+  ].join("\n");
 }
 
 async function main(): Promise<void> {
@@ -125,7 +126,10 @@ async function main(): Promise<void> {
       "admin_action_log action CHECK widening",
       ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL,
     ],
-    ["audit-chain table (audit-worm 0001)", auditChainMigrationSql()],
+    [
+      "audit-chain + artifact-version tables (audit-worm 0001/0004)",
+      auditWormMigrationSql(),
+    ],
     ["admin mutation provision", ADMIN_MUTATION_PROVISION_SQL],
     [
       `role grants to ${grantee === "CURRENT_USER" ? "current user" : grantee}`,
