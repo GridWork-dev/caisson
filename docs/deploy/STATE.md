@@ -8,6 +8,18 @@ grounds:
 
 # Deploy log
 
+## 2026-07-25 — clean-state wave live (site): truth-fixes + CVE batch
+
+`railway up --service caisson-site` from clean main `ea2bee11` — deployment
+`3120a2ef` SUCCESS, healthz 200. Live-verified: dead `bunx @caisson-sh/cli@latest`
+hero command GONE (honest "private beta" chip, PR #327 / CAISSON-147), compliance
+page now states GOVERNANCE-mode WORM with a typed escalation to COMPLIANCE at
+launch (CAISSON-148; the leaked-root-key line dropped). Also in this image: the
+2026-07-24 CVE batch (postcss 8.5.23, valibot 1.4.2, js-yaml/brace-expansion
+re-resolves — 768e53f3) and dep-cruiser v18 (#303). Ledger context: visual
+re-audit closed 729/0/0 same day (8a652c92). Board-audit D1 full remedy still
+rides the deferred fork-walk (CAISSON-150).
+
 ## 2026-07-24 — post-deploy visual re-audit: the 14 accepted rows flip to fixed (CAISSON-149)
 
 The illustration-placeholder family re-audited against production at `c6b42869`
