@@ -187,14 +187,43 @@ export function isCreditableMember(
 const BUNDLE_ID_SET: ReadonlySet<string> = new Set<string>(BUNDLE_IDS);
 
 /**
- * The F8 upgrade credit an owned `itemId` contributes toward upgrading to `bundleId` — its retail.
+ * Convert a charged amount in MINOR units (the `entitlement_grant.charged_amount` column, the
+ * provider's own unit) to the integer USD this module prices in, rounding UP.
+ *
+ * Up, not nearest: this feeds the ADR-0381 floor "an upgrade credit never falls below what the buyer
+ * actually paid". A buyer charged $149.50 (14950) must credit at least $149.50; `Math.round` would
+ * return $150 here but `Math.floor` would return $149 — below what they paid, which is exactly the
+ * clause's failure mode. Ceiling costs at most 99 cents and always errs toward the buyer.
+ */
+function minorUnitsToUsdCeil(minorUnits: number): number {
+  return Math.ceil(minorUnits / 100);
+}
+
+/**
+ * The F8 upgrade credit an owned `itemId` contributes toward upgrading to `bundleId` — its retail,
+ * or what the buyer actually paid for it when that is higher (ADR-0381 lock 2: a credit never falls
+ * below the buyer's own paid price, so a later price CUT can never strand someone who bought at the
+ * old higher number).
+ *
+ * `paidMinorUnits` is the buyer's recorded charge for this one item in the provider's minor units
+ * (`entitlement_grant.charged_amount`), or `undefined` when nothing is recorded — an
+ * `admin_comp` grant, a driver with no per-line data, or any line whose charge cannot be attributed
+ * to a single SKU (see `grantEntitlements`). Undefined means "unknown", which falls back to retail:
+ * the pre-0381 behaviour, and the only honest answer when no per-SKU amount exists.
+ *
  * FAIL-CLOSED (ADR-0247 F8): an unknown bundle, or an item that is NOT a creditable member of the
  * bundle (an unmapped pair), THROWS — never a silent $0 that would undercredit and overcharge the
- * buyer. A member with no `SKU_RETAIL` price is a data gap and likewise throws. Callers crediting a
- * buyer's mixed owned set filter to members first ({@link upgradeQuote}); this primitive is the
- * guard against asking for a pair that should not resolve.
+ * buyer. A member with no `SKU_RETAIL` price is a data gap and likewise throws. A negative or
+ * non-integer `paidMinorUnits` is a corrupt money value and throws rather than quietly crediting a
+ * fraction. Callers crediting a buyer's mixed owned set filter to members first
+ * ({@link upgradeQuote}); this primitive is the guard against asking for a pair that should not
+ * resolve.
  */
-export function resolveUpgradeCredit(itemId: string, bundleId: string): number {
+export function resolveUpgradeCredit(
+  itemId: string,
+  bundleId: string,
+  paidMinorUnits?: number,
+): number {
   if (!BUNDLE_ID_SET.has(bundleId)) {
     throw new ConfigError(`unknown bundle id for upgrade credit: ${bundleId}`);
   }
@@ -212,7 +241,13 @@ export function resolveUpgradeCredit(itemId: string, bundleId: string): number {
       `creditable member ${itemId} has no retail price (upgrade-credit data gap)`,
     );
   }
-  return retail;
+  if (paidMinorUnits === undefined) return retail;
+  if (!Number.isInteger(paidMinorUnits) || paidMinorUnits < 0) {
+    throw new ConfigError(
+      `paid amount for item ${itemId} is not a non-negative integer of minor units: ${String(paidMinorUnits)}`,
+    );
+  }
+  return Math.max(retail, minorUnitsToUsdCeil(paidMinorUnits));
 }
 
 /** An F8 upgrade quote: what the buyer pays to move from owned items to `bundle`. */
@@ -236,10 +271,17 @@ export interface UpgradeQuote {
  * is ignored — not a fail-closed case); each credited item resolves through the fail-closed
  * {@link resolveUpgradeCredit}. `upgradePrice = max(0, bundleRetail − Σ credits)`. Pure + integer
  * USD, so the cart reads a pre-declared number and never recomputes `bundle − owned` ad-hoc.
+ *
+ * `paidMinorUnitsByItem` (ADR-0381 lock 2) optionally supplies what the buyer ACTUALLY paid per
+ * owned item, in minor units — the caller's `entitlement_grant.charged_amount` read. Any item with
+ * an entry credits at `max(retail, paid)`; omitted items credit at retail exactly as before. The
+ * map is an input, never a lookup this module performs: the pricebook stays pure and free of DB
+ * access, and the license/site layer owns the tenant-scoped read.
  */
 export function upgradeQuote(
   bundleId: string,
   ownedItemIds: readonly string[],
+  paidMinorUnitsByItem?: Readonly<Record<string, number>>,
 ): UpgradeQuote {
   if (!BUNDLE_ID_SET.has(bundleId)) {
     throw new ConfigError(`unknown bundle id for upgrade quote: ${bundleId}`);
@@ -250,7 +292,18 @@ export function upgradeQuote(
     isCreditableMember(id, bundle),
   );
   const credit = creditedItems.reduce(
-    (sum, id) => sum + resolveUpgradeCredit(id, bundle),
+    (sum, id) =>
+      sum +
+      resolveUpgradeCredit(
+        id,
+        bundle,
+        // Absent key → undefined → retail. `Object.hasOwn` (not a bare index) so an item named
+        // after an Object.prototype member can never inherit a bogus "paid amount".
+        paidMinorUnitsByItem !== undefined &&
+          Object.hasOwn(paidMinorUnitsByItem, id)
+          ? paidMinorUnitsByItem[id]
+          : undefined,
+      ),
     0,
   );
   return {

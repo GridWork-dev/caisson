@@ -13,10 +13,18 @@ import { upgradeQuote, type UpgradeQuote } from "@caisson/pricebook";
  * item×bundle credit map. Owned items that are not creditable members of the target bundle contribute
  * nothing (bundle-to-bundle upgrade crediting is out of the F8 map's scope). Throws (fail-closed) only
  * on an unknown `bundleId`.
+ *
+ * `paidMinorUnitsByItem` (ADR-0381 lock 2) is the buyer's own paid price per owned item, in minor
+ * units — the `entitlement_grant.charged_amount` read. An item with an entry credits at
+ * `max(retail, paid)`, so a later price CUT never strands a buyer who paid the old higher number;
+ * omitted items credit at retail. Optional because the column is NULL wherever a charge could not
+ * be attributed to a single SKU, and because the caller may not have the read yet — the floor is
+ * only ever applied to amounts we actually recorded.
  */
 export function bundleUpgradeQuote(
   bundleId: string,
   ownedEntitlementIds: readonly string[],
+  paidMinorUnitsByItem?: Readonly<Record<string, number>>,
 ): UpgradeQuote {
-  return upgradeQuote(bundleId, ownedEntitlementIds);
+  return upgradeQuote(bundleId, ownedEntitlementIds, paidMinorUnitsByItem);
 }

@@ -134,3 +134,84 @@ describe("data integrity — the pre-declared money data holds its invariants", 
     expect(bundleMembershipTimeline("everything")).toEqual({});
   });
 });
+
+// ADR-0381 lock 2 — the paid-price floor on an upgrade credit. `paidMinorUnits` is the buyer's own
+// recorded charge (minor units, `entitlement_grant.charged_amount`); the credit is never below it.
+describe("upgrade credit honours what the buyer actually paid (ADR-0381 lock 2)", () => {
+  // `SKU_RETAIL` is keyed by plain string, so `noUncheckedIndexedAccess` widens a lookup to
+  // `number | undefined`. Resolve it once, loudly, rather than asserting at each call site.
+  const retailOf = (itemId: string): number => {
+    const retail = SKU_RETAIL[itemId];
+    if (retail === undefined) throw new Error(`no retail price for ${itemId}`);
+    return retail;
+  };
+
+  test("omitted paid amount credits at retail — the pre-0381 behaviour", () => {
+    expect(resolveUpgradeCredit("field-crypto", "compliance")).toBe(
+      retailOf("field-crypto"),
+    );
+    expect(resolveUpgradeCredit("field-crypto", "compliance", undefined)).toBe(
+      retailOf("field-crypto"),
+    );
+  });
+
+  test("a paid price ABOVE current retail wins — a price cut never strands the buyer", () => {
+    // Bought at $249 when the SKU listed higher; retail has since been cut to $199.
+    expect(resolveUpgradeCredit("field-crypto", "compliance", 24900)).toBe(249);
+  });
+
+  test("a paid price BELOW retail does not reduce the credit — retail is the floor", () => {
+    // A discounted/affiliate purchase still credits the full retail, never the discounted amount.
+    expect(resolveUpgradeCredit("field-crypto", "compliance", 9900)).toBe(
+      retailOf("field-crypto"),
+    );
+  });
+
+  test("a fractional paid amount rounds UP, never below what was paid", () => {
+    // $299.50 paid must credit at least $299.50 — flooring to 299 would break the clause.
+    expect(resolveUpgradeCredit("field-crypto", "compliance", 29950)).toBe(300);
+  });
+
+  test("a zero paid amount is not treated as unknown — retail still applies", () => {
+    expect(resolveUpgradeCredit("field-crypto", "compliance", 0)).toBe(
+      retailOf("field-crypto"),
+    );
+  });
+
+  test("a corrupt paid amount throws rather than crediting a fraction", () => {
+    expect(() =>
+      resolveUpgradeCredit("field-crypto", "compliance", -1),
+    ).toThrow();
+    expect(() =>
+      resolveUpgradeCredit("field-crypto", "compliance", 199.5),
+    ).toThrow();
+  });
+
+  test("a quote applies the floor per item and leaves unpriced items at retail", () => {
+    const owned = ["field-crypto", "audit-worm"];
+    const base = upgradeQuote("compliance", owned);
+    // Only field-crypto has a recorded overpay; audit-worm keeps its retail credit.
+    const withPaid = upgradeQuote("compliance", owned, {
+      "field-crypto": 40000,
+    });
+    expect(withPaid.credit).toBe(base.credit - retailOf("field-crypto") + 400);
+    expect(withPaid.upgradePrice).toBe(
+      Math.max(0, BUNDLE_RETAIL.compliance - withPaid.credit),
+    );
+  });
+
+  test("an inherited Object.prototype key is never read as a paid amount", () => {
+    // `{}.constructor` is truthy; a bare index would smuggle it in as a money value.
+    const quote = upgradeQuote("compliance", ["field-crypto"], {});
+    expect(quote.credit).toBe(retailOf("field-crypto"));
+  });
+
+  test("a credit is never below the buyer's paid price, across the whole catalog", () => {
+    for (const [itemId, retail] of Object.entries(SKU_RETAIL)) {
+      const paidMinorUnits = (retail + 50) * 100;
+      expect(
+        resolveUpgradeCredit(itemId, "everything", paidMinorUnits),
+      ).toBeGreaterThanOrEqual(paidMinorUnits / 100);
+    }
+  });
+});
