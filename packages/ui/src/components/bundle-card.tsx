@@ -37,6 +37,8 @@ export interface BundleCardProps extends Omit<
  *     Next consumer can still wrap/route normally since it's a real anchor.
  *   - `forwardRef` onto the single `<a>` DOM root, BEM block `cs-edition`.
  *   - `.cs-editions` (exported below) is the grid wrapper the page wraps cards in.
+ *
+ * @a11y Always renders a native anchor, so its full card content forms one keyboard-reachable link.
  */
 export const BundleCard = forwardRef<HTMLAnchorElement, BundleCardProps>(
   function BundleCard(

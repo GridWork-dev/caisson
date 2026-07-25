@@ -1,6 +1,6 @@
 # SPEC — Agent-ready design-system surface for `@caisson/ui`
 
-- **Date:** 2026-07-13 · **Status:** PARTIAL — core v1 shipped in PR #237 (forks locked → ADR-0330, PLAN locks ADR-0345), but the committed manifest remains a four-component fixture pending the ADR-0379 generated 39-component manifest and drift guard
+- **Date:** 2026-07-13 · **Status:** IMPLEMENTED — core v1 shipped in PR #237 (forks locked → ADR-0330, PLAN locks ADR-0345); ADR-0379 closes the residual with the generated 39-component manifest, byte drift guard, and shared contrast implementation. Site-copy follow-ups remain intentionally outside this no-copy wave.
 - **Tags:** `product` `frontend` `ai` `security` (eval act fires on `ai`; security audit fires on `security` — this spec now depends on an MCP transport/auth boundary decision and an entitlement-gated doctor surface, CR-09)
 - **Provenance:** Astryx pattern (github.com/facebook/astryx — "fully customizable and agent ready", CLI as _the primary interface for humans and agents_ + MCP server, beta, 7k★); Storybook 10.3+ `componentsManifest` (default-on since storybookjs/mcp #208, 2026-04); caisson agent-visibility thesis (ADR-0254 lineage, llms.txt shipped). Amended post-audit against the 2026-07-13 adversarial review round (below).
 
@@ -24,7 +24,7 @@ Make `@caisson/ui` the component kit a buyer's **coding agent** can adopt withou
 
 Five vertical slices, each independently shippable and independently verifiable — the FORK-LOCKS bias-upgrade to "both servers + both fronts + runtime axe" in one increment is retracted (WR-10):
 
-1. **Component manifest** — committed to the repo, produced by caisson's own build-time generator (Fork B1, sibling of `gen-tokens-css.ts`) from the 38 `@caisson/ui` components: props-as-JSON from TS types, variants derived from TS prop types, token dependencies, a11y notes, RECIPE.md conventions.
+1. **Component manifest** — committed to the repo, produced by caisson's own build-time generator (Fork B1, sibling of `gen-tokens-css.ts`) from the 39 `@caisson/ui` primary components: props-as-JSON from TS types, variants derived from TS prop types, token dependencies, a11y notes, RECIPE.md conventions.
 2. **CLI `describe --json`** — deterministic, same data layer as the manifest. Which package/bin hosts it is Fork F, deferred to PLAN.
 3. **Static doctor** — imports, version skew, token misuse, `data-*` variant validity, and the contrast-gate check (`tokens-contrast.test.ts` logic reused as a lib, not re-implemented). Deterministic, CI-safe, no renderer required.
 4. **Authed MCP tools** — `list_components` / `describe_component` / `get_tokens` / `check_usage` registered into the existing entitlement-gated `packages/mcp-server` via ADR-0216 `registerTool`. Reuses auth/rate-limit/entitlement infra as-is — no new server.
@@ -34,8 +34,11 @@ Five vertical slices, each independently shippable and independently verifiable 
 
 ## Fact fixes (2026-07-13 amendment)
 
-- Component count is **38**, not 40 — every count below is corrected.
-- Variants must derive from **TS prop types**, not `data-*` attribute scanning alone — `data-*` attrs cover only 28 of the 38 components; a scan-only approach would silently drop variant data for the other 10.
+- Component count is **39**, not the historical 38/40 estimates: one stem-matching primary export
+  per component module. `LedgerRow` and `ToastRegion` remain deliberate secondary exports.
+- Variants derive from **TS prop types**, not `data-*` attribute scanning alone—source-owned
+  `data-*` attrs cover 27 of the 39 primaries (including conditional object-literal spreads); a
+  scan-only approach would silently drop variant data for the other 12.
 - Any shadcn-registry reference uses **`bunx`** (never `npx` — repo convention). GitHub registries resolve as `owner/repo/item`; `@caisson/button` requires a configured/indexed `@caisson` namespace before that install path is real (WR-04).
 - `@caisson/ui` is described as **"native-first,"** never "zero-dependency" — it declares `radix-ui` and `zod` as runtime dependencies (WR-03).
 
@@ -52,7 +55,7 @@ Five vertical slices, each independently shippable and independently verifiable 
 
 Two entry points, matching the D1 gating line:
 
-- **No-credentials discovery** — any agent with just the repo checkout or a local stdio MCP config: reads the committed manifest or calls `list_components` / `describe_component` on the local stdio server → 38 components with one-liners, full props/variants/tokens JSON for any one of them; or runs `describe --json` from the CLI. No caisson account needed.
+- **No-credentials discovery** — any agent with just the repo checkout or a local stdio MCP config: reads the committed manifest or calls `list_components` / `describe_component` on the local stdio server → 39 components with one-liners, full props/variants/tokens JSON for any one of them; or runs `describe --json` from the CLI. No caisson account needed.
 - **Authenticated verify** — a buyer's Claude/Codex session with buyer-MCP credentials: scaffolds a screen using the kit's conventions (RECIPE.md rules as machine-readable constraints), then calls `check_usage` (the static doctor) — "form-field missing `aria-describedby` wiring; token `--cs-color-x` overridden outside theme API" — typed, fixable findings, zero findings on correct usage. The agent never opens a browser — the doctor is static, no renderer needed for v1.
 
 ## What exists already (build on, don't duplicate)
@@ -71,7 +74,7 @@ Astryx is free but is _Meta's system_ — adopting it means adopting StyleX + Me
 ## Rough surface sketch (post-amendment, v1)
 
 - **Authed MCP** (registered into `packages/mcp-server`): `list_components`, `describe_component`, `get_tokens`, `check_usage` (doctor core). Any pro-tier tools/fields are declared entitlement-gated in the ADR-0216 tool manifest at registration time (see Entitlement boundary below).
-- **Local stdio discovery MCP**: `list_components`, `describe_component`, `get_tokens` — same shapes as the authed tools, scoped to the 38 Apache-base components only, no auth, no network transport.
+- **Local stdio discovery MCP**: `list_components`, `describe_component`, `get_tokens` — same shapes as the authed tools, scoped to the 39 Apache-base primary components only, no auth, no network transport.
 - **CLI**: `describe --json` — same data layer as the MCP tools. Packaging host is Fork F, resolved at PLAN.
 - **Manifest generation**: build-time script in `packages/ui` (sibling of `gen-tokens-css.ts`) emitting `components-manifest.json` from TS types (props + variants) plus a `data-*` scan (coverage note only — variants are TS-type-derived per Fact fixes, `data-*` is not the source of truth); committed to the repo per Fork B1.
 
@@ -85,7 +88,7 @@ Astryx is free but is _Meta's system_ — adopting it means adopting StyleX + Me
 
 Every MCP tool that can return pro-tier metadata (props/variants for `ui-pro` components, if/when those register into this surface) must declare that in its ADR-0216 tool manifest at registration time — which tools may expose pro metadata is a recorded, reviewable list, not an implicit property of the endpoint. Required tests:
 
-- The local stdio discovery server's tool set is asserted to be a strict subset of the Apache-base 38 components — it can never resolve a pro-tier component even if one is added to the monorepo later.
+- The local stdio discovery server's tool set is asserted to be a strict subset of the Apache-base 39 primary components — it can never resolve a pro-tier component even if one is added to the monorepo later.
 - An unentitled/unauthenticated caller against the buyer MCP's pro-tagged tools/fields is denied (entitlement error), never a silent downgrade or a partial pro-shaped response.
 - A cross-tenant/cross-tier denial test for `check_usage` matching the existing entitlement-gate pattern in `packages/mcp-server`.
 

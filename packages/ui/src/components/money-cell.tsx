@@ -61,6 +61,9 @@ export interface MoneyCellProps extends HTMLAttributes<HTMLSpanElement> {
  * Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`, `signTone`
  * resolved via a `data-sign` attribute + a local-indirection `--money-fg` var (rule 3),
  * BEM block `cs-money`, `forwardRef` on the root. Presentational — no Radix.
+ *
+ * @a11y The integer amount is always rendered as text; `data-sign` only adds visual tone and never
+ *   carries the sign as color alone.
  */
 export const MoneyCell = forwardRef<HTMLSpanElement, MoneyCellProps>(
   function MoneyCell(

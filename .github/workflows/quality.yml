@@ -55,6 +55,7 @@ jobs:
               - 'services/intel/**'
             ui:
               - 'packages/ui/**'
+              - 'packages/ds-manifest/src/base-manifest.json'
             local-store:
               - 'packages/local-store/**'
             site:
@@ -149,6 +150,8 @@ jobs:
         run: |
           bun run packages/ui/scripts/gen-tokens-css.ts
           git diff --exit-code packages/ui/styles/tokens.css
+      - name: component manifest is a byte-identical rebuild from the UI source
+        run: bun run --filter @caisson/ui check:manifest
 
   # Unused-dep / unused-export gate (repo-improvement-program row #7). ADVISORY lane, same
   # promotion rule as the `sot` gate: detect and report, never block. `--no-exit-code` means a

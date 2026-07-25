@@ -4,11 +4,37 @@
 // skew), and a WCAG contrast regression on a flattened theme — via checkContrast, the kit's own gate.
 // Fixture sources are inline string constants (not .tsx files) so tsc never tries to compile them.
 import { describe, expect, test } from "bun:test";
-import { darkTheme, functionalDark } from "@caisson/ui/tokens";
 import { loadBaseManifest } from "./read.ts";
-import { checkUsage, type ContrastTheme } from "./index.ts";
+import {
+  checkUsage,
+  type ContrastFunctional,
+  type ContrastTheme,
+} from "./index.ts";
 
 const manifest = loadBaseManifest();
+const darkTheme: ContrastTheme = {
+  bg: "#000000",
+  surface1: "#000000",
+  surface2: "#000000",
+  border: "#777777",
+  borderStrong: "#ffffff",
+  fg: "#ffffff",
+  fgMuted: "#ffffff",
+  accent: "#ffffff",
+  accentHover: "#ffffff",
+  onAccent: "#000000",
+  accentTint: "#000000",
+  focus: "#ffffff",
+  link: "#ffffff",
+  glowAccent: "#000000",
+  scrim: "#000000",
+};
+const functionalDark: ContrastFunctional = {
+  success: "#ffffff",
+  warning: "#ffffff",
+  danger: "#ffffff",
+  info: "#ffffff",
+};
 
 // A brand-conformant screen using three kit components the right way — no colour literals, no token
 // overrides, no data-* variants, no hand-rolled aria. This is the "no-credentials agent builds a

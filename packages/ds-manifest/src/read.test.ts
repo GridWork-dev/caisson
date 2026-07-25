@@ -1,12 +1,29 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { loadBaseManifest } from "./read";
 
+function readUiVersion(): string {
+  const input: unknown = JSON.parse(
+    readFileSync(resolve(import.meta.dir, "../../ui/package.json"), "utf8"),
+  );
+  if (
+    typeof input !== "object" ||
+    input === null ||
+    !("version" in input) ||
+    typeof input.version !== "string"
+  )
+    throw new Error("@caisson/ui package version is missing");
+  return input.version;
+}
+
 describe("loadBaseManifest", () => {
-  test("reads and validates the committed base manifest fixture", () => {
+  test("reads and validates the committed generated base manifest", () => {
     const manifest = loadBaseManifest();
     expect(manifest.schemaVersion).toBe(1);
     expect(manifest.generatedFor.pkg).toBe("@caisson/ui");
-    expect(manifest.components.length).toBeGreaterThan(0);
+    expect(manifest.generatedFor.version).toBe(readUiVersion());
+    expect(manifest.components).toHaveLength(39);
   });
 
   test("covers both a data-* component and a no-data-* one (variants derive from TS types, not attribute scanning)", () => {

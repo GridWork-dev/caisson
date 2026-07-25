@@ -99,6 +99,9 @@ function getSharedObserver(): IntersectionObserver | null {
  * Polymorphism here is a fixed tag-name union via `as` (not Radix `Slot`/`asChild`): the element
  * always renders one of a few block-level tags and owns its own internal ref for the observer, so
  * there is no consumer ref to forward.
+ *
+ * @a11y Reduced-motion users skip the observer and reveal immediately; without JavaScript, content
+ *   remains visible rather than being trapped at `opacity: 0`.
  */
 export function Reveal({
   children,

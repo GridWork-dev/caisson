@@ -19,6 +19,9 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
  *   - `accent` → `data-accent` (boolean attribute), `interactive` → `data-interactive`; both styled
  *     by attribute selectors in `card.css` — no variant logic in JS.
  *   - Co-located CSS reads only `var(--cs-*)`; BEM block `cs-card`.
+ *
+ * @a11y The root is a presentational `div` with no implicit role; interactive content must remain
+ *   a real control or link supplied by the caller.
  */
 export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
   { accent, interactive, className, children, ...rest },

@@ -26,9 +26,9 @@ export interface SwitchProps extends Omit<
  * by every AT, so the APG recommends the button build for JS-driven switches). Zero-Radix, zero
  * dependencies (ADR-0291).
  *
- * Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`; `data-checked` (via
- * `aria-checked`) drives the thumb position/fill by attribute selector (rule 3); `forwardRef` onto
- * the single root `<button>`; BEM block `cs-switch`.
+ * Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`; the semantic
+ * `aria-checked` state also drives the thumb position/fill by attribute selector (with no redundant
+ * `data-*` copy); `forwardRef` onto the single root `<button>`; BEM block `cs-switch`.
  */
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
   function Switch(

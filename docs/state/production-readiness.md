@@ -25,8 +25,8 @@ blocked until both technical and operator evidence is attached.
 | Security                | **gaps**                                        | Limiter policy implemented; four technical receipts and three adapter audits remain                                    |
 | Commerce                | **blocked**                                     | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                    |
 | Operations              | **gaps**                                        | Restore rehearsed July 11; current backup recency and provider-console checks still required                           |
-| Buyer/product           | **gaps**                                        | Five already-locked residual families remain                                                                           |
-| Release                 | **blocked**                                     | 32 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                           |
+| Buyer/product           | **gaps**                                        | Design-manifest residual complete; four already-locked families remain                                                 |
+| Release                 | **blocked**                                     | 33 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                           |
 
 ## Evidence snapshot
 
@@ -34,12 +34,14 @@ blocked until both technical and operator evidence is attached.
 
 - Baseline audited `main`: `fe2dfacaa2693578f49baf431f6d0865486174a6`.
 - `bun run check` passed all 218 tasks at baseline.
-- Dependency-cruiser false green is repaired in `c236681f`: TypeScript 6.0.3, 2,293 modules,
-  1,627 TypeScript modules, 6,500+ dependency edges, and `.ts`/`.tsx` sentinels.
-- Total price authority is enforced in `f6122de8`.
+- Dependency-cruiser false green is repaired in `c236681f`: TypeScript 6.0.3, 2,296 modules,
+  1,630 TypeScript modules, 6,514 dependency edges, and `.ts`/`.tsx` sentinels.
+- Total price authority is enforced in `f6122de8`, with the catalog type restored in
+  `92d930b6`.
 - Route-specific limiter infrastructure failures are enforced in `014ac4de`.
-- There are 32 pending changeset files. Current resolution affects 41 patch packages and 3 minor
-  packages, with 7 unchanged dependents.
+- Dependency-patch ownership is enforced by the audit harness in `3e384bc5`.
+- There are 33 pending changeset files. Current resolution affects 41 patch packages and 4 minor
+  packages.
 - Current GitHub PRs, Actions, releases, required-check evidence, 2FA, and branch posture are
   **uncertified** until private-repository authorization exists. Older GitHub tables are historical.
 
@@ -94,11 +96,15 @@ management key. Arm anchoring only after its scheduler and TSA/Rekor/OTS egress 
 
 ### Buyer/product residuals
 
+Completed locally: generated 39-component design-system manifest, byte drift guard, and
+single-source browser-rendered contrast checks.
+
+Still open:
+
 1. Three module-depth pages for access-review, risk-register, and trust-page.
 2. Admin chain viewer row status, proof details, provenance, redacted export, and redaction count.
 3. Tenant self-service proof route with dashboard/demo integration.
-4. Generated 39-component design-system manifest, drift guard, and single-source contrast checks.
-5. Buyer-dashboard crosswalk matrix.
+4. Buyer-dashboard crosswalk matrix.
 
 `substrate.field-crypto-policy` is explicitly open. No canonical control content or public claim is
 authorized until the operator locks it.

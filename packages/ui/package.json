@@ -33,9 +33,11 @@
     "./styles/tokens.css": "./styles/tokens.css"
   },
   "scripts": {
-    "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
-    "test": "bun test ./src",
+    "build": "tscn -p tsconfig.json && tscn -p tsconfig.scripts.json",
+    "lint": "eslint src scripts",
+    "test": "bun test ./src ./scripts",
+    "check:manifest": "bun run scripts/gen-manifest.ts --check",
+    "gen:manifest": "bun run scripts/gen-manifest.ts",
     "gen:tokens": "bun run scripts/gen-tokens-css.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
@@ -51,6 +53,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@caisson/ds-manifest": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
@@ -60,13 +63,11 @@
     "@storybook/addon-vitest": "10.5.0",
     "@storybook/builder-vite": "10.5.0",
     "@storybook/react-vite": "10.5.0",
-    "@types/culori": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitest/browser": "4.1.10",
     "@vitest/browser-playwright": "4.1.10",
-    "culori": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-storybook": "10.5.0",
     "lucide-react": "catalog:",

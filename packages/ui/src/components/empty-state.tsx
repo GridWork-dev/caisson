@@ -26,6 +26,9 @@ export interface EmptyStateProps extends Omit<
  *
  * Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`, BEM block
  * `cs-empty`, `forwardRef` on the single `<div>` root. Presentational — no Radix.
+ *
+ * @a11y The decorative leading icon is `aria-hidden`; the visible title and description carry the
+ *   empty-state meaning as text.
  */
 export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(
   function EmptyState(

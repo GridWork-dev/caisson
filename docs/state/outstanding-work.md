@@ -23,16 +23,16 @@ and runtime evidence.
 | Workstream                                       | State                               | Exit evidence                                                          |
 | ------------------------------------------------ | ----------------------------------- | ---------------------------------------------------------------------- |
 | T0 — canonical truth and issue reconciliation    | **complete locally**                | SOT green; Linear dispositions match this tracker                      |
-| T1 — TypeScript dependency graph                 | **complete locally**                | `c236681f`; 2,293 modules, 1,627 TypeScript modules, sentinels present |
-| T2 — total price authority                       | **complete locally**                | `f6122de8`; every sellable commercial package covered                  |
+| T1 — TypeScript dependency graph                 | **complete locally**                | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present |
+| T2 — total price authority                       | **complete locally**                | `f6122de8` + `92d930b6`; every sellable commercial package covered     |
 | T3 — route-specific limiter policy               | **complete locally**                | `014ac4de`; webhook fail-open+alert, protected routes 503              |
 | T4 — one-SHA fleet and migration 0030            | **held: external + migration gate** | six runtime legs on one approved SHA; migration and parity receipts    |
-| T5 — five locked product residuals               | **queued**                          | depth pages, proof surfaces, generated DS manifest, crosswalk tests    |
+| T5 — five locked product residuals               | **1 complete / 4 held**             | DS manifest green; four named fork-board rows remain                   |
 | T6 — Inngest + Azure Key Vault + Azure Blob WORM | **queued**                          | three isolated adapter reviews and changesets                          |
 | T7 — consolidated verification and release       | **held after code waves**           | green local/CI gates, immutable tag-to-bytes and deploy receipts       |
 
-There are **32 pending changeset files**. Current Changesets resolution is 41 patch package
-releases, 3 minor package releases, and 7 unchanged dependents. They are consumed only by T7.
+There are **33 pending changeset files**. Current Changesets resolution is 41 patch package
+releases and 4 minor package releases. They are consumed only by T7.
 
 ## Linear reconciliation
 
@@ -72,12 +72,14 @@ releases, 3 minor package releases, and 7 unchanged dependents. They are consume
 1. **Truth:** reconcile this tracker, production-readiness, package catalog, architecture, deploy
    state, runbooks, spec status, ADR index, and Linear.
 2. **Safety:** land the dependency-graph guard, total price authority, and route-specific limiter
-   behavior. Complete locally in commits `c236681f`, `f6122de8`, and `014ac4de`.
+   behavior. Complete locally in commits `c236681f`, `f6122de8`, `014ac4de`, `92d930b6`,
+   and `3e384bc5`.
 3. **Fleet:** from one approved commit deploy site, admin, license, docs-RAG, support-bot, and
    registry Worker; apply migration 0030; run parity, health, checkout, entitlement, refund, RAG,
    and support probes. This is an explicit external-system/data-migration hold.
-4. **Locked product gaps:** complete three module-depth pages; admin per-row proof and redacted
-   export; tenant proof route; generated 39-component DS manifest; buyer crosswalk matrix.
+4. **Locked product gaps:** the generated 39-component DS manifest, drift guard, and shared
+   contrast gate are complete locally. Three module-depth pages, admin per-row proof/export,
+   tenant proof route, and buyer crosswalk remain held on their named fork-board rows.
 5. **Provider adapters:** add Inngest v4 jobs, Azure Key Vault KMS, and Azure Blob immutable
    storage in isolated implementation/review lanes.
 6. **Release:** reconcile all code waves, run audits and full gates, consume all changesets in one
@@ -101,6 +103,7 @@ These are not part of the active completion program:
 
 | Date       | Evidence                                                                   |
 | ---------- | -------------------------------------------------------------------------- |
+| 2026-07-25 | Generated 39-component design manifest and shared contrast gate            |
 | 2026-07-25 | Launch-critical dependency, price, and limiter safety fixes on this branch |
 | 2026-07-25 | Site truth-fix deployment recorded in deploy state                         |
 | 2026-07-24 | Visual re-audit: 729/729 fixed                                             |

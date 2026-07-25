@@ -1,9 +1,25 @@
 # VERIFY — Agent-ready design-system surface for `@caisson/ui`
 
-- **Date:** 2026-07-13 · **Act:** 4 (VERIFY) · **Verdict: PASS (v1 scope), with 3 items SEQUENCED behind the `packages/ui` freeze (not failed)**
+- **Date:** 2026-07-13 · **Act:** 4 (VERIFY) · **Verdict: PASS (v1 scope); G1/T1.4 residuals closed 2026-07-25**
 - **SPEC:** `outputs/specs/agent-ready-ds-surface/SPEC.md` (LOCKED, amended 2026-07-13)
 - **Locks:** ADR-0330 (forks A–E + re-cut v1) · ADR-0345 (Fork F = option (a), open CLI thin client)
 - **Branch:** `feature/exec-ds-surface` · diff base `feature/kickoff-t-platform` (17 commits `10ff7f22..a3821260`)
+
+## 2026-07-25 residual closeout
+
+ADR-0379 lifted the historical `packages/ui` freeze for the full-state completion program:
+
+- G1 is complete with a strict, generated 39-primary-component manifest. The generator derives the
+  set from the authoritative barrel, preserves generic and discriminated-union prop types, extracts
+  token/JSDoc/recipe metadata, validates against `componentManifestSchema`, and byte-compares the
+  committed artifact in CI.
+- T1.4 is complete. `@caisson/ui` and the agent doctor now call the same browser-rendered contrast
+  implementation, taking the stricter channel-clamp/CSS-Color-4 result and checking semantic,
+  functional, and code-syntax tokens.
+- The dependency direction is now acyclic: `@caisson/ui` has a build-only dev edge on
+  `@caisson/ds-manifest`; the manifest package has no `@caisson/ui` dependency.
+- T6.1/T6.2 discovery-pointer/site-copy follow-ups remain intentionally deferred by ADR-0379's
+  no-site-copy lock; they do not make the implemented v1 data/tool surface partial.
 
 ## Method
 
@@ -20,12 +36,12 @@ Ground-truth runs (this session, `snip proxy`, fresh `--force` where noted):
 
 ## SPEC Goal clauses (goal-backward)
 
-| #   | Goal clause                                                                               | Verdict              | Evidence                                                                                                                                                                                                                                                                                                                                                            |
-| --- | ----------------------------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| G-a | Agent discovers components + reads props/variants/tokens as typed JSON, **no human docs** | **PASS**             | Committed `packages/ds-manifest/src/base-manifest.json` (schema-validated on read, `read.ts`); `listComponents`/`describeComponent`/`getTokens` pure readers (`manifest-tools.ts`); CLI `describe --json` / `describe <name> --json` (`describe.ts`, 6 tests); local stdio discovery MCP over a real MCP Client, no bearer (`discovery-stdio.test.ts`).             |
-| G-b | Verify correct usage **mechanically** (`doctor`), no browser                              | **PASS**             | `checkUsage` static core (`doctor.ts`) — imports, version-skew, token-misuse, `data-*` variant validity, aria wiring, contrast (reuses `contrast.ts`, the kit's own gate — not re-implemented). Pure regex over untrusted input: no exec/fs/network/renderer. Guard grep for `axe`/`jsdom`/`render`/`react-dom` in the doctor lib → only prose comments, zero code. |
-| G-c | Paid verify + pro metadata stay **entitlement-gated** behind the buyer MCP                | **PASS**             | `check_usage` gated on the dedicated `ds-doctor` slug; `describe_pro_component` gated on `@caisson/ui-pro`, registered only when a pro manifest is supplied (`manifest-tools.ts`). Runtime gate = the ADR-0216 seam, identical to `coach.ts`.                                                                                                                       |
-| G-d | `@caisson/ui` gains **zero runtime deps**                                                 | **PASS (trivially)** | The generator (G1) is freeze-deferred; `packages/ui` is untouched in the diff. `@caisson/ds-manifest` runtime deps = `culori` + `zod` only; `@caisson/ui` is a **devDep** edge (tokens passed as args, no cycle).                                                                                                                                                   |
+| #   | Goal clause                                                                               | Verdict  | Evidence                                                                                                                                                                                                                                                                                                                                                            |
+| --- | ----------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| G-a | Agent discovers components + reads props/variants/tokens as typed JSON, **no human docs** | **PASS** | Committed `packages/ds-manifest/src/base-manifest.json` (schema-validated on read, `read.ts`); `listComponents`/`describeComponent`/`getTokens` pure readers (`manifest-tools.ts`); CLI `describe --json` / `describe <name> --json` (`describe.ts`, 6 tests); local stdio discovery MCP over a real MCP Client, no bearer (`discovery-stdio.test.ts`).             |
+| G-b | Verify correct usage **mechanically** (`doctor`), no browser                              | **PASS** | `checkUsage` static core (`doctor.ts`) — imports, version-skew, token-misuse, `data-*` variant validity, aria wiring, contrast (reuses `contrast.ts`, the kit's own gate — not re-implemented). Pure regex over untrusted input: no exec/fs/network/renderer. Guard grep for `axe`/`jsdom`/`render`/`react-dom` in the doctor lib → only prose comments, zero code. |
+| G-c | Paid verify + pro metadata stay **entitlement-gated** behind the buyer MCP                | **PASS** | `check_usage` gated on the dedicated `ds-doctor` slug; `describe_pro_component` gated on `@caisson/ui-pro`, registered only when a pro manifest is supplied (`manifest-tools.ts`). Runtime gate = the ADR-0216 seam, identical to `coach.ts`.                                                                                                                       |
+| G-d | `@caisson/ui` gains **zero runtime deps**                                                 | **PASS** | G1 adds only a dev edge from `@caisson/ui` to `@caisson/ds-manifest`; the manifest package retains only `culori` + `zod` at runtime. Generator/compiler dependencies stay build-only, and the inverse historical test edge was removed, so there is no workspace cycle.                                                                                             |
 
 ## SPEC three-run acceptance test (the marketing demo)
 
@@ -57,12 +73,14 @@ Ground-truth runs (this session, `snip proxy`, fresh `--force` where noted):
 
 ---
 
-## Sequenced behind the `packages/ui` freeze (NOT failures)
+## Historical freeze-sequenced items
 
 These were correctly deferred per the PLAN FREEZE-SEQ marking + the EXECUTE binding (frozen `packages/ui`, `apps/site`). Each has a landing sequence; none blocks v1 shippability.
 
-1. **G1 — real manifest generator (`packages/ui/scripts/gen-manifest.ts`) + the true 38-component base/pro manifests + drift guard (T1.1–T1.3).** `packages/ui` is FROZEN (Kickoff S). The committed `base-manifest.json` is the **hand-authored 4-component fixture** (Button, Card, FormField, Terminal — deliberately including one no-`data-*` component per P7). All consumers derive counts from the manifest at runtime (`BASE_MANIFEST.components.length`, never a hardcoded 38), so the whole surface stays green when the generator replaces the fixture with the real 38. **Sequence:** land G1 when Kickoff S lifts the freeze → regenerate → re-verify G2–G5 against real JSON.
-2. **T1.4 — single-source the contrast gate** (refactor `packages/ui/src/tokens-contrast.test.ts` to consume `ds-manifest` `checkContrast`). FREEZE-SEQ, low priority; `contrast.ts` already IS the single implementation the doctor uses, so this is a cleanup, not a correctness gap.
+1. **G1 — CLOSED 2026-07-25.** `packages/ui/scripts/gen-manifest.ts` now emits the real
+   39-primary-component base manifest and its drift guard.
+2. **T1.4 — CLOSED 2026-07-25.** The UI contrast test consumes the shared
+   `@caisson/ds-manifest` implementation.
 3. **T6.1 / T6.2 — services/docs discovery pointer + apps/site copy.** T6.2 (`apps/site`) is FROZEN. T6.1 (`services/docs`) is not frozen but is gated on the real surface (G1) + the external shadcn-namespace task (P12) per the PLAN dependency graph; sequenced after G1 lands.
 
 ## SWEEP / EVAL / SHIP notes (for the acts after this one)
@@ -72,4 +90,8 @@ These were correctly deferred per the PLAN FREEZE-SEQ marking + the EXECUTE bind
 
 ## Verdict
 
-**PASS for the v1 scope the SPEC/ADRs authorize.** All four Goal clauses, all three acceptance runs, and all three mandatory entitlement-boundary tests are satisfied by committed, green tests, and both governing forks (D locked, F per ADR-0345) are honored. The three deferred items are sequenced behind the `packages/ui` freeze exactly as the PLAN marked them — sequenced, not failed. No goal-backward gap.
+**PASS for the v1 scope the SPEC/ADRs authorize.** All four Goal clauses, all three acceptance
+runs, and all three mandatory entitlement-boundary tests are satisfied. Both governing forks (D
+locked, F per ADR-0345) are honored; G1 and T1.4 are now closed. The remaining docs/site-copy
+pointer is intentionally deferred by the active no-copy lock and does not create a data/tool
+surface gap.
