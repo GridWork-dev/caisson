@@ -86,7 +86,17 @@ releases and 4 minor package releases. They are consumed only by T7.
    tenant proof route, and buyer crosswalk remain held on their named fork-board rows.
 5. **Provider adapters:** add Inngest v4 jobs, Azure Key Vault KMS, and Azure Blob immutable
    storage in isolated implementation/review lanes.
-6. **Release:** reconcile all code waves, run audits and full gates, consume all changesets in one
+6. **oscal-spine SKU + Compliance reprice (ADR-0383, NOT STARTED):** a dedicated wave, ordered
+   because each step gates the next. Carve `@caisson/oscal-spine` out of `frameworks-pack` and
+   `compliance-core` (no package boundary exists today, and every `SKU_RETAIL` key is a package) →
+   pricebook at $249 plus a Compliance membership entry and `BUNDLE_RETAIL.compliance = 1649` →
+   production catalog **35/66 → 36/68** in `tools/paddle-catalog-recreate.ts` and every gate and
+   runbook asserting the count → regenerate `packages/cli/registry-index.json` → the ~10 files
+   carrying $1,449 outside append-only history → the docs-RAG pricing corpus and the support-bot
+   answer → the state docs. Indivisible: the price-authority gate fails on a catalog where the
+   pricebook and display sheet disagree. Deployed docs/support keep answering $1,449 until the fleet
+   redeploy, so the runbook's probe becomes a post-deploy check rather than a pre-deploy assertion.
+7. **Release:** reconcile all code waves, run audits and full gates, consume all changesets in one
    version PR, tag immutable bytes, publish the tag, and redeploy the Worker from that tag.
 
 ## Trigger-parked

@@ -7,7 +7,7 @@ status: live
 
 ## Current state (2026-07-25)
 
-**ADR ceiling is `0382`; the audited base is `fe2dfaca`; the latest immutable release tag remains
+**ADR ceiling is `0383`; the audited base is `fe2dfaca`; the latest immutable release tag remains
 `v2026.07.20.3`.** The ADR-0379 full-state completion program is active on
 `feature/full-state-completion`; ADR-0380 closed its six fork rows and split the remaining build
 into two parallel worktree lanes — `feature/completion-lane-a` (code residuals plus the adapter
@@ -19,6 +19,10 @@ ADR-0382 closed the last two decision rows — the upgrade-credit paid floor is 
 grant (migration `0031`, application still behind the operator's data-migration hold) and
 release tags are signed going forward — leaving Railway PITR and the `oscal-spine` price as the
 only open rows.
+ADR-0383 then priced `oscal-spine` at $249, folded it into Compliance, and repriced that bundle
+$1,449 to $1,649 — superseding ADR-0381's price hold. Its execution is a dedicated wave and has
+NOT started: the repository still carries $1,449 everywhere, and the price-authority gate
+requires every surface to move at once.
 
 - **61 packages:** 17 Apache-2.0 and 44 commercial; 79 Bun workspaces total.
 - **Safety wave complete locally:** TypeScript-aware dependency graph (`c236681f`), total price
