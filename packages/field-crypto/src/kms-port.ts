@@ -37,7 +37,7 @@ export interface KmsClient {
   /**
    * Request deletion of `keyId`'s key material — the crypto-shred primitive. The receipt reports
    * only the destruction state the provider proved: cloud retention windows remain explicitly
-   * pending/recoverable, while an immediate local destruction or completed purge is irreversible.
+   * pending/recoverable, while only provider-proved destruction or completed purge is irreversible.
    *
    * Requires an EXPLICIT, non-empty `keyId` (ADR-0197): every driver MUST throw rather than fall back
    * to a shared/default scope, because shredding a shared key would destroy every tenant's material.

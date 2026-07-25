@@ -53,7 +53,7 @@ const cryptoShredRequestSchema = strictObject({
 export type CryptoShredRequest = z.infer<typeof cryptoShredRequestSchema>;
 
 export interface CryptoShredReceipt {
-  /** Highest key version destroyed (0 if the scope was never provisioned). */
+  /** Highest key version covered by the deletion request (0 if the scope was never provisioned). */
   readonly shreddedThroughVersion: number;
   /** The exact destruction state the KMS provider proved. */
   readonly deletion: KmsDeletionReceipt;

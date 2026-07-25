@@ -41,9 +41,9 @@ export interface EvidenceGeneratedEvent {
 }
 
 /**
- * Operational summary of a crypto-shred erasure — opaque ids + the legal basis + the highest key
- * version destroyed. NEVER raw PII (the FACT of erasure is preserved forever in the immutable chain;
- * this is only its drop-able ops mirror).
+ * Operational summary of a crypto-shred request — opaque ids + the legal basis + the highest key
+ * version covered. NEVER raw PII (the FACT and provider-reported finality are preserved forever in
+ * the immutable chain; this is only its drop-able ops mirror).
  */
 export interface ErasureCryptoShredEvent {
   /** Owning tenant (opaque reference). */
@@ -52,7 +52,7 @@ export interface ErasureCryptoShredEvent {
   readonly subjectId: string;
   /** Legal basis recorded for the erasure, e.g. `"gdpr-art17"`. */
   readonly reason: string;
-  /** Highest key version destroyed by the shred (0 if the scope was never provisioned). */
+  /** Highest key version covered by the deletion request (0 if the scope was never provisioned). */
   readonly shreddedThroughVersion: number;
   /** Exact provider-proven deletion state; pending/recoverable states stay explicit. */
   readonly deletion: KmsDeletionReceipt;

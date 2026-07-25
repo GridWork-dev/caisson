@@ -201,8 +201,8 @@ const drivers: ReadonlyArray<{
 }> = [
   {
     name: "LocalKmsClient",
-    state: "destroyed",
-    irreversible: true,
+    state: "soft-deleted",
+    irreversible: false,
     client: () => new LocalKmsClient(randomBytes(32)),
   },
   {

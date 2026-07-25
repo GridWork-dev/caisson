@@ -65,7 +65,7 @@ describe("cryptoShred (erasure ⟂ append-only chain — ADR-0055/0052, TM-F/TM-
       occurredAt: OCCURRED_AT,
     });
 
-    // 1. the ciphertext is now permanently unrecoverable — the KEK is gone (no live KMS, all local)
+    // 1. the ciphertext is unavailable to this client after its local soft-delete tombstone.
     await expect(
       crypto.decryptField("subject_a", ssn, "patient.ssn"),
     ).rejects.toThrow();
@@ -77,8 +77,8 @@ describe("cryptoShred (erasure ⟂ append-only chain — ADR-0055/0052, TM-F/TM-
     // 3. the receipt records the erasure as an auditable, PII-free event
     expect(receipt.shreddedThroughVersion).toBe(1);
     expect(receipt.deletion).toEqual({
-      state: "destroyed",
-      irreversible: true,
+      state: "soft-deleted",
+      irreversible: false,
     });
     expect((receipt.auditPayload as Record<string, JsonValue>).event).toBe(
       ERASURE_CRYPTO_SHRED,
@@ -120,8 +120,8 @@ describe("cryptoShred (erasure ⟂ append-only chain — ADR-0055/0052, TM-F/TM-
     expect(JSON.parse(canonicalize(receipt.auditPayload))).toEqual({
       event: ERASURE_CRYPTO_SHRED,
       deletion: {
-        irreversible: true,
-        state: "destroyed",
+        irreversible: false,
+        state: "soft-deleted",
       },
       method: "kms-key-deletion",
       occurredAt: OCCURRED_AT,
@@ -153,7 +153,7 @@ describe("cryptoShred (erasure ⟂ append-only chain — ADR-0055/0052, TM-F/TM-
     expect(await crypto.decryptField("subject_a", env, "c")).toBe("still-here");
   });
 
-  test("crypto-shred is irreversible: re-provisioning a shredded scope is refused", async () => {
+  test("a locally soft-deleted scope stays unavailable for the current provider instance", async () => {
     const provider = freshProvider();
     await provider.provision("subject_a");
     await cryptoShred(provider, {

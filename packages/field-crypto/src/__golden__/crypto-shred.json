@@ -1,8 +1,8 @@
 {
   "event": "erasure.crypto-shred",
   "deletion": {
-    "state": "destroyed",
-    "irreversible": true
+    "state": "soft-deleted",
+    "irreversible": false
   },
   "method": "kms-key-deletion",
   "tenantId": "tenant_1",
