@@ -60,15 +60,21 @@ END $$;`;
  */
 export const PG_IDENTIFIER_RE = /^[a-z_][a-z0-9_]*$/;
 
-export function auditWormMigrationSql(): string {
+export function auditWormMigrationSteps(): Array<[string, string]> {
   const migrationRoot = join(
     import.meta.dir,
     "../../../packages/audit-worm/src/migrations",
   );
   return [
-    readFileSync(join(migrationRoot, "0001_audit_chain.sql"), "utf8"),
-    readFileSync(join(migrationRoot, "0004_artifact_versions.sql"), "utf8"),
-  ].join("\n");
+    [
+      "audit-chain table (audit-worm 0001)",
+      readFileSync(join(migrationRoot, "0001_audit_chain.sql"), "utf8"),
+    ],
+    [
+      "artifact-version ledger (audit-worm 0004)",
+      readFileSync(join(migrationRoot, "0004_artifact_versions.sql"), "utf8"),
+    ],
+  ];
 }
 
 async function main(): Promise<void> {
@@ -126,10 +132,7 @@ async function main(): Promise<void> {
       "admin_action_log action CHECK widening",
       ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL,
     ],
-    [
-      "audit-chain + artifact-version tables (audit-worm 0001/0004)",
-      auditWormMigrationSql(),
-    ],
+    ...auditWormMigrationSteps(),
     ["admin mutation provision", ADMIN_MUTATION_PROVISION_SQL],
     [
       `role grants to ${grantee === "CURRENT_USER" ? "current user" : grantee}`,
@@ -153,19 +156,19 @@ async function main(): Promise<void> {
         }
       }
     }
-    // Verify — roles + tables exist, and the action CHECK knows the v1 actions.
+    // Verify — roles + every required table exist, and the action CHECK knows the v1 actions.
     const roles = await pool.query(
       "SELECT rolname FROM pg_roles WHERE rolname IN ('admin','admin_write','app') ORDER BY rolname",
     );
     const tables = await pool.query(
-      "SELECT table_name FROM information_schema.tables WHERE table_name IN ('admin_action_log','audit_chain_entry') ORDER BY table_name",
+      "SELECT table_name FROM information_schema.tables WHERE table_name IN ('admin_action_log','audit_chain_entry','worm_artifact_version') ORDER BY table_name",
     );
     process.stdout.write(
       `[provision-admin] roles: ${roles.rows.map((r) => r.rolname as string).join(", ")}\n` +
         `[provision-admin] tables: ${tables.rows.map((r) => r.table_name as string).join(", ")}\n`,
     );
-    if (roles.rows.length !== 3 || tables.rows.length !== 2) {
-      throw new Error("verification failed: expected 3 roles + 2 tables");
+    if (roles.rows.length !== 3 || tables.rows.length !== 3) {
+      throw new Error("verification failed: expected 3 roles + 3 tables");
     }
   } finally {
     await pool.end();
