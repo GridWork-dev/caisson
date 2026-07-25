@@ -75,6 +75,23 @@ authenticated dashboard, checkout sandbox, entitlement, refund, RAG, and support
 Docs/support must answer $1,449; fulfillment must recognize every current product ID and reject an
 unknown ID.
 
+### Shared-bearer rotation is not a per-service operation
+
+Three bearers are byte-identical across independently-deployed services, so rotating one side alone
+silently breaks the other:
+
+| Token                     | Held by                                    |
+| ------------------------- | ------------------------------------------ |
+| `DOCS_SERVICE_TOKEN`      | `caisson-docs` ⇄ `caisson-support-bot`     |
+| `SUPPORT_BOT_GRANT_TOKEN` | `caisson-license` + `caisson-site` → bot   |
+| `LICENSE_ISSUE_TOKEN`     | `caisson-license` ⇄ its authorized callers |
+
+Rotate each as one atomic change: set the new value on **every** holder before restarting any of
+them, then restart in verifier-before-issuer order and re-probe both sides of the pair. A rotation
+that restarts one service first produces 401s that look like an auth regression rather than a
+half-applied rotation. There is no shared-secret rotation elsewhere in this runbook — do not assume
+the generic credential steps cover these three.
+
 ## Act 2 — finish code waves and release candidate
 
 - [ ] Complete the five already-locked product residual families.
