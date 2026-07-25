@@ -501,7 +501,6 @@ export async function checkManifestPriceAgreement(
 // over (disk, PRICE_AUTHORITY) like its siblings; all degrade to a skip/warn when node_modules or a
 // cross-surface file is absent (the post-install CI pass is authoritative).
 
-/**
 interface CatalogManifest {
   priceCents?: number | null;
   kind?: string;
