@@ -39,8 +39,9 @@ function recordedDist(
   bytes: Uint8Array,
   slug: string,
   version: string,
+  lockfilePath?: string,
 ): ReturnType<typeof computeTarballDist> {
-  const lockHash = currentLockHash();
+  const lockHash = currentLockHash(lockfilePath);
   return {
     ...computeTarballDist(bytes, slug, version),
     ...(lockHash !== undefined ? { lockHash } : {}),
@@ -790,6 +791,7 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
     mkdirSync(registryDir, { recursive: true });
     const baseLedgerPath = join(dir, "base-ledger.jsonl");
     const baseSidecarPath = join(dir, "base-tarballs.json");
+    const candidateLockfilePath = join(candidateRoot, "bun.lock");
     const historicalKey = "@caisson/auth@1.0.0";
     const candidateKey = "@caisson/demo@2.0.0";
     const historical = computeTarballDist(
@@ -838,6 +840,7 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       join(packageDir, "package.json"),
       JSON.stringify({ name: "@caisson/demo", version: "2.0.0" }),
     );
+    writeFileSync(candidateLockfilePath, "candidate-lock-resolution\n");
     const freshBytes = tgzWithPackageJson({
       name: "@caisson/demo",
       version: "2.0.0",
@@ -857,7 +860,10 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       const sidecar = readSidecar(join(registryDir, "tarballs.json"));
       expect(sidecar.tarballs[historicalKey]).toEqual(historical);
       expect(sidecar.tarballs[candidateKey]).toEqual(
-        recordedDist(freshBytes, "demo", "2.0.0"),
+        recordedDist(freshBytes, "demo", "2.0.0", candidateLockfilePath),
+      );
+      expect(sidecar.tarballs[candidateKey]?.lockHash).not.toBe(
+        currentLockHash(),
       );
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -955,6 +961,7 @@ describe("tarball sidecar (ADR-0223 Fork 1.1)", () => {
       join(authDir, "package.json"),
       JSON.stringify({ name: "@caisson/auth", version: diskVersion }),
     );
+    writeFileSync(join(candidateRoot, "bun.lock"), `${label}-candidate-lock\n`);
     return {
       dir,
       candidateRoot,
