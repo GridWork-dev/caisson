@@ -39,6 +39,9 @@ commit, conventional commit scopes from CLAUDE.md.
 - No deploy, migration, restart, tag, publish, secret write, or commerce change. Those are held
   operator gates.
 - Changeset for every touched package. The KMS port widening is breaking — say so in the changeset.
+- The three provider SDKs need a network install. `bunfig.toml` enforces a 7-day
+  `minimumReleaseAge`; a package newer than that needs an explicit exclude entry. Surface the
+  install command in the pane and get it approved rather than working around the gate.
 
 ## Done means
 
