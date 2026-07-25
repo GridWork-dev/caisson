@@ -1,12 +1,12 @@
 ---
-status: locked (ADR-0363 build-now + ADR-0364 fork locks F2-F5; PLAN authoring may begin)
+status: shipped (PR #278; commit d233afe0)
 owner: operator
 ---
 
 # SPEC — Dual-catalog OSCAL spine: caisson catalog OSCAL expression + vendored NIST 800-53 rev5 + OLIR-style mapping rows
 
-- **Repo:** caisson · **Tags:** `product`, `security` · **Status:** LOCKED — forks resolved at the
-  2026-07-18 same-day picker → **ADR-0364** (F2 OLIR-verbatim override · F3 extend-in-place ·
+- **Repo:** caisson · **Tags:** `product`, `security` · **Status:** SHIPPED in PR #278
+  (`d233afe0`) after the 2026-07-18 picker → **ADR-0364** (F2 OLIR-verbatim override · F3 extend-in-place ·
   F4 one merged catalog · F5 scheduled-watch override; F1 was bound by ADR-0363's own text).
 - **Lock:** ADR-0363 (2026-07-18, "build now") supersedes in part ADR-0333's deferred-fork gate — the
   real-FedRAMP-ask trigger is dropped; the fork's stated PRECONDITIONS become binding build

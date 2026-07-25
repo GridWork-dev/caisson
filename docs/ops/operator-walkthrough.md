@@ -1,76 +1,80 @@
 ---
-updated: 2026-07-22
+updated: 2026-07-25
 status: live
 grounds:
   - docs/state/outstanding-work.md
   - docs/state/decisions-and-forks.md
+  - docs/state/production-readiness.md
   - docs/deploy/STATE.md
+  - docs/business/caisson-internal-master-map.md
 ---
 
-# Operator walkthrough — every open operator act
+# Operator walkthrough — remaining human gates
 
-The single checklist of everything that needs the operator's hands or call, ordered
-roughly by leverage. Each row cites the board/ADR that owns it — this file routes a
-walkthrough sitting; `docs/state/outstanding-work.md` stays the tracker of record.
-Tick items here during a sitting, then true up the board.
+Use the repository hierarchy, not an external artifact:
 
-A rendered standing synthesis of the whole live estate (fleet, surfaces, seams, gates,
-plus this list) is the **Caisson — Live State** artifact:
-<https://claude.ai/code/artifact/80d606b9-1465-4ba6-a52a-890ee6ba1857> — regenerated on
-request; the repo owns truth, the artifact restates.
+1. [Outstanding work](../state/outstanding-work.md) — executable work.
+2. [Fork board](../state/decisions-and-forks.md) — unresolved operator decisions.
+3. [Production readiness](../state/production-readiness.md) — evidence-backed launch state.
+4. [Deploy state](../deploy/STATE.md) — immutable deployment receipts.
+5. [First-sale master map](../business/caisson-internal-master-map.md) — business/adviser gates.
 
-## Strategic (operator call, not a dashboard click)
+## Gate A — evidence and acceptance
 
-- [ ] **W3 public flip** — HELD on business optics (2026-07-17 lock: wait for
-      Mercury/Paddle maturity). All technical gates verified green; the 7-step firing
-      checklist is `outputs/research/w3-flipgate-verification-2026-07-17.md`. Flipping
-      makes caisson-oss public, arms npm delivery, and lands free native branch
-      protection.
-- [ ] **Production Paddle account** — checkout is sandbox end-to-end; the production
-      account + live price ids are the remaining commerce gate. Pricing final numbers
-      stay operator-adjustable until this lands (ADR-0012 anchors, ADR-0082 committed
-      display).
+- [ ] Authorize the GitHub private-repository connector.
+- [ ] Verify current PRs, Actions, releases, branch posture, organization 2FA, and public-repo timing.
+- [ ] Produce COMPLIANCE-WORM, deployed-pooler RLS, split-brain recovery, and KMS-signing receipts.
+- [ ] Obtain two or three working-auditor acceptance reviews.
+- [ ] Resolve or explicitly defer all 14 counsel, 8 CPA, and 9 operator questions.
+- [ ] Complete all 18 first-sale business gates and record the paid-launch go/no-go.
 
-## Deploy-arming acts (env flips on live services)
+## Gate B — production reconciliation
 
-- [ ] **Arm the WORM anchor scheduler** — set `ANCHOR_CHECKPOINT_SCHEDULE`,
-      `CAISSON_WORM_BUCKET`, `CAISSON_TSA_URL` on caisson-license (ADR-0346 DEPLOY act;
-      ships inert today).
-- [ ] **PostHog LLM-obs** — set `POSTHOG_CAPTURE_KEY` on the site + support-bot deploys
-      to activate the shipped capture code (ADR-0356; deliberately dormant).
+- [ ] Select the approved immutable commit and rollback target.
+- [ ] Deploy site, admin, license, docs-RAG, support-bot, and registry Worker from that commit.
+- [ ] Apply migration `0030` through the migration hold point and attach the receipt.
+- [ ] Prove manifest-digest parity plus health, checkout, entitlement, refund, RAG, and support.
+- [ ] Confirm docs/support answers use $1,449 and license fulfillment recognizes all current SKUs.
 
-## Dashboard reads (2–5 minutes each; unblocks audit reruns)
+## Gate C — commerce and Ring 3
 
-- [ ] **Railway** — confirm Postgres backup recency on both DBs (main + admin).
-- [ ] **Arnica** — read current findings in the dashboard (email alerts wired; the
-      finding list itself never reviewed).
-- [ ] **Grafana Cloud org portal** — exact quota GB usage (org-admin-only page).
-- [ ] **Blacksmith** — authoritative CI minutes (fork PF2-1; local estimates only).
-- [ ] **1Password** — `op signin` + run the vault parity check (interactive; last
-      parity exit 0 at the vault sweep).
+- [ ] Complete Paddle production approval.
+- [ ] Recreate the 35-product/66-price production catalog.
+- [ ] Configure adjustment and dunning behavior.
+- [ ] Prove a real checkout, refund, and entitlement lifecycle.
+- [ ] Complete Mercury setup.
+- [ ] Create and allowlist the Ring-3 probe account, deploy admin, and verify GitHub OAuth.
 
-## Design-tooling adoption residual (caisson-owned remainder)
+## Gate D — provider and security console reads
 
-- [ ] **FixAEO free scan** — ~5 min in a browser; external validation of the shipped
-      llms.txt/robots/schema. Never pay (ADR-0254).
+- [ ] Railway backup recency.
+- [ ] Arnica findings.
+- [ ] Grafana quota.
+- [ ] Blacksmith minutes.
+- [ ] DMARC reports.
+- [ ] 1Password/local/Railway key parity.
+- [ ] Bedrock access.
+- [ ] Launch copy of `SESSION_TOKEN_HMAC_KEY`.
+- [ ] Remove the dead OpenRouter management key.
+- [ ] Arm the WORM anchor scheduler only after TSA/Rekor/OTS egress is ledgered.
 
-The rest of the 2026-07-13 adoption round (Stitch key + MCP manifest, superdesign gate,
-Recraft key, 21st.dev manifest) is **gridwork-core work** — handed off to that repo's
-session queue 2026-07-17 (gw handoff, branch main), together with the Tailscale ACL
-console review and the `OPENROUTER_MANAGEMENT_KEY` regen (global surfaces, not caisson's;
-the caisson audit rerun that waits on the OpenRouter key stays noted on the board).
+## Gate E — public release
 
-## Optional / time-gated
+- [ ] Keep marketing public and cart/dashboard/checkout Cloudflare-gated through verification.
+- [ ] Approve the immutable version tag and exact-byte publish receipt.
+- [ ] Flip the OSS repository and npm delivery only after the business and release gates.
+- [ ] Remove commerce gates at launch and immediately record GOVERNANCE→COMPLIANCE WORM proof.
+- [ ] Run Show HN only after the public artifacts work.
 
-- [ ] **Paddle webhook secret rotation** (M3) — optional hardening; notification
-      settings expose the secret inline.
-- [ ] **DMARC aggregates** — in ~3–7 days, read the first reports at
-      admin@gridwork.dev (the `caisson.sh._report._dmarc.gridwork.dev` authz record
-      went live 2026-07-17; content arrives on receiver cadence).
+## Gate F — demand
 
-## Closed 2026-07-17 (context for the sitting)
+Only after all four technical receipts:
 
-Tailscale 1.98.9 upgrade · DMARC external-report authorization (terraform,
-`f45ab6bd`) · `--strict-digests` CI enforcement (PR 267) · caisson-oss build-check
-healed · rotation fork resolved as accepted residual · intel findings freshness proven
-against the live DB (77 findings, scheduler hot at ~14-min cadence).
+- [ ] Start the four-instrument 30-day demand program.
+- [ ] Run buyer-map interviews.
+- [ ] Prove the discounted-partner offer.
+- [ ] Send the five design-partner emails.
+
+FixAEO, affiliate work, directories, multi-year pricing, production CMK, ISO claims, Railway PITR,
+vertical packages, MySQL, Socket, SOC 2, AuditKit, and rich OSCAL remain optional or
+trigger-parked; they are not launch-path substitutions.

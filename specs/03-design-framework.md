@@ -1,6 +1,8 @@
 # Design Framework — Concept Spec
 
-**Status:** spec-committed (Gate 4); brand/voice locked in the positioning session 2026-06-27 (§4). **Scope:** (a) the visual system for Caisson's own
+**Status:** locked and implemented through the current design ADR chain (ADR-0042 → ADR-0078,
+extended through ADR-0374–0378); active residuals live in `docs/state/outstanding-work.md`.
+**Scope:** (a) the visual system for Caisson's own
 surfaces (marketing, docs, dashboard, cockpit); (b) the **design-token floor shipped in the
 `ui` package** that every edition's reference app inherits. Brand floor per gridwork-core
 `identity/design-system.md`; research-first per the `refero-design`/`impeccable` skills before build.

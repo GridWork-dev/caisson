@@ -1,12 +1,32 @@
 ---
-updated: 2026-07-24
+updated: 2026-07-25
 status: live
 grounds:
   - docs/build-state.md
   - docs/ops/launch-runbook.md
+  - registry/scripts/index-parity-probe.ts
+  - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
 ---
 
 # Deploy log
+
+## Current fleet parity — 2026-07-25
+
+Health and source parity are separate:
+
+| Leg                         | Current evidence                                          | State                        |
+| --------------------------- | --------------------------------------------------------- | ---------------------------- |
+| Audited repository baseline | `fe2dfaca`; registry digest `74e92a6813bc` (53 entries)   | source                       |
+| Registry Worker             | 17 served entries match repository latest                 | OK                           |
+| License                     | digest `09adca8d32a5`                                     | **DRIFT**                    |
+| Admin                       | digest `97b183902c08`                                     | **DRIFT**                    |
+| Site                        | latest site-only source `ea2bee11`, deployment `3120a2ef` | not a fleet receipt          |
+| Docs-RAG / support-bot      | no current same-source receipt                            | uncertified                  |
+| Migration `0030`            | authored in source                                        | production apply unreceipted |
+
+ADR-0379 supersedes any “fleet current” or CAISSON-150 defer wording below. The next production
+act is one approved immutable SHA across site, admin, license, docs-RAG, support-bot, and Worker,
+followed by migration and parity/probe receipts. This is an external-system/data-migration hold.
 
 ## 2026-07-25 — clean-state wave live (site): truth-fixes + CVE batch
 
@@ -17,8 +37,8 @@ page now states GOVERNANCE-mode WORM with a typed escalation to COMPLIANCE at
 launch (CAISSON-148; the leaked-root-key line dropped). Also in this image: the
 2026-07-24 CVE batch (postcss 8.5.23, valibot 1.4.2, js-yaml/brace-expansion
 re-resolves — 768e53f3) and dep-cruiser v18 (#303). Ledger context: visual
-re-audit closed 729/0/0 same day (8a652c92). Board-audit D1 full remedy still
-rides the deferred fork-walk (CAISSON-150).
+re-audit closed 729/0/0 same day (8a652c92). Board-audit D1 is now incorporated into
+the ADR-0379 completion program (CAISSON-150).
 
 ## 2026-07-24 — post-deploy visual re-audit: the 14 accepted rows flip to fixed (CAISSON-149)
 
@@ -87,7 +107,7 @@ The full ADR-0374/0375 visual-remediation phase merged and deployed in one sitti
   and "as available"", "Disclaimer of warranties" headings, zero residual ALL-CAPS walls).
 - **caisson-admin redeployed** (deployment `9fca73b7` SUCCESS, image `848e6d57`) at the
   same SHA — first deploy carrying the mobile nav collapse disclosure. Edge answers 307
-  to the CF-Access login as designed (permanent operator gate). Note: the CLI stream
+  to the in-app GitHub OAuth login as designed. Note: the CLI stream
   ended at `image push` without a `Deploy complete` line — completion confirmed via
   `railway deployment list` (status SUCCESS), not the stream.
 - **Linear:** CAISSON-135…143 all moved to Done (the nine visual-audit + ADR-0374 items).
@@ -101,8 +121,8 @@ rail (rendered-geometry proof green pre-merge), waitlist Turnstile `onReady`
 sibling-mount fix, harness third-party console filter, light `surface-1` L step
 (contrast matrix 60/60), admin foundations explicit 3-up grid. Opus SHIP review PASS
 (two P3s applied in-branch); CI 16/16 green. **caisson-site redeployed** (`Deploy
-complete`; TOC rail + section ids verified live, healthz 200) and **caisson-admin
-redeployed** (deployment SUCCESS; edge 307 to CF-Access) at `56e46f1c`. The lock-4
+  complete`; TOC rail + section ids verified live, healthz 200) and **caisson-admin
+redeployed** (deployment SUCCESS; edge 307 to in-app GitHub OAuth) at `56e46f1c`. The lock-4
 standard live re-audit + final ledger reconcile ran as the phase-closing act (see the
 tracker row for the resulting ledger state).
 

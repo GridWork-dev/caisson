@@ -1,6 +1,7 @@
 # Core Loop & UX — Concept Spec
 
-**Status:** spec-committed pending Gate 4. Implements the core loop in `00-product-spec.md §3`.
+**Status:** locked and implemented; current residuals live in
+`docs/state/outstanding-work.md`. Implements the core loop in `00-product-spec.md §3`.
 **Scope:** the buyer-facing surfaces + journey, and the seller ops surfaces. Visual system → `03-design-framework.md`.
 
 ## 1. Surfaces

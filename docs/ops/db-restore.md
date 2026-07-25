@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-22
+updated: 2026-07-25
 status: live
 grounds:
   - docs/deploy/STATE.md
@@ -7,36 +7,39 @@ grounds:
   - docs/operations.md
 ---
 
-# Database restore procedure (CAISSON-52, doc half)
+# Database restore procedure
 
-The operative, REHEARSED restore path is the logical `pg_dump`/`pg_restore` procedure in
-`docs/operations.md` §9 — proven end-to-end with full row-count parity on all schemas, including
-the roles-before-restore caveat (recreate admin/admin_write/admin_app BEFORE `pg_restore` or every
-RLS `CREATE POLICY` fails). Railway native PITR was evaluated and **DECLINED** at the 2026-07-11
-backup picker (daily snapshots + rehearsed logical restore instead) — Railway's native restore is
-an in-place staged volume swap, never a rehearsal path. The PITR mechanics are kept as reference in
-`docs/archive/db-restore-pitr-reference-2026-07-13.md` for if that fork reopens.
+The operative path is the logical `pg_dump`/`pg_restore` procedure in
+[operations §9](../operations.md). It was rehearsed successfully on 2026-07-11 with full
+row-count parity, including the requirement to recreate the `admin`, `admin_write`, `admin_app`,
+and `app` roles before `pg_restore` so RLS policy creation succeeds.
 
-## Topology: ONE Postgres service, TWO databases
+That rehearsal is historical recovery evidence, not proof that today’s backup is recent. Verify
+Railway snapshot recency before launch. Migration `0030` exists in source and has no
+production-apply receipt.
 
-Confirmed (`docs/deploy/STATE.md`'s "Admin OAuth flip" entry, 2026-07-07-ish): `admin_auth` is a
-**database** created with `CREATE DATABASE admin_auth` **on the Railway Postgres** — i.e. the
-SAME Postgres service the commerce/platform data lives on, not a second Railway Postgres service.
-Two logical databases, one physical server:
+## Topology: one service, two application databases, one unused default
 
-- the platform/commerce database (the service's default database, `DATABASE_URL`) — buyer
-  accounts, entitlements, credits, billing.
-- `admin_auth` (`ADMIN_AUTH_DATABASE_URL`) — better-auth's own tables for `apps/admin`'s GitHub
-  OAuth sign-in, deliberately isolated from commerce (the config forbids reusing the site auth DB
-  to avoid an `account` table collision — same STATE.md entry).
+| Database     | Purpose                                                            |
+| ------------ | ------------------------------------------------------------------ |
+| `railway`    | platform and commerce data, including `intel` and `pgboss` schemas |
+| `admin_auth` | isolated Better Auth database for admin GitHub OAuth               |
+| `postgres`   | Railway-created default database; unused                           |
 
-## Related
+All three databases are on one Railway Postgres service. Restore scope must name the database;
+“restore Postgres” is not a sufficiently precise instruction.
 
-- **Restore procedure (the current one)** — `docs/operations.md` §9 (logical `pg_dump`/`pg_restore`).
-- **PITR reference (declined path, kept for context)** — `docs/archive/db-restore-pitr-reference-2026-07-13.md`.
-- **Code-level rollback** (a bad deploy, not a bad write) — `docs/ops/incident-response.md`
-  §"Generic Railway rollback". A restore undoes DATA; a rollback undoes CODE — an incident may need
-  either or both.
-- **Read-only containment** — `packages/kernel/src/read-only.ts`'s `assertNotReadOnly` gate has
-  been LIVE since ADR-0300 (2026-07-09, Kickoff-H W3, an admin-flipped `system_mode` source). Can
-  freeze writes while a restore target is being decided — see `docs/ops/incident-response.md`.
+## Recovery sequence
+
+1. Put the platform in read-only containment while selecting a recovery point.
+2. Verify the dump, target database, roles, extensions, and rollback path.
+3. Follow `docs/operations.md §9`; restore roles before schema/data.
+4. Compare schema and row-count receipts for every expected schema.
+5. Run tenant RLS, auth, entitlement, billing, jobs, intel, and admin-auth probes.
+6. Lift read-only mode only after verification.
+
+Read-only mode buys investigation time; it does not restore data. A code rollback and a data
+restore are separate operations and an incident can require both.
+
+Railway PITR remains trigger-parked. Its former evaluation is reference-only at
+`docs/archive/db-restore-pitr-reference-2026-07-13.md`.
