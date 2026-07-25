@@ -54,7 +54,7 @@ registry/     # versioned module sources the generator + buyer's agent pull from
 apps/         # 7 apps: 5 Next.js (ADR-0044) — site (marketing+docs) · admin (control-plane, absorbed studio) · compliance/ai-kit/local-ai reference; base + agent-dev = plain-TS consumers
 services/     # support-bot (Python) · license · docs · intel · betterstack-adapter
 specs/        # locked concept set: 00 founding · 01 architecture · 02 core-loop · 03 design · 04 voice-and-brand
-knowledge/decisions/   # ADRs 0001–0329 (gaps exist; live catalog in docs/adr-index.md)
+knowledge/decisions/   # ADRs (live catalog + ceiling in docs/adr-index.md; gaps exist)
 docs/state/   # decisions-and-forks live board
 outputs/kickoffs/      # kickoff docs for future sessions
 ```
