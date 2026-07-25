@@ -17,6 +17,7 @@
     "@caisson/audit-worm": "workspace:*",
     "@caisson/auth": "workspace:*",
     "@caisson/brand": "workspace:*",
+    "@caisson/compliance-core": "workspace:*",
     "@caisson/credits": "workspace:*",
     "@caisson/demo-registry": "workspace:*",
     "@caisson/email": "workspace:*",
