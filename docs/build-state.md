@@ -7,9 +7,11 @@ status: live
 
 ## Current state (2026-07-25)
 
-**ADR ceiling is `0379`; the audited base is `fe2dfaca`; the latest immutable release tag remains
+**ADR ceiling is `0380`; the audited base is `fe2dfaca`; the latest immutable release tag remains
 `v2026.07.20.3`.** The ADR-0379 full-state completion program is active on
-`feature/full-state-completion`.
+`feature/full-state-completion`; ADR-0380 closed its six fork rows and split the remaining build
+into two parallel worktree lanes — `feature/completion-lane-a` (code residuals plus the adapter
+wave) and `feature/module-depth-pages` (the module-depth design slice).
 
 - **61 packages:** 17 Apache-2.0 and 44 commercial; 79 Bun workspaces total.
 - **Safety wave complete locally:** TypeScript-aware dependency graph (`c236681f`), total price

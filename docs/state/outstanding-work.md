@@ -3,6 +3,7 @@ updated: 2026-07-25
 status: live
 grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
+  - knowledge/decisions/ADR-0380-completion-fork-locks-and-module-depth-slice.md
   - outputs/specs/full-state-completion/SPEC.md
   - docs/state/decisions-and-forks.md
   - docs/state/production-readiness.md
@@ -20,35 +21,35 @@ and runtime evidence.
 
 ## State matrix
 
-| Workstream                                       | State                               | Exit evidence                                                          |
-| ------------------------------------------------ | ----------------------------------- | ---------------------------------------------------------------------- |
-| T0 — canonical truth and issue reconciliation    | **complete locally**                | SOT content gates green; only concurrent-worktree hygiene remains      |
-| T1 — TypeScript dependency graph                 | **complete locally**                | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present |
-| T2 — total price authority                       | **complete locally**                | `f6122de8` + `92d930b6`; every sellable commercial package covered     |
-| T3 — route-specific limiter policy               | **complete locally**                | `014ac4de`; webhook fail-open+alert, protected routes 503              |
-| T4 — one-SHA fleet and migration 0030            | **held: external + migration gate** | six runtime legs on one approved SHA; migration and parity receipts    |
-| T5 — five locked product residuals               | **1 complete / 4 held**             | `b037b878` DS manifest green; four named fork-board rows remain        |
-| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **queued**                          | three isolated adapter reviews and changesets                          |
-| T7 — consolidated verification and release       | **held after code waves**           | green local/CI gates, immutable tag-to-bytes and deploy receipts       |
+| Workstream                                       | State                               | Exit evidence                                                                             |
+| ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| T0 — canonical truth and issue reconciliation    | **complete locally**                | SOT content gates green; only concurrent-worktree hygiene remains                         |
+| T1 — TypeScript dependency graph                 | **complete locally**                | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                    |
+| T2 — total price authority                       | **complete locally**                | `f6122de8` + `92d930b6`; every sellable commercial package covered                        |
+| T3 — route-specific limiter policy               | **complete locally**                | `014ac4de`; webhook fail-open+alert, protected routes 503                                 |
+| T4 — one-SHA fleet and migration 0030            | **held: external + migration gate** | six runtime legs on one approved SHA; migration and parity receipts                       |
+| T5 — five locked product residuals               | **1 complete / 4 in build**         | `b037b878` DS manifest green; forks closed by ADR-0380 — T5B/C/E in lane A, T5A in lane B |
+| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **in build (lane A)**               | three isolated adapter reviews and changesets; KMS port widening is breaking              |
+| T7 — consolidated verification and release       | **held after code waves**           | green local/CI gates, immutable tag-to-bytes and deploy receipts                          |
 
 There are **33 pending changeset files**. Current Changesets resolution is 41 patch package
 releases and 4 minor package releases. They are consumed only by T7.
 
 ## Linear reconciliation
 
-| Issue       | State                   | Canonical disposition                                                       |
-| ----------- | ----------------------- | --------------------------------------------------------------------------- |
-| CAISSON-150 | In Progress             | ADR-0379 completion program                                                 |
-| CAISSON-134 | In Progress             | three module-depth pages; current content/mark fork is on the fork board    |
-| CAISSON-104 | Todo                    | Ring-3 operator/external act using the corrected probe runbook              |
-| CAISSON-39  | Todo                    | D10 WORM receipt active; non-D10 evidence classes trigger-parked            |
-| CAISSON-113 | Backlog                 | narrowed to provider-console/key-parity reads                               |
-| CAISSON-151 | Backlog, due 2026-07-31 | time-gated through July 30                                                  |
-| CAISSON-105 | Backlog                 | business/public-release gated                                               |
-| CAISSON-101 | Backlog                 | trigger: real cassette/model change                                         |
-| CAISSON-78  | Backlog                 | trigger: material competitor event                                          |
-| CAISSON-130 | Backlog                 | trigger: future copy wave; frozen now                                       |
-| CAISSON-131 | **Done**                | July persona findings absorbed into the completed audit/remediation program |
+| Issue       | State                   | Canonical disposition                                                        |
+| ----------- | ----------------------- | ---------------------------------------------------------------------------- |
+| CAISSON-150 | In Progress             | ADR-0379 completion program                                                  |
+| CAISSON-134 | In Progress             | three module-depth pages; fork closed by ADR-0380 lock 6, building in lane B |
+| CAISSON-104 | Todo                    | Ring-3 operator/external act using the corrected probe runbook               |
+| CAISSON-39  | Todo                    | D10 WORM receipt active; non-D10 evidence classes trigger-parked             |
+| CAISSON-113 | Backlog                 | narrowed to provider-console/key-parity reads                                |
+| CAISSON-151 | Backlog, due 2026-07-31 | time-gated through July 30                                                   |
+| CAISSON-105 | Backlog                 | business/public-release gated                                                |
+| CAISSON-101 | Backlog                 | trigger: real cassette/model change                                          |
+| CAISSON-78  | Backlog                 | trigger: material competitor event                                           |
+| CAISSON-130 | Backlog                 | trigger: future copy wave; frozen now                                        |
+| CAISSON-131 | **Done**                | July persona findings absorbed into the completed audit/remediation program  |
 
 ## Operator and external gates
 
