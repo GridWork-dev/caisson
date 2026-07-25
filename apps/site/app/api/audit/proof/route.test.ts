@@ -50,6 +50,7 @@ function dependencies(
       role: "owner",
     }),
     assertTenantScope: async () => {},
+    checkRateLimit: async () => ({ allowed: true, retryAfterSec: 0 }),
     getProof: async () => PROOF,
     ...overrides,
   };
@@ -137,6 +138,32 @@ describe("GET /api/audit/proof", () => {
     expect(response.status).toBe(403);
     expect(proxied).toBe(false);
     expect(await response.json()).toEqual({ error: "forbidden" });
+  });
+
+  test("enforces the account and global proof budget before proxying and returns Retry-After", async () => {
+    const order: string[] = [];
+    const GET = createTenantProofRoute(
+      dependencies({
+        assertTenantScope: async () => {
+          order.push("scope");
+        },
+        checkRateLimit: async (accountId) => {
+          order.push(`rate:${accountId}`);
+          return { allowed: false, retryAfterSec: 17 };
+        },
+        getProof: async () => {
+          order.push("proxy");
+          return PROOF;
+        },
+      }),
+    );
+
+    const response = await GET(request());
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("17");
+    expect(await response.json()).toEqual({ error: "rate limited" });
+    expect(order).toEqual(["scope", `rate:${ACCOUNT}`]);
   });
 
   test("returns only the already-redacted proof bytes", async () => {

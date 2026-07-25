@@ -18,7 +18,11 @@ import {
   isRedactedKey,
   redactValue,
 } from "@caisson/kernel/redact";
-import type { AuditChainEntry, JsonValue } from "@caisson/kernel";
+import {
+  looksLikeSecret,
+  type AuditChainEntry,
+  type JsonValue,
+} from "@caisson/kernel";
 import type { RowProof } from "@caisson/audit-worm";
 
 /**
@@ -149,6 +153,10 @@ function collectRedactedPaths(
   out: Set<string>,
   path: readonly string[] = [],
 ): void {
+  if (typeof value === "string") {
+    if (looksLikeSecret(value)) out.add(path.join(".") || "$");
+    return;
+  }
   if (Array.isArray(value)) {
     for (const item of value) collectRedactedPaths(item, keys, out, path);
     return;
@@ -183,9 +191,10 @@ export async function assembleProofSuccess(
   collectRedactedPaths(entry.payload, DEFAULT_REDACT_KEYS, redactedPaths);
   const redacted = redactedPaths.size > 0;
 
-  const wirePayload: JsonValue = redacted
-    ? (redactValue(entry.payload, DEFAULT_REDACT_KEYS) as JsonValue)
-    : entry.payload;
+  const wirePayload = redactValue(
+    entry.payload,
+    DEFAULT_REDACT_KEYS,
+  ) as JsonValue;
   const wireEntry: AuditChainEntry = { ...entry, payload: wirePayload };
 
   const checks = await verifyEntryAgainstAnchor(wireEntry, anchorForRow, {

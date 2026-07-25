@@ -8,6 +8,7 @@ import {
   assertTenantEvidenceScope,
   tenantEvidenceProxyFromEnv,
 } from "@/lib/tenant-evidence-runtime";
+import { checkTenantEvidenceRateLimit } from "@/lib/tenant-evidence-rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,9 @@ const querySchema = z
 export interface TenantProofRouteDependencies {
   readonly getSession: typeof getSession;
   readonly assertTenantScope: (accountId: string) => Promise<void>;
+  readonly checkRateLimit: (
+    accountId: string,
+  ) => Promise<{ readonly allowed: boolean; readonly retryAfterSec: number }>;
   readonly getProof: (
     accountId: string,
     seq: number,
@@ -68,6 +72,13 @@ export function createTenantProofRoute(
       return json({ error: "forbidden" }, 403);
     }
 
+    const rate = await dependencies.checkRateLimit(session.accountId);
+    if (!rate.allowed) {
+      const response = json({ error: "rate limited" }, 429);
+      response.headers.set("Retry-After", String(rate.retryAfterSec));
+      return response;
+    }
+
     try {
       return json(
         await dependencies.getProof(session.accountId, parsed.data.seq),
@@ -88,6 +99,7 @@ export function createTenantProofRoute(
 export const GET = createTenantProofRoute({
   getSession,
   assertTenantScope: assertTenantEvidenceScope,
+  checkRateLimit: async (accountId) => checkTenantEvidenceRateLimit(accountId),
   getProof: (accountId, seq) =>
     tenantEvidenceProxyFromEnv().getProof(accountId, seq),
 });

@@ -119,7 +119,8 @@ describe("tenant evidence internal proxy client", () => {
     }) as typeof fetchWithTimeout;
     const proxy = createTenantEvidenceProxy(
       parseTenantEvidenceProxyConfig({
-        url: "https://admin.internal.example/api/internal/audit/proof",
+        url: "https://admin.railway.internal/api/internal/audit/proof",
+        internalHost: "admin.railway.internal",
         secret: SECRET,
       }),
       fetchImpl,
@@ -138,15 +139,24 @@ describe("tenant evidence internal proxy client", () => {
   test("rejects unsafe URLs and unknown config fields at the strict boundary", () => {
     expect(() =>
       parseTenantEvidenceProxyConfig({
-        url: "http://admin.internal.example/api/internal/audit/proof",
+        url: "http://admin.railway.internal/api/internal/audit/proof",
+        internalHost: "admin.railway.internal",
         secret: SECRET,
       }),
     ).toThrow();
     expect(() =>
       parseTenantEvidenceProxyConfig({
-        url: "https://admin.internal.example/api/internal/audit/proof",
+        url: "https://admin.railway.internal/api/internal/audit/proof",
+        internalHost: "admin.railway.internal",
         secret: SECRET,
         accountId: ACCOUNT,
+      }),
+    ).toThrow();
+    expect(() =>
+      parseTenantEvidenceProxyConfig({
+        url: "https://admin.caisson.sh/api/internal/audit/proof",
+        internalHost: "admin.railway.internal",
+        secret: SECRET,
       }),
     ).toThrow();
   });
@@ -159,7 +169,8 @@ describe("tenant evidence internal proxy client", () => {
       })) as typeof fetchWithTimeout;
     const proxy = createTenantEvidenceProxy(
       parseTenantEvidenceProxyConfig({
-        url: "https://admin.internal.example/api/internal/audit/proof",
+        url: "https://admin.railway.internal/api/internal/audit/proof",
+        internalHost: "admin.railway.internal",
         secret: SECRET,
       }),
       fetchImpl,
@@ -181,13 +192,15 @@ describe("tenant evidence internal proxy client", () => {
       return Response.json({
         kind: "latest-evidence-pack",
         sha256: "d".repeat(64),
+        manifestSha256: "e".repeat(64),
         generatedAt: "2026-07-25T20:30:00.000Z",
         manifest,
       });
     }) as typeof fetchWithTimeout;
     const proxy = createTenantEvidenceProxy(
       parseTenantEvidenceProxyConfig({
-        url: "https://admin.internal.example/api/internal/audit/proof",
+        url: "https://admin.railway.internal/api/internal/audit/proof",
+        internalHost: "admin.railway.internal",
         secret: SECRET,
       }),
       fetchImpl,

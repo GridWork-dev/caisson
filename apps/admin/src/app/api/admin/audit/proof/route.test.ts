@@ -30,11 +30,15 @@ let pg: {
 };
 
 /** The `globalThis`-cached admin transactor (admin-db.ts) — reset so getAdminDb rebuilds under our env. */
-type AdminDbGlobal = { caissonAdminTransactor?: unknown };
+type AdminDbGlobal = {
+  caissonAdminTransactor?: unknown;
+  caissonAdminPglite?: { close(): Promise<void> };
+};
 const origDbUrl = process.env.CAISSON_ADMIN_DB_URL;
 const origBucket = process.env.CAISSON_ADMIN_WORM_BUCKET;
 const origWormDir = process.env.CAISSON_ADMIN_WORM_DIR;
 let origTransactor: unknown;
+let origPglite: AdminDbGlobal["caissonAdminPglite"];
 
 beforeAll(async () => {
   // Hermetic setup, independent of the ambient env AND of which admin test cached the shared
@@ -43,10 +47,13 @@ beforeAll(async () => {
   // would DNS-fail every seed. Capture the prior cache so afterAll can restore it EXACTLY (leaving
   // sibling test files untouched), then force the in-memory PGlite double + a LocalArtifactStore this
   // test seeds and the route reads back.
-  origTransactor = (globalThis as AdminDbGlobal).caissonAdminTransactor;
+  const adminGlobal = globalThis as AdminDbGlobal;
+  origTransactor = adminGlobal.caissonAdminTransactor;
+  origPglite = adminGlobal.caissonAdminPglite;
   delete process.env.CAISSON_ADMIN_DB_URL;
   delete process.env.CAISSON_ADMIN_WORM_BUCKET;
-  (globalThis as AdminDbGlobal).caissonAdminTransactor = undefined;
+  adminGlobal.caissonAdminTransactor = undefined;
+  adminGlobal.caissonAdminPglite = undefined;
   wormDir = await mkdtemp(join(tmpdir(), "caisson-proof-worm-"));
   process.env.CAISSON_ADMIN_WORM_DIR = wormDir; // the route's wormStore() reads this at call time
   const db = await getAdminDb();
@@ -55,6 +62,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  const adminGlobal = globalThis as AdminDbGlobal;
+  const ownedPglite = adminGlobal.caissonAdminPglite;
+  if (ownedPglite !== undefined && ownedPglite !== origPglite) {
+    await ownedPglite.close();
+  }
   await rm(wormDir, { recursive: true, force: true });
   // Restore the exact prior state so a sibling admin test file sees what it would have without us.
   if (origDbUrl !== undefined) process.env.CAISSON_ADMIN_DB_URL = origDbUrl;
@@ -63,7 +75,8 @@ afterAll(async () => {
   if (origWormDir !== undefined)
     process.env.CAISSON_ADMIN_WORM_DIR = origWormDir;
   else delete process.env.CAISSON_ADMIN_WORM_DIR;
-  (globalThis as AdminDbGlobal).caissonAdminTransactor = origTransactor;
+  adminGlobal.caissonAdminTransactor = origTransactor;
+  adminGlobal.caissonAdminPglite = origPglite;
 });
 
 beforeEach(() => {

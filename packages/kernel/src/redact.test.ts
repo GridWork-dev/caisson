@@ -12,6 +12,21 @@ describe("isRedactedKey", () => {
     expect(isRedactedKey("Authorization", DEFAULT_REDACT_KEYS)).toBe(true);
     expect(isRedactedKey("email", DEFAULT_REDACT_KEYS)).toBe(false);
   });
+
+  test("normalizes compound credential names across camel, snake, and kebab case", () => {
+    for (const key of [
+      "access_token",
+      "accessToken",
+      "ACCESS-TOKEN",
+      "refresh_token",
+      "refreshToken",
+      "session_token",
+      "sessionToken",
+      "client-secret",
+    ]) {
+      expect(isRedactedKey(key, DEFAULT_REDACT_KEYS)).toBe(true);
+    }
+  });
 });
 
 describe("redactValue", () => {
@@ -40,6 +55,21 @@ describe("redactValue", () => {
     expect(redactValue({ ssn: "x", name: "y" }, new Set(["ssn"]))).toEqual({
       ssn: REDACTED,
       name: "y",
+    });
+  });
+
+  test("scrubs credential spans nested under otherwise-benign keys", () => {
+    expect(
+      redactValue(
+        {
+          note: "rotate sk-proj-AAAABBBBCCCCDDDD before release",
+          nested: ["auth_token: ghp_0123456789ABCDEFabcdef0123"],
+        },
+        DEFAULT_REDACT_KEYS,
+      ),
+    ).toEqual({
+      note: "rotate [REDACTED] before release",
+      nested: ["auth_token: [REDACTED]"],
     });
   });
 });

@@ -59,6 +59,7 @@ export function tenantEvidenceProxyFromEnv(
   return createTenantEvidenceProxy(
     parseTenantEvidenceProxyConfig({
       url: env.CAISSON_PROOF_PROXY_URL,
+      internalHost: env.CAISSON_PROOF_PROXY_INTERNAL_HOST,
       secret: env.CAISSON_PROOF_PROXY_SECRET,
     }),
   );

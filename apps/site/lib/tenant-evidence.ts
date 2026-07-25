@@ -22,10 +22,34 @@ const proxyUrl = z
       url.hash === ""
     );
   }, "must be an HTTPS URL without credentials, query, or fragment");
+const privateProxyHost = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1)
+  .max(253)
+  .refine(
+    (value) => value.endsWith(".railway.internal"),
+    "must use Railway private DNS",
+  );
 
 const proxyConfigSchema = strictObject({
   url: proxyUrl,
-  secret: z.string().min(32).max(4096),
+  internalHost: privateProxyHost,
+  secret: z.string().trim().min(32).max(4096),
+}).superRefine((config, ctx) => {
+  const url = new URL(config.url);
+  if (
+    url.hostname.toLowerCase() !== config.internalHost ||
+    url.pathname !== "/api/internal/audit/proof"
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["url"],
+      message:
+        "proof proxy URL must target the configured private host and exact internal proof path",
+    });
+  }
 });
 
 export type TenantEvidenceProxyConfig = z.infer<typeof proxyConfigSchema>;
@@ -87,6 +111,7 @@ export type TenantProofResponse = z.infer<typeof TenantProofResponseSchema>;
 export const LatestEvidencePackResponseSchema = strictObject({
   kind: z.literal("latest-evidence-pack"),
   sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  manifestSha256: z.string().regex(/^[0-9a-f]{64}$/),
   generatedAt: z.string().datetime(),
   manifest: evidencePackManifestSchema,
 });

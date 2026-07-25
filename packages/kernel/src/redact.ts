@@ -5,6 +5,7 @@
 // so the browser PayloadViewer (which re-exports from here) and the offline standalone verifier can
 // name the same redaction semantics. `apps/admin` deps @caisson/kernel but not @caisson/ui-pro, so
 // the kernel home keeps the endpoint's redaction dependency-clean and aligns with the open-core split.
+import { scrubForEgress } from "./secret-scrub.ts";
 
 /** The masking sentinel shown/copied in place of a redacted value. */
 export const REDACTED = "[redacted]";
@@ -22,11 +23,22 @@ export const DEFAULT_REDACT_KEYS: ReadonlySet<string> = new Set([
   "private_key",
   "clientsecret",
   "client_secret",
+  "access_token",
+  "refresh_token",
+  "session_token",
 ]);
 
-/** True when `key` should be redacted (case-insensitive match against `keys`). */
+function normalizeCredentialKey(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/** True when `key` should be redacted (case-insensitive, separator-normalized match against `keys`). */
 export function isRedactedKey(key: string, keys: ReadonlySet<string>): boolean {
-  return keys.has(key.toLowerCase());
+  const normalized = normalizeCredentialKey(key);
+  for (const candidate of keys) {
+    if (normalizeCredentialKey(candidate) === normalized) return true;
+  }
+  return false;
 }
 
 /**
@@ -39,6 +51,7 @@ export function redactValue(
   value: unknown,
   keys: ReadonlySet<string>,
 ): unknown {
+  if (typeof value === "string") return scrubForEgress(value);
   if (Array.isArray(value)) return value.map((v) => redactValue(v, keys));
   if (value !== null && typeof value === "object") {
     const out: Record<string, unknown> = {};

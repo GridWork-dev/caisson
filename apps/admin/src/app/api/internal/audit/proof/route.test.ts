@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from "node:crypto";
+import { createHash, createHmac, randomUUID } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,13 +19,18 @@ import { createInternalProofRoute } from "./route.ts";
 
 const PROXY_SECRET = "test-proof-proxy-secret-with-32-bytes";
 
-type AdminDbGlobal = { caissonAdminTransactor?: unknown };
+type AdminDbGlobal = {
+  caissonAdminTransactor?: unknown;
+  caissonAdminPglite?: { close(): Promise<void> };
+};
 const originalDbUrl = process.env.CAISSON_ADMIN_DB_URL;
 const originalBucket = process.env.CAISSON_ADMIN_WORM_BUCKET;
 const originalWormDir = process.env.CAISSON_ADMIN_WORM_DIR;
 const originalProxySecret = process.env.CAISSON_PROOF_PROXY_SECRET;
+const originalProxyHost = process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST;
 const originalEvidencePackRoot = process.env.CAISSON_EVIDENCE_PACK_ROOT;
 let originalTransactor: unknown;
+let originalPglite: AdminDbGlobal["caissonAdminPglite"];
 let wormDir: string;
 let evidencePackRoot: string;
 let store: AuditChainStore;
@@ -47,11 +52,14 @@ function request(
   if (credential !== null) {
     headers.set("authorization", `Bearer ${credential}`);
   }
-  return new Request("http://admin.internal/api/internal/audit/proof", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  return new Request(
+    "https://admin.railway.internal/api/internal/audit/proof",
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 async function seed(
@@ -81,22 +89,29 @@ async function seedLatestEvidencePack(
     join(accountDir, "packs", "pack.json"),
     JSON.stringify(golden),
   );
+  const manifestSha256 = createHash("sha256")
+    .update(JSON.stringify(golden))
+    .digest("hex");
   await writeFile(
     join(accountDir, "latest.json"),
     JSON.stringify({
       formatVersion: "1",
       manifestPath: overrides.manifestPath ?? "packs/pack.json",
-      sha256: "a".repeat(64),
+      archiveSha256: "a".repeat(64),
+      manifestSha256,
       generatedAt: "2026-07-25T18:00:00.000Z",
     }),
   );
 }
 
 beforeAll(async () => {
-  originalTransactor = (globalThis as AdminDbGlobal).caissonAdminTransactor;
+  const adminGlobal = globalThis as AdminDbGlobal;
+  originalTransactor = adminGlobal.caissonAdminTransactor;
+  originalPglite = adminGlobal.caissonAdminPglite;
   delete process.env.CAISSON_ADMIN_DB_URL;
   delete process.env.CAISSON_ADMIN_WORM_BUCKET;
-  (globalThis as AdminDbGlobal).caissonAdminTransactor = undefined;
+  adminGlobal.caissonAdminTransactor = undefined;
+  adminGlobal.caissonAdminPglite = undefined;
   wormDir = await mkdtemp(join(tmpdir(), "caisson-internal-proof-"));
   evidencePackRoot = await mkdtemp(
     join(tmpdir(), "caisson-evidence-pack-pointer-"),
@@ -104,6 +119,7 @@ beforeAll(async () => {
   process.env.CAISSON_ADMIN_WORM_DIR = wormDir;
   process.env.CAISSON_EVIDENCE_PACK_ROOT = evidencePackRoot;
   process.env.CAISSON_PROOF_PROXY_SECRET = PROXY_SECRET;
+  process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST = "admin.railway.internal";
   const db = await getAdminDb();
   store = new AuditChainStore({
     db,
@@ -111,12 +127,19 @@ beforeAll(async () => {
   });
   POST = createInternalProofRoute({
     proxySecret: () => process.env.CAISSON_PROOF_PROXY_SECRET,
+    internalHost: () => process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST,
+    checkRateLimit: async () => ({ allowed: true, retryAfterSec: 0 }),
     getMutationDeps: async () => ({ worm: store }),
     readLatestEvidencePack,
   });
 });
 
 afterAll(async () => {
+  const adminGlobal = globalThis as AdminDbGlobal;
+  const ownedPglite = adminGlobal.caissonAdminPglite;
+  if (ownedPglite !== undefined && ownedPglite !== originalPglite) {
+    await ownedPglite.close();
+  }
   await rm(wormDir, { recursive: true, force: true });
   await rm(evidencePackRoot, { recursive: true, force: true });
   if (originalDbUrl === undefined) delete process.env.CAISSON_ADMIN_DB_URL;
@@ -129,10 +152,14 @@ afterAll(async () => {
   if (originalProxySecret === undefined)
     delete process.env.CAISSON_PROOF_PROXY_SECRET;
   else process.env.CAISSON_PROOF_PROXY_SECRET = originalProxySecret;
+  if (originalProxyHost === undefined)
+    delete process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST;
+  else process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST = originalProxyHost;
   if (originalEvidencePackRoot === undefined)
     delete process.env.CAISSON_EVIDENCE_PACK_ROOT;
   else process.env.CAISSON_EVIDENCE_PACK_ROOT = originalEvidencePackRoot;
-  (globalThis as AdminDbGlobal).caissonAdminTransactor = originalTransactor;
+  adminGlobal.caissonAdminTransactor = originalTransactor;
+  adminGlobal.caissonAdminPglite = originalPglite;
 });
 
 beforeEach(() => {
@@ -224,6 +251,28 @@ describe("POST /api/internal/audit/proof", () => {
     const response = await POST(request(accountId, { seq: 0 }));
 
     expect(response.status).toBe(503);
+  });
+
+  test("applies an account and global backstop before any internal proof read", async () => {
+    const accountId = randomUUID();
+    await seed(accountId, [{ event: "created" }]);
+    let read = false;
+    const rateLimited = createInternalProofRoute({
+      proxySecret: () => PROXY_SECRET,
+      internalHost: () => "admin.railway.internal",
+      checkRateLimit: async () => ({ allowed: false, retryAfterSec: 23 }),
+      getMutationDeps: async () => {
+        read = true;
+        return { worm: store };
+      },
+      readLatestEvidencePack,
+    });
+
+    const response = await rateLimited(request(accountId, { seq: 0 }));
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("23");
+    expect(read).toBe(false);
   });
 
   test("resolves the authenticated account's persisted latest evidence-pack pointer", async () => {

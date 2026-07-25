@@ -39,6 +39,7 @@ function latestPack(): LatestEvidencePackResponse {
   return {
     kind: "latest-evidence-pack",
     sha256: "d".repeat(64),
+    manifestSha256: "e".repeat(64),
     generatedAt: "2026-07-25T20:30:00.000Z",
     manifest: parseEvidencePackManifest({
       formatVersion: "2",

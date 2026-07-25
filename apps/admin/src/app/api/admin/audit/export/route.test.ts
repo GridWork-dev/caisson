@@ -18,19 +18,26 @@ import { buildAdminAuditWindow } from "@/lib/audit-window";
 
 const { GET } = await import("./route.ts");
 
-type AdminDbGlobal = { caissonAdminTransactor?: unknown };
+type AdminDbGlobal = {
+  caissonAdminTransactor?: unknown;
+  caissonAdminPglite?: { close(): Promise<void> };
+};
 const originalDbUrl = process.env.CAISSON_ADMIN_DB_URL;
 const originalBucket = process.env.CAISSON_ADMIN_WORM_BUCKET;
 const originalWormDir = process.env.CAISSON_ADMIN_WORM_DIR;
 let originalTransactor: unknown;
+let originalPglite: AdminDbGlobal["caissonAdminPglite"];
 let wormDir: string;
 let store: AuditChainStore;
 
 beforeAll(async () => {
-  originalTransactor = (globalThis as AdminDbGlobal).caissonAdminTransactor;
+  const adminGlobal = globalThis as AdminDbGlobal;
+  originalTransactor = adminGlobal.caissonAdminTransactor;
+  originalPglite = adminGlobal.caissonAdminPglite;
   delete process.env.CAISSON_ADMIN_DB_URL;
   delete process.env.CAISSON_ADMIN_WORM_BUCKET;
-  (globalThis as AdminDbGlobal).caissonAdminTransactor = undefined;
+  adminGlobal.caissonAdminTransactor = undefined;
+  adminGlobal.caissonAdminPglite = undefined;
   wormDir = await mkdtemp(join(tmpdir(), "caisson-audit-export-"));
   process.env.CAISSON_ADMIN_WORM_DIR = wormDir;
   const db = await getAdminDb();
@@ -41,6 +48,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  const adminGlobal = globalThis as AdminDbGlobal;
+  const ownedPglite = adminGlobal.caissonAdminPglite;
+  if (ownedPglite !== undefined && ownedPglite !== originalPglite) {
+    await ownedPglite.close();
+  }
   await rm(wormDir, { recursive: true, force: true });
   if (originalDbUrl === undefined) delete process.env.CAISSON_ADMIN_DB_URL;
   else process.env.CAISSON_ADMIN_DB_URL = originalDbUrl;
@@ -49,7 +61,8 @@ afterAll(async () => {
   else process.env.CAISSON_ADMIN_WORM_BUCKET = originalBucket;
   if (originalWormDir === undefined) delete process.env.CAISSON_ADMIN_WORM_DIR;
   else process.env.CAISSON_ADMIN_WORM_DIR = originalWormDir;
-  (globalThis as AdminDbGlobal).caissonAdminTransactor = originalTransactor;
+  adminGlobal.caissonAdminTransactor = originalTransactor;
+  adminGlobal.caissonAdminPglite = originalPglite;
 });
 
 beforeEach(() => {

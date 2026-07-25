@@ -131,6 +131,57 @@ describe("assembleProofSuccess — H3 server-side redaction", () => {
 
     expect(body.redactedPaths).toEqual(["rows.credentials.token"]);
   });
+
+  test("redacts nested camelCase and snake_case compound credential keys at the admin proof boundary", async () => {
+    const proof = proofFor({
+      integrations: {
+        serviceCredentials: {
+          accessToken: "camel-access-secret",
+          safeLabel: "primary",
+        },
+        api_credentials: {
+          refresh_token: "snake-refresh-secret",
+          safeLabel: "backup",
+        },
+      },
+    });
+
+    const body = await assembleProofSuccess(proof, NOW);
+    const serialized = JSON.stringify(body);
+
+    expect(serialized).not.toContain("camel-access-secret");
+    expect(serialized).not.toContain("snake-refresh-secret");
+    expect(body.redacted).toBe(true);
+    expect(body.redactedPaths).toEqual([
+      "integrations.api_credentials.refresh_token",
+      "integrations.serviceCredentials.accessToken",
+    ]);
+    expect(body.receipt.raw.payload).toEqual({
+      integrations: {
+        serviceCredentials: {
+          accessToken: "[redacted]",
+          safeLabel: "primary",
+        },
+        api_credentials: {
+          refresh_token: "[redacted]",
+          safeLabel: "backup",
+        },
+      },
+    });
+  });
+
+  test("redacts a credential-shaped span stored under a benign key", async () => {
+    const proof = proofFor({
+      note: "provider returned sk-proj-abcdefghijklmnop during setup",
+    });
+
+    const body = await assembleProofSuccess(proof, NOW);
+    const serialized = JSON.stringify(body);
+
+    expect(serialized).not.toContain("sk-proj-abcdefghijklmnop");
+    expect(body.redacted).toBe(true);
+    expect(body.redactedPaths).toEqual(["note"]);
+  });
 });
 
 describe("strict schemas (binding #6)", () => {

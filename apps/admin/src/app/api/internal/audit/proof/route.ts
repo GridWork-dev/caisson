@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { NotFoundError, ValidationError } from "@caisson/kernel";
 import { wormAnchorAccount } from "@caisson/service-license";
 import { z, ZodError } from "zod";
@@ -13,24 +12,14 @@ import {
   ProofSuccessSchema,
   ProofUnverifiableSchema,
 } from "@/lib/audit-proof";
+import {
+  authenticateInternalProofRequest,
+  parseInternalProofAuthConfig,
+} from "@/lib/internal-proof-auth";
+import { checkInternalProofRateLimit } from "@/lib/internal-proof-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const accountHeaderSchema = z
-  .object({
-    accountId: z
-      .string()
-      .trim()
-      .min(1)
-      .max(256)
-      .refine(
-        // eslint-disable-next-line no-control-regex -- reject C0/C1 controls and whitespace in the server-derived account id.
-        (value) => !/[\u0000-\u001f\u007f-\u009f\s]/.test(value),
-        "account id has whitespace or control characters",
-      ),
-  })
-  .strict();
 
 const rowProofRequestSchema = z
   .object({
@@ -47,35 +36,11 @@ const requestSchema = z.union([
   latestEvidencePackRequestSchema,
 ]);
 
-const proxySecretSchema = z.string().trim().min(32).max(4096);
-const BEARER = /^Bearer ([0-9a-f]{64})$/;
-
 function respond(body: unknown, status = 200): Response {
   const response = json(body, status);
   response.headers.set("Cache-Control", "private, no-store");
   response.headers.set("Vary", "Authorization, X-Caisson-Account-Id");
   return response;
-}
-
-function expectedCredential(accountId: string, secret: string): Buffer {
-  return Buffer.from(
-    createHmac("sha256", secret).update(accountId).digest("hex"),
-    "utf8",
-  );
-}
-
-function hasValidCredential(
-  authorization: string | null,
-  accountId: string,
-  secret: string,
-): boolean {
-  const match = authorization?.match(BEARER);
-  if (match === undefined || match === null) return false;
-  const supplied = Buffer.from(match[1] ?? "", "utf8");
-  const expected = expectedCredential(accountId, secret);
-  return (
-    supplied.length === expected.length && timingSafeEqual(supplied, expected)
-  );
 }
 
 type InternalProofMutationDeps = Pick<
@@ -85,6 +50,10 @@ type InternalProofMutationDeps = Pick<
 
 export interface InternalProofRouteDependencies {
   readonly proxySecret: () => string | undefined;
+  readonly internalHost: () => string | undefined;
+  readonly checkRateLimit: (
+    accountId: string,
+  ) => Promise<{ readonly allowed: boolean; readonly retryAfterSec: number }>;
   readonly getMutationDeps: () => Promise<InternalProofMutationDeps>;
   readonly readLatestEvidencePack: typeof readLatestEvidencePack;
 }
@@ -93,30 +62,25 @@ export function createInternalProofRoute(
   dependencies: InternalProofRouteDependencies,
 ): (req: Request) => Promise<Response> {
   return async (req) => {
-    const secretResult = proxySecretSchema.safeParse(
-      dependencies.proxySecret(),
-    );
-    if (!secretResult.success) {
+    const authConfig = parseInternalProofAuthConfig({
+      secret: dependencies.proxySecret(),
+      internalHost: dependencies.internalHost(),
+    });
+    if (authConfig === null) {
       return respond({ error: "proof proxy unavailable" }, 503);
     }
 
-    let accountId: string;
-    try {
-      accountId = accountHeaderSchema.parse({
-        accountId: req.headers.get("x-caisson-account-id"),
-      }).accountId;
-    } catch {
-      return respond({ error: "invalid request" }, 400);
-    }
-
-    if (
-      !hasValidCredential(
-        req.headers.get("authorization"),
-        accountId,
-        secretResult.data,
-      )
-    ) {
+    const authenticated = authenticateInternalProofRequest(req, authConfig);
+    if (authenticated === null) {
       return respond({ error: "unauthorized" }, 401);
+    }
+    const { accountId } = authenticated;
+
+    const rate = await dependencies.checkRateLimit(accountId);
+    if (!rate.allowed) {
+      const response = respond({ error: "rate limited" }, 429);
+      response.headers.set("Retry-After", String(rate.retryAfterSec));
+      return response;
     }
 
     let input: z.infer<typeof requestSchema>;
@@ -167,6 +131,8 @@ export function createInternalProofRoute(
 
 export const POST = createInternalProofRoute({
   proxySecret: () => process.env.CAISSON_PROOF_PROXY_SECRET,
+  internalHost: () => process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST,
+  checkRateLimit: async (accountId) => checkInternalProofRateLimit(accountId),
   getMutationDeps: getAdminMutationDeps,
   readLatestEvidencePack,
 });

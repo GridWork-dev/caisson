@@ -1,4 +1,6 @@
-import { stat, readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { constants } from "node:fs";
+import { open, realpath } from "node:fs/promises";
 import { isAbsolute, resolve, sep } from "node:path";
 import {
   evidencePackManifestSchema,
@@ -31,13 +33,17 @@ const persistedPointerSchema = strictObject({
         !value.split(/[\\/]/u).includes(".."),
       "manifestPath must be relative and contained",
     ),
-  sha256: z.string().regex(/^[0-9a-f]{64}$/u),
+  archiveSha256: z.string().regex(/^[0-9a-f]{64}$/u),
+  manifestSha256: z.string().regex(/^[0-9a-f]{64}$/u),
   generatedAt: z.string().datetime({ offset: true }),
 });
 
 export const latestEvidencePackResponseSchema = strictObject({
   kind: z.literal("latest-evidence-pack"),
+  /** Digest of the immutable exported archive/logical pack, not of manifest.json. */
   sha256: z.string().regex(/^[0-9a-f]{64}$/u),
+  /** Digest of the exact manifest.json bytes parsed below. */
+  manifestSha256: z.string().regex(/^[0-9a-f]{64}$/u),
   generatedAt: z.string().datetime({ offset: true }),
   manifest: evidencePackManifestSchema,
 });
@@ -54,20 +60,84 @@ function isMissingFile(error: unknown): boolean {
   );
 }
 
-async function readBoundedFile(
+function errorCode(error: unknown): unknown {
+  return typeof error === "object" && error !== null
+    ? Reflect.get(error, "code")
+    : undefined;
+}
+
+function isContained(root: string, candidate: string): boolean {
+  return candidate === root || candidate.startsWith(`${root}${sep}`);
+}
+
+async function canonicalContainedFile(
   filePath: string,
-  maxBytes: number,
+  accountDir: string,
   missingMessage: string,
 ): Promise<string> {
+  let canonical: string;
   try {
-    const metadata = await stat(filePath);
-    if (!metadata.isFile() || metadata.size > maxBytes) {
-      throw new InternalError("persisted evidence-pack artifact is invalid");
-    }
-    return await readFile(filePath, "utf8");
+    canonical = await realpath(filePath);
   } catch (error) {
     if (isMissingFile(error)) throw new NotFoundError(missingMessage);
     throw error;
+  }
+  if (!isContained(accountDir, canonical)) {
+    throw new InternalError(
+      "persisted evidence-pack pointer escapes its account directory",
+    );
+  }
+  if (canonical !== filePath) {
+    throw new InternalError(
+      "persisted evidence-pack artifacts must not use symbolic links",
+    );
+  }
+  return canonical;
+}
+
+async function readBoundedFile(
+  filePath: string,
+  accountDir: string,
+  maxBytes: number,
+  missingMessage: string,
+): Promise<string> {
+  const canonical = await canonicalContainedFile(
+    filePath,
+    accountDir,
+    missingMessage,
+  );
+  let handle;
+  try {
+    handle = await open(canonical, constants.O_RDONLY | constants.O_NOFOLLOW);
+    const metadata = await handle.stat();
+    if (!metadata.isFile() || metadata.size > maxBytes) {
+      throw new InternalError("persisted evidence-pack artifact is invalid");
+    }
+
+    const chunks: Buffer[] = [];
+    let position = 0;
+    while (position <= maxBytes) {
+      const chunk = Buffer.alloc(Math.min(64 * 1024, maxBytes + 1 - position));
+      const { bytesRead } = await handle.read(chunk, 0, chunk.length, position);
+      if (bytesRead === 0) break;
+      chunks.push(chunk.subarray(0, bytesRead));
+      position += bytesRead;
+    }
+    const after = await handle.stat();
+    if (position > maxBytes || after.size !== position) {
+      throw new InternalError("persisted evidence-pack artifact is invalid");
+    }
+    return Buffer.concat(chunks, position).toString("utf8");
+  } catch (error) {
+    if (isMissingFile(error)) throw new NotFoundError(missingMessage);
+    if (errorCode(error) === "ELOOP") {
+      throw new InternalError(
+        "persisted evidence-pack artifacts must not use symbolic links",
+      );
+    }
+    throw error;
+  } finally {
+    await handle?.close();
   }
 }
 
@@ -89,10 +159,45 @@ export async function readLatestEvidencePack(
     );
   }
 
-  const accountDir = resolve(root, wormAnchorAccount(accountId));
+  const configuredRoot = resolve(root);
+  let canonicalRoot: string;
+  try {
+    canonicalRoot = await realpath(configuredRoot);
+  } catch (error) {
+    if (isMissingFile(error)) {
+      throw new ConfigError("CAISSON_EVIDENCE_PACK_ROOT does not exist");
+    }
+    throw error;
+  }
+  if (canonicalRoot !== configuredRoot) {
+    throw new ConfigError(
+      "CAISSON_EVIDENCE_PACK_ROOT must not use symbolic links",
+    );
+  }
+
+  const accountDir = resolve(canonicalRoot, wormAnchorAccount(accountId));
+  let canonicalAccountDir: string;
+  try {
+    canonicalAccountDir = await realpath(accountDir);
+  } catch (error) {
+    if (isMissingFile(error)) {
+      throw new NotFoundError("latest evidence-pack pointer not found");
+    }
+    throw error;
+  }
+  if (
+    canonicalAccountDir !== accountDir ||
+    !isContained(canonicalRoot, canonicalAccountDir)
+  ) {
+    throw new InternalError(
+      "persisted evidence-pack account directory must be contained and must not use symbolic links",
+    );
+  }
+
   const pointerPath = resolve(accountDir, "latest.json");
   const pointerContents = await readBoundedFile(
     pointerPath,
+    canonicalAccountDir,
     MAX_POINTER_BYTES,
     "latest evidence-pack pointer not found",
   );
@@ -104,8 +209,8 @@ export async function readLatestEvidencePack(
     throw new InternalError("persisted evidence-pack pointer is invalid");
   }
 
-  const manifestPath = resolve(accountDir, pointer.manifestPath);
-  if (!manifestPath.startsWith(`${accountDir}${sep}`)) {
+  const manifestPath = resolve(canonicalAccountDir, pointer.manifestPath);
+  if (!isContained(canonicalAccountDir, manifestPath)) {
     throw new InternalError(
       "persisted evidence-pack pointer escapes its account directory",
     );
@@ -114,6 +219,7 @@ export async function readLatestEvidencePack(
   try {
     manifestContents = await readBoundedFile(
       manifestPath,
+      canonicalAccountDir,
       MAX_MANIFEST_BYTES,
       "persisted evidence-pack manifest not found",
     );
@@ -124,6 +230,14 @@ export async function readLatestEvidencePack(
       );
     }
     throw error;
+  }
+  const manifestSha256 = createHash("sha256")
+    .update(manifestContents)
+    .digest("hex");
+  if (manifestSha256 !== pointer.manifestSha256) {
+    throw new InternalError(
+      "persisted evidence-pack manifest digest does not match its pointer",
+    );
   }
 
   let manifest;
@@ -140,7 +254,8 @@ export async function readLatestEvidencePack(
 
   return parseStrict(latestEvidencePackResponseSchema, {
     kind: "latest-evidence-pack",
-    sha256: pointer.sha256,
+    sha256: pointer.archiveSha256,
+    manifestSha256,
     generatedAt: pointer.generatedAt,
     manifest,
   });
