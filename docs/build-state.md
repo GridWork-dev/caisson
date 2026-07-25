@@ -1,13 +1,15 @@
 ---
-updated: 2026-07-21
+updated: 2026-07-24
 status: live
 ---
 
 # Build state & roadmap
 
-## Current state (2026-07-21)
+## Current state (2026-07-24)
 
-**ADR ceiling is now `0373`, PRs merged through `#318`, release tags through `v2026.07.20.3`.**
+**ADR ceiling is now `0378`, PRs merged through `#326`, release tags through `v2026.07.20.3`.**
+The ADR-0378 media-overhaul program is deployed: caisson-site deployment `c6b42869` SUCCESS,
+2026-07-23 (mirrors `docs/deploy/STATE.md`).
 The 2026-07-20 SKU-arming sitting (ADR-0373 picker, two rounds / seven locks) armed the three
 compliance-gap SKUs with first prices — access-review `$199`, risk-register `$279`, trust-page
 `$149` — via the gate-forced two-consume sequence (`#314` publish-arm → `#315` consume → `#316`
