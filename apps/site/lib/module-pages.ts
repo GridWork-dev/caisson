@@ -352,6 +352,218 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     },
   },
   {
+    slug: "access-review",
+    metaTitle: "Access Reviews, Attested Campaigns | Caisson",
+    metaDescription:
+      "Import a reviewer roster, append approve or revoke decisions to the tenant audit chain, and close each campaign with every undecided reviewee reported unresolved.",
+    heroOneLiner:
+      "A review campaign closes complete or at its deadline, and every missing decision stays visible as unresolved, never guessed into approval.",
+    definition:
+      "access-review is the headless campaign kernel for periodic entitlement attestation: openCampaign freezes an imported reviewer roster, recordDecision appends approve or revoke decisions to the tenant audit chain, and closeCampaign refuses an early partial close. At deadline, scanCampaignDecisions reports every undecided reviewee as unresolved, never approved. Job task definitions carry the same lifecycle onto a recurring cadence.",
+    included: [
+      {
+        title: "CSV, JSON, or in-memory membership snapshots",
+        body: "createCsvMembershipSnapshotSource(), createJsonMembershipSnapshotSource(), and createInMemoryMembershipSnapshotSource() validate three input forms into the same frozen reviewer and reviewee roster. The adapters perform no I/O themselves, so your loader stays at the edge and every campaign receives the same parsed MembershipSnapshot shape.",
+      },
+      {
+        title: "Strict campaign boundaries",
+        body: "openCampaignSchema, recordDecisionSchema, and closeCampaignSchema reject unknown fields before the lifecycle touches Postgres or the chain. Reviewee ids are bounded, rosters must be unique, campaign windows are positive and capped by MAX_CAMPAIGN_WINDOW_MS, and every account or campaign id must be a UUID.",
+      },
+      {
+        title: "One chained record per lifecycle event",
+        body: "openCampaign(), recordDecision(), and closeCampaign() append CAMPAIGN_OPENED_RECORD, CAMPAIGN_DECISION_RECORD, and CAMPAIGN_CLOSED_RECORD payloads through the narrow CampaignChainStore port. The mutable campaign row answers operational queries; the append-only chain preserves who decided what and the unresolved roster recorded at close.",
+      },
+      {
+        title: "Latest decision wins, absence stays unresolved",
+        body: "scanCampaignDecisions() sorts loaded entries by sequence, takes the latest approve or revoke decision per reviewee, and returns the frozen roster members with no decision. closeCampaign() refuses while the campaign is incomplete and not due; at the deadline it records that unresolved list as-is, never as approval.",
+      },
+      {
+        title: "Recurring open and close jobs",
+        body: "defineCampaignOpenTask() and defineCampaignCloseTask() expose the lifecycle as @caisson/jobs task definitions. enqueueCampaignOpen() uses a tenant-and-reviewer singleton key, while enqueueCampaignClose() keys by tenant and campaign, so overlapping schedule ticks do not enqueue the same review twice.",
+      },
+    ],
+    artifact: {
+      label:
+        "scanCampaignDecisions, the flag-never-guess decision fold over the audit chain",
+      lang: "ts",
+      file: "packages/access-review/src/campaign.ts",
+      code: 'export function scanCampaignDecisions(\n  entries: readonly AuditChainEntry[],\n  campaignId: string,\n  reviewees: readonly string[],\n): CampaignDecisionScan {\n  const decisions = new Map<string, ReviewDecision>();\n  // "Latest wins" depends on seq-ascending iteration order — sort defensively rather than trust\n  // the caller\'s ordering (entries is fully in memory already, so this is one cheap pass).\n  const bySeq = [...entries].sort((a, b) => a.seq - b.seq);\n  for (const entry of bySeq) {\n    const decision = decisionFromEntry(entry, campaignId);\n    if (decision !== null)\n      decisions.set(decision.revieweeId, decision.decision);\n  }\n  const unresolved = reviewees.filter((r) => !decisions.has(r));\n  return { decisions, unresolved };\n}',
+      annotations: [
+        "scanCampaignDecisions sorts by seq before folding, so a revised decision supersedes the earlier append even when the caller supplied entries out of order.",
+        "scanCampaignDecisions derives unresolved from the frozen roster after the fold; no missing decision enters the decisions map as an approval.",
+      ],
+    },
+    faq: [
+      {
+        question: "Does access-review include a reviewer portal?",
+        answer:
+          "No. It is a headless campaign package: snapshot adapters, strict lifecycle functions, job definitions, and the audit-chain port. Your app owns the reviewer-facing route and authentication. The live control on this page is a deterministic demonstration of the package logic, not a hosted review service.",
+      },
+      {
+        question: "Can a reviewer revise an earlier decision?",
+        answer:
+          "Yes. recordDecision() appends the revision instead of editing history, and scanCampaignDecisions() takes the latest entry by sequence. A decision is refused when its campaign read observes closed_at, but that read is not atomic with closeCampaign(): a decision already racing the close can append after campaign.closed and does not change the unresolved list already reported at close.",
+      },
+      {
+        question:
+          "What happens when the deadline arrives with decisions missing?",
+        answer:
+          "closeCampaign() can close because the campaign is due, but it does not fill the gaps. It appends CAMPAIGN_CLOSED_RECORD with every still-undecided reviewee in unresolved and returns the same list to the caller.",
+      },
+      {
+        question: "What audit store does the standalone module require?",
+        answer:
+          "You inject a CampaignChainStore implementing append() and load(); the real AuditChainStore satisfies that narrow port. A standalone purchase gives you the campaign package, not a hosted chain. The Compliance bundle grants access-review and audit-worm together if you want both source packages.",
+      },
+    ],
+    relatedGlossary: ["soc2-audit-log", "worm-audit-log"],
+    sells: {
+      edition: "Compliance",
+      note: `Sold standalone at ${modulePrice("access-review")}, or granted as a named member of the ${bundlePrice("compliance")} Compliance bundle. The Everything bundle includes it by construction with every sellable module.`,
+    },
+  },
+  {
+    slug: "risk-register",
+    metaTitle: "AI Risk Register, Computed Residuals | Caisson",
+    metaDescription:
+      "Likelihood by impact scoring with a computed residual, WORM-logged operator overrides, framework crosswalk pointers, and a deterministic treatment-plan artifact.",
+    heroOneLiner:
+      "The residual is computed from likelihood and impact; an operator can override the judgment, but never rewrite the score that came before it.",
+    definition:
+      "risk-register is a framework-agnostic risk model: defineRiskEntry derives a branded likelihood by impact residual that callers cannot supply, recordResidualOverride writes a separate exception to the tenant audit chain, and buildRiskTreatmentPlan emits a deterministic, crosswalk-linked evidence artifact. Computed and effective scores remain side by side, so an operator judgment never rewrites the original rating.",
+    included: [
+      {
+        title: "Strict authored risk rows",
+        body: "defineRiskEntry() parses RiskEntryInput without accepting a residual field, then returns a fully checked RiskEntry carrying subject, likelihood, impact, treatment plan, owner, SHA-256 evidence digest, and framework crosswalk pointers. Unknown fields and malformed digests fail before a row is admitted.",
+      },
+      {
+        title: "Residuals are derived, not typed in",
+        body: "computeResidual() is the only function that returns the nominal Residual type, multiplying the fixed Likelihood and Impact ordinals into an integer from 1 through 25. The runtime RiskEntry schema re-computes that value as a second check, so a hand-assembled mismatch is rejected too.",
+      },
+      {
+        title: "Overrides stay separate and accountable",
+        body: "recordResidualOverride() leaves the RiskEntry residual untouched and appends a RiskResidualOverrideRecord carrying the computed score, override score, who, why, and when. If the chain append fails, the function throws an evidence-gap InternalError instead of returning an override no audit trail can prove.",
+      },
+      {
+        title: "Deterministic treatment-plan evidence",
+        body: "buildRiskTreatmentPlan() re-derives every computed score, applies the supplied latest override only to effectiveResidual, sorts rows by riskId, and returns canonicalize(toJson(plan)) as canonicalPlan. Identical register state produces identical bytes regardless of input order, filesystem, locale, or clock.",
+      },
+      {
+        title: "Summary counts cannot be fabricated",
+        body: "riskTreatmentPlanSchema derives totalRisks, overriddenCount, and unmitigatedCount from the actual rows and rejects any mismatched summary. RISK_TREATMENT_PLAN_FORMAT_VERSION pins the artifact contract, while the posture stays readiness-style, recording treatment coverage without claiming compliance.",
+      },
+    ],
+    artifact: {
+      label:
+        "defineRiskEntry, the only authored-row path and its computed residual",
+      lang: "ts",
+      file: "packages/risk-register/src/model.ts",
+      code: "export function defineRiskEntry(input: RiskEntryInput): RiskEntry {\n  const parsed = parseStrict(RiskEntryInput, input);\n  const residual = computeResidual(parsed.likelihood, parsed.impact);\n  return parseStrict(RiskEntry, { ...parsed, residual });\n}",
+      annotations: [
+        "defineRiskEntry parses RiskEntryInput before it derives anything, so callers cannot smuggle a residual or an unknown field into the authored row.",
+        "computeResidual is the sole residual mint in this path; the finished object is parsed through RiskEntry again, including its likelihood-by-impact cross-check.",
+      ],
+    },
+    faq: [
+      {
+        question: "Can an API caller supply the residual score directly?",
+        answer:
+          "No. RiskEntryInput has no residual field, and defineRiskEntry() derives it through computeResidual(). The resulting Residual is nominally branded at the type level, then RiskEntry re-computes and checks it at runtime as a second belt.",
+      },
+      {
+        question: "Does an operator override erase the computed score?",
+        answer:
+          "No. recordResidualOverride() appends a separate risk.residual-overridden chain record. buildRiskTreatmentPlan() keeps computedResidual and effectiveResidual side by side, plus who, why, when, and the override score, so the original model output remains recoverable.",
+      },
+      {
+        question: "Is the register limited to the EU AI Act?",
+        answer:
+          "No. The model is framework-agnostic. Each RiskEntry carries CrosswalkReference-shaped pointers into any shipped framework pack, while compliance-core uses the same model for its EU AI Act risk-management collector.",
+      },
+      {
+        question:
+          "Does buildRiskTreatmentPlan write a file or read the audit chain?",
+        answer:
+          "Neither. It is a pure builder over the RiskEntry rows and latest overrides you supply. It returns the validated plan plus canonicalPlan; your application resolves the latest chain records and decides where to persist or package the artifact.",
+      },
+    ],
+    relatedGlossary: ["control-to-code-mapping", "audit-evidence-bundle"],
+    sells: {
+      edition: "Compliance",
+      note: `Sold standalone at ${modulePrice("risk-register")}, or granted as a named member of the ${bundlePrice("compliance")} Compliance bundle. The Everything bundle includes it by construction with every sellable module.`,
+    },
+  },
+  {
+    slug: "trust-page",
+    metaTitle: "Trust Page Generator, Allowlist-Redacted | Caisson",
+    metaDescription:
+      "Generate self-contained HTML and JSON from an evidence pack after an allowlist redaction gate, with aggregate-only defaults and readiness-language checks.",
+    heroOneLiner:
+      "A fact absent from the allowlist reaches neither HTML nor JSON, and the default page exposes aggregate posture without tenant or control detail.",
+    definition:
+      "trust-page is a pure generator that turns an EvidencePackManifest into self-contained HTML and JSON for a buyer-hosted trust page. flattenManifestFacts defines the only fields that can appear; generateTrustPage filters that universe through DEFAULT_TRUST_PAGE_ALLOWLIST before rendering either output and rejects prohibited readiness claims. It adds no auth, comments, sign-off, hosting, or runtime fetch.",
+    included: [
+      {
+        title: "A finite fact ceiling before redaction",
+        body: "flattenManifestFacts() converts the evidence-pack manifest into the flat scalar key universe the generator can render. Tenant id, framework identity, chain-anchor values, summary counts, and per-control fields enter through this one function; a fabricated field outside that universe has no route into either output.",
+      },
+      {
+        title: "Aggregate-only defaults",
+        body: "DEFAULT_TRUST_PAGE_ALLOWLIST admits framework title and version plus aggregate posture, total, ready, and gap counts. It excludes tenantId, the raw chain-anchor hash, total evidence count, every per-control title and readiness value, and the crosswalk table unless the caller opts each field in.",
+      },
+      {
+        title: "Crosswalk rows require explicit opt-in",
+        body: "CROSSWALK_ROLLUP_ROWS_KEY is the sentinel that enables generateTrustPage() to render the crosswalk-rollup table. Without that exact allowlist entry, the HTML contains no table and the JSON crosswalk stays empty; opting in also exposes the cells' evidence pointers, so the choice is visible and deliberate.",
+      },
+      {
+        title: "HTML and JSON are independently self-contained",
+        body: "generateTrustPage() returns a TrustPage-shaped pair of complete static HTML and newline-terminated JSON. Neither output fetches the other at runtime, and sorted fact keys keep both stable across caller allowlist order, so a buyer can host either artifact anywhere without a Caisson service.",
+      },
+      {
+        title: "Readiness language is enforced",
+        body: "generateTrustPage() runs every rendered string through the shared readiness-language gate before returning. A prohibited compliant, certified, or verified claim throws instead of entering the artifact, while crosswalk rows pass through the same citation-row guard as the rest of the compliance render surface.",
+      },
+    ],
+    artifact: {
+      label:
+        "generateTrustPage, allowlist first, readiness gate second, render last",
+      lang: "ts",
+      file: "packages/trust-page/src/render.ts",
+      code: 'export function generateTrustPage(\n  manifest: EvidencePackManifest,\n  options: GenerateTrustPageOptions = {},\n): TrustPage {\n  const allowlist = options.allowlist ?? DEFAULT_TRUST_PAGE_ALLOWLIST;\n  const facts = redactToAllowlist(flattenManifestFacts(manifest), allowlist);\n  for (const [key, value] of Object.entries(facts)) {\n    if (typeof value === "string") {\n      assertReadinessLanguage(value, `trust page fact "${key}"`);\n    }\n  }\n  const rows = allowlist.includes(CROSSWALK_ROLLUP_ROWS_KEY)\n    ? crosswalkRollupRows(manifest)\n    : [];\n  return {\n    html: renderHtml(facts, rows),\n    json: renderJson(facts, rows),\n  };\n}',
+      annotations: [
+        "generateTrustPage calls flattenManifestFacts and redactToAllowlist before either renderer receives data; a field missing from the allowlist never enters HTML or JSON.",
+        "DEFAULT_TRUST_PAGE_ALLOWLIST is the fallback when the caller supplies no override, and generateTrustPage still runs every surviving string through the readiness-language gate.",
+      ],
+    },
+    faq: [
+      {
+        question: "Is trust-page a hosted trust center?",
+        answer:
+          "No. generateTrustPage() is a pure source-code generator that returns static HTML and JSON. It ships no server, authentication, comments, sign-off, NDA gate, hosting, or runtime fetch; your application decides where and how the artifacts are published.",
+      },
+      {
+        question: "What can the default page reveal?",
+        answer:
+          "Only the six DEFAULT_TRUST_PAGE_ALLOWLIST fields: framework title and version, aggregate posture, total controls, controls ready, and controls with gaps. Tenant id, raw anchor hashes, evidence totals, per-control detail, and crosswalk rows stay absent.",
+      },
+      {
+        question: "Can the generated page claim we are compliant or certified?",
+        answer:
+          "No. generateTrustPage() sends every surviving string through assertReadinessLanguage before rendering. Prohibited outcome language throws instead of reaching the HTML or JSON; the page reports evidence readiness, never an auditor's conclusion.",
+      },
+      {
+        question: "How do I show the crosswalk rollup?",
+        answer:
+          "Add CROSSWALK_ROLLUP_ROWS_KEY to the allowlist. That enables the citation-row table in HTML and the crosswalk array in JSON, including each cell's evidence pointers. Without the sentinel, both outputs omit those rows completely.",
+      },
+    ],
+    relatedGlossary: ["compliance-crosswalk", "audit-evidence-bundle"],
+    sells: {
+      edition: "Compliance",
+      note: `Sold standalone at ${modulePrice("trust-page")}, or granted as a named member of the ${bundlePrice("compliance")} Compliance bundle. The Everything bundle includes it by construction with every sellable module.`,
+    },
+  },
+  {
     slug: "ai-meter",
     metaTitle: "Token Metering, @caisson/ai-meter | Caisson",
     metaDescription:
