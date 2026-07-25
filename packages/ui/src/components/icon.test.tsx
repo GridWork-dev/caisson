@@ -33,4 +33,25 @@ describe("Icon registry (bespoke extension point)", () => {
     expect(html).toContain('role="img"');
     expect(html).toContain('aria-label="write once read many"');
   });
+
+  test("the module-depth names participate in the typed runtime registry", () => {
+    const marker =
+      (name: string): IconGlyph =>
+      (p) => <svg data-module-depth={name} {...p} />;
+    registerIcons({
+      "access-review": marker("access-review"),
+      "risk-register": marker("risk-register"),
+      "trust-page": marker("trust-page"),
+    });
+
+    for (const name of [
+      "access-review",
+      "risk-register",
+      "trust-page",
+    ] as const) {
+      const html = renderToStaticMarkup(<Icon name={name} />);
+      expect(html).toContain(`data-module-depth="${name}"`);
+      expect(html).toContain("cs-icon");
+    }
+  });
 });
