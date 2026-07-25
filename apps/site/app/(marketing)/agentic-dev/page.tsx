@@ -17,7 +17,7 @@ import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
-import { requireBundlePage } from "@/lib/bundle-pages";
+import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import {
   breadcrumb,
@@ -63,22 +63,22 @@ const PIECES = [
   {
     icon: "boxes" as const,
     label: "Typed agent / skill / rule schema",
-    body: "Every agent, skill, and rule is a declared file — model lane, allowed tools, capability, side-effect flag. Validated against a schema at load, with a reference-integrity check: a ghost cross-ref throws before anything runs.",
+    body: "Every agent, skill, and rule is a declared file, model lane, allowed tools, capability, side-effect flag. Validated against a schema at load, with a reference-integrity check: a ghost cross-ref throws before anything runs.",
   },
   {
     icon: "git-branch" as const,
     label: "Lifecycle state machine",
-    body: "Work moves SPEC → PLAN → EXECUTE → VERIFY → SWEEP → EVAL → SHIP. Transitions are guarded: VERIFY fails, the machine reopens PLAN — SHIP is the only terminal state. The path is the policy.",
+    body: "Work moves SPEC → PLAN → EXECUTE → VERIFY → SWEEP → EVAL → SHIP. Transitions are guarded: VERIFY fails, the machine reopens PLAN, SHIP is the only terminal state. The path is the policy.",
   },
   {
-    icon: "database" as const,
-    label: "Local hybrid memory",
-    body: "Recall is vector + full-text over a local store, scoped per project. Reads are always allowed; writes honor a per-session mode. Secrets are never a memory item — they source from env, not recall.",
+    icon: "shield" as const,
+    label: "Governance guards",
+    body: "Every transition guard and hook returns one of three decisions: allow, deny(reason), or mutate(context). A guard never runs an engine, it decides whether policy permits an already-legal move, fail-closed by default.",
   },
   {
     icon: "terminal" as const,
     label: "Hooks dispatcher",
-    body: "Lifecycle events fire typed hooks — session-start recall, per-act logging, pre-commit gates. The dispatcher is the one audited seam; a hook cannot reach a credential the kernel did not hand it.",
+    body: "Lifecycle events fire typed hooks, session-start recall, per-act logging, pre-commit gates. The dispatcher is the one audited seam; a hook cannot reach a credential the kernel did not hand it.",
   },
 ] as const;
 
@@ -153,12 +153,12 @@ const MCP_SEQUENCE = [
   {
     icon: "key" as const,
     step: "1. Authenticate",
-    body: "A timing-safe Bearer compare against every issued buyer token, no early return — a match never leaks through response latency.",
+    body: "A timing-safe Bearer compare against every issued buyer token, no early return, a match never leaks through response latency.",
   },
   {
     icon: "boxes" as const,
     step: "2. Discover",
-    body: "listTools returns only what the caller owns. A tool from a bundle you don't own is invisible, not just refused — the same 404 as a tool that doesn't exist.",
+    body: "listTools returns only what the caller owns. A tool from a bundle you don't own is invisible, not just refused, the same 404 as a tool that doesn't exist.",
   },
   {
     icon: "terminal" as const,
@@ -168,7 +168,7 @@ const MCP_SEQUENCE = [
   {
     icon: "shield" as const,
     step: "4. Govern",
-    body: "A per-account rate limit gates every dispatch (fail-open only on a store fault, never on a real deny), and a retired tool answers 410 with a reason — never a bare 404 that leaves an integration guessing.",
+    body: "A per-account rate limit gates every dispatch (fail-open only on a store fault, never on a real deny), and a retired tool answers 410 with a reason, never a bare 404 that leaves an integration guessing.",
   },
 ] as const;
 
@@ -206,13 +206,13 @@ gate:         `}
 /* ---------- Agent-runner spawn artifact ---------- */
 const RunnerSpawn = (
   <Terminal
-    label="agent-runner — spawn"
+    label="agent-runner, spawn"
     status={<StatusChip label="isolated worktree" tone="accent" dot />}
   >
     {`$ caisson-agent run --profile claude-code --task "fix flaky test"\n`}
     <span className="cs-tok-muted">
       {
-        "  buildEngineEnv(): fixed allowlist + provider key only — never a process.env spread\n"
+        "  buildEngineEnv(): fixed allowlist + provider key only, never a process.env spread\n"
       }
     </span>
     <span className="cs-tok-success">{"✓"}</span>
@@ -285,7 +285,6 @@ export default function AgenticDevPage() {
 
       {/* ===== What it composes ===== */}
       <Section
-        eyebrow="What it composes"
         title="A governed kernel, not a wrapper."
         lede="@caisson/agent-kernel is one of the pieces the Agentic-Dev bundle composes together as peers, alongside local memory and the tool-exec gate, all built on the same open @caisson/kernel base every bundle shares. It carries a typed agent/skill/rule schema with a reference-integrity validator (a ghost cross-ref throws before anything runs), the 7-act lifecycle FSM (SPEC → PLAN → EXECUTE → VERIFY → SWEEP → EVAL → SHIP, with a failed VERIFY reopening PLAN and SHIP as the only terminal state), governance guards, and the hooks dispatcher that fires lifecycle events without handing a hook a credential the kernel didn't give it."
         band="tint"
@@ -302,9 +301,8 @@ export default function AgenticDevPage() {
       {/* ===== Four composed packages ===== */}
       <Reveal>
         <Section
-          eyebrow="What ships in the box"
-          title="Four composed packages, not one kernel."
-          lede="Each member is a real workspace dependency. The kernel, the runner, and local memory each carry a standalone price; the tool-exec gate has no standalone SKU."
+          title={`${spellCount(MEMBER_MODULES.length)} composed packages, not one kernel.`}
+          lede="Each member is a real workspace dependency, and each one carries its own standalone price: the kernel, the runner, the trajectory log, local memory, and the tool-exec gate."
         >
           <FeatureGrid cols={2}>
             {MEMBER_MODULES.map((m) => (
@@ -317,7 +315,6 @@ export default function AgenticDevPage() {
       {/* ===== Inside the agent-kernel package ===== */}
       <Reveal>
         <Section
-          eyebrow="Inside the agent-kernel package"
           title="Four parts, each a declared seam."
           lede="No part is a black box. Each is a file you can read, diff, and gate in review before an agent ever runs."
         >
@@ -345,9 +342,8 @@ export default function AgenticDevPage() {
       {/* ===== The lifecycle: a state machine, not a checklist ===== */}
       <Reveal>
         <Section
-          eyebrow="The lifecycle"
           title="A state machine, not a checklist."
-          lede="VERIFY failing reopens PLAN. There is no shortcut to SHIP. The machine owns the path — the engineer does not override it inline."
+          lede="VERIFY failing reopens PLAN. There is no shortcut to SHIP. The machine owns the path, the engineer does not override it inline."
           band="surface"
         >
           <Terminal
@@ -380,9 +376,8 @@ export default function AgenticDevPage() {
       {/* ===== Spawns agents, not just scaffolds them ===== */}
       <Reveal>
         <Section
-          eyebrow="The agent runner"
           title="Spawns agents, not just scaffolds them."
-          lede="@caisson/agent-runner spawns a headless coding-agent CLI as a detached subprocess in an isolated worktree, streams an auditable .jsonl transcript that survives the launcher exiting, and parses it into a structured run report (tool calls, files touched, final result). The child environment is built from scratch — never spread from process.env — with a fixed non-secret passthrough allowlist and only the target provider's key, so a secret sitting in your shell has no path into the sandbox. Provider-agnostic: name the binary, the env-var names for the endpoint and key, the model, and an argv template; a worked Claude Code CLI profile ships as the reference. It ships as its own package alongside the bundle, not wired into the kernel's lifecycle."
+          lede="@caisson/agent-runner spawns a headless coding-agent CLI as a detached subprocess in an isolated worktree, streams an auditable .jsonl transcript that survives the launcher exiting, and parses it into a structured run report (tool calls, files touched, final result). The child environment is built from scratch (never spread from process.env) with a fixed non-secret passthrough allowlist and only the target provider's key, so a secret sitting in your shell has no path into the sandbox. Provider-agnostic: name the binary, the env-var names for the endpoint and key, the model, and an argv template; a worked Claude Code CLI profile ships as the reference. It ships as its own package alongside the bundle, not wired into the kernel's lifecycle."
         >
           {RunnerSpawn}
         </Section>
@@ -391,9 +386,8 @@ export default function AgenticDevPage() {
       {/* ===== Local memory and a sandboxed exec gate ===== */}
       <Reveal>
         <Section
-          eyebrow="Memory and the exec gate"
           title="Local memory, and a sandboxed exec gate."
-          lede="@caisson/local-store gives the bundle hybrid vector + full-text recall (vec0 + FTS5 with reciprocal-rank fusion, an FTS-only offline floor when no embedder is wired) scoped per tenant at the file level. @caisson/tool-exec is the governed tool-execution gate composed alongside it: default-deny allowlist, Zod-strict argv schemas, execFile arg-arrays — never a shell — so an agent that wants to run a command only gets the ones you explicitly allowed. Neither piece makes an LLM call or imports a vendor SDK; the composed bundle holds no credential of its own."
+          lede="@caisson/local-store gives the bundle hybrid vector + full-text recall (vec0 + FTS5 with reciprocal-rank fusion, an FTS-only offline floor when no embedder is wired) scoped per tenant at the file level. @caisson/tool-exec is the governed tool-execution gate composed alongside it: default-deny allowlist, Zod-strict argv schemas, execFile arg-arrays (never a shell) so an agent that wants to run a command only gets the ones you explicitly allowed. Neither piece makes an LLM call or imports a vendor SDK; the composed bundle holds no credential of its own."
           band="surface"
         />
       </Reveal>
@@ -401,9 +395,8 @@ export default function AgenticDevPage() {
       {/* ===== Connect over MCP (SYNTHESIS §6 Tier-1 row 9) ===== */}
       <Reveal>
         <Section
-          eyebrow="Connect over MCP"
           title="Where your agent connects."
-          lede="Most kits ship an MCP server now; the difference is what it lets an agent do. @caisson/mcp-server ships in the open Base substrate — every plan gets it, not just Agentic-Dev — and it treats the agent as a principal: four stages on every call, in order, the same server the buyer dashboard and any MCP-speaking agent client connect through."
+          lede="Most kits ship an MCP server now; the difference is what it lets an agent do. @caisson/mcp-server ships in the open Base substrate (every plan gets it, not just Agentic-Dev) and it treats the agent as a principal: four stages on every call, in order, the same server the buyer dashboard and any MCP-speaking agent client connect through."
         >
           <FeatureGrid cols={2}>
             {MCP_SEQUENCE.map((s) => (
@@ -429,7 +422,6 @@ export default function AgenticDevPage() {
       {/* ===== Framing: governed, not magic ===== */}
       <Reveal>
         <Section
-          eyebrow="The framing"
           title="A governed kernel, not autonomous magic."
           lede="The kernel does not make agents smarter. It makes them accountable: every dispatch declares its lane and its boundary, the kernel holds the credentials, and the lifecycle owns the path to ship."
         >
@@ -439,12 +431,12 @@ export default function AgenticDevPage() {
                 {
                   icon: "shield" as const,
                   title: "Credential boundary",
-                  body: "The kernel holds secrets. An agent that wants to deploy cannot — that capability lives on one audited side of the seam.",
+                  body: "The kernel holds secrets. An agent that wants to deploy cannot, that capability lives on one audited side of the seam.",
                 },
                 {
                   icon: "git-branch" as const,
                   title: "Declared lanes",
-                  body: "Model, tools, and isolation are declared at dispatch — not defaulted to the most powerful option. Escalate on uncertainty, not habit.",
+                  body: "Model, tools, and isolation are declared at dispatch, not defaulted to the most powerful option. Escalate on uncertainty, not habit.",
                 },
                 {
                   icon: "file-check" as const,
@@ -475,7 +467,6 @@ export default function AgenticDevPage() {
       {/* ===== Licensing ===== */}
       <Reveal>
         <Section
-          eyebrow="How it ships"
           title="A composition of the same base."
           lede="Agentic-Dev is a composition of the same open Caisson base every bundle shares, not a fork. Buy it outright, take a piece à la carte, or subscribe for credits and updates."
           band="tint"
@@ -488,7 +479,7 @@ export default function AgenticDevPage() {
                 style={{ marginTop: "var(--cs-space-2)" }}
               >
                 Buy the bundle outright for {bundlePrice("agentic-dev")} and own
-                the source — all four composed pieces, kernel through the agent
+                the source, all four composed pieces, kernel through the agent
                 runner.
               </p>
             </Card>
@@ -530,7 +521,7 @@ export default function AgenticDevPage() {
 
       {/* ===== FAQ ===== */}
       <Reveal>
-        <Section eyebrow="Questions" title="Common questions." band="surface">
+        <Section title="Common questions." band="surface">
           <Faq items={FAQS} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
       </Reveal>
@@ -538,9 +529,8 @@ export default function AgenticDevPage() {
       {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
       <Reveal>
         <Section
-          eyebrow="Trial path"
           title="Prove fit in week one."
-          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />
@@ -549,7 +539,7 @@ export default function AgenticDevPage() {
       </Reveal>
 
       {/* ===== Get started ===== */}
-      <Section eyebrow="Get started" id="get-started">
+      <Section id="get-started">
         <h2 className="cs-section-title">Ship governed agents.</h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
           Buy the bundle outright and own the source, or take the kernel or the

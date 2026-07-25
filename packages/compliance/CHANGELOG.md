@@ -1,5 +1,32 @@
 # @caisson/compliance
 
+## 0.6.0
+
+### Minor Changes
+
+- 1c5c137: The Compliance bundle gains three new members — access reviews, the risk register, and
+  the buyer trust page — and is repriced to $1,449, holding the same below-sum ratio over
+  the enlarged member set.
+
+### Patch Changes
+
+- Updated dependencies [3b9237b]
+  - @caisson/signing-primitive@0.3.7
+  - @caisson/compliance-core@0.6.1
+
+## 0.5.10
+
+### Patch Changes
+
+- Updated dependencies [dd94186]
+- Updated dependencies [fa79938]
+- Updated dependencies [ff2cc46]
+- Updated dependencies [0f2215e]
+- Updated dependencies [31d59fd]
+  - @caisson/compliance-core@0.6.0
+  - @caisson/frameworks-pack@0.6.0
+  - @caisson/signing-primitive@0.3.6
+
 ## 0.5.9
 
 ### Patch Changes

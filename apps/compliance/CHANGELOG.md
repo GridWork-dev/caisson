@@ -1,5 +1,18 @@
 # @caisson/app-compliance
 
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies [1c5c137]
+  - @caisson/compliance@0.6.0
+
+## 0.0.16
+
+### Patch Changes
+
+- @caisson/compliance@0.5.10
+
 ## 0.0.15
 
 ### Patch Changes

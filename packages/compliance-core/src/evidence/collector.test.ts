@@ -325,7 +325,7 @@ describe("fieldCryptoPolicyCollector (HIPAA PHI encryption-at-rest)", () => {
 describe("aiRiskRegisterCollector (EU AI Act Art. 9)", () => {
   const collector = aiRiskRegisterCollector();
 
-  test("passes when every risk is assessed and mitigated", () => {
+  test("passes when every risk is assessed with a treatment plan on record", () => {
     const r = collector.collect({
       entries: [
         managedRisk("R-1", "openai/gpt-4o lane"),

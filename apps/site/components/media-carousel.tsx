@@ -8,7 +8,7 @@ import { CodeBlock, Icon } from "@/components";
 import { BundleCompositionSlide } from "@/components/marketplace-hero-artifact";
 import { MarketplaceDiagram } from "@/components/marketplace-diagrams";
 import { MediaPlaceholder } from "@/components/media-placeholder";
-import type { ComponentKey, MediaSlide } from "@/lib/media-manifest";
+import type { ComponentKey, MediaSlide, PokeKey } from "@/lib/media-manifest";
 
 import styles from "./media-carousel.module.css";
 
@@ -43,6 +43,112 @@ const COMPONENT_SLIDES: Record<ComponentKey, ComponentType> = {
   }),
 };
 
+// The interactive poke slides (ADR-0378 lock 2) — the one slide kind that owns interactive state.
+// Same lazy client-only loading discipline as COMPONENT_SLIDES; keyed by PokeKey so the manifest
+// stays the single source of which entry shows which poke.
+const POKE_SLIDES: Record<PokeKey, ComponentType> = {
+  "field-crypto": dynamic(() => import("./poke/field-crypto-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "audit-worm": dynamic(() => import("./poke/audit-worm-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "ai-meter": dynamic(() => import("./poke/ai-meter-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  guardrails: dynamic(() => import("./poke/guardrails-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "signing-primitive": dynamic(() => import("./poke/signing-primitive-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  credits: dynamic(() => import("./poke/credits-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "billing-orchestration": dynamic(
+    () => import("./poke/billing-orchestration-poke"),
+    { ssr: false, loading: () => <MediaPlaceholder icon="boxes" /> },
+  ),
+  "tool-exec": dynamic(() => import("./poke/tool-exec-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "local-privacy": dynamic(() => import("./poke/local-privacy-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "org-controls": dynamic(() => import("./poke/org-controls-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "retention-runner": dynamic(() => import("./poke/retention-runner-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "local-store": dynamic(() => import("./poke/local-store-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "local-sync": dynamic(() => import("./poke/local-sync-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "local-inference": dynamic(() => import("./poke/local-inference-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "agent-kernel": dynamic(() => import("./poke/agent-kernel-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "agent-runner": dynamic(() => import("./poke/agent-runner-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "agent-trajectory": dynamic(() => import("./poke/agent-trajectory-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "compliance-core": dynamic(() => import("./poke/compliance-core-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "frameworks-pack": dynamic(() => import("./poke/frameworks-pack-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "access-review": dynamic(() => import("./poke/access-review-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "risk-register": dynamic(() => import("./poke/risk-register-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "trust-page": dynamic(() => import("./poke/trust-page-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  alerting: dynamic(() => import("./poke/alerting-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "ai-evals": dynamic(() => import("./poke/ai-evals-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+  "prompt-registry": dynamic(() => import("./poke/prompt-registry-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
+};
+
 function Slide({ slide }: { slide: MediaSlide }) {
   switch (slide.kind) {
     case "diagram":
@@ -50,6 +156,11 @@ function Slide({ slide }: { slide: MediaSlide }) {
         return <BundleCompositionSlide bundleId={slide.compositionBundle} />;
       }
       return slide.diagram ? <MarketplaceDiagram name={slide.diagram} /> : null;
+    case "poke": {
+      if (!slide.poke) return null;
+      const PokeSlide = POKE_SLIDES[slide.poke];
+      return <PokeSlide />;
+    }
     case "component": {
       if (!slide.component) return null;
       const ComponentSlide = COMPONENT_SLIDES[slide.component];
@@ -114,6 +225,9 @@ export function MediaCarousel({
       aria-roledescription="carousel"
       aria-label={label}
       onKeyDown={(e) => {
+        // A poke slide owns its keyboard interaction (ADR-0378): arrow keys inside a [data-poke]
+        // subtree drive the poke's inputs, never slide navigation.
+        if ((e.target as HTMLElement).closest?.("[data-poke]")) return;
         if (e.key === "ArrowRight") {
           e.preventDefault();
           go(1);
@@ -124,7 +238,9 @@ export function MediaCarousel({
       }}
     >
       <div className={styles.stage}>
-        <Slide slide={current} />
+        <div className={styles.stageContent}>
+          <Slide slide={current} />
+        </div>
         <button
           type="button"
           className={`${styles.nav} ${styles.prev}`}

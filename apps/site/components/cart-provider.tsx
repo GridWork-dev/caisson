@@ -1,10 +1,12 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -36,6 +38,10 @@ export interface CartContextValue {
   openDrawer: () => void;
   closeDrawer: () => void;
   toggleDrawer: () => void;
+  /** Increments on every `addItem` — the nav badge keys off it so each add re-mounts and re-pulses
+   *  the count (a compositor-only, reduced-motion-safe animation). Not tied to `items.length` so a
+   *  remove doesn't pulse. */
+  addPulse: number;
   /** Lines silently dropped by the hydration-time `pruneCart` (G32) — a retired SKU still in
    *  localStorage. Empty once acknowledged (`dismissPrunedNotice`) or on the next hydration. */
   prunedItems: readonly CartItem[];
@@ -60,6 +66,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [prunedItems, setPrunedItems] = useState<CartItem[]>([]);
+  const [addPulse, setAddPulse] = useState(0);
+
+  // First-add-per-page rule (ADR-0378 lock 4): the FIRST addItem in a page view auto-opens the
+  // drawer (the confirmation + bundle-savings-nudge impression); later adds on the same page view
+  // only pulse the badge. The flag resets on navigation, and /cart + /dashboard/cart never
+  // auto-open (a drawer over a cart page is redundant).
+  const pathname = usePathname();
+  const firstAddRef = useRef(false);
+  useEffect(() => {
+    firstAddRef.current = false;
+  }, [pathname]);
 
   useEffect(() => {
     // Prune against the live catalog: a persisted line with a retired price id (ADR-0238) would
@@ -94,7 +111,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       drawerOpen,
       addItem: (item) => {
         setItems((prev) => addCartItem(prev, item));
-        setDrawerOpen(true);
+        setAddPulse((n) => n + 1);
+        const noAutoOpen =
+          pathname === "/cart" || pathname === "/dashboard/cart";
+        if (!firstAddRef.current && !noAutoOpen) {
+          firstAddRef.current = true;
+          setDrawerOpen(true);
+        }
       },
       removeItem: (id) => setItems((prev) => removeCartItem(prev, id)),
       replaceCart: (next) => setItems([...next]),
@@ -102,10 +125,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       openDrawer: () => setDrawerOpen(true),
       closeDrawer: () => setDrawerOpen(false),
       toggleDrawer: () => setDrawerOpen((v) => !v),
+      addPulse,
       prunedItems,
       dismissPrunedNotice: () => setPrunedItems([]),
     }),
-    [items, drawerOpen, prunedItems],
+    [items, drawerOpen, prunedItems, addPulse, pathname],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   Background,
@@ -13,6 +13,7 @@ import {
   ReactFlow,
   useEdgesState,
   useNodesState,
+  type ColorMode,
   type Edge,
   type Node,
   type NodeProps,
@@ -20,12 +21,79 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
+import { THEME_STORAGE_KEY } from "@caisson/ui/components";
+
 import type {
   ArchitectureGraph,
   BoundaryId,
   NodeKind,
 } from "@/lib/architecture-annotations";
 import type { FleetSnapshot, NodeOverlay } from "@/lib/fleet-reads";
+
+function readPinnedTheme(): "dark" | "light" | null {
+  try {
+    const v = localStorage.getItem(THEME_STORAGE_KEY);
+    return v === "dark" || v === "light" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The theme actually in effect right now: a pinned choice (ThemeToggle), else the OS
+ *  preference, else dark (the un-attributed `:root` default — see globals.css). */
+function resolveColorMode(): "dark" | "light" {
+  const pinned = readPinnedTheme();
+  if (pinned) return pinned;
+  if (
+    typeof matchMedia !== "undefined" &&
+    matchMedia("(prefers-color-scheme: light)").matches
+  ) {
+    return "light";
+  }
+  return "dark";
+}
+
+/**
+ * Mirrors the ADMIN APP's own theme (ThemeToggle's pin-else-OS model) rather than React Flow's
+ * built-in `colorMode="system"`, which only ever tracks the raw OS preference: the instant an
+ * operator PINS a theme against the OS setting (ThemeToggle writes `data-theme` directly, no
+ * custom event), `system` desyncs from the rest of the page — the ADR-0374 "controls/minimap
+ * stay light in dark mode" finding. `system` also resolves purely on the client (no window at
+ * build time), so the force-static page's baked SSR markup and the first real client paint
+ * disagree — the paired hydration-mismatch finding. An SSR-stable "dark" default here matches
+ * ThemeToggle's own SSR-stable default, resolved for real only after mount.
+ */
+function useAdminColorMode(): ColorMode {
+  const [mode, setMode] = useState<ColorMode>("dark");
+
+  useEffect(() => {
+    setMode(resolveColorMode());
+
+    const mq =
+      typeof matchMedia !== "undefined"
+        ? matchMedia("(prefers-color-scheme: light)")
+        : null;
+    const onMqChange = (): void => {
+      if (!readPinnedTheme()) setMode(mq?.matches ? "light" : "dark");
+    };
+    mq?.addEventListener("change", onMqChange);
+
+    // ThemeToggle mutates `data-theme` directly (no custom event) — observe the attribute so a
+    // pin toggled anywhere on the page updates this canvas without a remount.
+    const observer = new MutationObserver(() => setMode(resolveColorMode()));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => {
+      mq?.removeEventListener("change", onMqChange);
+      observer.disconnect();
+    };
+  }, []);
+
+  return mode;
+}
 
 // The React Flow render of the ADR-0143 hybrid graph. Type-only import of the graph shapes keeps the
 // node:fs topology deriver out of the client bundle. All data-flow reasoning lives in
@@ -276,6 +344,7 @@ export function ArchitectureFlow({ graph }: { graph: ArchitectureGraph }) {
   const initial = useMemo(() => layout(graph), [graph]);
   const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
   const [edges, , onEdgesChange] = useEdgesState(initial.edges);
+  const colorMode = useAdminColorMode();
 
   // ADR-0316 W-FLEET — decorate the static diagram with live fleet data at RUNTIME (the page itself
   // is force-static, baked without a repo tree; this client fetch is the only live seam). Dormant /
@@ -337,7 +406,7 @@ export function ArchitectureFlow({ graph }: { graph: ArchitectureGraph }) {
           fitViewOptions={{ padding: 0.15 }}
           minZoom={0.3}
           nodesConnectable={false}
-          colorMode="system"
+          colorMode={colorMode}
           proOptions={{ hideAttribution: true }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />

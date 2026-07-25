@@ -195,11 +195,21 @@ export function SiteNav() {
       </div>
 
       {/* Right utility cluster (F3): cart · theme · Get started · account. The cart stays visible
-          below 900px too (rendered again inside the compact cluster, not gated). */}
+          below 900px too (rendered again inside the compact cluster, not gated).
+          ADR-0374 (13d3ad90bd9d5c1d/6fb94e97aa492d63): this was `variant="primary"` (solid accent) —
+          on any page whose own content leads with a solid-accent CTA (e.g. the empty /cart card's
+          "Browse editions & modules"), two competing solid buttons shared the fold. The header nav
+          is a persistent utility row on EVERY page, never the page's own primary action, so it
+          reads as `ghost` everywhere — matching NavAccount's bordered "Sign in" pill beside it — and
+          leaves each page's real primary CTA the only solid-accent button in view. The mobile
+          drawer's own pinned CTA (Kickoff-I) is a separate, explicit `variant="primary"` call in
+          mobile-drawer.tsx and is unaffected. */}
       <div className={styles.navUtils}>
         <CartTrigger />
         <ThemeToggle />
-        <Button href={GET_STARTED.href}>{GET_STARTED.label}</Button>
+        <Button href={GET_STARTED.href} variant="ghost">
+          {GET_STARTED.label}
+        </Button>
         <NavAccount />
       </div>
 

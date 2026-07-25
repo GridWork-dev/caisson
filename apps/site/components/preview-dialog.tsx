@@ -20,6 +20,8 @@ import { mediaSlides, type MediaSlide } from "@/lib/media-manifest";
 import { MODULE_PAGES } from "@/lib/module-pages";
 import { entryByViewId, type SurfaceEntry } from "@/lib/marketplace-surface";
 import { modulePostureGroup } from "@/lib/stack-fit";
+import { TruthfulSignals } from "@/components/truthful-signals";
+import type { TruthfulSignal } from "@/lib/trust-signals";
 import {
   bundleModuleSubtotal,
   bundlePriceById,
@@ -59,13 +61,20 @@ interface ViewModel {
   body: React.ReactNode;
 }
 
-function buildViewModel(entry: SurfaceEntry): ViewModel {
+function buildViewModel(
+  entry: SurfaceEntry,
+  signals: readonly TruthfulSignal[],
+): ViewModel {
   // omitCodeArtifact (ADR-0290 WR-03): the dialog body renders the record's artifact itself as a
   // bounded CodeBlock below, so a code-artifact carousel slide would show the identical code
   // twice — and, unclamped, it filled the whole dialog (CAISSON-68).
-  const slides = mediaSlides(entry.kind, entry.id, { omitCodeArtifact: true });
+  // leadWithPoke (ADR-0378 lock 1): the card viewer leads with the interactive poke.
+  const slides = mediaSlides(entry.kind, entry.id, {
+    omitCodeArtifact: true,
+    leadWithPoke: true,
+  });
   if (entry.kind === "module") return moduleViewModel(entry, slides);
-  return bundleViewModel(entry, slides);
+  return bundleViewModel(entry, slides, signals);
 }
 
 function moduleViewModel(
@@ -104,7 +113,7 @@ function moduleViewModel(
         ))}
         {m && m.bundles.length === 0 ? (
           <span className="cs-muted" style={{ fontSize: "var(--cs-text-xs)" }}>
-            Sold standalone — not included in any bundle.
+            Sold standalone: not included in any bundle.
           </span>
         ) : (
           m?.bundles.map((b) => (
@@ -130,7 +139,7 @@ function moduleViewModel(
             <ul className="cs-preview-list">
               {record.included.map((item, i) => (
                 <li key={`${entry.id}-${i}`}>
-                  <strong>{item.title}</strong> — {item.body}
+                  <strong>{item.title}:</strong> {item.body}
                 </li>
               ))}
             </ul>
@@ -154,6 +163,7 @@ function moduleViewModel(
 function bundleViewModel(
   entry: SurfaceEntry,
   slides: readonly MediaSlide[],
+  signals: readonly TruthfulSignal[],
 ): ViewModel {
   const anchor = isBundleId(entry.id) ? bundlePriceById(entry.id) : undefined;
   const record = bundlePageRecord(entry.id);
@@ -201,12 +211,14 @@ function bundleViewModel(
           )}
         </div>
 
+        <TruthfulSignals signals={signals} />
+
         {isEverything ? (
           <p className="cs-muted cs-preview-def">
             Every à-la-carte module totals {formatUsd(moduleCatalogSubtotal())}.
-            The Everything bundle is the whole commercial catalog — every bundle
-            and every module — for {priceStrOf(entry, anchor)}. One purchase,
-            the whole library.
+            The Everything bundle is the whole commercial catalog (every bundle
+            and every module) for {priceStrOf(entry, anchor)}. One purchase, the
+            whole library.
           </p>
         ) : members.length > 0 ? (
           <ul className="cs-preview-members">
@@ -248,9 +260,11 @@ function priceStrOf(
 export function PreviewDialog({
   viewId,
   onClose,
+  signals,
 }: {
   viewId: string | null;
   onClose: () => void;
+  signals: readonly TruthfulSignal[];
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   // Memoized on viewId so vm (and vm.slides) keeps a stable identity across parent re-renders —
@@ -258,8 +272,8 @@ export function PreviewDialog({
   // would snap an open carousel back to slide 1 whenever cart/theme context re-renders the tree.
   const liveVm = useMemo(() => {
     const entry = viewId ? entryByViewId(viewId) : undefined;
-    return entry ? buildViewModel(entry) : undefined;
-  }, [viewId]);
+    return entry ? buildViewModel(entry, signals) : undefined;
+  }, [viewId, signals]);
 
   // Retain the last-resolved view model through the authored close (ADR-0307): the parent nulls
   // viewId at close, and unmounting the shell in that same render would leave the exit transition

@@ -24,6 +24,9 @@
   --cs-warning: oklch(0.78 0.13 75);
   --cs-danger: oklch(0.65 0.18 25);
   --cs-info: oklch(0.70 0.12 240);
+  /* code syntax (ADR-0374) */
+  --cs-code-string: oklch(0.72 0.15 170);
+  --cs-code-keyword: oklch(0.75 0.11 280);
   /* type */
   --cs-font-sans: var(--font-sans, "Hubot Sans", ui-sans-serif, system-ui, sans-serif);
   --cs-font-mono: var(--font-mono, "Martian Mono", ui-monospace, "SFMono-Regular", monospace);
@@ -85,25 +88,28 @@
   :root:not([data-theme="dark"]) {
     /* colour — semantic + functional (light, OS-seeded) */
   --cs-bg: oklch(0.99 0.003 220);
-  --cs-surface-1: oklch(0.975 0.005 220);
+  --cs-surface-1: oklch(0.965 0.005 220);
   --cs-surface-2: oklch(0.95 0.006 220);
   --cs-border: oklch(0.88 0.008 220);
   --cs-border-strong: oklch(0.80 0.010 220);
   --cs-fg: oklch(0.22 0.015 220);
   --cs-fg-muted: oklch(0.45 0.018 220);
-  --cs-accent: oklch(0.50 0.13 215);
-  --cs-accent-hover: oklch(0.48 0.13 215);
+  --cs-accent: oklch(0.49 0.13 215);
+  --cs-accent-hover: oklch(0.47 0.13 215);
   --cs-on-accent: oklch(0.99 0.01 220);
   --cs-accent-tint: oklch(0.93 0.03 205);
-  --cs-focus: oklch(0.50 0.13 215);
-  --cs-link: oklch(0.50 0.13 215);
-  --cs-glow-accent: 0 0 0 1px oklch(0.50 0.13 215 / 0.28), 0 0 22px oklch(0.50 0.13 215 / 0.16);
+  --cs-focus: oklch(0.49 0.13 215);
+  --cs-link: oklch(0.49 0.13 215);
+  --cs-glow-accent: 0 0 0 1px oklch(0.49 0.13 215 / 0.28), 0 0 22px oklch(0.49 0.13 215 / 0.16);
   --cs-scrim: oklch(0.22 0.015 220 / 0.45);
   /* functional / status */
   --cs-success: oklch(0.50 0.15 150);
   --cs-warning: oklch(0.50 0.12 75);
   --cs-danger: oklch(0.50 0.19 25);
   --cs-info: oklch(0.50 0.13 240);
+  /* code syntax (ADR-0374) */
+  --cs-code-string: oklch(0.48 0.15 170);
+  --cs-code-keyword: oklch(0.52 0.14 280);
   }
 }
 
@@ -111,23 +117,26 @@
 [data-theme="light"] {
   /* colour — semantic + functional (light); shared type/scale inherited from :root */
   --cs-bg: oklch(0.99 0.003 220);
-  --cs-surface-1: oklch(0.975 0.005 220);
+  --cs-surface-1: oklch(0.965 0.005 220);
   --cs-surface-2: oklch(0.95 0.006 220);
   --cs-border: oklch(0.88 0.008 220);
   --cs-border-strong: oklch(0.80 0.010 220);
   --cs-fg: oklch(0.22 0.015 220);
   --cs-fg-muted: oklch(0.45 0.018 220);
-  --cs-accent: oklch(0.50 0.13 215);
-  --cs-accent-hover: oklch(0.48 0.13 215);
+  --cs-accent: oklch(0.49 0.13 215);
+  --cs-accent-hover: oklch(0.47 0.13 215);
   --cs-on-accent: oklch(0.99 0.01 220);
   --cs-accent-tint: oklch(0.93 0.03 205);
-  --cs-focus: oklch(0.50 0.13 215);
-  --cs-link: oklch(0.50 0.13 215);
-  --cs-glow-accent: 0 0 0 1px oklch(0.50 0.13 215 / 0.28), 0 0 22px oklch(0.50 0.13 215 / 0.16);
+  --cs-focus: oklch(0.49 0.13 215);
+  --cs-link: oklch(0.49 0.13 215);
+  --cs-glow-accent: 0 0 0 1px oklch(0.49 0.13 215 / 0.28), 0 0 22px oklch(0.49 0.13 215 / 0.16);
   --cs-scrim: oklch(0.22 0.015 220 / 0.45);
   /* functional / status */
   --cs-success: oklch(0.50 0.15 150);
   --cs-warning: oklch(0.50 0.12 75);
   --cs-danger: oklch(0.50 0.19 25);
   --cs-info: oklch(0.50 0.13 240);
+  /* code syntax (ADR-0374) */
+  --cs-code-string: oklch(0.48 0.15 170);
+  --cs-code-keyword: oklch(0.52 0.14 280);
 }

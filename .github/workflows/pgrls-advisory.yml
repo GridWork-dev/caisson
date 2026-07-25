@@ -77,7 +77,7 @@ jobs:
       # An ephemeral Postgres the job owns start-to-finish — never a shared/long-lived instance.
       # 17-alpine matches the pin the rest of the fleet targets (Railway Postgres is also PG17).
       postgres:
-        image: postgres:17-alpine
+        image: postgres:17-alpine@sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193
         env:
           POSTGRES_USER: ci
           POSTGRES_PASSWORD: ci

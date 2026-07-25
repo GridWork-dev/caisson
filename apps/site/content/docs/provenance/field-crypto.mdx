@@ -1,27 +1,27 @@
 ---
 title: field-crypto
-description: Per-tenant field encryption via HKDF key derivation, behind a pluggable FieldKeyProvider KMS port — one tenant's key never decrypts another tenant's data.
+description: Per-tenant field encryption via HKDF key derivation, behind a pluggable FieldKeyProvider KMS port, one tenant's key never decrypts another tenant's data.
 ---
 
 `@caisson/field-crypto` encrypts individual fields with a key derived per tenant. A single
 root key lives in your KMS (or an env-held master key for the zero-infra default); each
 tenant's subkey is derived from it with HKDF-SHA256, using the tenant id and key version as
-the HKDF `info`. One tenant's key cannot decrypt another tenant's ciphertext — the isolation
+the HKDF `info`. One tenant's key cannot decrypt another tenant's ciphertext, the isolation
 is in the key derivation, not in an application check that could be skipped.
 
 ## What it does
 
-- **Per-tenant field encryption** — encrypt and decrypt named fields (a patient SSN, a
+- **Per-tenant field encryption**: encrypt and decrypt named fields (a patient SSN, a
   bank token) scoped to a tenant. The plaintext is never stored.
-- **HKDF key derivation** — per-tenant subkeys are derived deterministically from the root
+- **HKDF key derivation**: per-tenant subkeys are derived deterministically from the root
   key with HKDF-SHA256. The tenant id and key version are folded into the derivation, so it
   is reproducible for one tenant/version and useless for any other.
-- **AAD-bound AES-256-GCM envelope** — every ciphertext binds tenant, key version, and
+- **AAD-bound AES-256-GCM envelope**: every ciphertext binds tenant, key version, and
   column (and, for row-bound fields, row id) as GCM's additional authenticated data. A
   self-describing envelope carries its own format/algorithm/key-version header.
-- **Key-version rotation with no bulk re-encrypt** — bump a tenant's current version; older
+- **Key-version rotation with no bulk re-encrypt**: bump a tenant's current version; older
   envelopes keep decrypting under the version they were written with.
-- **Crypto-shred erasure** — destroy a tenant or subject's key-encryption key through the
+- **Crypto-shred erasure**: destroy a tenant or subject's key-encryption key through the
   KMS port to make every ciphertext under it permanently unrecoverable, without mutating an
   append-only audit chain.
 
@@ -33,7 +33,7 @@ bun add @caisson/field-crypto
 
 ## Quickstart
 
-The zero-infra default derives keys from an env-held master secret — no key table, no KMS
+The zero-infra default derives keys from an env-held master secret, no key table, no KMS
 call:
 
 ```bash
@@ -59,13 +59,13 @@ await crypto.decryptField(otherTenantId, sealed, "patient.ssn"); // throws: AEAD
 
 The encryption key for tenant A is a pure function of the root key, A's id, and the key
 version. There is no shared field key, and no path where tenant B's subkey decrypts A's
-data — a ciphertext relocated to another tenant, column, or row fails to authenticate,
+data, a ciphertext relocated to another tenant, column, or row fails to authenticate,
 never returns the wrong plaintext.
 
 ## The Drizzle column path
 
-For application code that reads/writes through Drizzle, `encryptedColumn` is transparent —
-encrypt on write, decrypt on read — driven by an `AsyncLocalStorage` tenant context you bind
+For application code that reads/writes through Drizzle, `encryptedColumn` is transparent:
+encrypt on write, decrypt on read, driven by an `AsyncLocalStorage` tenant context you bind
 alongside your RLS `withTenant` call (the encryption boundary equals the RLS tenant
 boundary):
 
@@ -86,13 +86,13 @@ await withFieldCryptoContext(derivedContext(provider, tenantId), () =>
 );
 ```
 
-Reach an encrypted column with no bound context and `currentFieldCryptoContext()` throws —
+Reach an encrypted column with no bound context and `currentFieldCryptoContext()` throws:
 fail-closed, never a partial or unscoped read.
 
 ## Row-bound fields
 
 Fields that need cross-row tamper-evidence (any SEC/HIPAA-sensitive column) use the explicit
-row-bound path instead of the transparent column — `rowId` must be a client-minted
+row-bound path instead of the transparent column, `rowId` must be a client-minted
 `crypto.randomUUID()` primary key, known before the insert:
 
 ```ts
@@ -111,7 +111,7 @@ const registry = new KeyVersionRegistry();
 registry.rotate(tenantId); // bumps the current version; new writes use it immediately
 ```
 
-There's no bulk re-encrypt job — every envelope carries its own `key_version`, so a value
+There's no bulk re-encrypt job, every envelope carries its own `key_version`, so a value
 written under an older version keeps decrypting until its next write lazily re-encrypts it
 under the current one.
 
@@ -119,7 +119,7 @@ under the current one.
 
 The `FieldKeyProvider` port is the seam: `DerivedKeyProvider` (above) is the zero-infra
 default; `KmsKeyProvider` wraps a per-tenant data-encryption key under a KMS-held
-key-encryption key that never leaves the KMS — only the wrapped DEK is persisted. AWS and
+key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. AWS and
 GCP KMS clients ship today; Azure Key Vault and HashiCorp Vault Transit implement the same
 three-method `KmsClient` port.
 
@@ -140,7 +140,7 @@ key-value store you wire) to persist wrapped DEKs.
 `cryptoShred` destroys a tenant or subject's KEK through the KMS port and mints an
 `erasure.crypto-shred` audit payload that carries no PII. Every ciphertext under that key
 becomes permanently unrecoverable, while an append-only WORM-anchored audit chain's
-committed bytes never change — `verifyChain` still passes after the shred, because the
+committed bytes never change, `verifyChain` still passes after the shred, because the
 chain only ever committed the ciphertext envelope, never plaintext.
 
 ```ts
@@ -159,7 +159,7 @@ const { auditPayload } = await cryptoShred(kmsProvider, {
 
 | Var | What | Notes |
 | --- | --- | --- |
-| `MASTER_FIELD_KEY` | 32-byte IKM, hex (64 chars) | Hard secret — read once, never logged. |
+| `MASTER_FIELD_KEY` | 32-byte IKM, hex (64 chars) | Hard secret, read once, never logged. |
 | `FIELD_CRYPTO_SALT` | 32-byte per-deployment salt, hex (64 chars) | Non-secret; cross-deployment domain separation. |
 
 Only required for the `DerivedKeyProvider` default. `KmsKeyProvider` reads its credentials
@@ -169,13 +169,13 @@ through the KMS client you construct (`awsKmsClient`/`createGcpKmsClient`).
 
 The encryption boundary equals the RLS tenant boundary (`@caisson/tenancy-rls`): bind
 `withFieldCryptoContext` alongside `withTenant` so a query can never touch an encrypted
-column outside its tenant scope. `cryptoShred` is designed to sit under `@caisson/audit-worm`
-— the shred receipt's audit payload is meant to be appended to the WORM chain by the caller,
+column outside its tenant scope. `cryptoShred` is designed to sit under `@caisson/audit-worm`:
+the shred receipt's audit payload is meant to be appended to the WORM chain by the caller,
 so an erasure is recorded without ever mutating the chain's committed bytes.
 
 <Callout type="info" title="Not a compliance certification">
   field-crypto ships the technical control HIPAA and SOC 2 point at for data at
-  rest — a distinct key per tenant and cryptographic proof a ciphertext can't
+  rest, a distinct key per tenant and cryptographic proof a ciphertext can't
   cross tenant boundaries. It does not make an organization compliant; that
   determination is your organization's and its auditor's to make.
 </Callout>

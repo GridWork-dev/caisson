@@ -1,13 +1,41 @@
 import { describe, expect, test } from "bun:test";
-import { wcagContrast } from "culori";
+import { clampRgb, formatHex, parse, toGamut, wcagContrast } from "culori";
+
+/**
+ * Browser-equivalent contrast (ADR-0374 Decision 1): our tokens are authored in OKLCH, but a browser
+ * gamut-maps every out-of-sRGB OKLCH into the display gamut before painting — and the clamped colour
+ * has a different luminance than the ideal OKLCH. Computing `wcagContrast` on the raw OKLCH string
+ * therefore checks a colour the user never sees; a value can pass the gate at 4.6:1 raw and render at
+ * 4.4:1. Map each token to its rendered sRGB hex first, then score.
+ *
+ * There is no single "the browser's gamut map": the naive per-channel clip (`clampRgb`) and the CSS
+ * Color 4 chroma-reducing search (`toGamut`) disagree on an out-of-gamut colour (e.g. the light accent
+ * → #007491 vs #00728a, 4.413 vs 4.568 against accent-tint). Anchoring the gate to ONE method would
+ * re-create the exact blind spot this fix closes, one layer up — so the gate asserts the MIN of BOTH
+ * mappings (kimi-k3 amendment): a pairing must clear its threshold under whichever a real engine picks.
+ */
+const toGamutFn = toGamut("rgb", "oklch");
+const hexClamp = (c: string) => formatHex(clampRgb(parse(c)!));
+const hexCss4 = (c: string) => formatHex(toGamutFn(parse(c)!));
+const contrast = (fg: string, bg: string) =>
+  Math.min(
+    wcagContrast(hexClamp(fg), hexClamp(bg)),
+    wcagContrast(hexCss4(fg), hexCss4(bg)),
+  );
 
 import {
+  codeTokensDark,
+  codeTokensLight,
   darkTheme,
   functionalDark,
   functionalLight,
   lightTheme,
 } from "./tokens/index";
-import type { FunctionalTokens, SemanticTheme } from "./tokens/index";
+import type {
+  CodeTokens,
+  FunctionalTokens,
+  SemanticTheme,
+} from "./tokens/index";
 
 /**
  * WCAG contrast matrix — ADR-0101 gate #2 (the deterministic design-quality gate that REPLACES the
@@ -66,7 +94,7 @@ const FN_SURFACES: ReadonlyArray<keyof SemanticTheme> = [
 function checkTheme(theme: SemanticTheme, mode: string) {
   for (const p of PAIRS) {
     test(`${mode}: ${p.fg} on ${p.bg} (${p.use}) ≥ ${p.min.toFixed(1)}:1`, () => {
-      const ratio = wcagContrast(theme[p.fg], theme[p.bg]);
+      const ratio = contrast(theme[p.fg], theme[p.bg]);
       expect(ratio).toBeGreaterThanOrEqual(p.min);
     });
   }
@@ -80,7 +108,27 @@ function checkFunctional(
   for (const k of FN_KEYS) {
     for (const s of FN_SURFACES) {
       test(`${mode}: ${k} on ${s} (status text / code token) ≥ 4.5:1`, () => {
-        expect(wcagContrast(fn[k], theme[s])).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(fn[k], theme[s])).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
+}
+
+// The two code-syntax tokens (ADR-0374 Decision 2: codeString/codeKeyword, baked into
+// shiki-caisson-theme.ts) render as inline syntax-highlight spans on the same bg/surface ramp as
+// everything else — small text, so 4.5:1, same threshold as FN_KEYS above. These sit OUTSIDE both
+// SemanticTheme and FunctionalTokens, so neither matrix above ever reached them (audit round 2,
+// F8: shipped with no contrast gate at all).
+const CODE_KEYS: ReadonlyArray<keyof CodeTokens> = [
+  "codeString",
+  "codeKeyword",
+];
+
+function checkCodeTokens(theme: SemanticTheme, code: CodeTokens, mode: string) {
+  for (const k of CODE_KEYS) {
+    for (const s of FN_SURFACES) {
+      test(`${mode}: ${k} on ${s} (code-syntax token) ≥ 4.5:1`, () => {
+        expect(contrast(code[k], theme[s])).toBeGreaterThanOrEqual(4.5);
       });
     }
   }
@@ -91,4 +139,6 @@ describe("WCAG contrast matrix — both modes (ADR-0101 gate #2)", () => {
   checkTheme(lightTheme, "light");
   checkFunctional(darkTheme, functionalDark, "dark");
   checkFunctional(lightTheme, functionalLight, "light");
+  checkCodeTokens(darkTheme, codeTokensDark, "dark");
+  checkCodeTokens(lightTheme, codeTokensLight, "light");
 });

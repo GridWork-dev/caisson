@@ -38,7 +38,7 @@ export const metadata = buildMetadata({
   type: "article",
 });
 
-// The compliance bundle price ($1,049 once) and the optional updates cadence ($1,499/yr) both read
+// The compliance bundle price ($1,449 once) and the optional updates cadence ($1,499/yr) both read
 // from the committed sheet (lib/pricing) — never hand-typed, so a reprice can't strand this page.
 const COMPLIANCE_PRICE = bundlePrice("compliance");
 const UPDATES = priceById("compliance-updates");
@@ -52,7 +52,7 @@ const PATHS = [
     icon: "git-branch" as const,
     kicker: "Path 1",
     title: "Build it yourself",
-    body: "Write fail-closed RLS, a tamper-evident audit chain, WORM evidence storage, and an evidence-pack generator from scratch — the load-bearing parts a regulated-SaaS team has to get exactly right the first time.",
+    body: "Write fail-closed RLS, a tamper-evident audit chain, WORM evidence storage, and an evidence-pack generator from scratch, the load-bearing parts a regulated-SaaS team has to get exactly right the first time.",
     figure: "SOC 2 from scratch: $80k, 6–9 months",
     note: "Retrofitting RLS, WORM, and an audit chain into a live database is months more.",
   },
@@ -60,15 +60,15 @@ const PATHS = [
     icon: "gauge" as const,
     kicker: "Path 2",
     title: "Buy a hosted platform",
-    body: "Subscribe to an audit-automation service that connects to your stack and monitors it from the outside — a scanner and a dashboard. Fast to show a status page, and a recurring subscription for as long as you need to stay audit-ready.",
+    body: "Subscribe to an audit-automation service that connects to your stack and monitors it from the outside, a scanner and a dashboard. Fast to show a status page, and a recurring subscription for as long as you need to stay audit-ready.",
     figure: "A scanner reports what's missing.",
-    note: "It watches code it didn't write — the controls still have to exist in your codebase.",
+    note: "It watches code it didn't write, the controls still have to exist in your codebase.",
   },
   {
     icon: "boxes" as const,
     kicker: "Path 3 · Caisson",
     title: "Own the code",
-    body: "The compliance controls as source you own — fail-closed RLS, an append-only audit chain, WORM evidence storage, and an evidence-pack generator — wired on day one and tested in CI on every push.",
+    body: "The compliance controls as source you own (fail-closed RLS, an append-only audit chain, WORM evidence storage, and an evidence-pack generator) wired on day one and tested in CI on every push.",
     figure: `${COMPLIANCE_PRICE} · one-time, perpetual`,
     note: "Own the source. No per-seat subscription; optional updates keep the mappings current.",
   },
@@ -107,29 +107,29 @@ const FAQ = [
   {
     question: "Is Caisson a compliance platform?",
     answer:
-      "No. Caisson is a codebase you own, not a hosted service that watches your stack. It ships the technical controls a framework requires — fail-closed RLS, an audit chain, WORM storage, evidence generation — as source you run yourself. It generates audit evidence; it does not certify you or replace your auditor.",
+      "No. Caisson is a codebase you own, not a hosted service that watches your stack. It ships the technical controls a framework requires (fail-closed RLS, an audit chain, WORM storage, evidence generation) as source you run yourself. It generates audit evidence; it does not certify you or replace your auditor.",
   },
   {
     question: "If I own the code, do I still need an audit?",
     answer:
-      "Yes. Caisson ships the technical controls; the audit itself and your organizational controls — HR, vendor management, incident response — stay yours. No codebase can make you SOC 2 or HIPAA compliant. Caisson makes the technical evidence real, testable, and ready before the assessor asks for it.",
+      "Yes. Caisson ships the technical controls; the audit itself and your organizational controls (HR, vendor management, incident response) stay yours. No codebase can make you SOC 2 or HIPAA compliant. Caisson makes the technical evidence real, testable, and ready before the assessor asks for it.",
   },
   {
-    question: "Build vs buy — which is cheaper?",
-    answer: `Building the controls yourself runs $80k and 6–9 months for SOC 2 alone. A hosted platform is a recurring subscription that never ends. Owning the Compliance bundle source is ${COMPLIANCE_PRICE}, once — the controls are wired on day one, and an optional updates plan keeps framework mappings current if you want it.`,
+    question: "Build vs buy: which is cheaper?",
+    answer: `Building the controls yourself runs $80k and 6–9 months for SOC 2 alone. A hosted platform is a recurring subscription that never ends. Owning the Compliance bundle source is ${COMPLIANCE_PRICE}, once: the controls are wired on day one, and an optional updates plan keeps framework mappings current if you want it.`,
   },
   {
     question: "Can't I just have an AI coding assistant write these controls?",
     answer:
-      "You can generate a first draft in an afternoon — but a plausible draft is exactly the trap on the money and crypto seams. Fail-closed RLS, a tamper-evident audit chain, per-tenant field encryption, and license-token verification are the parts where code that looks right passes review and still leaks a tenant or fails an audit. Caisson's are already written, tested in CI on every push, and yours to own — and someone still has to maintain and re-map them as frameworks move, which the updates plan does for you.",
+      "You can generate a first draft in an afternoon, but a plausible draft is exactly the trap on the money and crypto seams. Fail-closed RLS, a tamper-evident audit chain, per-tenant field encryption, and license-token verification are the parts where code that looks right passes review and still leaks a tenant or fails an audit. Caisson's are already written, tested in CI on every push, and yours to own, and someone still has to maintain and re-map them as frameworks move, which the updates plan does for you.",
   },
   {
     question: "What support and updates come with the code I own?",
-    answer: `Every license includes support from a real person on email and Discord, business-days response, and 12 months of updates from your order date — registry access to any entitled-package version published in that window. After it you can renew updates for another 12 months at 40% of the then-current list price or let it lapse; either way the perpetual license keeps working, with no subscription or network call required to stay valid. The EULA's vendor-continuity clause keeps your license and offline verification intact even if the product is discontinued.`,
+    answer: `Every license includes support from a real person on email and Discord, business-days response, and 12 months of updates from your order date, registry access to any entitled-package version published in that window. After it you can renew updates for another 12 months at 40% of the then-current list price or let it lapse; either way the perpetual license keeps working, with no subscription or network call required to stay valid. The EULA's vendor-continuity clause keeps your license and offline verification intact even if the product is discontinued.`,
   },
   {
     question: "What happens if I stop paying?",
-    answer: `Nothing you own goes away. The Compliance bundle is a one-time, perpetual purchase — the source and every control you bought stay yours. Only the optional Compliance Updates plan (${UPDATES_PRICE}) lapses, which means you stop receiving refreshed framework mappings, not that your code stops working.`,
+    answer: `Nothing you own goes away. The Compliance bundle is a one-time, perpetual purchase, the source and every control you bought stay yours. Only the optional Compliance Updates plan (${UPDATES_PRICE}) lapses, which means you stop receiving refreshed framework mappings, not that your code stops working.`,
   },
 ] as const;
 
@@ -171,7 +171,7 @@ export default function BuildVsBuyPage() {
             Three ways to get audit-ready infrastructure: build it yourself over
             6–9 months, rent a hosted audit platform that watches your stack
             from the outside, or own the code that enforces the controls from
-            within. Caisson is the third path — the load-bearing layer, bought
+            within. Caisson is the third path, the load-bearing layer, bought
             once and yours to keep.
           </>
         }
@@ -193,7 +193,7 @@ export default function BuildVsBuyPage() {
               "No per-seat subscription",
               "Tested in CI",
             ]}
-            note="Caisson ships technical controls — the audit stays yours"
+            note="Caisson ships technical controls, the audit stays yours"
           />
         }
         artifact={<ProofTerminal />}
@@ -203,7 +203,7 @@ export default function BuildVsBuyPage() {
       <Section
         eyebrow="Three honest paths"
         title="Every regulated team weighs the same three."
-        lede="This isn't a scoreboard against a named vendor — it's the real decision. Build the load-bearing infrastructure, rent a service that monitors it, or own the code that is it. Here's each path told straight."
+        lede="This isn't a scoreboard against a named vendor, it's the real decision. Build the load-bearing infrastructure, rent a service that monitors it, or own the code that is it. Here's each path told straight."
       >
         <FeatureGrid cols={3} style={{ marginTop: "var(--cs-space-8)" }}>
           {PATHS.map((p) => (
@@ -250,7 +250,7 @@ export default function BuildVsBuyPage() {
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
           Build figures are the industry cost of a first SOC 2, not a Caisson
           quote. Whether any path makes your system compliant depends on your
-          deployment and your audit — a determination that stays with your team.
+          deployment and your audit, a determination that stays with your team.
         </p>
       </Section>
 
@@ -259,7 +259,7 @@ export default function BuildVsBuyPage() {
         <Section
           eyebrow="The earlier layer"
           title="A scanner reports what's missing. It doesn't build it."
-          lede="A hosted platform inspects your stack from the outside and tells you where the controls should be. Caisson is the controls — fail-closed RLS, a tamper-evident audit chain, and evidence generation, as source you own and run. The load-bearing layer sits earlier than the dashboard that grades it."
+          lede="A hosted platform inspects your stack from the outside and tells you where the controls should be. Caisson is the controls (fail-closed RLS, a tamper-evident audit chain, and evidence generation), as source you own and run. The load-bearing layer sits earlier than the dashboard that grades it."
           band="tint"
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
@@ -281,7 +281,7 @@ const result = verifyChain(entries, anchor);
             />
           </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
-            The base substrate — fail-closed RLS, auth, billing — is Apache-2.0
+            The base substrate (fail-closed RLS, auth, billing) is Apache-2.0
             and ships with every bundle. The Compliance bundle adds the WORM
             store, audit chain, and evidence-pack generator on top.
           </p>
@@ -325,7 +325,7 @@ const result = verifyChain(entries, anchor);
                     "Fail-closed RLS, WORM storage, and an append-only audit chain, as source you own",
                     "An evidence-pack generator that maps controls to framework clauses",
                     "The gates wired and tested in CI before your first assessment",
-                    `A one-time, perpetual purchase — ${COMPLIANCE_PRICE} for the Compliance bundle`,
+                    `A one-time, perpetual purchase, ${COMPLIANCE_PRICE} for the Compliance bundle`,
                   ].map((item) => (
                     <li
                       key={item}
@@ -393,7 +393,7 @@ const result = verifyChain(entries, anchor);
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-4)" }}>
             Caisson ships technical controls and generates evidence. It is not
             itself SOC 2 or HIPAA certified, and owning it does not make you
-            compliant — that determination depends on your audit and your
+            compliant, that determination depends on your audit and your
             organizational controls.
           </p>
         </Section>

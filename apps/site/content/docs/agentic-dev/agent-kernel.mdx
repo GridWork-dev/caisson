@@ -1,14 +1,13 @@
 ---
 title: agent-kernel
-description: The engine-neutral agent kernel — agent/skill/rule schema, seven-act lifecycle FSM, allow/deny/mutate governance, hooks dispatcher, and an opt-in tamper-evident audit chain. No vendor SDK, no LLM call.
+description: The engine-neutral agent kernel, agent/skill/rule schema, seven-act lifecycle FSM, allow/deny/mutate governance, hooks dispatcher, and an opt-in tamper-evident audit chain. No vendor SDK, no LLM call.
 ---
 
 `@caisson/agent-kernel` is the engine-neutral base for governed AI agent work: a Zod schema
 for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship),
 allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident
-audit-chain recorder. It imports no vendor SDK and runs no LLM — composition mechanism
-only, consumed down-only by both the base `cli`/`mcp-server` and the Agentic-Dev bundle
-(ADR-0022 down-only, ADR-0065).
+audit-chain recorder. It imports no vendor SDK and runs no LLM, composition mechanism
+only, consumed down-only by both the base `cli`/`mcp-server` and the Agentic-Dev bundle.
 
 ## Install
 
@@ -50,7 +49,7 @@ await hooks.dispatch("before:execute", { act: "execute", phase: "before" });
 `AgentArtifact`, `SkillArtifact`, and `RuleArtifact` are a Zod `discriminatedUnion` on
 `kind`, built on `@caisson/kernel`'s `strictObject`: an unknown field is rejected outright,
 not silently dropped. A bad artifact fails through `parseArtifact` as a redaction-safe
-`ValidationError` — never the rejected values.
+`ValidationError`: never the rejected values.
 
 ## The lifecycle FSM
 
@@ -70,7 +69,7 @@ const TRANSITIONS: Record<Act, readonly Act[]> = {
 };
 ```
 
-`verify` is the only act with two outgoing edges — a failed VERIFY reopens `plan`, it has
+`verify` is the only act with two outgoing edges, a failed VERIFY reopens `plan`, it has
 no edge to `ship`. `ship: []` makes SHIP a hard terminal state in the type itself, not just
 a documented convention.
 
@@ -78,7 +77,7 @@ a documented convention.
 
 `evaluateGuards` folds a `TransitionGuard[]` list fail-closed: the first `deny`
 short-circuits (remaining guards do not run), a `mutate(ctx)` threads its context into the
-guards after it, and a guard that **throws is itself treated as a deny** — a buggy guard
+guards after it, and a guard that **throws is itself treated as a deny**: a buggy guard
 can never accidentally admit a transition.
 
 ```ts
@@ -99,13 +98,13 @@ order and awaits each. A handler that throws is isolated, reported to an optiona
 that returns `deny()` still short-circuits the loop. An unregistered point is a no-op.
 
 `commandHandler` runs a fixed argv array through `node:child_process` `execFile`: no shell
-is spawned, and no `HookContext` value can reach the command's arguments — shell injection
+is spawned, and no `HookContext` value can reach the command's arguments, shell injection
 through a hook is structurally impossible.
 
 ## Opt-in tamper-evident audit chain
 
 `AuditedLifecycle` wraps every governed transition with the kernel's
-`chainEntry`/`anchorChain`/`verifyChain` hash-chain primitives — the same mechanism the
+`chainEntry`/`anchorChain`/`verifyChain` hash-chain primitives, the same mechanism the
 Compliance bundle's `audit-worm` package uses. Off by default; set `audited: true` with a
 store (`InMemoryAuditLifecycleStore` ships for offline/CLI use, or bring your own) and each
 admitted step becomes an append-only, tamper-evident chain entry.
@@ -114,8 +113,8 @@ admitted step becomes an append-only, tamper-evident chain entry.
 
 agent-kernel imports no vendor SDK and runs no LLM: it contributes the schema/FSM/
 governance/hooks/audit-chain mechanism, never the engine wiring. It sits below the edition
-line — both base `cli`/`mcp-server` and the Agentic-Dev bundle's curated agent/skill/rule
-content compose it down-only (ADR-0022, ADR-0065).
+line, both base `cli`/`mcp-server` and the Agentic-Dev bundle's curated agent/skill/rule
+content compose it down-only.
 
 <Callout type="info" title="Sold standalone">
   agent-kernel is $199 à la carte and included in the Agentic-Dev bundle, which wires it

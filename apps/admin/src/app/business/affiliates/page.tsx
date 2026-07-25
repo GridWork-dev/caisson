@@ -20,17 +20,18 @@ export const dynamic = "force-dynamic";
 const EMPTY_REPORT: AffiliateReport = { affiliates: [], unattributed: [] };
 
 /**
- * Read the report through the ADR-0141 admin role, degrading to EMPTY on ANY error rather than
- * 500ing the cockpit (the dormant rider). The one expected error is a permission-denied on
- * `order_record` until it is added to admin-db.ts's `ADMIN_READ_TABLES` (its cross-tenant admin
- * SELECT policy is a DEPLOY-provisioning concern — see the accepts note); a not-provisioned
- * `affiliate_code` degrades the same way. Real data lights up once both are granted.
+ * Read the report through the ADR-0141 admin role. A load failure (the expected case is a
+ * permission-denied on `order_record` until it is added to admin-db.ts's `ADMIN_READ_TABLES` — its
+ * cross-tenant admin SELECT policy is a DEPLOY-provisioning concern; a not-provisioned
+ * `affiliate_code` degrades the same way) degrades to EMPTY rather than 500ing the cockpit, but the
+ * caller carries `ok: false` — a money surface must never render a failed read identically to a
+ * genuinely-empty report (same honesty rule as /support and /intel).
  */
-async function loadReport(): Promise<AffiliateReport> {
+async function loadReport(): Promise<{ report: AffiliateReport; ok: boolean }> {
   try {
-    return await readAdmin(readAffiliateReport);
+    return { report: await readAdmin(readAffiliateReport), ok: true };
   } catch {
-    return EMPTY_REPORT;
+    return { report: EMPTY_REPORT, ok: false };
   }
 }
 
@@ -45,9 +46,9 @@ function fmtDate(iso: string): string {
 
 export default async function AffiliatesPage() {
   const configured = adminDbConfigured();
-  const report: AffiliateReport = configured
+  const { report, ok } = configured
     ? await loadReport()
-    : EMPTY_REPORT;
+    : { report: EMPTY_REPORT, ok: true };
 
   const totalCommission = report.affiliates.reduce(
     (n, a) => n + a.commissionCents,
@@ -66,8 +67,8 @@ export default async function AffiliatesPage() {
         <p className="lede">
           Every attributed order (a redeemed affiliate code, joined by{" "}
           <span className="mono">discount_id</span>), the commission payable at
-          each code&rsquo;s stamped rate, and refund clawback alerts. Read-only
-          — the report FLAGS a clawback, it never moves money (ADR-0294/0302).
+          each code&rsquo;s stamped rate, and refund clawback alerts. Read-only:
+          the report flags a clawback, it never moves money (ADR-0294/0302).
         </p>
       </section>
 
@@ -81,10 +82,20 @@ export default async function AffiliatesPage() {
         </div>
       ) : null}
 
+      {configured && !ok ? (
+        <div className="panel">
+          <p className="section-title">Could not load</p>
+          <p className="muted">
+            The affiliate report could not be read right now — a database error,
+            not zero attributed orders. Reload to retry.
+          </p>
+        </div>
+      ) : null}
+
       <p className="muted" style={{ fontSize: "0.82em", maxWidth: "80ch" }}>
         Orders placed before the affiliate-attribution column shipped
         (2026-07-10) carry no <span className="mono">discount_id</span> and are
-        not attributed here — this report covers attributed orders only.
+        not attributed here. This report covers attributed orders only.
         Commission is <strong>{usd(totalCommission)}</strong> payable across all
         affiliates; <strong>{usd(totalClawback)}</strong> is a refund clawback
         alert to net manually against a prior payout.

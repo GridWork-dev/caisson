@@ -21,7 +21,10 @@ export function LoginButton({ next }: { next: string }): React.ReactElement {
   }
 
   return (
-    <div className="stack" style={{ gap: "var(--cs-space-3)" }}>
+    <div
+      className="stack"
+      style={{ gap: "var(--cs-space-3)", justifyItems: "start" }}
+    >
       <Button
         type="button"
         variant="primary"

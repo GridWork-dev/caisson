@@ -124,11 +124,19 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
     for (const [priceId, ent] of Object.entries(W7_RENEWAL_ROWS)) {
       expect(resolveRenewal(priceId).renewsEntitlement).toBe(ent);
     }
-    // 28 W7-era rows + agent-trajectory (agent-runtime wave, 2026-07-18).
+    // 28 W7-era rows + agent-trajectory (agent-runtime wave, 2026-07-18) + the
+    // compliance-gap trio (SKU-arming wave, 2026-07-20).
     expect(
       resolveRenewal("pri_01kxvpjp4hga6v33nbx6nn0yw1").renewsEntitlement,
     ).toBe("agent-trajectory");
-    expect(Object.keys(RENEWAL_BOOK).length).toBe(29);
+    for (const [priceId, ent] of Object.entries({
+      pri_01ky0fgqtdyankb7fh999ak7xc: "access-review",
+      pri_01ky0fgqw89n4wrjysw4sgcray: "risk-register",
+      pri_01ky0fgqy145zagcq0n3btxr5k: "trust-page",
+    })) {
+      expect(resolveRenewal(priceId).renewsEntitlement).toBe(ent);
+    }
+    expect(Object.keys(RENEWAL_BOOK).length).toBe(32);
   });
 });
 

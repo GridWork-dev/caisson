@@ -1,9 +1,12 @@
 {
   "name": "@caisson/trust-page",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.3.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Buyer trust-page generator: a self-contained static HTML + JSON page, built from an evidence pack + its crosswalk rollup through allowlist-based redaction, that a buyer hosts anywhere to show prospects their compliance posture.",
   "exports": {
     ".": {

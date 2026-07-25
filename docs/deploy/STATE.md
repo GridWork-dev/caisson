@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-20
+updated: 2026-07-24
 status: live
 grounds:
   - docs/build-state.md
@@ -7,6 +7,162 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-07-24 — post-deploy visual re-audit: the 14 accepted rows flip to fixed (CAISSON-149)
+
+The illustration-placeholder family re-audited against production at `c6b42869`
+(caisson.sh live). All 14 surfaces now render the ADR-0377/0378 proof-triad media where
+the empty placeholder slots were: the 11 module pages (ai-evals, local-store,
+retention-runner, audit-worm, field-crypto, alerting, agent-runner, agent-kernel,
+guardrails, ai-meter, prompt-registry) each carry a real SSR blueprint sheet ("The
+package in blueprint: …" caption + labeled SVG schematic, 32–55 SVG nodes on the pages
+browser-probed), and the 3 bundle pages (agentic-dev, compliance, ai-kit) each carry the
+cross-section strata ("bundle: … · cross-section · N members drawn"). Verification split:
+4 pages browser-verified with playwright screenshots + DOM probes (ai-evals, local-store,
+retention-runner, audit-worm) before a host Chrome fault killed the browser lane; the
+remaining 10 verified via rendered-page extraction of the SSR schematic captions
+(crawl4ai against production — the schematics are SSR, so the payload is the proof; the
+browser-verified four confirm identical payloads paint as real schematics).
+**Ledger reconciled: 729 rows = 729 fixed / 0 accepted / 0 open** — the ledger is fully
+closed for the first time (`tooling/design-critic/findings.toml`, 14 accepted→fixed).
+
+## 2026-07-23 — ADR-0378 media-overhaul program live (site)
+
+The full program (PR 326 squash, `45784c38`; state batch `0bce43df`) deployed to
+**caisson-site** with operator approval via the continue picker: `railway up` from the
+repo root, deployment `c6b42869` SUCCESS first try. Live-verified: healthz 200; the
+homepage decision band renders and StackBuilder is gone (the two remaining "your stack"
+strings are the locked /stack-fit ghost-link copy); the marketplace toolbar catalog is
+live with the stack dock/rail absent from the payload; module sheets SSR in the page
+HTML; the field-crypto envelope-bench poke MOUNTS client-side in a real browser against
+production (`data-poke` present, seal/key-version/golden-replay controls rendered —
+pokes are ssr:false, so HTML greps cannot see them; browser verification is the proof).
+This deploy also takes **next 16.2.11** live (the 2026-07-23 CVE batch: middleware
+auth-bypass + SSRF x2 + Server Actions DoS fixed in production). The 14 accepted
+ledger rows are now eligible to flip at the next re-audit.
+
+## 2026-07-22 — open-row sextet live (site) + schematics kickoff opened (ADR-0377)
+
+The six open live-reaudit ledger rows fixed, merged (PR 325 squash, `78a3b8fa`, CI 15
+pass / 3 path-skips, opus SHIP review CLEAN with one P3 test-pin applied in-branch) and
+**caisson-site redeployed** (deployment `bdf577b8` SUCCESS, `Deploy complete` clean
+first try) with operator deploy approval via the picker. Live-verified with geometry
+proofs: docs copy buttons carry the 44px `::before` catchment (measured 44×44 over the
+24px button; the 34px header-button row was already catchmented by the P2-006 pass —
+closed as already-mitigated), field-crypto terminal headline holds one line at 1440w,
+home chain notation unified on `‖` (4/4 occurrences), marketplace dock clears the
+footer's last row by 19px at full mobile scroll (footer pad 72px), ai-kit lede
+reconciliation sentence live. Ledger reconciled: **729 rows = 715 fixed / 14 accepted /
+0 open** — the open class empty for the first time; the 14 accepted stay owned by the
+module-schematics kickoff (CAISSON-145), whose direction locked the same sitting
+(ADR-0377: hybrid — blueprint sheets for modules, cross-section strata for bundles).
+Lane litter `apps/site/outputs/admin-shots.ts` swept (gitignored but eslint-scanned).
+
+## 2026-07-22 — visual-remediation phase closeout: wave + CVE bumps + ADR-0375 closeout live (site · admin)
+
+The full ADR-0374/0375 visual-remediation phase merged and deployed in one sitting:
+
+- **Merges (all squash, main CI green):** PR #319 the overnight ADR-0374 wave (`6d1c8051`,
+  73 commits folded from the W1–W4 worktree lanes), PR #320 the four osv-scanner CVE dep
+  bumps restoring the `deterministic` gate (`280f09d8`), PR #321 the ADR-0375 closeout —
+  four operator locks: em-dash copy law, one-accent-eyebrow-per-page, legal
+  bold+contrast conspicuousness, component tail (`af54102c`). #321 needed one CI round-trip:
+  the rebased branch rode the wave's changesets pre-squash, so a branch-local
+  site+admin patch changeset was added for the `--since=main` presence gate.
+- **caisson-site redeployed** (image `aca16ed6`, `Deploy complete`) at main `af54102c`,
+  `railway up` from the repo root per convention. Verified live: healthz 200;
+  `/legal/terms` renders the conspicuous clauses sentence-case bold ("provided "as is"
+  and "as available"", "Disclaimer of warranties" headings, zero residual ALL-CAPS walls).
+- **caisson-admin redeployed** (deployment `9fca73b7` SUCCESS, image `848e6d57`) at the
+  same SHA — first deploy carrying the mobile nav collapse disclosure. Edge answers 307
+  to the CF-Access login as designed (permanent operator gate). Note: the CLI stream
+  ended at `image push` without a `Deploy complete` line — completion confirmed via
+  `railway deployment list` (status SUCCESS), not the stream.
+- **Linear:** CAISSON-135…143 all moved to Done (the nine visual-audit + ADR-0374 items).
+- The `deploy-railway` workflow run on the #319 merge push was an **inert no-op**
+  (RAILWAY_TOKEN still unset — arms at cutover C2); manual `railway up` remains the
+  real deploy path.
+
+**Same-day residual batch (ADR-0376, PR 322 squash-merged `56e46f1c`):** the residual
+picker's locks 1+3 built and deployed the same sitting — legal "On this page" jump-nav
+rail (rendered-geometry proof green pre-merge), waitlist Turnstile `onReady`
+sibling-mount fix, harness third-party console filter, light `surface-1` L step
+(contrast matrix 60/60), admin foundations explicit 3-up grid. Opus SHIP review PASS
+(two P3s applied in-branch); CI 16/16 green. **caisson-site redeployed** (`Deploy
+complete`; TOC rail + section ids verified live, healthz 200) and **caisson-admin
+redeployed** (deployment SUCCESS; edge 307 to CF-Access) at `56e46f1c`. The lock-4
+standard live re-audit + final ledger reconcile ran as the phase-closing act (see the
+tracker row for the resulting ledger state).
+
+**Lock-4 re-audit tail (same sitting):** the 10-lane live re-audit verified 8 fix
+classes outright and surfaced three real leftovers, fixed and shipped as two micro-PRs —
+PR 323 (`2bfc60e0`: terms EULA link was color-alone, marketplace catalog section
+duplicated the hero accent eyebrow) and PR 324 (`5788b030`: the hero artifact label
+"one base, 5 composable bundles" contradicted the page's own six-bundle lede/facet —
+now "+ Everything", chips unchanged). **caisson-site redeployed** at `5788b030`
+(`Deploy complete`; all three fixes verified live; healthz 200) — note the FIRST
+redeploy attempt at `2bfc60e0` died in the Railway builder during the type-check step
+with no error line (CI had built the identical tree green; builder transient) and never
+touched the live deployment; the `5788b030` deploy superseded it. **Final reconcile:**
+the design-critic ledger closed at **729 rows = 709 fixed · 14 accepted (the
+illustration-placeholder family, owned by the module-schematics kickoff CAISSON-145) ·
+6 open** (curated info-tier findings from the live re-audit: docs touch targets ×2,
+field-crypto headline wrap, home glyph inconsistency, dock-over-footer at exact scroll
+bottom, ai-kit four-vs-seven copy nuance).
+
+## 2026-07-20 (third wave) — compliance-gap SKU arming: two trains + catalog debut
+
+The ADR-0373 arming executed end-to-end in one sitting (checklists
+`docs/releases/v2026.07.20.{2,3}-checklist.md`, audit
+`outputs/audit/release-audit-v2026.07.20.3.md`):
+
+- **v2026.07.20.2** (tag `5b37fb0e`, consume 1 = the sellable flip + bundle join, PR #316):
+  readiness 9/9, train ALL GREEN. **Registry Worker redeployed** (`42f33702`) post-train;
+  r2-parity re-dispatched manually (workflow_run stays suppressed for GITHUB_TOKEN-dispatched
+  trains): 293/294, sole miss = the known agent-trajectory 0.3.0 stranded row.
+- **Consume 2** (PR #317, merged `8b728f95`, 18 checks green) — sibling churn predicted locally
+  and the signing-primitive repack changeset PRE-landed on main, so the version PR came out
+  clean first round. Index truth verified: three SKUs sellable at the locked prices,
+  compliance 13 / everything 34 members at 0.2.0 pins.
+- **v2026.07.20.3** (tag `b1be281f` at the attestation commit): local byte-gate proof green
+  before tagging, readiness 9/9, train ALL GREEN. **Registry Worker redeployed** (`0dcd2c49`);
+  r2-parity 300/301 — same sole stranded-row residual. Mirror private, npm leg unarmed.
+- **Catalog-debut PR #318 squash-merged** (`108a358a`; main CI 4/4 green) after a two-audit
+  SHIP pass — opus review (P0 compliance-page composed-vs-standalone honesty + 4 nits, all
+  fixed) and a fable money-seam audit (**PASS, no blockers**; its LOW — a silent fail-open in
+  the new pricebook-agreement gate — fixed in-PR with a visible warn + smoke tests). Ships the
+  pricebook books + COMPLIANCE_GAP join instants, the $1,449 site display + three MODULE_PRICES
+  rows, Paddle sandbox wiring (3 products + 6 prices minted via the recreate tool; both
+  existing compliance prices PATCHed in place — price ids stable, no dashboard edit), leaf-set
+  pin re-capture, RIDER3 prune, and the deploy.sh Worker build-surface fix.
+- **Registry Worker redeployed** (`655a9b0c`) at the merge commit — serves the COMPLIANCE_GAP
+  membership timeline; the fixed deploy.sh built all three workspace deps cleanly.
+- **caisson-site redeployed** (image `5e46a81b`, `Deploy complete`) at main `108a358a` after a
+  self-inflicted 10-failure detour: `railway up` was run from `apps/site`, uploading only that
+  subtree while `railway.toml`'s `dockerfilePath` is repo-root-relative — the builder aborted
+  with `couldn't locate the dockerfile` before any build step, surfacing only the misleading
+  `scheduling build on Metal builder` line (initially misdiagnosed as the 2026-07-19 platform
+  incident recurring; the operator-supplied dashboard build log showed the real cause).
+  **The command must run from the repo root** (the railway.toml header says so; memory #380).
+  Verified live: `/compliance` shows $1,449 + "Thirteen packages" with the composed-10 vs
+  standalone-3 copy; all 26 module cards render buyable on `/marketplace` including the three
+  debuts at $199/$279/$149; healthz 200. Known content gap (not a bug — links are conditional):
+  no MODULE_PAGES depth records for the three yet → CAISSON-134.
+
+The close-out picker's execution (PRs #312/#313, both squash-merged green same sitting):
+
+- **Registry Worker redeployed** (version `e2221ad1`) serving the pruned index — 60 stranded
+  mid-chain versions delisted append-only; live spot-check: kernel packument now lists only
+  uploaded versions (0.5.1/0.4.2 gone, `latest 0.5.3` intact). The re-dispatched r2-parity
+  probe (run 29749913921) converged **61 → 1 miss** — exactly the carved-out member-pinned
+  version, which delists in a follow-up prune after the next consume repoints the
+  agentic-dev/everything bundle pins.
+- **caisson-site redeployed** (image `622a5db0`, `Deploy complete`) at main `0f2215e7` carrying
+  the #313 fix batch: catalog-derived depth-page prices AND the three pages that had been
+  rendering raw template source (tool-exec · org-controls · local-sync) — all three verified
+  200 with zero raw-source remnants live.
+- The dud `v2026.07.20` tag + GitHub Release deleted (operator-authorized at the picker);
+  `v2026.07.20.1` is the sole `.20` tag and Latest.
 
 ## 2026-07-20 — v2026.07.20.1 release train GREEN + deploy tail (Worker · site · intel)
 

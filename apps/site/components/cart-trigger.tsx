@@ -9,7 +9,7 @@ import styles from "./cart-trigger.module.css";
  *  non-zero. Sits outside the desktop-only `.navCtas` group and the mobile drawer so it stays
  *  visible at every breakpoint (`components/site-nav.tsx`). */
 export function CartTrigger() {
-  const { items, toggleDrawer } = useCart();
+  const { items, toggleDrawer, addPulse } = useCart();
   const count = items.length;
 
   return (
@@ -37,6 +37,10 @@ export function CartTrigger() {
       <Icon name="cart" />
       {count > 0 && (
         <span
+          // Re-keyed by addPulse so every add re-mounts this node and replays the pop (a bare count
+          // key would also pulse on remove); compositor-only, reduced-motion-safe (see the module).
+          key={addPulse}
+          className={styles.badge}
           aria-hidden="true"
           style={{
             position: "absolute",

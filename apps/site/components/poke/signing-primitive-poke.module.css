@@ -1,0 +1,133 @@
+.zones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-5);
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+.zoneLabel {
+  margin: 0 0 var(--cs-space-1);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cs-fg-muted);
+}
+
+/* label : value readout rows */
+.readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--cs-space-2);
+}
+
+.readoutLabel {
+  flex-shrink: 0;
+  min-inline-size: 7rem;
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.readoutValue {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+  color: var(--cs-fg);
+  word-break: break-word;
+}
+
+.hexRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+}
+
+.hex {
+  display: block;
+  padding: var(--cs-space-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-space-1);
+  background: var(--cs-surface-2);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-accent);
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* A tampered value reads in the danger token so the break is legible at a glance. */
+.hex[data-tampered="true"] {
+  color: var(--cs-danger);
+  border-color: var(--cs-danger);
+}
+
+.note {
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.sampleTag {
+  display: inline-block;
+  padding: 0 var(--cs-space-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-space-1);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+/* Tamper toggles. */
+.toggles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  min-block-size: 2.75rem;
+  padding: 0 var(--cs-space-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-space-1);
+  background: var(--cs-surface-2);
+  font-size: var(--cs-text-sm);
+  color: var(--cs-fg);
+  cursor: pointer;
+}
+
+.toggle[data-active="true"] {
+  border-color: var(--cs-danger);
+  color: var(--cs-fg);
+}
+
+.toggle input {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  accent-color: var(--cs-danger);
+  flex-shrink: 0;
+}
+
+.receiptNote {
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toggle,
+  .hex {
+    transition:
+      border-color 120ms ease,
+      color 120ms ease;
+  }
+}

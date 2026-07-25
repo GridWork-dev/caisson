@@ -7,6 +7,8 @@ export {
 } from "./css-vars.ts";
 export {
   accentCandidates,
+  codeTokensDark,
+  codeTokensLight,
   functional,
   functionalDark,
   functionalLight,
@@ -15,6 +17,7 @@ export {
 export { darkTheme, lightTheme, fonts, selected } from "./theme.ts";
 export type {
   AccentCandidate,
+  CodeTokens,
   FunctionalTokens,
   SemanticTheme,
   TypeCandidate,

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-20
+updated: 2026-07-22
 status: live
 grounds:
   - packages/
@@ -95,18 +95,21 @@ ADR-0094/0097 base-11 to bring the enforced-open total to **16** (`tooling/stand
 `OPEN_BASE_NAMES`). **`credits` is NOT in this set** — flipped open→commercial by operator override
 (ADR-0249 G5) and priced under AI-Production below.
 
-### Commercial — Compliance bundle ($1,049) + members
+### Commercial — Compliance bundle ($1,449) + members
 
-| Package             | License    | Sold as                                                                                             | Bundle(s)                                          | Build status                          | Owns                                                                                                                                    |
-| ------------------- | ---------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `compliance`        | Commercial | bundle hero package — **$1,049** (ADR-0258 §3; supersedes the retired $799 edition price, ADR-0227) | Compliance (self)                                  | substantial                           | evidence collectors, SOC2/HIPAA/EU-AI-Act frameworks, pack-format + Ed25519/RFC-3161 signing — now composes the three carved SKUs below |
-| `compliance-core`   | Commercial | à la carte $299 (ADR-0257 §3 carve)                                                                 | Compliance                                         | built (commercial carve, ADR-0257 §1) | RLS-force evidence collector + isolation tests + SOC2/HIPAA evidence-pack generator                                                     |
-| `frameworks-pack`   | Commercial | à la carte $249 (ADR-0257 §3 carve)                                                                 | Compliance                                         | built (commercial carve, ADR-0257 §1) | SOC2/HIPAA/EU-AI-Act control mappings + OSCAL v1.2.2 export                                                                             |
-| `signing-primitive` | Commercial | à la carte $199 (ADR-0257 §3 carve)                                                                 | Compliance, Provenance                             | built (commercial carve, ADR-0257 §1) | detached Ed25519 + RFC-3161 evidence signing                                                                                            |
-| `field-crypto` †    | Commercial | à la carte $199                                                                                     | Compliance, AI-Production, Local-first, Provenance | built                                 | per-tenant HKDF + AES-256-GCM envelope + crypto-shred                                                                                   |
-| `audit-worm` †      | Commercial | à la carte $149                                                                                     | Compliance, Provenance                             | substantial                           | SHA-256 hash-chain WORM store + S3 ObjectLock adapter                                                                                   |
-| `alerting`          | Commercial | à la carte $149                                                                                     | Compliance                                         | built (Stage-2, ADR-0150)             | SOC2 CC7.2 alert pipeline (dedup → rate-cap → quiet-hours → deliver → audit)                                                            |
-| `retention-runner`  | Commercial | à la carte $199                                                                                     | Compliance                                         | built (Stage-2, ADR-0151)             | CCPA/GDPR erasure runner (purge → cascade-delete → orphan-sweep → audit)                                                                |
+| Package             | License    | Sold as                                                                                                       | Bundle(s)                                          | Build status                          | Owns                                                                                                                                    |
+| ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `compliance`        | Commercial | bundle hero package — **$1,449** (ADR-0373, the compliance-gap join reprice; supersedes ADR-0258 §3's $1,049) | Compliance (self)                                  | substantial                           | evidence collectors, SOC2/HIPAA/EU-AI-Act frameworks, pack-format + Ed25519/RFC-3161 signing — now composes the three carved SKUs below |
+| `compliance-core`   | Commercial | à la carte $299 (ADR-0257 §3 carve)                                                                           | Compliance                                         | built (commercial carve, ADR-0257 §1) | RLS-force evidence collector + isolation tests + SOC2/HIPAA evidence-pack generator                                                     |
+| `frameworks-pack`   | Commercial | à la carte $249 (ADR-0257 §3 carve)                                                                           | Compliance                                         | built (commercial carve, ADR-0257 §1) | SOC2/HIPAA/EU-AI-Act control mappings + OSCAL v1.2.2 export                                                                             |
+| `signing-primitive` | Commercial | à la carte $199 (ADR-0257 §3 carve)                                                                           | Compliance, Provenance                             | built (commercial carve, ADR-0257 §1) | detached Ed25519 + RFC-3161 evidence signing                                                                                            |
+| `field-crypto` †    | Commercial | à la carte $199                                                                                               | Compliance, AI-Production, Local-first, Provenance | built                                 | per-tenant HKDF + AES-256-GCM envelope + crypto-shred                                                                                   |
+| `audit-worm` †      | Commercial | à la carte $149                                                                                               | Compliance, Provenance                             | substantial                           | SHA-256 hash-chain WORM store + S3 ObjectLock adapter                                                                                   |
+| `alerting`          | Commercial | à la carte $149                                                                                               | Compliance                                         | built (Stage-2, ADR-0150)             | SOC2 CC7.2 alert pipeline (dedup → rate-cap → quiet-hours → deliver → audit)                                                            |
+| `retention-runner`  | Commercial | à la carte $199                                                                                               | Compliance                                         | built (Stage-2, ADR-0151)             | CCPA/GDPR erasure runner (purge → cascade-delete → orphan-sweep → audit)                                                                |
+| `access-review`     | Commercial | à la carte $199 (ADR-0373 first price)                                                                        | Compliance                                         | built (ADR-0371)                      | per-user access-review campaigns: reviewer attestation + WORM-logged approve/revoke decisions                                           |
+| `risk-register`     | Commercial | à la carte $279 (ADR-0373 first price)                                                                        | Compliance                                         | built (ADR-0371)                      | EU-AI-Act-aligned AI risk register: computed residual risk + byte-stable treatment-plan artifact                                        |
+| `trust-page`        | Commercial | à la carte $149 (ADR-0373 first price)                                                                        | Compliance                                         | built (ADR-0371)                      | customer-facing trust/compliance status page, pure-rendered from evidence-pack posture (allowlist redaction)                            |
 
 `@caisson/compliance`'s manifest republished `kind:"bundle"` at $1,049 (CAISSON-24, 2026-07-06) —
 historical `kind:"edition"` ledger entries stay valid forever per ADR-0257 §1 (no ledger rewrite).
@@ -137,13 +140,13 @@ import sites repointed, sync last.
 
 ### Commercial — Agentic-Dev bundle ($329) + members
 
-| Package            | License    | Sold as                                                                                                           | Bundle(s)             | Build status                   | Owns                                                                                                                                        |
-| ------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `agentic-dev`      | Commercial | bundle hero package — **$329** (ADR-0258; ADR-0257 §1 vocabulary)                                                 | Agentic-Dev (self)    | substantial                    | typed agent/skill/rule schema + lifecycle + multi-harness emitter — now composes `tool-exec`                                                |
-| `agent-kernel` †   | Commercial | à la carte $199                                                                                                   | Agentic-Dev           | substantial                    | governed engine-neutral agent kernel                                                                                                        |
-| `agent-runner`     | Commercial | à la carte $49                                                                                                    | Agentic-Dev           | built (ADR-0186)               | sandboxed, governed agent execution (worktree isolation, auditable transcript)                                                              |
-| `agent-trajectory` | Commercial | not yet sold — indexed @0.2.0 but unsellable (no price row, no bundle membership) until the ADR-0349 publish gate | Agentic-Dev (planned) | built (ADR-0349/0351, slice 1) | engine-neutral trajectory contract: append-only `.strict()` event schema, digest-ref payloads, replay projection, claude-transcript adapter |
-| `tool-exec`        | Commercial | à la carte $99 (ADR-0260 first price)                                                                             | Agentic-Dev           | built (Stage-2, ADR-0153)      | governed tool-execution gate: default-deny allowlist over Zod-strict argv schemas + execFile arg-arrays                                     |
+| Package            | License    | Sold as                                                           | Bundle(s)          | Build status                   | Owns                                                                                                                                        |
+| ------------------ | ---------- | ----------------------------------------------------------------- | ------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentic-dev`      | Commercial | bundle hero package — **$329** (ADR-0258; ADR-0257 §1 vocabulary) | Agentic-Dev (self) | substantial                    | typed agent/skill/rule schema + lifecycle + multi-harness emitter — now composes `tool-exec`                                                |
+| `agent-kernel` †   | Commercial | à la carte $199                                                   | Agentic-Dev        | substantial                    | governed engine-neutral agent kernel                                                                                                        |
+| `agent-runner`     | Commercial | à la carte $49                                                    | Agentic-Dev        | built (ADR-0186)               | sandboxed, governed agent execution (worktree isolation, auditable transcript)                                                              |
+| `agent-trajectory` | Commercial | à la carte $49 (2026-07-18 catalog debut)                         | Agentic-Dev        | built (ADR-0349/0351, slice 1) | engine-neutral trajectory contract: append-only `.strict()` event schema, digest-ref payloads, replay projection, claude-transcript adapter |
+| `tool-exec`        | Commercial | à la carte $99 (ADR-0260 first price)                             | Agentic-Dev        | built (Stage-2, ADR-0153)      | governed tool-execution gate: default-deny allowlist over Zod-strict argv schemas + execFile arg-arrays                                     |
 
 `local-store` (member of both Local-first and Agentic-Dev) is listed once, under Local-first above.
 
@@ -244,7 +247,7 @@ open Base substrate (§1's first table). Remaining bundle-only commercial rows:
 `apps/site/lib/pricing.ts` (`BUNDLE_PRICES`/`MODULE_PRICES`) is the display SOT; `packages/pricebook/src/upgrades.ts`
 (`BUNDLE_RETAIL`/`SKU_RETAIL`) is the price authority both `pricing.test.ts` and the checkout/upgrade-credit
 math pin against. They supersede every earlier edition-era figure: **ADR-0227**'s Compliance $799 →
-**ADR-0258**'s $1,049; **ADR-0137**'s AI Production Kit $599 / Agentic-Dev $249 / Local-first AI $349 /
+**ADR-0258**'s $1,049 → **ADR-0373**'s $1,449 (the compliance-gap join reprice, 2026-07-20); **ADR-0137**'s AI Production Kit $599 / Agentic-Dev $249 / Local-first AI $349 /
 Everything Bundle $1,499 → **ADR-0258/0260**'s $739 / $329 / $629 / $2,059. **Editions are RETIRED**
 (dissolved into bundles, ADR-0257) and their purchase ids **purged** (ADR-0270, 2026-07-07) after
 proving zero real buyers held them — the alias map (`bundle-vocabulary.ts`) is empty, sandbox/test
@@ -252,24 +255,24 @@ grants drain to canonical ids at deploy, and no real buyer's access changed.
 
 ### Bundles
 
-| SKU                      | Price                    | What it is                                                                               | Build status                                  |
-| ------------------------ | ------------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------- |
-| **Compliance** (hero)    | **$1,049** (ADR-0258 §3) | SOC2/HIPAA/EU-AI-Act evidence + WORM audit + field crypto + the framework/signing carves | substantial (P2, partial per build-state)     |
-| **AI-Production**        | **$739** (ADR-0258 §2)   | metering + evals + guardrails + prompt registry + credits behind a gateway               | partial (P3)                                  |
-| **Local-first**          | **$629** (ADR-0258 §1)   | on-device inference + hybrid local store + the sync/inference/privacy 3-way carve        | substantial (P4a, partial per build-state)    |
-| **Agentic-Dev**          | **$329** (ADR-0258)      | governed agent kernel + sandboxed runner + tool-exec gate + multi-harness emitter        | substantial (P4b, partial per build-state)    |
-| **Provenance** (net-new) | **$399** (ADR-0260 §3)   | detached signing + append-only WORM audit chain + per-tenant field encryption            | n/a — composite of 3 Compliance-carve members |
-| **Everything**           | **$2,059** (ADR-0258 §3) | every bundle and every à-la-carte module — the whole catalog, one purchase               | n/a — composite of every row below            |
+| SKU                      | Price                    | What it is                                                                                                                                        | Build status                                  |
+| ------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **Compliance** (hero)    | **$1,449** (ADR-0373)    | SOC2/HIPAA/EU-AI-Act evidence + WORM audit + field crypto + the framework/signing carves + the access-review/risk-register/trust-page gap-closers | substantial (P2, partial per build-state)     |
+| **AI-Production**        | **$739** (ADR-0258 §2)   | metering + evals + guardrails + prompt registry + credits behind a gateway                                                                        | partial (P3)                                  |
+| **Local-first**          | **$629** (ADR-0258 §1)   | on-device inference + hybrid local store + the sync/inference/privacy 3-way carve                                                                 | substantial (P4a, partial per build-state)    |
+| **Agentic-Dev**          | **$329** (ADR-0258)      | governed agent kernel + sandboxed runner + tool-exec gate + multi-harness emitter                                                                 | substantial (P4b, partial per build-state)    |
+| **Provenance** (net-new) | **$399** (ADR-0260 §3)   | detached signing + append-only WORM audit chain + per-tenant field encryption                                                                     | n/a — composite of 3 Compliance-carve members |
+| **Everything**           | **$2,059** (ADR-0258 §3) | every bundle and every à-la-carte module — the whole catalog, one purchase                                                                        | n/a — composite of every row below            |
 
 **Renewals (flat 40% of list, X9-rounded — ADR-0260 §5 ladder, three numbers superseded by ADR-0258
-§4):** Compliance **$419** · AI-Production **$289** · Local-first **$249** · Agentic-Dev **$129** ·
-Provenance **$159** · Everything **$819**.
+§4; Compliance moved $419 → $579 with the ADR-0373 reprice):** Compliance **$579** · AI-Production
+**$289** · Local-first **$249** · Agentic-Dev **$129** · Provenance **$159** · Everything **$819**.
 
 **Resolved (was: the $749 launch-sum wrinkle):** superseded first by ADR-0227/ADR-0238, then fully
 retired by the ADR-0257/0258/0259/0260 catalog rework — the edition-era historical wrinkle text (and
 the four edition SKUs it described) live in git history only.
 
-### 22 à la carte modules (ADR-0257/0258/0259/0260, 2026-07-06)
+### 26 à la carte modules (ADR-0257/0258/0259/0260, 2026-07-06; +agent-trajectory 2026-07-18; +the ADR-0373 compliance-gap trio 2026-07-20)
 
 Every sellable commercial SKU, individually priced. **Bundle(s)** is the registry-index-pinned
 membership (`pricing.ts`'s `bundles[]`, cross-checked by `pricing.test.ts`); an empty cell = a
@@ -285,6 +288,9 @@ standalone SKU no persona bundle grants (Everything-only). Grouped below by cata
 | `audit-worm` †          | $149  | Compliance, Provenance                             | substantial                                                                                                                                 |
 | `alerting`              | $149  | Compliance                                         | built (Stage-2, ADR-0150)                                                                                                                   |
 | `retention-runner`      | $199  | Compliance                                         | built (Stage-2, ADR-0151)                                                                                                                   |
+| `access-review`         | $199  | Compliance                                         | built (ADR-0371) — catalog debut 2026-07-20 (ADR-0373)                                                                                      |
+| `risk-register`         | $279  | Compliance                                         | built (ADR-0371) — catalog debut 2026-07-20 (ADR-0373)                                                                                      |
+| `trust-page`            | $149  | Compliance                                         | built (ADR-0371) — catalog debut 2026-07-20 (ADR-0373)                                                                                      |
 | `ai-meter` †            | $199  | AI-Production                                      | substantial                                                                                                                                 |
 | `ai-evals` †            | $199  | AI-Production                                      | substantial                                                                                                                                 |
 | `guardrails` †          | $149  | AI-Production                                      | substantial                                                                                                                                 |
@@ -296,7 +302,7 @@ standalone SKU no persona bundle grants (Everything-only). Grouped below by cata
 | `local-privacy`         | $99   | Local-first                                        | built (commercial carve, ADR-0258 §1)                                                                                                       |
 | `agent-kernel` †        | $199  | Agentic-Dev                                        | substantial                                                                                                                                 |
 | `agent-runner`          | $49   | Agentic-Dev                                        | built (ADR-0186)                                                                                                                            |
-| `agent-trajectory`      | —     | Agentic-Dev (planned; no members-map entry yet)    | built (ADR-0349/0351 slice 1) — indexed @0.2.0, unsellable until the publish gate                                                           |
+| `agent-trajectory`      | $49   | Agentic-Dev                                        | built (ADR-0349/0351 slice 1) — catalog debut 2026-07-18                                                                                    |
 | `tool-exec`             | $99   | Agentic-Dev                                        | built (Stage-2, ADR-0153)                                                                                                                   |
 | `org-controls`          | $249  | — (Everything only)                                | built (commercial carve, ADR-0257 §1)                                                                                                       |
 | `billing-orchestration` | $99   | — (Everything only)                                | built (commercial carve, ADR-0257 §1)                                                                                                       |

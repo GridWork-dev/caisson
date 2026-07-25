@@ -112,15 +112,16 @@ describe("per-module bare-slug purchase-id form", () => {
     expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
   });
 
-  test("RESERVED_MODULE_ENTITLEMENT_IDS is empty — every reservation has graduated", () => {
-    // agent-usage graduated 2026-07-18: the agent-runtime consume auto-ledgered/indexed it
-    // (sellable:false), so the reservation dropped in the change acknowledging that entry —
-    // the exact path agent-trajectory took 2026-07-17 (indexed @ 0.2.0 by the slice-1
-    // consume), ui-pro (2026-07-07), and alerting/retention-runner before it. Index presence
-    // is not sellability: agent-usage stays priced nowhere and in no bundle members map until
-    // its own publish gate (2026-07-18 operator lock). The fail-soft branch stays covered by
-    // the temp-root fixture suite in tooling/standards-gate catalog-checks.
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual([]);
+  test("RESERVED_MODULE_ENTITLEMENT_IDS holds exactly the open publishing-gap reservations", () => {
+    // Currently none open. The 2026-07-20 compliance-gap arming quartet (access-review,
+    // risk-register, trust-page, artifact-render) graduated in the version cut that created
+    // their first index entries — the exact path agent-usage took 2026-07-18, agent-trajectory
+    // 2026-07-17, ui-pro 2026-07-07, and alerting/retention-runner before it. Index presence
+    // is not sellability: the three gap SKUs' sellable/price flip and bundle membership land
+    // in the post-publish PR; artifact-render stays sellable:false forever (published-never-
+    // sold render substrate). The fail-soft branch stays covered by the temp-root fixture
+    // suite in tooling/standards-gate catalog-checks.
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([]);
   });
 
   test("with the reservation gone, an unindexed ui-pro fails closed like any unknown id", () => {
@@ -613,7 +614,9 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
   // catalog + grants use. `everything` re-captured again after the ui-pro first publish to pin
   // @caisson/ui-pro's entry into the explicit leaf set. Re-captured 2026-07-18: @caisson/agent-trajectory
   // joined the agentic-dev and everything members maps (the agent-runtime consume), so it is now in
-  // both leaf sets.
+  // both leaf sets. Re-captured 2026-07-20: the compliance-gap trio (@caisson/access-review,
+  // @caisson/risk-register, @caisson/trust-page) joined the compliance and everything members
+  // maps (the SKU-arming consume), so all three now appear in both leaf sets.
   const REAL_INDEX = join(
     dirname(fileURLToPath(import.meta.url)),
     "..",
@@ -624,6 +627,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
   );
   const BUNDLE_EXPANSIONS: Readonly<Record<string, readonly string[]>> = {
     compliance: [
+      "@caisson/access-review",
       "@caisson/alerting",
       "@caisson/audit-worm",
       "@caisson/compliance",
@@ -632,8 +636,10 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/frameworks-pack",
       "@caisson/kernel",
       "@caisson/retention-runner",
+      "@caisson/risk-register",
       "@caisson/signing-primitive",
       "@caisson/tenancy-rls",
+      "@caisson/trust-page",
     ],
     "ai-production": [
       "@caisson/ai-config",
@@ -674,6 +680,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
     // — the open Apache base (kernel/tenancy-rls/ai-config/local-store/…) stays absent by design
     // (it ships free via the Worker's free-view floor, never as a grant).
     everything: [
+      "@caisson/access-review",
       "@caisson/agent-kernel",
       "@caisson/agent-runner",
       "@caisson/agent-trajectory",
@@ -702,8 +709,10 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/prompt-registry",
       "@caisson/provenance",
       "@caisson/retention-runner",
+      "@caisson/risk-register",
       "@caisson/signing-primitive",
       "@caisson/tool-exec",
+      "@caisson/trust-page",
       "@caisson/ui-pro",
     ],
   };

@@ -1,25 +1,25 @@
 ---
 title: Agentic-Dev
-description: The governed-agent kernel plus sandboxed execution — typed agent/skill/rule schema, a seven-act lifecycle FSM, a default-deny tool-exec gate, and local hybrid memory.
+description: The governed-agent kernel plus sandboxed execution, typed agent/skill/rule schema, a seven-act lifecycle FSM, a default-deny tool-exec gate, and local hybrid memory.
 ---
 
 The **Agentic-Dev** bundle is the layer your own AI coding agent runs inside, not a layer that
 replaces your judgment with autonomy. Every agent, skill, and rule is a typed artifact; every act
 transition is a legal move on a state machine; every shell command an agent runs passes a
-default-deny gate. The kernel governs the loop — it does not hand the agent the keys.
+default-deny gate. The kernel governs the loop, it does not hand the agent the keys.
 
 ## What's in the bundle
 
-- **[agent-kernel](/docs/agentic-dev/agent-kernel)** — the engine-neutral base: a Zod schema for
+- **[agent-kernel](/docs/agentic-dev/agent-kernel)**: the engine-neutral base: a Zod schema for
   agent/skill/rule artifacts, a seven-act lifecycle FSM (spec through ship), allow/deny/mutate
   governance guards, a hooks dispatcher, and an opt-in tamper-evident audit chain.
-- **[agent-runner](/docs/agentic-dev/agent-runner)** — spawns a headless coding agent into an
+- **[agent-runner](/docs/agentic-dev/agent-runner)**: spawns a headless coding agent into an
   isolated worktree with a scrubbed, from-scratch environment: zero secret leak by construction,
   plus an auditable `.jsonl` transcript and a structured run report.
-- **[tool-exec](/docs/agentic-dev/tool-exec)** — the governed tool-call primitive: a default-deny
-  command allowlist, Zod-strict argv validation, and `execFile` arg-arrays only — an agent never
+- **[tool-exec](/docs/agentic-dev/tool-exec)**: the governed tool-call primitive: a default-deny
+  command allowlist, Zod-strict argv validation, and `execFile` arg-arrays only, an agent never
   reaches a shell.
-- **[local-store](/docs/local-first/local-store)** — the hybrid vector + full-text local memory
+- **[local-store](/docs/local-first/local-store)**: the hybrid vector + full-text local memory
   an agent recalls over, shared with the Local-first bundle.
 
 ## Install
@@ -31,30 +31,30 @@ cd caisson-app
 bun install
 ```
 
-`--edition agentic-dev` auto-selects the Agentic-Dev bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+`--edition agentic-dev` auto-selects the Agentic-Dev bundle's current modules, the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
 
 ## How it composes
 
-`agent-kernel`'s FSM is the spine every governed act moves through — `verify` is the only act with
+`agent-kernel`'s FSM is the spine every governed act moves through, `verify` is the only act with
 two outgoing edges, so a failed goal-backward verify reopens `plan` rather than advancing toward
 `ship`. `agent-runner` spawns the actual worker inside that governed loop, in an isolated worktree
 with an environment built from scratch rather than inherited. `tool-exec` is the gate every shell
-command from that worker passes through — a command outside the declared allowlist is unreachable,
+command from that worker passes through, a command outside the declared allowlist is unreachable,
 not merely discouraged. `local-store` gives the agent hybrid vector-plus-keyword recall that stays
 on the machine unless you wire an explicit egress.
 
 ## Composing with the base
 
-`agent-kernel` imports no vendor SDK and runs no LLM — it is composition mechanism only, and both
+`agent-kernel` imports no vendor SDK and runs no LLM, it is composition mechanism only, and both
 the base `@caisson/cli`/`@caisson/mcp-server` and this bundle's curated content consume it
-down-only (ADR-0022, ADR-0065). The same kernel underpins the `create-caisson` generator and the
+down-only. The same kernel underpins the `create-caisson` generator and the
 buyer-facing MCP server, so the rules that govern your own workflow are the rules that govern code
 generation.
 
 ## Entitlement
 
 Agentic-Dev is a commercial bundle (`LicenseRef-Caisson-Commercial`). Buy the bundle, or any
-member module à la carte — a purchase grants the module's entitlement id, checked offline against
+member module à la carte, a purchase grants the module's entitlement id, checked offline against
 the license.
 
 ## Related

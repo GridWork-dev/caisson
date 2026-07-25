@@ -27,31 +27,180 @@
   cursor: pointer;
 }
 
-/* ==================== one-surface grid (ADR-0285) ==================== */
-/* Three zones: facets · the unified bundle+module results · the sticky cart-aware stack rail. */
-.surface {
-  display: grid;
-  grid-template-columns: 13rem minmax(0, 1fr) 21rem;
-  gap: var(--cs-space-8);
-  align-items: start;
-  margin-top: var(--cs-space-8);
+/* ==================== one-surface toolbar + bands (ADR-0378 lock 3) ==================== */
+/* The 13rem facet rail and the 21rem stack rail are both gone. A sticky filter toolbar sits above
+ * the grid and the results split into a Bundles band then a Modules band. Freed width goes to a
+ * 3-up card grid inside the existing 1140px container (cs-grid--3), not to reserved side chrome. */
+.toolbar {
+  position: sticky;
+  top: var(--cs-space-20);
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cs-space-3);
+  margin-top: var(--cs-space-6);
+  margin-bottom: var(--cs-space-5);
+  padding: var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: color-mix(in oklab, var(--cs-bg) 92%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
 }
 
-.surfaceMain {
+.desktopFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cs-space-3);
+}
+
+.mobileFilters {
+  display: none;
+}
+
+/* Below the md rung the per-facet controls collapse into one Filters disclosure; search stays. */
+@media (max-width: 48rem) {
+  .desktopFilters {
+    display: none;
+  }
+  .mobileFilters {
+    display: block;
+  }
+}
+
+/* The toolbar search grows to fill the row; the standalone-input max-width + margin are dropped. */
+.toolbar .search {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+  max-width: none;
+  margin: 0;
+}
+
+/* Segmented Type control — buttons (not radios) so it renders in both the desktop toolbar and the
+ * mobile Filters panel without a duplicate radio name; 2.75rem tall for the touch target. */
+.segmented {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  min-height: 2.75rem;
+  padding: var(--cs-space-2) var(--cs-space-4);
+  border: 0;
+  border-right: 1px solid var(--cs-border);
+  background: transparent;
+  color: var(--cs-fg-muted);
+  font: inherit;
+  font-size: var(--cs-text-sm);
+  cursor: pointer;
+}
+
+.segment:last-child {
+  border-right: 0;
+}
+
+.segment:hover {
+  color: var(--cs-fg);
+}
+
+.segment[aria-pressed="true"] {
+  background: var(--cs-accent-tint);
+  color: var(--cs-accent);
+}
+
+.segmentCount {
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.segment[aria-pressed="true"] .segmentCount {
+  color: var(--cs-accent);
+}
+
+/* Media toggle — an inline checkbox row that sits directly in the toolbar. */
+.mediaToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  min-height: 2.75rem;
+  padding: 0 var(--cs-space-2);
+  font-size: var(--cs-text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Mobile Filters panel body — the four controls stacked; the segmented control goes full-width. */
+.filtersStack {
+  display: grid;
+  gap: var(--cs-space-5);
+  min-width: 14rem;
+}
+
+.filtersStack .segmented {
+  width: 100%;
+}
+
+.filtersStack .segment {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+/* Result bands — Bundles leads, a hairline divider, then Modules; each a cs-grid--3 (steps to 2-up
+ * at 60rem, 1-up at 48rem via the global grid ladder). */
+.band {
+  margin-top: var(--cs-space-6);
+}
+
+.bandHead {
+  margin: 0 0 var(--cs-space-4);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  font-weight: var(--cs-weight-medium);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+  color: var(--cs-fg-muted);
+}
+
+.divider {
+  margin: var(--cs-space-8) 0;
+  border: 0;
+  border-top: 1px solid var(--cs-border);
+}
+
+/* Marketplace cart summary strip (ADR-0378 lock 4) — /marketplace only, once the cart is non-empty.
+ * A slim fixed bottom strip: count + subtotal pinned left, Review (opens the one drawer) pinned
+ * right, so a centered compare-tray card can overlap the empty middle without hiding either end. */
+.cartStrip {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 39;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-4);
+  padding: var(--cs-space-3) var(--cs-space-6);
+  padding-bottom: calc(var(--cs-space-3) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--cs-border);
+  background: color-mix(in oklab, var(--cs-bg) 92%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+}
+
+.cartStripMeta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--cs-space-3);
   min-width: 0;
 }
 
-/* Collapse to a single column below the lg rung — facets + rail un-stick and stack. */
-@media (max-width: 68rem) {
-  .surface {
-    grid-template-columns: 1fr;
-    gap: var(--cs-space-6);
-  }
-  .surface .facets,
-  .surface .rail {
-    position: static;
-    top: auto;
-  }
+.cartStripTotal {
+  font-size: var(--cs-text-lg);
 }
 
 /* Card header meta row (ADR-0285 one-surface card) — two clusters that WRAP instead of spilling a
@@ -173,7 +322,7 @@
   display: flex;
   align-items: center;
   gap: var(--cs-space-3);
-  min-height: 1.75rem; /* ≥24px hit target (WCAG 2.5.8) */
+  min-height: 2.75rem; /* 44px touch target (WCAG 2.5.8) — disclosure-panel option rows */
   padding: var(--cs-space-1) 0;
   font-size: var(--cs-text-sm);
   cursor: pointer;

@@ -106,7 +106,7 @@ export default async function DashboardActivityPage() {
     .reverse();
 
   return (
-    <ActivityShell note="Showing credit-ledger activity — per-call model/token detail isn't available in this environment.">
+    <ActivityShell note="Showing credit-ledger activity. Per-call model/token detail isn't available in this environment.">
       {debits.length === 0 ? (
         <EmptyState
           icon="gauge"

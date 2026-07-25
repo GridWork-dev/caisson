@@ -15,10 +15,12 @@ import {
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { hasModulePage } from "@/lib/module-pages";
 import { BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
+import { truthfulSignals } from "@/lib/trust-signals";
+import { TruthfulSignals } from "@/components/truthful-signals";
 
 export const metadata = buildMetadata({
   title: "Marketplace",
-  description: `Every Caisson bundle and module on one surface — ${MODULE_PRICES.length} modules composed into six bundles, one-time perpetual pricing. Filter by type, category, or price; preview the media; compare; and build a stack. Own the source, no forced renewal.`,
+  description: `Every Caisson bundle and module on one surface: ${MODULE_PRICES.length} modules composed into six bundles, one-time perpetual pricing. Filter by type, category, or price; preview the media; compare; and build a stack. Own the source, no forced renewal.`,
   path: "/marketplace",
 });
 
@@ -32,15 +34,16 @@ const HUB_FAQ = [
   {
     question: "Where did the Modules and Build tabs go?",
     answer:
-      "They're this one surface now. Filter by type to see just modules or just bundles, add anything to the stack rail on the right to watch the running total, and the builder still points at the bundle that covers your picks for less. Old links redirect here automatically.",
+      "They're this one surface now. Filter by type to see just modules or just bundles, add anything to your cart, and the drawer points at the bundle that covers your picks for less. Old links redirect here automatically.",
   },
   {
     question: "Can I buy one module without the bundle around it?",
-    answer: `Yes. Each of the ${MODULE_PRICES.length} modules is a standalone one-time purchase — pick what composes onto your base, no bundle required. Every card previews what ships and opens straight to checkout.`,
+    answer: `Yes. Each of the ${MODULE_PRICES.length} modules is a standalone one-time purchase: pick what composes onto your base, no bundle required. Every card previews what ships and opens straight to checkout.`,
   },
 ] as const;
 
 export default function MarketplacePage() {
+  const signals = truthfulSignals();
   const breadcrumbNode = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Marketplace", path: "/marketplace" },
@@ -83,19 +86,25 @@ export default function MarketplacePage() {
 
       {/* ===== The catalog — one surface ===== */}
       <Section
-        eyebrow="The catalog"
         title="Browse the whole library in one place."
-        lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and build a stack on the right — the builder points at the bundle that covers your picks for less."
+        lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and add anything to your cart, the drawer points at the bundle that covers your picks for less."
       >
-        <MarketplaceSurface />
+        <div
+          style={{
+            marginTop: "var(--cs-space-2)",
+            marginBottom: "var(--cs-space-6)",
+          }}
+        >
+          <TruthfulSignals signals={signals} lead="Check before you buy:" />
+        </div>
+        <MarketplaceSurface signals={signals} />
       </Section>
 
       {/* ===== The open base — "batteries included" under the prices (anxiety-relief beat;
           ADR-0094 open-core made visible at purchase time) ===== */}
       <Section
-        eyebrow="The open base"
         title="Every bundle sits on this. So can you, for free."
-        lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license — source you own — but the base was always yours."
+        lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license (source you own), but the base was always yours."
         band="surface"
       >
         {/* Static header, base-capability cards cascade in (ADR-0307). */}
@@ -138,7 +147,7 @@ export default function MarketplacePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqPage(HUB_FAQ)) }}
       />
-      <Section eyebrow="FAQ" title="Buying, briefly.">
+      <Section title="Buying, briefly.">
         <Faq items={HUB_FAQ} defaultOpenFirst />
       </Section>
     </>

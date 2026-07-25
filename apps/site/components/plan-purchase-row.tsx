@@ -4,7 +4,13 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Button, Card } from "@caisson/ui/components";
 import { isPaddleConfigured, openCheckout } from "@/lib/paddle-checkout";
-import { BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
+import {
+  BUNDLE_PRICES,
+  MODULE_PRICES,
+  bundlePrice,
+  formatUsd,
+  isBundleId,
+} from "@/lib/pricing";
 
 /**
  * Resolve a purchase row's display label from the committed bundle/module catalog rather than
@@ -24,6 +30,20 @@ export function displayLabel(tag: string): string {
   if (canonical !== undefined) return canonical;
   const humanized = tag.replace(/_/g, " ");
   return humanized.charAt(0).toUpperCase() + humanized.slice(1);
+}
+
+/**
+ * A purchase row's price, resolved from the SAME committed catalog `displayLabel` reads above —
+ * `bundlePrice()` for a bundle id, the module's own catalog amount for a module id. Never
+ * hardcoded (ADR-0374: Buy rows previously showed no price at all). `null` for anything else (a
+ * subscription purchase tag with no one-time catalog entry) — the row omits the line rather than
+ * showing a wrong or invented number.
+ */
+export function displayPrice(tag: string): string | null {
+  const id = tag.replace(/_(bundle|module)$/, "");
+  if (isBundleId(id)) return bundlePrice(id);
+  const module = MODULE_PRICES.find((m) => m.id === id);
+  return module ? formatUsd(module.amount) : null;
 }
 
 export interface PlanPurchaseRowProps {
@@ -60,7 +80,7 @@ export function PlanPurchaseRow({
       // poisoning the session — surface it instead of letting the button just revert with no
       // explanation, mirroring cart-checkout-panel.tsx's catch.
       setError(
-        "Checkout failed to load — check your connection or ad-blocker, then try again.",
+        "Checkout failed to load. Check your connection or ad-blocker, then try again.",
       );
     } finally {
       setOpening(false);
@@ -78,7 +98,17 @@ export function PlanPurchaseRow({
           flexWrap: "wrap",
         }}
       >
-        <span className="cs-card-title">{displayLabel(label)}</span>
+        <div style={{ display: "grid", gap: "var(--cs-space-1)" }}>
+          <span className="cs-card-title">{displayLabel(label)}</span>
+          {!owned && displayPrice(label) !== null ? (
+            <span
+              className="cs-muted"
+              style={{ fontSize: "var(--cs-text-sm)" }}
+            >
+              {displayPrice(label)}
+            </span>
+          ) : null}
+        </div>
         {owned ? (
           <div
             style={{

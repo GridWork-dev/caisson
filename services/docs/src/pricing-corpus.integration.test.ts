@@ -14,7 +14,7 @@ describe("pricing corpus (real SOT)", () => {
     expect(facts.bundles.length).toBe(6);
     expect(facts.modules.length).toBeGreaterThan(0);
     // The committed compliance bundle price — read from the SOT, never scraped.
-    expect(facts.bundles.find((b) => b.id === "compliance")?.amount).toBe(1049);
+    expect(facts.bundles.find((b) => b.id === "compliance")?.amount).toBe(1449);
   });
 
   test("buildCorpus(pricingFacts) appends valid kind:pricing chunks + pages", async () => {
@@ -27,7 +27,7 @@ describe("pricing corpus (real SOT)", () => {
       expect(() => DocChunkSchema.parse(c)).not.toThrow();
     // The live compliance bundle price appears verbatim in a pricing chunk — a stale citation is
     // impossible.
-    expect(pricing.some((c) => c.text.includes("$1,049"))).toBe(true);
+    expect(pricing.some((c) => c.text.includes("$1,449"))).toBe(true);
     expect(corpus.pages.some((p) => p.kind === "pricing")).toBe(true);
     // ADR-0278 Track K (fable F2): the real SOT currently carries an unpriced priority-support row
     // (`amount: null`) — it must never reach the public corpus with internal "unset" config copy.

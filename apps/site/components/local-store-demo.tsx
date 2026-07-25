@@ -33,7 +33,7 @@ const RESULTS: readonly StoreSearchResult[] = [
 
 export default function LocalStoreDemo() {
   return (
-    <MediaFrame label="StoreSearch">
+    <MediaFrame label="Hybrid search">
       <div style={{ padding: "var(--cs-space-6)" }}>
         <StoreSearch
           query={QUERY}

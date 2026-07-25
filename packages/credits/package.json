@@ -1,6 +1,6 @@
 {
   "name": "@caisson/credits",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

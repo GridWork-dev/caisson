@@ -2,15 +2,10 @@
 // on id/version/license/dependencies. `kind: "primitive"` — a shared compliance primitive, not an
 // edition or a bundle meta.
 //
-// SKU posture: a RESERVED catalog id, sold-unpublished (the same posture @caisson/agent-usage and
-// @caisson/agent-trajectory shipped at first index). `sellable: false` keeps it out of the
-// price-coverage locked-price requirement and off every bundle's `members` pin map; the module is
-// registered in the registry so its id exists, but no storefront surface (apps/site's MODULE_PRICES,
-// a bundle members map, a docs depth page) may reference it until a later publish gate flips
-// `sellable` and adds it to a bundle's composition. Commercial under open-core (this is not among
-// the enumerated open Base packages), so it ships LicenseRef-Caisson-Commercial at `paid`;
-// `priceCents` carries the same pre-launch placeholder anchor (4900) every not-yet-priced
-// commercial primitive carries.
+// SKU posture: SELLABLE at $199 (the 2026-07-20 pricing round; first published 0.2.0 as
+// sellable:false substrate, flipped here in the post-publish membership cut). A member of the
+// Compliance and Everything bundles. The v2 GitHub-org connector is the named repricing trigger.
+// Commercial under open-core (LicenseRef-Caisson-Commercial at `paid`).
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -19,8 +14,8 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
-  sellable: false,
+  priceCents: 19900,
+  sellable: true,
   license: pkg.license,
   dependencies: ["@caisson/jobs", "@caisson/kernel", "@caisson/tenancy-rls"],
   golden: null,

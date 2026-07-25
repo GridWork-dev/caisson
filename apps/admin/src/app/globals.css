@@ -15,6 +15,30 @@ html {
   color-scheme: dark;
 }
 
+/* ADR-0374 [high]: `color-scheme` (native UA form-control chrome — search-input fill, scrollbars,
+ * etc.) only had TWO prongs here (this dark default + the `[data-theme="light"]` pin below), never
+ * an OS-seed prong — so an UNPINNED visitor whose OS prefers light got the app's own `--cs-*`
+ * tokens correctly flipped light (tokens.css / apply-theme.ts's documented 3-prong cascade) while
+ * native widgets stayed dark-chromed underneath. Third prong closes the same gap for `color-scheme`
+ * that the token cascade already closes for colors. */
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) {
+    color-scheme: light;
+  }
+}
+
+html,
+body {
+  /* Root 6 (ADR-0374 visual audit): no page-level guard meant a wide nowrap table (or any other
+   * overflowing content) could push the whole page past the viewport on mobile. The table itself
+   * scrolls via `.panel`'s own `overflow-x` below; this is the last-resort backstop so a miss
+   * there clips instead of widening the page. `clip`, not `hidden` (audit round 2, F5): `hidden`
+   * establishes a new scroll container on the axis, which can break `position: sticky` anchoring
+   * for descendants (the topbar) that expect html/body to stay a plain non-scrolling ancestor;
+   * `clip` still clips the overflow without creating that scroll container. */
+  overflow-x: clip;
+}
+
 [data-theme="light"] {
   color-scheme: light;
 }
@@ -58,6 +82,22 @@ kbd,
   font-feature-settings: "ss01", "zero";
 }
 
+/* A bare text `<input>` on an admin GET-search/verify form (no design-system Input primitive
+ * exists yet in @caisson/ui) — token-styled so it reads as part of the app, not the browser's
+ * default gray control. Kept to the tokens the rest of the kit already reads (`var(--cs-*)`). */
+.text-input {
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  color: var(--cs-fg);
+  font-size: var(--cs-text-sm);
+}
+.text-input:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 1px;
+}
+
 h1,
 h2,
 h3 {
@@ -94,6 +134,13 @@ p {
   background: color-mix(in oklab, var(--cs-bg) 82%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--cs-border);
+}
+
+/* A second `.topbar` nested under a section (e.g. CatalogNav under the root AdminNav) — only
+ * ONE header can own the sticky top:0 slot without the two overlapping on scroll. The nested one
+ * stays put in normal flow instead of also pinning. */
+.topbar--static {
+  position: static;
 }
 
 .brand {
@@ -135,6 +182,64 @@ p {
   background: var(--cs-surface-2);
 }
 
+/* ---- mobile nav collapse (ADR-0374 [info]: e0817bf3ed27130b, 450dcca1a0936d17,
+   51bc1aaabe5f3590, 7e0714515219721c, a9101e6be4233ec9, a4f11203b0723c0a) ---- */
+
+.admin-nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  color: var(--cs-fg);
+}
+.admin-nav-toggle:hover {
+  background: var(--cs-surface-2);
+}
+
+/* .topbar is `position: sticky`, which (like `relative`) establishes the containing block this
+   panel positions against — it drops directly under the topbar without a separate wrapper. */
+.admin-nav-panel {
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+  padding: var(--cs-space-3) clamp(1.25rem, 0.5rem + 3vw, 3rem);
+  background: var(--cs-surface-1);
+  border-bottom: 1px solid var(--cs-border);
+  box-shadow: 0 12px 24px -12px rgb(0 0 0 / 35%);
+}
+.admin-nav-panel a {
+  padding: 0.65rem 0.7rem;
+  border-radius: var(--cs-radius-md);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-sm);
+}
+.admin-nav-panel a:hover {
+  color: var(--cs-fg);
+  background: var(--cs-surface-2);
+  text-decoration: none;
+}
+.admin-nav-panel a[aria-current="page"] {
+  color: var(--cs-fg);
+  background: var(--cs-surface-2);
+}
+
+@media (max-width: 56.25rem) {
+  .nav--desktop {
+    display: none;
+  }
+  .admin-nav-toggle {
+    display: inline-flex;
+  }
+}
+
 /* ---- type primitives --------------------------------------------------- */
 
 .eyebrow {
@@ -167,6 +272,9 @@ p {
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-lg);
   padding: clamp(1rem, 0.6rem + 1.5vw, 1.75rem);
+  /* Root 6 (ADR-0374 visual audit): every `.admin-table` (nowrap th/td) is a direct child of a
+   * `.panel` — scroll the table's own container, never the page (the html/body guard above). */
+  overflow-x: auto;
 }
 .panel.is-rec {
   border-color: color-mix(in oklab, var(--cs-accent) 55%, var(--cs-border));
@@ -275,6 +383,16 @@ p {
   gap: var(--cs-space-6);
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
+/* The A/B/C accent-fork panels: always 3-up on desktop (fixed 3-item set — auto-fit's
+   2-column midpoint orphaned Panel C), single column once 3-up can't stay readable. */
+.foundations-candidates {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 56.25rem) {
+  .foundations-candidates {
+    grid-template-columns: 1fr;
+  }
+}
 .row {
   display: flex;
   align-items: center;
@@ -299,6 +417,12 @@ p {
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-lg);
   overflow: hidden;
+}
+/* A long near-identical row list (ops traces/logs) — cap the visible height and scroll the
+ * list itself instead of running the whole page long. */
+.board--capped {
+  max-height: 22rem;
+  overflow-y: auto;
 }
 .board-row + .board-row {
   border-top: 1px solid var(--cs-border);
@@ -351,6 +475,60 @@ p {
 }
 .board-link.is-static .board-arrow {
   display: none;
+}
+
+/* ADR-0374 [high]: the ADR trail row is a 4-col grid (num/title/chip/date) inside `.board`,
+ * which itself clips overflow (`.board { overflow: hidden }` above) — on mobile the auto-sized
+ * trailing columns had no room and the chip + date silently clipped. Collapse to a 2-col grid:
+ * num+title on row 1, chip+date on row 2 — nothing needs to shrink past its content. */
+@media (max-width: 40rem) {
+  .board-link--adr-row {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "num main"
+      "chip date";
+    row-gap: var(--cs-space-2);
+  }
+  .board-link--adr-row .board-num {
+    grid-area: num;
+  }
+  .board-link--adr-row .board-main {
+    grid-area: main;
+  }
+  .board-link--adr-row .board-chip {
+    grid-area: chip;
+  }
+  .board-link--adr-row .board-date {
+    grid-area: date;
+    justify-self: end;
+  }
+}
+
+/* ---- forks board — open-fork rows (ADR-0374 [high]: was one flattened markdown-table wall) --- */
+
+.fork-rows {
+  list-style: none;
+  padding: 0;
+  margin-top: var(--cs-space-3);
+  display: grid;
+  gap: var(--cs-space-3);
+}
+.fork-row {
+  padding-top: var(--cs-space-3);
+  border-top: 1px solid var(--cs-border);
+  display: grid;
+  gap: var(--cs-space-1);
+}
+.fork-row:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+.fork-row-item {
+  font-weight: var(--cs-weight-medium);
+}
+.fork-row-state {
+  font-size: var(--cs-text-sm);
+  line-height: var(--cs-leading-relaxed);
 }
 
 /* ---- candidate preview (foundations) ---------------------------------- */

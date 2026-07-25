@@ -5,16 +5,10 @@
 // buyer hosts anywhere to show prospects their compliance posture. Pure, un-wired-seam (ADR-0047):
 // no auth, no hosted comments, no sign-off — permanent non-goals, never scaffolded here.
 //
-// NEVER PUBLISHED, reserved-for-later posture (`package.json` carries `private: true`, the
-// `@caisson/license-issue` precedent — a paid-tier manifest with no `publishConfig`): the package
-// ships real code and a real manifest, but is deliberately not on the publish/index path yet — not
-// appended to `registry/ledger.jsonl`, so it is absent from the served catalog (not displayed on
-// apps/site, no purchase path reaches it) until a later pricing round flips it. `sellable: false`
-// additionally exempts it from ever needing a PRICE_AUTHORITY row while unpriced; `priceCents` stays
-// at the documented pre-launch placeholder anchor (4900). This is NOT the `RESERVED_MODULE_
-// ENTITLEMENT_IDS` reservation (that set is for a SOLD-but-unpublished module with a real purchase
-// row already granting entitlements — hard-pinned empty; nothing here is sold yet, so nothing is
-// added there). Dependencies are DOWN-ONLY (ADR-0003): the generator consumes the evidence-pack shape
+// SKU posture: SELLABLE at $149 (the 2026-07-20 pricing round; first published 0.2.0 as
+// sellable:false substrate, flipped here in the post-publish membership cut). A member of the
+// Compliance and Everything bundles.
+// Dependencies are DOWN-ONLY (ADR-0003): the generator consumes the evidence-pack shape
 // from `@caisson/compliance-core` and renders through `@caisson/artifact-render`, never the reverse.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
@@ -22,10 +16,10 @@ import { defineModule } from "../../registry/schema/module-manifest";
 export default defineModule({
   id: "@caisson/trust-page",
   version: pkg.version,
-  kind: "base",
+  kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
-  sellable: false,
+  priceCents: 14900,
+  sellable: true,
   license: pkg.license,
   dependencies: [
     "@caisson/artifact-render",

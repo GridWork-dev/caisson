@@ -5,33 +5,34 @@
 # NOT listed here (fixed by real bumps in root package.json `overrides`, so osv stops reporting them):
 #   systeminformation  CVE-2025-68154 / CVE-2026-26280 / CVE-2026-26318 / CVE-2026-44724  -> >=5.31.6
 #   ws                 CVE-2026-45736 / CVE-2026-48779                                     -> >=8.21.0
+#   sharp              GHSA-f88m-g3jw-g9cj (inherited libvips CVEs), via next's optional
+#                      peer dep                                                            -> >=0.35.0
+#   @hono/node-server  GHSA-frvp-7c67-39w9 (serve-static path traversal, Windows-only) +
+#                      GHSA-9mqv-5hh9-4cgg (upgradeWebSocket DoS, unreachable — we never call
+#                      upgradeWebSocket), via @modelcontextprotocol/sdk; only getRequestListener()
+#                      is used (stable, unchanged in v2 per upstream release notes: "public API
+#                      stays the same")                                                    -> >=2.0.10
+#   engine.io          GHSA-r635-g3xr-vw7x, via @trigger.dev/core's socket.io@4.7.4 pin
+#                      (~6.5.2 range) — deduped onto the same 6.6.9 already used by the
+#                      socket.io@4.8.3 path elsewhere in the tree                           -> >=6.6.7
+#   fast-uri           GHSA-v2hh-gcrm-f6hx, via ajv@8.20.0 (already allows ^3.0.1)          -> >=3.1.4
+#   postcss            GHSA-6g55-p6wh-862q / GHSA-r28c-9q8g-f849 (sourceMappingURL file reads)
+#                      + the formerly-accepted CVE-2026-41305                               -> >=8.5.18
+#   valibot            GHSA-5qjj-4xww-7phc (flatten() throw on inherited prop names)        -> >=1.4.2
+#   js-yaml 5.x        GHSA-pm4m-ph32-ghv5 (flow-collection DoS) — 5.2.1 re-resolved off the
+#                      tree (fumadocs range) / 3.x-4.x copies unaffected                    -> >=5.2.2
+#   brace-expansion 5.x GHSA-mh99-v99m-4gvg                                                  -> >=5.0.8
 #
 # Every id below has a matching dated row in docs/security/tooling-playbook.md (Accepted findings).
-
-[[IgnoredVulns]]
-id = "CVE-2024-47764"
-reason = "cookie <0.7.0, transitive under @trigger.dev/core's socket.io/engine.io (engine.io pins ~0.4.1). Cookie name/path/domain out-of-bounds chars — engine.io generates the sid cookie's attributes itself from static config, never from user input, so unreachable. A global cookie override would force engine.io (~0.4.1) or msw (^1.1.1) off their pinned ranges; deferred to Renovate's pin wave. Accepted 2026-07-10."
-
-[[IgnoredVulns]]
-id = "CVE-2026-41305"
-reason = "postcss <8.5.10. XSS only when postcss stringifies attacker-submitted CSS source; the site build processes only first-party authored CSS, never user-submitted stylesheets. Fix (8.5.10) is a build-critical same-major bump deferred to Renovate rather than a hand-forced override across the shared checkout. Accepted 2026-07-10."
-
-[[IgnoredVulns]]
-id = "CVE-2026-8769"
-reason = "@ai-sdk/provider-utils 3.0.27/3.0.28 — NO fixed version published (osv lists none). Transitive under the @ai-sdk provider drivers in @caisson/ai-kit. Re-evaluate when a fix ships. Accepted 2026-07-10."
 
 [[IgnoredVulns]]
 id = "CVE-2026-54285"
 reason = "@opentelemetry/core 2.0.1, transitive under @trigger.dev/core's pinned OTel instrumentation (the main OTel suite is already on the fixed 2.8.0). Header-propagator over-allocation, practically bounded by Node's 16KB max-http-header-size; forcing the trigger.dev-nested core to 2.8.0 risks breaking trigger.dev runtime telemetry. Accepted 2026-07-10."
 
-[[IgnoredVulns]]
-id = "CVE-2026-45772"
-reason = "turbo 2.5.8 — arbitrary code execution ONLY when running turbo in an UNTRUSTED repository containing a malicious .yarnrc.yml yarnPath. Our CI and local runs execute turbo exclusively against this trusted first-party repo. Fix (2.9.14) is a same-major bump of CI-critical build tooling, deferred to Renovate rather than a hand-bump that would re-resolve the build tool under concurrent builders. Accepted 2026-07-10."
-
-[[IgnoredVulns]]
-id = "CVE-2026-45773"
-reason = "turbo 2.5.8 — same untrusted-repo malicious-yarn-config vector as CVE-2026-45772, same trusted-repo-only usage and same deferral to the Renovate pin wave (fix 2.9.14). Accepted 2026-07-10."
-
 # NOTE: pytest CVE-2025-71176 lives in services/support-bot/uv.lock. osv-scanner config does NOT
 # propagate into child directories (per its docs), so that accept lives in
 # services/support-bot/osv-scanner.toml, next to the lockfile it applies to.
+
+[[IgnoredVulns]]
+id = "GHSA-mh99-v99m-4gvg"
+reason = "brace-expansion DoS via unbounded expansion (OOM). Remaining copies after the 2026-07-25 bump wave are 1.1.16 (minimatch@3 chains under eslint tooling) and 2.1.2 (minimatch@5-9 chains) — NO patched 1.x/2.x release exists (fix only in 5.0.8, which the 5.x copy already runs). Forcing 5.x into minimatch@<10 parents is a cross-major breakage risk for a dev/build-time-only surface whose expansion inputs are first-party glob patterns, never attacker-controlled. Revisit when upstream publishes patched 1.x/2.x or parents bump minimatch. Accepted 2026-07-25 (resident, clean-state sweep — flagged for operator retro-veto)."

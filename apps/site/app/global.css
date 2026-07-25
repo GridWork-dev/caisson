@@ -51,6 +51,14 @@
   --color-fd-accent: var(--cs-accent-tint);
   --color-fd-accent-foreground: var(--cs-fg);
   --color-fd-ring: var(--cs-focus);
+  /* Callout accent colors (visual-audit remediation): fumadocs' Callout reads
+   * `var(--color-fd-info|warning|error|success, var(--color-fd-muted))` — unmapped here, these
+   * four fell through to fumadocs' own default-colors.css literals (a hardcoded off-brand blue
+   * for `info`, the site's most common admonition type), never the --cs-* contract. */
+  --color-fd-info: var(--cs-accent);
+  --color-fd-warning: var(--cs-warning);
+  --color-fd-error: var(--cs-danger);
+  --color-fd-success: var(--cs-success);
 }
 
 /* ===== Docs code-block scroll affordance (visual-audit remediation, docs-parity pass).
@@ -97,23 +105,106 @@
   font-style: var(--shiki-dark-font-style);
 }
 
+/* ===== Docs mobile shell root-cause fix (visual-audit remediation, ADR-0374 W1 P0).
+ * apps/site/app/docs/layout.tsx used to wrap fumadocs' page output in a bare <main
+ * id="main-content"> for the P1-002 skip-link landmark fix — that wrapper sat BETWEEN fumadocs'
+ * CSS Grid container (#nd-docs-layout) and its five direct-child grid items (header/sidebar/
+ * TOC-popover/article/TOC, each positioned via an inline `[grid-area:*]` style), which only takes
+ * effect on a DIRECT child of the grid container. The wrapper made every one of those
+ * assignments inert and collapsed all five into implicit grid auto-placement instead — dragging
+ * the ENTIRE page's min-content (~900px, every code block/table unwrapped) into column 1
+ * (`minmax(min-content, 1fr)`, the sidebar-rail track) and blowing the whole shell past the
+ * 390px viewport on every docs route (mobile header/hamburger pushed off-screen, prose/code
+ * clipped mid-word, tables vanishing instead of scrolling), and — at desktop — collapsing the
+ * sticky right-rail TOC into a plain block that rendered at the very bottom of the page instead
+ * of alongside the content. Fixed at the source: the wrapper is gone (docs/layout.tsx renders
+ * `{children}` directly) and the skip-link id/role/tabIndex moved onto fumadocs' own
+ * `<article id="nd-page">` via DocsPage's `id`/`role`/`tabIndex` passthrough
+ * (docs/[[...slug]]/page.tsx) — `#main-content` is now that article's real id (`#nd-page` is
+ * gone). `min-width: 0` insures the item's own automatic minimum can never re-inflate the
+ * article's already-`minmax(0, …)` content track (an item's default min-content minimum can
+ * still do that even when the track itself floors at 0). `overflow-wrap` is scoped to the prose
+ * body only (never inline code — copy-paste fidelity of shell commands is the product's worst
+ * failure mode) via `.cs-prose`'s own text nodes; code/table scroll cues are the existing
+ * `.fd-scroll-container` / Shiki figure affordance above. `.cs-prose` is DocsBody's own extra
+ * className, layered onto fumadocs' `.prose`. */
+#main-content {
+  min-width: 0;
+}
+
+.cs-prose {
+  overflow-wrap: anywhere;
+}
+
+.cs-prose :where(code, pre, kbd, samp) {
+  overflow-wrap: normal;
+}
+
+/* Desktop reading measure (visual-audit remediation): fumadocs' own `max-w-[900px]` on the
+ * article runs ~85-90ch at the docs body's font-size — over both this skill's 65-75ch cap and
+ * Caisson's own committed 52-75ch rule (DESIGN.md §3). `min()` only ever narrows, never widens,
+ * past fumadocs' existing cap; `:not([data-full])` leaves full-width docs pages (wide tables/
+ * diagrams) at their own wider `max-w-[1168px]` untouched.
+ *
+ * Scoped under `#nd-docs-layout` (fumadocs' own grid container id — docs/[[...slug]]/page.tsx's
+ * `<article id="main-content">` is its descendant), NOT bare `#main-content` (P1 regression,
+ * ADR-0374 audit round 2): `app/(marketing)/layout.tsx` ALSO renders `<main id="main-content">`
+ * with no `#nd-docs-layout` ancestor, so the unscoped id selector was collapsing every
+ * marketing/legal/glossary page to this 900px reading column too. */
+#nd-docs-layout #main-content:not([data-full="true"]) {
+  max-width: min(900px, 75ch);
+}
+
+/* ===== Docs content links are opt-in-only today: `a { text-decoration: none }` (base.css reset)
+ * leaves every inline prose link color-alone (WCAG 1.4.1) unless a call site remembers `.cs-link`
+ * — no MDX author does, so every docs body link across every route is color-only. Scope the
+ * default inversion to `.cs-prose` (never the whole page — `.cs-prose a` would still catch
+ * fumadocs' own heading self-links otherwise: every h1-h6 wraps its FULL text in an `<a
+ * data-card href="#slug">`, so `[data-card]` is the exact, stable exclusion hook fumadocs already
+ * ships, not a guess). */
+.cs-prose a:not([data-card]) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 /* ===== Docs chrome 44px hit-area pass (browser-audit P2-006). fumadocs' "icon-sm" button recipe
  * (search trigger, sidebar toggle, the GitHub link) renders at 34x34 — its own compiled
  * `dist/components/ui/button.js` hardcodes the size via `[&_svg]:size-4.5`, which survives as a
  * literal Tailwind class token in the DOM and is the only stable hook available without forking
  * the library (no `className`/size prop reaches this deep). Same invisible centered pseudo-element
  * pattern as the rest of the sweep — visual size is untouched, only the click/tap catchment grows. */
-[class*="size-4.5"] {
+/* live-reaudit-2026-07-22: the heading Copy-Anchor-Link button ships with NO class attribute and
+ * the code-block copy button's classes carry no size token, so both escaped the [class*="size-4.5"]
+ * hook and still measured 24x24 — the aria-label (which toggles Copy Text/Copied Text) is their
+ * only stable hook. Same invisible catchment, same 44px floor. */
+[class*="size-4.5"],
+button[aria-label="Copy Anchor Link"],
+button[aria-label="Copy Text"],
+button[aria-label="Copied Text"] {
   position: relative;
 }
 
-[class*="size-4.5"]::before {
+[class*="size-4.5"]::before,
+button[aria-label="Copy Anchor Link"]::before,
+button[aria-label="Copy Text"]::before,
+button[aria-label="Copied Text"]::before {
   content: "";
   position: absolute;
   inset: 50% auto auto 50%;
   width: 2.75rem;
   height: 2.75rem;
   transform: translate(-50%, -50%);
+}
+
+/* live-reaudit-2026-07-22: the marketplace mobile stack dock (fixed, bottom-0) clears the picker
+ * surface via that module's own `.surface` padding, but the shared footer FOLLOWS the surface in
+ * flow, so at exact full-page scroll the collapsed dock bar sat over the footer's last rows. The
+ * dock is always-rendered on its page (never conditionally mounted), so `body:has()` is a reliable
+ * page gate; clearance applies only below the dock's own 56.25rem cutover. */
+@media (max-width: 56.25rem) {
+  body:has([data-stack-dock]) .cs-footer {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ===== Reset re-assert — base.css already sets these, but it loads BEFORE the Tailwind/Fumadocs
@@ -127,6 +218,17 @@
 html {
   -webkit-text-size-adjust: 100%;
   color-scheme: dark;
+}
+
+/* ADR-0374: `color-scheme` (native UA chrome — form-control fill, scrollbars, date pickers) had only
+ * two prongs — this dark default + the `[data-theme="light"]` pin below — never an OS-seed prong. An
+ * UNPINNED visitor whose OS prefers light got the --cs-* tokens correctly flipped light (tokens.css's
+ * documented 3-prong cascade) while native widgets stayed dark-chromed underneath. This third prong
+ * closes the same gap the token cascade already closes, mirroring apps/admin's globals.css. */
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) {
+    color-scheme: light;
+  }
 }
 
 [data-theme="light"] {
@@ -306,6 +408,20 @@ kbd,
   padding-block: var(--cs-space-16);
   color: var(--cs-fg-muted);
   font-size: var(--cs-text-sm);
+}
+
+/* Footer group headings (Bundles / Marketplace / Resources / Legal / Product updates). These were
+ * borrowing `.cs-status` — a live-status "glyph + label" component (`display: inline-flex` + `gap`) —
+ * as a plain-text heading. inline-flex keeps the trailing letter-spacing a normal block heading trims
+ * at line end, so a header read looser/less even than the accompanying link list (visual-audit
+ * 06bd6da4 / a72c0f97). A purpose-built block heading normalizes every column header identically. */
+.cs-footer-heading {
+  display: block;
+  margin-bottom: var(--cs-space-3);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  color: var(--cs-fg-muted);
 }
 
 /* `minmax(0, 1fr)` (not bare `1fr`, same reasoning as `.cs-hero__lead`/`.cs-hero__artifact` in
@@ -727,4 +843,46 @@ kbd,
   ::view-transition-new(*) {
     animation: none !important;
   }
+}
+
+/* Legal "On this page" jump-nav rail (ADR-0376 lock 3). The legal docs keep their
+ * deliberate 62ch single-column measure; this rail occupies the container's right dead
+ * space instead of widening the text. Both the rail and the container are CENTER-anchored,
+ * so the rail (left edge +13rem from center) can never overlap the prose column (right
+ * edge ≈ +11.2rem from center) at any viewport — the media floor only guarantees the
+ * rail's own right edge fits. Fixed, not sticky: the band sections are full-bleed
+ * siblings, so there is no shared scroll column to stick within. */
+.legal-toc {
+  display: none;
+}
+@media (min-width: 75rem) {
+  .legal-toc {
+    display: block;
+    position: fixed;
+    top: 7rem;
+    left: calc(50% + 13rem);
+    width: 21rem;
+    max-height: calc(100vh - 9rem);
+    overflow-y: auto;
+    padding-left: var(--cs-space-4);
+    border-left: 1px solid var(--cs-border);
+  }
+  .legal-toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--cs-space-2);
+  }
+  .legal-toc a {
+    font-size: var(--cs-text-sm);
+    color: var(--cs-fg-muted);
+  }
+  .legal-toc a:hover {
+    color: var(--cs-accent);
+  }
+}
+/* Anchored legal sections land below the sticky site header. */
+.cs-section[id] {
+  scroll-margin-top: 6rem;
 }

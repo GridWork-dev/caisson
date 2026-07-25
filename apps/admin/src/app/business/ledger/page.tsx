@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { EmptyState, MetricStat } from "@caisson/ui/components";
+import { Button, EmptyState, MetricStat } from "@caisson/ui/components";
 import { expiringSoon, type ExpiringSoon } from "@caisson/credits";
 import { adminDbConfigured, readAdmin } from "@/lib/admin-db";
 import {
@@ -108,12 +108,12 @@ export default async function LedgerPage({
           name="account"
           defaultValue={account}
           placeholder="Account id"
-          className="mono"
-          style={{ padding: 6, minWidth: 320 }}
+          className="mono text-input"
+          style={{ minWidth: 320 }}
         />
-        <button type="submit" style={{ padding: "6px 12px" }}>
+        <Button type="submit" variant="primary" size="sm">
           Load timeline
-        </button>
+        </Button>
       </form>
 
       {!active ? (

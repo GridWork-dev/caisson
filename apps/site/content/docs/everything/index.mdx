@@ -1,28 +1,28 @@
 ---
 title: Everything
-description: The full Caisson catalog — every bundle and every à-la-carte module, one purchase.
+description: The full Caisson catalog, every bundle and every à-la-carte module, one purchase.
 ---
 
 The **Everything** bundle is the full catalog: every module across [Compliance](/docs/compliance),
 [AI-Production](/docs/ai-production), [Local-first](/docs/local-first),
 [Agentic-Dev](/docs/agentic-dev), and [Provenance](/docs/provenance), plus the standalone
-commercial modules no persona bundle grants — org controls, billing orchestration, and the UI Pro
-component layer — in one purchase.
+commercial modules no persona bundle grants, org controls, billing orchestration, and the UI Pro
+component layer, in one purchase.
 
 ## What's in the bundle
 
-Everything contains every sellable SKU in the catalog by construction — it is never listed on an
+Everything contains every sellable SKU in the catalog by construction, it is never listed on an
 individual module's bundle membership because membership in it is implicit. That includes:
 
 - Every module in the five persona/provenance bundles above (field-crypto, audit-worm,
   retention-runner, alerting, compliance-core, frameworks-pack, signing-primitive, ai-meter,
   ai-evals, guardrails, prompt-registry, credits, local-store, local-sync, local-inference,
   local-privacy, agent-kernel, agent-runner, tool-exec).
-- **[org-controls](/docs/base/org-controls)** — WorkOS SSO plus the owner-gated multi-user
+- **[org-controls](/docs/base/org-controls)**: WorkOS SSO plus the owner-gated multi-user
   surface and admin-write RLS layer.
-- **[billing-orchestration](/docs/base/billing-orchestration)** — the multi-provider billing
+- **[billing-orchestration](/docs/base/billing-orchestration)**: the multi-provider billing
   engine (Paddle, Stripe, LemonSqueezy, Polar) behind one `BillingProvider` port.
-- **[ui-pro](/docs/base/ui-pro)** — the commercial component tier on the open `@caisson/ui` base:
+- **[ui-pro](/docs/base/ui-pro)**: the commercial component tier on the open `@caisson/ui` base:
   DataTablePro, OpsMatrix, AuditTimeline, CommandPalette, charts, and the interactive primitives.
 
 ## Install
@@ -34,20 +34,20 @@ cd caisson-app
 bun install
 ```
 
-`--edition everything` auto-selects the Everything bundle's current modules — the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+`--edition everything` auto-selects the Everything bundle's current modules, the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
 
 ## How it composes
 
-Every module in Everything composes exactly the way it composes inside its own persona bundle —
+Every module in Everything composes exactly the way it composes inside its own persona bundle:
 Everything changes what's licensed, not how the modules wire together. A module that spans
 several bundles (`field-crypto` across Compliance, AI-Production, Local-first, and Provenance) is
 granted once, not duplicated per bundle.
 
 ## Composing with the base
 
-Everything sits on the same open-core [base substrate](/docs/base) as every other bundle —
+Everything sits on the same open-core [base substrate](/docs/base) as every other bundle:
 `@caisson/kernel`, `@caisson/tenancy-rls`, `@caisson/ui`, `@caisson/billing`, and the rest of the
-Apache-2.0 packages — and adds the full commercial layer on top.
+Apache-2.0 packages, and adds the full commercial layer on top.
 
 ## Entitlement
 

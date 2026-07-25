@@ -4,13 +4,13 @@ description: A Resend email port with a test driver.
 ---
 
 `@caisson/email` is the transactional-email port. [Resend](https://resend.com) is the default
-driver — Postmark, SMTP, and SES ship alongside it — and every driver sits behind the port like
+driver (Postmark, SMTP, and SES ship alongside it) and every driver sits behind the port like
 every other vendor in the base: call sites depend on the port, not the SDK.
 
 ## The contract
 
 A **capture driver** records sends in memory, so a suite asserts on what would have been
-emailed — recipient, template, payload — without a network call or a live key.
+emailed (recipient, template, payload) without a network call or a live key.
 
 ```ts
 import { createResendEmailer } from "@caisson/email";
@@ -27,7 +27,7 @@ await email.send({
 });
 ```
 
-Under the standards gate, tests wire the capture driver instead and assert on what was sent —
+Under the standards gate, tests wire the capture driver instead and assert on what was sent:
 never a network call, never a live key:
 
 ```ts
@@ -56,9 +56,9 @@ interface Emailer {
 }
 ```
 
-One method, provider-agnostic — every driver below implements it. `template` is free-form on
+One method, provider-agnostic, every driver below implements it. `template` is free-form on
 the port itself: a caller can pass one of the branded template ids (rendered below) or an
-arbitrary name — [`@caisson/alerting`](/docs/compliance/alerting) sends operator alerts through
+arbitrary name, [`@caisson/alerting`](/docs/compliance/alerting) sends operator alerts through
 this same port with its own `alert.*` namespace, and every driver falls back to a generic
 subject/text mapping when `template` isn't a known id.
 
@@ -73,7 +73,7 @@ interface CaptureEmailer extends Emailer {
 ```
 
 In-memory driver for tests. `send` pushes onto a private array exposed read-only via `sent`
-(preserving order) and never touches the network — the framework-agnostic reference
+(preserving order) and never touches the network, the framework-agnostic reference
 implementation of the port.
 
 ```ts
@@ -86,7 +86,7 @@ interface ResendConfig {
 
 Production driver backed by [Resend](https://resend.com). `apiKey` is injected config, never a
 module-level constant. `send` renders the branded template when `template` matches a known id,
-then POSTs through `fetchWithTimeout`. A non-`ok` response throws `InternalError` — the response
+then POSTs through `fetchWithTimeout`. A non-`ok` response throws `InternalError`: the response
 body is never included in the thrown error, since a Resend error can echo the recipient or a key
 fragment back.
 
@@ -98,7 +98,7 @@ interface PostmarkConfig {
 }
 ```
 
-Production driver backed by Postmark. Same shape as the Resend driver — `fetchWithTimeout`,
+Production driver backed by Postmark. Same shape as the Resend driver, `fetchWithTimeout`,
 `InternalError` on a non-`ok` response, and the response body withheld for the same reason.
 
 ```ts
@@ -130,7 +130,7 @@ interface SesConfig {
 ```
 
 AWS SES driver. SES exposes an SMTP interface, so `createSesEmailer` is `createSmtpEmailer`
-pointed at SES's regional endpoint (`email-smtp.<region>.amazonaws.com:587`, STARTTLS) — there
+pointed at SES's regional endpoint (`email-smtp.<region>.amazonaws.com:587`, STARTTLS), there
 is no separate `aws-sdk` dependency. `sesSmtpConfig` is the pure config mapper underneath it,
 exposed as the testable seam.
 
@@ -159,7 +159,7 @@ function isEmailTemplateId(template: string): template is EmailTemplateId;
 ```
 
 `EMAIL_TEMPLATE_IDS` is the stable display order the admin catalog preview walks.
-`isEmailTemplateId` is the runtime membership check — a request-supplied string is never trusted
+`isEmailTemplateId` is the runtime membership check, a request-supplied string is never trusted
 without it.
 
 ```ts
@@ -176,7 +176,7 @@ interface RenderedEmail {
 ```
 
 Renders one branded template against its typed prop shape (`TemplateDataMap` keys each id to
-its own data type — a purchase receipt's line items are not a magic-link's `url`). Throws if
+its own data type, a purchase receipt's line items are not a magic-link's `url`). Throws if
 the template id isn't in the registry; callers with an unchecked `template` string use
 `tryRenderEmailTemplate` instead.
 
@@ -187,10 +187,10 @@ function tryRenderEmailTemplate(
 ): Promise<RenderedEmail | null>;
 ```
 
-The driver-facing entry point. Returns `null` — never throws — when `template` isn't a known
+The driver-facing entry point. Returns `null` (never throws) when `template` isn't a known
 branded id, or when `data` doesn't structurally match that template's shape, so a free-form
 alert or a malformed payload falls back to the generic subject/text mapping instead of breaking
-the send. Every production driver's `send` calls this first — the capture driver records the
+the send. Every production driver's `send` calls this first, the capture driver records the
 raw message without rendering.
 
 ```ts
@@ -198,7 +198,7 @@ const EMAIL_SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] };
 ```
 
 One realistic payload per template id, shared by the admin catalog preview, the admin
-send-test route, and the visual harness — so a preview, a test send, and a
+send-test route, and the visual harness, so a preview, a test send, and a
 screenshot always render off the same data.
 
 ## Related

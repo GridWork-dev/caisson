@@ -31,13 +31,19 @@ export default defineModule({
   // The explicit full-catalog membership (ADR-0258 §3): the bundle self + every sellable commercial
   // SKU + ui-pro, every pin a real published version.
   members: {
-    "@caisson/everything": "0.2.3",
+    "@caisson/everything": "0.2.5",
+    // The 2026-07-20 compliance-gap join: three new sellable SKUs enter at their first
+    // published version (the two-consume arming — publish first, membership after).
+    "@caisson/access-review": "0.2.0",
+    "@caisson/risk-register": "0.2.0",
+    "@caisson/trust-page": "0.2.0",
     "@caisson/agent-kernel": "0.6.0",
     "@caisson/agent-runner": "0.2.0",
-    // agent-trajectory joins at the encRef-bearing 0.3.0 (2026-07-18 consume) — same rule as
-    // the agentic-dev pin: never the pre-encRef 0.2.0. agent-usage stays OUT (indexed
+    // agent-trajectory pins an encRef-bearing version — same rule as the agentic-dev pin: never
+    // the pre-encRef 0.2.0. Repointed 0.3.0 -> 0.3.4 (2026-07-20) so the stranded 0.3.0 tarball
+    // row can retire at the follow-up registry prune. agent-usage stays OUT (indexed
     // sellable:false, rider-3 unpublished — no bundle carries it until its own publish gate).
-    "@caisson/agent-trajectory": "0.3.0",
+    "@caisson/agent-trajectory": "0.3.4",
     // The five sibling persona-bundle metas are themselves sellable SKUs and are IN — the
     // description sells them by name, and an Everything buyer must be entitled to install them.
     // The DISSOLVED edition metas (@caisson/agent-dev, @caisson/ai-kit, @caisson/local-ai) are

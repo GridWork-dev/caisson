@@ -1,0 +1,72 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-4);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.optionGroup {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  padding: var(--cs-space-3);
+  margin: 0;
+}
+
+.legend {
+  padding: 0 var(--cs-space-1);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.optionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding-inline: var(--cs-space-2);
+}
+
+.outputPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-4);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+}
+
+.subLabel {
+  margin: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  font-weight: 600;
+  color: var(--cs-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--cs-tracking-wide);
+}
+
+.chipsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .outputPanel {
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease;
+  }
+}

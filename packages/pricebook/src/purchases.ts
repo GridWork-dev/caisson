@@ -25,7 +25,7 @@ import { planEntitlementsSchema } from "./plans.ts";
 const NO_CREDITS = asCredits(0);
 
 /** Append-only version stamp — a purchase-row change bumps this, never edits it in place (ADR-0006). */
-export const PURCHASE_BOOK_VERSION = "2026-07-18.1";
+export const PURCHASE_BOOK_VERSION = "2026-07-20.1";
 
 export const purchaseBookEntrySchema = strictObject({
   /** Stable internal purchase tag (NOT the Stripe id) — survives a price-id rotation. */
@@ -257,6 +257,23 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     purchaseTag: "agent-trajectory_module",
     credits: NO_CREDITS,
     entitlements: ["agent-trajectory"],
+  },
+  // The compliance-gap trio joined the catalog 2026-07-20 (SKU-arming wave) — sandbox
+  // prices created via tools/paddle-catalog-recreate.ts.
+  pri_01ky0fgqdwpf6yaxzeef03q88e: {
+    purchaseTag: "access-review_module",
+    credits: NO_CREDITS,
+    entitlements: ["access-review"],
+  },
+  pri_01ky0fgqk5d855hfjdngjrvj89: {
+    purchaseTag: "risk-register_module",
+    credits: NO_CREDITS,
+    entitlements: ["risk-register"],
+  },
+  pri_01ky0fgqqzmfbm2406q4rys44e: {
+    purchaseTag: "trust-page_module",
+    credits: NO_CREDITS,
+    entitlements: ["trust-page"],
   },
 
   // ---- REAL Paddle sandbox price ids — the W7 catalog big-bang (ADR-0258 §5, created

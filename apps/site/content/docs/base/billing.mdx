@@ -3,19 +3,19 @@ title: Billing
 description: Stripe, Paddle, LemonSqueezy, and Polar behind a BillingProvider port, with HMAC raw-body webhook verification.
 ---
 
-`@caisson/billing` wires four providers — Stripe, Paddle, LemonSqueezy, and Polar — behind the
+`@caisson/billing` wires four providers (Stripe, Paddle, LemonSqueezy, and Polar) behind the
 same `BillingProvider` port, so the rest of the base depends on the port, not the vendor. Stripe
 pairs with Stripe Tax, with the operator as the merchant of record. Paddle, LemonSqueezy, and Polar
-are each Merchant of Record themselves — they compute, collect, and remit tax on the sale. Paddle
+are each Merchant of Record themselves, they compute, collect, and remit tax on the sale. Paddle
 is the provider Caisson's own store runs on; Stripe, LemonSqueezy, and Polar stay buyer-selectable
 drivers for products composed on the base, dormant until you supply that provider's credentials,
-each satisfying the identical port — swap providers by injecting a different driver, not by
+each satisfying the identical port, swap providers by injecting a different driver, not by
 rewriting call sites.
 
 ## The contract
 
 Webhooks are verified against the **raw request body** with a timing-safe HMAC compare. A body that
-has been parsed and re-serialized fails verification — the signature is over the exact bytes the
+has been parsed and re-serialized fails verification, the signature is over the exact bytes the
 provider sent, not the JSON your framework reconstructed.
 
 ```ts
@@ -27,7 +27,7 @@ verifyStripeWebhook(rawBody, req.headers["stripe-signature"], secret);
 
 Paddle's `Paddle-Signature` header carries a `ts=` timestamp and one or more `h1=` HMAC values; the
 signed payload is `${ts}:${rawBody}` (colon-joined, unlike Stripe's period-joined scheme). The
-default timestamp tolerance is **5 seconds** — Paddle's own documented SDK default, and a delivery
+default timestamp tolerance is **5 seconds**: Paddle's own documented SDK default, and a delivery
 rejected for skew is retried with a fresh signature, so the tight window costs nothing durable.
 
 ```ts
@@ -38,15 +38,15 @@ verifyPaddleWebhook(rawBody, req.headers["paddle-signature"], secret);
 ```
 
 Paddle fires one event, `transaction.completed`, for both a one-time purchase and every subscription
-charge — the `origin` field tells them apart: `web`/`api` is the subscription's first charge
+charge, the `origin` field tells them apart: `web`/`api` is the subscription's first charge
 (`subscription_create`, grants), `subscription_recurring` is a renewal (`subscription_cycle`,
 grants), and `subscription_charge` is a mid-cycle one-time charge that must not re-grant the cycle
-allotment (non-granting). Idempotency anchors on the Paddle **transaction id** (`txn_…`) — stable
-across redeliveries — rather than `invoice_id`, which Paddle documents as deprecated.
+allotment (non-granting). Idempotency anchors on the Paddle **transaction id** (`txn_…`), stable
+across redeliveries, rather than `invoice_id`, which Paddle documents as deprecated.
 
 **LemonSqueezy** and **Polar** are two more MoR drivers behind the same port, for products where the
 buyer wants one of those rails instead. Both are dormant until you supply that provider's
-credentials — nothing is imported or constructed unless you configure it.
+credentials, nothing is imported or constructed unless you configure it.
 
 ```ts
 import { verifyLemonSqueezyWebhook } from "@caisson/billing";
@@ -70,7 +70,7 @@ verifyPolarWebhook(rawBody, signatureHeader, secret);
 ```
 
 Because billing rides a port, a test driver stands in for any of the four providers under the
-standards gate — suites assert on charge and webhook behavior without a network call.
+standards gate, suites assert on charge and webhook behavior without a network call.
 
 ## API reference
 
@@ -116,11 +116,11 @@ interface VerifyOptions {
 }
 ```
 
-All four return `void`: a valid signature simply returns, and every failure — malformed header,
-wrong secret, tampered body, timestamp outside tolerance — throws `AuthnError` (from
+All four return `void`: a valid signature simply returns, and every failure, malformed header,
+wrong secret, tampered body, timestamp outside tolerance, throws `AuthnError` (from
 `@caisson/kernel`, HTTP 401), never a boolean or a silently-false result. `verifyLemonSqueezyWebhook`
 takes no `VerifyOptions`: its signature carries no timestamp, so there's no replay window to
-configure. `verifyPolarWebhook` expects one already-joined `signatureHeader` — Standard Webhooks
+configure. `verifyPolarWebhook` expects one already-joined `signatureHeader`: Standard Webhooks
 splits the signature across three request headers (`webhook-id`, `webhook-timestamp`,
 `webhook-signature`); join them `` `${id}.${timestamp}.${signature}` `` before calling, as shown
 above.
@@ -179,7 +179,7 @@ interface PolarConfig {
 ### The webhook event map
 
 `verifyAndParse` maps every provider's payload onto one provider-agnostic union, validated at
-runtime by the exported `DomainBillingEventSchema` — a Zod discriminated union on `type`, every
+runtime by the exported `DomainBillingEventSchema`: a Zod discriminated union on `type`, every
 member strict, so an unknown field fails closed rather than passing through silently:
 
 ```ts
@@ -242,14 +242,14 @@ type DomainBillingEvent =
     };
 ```
 
-`sourceEventId` is the provider's own event id on every member — it flows straight into the credit
+`sourceEventId` is the provider's own event id on every member, it flows straight into the credit
 wallet's idempotency key, so a redelivered webhook grants exactly once. `lineItems` on
 `purchase.completed` is every paid line of the transaction, not just the first: a multi-item cart is
 one provider transaction carrying several lines, and each one is fulfilled. `refund.completed`
-splits the same way — `fullyRefunded: true` means revoke everything keyed by `paymentId`;
+splits the same way, `fullyRefunded: true` means revoke everything keyed by `paymentId`;
 `fullyRefunded: false` means act per line on `items[]`, keyed by
 `` `${adjustmentId}:${itemId}` ``. `chargeback.detected` is alert-only: nothing in
-`@caisson/billing` grants, revokes, or claws back credits from it — a chargeback is the provider
+`@caisson/billing` grants, revokes, or claws back credits from it, a chargeback is the provider
 absorbing the dispute, and any account action is a manual operator review. `invoice.paid` carries
 `billingReason` so a non-cycle invoice grants nothing, regardless of caller logic upstream.
 

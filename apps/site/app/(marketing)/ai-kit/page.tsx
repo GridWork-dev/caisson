@@ -33,7 +33,7 @@ import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
-import { requireBundlePage } from "@/lib/bundle-pages";
+import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { TrackView } from "@/components/track-view";
 
@@ -193,7 +193,6 @@ export default function AiKitPage() {
 
       {/* ===== What it composes ===== */}
       <Section
-        eyebrow="What it composes"
         title="One package, four other Caisson packages behind it."
         lede="The kit is one package, @caisson/ai-kit, wired around four other Caisson packages: prompt-registry resolves and renders the versioned prompt, ai-meter reserves against the tenant's cap before the call and reconciles the real usage after, guardrails runs the input and output through a Zod-typed schema and policy check, and ai-config maps the call's lane to a provider. The pipeline is fixed and fail-closed (resolve, render, input-guard, reserve, provider call, record usage, output-guard, reconcile), and it is the only Caisson package that imports a provider SDK (ai / @ai-sdk/*), keeping that dependency behind one boundary instead of scattered across your route handlers."
         band="tint"
@@ -209,8 +208,7 @@ export default function AiKitPage() {
 
       {/* ===== Four composed modules ===== */}
       <Section
-        eyebrow="What ships in the box"
-        title="Four modules behind one chokepoint."
+        title={`${spellCount(MEMBER_MODULES.length)} modules behind one chokepoint.`}
       >
         <Reveal>
           <FeatureGrid cols={2}>
@@ -223,7 +221,6 @@ export default function AiKitPage() {
 
       {/* ===== Who it's for ===== */}
       <Section
-        eyebrow="Who it's for"
         title="Teams whose one fetch call is about to become a feature."
         lede="Teams that already have a route calling a model and have hit, or are about to hit, one of three failure modes: an unmetered retry loop triples the API invoice before anyone notices, a prompt edited inline three files deep breaks silently with no way to diff or roll it back, or user input reaches the model with no schema and no policy check on what comes back. If your AI feature is one fetch call today, this kit is the difference between that and a feature you can put a spend cap and an audit trail behind."
         band="surface"
@@ -231,14 +228,12 @@ export default function AiKitPage() {
 
       {/* ===== Metered by construction, BYOK included ===== */}
       <Section
-        eyebrow="Metered by construction"
         title="BYOK included."
         lede="The same reserve-before / reconcile-after chokepoint covers infer(), inferStream(), embed(), and embedMany(), so a runaway embedding job hits the same cap as a runaway chat loop. A tenant can also supply their own provider key instead of the shared platform lane; BYOK resolves the tenant's encrypted key ahead of the default, and a BYOK-backed call debits zero credits because the tenant pays the provider directly."
       />
 
       {/* ===== Rigor as code ===== */}
       <Section
-        eyebrow="Rigor as code"
         title="Every claim here is a control you can point at."
         lede="The caps and the breaker are configuration checked into your repo, enforced at call time, and reviewable in the same pull request as the feature that needs them."
         band="surface"
@@ -249,7 +244,7 @@ export default function AiKitPage() {
             status={<StatusChip label="enforced at call time" tone="muted" />}
           >
             {
-              "# caisson.ai.toml — checked into your repo, enforced at call time\n\n"
+              "# caisson.ai.toml, checked into your repo, enforced at call time\n\n"
             }
             <span className="cs-tok-muted">{"[caps.default]\n"}</span>
             {"daily_tokens = "}
@@ -274,7 +269,7 @@ export default function AiKitPage() {
       </Section>
 
       {/* ===== Pricing ===== */}
-      <Section eyebrow={"How it's sold"} title="Own the code, or subscribe.">
+      <Section title="Own the code, or subscribe.">
         <Reveal>
           <FeatureGrid cols={3}>
             <Card accent>
@@ -292,10 +287,11 @@ export default function AiKitPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                The gateway, all four composed modules, and future patch
-                releases, in your own repo as TypeScript source. Scaffold it in
-                with bunx @caisson-sh/cli@latest, or add it to an existing
-                Caisson base.
+                The gateway, all{" "}
+                {spellCount(MEMBER_MODULES.length).toLowerCase()} composed
+                modules, and future patch releases, in your own repo as
+                TypeScript source. Scaffold it in with bunx
+                @caisson-sh/cli@latest, or add it to an existing Caisson base.
               </p>
             </Card>
 
@@ -305,10 +301,10 @@ export default function AiKitPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                The composed modules are also sold individually: prompt-registry
+                The composed modules are also sold individually: prompt registry
                 from {formatUsd(moduleAmount("prompt-registry"))}, guardrails
-                from {formatUsd(moduleAmount("guardrails"))}, ai-meter from{" "}
-                {formatUsd(moduleAmount("ai-meter"))};
+                from {formatUsd(moduleAmount("guardrails"))}, token metering
+                from {formatUsd(moduleAmount("ai-meter"))};
                 {modulePrice && modulePrice.amount !== null ? (
                   <>
                     {" "}
@@ -349,7 +345,7 @@ export default function AiKitPage() {
       </Section>
 
       {/* ===== FAQ ===== */}
-      <Section eyebrow="Common questions" band="tint">
+      <Section title="Common questions" band="tint">
         <Reveal>
           <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-6)" }} />
         </Reveal>
@@ -358,9 +354,8 @@ export default function AiKitPage() {
       {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
       <Reveal>
         <Section
-          eyebrow="Trial path"
           title="Prove fit in week one."
-          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />
@@ -369,7 +364,7 @@ export default function AiKitPage() {
       </Reveal>
 
       {/* ===== Get started ===== */}
-      <Section eyebrow="Get started">
+      <Section>
         <h2
           className="cs-section-title"
           style={{ marginTop: "var(--cs-space-3)" }}

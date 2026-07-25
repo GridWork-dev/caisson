@@ -39,17 +39,17 @@ const PRODUCT_CONTROLS: ReadonlyArray<{
   {
     icon: "rls",
     label: "Fail-closed RLS",
-    body: "packages/tenancy-rls's buildTenantPolicySql emits ENABLE ROW LEVEL SECURITY plus FORCE ROW LEVEL SECURITY on every tenant table, so the policy binds the table owner too — not just other roles. The sole entry point, withTenant, opens a transaction, drops to the unprivileged app role, and binds the account id into a Postgres GUC (app.current_account) that every policy reads; a code path that forgets withTenant has no GUC bound and the table returns nothing. A one-time role pre-flight (assertRoleNotPrivileged) refuses to run if that role is ever a superuser or BYPASSRLS, since either would silently no-op FORCE ROW LEVEL SECURITY. Cross-tenant isolation is a CI test, not a convention.",
+    body: "packages/tenancy-rls's buildTenantPolicySql emits ENABLE ROW LEVEL SECURITY plus FORCE ROW LEVEL SECURITY on every tenant table, so the policy binds the table owner too, not just other roles. The sole entry point, withTenant, opens a transaction, drops to the unprivileged app role, and binds the account id into a Postgres GUC (app.current_account) that every policy reads; a code path that forgets withTenant has no GUC bound and the table returns nothing. A one-time role pre-flight (assertRoleNotPrivileged) refuses to run if that role is ever a superuser or BYPASSRLS, since either would silently no-op FORCE ROW LEVEL SECURITY. Cross-tenant isolation is a CI test, not a convention.",
   },
   {
     icon: "shield",
     label: "Resolve-and-recheck SSRF guard",
-    body: `packages/kernel's ssrf.ts stops DNS rebinding on every buyer- or config-supplied URL — the alerting webhook transports and the ai-kit provider baseUrl both route through it. assertSafePublicUrl rejects non-https, credentials-in-URL, and a literal private/loopback/link-local/metadata host at the config boundary; assertResolvedHostPublic then resolves the hostname and re-checks every returned A/AAAA record against the same denylist immediately before the outbound fetch, so a public name that DNS-rebinds to 127.0.0.1 or 169.254.169.254 is caught where a literal-only check can't see it. ssrfGuardedFetch forces redirect: "error" — only the original host is re-checked, so a followed redirect could otherwise carry the request past the guard.`,
+    body: `packages/kernel's ssrf.ts stops DNS rebinding on every buyer- or config-supplied URL (the alerting webhook transports and the ai-kit provider baseUrl both route through it. assertSafePublicUrl rejects non-https, credentials-in-URL, and a literal private/loopback/link-local/metadata host at the config boundary; assertResolvedHostPublic then resolves the hostname and re-checks every returned A/AAAA record against the same denylist immediately before the outbound fetch, so a public name that DNS-rebinds to 127.0.0.1 or 169.254.169.254 is caught where a literal-only check can't see it. ssrfGuardedFetch forces redirect: "error") only the original host is re-checked, so a followed redirect could otherwise carry the request past the guard.`,
   },
   {
     icon: "worm",
     label: "WORM storage",
-    body: "Evidence buckets enable S3 Object Lock. The default is GOVERNANCE mode — inside the retention window an object cannot be overwritten or deleted by an app bug or an ordinary operator, though a caller holding s3:BypassGovernanceRetention can still override it. COMPLIANCE mode is available as an explicit, irreversible opt-in (production-only, gated behind irreversibleComplianceOptIn) for retention even the AWS account root cannot shorten.",
+    body: "Evidence buckets enable S3 Object Lock. The default is GOVERNANCE mode, inside the retention window an object cannot be overwritten or deleted by an app bug or an ordinary operator, though a caller holding s3:BypassGovernanceRetention can still override it. COMPLIANCE mode is available as an explicit, irreversible opt-in (production-only, gated behind irreversibleComplianceOptIn) for retention even the AWS account root cannot shorten.",
   },
   {
     icon: "audit-chain",
@@ -77,12 +77,12 @@ const SITE_POSTURE: ReadonlyArray<{
   {
     icon: "server",
     title: "Dynamic app, minimal surface",
-    body: "caisson.sh runs as a Next.js standalone Node server on Railway, backed by Postgres for the buyer dashboard, billing, and checkout. Marketing and docs pages still render statically at build time; only the dashboard, checkout, and forms are dynamic, and every authed route runs the same fail-closed tenant isolation the product ships — no secrets in the client bundle.",
+    body: "caisson.sh runs as a Next.js standalone Node server on Railway, backed by Postgres for the buyer dashboard, billing, and checkout. Marketing and docs pages still render statically at build time; only the dashboard, checkout, and forms are dynamic, and every authed route runs the same fail-closed tenant isolation the product ships, no secrets in the client bundle.",
   },
   {
     icon: "shield",
     title: "Admin gated by a fail-closed CF-Access JWT check",
-    body: "apps/admin renders cross-tenant business data and ships no other auth, so an app-wide middleware validates Cf-Access-Jwt-Assertion against the admin Access application's JWKS, pins the aud claim to the admin app specifically (the site and admin Access apps share one email policy, so a signature-only check would accept a site token), and denies with a 403 on any failure — expired token, wrong aud/iss, unreachable JWKS, or a request that reached the raw Railway origin directly, bypassing the Cloudflare edge entirely. In production, an unconfigured gate also denies: both CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD must be set before the app serves a single route.",
+    body: "apps/admin renders cross-tenant business data, so an app-wide middleware validates the Cf-Access-Jwt-Assertion token's signature, audience, and issuer against the admin Access app's own JWKS before any route runs, denying with a 403 on any failure or misconfiguration. Both CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD must be set before the app serves a single route.",
   },
   {
     icon: "gauge",
@@ -92,17 +92,17 @@ const SITE_POSTURE: ReadonlyArray<{
   {
     icon: "lock",
     title: "Cookieless analytics, self-hosted fonts",
-    body: "Analytics run through Plausible — no cookies, no cross-site identifiers, no consent banner because there is nothing to consent to. Fonts ship from our own origin via next/font, so font-src stays locked to 'self' with no third-party font CDN in the trust surface.",
+    body: "Analytics run through Plausible, no cookies, no cross-site identifiers, no consent banner because there is nothing to consent to. Fonts ship from our own origin via next/font, so font-src stays locked to 'self' with no third-party font CDN in the trust surface.",
   },
   {
     icon: "key",
     title: "Validated forms endpoint",
-    body: "The ask-AI and waitlist routes both validate input with Zod .strict() — unknown fields rejected — and gate on a Cloudflare Turnstile token before any request reaches the model or the mailing list. makeTurnstileVerifier fails closed on the ask route; the waitlist route also drops bots via a honeypot field.",
+    body: "The ask-AI and waitlist routes both validate input with Zod .strict() (unknown fields rejected) and gate on a Cloudflare Turnstile token before any request reaches the model or the mailing list. makeTurnstileVerifier fails closed on the ask route; the waitlist route also drops bots via a honeypot field.",
   },
   {
     icon: "file-check",
     title: "Responsible disclosure",
-    body: "A machine-readable policy lives at /.well-known/security.txt (RFC 9116). Report anything you find to security@caisson.sh — we read it.",
+    body: "A machine-readable policy lives at /.well-known/security.txt (RFC 9116). Report anything you find to security@caisson.sh, we read it.",
   },
 ];
 
@@ -112,7 +112,7 @@ const FAQ: ReadonlyArray<{ question: string; answer: string }> = [
   {
     question: "Is Caisson SOC 2 or HIPAA certified?",
     answer:
-      "No. Caisson is a codebase, not an auditor. It ships the technical controls those frameworks require — fail-closed RLS, WORM storage, an append-only audit chain — and generates the evidence pack you hand your auditor. The audit itself and your organizational controls (HR, vendor, incident response) remain yours.",
+      "No. Caisson is a codebase, not an auditor. It ships the technical controls those frameworks require (fail-closed RLS, WORM storage, an append-only audit chain) and generates the evidence pack you hand your auditor. The audit itself and your organizational controls (HR, vendor, incident response) remain yours.",
   },
   {
     question: "Does this site set tracking cookies?",
@@ -129,7 +129,7 @@ const FAQ: ReadonlyArray<{ question: string; answer: string }> = [
     question:
       "How is the admin dashboard protected if it renders every tenant's data?",
     answer:
-      "Two independent layers: Cloudflare Access gates the edge, and apps/admin's own middleware.ts independently verifies the Cf-Access-Jwt-Assertion token's signature, audience, and issuer before any route runs, denying with a 403 on failure or misconfiguration. A request that reaches the raw Railway origin directly — bypassing Cloudflare — still hits this in-app check and is refused.",
+      "Two independent layers: Cloudflare Access gates the edge, and apps/admin's own middleware.ts independently verifies the Cf-Access-Jwt-Assertion token's signature, audience, and issuer before any route runs, denying with a 403 on failure or misconfiguration. A request that reaches the raw Railway origin directly (bypassing Cloudflare) still hits this in-app check and is refused.",
   },
   {
     question: "How do I report a vulnerability?",
@@ -158,7 +158,7 @@ export default function SecurityPage() {
     techArticle({
       headline: "Caisson security & trust posture",
       description:
-        "The product controls Caisson generates and the security posture of caisson.sh, stated precisely — no certification claims.",
+        "The product controls Caisson generates and the security posture of caisson.sh, stated precisely, no certification claims.",
       url: "https://caisson.sh/security",
     }),
     faqPage(FAQ),
@@ -179,7 +179,7 @@ export default function SecurityPage() {
         <Hero
           eyebrow="Security & trust"
           title="Fail-closed by construction."
-          lede="The same posture Caisson generates for your app governs this site: deny by default, prove it with code, claim nothing we do not ship. Caisson generates audit evidence — it is not the auditor."
+          lede="The same posture Caisson generates for your app governs this site: deny by default, prove it with code, claim nothing we do not ship. Caisson generates audit evidence, it is not the auditor."
           ctas={
             <>
               <Button href="mailto:security@caisson.sh" external>
@@ -223,9 +223,8 @@ content-security-policy: default-src 'self'; …`}
         {/* ===== Product controls (what Caisson generates) ===== */}
         <Section
           band="tint"
-          eyebrow="Controls Caisson generates"
           title="The security your app inherits on day one."
-          lede="These are product features — wired and tested into the codebase Caisson generates, not services we run on your behalf. You own the source and the evidence."
+          lede="These are product features, wired and tested into the codebase Caisson generates, not services we run on your behalf. You own the source and the evidence."
         >
           <div className="cs-grid" style={{ marginTop: "var(--cs-space-8)" }}>
             {PRODUCT_CONTROLS.map((c) => (
@@ -252,9 +251,8 @@ content-security-policy: default-src 'self'; …`}
 
         {/* ===== This site's posture ===== */}
         <Section
-          eyebrow="This site"
           title="How caisson.sh itself is secured."
-          lede="A dynamic app widens the attack surface — we keep it deliberately scoped and document exactly what ships."
+          lede="A dynamic app widens the attack surface, we keep it deliberately scoped and document exactly what ships."
         >
           <FeatureGrid cols={3}>
             {SITE_POSTURE.map((p) => (
@@ -279,8 +277,7 @@ content-security-policy: default-src 'self'; …`}
         {/* ===== The shipped CSP, with the honest residual ===== */}
         <Section
           band="surface"
-          eyebrow="Content-Security-Policy"
-          title="The policy that ships — including what is not yet locked down."
+          title="The policy that ships, including what is not yet locked down."
           lede="We state CSP residuals plainly rather than imply a tighter policy than we run. Trust is the product; over-claiming it would defeat the point."
         >
           <Reveal>
@@ -316,7 +313,7 @@ content-security-policy: default-src 'self'; …`}
                 script, <code className="mono">*.paddle.com</code> for its
                 overlay iframe and API), and Cloudflare Turnstile (
                 <code className="mono">challenges.cloudflare.com</code>) for the
-                invisible bot check on the Ask-AI assistant — nothing wider.
+                invisible bot check on the Ask-AI assistant. Nothing wider.
                 Tightening the inline residual to per-script hashes is a tracked
                 follow-up, not a shipped claim.
               </p>
@@ -325,10 +322,7 @@ content-security-policy: default-src 'self'; …`}
         </Section>
 
         {/* ===== The honesty boundary ===== */}
-        <Section
-          eyebrow="The honesty boundary"
-          title="Caisson generates evidence. It is not an auditor."
-        >
+        <Section title="Caisson generates evidence. It is not an auditor.">
           <div style={{ marginTop: "var(--cs-space-4)" }}>
             <Card accent>
               <p
@@ -347,7 +341,7 @@ content-security-policy: default-src 'self'; …`}
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-4)", maxWidth: "64ch" }}
               >
-                We never imply Caisson is SOC 2 or HIPAA certified — a codebase
+                We never imply Caisson is SOC 2 or HIPAA certified. A codebase
                 cannot be. It maps the live RLS policies, the SSRF guard, WORM
                 retention, and the audit-chain proof to named controls so you
                 can hand an auditor the evidence, not a screenshot. The
@@ -359,11 +353,7 @@ content-security-policy: default-src 'self'; …`}
         </Section>
 
         {/* ===== FAQ ===== */}
-        <Section
-          band="tint"
-          eyebrow="Straight answers"
-          title="The questions procurement asks first."
-        >
+        <Section band="tint" title="The questions procurement asks first.">
           {/* Bare <Faq>, matching ai-kit/compliance — a Card wrapper here double-borders the
            * accordion rows (Faq draws its own per-row surface). D8(a) vetoable call. */}
           <Faq items={FAQ} style={{ marginTop: "var(--cs-space-8)" }} />
@@ -371,9 +361,8 @@ content-security-policy: default-src 'self'; …`}
 
         {/* ===== Disclosure CTA ===== */}
         <Section
-          eyebrow="Responsible disclosure"
           title="Found something? Tell us."
-          lede="We publish a machine-readable policy and read every report. No bounty program yet — the report still matters."
+          lede="We publish a machine-readable policy and read every report. No bounty program yet, the report still matters."
         >
           <div className="cs-cta-row">
             <Button href="mailto:security@caisson.sh" external>

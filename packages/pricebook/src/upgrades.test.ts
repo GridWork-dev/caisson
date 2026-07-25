@@ -55,11 +55,11 @@ describe("upgradeQuote — bundle − owned, floored at $0 (ADR-0247 F8)", () =>
   });
 
   test("owning a subset credits their retail, below the bundle price (below-sum)", () => {
-    // field-crypto (199) + audit-worm (149) = 348 credited off Compliance $1,049.
+    // field-crypto (199) + audit-worm (149) = 348 credited off Compliance $1,449.
     const q = upgradeQuote("compliance", ["field-crypto", "audit-worm"]);
     expect([...q.creditedItems].sort()).toEqual(["audit-worm", "field-crypto"]);
     expect(q.credit).toBe(348);
-    expect(q.upgradePrice).toBe(1049 - 348);
+    expect(q.upgradePrice).toBe(1449 - 348);
     expect(q.upgradePrice).toBeGreaterThan(0);
   });
 

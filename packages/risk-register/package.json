@@ -1,10 +1,13 @@
 {
   "name": "@caisson/risk-register",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.3.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "A framework-agnostic risk register: likelihood x impact scoring with a computed, never freeform, residual; operator overrides recorded as a chained exception rather than an edit; and crosswalk pointers into any shipped compliance framework pack. Never published; reserved for the future pricing round.",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "description": "A framework-agnostic risk register: likelihood x impact scoring with a computed, never freeform, residual; operator overrides recorded as a chained exception rather than an edit; and crosswalk pointers into any shipped compliance framework pack.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

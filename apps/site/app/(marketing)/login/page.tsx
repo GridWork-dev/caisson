@@ -30,7 +30,9 @@ export default async function LoginPage({
         title="Buyer dashboard sign-in"
         lede="Get a one-time sign-in link by email, or continue with a connected account. You'll land back on your entitlements, credits, and license."
       />
-      <Section eyebrow="Sign in" title="Continue to your dashboard">
+      {/* No repeated eyebrow/title here (visual-audit id 7f0f9a31ef80d5e4) - the Hero above
+          already carries "Sign in"; this Section is a plain content wrapper. */}
+      <Section>
         <LoginForm
           providers={providers}
           next={next ?? "/dashboard"}

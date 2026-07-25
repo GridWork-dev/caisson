@@ -400,14 +400,17 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
     // named here still fails, so the completeness guard survives the exception.
     // Named allowlist, filtered against everything's REAL index members so the two-phase
     // graduation holds: a source-manifest membership only realizes in the index at the next
-    // consume (ADR-0178 lesson), so agent-trajectory (source-joined 2026-07-18 at the encRef
-    // 0.3.0) stays excepted exactly until the version PR re-ledgers everything with it, then
-    // automatically stops being excepted. agent-usage stays indexed sellable:false with no
-    // membership until its own publish gate (2026-07-18 operator lock). Any OTHER module
-    // missing from everything's members and NOT named here still fails the guard.
+    // consume (ADR-0178 lesson) — the `!everythingMembers.has` term makes a graduated name a
+    // no-op, and a graduated name is then PRUNED from the allowlist (agent-trajectory rode
+    // this path at its encRef first-publish; the three compliance-gap SKUs — access-review,
+    // risk-register, trust-page — completed the same two-consume arming 2026-07-20).
+    // agent-usage stays indexed sellable:false with no membership until its own publish gate
+    // (2026-07-18 operator lock), and artifact-render is the published-never-sold render
+    // substrate (a dependency, not an entitlement) — both stay excepted indefinitely. Any
+    // OTHER module missing from everything's members and NOT named here still fails the guard.
     const RIDER3_UNPUBLISHED = new Set([
-      "@caisson/agent-trajectory",
       "@caisson/agent-usage",
+      "@caisson/artifact-render",
     ]);
     const everything = realIndex.modules.find(
       (m) => m.id === "@caisson/everything",

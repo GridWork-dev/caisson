@@ -1,11 +1,11 @@
 ---
 title: UI Pro
-description: The commercial component tier on the open @caisson/ui token floor — an advanced data grid, virtualized tree, ops matrix, audit timeline, and more.
+description: The commercial component tier on the open @caisson/ui token floor, an advanced data grid, virtualized tree, ops matrix, audit timeline, and more.
 ---
 
 `@caisson/ui-pro` layers advanced data-ops and compliance surfaces on the open Apache-2.0
 `@caisson/ui` token floor. It is the components a free kit paywalls, plus domain-composed
-operations views — themed entirely through the same token contract, so re-skinning `@caisson/ui`
+operations views, themed entirely through the same token contract, so re-skinning `@caisson/ui`
 re-skins these too.
 
 This is commercial software (`LicenseRef-Caisson-Commercial`) and requires a valid Caisson
@@ -13,26 +13,26 @@ entitlement to install from the registry.
 
 ## What it ships
 
-- **DataTablePro** — a superset of the floor `DataTable` column contract: multi-column filter
+- **DataTablePro**: a superset of the floor `DataTable` column contract: multi-column filter
   builder, single-column sort, row grouping with per-group aggregation, column show/hide + pin-left,
   CSV export, saved views, and fixed-height row virtualization for large sets.
-- **TreePro** — a virtualized tree for large hierarchies with lazy-loaded children and keyboard
+- **TreePro**: a virtualized tree for large hierarchies with lazy-loaded children and keyboard
   navigation.
-- **OpsMatrix** — a coverage matrix for permissions, controls, and SKU comparisons.
-- **AuditTimeline** — a hash-chain event timeline with per-link verification badges.
-- **PayloadViewer** — a redaction-aware JSON viewer with a collapsible tree, copy, and path masking.
-- **TypeToConfirm** — a destructive-action dialog armed by retyping the resource name, with a
+- **OpsMatrix**: a coverage matrix for permissions, controls, and SKU comparisons.
+- **AuditTimeline**: a hash-chain event timeline with per-link verification badges.
+- **PayloadViewer**: a redaction-aware JSON viewer with a collapsible tree, copy, and path masking.
+- **TypeToConfirm**: a destructive-action dialog armed by retyping the resource name, with a
   busy → ok/warn/err result lifecycle.
-- **DateRangePicker** — a range picker with fiscal-quarter and billing-cycle presets, a comparison
+- **DateRangePicker**: a range picker with fiscal-quarter and billing-cycle presets, a comparison
   range, and timezone-aware output.
-- **CommandPalette**, **DiffViewer**, **KanbanBoard** — a ⌘K fuzzy command menu, a redaction-aware
+- **CommandPalette**, **DiffViewer**, **KanbanBoard**: a ⌘K fuzzy command menu, a redaction-aware
   diff viewer, and a drag-drop board.
-- **Tooltip**, **Popover**, **Menu** — the focus-managed/positioning-hard interactive primitives
+- **Tooltip**, **Popover**, **Menu**: the focus-managed/positioning-hard interactive primitives
   that stay commercial (Tabs/Checkbox/Radio/Switch/Badge/Accordion are the open-base counterparts;
   the dialog-class primitive is the open `@caisson/ui` `Dialog`, not a ui-pro component).
 
 Every interactive component ships full keyboard navigation, correct ARIA roles and labels, and
-focus management (trap and restore in overlays) — a launch requirement, not a polish item.
+focus management (trap and restore in overlays), a launch requirement, not a polish item.
 
 ## Install
 
@@ -41,7 +41,7 @@ bun add @caisson/ui-pro
 ```
 
 Components ship as raw `.tsx` with co-located CSS. In a Next application, add the package to
-`transpilePackages` and import the token stylesheet from `@caisson/ui` once at the root — the same
+`transpilePackages` and import the token stylesheet from `@caisson/ui` once at the root, the same
 delivery model as the open floor it builds on.
 
 ```ts
@@ -115,7 +115,7 @@ import { TypeToConfirm } from "@caisson/ui-pro/components";
 
 ## An audit-chain timeline
 
-`AuditTimeline` renders `ChainEntry`-shaped rows with per-link verification badges — it takes chain
+`AuditTimeline` renders `ChainEntry`-shaped rows with per-link verification badges, it takes chain
 entries as props with no runtime coupling to a store, pairing naturally with `@caisson/audit-worm`:
 
 ```tsx
@@ -143,16 +143,16 @@ const actions: readonly CommandAction[] = [
 
 ## Pure transforms
 
-The sellable logic behind the interactive components — filtering, sorting, grouping, CSV export,
+The sellable logic behind the interactive components, filtering, sorting, grouping, CSV export,
 tree flattening, chain verification, redaction, date-range presets, fuzzy matching, JSON/line diff,
-floating-position math, and kanban card movement — ships as pure functions exported alongside the
+floating-position math, and kanban card movement, ships as pure functions exported alongside the
 components (`table-ops`, `virtual`, `tree`, `audit-chain`, `redact`, `date-presets`, `charts`,
 `fuzzy`, `diff`, `board`, `position`), for direct testing and server-side reuse without pulling in
 React.
 
 ## Composing with the base
 
-`@caisson/ui-pro` depends only on `@caisson/ui` (`workspace:*`) — every component reads the same
+`@caisson/ui-pro` depends only on `@caisson/ui` (`workspace:*`), every component reads the same
 `--cs-*` token contract, so a brand re-skin at the base floor propagates through the whole tier with
 no forking. `DataTablePro` extends the floor `DataTable`'s column/row contract rather than replacing
 it; `TypeToConfirm` builds on the floor `Dialog` (native `<dialog>`, focus trap, Escape, focus

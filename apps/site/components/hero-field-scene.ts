@@ -65,7 +65,7 @@ const DARK: Palette = {
 const LIGHT: Palette = {
   rod: "#b7bfc2", // oklch(0.80 0.010 220) — border-strong (darker than the near-white bg)
   rodDeep: "#eaeff1", // oklch(0.95 220) — surface-2, fades toward bg #fafcfd at the bottom
-  accent: "#007491", // oklch(0.50 0.13 215) — light-theme accent
+  accent: "#00718e", // oklch(0.49 0.13 215) — light-theme accent (re-pointed, ADR-0374)
   opacity: 0.36,
 };
 

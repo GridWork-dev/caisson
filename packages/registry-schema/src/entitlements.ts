@@ -80,8 +80,14 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the SAME change that first indexes its package — its bare slug then resolves through the
  * ordinary indexed-module branch below.
  *
- * Currently reserved: nothing — `agent-usage` graduated at the 2026-07-18 full-catalog consume
- * (its first index entry), leaving the set empty per the rule above.
+ * Currently reserved: none. The 2026-07-20 compliance-gap arming quartet — `access-review`,
+ * `risk-register`, `trust-page`, and `artifact-render` (published-never-sold render substrate,
+ * the platform-reads/pricebook posture) — graduated in this same version cut: the cut created
+ * their first index entries (each at 0.2.0), so per the rule above their reservations leave in
+ * the change that acknowledges those entries. Index presence is not sellability: the three SKUs
+ * stay `sellable: false` until the post-publish membership PR flips them, and artifact-render
+ * is never sold.
+ * `agent-usage` graduated at the 2026-07-18 full-catalog consume (its first index entry).
  * Prior graduations: `agent-trajectory` graduated 2026-07-17 — the slice-1 changeset
  * consume auto-ledgered/indexed `@caisson/agent-trajectory@0.2.0`, so per the rule above its
  * reservation left in the change that acknowledged that first index entry. Index presence is NOT

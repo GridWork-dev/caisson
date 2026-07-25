@@ -221,15 +221,22 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
       const { ctx, page } = await newPage(DESKTOP);
       try {
         await goto(page, "/docs");
-        // exactly ONE main landmark (lighthouse `landmark-one-main`), and it IS the skip target
+        // exactly ONE main landmark (lighthouse `landmark-one-main`), and it IS the skip target.
+        // `main, [role="main"]`, not bare `main` (ADR-0374 W1): docs/[[...slug]]/page.tsx passes
+        // `role="main"` onto fumadocs' own `<article>` rather than wrapping it in a literal
+        // `<main>` (a wrapper there breaks fumadocs' CSS Grid `[grid-area:*]` layout — the P0 this
+        // wave fixed). Every OTHER route group still renders a literal `<main id="main-content">`
+        // with no `role` attribute, so the two arms of this selector never both match on any one
+        // page — no double-count risk.
+        const mainLandmark = page.locator('main, [role="main"]');
         expect(
-          await page.locator("main").count(),
-          "docs must render exactly one <main> landmark",
+          await mainLandmark.count(),
+          "docs must render exactly one main landmark",
         ).toBe(1);
         expect(
-          await page.locator("main#main-content").count(),
+          await mainLandmark.first().getAttribute("id"),
           "the main landmark must be the #main-content skip target",
-        ).toBe(1);
+        ).toBe("main-content");
 
         // the skip link is the document's FIRST focusable, and activating it moves focus (not
         // just the hash) — `tabIndex={-1}` on the landmark makes it the fragment focus target.
@@ -511,9 +518,10 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
         await preview.press("Enter");
         // precondition, asserted loudly: if the catalog/media manifest ever trims Compliance to
         // a single slide, fail with THIS message instead of an opaque arrow-locator timeout —
-        // the fix is to point the test at another multi-slide entry.
+        // the fix is to point the test at another multi-slide entry. Scoped to the carousel:
+        // the marketplace filter toolbar carries its own (collapsed-on-mobile) role="group".
         await page
-          .locator('[role="group"]')
+          .locator('[aria-roledescription="carousel"] [role="group"]')
           .first()
           .waitFor({ state: "visible", timeout: 10_000 })
           .catch(() => {

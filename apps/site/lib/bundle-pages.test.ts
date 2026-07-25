@@ -3,7 +3,7 @@
 // content-free. Keeps the pop-out and the standalone pages reading the same non-drifting source.
 import { describe, expect, test } from "bun:test";
 
-import { BUNDLE_PAGES, bundlePageRecord } from "./bundle-pages";
+import { BUNDLE_PAGES, bundlePageRecord, spellCount } from "./bundle-pages";
 import {
   bundlePrice,
   BUNDLE_PRICES,
@@ -79,6 +79,14 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
     }
   });
 
+  test("the ai-production lede's member count matches the members it enumerates", () => {
+    // The lede's closing sentence says "all seven modules below" and names each one; a member
+    // add/remove would silently desync it (the four-vs-seven class the live re-audit caught).
+    const record = bundlePageRecord("ai-production");
+    expect(record?.members.length).toBe(7);
+    expect(record?.hero.lede).toContain("all seven modules");
+  });
+
   test("provenance members mirror modulesByBundle ids + labels (rendered from the record)", () => {
     const record = bundlePageRecord("provenance");
     const members = modulesByBundle("provenance");
@@ -107,5 +115,15 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
         .sort();
       expect(recordedSellable).toEqual(real);
     }
+  });
+
+  test("every bundle's member count spells out correctly, and out-of-range falls back to a numeral", () => {
+    for (const r of BUNDLE_PAGES) {
+      if (r.slug === "everything") continue;
+      expect(spellCount(r.members.length)).not.toBe(String(r.members.length));
+    }
+    expect(spellCount(0)).toBe("Zero");
+    expect(spellCount(13)).toBe("Thirteen");
+    expect(spellCount(16)).toBe("16");
   });
 });

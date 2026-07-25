@@ -117,21 +117,21 @@ const CONTROLS: readonly {
   {
     icon: "rls",
     title: "Fail-closed RLS",
-    body: "Every tenant table enables AND forces row-level security, so the policy binds the owner too — no privileged path around it. A query that never set the tenant context returns nothing, not everything.",
+    body: "Every tenant table enables AND forces row-level security, so the policy binds the owner too, no privileged path around it. A query that never set the tenant context returns nothing, not everything.",
     tags: ["SOC 2 CC6.1", "HIPAA §164.312(a)(1)"],
     proof: "SELECT count(*) FROM invoices;  →  ERROR: app.tenant_id not set",
   },
   {
     icon: "worm",
     title: "WORM evidence storage",
-    body: "Evidence buckets ship with S3 Object Lock in COMPLIANCE mode and a default retention. Inside the window an object cannot be overwritten or deleted — not by a bug, not by an operator, not by a leaked root key.",
+    body: "Evidence buckets ship with S3 Object Lock in COMPLIANCE mode and a default retention. Inside the window an object cannot be overwritten or deleted, not by a bug, not by an operator, not by a leaked root key.",
     tags: ["HIPAA §164.312(c)(1)", "SOC 2 CC7.2"],
     proof: "delete-object  →  AccessDenied: WORM-protected until 2033-06-27Z",
   },
   {
     icon: "audit-chain",
     title: "Append-only audit chain",
-    body: "Each audit row commits SHA-256 over the previous hash plus its own payload. Tampering with any historical row breaks every link after it — and the break is detectable, provable, and exportable for an auditor.",
+    body: "Each audit row commits SHA-256 over the previous hash plus its own payload. Tampering with any historical row breaks every link after it, and the break is detectable, provable, and exportable for an auditor.",
     tags: ["HIPAA §164.312(b)", "SOC 2 CC7.2"],
     proof: "caisson audit verify  →  41984 rows · 0 breaks · root 2c9f…b7",
   },
@@ -145,7 +145,7 @@ const CONTROLS: readonly {
   {
     icon: "evidence-pack",
     title: "Evidence-pack generator",
-    body: "Collects the live RLS policies, the WORM retention config, and an audit-chain proof, maps them to named controls, and writes a dated bundle. The evidence comes from the system that enforces it — not a spreadsheet.",
+    body: "Collects the live RLS policies, the WORM retention config, and an audit-chain proof, maps them to named controls, and writes a dated bundle. The evidence comes from the system that enforces it, not a spreadsheet.",
     tags: ["SOC 2 · HIPAA mapping"],
     proof:
       "soc2-evidence-2026-06-28/: rls-policies.json · worm-retention.json · audit-chain-proof.json",
@@ -162,7 +162,7 @@ const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 export default function CompliancePage() {
   const heroArtifact: ReactNode = (
     <Terminal
-      label="psql — tenant isolation"
+      label="psql, tenant isolation"
       status={<StatusChip label="denied" tone="muted" dot />}
     >
       {`$ psql -c "select * from invoices"\n`}
@@ -211,7 +211,7 @@ export default function CompliancePage() {
       />
 
       {/* ===== Hero ===== */}
-      {/* data-vt-hero: Door Morph landing pad (ADR-0334 moment 3) — the home compliance door
+      {/* data-vt-hero: Door Morph landing pad (ADR-0334 moment 3), the home compliance door
           chip morphs into this hero's eyebrow; global.css assigns the view-transition-name. */}
       <div data-vt-hero="door-compliance">
         <Hero
@@ -237,7 +237,7 @@ export default function CompliancePage() {
                 "WORM evidence",
                 "Append-only audit",
               ]}
-              note="Caisson generates the evidence — the certification is your auditor's call, not ours. Support is included with every license: a real person on email and Discord, business-days response."
+              note="Caisson generates the evidence, the certification is your auditor's call, not ours. Support is included with every license: a real person on email and Discord, business-days response."
             />
           }
           artifact={heroArtifact}
@@ -247,8 +247,8 @@ export default function CompliancePage() {
       {/* ===== What it composes ===== */}
       <Reveal>
         <Section
-          eyebrow="What it composes"
-          lede="The Compliance bundle is a real runtime composition of ten @caisson/* packages, not a bundle of marketing copy: kernel (typed config, the SHA-256 chain primitive, append-only versioning), tenancy-rls (the fail-closed RLS guard), field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption), audit-worm (the append-only audit chain plus the S3 Object-Lock WORM adapter), migrate (the one migration assembler and runner, forward-only and checksum-drift-safe), alerting plus retention-runner (deduped alert delivery and policy-driven data retention), and the three carves — compliance-core (the evidence engine), frameworks-pack (the SOC 2 and HIPAA control mappings, PCI DSS and GDPR crosswalk exports, and OSCAL export), and signing-primitive (detached Ed25519 + RFC-3161 signing). alerting and retention-runner are wired in as real workspace dependencies and re-exported through the bundle's own index, not asserted in a manifest and left uncomposed."
+          title="What it composes"
+          lede="The Compliance bundle's core is a real runtime composition of ten @caisson/* packages, not a bundle of marketing copy: kernel (typed config, the SHA-256 chain primitive, append-only versioning), tenancy-rls (the fail-closed RLS guard), field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption), audit-worm (the append-only audit chain plus the S3 Object-Lock WORM adapter), migrate (the one migration assembler and runner, forward-only and checksum-drift-safe), alerting plus retention-runner (deduped alert delivery and policy-driven data retention), and the three carves, compliance-core (the evidence engine), frameworks-pack (the SOC 2 and HIPAA control mappings, PCI DSS and GDPR crosswalk exports, and OSCAL export), and signing-primitive (detached Ed25519 + RFC-3161 signing). alerting and retention-runner are wired in as real workspace dependencies and re-exported through the bundle's own index, not asserted in a manifest and left uncomposed. The purchase also includes three standalone compliance modules that run beside the composed core: access-review (attested access-review campaigns), risk-register (the AI risk register), and trust-page (the customer-facing trust page)."
         />
       </Reveal>
 
@@ -260,12 +260,11 @@ export default function CompliancePage() {
         />
       </Section>
 
-      {/* ===== The ten composed packages ===== */}
+      {/* ===== The thirteen member packages ===== */}
       <Reveal>
         <Section
-          eyebrow="The composition"
-          title="Ten packages, one bundle."
-          lede="Each member is a real workspace dependency — not a manifest claim. The ones also sold standalone carry their own price."
+          title="Thirteen packages, one bundle."
+          lede="Ten members form the composed runtime core, real workspace dependencies, not manifest claims. The other three are standalone compliance modules included in the same purchase. The ones also sold standalone carry their own price."
         >
           <FeatureGrid cols={3}>
             {MEMBER_MODULES.map((m) => (
@@ -278,9 +277,8 @@ export default function CompliancePage() {
       {/* ===== Who it's for ===== */}
       <Reveal>
         <Section
-          eyebrow="Who it's for"
           title="Teams that need the controls before the first customer, not after."
-          lede="Teams building regulated SaaS — HIPAA, SOC 2, or both — who need the technical access and integrity controls in place before the first customer shares a row, not backfilled after a pen test or a procurement questionnaire flags the gap. Retrofitting RLS, WORM, and an audit chain into a live multi-tenant database is a migration with customer data on the line; wiring them in on day one is a schema decision."
+          lede="Teams building regulated SaaS (HIPAA, SOC 2, or both) who need the technical access and integrity controls in place before the first customer shares a row, not backfilled after a pen test or a procurement questionnaire flags the gap. Retrofitting RLS, WORM, and an audit chain into a live multi-tenant database is a migration with customer data on the line; wiring them in on day one is a schema decision."
           band="tint"
         >
           <Card accent className="cs-elevate-md">
@@ -295,7 +293,7 @@ export default function CompliancePage() {
               SOC 2 from scratch runs <span className="cs-num">$80k</span> and{" "}
               <span className="cs-num">6–9 months</span>. Retrofitting RLS,
               WORM, and an audit chain into a <em>live</em> multi-tenant
-              database is months more — a migration with customer data on the
+              database is months more, a migration with customer data on the
               line.
             </p>
             <p
@@ -307,10 +305,10 @@ export default function CompliancePage() {
               it is just how the schema is built.
             </p>
           </Card>
-          {/* CAISSON-99: the retrofit-cost card's reactive sibling — the unplanned crisis-sprint
+          {/* CAISSON-99: the retrofit-cost card's reactive sibling, the unplanned crisis-sprint
               cost. Scene drawn from the interviewed leads' own accounts (Cookiy 45-transcript
               compliance buying-journey study); interview-attributed, never a case study
-              (ADR-0319 R5 — no customer stories until design-partner conversions exist). */}
+              (ADR-0319 R5, no customer stories until design-partner conversions exist). */}
           <Card style={{ marginTop: "var(--cs-space-5)" }}>
             <p
               style={{
@@ -322,7 +320,7 @@ export default function CompliancePage() {
             >
               The unplanned version of that bill: across our interviews,
               prospect and partner reviews kept triggering the same reactive
-              sprint. One engineering lead&rsquo;s week — an enterprise prospect
+              sprint. One engineering lead&rsquo;s week, an enterprise prospect
               asks for a 90-day audit export, the logs are missing admin
               actions, and the roadmap loses a{" "}
               <span className="cs-num">war-room week</span> with the deal on the
@@ -332,7 +330,7 @@ export default function CompliancePage() {
               className="cs-muted"
               style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
             >
-              Those reviews ask for what this bundle ships — the audit chain,
+              Those reviews ask for what this bundle ships, the audit chain,
               immutable logs, the evidence export. Install the controls before
               the deal that demands them.
             </p>
@@ -343,7 +341,6 @@ export default function CompliancePage() {
       {/* ===== The five controls (evidence cards) ===== */}
       <Reveal>
         <Section
-          eyebrow="What ships in the box"
           title="Five technical controls, each with its proof."
           lede="No diagrams standing in for behaviour. The artifact carries the claim, and each control names the framework clause it satisfies."
         >
@@ -404,9 +401,8 @@ export default function CompliancePage() {
       {/* ===== Honesty boundary: technical vs administrative ===== */}
       <Reveal>
         <Section
-          eyebrow="The honesty boundary"
           title="Caisson ships the controls. Your auditor signs the certificate."
-          lede="Caisson ships the technical controls SOC 2 CC6.x / CC7.2 and HIPAA §164.312 require, and generates the dated evidence bundle mapped to those named controls. It does not — and cannot — make you certified: the administrative controls (HR, vendor management, incident response) and the audit engagement itself stay with you and your auditor."
+          lede="Caisson ships the technical controls SOC 2 CC6.x / CC7.2 and HIPAA §164.312 require, and generates the dated evidence bundle mapped to those named controls. It does not (and cannot) make you certified: the administrative controls (HR, vendor management, incident response) and the audit engagement itself stay with you and your auditor."
           band="surface"
         >
           <FeatureGrid cols={2}>
@@ -452,7 +448,7 @@ export default function CompliancePage() {
                 }}
               >
                 <li>
-                  Administrative controls — HR, vendor management, incident
+                  Administrative controls, HR, vendor management, incident
                   response.
                 </li>
                 <li>The audit engagement and the certification itself.</li>
@@ -470,12 +466,12 @@ export default function CompliancePage() {
             Why the ownership line matters: in March 2026 a venture-backed
             compliance-automation vendor was publicly accused of delivering
             AI-fabricated SOC 2 reports to hundreds of customers (TechCrunch,
-            2026-03-22). Whatever that case resolves to, the lesson stands —
+            2026-03-22). Whatever that case resolves to, the lesson stands:
             evidence you cannot verify independently is a promise, not proof.
             Caisson&rsquo;s audit chain is hash-linked and anchored write-once
             outside your database, and its evidence packs are deterministic to
             the byte, so your auditor verifies integrity without trusting any
-            vendor — including us.{" "}
+            vendor, including us.{" "}
             <a href="/compare/delve">Read the dated comparison</a>.
           </p>
         </Section>
@@ -484,7 +480,6 @@ export default function CompliancePage() {
       {/* ===== How it's proven: the real CI conformance gate + precise scope ===== */}
       <Reveal>
         <Section
-          eyebrow="How compliance is proven"
           title="The evidence format is schema-checked in CI, on every push."
           lede="Not a claim you take on trust: every push runs an OSCAL conformance gate. The evidence pack is exported to NIST OSCAL v1.2.2 and round-tripped JSON → XML → schema-validate against the published OSCAL schema, so a malformed or drifted export fails the build before it ships."
           band="tint"
@@ -515,12 +510,12 @@ export default function CompliancePage() {
               style={{ marginTop: "var(--cs-space-4)", maxWidth: "72ch" }}
             >
               Precise scope: this gate proves the evidence pack conforms to the
-              NIST OSCAL schema — structure and well-formedness — so the export
-              is machine-readable by any tool that speaks OSCAL. It is a
-              self-run conformance check on Caisson&rsquo;s own export format,
-              not a third-party assessment. No external body assesses or
-              certifies Caisson or your deployment; that engagement stays with
-              your auditor.
+              NIST OSCAL schema (structure and well-formedness) so the export is
+              machine-readable by any tool that speaks OSCAL. It is a self-run
+              conformance check on Caisson&rsquo;s own export format, not a
+              third-party assessment. No external body assesses or certifies
+              Caisson or your deployment; that engagement stays with your
+              auditor.
             </p>
           </Card>
         </Section>
@@ -528,21 +523,14 @@ export default function CompliancePage() {
 
       {/* ===== FAQ (visible + JSON-LD) ===== */}
       <Reveal>
-        <Section
-          eyebrow="Procurement questions"
-          title="What a security review asks first."
-        >
+        <Section title="What a security review asks first.">
           <Faq items={FAQ} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
       </Reveal>
 
       {/* ===== Pricing / how it ships ===== */}
       <Reveal>
-        <Section
-          eyebrow="How Compliance is sold"
-          title="Own the source, or track the frameworks."
-          band="tint"
-        >
+        <Section title="Own the source, or track the frameworks." band="tint">
           <Card accent className="cs-elevate-md">
             <div
               style={{
@@ -571,9 +559,9 @@ export default function CompliancePage() {
             >
               A one-time, perpetual license: bunx @caisson-sh/cli@latest
               scaffolds the base with tenancy-rls fail-closed and the standards
-              gate passing, and the five evidence collectors — RLS-force,
+              gate passing, and the five evidence collectors, RLS-force,
               chain-verify, WORM-retention, field-crypto-policy, and the
-              impersonation collector — are already wired into the SOC 2, HIPAA,
+              impersonation collector, are already wired into the SOC 2, HIPAA,
               and EU-AI-Act evidence packs. The pack format includes an OSCAL
               v1.2.2 export (canonical JSON plus an XML conversion path)
               alongside Ed25519 and RFC-3161 signing.{" "}
@@ -591,10 +579,10 @@ export default function CompliancePage() {
             </div>
           </Card>
           {/* CAISSON-98: the buyers'-own-estimate ROI frame beside the price (Cookiy study
-              019f4a11) — attributed to the interviews, never asserted as a benchmark. */}
+              019f4a11), attributed to the interviews, never asserted as a benchmark. */}
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
             Buyers we interviewed put building these foundations in-house at
-            four to eight engineering-weeks — the translation most sign-offs
+            four to eight engineering-weeks, the translation most sign-offs
             actually run on. The license price is a one-time number against that
             build.
           </p>
@@ -604,9 +592,8 @@ export default function CompliancePage() {
       {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
       <Reveal>
         <Section
-          eyebrow="Trial path"
           title="Prove fit in week one."
-          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />
@@ -615,7 +602,7 @@ export default function CompliancePage() {
       </Reveal>
 
       {/* ===== Get started ===== */}
-      <Section eyebrow="Get started" title="Start fail-closed.">
+      <Section title="Start fail-closed.">
         <div style={{ maxWidth: "36rem", marginTop: "var(--cs-space-6)" }}>
           <Terminal
             label="shell"

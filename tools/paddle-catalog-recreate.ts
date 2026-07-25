@@ -400,14 +400,16 @@ function selfCheck(): void {
   const plan = buildPlan();
   const byKind = (k: ProductKind) => plan.filter((p) => p.kind === k);
   assert.equal(byKind("bundle").length, 6, "expected 6 bundles");
-  assert.equal(byKind("module").length, 22, "expected 22 modules");
+  // 26 = the 22 of the sandbox big-bang era + agent-trajectory (2026-07-18, which shipped
+  // without bumping this pin) + the compliance-gap trio (access-review/risk-register/trust-page).
+  assert.equal(byKind("module").length, 26, "expected 26 modules");
   assert.equal(byKind("subscription").length, 2, "expected 2 subscriptions");
   assert.equal(
     byKind("renewal-parent").length,
     1,
     "expected 1 renewal product",
   );
-  assert.equal(plan.length, 31, "expected 31 products total");
+  assert.equal(plan.length, 35, "expected 35 products total");
 
   for (const prod of plan) {
     assert.equal(
@@ -426,14 +428,15 @@ function selfCheck(): void {
   // Pin the money math against the runbook §2.2 locked numbers.
   const bundleCents = (id: string) =>
     byKind("bundle").find((p) => p.caissonId === id)?.prices[0]?.amountCents;
-  assert.equal(bundleCents("compliance"), 104900, "compliance = $1,049.00");
+  assert.equal(bundleCents("compliance"), 144900, "compliance = $1,449.00");
   assert.equal(bundleCents("everything"), 205900, "everything = $2,059.00");
 
   const renewalCents = (id: string) =>
     byKind("renewal-parent")[0]?.prices.find((pr) => pr.key === `renew:${id}`)
       ?.amountCents;
-  // ADR-0260 §5 flat-40%-X9 renewal ladder (runbook: $419/$289/$249/$129/$159/$819).
-  assert.equal(renewalCents("compliance"), 41900, "compliance renewal = $419");
+  // ADR-0260 §5 flat-40%-X9 renewal ladder (runbook: $579/$289/$249/$129/$159/$819 —
+  // compliance moved $419 → $579 with the bundle's reprice to $1,449).
+  assert.equal(renewalCents("compliance"), 57900, "compliance renewal = $579");
   assert.equal(renewalCents("everything"), 81900, "everything renewal = $819");
   assert.equal(
     renewalCents("agentic-dev"),
@@ -452,7 +455,7 @@ function selfCheck(): void {
   assert.equal(subCents("developer"), 49900, "developer = $499/yr");
 
   out(
-    "self-check OK — 31 products, money math pinned to the runbook §2.2 catalog.",
+    "self-check OK — 35 products, money math pinned to the runbook §2.2 catalog.",
   );
 }
 

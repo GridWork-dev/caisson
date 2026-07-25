@@ -55,12 +55,12 @@ const FAQ_ITEMS = [
   {
     question: "Is the license a one-time purchase or a subscription?",
     answer:
-      "One-time for the license, time-boxed for updates. The perpetual license fee is a single charge per bundle or module: the license doesn't expire, doesn't require renewal, and verifies offline — no call home required. Your purchase includes 12 months of registry updates from the Order date; after that, you can renew updates access for another 12 months at 40% of the then-current list price, or let it lapse with no penalty to the code you already have. Compliance Updates is a separate, optional, recurring subscription that layers on ongoing framework-mapping updates; skipping either one never affects the perpetual license you already hold.",
+      "One-time for the license, time-boxed for updates. The perpetual license fee is a single charge per bundle or module: the license doesn't expire, doesn't require renewal, and verifies offline: no call home required. Your purchase includes 12 months of registry updates from the Order date; after that, you can renew updates access for another 12 months at 40% of the then-current list price, or let it lapse with no penalty to the code you already have. Compliance Updates is a separate, optional, recurring subscription that layers on ongoing framework-mapping updates; skipping either one never affects the perpetual license you already hold.",
   },
   {
     question: "What's the refund policy?",
     answer:
-      "Every purchase comes with an unconditional 14-day money-back guarantee. Request a refund within 14 days for any reason — whether or not you've downloaded or used the software, and regardless of location or consumer/business status — and you get a full refund. Email support@caisson.sh with your order number, or contact Paddle directly at paddle.net. Paddle, as merchant of record, returns the payment to your original method. An approved refund revokes the entitlement it granted and returns unused credits; a multi-item order can be refunded line by line.",
+      "Every purchase comes with an unconditional 14-day money-back guarantee. Request a refund within 14 days for any reason (whether or not you've downloaded or used the software, and regardless of location or consumer/business status) and you get a full refund. Email support@caisson.sh with your order number, or contact Paddle directly at paddle.net. Paddle, as merchant of record, returns the payment to your original method. An approved refund revokes the entitlement it granted and returns unused credits; a multi-item order can be refunded line by line.",
   },
   {
     question: "How do I request security documentation?",
@@ -113,7 +113,7 @@ export default function ProcurementPage() {
       />
 
       {/* ===== The boundary statement ===== */}
-      <Section band="tint" eyebrow="The boundary">
+      <Section band="tint">
         <Card accent>
           <p
             style={{
@@ -139,18 +139,10 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== Technical controls ===== */}
-      <Section
-        eyebrow="Technical controls"
-        title="Compliance bundle: what it ships."
-      >
+      <Section title="Compliance bundle: what it ships.">
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
-            gap: "var(--cs-space-4)",
-            marginTop: "var(--cs-space-8)",
-          }}
+          className="cs-grid cs-grid--2"
+          style={{ marginTop: "var(--cs-space-8)" }}
         >
           {WHAT_CAISSON_SHIPS.map((item, i) => (
             <Reveal key={item.label} delay={i * 50} as="article">
@@ -196,11 +188,7 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== Who you're buying from ===== */}
-      <Section
-        band="tint"
-        eyebrow="Who you're buying from"
-        title="The entity and the licensing relationship."
-      >
+      <Section band="tint" title="The entity and the licensing relationship.">
         <p className="cs-lede">
           Caisson is licensed to you by Caisson Software LLC, based in Atlanta,
           Georgia. That&rsquo;s the party behind the software: it owns the
@@ -221,10 +209,7 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== Invoicing & merchant of record ===== */}
-      <Section
-        eyebrow="Invoicing & billing"
-        title="Paddle is the merchant of record."
-      >
+      <Section title="Paddle is the merchant of record.">
         <p className="cs-lede">
           Every order runs through Paddle.com, Caisson&rsquo;s merchant of
           record. Paddle collects payment, calculates and remits sales tax and
@@ -247,8 +232,8 @@ export default function ProcurementPage() {
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
           Refunds: every purchase comes with an unconditional 14-day money-back
           guarantee. Request a refund within 14 days for any reason and you get
-          a full refund &mdash; whether or not you&rsquo;ve downloaded or used
-          the software, and regardless of location or consumer/business status.
+          a full refund, whether or not you&rsquo;ve downloaded or used the
+          software, and regardless of location or consumer/business status.
           Paddle, as merchant of record, returns the payment to your original
           method. An approved refund revokes the entitlement it granted and
           returns unused credits; access and credits already used aren&rsquo;t
@@ -264,23 +249,14 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== Documentation requests ===== */}
-      <Section
-        band="tint"
-        eyebrow="Documentation requests"
-        title="How to request security and tax docs."
-      >
+      <Section band="tint" title="How to request security and tax docs.">
         <p className="cs-lede">
           We respond to documented requests from security reviewers and
           procurement teams within 5 business days.
         </p>
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fill, minmax(min(100%, 260px), 1fr))",
-            gap: "var(--cs-space-4)",
-            marginTop: "var(--cs-space-8)",
-          }}
+          className="cs-grid cs-grid--3"
+          style={{ marginTop: "var(--cs-space-8)" }}
         >
           {[
             {
@@ -342,12 +318,12 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== FAQ ===== */}
-      <Section eyebrow="Procurement FAQ" title="Common questions.">
+      <Section title="Common questions.">
         <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-8)" }} />
       </Section>
 
       {/* ===== Contact nudge ===== */}
-      <Section band="surface" eyebrow="Get started">
+      <Section band="surface" title="Get started">
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-5)" }}>
           For security documentation, procurement questionnaires, W-9 requests,
           or to discuss the technical controls in detail, email{" "}
@@ -358,7 +334,11 @@ export default function ProcurementPage() {
           <a href="mailto:support@caisson.sh" className="cs-link">
             support@caisson.sh
           </a>{" "}
-          (contracts, tax, entity). Ready to purchase or evaluate? See pricing.
+          (contracts, tax, entity). Ready to purchase or evaluate?{" "}
+          <a href="/marketplace" className="cs-link">
+            See pricing
+          </a>
+          .
         </p>
         <div
           style={{

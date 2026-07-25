@@ -5,16 +5,16 @@ description: Install the base, wire a tenant, and run the standards gate.
 
 ## Requirements
 
-- **Bun** (the runtime and package manager — never npm or yarn).
+- **Bun** (the runtime and package manager, never npm or yarn).
 - **Postgres** (Neon over HTTP is the reference host; the data layer is swappable).
 - A Postgres database you can run migrations against.
 
 ## Get your license key
 
-A license is issued automatically the first time you complete a purchase — find it at
+A license is issued automatically the first time you complete a purchase, find it at
 [`/dashboard/license`](/dashboard/license): one offline-verifiable Ed25519 token per major
 version, with a copy-token button. Verify it anytime, offline, with `verifyLicense()` from
-`@caisson/license-verify` — no network call required.
+`@caisson/license-verify`: no network call required.
 
 ## Install
 
@@ -25,14 +25,14 @@ bunx @caisson-sh/cli@latest
 With no flags, `create-caisson` runs **interactively** in a terminal (TTY): it prompts for a
 licensed build vs. the free Apache-2.0 sample vs. the full-catalog demo, then your project name
 and module selection. A scripted, non-interactive run needs an explicit `--name` plus either
-`--edition <bundle>` — which auto-selects the bundle's current modules — or at least one
+`--edition <bundle>` (which auto-selects the bundle's current modules) or at least one
 `--module <id@version>` (repeatable; also overrides or extends an edition's auto-selection).
 Run `bunx @caisson-sh/cli@latest --help` for the full flag reference.
 
 **Free, no license key:** `--sample` and `--demo` need no module selection and no
 `CAISSON_LICENSE_TOKEN`. `--sample` installs only public-npm Apache-2.0 packages; `--demo`
 composes the full catalog with every commercial module replaced by a local stub, and its
-generated `.npmrc` still maps `@caisson:registry` to `registry.caisson.sh` — tokenless, since that
+generated `.npmrc` still maps `@caisson:registry` to `registry.caisson.sh`: tokenless, since that
 registry serves the open module set to an unauthenticated request.
 
 ```bash
@@ -42,7 +42,7 @@ bun install
 ```
 
 **Licensed install:** every other generated project ships a `.npmrc` pointing `@caisson:registry`
-at `registry.caisson.sh` with the auth token read from `CAISSON_LICENSE_TOKEN` — export your
+at `registry.caisson.sh` with the auth token read from `CAISSON_LICENSE_TOKEN`: export your
 dashboard license key under that name before `bun install`.
 
 ```bash
@@ -55,7 +55,7 @@ bun install
 ### Pin an exact install
 
 A `create-caisson` run carries two independent pins: which release of the generator you run, and
-which exact version of each module it resolves. Neither accepts a range — every version string is
+which exact version of each module it resolves. Neither accepts a range, every version string is
 matched byte-for-byte against the registry.
 
 **The generator release.** Each published `@caisson-sh/cli` release bundles a snapshot of the
@@ -68,7 +68,7 @@ bunx @caisson-sh/cli@0.4.0 --name my-app --module @caisson/kernel@1.4.0
 
 `@latest` always resolves against the newest snapshot; pin an explicit npm version (`@0.4.0`) to
 freeze the catalog a script runs against. `CAISSON_REGISTRY_INDEX=<path>` points the generator at a
-different index file entirely — a CI/local-dev override, not part of a normal install.
+different index file entirely, a CI/local-dev override, not part of a normal install.
 
 **`--module <id@version>`.** Repeat the flag once per package:
 
@@ -80,10 +80,10 @@ bunx @caisson-sh/cli@latest --name my-app \
 
 - Each value splits on the **last** `@`, so a scoped id (`@caisson/kernel`) keeps its leading `@`;
   a value with no `@` after position 0 fails immediately (`--module expects <id@version>`).
-- `version` is not a semver range — it must equal one of that module's published versions exactly.
+- `version` is not a semver range, it must equal one of that module's published versions exactly.
   `^1.4.0`, `~1.4`, `1.x`, and `latest` are all rejected.
 - The same module id twice in one selection is rejected before generation runs (an ambiguous
-  "which version wins" case — `package.json` and the generated README would otherwise disagree).
+  "which version wins" case, `package.json` and the generated README would otherwise disagree).
 
 Both checks run **before** any path is built or any file touches disk, so a bad id or version never
 reaches the filesystem:
@@ -97,7 +97,7 @@ unknown version for @caisson/kernel: "9.9.9"
 
 `@caisson/cli`'s package export (`.` in `package.json`, resolving to `src/index.ts` in a Bun
 workspace or `dist/index.js` published) surfaces the same pipeline the `create-caisson` binary
-runs — for a caller that wants to validate or generate without shelling out, like the MCP server's
+runs, for a caller that wants to validate or generate without shelling out, like the MCP server's
 `generate` tool.
 
 ```ts
@@ -117,8 +117,8 @@ import {
 | ------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `parseArgs`         | `(argv: readonly string[]) => unknown`                                                                                | Turns argv into a `RawSelection`-shaped object; throws on an unknown flag or a malformed `--module` value. Never touches the registry.                      |
 | `validateSelection` | `(index: RegistryIndex, raw: unknown) => Selection`                                                                   | Zod `.strict()`-parses `raw`, then checks every module id and version against `index`. Throws on the first unknown id or version, before generation starts. |
-| `generate`          | `(index: RegistryIndex, raw: unknown, engine?: GeneratorEngine) => { selection: Selection; files: GeneratedFileSet }` | Runs `validateSelection`, then hands the result to `engine` (`templatesEngine` by default). Returns the file set in memory — no disk write.                 |
-| `runCli`            | `(argv: readonly string[], deps: { index: RegistryIndex }) => { selection: Selection; files: GeneratedFileSet }`      | `parseArgs` + `generate` in one call — the shape a programmatic caller uses.                                                                                |
+| `generate`          | `(index: RegistryIndex, raw: unknown, engine?: GeneratorEngine) => { selection: Selection; files: GeneratedFileSet }` | Runs `validateSelection`, then hands the result to `engine` (`templatesEngine` by default). Returns the file set in memory, no disk write.                 |
+| `runCli`            | `(argv: readonly string[], deps: { index: RegistryIndex }) => { selection: Selection; files: GeneratedFileSet }`      | `parseArgs` + `generate` in one call, the shape a programmatic caller uses.                                                                                |
 
 `RegistryIndex` is loaded from `@caisson/registry-schema`'s `loadRegistryIndexFromFile`, reading
 whichever path the pinning rules above resolve to. `Selection` (also exported as
@@ -137,30 +137,30 @@ type Selection = {
 Fail-closed in the generation pipeline: `generate` and `runCli` never produce a `Selection` with an
 unresolved id or version, because both call `validateSelection` first and it throws rather than
 returning a partial result. (Parsing raw input directly via the exported `SelectionSchema` skips
-that registry check — it only enforces shape.)
+that registry check, it only enforces shape.)
 
 ## Point your AI agent at Caisson
 
 Two ways a coding agent (Claude Code, Cursor, or anything that can run a terminal command) can
-drive Caisson — pick the one that matches how much wiring you want to do.
+drive Caisson, pick the one that matches how much wiring you want to do.
 
 ### Shell out to the CLI (zero setup)
 
-`create-caisson` is a plain CLI — an agent that can run a terminal command invokes it exactly like
+`create-caisson` is a plain CLI, an agent that can run a terminal command invokes it exactly like
 you would by hand:
 
 ```bash
 bunx @caisson-sh/cli@latest --name my-app --edition compliance --module <id@version>
 ```
 
-Repeat `--module` per module. `--help` prints the flag reference, not the live catalog — an agent
+Repeat `--module` per module. `--help` prints the flag reference, not the live catalog, an agent
 (or you) gets the current registry ids and exact versions from the MCP server's `list_modules`/
 `describe_module` tools (below), or from your dashboard. No extra wiring beyond the
 `CAISSON_LICENSE_TOKEN` you already export for `bun install`.
 
 ### Wire the MCP server (tool-native)
 
-`@caisson/mcp-server` is a published Apache-2.0 package — it is not a scaffold default, so add it
+`@caisson/mcp-server` is a published Apache-2.0 package, it is not a scaffold default, so add it
 to your generated project first:
 
 ```bash
@@ -169,7 +169,7 @@ bun add @caisson/mcp-server
 
 It is an auth-gated, entitlement-scoped MCP server exposing `list_modules`, `describe_module`, and
 `generate` as tools, so an agent calls them natively instead of shelling out. Host it locally over
-stdio with `runStdioServer` — one process per buyer session, the same pattern Claude Desktop /
+stdio with `runStdioServer`: one process per buyer session, the same pattern Claude Desktop /
 Claude Code use for any local stdio MCP server:
 
 ```ts
@@ -202,7 +202,7 @@ The full tool catalog, entitlement scoping, and the network-reachable HTTP trans
 
 ## Wire a tenant
 
-Every data path goes through `withTenant` — the sole entry point that sets the RLS tenant context.
+Every data path goes through `withTenant`: the sole entry point that sets the RLS tenant context.
 There is no way to query tenant data without it; that is the point.
 
 ```ts
@@ -226,6 +226,6 @@ bun run check
 
 - Read the **base substrate** docs for `auth`, `tenancy-rls`, `billing`, and `credits`.
 - Read the **Compliance** docs to turn on WORM evidence and the audit chain.
-- Bring your own framework — the `@caisson/*` packages never import one.
+- Bring your own framework, the `@caisson/*` packages never import one.
 
 <DocsCta />

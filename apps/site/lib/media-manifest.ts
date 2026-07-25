@@ -12,7 +12,7 @@
 //      concept-only items with neither a showable component nor an artifact. Bundle slides use the
 //      parametrized composition pattern (one component, fed each bundle's real member modules).
 // Where none of those apply, the brand placeholder auto-fills slide 1 — never a fabricated
-// screenshot. All 28 catalog items resolve to real media (ADR-0290) — the placeholder path stays as
+// screenshot. All 32 catalog items resolve to real media (ADR-0290/0378) — the placeholder path stays as
 // the defensive fallback for a future catalog item not yet wired in.
 import type { IconName } from "@caisson/ui/components";
 
@@ -20,35 +20,81 @@ import { BUNDLE_MARKS, moduleMark } from "./marks";
 import { MODULE_PAGES } from "./module-pages";
 import { type BundleId, BUNDLE_PRICES, isBundleId } from "./pricing";
 
-export type SlideKind = "diagram" | "component" | "code-artifact" | "image";
+export type SlideKind =
+  "diagram" | "poke" | "component" | "code-artifact" | "image";
 
-/** The authored token-styled diagram set (ADR-0285 §3 / ADR-0290) — each depicts SHIPPED behaviour
- *  only (copy law ADR-0080). The three original mechanism diagrams, the eight ADR-0290 additions,
- *  and eight more single-target mechanism diagrams closing the depth-page media gap (Kickoff G W3)
- *  for the modules whose only slide was their code artifact — which the depth page omits (WR-03),
- *  leaving the bare placeholder. */
+/** The interactive "poke" slides (ADR-0378 lock 2) — the one slide kind that genuinely owns
+ *  interactive state: a deterministic in-browser run of the module's shipped mechanism (real
+ *  WebCrypto / the package's own pure math, golden-pinned), with a tamper control and the
+ *  client-side trust line. All 25 pokes shipped (kimi §B paradigm table); ui-pro is exempt —
+ *  its live component slide IS its poke. */
+export type PokeKey =
+  | "field-crypto"
+  | "audit-worm"
+  | "ai-meter"
+  | "guardrails"
+  | "signing-primitive"
+  | "credits"
+  | "billing-orchestration"
+  | "tool-exec"
+  | "local-privacy"
+  | "org-controls"
+  | "retention-runner"
+  | "local-store"
+  | "local-sync"
+  | "local-inference"
+  | "agent-kernel"
+  | "agent-runner"
+  | "agent-trajectory"
+  | "compliance-core"
+  | "frameworks-pack"
+  | "access-review"
+  | "risk-register"
+  | "trust-page"
+  | "alerting"
+  | "ai-evals"
+  | "prompt-registry";
+
+/** The bespoke schematic set (the ADR-0377 blueprint language, completed by the ADR-0378
+ *  migrate-all wave): a blueprint linework sheet per module, a cross-section strata sheet per
+ *  bundle — each a CLAIM about shipped behaviour (copy law ADR-0080). The 24 shared mechanism
+ *  diagrams this union once carried retired when every page gained its bespoke sheet
+ *  (ADR-0377 migrate-all); their template died with them. */
 export type DiagramKey =
-  | "rls-deny"
-  | "audit-chain"
-  | "worm-lifecycle"
-  | "credits-ledger"
-  | "local-sync-merge"
-  | "local-inference-egress"
-  | "privacy-gate"
-  | "tool-exec-gate"
-  | "org-controls-mutation"
-  | "billing-provider-port"
-  | "frameworks-oscal"
-  | "alert-pipeline"
-  | "meter-reserve-reconcile"
-  | "eval-baseline-gate"
-  | "guard-fail-closed"
-  | "prompt-render-boundary"
-  | "local-hybrid-rrf"
-  | "agent-lifecycle-fsm"
-  | "runner-env-scrub"
-  | "trajectory-run-record"
-  | "retention-erasure";
+  // The ADR-0377 pilot trio.
+  | "schematic-field-crypto"
+  | "schematic-audit-worm"
+  | "schematic-compliance"
+  // The ADR-0378 migrate-all wave: the remaining 23 module sheets + 5 bundle cross-sections.
+  | "schematic-ai-meter"
+  | "schematic-guardrails"
+  | "schematic-prompt-registry"
+  | "schematic-ai-evals"
+  | "schematic-signing-primitive"
+  | "schematic-credits"
+  | "schematic-billing-orchestration"
+  | "schematic-alerting"
+  | "schematic-tool-exec"
+  | "schematic-local-privacy"
+  | "schematic-org-controls"
+  | "schematic-retention-runner"
+  | "schematic-local-store"
+  | "schematic-local-sync"
+  | "schematic-local-inference"
+  | "schematic-ui-pro"
+  | "schematic-agent-kernel"
+  | "schematic-agent-runner"
+  | "schematic-agent-trajectory"
+  | "schematic-compliance-core"
+  | "schematic-frameworks-pack"
+  | "schematic-access-review"
+  | "schematic-risk-register"
+  | "schematic-trust-page"
+  | "schematic-ai-production"
+  | "schematic-local-first"
+  | "schematic-agentic-dev"
+  | "schematic-provenance"
+  | "schematic-everything";
 
 /** The live-rendered kit components wired into a media slide (ADR-0308 full-depth, extending
  *  ADR-0290). A catalog module earns a `component` slide only when it genuinely ships a showable
@@ -79,6 +125,8 @@ export interface MediaSlide {
   /** kind === "diagram" — a bundle composition slide (the modules→bundle→base pattern) instead of
    *  an authored SVG. Mutually exclusive with `diagram`. */
   compositionBundle?: BundleId;
+  /** kind === "poke" — which interactive poke to render. */
+  poke?: PokeKey;
   /** kind === "component" — which live kit component to render. */
   component?: ComponentKey;
   /** kind === "code-artifact" — the item's real depth-page artifact (module-pages.ts), resolved
@@ -89,117 +137,161 @@ export interface MediaSlide {
 }
 
 const DIAGRAM_ORDER: readonly DiagramKey[] = [
-  "rls-deny",
-  "audit-chain",
-  "worm-lifecycle",
-  "credits-ledger",
-  "local-sync-merge",
-  "local-inference-egress",
-  "privacy-gate",
-  "tool-exec-gate",
-  "org-controls-mutation",
-  "billing-provider-port",
-  "frameworks-oscal",
-  "alert-pipeline",
-  "meter-reserve-reconcile",
-  "eval-baseline-gate",
-  "guard-fail-closed",
-  "prompt-render-boundary",
-  "local-hybrid-rrf",
-  "agent-lifecycle-fsm",
-  "runner-env-scrub",
-  "trajectory-run-record",
-  "retention-erasure",
+  "schematic-field-crypto",
+  "schematic-audit-worm",
+  "schematic-compliance",
+  "schematic-ai-meter",
+  "schematic-guardrails",
+  "schematic-prompt-registry",
+  "schematic-ai-evals",
+  "schematic-signing-primitive",
+  "schematic-credits",
+  "schematic-billing-orchestration",
+  "schematic-alerting",
+  "schematic-tool-exec",
+  "schematic-local-privacy",
+  "schematic-org-controls",
+  "schematic-retention-runner",
+  "schematic-local-store",
+  "schematic-local-sync",
+  "schematic-local-inference",
+  "schematic-ui-pro",
+  "schematic-agent-kernel",
+  "schematic-agent-runner",
+  "schematic-agent-trajectory",
+  "schematic-compliance-core",
+  "schematic-frameworks-pack",
+  "schematic-access-review",
+  "schematic-risk-register",
+  "schematic-trust-page",
+  "schematic-ai-production",
+  "schematic-local-first",
+  "schematic-agentic-dev",
+  "schematic-provenance",
+  "schematic-everything",
 ];
 
+/** Exhaustiveness backstop (SHIP review P3-2): DIAGRAM_ORDER is a plain array TypeScript can't
+ *  check against the union — a key missing here would silently never render. The keyed Records
+ *  below ARE checked, so their key count is the truth; fail the module load on drift. */
+function assertDiagramOrderExhaustive(
+  targets: Record<DiagramKey, unknown>,
+): void {
+  const order = new Set(DIAGRAM_ORDER);
+  const keys = Object.keys(targets);
+  if (order.size !== DIAGRAM_ORDER.length || order.size !== keys.length) {
+    throw new Error(
+      `DIAGRAM_ORDER is out of sync with the DiagramKey set (${DIAGRAM_ORDER.length} ordered, ${keys.length} keyed)`,
+    );
+  }
+}
+
 const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
-  "rls-deny":
-    "Per-tenant isolation, fail-closed: a query that never set the tenant context returns zero rows, never everything.",
-  "audit-chain":
-    "Append-only hash chain: each entry commits SHA-256 over the previous hash — one edited row breaks every link after it.",
-  "worm-lifecycle":
-    "Evidence lifecycle: a privileged write joins the chain, anchors to WORM under S3 Object-Lock, then verifies and exports.",
-  "credits-ledger":
-    "PG-atomic credit ledger: grant, then FIFO-spend, fail-closed at zero — a 402, never a silent negative balance.",
-  "local-sync-merge":
-    "Two-way offline sync: each device's changesets reconcile through a logical clock to one converged state, no server round-trip.",
-  "local-inference-egress":
-    "A prompt runs against an on-device ONNX model — inference never leaves the box unless a hosted provider is opted into.",
-  "privacy-gate":
-    "Every outbound payload crosses a default-deny egress gate: no host is reachable unless a typed allowlist names it.",
-  "tool-exec-gate":
-    "An agent's command crosses a default-deny allowlist over Zod-strict argv before execFile runs it — never a shell.",
-  "org-controls-mutation":
-    "An owner-gated mutation crosses the admin-write RLS layer and lands two log rows: the mutation and its audit entry.",
-  "billing-provider-port":
-    "Four billing providers behind one port: a webhook fulfills exactly once, however many times it's redelivered.",
-  "frameworks-oscal":
-    "Named framework clauses map to controls, then export as an OSCAL v1.2.2 catalog the evidence packs render against.",
-  "alert-pipeline":
-    "Five-stage alert pipeline: dedup, rate-cap with digest fallback, timezone-aware quiet hours, then multi-channel delivery — every outcome lands an audit row.",
-  "meter-reserve-reconcile":
-    "Estimate, reserve, reconcile: credits debit before the provider is called and true up to actual usage — a crossed hard cap trips the breaker, fail-closed.",
-  "eval-baseline-gate":
-    "Every eval run gates against a committed JSON baseline: a score drop past tolerance fails the build — re-blessing is a deliberate act, never a silent pass.",
-  "guard-fail-closed":
-    "A flagged input, a credential-shaped string, or a moderator outage blocks the call — fail-closed by default, a typed 422, never a silent pass-through.",
-  "prompt-render-boundary":
-    "Injection-safe rendering: variables validate against the version's strict schema, then fill placeholders in one escaped pass — a value can never forge a role.",
-  "local-hybrid-rrf":
-    "Hybrid retrieval: a vec0 vector leg and an FTS5 keyword leg rank independently, then fuse by Reciprocal Rank Fusion — with no vector it degrades to keyword-only.",
-  "agent-lifecycle-fsm":
-    "The seven-act lifecycle FSM: only legal transitions advance — a failed verify re-opens plan, and an illegal skip throws, never a silent pass.",
-  "runner-env-scrub":
-    "The child env is built from scratch — a fixed non-secret allowlist plus only the target provider's key — and the run streams to an auditable .jsonl transcript.",
-  "trajectory-run-record":
-    "Every step, tool proposal, approval, and spend appends to the run's event log — sensitive bodies referenced by digest, a paused run's resume material encrypted at rest — and project() replays the same log to the same projection every time.",
-  "retention-erasure":
-    "One validated erasure request fans out to every registered target with per-target error isolation — a failing store lands in its own result, never aborting the others — then exactly one reason-tagged audit row is written.",
+  "schematic-field-crypto":
+    "The package in blueprint: HKDF-SHA256 derives a distinct key per tenant, the AEAD gate binds tenant/key-version/column as authenticated data, and the self-describing envelope's byte layout means old key versions decrypt forever.",
+  "schematic-audit-worm":
+    "The package in blueprint: every append mints a length-keyed anchor into write-once S3 Object-Lock storage, and verify() treats that store as the trusted length oracle, so a cut tail fails even when the surviving prefix hashes clean.",
+  "schematic-compliance":
+    "The bundle in cross-section: commercial members at the module seam, composing onto the Apache-2.0 kernel and fail-closed RLS base, on Postgres and S3 Object-Lock bedrock; nine of the thirteen pinned members drawn.",
+  "schematic-ai-meter":
+    "The package in blueprint: reserve debits credits and checks the circuit breaker before the provider is ever called, and reconcile trues the charge to actual usage inside an atomic per-tenant spend window.",
+  "schematic-guardrails":
+    "The package in blueprint: a cheap regex pre-screen, the unconditional secret-shape gate, then the configured moderator under a deadline; an outage or timeout blocks the call, fail-closed.",
+  "schematic-prompt-registry":
+    "The package in blueprint: name@version or name@alias resolves to an immutable version, and renderPrompt validates untrusted variables against a strict schema before one escaped, non-recursive fill pass.",
+  "schematic-ai-evals":
+    "The package in blueprint: gateAgainstBaseline compares every run to a committed JSON baseline; a below-threshold run is rejected before the baseline is touched, and blessing is the only rewrite path.",
+  "schematic-signing-primitive":
+    "The package in blueprint: a per-tenant Ed25519 signer produces a detached signature over the canonicalized manifest and its chain-anchor tip hash, and verification fails closed on any error.",
+  "schematic-credits":
+    "The package in blueprint: grant() upserts the wallet atomically, and debit() walks unexpired grants in FIFO order, answering with a 402 the moment the remainder cannot be covered.",
+  "schematic-billing-orchestration":
+    "The package in blueprint: four provider drivers behind one BillingProvider port, where verifyAndParse feeds a claim-once idempotency guard that fulfills a redelivered webhook exactly once.",
+  "schematic-alerting":
+    "The package in blueprint: dedup, rate-cap, and quiet-hours short-circuit before multi-channel delivery, each channel isolated behind its own catch, and every outcome writes exactly one audit row.",
+  "schematic-tool-exec":
+    "The package in blueprint: a proposed command crosses the default-deny allowlist and Zod-strict argv validation before execFile runs it, never a shell.",
+  "schematic-local-privacy":
+    "The package in blueprint: every outbound payload crosses the egress guard's default-deny gate, and no host is reachable unless a typed policy allowlist names it.",
+  "schematic-org-controls":
+    "The package in blueprint: an owner-gated mutation crosses the admin-write RLS layer and lands two rows, the mutation and its audit entry; a seat is denied at the role guard.",
+  "schematic-retention-runner":
+    "The package in blueprint: runErasure fans one validated request out to every registered target with per-target error isolation, then writes exactly one reason-tagged audit row.",
+  "schematic-local-store":
+    "The package in blueprint: a vec0 vector leg and an FTS5 keyword leg fuse by Reciprocal Rank Fusion at the RRF_K constant, degrading to keyword-only with no vector, over one SQLite file per tenant.",
+  "schematic-local-sync":
+    "The package in blueprint: per-replica changesets reconcile through the hybrid-logical-clock comparator into one converged row set, and a persisted tombstone keeps a deleted row from resurrecting.",
+  "schematic-local-inference":
+    "The package in blueprint: model fetches cross a guarded egress chokepoint with a host allowlist and SHA-256 hash-pin verify, and the off-by-default rented backend records a meter entry per call.",
+  "schematic-ui-pro":
+    "The package in blueprint: presentation components cross one seam into pure library functions, the audit timeline onto verifyChain, the grid onto sortRows and toCsv, composing onto the Apache-2.0 base kit.",
+  "schematic-agent-kernel":
+    "The package in blueprint: the seven-act lifecycle state machine admits only legal transitions, a failed verify reopens plan, and every governance hook answers in the shared HookResult shape.",
+  "schematic-agent-runner":
+    "The package in blueprint: the child env is built from scratch off a fixed allowlist, and the run spawns into an isolated worktree streaming an auditable .jsonl transcript.",
+  "schematic-agent-trajectory":
+    "The package in blueprint: every step appends to the run's event log with sensitive bodies held as digests, and approvals move through a compare-and-swap park-and-approve cycle.",
+  "schematic-compliance-core":
+    "The package in blueprint: each collector answers pass, flagged, or unresolved, and generateEvidencePack throws a typed 422 before producing anything while a single control is unresolved.",
+  "schematic-frameworks-pack":
+    "The package in blueprint: every crosswalk row is a discriminated union on its claim, an implements claim requires a proof pointer, and a maps-to claim carries none, across three own-authored framework packs.",
+  "schematic-access-review":
+    "The package in blueprint: closeCampaign refuses to close before every reviewee has decided or the deadline passes, and an undecided reviewee lands unresolved on the closed record, never auto-approved.",
+  "schematic-risk-register":
+    "The package in blueprint: computeResidual is the only mint for the branded residual score, and an operator override lands as its own chained exception record, never a silent edit.",
+  "schematic-trust-page":
+    "The package in blueprint: flattenManifestFacts declares the universe of facts a page could show, and the allowlist filter runs before either output renders, so an absent field never reaches HTML or JSON.",
+  "schematic-ai-production":
+    "The AI-Production bundle in cross-section: six commercial members at the module seam, composing onto the kernel, tenancy-rls, and ai-config base, on a Postgres bedrock.",
+  "schematic-local-first":
+    "The Local-first bundle in cross-section: five commercial members at the module seam, composing onto the kernel and license-verify base, on an on-device SQLite bedrock.",
+  "schematic-agentic-dev":
+    "The Agentic-Dev bundle in cross-section: five commercial members at the module seam, composing onto the kernel and ai-config base, on Postgres and on-device SQLite bedrock.",
+  "schematic-provenance":
+    "The Provenance bundle in cross-section: three commercial members at the module seam, composing onto the kernel base, on Postgres and S3 Object-Lock bedrock.",
+  "schematic-everything":
+    "The Everything bundle in cross-section: five persona bundles plus three platform modules at the module seam, composing onto the Apache-2.0 base, on Postgres, S3 Object-Lock, and on-device SQLite bedrock.",
 };
 
-// Which entries carry which authored diagram (`kind:slug`). Mapped to the top entries whose shipped
-// behaviour each diagram actually depicts — the compliance/provenance seam, plus the eight new
-// single-target mechanism diagrams.
+// Which entries carry which sheet (`kind:slug`). Post-migration (ADR-0378), every sheet is
+// single-target: the page whose package it draws. A module's bespoke sheet REPLACED the shared
+// mechanism diagram(s) that once targeted its page.
 const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
-  "rls-deny": new Set([
-    "bundle:compliance",
-    "module:compliance-core",
-    "module:field-crypto",
-  ]),
-  "audit-chain": new Set([
-    "bundle:compliance",
-    "bundle:provenance",
-    "module:audit-worm",
-    "module:signing-primitive",
-  ]),
-  // NOT module:retention-runner — the diagram depicts audit-worm's evidence lifecycle (write/
-  // chain/anchor/verify + Object-Lock), not retention sweeps or erasure; showing it on the
-  // erasure module's buy surface misrepresents what ships (ADR-0082 artifacts-true-to-built).
-  // retention-runner carries its own bespoke `retention-erasure` diagram below.
-  "worm-lifecycle": new Set([
-    "bundle:compliance",
-    "bundle:provenance",
-    "module:audit-worm",
-  ]),
-  "credits-ledger": new Set(["module:credits"]),
-  "local-sync-merge": new Set(["module:local-sync"]),
-  "local-inference-egress": new Set(["module:local-inference"]),
-  "privacy-gate": new Set(["module:local-privacy"]),
-  "tool-exec-gate": new Set(["module:tool-exec"]),
-  "org-controls-mutation": new Set(["module:org-controls"]),
-  "billing-provider-port": new Set(["module:billing-orchestration"]),
-  "frameworks-oscal": new Set(["module:frameworks-pack"]),
-  "alert-pipeline": new Set(["module:alerting"]),
-  "meter-reserve-reconcile": new Set(["module:ai-meter"]),
-  "eval-baseline-gate": new Set(["module:ai-evals"]),
-  "guard-fail-closed": new Set(["module:guardrails"]),
-  "prompt-render-boundary": new Set(["module:prompt-registry"]),
-  "local-hybrid-rrf": new Set(["module:local-store"]),
-  "agent-lifecycle-fsm": new Set(["module:agent-kernel"]),
-  "runner-env-scrub": new Set(["module:agent-runner"]),
-  "trajectory-run-record": new Set(["module:agent-trajectory"]),
-  "retention-erasure": new Set(["module:retention-runner"]),
+  "schematic-field-crypto": new Set(["module:field-crypto"]),
+  "schematic-audit-worm": new Set(["module:audit-worm"]),
+  "schematic-compliance": new Set(["bundle:compliance"]),
+  "schematic-ai-meter": new Set(["module:ai-meter"]),
+  "schematic-guardrails": new Set(["module:guardrails"]),
+  "schematic-prompt-registry": new Set(["module:prompt-registry"]),
+  "schematic-ai-evals": new Set(["module:ai-evals"]),
+  "schematic-signing-primitive": new Set(["module:signing-primitive"]),
+  "schematic-credits": new Set(["module:credits"]),
+  "schematic-billing-orchestration": new Set(["module:billing-orchestration"]),
+  "schematic-alerting": new Set(["module:alerting"]),
+  "schematic-tool-exec": new Set(["module:tool-exec"]),
+  "schematic-local-privacy": new Set(["module:local-privacy"]),
+  "schematic-org-controls": new Set(["module:org-controls"]),
+  "schematic-retention-runner": new Set(["module:retention-runner"]),
+  "schematic-local-store": new Set(["module:local-store"]),
+  "schematic-local-sync": new Set(["module:local-sync"]),
+  "schematic-local-inference": new Set(["module:local-inference"]),
+  "schematic-ui-pro": new Set(["module:ui-pro"]),
+  "schematic-agent-kernel": new Set(["module:agent-kernel"]),
+  "schematic-agent-runner": new Set(["module:agent-runner"]),
+  "schematic-agent-trajectory": new Set(["module:agent-trajectory"]),
+  "schematic-compliance-core": new Set(["module:compliance-core"]),
+  "schematic-frameworks-pack": new Set(["module:frameworks-pack"]),
+  "schematic-access-review": new Set(["module:access-review"]),
+  "schematic-risk-register": new Set(["module:risk-register"]),
+  "schematic-trust-page": new Set(["module:trust-page"]),
+  "schematic-ai-production": new Set(["bundle:ai-production"]),
+  "schematic-local-first": new Set(["bundle:local-first"]),
+  "schematic-agentic-dev": new Set(["bundle:agentic-dev"]),
+  "schematic-provenance": new Set(["bundle:provenance"]),
+  "schematic-everything": new Set(["bundle:everything"]),
 };
+
+assertDiagramOrderExhaustive(DIAGRAM_TARGETS);
 
 /** Which modules carry a live-component slide, and the honest one-line caption for each (ADR-0308
  *  full-depth). The `component` is the live surface the carousel renders; the caption is the visible
@@ -241,6 +333,170 @@ const MODULE_COMPONENTS: Readonly<
   },
 };
 
+/** Which modules carry an interactive poke slide (ADR-0378 lock 1 — the proof-triad floor).
+ *  Captions are honest: they name what actually computes, never assert. */
+const MODULE_POKES: Readonly<
+  Record<string, { poke: PokeKey; caption: string }>
+> = {
+  "field-crypto": {
+    poke: "field-crypto",
+    caption:
+      "Seal a value as one tenant and watch every other tenant fail to open it: real HKDF-SHA256 and AES-256-GCM running in your browser, the same derivation the package ships.",
+  },
+  "audit-worm": {
+    poke: "audit-worm",
+    caption:
+      "Append entries, then edit history: the SHA-256 chain verdict flips at the broken link, and a cut tail fails against the anchor even when the surviving prefix hashes clean.",
+  },
+  "ai-meter": {
+    poke: "ai-meter",
+    caption:
+      "Reserve before you spend, reconcile to actual usage, and trip the breaker: the package's own integer micro-USD math against the bundled price book.",
+  },
+  guardrails: {
+    poke: "guardrails",
+    caption:
+      "Type something the boundary should stop: live PII detection with the package's real redaction modes, and a moderator outage that blocks fail-closed.",
+  },
+  "signing-primitive": {
+    poke: "signing-primitive",
+    caption:
+      "Verify a per-tenant detached Ed25519 signature over a sample evidence manifest, then flip a payload byte or swap the key to watch it fail.",
+  },
+  credits: {
+    poke: "credits",
+    caption:
+      "Grant four credit lines, debit them FIFO, then overdraw the wallet and read the real 402 InsufficientCreditsError.",
+  },
+  "billing-orchestration": {
+    poke: "billing-orchestration",
+    caption:
+      "Redeliver the same provider webhook and watch the claim table fulfill it exactly once: the real billing-orchestration idempotency guard running in your browser.",
+  },
+  "tool-exec": {
+    poke: "tool-exec",
+    caption:
+      "Type a command name and argv: the default-deny allowlist and Zod-strict schema decide before anything can spawn, right in your browser.",
+  },
+  "local-privacy": {
+    poke: "local-privacy",
+    caption:
+      "Run the real fail-closed egress decision client-side against the two policies the module ships: the same host passes under one and blocks under the other.",
+  },
+  "org-controls": {
+    poke: "org-controls",
+    caption:
+      "Switch the actor role from owner to seat and read the real assertCanManageMembers denial; the owner path shows the member row it would insert plus its audit-chain hash.",
+  },
+  "retention-runner": {
+    poke: "retention-runner",
+    caption:
+      "Fan out one erasure across three targets with per-target error isolation, and watch exactly one reason-tagged audit row land every time, even when a target fails.",
+  },
+  "local-store": {
+    poke: "local-store",
+    caption:
+      "An RRF explorer over a fixed 8-doc corpus: the vector leg and the FTS5 keyword leg rank independently, and the package's real RRF_K=60 fusion pulls a keyword-only match up the fused ranking.",
+  },
+  "local-sync": {
+    poke: "local-sync",
+    caption:
+      "Two replicas edit offline and converge to one state through reconcileWithTombstones, with a toggle proving a persisted tombstone is the only thing stopping a deleted row from coming back.",
+  },
+  "local-inference": {
+    poke: "local-inference",
+    caption:
+      "Run a real embedding on-device and watch the egress meter hold at zero, until you opt a rented backend in.",
+  },
+  "agent-kernel": {
+    poke: "agent-kernel",
+    caption:
+      "Click any act to attempt a lifecycle transition and watch the real illegal-skip error, or reopen PLAN after a failed VERIFY: the package's actual transition table in your browser.",
+  },
+  "agent-runner": {
+    poke: "agent-runner",
+    caption:
+      "The child env is built from scratch off a seven-key allowlist: toggle a secret-shaped key in the sample parent env and watch it never reach the child process.",
+  },
+  "agent-trajectory": {
+    poke: "agent-trajectory",
+    caption:
+      "Replay the same eleven-kind event log twice, then tamper one field and watch the projection diverge or the schema reject it outright.",
+  },
+  "compliance-core": {
+    poke: "compliance-core",
+    caption:
+      "Flip six real compliance-core evidence collectors to pass, then watch the generator refuse with the real EvidencePackBlockedError or produce the honest pack shape, all computed client-side.",
+  },
+  "frameworks-pack": {
+    poke: "frameworks-pack",
+    caption:
+      "Pick a real crosswalk clause and watch the production toOscalCatalog turn the matching controls into an OSCAL v1.2.2 catalog, or come up empty when the clause is not mapped.",
+  },
+  "access-review": {
+    poke: "access-review",
+    caption:
+      "Decide each reviewee in a sample campaign, then try closing it early and watch the real closeCampaign guard refuse the partial close.",
+  },
+  "risk-register": {
+    poke: "risk-register",
+    caption:
+      "Move the likelihood and impact sliders and watch the residual come out of the real computeResidual math, then record an override and see it land as a separate, accountable exception row.",
+  },
+  "trust-page": {
+    poke: "trust-page",
+    caption:
+      "A live allowlist gate: toggle sample evidence-pack facts and watch only the allowed ones reach the trust page's HTML and JSON, then try to force a fabricated field past the gate.",
+  },
+  alerting: {
+    poke: "alerting",
+    caption:
+      "Push one alert through dedup, rate cap, quiet hours, and delivery, running the real alerting pipeline math live in your browser.",
+  },
+  "ai-evals": {
+    poke: "ai-evals",
+    caption:
+      "Drag two scorer sliders and watch the real baseline comparator fail closed, then bless the run on purpose and watch the committed baseline move.",
+  },
+  "prompt-registry": {
+    poke: "prompt-registry",
+    caption:
+      "Promote or roll back the prod alias across a four-version prompt lineage: every version row stays on file forever, only the pointer moves, and pointing at an unminted version fails closed.",
+  },
+};
+
+/** Bundles borrow the hero member's poke VERBATIM (ADR-0378 lock 1 — borrow, never fork): the same
+ *  component the module page renders, one manifest line per bundle. */
+const BUNDLE_POKES: Readonly<
+  Record<string, { poke: PokeKey; caption: string }>
+> = {
+  compliance: {
+    poke: "field-crypto",
+    caption:
+      "The bundle's hero member under your cursor: field encryption sealed live and cross-tenant opens failing, exactly as the field-crypto module page proves it.",
+  },
+  "ai-production": {
+    poke: "ai-meter",
+    caption:
+      "The bundle's hero member under your cursor: reserve, reconcile, and breaker-trip in the package's own integer math, exactly as the ai-meter module page proves it.",
+  },
+  provenance: {
+    poke: "audit-worm",
+    caption:
+      "The bundle's hero member under your cursor: edit history and watch the chain verdict flip, exactly as the audit-worm module page proves it.",
+  },
+  "agentic-dev": {
+    poke: "agent-kernel",
+    caption:
+      "The bundle's hero member under your cursor: the seven-act lifecycle stepper refusing illegal transitions, exactly as the agent-kernel module page proves it.",
+  },
+  "local-first": {
+    poke: "local-store",
+    caption:
+      "The bundle's hero member under your cursor: hybrid retrieval fused by real RRF math, exactly as the local-store module page proves it.",
+  },
+};
+
 /** The entry's mark, for the placeholder slide and the card glyph. */
 function entryMark(kind: "bundle" | "module", id: string): IconName {
   if (kind === "bundle") {
@@ -264,13 +520,16 @@ export interface MediaSlidesOptions {
    *  the identical code twice. Card viewer / preview dialog omit this (code-artifact is the only
    *  place they show the code). */
   omitCodeArtifact?: boolean;
+  /** Hoist the poke to slide 1 (ADR-0378 lock 1: the card viewer leads with the poke — the only
+   *  slide kind that stops a scrolling buyer mid-gesture; depth pages lead with the sheet). */
+  leadWithPoke?: boolean;
 }
 
-/** The ordered media slides for one entry (ADR-0290 / ADR-0308). Preference order: a bundle leads
- *  with its composition slide; a module leads with its live component (MODULE_COMPONENTS — the
- *  modules that ship a showable @caisson/ui surface), then its real code artifact (module-pages.ts),
- *  then any authored mechanism diagrams that target it — so a full-depth module carries all three
- *  kinds. If none apply, the brand placeholder is slide 1 so every entry has at least one slide. */
+/** The ordered media slides for one entry (ADR-0378 lock 1, refining ADR-0290/0308). Module order:
+ *  bespoke schematic sheet → poke → live component → code artifact (unless omitted). Bundle order:
+ *  strata sheet → composition → the hero member's borrowed poke. `leadWithPoke` hoists the poke to
+ *  slide 1 for the card viewer. If nothing applies, the brand placeholder is slide 1 so every
+ *  entry has at least one slide. */
 export function mediaSlides(
   kind: "bundle" | "module",
   id: string,
@@ -279,6 +538,24 @@ export function mediaSlides(
   const viewId = `${kind}:${id}`;
   const slides: MediaSlide[] = [];
 
+  // Post-migration (ADR-0378), every targeted diagram IS a bespoke schematic sheet.
+  const sheets = DIAGRAM_ORDER.filter((key) =>
+    DIAGRAM_TARGETS[key].has(viewId),
+  );
+  const diagramSlide = (key: DiagramKey): MediaSlide => ({
+    kind: "diagram",
+    diagram: key,
+    caption: DIAGRAM_CAPTIONS[key],
+  });
+
+  const pokeEntry = (kind === "module" ? MODULE_POKES : BUNDLE_POKES)[id];
+  const pokeSlide: MediaSlide | null = pokeEntry
+    ? { kind: "poke", poke: pokeEntry.poke, caption: pokeEntry.caption }
+    : null;
+
+  // The bespoke sheet leads (depth pages lead with the sheet — ADR-0378).
+  for (const key of sheets) slides.push(diagramSlide(key));
+
   if (kind === "bundle" && isBundleId(id)) {
     slides.push({
       kind: "diagram",
@@ -286,6 +563,8 @@ export function mediaSlides(
       caption: bundleCompositionCaption(id),
     });
   }
+
+  if (pokeSlide) slides.push(pokeSlide);
 
   if (kind === "module") {
     const comp = MODULE_COMPONENTS[id];
@@ -313,13 +592,11 @@ export function mediaSlides(
     }
   }
 
-  for (const key of DIAGRAM_ORDER) {
-    if (DIAGRAM_TARGETS[key].has(viewId)) {
-      slides.push({
-        kind: "diagram",
-        diagram: key,
-        caption: DIAGRAM_CAPTIONS[key],
-      });
+  if (options?.leadWithPoke && pokeSlide) {
+    const at = slides.indexOf(pokeSlide);
+    if (at > 0) {
+      slides.splice(at, 1);
+      slides.unshift(pokeSlide);
     }
   }
 

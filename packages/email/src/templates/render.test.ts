@@ -253,7 +253,7 @@ describe("renderEmailTemplate", () => {
       bundle: "Compliance",
     });
     expect(rendered.subject).toBe(
-      "What Caisson Compliance ships — and what it doesn't",
+      "What Caisson Compliance ships, and what it doesn't",
     );
     expect(rendered.html).toContain("cto@acme.com");
     expect(rendered.html).toContain("fail-closed");

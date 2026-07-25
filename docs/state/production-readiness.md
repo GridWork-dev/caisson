@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-20
+updated: 2026-07-22
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -94,6 +94,11 @@ limit 429-proven live 2026-07-10 (below).
   `buyer-dashboard-flow.live.test.ts` now run for real (the first credentialed run immediately
   caught a real bug: better-auth 403s auth POSTs without an `Origin` header, which the test's own
   sign-in helper never sent — fixed).
+- **P1 (board-audit-confirmed launch-blocker, 2026-07):** WORM claim overstates the live posture —
+  the compliance page claims S3 Object Lock **COMPLIANCE** mode
+  (`apps/site/app/(marketing)/compliance/page.tsx:127`) while the live bucket default is
+  **GOVERNANCE** pre-launch (`docs/ops/launch-runbook.md` P7 gate flips it at launch). Findings
+  tracked in `outputs/audit/2026-07-board/BOARD-REPORT.md`; decisions pending operator fork-walk.
 - **P3:** GitHub Action refs are SHA-pinned (46/46, Kickoff-K supply-chain audit); Docker base
   images are pinned to tags not digests — Renovate `docker:pinDigests` enabled for first-party
   images (buyer scaffolds stay tag-pinned).
@@ -151,7 +156,11 @@ and verified fixed + shipped (11th/12th-sitting waves, PRs #165–#186): license
 create-caisson delivery path from a packed tarball, dashboard plan/invoices/members/cancel,
 entitlement gates, sign-out revocation, marketplace media 28/28 real. Remaining:
 
-- **P1:** the marketed CLI command 404s until npm publishes (consolidated blocker 6).
+- **P1 (board-audit-confirmed launch-blocker, 2026-07):** the marketed CLI command 404s until npm
+  publishes (consolidated blocker 6) — and the hero renders the dead `bunx @caisson-sh/cli@latest`
+  command beside a success-tone "ready" chip (`apps/site/components/dual-door-hero.tsx:113-123`),
+  presenting a broken command as working. Findings tracked in
+  `outputs/audit/2026-07-board/BOARD-REPORT.md`; decisions pending operator fork-walk.
 - **P2:** Fumadocs depth pages exist for the 11 open base modules but only ~4 of ~18 commercial
   à-la-carte modules — thin pre-purchase technical docs for the things being sold. (tracked as of
   this sweep)

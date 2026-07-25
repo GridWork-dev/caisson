@@ -22,6 +22,11 @@
       "reason": "Detector counts CSS comments as body copy; house comment voice uses em-dashes. Rendered copy is governed by the ADR-0080 copy laws, not this heuristic."
     },
     {
+      "antipattern": "numbered-section-markers",
+      "file": "apps/site/app/global.css",
+      "reason": "Detector reads CSS as body text: the legal-toc geometry comment's rem measurements (11.2rem etc.) complete a 10/11/12 token run with pre-existing values. No rendered numbered section markers exist - same comment-text false-positive class as the em-dash entry above."
+    },
+    {
       "antipattern": "em-dash-overuse",
       "file": "apps/site/app/layout.tsx",
       "reason": "Same comment-text false positive as global.css - JSX comments, not rendered copy."

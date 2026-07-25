@@ -65,10 +65,10 @@ export const BUNDLE_PRICES: readonly (PriceAnchor & { id: BundleId })[] = [
   {
     id: "compliance",
     label: "Compliance",
-    amount: 1049,
+    amount: 1449,
     unit: "once",
     from: false,
-    note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, and the framework + signing carves.",
+    note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, access reviews, the AI risk register, a buyer trust page, and the framework + signing carves.",
   },
   {
     id: "ai-production",
@@ -84,7 +84,7 @@ export const BUNDLE_PRICES: readonly (PriceAnchor & { id: BundleId })[] = [
     amount: 629,
     unit: "once",
     from: false,
-    note: "On-device inference, a privacy egress gate, and local vector search — your data never leaves the device.",
+    note: "On-device inference, a privacy egress gate, and local vector search: data stays on device unless you explicitly enable a hosted transport.",
   },
   {
     id: "agentic-dev",
@@ -108,7 +108,7 @@ export const BUNDLE_PRICES: readonly (PriceAnchor & { id: BundleId })[] = [
     amount: 2059,
     unit: "once",
     from: false,
-    note: "The full catalog — every bundle and every à-la-carte module, one purchase.",
+    note: "The full catalog: every bundle and every à-la-carte module, one purchase.",
   },
 ] as const;
 
@@ -170,6 +170,31 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     bundles: ["compliance"],
     blurb:
       "Deduped, rate-capped alert delivery with quiet hours and an audit trail: the SOC 2 CC7.2 alerting control your compliance program can point to.",
+  },
+  // Compliance-gap SKUs (first prices, the 2026-07-20 pricing round).
+  {
+    id: "access-review",
+    label: "Access reviews",
+    amount: 199,
+    bundles: ["compliance"],
+    blurb:
+      "Audit-prep access-review campaigns: import a membership snapshot, record per-reviewee attested approve/revoke decisions into the WORM log, and close with every undecided reviewee flagged, never auto-approved.",
+  },
+  {
+    id: "risk-register",
+    label: "AI risk register",
+    amount: 279,
+    bundles: ["compliance"],
+    blurb:
+      "Likelihood x impact risk scoring with a computed residual, operator overrides recorded as chained exceptions, crosswalks into your framework packs, and a treatment-plan evidence artifact.",
+  },
+  {
+    id: "trust-page",
+    label: "Trust page",
+    amount: 149,
+    bundles: ["compliance"],
+    blurb:
+      "A self-contained trust page built from your evidence pack through allowlist-based redaction: host it anywhere to show prospects your compliance posture.",
   },
   // ---- AI Production Kit ----
   {
@@ -238,7 +263,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 49,
     bundles: ["agentic-dev"],
     blurb:
-      "The governed run record: an append-only, replayable event log of every agent step, tool proposal, approval, and spend — sensitive bodies referenced by digest, paused runs encrypted at rest, and a deterministic replay for scoring and audit.",
+      "The governed run record: an append-only, replayable event log of every agent step, tool proposal, approval, and spend, with sensitive bodies referenced by digest, paused runs encrypted at rest, and a deterministic replay for scoring and audit.",
   },
   // ---- Catalog-rework carve + standalone SKUs (ADR-0257/0258/0260) ----
   // Prices are the @caisson/pricebook `SKU_RETAIL` truth (pinned by pricing.test.ts); `bundles[]`
@@ -258,7 +283,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 249,
     bundles: ["compliance"],
     blurb:
-      "The framework control library: SOC 2, HIPAA, and EU AI Act mappings with OSCAL v1.2.2 export — the clause-to-control catalog the evidence packs render against.",
+      "The framework control library: SOC 2, HIPAA, and EU AI Act mappings with OSCAL v1.2.2 export, the clause-to-control catalog the evidence packs render against.",
   },
   {
     id: "signing-primitive",
@@ -284,7 +309,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 199,
     bundles: ["local-first"],
     blurb:
-      "Two-way offline sync: changesets, tombstones, a logical clock, and a reconcile pass with a convergence test — the device catches up without a server round-trip.",
+      "Two-way offline sync: changesets, tombstones, a logical clock, and a reconcile pass with a convergence test, so the device catches up without a server round-trip.",
   },
   {
     id: "local-inference",
@@ -292,7 +317,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 249,
     bundles: ["local-first"],
     blurb:
-      "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use — inference on-device by default, hosted only by opt-in.",
+      "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use: inference on-device by default, hosted only by opt-in.",
   },
   {
     id: "local-privacy",
@@ -300,7 +325,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 99,
     bundles: ["local-first"],
     blurb:
-      "A default-deny egress boundary every payload crosses before it can leave the process: no host is reachable unless a typed allowlist names it — leave it empty and egress is zero.",
+      "A default-deny egress boundary every payload crosses before it can leave the process: no host is reachable unless a typed allowlist names it, and leaving it empty makes egress zero.",
   },
   {
     id: "tool-exec",
@@ -308,7 +333,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 99,
     bundles: ["agentic-dev"],
     blurb:
-      "The governed tool-execution gate: a default-deny allowlist over Zod-strict argv schemas and execFile arg-arrays — an agent reaches only the commands you explicitly allowed, never a shell.",
+      "The governed tool-execution gate: a default-deny allowlist over Zod-strict argv schemas and execFile arg-arrays, so an agent reaches only the commands you explicitly allowed, never a shell.",
   },
   // ---- Platform / standalone commercial SKUs (in Everything, no persona bundle) ----
   {
@@ -464,7 +489,7 @@ export const PLAN_PRICES: readonly PriceAnchor[] = [
     amount: MODULE_MIN_AMOUNT,
     unit: "once",
     from: true,
-    note: "Take a single module à la carte — 22 standalone modules across the catalog.",
+    note: "Take a single module à la carte: 26 standalone modules across the catalog.",
   },
   {
     id: "compliance-updates",
@@ -572,7 +597,7 @@ export const SKU_COLUMNS = [
  *  (Apache-2.0, ship with everything — incl. fail-closed RLS) live on the one base row. */
 export const SKU_FEATURE_ROWS: readonly SkuRow[] = [
   {
-    label: "Postgres base — fail-closed RLS, auth (Apache-2.0)",
+    label: "Postgres base: fail-closed RLS, auth (Apache-2.0)",
     cells: [true, true, true, true, true],
   },
   {

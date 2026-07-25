@@ -1,5 +1,11 @@
 # @caisson/platform-reads
 
+## 0.2.8
+
+### Patch Changes
+
+- d0e6b5c: Rebuilt against current dependency resolutions; no source changes.
+
 ## 0.2.7
 
 ### Patch Changes

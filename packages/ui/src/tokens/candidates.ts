@@ -6,6 +6,7 @@
  */
 import type {
   AccentCandidate,
+  CodeTokens,
   FunctionalTokens,
   TypeCandidate,
 } from "./types.ts";
@@ -31,6 +32,22 @@ export const functionalLight: FunctionalTokens = {
 
 /** @deprecated back-compat alias = the dark set (the un-attributed :root default). */
 export const functional = functionalDark;
+
+/** Code-syntax set — per mode (ADR-0374 Decision 2). Palette-independent (a code-syntax scale, not
+ *  an accent role): string at hue 170 sits clear of `--cs-success` (150), keyword at hue 280 clear
+ *  of `--cs-info` (240) and `--cs-accent` (205-215). Each clears WCAG AA (>=4.5:1, worst 5.29:1
+ *  light string-on-surface1) against bg/surface1 in its mode, verified under the min of both
+ *  gamut-mapping methods (same method as the contrast gate). Emitted into every theme block. */
+export const codeTokensDark: CodeTokens = {
+  codeString: "oklch(0.72 0.15 170)",
+  codeKeyword: "oklch(0.75 0.11 280)",
+};
+
+/** Light-surface code-syntax set — darkened L so each clears AA on the near-white light field. */
+export const codeTokensLight: CodeTokens = {
+  codeString: "oklch(0.48 0.15 170)",
+  codeKeyword: "oklch(0.52 0.14 280)",
+};
 
 export const accentCandidates: readonly AccentCandidate[] = [
   {
@@ -59,20 +76,29 @@ export const accentCandidates: readonly AccentCandidate[] = [
     },
     light: {
       bg: "oklch(0.99 0.003 220)",
-      surface1: "oklch(0.975 0.005 220)",
+      // L 0.975 -> 0.965 (ADR-0376 lock 3, visual-audit retention-tint row): a 0.015 L
+      // step from bg rendered cards at 1.041:1 vs the page — imperceptible as a fill;
+      // only the 1px border read as a surface. 0.965 widens bg->surface1 to 1.075:1 and
+      // evens the ramp (0.99 -> 0.965 -> 0.95). Dark mode already carries a 0.04 gap.
+      surface1: "oklch(0.965 0.005 220)",
       surface2: "oklch(0.95 0.006 220)",
       border: "oklch(0.88 0.008 220)",
       borderStrong: "oklch(0.80 0.010 220)",
       fg: "oklch(0.22 0.015 220)",
       fgMuted: "oklch(0.45 0.018 220)",
-      accent: "oklch(0.50 0.13 215)",
-      accentHover: "oklch(0.48 0.13 215)",
+      // Darkened L 0.50 -> 0.49 (ADR-0374, visual-audit root F2): the prior value cleared AA only on
+      // the raw OKLCH string; gamut-mapped into sRGB (what browsers actually paint) the accent-on-tint
+      // eyebrow pairing sat at 4.413:1 under naive clamp — an AA fail for sub-14px eyebrow/StatusChip
+      // text. A -0.01 L nudge (hue/chroma unchanged) lifts the binding eyebrow pair to 4.594:1 taken
+      // as the MIN of both gamut-mapping methods, the re-pointed gate; every accent pairing clears 4.5.
+      accent: "oklch(0.49 0.13 215)",
+      accentHover: "oklch(0.47 0.13 215)",
       onAccent: "oklch(0.99 0.01 220)",
       accentTint: "oklch(0.93 0.03 205)",
-      focus: "oklch(0.50 0.13 215)",
-      link: "oklch(0.50 0.13 215)",
+      focus: "oklch(0.49 0.13 215)",
+      link: "oklch(0.49 0.13 215)",
       glowAccent:
-        "0 0 0 1px oklch(0.50 0.13 215 / 0.28), 0 0 22px oklch(0.50 0.13 215 / 0.16)",
+        "0 0 0 1px oklch(0.49 0.13 215 / 0.28), 0 0 22px oklch(0.49 0.13 215 / 0.16)",
       scrim: "oklch(0.22 0.015 220 / 0.45)",
     },
   },
@@ -102,7 +128,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
     },
     light: {
       bg: "oklch(0.99 0.003 160)",
-      surface1: "oklch(0.975 0.005 160)",
+      surface1: "oklch(0.965 0.005 160)",
       surface2: "oklch(0.95 0.006 160)",
       border: "oklch(0.88 0.008 160)",
       borderStrong: "oklch(0.80 0.010 160)",
@@ -145,7 +171,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
     },
     light: {
       bg: "oklch(0.99 0.002 235)",
-      surface1: "oklch(0.975 0.003 235)",
+      surface1: "oklch(0.965 0.003 235)",
       surface2: "oklch(0.95 0.004 235)",
       border: "oklch(0.88 0.006 235)",
       borderStrong: "oklch(0.80 0.008 235)",

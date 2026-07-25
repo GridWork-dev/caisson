@@ -6,7 +6,13 @@
 // (`SkuLine`) does not carry one today, so the wired sender passes labels only and the accurate
 // total still rides on `amountTotalMinor`), and the dashboard link — no PII beyond what the buyer
 // already gave the checkout.
-import { EmailBody, EmailButton, EmailLayout } from "./layout.tsx";
+import {
+  EmailBody,
+  EmailButton,
+  EmailLayout,
+  EmailLink,
+  EmailMono,
+} from "./layout.tsx";
 
 export interface PurchaseConfirmationLine {
   /** Human-readable line label (canonical product/bundle name). */
@@ -52,17 +58,18 @@ export function PurchaseConfirmationEmail(
 ): React.ReactElement {
   return (
     <EmailLayout
-      preview={`Order ${data.orderId} — ${formatMinor(data.amountTotalMinor, data.currency)}`}
+      preview={`Order ${data.orderId}: ${formatMinor(data.amountTotalMinor, data.currency)}`}
       heading="Purchase confirmed"
     >
       <EmailBody>
-        Thanks, {data.buyerName}. Order {data.orderId} is confirmed.
+        Thanks, {data.buyerName}. Order <EmailMono>{data.orderId}</EmailMono> is
+        confirmed.
       </EmailBody>
       {data.lines.map((line, i) => (
         <EmailBody key={`${line.label}-${String(i)}`}>
           {line.amountMinor === undefined
             ? line.label
-            : `${line.label} — ${formatMinor(line.amountMinor, data.currency)}`}
+            : `${line.label}: ${formatMinor(line.amountMinor, data.currency)}`}
         </EmailBody>
       ))}
       <EmailBody>
@@ -72,13 +79,17 @@ export function PurchaseConfirmationEmail(
       {data.licenseToken !== undefined && (
         <>
           <EmailBody>Your license is ready:</EmailBody>
-          <EmailBody>{data.licenseToken}</EmailBody>
+          <EmailBody>
+            <EmailMono>{data.licenseToken}</EmailMono>
+          </EmailBody>
         </>
       )}
       <EmailBody>
-        Pull your license and modules with bunx @caisson-sh/cli@latest using the
-        account on your dashboard. Full terms are in the Caisson EULA at
-        https://caisson.sh/legal/eula.
+        Pull your license and modules with{" "}
+        <EmailMono>bunx @caisson-sh/cli@latest</EmailMono> using the account on
+        your dashboard. Full terms are in the{" "}
+        <EmailLink href="https://caisson.sh/legal/eula">Caisson EULA</EmailLink>
+        .
       </EmailBody>
     </EmailLayout>
   );

@@ -1,17 +1,47 @@
 import { buildMetadata } from "@/lib/metadata";
 import { Card, Section } from "@/components";
 import { prose } from "../prose";
+import { LegalToc, type LegalTocItem } from "../toc";
 
 export const metadata = buildMetadata({
   title: "EULA",
   description:
-    "The binding Caisson End User License Agreement (EULA) — the Commercial License Agreement governing your purchase and use of Caisson software. Caisson Software LLC, governed by the laws of Georgia, USA.",
+    "The binding Caisson End User License Agreement (EULA): the Commercial License Agreement governing your purchase and use of Caisson software. Caisson Software LLC, governed by the laws of Georgia, USA.",
   path: "/legal/eula",
 });
+
+const TOC: readonly LegalTocItem[] = [
+  { id: "parties-and-definitions", label: "Parties and definitions" },
+  { id: "license-grant", label: "License grant" },
+  { id: "restrictions", label: "Restrictions" },
+  {
+    id: "entitlement-and-offline-verification",
+    label: "Entitlement and offline verification",
+  },
+  { id: "fees-and-payment", label: "Fees and payment" },
+  { id: "term-and-termination", label: "Term and termination" },
+  {
+    id: "vendor-continuity",
+    label: "Vendor continuity and self-maintenance",
+  },
+  { id: "disclaimer-of-warranties", label: "Disclaimer of warranties" },
+  { id: "limitation-of-liability", label: "Limitation of liability" },
+  { id: "indemnification", label: "Indemnification" },
+  { id: "intellectual-property", label: "Intellectual property" },
+  { id: "confidentiality", label: "Confidentiality" },
+  { id: "assignment-and-transfer", label: "Assignment and transfer" },
+  { id: "governing-law-and-disputes", label: "Governing law and disputes" },
+  { id: "entire-agreement", label: "Entire agreement" },
+  {
+    id: "licensing-and-legal-questions",
+    label: "Licensing and legal questions",
+  },
+];
 
 export default function EulaPage() {
   return (
     <>
+      <LegalToc items={TOC} />
       {/* Page header */}
       <Section eyebrow="Legal" title="End User License Agreement" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
@@ -40,17 +70,17 @@ export default function EulaPage() {
             This End User License Agreement is being finalized with legal
             counsel and may be updated before the first sale. It is provided
             here for reference. The{" "}
-            <a href="/legal/license" style={{ color: "var(--cs-accent)" }}>
+            <a href="/legal/license" className="cs-link">
               License page
             </a>{" "}
-            is a plain-language summary only — this document is the binding
+            is a plain-language summary only; this document is the binding
             agreement.
           </p>
         </Card>
       </Section>
 
       {/* 1. Parties & definitions */}
-      <Section eyebrow="Parties" title="Parties and definitions">
+      <Section id="parties-and-definitions" title="Parties and definitions">
         <p style={prose.paragraph}>
           This End User License Agreement (&ldquo;Agreement&rdquo; or
           &ldquo;EULA&rdquo;) is between Caisson Software LLC, a Georgia limited
@@ -117,7 +147,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 2. License grant */}
-      <Section eyebrow="Grant" title="License grant" band="tint">
+      <Section id="license-grant" title="License grant" band="tint">
         <p style={prose.paragraph}>
           Subject to your compliance with this Agreement and full payment of
           applicable fees, Caisson grants you a{" "}
@@ -138,7 +168,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 3. Restrictions */}
-      <Section eyebrow="Limits" title="Restrictions">
+      <Section id="restrictions" title="Restrictions">
         <p style={prose.paragraph}>
           The license granted above is subject to the following restrictions.
           You agree not to:
@@ -147,7 +177,7 @@ export default function EulaPage() {
           <li style={prose.li}>
             Redistribute, resell, sublicense, or publish the Software, in source
             or compiled form, as a standalone kit, boilerplate, library, or
-            template — including one that competes with Caisson.
+            template, including one that competes with Caisson.
           </li>
           <li style={prose.li}>
             Grant any third party access to the Software itself; your customers
@@ -176,7 +206,7 @@ export default function EulaPage() {
 
       {/* 4. Entitlement & offline verification */}
       <Section
-        eyebrow="Entitlement"
+        id="entitlement-and-offline-verification"
         title="Entitlement and offline verification"
         band="tint"
       >
@@ -201,7 +231,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 5. Fees & payment */}
-      <Section eyebrow="Fees" title="Fees and payment">
+      <Section id="fees-and-payment" title="Fees and payment">
         <p style={prose.paragraph}>
           Fees are as displayed on caisson.sh at the time of your Order and are
           processed through our merchant of record, who handles payment
@@ -210,14 +240,14 @@ export default function EulaPage() {
           covered by an unconditional 14-day money-back guarantee: request a
           refund within 14 days for any reason and the merchant of record
           returns your payment. See the{" "}
-          <a href="/legal/terms" style={{ color: "var(--cs-accent)" }}>
+          <a href="/legal/terms" className="cs-link">
             Terms of Use
           </a>{" "}
           for the full refund policy.
         </p>
         <p style={prose.paragraph}>
           The perpetual license fee is a one-time charge that includes 12 months
-          of updates from your Order date &mdash; registry access to any
+          of updates from your Order date: registry access to any
           entitled-package version published in that window, plus everything
           already delivered. After that window, you may renew updates access for
           another 12 months at 40% of the then-current list price, or let it
@@ -233,15 +263,15 @@ export default function EulaPage() {
         <p style={prose.paragraph}>
           Certain AI-feature and codegen functionality within the Software is
           metered using a prepaid credit balance (&ldquo;Credits&rdquo;).
-          Credits are issued in grants &mdash; through a subscription cycle, a
-          one-time top-up purchase, or a promotional grant &mdash; and are
-          pooled into a single wallet; unused Credits from a prior grant roll
-          over and are not forfeited at the end of a billing cycle. Each Credit
-          grant expires twelve (12) months after it is issued, unless we state a
-          different expiration for that grant at the time it is issued. Credits
-          are consumed on a first-in, first-out basis, drawing from your oldest
+          Credits are issued in grants (through a subscription cycle, a one-time
+          top-up purchase, or a promotional grant) and are pooled into a single
+          wallet; unused Credits from a prior grant roll over and are not
+          forfeited at the end of a billing cycle. Each Credit grant expires
+          twelve (12) months after it is issued, unless we state a different
+          expiration for that grant at the time it is issued. Credits are
+          consumed on a first-in, first-out basis, drawing from your oldest
           outstanding grant first, so that Credits nearing expiration are used
-          before newer Credits &mdash; an actively used balance is not lost to
+          before newer Credits; an actively used balance is not lost to
           expiration through non-use alone. Credits remaining in a grant that
           expires unused are forfeited without refund; expiration of a Credit
           grant does not affect your license to the Software or any other right
@@ -250,7 +280,11 @@ export default function EulaPage() {
       </Section>
 
       {/* 6. Term & termination */}
-      <Section eyebrow="Term" title="Term and termination" band="tint">
+      <Section
+        id="term-and-termination"
+        title="Term and termination"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           This Agreement is effective from the date of your Order and continues
           until terminated as described below. The license grant for the
@@ -268,10 +302,10 @@ export default function EulaPage() {
           Software.
         </p>
         <p style={prose.paragraph}>
-          Sections that by their nature should survive termination — including
+          Sections that by their nature should survive termination (including
           Vendor continuity and self-maintenance, Disclaimer of warranties,
           Limitation of liability, Indemnification, Intellectual property,
-          Confidentiality, and Governing law — survive.
+          Confidentiality, and Governing law) survive.
         </p>
       </Section>
 
@@ -280,7 +314,6 @@ export default function EulaPage() {
           actual clause instead of just the page (ADR-0323 Cookiy-response, item 3). */}
       <Section
         id="vendor-continuity"
-        eyebrow="Continuity"
         title="Vendor continuity and self-maintenance"
       >
         <p style={prose.paragraph}>
@@ -304,10 +337,10 @@ export default function EulaPage() {
         <ul style={prose.list}>
           <li style={prose.li}>
             <strong>Self-maintenance.</strong> The right to modify, fork, and
-            patch the Software as delivered to you &mdash; including for
-            security, compatibility, and continued operation &mdash; and to
-            engage third-party contractors, bound by confidentiality obligations
-            at least as protective as this Agreement, to do so on your behalf.
+            patch the Software as delivered to you (including for security,
+            compatibility, and continued operation) and to engage third-party
+            contractors, bound by confidentiality obligations at least as
+            protective as this Agreement, to do so on your behalf.
           </li>
           <li style={prose.li}>
             <strong>Internal continuity copies.</strong> A waiver of the
@@ -339,46 +372,48 @@ export default function EulaPage() {
           or continue: (a) any right to use the Caisson name, wordmark, glyph,
           or other marks, which remain governed by Intellectual property, above;
           (b) any obligation of Caisson to provide future updates, new versions,
-          security patches, support, or services &mdash; the rights above are
-          self-help rights, not a continuation of any Caisson service; (c) any
-          updates window or Updates Subscription, neither of which is extended,
-          renewed, or reinstated by a Continuity Event; (d) any warranty &mdash;
-          the disclaimers under Disclaimer of warranties and the limitations
-          under Limitation of liability survive a Continuity Event unchanged and
-          apply to any exercise of the rights in this Section; or (e) any right
-          of access to Caisson source, versions, or Confidential Information
-          beyond what was actually delivered to you before the Continuity Event;
-          Caisson has no obligation to escrow or deliver anything further.
+          security patches, support, or services: the rights above are self-help
+          rights, not a continuation of any Caisson service; (c) any updates
+          window or Updates Subscription, neither of which is extended, renewed,
+          or reinstated by a Continuity Event; (d) any warranty: the disclaimers
+          under Disclaimer of warranties and the limitations under Limitation of
+          liability survive a Continuity Event unchanged and apply to any
+          exercise of the rights in this Section; or (e) any right of access to
+          Caisson source, versions, or Confidential Information beyond what was
+          actually delivered to you before the Continuity Event; Caisson has no
+          obligation to escrow or deliver anything further.
         </p>
         <p style={prose.paragraph}>
-          Any successor to Caisson &mdash; by merger, acquisition, asset sale,
-          bankruptcy transfer, or otherwise &mdash; takes the Software subject
-          to this Section. This Section runs with Caisson&rsquo;s rights in the
-          Software and binds Caisson&rsquo;s successors and assigns; Caisson
-          shall make any assignment or transfer of its rights in the Software
-          expressly subject to this Section. The parties intend that this
-          Agreement is a license of &ldquo;intellectual property&rdquo; as
-          defined in Section 101(35A) of the U.S. Bankruptcy Code, and that you
-          retain the rights of a licensee under Section 365(n), including the
-          right to retain and use the Software as delivered. If a successor
-          assumes this Agreement (including this Section) in writing within the
-          period stated in clause (iv) of the definition of Continuity Event, no
-          Continuity Event occurs by reason of that transaction and this
-          Agreement continues in effect unchanged.
+          Any successor to Caisson (by merger, acquisition, asset sale,
+          bankruptcy transfer, or otherwise) takes the Software subject to this
+          Section. This Section runs with Caisson&rsquo;s rights in the Software
+          and binds Caisson&rsquo;s successors and assigns; Caisson shall make
+          any assignment or transfer of its rights in the Software expressly
+          subject to this Section. The parties intend that this Agreement is a
+          license of &ldquo;intellectual property&rdquo; as defined in Section
+          101(35A) of the U.S. Bankruptcy Code, and that you retain the rights
+          of a licensee under Section 365(n), including the right to retain and
+          use the Software as delivered. If a successor assumes this Agreement
+          (including this Section) in writing within the period stated in clause
+          (iv) of the definition of Continuity Event, no Continuity Event occurs
+          by reason of that transaction and this Agreement continues in effect
+          unchanged.
         </p>
       </Section>
 
       {/* 7. Warranty disclaimer */}
-      <Section eyebrow="Warranty" title="Disclaimer of warranties">
-        <p style={prose.paragraph}>
-          THE SOFTWARE IS PROVIDED &ldquo;AS IS&rdquo; AND &ldquo;AS
-          AVAILABLE,&rdquo; WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-          INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
-          MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-          NON-INFRINGEMENT. CAISSON DOES NOT WARRANT THAT THE SOFTWARE WILL BE
-          ERROR-FREE OR UNINTERRUPTED, OR THAT IT WILL MEET YOUR SPECIFIC
-          REQUIREMENTS.
-        </p>
+      <Section id="disclaimer-of-warranties" title="Disclaimer of warranties">
+        <Card style={{ marginTop: "var(--cs-space-4)" }}>
+          <p style={{ ...prose.paragraph, marginTop: 0, ...prose.conspicuous }}>
+            The Software is provided &ldquo;as is&rdquo; and &ldquo;as
+            available,&rdquo; without warranty of any kind, express or implied,
+            including but not limited to the implied warranties of
+            merchantability, fitness for a particular purpose, and
+            non-infringement. Caisson does not warrant that the Software will be
+            error-free or uninterrupted, or that it will meet your specific
+            requirements.
+          </p>
+        </Card>
         <p style={prose.paragraph}>
           Nothing in the Software or this Agreement constitutes compliance,
           legal, or security advice, and no statement here is a certification of
@@ -390,22 +425,34 @@ export default function EulaPage() {
       </Section>
 
       {/* 8. Limitation of liability */}
-      <Section eyebrow="Liability" title="Limitation of liability" band="tint">
-        <p style={prose.paragraph}>
-          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL
-          CAISSON OR ITS OFFICERS, DIRECTORS, EMPLOYEES, OR CONTRACTORS BE
-          LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
-          EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE,
-          DATA, OR BUSINESS OPPORTUNITY, ARISING OUT OF OR RELATED TO THIS
-          AGREEMENT OR THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-          DAMAGES.
-        </p>
-        <p style={prose.paragraph}>
-          CAISSON&apos;S TOTAL CUMULATIVE LIABILITY ARISING OUT OF OR RELATED TO
-          THIS AGREEMENT WILL NOT EXCEED THE TOTAL FEES YOU ACTUALLY PAID TO
-          CAISSON FOR THE SOFTWARE GIVING RISE TO THE CLAIM IN THE TWELVE (12)
-          MONTHS PRECEDING THE EVENT GIVING RISE TO LIABILITY.
-        </p>
+      <Section
+        id="limitation-of-liability"
+        title="Limitation of liability"
+        band="tint"
+      >
+        <Card style={{ marginTop: "var(--cs-space-4)" }}>
+          <p style={{ ...prose.paragraph, marginTop: 0, ...prose.conspicuous }}>
+            To the maximum extent permitted by applicable law, in no event will
+            Caisson or its officers, directors, employees, or contractors be
+            liable for any indirect, incidental, special, consequential,
+            exemplary, or punitive damages, or for any loss of profits, revenue,
+            data, or business opportunity, arising out of or related to this
+            Agreement or the Software, even if advised of the possibility of
+            such damages.
+          </p>
+          <p
+            style={{
+              ...prose.paragraph,
+              ...prose.conspicuous,
+              marginTop: "var(--cs-space-3)",
+            }}
+          >
+            Caisson&apos;s total cumulative liability arising out of or related
+            to this Agreement will not exceed the total fees you actually paid
+            to Caisson for the Software giving rise to the claim in the twelve
+            (12) months preceding the event giving rise to liability.
+          </p>
+        </Card>
         <p style={prose.paragraph}>
           These limitations apply regardless of the legal theory on which a
           claim is based, and even if a remedy fails of its essential purpose.
@@ -415,7 +462,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 9. Indemnification */}
-      <Section eyebrow="Indemnity" title="Indemnification">
+      <Section id="indemnification" title="Indemnification">
         <p style={prose.paragraph}>
           You agree to indemnify, defend, and hold harmless Caisson and its
           officers, directors, employees, and contractors from any claim, loss,
@@ -433,7 +480,11 @@ export default function EulaPage() {
       </Section>
 
       {/* 10. Intellectual property */}
-      <Section eyebrow="IP" title="Intellectual property" band="tint">
+      <Section
+        id="intellectual-property"
+        title="Intellectual property"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           Caisson and its licensors retain all right, title, and interest in and
           to the Software, including all intellectual property rights therein.
@@ -445,8 +496,8 @@ export default function EulaPage() {
           You retain all right, title, and interest in Your Products and in any
           modifications you make to the Software for use in Your Products,
           subject to Caisson&apos;s underlying rights in the Software and the
-          restrictions in this Agreement — you may not use those modifications
-          to circumvent the redistribution restriction.
+          restrictions in this Agreement; you may not use those modifications to
+          circumvent the redistribution restriction.
         </p>
         <p style={prose.paragraph}>
           The Caisson name, wordmark, glyph, and associated marks are the
@@ -457,7 +508,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 11. Confidentiality */}
-      <Section eyebrow="Confidential" title="Confidentiality">
+      <Section id="confidentiality" title="Confidentiality">
         <p style={prose.paragraph}>
           The Software&apos;s non-public source code, and any non-public
           technical or business information Caisson shares with you in
@@ -478,7 +529,11 @@ export default function EulaPage() {
       </Section>
 
       {/* 12. Assignment & transfer */}
-      <Section eyebrow="Assignment" title="Assignment and transfer" band="tint">
+      <Section
+        id="assignment-and-transfer"
+        title="Assignment and transfer"
+        band="tint"
+      >
         <p style={prose.paragraph}>
           You may not assign or transfer this Agreement or your license without
           Caisson&apos;s prior written consent, except that you may transfer
@@ -495,7 +550,10 @@ export default function EulaPage() {
       </Section>
 
       {/* 13. Governing law */}
-      <Section eyebrow="Jurisdiction" title="Governing law and disputes">
+      <Section
+        id="governing-law-and-disputes"
+        title="Governing law and disputes"
+      >
         <p style={prose.paragraph}>
           This Agreement is governed by and construed in accordance with the
           laws of the State of Georgia, United States, without regard to its
@@ -514,7 +572,7 @@ export default function EulaPage() {
       </Section>
 
       {/* 14. Entire agreement */}
-      <Section eyebrow="Agreement" title="Entire agreement" band="tint">
+      <Section id="entire-agreement" title="Entire agreement" band="tint">
         <p style={prose.paragraph}>
           This Agreement, together with your Order confirmation and any
           applicable module- or bundle-specific terms referenced in your
@@ -522,7 +580,7 @@ export default function EulaPage() {
           regarding the Software, and supersedes all prior or contemporaneous
           understandings regarding its subject matter. Where the plain-language
           summary at{" "}
-          <a href="/legal/license" style={{ color: "var(--cs-accent)" }}>
+          <a href="/legal/license" className="cs-link">
             /legal/license
           </a>{" "}
           and this Agreement conflict, this Agreement governs.
@@ -537,7 +595,10 @@ export default function EulaPage() {
       </Section>
 
       {/* 15. Contact */}
-      <Section eyebrow="Contact" title="Licensing and legal questions">
+      <Section
+        id="licensing-and-legal-questions"
+        title="Licensing and legal questions"
+      >
         <p style={prose.paragraph}>
           For questions about this Agreement, transfer requests, or enterprise
           terms:
@@ -547,10 +608,7 @@ export default function EulaPage() {
           <br />
           Atlanta, Georgia, USA
           <br />
-          <a
-            href="mailto:admin@caisson.sh"
-            style={{ color: "var(--cs-accent)" }}
-          >
+          <a href="mailto:admin@caisson.sh" className="cs-link">
             admin@caisson.sh
           </a>
         </p>

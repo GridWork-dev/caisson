@@ -5,21 +5,19 @@
 // rather than a plain edit, and a risk-treatment-plan evidence artifact. The EU-AI-Act evidence
 // collector in the compliance evidence engine now runs on an instance of this model.
 //
-// `sellable: false` — not individually sold and not displayed in the catalog yet; it ships as
-// substrate the compliance evidence engine composes, the same reserved-before-publish posture the
-// other not-yet-catalog-listed primitives in this tree carry. `priceCents` mirrors the shared
-// pre-launch placeholder anchor (4900) every other not-yet-priced commercial module carries; the
-// real price locks later, alongside the module's catalog listing.
+// SKU posture: SELLABLE at $279 (the 2026-07-20 pricing round; first published 0.2.0 as
+// sellable:false substrate, flipped here in the post-publish membership cut). A member of the
+// Compliance and Everything bundles.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/risk-register",
   version: pkg.version,
-  kind: "base",
+  kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
-  sellable: false,
+  priceCents: 27900,
+  sellable: true,
   license: pkg.license,
   dependencies: [
     "@caisson/audit-worm",
