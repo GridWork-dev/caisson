@@ -307,23 +307,52 @@ describe("createBedrockRentedTransport — lenient wire parse → strict mapping
 });
 
 describe("createBedrockRentedTransport — fail-closed boundaries", () => {
-  test("a non-2xx throws InternalError with the status and NEVER the response body", async () => {
-    const leakMarker = "bedrock-leaked-material";
-    const guard = new RecordingGuard(
-      bedrockPolicy(),
-      () => new Response(`upstream error: ${leakMarker}`, { status: 403 }),
+  test("a non-2xx surfaces sanitized AWS diagnostics without leaking credentials", async () => {
+    const sessionToken = "bedrock-sts-session-token";
+    const guard = new RecordingGuard(bedrockPolicy(), () =>
+      jsonResponse(
+        {
+          __type: "AccessDeniedException",
+          message: `Model access denied for ${ACCESS_KEY_ID}`,
+          signedHeaders: {
+            authorization: `AWS4-HMAC-SHA256 Credential=${ACCESS_KEY_ID}/scope`,
+            "content-type": "application/json",
+            host: HOST,
+            "x-amz-content-sha256": "bedrock-body-hash",
+            "x-amz-date": "20260725T120000Z",
+            "x-amz-security-token": sessionToken,
+          },
+          secretAccessKey: SECRET_ACCESS_KEY,
+          sessionToken,
+        },
+        403,
+      ),
     );
     let caught: unknown;
     try {
-      await makeTransport(guard).embed({ text: "x" });
+      await makeTransport(guard, { sessionToken }).embed({ text: "x" });
     } catch (err) {
       caught = err;
     }
     expect(caught).toBeInstanceOf(InternalError);
     const ie = caught as InternalError;
     expect(ie.details?.status).toBe(403);
-    expect(ie.message).not.toContain(leakMarker);
-    expect(JSON.stringify(ie.details ?? {})).not.toContain(leakMarker);
+    expect(ie.details?.action).toBe("invoke");
+    expect(ie.details?.awsType).toBe("AccessDeniedException");
+    expect(ie.details?.awsMessage).toBe("Model access denied for [REDACTED]");
+    expect(ie.message).toContain("HTTP 403");
+    expect(ie.message).toContain("AccessDeniedException");
+    expect(ie.message).toContain("Model access denied");
+    expect(ie.details?.body).toContain("AccessDeniedException");
+    const diagnostic = `${ie.message}\n${JSON.stringify(ie.details ?? {})}`;
+    expect(diagnostic).not.toContain(ACCESS_KEY_ID);
+    expect(diagnostic).not.toContain(SECRET_ACCESS_KEY);
+    expect(diagnostic).not.toContain(sessionToken);
+    expect(diagnostic).not.toContain("AWS4-HMAC-SHA256");
+    expect(diagnostic).not.toContain("application/json");
+    expect(diagnostic).not.toContain(HOST);
+    expect(diagnostic).not.toContain("bedrock-body-hash");
+    expect(diagnostic).not.toContain("20260725T120000Z");
   });
 });
 

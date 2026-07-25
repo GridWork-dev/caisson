@@ -95,27 +95,48 @@ const BEDROCK_CHAT =
 const BEDROCK_DIM = 512;
 const BEDROCK_LIVE = AWS_KEY_ID !== "" && AWS_SECRET !== "";
 
+function requireBedrockSetting(value: string, envVar: string): string {
+  if (value.trim() === "") {
+    throw new Error(
+      `Bedrock live test requires a non-empty ${envVar} in ~/.gridwork/caisson.env`,
+    );
+  }
+  return value;
+}
+
 function bedrockTransport(): RentedTransport {
+  const region = requireBedrockSetting(AWS_REGION, "AWS_REGION");
+  const embeddingModelId = requireBedrockSetting(
+    BEDROCK_EMBED,
+    "CAISSON_LIVE_BEDROCK_EMBEDDING_MODEL",
+  );
+  const completionModelId = requireBedrockSetting(
+    BEDROCK_CHAT,
+    "CAISSON_LIVE_BEDROCK_COMPLETION_MODEL",
+  );
   return createBedrockRentedTransport({
     guard: createEgressGuard(
       localOnlyPolicy([
         {
-          host: `bedrock-runtime.${AWS_REGION}.amazonaws.com`,
+          host: `bedrock-runtime.${region}.amazonaws.com`,
           kind: "rented-backend",
         },
       ]),
     ),
-    region: AWS_REGION,
+    region,
     accessKeyId: AWS_KEY_ID,
     secretAccessKey: AWS_SECRET,
     ...(AWS_SESSION !== "" ? { sessionToken: AWS_SESSION } : {}),
-    embeddingModelId: BEDROCK_EMBED,
-    completionModelId: BEDROCK_CHAT,
+    embeddingModelId,
+    completionModelId,
     dimensions: BEDROCK_DIM,
     timeoutMs: TIMEOUT_MS,
   });
 }
 
+// If either live leg returns an AWS service error, check Bedrock model-access grants plus the
+// configured model id/region in ~/.gridwork/caisson.env against the defaults above, then re-run:
+//   cd packages/local-inference && bun run test:live
 describe("Bedrock rented transport — LIVE (skips without AWS_* creds)", () => {
   test.skipIf(!BEDROCK_LIVE)(
     "embed returns the requested Titan v2 width with integer usage (SigV4 accepted by real AWS)",
