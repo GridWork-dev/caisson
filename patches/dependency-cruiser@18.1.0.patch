@@ -1,0 +1,105 @@
+diff --git a/src/extract/transpile/try-import-available.mjs b/src/extract/transpile/try-import-available.mjs
+index 13062e902551eb619e8426f3031b277b2e7813f7..2f1c8ae507031cea2d9d8b1bbe76af129a45f477 100644
+--- a/src/extract/transpile/try-import-available.mjs
++++ b/src/extract/transpile/try-import-available.mjs
+@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
+ import { coerce, satisfies } from "semver";
+ 
+ const require = createRequire(import.meta.url);
++const projectRequire = createRequire(path.join(process.cwd(), "package.json"));
+ 
+ const PACKAGE_RE = "[^/]+";
+ const SCOPED_PACKAGE_RE = "@[^/]+(?:/[^/]+)";
+@@ -16,9 +17,16 @@ function getVersion(pModuleName) {
+ 	// of course we'd love to use something like an import with an import assertion
+ 	// As that's _experimental_ we have to use _require_ in stead.
+ 	// eslint-disable-next-line import/no-dynamic-require, security/detect-non-literal-require
+-	const lManifest = require(
+-		path.join(extractRootModuleName(pModuleName), "package.json"),
++	const lManifestName = path.join(
++		extractRootModuleName(pModuleName),
++		"package.json",
+ 	);
++	let lManifest;
++	try {
++		lManifest = projectRequire(lManifestName);
++	} catch {
++		lManifest = require(lManifestName);
++	}
+ 	return lManifest.version;
+ }
+ 
+@@ -37,7 +45,11 @@ export default function tryImportAvailable(pModuleName, pSemanticVersion) {
+ 		}
+ 		// of course we'd love to use something like import.meta.resolve, but
+ 		// that's _experimental_, so ¯\_(ツ)_/¯
+-		return Boolean(require.resolve(pModuleName));
++		try {
++			return Boolean(projectRequire.resolve(pModuleName));
++		} catch {
++			return Boolean(require.resolve(pModuleName));
++		}
+ 	} catch (pError) {
+ 		return false;
+ 	}
+diff --git a/src/utl/try-import.mjs b/src/utl/try-import.mjs
+index fd2ab85f388f07b1622f2a4f13099e28c1ec0f62..fac82ae5e98654392f21c3d430ef9e56a19b8998 100644
+--- a/src/utl/try-import.mjs
++++ b/src/utl/try-import.mjs
+@@ -1,9 +1,11 @@
+ import { join } from "node:path/posix";
+ import { createRequire } from "node:module";
++import { pathToFileURL } from "node:url";
+ import { coerce, satisfies } from "semver";
+ import extractRootModuleName from "./extract-root-module-name.cjs";
+ 
+ const require = createRequire(import.meta.url);
++const projectRequire = createRequire(join(process.cwd(), "package.json"));
+ 
+ /**
+  * @throws {Error}
+@@ -26,15 +28,21 @@ function getVersion(pModuleName) {
+ 	// return lManifest.default.version;
+ 	//
+ 	// eslint-disable-next-line import/no-dynamic-require, security/detect-non-literal-require
+-	const lManifest = require(
+-		join(
+-			// @ts-expect-error TS2345 extractRootModuleName can return either a string or
+-			// undefined. If undefined this function will throw. Which is _fine_, even
+-			// _expected_ in the context it's currently used
+-			extractRootModuleName(pModuleName),
+-			"package.json",
+-		),
++	const lManifestName = join(
++		// @ts-expect-error TS2345 extractRootModuleName can return either a string or
++		// undefined. If undefined this function will throw. Which is _fine_, even
++		// _expected_ in the context it's currently used
++		extractRootModuleName(pModuleName),
++		"package.json",
+ 	);
++	let lManifest;
++	try {
++		// Bun's isolated linker may expose a dependency-local package version that
++		// differs from the invoking project's installation. Prefer the project.
++		lManifest = projectRequire(lManifestName);
++	} catch {
++		lManifest = require(lManifestName);
++	}
+ 	return lManifest.version;
+ }
+ 
+@@ -58,7 +66,13 @@ export default async function tryImport(pModuleName, pSemanticVersion) {
+ 				return false;
+ 			}
+ 		}
+-		const lModule = await import(pModuleName);
++		let lModule;
++		try {
++			const lResolvedModule = projectRequire.resolve(pModuleName);
++			lModule = await import(pathToFileURL(lResolvedModule).href);
++		} catch {
++			lModule = await import(pModuleName);
++		}
+ 		return lModule.default ? lModule.default : lModule;
+ 	} catch (pError) {
+ 		return false;

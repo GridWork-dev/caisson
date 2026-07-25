@@ -1652,6 +1652,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "dependency-cruiser@18.1.0": "patches/dependency-cruiser@18.1.0.patch",
+  },
   "overrides": {
     "@hono/node-server": "^2.0.10",
     "engine.io": "^6.6.9",
