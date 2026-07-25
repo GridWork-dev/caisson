@@ -40,6 +40,7 @@ async function withRenameAlias(
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
+  RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
   RENEWAL_EXTENSION_SCHEMA_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   UPDATES_WINDOW_EXPIRY_NOTICE_SCHEMA_SQL,
@@ -66,6 +67,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
+  await tp.exec(RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL);
   await tp.exec(UPDATES_WINDOW_EXPIRY_NOTICE_SCHEMA_SQL);
 });
 
@@ -725,9 +727,11 @@ describe("renewal-extension ledger + reverse (un-extend, ADR-0251 Consequences)"
       entitlement_id: string;
       purchase_id: string;
       line_item_id: string;
+      months: number;
       status: string;
     }>(
-      `SELECT entitlement_id, purchase_id, line_item_id, status FROM renewal_extension WHERE account_id = $1`,
+      `SELECT entitlement_id, purchase_id, line_item_id, months, status
+         FROM renewal_extension WHERE account_id = $1`,
       [acct],
     );
     expect(rows).toEqual([
@@ -735,6 +739,7 @@ describe("renewal-extension ledger + reverse (un-extend, ADR-0251 Consequences)"
         entitlement_id: "compliance",
         purchase_id: "pay_ren_rl",
         line_item_id: "txnitm_rl",
+        months: 12,
         status: "active",
       },
     ]);
@@ -771,6 +776,80 @@ describe("renewal-extension ledger + reverse (un-extend, ADR-0251 Consequences)"
     // Exactly back to the original purchase window — never below it.
     expect((await windowOf(acct)).compliance).toBe("2027-01-05T00:00:00.000Z");
     expect(await ledgerStatuses(acct)).toEqual(["reversed"]);
+  });
+
+  test("reverse un-extends the full tenor of a two-year renewal", async () => {
+    const acct = "acct_ren_rev_2y";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_rev_2y",
+        source: onetime("pay_rev_2y"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z"); // baseline window end = 2027-01-05
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_ren_rev_2y",
+        lineItemId: "txnitm_rev_2y",
+        years: 2,
+      }),
+    );
+    expect((await windowOf(acct)).compliance).toBe("2029-01-05T00:00:00.000Z");
+    expect(
+      await tp.query<{ months: number }>(
+        `SELECT months FROM renewal_extension
+          WHERE account_id = $1 AND purchase_id = $2`,
+        [acct, "pay_ren_rev_2y"],
+      ),
+    ).toEqual([{ months: 24 }]);
+
+    const n = await withTenant(tp.pg, acct, (tx) =>
+      reverseRenewalExtensions(tx, {
+        accountId: acct,
+        purchaseId: "pay_ren_rev_2y",
+      }),
+    );
+    expect(n).toBe(1);
+    expect((await windowOf(acct)).compliance).toBe("2027-01-05T00:00:00.000Z");
+    expect(await ledgerStatuses(acct)).toEqual(["reversed"]);
+  });
+
+  test("a pre-migration renewal row with NULL months reverses as the legacy 12-month tenor", async () => {
+    const acct = "acct_ren_rev_legacy";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_rev_legacy",
+        source: onetime("pay_rev_legacy"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z");
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_ren_rev_legacy",
+        lineItemId: "txnitm_rev_legacy",
+      }),
+    );
+    await tp.query(
+      `UPDATE renewal_extension SET months = NULL
+        WHERE account_id = $1 AND purchase_id = $2`,
+      [acct, "pay_ren_rev_legacy"],
+    );
+
+    await withTenant(tp.pg, acct, (tx) =>
+      reverseRenewalExtensions(tx, {
+        accountId: acct,
+        purchaseId: "pay_ren_rev_legacy",
+      }),
+    );
+    expect((await windowOf(acct)).compliance).toBe("2027-01-05T00:00:00.000Z");
   });
 
   test("a second refund event does not double-shrink (idempotent latch)", async () => {

@@ -167,6 +167,14 @@ CREATE UNIQUE INDEX renewal_extension_uniq
 ${buildTenantPolicySql("renewal_extension")}
 `;
 
+// CAISSON-128: persist the exact renewal tenor that moved the updates window so a later refund can
+// subtract the same interval. SEPARATE migration, never an edit to the checksum-pinned
+// `0017_renewal_extension.sql` above (ADR-0006 append-only). Nullable by design: rows written before
+// this migration carry NULL and reverse as the historical one-year / 12-month tenor.
+export const RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL = `
+ALTER TABLE renewal_extension ADD COLUMN months integer;
+`;
+
 /** The provenance of a grant: a recurring subscription, or a one-time (non-subscription) purchase. */
 export type GrantSource =
   | { kind: "subscription"; subscriptionId: string }
@@ -932,8 +940,8 @@ export async function extendUpdatesWindow(
   // as the extend UPDATE above.
   await tx.query(
     `INSERT INTO renewal_extension
-       (id, account_id, entitlement_id, purchase_id, line_item_id)
-     VALUES ($1, $2, $3, $4, $5)
+       (id, account_id, entitlement_id, purchase_id, line_item_id, months)
+     VALUES ($1, $2, $3, $4, $5, $6)
      ON CONFLICT (account_id, entitlement_id, purchase_id, line_item_id) DO NOTHING`,
     [
       randomUUID(),
@@ -941,6 +949,7 @@ export async function extendUpdatesWindow(
       input.entitlementId,
       input.sourceEventId,
       input.lineItemId ?? "",
+      months,
     ],
   );
   return r.rows.length;
@@ -962,19 +971,21 @@ export interface ReverseRenewalExtensionsInput {
 /**
  * Un-extend the updates window a refunded renewal SKU had granted (ADR-0251 Consequences —
  * previously an unbuilt follow-up). For each ACTIVE `renewal_extension` ledger row this refund
- * matches, shrink the renewed pair's active one_time grant rows by ONE renewal interval (12 months),
- * FLOORED at the original purchase window (`granted_at + 12 months`) so the window can never dip
- * BELOW what the buyer originally bought — then LATCH the ledger row `reversed`, so a redelivered or
- * sibling refund event (e.g. a partial then a whole-transaction adjustment) never double-shrinks it
- * (idempotent). Alias-tolerant: the ledger's canonical `entitlement_id` matches legacy-keyed grant
- * rows via the alias group (the extend/window-read convention). Returns the number of extensions
- * reversed. Run inside `withTenant`.
+ * matches, shrink the renewed pair's active one_time grant rows by that row's stored renewal tenor
+ * (`months`, with legacy NULL rows defaulting to 12), FLOORED at the original purchase window
+ * (`granted_at + 12 months`) so the window can never dip BELOW what the buyer originally bought —
+ * then LATCH the ledger row `reversed`, so a redelivered or sibling refund event (e.g. a partial
+ * then a whole-transaction adjustment) never double-shrinks it (idempotent). Alias-tolerant: the
+ * ledger's canonical `entitlement_id` matches legacy-keyed grant rows via the alias group (the
+ * extend/window-read convention). Returns the number of extensions reversed. Run inside
+ * `withTenant`.
  *
- * // ponytail: the shrink subtracts a FIXED 12 months rather than restoring a stored pre-value.
+ * // ponytail: the shrink subtracts the stored tenor rather than restoring a stored pre-value.
  * // Exact whenever the renewal was bought while the window was still live (the common case:
- * // `updates_expires_at - 12mo` == the prior end). A renewal bought on a LAPSED window over-restores
- * // by the lapse gap (favoring the buyer, always ≥ baseline) — accepted rather than storing per-row
- * // before/after; upgrade to a stored pre-value only if lapsed-then-refunded exactness ever matters.
+ * // `updates_expires_at - months` == the prior end). A renewal bought on a LAPSED window
+ * // over-restores by the lapse gap (favoring the buyer, always ≥ baseline) — accepted rather than
+ * // storing per-row before/after; upgrade to a stored pre-value only if lapsed-then-refunded
+ * // exactness ever matters.
  */
 export async function reverseRenewalExtensions(
   tx: TenantExecutor,
@@ -982,13 +993,23 @@ export async function reverseRenewalExtensions(
 ): Promise<number> {
   const rows =
     input.lineItemIds === undefined
-      ? await tx.query<{ id: string; entitlement_id: string }>(
-          `SELECT id, entitlement_id FROM renewal_extension
+      ? await tx.query<{
+          id: string;
+          entitlement_id: string;
+          months: number;
+        }>(
+          `SELECT id, entitlement_id, COALESCE(months, 12) AS months
+             FROM renewal_extension
              WHERE account_id = $1 AND purchase_id = $2 AND status = 'active'`,
           [input.accountId, input.purchaseId],
         )
-      : await tx.query<{ id: string; entitlement_id: string }>(
-          `SELECT id, entitlement_id FROM renewal_extension
+      : await tx.query<{
+          id: string;
+          entitlement_id: string;
+          months: number;
+        }>(
+          `SELECT id, entitlement_id, COALESCE(months, 12) AS months
+             FROM renewal_extension
              WHERE account_id = $1 AND purchase_id = $2 AND status = 'active'
                AND line_item_id = ANY($3::text[])`,
           [input.accountId, input.purchaseId, [...input.lineItemIds]],
@@ -1002,13 +1023,17 @@ export async function reverseRenewalExtensions(
       `UPDATE entitlement_grant
          SET updates_expires_at = GREATEST(
                granted_at + interval '12 months',
-               updates_expires_at - interval '12 months')
+               updates_expires_at - make_interval(months => $3::int))
        WHERE account_id = $1
          AND entitlement_id = ANY($2::text[])
          AND source_kind = 'one_time'
          AND status = 'active'
          AND updates_expires_at IS NOT NULL`,
-      [input.accountId, entitlementIdAliasGroup(row.entitlement_id)],
+      [
+        input.accountId,
+        entitlementIdAliasGroup(row.entitlement_id),
+        row.months,
+      ],
     );
     await tx.query(
       `UPDATE renewal_extension SET status = 'reversed', reversed_at = now() WHERE id = $1`,

@@ -97,6 +97,7 @@ test("platformMigrationsPackage() with no extra applies the shared chain (everyt
     "0024_checkout_abandonment.sql",
     "0025_order_record_discount.sql",
     "0026_affiliate_code.sql",
+    "0030_renewal_extension_months.sql",
   ]);
   expect(assembly.sequence.map((m) => m.filename)).toEqual([
     "0001_app_role.sql",
@@ -120,6 +121,7 @@ test("platformMigrationsPackage() with no extra applies the shared chain (everyt
     "0019_checkout_abandonment.sql",
     "0020_order_record_discount.sql",
     "0021_affiliate_code.sql",
+    "0022_renewal_extension_months.sql",
   ]);
 });
 

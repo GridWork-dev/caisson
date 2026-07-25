@@ -37,6 +37,10 @@ export function renewalYears(entry: RenewalBookEntry): number {
   return entry.years ?? 1;
 }
 
+// TODO(CAISSON-128 arming): the operator must add Paddle multi-year prices, add matching
+// RENEWAL_BOOK rows with `years: 2` or `years: 3`, decide and add `discountBps`, and wire the
+// `multiYearRenewalAmount` display. None of those product/price changes are armed by this pre-work.
+
 /**
  * `providerPriceId -> RenewalBookEntry`. One renewal SKU per renewable edition/module (the same
  * catalog PURCHASE_BOOK sells one-time), plus the bundle. Live SANDBOX price ids; resolveRenewal
