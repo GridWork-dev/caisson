@@ -78,8 +78,10 @@ describe("registry coverage gates (CAISSON-85/86)", () => {
     for (const line of grandfather.danglingMemberPins) {
       expect(currentDangling.has(line)).toBe(true);
     }
+    // Re-frozen 2026-07-24: the expired agent-trajectory@0.3.0 carve-out prune exposed 2 more
+    // dead pinner edges (agentic-dev@0.2.3, everything@0.2.5) — 114 -> 116, same class as above.
     expect(grandfather.rowlessVersions.length).toBeLessThanOrEqual(88);
-    expect(grandfather.danglingMemberPins.length).toBeLessThanOrEqual(114);
+    expect(grandfather.danglingMemberPins.length).toBeLessThanOrEqual(116);
   });
 
   test("checkRegistryCoverage over the committed files reports ok", () => {

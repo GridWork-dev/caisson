@@ -1,5 +1,5 @@
 {
-  "$comment": "Frozen pre-sidecar backlog (CAISSON-85/86; tarballs.json was bolted on by ADR-0223 after these versions shipped). rowlessVersions: advertised id@version pairs with no tarball row. danglingMemberPins: served-index member pins that do not resolve on the served+tarball-backed surface. Enumerated once 2026-07-12 (kickoff P). Re-enumerated 2026-07-17 after the ADR-0359 93-row version-delist prune: rowlessVersions held steady at 88 (untouched by the prune); danglingMemberPins retired the stale everything@0.2.0/0.2.1/0.2.2 pinner rows (those pinning VERSIONS were themselves version-delisted, so the served index no longer carries them to check) and grew to enumerate the still-served bundle manifests' member pins the prune exposed as dead - those manifests' pinned old member versions were among the 93 pruned rows, a silently-dead edge the prune converted into an honestly-enumerated one. Entries may HEAL (gain rows via a future backfill, or drop out when their own pinning version is later delisted) but the lists must never grow past a re-enumeration event - a violation outside these lists fails the coverage gate.",
+  "$comment": "Frozen pre-sidecar backlog (CAISSON-85/86; tarballs.json was bolted on by ADR-0223 after these versions shipped). rowlessVersions: advertised id@version pairs with no tarball row. danglingMemberPins: served-index member pins that do not resolve on the served+tarball-backed surface. Enumerated once 2026-07-12 (kickoff P). Re-enumerated 2026-07-17 after the ADR-0359 93-row version-delist prune: rowlessVersions held steady at 88 (untouched by the prune); danglingMemberPins retired the stale everything@0.2.0/0.2.1/0.2.2 pinner rows (those pinning VERSIONS were themselves version-delisted, so the served index no longer carries them to check) and grew to enumerate the still-served bundle manifests' member pins the prune exposed as dead - those manifests' pinned old member versions were among the 93 pruned rows, a silently-dead edge the prune converted into an honestly-enumerated one. Entries may HEAL (gain rows via a future backfill, or drop out when their own pinning version is later delisted) but the lists must never grow past a re-enumeration event - a violation outside these lists fails the coverage gate. Re-enumerated 2026-07-24 when the expired agent-trajectory@0.3.0 carve-out (PR #312) was pruned - PRs #315/#317 had repointed the live bundle pins to 0.3.4, so danglingMemberPins grew by the two still-served old pinner rows (agentic-dev@0.2.3, everything@0.2.5) the delist exposed as dead edges.",
   "rowlessVersions": [
     "@caisson/agent-kernel@0.1.0",
     "@caisson/agent-kernel@0.2.0",
@@ -97,6 +97,7 @@
     "@caisson/agentic-dev@0.2.1 -> @caisson/kernel@0.4.2",
     "@caisson/agentic-dev@0.2.1 -> @caisson/local-store@0.2.4",
     "@caisson/agentic-dev@0.2.1 -> @caisson/tool-exec@0.1.5",
+    "@caisson/agentic-dev@0.2.3 -> @caisson/agent-trajectory@0.3.0",
     "@caisson/ai-production@0.2.1 -> @caisson/ai-config@0.3.0",
     "@caisson/ai-production@0.2.1 -> @caisson/ai-evals@0.3.1",
     "@caisson/ai-production@0.2.1 -> @caisson/ai-meter@0.3.4",
@@ -195,6 +196,7 @@
     "@caisson/everything@0.2.3 -> @caisson/signing-primitive@0.2.0",
     "@caisson/everything@0.2.3 -> @caisson/tool-exec@0.1.5",
     "@caisson/everything@0.2.3 -> @caisson/ui-pro@0.1.0",
+    "@caisson/everything@0.2.5 -> @caisson/agent-trajectory@0.3.0",
     "@caisson/local-first@0.2.1 -> @caisson/field-crypto@0.3.0",
     "@caisson/local-first@0.2.1 -> @caisson/kernel@0.4.2",
     "@caisson/local-first@0.2.1 -> @caisson/license-verify@0.3.0",

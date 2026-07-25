@@ -262,20 +262,6 @@
         }
       }
     },
-    "@caisson/agent-trajectory@0.3.0": {
-      "key": "agent-trajectory/agent-trajectory-0.3.0.tgz",
-      "shasum": "2fbdabfd61c754f750196729de88c340ab57aa63",
-      "integrity": "sha512-hgzenbdnjkNQoV9j1yonl0fxQkwjs6zqKPFEltpLDYxpLtozAXqMVMwkIob4XUl1SsZ3nM2XQZSzp2+pOckNsA==",
-      "size": 37022,
-      "meta": {
-        "dependencies": {
-          "@caisson/field-crypto": "0.3.2",
-          "@caisson/kernel": "0.5.0",
-          "@caisson/tenancy-rls": "0.5.2",
-          "zod": "^4.0.0"
-        }
-      }
-    },
     "@caisson/agent-trajectory@0.3.2": {
       "key": "agent-trajectory/agent-trajectory-0.3.2.tgz",
       "shasum": "d0a09de567d71a7cb9e10e87652d37d1a2c6fd69",
