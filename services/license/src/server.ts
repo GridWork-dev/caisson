@@ -19,6 +19,7 @@ import { initObservability } from "@caisson/observability";
 import { loadRegistryIndex } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
+import { createRateLimiterAlert, loadOpsAlertChannels } from "./alerting.ts";
 import { hasRecentAbandonedCheckoutNotice } from "./checkout-abandonment-store.ts";
 import {
   type ChargebackAlert,
@@ -132,6 +133,7 @@ export function startServer(
   // Zod-validated from env with safe defaults; a present-but-invalid limit fails startup closed rather
   // than serving with a silently-wrong budget.
   const limiter = new TokenBucketLimiter(loadRateLimitConfig());
+  const rateLimiterAlert = createRateLimiterAlert(loadOpsAlertChannels());
 
   // Post-grant Discord role push (ADR-0203): wired only when SUPPORT_BOT_URL +
   // SUPPORT_BOT_GRANT_TOKEN are both set; otherwise the webhook grants exactly as before and the
@@ -242,6 +244,7 @@ export function startServer(
     db,
     provider,
     limiter,
+    rateLimiterAlert,
     discordNotify,
     posthogCapture,
     abandonedCheckoutConverted,

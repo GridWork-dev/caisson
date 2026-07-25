@@ -70,6 +70,10 @@ import {
 import type { PurchaseCapture } from "./posthog-capture.ts";
 import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
 import { type BillingWebhookResult, handleBillingWebhook } from "./webhook.ts";
+import type {
+  RateLimiterFailureMode,
+  RateLimiterInfraAlert,
+} from "./alerting.ts";
 
 export interface IssueAppDeps {
   /** Bearer secret for POST /issue. Must be non-empty — server.ts fails closed if it is unset. */
@@ -100,6 +104,11 @@ export interface IssueAppDeps {
    * primary auth — this only caps an abusive flood. server.ts injects it.
    */
   limiter: RateLimiter;
+  /**
+   * Detached operational alert for limiter infrastructure failures. The payload is intentionally
+   * redacted to route bucket + applied failure policy; it never receives request or error data.
+   */
+  rateLimiterAlert: (alert: RateLimiterInfraAlert) => Promise<void>;
   /**
    * The post-grant Discord role push (ADR-0203). `null` when SUPPORT_BOT_URL /
    * SUPPORT_BOT_GRANT_TOKEN are unset — the push is simply skipped. Fired DETACHED after the grant
@@ -553,12 +562,13 @@ async function mintLicensePostCommit(
 export function createApp(
   deps: IssueAppDeps,
 ): (req: Request) => Promise<Response> {
-  /**
-   * Per-IP rate gate. Returns a 429 Response when the bucket is exhausted, or `null` to proceed. FAILS
-   * OPEN on any limiter internal error (logs to stderr — never silently disables) so a limiter bug can
-   * never take the commerce webhook or the issuer offline.
-   */
-  const rateLimited = (bucket: RateBucket, req: Request): Response | null => {
+  /** Per-IP rate gate. A real bucket denial is always 429. Infrastructure failure follows the
+   * caller's explicit route policy and emits a detached, redacted operational alert. */
+  const rateLimited = (
+    bucket: RateBucket,
+    req: Request,
+    failureMode: RateLimiterFailureMode,
+  ): Response | null => {
     try {
       // Per-IP FIRST, so per-IP abuse stays isolated to the abuser's own bucket. Only a per-IP-ALLOWED
       // request then charges the header-independent service-wide ceiling (Strix vuln-0001 defense-in-
@@ -577,12 +587,26 @@ export function createApp(
         });
       }
       return null;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+    } catch {
       process.stderr.write(
-        `[service-license] rate-limiter error (failing open): ${msg}\n`,
+        `[service-license] ALERT: rate-limiter infrastructure failure; bucket=${bucket}; policy=fail-${failureMode}\n`,
       );
-      return null;
+      try {
+        void deps
+          .rateLimiterAlert({ bucket, failureMode })
+          .catch(() =>
+            process.stderr.write(
+              "[service-license] rate-limiter alert rejected (ignored)\n",
+            ),
+          );
+      } catch {
+        process.stderr.write(
+          "[service-license] rate-limiter alert threw (ignored)\n",
+        );
+      }
+      return failureMode === "closed"
+        ? json({ error: "rate limiter unavailable" }, 503)
+        : null;
     }
   };
 
@@ -606,7 +630,7 @@ export function createApp(
     if (pathname === "/issue") {
       if (method !== "POST") return text("method not allowed", 405);
       // Rate-gate BEFORE the bearer check (defense-in-depth) so an unauthenticated flood is capped too.
-      const limited = rateLimited("issue", req);
+      const limited = rateLimited("issue", req, "closed");
       if (limited !== null) return limited;
       if (!authorized(req, deps.token, deps.adminToken ?? ""))
         return json({ error: "unauthorized" }, 401);
@@ -661,7 +685,7 @@ export function createApp(
     // `{ discountId, code }`.
     if (pathname === "/admin/affiliate/mint") {
       if (method !== "POST") return text("method not allowed", 405);
-      const limited = rateLimited("issue", req);
+      const limited = rateLimited("issue", req, "closed");
       if (limited !== null) return limited;
       if (!authorized(req, deps.token, deps.adminToken ?? ""))
         return json({ error: "unauthorized" }, 401);
@@ -705,7 +729,7 @@ export function createApp(
       const evalDeps = deps.eval;
       if (evalDeps === null || evalDeps === undefined)
         return json({ error: "not found" }, 404);
-      const limited = rateLimited("issue", req);
+      const limited = rateLimited("issue", req, "closed");
       if (limited !== null) return limited;
       if (!authorized(req, deps.token, deps.adminToken ?? ""))
         return json({ error: "unauthorized" }, 401);
@@ -800,7 +824,7 @@ export function createApp(
       const evalDeps = deps.eval;
       if (evalDeps === null || evalDeps === undefined)
         return json({ error: "not found" }, 404);
-      const limited = rateLimited("issue", req);
+      const limited = rateLimited("issue", req, "closed");
       if (limited !== null) return limited;
       if (!authorized(req, deps.token, deps.adminToken ?? ""))
         return json({ error: "unauthorized" }, 401);
@@ -916,7 +940,7 @@ export function createApp(
 
       // Rate-gate FIRST: /webhook is the public grey-origin (`*.up.railway.app`) surface, so an
       // unsigned flood (each costs an HMAC compute) is capped before any verify/DB work.
-      const limited = rateLimited("webhook", req);
+      const limited = rateLimited("webhook", req, "open");
       if (limited !== null) return limited;
 
       // Fail closed when the webhook secret is unconfigured: a null provider cannot verify ANY signature,

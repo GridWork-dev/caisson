@@ -13,6 +13,16 @@ import {
 } from "@caisson/alerting";
 import type { AlertChannel, AlertEvent } from "@caisson/alerting";
 import type { JobAlertingDeps } from "@caisson/jobs";
+import type { RateBucket } from "./rate-limit.ts";
+
+export type RateLimiterFailureMode = "open" | "closed";
+
+/** Deliberately excludes request, client, and raw-error data so an infrastructure alert can never
+ * leak headers, tokens, request bodies, IP addresses, or provider connection strings. */
+export interface RateLimiterInfraAlert {
+  bucket: RateBucket;
+  failureMode: RateLimiterFailureMode;
+}
 
 /** Resolve the ops Discord alert channels from env; empty (no channel) unless
  *  `DISCORD_OPS_WEBHOOK_URL` is set. Same load-from-env, fail-safe-absent shape as
@@ -68,6 +78,27 @@ function jobInfraErrorEvent(
     dedupeKey: "jobs.infra_error",
     title: "pg-boss infra error",
     body: withSuppressedNote(message, suppressedCount).slice(0, 5000),
+    createdAt: nowMs,
+  };
+}
+
+function rateLimiterInfraErrorEvent(
+  alert: RateLimiterInfraAlert,
+  nowMs: number,
+  suppressedCount: number,
+): AlertEvent {
+  return {
+    id: crypto.randomUUID(),
+    type: "license.rate_limiter_infra_error",
+    severity: "critical",
+    tenantId: "operator",
+    recipient: "operator",
+    dedupeKey: `license.rate_limiter_infra_error:${alert.bucket}:${alert.failureMode}`,
+    title: "License rate limiter unavailable",
+    body: withSuppressedNote(
+      `The ${alert.bucket} limiter threw; request handling applied fail-${alert.failureMode} policy.`,
+      suppressedCount,
+    ),
     createdAt: nowMs,
   };
 }
@@ -143,5 +174,29 @@ export function createJobAlertingDeps(
         // Same posture — never throw back into pg-boss's error event dispatch.
       }
     },
+  };
+}
+
+/** Build the detached, never-throw operational alert used by the HTTP router when limiter
+ * infrastructure throws. A per-bucket/policy cooldown prevents an outage from paging once per
+ * request while preserving separate signals for the availability-biased webhook and protected
+ * fail-closed routes. */
+export function createRateLimiterAlert(
+  channels: readonly AlertChannel[],
+): (alert: RateLimiterInfraAlert) => Promise<void> {
+  const cooldown = createCooldown();
+  return async (alert: RateLimiterInfraAlert): Promise<void> => {
+    const key = `license.rate_limiter_infra_error:${alert.bucket}:${alert.failureMode}`;
+    const suppressed = cooldown(key);
+    if (suppressed === null) return;
+    try {
+      await deliverImmediate(
+        rateLimiterInfraErrorEvent(alert, Date.now(), suppressed),
+        channels,
+        createInMemoryAuditSink(),
+      );
+    } catch {
+      // Alert delivery must never change the route's locked failure policy.
+    }
   };
 }

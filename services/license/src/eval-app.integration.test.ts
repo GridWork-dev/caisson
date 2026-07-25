@@ -34,6 +34,7 @@ import {
 import type { Transactor } from "@caisson/tenancy-rls";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { createApp } from "./app.ts";
+import type { RateLimiterInfraAlert } from "./alerting.ts";
 import {
   EVAL_APPLICATION_SCHEMA_SQL,
   createEvalApplication,
@@ -47,7 +48,11 @@ import {
 } from "./eval-store.ts";
 import type { EvalConfig } from "./eval-verification.ts";
 import { LICENSE_REVOCATION_SCHEMA_SQL } from "./license-revocation-store.ts";
-import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
+import {
+  loadRateLimitConfig,
+  type RateLimiter,
+  TokenBucketLimiter,
+} from "./rate-limit.ts";
 
 const TOKEN = "test-license-issue-token-0123456789";
 const DEV_SEED = createHash("sha256")
@@ -146,6 +151,7 @@ beforeAll(async () => {
     renewalEmailNotify: async () => {},
     revokeEmailNotify: async () => {},
     chargebackAlert: async () => {},
+    rateLimiterAlert: async () => {},
     eval: { config: CONFIG, resolveSignals: goodSignals },
   });
 });
@@ -363,6 +369,52 @@ const issueReq = (body: unknown, auth = TOKEN) =>
   });
 
 describe("HTTP /eval/apply + /eval/issue", () => {
+  for (const pathname of ["/eval/apply", "/eval/issue"] as const) {
+    for (const stage of ["check", "checkGlobal"] as const) {
+      test(`${pathname} fails closed with 503 and alerts when limiter ${stage} throws`, async () => {
+        const alerts: RateLimiterInfraAlert[] = [];
+        const limiter: RateLimiter = {
+          check: () => {
+            if (stage === "check") throw new Error("limiter unavailable");
+            return { allowed: true, retryAfterSec: 0 };
+          },
+          checkGlobal: () => {
+            if (stage === "checkGlobal") throw new Error("limiter unavailable");
+            return { allowed: true, retryAfterSec: 0 };
+          },
+        };
+        const limitedApp = createApp({
+          token: TOKEN,
+          signer,
+          index,
+          db,
+          provider: null,
+          limiter,
+          discordNotify: null,
+          posthogCapture: null,
+          purchaseEmailNotify: async () => {},
+          renewalEmailNotify: async () => {},
+          revokeEmailNotify: async () => {},
+          chargebackAlert: async () => {},
+          rateLimiterAlert: async (alert) => {
+            alerts.push(alert);
+          },
+          eval: { config: CONFIG, resolveSignals: goodSignals },
+        });
+
+        const response = await limitedApp(
+          new Request(`http://license.test${pathname}`, { method: "POST" }),
+        );
+
+        expect(response.status).toBe(503);
+        expect(await response.json()).toEqual({
+          error: "rate limiter unavailable",
+        });
+        expect(alerts).toEqual([{ bucket: "issue", failureMode: "closed" }]);
+      });
+    }
+  }
+
   test("apply auto-approves a good work domain; a free-mail domain auto-rejects", async () => {
     const d = freshDomain();
     const ok = await app(
@@ -595,6 +647,7 @@ describe("HTTP /eval/* is 404 when the eval surface is not wired", () => {
       renewalEmailNotify: async () => {},
       revokeEmailNotify: async () => {},
       chargebackAlert: async () => {},
+      rateLimiterAlert: async () => {},
       // eval omitted → null
     });
     expect(

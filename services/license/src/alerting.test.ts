@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { createCaptureChannel } from "@caisson/alerting";
 import type { AlertChannel } from "@caisson/alerting";
-import { createJobAlertingDeps, loadOpsAlertChannels } from "./alerting.ts";
+import {
+  createJobAlertingDeps,
+  createRateLimiterAlert,
+  loadOpsAlertChannels,
+} from "./alerting.ts";
 
 describe("loadOpsAlertChannels", () => {
   test("no channel when DISCORD_OPS_WEBHOOK_URL is unset", () => {
@@ -103,5 +107,42 @@ describe("createJobAlertingDeps", () => {
     await deps.reportInfraError(new Error("c"));
 
     expect(capture.delivered).toHaveLength(3);
+  });
+});
+
+describe("createRateLimiterAlert", () => {
+  test("delivers a redacted critical event with the applied route policy", async () => {
+    const capture = createCaptureChannel("capture");
+    const report = createRateLimiterAlert([capture]);
+
+    await report({ bucket: "issue", failureMode: "closed" });
+
+    expect(capture.delivered).toHaveLength(1);
+    expect(capture.delivered[0]).toMatchObject({
+      type: "license.rate_limiter_infra_error",
+      severity: "critical",
+      title: "License rate limiter unavailable",
+      body: "The issue limiter threw; request handling applied fail-closed policy.",
+    });
+  });
+
+  test("deduplicates a same-policy burst and never throws on channel failure", async () => {
+    const capture = createCaptureChannel("capture");
+    const failing: AlertChannel = {
+      name: "flaky",
+      deliver: () => {
+        throw new Error("channel down");
+      },
+    };
+    const report = createRateLimiterAlert([capture, failing]);
+
+    await expect(
+      Promise.all(
+        Array.from({ length: 5 }, () =>
+          report({ bucket: "webhook", failureMode: "open" }),
+        ),
+      ),
+    ).resolves.toBeDefined();
+    expect(capture.delivered).toHaveLength(1);
   });
 });

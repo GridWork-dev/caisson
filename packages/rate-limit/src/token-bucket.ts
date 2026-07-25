@@ -13,9 +13,10 @@
 //
 // The bucket is a fixed-window token bucket: each (bucket,ip) holds `tokens` that reset to
 // `capacity` at the `resetAt` window boundary. Bounded map size + prune-on-insert keep memory flat
-// under a spray of distinct source IPs. The limiter NEVER throws on a hot path; callers should still
-// fail OPEN on any internal error (log, never silently disable) so a limiter bug can't take a
-// service down.
+// under a spray of distinct source IPs. This implementation does not throw on its hot path; callers
+// still declare an explicit infrastructure-failure policy because injected or future shared-store
+// implementations can fail. Availability-sensitive routes may fail open, while protected routes
+// can fail closed.
 export interface BucketConfig {
   /** Burst capacity = max requests allowed within one window. */
   readonly capacity: number;
