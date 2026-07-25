@@ -16,12 +16,14 @@
 #                      (~6.5.2 range) — deduped onto the same 6.6.9 already used by the
 #                      socket.io@4.8.3 path elsewhere in the tree                           -> >=6.6.7
 #   fast-uri           GHSA-v2hh-gcrm-f6hx, via ajv@8.20.0 (already allows ^3.0.1)          -> >=3.1.4
+#   postcss            GHSA-6g55-p6wh-862q / GHSA-r28c-9q8g-f849 (sourceMappingURL file reads)
+#                      + the formerly-accepted CVE-2026-41305                               -> >=8.5.18
+#   valibot            GHSA-5qjj-4xww-7phc (flatten() throw on inherited prop names)        -> >=1.4.2
+#   js-yaml 5.x        GHSA-pm4m-ph32-ghv5 (flow-collection DoS) — 5.2.1 re-resolved off the
+#                      tree (fumadocs range) / 3.x-4.x copies unaffected                    -> >=5.2.2
+#   brace-expansion 5.x GHSA-mh99-v99m-4gvg                                                  -> >=5.0.8
 #
 # Every id below has a matching dated row in docs/security/tooling-playbook.md (Accepted findings).
-
-[[IgnoredVulns]]
-id = "CVE-2026-41305"
-reason = "postcss <8.5.10. XSS only when postcss stringifies attacker-submitted CSS source; the site build processes only first-party authored CSS, never user-submitted stylesheets. Fix (8.5.10) is a build-critical same-major bump deferred to Renovate rather than a hand-forced override across the shared checkout. Accepted 2026-07-10."
 
 [[IgnoredVulns]]
 id = "CVE-2026-54285"
@@ -30,3 +32,7 @@ reason = "@opentelemetry/core 2.0.1, transitive under @trigger.dev/core's pinned
 # NOTE: pytest CVE-2025-71176 lives in services/support-bot/uv.lock. osv-scanner config does NOT
 # propagate into child directories (per its docs), so that accept lives in
 # services/support-bot/osv-scanner.toml, next to the lockfile it applies to.
+
+[[IgnoredVulns]]
+id = "GHSA-mh99-v99m-4gvg"
+reason = "brace-expansion DoS via unbounded expansion (OOM). Remaining copies after the 2026-07-25 bump wave are 1.1.16 (minimatch@3 chains under eslint tooling) and 2.1.2 (minimatch@5-9 chains) — NO patched 1.x/2.x release exists (fix only in 5.0.8, which the 5.x copy already runs). Forcing 5.x into minimatch@<10 parents is a cross-major breakage risk for a dev/build-time-only surface whose expansion inputs are first-party glob patterns, never attacker-controlled. Revisit when upstream publishes patched 1.x/2.x or parents bump minimatch. Accepted 2026-07-25 (resident, clean-state sweep — flagged for operator retro-veto)."
