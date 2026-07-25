@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-// Shared prose styles for the four legal pages — inline style props reading --cs-* tokens.
+// Shared prose styles for the five legal pages — inline style props reading --cs-* tokens.
 // Previously each page carried its own copy and they drifted: the EULA was remediated to a
 // 33rem column while the other three stayed at 72ch, and the visual audit flagged legal pages
 // leaving ~45% of the desktop width empty. One measure now, consistent with the site's own

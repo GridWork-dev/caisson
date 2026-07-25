@@ -143,11 +143,11 @@ jobs:
         # can exceed its hook timeout. Halving peak concurrency removes the starvation (local `bun run
         # check` stays full-speed). Tunable if the job runs long.
         run: bunx turbo run build lint test --no-daemon --concurrency=50% --continue=dependencies-successful && bun run gate
-      - name: demo excerpt + preview guards (tools/ sits outside the workspace, so turbo never runs these)
-        # The excerpt secret-scan + source-drift test and the preview reader-contract test are
-        # load-bearing gates for a PUBLIC marketing surface — same class as the registry job's
-        # outside-turbo `bun test registry/...`.
-        run: bun test tools/demo-excerpts tools/demo-preview
+      - name: public-surface + Paddle catalog guards (tools/ sits outside the workspace)
+        # The excerpt secret-scan + source-drift test, preview reader contract, and production
+        # Paddle marker-map validator are load-bearing gates outside turbo — same class as the
+        # registry job's outside-turbo `bun test registry/...`.
+        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 

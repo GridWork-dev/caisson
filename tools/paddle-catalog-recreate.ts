@@ -21,7 +21,9 @@
  * Usage:
  *   bun tools/paddle-catalog-recreate.ts               # DRY-RUN: print the create plan, no API calls
  *   PADDLE_ENV=production PADDLE_API_KEY=pdl_live_... \
- *     bun tools/paddle-catalog-recreate.ts --execute    # create against Paddle (idempotent)
+ *     bun tools/paddle-catalog-recreate.ts --execute \
+ *       --export-map=outputs/executions/paddle-production-map.json
+ *                                                    # create, verify, export marker → live-id map
  *   bun tools/paddle-catalog-recreate.ts --self-check   # assert the plan/money math, exit
  *
  * Idempotency: every product carries custom_data.caisson_id (+ caisson_kind) and every price
@@ -34,6 +36,8 @@
  * the flip stay the operator's act — this tool only builds the catalog.
  */
 import assert from "node:assert/strict";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 // Root tools/ scripts are linted by the root eslint pass (no-console); match the
 // tooling/scripts/sot-check.ts convention of writing straight to stdio.
@@ -70,9 +74,10 @@ async function fetchWithTimeout(
 
 // ---- Plan model ---------------------------------------------------------------------------------
 
-type ProductKind = "bundle" | "module" | "subscription" | "renewal-parent";
+export type ProductKind =
+  "bundle" | "module" | "subscription" | "renewal-parent";
 
-interface PlanPrice {
+export interface PlanPrice {
   /** Stable marker written to the Paddle price's custom_data.caisson_key for idempotent re-lookup. */
   key: string;
   description: string;
@@ -82,7 +87,7 @@ interface PlanPrice {
   billingInterval?: "year";
 }
 
-interface PlanProduct {
+export interface PlanProduct {
   /** Stable marker written to the Paddle product's custom_data.caisson_id for idempotent re-lookup. */
   caissonId: string;
   kind: ProductKind;
@@ -105,7 +110,7 @@ function toCents(usd: number): number {
 }
 
 /** Build the full desired catalog from the pricing SOT. Pure — no env, no network. */
-function buildPlan(): PlanProduct[] {
+export function buildPlan(): PlanProduct[] {
   const products: PlanProduct[] = [];
 
   // 6 bundles — one-time perpetual license.
@@ -211,12 +216,14 @@ function paddleBase(): string {
 function requireApiKey(): string {
   const key = process.env.PADDLE_API_KEY;
   if (key === undefined || key.length === 0) {
-    throw new Error("PADDLE_API_KEY is required for --execute (fail-closed).");
+    throw new Error(
+      "PADDLE_API_KEY is required for --execute or --export-map (fail-closed).",
+    );
   }
   return key;
 }
 
-interface PaddleObject {
+export interface PaddleObject {
   id: string;
   custom_data?: Record<string, unknown> | null;
   prices?: PaddleObject[];
@@ -260,21 +267,31 @@ async function paddleRequest(
 }
 
 /** List every existing product with its prices, keyed by custom_data.caisson_id (idempotency map). */
-async function listExistingProducts(
-  apiKey: string,
-): Promise<Map<string, PaddleObject>> {
-  const byId = new Map<string, PaddleObject>();
+async function listExistingProducts(apiKey: string): Promise<PaddleObject[]> {
+  const products: PaddleObject[] = [];
   let next: string | undefined =
     "/products?include=prices&per_page=100&status=active";
   while (next !== undefined) {
     const { data, meta } = await paddleRequest(apiKey, "GET", next);
-    for (const p of data as PaddleObject[]) {
-      const cid = p.custom_data?.caisson_id;
-      if (typeof cid === "string") byId.set(cid, p);
-    }
+    products.push(...(data as PaddleObject[]));
     next = meta?.pagination?.has_more ? meta.pagination.next : undefined;
   }
-  return byId;
+  return products;
+}
+
+function existingProductsByMarker(
+  products: readonly PaddleObject[],
+): Map<string, PaddleObject> {
+  const byMarker = new Map<string, PaddleObject>();
+  for (const product of products) {
+    const marker = product.custom_data?.caisson_id;
+    if (typeof marker !== "string") continue;
+    if (byMarker.has(marker)) {
+      throw new Error(`duplicate product marker "${marker}" in Paddle`);
+    }
+    byMarker.set(marker, product);
+  }
+  return byMarker;
 }
 
 function existingPriceKeys(product: PaddleObject | undefined): Set<string> {
@@ -284,6 +301,133 @@ function existingPriceKeys(product: PaddleObject | undefined): Set<string> {
     if (typeof k === "string") keys.add(k);
   }
   return keys;
+}
+
+export interface CatalogMapping {
+  readonly schemaVersion: 1;
+  readonly environment: "production";
+  readonly products: Readonly<Record<string, string>>;
+  readonly prices: Readonly<Record<string, string>>;
+}
+
+/**
+ * Validate a Paddle snapshot against the complete desired plan and return the stable marker → id
+ * mapping used for production wiring. Unmarked non-Caisson products are ignored; once a product
+ * carries `caisson_id`, its product and every active price must match the plan exactly.
+ */
+export function buildCatalogMapping(
+  plan: readonly PlanProduct[],
+  snapshot: readonly PaddleObject[],
+): CatalogMapping {
+  const expectedProducts = new Map<string, PlanProduct>();
+  const expectedPrices = new Map<string, string>();
+
+  for (const product of plan) {
+    if (expectedProducts.has(product.caissonId)) {
+      throw new Error(
+        `duplicate planned product marker "${product.caissonId}"`,
+      );
+    }
+    expectedProducts.set(product.caissonId, product);
+    for (const price of product.prices) {
+      if (expectedPrices.has(price.key)) {
+        throw new Error(`duplicate planned price marker "${price.key}"`);
+      }
+      expectedPrices.set(price.key, product.caissonId);
+    }
+  }
+
+  const productEntries: Array<readonly [string, string]> = [];
+  const priceEntries: Array<readonly [string, string]> = [];
+  const seenProducts = new Set<string>();
+  const seenPrices = new Set<string>();
+
+  for (const product of snapshot) {
+    const productMarker = product.custom_data?.caisson_id;
+    if (typeof productMarker !== "string") continue;
+    const plannedProduct = expectedProducts.get(productMarker);
+    if (!plannedProduct) {
+      throw new Error(`unexpected product marker "${productMarker}" in Paddle`);
+    }
+    if (seenProducts.has(productMarker)) {
+      throw new Error(`duplicate product marker "${productMarker}" in Paddle`);
+    }
+    if (product.id.length === 0) {
+      throw new Error(`empty product id for marker "${productMarker}"`);
+    }
+    seenProducts.add(productMarker);
+    productEntries.push([productMarker, product.id]);
+
+    const plannedKeys = new Set(
+      plannedProduct.prices.map((price) => price.key),
+    );
+    for (const price of product.prices ?? []) {
+      const priceMarker = price.custom_data?.caisson_key;
+      if (typeof priceMarker !== "string") {
+        throw new Error(
+          `unmarked active price "${price.id}" on product "${productMarker}"`,
+        );
+      }
+      if (!plannedKeys.has(priceMarker)) {
+        throw new Error(
+          `unexpected price marker "${priceMarker}" on product "${productMarker}"`,
+        );
+      }
+      if (seenPrices.has(priceMarker)) {
+        throw new Error(`duplicate price marker "${priceMarker}" in Paddle`);
+      }
+      if (price.id.length === 0) {
+        throw new Error(`empty price id for marker "${priceMarker}"`);
+      }
+      seenPrices.add(priceMarker);
+      priceEntries.push([priceMarker, price.id]);
+    }
+  }
+
+  for (const marker of expectedProducts.keys()) {
+    if (!seenProducts.has(marker)) {
+      throw new Error(`missing product marker "${marker}" in Paddle`);
+    }
+  }
+  for (const marker of expectedPrices.keys()) {
+    if (!seenPrices.has(marker)) {
+      throw new Error(`missing price marker "${marker}" in Paddle`);
+    }
+  }
+
+  const sortedProducts = productEntries.sort(([a], [b]) => a.localeCompare(b));
+  const sortedPrices = priceEntries.sort(([a], [b]) => a.localeCompare(b));
+  return {
+    schemaVersion: 1,
+    environment: "production",
+    products: Object.fromEntries(sortedProducts),
+    prices: Object.fromEntries(sortedPrices),
+  };
+}
+
+/** Resolve an operator-supplied export path without allowing writes outside the current checkout. */
+export function resolveExportPath(
+  requestedPath: string,
+  cwd: string = process.cwd(),
+): string {
+  if (requestedPath.includes("\u0000")) {
+    throw new Error("export path must not contain a null byte");
+  }
+  if (path.isAbsolute(requestedPath)) {
+    throw new Error("export path must be relative to the current checkout");
+  }
+  if (requestedPath.split(/[\\/]/u).includes("..")) {
+    throw new Error("export path must not contain traversal segments");
+  }
+  if (!requestedPath.endsWith(".json")) {
+    throw new Error("export path must end in .json");
+  }
+  const root = path.resolve(cwd);
+  const resolved = path.resolve(root, requestedPath);
+  if (!resolved.startsWith(`${root}${path.sep}`)) {
+    throw new Error("export path must stay inside the current checkout");
+  }
+  return resolved;
 }
 
 async function createProduct(
@@ -365,7 +509,7 @@ function printPlan(plan: PlanProduct[]): void {
 async function execute(plan: PlanProduct[]): Promise<void> {
   const apiKey = requireApiKey();
   out(`\nExecuting against Paddle [${paddleEnv()}] — ${paddleBase()}\n`);
-  const existing = await listExistingProducts(apiKey);
+  const existing = existingProductsByMarker(await listExistingProducts(apiKey));
   let createdProducts = 0;
   let createdPrices = 0;
   for (const prod of plan) {
@@ -395,6 +539,28 @@ async function execute(plan: PlanProduct[]): Promise<void> {
   );
 }
 
+async function exportCatalogMapping(
+  plan: readonly PlanProduct[],
+  requestedPath: string,
+): Promise<void> {
+  if (paddleEnv() !== "production") {
+    throw new Error(
+      "--export-map is production-only; set PADDLE_ENV=production explicitly",
+    );
+  }
+  const apiKey = requireApiKey();
+  const mapping = buildCatalogMapping(plan, await listExistingProducts(apiKey));
+  const exportPath = resolveExportPath(requestedPath);
+  await mkdir(path.dirname(exportPath), { recursive: true });
+  await writeFile(exportPath, `${JSON.stringify(mapping, null, 2)}\n`, {
+    encoding: "utf8",
+    flag: "wx",
+  });
+  out(
+    `Verified production mapping written (${Object.keys(mapping.products).length} products, ${Object.keys(mapping.prices).length} prices): ${path.relative(process.cwd(), exportPath)}`,
+  );
+}
+
 /** Assert the plan shape + money math (the one runnable check). */
 function selfCheck(): void {
   const plan = buildPlan();
@@ -410,6 +576,11 @@ function selfCheck(): void {
     "expected 1 renewal product",
   );
   assert.equal(plan.length, 35, "expected 35 products total");
+  assert.equal(
+    plan.reduce((count, product) => count + product.prices.length, 0),
+    66,
+    "expected 66 prices total",
+  );
 
   for (const prod of plan) {
     assert.equal(
@@ -455,13 +626,36 @@ function selfCheck(): void {
   assert.equal(subCents("developer"), 49900, "developer = $499/yr");
 
   out(
-    "self-check OK — 35 products, money math pinned to the runbook §2.2 catalog.",
+    "self-check OK — 35 products, 66 prices, money math pinned to the runbook §2.2 catalog.",
   );
 }
 
 async function main(): Promise<void> {
-  const args = new Set(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  const args = new Set(argv);
+  const exportArgs = argv.filter((arg) => arg.startsWith("--export-map="));
+  if (exportArgs.length > 1) {
+    throw new Error("--export-map may be provided only once");
+  }
+  const exportPath = exportArgs[0]?.slice("--export-map=".length);
+  if (exportArgs.length === 1 && exportPath?.length === 0) {
+    throw new Error("--export-map requires a relative .json path");
+  }
+  const knownArgs = new Set([
+    "--execute",
+    "--self-check",
+    ...(exportArgs.length === 1 ? [exportArgs[0] as string] : []),
+  ]);
+  const unknown = argv.filter((arg) => !knownArgs.has(arg));
+  if (unknown.length > 0) {
+    throw new Error(`unknown argument(s): ${unknown.join(", ")}`);
+  }
   if (args.has("--self-check")) {
+    if (args.has("--execute") || exportPath !== undefined) {
+      throw new Error(
+        "--self-check cannot be combined with execution or export",
+      );
+    }
     selfCheck();
     return;
   }
@@ -470,6 +664,9 @@ async function main(): Promise<void> {
     await execute(plan);
   } else {
     printPlan(plan);
+  }
+  if (exportPath !== undefined) {
+    await exportCatalogMapping(plan, exportPath);
   }
 }
 
