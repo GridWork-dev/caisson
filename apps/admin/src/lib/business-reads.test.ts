@@ -20,6 +20,7 @@ import {
 } from "@caisson/credits";
 import { asCredits } from "@caisson/kernel";
 import {
+  ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
@@ -156,6 +157,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   // ADR-0316 W-COMMERCE money-timeline tables: the Paddle order/subscription history + the ADR-0315
   // discount_id column. `grant_consumption` already exists (its migration ran above) — it just needs

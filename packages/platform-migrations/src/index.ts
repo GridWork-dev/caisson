@@ -39,6 +39,7 @@ import {
   AFFILIATE_CODE_SCHEMA_SQL,
   CHECKOUT_ABANDONMENT_NOTICE_SCHEMA_SQL,
   CHECKOUT_ABANDONMENT_SCHEMA_SQL,
+  ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
@@ -187,6 +188,13 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "0030_renewal_extension_months.sql",
     sql: RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
+  },
+  // ADR-0381 lock 2: the per-grant paid amount the upgrade-credit floor reads. Tail append at the
+  // next free prefix — 0030 was the previous tail, and every slot at or below it is checksum-pinned
+  // on the live DB.
+  {
+    name: "0031_entitlement_grant_charged_amount.sql",
+    sql: ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   },
 ];
 

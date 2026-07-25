@@ -27,6 +27,7 @@ import { withTenant } from "@caisson/tenancy-rls";
 import type { BillingProvider, DomainBillingEvent } from "@caisson/billing";
 import { PROCESSED_EVENT_SCHEMA_SQL } from "@caisson/billing-orchestration";
 import {
+  ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
@@ -55,6 +56,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
   await tp.exec(RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL);
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
