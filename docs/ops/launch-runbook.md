@@ -59,6 +59,20 @@ Preconditions:
       written into the execution receipt.
 - [ ] Railway backup recency is verified and the logical restore procedure is ready.
 - [ ] The external-system/data-migration hold is explicitly released.
+- [ ] Every boot-blocking secret below is present on its service. Check this before the deploy, not
+      after — two of the three fail in ways the deploy probe will not catch.
+
+### Boot-blocking secrets on `caisson-site`
+
+| Variable                                 | Failure mode when unset                                                                                                                                                                                                                               | Armed?                                                    |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `SESSION_TOKEN_HMAC_KEY`                 | **Hard boot failure.** `apps/site/lib/auth-server.ts:151,265` throws rather than fall back to storing raw session tokens (ADR-0366). Loud and immediate — a crashed boot or failed health check.                                                      | Yes — `docs/deploy/STATE.md:281`                          |
+| `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT` | **Deferred throw, not a boot failure.** The site starts clean and passes every deploy probe; the first buyer BYOK submit then throws (`apps/site/lib/byok.ts:142-147`), because production refuses to seal real tenant secrets under the demo vector. | **No arming record exists** — verify on the service first |
+| `BETTER_AUTH_SECRET`                     | `/dashboard` sign-in 503s (`apps/site/railway.toml`).                                                                                                                                                                                                 | Yes                                                       |
+
+The BYOK pair is the dangerous one: a deploy that omits it looks completely healthy and fails only
+in front of a paying buyer. Confirm both variables exist on the service before releasing the hold,
+and record the check in the execution receipt.
 
 Deploy in verifier-before-issuer order whenever strict schemas or manifests change:
 
