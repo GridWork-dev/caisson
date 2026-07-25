@@ -1,9 +1,8 @@
 // Registry manifest (ADR-0020). Loaded by @caisson/standards-gate; must agree with package.json on
 // id/version/license/dependencies. `kind: "primitive"` — a shared AI-production primitive (the
 // metered-inference money path the AI Production Kit gateway reserves/reconciles through), not a base
-// service or an edition. Paid + LicenseRef-Caisson-Commercial (ADR-0050). `priceCents` is a
-// PLACEHOLDER pending the Pricing lock (a positive integer is required to validate; the number is
-// not the locked price).
+// service or an edition. Paid + LicenseRef-Caisson-Commercial (ADR-0050). Standalone pricing is
+// locked at $199 by ADR-0129 and enforced through PRICE_AUTHORITY.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -12,7 +11,7 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
+  priceCents: 19900,
   license: pkg.license,
   dependencies: [
     "@caisson/kernel",

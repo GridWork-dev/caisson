@@ -111,15 +111,17 @@ describe("checkPriceCoverage", () => {
     expect(await checkPriceCoverage([p])).toEqual([]);
   });
 
-  test("the placeholder anchor (4900) is not-yet-locked — no row required", async () => {
+  test("a sellable $49 module still requires a PRICE_AUTHORITY row", async () => {
     const p = manifestPkg(
       "@caisson/fixture-placeholder",
       `{ kind: "primitive", priceCents: 4900 }`,
     );
-    expect(await checkPriceCoverage([p])).toEqual([]);
+    const f = await checkPriceCoverage([p]);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.message).toContain("no PRICE_AUTHORITY row");
   });
 
-  test("an edition/bundle meta is formula-priced — no per-SKU row required", async () => {
+  test("sellable edition and bundle metas require PRICE_AUTHORITY rows", async () => {
     const edition = manifestPkg(
       "@caisson/fixture-edition",
       `{ kind: "edition", priceCents: 79900 }`,
@@ -128,7 +130,11 @@ describe("checkPriceCoverage", () => {
       "@caisson/fixture-bundle",
       `{ kind: "bundle", priceCents: 205900 }`,
     );
-    expect(await checkPriceCoverage([edition, bundle])).toEqual([]);
+    const findings = await checkPriceCoverage([edition, bundle]);
+    expect(findings).toHaveLength(2);
+    expect(findings.every((finding) => finding.rule === "price-coverage")).toBe(
+      true,
+    );
   });
 
   test("a sellable commercial module carrying no positive integer price is an error", async () => {

@@ -419,6 +419,11 @@ export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   // Compliance bundle repriced as the three compliance-gap members joined (was 104900/ADR-0258;
   // before that 79900/ADR-0227 as an edition).
   "@caisson/compliance": { cents: 144900, adr: "ADR-0373" },
+  "@caisson/ai-production": { cents: 73900, adr: "ADR-0258" },
+  "@caisson/local-first": { cents: 62900, adr: "ADR-0258" },
+  "@caisson/agentic-dev": { cents: 32900, adr: "ADR-0260" },
+  "@caisson/provenance": { cents: 39900, adr: "ADR-0260" },
+  "@caisson/everything": { cents: 205900, adr: "ADR-0258" },
   "@caisson/audit-worm": { cents: 14900, adr: "ADR-0129" },
   // Local-first bundle repriced to the 3-way-carve sum-anchored $629 (was $349/ADR-0240).
   "@caisson/local-ai": { cents: 62900, adr: "ADR-0258" },
@@ -426,6 +431,17 @@ export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   "@caisson/ai-kit": { cents: 73900, adr: "ADR-0258" },
   "@caisson/agent-dev": { cents: 32900, adr: "ADR-0258" },
   "@caisson/credits": { cents: 14900, adr: "ADR-0260" },
+  "@caisson/field-crypto": { cents: 19900, adr: "ADR-0129" },
+  "@caisson/retention-runner": { cents: 19900, adr: "ADR-0137" },
+  "@caisson/alerting": { cents: 14900, adr: "ADR-0137" },
+  "@caisson/ai-meter": { cents: 19900, adr: "ADR-0129" },
+  "@caisson/ai-evals": { cents: 19900, adr: "ADR-0129" },
+  "@caisson/guardrails": { cents: 14900, adr: "ADR-0129" },
+  "@caisson/prompt-registry": { cents: 9900, adr: "ADR-0129" },
+  "@caisson/local-store": { cents: 9900, adr: "ADR-0129" },
+  "@caisson/agent-kernel": { cents: 19900, adr: "ADR-0129" },
+  "@caisson/agent-runner": { cents: 4900, adr: "ADR-0222" },
+  "@caisson/agent-trajectory": { cents: 4900, adr: "ADR-0379" },
   // Catalog-rework carves (all private pre-first-publish; prices locked by the rework pickers).
   "@caisson/org-controls": { cents: 24900, adr: "ADR-0257" },
   "@caisson/compliance-core": { cents: 29900, adr: "ADR-0260" },
@@ -486,15 +502,6 @@ export async function checkManifestPriceAgreement(
 // cross-surface file is absent (the post-install CI pass is authoritative).
 
 /**
- * The pre-launch placeholder every not-yet-priced commercial manifest carries (`priceCents: 4900`,
- * documented across the manifests as "the pre-launch placeholder anchor"). A module still at this
- * anchor has no locked price yet, so price-coverage does not demand a PRICE_AUTHORITY row for it —
- * the row lands when its real price locks. NOTE: keying the "unlocked" signal on this value means a
- * SKU whose real locked price happens to be $49 is not FORCED to carry a row (it still may, and once
- * it does the coverage check passes on the row); the anchor is a floor for "needs a row", not a bar.
- */
-const PLACEHOLDER_PRICE_ANCHOR = 4900;
-
 interface CatalogManifest {
   priceCents?: number | null;
   kind?: string;
@@ -515,13 +522,10 @@ async function loadCatalogManifest(p: Pkg): Promise<CatalogManifest | null> {
 
 /**
  * price-coverage (ADR-0248 F5). Every SELLABLE commercial `packages/*` module must carry a positive
- * integer price AND — once that price is locked (i.e. off the placeholder anchor) — a PRICE_AUTHORITY
- * row, so a shipped SKU's price is CI-pinned to its ADR and can never silently drift. Exemptions:
- * a `sellable: false` package is bundle-only substrate (platform-reads/pricebook); an `edition`/
- * `bundle` meta is formula-priced in apps/site (the below-sum rule), not a per-SKU authority row; a
- * module still at the placeholder anchor has no locked price yet. Closes the "3-of-19" coverage gap
- * incrementally: the carve SKUs land rows here; the remaining placeholder modules earn theirs as
- * their prices lock.
+ * integer price AND a PRICE_AUTHORITY row, so every shipped SKU's price is CI-pinned to its ADR and
+ * can never silently drift. The only exemption is an explicit `sellable: false` declaration for
+ * bundle-only, internal, retired, or unpublished packages. In particular, $49 is a legitimate
+ * buyer price rather than a sentinel and bundle metas are themselves sellable SKUs.
  */
 export async function checkPriceCoverage(pkgs: Pkg[]): Promise<Finding[]> {
   const findings: Finding[] = [];
@@ -548,9 +552,6 @@ export async function checkPriceCoverage(pkgs: Pkg[]): Promise<Finding[]> {
       });
       continue;
     }
-    // Formula-priced metas + not-yet-locked placeholders don't (yet) owe a PRICE_AUTHORITY row.
-    if (m.kind === "edition" || m.kind === "bundle") continue;
-    if (m.priceCents === PLACEHOLDER_PRICE_ANCHOR) continue;
     if (!PRICE_AUTHORITY[p.name]) {
       findings.push({
         severity: "error",
@@ -626,12 +627,10 @@ export async function checkPricebookPriceAgreement(
   const findings: Finding[] = [];
   for (const [id, { cents }] of Object.entries(PRICE_AUTHORITY)) {
     const slug = id.replace(/^@caisson\//, "");
-    // Mirror checkPriceCoverage's exemptions: a dissolved edition meta (delisted, never
-    // upgrade-credited) and sellable:false substrate owe no pricebook row. Bundles and
-    // sellable modules do.
+    // Mirror checkPriceCoverage's sole exemption: sellable:false packages owe no pricebook row.
     const pkg = byName.get(id);
     const m = pkg ? await loadCatalogManifest(pkg) : null;
-    if (m?.kind === "edition" || m?.sellable === false) continue;
+    if (m?.sellable === false) continue;
     const isBundle = slug in bundles;
     const dollars = isBundle ? bundles[slug] : sku[slug];
     if (dollars === undefined) {

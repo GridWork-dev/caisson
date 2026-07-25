@@ -18,6 +18,7 @@ export default defineModule({
   editions: ["local-ai"],
   tier: "paid",
   priceCents: 62900,
+  sellable: false,
   license: pkg.license,
   dependencies: [
     "@caisson/kernel",

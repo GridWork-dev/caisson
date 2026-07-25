@@ -9,8 +9,8 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  // Positive int required by the manifest refine (ADR-0007).
-  priceCents: 4900,
+  // Standalone $199, locked by ADR-0137 and enforced through PRICE_AUTHORITY.
+  priceCents: 19900,
   license: pkg.license,
   dependencies: ["@caisson/kernel", "@caisson/jobs"],
   golden: null,

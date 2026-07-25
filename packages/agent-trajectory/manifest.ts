@@ -7,9 +7,9 @@
 //
 // Commercial under open-core (ADR-0094/0097): the runtime observation layer is NOT among the
 // enumerated open Base packages, so it ships LicenseRef-Caisson-Commercial and the license<->tier
-// rule forces `paid`. `priceCents` mirrors the pre-launch placeholder anchor (4900) the other
-// commercial primitives carry; FINAL pricing is the still-open Pricing fork (SD-6/ADR-0012), out of
-// scope here — it need only be a positive integer (ADR-0007). Deps are DOWN-ONLY (ADR-0003):
+// rule forces `paid`. ADR-0379 records the existing $49 storefront value as an explicit authority
+// row, closing the former placeholder exemption without changing the displayed price. Deps are
+// DOWN-ONLY (ADR-0003):
 // @caisson/kernel (parseStrict + the typed error model), @caisson/tenancy-rls (S3, ADR-0360 U-3 —
 // the PG-backed TrajectoryStore/RunStateStore need it at RUNTIME: each `append`/CAS call opens its
 // own short-lived `withTenant` transaction; see store.pg.ts's file header for why a pre-scoped
@@ -29,11 +29,7 @@
 // member pin must name the wrap-bearing sellable version specifically, not merely a real published
 // one — this version isn't ledgered yet, and pinning the prior "0.2.0" would ship the pre-encRef,
 // plaintext-parked_state tarball. Bundle membership rides a small post-consume follow-up pinned at
-// the then-published, encRef-bearing version (ride-after-consume discipline). `priceCents` stays
-// UNCHANGED at the placeholder anchor: `checkPriceCoverage` (`tooling/standards-gate`) exempts any
-// module still at exactly this anchor from needing a PRICE_AUTHORITY row, so this is not a
-// locked/new price — no number was invented for this slice; FINAL per-module pricing remains the
-// same still-open Pricing fork noted above.
+// the then-published, encRef-bearing version (ride-after-consume discipline).
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 

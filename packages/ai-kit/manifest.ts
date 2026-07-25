@@ -19,6 +19,7 @@ export default defineModule({
   editions: ["ai-kit"],
   tier: "paid",
   priceCents: 73900,
+  sellable: false,
   license: pkg.license,
   dependencies: [
     "@caisson/agent-trajectory",

@@ -603,7 +603,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
     render: () => (
       <MobileBuyBar
         label="Compliance bundle"
-        price="$1,049"
+        price="$1,449"
         action={<Button size="sm">Buy</Button>}
       />
     ),
@@ -618,7 +618,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
     variants: ["usd-cents", "credits", "signed"],
     render: () => (
       <div className="row" style={{ gap: "var(--cs-space-4)" }}>
-        <MoneyCell value={104900} unit="usd-cents" />
+        <MoneyCell value={144900} unit="usd-cents" />
         <MoneyCell value={4880} unit="credits" />
         <MoneyCell value={-120} unit="credits" sign signTone />
       </div>
