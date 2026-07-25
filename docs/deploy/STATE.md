@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-23
+updated: 2026-07-24
 status: live
 grounds:
   - docs/build-state.md
@@ -7,6 +7,24 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-07-24 — post-deploy visual re-audit: the 14 accepted rows flip to fixed (CAISSON-149)
+
+The illustration-placeholder family re-audited against production at `c6b42869`
+(caisson.sh live). All 14 surfaces now render the ADR-0377/0378 proof-triad media where
+the empty placeholder slots were: the 11 module pages (ai-evals, local-store,
+retention-runner, audit-worm, field-crypto, alerting, agent-runner, agent-kernel,
+guardrails, ai-meter, prompt-registry) each carry a real SSR blueprint sheet ("The
+package in blueprint: …" caption + labeled SVG schematic, 32–55 SVG nodes on the pages
+browser-probed), and the 3 bundle pages (agentic-dev, compliance, ai-kit) each carry the
+cross-section strata ("bundle: … · cross-section · N members drawn"). Verification split:
+4 pages browser-verified with playwright screenshots + DOM probes (ai-evals, local-store,
+retention-runner, audit-worm) before a host Chrome fault killed the browser lane; the
+remaining 10 verified via rendered-page extraction of the SSR schematic captions
+(crawl4ai against production — the schematics are SSR, so the payload is the proof; the
+browser-verified four confirm identical payloads paint as real schematics).
+**Ledger reconciled: 729 rows = 729 fixed / 0 accepted / 0 open** — the ledger is fully
+closed for the first time (`tooling/design-critic/findings.toml`, 14 accepted→fixed).
 
 ## 2026-07-23 — ADR-0378 media-overhaul program live (site)
 
