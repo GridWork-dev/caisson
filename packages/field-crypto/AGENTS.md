@@ -24,7 +24,9 @@ column-context`. Reuse the SAME `columnContext` string for a column on read and 
 - **`DerivedKeyProvider` (default)** — zero infra; per-tenant HKDF. Backs the sync Drizzle column.
 - **`KmsKeyProvider`** — envelope encryption; the KEK stays in the KMS. Async only — for the Drizzle
   column under KMS, pre-resolve + cache DEKs into the sync context (P2 wiring). Supply a real
-  `KmsClient` (AWS/GCP/Azure/Vault); CI uses `LocalKmsClient` (a real local wrap, no cloud call).
+  `KmsClient` (AWS/GCP/Azure); CI uses `LocalKmsClient` (a real local wrap, no cloud call).
+- **Deletion receipts are literal provider truth.** Pending, scheduled, and soft-deleted keys remain
+  recoverable and MUST report `irreversible: false`; only a proved destroy/purge reports `true`.
 
 ## Envelope (ADR-0046)
 
@@ -34,5 +36,6 @@ base64 into `text`. An unknown format-version/alg-id throws — never guess. The
 
 ## Out of scope (Wave 0)
 
-No evidence-pack logic, no WORM, no live cloud KMS call. This package is the primitive the Compliance
-edition consumes (ADR-0006).
+No evidence-pack logic and no WORM. Cloud adapters are covered by injected doubles in CI; separately
+gated live proofs require explicit credentials. This package is the primitive the Compliance edition
+consumes (ADR-0006).

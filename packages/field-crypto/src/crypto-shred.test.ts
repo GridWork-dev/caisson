@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { matchGolden } from "@caisson/testing";
 import {
   anchorChain,
   buildChain,
@@ -75,6 +76,10 @@ describe("cryptoShred (erasure ⟂ append-only chain — ADR-0055/0052, TM-F/TM-
     expect(verifyChain(entries, anchor).valid).toBe(true);
     // 3. the receipt records the erasure as an auditable, PII-free event
     expect(receipt.shreddedThroughVersion).toBe(1);
+    expect(receipt.deletion).toEqual({
+      state: "destroyed",
+      irreversible: true,
+    });
     expect((receipt.auditPayload as Record<string, JsonValue>).event).toBe(
       ERASURE_CRYPTO_SHRED,
     );
@@ -114,6 +119,10 @@ describe("cryptoShred (erasure ⟂ append-only chain — ADR-0055/0052, TM-F/TM-
     // metadata-only: ids / reason / instant / version / method — nothing that could carry erased content
     expect(JSON.parse(canonicalize(receipt.auditPayload))).toEqual({
       event: ERASURE_CRYPTO_SHRED,
+      deletion: {
+        irreversible: true,
+        state: "destroyed",
+      },
       method: "kms-key-deletion",
       occurredAt: OCCURRED_AT,
       reason: "ccpa-1798.105",
@@ -121,6 +130,7 @@ describe("cryptoShred (erasure ⟂ append-only chain — ADR-0055/0052, TM-F/TM-
       subjectId: "subject_a",
       tenantId: "tenant_1",
     });
+    matchGolden(import.meta.url, "crypto-shred", receipt.auditPayload);
   });
 
   test("a malformed request throws (fail-closed) BEFORE any key is shredded", async () => {

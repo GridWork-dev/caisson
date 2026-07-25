@@ -21,12 +21,12 @@ import { type FieldKeyProvider } from "./provider.ts";
 import { aesGcm } from "./cipher.ts";
 import { buildAad } from "./aad.ts";
 import { createAwsKmsClient } from "./kms-aws.ts";
-import type { KmsClient } from "./kms-port.ts";
+import type { KmsClient, KmsDeletionReceipt } from "./kms-port.ts";
 
 // The KmsClient port lives in ./kms-port.ts (a leaf) to break the kms.ts ↔ kms-aws.ts type cycle
 // (dep-cruiser no-circular, tsPreCompilationDeps). Re-exported here for back-compat — index.ts and
 // callers still import `KmsClient` from ./kms.ts.
-export type { KmsClient };
+export type { KmsClient, KmsDeletionReceipt };
 
 /** Persistence for each tenant's wrapped DEKs by version + the current version. DB-backed via `DbWrappedKeyStore` (P2, below). */
 export interface WrappedKeyStore {
@@ -170,10 +170,13 @@ export class KmsKeyProvider implements FieldKeyProvider {
    * existed at shred time (0 if the scope was never provisioned) for the erasure audit record.
    * Idempotent: re-shredding an already-shredded scope is a no-op success.
    */
-  async scheduleKeyDeletion(tenantId: string): Promise<number> {
+  async scheduleKeyDeletion(tenantId: string): Promise<{
+    readonly shreddedThroughVersion: number;
+    readonly deletion: KmsDeletionReceipt;
+  }> {
     const through = (await this.store.currentVersion(tenantId)) ?? 0;
-    await this.kms.scheduleKeyDeletion(tenantId);
-    return through;
+    const deletion = await this.kms.scheduleKeyDeletion(tenantId);
+    return { shreddedThroughVersion: through, deletion };
   }
 }
 
@@ -257,7 +260,7 @@ export class LocalKmsClient implements KmsClient {
     );
   }
 
-  async scheduleKeyDeletion(keyId: string): Promise<void> {
+  async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
     // Refuse an empty scope — the port contract requires an explicit keyId for the crypto-shred, so a
     // missing scope can never fall through to a broader deletion (mirrors the AWS driver, ADR-0197).
     if (keyId.length === 0) {
@@ -268,6 +271,7 @@ export class LocalKmsClient implements KmsClient {
     // Destroy the scope's KEK. Immediate in the local double (a real KMS schedules a pending-deletion
     // window); the effect is identical — every DEK wrapped under `keyId` is now permanently inert.
     this.shredded.add(keyId);
+    return { state: "destroyed", irreversible: true };
   }
 }
 

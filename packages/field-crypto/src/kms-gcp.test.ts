@@ -25,7 +25,9 @@ function fakeGcpKms(responses: {
     ciphertext?: unknown;
     additionalAuthenticatedData?: unknown;
   }) => { plaintext?: Uint8Array | null };
-  destroyCryptoKeyVersion?: (req: { name?: unknown }) => Record<string, never>;
+  destroyCryptoKeyVersion?: (req: { name?: unknown }) => FakeVersion & {
+    destroyTime?: { seconds: number };
+  };
   listCryptoKeyVersions?: (req: { parent?: unknown }) => FakeVersion[];
 }): { client: GcpKmsSendable; seen: { method: string; request: unknown }[] } {
   const seen: { method: string; request: unknown }[] = [];
@@ -48,7 +50,14 @@ function fakeGcpKms(responses: {
     }) as GcpKmsSendable["decrypt"],
     destroyCryptoKeyVersion: (async (request: { name?: unknown }) => {
       seen.push({ method: "destroyCryptoKeyVersion", request });
-      return [responses.destroyCryptoKeyVersion?.(request) ?? {}, request, {}];
+      return [
+        responses.destroyCryptoKeyVersion?.(request) ?? {
+          state: "DESTROY_SCHEDULED",
+          destroyTime: { seconds: 1_775_001_600 },
+        },
+        request,
+        {},
+      ];
     }) as GcpKmsSendable["destroyCryptoKeyVersion"],
     listCryptoKeyVersions: (async (request: { parent?: unknown }) => {
       seen.push({ method: "listCryptoKeyVersions", request });
@@ -155,7 +164,7 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
       client: kms,
     });
 
-    await client.scheduleKeyDeletion(
+    const receipt = await client.scheduleKeyDeletion(
       "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a",
     );
 
@@ -167,6 +176,11 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
     expect((seen[1]?.request as { name: string }).name).toBe(
       "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a/cryptoKeyVersions/1",
     );
+    expect(receipt).toEqual({
+      state: "destroy-scheduled",
+      irreversible: false,
+      scheduledFor: "2026-04-01T00:00:00.000Z",
+    });
   });
 
   test("scheduleKeyDeletion destroys EVERY live version of a rotated key, skipping already-destroyed ones", async () => {
@@ -183,7 +197,7 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
       client: kms,
     });
 
-    await client.scheduleKeyDeletion(parent);
+    const receipt = await client.scheduleKeyDeletion(parent);
 
     const destroyed = seen
       .filter((s) => s.method === "destroyCryptoKeyVersion")
@@ -193,6 +207,10 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
       `${parent}/cryptoKeyVersions/1`,
       `${parent}/cryptoKeyVersions/3`,
     ]);
+    expect(receipt).toMatchObject({
+      state: "destroy-scheduled",
+      irreversible: false,
+    });
   });
 
   test("scheduleKeyDeletion fails loud when the list returns no versions at all", async () => {

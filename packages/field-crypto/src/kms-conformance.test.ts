@@ -13,6 +13,10 @@ import {
 import { LocalKmsClient, type KmsClient } from "./kms.ts";
 import { createAwsKmsClient, type KmsSendable } from "./kms-aws.ts";
 import { createGcpKmsClient, type GcpKmsSendable } from "./kms-gcp.ts";
+import {
+  createAzureKeyVaultKmsClient,
+  type AzureKeyVaultClient,
+} from "./kms-azure.ts";
 import { aesGcm } from "./cipher.ts";
 
 const WRAP_AAD = Buffer.from("kms-conformance-fake-aws-wrap");
@@ -57,7 +61,10 @@ function fakeAwsBackend(): KmsSendable {
       }
       if (command instanceof ScheduleKeyDeletionCommand) {
         shredded = true;
-        return {};
+        return {
+          KeyState: "PendingDeletion",
+          DeletionDate: new Date("2026-08-01T00:00:00.000Z"),
+        };
       }
       throw new Error("kms-conformance: unexpected command");
     }) as KmsSendable["send"],
@@ -109,7 +116,14 @@ function fakeGcpBackend(): GcpKmsSendable {
     }) as GcpKmsSendable["decrypt"],
     destroyCryptoKeyVersion: (async (request: unknown) => {
       destroyed = true;
-      return [{}, request, {}];
+      return [
+        {
+          state: "DESTROY_SCHEDULED",
+          destroyTime: { seconds: 1_775_001_600 },
+        },
+        request,
+        {},
+      ];
     }) as GcpKmsSendable["destroyCryptoKeyVersion"],
     listCryptoKeyVersions: (async (request: { parent?: unknown }) => {
       // One live version until destroyed — the shape the driver's list-then-destroy shred expects.
@@ -131,10 +145,70 @@ function fakeGcpBackend(): GcpKmsSendable {
   };
 }
 
-const drivers: ReadonlyArray<{ name: string; client(): KmsClient }> = [
-  { name: "LocalKmsClient", client: () => new LocalKmsClient(randomBytes(32)) },
+function fakeAzureBackend(): AzureKeyVaultClient {
+  const kek = randomBytes(32);
+  let deleted = false;
+  return {
+    getCryptographyClient() {
+      return {
+        async wrapKey(_algorithm, plaintext) {
+          if (deleted) {
+            throw new Error("kms-conformance: fake Azure key was deleted");
+          }
+          const { nonce, ciphertext, tag } = aesGcm.encrypt(
+            kek,
+            Buffer.from(plaintext),
+            WRAP_AAD,
+          );
+          return { result: Buffer.concat([nonce, ciphertext, tag]) };
+        },
+        async unwrapKey(_algorithm, wrapped) {
+          if (deleted) {
+            throw new Error("kms-conformance: fake Azure key was deleted");
+          }
+          const blob = Buffer.from(wrapped);
+          const nonce = blob.subarray(0, 12);
+          const tag = blob.subarray(blob.length - 16);
+          const ciphertext = blob.subarray(12, blob.length - 16);
+          return {
+            result: aesGcm.decrypt(kek, { nonce, ciphertext, tag }, WRAP_AAD),
+          };
+        },
+      };
+    },
+    async beginDeleteKey() {
+      return {
+        async pollUntilDone() {
+          deleted = true;
+          return {
+            properties: {
+              recoveryLevel: "Recoverable",
+              scheduledPurgeDate: new Date("2026-09-01T00:00:00.000Z"),
+            },
+          };
+        },
+      };
+    },
+    async purgeDeletedKey() {},
+  };
+}
+
+const drivers: ReadonlyArray<{
+  name: string;
+  state: string;
+  irreversible: boolean;
+  client(): KmsClient;
+}> = [
+  {
+    name: "LocalKmsClient",
+    state: "destroyed",
+    irreversible: true,
+    client: () => new LocalKmsClient(randomBytes(32)),
+  },
   {
     name: "createAwsKmsClient",
+    state: "pending-deletion",
+    irreversible: false,
     client: () =>
       createAwsKmsClient({
         keyId: "conformance-cmk",
@@ -143,6 +217,8 @@ const drivers: ReadonlyArray<{ name: string; client(): KmsClient }> = [
   },
   {
     name: "createGcpKmsClient",
+    state: "destroy-scheduled",
+    irreversible: false,
     client: () =>
       createGcpKmsClient({
         cryptoKeyName:
@@ -150,30 +226,42 @@ const drivers: ReadonlyArray<{ name: string; client(): KmsClient }> = [
         client: fakeGcpBackend(),
       }),
   },
+  {
+    name: "createAzureKeyVaultKmsClient",
+    state: "soft-deleted",
+    irreversible: false,
+    client: () =>
+      createAzureKeyVaultKmsClient({
+        keyName: "conformance-key",
+        purgeProtectionEnabled: true,
+        client: fakeAzureBackend(),
+      }),
+  },
 ];
 
-for (const { name, client } of drivers) {
+for (const { name, state, irreversible, client } of drivers) {
   describe(`KmsClient port conformance: ${name}`, () => {
     test("generateDataKey wraps (the wrapped form is not the plaintext DEK)", async () => {
       const kms = client();
-      const { plaintextKey, wrappedKey } = await kms.generateDataKey("acct_a");
+      const { plaintextKey, wrappedKey } = await kms.generateDataKey("acct-a");
       expect(plaintextKey.length).toBe(32);
       expect(wrappedKey.equals(plaintextKey)).toBe(false);
     });
 
     test("decryptDataKey round-trips a wrapped DEK back to its plaintext", async () => {
       const kms = client();
-      const { plaintextKey, wrappedKey } = await kms.generateDataKey("acct_a");
-      const unwrapped = await kms.decryptDataKey("acct_a", wrappedKey);
+      const { plaintextKey, wrappedKey } = await kms.generateDataKey("acct-a");
+      const unwrapped = await kms.decryptDataKey("acct-a", wrappedKey);
       expect(unwrapped.equals(plaintextKey)).toBe(true);
     });
 
     test("scheduleKeyDeletion is fail-closed: the scope is unusable after", async () => {
       const kms = client();
-      const { wrappedKey } = await kms.generateDataKey("acct_a");
-      await kms.scheduleKeyDeletion("acct_a");
-      await expect(kms.decryptDataKey("acct_a", wrappedKey)).rejects.toThrow();
-      await expect(kms.generateDataKey("acct_a")).rejects.toThrow();
+      const { wrappedKey } = await kms.generateDataKey("acct-a");
+      const receipt = await kms.scheduleKeyDeletion("acct-a");
+      expect(receipt).toMatchObject({ state, irreversible });
+      await expect(kms.decryptDataKey("acct-a", wrappedKey)).rejects.toThrow();
+      await expect(kms.generateDataKey("acct-a")).rejects.toThrow();
     });
 
     test("scheduleKeyDeletion refuses an empty keyId (no default-scope crypto-shred, ADR-0197)", async () => {
