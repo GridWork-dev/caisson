@@ -22,12 +22,12 @@ and runtime evidence.
 
 | Workstream                                       | State                               | Exit evidence                                                          |
 | ------------------------------------------------ | ----------------------------------- | ---------------------------------------------------------------------- |
-| T0 — canonical truth and issue reconciliation    | **complete locally**                | SOT green; Linear dispositions match this tracker                      |
+| T0 — canonical truth and issue reconciliation    | **complete locally**                | SOT content gates green; only concurrent-worktree hygiene remains      |
 | T1 — TypeScript dependency graph                 | **complete locally**                | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present |
 | T2 — total price authority                       | **complete locally**                | `f6122de8` + `92d930b6`; every sellable commercial package covered     |
 | T3 — route-specific limiter policy               | **complete locally**                | `014ac4de`; webhook fail-open+alert, protected routes 503              |
 | T4 — one-SHA fleet and migration 0030            | **held: external + migration gate** | six runtime legs on one approved SHA; migration and parity receipts    |
-| T5 — five locked product residuals               | **1 complete / 4 held**             | DS manifest green; four named fork-board rows remain                   |
+| T5 — five locked product residuals               | **1 complete / 4 held**             | `b037b878` DS manifest green; four named fork-board rows remain        |
 | T6 — Inngest + Azure Key Vault + Azure Blob WORM | **queued**                          | three isolated adapter reviews and changesets                          |
 | T7 — consolidated verification and release       | **held after code waves**           | green local/CI gates, immutable tag-to-bytes and deploy receipts       |
 

@@ -18,28 +18,32 @@ blocked until both technical and operator evidence is attached.
 
 ## Verdicts
 
-| Dimension               | Verdict                                         | Current state                                                                                                          |
-| ----------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Repository              | **baseline green; branch verification pending** | 79 Bun workspaces; dependency/price/limiter repairs landed locally; final format/full-check and GitHub evidence remain |
-| Deploy / infrastructure | **red parity**                                  | Public probes answer, but license and admin manifest digests differ from repository/Worker                             |
-| Security                | **gaps**                                        | Limiter policy implemented; four technical receipts and three adapter audits remain                                    |
-| Commerce                | **blocked**                                     | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                    |
-| Operations              | **gaps**                                        | Restore rehearsed July 11; current backup recency and provider-console checks still required                           |
-| Buyer/product           | **gaps**                                        | Design-manifest residual complete; four already-locked families remain                                                 |
-| Release                 | **blocked**                                     | 33 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                           |
+| Dimension               | Verdict                                      | Current state                                                                                                                 |
+| ----------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Repository              | **local gates green; certification pending** | 79 Bun workspaces; 218/218 tasks pass; concurrent Paddle worktree and unavailable GitHub evidence prevent final certification |
+| Deploy / infrastructure | **red parity**                               | Public probes answer, but license and admin manifest digests differ from repository/Worker                                    |
+| Security                | **gaps**                                     | Limiter policy implemented; four technical receipts and three adapter audits remain                                           |
+| Commerce                | **blocked**                                  | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                           |
+| Operations              | **gaps**                                     | Restore rehearsed July 11; current backup recency and provider-console checks still required                                  |
+| Buyer/product           | **gaps**                                     | Design-manifest residual complete; four already-locked families remain                                                        |
+| Release                 | **blocked**                                  | 33 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                  |
 
 ## Evidence snapshot
 
 ### Repository and quality
 
 - Baseline audited `main`: `fe2dfacaa2693578f49baf431f6d0865486174a6`.
-- `bun run check` passed all 218 tasks at baseline.
+- `bun run check` passed all 218 tasks on `b037b878`; formatting, standards, manifest drift, and
+  dependency-graph guards are green.
 - Dependency-cruiser false green is repaired in `c236681f`: TypeScript 6.0.3, 2,296 modules,
   1,630 TypeScript modules, 6,514 dependency edges, and `.ts`/`.tsx` sentinels.
 - Total price authority is enforced in `f6122de8`, with the catalog type restored in
   `92d930b6`.
 - Route-specific limiter infrastructure failures are enforced in `014ac4de`.
 - Dependency-patch ownership is enforced by the audit harness in `3e384bc5`.
+- `bun run sot` has every content/structure gate green. Its sole drift is branch hygiene because
+  `/home/gw/lab/caisson-paddle-onboarding` exists concurrently on
+  `feature/paddle-onboarding-setup`; this task did not remove another workstream.
 - There are 33 pending changeset files. Current resolution affects 41 patch packages and 4 minor
   packages.
 - Current GitHub PRs, Actions, releases, required-check evidence, 2FA, and branch posture are
