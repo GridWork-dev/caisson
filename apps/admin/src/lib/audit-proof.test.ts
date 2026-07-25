@@ -105,7 +105,7 @@ describe("assembleProofSuccess — H3 server-side redaction", () => {
     expect(serialized).not.toContain("s3cr3t-token");
 
     expect(body.redacted).toBe(true);
-    expect(body.redactedPaths).toEqual(["password", "token"]);
+    expect(body.redactedPaths).toEqual(["nested.token", "password"]);
     // The masked payload is what crosses the wire; the original is gone.
     expect(body.receipt.raw.payload).toEqual({
       user: "alice",
@@ -117,6 +117,19 @@ describe("assembleProofSuccess — H3 server-side redaction", () => {
     // Leg 2 still holds: the anchor commits to the ORIGINAL hash, which the entry still carries.
     expect(body.receipt.checks.anchorEquality).toBe("pass");
     expect(body.receipt.redacted).toBe(true);
+  });
+
+  test("reports a repeated nested secret as one distinct key path", async () => {
+    const proof = proofFor({
+      rows: [
+        { credentials: { token: "first" } },
+        { credentials: { token: "second" } },
+      ],
+    });
+
+    const body = await assembleProofSuccess(proof, NOW);
+
+    expect(body.redactedPaths).toEqual(["rows.credentials.token"]);
   });
 });
 

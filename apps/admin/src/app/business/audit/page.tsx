@@ -1,9 +1,10 @@
 import type { ChainVerification, AuditChainEntry } from "@caisson/kernel";
-import { ChainViewer } from "@caisson/audit-worm/ui";
 import { wormAnchorAccount } from "@caisson/service-license";
 import { Button } from "@caisson/ui/components";
 import { adminDbConfigured } from "@/lib/admin-db";
 import { getAdminMutationDeps } from "@/lib/admin-mutations-runtime";
+import { buildAdminAuditWindow } from "@/lib/audit-window";
+import { AuditChainClient } from "./audit-chain-client";
 
 // G30 — the per-tenant WORM audit-chain integrity view. `AuditChainStore.verify()` and
 // `ChainViewer` both already exist production-quality (@caisson/audit-worm); the mutation surface
@@ -25,6 +26,10 @@ export default async function AuditPage({
 
   let entries: readonly AuditChainEntry[] = [];
   let verification: ChainVerification = { valid: true, brokenAt: null };
+  let rowStatuses: Awaited<
+    ReturnType<typeof buildAdminAuditWindow>
+  >["rowStatuses"] = [];
+  let redactedPaths: readonly string[] = [];
   let loaded = false;
   let loadError: string | null = null;
 
@@ -32,8 +37,16 @@ export default async function AuditPage({
     try {
       const deps = await getAdminMutationDeps();
       const anchor = wormAnchorAccount(targetAccountId);
-      entries = await deps.worm.load(anchor);
-      verification = await deps.worm.verify(anchor);
+      const window = await buildAdminAuditWindow({
+        source: deps.worm,
+        accountId: anchor,
+        tenantId: targetAccountId,
+        now: new Date(),
+      });
+      entries = window.entries;
+      verification = window.verification;
+      rowStatuses = window.rowStatuses;
+      redactedPaths = window.redactedPaths;
       loaded = true;
     } catch (err) {
       loadError = err instanceof Error ? err.message : "chain read failed";
@@ -84,7 +97,14 @@ export default async function AuditPage({
       ) : null}
 
       {loaded ? (
-        <ChainViewer entries={entries} verification={verification} />
+        <AuditChainClient
+          accountId={targetAccountId}
+          entries={entries}
+          verification={verification}
+          rowStatuses={rowStatuses}
+          anchorProvenance={{ length: entries.length }}
+          redactedPaths={redactedPaths}
+        />
       ) : (
         <p className="muted">
           {targetAccountId === ""

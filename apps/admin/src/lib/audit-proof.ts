@@ -53,7 +53,7 @@ const rowReceiptSchema = z
       })
       .strict(),
     raw: z
-      .object({ prevHash: z.string().min(1).nullable(), payload: z.unknown() })
+      .object({ prevHash: z.string().min(1).nullable(), payload: z.json() })
       .strict(),
     redacted: z.boolean(),
     checks: z
@@ -97,24 +97,69 @@ export interface ProofSuccess {
   readonly chainLength: number;
 }
 
+export type ProofResponse =
+  ProofSuccess | z.infer<typeof ProofUnverifiableSchema>;
+
 /**
- * Collect the names of every redactable key present anywhere in `value` (the count + paths the wire's
- * `redactedPaths` reports, and the boolean that decides `redacted`). Mirrors `redactValue`'s walk:
- * object keys matched case-insensitively, arrays walked element-wise (indices are never keys).
+ * Strictly parse the wire shape and normalize Zod's optional-property inference into the kernel's
+ * exact-optional `RowReceipt` contract. Undefined provenance is omitted, never materialized.
  */
-function collectRedactedKeys(
+export function parseProofResponse(input: unknown): ProofResponse {
+  const parsed = ProofResponseSchema.parse(input);
+  if ("state" in parsed) return parsed;
+  const { anchor, checks } = parsed.receipt;
+  const receipt: RowReceipt = {
+    ...parsed.receipt,
+    anchor: {
+      length: anchor.length,
+      tipHash: anchor.tipHash,
+      ...(anchor.genesisHash === undefined
+        ? {}
+        : { genesisHash: anchor.genesisHash }),
+      ...(anchor.sig === undefined ? {} : { sig: anchor.sig }),
+      ...(anchor.keyId === undefined ? {} : { keyId: anchor.keyId }),
+    },
+    checks: {
+      linkRecompute: checks.linkRecompute,
+      anchorEquality: checks.anchorEquality,
+      ...(checks.signature === undefined
+        ? {}
+        : { signature: checks.signature }),
+    },
+  };
+  return {
+    receipt,
+    redacted: parsed.redacted,
+    chainLength: parsed.chainLength,
+    ...(parsed.redactedPaths === undefined
+      ? {}
+      : { redactedPaths: parsed.redactedPaths }),
+  };
+}
+
+/**
+ * Collect the distinct dotted paths of every redactable key present anywhere in `value` (the count +
+ * paths the wire's `redactedPaths` reports, and the boolean that decides `redacted`). Mirrors
+ * `redactValue`'s walk: object keys are matched case-insensitively and arrays are walked without
+ * adding numeric indices, so the same logical field repeated across rows is counted once.
+ */
+function collectRedactedPaths(
   value: unknown,
   keys: ReadonlySet<string>,
   out: Set<string>,
+  path: readonly string[] = [],
 ): void {
   if (Array.isArray(value)) {
-    for (const v of value) collectRedactedKeys(v, keys, out);
+    for (const item of value) collectRedactedPaths(item, keys, out, path);
     return;
   }
   if (value !== null && typeof value === "object") {
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (isRedactedKey(k, keys)) out.add(k);
-      else collectRedactedKeys(v, keys, out);
+    for (const [key, child] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      const childPath = [...path, key];
+      if (isRedactedKey(key, keys)) out.add(childPath.join("."));
+      else collectRedactedPaths(child, keys, out, childPath);
     }
   }
 }
@@ -134,9 +179,9 @@ export async function assembleProofSuccess(
 ): Promise<ProofSuccess> {
   const { entry, anchorForRow, chainLength } = proof;
 
-  const redactedKeys = new Set<string>();
-  collectRedactedKeys(entry.payload, DEFAULT_REDACT_KEYS, redactedKeys);
-  const redacted = redactedKeys.size > 0;
+  const redactedPaths = new Set<string>();
+  collectRedactedPaths(entry.payload, DEFAULT_REDACT_KEYS, redactedPaths);
+  const redacted = redactedPaths.size > 0;
 
   const wirePayload: JsonValue = redacted
     ? (redactValue(entry.payload, DEFAULT_REDACT_KEYS) as JsonValue)
@@ -164,7 +209,7 @@ export async function assembleProofSuccess(
         receipt,
         redacted,
         chainLength,
-        redactedPaths: [...redactedKeys].sort(),
+        redactedPaths: [...redactedPaths].sort(),
       }
     : { receipt, redacted, chainLength };
 }
