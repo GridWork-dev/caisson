@@ -17,23 +17,15 @@ pathIgnorePatterns = ["**/dist/**"]
 # version ages past the window (or is superseded); that delay is the point, not a bug.
 minimumReleaseAge = 604800
 # Deliberate adoptions inside the window are exempted HERE, dated, and removed once aged:
-# - ai / @ai-sdk/*: AI SDK v7 adopted by PR #234 (published 2026-07-10) — remove after 2026-07-17.
-# - vite: vite@8.1.4 pulled by @storybook/builder-vite, adopted by Kickoff-S (published 2026-07-09) — remove after 2026-07-16.
-# - storybook 10.5.0 set + @storybook/addon-mcp 0.7.0 + eslint-plugin-storybook: the Kickoff-S
-#   Storybook trial itself (published 2026-07-10) — remove after 2026-07-17. The trial's PR CI
-#   passed on a warm runner cache; a COLD-cache frozen install still age-filters manifest fetches,
-#   which is what reddened main post-merge. Exclusions must cover the packages, not just vite.
+# (Expired + removed 2026-07-24: ai/@ai-sdk/* and the storybook 10.5.0 set — due 2026-07-17;
+#  vite — due 2026-07-16; @hono/node-server — due 2026-07-23.)
 # - fast-uri: 3.1.4 is the osv-scanner fix for GHSA-v2hh-gcrm-f6hx (published 2026-07-19), pulled
 #   in by the root `overrides` CVE-dep-bump wave — remove after 2026-07-26.
-# - @hono/node-server: 2.0.10 is the osv-scanner fix for GHSA-9mqv-5hh9-4cgg, an unauthenticated
-#   memory-leak DoS in `upgradeWebSocket` (published 2026-07-15) — our only usage is the SDK's
-#   `getRequestListener`, `upgradeWebSocket` is never called, so this isn't even reachable, but the
-#   fixed version clears the scan. Same overrides wave as fast-uri — remove after 2026-07-23.
 # - next: 16.2.11 is the coordinated Next.js security release fixing 9 CVEs in 16.2.10 (4 High:
 #   middleware auth bypass GHSA-6gpp-xcg3-4w24, SSRF x2, Server-Actions DoS; published 2026-07-23).
 #   An official advisory-backed security release is the opposite of the silent-poisoned-release this
 #   floor defends against; operator-approved 2026-07-23 — remove after 2026-07-30.
-minimumReleaseAgeExcludes = ["ai", "@ai-sdk/amazon-bedrock", "@ai-sdk/anthropic", "@ai-sdk/azure", "@ai-sdk/deepseek", "@ai-sdk/gateway", "@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/openai-compatible", "@ai-sdk/otel", "@ai-sdk/provider", "@ai-sdk/provider-utils", "@ai-sdk/react", "@ai-sdk/test-server", "vite", "storybook", "@storybook/addon-a11y", "@storybook/addon-docs", "@storybook/addon-mcp", "@storybook/addon-vitest", "@storybook/builder-vite", "@storybook/react-vite", "eslint-plugin-storybook", "fast-uri", "@hono/node-server", "next", "@next/env", "@next/swc-darwin-arm64", "@next/swc-darwin-x64", "@next/swc-linux-arm64-gnu", "@next/swc-linux-arm64-musl", "@next/swc-linux-x64-gnu", "@next/swc-linux-x64-musl", "@next/swc-win32-arm64-msvc", "@next/swc-win32-x64-msvc"]
+minimumReleaseAgeExcludes = ["fast-uri", "next", "@next/env", "@next/swc-darwin-arm64", "@next/swc-darwin-x64", "@next/swc-linux-arm64-gnu", "@next/swc-linux-arm64-musl", "@next/swc-linux-x64-gnu", "@next/swc-linux-x64-musl", "@next/swc-win32-arm64-msvc", "@next/swc-win32-x64-msvc"]
 
 # Repo-level Socket.dev bunfig scanner (ADR-0341 item 3) — READY TO FLIP, NOT LIVE.
 # Distinct from the already-installed `socket-security` GitHub PR-check app
