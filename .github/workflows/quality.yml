@@ -280,6 +280,11 @@ jobs:
           restore-keys: ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
       - name: install playwright chromium
+        # Run from the workspace so bunx resolves apps/site's pinned playwright
+        # (bun keeps workspace bins in apps/site/node_modules/.bin, not root) —
+        # a bare root bunx silently fetches npm-latest, whose browser revision
+        # drifts from the pin the e2e actually launches (2026-07-24 breakage).
+        working-directory: apps/site
         run: bunx playwright install --with-deps chromium
       - name: deterministic browser-audit graduation suite (build + serve + assert)
         run: bunx turbo run test:e2e --filter=@caisson/site --no-daemon
