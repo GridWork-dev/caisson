@@ -15,19 +15,19 @@ const proxyUrl = z
   .refine((value) => {
     const url = new URL(value);
     return (
-      url.protocol === "https:" &&
       url.username === "" &&
       url.password === "" &&
       url.search === "" &&
       url.hash === ""
     );
-  }, "must be an HTTPS URL without credentials, query, or fragment");
+  }, "must not contain credentials, query, or fragment");
 const privateProxyHost = z
   .string()
   .trim()
   .toLowerCase()
   .min(1)
   .max(253)
+  .regex(/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/u)
   .refine(
     (value) => value.endsWith(".railway.internal"),
     "must use Railway private DNS",
@@ -40,6 +40,7 @@ const proxyConfigSchema = strictObject({
 }).superRefine((config, ctx) => {
   const url = new URL(config.url);
   if (
+    url.protocol !== "http:" ||
     url.hostname.toLowerCase() !== config.internalHost ||
     url.pathname !== "/api/internal/audit/proof"
   ) {
@@ -47,7 +48,7 @@ const proxyConfigSchema = strictObject({
       code: z.ZodIssueCode.custom,
       path: ["url"],
       message:
-        "proof proxy URL must target the configured private host and exact internal proof path",
+        "proof proxy URL must use Railway private-network HTTP at the configured host and exact internal proof path",
     });
   }
 });

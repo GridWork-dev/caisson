@@ -119,7 +119,7 @@ describe("tenant evidence internal proxy client", () => {
     }) as typeof fetchWithTimeout;
     const proxy = createTenantEvidenceProxy(
       parseTenantEvidenceProxyConfig({
-        url: "https://admin.railway.internal/api/internal/audit/proof",
+        url: "http://admin.railway.internal/api/internal/audit/proof",
         internalHost: "admin.railway.internal",
         secret: SECRET,
       }),
@@ -139,14 +139,14 @@ describe("tenant evidence internal proxy client", () => {
   test("rejects unsafe URLs and unknown config fields at the strict boundary", () => {
     expect(() =>
       parseTenantEvidenceProxyConfig({
-        url: "http://admin.railway.internal/api/internal/audit/proof",
+        url: "https://admin.railway.internal/api/internal/audit/proof",
         internalHost: "admin.railway.internal",
         secret: SECRET,
       }),
     ).toThrow();
     expect(() =>
       parseTenantEvidenceProxyConfig({
-        url: "https://admin.railway.internal/api/internal/audit/proof",
+        url: "http://admin.railway.internal/api/internal/audit/proof",
         internalHost: "admin.railway.internal",
         secret: SECRET,
         accountId: ACCOUNT,
@@ -169,7 +169,7 @@ describe("tenant evidence internal proxy client", () => {
       })) as typeof fetchWithTimeout;
     const proxy = createTenantEvidenceProxy(
       parseTenantEvidenceProxyConfig({
-        url: "https://admin.railway.internal/api/internal/audit/proof",
+        url: "http://admin.railway.internal/api/internal/audit/proof",
         internalHost: "admin.railway.internal",
         secret: SECRET,
       }),
@@ -199,7 +199,7 @@ describe("tenant evidence internal proxy client", () => {
     }) as typeof fetchWithTimeout;
     const proxy = createTenantEvidenceProxy(
       parseTenantEvidenceProxyConfig({
-        url: "https://admin.railway.internal/api/internal/audit/proof",
+        url: "http://admin.railway.internal/api/internal/audit/proof",
         internalHost: "admin.railway.internal",
         secret: SECRET,
       }),
