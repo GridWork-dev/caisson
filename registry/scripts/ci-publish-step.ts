@@ -321,9 +321,11 @@ function checkSiblingChurn(opts: {
   packageDirFor: (slug: string) => string;
   packFn: PackFn;
   stagingDir: string;
+  lockfilePath: string;
 }): void {
-  const { sidecar, skipKeys, packageDirFor, packFn, stagingDir } = opts;
-  const runLockHash = currentLockHash();
+  const { sidecar, skipKeys, packageDirFor, packFn, stagingDir, lockfilePath } =
+    opts;
+  const runLockHash = currentLockHash(lockfilePath);
   const siblingMismatches: string[] = [];
   for (const key of Object.keys(sidecar.tarballs)) {
     if (skipKeys.has(key)) continue; // freshly (re-)recorded this run
@@ -373,6 +375,7 @@ export function refreshVersionCandidateTarballs(
   opts: RefreshVersionCandidateOpts,
 ): number {
   const root = resolve(opts.candidateRoot);
+  const candidateLockfilePath = pathInside(root, "bun.lock");
   const candidateLedgerPath = pathInside(root, "registry", "ledger.jsonl");
   const candidateSidecarPath = pathInside(root, "registry", "tarballs.json");
   const baseLedger = readFileSync(opts.baseLedgerPath, "utf8");
@@ -438,6 +441,7 @@ export function refreshVersionCandidateTarballs(
   const packFn = opts.packFn ?? defaultPack;
   const stagingDir = opts.stagingDir ?? STAGING_DIR;
   const newKeySet = new Set(candidateNewKeys);
+  const refreshLockHash = currentLockHash(candidateLockfilePath);
   for (const key of candidateNewKeys) {
     const { slug, version } = candidatePackageKey(key);
     const packageDir = pathInside(root, "packages", slug);
@@ -461,7 +465,6 @@ export function refreshVersionCandidateTarballs(
       throw new Error(`candidate package identity does not match ${key}`);
     }
     const bytes = packFn(packageDir, slug, version, stagingDir);
-    const refreshLockHash = currentLockHash();
     candidateSidecar.tarballs[key] = {
       ...computeTarballDist(bytes, slug, version),
       ...(refreshLockHash !== undefined ? { lockHash: refreshLockHash } : {}),
@@ -479,6 +482,7 @@ export function refreshVersionCandidateTarballs(
     packageDirFor: (slug) => pathInside(root, "packages", slug),
     packFn,
     stagingDir,
+    lockfilePath: candidateLockfilePath,
   });
 
   if (candidateNewKeys.length > 0) {
@@ -1052,6 +1056,7 @@ export async function runPublishStep(
     packageDirFor: (slug) => join(packagesDir, slug),
     packFn: packFn ?? defaultPack,
     stagingDir: stagingDir ?? STAGING_DIR,
+    lockfilePath: LOCKFILE_PATH,
   });
 
   return {

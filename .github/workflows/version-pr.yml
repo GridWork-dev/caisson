@@ -165,14 +165,20 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: "1.3.14"
-      - name: cache bun install
+      - name: cache bun installs
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('trusted/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('trusted/bun.lock', 'candidate/bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
       - name: install trusted base dependencies without lifecycle scripts
         working-directory: trusted
+        run: bun install --frozen-lockfile --ignore-scripts
+      # Materialize the candidate's dependency graph under its own committed lockfile so `bun pm
+      # pack` rewrites workspace dependencies from candidate resolution. `--ignore-scripts` keeps
+      # the PR head data-only: no candidate lifecycle hook executes; the packer/tooling stays trusted.
+      - name: install candidate dependencies under its frozen lockfile without lifecycle scripts
+        working-directory: candidate
         run: bun install --frozen-lockfile --ignore-scripts
       - name: re-record unmerged version-branch tarball rows
         run: |
