@@ -136,9 +136,9 @@ describe("ADR-0258 §3 Everything = explicit full-catalog rule (ui-pro IN, priva
     expect(granted.has("@caisson/audit-harness")).toBe(false);
   });
 
-  test("the explicit rule replaces the derived scan: everything reads its indexed bundle entry", () => {
-    // With the @caisson/everything bundle entry present, expansion reads its explicit members map
-    // (not base ∪ all editions) — the derivation is the pre-republish fallback only.
+  test("everything reads its indexed bundle entry as the sole grant rule", () => {
+    // With the @caisson/everything bundle entry present, expansion reads exactly its explicit
+    // members map — never base ∪ all editions.
     const m = mf("everything");
     expect(
       [...expandEntitlements(indexWithBundle(m), ["everything"])].sort(),

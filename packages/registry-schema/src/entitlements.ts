@@ -9,13 +9,13 @@
  * purchased id resolving forever. The legacy `kind:"edition"` index/ledger entries stay served forever; a
  * bundle's expansion still folds their members via the decoupled `EDITION_BUNDLE_ID` index relation.
  *
- * The registry INDEX is the single source of truth for membership (ADR-0071 binding): an edition's
- * members = every manifest whose `editions[]` contains that edition; the bundle's members = base
- * (every non-edition-scoped module) ∪ all editions. Membership is DERIVED from the index here, never
- * hand-listed and never baked into the entitlement token — a module added to an edition reaches
- * existing entitled buyers through the index alone, with no token re-issue. The resolver reads the
- * already-built index (the derived allowlist projection), not raw manifests per call (ADR-0071
- * rejected "resolve from manifests live on every gate call").
+ * The registry INDEX is the single source of truth for membership (ADR-0071 binding): a bundle
+ * resolves through its indexed `kind:"bundle"` members map plus any legacy edition metadata mapped
+ * to that bundle. `everything` has no catalog-wide fallback; without its indexed bundle entry it
+ * grants nothing. Membership is never baked into the entitlement token — a bundle members-map
+ * update reaches existing entitled buyers through the index alone, with no token re-issue. The
+ * resolver reads the already-built index (the derived allowlist projection), not raw manifests per
+ * call (ADR-0071 rejected "resolve from manifests live on every gate call").
  *
  * Per-module à-la-carte purchase ids are the BARE package slug, no `@caisson/`
  * prefix (e.g. `field-crypto` for `@caisson/field-crypto`) — `@caisson/pricebook`'s PURCHASE_BOOK
@@ -54,8 +54,8 @@ type Edition = (typeof EDITIONS)[number];
  * `kind:"edition"` ledger/index entries stay served forever (ADR-0006 append-only; the operator-gated
  * bundle-only index republish is a separate decision), so a bundle purchase must still resolve the members
  * its legacy edition meta-package contributes. This is index machinery, NOT a purchase alias — an edition id
- * is no longer a purchasable/normalizable id (ADR-0270), it is only a served artifact. `legacyEditionNamesFor`
- * + `fullCatalogMembers` read THIS map; the single purchase-alias point in `expandEntitlements` reads the
+ * is no longer a purchasable/normalizable id (ADR-0270), it is only a served artifact.
+ * `legacyEditionNamesFor` reads THIS map; the single purchase-alias point in `expandEntitlements` reads the
  * (now-empty) spine. Both live-index and legacy tokens keep their exact member sets.
  */
 const EDITION_BUNDLE_ID: ReadonlyMap<Edition, BundleId> = new Map([
@@ -268,21 +268,6 @@ function membersOfBundle(
   return [...members];
 }
 
-/** True iff the index carries a first-class `kind:"bundle"` entry for `bundleId` (ADR-0257). */
-function hasBundleEntry(index: RegistryIndex, bundleId: BundleId): boolean {
-  const bundleModuleId = `@caisson/${bundleId}`;
-  return index.modules.some(
-    (m) => m.id === bundleModuleId && latestManifest(m).kind === "bundle",
-  );
-}
-
-/** The base = every module scoped to no edition (`editions[] === []`) — ships with every edition. */
-function baseMembers(index: RegistryIndex): string[] {
-  return index.modules
-    .filter((m) => latestManifest(m).editions.length === 0)
-    .map((m) => m.id);
-}
-
 /**
  * The open SPDX license (ADR-0094/0097). A base-kind module ships this IFF it belongs to the free
  * open Base substrate; every commercial module ships `LicenseRef-Caisson-Commercial`. Kept in sync
@@ -326,26 +311,6 @@ export function baseModuleIds(index: RegistryIndex): readonly string[] {
 }
 
 /**
- * The DERIVED full-catalog rule (DEPRECATED fallback): base ∪ every legacy edition's members, purely
- * from the index. The EXPLICIT full-catalog rule that supersedes it is now the `@caisson/everything`
- * bundle manifest's frozen `members` map (ADR-0257/0258 §3 — every sellable commercial SKU incl.
- * `ui-pro`; `@caisson/brand` + `@caisson/license-issue` are private/never-sold and excluded there).
- * `expandEntitlements` PREFERS that indexed entry the moment it is present (`hasBundleEntry`), so this
- * derivation only runs BEFORE the members-fold republish indexes the everything bundle — a transitional
- * path, removable once the index is guaranteed to carry it. The derivation cannot leak a private
- * package by construction: `brand`/`license-issue` are never published, so they never reach the index.
- */
-function fullCatalogMembers(index: RegistryIndex): string[] {
-  const out = new Set<string>(baseMembers(index));
-  for (const edition of EDITIONS) {
-    const bundleId = EDITION_BUNDLE_ID.get(edition);
-    if (bundleId === undefined) continue; // unreachable — every edition maps to a bundle (ADR-0270 index reln)
-    for (const id of membersOfBundle(index, bundleId)) out.add(id);
-  }
-  return [...out];
-}
-
-/**
  * Expand a buyer's purchased ids (bundle ids / à-la-carte module slugs, either the full `@caisson/<slug>`
  * module-id form or the bare `<slug>` per-module purchase-id form) into the flat member-module slug set the
  * ADR-0008/0021 allowlist gate checks. Membership is read from `index` ONLY (ADR-0071). This loop's
@@ -365,9 +330,7 @@ function fullCatalogMembers(index: RegistryIndex): string[] {
  * `snapshot` (ADR-0257 §1.2 / ADR-0247 F7, OPTIONAL) applies the per-member snapshot-at-sale filter
  * (see {@link EntitlementSnapshot}): a bundle member that joined after the buyer's `entitledSince`
  * for that bundle is dropped, fail-soft. Omitted → identical to the pre-snapshot behavior (the
- * Wave-0 unfiltered contract; TM-E fail-closed throw untouched on either path). The `everything`
- * full-catalog FALLBACK derivation is deliberately left unfiltered — Everything is the whole catalog
- * (grandfathered); once its explicit `kind:"bundle"` entry lands (W5) it filters like any bundle.
+ * Wave-0 unfiltered contract; TM-E fail-closed throw untouched on either path).
  */
 export function expandEntitlements(
   index: RegistryIndex,
@@ -384,14 +347,9 @@ export function expandEntitlements(
     // this call stays as the one point the next module rename plugs into; no caller pre-normalizes.
     const id = normalizeEntitlementId(purchased);
     if (isBundleId(id)) {
-      // `everything` prefers its explicit indexed bundle entry (the W5 members-fold rule); until that
-      // entry lands it falls back to the derived full-catalog rule (base ∪ every legacy edition's
-      // members).
-      const expanded =
-        id === "everything" && !hasBundleEntry(index, id)
-          ? fullCatalogMembers(index)
-          : membersOfBundle(index, id, snapshot);
-      for (const memberId of expanded) members.add(memberId);
+      for (const memberId of membersOfBundle(index, id, snapshot)) {
+        members.add(memberId);
+      }
       continue;
     }
     if (MODULE_ID_RE.test(id) && allowlist.has(id)) {
