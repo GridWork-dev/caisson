@@ -28,9 +28,8 @@ import {
 } from "./entitlements";
 import { loadRegistryIndex, loadRegistryIndexFromFile } from "./registry-index";
 
-/** The canonical whole-catalog bundle id (ADR-0257) — the `everything` bundle. On an index WITHOUT an
- *  explicit `@caisson/everything` bundle entry (this suite's fixture) it derives base ∪ every edition's
- *  members, the behavior the legacy `bundle` sentinel had before ADR-0270 purged that sentinel. */
+/** The canonical whole-catalog bundle id (ADR-0257) — the `everything` bundle. This suite's fixture
+ * deliberately omits its explicit `@caisson/everything` entry to pin fail-closed behavior. */
 const EVERYTHING = "everything" as const;
 
 const FIXTURE_INDEX = join(
@@ -40,7 +39,7 @@ const FIXTURE_INDEX = join(
 );
 const index = loadRegistryIndexFromFile(FIXTURE_INDEX);
 
-/** Each purchase scenario: a single edition, the bundle sentinel, an à-la-carte module, and the
+/** Each purchase scenario: a single bundle, the whole-catalog bundle, an à-la-carte module, and the
  *  multi-purchase / dedup combinations. The produced member set is sorted for a stable golden. */
 const CASES: ReadonlyArray<{ readonly purchased: readonly string[] }> = [
   { purchased: ["compliance"] },
@@ -65,13 +64,6 @@ describe("ADR-0071 entitlement expansion (golden-first, ADR-0013)", () => {
       members: [...expandEntitlements(index, c.purchased)].sort(),
     }));
     matchGolden(import.meta.url, "entitlement-expansion", produced);
-  });
-
-  test("the everything bundle equals base + every edition's members (index-derived, never token-baked)", () => {
-    const bundle = [...expandEntitlements(index, [EVERYTHING])].sort();
-    // base (editions[] === []) ∪ each edition's members == every module in the index.
-    const everything = index.modules.map((m) => m.id).sort();
-    expect(bundle).toEqual(everything);
   });
 
   test("an unknown purchased id fails closed (throws — never a silent grant or silent drop)", () => {
@@ -297,17 +289,14 @@ describe("baseModuleIds (ADR-0094/0097 — the free, always-served OPEN substrat
     expect(base).not.toContain("@caisson/credits");
   });
 
-  test("base ⊆ the everything bundle (everything = base ∪ all editions)", () => {
+  test("a missing everything bundle entry does not implicitly grant open base modules", () => {
     const bundle = expandEntitlements(index, [EVERYTHING]);
-    for (const id of baseModuleIds(index)) expect(bundle.has(id)).toBe(true);
+    for (const id of baseModuleIds(index)) expect(bundle.has(id)).toBe(false);
   });
 
-  test("a commercial base-kind module stays bundle-deliverable + à-la-carte (gated, not removed)", () => {
-    // credits is commercial base: excluded from the FREE floor, but an entitled bundle OR bare-slug
-    // buyer still receives it — the license gate is on the free-view floor only, never on expansion.
-    expect(
-      expandEntitlements(index, [EVERYTHING]).has("@caisson/credits"),
-    ).toBe(true);
+  test("a commercial base-kind module stays à-la-carte deliverable (gated, not removed)", () => {
+    // credits is commercial base: excluded from the FREE floor, but its bare-slug buyer still
+    // receives it — the license gate is on the free-view floor only, never on direct expansion.
     expect([...expandEntitlements(index, ["credits"])]).toEqual([
       "@caisson/credits",
     ]);
@@ -497,12 +486,10 @@ describe("ADR-0257/0270 bundle vocabulary + purchase-alias spine", () => {
     }
   });
 
-  test("everything derives base ∪ every edition on an index without an explicit bundle entry", () => {
-    // The fixture carries no `@caisson/everything` bundle entry, so `everything` takes the derived
-    // full-catalog fallback (base ∪ every edition's members) — the behavior the retired `bundle` sentinel
-    // had, now reached only via the canonical id.
-    const everything = [...expandEntitlements(index, [EVERYTHING])].sort();
-    expect(everything).toEqual(index.modules.map((m) => m.id).sort());
+  test("everything expands to nothing when its bundle entry is absent (fail-closed)", () => {
+    // The fixture deliberately carries no `@caisson/everything` bundle entry. A missing catalog
+    // rule must never widen the grant to base-scoped or legacy-edition modules.
+    expect([...expandEntitlements(index, [EVERYTHING])]).toEqual([]);
   });
 
   test("a KNOWN bundle id with no index presence expands to nothing (fail-soft, edition semantics)", () => {
@@ -568,7 +555,7 @@ describe("ADR-0257/0270 bundle vocabulary + purchase-alias spine", () => {
     ]);
   });
 
-  test('everything PREFERS its explicit kind:"bundle" entry over the derived full-catalog rule', () => {
+  test('everything reads its explicit kind:"bundle" entry', () => {
     const withEverything = loadRegistryIndex({
       schemaVersion: 1,
       modules: [
@@ -590,15 +577,14 @@ describe("ADR-0257/0270 bundle vocabulary + purchase-alias spine", () => {
                 priceCents: 205900,
                 license: "LicenseRef-Caisson-Commercial",
                 members: { "@caisson/credits": "0.1.0" },
-                description:
-                  "Explicit Everything membership rule fixture (W5 replaces the derived scan).",
+                description: "Explicit Everything membership rule fixture.",
               },
             },
           ],
         },
       ],
     });
-    // The explicit entry's members map wins — NOT base ∪ all editions.
+    // The explicit entry's members map is the sole grant rule.
     expect(
       [...expandEntitlements(withEverything, ["everything"])].sort(),
     ).toEqual(["@caisson/credits"]);
@@ -673,8 +659,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/local-store",
       "@caisson/tool-exec",
     ],
-    // Explicit leaf-set pin (not derived — see the "reads the explicit everything rule" test
-    // below for the derived proof) so a silent membership regression in the everything
+    // Explicit leaf-set pin so a silent membership regression in the everything
     // manifest's `members` map reddens CI directly, not just via a count/size assertion.
     // @caisson/ui-pro is INDEXED and a member as of its first publish (everything@0.2.2)
     // — the open Apache base (kernel/tenancy-rls/ai-config/local-store/…) stays absent by design
@@ -747,11 +732,11 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
   });
 
   test("the everything bundle id reads the explicit everything rule on the real index", () => {
-    // Post-fold semantics: the indexed @caisson/everything bundle entry's explicit members map wins
-    // over the derived full-catalog scan. The grant is that map filtered to indexed ids — since the
-    // ui-pro first publish (everything@0.2.2) that includes @caisson/ui-pro at its real version —
-    // and the open Apache base is deliberately absent (it ships free via the Worker's free-view
-    // floor, never as a grant).
+    // Post-fold semantics: the indexed @caisson/everything bundle entry's explicit members map is
+    // the sole grant rule. The grant is that map filtered to indexed ids — since the ui-pro first
+    // publish (everything@0.2.2) that includes @caisson/ui-pro at its real version — and the open
+    // Apache base is deliberately absent (it ships free via the Worker's free-view floor, never as
+    // a grant).
     const bundle = [...expandEntitlements(realIndex, [EVERYTHING])].sort();
     const everythingEntry = realIndex.modules.find(
       (m) => m.id === "@caisson/everything",

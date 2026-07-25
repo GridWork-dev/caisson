@@ -179,7 +179,7 @@ function resolveEditionMembers(
     }
     return resolvable;
   };
-  // Pass 1: the first-class bundle entry (`hasBundleEntry` preference, ADR-0257).
+  // Pass 1: the first-class bundle entry (ADR-0257).
   for (const m of index.modules) {
     const manifest = latestOf(m);
     if (manifest?.kind === "bundle" && m.id === bundleModuleId) {

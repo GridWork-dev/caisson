@@ -1,9 +1,10 @@
 // resolveAccountEntitlements end to end (ADR-0071): stored purchased ids → expanded member slugs,
 // over PGlite + real withTenant RLS and a synthetic registry index. Proves the wiring (store read →
 // index expansion) — the expansion correctness itself is golden-tested in @caisson/registry-schema.
-// Asserts: an edition resolves to ONLY its index-derived members (not base); the bundle resolves to
-// everything; no entitlement resolves to the empty set; a stored id absent from the index fails closed
-// (the resolver propagates expandEntitlements' throw — never a silent drop, threat TM-E).
+// Asserts: an edition resolves to ONLY its index-derived members (not base); the Everything bundle
+// resolves through its complete indexed members map; no entitlement resolves to the empty set; a
+// stored id absent from the index fails closed (the resolver propagates expandEntitlements' throw —
+// never a silent drop, threat TM-E).
 import {
   afterAll,
   beforeAll,
@@ -66,6 +67,34 @@ const index = loadRegistryIndex({
     entry("@caisson/compliance", ["compliance"]),
     entry("@caisson/ai-kit", ["ai-kit"]),
     entry("@caisson/audit-worm", []), // per-module bare-slug purchase target below
+    {
+      id: "@caisson/everything",
+      latest: "1.0.0",
+      versions: [
+        {
+          version: "1.0.0",
+          publishedAt: "2026-01-01T00:00:00.000Z",
+          gateAttestation: "ci-run-1@deadbeef",
+          manifest: {
+            id: "@caisson/everything",
+            version: "1.0.0",
+            kind: "bundle",
+            tier: "paid",
+            license: "LicenseRef-Caisson-Commercial",
+            priceCents: 205900,
+            editions: [],
+            members: {
+              "@caisson/ai-kit": "1.0.0",
+              "@caisson/audit-worm": "1.0.0",
+              "@caisson/compliance": "1.0.0",
+              "@caisson/everything": "1.0.0",
+              "@caisson/kernel": "1.0.0",
+            },
+            description: "Everything bundle fixture.",
+          },
+        },
+      ],
+    },
   ],
 });
 
@@ -100,10 +129,10 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
     expect([...resolved].sort()).toEqual(["@caisson/compliance"]);
   });
 
-  test("the everything bundle resolves to every module (base ∪ all editions)", async () => {
+  test("the indexed everything bundle resolves to every fixture module", async () => {
     const acct = "acct_bundle";
-    // ADR-0270: the legacy `bundle` sentinel is purged; the whole catalog is bought as `everything`,
-    // which on an index without an explicit everything bundle entry derives base ∪ every edition.
+    // ADR-0270: the legacy `bundle` sentinel is purged; the whole catalog is bought as `everything`
+    // and resolves only through its indexed kind:"bundle" members map.
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
@@ -119,6 +148,7 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
       "@caisson/ai-kit",
       "@caisson/audit-worm",
       "@caisson/compliance",
+      "@caisson/everything",
       "@caisson/kernel",
     ]);
   });

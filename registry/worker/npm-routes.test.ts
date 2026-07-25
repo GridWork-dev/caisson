@@ -73,6 +73,28 @@ const index = loadRegistryIndex({
   modules: [
     openBase("@caisson/kernel"), // free base
     commercialBase("@caisson/field-crypto"), // commercial, à-la-carte "field-crypto"
+    {
+      id: "@caisson/everything",
+      latest: "1.0.0",
+      versions: [
+        {
+          version: "1.0.0",
+          publishedAt: "2026-01-01T00:00:00.000Z",
+          gateAttestation: "ci-run-1@deadbeef",
+          manifest: {
+            id: "@caisson/everything",
+            version: "1.0.0",
+            kind: "bundle",
+            tier: "paid",
+            license: "LicenseRef-Caisson-Commercial",
+            priceCents: 205900,
+            editions: [],
+            members: { "@caisson/field-crypto": "1.0.0" },
+            description: "Everything bundle fixture.",
+          },
+        },
+      ],
+    },
   ],
 });
 
