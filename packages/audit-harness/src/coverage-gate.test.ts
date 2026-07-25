@@ -52,6 +52,7 @@ const IGNORE_GLOBS: readonly string[] = [
   "bun.lock",
   // dotfiles — no audit value
   ".gitignore",
+  ".gitattributes",
   ".dockerignore",
   ".prettierignore",
   // semgrep scan-scope config (tools/security stack) — a lint-tool ignore list, same class as the
@@ -126,7 +127,11 @@ describe("coverage gate — complete, non-overlapping tree partition (ADR-0233)"
     );
     // (b) a root doc.
     expect(domainForPath("README.md", domains)?.id).toBe("root-docs");
-    // (c) a hypothetical new top-level dir with no IGNORE entry and no domain: this is exactly the
+    // (c) Bun's committed dependency patches are audited as internal package-manager tooling.
+    expect(
+      domainForPath("patches/dependency-cruiser@18.1.0.patch", domains)?.id,
+    ).toBe("patches");
+    // (d) a hypothetical new top-level dir with no IGNORE entry and no domain: this is exactly the
     // shape the whole-repo scan test above fails loud on — unclaimed AND not ignored.
     expect(domainForPath("newdir/x.ts", domains)).toBeNull();
     expect(isIgnored("newdir/x.ts")).toBe(false);

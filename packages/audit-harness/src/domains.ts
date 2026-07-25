@@ -120,9 +120,9 @@ function unitDomain(
 /**
  * Derive the complete domain partition for the repo at `root`. One domain per tree unit —
  * `packages/*`, `apps/*`, `services/*`, `tooling/*`, `infra/*`, `tools/*`, the three
- * registry-service units, the workflows dir, the generator's emitted templates, the docs-content
- * prose aggregate, repo scripts, the root-docs aggregate, and the synthetic oss-mirror export
- * view. ≈67 domains, none hand-typed.
+ * registry-service units, committed package-manager patches, the workflows dir, the generator's
+ * emitted templates, the docs-content prose aggregate, repo scripts, the root-docs aggregate, and
+ * the synthetic oss-mirror export view. ≈67 domains, none hand-typed.
  *
  * THROWS if any `packages/*` unit cannot be classified (no package.json) — the coverage gate.
  */
@@ -173,6 +173,15 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
   for (const name of ["worker", "scripts", "schema"]) {
     domains.push(unitDomain("registry", name, "internal-only"));
   }
+
+  // Bun's committed dependency patches are executable package-manager inputs. They are
+  // internal-only, but remain inside the audit partition instead of disappearing into an ignore.
+  domains.push({
+    id: "patches",
+    roots: ["patches"],
+    globs: ["patches/**"],
+    class: "internal-only",
+  });
 
   // The .github/workflows CI surface — one domain over every workflow.
   domains.push({
