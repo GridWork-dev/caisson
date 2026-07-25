@@ -18,6 +18,7 @@ import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
+  RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
   RENEWAL_EXTENSION_SCHEMA_SQL,
   extendUpdatesWindow,
   grantEntitlements,
@@ -37,6 +38,7 @@ beforeAll(async () => {
   // extendUpdatesWindow now records a renewal_extension ledger row (ADR-0251 un-extend) — its
   // table must exist wherever the function is exercised.
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
+  await tp.exec(RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL);
 });
 
 afterAll(async () => {
