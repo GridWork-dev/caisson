@@ -1,0 +1,27 @@
+{
+  "slug": "main",
+  "createdAt": "2026-07-23T11:42:54.472Z",
+  "endedAt": null,
+  "entries": [
+    {
+      "ts": "2026-07-23T11:42:54.472Z",
+      "phase": null,
+      "text": "session started"
+    },
+    {
+      "ts": "2026-07-23T11:54:58.318Z",
+      "phase": null,
+      "text": "session started"
+    },
+    {
+      "ts": "2026-07-23T11:54:59.715Z",
+      "phase": null,
+      "text": "session started"
+    },
+    {
+      "ts": "2026-07-23T12:07:15.775Z",
+      "phase": null,
+      "text": "session started"
+    }
+  ]
+}
