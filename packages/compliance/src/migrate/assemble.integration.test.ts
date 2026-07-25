@@ -47,6 +47,63 @@ const COMPOSED_TABLES = [
 ] as const;
 
 /**
+ * The global migration identities already released before audit-worm added artifact-version
+ * persistence. These checksums are the production ledger contract: new package-local migrations
+ * must append after this prefix instead of renumbering it.
+ */
+const RELEASED_GLOBAL_PREFIX = [
+  {
+    version: 1,
+    sourcePackage: "@caisson/field-crypto",
+    sourceName: "0001_field_keys.sql",
+    checksum:
+      "e23c8bc5449c43e4a2f81e07ed6a13b1f9c357db4fa6692a542e9da61b9203da",
+  },
+  {
+    version: 2,
+    sourcePackage: "@caisson/field-crypto",
+    sourceName: "0002_field_keys_rls_nullif.sql",
+    checksum:
+      "cbd5e935f744529a866fd7800458996897ca75e424c5bad723f1c2c918863ae3",
+  },
+  {
+    version: 3,
+    sourcePackage: "@caisson/audit-worm",
+    sourceName: "0001_audit_chain.sql",
+    checksum:
+      "1661369f117e83e80f1301bfb60073c06d6fd9fcc5445da11402e189bb001aa2",
+  },
+  {
+    version: 4,
+    sourcePackage: "@caisson/audit-worm",
+    sourceName: "0002_versions.sql",
+    checksum:
+      "7591464b2c1055dca3165cfb2a127ee78ddb13193eeb5575312bdbf3fd1fc964",
+  },
+  {
+    version: 5,
+    sourcePackage: "@caisson/audit-worm",
+    sourceName: "0003_rls_nullif.sql",
+    checksum:
+      "c2a180d8d4fcb06f7c190883b974b2b18f0ba3fa9646a227bd5dc9b33a75460b",
+  },
+  {
+    version: 6,
+    sourcePackage: "@caisson/compliance",
+    sourceName: "0001_impersonation_session.sql",
+    checksum:
+      "da2e9bac7b168db5e317d85816e8317fd819d0b0a5a2989d28e90c62c0a39066",
+  },
+  {
+    version: 7,
+    sourcePackage: "@caisson/compliance",
+    sourceName: "0002_impersonation_session_rls_nullif.sql",
+    checksum:
+      "30c970d6680a3527abe1dbadd612762e3e83d08f3c7979555f20464b58eedb83",
+  },
+] as const;
+
+/**
  * A PGlite-backed `MigrationApplier` (ADR-0090) — the ONLY thing this test supplies. The forward-only
  * apply/skip/checksum-drift loop is the SHARED `runMigrations` from @caisson/migrate; this port just
  * wires it to a real DB: `applied()` reads the `schema_version` ledger, `apply()` runs the migration
@@ -98,9 +155,9 @@ describe("assembled sequence (ADR-0070, TM-O)", () => {
       "0003_audit_chain.sql",
       "0004_versions.sql",
       "0005_rls_nullif.sql",
-      "0006_artifact_versions.sql",
-      "0007_impersonation_session.sql",
-      "0008_impersonation_session_rls_nullif.sql",
+      "0006_impersonation_session.sql",
+      "0007_impersonation_session_rls_nullif.sql",
+      "0008_artifact_versions.sql",
     ]);
     expect(assembly.sequence.map((m) => m.sourcePackage)).toEqual([
       "@caisson/field-crypto",
@@ -108,9 +165,9 @@ describe("assembled sequence (ADR-0070, TM-O)", () => {
       "@caisson/audit-worm",
       "@caisson/audit-worm",
       "@caisson/audit-worm",
+      "@caisson/compliance",
+      "@caisson/compliance",
       "@caisson/audit-worm",
-      "@caisson/compliance",
-      "@caisson/compliance",
     ]);
     expect(assembly.sequence.map((m) => m.seq)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8,
@@ -166,6 +223,45 @@ describe("ordered apply + ledger (PGlite)", () => {
     const second = await runMigrations(assembly, pgApplier(tp));
     expect(second.applied).toEqual([]);
     expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  test("an existing released 1–7 ledger applies only artifact versions at 8", async () => {
+    const upgraded = await newTestPg();
+    try {
+      await upgraded.exec(SCHEMA_VERSION_DDL);
+      const migrationsByIdentity = new Map(
+        assembly.sequence.map((migration) => [
+          `${migration.sourcePackage}:${migration.sourceName}`,
+          migration,
+        ]),
+      );
+
+      for (const released of RELEASED_GLOBAL_PREFIX) {
+        const migration = migrationsByIdentity.get(
+          `${released.sourcePackage}:${released.sourceName}`,
+        );
+        expect(migration).toBeDefined();
+        expect(migration?.checksum).toBe(released.checksum);
+        await upgraded.exec(migration?.sql ?? "");
+        await upgraded.query(
+          "INSERT INTO schema_version (version, checksum) VALUES ($1, $2)",
+          [released.version, released.checksum],
+        );
+      }
+
+      const result = await runMigrations(assembly, pgApplier(upgraded));
+      expect(result).toEqual({
+        applied: [8],
+        skipped: [1, 2, 3, 4, 5, 6, 7],
+        schemaVersion: assembly.schemaVersion,
+      });
+      const [artifactVersions] = await upgraded.query<{ reg: string | null }>(
+        "SELECT to_regclass('worm_artifact_version')::text AS reg",
+      );
+      expect(artifactVersions?.reg).toBe("worm_artifact_version");
+    } finally {
+      await upgraded.close();
+    }
   });
 });
 

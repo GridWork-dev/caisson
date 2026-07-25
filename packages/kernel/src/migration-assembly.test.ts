@@ -3,6 +3,7 @@ import { matchGolden } from "@caisson/testing";
 import {
   type PackageMigrations,
   assembleMigrations,
+  assembleMigrationsWithPinnedPrefix,
 } from "./migration-assembly.ts";
 
 // A fixed 2-package input: `@caisson/billing` depends on `@caisson/kernel`, so the kernel's
@@ -100,5 +101,54 @@ describe("migration-assembly (ADR-0070)", () => {
         },
       ]),
     ).toThrow(/migration name/);
+  });
+
+  test("a released global prefix stays fixed while new package migrations append", () => {
+    const { sequence } = assembleMigrationsWithPinnedPrefix(INPUT, [
+      {
+        sourcePackage: "@caisson/kernel",
+        sourceName: "0001_init.sql",
+      },
+      {
+        sourcePackage: "@caisson/billing",
+        sourceName: "0001_credit_ledger.sql",
+      },
+    ]);
+
+    expect(
+      sequence.map((migration) => [
+        migration.sourcePackage,
+        migration.sourceName,
+      ]),
+    ).toEqual([
+      ["@caisson/kernel", "0001_init.sql"],
+      ["@caisson/billing", "0001_credit_ledger.sql"],
+      ["@caisson/kernel", "0002_accounts.sql"],
+    ]);
+    expect(sequence.map((migration) => migration.seq)).toEqual([1, 2, 3]);
+  });
+
+  test("a missing or duplicate pinned migration is rejected", () => {
+    expect(() =>
+      assembleMigrationsWithPinnedPrefix(INPUT, [
+        {
+          sourcePackage: "@caisson/kernel",
+          sourceName: "9999_missing.sql",
+        },
+      ]),
+    ).toThrow(/missing pinned migration/);
+
+    expect(() =>
+      assembleMigrationsWithPinnedPrefix(INPUT, [
+        {
+          sourcePackage: "@caisson/kernel",
+          sourceName: "0001_init.sql",
+        },
+        {
+          sourcePackage: "@caisson/kernel",
+          sourceName: "0001_init.sql",
+        },
+      ]),
+    ).toThrow(/duplicate pinned migration/);
   });
 });

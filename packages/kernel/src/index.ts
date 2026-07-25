@@ -92,10 +92,14 @@ export type {
   GuardrailBlock,
 } from "./observability.ts";
 
-export { assembleMigrations } from "./migration-assembly.ts";
+export {
+  assembleMigrations,
+  assembleMigrationsWithPinnedPrefix,
+} from "./migration-assembly.ts";
 export type {
   MigrationFile,
   PackageMigrations,
+  PinnedMigrationIdentity,
   MergedMigration,
   SchemaVersionEntry,
   MigrationAssembly,
