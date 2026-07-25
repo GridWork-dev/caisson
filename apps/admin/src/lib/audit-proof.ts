@@ -4,9 +4,9 @@
 // unit-testable without a PGlite/WORM/auth harness. The route wires auth + rate-limit + access-log +
 // the WORM read around this.
 //
-// Trust boundary (H1): this is the OPERATOR surface — the target account is a validated UUID input,
-// because operator cross-tenant inspection is the design. "Session-derived, RLS-scoped account" is the
-// SEPARATE tenant route (GATE-2), not this one.
+// Trust boundary (H1): this is the OPERATOR surface — the target account is a bounded opaque input
+// because operator cross-tenant inspection is the design. "Session-derived, RLS-scoped account" is
+// the SEPARATE tenant route (GATE-2), not this one.
 import { z } from "zod";
 import {
   buildRowReceipt,
@@ -26,14 +26,24 @@ import {
 import type { RowProof } from "@caisson/audit-worm";
 
 /**
- * The strict query contract (binding #6, CR-07 §5). `account` is a validated UUID (H1 — the operator
- * inspects a target tenant by id); `seq` is coerced from the query string to a NON-NEGATIVE INTEGER
- * before it can reach WORM-key construction (a float/`"abc"`/negative is a 400). Unknown query fields
- * are rejected by `.strict()`.
+ * The strict query contract (binding #6, CR-07 §5). `account` accepts the real opaque better-auth id
+ * as well as legacy UUIDs, while rejecting whitespace, control bytes, and path separators. The route
+ * derives the UUID-shaped WORM account server-side. `seq` is coerced from the query string to a
+ * NON-NEGATIVE INTEGER before it can reach WORM-key construction (a float/`"abc"`/negative is a 400).
+ * Unknown query fields are rejected by `.strict()`.
  */
 export const AuditProofQuery = z
   .object({
-    account: z.string().uuid(),
+    account: z
+      .string()
+      .trim()
+      .min(1)
+      .max(256)
+      .refine(
+        // eslint-disable-next-line no-control-regex -- this boundary rejects C0/C1 account-id bytes.
+        (value) => !/[\u0000-\u001f\u007f-\u009f\s/\\]/u.test(value),
+        "account id has whitespace, control characters, or path separators",
+      ),
     seq: z.coerce.number().int().nonnegative(),
   })
   .strict();

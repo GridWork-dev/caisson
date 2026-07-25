@@ -17,6 +17,7 @@ import {
 } from "bun:test";
 import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
 import { canonicalize, chainEntry, type JsonValue } from "@caisson/kernel";
+import { wormAnchorAccount } from "@caisson/service-license";
 import { withTenant } from "@caisson/tenancy-rls";
 import { setAdminAuthFixture, VERIFIED_ADMIN } from "@/lib/admin-auth-mock";
 import { getAdminDb } from "@/lib/admin-db";
@@ -94,9 +95,12 @@ function get(account: string, seq: number | string): Promise<Response> {
 }
 
 /** Seed a real chain (entries + per-length WORM anchors) for a fresh random account; return its id. */
-async function seed(payloads: JsonValue[]): Promise<string> {
-  const account = randomUUID();
-  for (const p of payloads) await store.append(account, p);
+async function seed(
+  payloads: JsonValue[],
+  account = randomUUID(),
+): Promise<string> {
+  const anchorAccount = wormAnchorAccount(account);
+  for (const p of payloads) await store.append(anchorAccount, p);
   return account;
 }
 
@@ -117,7 +121,7 @@ describe("GET /api/admin/audit/proof (T-A1)", () => {
     expect(res.status).toBe(400);
   });
 
-  test("non-uuid account (a path fragment) -> 400 (client can't influence the WORM key)", async () => {
+  test("path-fragment account -> 400 (client can't influence the WORM key)", async () => {
     const res = await get("../../etc/passwd", 0);
     expect(res.status).toBe(400);
   });
@@ -145,6 +149,17 @@ describe("GET /api/admin/audit/proof (T-A1)", () => {
       [account],
     );
     expect(log.rows.length).toBeGreaterThan(0);
+  });
+
+  test("a real opaque better-auth account id resolves through the lazy proof route", async () => {
+    const account = "k5G2mB9qL0xWc4vRt7nYs1uZp8dJh3fA";
+    await seed([{ event: "created", actor: "buyer" }], account);
+
+    const res = await get(account, 0);
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { chainLength?: number };
+    expect(body.chainLength).toBe(1);
   });
 
   test("redacted row -> 200 and no secret value crosses the wire (H3)", async () => {

@@ -1,6 +1,6 @@
 // GET /api/admin/audit/proof — the operator proof-bundle endpoint (T-A1, per-row verification SPEC).
 //
-// H1 / binding #1: this is the OPERATOR surface. The target `account` is a validated UUID INPUT
+// H1 / binding #1: this is the OPERATOR surface. The target `account` is a bounded opaque INPUT
 // (operator cross-tenant inspection is the design), gated by an in-handler `requireAdmin` re-check
 // (never the proxy header — security floor) + access-logging (M1). The strictly-session-derived,
 // RLS-scoped TENANT route is a SEPARATE endpoint (GATE-2) that ships after the apps/site freeze lifts.
@@ -55,7 +55,7 @@ export async function GET(req: Request): Promise<Response> {
   const actor = await requireAdmin(req);
   if (actor === null) return respond({ error: "unauthorized" }, 401);
 
-  // binding #6 — `.strict()` query; unknown fields / non-UUID account / non-integer seq -> 400.
+  // binding #6 — `.strict()` query; unknown fields / unsafe account / non-integer seq -> 400.
   let query: { account: string; seq: number };
   try {
     query = AuditProofQuery.parse(
@@ -80,10 +80,10 @@ export async function GET(req: Request): Promise<Response> {
 
   const deps = await getAdminMutationDeps();
 
-  // The chain is keyed by the wormAnchorAccount-derived UUID (`append()` used it). For a UUID input
-  // this only lowercases, so `getRowProof` -> `anchorKey` -> `buildArtifactKey` gets a well-formed
-  // UUID segment: the WORM key is constructed SERVER-SIDE from the validated account + seq, never from
-  // a client-supplied string (CR-07 §5).
+  // The chain is keyed by the wormAnchorAccount-derived UUID (`append()` used it). UUIDs pass through;
+  // opaque better-auth ids are deterministically derived, so `getRowProof` -> `anchorKey` ->
+  // `buildArtifactKey` always gets a well-formed UUID segment. The WORM key is constructed SERVER-SIDE
+  // from the validated account + seq, never from a client-supplied path (CR-07 §5).
   const anchorAccount = wormAnchorAccount(account);
   let proof;
   try {

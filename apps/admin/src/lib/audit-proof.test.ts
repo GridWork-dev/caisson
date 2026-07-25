@@ -185,15 +185,20 @@ describe("assembleProofSuccess — H3 server-side redaction", () => {
 });
 
 describe("strict schemas (binding #6)", () => {
-  test("the query rejects unknown fields, non-uuid account, and non-integer seq", () => {
+  test("the query accepts opaque ids and rejects unknown fields, unsafe accounts, and non-integer seq", () => {
     const account = "11111111-1111-4111-8111-111111111111"; // valid v4/variant UUID
+    const opaqueAccount = "k5G2mB9qL0xWc4vRt7nYs1uZp8dJh3fA";
     expect(AuditProofQuery.safeParse({ account, seq: "0" }).success).toBe(true);
+    expect(
+      AuditProofQuery.safeParse({ account: opaqueAccount, seq: "0" }).success,
+    ).toBe(true);
     expect(AuditProofQuery.safeParse({ account, seq: "3" }).success).toBe(true);
     expect(
       AuditProofQuery.safeParse({ account, seq: "0", evil: "x" }).success,
     ).toBe(false);
     expect(
-      AuditProofQuery.safeParse({ account: "not-a-uuid", seq: "0" }).success,
+      AuditProofQuery.safeParse({ account: "../../etc/passwd", seq: "0" })
+        .success,
     ).toBe(false);
     expect(AuditProofQuery.safeParse({ account, seq: "1.5" }).success).toBe(
       false,
