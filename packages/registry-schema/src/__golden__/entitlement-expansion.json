@@ -30,16 +30,7 @@
     "purchased": [
       "everything"
     ],
-    "members": [
-      "@caisson/agent-dev",
-      "@caisson/ai-kit",
-      "@caisson/compliance",
-      "@caisson/credits",
-      "@caisson/evidence-pack",
-      "@caisson/inference",
-      "@caisson/kernel",
-      "@caisson/local-ai"
-    ]
+    "members": []
   },
   {
     "purchased": [

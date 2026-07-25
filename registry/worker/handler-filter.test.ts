@@ -1,9 +1,10 @@
 // Registry Worker entitlement filtering (ADR-0008/0047/0071, code-wiring B2). Drives createIndexHandler
 // with an INJECTED fake resolver (no crypto here — the Ed25519 verify path is covered in
 // entitlement-filter.test.ts). Asserts: a licensed caller sees base ∪ their edition; community sees
-// base only; the bundle sees everything; an unentitled known module is 404 (invisible, ADR-0076); a
-// stale/forged entitlement fails SAFE to base (never 500); filtered responses are non-cacheable
-// (private, no-store + Vary); and with NO resolver the full catalog is served unfiltered (Wave-0).
+// base only; an absent everything bundle fails closed; an unentitled known module is 404 (invisible,
+// ADR-0076); a stale/forged entitlement fails SAFE to base (never 500); filtered responses are
+// non-cacheable (private, no-store + Vary); and with NO resolver the full catalog is served
+// unfiltered (Wave-0).
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import {
@@ -87,10 +88,8 @@ describe("Worker entitlement filtering (ADR-0071)", () => {
     expect(await ids(handlerFor(null)(req("/")))).toEqual(["@caisson/kernel"]);
   });
 
-  test("the everything bundle sees every module", async () => {
+  test("a missing everything bundle entry fails closed to the free base", async () => {
     expect(await ids(handlerFor(["everything"])(req("/")))).toEqual([
-      "@caisson/ai-kit",
-      "@caisson/compliance",
       "@caisson/kernel",
     ]);
   });
@@ -320,10 +319,8 @@ describe("Worker gates COMMERCIAL base-kind modules (ADR-0094/0097 open-core, Q1
     expect(await ids(res)).toEqual(["@caisson/kernel"]); // never field-crypto on error
   });
 
-  test("(e) the everything bundle still receives the commercial base-kind module (gated, not removed)", async () => {
+  test("(e) a missing everything bundle entry never widens to commercial base-kind modules", async () => {
     expect(await ids(gatedHandlerFor(["everything"])(req("/")))).toEqual([
-      "@caisson/ai-kit",
-      "@caisson/field-crypto",
       "@caisson/kernel",
     ]);
   });
@@ -460,7 +457,32 @@ describe("updates-window filtering on /modules/:id (ADR-0244/0255)", () => {
   };
   const winIndex = loadRegistryIndex({
     schemaVersion: 1,
-    modules: [entry("@caisson/kernel", []), multiVersion],
+    modules: [
+      entry("@caisson/kernel", []),
+      multiVersion,
+      {
+        id: "@caisson/everything",
+        latest: "1.0.0",
+        versions: [
+          {
+            version: "1.0.0",
+            publishedAt: "2026-01-01T00:00:00.000Z",
+            gateAttestation: "ci-run-1@deadbeef",
+            manifest: {
+              id: "@caisson/everything",
+              version: "1.0.0",
+              kind: "bundle",
+              tier: "paid",
+              license: "LicenseRef-Caisson-Commercial",
+              priceCents: 205900,
+              editions: [],
+              members: { "@caisson/compliance": "2.0.0" },
+              description: "everything bundle fixture",
+            },
+          },
+        ],
+      },
+    ],
   });
   const winHandlerFor = (window: string | null) =>
     createIndexHandler(winIndex, {

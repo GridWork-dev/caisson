@@ -3,8 +3,8 @@
 // the whole commercial catalog in one purchase. `bundle` (the legacy ADR-0012 "buy everything"
 // sentinel) aliases to `everything` at the single resolve-time alias point.
 //
-// EXPLICIT FULL-CATALOG RULE (ADR-0258 §3): this `members` map IS the full-catalog rule that replaces
-// the derived `fullCatalogMembers()` scan in @caisson/registry-schema. Content = every sellable
+// EXPLICIT FULL-CATALOG RULE (ADR-0258 §3): this `members` map IS the sole full-catalog rule consumed
+// by @caisson/registry-schema. Content = every sellable
 // commercial SKU including @caisson/ui-pro; the open Apache base ships free via the registry Worker's
 // free-view floor (union), so it is deliberately NOT re-listed here. Three commercial packages are
 // EXCLUDED by rule: @caisson/brand (private, never sold — the license-issue-pattern brand kit),
