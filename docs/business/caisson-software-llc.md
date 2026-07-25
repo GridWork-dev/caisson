@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-13
+updated: 2026-07-25
 status: live
 owner: operator (business/legal track)
 ---
@@ -127,8 +127,9 @@ Run as its own session when the GA approval lands. Steps in hard order; parallel
 3. **Operating agreement + IP assignment** signed per §3 brief (before Mercury — banks may ask
    for the OA; the IP assignment should predate revenue). Lawyer engagement brief:
    `docs/gtm/legal-review-brief.md` (one engagement, three scopes, locked 2026-07-10).
-4. **Mercury** — **UNBLOCKED 2026-07-10** (was EIN-gated; EIN now in hand). The sole member
-   applies DIRECT at mercury.com (never via a referral/affiliate layer): Articles + EIN
+4. **Mercury** — **UNBLOCKED 2026-07-10** (was EIN-gated; EIN now in hand), **not yet submitted**
+   (draft in progress — see [cpa-coordination-packet](finance/cpa-coordination-packet.md) §1). The
+   sole member applies DIRECT at mercury.com (never via a referral/affiliate layer): Articles + EIN
    letter + real principal address. Outcome: checking account + payout details for Paddle.
    A signed OA is preferred first (step 3) but the draft PDF suffices if ownership
    documentation is requested — banking is not gated on the lawyer-final OA.
@@ -157,11 +158,11 @@ UNDER CPA REVIEW / APPLICATION PENDING / REQUIRED BEFORE FIRST SALE).
 
 ### Workstream snapshot
 
-| Workstream                                                                                                                                                                                                                    | Owner              | State                                                                                                                                                                                 |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Client/conflict identification, ownership structure, age-18 transfer, OA + resolutions (incl. the organizer-resolution "adopted general provisions" ambiguity), delegation/continuity, existing + future IP, minor employment | Lawyer             | **UNDER LEGAL REVIEW** — packet drafted 2026-07-11, engagement beginning                                                                                                              |
-| Historical funding classification (father's Amex + Liam's Current, backfilled to Jan 2025), opening books, payroll system, tax/refund reserves, gift/transfer reporting                                                       | CPA                | **UNDER CPA REVIEW** — coordination packet drafted 2026-07-11                                                                                                                         |
-| Mercury (banking) + Paddle (MoR) approvals                                                                                                                                                                                    | Lakshmi / operator | **APPLICATION PENDING** — both submit with current truthful ownership facts (Lakshmi as owner/representative); update platforms if counsel's final structure changes a submitted fact |
+| Workstream                                                                                                                                                                                                                    | Owner              | State                                                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Client/conflict identification, ownership structure, age-18 transfer, OA + resolutions (incl. the organizer-resolution "adopted general provisions" ambiguity), delegation/continuity, existing + future IP, minor employment | Lawyer             | **UNDER LEGAL REVIEW** — packet drafted 2026-07-11, engagement beginning                                                                                                                                                         |
+| Historical funding classification (father's Amex + Liam's Current, backfilled to Jan 2025), opening books, payroll system, tax/refund reserves, gift/transfer reporting                                                       | CPA                | **UNDER CPA REVIEW** — coordination packet drafted 2026-07-11                                                                                                                                                                    |
+| Mercury (banking) + Paddle (MoR) approvals                                                                                                                                                                                    | Lakshmi / operator | **APPLICATION PENDING** — draft in progress, not yet submitted; both will submit with current truthful ownership facts (Lakshmi as owner/representative); update platforms if counsel's final structure changes a submitted fact |
 
 ### The central mismatch (the map's controlling caution)
 

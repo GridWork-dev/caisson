@@ -7,6 +7,8 @@ grounds:
   - docs/deploy/STATE.md
   - docs/business/caisson-internal-master-map.md
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
+  - docs/ops/provider-console-checks.md
+  - outputs/research/infra-provider-audit-2026-07-16.md
 ---
 
 # Caisson launch-act runbook
@@ -208,8 +210,9 @@ history.
 
 ## Post-launch operator program
 
-Verify Railway backups, Arnica, Grafana quota, Blacksmith minutes, DMARC, vault/key parity, Bedrock,
-the launch `SESSION_TOKEN_HMAC_KEY`, and dead OpenRouter-key removal. Arm TSA/Rekor/OTS anchoring
+Run the seven Gate D provider-console checks — [provider-console-checks](provider-console-checks.md)
+— including regenerating the dead `OPENROUTER_MANAGEMENT_KEY` (401s today; regeneration restores
+per-key usage/attribution for the six per-service inference keys). Arm TSA/Rekor/OTS anchoring
 only after the cross-repo egress ledger is updated.
 
 Start demand, interviews, discounted-partner proof, and five design-partner emails only after all

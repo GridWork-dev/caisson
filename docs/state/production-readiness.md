@@ -8,6 +8,9 @@ grounds:
   - outputs/specs/full-state-completion/SPEC.md
   - outputs/plans/full-state-completion/PLAN.md
   - registry/scripts/index-parity-probe.ts
+  - outputs/executions/2026-07-25-github-certification.md
+  - outputs/research/infra-provider-audit-2026-07-16.md
+  - docs/ops/provider-console-checks.md
 ---
 
 # Production readiness — Caisson
@@ -18,15 +21,15 @@ blocked until both technical and operator evidence is attached.
 
 ## Verdicts
 
-| Dimension               | Verdict                                      | Current state                                                                                                                 |
-| ----------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Repository              | **local gates green; certification pending** | 79 Bun workspaces; 218/218 tasks pass; concurrent Paddle worktree and unavailable GitHub evidence prevent final certification |
-| Deploy / infrastructure | **red parity**                               | Public probes answer, but license and admin manifest digests differ from repository/Worker                                    |
-| Security                | **gaps**                                     | Limiter policy implemented; four technical receipts and three adapter audits remain                                           |
-| Commerce                | **blocked**                                  | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                           |
-| Operations              | **gaps**                                     | Restore rehearsed July 11; current backup recency and provider-console checks still required                                  |
-| Buyer/product           | **gaps**                                     | Design-manifest residual complete; four already-locked families remain                                                        |
-| Release                 | **blocked**                                  | 33 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                  |
+| Dimension               | Verdict                                      | Current state                                                                                                                    |
+| ----------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Repository              | **local gates green; certification pending** | 79 Bun workspaces; 218/218 tasks pass; concurrent Paddle worktree and open-PR CI defects (see below) prevent final certification |
+| Deploy / infrastructure | **red parity**                               | Public probes answer, but license and admin manifest digests differ from repository/Worker                                       |
+| Security                | **gaps**                                     | Limiter policy implemented; four technical receipts and three adapter audits remain                                              |
+| Commerce                | **blocked**                                  | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                              |
+| Operations              | **gaps**                                     | Restore rehearsed July 11; current backup recency and provider-console checks still required                                     |
+| Buyer/product           | **gaps**                                     | Design-manifest residual complete; four already-locked families remain                                                           |
+| Release                 | **blocked**                                  | 33 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                     |
 
 ## Evidence snapshot
 
@@ -46,8 +49,13 @@ blocked until both technical and operator evidence is attached.
   `feature/paddle-onboarding-setup`; this task did not remove another workstream.
 - There are 33 pending changeset files. Current resolution affects 41 patch packages and 4 minor
   packages.
-- Current GitHub PRs, Actions, releases, required-check evidence, 2FA, and branch posture are
-  **uncertified** until private-repository authorization exists. Older GitHub tables are historical.
+- Private-repository access has been authorized since 2026-06-30 (`gh auth status`: active
+  `repo`-scoped token; `caisson-sh/caisson` confirmed private). Branch protection stays
+  discipline-only on the Free plan (ADR-0327) and org 2FA was declined 2026-07-15, re-raise at
+  launch — both accepted residuals. Current PRs, Actions, releases, and public-repository timing
+  are certified in [2026-07-25 GitHub certification](../../outputs/executions/2026-07-25-github-certification.md);
+  that pass found two open-PR CI defects still to fix before the repository dimension goes green.
+  Older GitHub tables are historical.
 
 ### Deploy and parity
 
@@ -94,9 +102,11 @@ Still required before paid launch:
 
 ### Operations
 
-Verify current Railway backup recency, Arnica, Grafana quota, Blacksmith minutes, DMARC, vault/key
-parity, Bedrock access, launch `SESSION_TOKEN_HMAC_KEY`, and removal of the dead OpenRouter
-management key. Arm anchoring only after its scheduler and TSA/Rekor/OTS egress ledger are ready.
+Run the seven Gate D provider-console checks — [provider-console-checks](../ops/provider-console-checks.md)
+— plus regenerate the dead `OPENROUTER_MANAGEMENT_KEY` (401s today; regeneration restores
+per-key usage/attribution for the six per-service inference keys, per
+[infra-provider-audit-2026-07-16](../../outputs/research/infra-provider-audit-2026-07-16.md) M2).
+Arm anchoring only after its scheduler and TSA/Rekor/OTS egress ledger are ready.
 
 ### Buyer/product residuals
 
