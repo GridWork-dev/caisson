@@ -94,9 +94,11 @@ export function DualDoorHero() {
         </div>
 
         {/* Supporting honest artifact (ADR-0104 static hero): the real cross-tenant denial + the
-            real install line — the denial carries the claim, no diagram standing in for behaviour.
-            Both terminals are framed, so the two cards carry matching elevation (ADR-0285 §4); the
-            install column fills to the psql terminal's height with a proof-chip row. */}
+            install line — the denial carries the claim, no diagram standing in for behaviour.
+            The CLI package is not yet on the public registry (CAISSON-147), so the chip states
+            "private beta", never a success-tone "ready". Both terminals are framed, so the two
+            cards carry matching elevation (ADR-0285 §4); the install column fills to the psql
+            terminal's height with a proof-chip row. */}
         <div className={styles.artifact}>
           <Terminal
             label="psql — cross-tenant read"
@@ -113,7 +115,7 @@ export function DualDoorHero() {
             <CodeBlock
               frame
               label="install"
-              status={<StatusChip tone="success" dot label="ready" />}
+              status={<StatusChip tone="muted" dot label="private beta" />}
               code={
                 <>
                   <span className="cs-tok-muted">$</span> bunx{" "}
