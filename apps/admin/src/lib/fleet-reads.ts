@@ -3,12 +3,18 @@
 // fetches through GET /api/admin/fleet: per-service Railway deploy status + the registry Worker's
 // Cloudflare request/error counts.
 //
-// Env-gated INERT (the /ops dormant pattern): with neither RAILWAY_API_TOKEN nor the Cloudflare
+// Env-gated INERT (the /ops dormant pattern): with neither a Railway credential nor the Cloudflare
 // analytics envs set, the snapshot reports `configured: false` and the overlay renders the static
 // diagram unchanged — never a throw, never a socket. Each upstream is INDEPENDENTLY gated and
 // INDEPENDENTLY cached at module scope for 60s, so the cockpit can never hammer a vendor API no
 // matter how often the page is opened, and any upstream error degrades to an empty overlay (honest
 // empty-states rider) rather than failing the whole read.
+//
+// Railway credential precedence: RAILWAY_PROJECT_TOKEN + RAILWAY_PROJECT_ID (both set) use the
+// `Project-Access-Token` header against a project-rooted query — the narrowest credential Railway
+// offers, scoped to this one project with no deploy/delete authority over the rest of the account.
+// RAILWAY_API_TOKEN (account-scoped, `Authorization: Bearer` + a `me`-rooted query) is the fallback
+// for deployments that haven't minted a project token yet. The project pair wins when both are set.
 //
 // Vendor response shapes are THIRD-PARTY + versioned, so parsing is defensive object-walking (typed
 // guards, not a rigid schema): a field that moved or vanished yields an empty overlay for that
@@ -67,6 +73,7 @@ const RAILWAY_NODE_IDS = [
   "site",
 ] as const;
 
+// me-rooted (account token): every project on the account, walked to find our services.
 const RAILWAY_QUERY = `query {
   me { projects { edges { node { services { edges { node {
     name
@@ -74,50 +81,95 @@ const RAILWAY_QUERY = `query {
   } } } } } } }
 }`;
 
-function railwayToken(): string | null {
-  const t = process.env.RAILWAY_API_TOKEN?.trim();
-  return t !== undefined && t.length > 0 ? t : null;
+// project-rooted (project token): project tokens don't support `me`, only `project(id)`.
+const RAILWAY_PROJECT_QUERY = `query($id: String!) {
+  project(id: $id) { services { edges { node {
+    name
+    serviceInstances { edges { node { latestDeployment { status } } } }
+  } } } }
+}`;
+
+type RailwayAuth =
+  | { kind: "project"; token: string; projectId: string }
+  | { kind: "account"; token: string };
+
+/** Narrowest-first: the project pair (Project-Access-Token) wins when both are configured. */
+function railwayAuth(): RailwayAuth | null {
+  const projectToken = process.env.RAILWAY_PROJECT_TOKEN?.trim();
+  const projectId = process.env.RAILWAY_PROJECT_ID?.trim();
+  if (
+    projectToken !== undefined &&
+    projectToken.length > 0 &&
+    projectId !== undefined &&
+    projectId.length > 0
+  ) {
+    return { kind: "project", token: projectToken, projectId };
+  }
+  const accountToken = process.env.RAILWAY_API_TOKEN?.trim();
+  return accountToken !== undefined && accountToken.length > 0
+    ? { kind: "account", token: accountToken }
+    : null;
 }
 
-/** Walk a Railway GraphQL response into { topologyNodeId → latest deploy status }. Degrades to {}. */
+/** Pull the `services { edges }` array out of either a project-rooted or a project-node record. */
+function serviceEdgesFrom(node: unknown): unknown[] {
+  return asArray(asRecord(asRecord(node)?.services)?.edges);
+}
+
+/**
+ * Walk a Railway GraphQL response into { topologyNodeId → latest deploy status }. Degrades to {}.
+ * Handles both response shapes: project-rooted (`data.project.services…`, project token) and
+ * me-rooted (`data.me.projects.edges[].node.services…`, account token) — whichever is present.
+ */
 export function parseRailwayDeployments(raw: unknown): Record<string, string> {
   const out: Record<string, string> = {};
-  const projects = asArray(
-    asRecord(asRecord(asRecord(asRecord(raw)?.data)?.me)?.projects)?.edges,
-  );
-  for (const p of projects) {
-    const services = asArray(
-      asRecord(asRecord(asRecord(p)?.node)?.services)?.edges,
+  const data = asRecord(asRecord(raw)?.data);
+  const projectNode = asRecord(data?.project);
+  const serviceEdges: unknown[] =
+    projectNode !== null
+      ? serviceEdgesFrom(projectNode)
+      : asArray(asRecord(asRecord(data?.me)?.projects)?.edges).flatMap((p) =>
+          serviceEdgesFrom(asRecord(p)?.node),
+        );
+  for (const s of serviceEdges) {
+    const svc = asRecord(asRecord(s)?.node);
+    const name = asString(svc?.name)?.toLowerCase();
+    if (name === null || name === undefined) continue;
+    const nodeId = RAILWAY_NODE_IDS.find((id) => name.includes(id));
+    if (nodeId === undefined || out[nodeId] !== undefined) continue;
+    const instances = asArray(asRecord(svc?.serviceInstances)?.edges);
+    const status = asString(
+      asRecord(asRecord(asRecord(instances[0])?.node)?.latestDeployment)
+        ?.status,
     );
-    for (const s of services) {
-      const svc = asRecord(asRecord(s)?.node);
-      const name = asString(svc?.name)?.toLowerCase();
-      if (name === null || name === undefined) continue;
-      const nodeId = RAILWAY_NODE_IDS.find((id) => name.includes(id));
-      if (nodeId === undefined || out[nodeId] !== undefined) continue;
-      const instances = asArray(asRecord(svc?.serviceInstances)?.edges);
-      const status = asString(
-        asRecord(asRecord(asRecord(instances[0])?.node)?.latestDeployment)
-          ?.status,
-      );
-      if (status !== null) out[nodeId] = status;
-    }
+    if (status !== null) out[nodeId] = status;
   }
   return out;
 }
 
-async function fetchRailway(token: string): Promise<Record<string, string>> {
+async function fetchRailway(
+  auth: RailwayAuth,
+): Promise<Record<string, string>> {
   try {
     const res = await fetchWithTimeout(
       RAILWAY_ENDPOINT,
       {
         method: "POST",
         headers: {
-          authorization: `Bearer ${token}`,
+          ...(auth.kind === "project"
+            ? { "Project-Access-Token": auth.token }
+            : { authorization: `Bearer ${auth.token}` }),
           "content-type": "application/json",
           accept: "application/json",
         },
-        body: JSON.stringify({ query: RAILWAY_QUERY }),
+        body: JSON.stringify(
+          auth.kind === "project"
+            ? {
+                query: RAILWAY_PROJECT_QUERY,
+                variables: { id: auth.projectId },
+              }
+            : { query: RAILWAY_QUERY },
+        ),
       },
       { timeoutMs: TIMEOUT_MS },
     );
@@ -222,12 +274,14 @@ interface Cached<T> {
 let railwayCache: Cached<Record<string, string>> | null = null;
 let workerCache: Cached<NodeOverlay | null> | null = null;
 
-async function cachedRailway(token: string): Promise<Record<string, string>> {
+async function cachedRailway(
+  auth: RailwayAuth,
+): Promise<Record<string, string>> {
   const now = Date.now();
   if (railwayCache !== null && now - railwayCache.at < CACHE_TTL_MS) {
     return railwayCache.value;
   }
-  const value = await fetchRailway(token);
+  const value = await fetchRailway(auth);
   railwayCache = { at: now, value };
   return value;
 }
@@ -247,7 +301,7 @@ async function cachedWorker(env: {
 
 /** True when at least one upstream is configured — the overlay only fetches when this holds. */
 export function fleetConfigured(): boolean {
-  return railwayToken() !== null || cloudflareEnv() !== null;
+  return railwayAuth() !== null || cloudflareEnv() !== null;
 }
 
 /**
@@ -256,15 +310,15 @@ export function fleetConfigured(): boolean {
  * empty overlay for its nodes, never a throw.
  */
 export async function fetchFleetSnapshot(): Promise<FleetSnapshot> {
-  const token = railwayToken();
+  const auth = railwayAuth();
   const cf = cloudflareEnv();
-  if (token === null && cf === null) {
+  if (auth === null && cf === null) {
     return { configured: false, nodes: {} };
   }
   const [railway, worker] = await Promise.all([
-    token === null
+    auth === null
       ? Promise.resolve<Record<string, string>>({})
-      : cachedRailway(token),
+      : cachedRailway(auth),
     cf === null ? Promise.resolve<NodeOverlay | null>(null) : cachedWorker(cf),
   ]);
   const nodes: Record<string, NodeOverlay> = {};
