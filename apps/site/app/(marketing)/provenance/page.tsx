@@ -129,7 +129,7 @@ const CONTROLS: readonly {
   {
     icon: "worm",
     title: "WORM evidence storage",
-    body: "Evidence buckets ship with S3 Object Lock in COMPLIANCE mode and a default retention. Inside the window an object cannot be overwritten or deleted, not by a bug, not by an operator, not by a leaked root key.",
+    body: "Evidence buckets ship with S3 Object Lock in GOVERNANCE mode and a default retention, with a typed, recorded escalation to COMPLIANCE mode at launch. Inside the window an object cannot be overwritten or deleted through any normal path, not by a bug, not by an operator.",
     proof: "delete-object  →  AccessDenied: WORM-protected until 2033-06-27Z",
   },
   {

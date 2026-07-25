@@ -63,8 +63,8 @@ const EVIDENCE = [
   {
     icon: "worm",
     label: "WORM storage",
-    body: "S3 Object-Lock in compliance mode. Inside the retention window an evidence object cannot be overwritten or deleted: not by an application bug, not by an operator, not by a leaked root key.",
-    proof: "ObjectLockMode: COMPLIANCE · Retain: 7y",
+    body: "S3 Object-Lock WORM in GOVERNANCE mode, with a recorded escalation to COMPLIANCE mode at launch. Inside the retention window an evidence object cannot be overwritten or deleted through any normal path: not by an application bug, not by an operator.",
+    proof: "ObjectLockMode: GOVERNANCE · Retain: 7y",
     maps: "SOC 2 CC7.2 · HIPAA §164.312(c)(1)",
   },
   {
