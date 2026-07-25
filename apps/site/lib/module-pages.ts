@@ -1,4 +1,7 @@
-// The 23 standalone-module depth-page records (ADR-0237 F2; the 13-record ADR-0368 wave joined
+// The standalone-module depth-page records — one per sellable module, 26 as of the ADR-0380
+// module-depth slice that closed the last three gaps (access-review, risk-register, trust-page).
+// The count is pinned at parity by module-pages.test.ts rather than trusted from this comment,
+// which has now drifted twice. (ADR-0237 F2; the 13-record ADR-0368 wave joined
 // 2026-07-19 via the same adversarial workflow) — the original 11 generated 2026-07-03 from the
 // adversarially-reviewed copy workflow output, with the entitlement-honesty overrides applied
 // (ai-evals is standalone-only: no edition or bundle grants it — registry members map truth,
