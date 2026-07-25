@@ -12,6 +12,9 @@ Provides the provider-agnostic background-job queue port: enqueue interface, in-
   `enqueue` maps to `tasks.trigger()` / `boss.send()` / `queue.add()` per driver. Inject a fake
   `client`/`queueFactory`+`workerFactory` in tests — the package's own test suite never touches the
   network.
+- `createInngestJobQueue(tasks, { client })` registers the task registry through Inngest v4
+  `createFunction()` and maps enqueue to `send()`. The caller constructs and injects the SDK client,
+  including credentials and serving configuration; this package never reads Inngest env vars.
 - `createBullMqJobQueue`'s worker-building capability is resolved LAZILY (only when `work()` is
   actually called) — an enqueue-only caller never needs a `connection`/`workerFactory` just to
   construct the queue. Construction only requires a way to build the `Queue` half.

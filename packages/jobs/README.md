@@ -26,3 +26,8 @@ bun add @caisson/jobs
   Simple-Mode `deduplication`. `close()` performs a graceful shutdown (workers, then queues).
   Tests inject `queueFactory`/`workerFactory` instead of a connection, so the suite never
   touches Redis.
+- `createInngestJobQueue` — the Inngest v4 serverless driver (ADR-0379). The caller injects an
+  already-configured `Inngest` client; construction registers each task with `createFunction()`,
+  enqueue sends a same-name event, and `idempotencyKey` maps to a task-scoped native event `id`.
+  The caller serves `client.funcs` through its framework adapter. This package never reads
+  `INNGEST_EVENT_KEY` or any other ambient credential.
