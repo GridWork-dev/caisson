@@ -564,31 +564,6 @@
           "gateAttestation": "29577501875@3f05e1e2850d55ce77767dfe9beefdc4923104dd"
         },
         {
-          "version": "0.3.0",
-          "manifest": {
-            "id": "@caisson/agent-trajectory",
-            "version": "0.3.0",
-            "kind": "primitive",
-            "editions": [],
-            "tier": "paid",
-            "priceCents": 4900,
-            "license": "LicenseRef-Caisson-Commercial",
-            "dependencies": [
-              "@caisson/field-crypto",
-              "@caisson/kernel",
-              "@caisson/tenancy-rls"
-            ],
-            "members": {},
-            "entry": "src/index.ts",
-            "agents": "AGENTS.md",
-            "golden": null,
-            "stability": "alpha",
-            "description": "Engine-neutral trajectory contract: an append-only, replayable event log (runs, steps, model calls, tool proposals/approvals, usage, checkpoints) with digest-ref payload discipline (sensitive bodies referenced by sha256 digest, never inlined) and a deterministic projection over shuffled arrival."
-          },
-          "publishedAt": "2026-07-18T18:04:44.000Z",
-          "gateAttestation": "29655121526@4c6d3f725fcc7b1e3eae00a9b28c1bffb5aad13b"
-        },
-        {
           "version": "0.3.2",
           "manifest": {
             "id": "@caisson/agent-trajectory",
