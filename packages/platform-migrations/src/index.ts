@@ -47,6 +47,7 @@ import {
   ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   ORDER_RECORD_SCHEMA_SQL,
   ORDER_RECORD_SUBSCRIPTION_LINK_MIGRATION_SQL,
+  RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
   RENEWAL_EXTENSION_SCHEMA_SQL,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "@caisson/service-license";
@@ -180,6 +181,13 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
     name: "0026_affiliate_code.sql",
     sql: AFFILIATE_CODE_SCHEMA_SQL,
   },
+  // CAISSON-128 pre-arm: record each renewal extension's exact tenor so a later refund subtracts
+  // the same interval. 0030 sorts after the site-local 0027-0029 tail; never slot it beside 0017,
+  // whose checksum is already live and immutable.
+  {
+    name: "0030_renewal_extension_months.sql",
+    sql: RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
+  },
 ];
 
 /**
@@ -188,14 +196,15 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
  * together by filename — same slug, same shape, as the pre-extraction `platformPackage()`.
  *
  * `extra` entries' `name`s must NOT collide with the shared chain's own names above (`0001`–`0019`
- * plus `0023`–`0026`) — a duplicate name is two migrations racing for the same renumbered slot, not
- * a merge. Effective apply order is `assembleMigrations`'s sort-by-filename over the COMBINED
- * array, not this function's array-position: an `extra` entry's numeric prefix decides where it
- * lands, not where it sits in the array you pass in (apps/site/lib/deploy-migrate.ts deliberately
- * uses `0011`/`0012` to reproduce their pre-extraction slot — see its own module doc). apps/site's
- * extras have since claimed `0020`–`0022` and `0027`–`0029` (CAISSON-110 demo-run), and the shared
- * chain `0025`–`0026` (ADR-0315); the next free prefix — for THIS chain or any caller with no
- * historical slot to preserve — is `0030_*.sql` and up. A mid-chain landing renumbers every later
+ * plus `0023`–`0026` and `0030`) — a duplicate name is two migrations racing for the same renumbered
+ * slot, not a merge. Effective apply order is `assembleMigrations`'s sort-by-filename over the
+ * COMBINED array, not this function's array-position: an `extra` entry's numeric prefix decides
+ * where it lands, not where it sits in the array you pass in (apps/site/lib/deploy-migrate.ts
+ * deliberately uses `0011`/`0012` to reproduce their pre-extraction slot — see its own module doc).
+ * apps/site's extras have since claimed `0020`–`0022` and `0027`–`0029` (CAISSON-110 demo-run), and
+ * the shared chain claimed `0025`–`0026` (ADR-0315) plus `0030` (CAISSON-128); the next free prefix
+ * — for THIS chain or any caller with no historical slot to preserve — is `0031_*.sql` and up. A
+ * mid-chain landing renumbers every later
  * migration's positional seq and fails the next real deploy closed on checksum drift (the
  * 2026-07-17 caisson-license failure); apps/site's `site-migrations.test.ts` golden-pins the
  * assembled ledger append-only.
