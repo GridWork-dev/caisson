@@ -9,6 +9,8 @@
  * Checks (R3, locked; #0 added by ADR-0325):
  *   0. Release SHA on main — the tag targets a commit that is an ancestor of origin/main (the
  *      merged version-PR commit; a tag cut on a stray branch must never train).
+ *   0b. Release tag signed (ADR-0382) — `git tag -v` verifies the tag against the allowed-signers
+ *      file. ADVISORY for now: tags cut before the lock are unsigned and cannot become signed.
  *   1. CI green on the release SHA — the five required checks (check, standards-gate,
  *      registry-index, oscal-conformance, deterministic — the last per the ADR-0327 scan-gate
  *      flip) completed successfully.
@@ -111,6 +113,29 @@ function checkTagOnMain(sha: string): void {
       "release SHA on main",
       false,
       `${sha.slice(0, 8)} is NOT on origin/main — the tag must target the merged version-PR commit`,
+    );
+  }
+}
+
+// --- 0b. release tag is signed (ADR-0382) -------------------------------------------------------
+// An annotated tag says WHO claims a release; a signed one proves it. Without a signature anyone
+// with push access can move or forge a tag onto a different commit and every downstream leg — the
+// registry publish, the mirror sync, the fleet redeploy — trusts it, because each of them resolves
+// the tag rather than a SHA. `git tag -v` verifies against the allowed-signers file; it fails on an
+// unsigned tag, an unknown signer, and a signature that does not match the tag's bytes.
+//
+// Tags cut before the signing lock are unsigned and cannot retroactively become signed, so this is
+// a WARNING here rather than a hard gate: it reports honestly on every release without failing the
+// train on history it cannot change. Promote it to a blocking check once the first signed tag has
+// trained end to end (that flip is a one-word change: `record(..., ok, ...)`).
+function checkTagSigned(tag: string): void {
+  try {
+    run("git", ["tag", "-v", tag]);
+    record("release tag signed", true, `${tag} carries a valid signature`);
+  } catch {
+    // Not fatal — see above. Surfaced so an unsigned tag is a visible choice, never an oversight.
+    console.log(
+      `  ! release tag signed — ${tag} is UNSIGNED or its signer is not in the allowed-signers file (advisory; see docs/ops/release-tag-signing.md)`,
     );
   }
 }
@@ -330,6 +355,7 @@ console.log(
   `release-readiness — tag ${tag}, sha ${sha.slice(0, 12)}${local ? ", local" : ""}\n`,
 );
 checkTagOnMain(sha);
+checkTagSigned(tag);
 checkCi(sha);
 checkChangesetsDrained();
 checkChangelogs();
