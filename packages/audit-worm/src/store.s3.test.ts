@@ -33,7 +33,7 @@ const RETAIN = new Date(Date.UTC(2033, 0, 1));
 
 interface S3StubBehavior {
   /** Throw inside to simulate an S3 error on PUT; otherwise the conditional write "succeeds". */
-  put?: (input: PutObjectCommandInput) => void;
+  put?: (input: PutObjectCommandInput) => unknown;
   get?: (input: GetObjectCommandInput) => unknown;
   head?: (input: HeadObjectCommandInput) => unknown;
   getRetention?: (input: GetObjectRetentionCommandInput) => unknown;
@@ -66,8 +66,9 @@ function makeS3Stub(behavior: S3StubBehavior = {}): S3Stub {
     async send(command: unknown): Promise<unknown> {
       if (command instanceof PutObjectCommand) {
         calls.put.push(command.input);
-        behavior.put?.(command.input);
-        return {};
+        return behavior.put
+          ? behavior.put(command.input)
+          : { VersionId: "s3-version-default" };
       }
       if (command instanceof GetObjectCommand) {
         calls.get.push(command.input);
@@ -126,6 +127,18 @@ function getOutput(
 }
 
 describe("S3ArtifactStore.put (write-once + GOVERNANCE default + retention lock)", () => {
+  test("returns the exact S3 object version identity recorded by the create-only write", async () => {
+    const stub = makeS3Stub({ put: () => ({ VersionId: "s3-version-42" }) });
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+    const key = buildArtifactKey(ACCOUNT_A, "versions", "proof.bin");
+
+    const meta = await store.put(key, new Uint8Array([4, 2]), {
+      retainUntil: RETAIN,
+    });
+
+    expect(meta.versionId).toBe("s3-version-42");
+  });
+
   test("issues a conditional GOVERNANCE Object-Lock write with the retain date and returns meta", async () => {
     const stub = makeS3Stub();
     const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
@@ -140,6 +153,7 @@ describe("S3ArtifactStore.put (write-once + GOVERNANCE default + retention lock)
     expect(meta).toEqual({
       key,
       size: 3,
+      versionId: "s3-version-default",
       retainUntil: RETAIN,
       contentType: "application/json",
     });
@@ -215,6 +229,26 @@ describe("S3ArtifactStore.put (write-once + GOVERNANCE default + retention lock)
 });
 
 describe("S3ArtifactStore.get / head", () => {
+  test("targets a caller-recorded version on get and head", async () => {
+    const bytes = new Uint8Array([4, 2]);
+    const stub = makeS3Stub({
+      get: () => getOutput(bytes, { ObjectLockRetainUntilDate: RETAIN }),
+      head: () => ({
+        ContentLength: bytes.byteLength,
+        ObjectLockRetainUntilDate: RETAIN,
+        VersionId: "s3-version-42",
+      }),
+    });
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+    const key = buildArtifactKey(ACCOUNT_A, "versions", "proof.bin");
+
+    await store.get(key, "s3-version-42");
+    await store.head(key, "s3-version-42");
+
+    expect(stub.calls.get[0]?.VersionId).toBe("s3-version-42");
+    expect(stub.calls.head[0]?.VersionId).toBe("s3-version-42");
+  });
+
   test("get round-trips the body, size, retain date, and content-type", async () => {
     const bytes = new Uint8Array([10, 20, 30]);
     const stub = makeS3Stub({
@@ -444,6 +478,17 @@ describe("S3ArtifactStore.extendRetention (ADR-0202 — extend-only, mode-preser
     expect(input.Key).toBe(key);
     expect(input.Retention?.Mode).toBe("GOVERNANCE"); // mode preserved, never escalated here
     expect(input.Retention?.RetainUntilDate).toBe(LATER);
+  });
+
+  test("targets the caller-recorded version throughout a retention extension", async () => {
+    const stub = makeS3Stub(lockedGovernance());
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+
+    await store.extendRetention(key, LATER, "s3-version-42");
+
+    expect(stub.calls.getRetention[0]?.VersionId).toBe("s3-version-42");
+    expect(stub.calls.putRetention[0]?.VersionId).toBe("s3-version-42");
+    expect(stub.calls.head[0]?.VersionId).toBe("s3-version-42");
   });
 
   test.each([

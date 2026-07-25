@@ -31,6 +31,7 @@ import {
 import {
   ArtifactExistsError,
   assertSafeKey,
+  assertValidArtifactVersionId,
   assertValidRetainUntil,
   type ArtifactMeta,
   type ArtifactObject,
@@ -64,6 +65,7 @@ interface GcsRetentionResource {
 }
 
 interface GcsObjectResource {
+  generation?: string;
   size?: string;
   contentType?: string;
   retention?: GcsRetentionResource;
@@ -201,15 +203,33 @@ export class GcsArtifactStore implements ArtifactStore {
         },
       );
     }
+    if (created.generation === undefined) {
+      throw new InternalError(
+        "audit-worm: GCS accepted the immutable write but returned no generation identity",
+        { key },
+      );
+    }
+    try {
+      assertValidArtifactVersionId(created.generation);
+    } catch {
+      throw new InternalError(
+        "audit-worm: GCS returned an invalid generation identity",
+        { key },
+      );
+    }
     return this.metaFromResource(key, created, contentType);
   }
 
-  async get(key: string): Promise<ArtifactObject> {
+  async get(key: string, versionId?: string): Promise<ArtifactObject> {
     assertSafeKey(key);
-    const meta = await this.headOrThrow(key);
-    const res = await this.transport(this.objectUrl(key, { alt: "media" }), {
-      method: "GET",
-    });
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
+    const meta = await this.headOrThrow(key, versionId);
+    const res = await this.transport(
+      this.objectUrl(key, { alt: "media" }, versionId),
+      {
+        method: "GET",
+      },
+    );
     if (res.status === 404) {
       throw new NotFoundError("artifact not found", { key });
     }
@@ -223,9 +243,12 @@ export class GcsArtifactStore implements ArtifactStore {
     return { ...meta, body };
   }
 
-  async head(key: string): Promise<ArtifactMeta | null> {
+  async head(key: string, versionId?: string): Promise<ArtifactMeta | null> {
     assertSafeKey(key);
-    const res = await this.transport(this.objectUrl(key), { method: "GET" });
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
+    const res = await this.transport(this.objectUrl(key, {}, versionId), {
+      method: "GET",
+    });
     if (res.status === 404) return null;
     if (!res.ok) {
       throw new InternalError("audit-worm: GCS object metadata read failed", {
@@ -246,10 +269,12 @@ export class GcsArtifactStore implements ArtifactStore {
   async extendRetention(
     key: string,
     newRetainUntil: Date,
+    versionId?: string,
   ): Promise<ArtifactMeta> {
     assertSafeKey(key);
     assertValidRetainUntil(newRetainUntil);
-    const current = await this.headOrThrow(key);
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
+    const current = await this.headOrThrow(key, versionId);
     if (
       current.retainUntil !== undefined &&
       newRetainUntil.getTime() <= current.retainUntil.getTime()
@@ -264,7 +289,7 @@ export class GcsArtifactStore implements ArtifactStore {
         },
       );
     }
-    const res = await this.transport(this.objectUrl(key), {
+    const res = await this.transport(this.objectUrl(key, {}, versionId), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -290,8 +315,13 @@ export class GcsArtifactStore implements ArtifactStore {
     };
   }
 
-  private objectUrl(key: string, query: Record<string, string> = {}): string {
+  private objectUrl(
+    key: string,
+    query: Record<string, string> = {},
+    versionId?: string,
+  ): string {
     const params = new URLSearchParams(query);
+    if (versionId !== undefined) params.set("generation", versionId);
     const qs = params.toString();
     return (
       `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(this.bucket)}` +
@@ -299,8 +329,11 @@ export class GcsArtifactStore implements ArtifactStore {
     );
   }
 
-  private async headOrThrow(key: string): Promise<ArtifactMeta> {
-    const meta = await this.head(key);
+  private async headOrThrow(
+    key: string,
+    versionId?: string,
+  ): Promise<ArtifactMeta> {
+    const meta = await this.head(key, versionId);
     if (meta === null) throw new NotFoundError("artifact not found", { key });
     return meta;
   }
@@ -311,6 +344,9 @@ export class GcsArtifactStore implements ArtifactStore {
     fallbackContentType?: string,
   ): ArtifactMeta {
     const meta: ArtifactMeta = { key, size: Number(resource.size ?? 0) };
+    if (resource.generation !== undefined) {
+      meta.versionId = resource.generation;
+    }
     const contentType = resource.contentType ?? fallbackContentType;
     if (contentType !== undefined) meta.contentType = contentType;
     if (resource.retention?.retainUntilTime !== undefined) {
