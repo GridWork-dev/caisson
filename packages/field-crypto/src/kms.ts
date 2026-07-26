@@ -15,8 +15,13 @@
 // because it acts on the KMS (not the store), it renders the field ciphertext under that scope
 // permanently unrecoverable WITHOUT mutating the append-only wrapped-DEK store (ADR-0014). The
 // erasure-vs-immutable-chain reconciliation lives in `crypto-shred.ts`.
-import { createHash, hkdfSync, randomBytes } from "node:crypto";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
+import {
+  createHash,
+  hkdfSync,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
+import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
 import { type FieldKeyProvider } from "./provider.ts";
 import { aesGcm } from "./cipher.ts";
 import { buildAad } from "./aad.ts";
@@ -31,6 +36,15 @@ export type { KmsClient, KmsDeletionReceipt };
 /** Persistence for each tenant's wrapped DEKs by version + the current version. DB-backed via `DbWrappedKeyStore` (P2, below). */
 export interface WrappedKeyStore {
   getWrapped(tenantId: string, keyVersion: number): Promise<Buffer | undefined>;
+  /**
+   * Atomically insert only when the tenant/version has no wrapped DEK. Returns true for the winner,
+   * false when an append-only winner already exists.
+   */
+  putWrappedIfAbsent(
+    tenantId: string,
+    keyVersion: number,
+    wrapped: Buffer,
+  ): Promise<boolean>;
   putWrapped(
     tenantId: string,
     keyVersion: number,
@@ -57,7 +71,31 @@ export class InMemoryWrappedKeyStore implements WrappedKeyStore {
     keyVersion: number,
     wrapped: Buffer,
   ): Promise<void> {
-    this.wrapped.set(this.key(tenantId, keyVersion), wrapped);
+    const key = this.key(tenantId, keyVersion);
+    const existing = this.wrapped.get(key);
+    if (existing !== undefined) {
+      if (
+        existing.length === wrapped.length &&
+        timingSafeEqual(existing, wrapped)
+      ) {
+        return;
+      }
+      throw new ConflictError(
+        "field-crypto: a different wrapped DEK already exists for this tenant/version (append-only)",
+        { tenantId, keyVersion },
+      );
+    }
+    this.wrapped.set(key, Buffer.from(wrapped));
+  }
+  async putWrappedIfAbsent(
+    tenantId: string,
+    keyVersion: number,
+    wrapped: Buffer,
+  ): Promise<boolean> {
+    const key = this.key(tenantId, keyVersion);
+    if (this.wrapped.has(key)) return false;
+    this.wrapped.set(key, Buffer.from(wrapped));
+    return true;
   }
   async currentVersion(tenantId: string): Promise<number | undefined> {
     return this.current.get(tenantId);
@@ -75,6 +113,8 @@ export class InMemoryWrappedKeyStore implements WrappedKeyStore {
 export interface KeyValueStore {
   get(key: string): Promise<string | undefined>;
   put(key: string, value: string): Promise<void>;
+  /** Atomic compare-and-set used to elect one first-provision winner. */
+  putIfAbsent(key: string, value: string): Promise<boolean>;
 }
 
 /**
@@ -105,7 +145,31 @@ export class DbWrappedKeyStore implements WrappedKeyStore {
     keyVersion: number,
     wrapped: Buffer,
   ): Promise<void> {
+    const existing = await this.getWrapped(tenantId, keyVersion);
+    if (existing !== undefined) {
+      if (
+        existing.length === wrapped.length &&
+        timingSafeEqual(existing, wrapped)
+      ) {
+        return;
+      }
+      throw new ConflictError(
+        "field-crypto: a different wrapped DEK already exists for this tenant/version (append-only)",
+        { tenantId, keyVersion },
+      );
+    }
     await this.kv.put(
+      this.wrappedKey(tenantId, keyVersion),
+      wrapped.toString("base64"),
+    );
+  }
+
+  async putWrappedIfAbsent(
+    tenantId: string,
+    keyVersion: number,
+    wrapped: Buffer,
+  ): Promise<boolean> {
+    return this.kv.putIfAbsent(
       this.wrappedKey(tenantId, keyVersion),
       wrapped.toString("base64"),
     );
@@ -136,10 +200,35 @@ export class KmsKeyProvider implements FieldKeyProvider {
         `field-crypto: key version overflow for tenant ${JSON.stringify(tenantId)}`,
       );
     }
-    const { wrappedKey } = await this.kms.generateDataKey(tenantId);
-    await this.store.putWrapped(tenantId, next, wrappedKey);
-    await this.store.setCurrentVersion(tenantId, next);
-    return next;
+    const generated = await this.kms.generateDataKey(tenantId);
+    try {
+      await this.store.putWrapped(tenantId, next, generated.wrappedKey);
+      await this.store.setCurrentVersion(tenantId, next);
+      return next;
+    } finally {
+      generated.plaintextKey.fill(0);
+    }
+  }
+
+  /**
+   * Return an existing current version or provision version 1 exactly once.
+   *
+   * Concurrent first seals use the store's atomic insert-if-absent operation: one wrapped DEK wins,
+   * every losing generated plaintext is zeroized, and all callers record/use version 1 without
+   * overwriting the append-only winner.
+   */
+  async ensureProvisioned(tenantId: string): Promise<number> {
+    const current = await this.store.currentVersion(tenantId);
+    if (current !== undefined) return current;
+
+    const generated = await this.kms.generateDataKey(tenantId);
+    try {
+      await this.store.putWrappedIfAbsent(tenantId, 1, generated.wrappedKey);
+      await this.store.setCurrentVersion(tenantId, 1);
+      return 1;
+    } finally {
+      generated.plaintextKey.fill(0);
+    }
   }
 
   async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {

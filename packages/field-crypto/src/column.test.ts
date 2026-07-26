@@ -1,13 +1,22 @@
 import { describe, expect, test } from "bun:test";
 import { DerivedKeyProvider } from "./provider.ts";
 import {
+  type FieldCryptoContext,
   currentFieldCryptoContext,
   derivedContext,
+  kmsContext,
   openField,
   sealField,
   withFieldCryptoContext,
+  withKmsFieldCryptoContext,
 } from "./column.ts";
 import { parseEnvelope } from "./envelope.ts";
+import {
+  InMemoryWrappedKeyStore,
+  KmsKeyProvider,
+  LocalKmsClient,
+} from "./kms.ts";
+import type { FieldKeyProvider } from "./provider.ts";
 
 const MASTER = Buffer.alloc(32, 0x11);
 const SALT = Buffer.alloc(32, 0x22);
@@ -71,5 +80,84 @@ describe("encrypted column seam (sealField / openField)", () => {
     expect(
       provider.deriveKey("acct_a", 1).equals(provider.deriveKey("acct_a", 2)),
     ).toBe(false);
+  });
+});
+
+describe("request-scoped KMS context", () => {
+  test("a value sealed under version N stays readable after currentVersion advances", async () => {
+    const provider = new KmsKeyProvider(
+      new LocalKmsClient(Buffer.alloc(32, 0x77)),
+      new InMemoryWrappedKeyStore(),
+    );
+    await provider.provision("acct_a");
+
+    const v1Sealed = await withKmsFieldCryptoContext(
+      provider,
+      "acct_a",
+      (ctx) => sealField(ctx, "patient.ssn", "old"),
+    );
+    expect(parseEnvelope(v1Sealed).keyVersion).toBe(1);
+
+    await provider.provision("acct_a");
+    await withKmsFieldCryptoContext(provider, "acct_a", (ctx) => {
+      expect(openField(ctx, "patient.ssn", v1Sealed)).toBe("old");
+      expect(
+        parseEnvelope(sealField(ctx, "patient.ssn", "new")).keyVersion,
+      ).toBe(2);
+    });
+  });
+
+  test("an unwrap failure fails closed and zeroizes keys already resolved", async () => {
+    const resolvedV1 = Buffer.alloc(32, 0x41);
+    const unwrapFailure = new Error("azure unwrap unavailable");
+    const provider: FieldKeyProvider = {
+      async currentVersion() {
+        return 2;
+      },
+      async keyFor(_tenantId, version) {
+        if (version === 1) return resolvedV1;
+        throw unwrapFailure;
+      },
+    };
+
+    await expect(kmsContext(provider, "acct_a")).rejects.toBe(unwrapFailure);
+    expect(resolvedV1.equals(Buffer.alloc(32))).toBe(true);
+  });
+
+  test("even an undefined rejection fails context construction closed", async () => {
+    const provider: FieldKeyProvider = {
+      async currentVersion() {
+        return 1;
+      },
+      async keyFor() {
+        return Promise.reject(undefined);
+      },
+    };
+
+    await expect(kmsContext(provider, "acct_a")).rejects.toBeUndefined();
+  });
+
+  test("no plaintext DEK survives the request scope", async () => {
+    const unwrapped = Buffer.alloc(32, 0x52);
+    const provider: FieldKeyProvider = {
+      async currentVersion() {
+        return 1;
+      },
+      async keyFor() {
+        return unwrapped;
+      },
+    };
+    let captured: FieldCryptoContext | undefined;
+
+    await withKmsFieldCryptoContext(provider, "acct_a", (ctx) => {
+      captured = ctx;
+      expect(currentFieldCryptoContext()).toBe(ctx);
+      const sealed = sealField(ctx, "patient.ssn", "secret");
+      expect(openField(ctx, "patient.ssn", sealed)).toBe("secret");
+    });
+
+    expect(unwrapped.equals(Buffer.alloc(32))).toBe(true);
+    expect(() => captured?.deriveKey(1)).toThrow(/disposed/);
+    expect(() => currentFieldCryptoContext()).toThrow(/fail-closed/);
   });
 });

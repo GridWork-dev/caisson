@@ -3,6 +3,7 @@ import {
   DbWrappedKeyStore,
   InMemoryWrappedKeyStore,
   type KeyValueStore,
+  type KmsClient,
   KmsKeyProvider,
   LocalKmsClient,
   awsKmsClient,
@@ -19,6 +20,11 @@ function fakeKv(): KeyValueStore {
     },
     async put(key: string, value: string): Promise<void> {
       data.set(key, value);
+    },
+    async putIfAbsent(key: string, value: string): Promise<boolean> {
+      if (data.has(key)) return false;
+      data.set(key, value);
+      return true;
     },
   };
 }
@@ -43,6 +49,43 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     const wrapped = await store.getWrapped("acct_a", 1);
     // nonce(12) + wrapped-DEK(32) + tag(16) = 60 bytes — a real AEAD wrap, not the bare 32B DEK.
     expect(wrapped?.length).toBe(60);
+  });
+
+  test("provision zeroizes the generated plaintext DEK after wrapping is persisted", async () => {
+    const plaintextKey = Buffer.alloc(32, 0x91);
+    const client: KmsClient = {
+      async generateDataKey() {
+        return {
+          plaintextKey,
+          wrappedKey: Buffer.alloc(48, 0x29),
+        };
+      },
+      async decryptDataKey() {
+        throw new Error("not used");
+      },
+      async scheduleKeyDeletion() {
+        return { state: "soft-deleted", irreversible: false };
+      },
+    };
+    const provider = new KmsKeyProvider(client, new InMemoryWrappedKeyStore());
+
+    await provider.provision("acct_a");
+
+    expect(plaintextKey.equals(Buffer.alloc(32))).toBe(true);
+  });
+
+  test("concurrent first seals elect one append-only version-1 winner", async () => {
+    const { provider, store } = freshProvider();
+
+    const versions = await Promise.all([
+      provider.ensureProvisioned("acct_a"),
+      provider.ensureProvisioned("acct_a"),
+    ]);
+
+    expect(versions).toEqual([1, 1]);
+    expect(await store.currentVersion("acct_a")).toBe(1);
+    expect(await store.getWrapped("acct_a", 1)).toBeDefined();
+    expect(await store.getWrapped("acct_a", 2)).toBeUndefined();
   });
 
   test("keyFor before provision throws (no silent empty key)", async () => {

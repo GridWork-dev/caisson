@@ -46,9 +46,12 @@ export { TenantFieldCrypto } from "./crypto.ts";
 
 export {
   type FieldCryptoContext,
+  type DisposableFieldCryptoContext,
   withFieldCryptoContext,
   currentFieldCryptoContext,
   derivedContext,
+  kmsContext,
+  withKmsFieldCryptoContext,
   sealField,
   openField,
   encryptedColumn,

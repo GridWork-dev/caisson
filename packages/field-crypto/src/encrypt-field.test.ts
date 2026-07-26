@@ -33,6 +33,24 @@ describe("encryptField (row-bound AAD, ADR-0055 — TM-E)", () => {
     expect(decryptField(ctx, COL, ROW, sealed)).toBe(SSN);
   });
 
+  test("zeroizes each short-lived working key after encrypt and decrypt", () => {
+    const workingKeys: Buffer[] = [];
+    const ctx: FieldCryptoContext = {
+      tenantId: "acct_a",
+      deriveKey() {
+        const key = keyForTenant("acct_a");
+        workingKeys.push(key);
+        return key;
+      },
+      currentVersion: () => 1,
+    };
+
+    const sealed = encryptField(ctx, COL, ROW, SSN);
+    expect(workingKeys[0]?.equals(Buffer.alloc(32))).toBe(true);
+    expect(decryptField(ctx, COL, ROW, sealed)).toBe(SSN);
+    expect(workingKeys[1]?.equals(Buffer.alloc(32))).toBe(true);
+  });
+
   test("a cross-row relocate fails to authenticate (TM-E, closes TM2)", () => {
     const ctx = ctxFor("acct_a");
     const sealed = encryptField(ctx, COL, ROW, SSN);
