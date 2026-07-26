@@ -112,6 +112,59 @@ describe("createAzureKeyVaultKmsClient", () => {
     expect(seenUnwrapVersions).toEqual(["version-1", "version-2"]);
   });
 
+  test("forwards pinned versions through the composed Azure client facade", async () => {
+    let latestVersion = "version-1";
+    const seenUnwrapVersions: string[] = [];
+    const { client: deletionClient } = fakeAzureKeyVault();
+    const facade: AzureKeyVaultClient = {
+      getCryptographyClient(keyName, requestedVersion) {
+        const version = requestedVersion ?? latestVersion;
+        const marker = version === "version-1" ? 0xa1 : 0xa2;
+        return {
+          async wrapKey(algorithm, key) {
+            return {
+              result: Uint8Array.from([marker, ...key]),
+              keyID: `https://caisson-test.vault.azure.net/keys/${keyName}/${version}`,
+              algorithm,
+            };
+          },
+          async unwrapKey(algorithm, value) {
+            seenUnwrapVersions.push(version);
+            if (value[0] !== marker) throw new Error("wrong Azure KEK version");
+            return {
+              result: Uint8Array.from(value.subarray(1)),
+              keyID: `https://caisson-test.vault.azure.net/keys/${keyName}/${version}`,
+              algorithm,
+            };
+          },
+        };
+      },
+      beginDeleteKey: deletionClient.beginDeleteKey,
+      purgeDeletedKey: deletionClient.purgeDeletedKey,
+    };
+    const client = createAzureKeyVaultKmsClient({
+      keyName: "default-key",
+      purgeProtectionEnabled: true,
+      client: facade,
+    });
+
+    const v1 = await client.generateDataKey("tenant-a");
+    latestVersion = "version-2";
+    const v2 = await client.generateDataKey("tenant-a");
+
+    expect(
+      (await client.decryptDataKey("tenant-a", v1.wrappedKey)).equals(
+        v1.plaintextKey,
+      ),
+    ).toBe(true);
+    expect(
+      (await client.decryptDataKey("tenant-a", v2.wrappedKey)).equals(
+        v2.plaintextKey,
+      ),
+    ).toBe(true);
+    expect(seenUnwrapVersions).toEqual(["version-1", "version-2"]);
+  });
+
   test("strictly validates config and requires an injected client", () => {
     const { client } = fakeAzureKeyVault();
     const withoutClient = {
