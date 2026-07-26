@@ -2,9 +2,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import {
-  ASK_AI_REQUIRED_VARIABLES,
+  FLEET_CONFIGURATION_SEAMS,
   assertReadOnlyRailwayArgs,
   buildConfiguredProbeArgs,
+  buildConfiguredProbeTargets,
   buildEnvironmentSection,
   buildLocalOnlyTail,
   buildServiceSection,
@@ -12,14 +13,19 @@ import {
   computeDrift,
   extractEnvVarNames,
   filterRelevantNames,
+  missingRequiredVariables,
   parseArgv,
   parseExistingFile,
   parseKv,
   parseRailwayStatus,
+  printConfiguredPresence,
   printDriftReport,
   resolveCollisions,
   shellQuote,
   uppercaseServiceKey,
+  type ConfiguredPresenceResult,
+  type ConfiguredProbeTarget,
+  type FleetConfigurationSeam,
   type ServiceVars,
 } from "./railway-env-sync";
 
@@ -313,49 +319,157 @@ describe("parseArgv", () => {
   });
 });
 
-describe("Ask-AI configured probe", () => {
-  test("checks only presence on caisson-site and never requests variable values", () => {
-    expect(ASK_AI_REQUIRED_VARIABLES).toEqual([
-      "DOCS_SERVICE_TOKEN",
-      "DOCS_QUERY_URL",
-    ]);
+describe("fleet configured probe", () => {
+  const expectedSeams: readonly FleetConfigurationSeam[] = [
+    {
+      id: "site.ask-ai-docs-retrieval",
+      service: "caisson-site",
+      environment: "production",
+      variables: ["DOCS_SERVICE_TOKEN", "DOCS_QUERY_URL"],
+      requirement: "required",
+    },
+    {
+      id: "site.ask-ai-generation",
+      service: "caisson-site",
+      environment: "production",
+      variables: ["OPENROUTER_API_KEY"],
+      requirement: "required",
+    },
+    {
+      id: "site.subscription-cancellation",
+      service: "caisson-site",
+      environment: "production",
+      variables: ["PADDLE_API_KEY"],
+      requirement: "required",
+    },
+    {
+      id: "site.paddle-checkout",
+      service: "caisson-site",
+      environment: "production",
+      variables: ["NEXT_PUBLIC_PADDLE_CLIENT_TOKEN"],
+      requirement: "required",
+    },
+    {
+      id: "site.byok-field-crypto",
+      service: "caisson-site",
+      environment: "production",
+      variables: ["MASTER_FIELD_KEY", "FIELD_CRYPTO_SALT"],
+      requirement: "required",
+    },
+    {
+      id: "site.authentication-runtime",
+      service: "caisson-site",
+      environment: "production",
+      variables: ["DATABASE_URL", "BETTER_AUTH_SECRET"],
+      requirement: "required",
+    },
+    {
+      id: "admin.license-reissue-and-affiliate-minting",
+      service: "caisson-admin",
+      environment: "production",
+      variables: ["CAISSON_LICENSE_ISSUE_URL", "ADMIN_ISSUE_TOKEN"],
+      requirement: "required",
+    },
+    {
+      id: "admin.catalog-test-email-recipient",
+      service: "caisson-admin",
+      environment: "production",
+      variables: ["CATALOG_TEST_EMAIL_TO"],
+      requirement: "optional",
+      optionalReason:
+        "Operator-only test delivery; buyer email delivery does not depend on it.",
+    },
+    {
+      id: "local-ai.field-crypto",
+      service: null,
+      environment: null,
+      variables: ["MASTER_FIELD_KEY", "FIELD_CRYPTO_SALT"],
+      requirement: "optional",
+      optionalReason:
+        "apps/local-ai is not deployed; development and test intentionally use the deterministic demo vector.",
+    },
+  ];
 
-    for (const variable of ASK_AI_REQUIRED_VARIABLES) {
-      const args = buildConfiguredProbeArgs(variable);
+  const expectedTargets: readonly ConfiguredProbeTarget[] =
+    expectedSeams.flatMap((seam) => {
+      const { service, environment } = seam;
+      if (service === null || environment === null) return [];
+      return seam.variables.map((variable) => ({
+        seamId: seam.id,
+        service,
+        environment,
+        variable,
+        requirement: seam.requirement,
+      }));
+    });
+
+  test("enumerates all nine verified fail-soft seams, including intentional optional cases", () => {
+    expect(FLEET_CONFIGURATION_SEAMS).toEqual(expectedSeams);
+    expect(buildConfiguredProbeTargets()).toEqual(expectedTargets);
+  });
+
+  test("checks only remote name presence and never requests variable values", () => {
+    for (const target of expectedTargets) {
+      const args = buildConfiguredProbeArgs(target);
       expect(args.slice(0, 5)).toEqual([
         "ssh",
         "--service",
-        "caisson-site",
+        target.service,
         "--environment",
-        "production",
+        target.environment,
       ]);
       expect(args).not.toContain("variables");
       expect(args).not.toContain("--json");
       expect(args).not.toContain("--kv");
-      expect(args.at(-1)).toBe(`test "\${${variable}+x}" = x`);
+      expect(args.at(-1)).toBe(`test "\${${target.variable}+x}" = x`);
       expect(() => assertReadOnlyRailwayArgs(args)).not.toThrow();
     }
   });
 
-  test("reports each configured name without reading, printing, or comparing a value", () => {
+  test("reports target metadata and booleans without a value channel", () => {
     const calls: string[][] = [];
     const report = checkConfiguredPresence((args) => {
       calls.push([...args]);
-      return args.at(-1)?.includes("DOCS_SERVICE_TOKEN") ?? false;
+      return !args.at(-1)?.includes("DOCS_QUERY_URL");
     });
 
     expect(calls).toEqual(
-      ASK_AI_REQUIRED_VARIABLES.map((variable) =>
-        buildConfiguredProbeArgs(variable),
-      ),
+      expectedTargets.map((target) => buildConfiguredProbeArgs(target)),
     );
-    expect(report).toEqual([
-      { variable: "DOCS_SERVICE_TOKEN", present: true },
-      { variable: "DOCS_QUERY_URL", present: false },
-    ]);
+    expect(report).toEqual(
+      expectedTargets.map((target) => ({
+        ...target,
+        present: target.variable !== "DOCS_QUERY_URL",
+      })),
+    );
   });
 
-  test("the Railway guard rejects every SSH command outside the fixed presence probes", () => {
+  test("fails only for missing required targets and still reports optional/not-deployed seams", () => {
+    const report: readonly ConfiguredPresenceResult[] = checkConfiguredPresence(
+      (args) =>
+        !args.at(-1)?.includes("DOCS_QUERY_URL") &&
+        !args.at(-1)?.includes("CATALOG_TEST_EMAIL_TO"),
+    );
+    expect(
+      missingRequiredVariables(report).map(
+        ({ service, variable }) => `${service}:${variable}`,
+      ),
+    ).toEqual(["caisson-site:DOCS_QUERY_URL"]);
+
+    let output = "";
+    printConfiguredPresence(report, (text) => {
+      output += text;
+    });
+    expect(output).toContain(
+      "caisson-admin CATALOG_TEST_EMAIL_TO: MISSING (OPTIONAL)",
+    );
+    expect(output).toContain(
+      "local-ai.field-crypto: NOT PROBED (OPTIONAL — apps/local-ai is not deployed;",
+    );
+    expect(output).not.toContain("secret-shaped-fixture-value");
+  });
+
+  test("the Railway guard rejects every SSH command outside the exact fleet presence probes", () => {
     expect(() =>
       assertReadOnlyRailwayArgs([
         "ssh",
@@ -366,6 +480,30 @@ describe("Ask-AI configured probe", () => {
         "env",
       ]),
     ).toThrow(/read-only mirror/);
+    expect(() =>
+      buildConfiguredProbeArgs({
+        seamId: "site.ask-ai-generation",
+        service: "caisson-admin",
+        environment: "production",
+        variable: "OPENROUTER_API_KEY",
+        requirement: "required",
+      }),
+    ).toThrow(/unknown configured probe target/);
+  });
+
+  test("the launch runbook carries one service/vars/behavior row for every seam", () => {
+    const runbook = readFileSync(
+      new URL("../../docs/ops/launch-runbook.md", import.meta.url),
+      "utf8",
+    );
+    for (const seam of expectedSeams) {
+      expect(runbook).toContain(`\`${seam.id}\``);
+      for (const variable of seam.variables) {
+        expect(runbook).toContain(`\`${variable}\``);
+      }
+    }
+    expect(runbook).toContain("OPTIONAL — operator-only test delivery");
+    expect(runbook).toContain("OPTIONAL — not deployed");
   });
 });
 

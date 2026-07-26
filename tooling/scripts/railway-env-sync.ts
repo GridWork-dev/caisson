@@ -34,13 +34,111 @@ const ENV_FILE_PATH = join(homedir(), ".gridwork", "caisson.env");
 const GRIDWORK_ENV_PATH = join(homedir(), ".gridwork", "env");
 const REPO_ROOT = join(import.meta.dir, "..", "..");
 const LOCAL_ONLY_MARKER = "# === local-only (not on Railway) ===";
-const ASK_AI_SERVICE = "caisson-site";
-const ASK_AI_ENVIRONMENT = "production";
-export const ASK_AI_REQUIRED_VARIABLES = [
-  "DOCS_SERVICE_TOKEN",
-  "DOCS_QUERY_URL",
-] as const;
-type AskAiRequiredVariable = (typeof ASK_AI_REQUIRED_VARIABLES)[number];
+
+export type ConfigurationRequirement = "required" | "optional";
+
+export interface FleetConfigurationSeam {
+  id: string;
+  service: string | null;
+  environment: string | null;
+  variables: readonly string[];
+  requirement: ConfigurationRequirement;
+  optionalReason?: string;
+}
+
+/** Launch inventory for configuration gates that otherwise degrade only on the feature path.
+ * A null service/environment means the code surface is intentionally not deployed and therefore
+ * has no Railway command. Optional seams remain visible instead of disappearing from the probe. */
+export const FLEET_CONFIGURATION_SEAMS = [
+  {
+    id: "site.ask-ai-docs-retrieval",
+    service: "caisson-site",
+    environment: "production",
+    variables: ["DOCS_SERVICE_TOKEN", "DOCS_QUERY_URL"],
+    requirement: "required",
+  },
+  {
+    id: "site.ask-ai-generation",
+    service: "caisson-site",
+    environment: "production",
+    variables: ["OPENROUTER_API_KEY"],
+    requirement: "required",
+  },
+  {
+    id: "site.subscription-cancellation",
+    service: "caisson-site",
+    environment: "production",
+    variables: ["PADDLE_API_KEY"],
+    requirement: "required",
+  },
+  {
+    id: "site.paddle-checkout",
+    service: "caisson-site",
+    environment: "production",
+    variables: ["NEXT_PUBLIC_PADDLE_CLIENT_TOKEN"],
+    requirement: "required",
+  },
+  {
+    id: "site.byok-field-crypto",
+    service: "caisson-site",
+    environment: "production",
+    variables: ["MASTER_FIELD_KEY", "FIELD_CRYPTO_SALT"],
+    requirement: "required",
+  },
+  {
+    id: "site.authentication-runtime",
+    service: "caisson-site",
+    environment: "production",
+    variables: ["DATABASE_URL", "BETTER_AUTH_SECRET"],
+    requirement: "required",
+  },
+  {
+    id: "admin.license-reissue-and-affiliate-minting",
+    service: "caisson-admin",
+    environment: "production",
+    variables: ["CAISSON_LICENSE_ISSUE_URL", "ADMIN_ISSUE_TOKEN"],
+    requirement: "required",
+  },
+  {
+    id: "admin.catalog-test-email-recipient",
+    service: "caisson-admin",
+    environment: "production",
+    variables: ["CATALOG_TEST_EMAIL_TO"],
+    requirement: "optional",
+    optionalReason:
+      "Operator-only test delivery; buyer email delivery does not depend on it.",
+  },
+  {
+    id: "local-ai.field-crypto",
+    service: null,
+    environment: null,
+    variables: ["MASTER_FIELD_KEY", "FIELD_CRYPTO_SALT"],
+    requirement: "optional",
+    optionalReason:
+      "apps/local-ai is not deployed; development and test intentionally use the deterministic demo vector.",
+  },
+] as const satisfies readonly FleetConfigurationSeam[];
+
+export interface ConfiguredProbeTarget {
+  seamId: string;
+  service: string;
+  environment: string;
+  variable: string;
+  requirement: ConfigurationRequirement;
+}
+
+export function buildConfiguredProbeTargets(): ConfiguredProbeTarget[] {
+  return FLEET_CONFIGURATION_SEAMS.flatMap((seam) => {
+    if (seam.service === null || seam.environment === null) return [];
+    return seam.variables.map((variable) => ({
+      seamId: seam.id,
+      service: seam.service,
+      environment: seam.environment,
+      variable,
+      requirement: seam.requirement,
+    }));
+  });
+}
 // Prefixes worth mirroring names-only from ~/.gridwork/env + repo .env.local files when they are
 // NOT already sourced from Railway (secrets/config caisson product code actually reads).
 const RELEVANT_PREFIX_RE =
@@ -395,27 +493,37 @@ const READ_ONLY_RAILWAY_VERBS = new Set(["whoami", "status", "variables"]);
 
 /** Build the only Railway SSH commands this script permits. `${NAME+x}` asks the remote shell
  * whether NAME exists without expanding, reading, comparing, measuring, or printing its value. */
-export function buildConfiguredProbeArgs(variable: string): string[] {
-  if (!ASK_AI_REQUIRED_VARIABLES.includes(variable as AskAiRequiredVariable)) {
+export function buildConfiguredProbeArgs(
+  target: ConfiguredProbeTarget,
+): string[] {
+  const allowed = buildConfiguredProbeTargets().some(
+    (candidate) =>
+      candidate.seamId === target.seamId &&
+      candidate.service === target.service &&
+      candidate.environment === target.environment &&
+      candidate.variable === target.variable &&
+      candidate.requirement === target.requirement,
+  );
+  if (!allowed) {
     throw new Error(
-      `railway-env-sync configured probe refuses unknown variable name: ${variable}`,
+      `railway-env-sync refuses unknown configured probe target: ${target.service}:${target.variable}`,
     );
   }
   return [
     "ssh",
     "--service",
-    ASK_AI_SERVICE,
+    target.service,
     "--environment",
-    ASK_AI_ENVIRONMENT,
+    target.environment,
     "sh",
     "-c",
-    `test "\${${variable}+x}" = x`,
+    `test "\${${target.variable}+x}" = x`,
   ];
 }
 
 function isConfiguredProbeArgs(args: readonly string[]): boolean {
-  return ASK_AI_REQUIRED_VARIABLES.some((variable) => {
-    const allowed = buildConfiguredProbeArgs(variable);
+  return buildConfiguredProbeTargets().some((target) => {
+    const allowed = buildConfiguredProbeArgs(target);
     return (
       args.length === allowed.length &&
       args.every((arg, index) => arg === allowed[index])
@@ -450,30 +558,51 @@ function railway(args: string[]): string {
 }
 
 export interface ConfiguredPresenceResult {
-  variable: AskAiRequiredVariable;
+  seamId: string;
+  service: string;
+  environment: string;
+  variable: string;
+  requirement: ConfigurationRequirement;
   present: boolean;
 }
 
-/** Run the fixed Ask-AI presence probes. The injected runner returns only the command's boolean
+/** Run the fixed fleet presence probes. The injected runner returns only the command's boolean
  * status; no variable value can enter this function or its report type. */
 export function checkConfiguredPresence(
   run: (args: string[]) => boolean,
 ): ConfiguredPresenceResult[] {
-  return ASK_AI_REQUIRED_VARIABLES.map((variable) => ({
-    variable,
-    present: run(buildConfiguredProbeArgs(variable)),
+  return buildConfiguredProbeTargets().map((target) => ({
+    ...target,
+    present: run(buildConfiguredProbeArgs(target)),
   }));
+}
+
+export function missingRequiredVariables(
+  report: readonly ConfiguredPresenceResult[],
+): ConfiguredPresenceResult[] {
+  return report.filter(
+    (result) => result.requirement === "required" && !result.present,
+  );
 }
 
 export function printConfiguredPresence(
   report: readonly ConfiguredPresenceResult[],
   write: (text: string) => void = (text) => process.stdout.write(text),
 ): void {
-  write(
-    `\nAsk-AI configured probe — ${ASK_AI_SERVICE} [${ASK_AI_ENVIRONMENT}]\n`,
-  );
+  write("\nFleet configured probe — deployed fail-soft seams\n");
   for (const result of report) {
-    write(`  ${result.variable}: ${result.present ? "PRESENT" : "MISSING"}\n`);
+    const requirement = result.requirement === "optional" ? " (OPTIONAL)" : "";
+    write(
+      `  [${result.seamId}] ${result.service} ${result.variable}: ${
+        result.present ? "PRESENT" : "MISSING"
+      }${requirement}\n`,
+    );
+  }
+  for (const seam of FLEET_CONFIGURATION_SEAMS) {
+    if (seam.service !== null || seam.environment !== null) continue;
+    write(
+      `  ${seam.id}: NOT PROBED (OPTIONAL — ${seam.optionalReason ?? "not deployed"})\n`,
+    );
   }
 }
 
@@ -487,16 +616,16 @@ function runConfiguredPresenceProbe(): void {
     }
   });
   printConfiguredPresence(report);
-  const missing = report
-    .filter((result) => !result.present)
-    .map((result) => result.variable);
+  const missing = missingRequiredVariables(report);
   if (missing.length > 0) {
     throw new Error(
-      `Ask-AI configured probe failed on ${ASK_AI_SERVICE}; missing: ${missing.join(", ")}`,
+      `Fleet configured probe failed; missing required names: ${missing
+        .map((result) => `${result.service}:${result.variable}`)
+        .join(", ")}`,
     );
   }
   process.stdout.write(
-    "Ask-AI configured probe: green — required variable names are present.\n",
+    "Fleet configured probe: green — required variable names are present.\n",
   );
 }
 
