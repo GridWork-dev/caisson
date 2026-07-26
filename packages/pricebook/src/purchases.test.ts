@@ -231,7 +231,7 @@ describe("ADR-0381 forward-only bundle reprices (2026-07-25)", () => {
   ] as const)("%s grants the canonical %s bundle", (priceId, bundleId) => {
     const entry = resolvePurchase(priceId);
     expect(entry.entitlements).toEqual([bundleId]);
-    expect(entry.credits).toBe(0);
+    expect<number>(entry.credits).toBe(0);
   });
 
   test("the archived predecessor ids remain resolvable for delayed webhooks", () => {
