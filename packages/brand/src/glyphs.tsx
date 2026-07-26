@@ -5,7 +5,7 @@
 // the kit floor ships no bespoke glyphs of its own. Server-safe (plain SVG, no framework import).
 import type { IconGlyph, RegisteredIconName } from "@caisson/ui/components";
 
-/** The 34 bespoke domain glyphs, keyed by the @caisson/ui registry name contract. */
+/** The 37 bespoke domain glyphs, keyed by the @caisson/ui registry name contract. */
 export const brandGlyphs: Record<RegisteredIconName, IconGlyph> = {
   // Row-level security: a table whose locked row admits only the keyed tenant.
   rls: (p) => (
@@ -694,6 +694,104 @@ export const brandGlyphs: Record<RegisteredIconName, IconGlyph> = {
         rx="0.6"
         fill="currentColor"
       />
+    </svg>
+  ),
+  // Access review: a frozen campaign roster with explicit approve and revoke decisions.
+  "access-review": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="3"
+        y="4"
+        width="18"
+        height="16"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle cx="7" cy="9" r="1" fill="currentColor" />
+      <path
+        d="M10 9h3.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M15.3 8.8l1.2 1.2 2.3-2.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="7" cy="15" r="1" fill="currentColor" />
+      <path
+        d="M10 15h3.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M15.8 13.8l2.6 2.6M18.4 13.8l-2.6 2.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
+  // Risk register: a likelihood × impact matrix with one scored risk moving into treatment.
+  "risk-register": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="3"
+        y="3"
+        width="18"
+        height="18"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M9 3v18M15 3v18M3 9h18M3 15h18"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        opacity="0.45"
+      />
+      <circle cx="17.5" cy="6.5" r="1.4" fill="currentColor" />
+      <path
+        d="M17 8l-5.5 5.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11.5 10.7v2.8h2.8"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  // Trust page: a host-anywhere browser surface exposing only the facts a buyer may inspect.
+  "trust-page": (p) => (
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <rect
+        x="3"
+        y="4"
+        width="18"
+        height="16"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path d="M3 8h18" stroke="currentColor" strokeWidth="1.6" opacity="0.5" />
+      <circle cx="6" cy="6" r="0.8" fill="currentColor" />
+      <path
+        d="M6.5 14c1.4-2 3.2-3 5.5-3s4.1 1 5.5 3c-1.4 2-3.2 3-5.5 3s-4.1-1-5.5-3Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="14" r="1.4" fill="currentColor" />
     </svg>
   ),
   // Agent trajectory: an append-only run record — step-dots along a replayable path that branches once.

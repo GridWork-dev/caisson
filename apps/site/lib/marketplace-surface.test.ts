@@ -174,6 +174,28 @@ describe("media manifest", () => {
     expect(viewer[0]?.kind).toBe("poke");
   });
 
+  test("ADR-0380: the three compliance-gap depth pages lead with their live poke, then their shipped schematic", () => {
+    const modules = ["access-review", "risk-register", "trust-page"] as const;
+    for (const id of modules) {
+      const slides = mediaSlides("module", id, {
+        omitCodeArtifact: true,
+      });
+      expect(slides.map((slide) => slide.kind)).toEqual(["poke", "diagram"]);
+      expect(slides[0]?.poke).toBe(id);
+      expect(slides[0]?.caption.length).toBeGreaterThan(0);
+      expect(slides[1]?.diagram).toBe(`schematic-${id}` as DiagramKey);
+      expect(slides[1]?.caption.length).toBeGreaterThan(0);
+    }
+  });
+
+  test("ADR-0380 preserves schematic-first depth composition for an existing record", () => {
+    const slides = mediaSlides("module", "field-crypto", {
+      omitCodeArtifact: true,
+    });
+    expect(slides[0]?.diagram).toBe("schematic-field-crypto");
+    expect(slides[1]?.poke).toBe("field-crypto");
+  });
+
   test("every bundle carries a real composition slide naming its own member modules", () => {
     // ADR-0378 post-migration: every bundle has its strata sheet at slide 0; the composition
     // slide follows at slide 1.
