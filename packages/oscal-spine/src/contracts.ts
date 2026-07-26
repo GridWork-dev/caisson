@@ -25,6 +25,20 @@ export interface OscalManifestControl {
   readonly readiness: "ready" | "gap";
 }
 
+export interface OscalCrosswalkRollupCell {
+  readonly framework: string;
+  readonly reference: string;
+  readonly canonicalControlIds: readonly string[];
+  readonly status: "ready" | "gap" | "unresolved";
+  readonly claim: "maps-to" | "implements";
+  readonly evidencePointers: readonly string[];
+  readonly note?: string | undefined;
+}
+
+export interface OscalCrosswalkRollup {
+  readonly cells: readonly OscalCrosswalkRollupCell[];
+}
+
 export interface OscalEvidencePackManifest {
   readonly formatVersion: string;
   readonly tenantId: string;
@@ -42,7 +56,7 @@ export interface OscalEvidencePackManifest {
     readonly totalEvidenceItems: number;
     readonly posture: string;
   };
-  readonly crosswalkRollup: unknown;
+  readonly crosswalkRollup: OscalCrosswalkRollup;
 }
 
 /** Structural framework-catalog projection consumed by the OSCAL catalog exporter. */
