@@ -107,7 +107,7 @@ export const SITE_LOCAL_MIGRATIONS: readonly MigrationFile[] = [
   // global (non-tenant), no RLS, same posture as the ask_ai_* counters (0011/0012).
   { name: "0028_demo_run_budget.sql", sql: DEMO_RUN_BUDGET_SCHEMA_SQL },
   { name: "0029_demo_run_leads.sql", sql: DEMO_RUN_LEADS_SCHEMA_SQL },
-  // ADR-0387/0388: durable append-only wrapped DEKs for the Azure KMS production path. Tail-only:
+  // ADR-0387/0389: durable append-only wrapped DEKs for the Azure KMS production path. Tail-only:
   // the shared platform chain currently ends at 0031, so this extends rather than re-slots its
   // positional ledger.
   {
