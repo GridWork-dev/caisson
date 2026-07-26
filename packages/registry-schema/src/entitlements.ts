@@ -154,6 +154,18 @@ export const COMPATIBILITY_REEXPORT_ENTITLEMENTS: ReadonlyMap<
   ["@caisson/frameworks-pack", ["@caisson/oscal-spine"]],
 ]);
 
+/**
+ * Named commercial runtime dependencies that are published but never sold independently. These
+ * edges exist solely so a package manager can resolve the dependency tree of an entitled package;
+ * they are not inferred from package manifests and do not create generic dependency closure.
+ */
+export const INTERNAL_RUNTIME_ENTITLEMENTS: ReadonlyMap<
+  string,
+  readonly string[]
+> = new Map<string, readonly string[]>([
+  ["@caisson/oscal-spine", ["@caisson/artifact-render"]],
+]);
+
 /** Boundary guard (ADR-0021 input-validation): the purchased ids are an array of bounded, non-empty
  *  strings. Classification + fail-closed rejection of unknown values happens below. */
 const PurchasedIds = z.array(z.string().trim().min(1).max(128));
@@ -192,23 +204,31 @@ function bareSlug(moduleId: string): string {
     : moduleId;
 }
 
-function addCompatibilityReexports(
+function addNamedEntitlementClosure(
   grantorId: string,
   allowlist: ReadonlySet<string>,
   members: Set<string>,
+  visited: Set<string> = new Set<string>(),
 ): void {
-  for (const targetId of COMPATIBILITY_REEXPORT_ENTITLEMENTS.get(grantorId) ??
-    []) {
-    if (allowlist.has(targetId)) {
-      members.add(targetId);
-      continue;
+  if (visited.has(grantorId)) return;
+  visited.add(grantorId);
+  for (const edges of [
+    COMPATIBILITY_REEXPORT_ENTITLEMENTS,
+    INTERNAL_RUNTIME_ENTITLEMENTS,
+  ]) {
+    for (const targetId of edges.get(grantorId) ?? []) {
+      if (allowlist.has(targetId)) {
+        members.add(targetId);
+        addNamedEntitlementClosure(targetId, allowlist, members, visited);
+        continue;
+      }
+      if (RESERVED_MODULE_ENTITLEMENT_IDS.has(bareSlug(targetId))) {
+        continue;
+      }
+      throw new Error(
+        `named entitlement target is neither indexed nor reserved: ${JSON.stringify(targetId)}`,
+      );
     }
-    if (RESERVED_MODULE_ENTITLEMENT_IDS.has(bareSlug(targetId))) {
-      continue;
-    }
-    throw new Error(
-      `compatibility re-export target is neither indexed nor reserved: ${JSON.stringify(targetId)}`,
-    );
   }
 }
 
@@ -400,13 +420,13 @@ export function expandEntitlements(
     if (isBundleId(id)) {
       for (const memberId of membersOfBundle(index, id, snapshot)) {
         members.add(memberId);
-        addCompatibilityReexports(memberId, allowlist, members);
+        addNamedEntitlementClosure(memberId, allowlist, members);
       }
       continue;
     }
     if (MODULE_ID_RE.test(id) && allowlist.has(id)) {
       members.add(id);
-      addCompatibilityReexports(id, allowlist, members);
+      addNamedEntitlementClosure(id, allowlist, members);
       continue;
     }
     if (MODULE_SLUG_RE.test(id)) {
@@ -419,7 +439,7 @@ export function expandEntitlements(
       const candidate = `@caisson/${id}`;
       if (allowlist.has(candidate)) {
         members.add(candidate);
-        addCompatibilityReexports(candidate, allowlist, members);
+        addNamedEntitlementClosure(candidate, allowlist, members);
         continue;
       }
       if (RESERVED_MODULE_ENTITLEMENT_IDS.has(id)) {
