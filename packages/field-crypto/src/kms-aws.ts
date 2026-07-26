@@ -75,7 +75,8 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
     throw new ConfigError("createAwsKmsClient requires a default `keyId`");
   }
   const defaultKeyId = config.keyId;
-  const pendingWindowInDays = config.pendingWindowInDays ?? 7;
+  const pendingWindowInDays =
+    config.pendingWindowInDays === undefined ? 7 : config.pendingWindowInDays;
   if (
     !Number.isInteger(pendingWindowInDays) ||
     pendingWindowInDays < 7 ||

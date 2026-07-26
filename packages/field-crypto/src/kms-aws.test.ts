@@ -33,12 +33,12 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     expect(() => createAwsKmsClient({ keyId: "" })).toThrow(/keyId/);
   });
 
-  for (const pendingWindowInDays of [6, 31, 7.5, Number.NaN, Infinity]) {
+  for (const pendingWindowInDays of [6, 31, 7.5, Number.NaN, Infinity, null]) {
     test(`fails closed on invalid pendingWindowInDays ${String(pendingWindowInDays)}`, () => {
       expect(() =>
         createAwsKmsClient({
           keyId: "key-DEFAULT",
-          pendingWindowInDays,
+          pendingWindowInDays: pendingWindowInDays as number,
           client: fakeKms(() => ({})).client,
         }),
       ).toThrow(/integer from 7 through 30/);
