@@ -81,7 +81,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "KMS envelope encryption behind one port",
-        body: "KmsKeyProvider wraps a per-tenant data-encryption key under a KMS-held key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. awsKmsClient() is the wired AWS driver; the same three-method KmsClient port is the seam a GCP, Azure Key Vault, or Vault Transit driver drops into.",
+        body: "KmsKeyProvider wraps a per-tenant data-encryption key under a KMS-held key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. AWS KMS, GCP KMS, and Azure Key Vault drivers ship behind the same three-method KmsClient port; Caisson's hosted production site uses Azure with required purge protection.",
       },
       {
         title: "Crypto-shred erasure without breaking the audit chain",
@@ -112,7 +112,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Can I use our own KMS instead of the derived key?",
         answer:
-          "Yes. FieldKeyProvider is a two-method port (keyFor and currentVersion. DerivedKeyProvider (HKDF, zero infra) is the default; KmsKeyProvider wraps a per-tenant DEK under AWS KMS today through awsKmsClient(). GCP, Azure Key Vault, and Vault Transit map cleanly onto the same three-method KmsClient port) implement it to plug them in.",
+          "Yes. FieldKeyProvider is the two-method key port: the library's DerivedKeyProvider serves zero-infrastructure dev/self-hosted deployments, while KmsKeyProvider works with the shipped AWS, GCP, and Azure clients. Caisson's hosted production site binds Azure-backed keys in a disposable request context and never falls back after a KMS failure.",
       },
       {
         question:

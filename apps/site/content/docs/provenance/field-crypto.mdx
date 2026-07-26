@@ -37,6 +37,9 @@ bun add @caisson/field-crypto
 The zero-infra dev/self-hosted path derives keys from an env-held master secret, no key table,
 no KMS call:
 
+Caisson's hosted production site does not use this path. Its BYOK seal path requires Azure Key
+Vault and fails closed when the vault, credentials, or purge-protection contract is unavailable.
+
 ```bash
 # 32-byte values, hex-encoded (64 chars)
 MASTER_FIELD_KEY=...
@@ -124,8 +127,10 @@ under the current one.
 
 The `FieldKeyProvider` port is the seam: `DerivedKeyProvider` (above) is the zero-infra
 dev/self-hosted choice; `KmsKeyProvider` wraps a per-tenant data-encryption key under a KMS-held
-key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. AWS and
-GCP KMS and Azure Key Vault clients ship today behind the same three-method `KmsClient` port.
+key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. AWS KMS,
+GCP KMS, and Azure Key Vault clients ship today behind the same three-method `KmsClient` port.
+Caisson's hosted production site wires the Azure client; it never falls back to a derived or demo
+key after a KMS failure.
 
 ```ts
 import {
@@ -168,14 +173,31 @@ const { auditPayload } = await cryptoShred(kmsProvider, {
 
 ## Configuration
 
+### Dev and self-hosted derived-key path
+
 | Var                 | What                                        | Notes                                           |
 | ------------------- | ------------------------------------------- | ----------------------------------------------- |
 | `MASTER_FIELD_KEY`  | 32-byte IKM, hex (64 chars)                 | Hard secret, read once, never logged.           |
 | `FIELD_CRYPTO_SALT` | 32-byte per-deployment salt, hex (64 chars) | Non-secret; cross-deployment domain separation. |
 
-Only required for the `DerivedKeyProvider` dev/self-hosted path. `KmsKeyProvider` reads its
-credentials through the KMS client you construct (`awsKmsClient`, `createGcpKmsClient`, or
-`createAzureKeyVaultKmsClient`).
+Only required for the `DerivedKeyProvider` dev/self-hosted path.
+
+### Caisson hosted production
+
+| Var                                | Required value / purpose                                       |
+| ---------------------------------- | -------------------------------------------------------------- |
+| `AZURE_KEY_VAULT_URL`              | HTTPS Azure Key Vault URL                                      |
+| `AZURE_KEY_VAULT_KEY_NAME`         | Prefix for deterministic per-tenant KEKs                       |
+| `AZURE_KEY_VAULT_WRAP_ALGORITHM`   | Exactly `RSA-OAEP-256`                                         |
+| `AZURE_KEY_VAULT_PURGE_PROTECTION` | Exactly `enabled`; runtime also verifies the key recovery mode |
+| `AZURE_TENANT_ID`                  | Service-principal tenant                                       |
+| `AZURE_CLIENT_ID`                  | Service-principal client                                       |
+| `AZURE_CLIENT_SECRET`              | Service-principal secret                                       |
+
+The hosted adapter creates Azure SDK clients from that explicit service principal, provisions a
+tenant KEK on first seal, and persists only wrapped DEKs in the tenant-scoped Postgres store.
+Self-hosted integrations construct their chosen KMS client (`createAwsKmsClient`,
+`createGcpKmsClient`, or `createAzureKeyVaultKmsClient`) and supply their own credential adapter.
 
 ## Composing with the base
 

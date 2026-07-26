@@ -1035,21 +1035,21 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Envelope encryption (DEK/KEK)",
     cluster: "security",
     definition:
-      "Envelope encryption wraps a data-encryption key (DEK) with a key-encryption key (KEK) that never leaves a KMS, so only the wrapped DEK is stored and the raw key material is never persisted. Caisson's KmsKeyProvider generates a DEK per tenant, stores just its KEK-wrapped form, and unwraps it through the KMS port on every read.",
+      "Envelope encryption wraps a data-encryption key (DEK) with a key-encryption key (KEK) that never leaves a KMS, so only the wrapped DEK is stored and the raw key material is never persisted. Caisson's KmsKeyProvider generates a DEK per tenant, stores just its KEK-wrapped form, and unwraps the tenant's historical versions through the KMS port when a request context binds.",
     artifact: {
       label:
-        "KmsKeyProvider.provision / keyFor: mint the DEK through the KMS, persist only its KEK-wrapped form",
+        "KmsKeyProvider.ensureProvisioned / keyFor: elect one wrapped-DEK winner and unwrap only for a request",
       lang: "ts",
-      code: "export class KmsKeyProvider implements FieldKeyProvider {\n  constructor(\n    private readonly kms: KmsClient,\n    private readonly store: WrappedKeyStore,\n  ) {}\n\n  // Mint a fresh DEK through the KMS; persist only its KEK-wrapped form.\n  async provision(tenantId: string): Promise<number> {\n    const cur = (await this.store.currentVersion(tenantId)) ?? 0;\n    const next = cur + 1;\n    const { wrappedKey } = await this.kms.generateDataKey(tenantId);\n    await this.store.putWrapped(tenantId, next, wrappedKey);\n    await this.store.setCurrentVersion(tenantId, next);\n    return next;\n  }\n\n  // Unwrap the stored DEK through the KMS on every read; plaintext never persists.\n  async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {\n    const wrapped = await this.store.getWrapped(tenantId, keyVersion);\n    if (wrapped === undefined) {\n      throw new NotFoundError(/* no wrapped DEK for this tenant/version */);\n    }\n    return this.kms.decryptDataKey(tenantId, wrapped);\n  }\n}",
+      code: "export class KmsKeyProvider implements FieldKeyProvider {\n  constructor(\n    private readonly kms: KmsClient,\n    private readonly store: WrappedKeyStore,\n  ) {}\n\n  // First seal elects one append-only version-1 winner under concurrency.\n  async ensureProvisioned(tenantId: string): Promise<number> {\n    const current = await this.store.currentVersion(tenantId);\n    if (current !== undefined) return current;\n\n    const generated = await this.kms.generateDataKey(tenantId);\n    try {\n      await this.store.putWrappedIfAbsent(tenantId, 1, generated.wrappedKey);\n      await this.store.setCurrentVersion(tenantId, 1);\n      return 1;\n    } finally {\n      generated.plaintextKey.fill(0);\n    }\n  }\n\n  // Request binding unwraps a stored version; its context zeroizes the result at exit.\n  async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {\n    const wrapped = await this.store.getWrapped(tenantId, keyVersion);\n    if (wrapped === undefined) {\n      throw new NotFoundError(/* no wrapped DEK for this tenant/version */);\n    }\n    return this.kms.decryptDataKey(tenantId, wrapped);\n  }\n}",
     },
     properties: [
       {
-        title: "One KMS port, four drop-in backends",
-        body: "KmsClient exposes just three methods (generateDataKey, decryptDataKey, scheduleKeyDeletion). AWS KMS and GCP KMS drivers ship today (createAwsKmsClient, createGcpKmsClient, both live-tested); Azure Key Vault or Vault Transit would slot behind the same three-method port, but no driver for them ships yet. The field-crypto column and envelope format never know which backend is live.",
+        title: "Three shipped cloud backends, one KMS port",
+        body: "KmsClient exposes just three methods (generateDataKey, decryptDataKey, scheduleKeyDeletion). AWS KMS, GCP KMS, and Azure Key Vault drivers ship today behind that port; Caisson's hosted production site wires Azure with explicit service-principal authentication and required purge protection. The field-crypto column and envelope format never know which backend is live.",
       },
       {
         title: "Only the wrapped DEK ever touches storage",
-        body: "generateDataKey returns the plaintext DEK and its KEK-wrapped form together; provision() persists only wrappedKey to the WrappedKeyStore. The plaintext key exists in memory just long enough to wrap or to encrypt a field, never logged, never written to disk.",
+        body: "generateDataKey returns the plaintext DEK and its KEK-wrapped form together; provisioning persists only wrappedKey to the WrappedKeyStore and zeroizes the generated plaintext in finally. Request binding unwraps historical DEKs into a disposable context that zeroizes every source and working buffer on exit; plaintext is never logged or written to disk.",
       },
       {
         title: "Rotation bumps a version, it never re-encrypts",
@@ -1075,7 +1075,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Do I need a cloud KMS to use field-crypto?",
         answer:
-          "No. DerivedKeyProvider (HKDF-SHA256, zero infrastructure) is the default; KmsKeyProvider is the opt-in upgrade tier for teams that already run AWS KMS, or want a hardware-backed KEK. Both implement the same two-method FieldKeyProvider port, so swapping one for the other touches no calling code.",
+          "No. The library keeps DerivedKeyProvider as the zero-infrastructure dev and self-hosted path. Caisson's hosted production site instead requires Azure Key Vault and binds a disposable request-scoped KMS context; a KMS loss fails closed with no derived or demo fallback.",
       },
       {
         question:
