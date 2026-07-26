@@ -71,7 +71,7 @@ The current registry parity probe reports:
 | Admin                                | `97b183902c08`                            | **DRIFT**           |
 | Latest recorded site-only deployment | source `ea2bee11`, Railway `3120a2ef`     | not a fleet receipt |
 
-Docs-RAG and support-bot source parity remain uncertified. Migrations `0030` and `0032` are authored
+Docs-RAG and support-bot source parity remain uncertified. Site migrations `0030`–`0032` are authored
 but have no production-apply receipts. Exit requires all six runtime legs built from one approved
 SHA, the migration chain applied through `0032_field_crypto_keys.sql`, manifest digest parity, and
 health/checkout/entitlement/refund/RAG/support/KMS probe receipts.

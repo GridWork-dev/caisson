@@ -15,7 +15,7 @@ row-count parity, including the requirement to recreate the `admin`, `admin_writ
 and `app` roles before `pg_restore` so RLS policy creation succeeds.
 
 That rehearsal is historical recovery evidence, not proof that today’s backup is recent. Verify
-Railway snapshot recency before launch. Migrations `0030` and `0032` exist in source and have no
+Railway snapshot recency before launch. Site migrations `0030`–`0032` exist in source and have no
 production-apply receipts. A restore drill for the release that arms hosted field crypto must
 reapply the chain through `0032_field_crypto_keys.sql`, then receipt the restored
 `field_key_version` and `field_wrapped_dek` rows, forced RLS and tenant policies, and append-only

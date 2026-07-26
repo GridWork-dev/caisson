@@ -1101,12 +1101,12 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Crypto-shredding",
     cluster: "security",
     definition:
-      "Crypto-shredding is cryptographic erasure: destroying a scope's encryption key so every ciphertext it protects becomes unrecoverable, the technical control GDPR and CCPA right-to-erasure requests point at, without deleting rows from an immutable audit chain. Caisson's field-crypto module schedules KEK deletion through a scope tied to one tenant, never a shared key, and mints an audit record carrying no PII.",
+      "Crypto-shredding is cryptographic erasure: destroying a scope's encryption key so every ciphertext it protects becomes unrecoverable, without deleting rows from an immutable audit chain. Caisson's field-crypto module requests KEK deletion through a scope tied to one tenant, never a shared key, and records the provider-proven deletion state without PII. A recoverable soft-delete receipt is not labeled permanent erasure.",
     artifact: {
       label:
-        "cryptoShred(): destroy the scope's KEK through the KMS port, mint the erasure.crypto-shred audit payload (no PII)",
+        "cryptoShred(): request scoped KEK deletion and record the provider-proven state (no PII)",
       lang: "ts",
-      code: "export async function cryptoShred(\n  provider: KmsKeyProvider,\n  request: CryptoShredRequest,\n): Promise<CryptoShredReceipt> {\n  const req = parseStrict(cryptoShredRequestSchema, request);\n  const shreddedThroughVersion = await provider.scheduleKeyDeletion(\n    req.keyScopeId,\n  );\n  const auditPayload: JsonValue = {\n    event: ERASURE_CRYPTO_SHRED,\n    method: SHRED_METHOD,\n    tenantId: req.tenantId,\n    subjectId: req.subjectId,\n    reason: req.reason,\n    occurredAt: req.occurredAt,\n    shreddedThroughVersion,\n  };\n  return { shreddedThroughVersion, auditPayload };\n}",
+      code: "export async function cryptoShred(\n  provider: KmsKeyProvider,\n  request: CryptoShredRequest,\n): Promise<CryptoShredReceipt> {\n  const req = parseStrict(cryptoShredRequestSchema, request);\n  const { shreddedThroughVersion, deletion } =\n    await provider.scheduleKeyDeletion(req.keyScopeId);\n  const auditPayload: JsonValue = {\n    event: ERASURE_CRYPTO_SHRED,\n    deletion,\n    method: SHRED_METHOD,\n    tenantId: req.tenantId,\n    subjectId: req.subjectId,\n    reason: req.reason,\n    occurredAt: req.occurredAt,\n    shreddedThroughVersion,\n  };\n  return { shreddedThroughVersion, deletion, auditPayload };\n}",
     },
     properties: [
       {
@@ -1115,15 +1115,15 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Selective because provisioning is per scope",
-        body: "KmsKeyProvider provisions one wrapped DEK version per tenant (or per subject, for a finer erasure grain), and scheduleKeyDeletion destroys only that scope's KEK: every other tenant's wrapped DEKs stay live, and unwrapping them continues to work.",
+        body: "KmsKeyProvider provisions one wrapped DEK version per tenant (or per subject, for a finer erasure grain), and scheduleKeyDeletion targets only that scope's KEK. Caisson refuses that scope after an accepted deletion request; every other tenant's wrapped DEKs stay live and continue to unwrap.",
       },
       {
         title: "The audit record carries no PII",
-        body: "cryptoShred's payload holds only opaque ids, the legal reason, the erasure instant, and the version destroyed, never the erased data itself, so it can be appended forever to the immutable WORM chain without ever recreating what the shred just destroyed.",
+        body: "cryptoShred's payload holds only opaque ids, the legal reason, the request instant, the covered version, and the provider's deletion state, never the erased data itself. It can remain in the immutable WORM chain without recreating the protected plaintext or overstating a recoverable soft delete.",
       },
       {
         title: "Fail-closed before the deletion, not after",
-        body: "parseStrict validates the erasure request against a .strict() schema before scheduleKeyDeletion ever runs, so a malformed request throws before an irreversible key deletion is scheduled, not after.",
+        body: "parseStrict validates the erasure request against a .strict() schema before scheduleKeyDeletion ever runs, so a malformed request throws before any provider deletion request is made.",
       },
     ],
     faq: [
@@ -1141,12 +1141,12 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Does crypto-shredding satisfy our GDPR Article 17 obligation on its own?",
         answer:
-          "Crypto-shredding ships the technical control Article 17 and CCPA §1798.105 ask for, a working erasure mechanism, and generates the audit evidence that a specific scope was destroyed on a specific date, for a specific reason. Whether a given request fully discharges your erasure obligation is a legal determination your organization makes, not a status the code can certify.",
+          "Crypto-shredding ships a technical erasure control and generates audit evidence that deletion was requested for a specific scope, when, why, and what finality the provider proved. Only an irreversible receipt proves permanent key destruction; whether a request fully discharges a legal obligation remains your organization's determination.",
       },
       {
         question: "Can a crypto-shredded key ever be recovered?",
         answer:
-          "No. AWS KMS's ScheduleKeyDeletion is irreversible once its pending window elapses, and the local test double marks the scope shredded immediately and permanently for that client instance's lifetime: every ciphertext wrapped under that key becomes inert, by design, with no recovery path.",
+          "It depends on the provider receipt. A soft-deleted or scheduled key can remain recoverable during its retention or cancellation window even though Caisson refuses to use the scope. Recovery is no longer possible only after the provider proves completed destruction or purge with an irreversible receipt.",
       },
     ],
     sells: {

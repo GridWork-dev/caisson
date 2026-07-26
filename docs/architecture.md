@@ -87,8 +87,8 @@ contrast implementation, including semantic, functional, and code-syntax colors.
 | `registry.caisson.sh` | Cloudflare Worker         | live authenticated npm protocol        |
 
 Current health is not current parity. Repository/Worker use manifest digest `74e92a6813bc`;
-license uses `09adca8d32a5`; admin uses `97b183902c08`. Docs/support parity and migrations `0030`
-and `0032` still need receipts. One approved SHA across all six legs is the next production
+license uses `09adca8d32a5`; admin uses `97b183902c08`. Docs/support parity and site migrations
+`0030`–`0032` still need receipts. One approved SHA across all six legs is the next production
 reconciliation.
 
 ## Gate stack

@@ -30,7 +30,7 @@ corresponding hold being released.
 - WORM remains GOVERNANCE pre-launch; launch requires a receipted forward-only COMPLIANCE
   escalation.
 - Health is green but source parity is red. License/admin digests differ from repository/Worker,
-  docs/support parity is uncertified, and migrations `0030` and `0032` are unreceipted.
+  docs/support parity is uncertified, and site migrations `0030`–`0032` are unreceipted.
 
 ## Binding execution order
 

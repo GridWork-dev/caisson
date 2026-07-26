@@ -85,7 +85,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Crypto-shred erasure without breaking the audit chain",
-        body: "cryptoShred() schedules KEK deletion through the KMS port and mints an erasure.crypto-shred audit payload that carries no PII. Every ciphertext under that key becomes permanently unrecoverable while the WORM-anchored hash chain's committed bytes never change, verifyChain still passes after the shred.",
+        body: "cryptoShred() requests KEK deletion through the KMS port and mints an erasure.crypto-shred audit payload that carries no PII plus the provider-proven deletion state. Caisson stops using the scope immediately; permanent cryptographic erasure is claimed only when the receipt is irreversible. The WORM-anchored hash chain's committed bytes never change, so verifyChain still passes.",
       },
     ],
     artifact: {
@@ -118,7 +118,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "How does this handle a GDPR or CCPA erasure request without breaking our immutable audit log?",
         answer:
-          "cryptoShred() destroys the tenant or subject's key-encryption key through the KMS port, so every ciphertext under it becomes permanently unrecoverable, while the append-only WORM chain never mutates, because it only ever committed the ciphertext envelope, never plaintext. The chain's verifyChain() still passes after a shred.",
+          "cryptoShred() requests deletion of the tenant or subject's key-encryption key and records the KMS receipt. Caisson refuses further use of that scope immediately; a soft-deleted or scheduled key remains provider-recoverable until its retention or cancellation window closes, and permanent erasure is recorded only after an irreversible receipt. The append-only WORM chain still verifies because it committed ciphertext, never plaintext.",
       },
     ],
     relatedGlossary: ["hipaa-technical-safeguards", "row-level-security"],
