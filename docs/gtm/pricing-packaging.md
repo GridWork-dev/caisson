@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-13
+updated: 2026-07-25
 status: live
 grounds:
   - knowledge/decisions/ADR-0259-ui-pro-spec-locks.md
@@ -144,7 +144,7 @@ one-time fix (ADR-0227's original consequence clause, carried into ADR-0258). No
 strikethrough anchors are shown; the site never charged the earlier numbers, so a struck-through
 price would be a dark pattern (ADR-0137).
 
-## Module catalog: 22 sellable modules across six bundles
+## Historical Stage-3 module catalog: 22 sellable modules (superseded)
 
 ADR-0129 originally value-anchored 12 individually-sellable modules against commercial
 comparables (e.g. `field-crypto` vs. IronCore/Evervault $395–1,954/mo; `ai-meter` vs.
@@ -155,10 +155,11 @@ whose module id collided with its own parent edition id (`compliance`, `ai-kit`,
 (every edition meta-package hard-depends on its commercial members). The fix was removal, not
 rename: editions were how composition was bought, modules were entry points into them. That
 11-standalone-module count was itself superseded at the Stage-3 catalog rework (ADR-0246 F1b):
-every commercial package is now individually priced, and `apps/site/lib/pricing.ts`
-`MODULE_PRICES` carries **22 sellable modules** — 19 hold membership in one or more of the six
-bundles (`bundles: [...]`), and 3 are genuinely standalone with no bundle grant
-(`org-controls`, `billing-orchestration`, `ui-pro`).
+every commercial package was then individually priced, and `apps/site/lib/pricing.ts`
+`MODULE_PRICES` carried **22 sellable modules** — 19 held membership in one or more of the six
+bundles (`bundles: [...]`), and 3 were genuinely standalone with no bundle grant
+(`org-controls`, `billing-orchestration`, `ui-pro`). The operative 2026-07-25 amendment above now
+has 27 modules, including the standalone $249 `oscal-spine` SKU.
 
 `ai-evals` is **no longer** `standaloneOnly`: the ADR-0258 members-fold joined it to the
 `ai-production` bundle (it was never in the legacy `ai-kit` edition map) — verify current
@@ -177,9 +178,9 @@ forever, offline Ed25519-verified, no phone-home. Bundled with that:
   punitive: the license keeps working on everything already entitled, updates just stop.
 - Subscriptions are untouched — an active subscription includes updates while active; this window
   governs one-time purchases only.
-- **Hard timing law: this policy must be in checkout + EULA copy before the checkout flip.** It
-  is not yet built (registry/entitlement version-window check is a named, not-yet-built,
-  checkout-flip item) — this doc states the policy now per the ADR's own instruction.
+- **Hard timing law: this policy must be in checkout + EULA copy before the checkout flip.** The
+  registry now enforces both the snapshot-at-sale member set and per-entitlement version window;
+  checkout and EULA copy carry the same perpetual-use/12-month-updates contract.
 
 Chosen over unbounded free updates (the AG-Grid-vs-Tailwind-Plus comparison in the ADR: Tailwind's
 unbounded lifetime model front-loaded LTV and left no recurring floor, −80% off peak when traffic

@@ -502,9 +502,10 @@ the current index — the Stage-2 "still serves 27 modules" state is long supers
 | `trust-page`      | 3 / 2 / 229       | **built (SELLABLE $149, ADR-0373)** | buyer-facing static trust/status-page generator over the evidence pack + crosswalk rollup; allowlist-based redaction (a field absent from the allowlist never renders a byte); no auth/portal — the NDA-gated variant is a PERMANENT non-goal; published @0.3.0, member of Compliance + Everything                                                                                   |
 | `verify-pack`     | 2 / 1 / 592       | **built (commercial, unpublished)** | independently obtained evidence-pack verifier: requires an out-of-band issuer-key fingerprint, then validates the signed complete-file manifest before the receipt chain and anchor signatures. It has not been published, so `npx @caisson/verify-pack ./pack` does not resolve publicly yet; until the operator-gated publish, the in-repo CLI is the available verification path. |
 
-The drift monitor (`#304`) and the ISO 27001 SoA generator (`#307`) live inside
-`compliance-core` (`src/evidence/drift/`, `src/evidence/oscal-iso27001-soa.ts`) and
-`frameworks-pack` (`src/soa/`) — no new SKU (extend-in-place per the SPEC locks).
+The drift monitor (`#304`) remains in `compliance-core/src/evidence/drift/`. The ISO 27001 SoA
+generator and the rest of the OSCAL surface now live in the standalone $249
+`@caisson/oscal-spine` SKU; `compliance-core` and `frameworks-pack` retain compatibility
+re-exports.
 
 ### Apps + services
 
