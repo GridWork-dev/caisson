@@ -24,14 +24,15 @@ grounds:
   - docs/deploy/STATE.md
   - docs/ops/launch-runbook.md
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
-  - knowledge/decisions/ADR-0380-five-product-residuals.md
-  - knowledge/decisions/ADR-0381-launch-gate-and-canonical-control.md
-  - knowledge/decisions/ADR-0382-revenue-recognition-signing-and-oscal-direction.md
+  - knowledge/decisions/ADR-0380-completion-fork-locks-and-module-depth-slice.md
+  - knowledge/decisions/ADR-0381-launch-gate-picker-locks.md
+  - knowledge/decisions/ADR-0382-upgrade-credit-floor-and-tag-signing.md
   - knowledge/decisions/ADR-0383-oscal-spine-sku-and-compliance-reprice.md
-  - knowledge/decisions/ADR-0384-oscal-full-surface-carve-and-renewal.md
-  - knowledge/decisions/ADR-0385-evidence-pack-boundary-and-export-allowlist.md
-  - knowledge/decisions/ADR-0386-everything-reprice-and-two-release-sequence.md
-  - knowledge/decisions/ADR-0387-azure-kms-backs-field-crypto.md
+  - knowledge/decisions/ADR-0384-oscal-spine-carve-boundary-and-renewal-knock-on.md
+  - knowledge/decisions/ADR-0385-evidence-pack-verifier-and-redaction-model.md
+  - knowledge/decisions/ADR-0386-everything-reprice-release-sequencing-and-wave-force-push.md
+  - knowledge/decisions/ADR-0387-field-crypto-kms-backing-and-pre-deploy-arming-pass.md
+  - knowledge/decisions/ADR-0388-oscal-wave-runs-parallel-and-merges-before-the-first-train.md
   - https://digital-strategy.ec.europa.eu/en/library/guidelines-transparency-obligations-providers-and-deployers-ai-systems
   - https://digital-strategy.ec.europa.eu/en/factpages/quick-facts-transparency-rules-ai-systems
   - https://eur-lex.europa.eu/eli/reg/2024/1689/oj?locale=en
