@@ -11,23 +11,32 @@
 import { appendFileSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { isAbsolute, resolve, sep } from "node:path";
+import { createElement, type ComponentType } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { fetchWithTimeout } from "@caisson/kernel";
 
+import EuAiActPage from "../app/frameworks/eu-ai-act/page";
+import Article50Page from "../app/frameworks/eu-ai-act/article-50/page";
 import {
   ARTICLE_50_PRIMARY_SOURCES,
+  ARTICLE_50_SUMMARY_SOURCES,
   ARTICLE_50_VERIFIED_ON,
 } from "../lib/article-50-sources";
-import { WRITING_PIECES, type WritingSource } from "../lib/writing";
+import type { RegulatorySource } from "../lib/regulatory-source";
+import { WRITING_PIECES } from "../lib/writing";
 
 const FETCH_TIMEOUT_MS = 30_000;
+const BODY_TIMEOUT_MS = 30_000;
+const MAX_BODY_BYTES = 32 * 1024 * 1024;
 
 interface FrameworkTarget {
   id: string;
   route: string;
   sourceFile: string;
+  page: ComponentType;
   verifiedOn: string;
-  sources: readonly WritingSource[];
+  sources: readonly RegulatorySource[];
 }
 
 const FRAMEWORK_TARGETS: readonly FrameworkTarget[] = [
@@ -35,13 +44,15 @@ const FRAMEWORK_TARGETS: readonly FrameworkTarget[] = [
     id: "framework-eu-ai-act",
     route: "/frameworks/eu-ai-act",
     sourceFile: "apps/site/app/frameworks/eu-ai-act/page.tsx",
+    page: EuAiActPage,
     verifiedOn: ARTICLE_50_VERIFIED_ON,
-    sources: ARTICLE_50_PRIMARY_SOURCES,
+    sources: ARTICLE_50_SUMMARY_SOURCES,
   },
   {
     id: "framework-eu-ai-act-article-50",
     route: "/frameworks/eu-ai-act/article-50",
     sourceFile: "apps/site/app/frameworks/eu-ai-act/article-50/page.tsx",
+    page: Article50Page,
     verifiedOn: ARTICLE_50_VERIFIED_ON,
     sources: ARTICLE_50_PRIMARY_SOURCES,
   },
@@ -51,7 +62,7 @@ export interface RegulatoryClaimTarget {
   id: string;
   route: string;
   verifiedOn: string;
-  sources: readonly WritingSource[];
+  sources: readonly RegulatorySource[];
 }
 
 export type RegulatoryWatchFindingKind =
@@ -88,6 +99,11 @@ export interface RegulatoryWatchReport {
 
 export type SourceFetcher = (url: string) => Promise<Response>;
 
+export interface RegulatoryWatchOptions {
+  bodyTimeoutMs?: number;
+  maxBodyBytes?: number;
+}
+
 /** Real-repo discovery. The test suite calls this against the checkout as the known-positive
  * smoke: a registry regression that discovers nothing must fail before the workflow can lie. */
 export function discoverRegulatoryClaims(
@@ -109,8 +125,16 @@ export function discoverRegulatoryClaims(
         `regulatory-claim-watch framework source escapes repository root: ${target.sourceFile}`,
       );
     }
-    const pageSource = readFileSync(sourcePath, "utf8");
-    assertFrameworkSourceLinkage(target.route, pageSource);
+    // File existence/containment remains a discovery invariant. Linkage is validated against the
+    // rendered disclosure so comments, dead expressions, and unused imports cannot false-green it.
+    readFileSync(sourcePath, "utf8");
+    const renderedMarkup = renderToStaticMarkup(createElement(target.page));
+    assertFrameworkSourceLinkage(
+      target.route,
+      renderedMarkup,
+      target.verifiedOn,
+      target.sources,
+    );
     return {
       id: target.id,
       route: target.route,
@@ -129,16 +153,25 @@ export function discoverRegulatoryClaims(
 
 export function assertFrameworkSourceLinkage(
   route: string,
-  pageSource: string,
+  renderedMarkup: string,
+  verifiedOn: string,
+  sources: readonly RegulatorySource[],
 ): void {
-  const sourceUsage = /ARTICLE_50_PRIMARY_SOURCES(?:\s*\[|\s*\.map\s*\()/u.test(
-    pageSource,
-  );
-  const verifiedDateUses =
-    pageSource.match(/\bARTICLE_50_VERIFIED_ON\b/gu)?.length ?? 0;
-  if (!sourceUsage || verifiedDateUses < 2) {
+  for (const source of sources) {
+    const escapedUrl = source.url
+      .replaceAll("&", "&amp;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+    if (!renderedMarkup.includes(`href="${escapedUrl}"`)) {
+      throw new Error(
+        `regulatory-claim-watch target ${route} does not render declared source ${source.url}`,
+      );
+    }
+  }
+  if (!renderedMarkup.includes(verifiedOn)) {
     throw new Error(
-      `regulatory-claim-watch target ${route} does not render its declared Article 50 sources and verification stamp`,
+      `regulatory-claim-watch target ${route} does not render verification stamp ${verifiedOn}`,
     );
   }
 }
@@ -200,16 +233,94 @@ function renderReport(
   return lines.join("\n");
 }
 
+interface SourceSnapshot {
+  ok: boolean;
+  status: number;
+  contentType: string;
+  body: Uint8Array;
+}
+
+async function readResponseBody(
+  response: Response,
+  { bodyTimeoutMs, maxBodyBytes }: Required<RegulatoryWatchOptions>,
+): Promise<Uint8Array> {
+  if (response.body === null) return new Uint8Array();
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(
+        new Error(
+          `source body read exceeded ${String(bodyTimeoutMs)}ms deadline`,
+        ),
+      );
+    }, bodyTimeoutMs);
+  });
+
+  try {
+    while (true) {
+      const result = await Promise.race([reader.read(), deadline]);
+      if (result.done) break;
+      totalBytes += result.value.byteLength;
+      if (totalBytes > maxBodyBytes) {
+        throw new Error(
+          `source body exceeded ${String(maxBodyBytes)} byte limit`,
+        );
+      }
+      chunks.push(result.value);
+    }
+  } catch (error) {
+    // Cancel the underlying stream so a source that sent headers and then stalled cannot retain
+    // the connection after the report has classified the read as failed.
+    void reader.cancel(error).catch(() => undefined);
+    throw error;
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
+}
+
+async function fetchSourceSnapshot(
+  fetcher: SourceFetcher,
+  url: string,
+  options: Required<RegulatoryWatchOptions>,
+): Promise<SourceSnapshot> {
+  const response = await fetcher(url);
+  return {
+    ok: response.ok,
+    status: response.status,
+    contentType: response.headers.get("content-type") ?? "",
+    body: response.ok
+      ? await readResponseBody(response, options)
+      : new Uint8Array(),
+  };
+}
+
 export async function runRegulatoryClaimWatch(
   targets: readonly RegulatoryClaimTarget[],
   fetcher: SourceFetcher,
+  options: RegulatoryWatchOptions = {},
 ): Promise<RegulatoryWatchReport> {
   assertKnownPositive(targets);
 
+  const resolvedOptions: Required<RegulatoryWatchOptions> = {
+    bodyTimeoutMs: options.bodyTimeoutMs ?? BODY_TIMEOUT_MS,
+    maxBodyBytes: options.maxBodyBytes ?? MAX_BODY_BYTES,
+  };
   let checkedSources = 0;
   const findings: RegulatoryWatchFinding[] = [];
   const notes: RegulatoryWatchNote[] = [];
-  const sourceResponses = new Map<string, Promise<Response>>();
+  const sourceResponses = new Map<string, Promise<SourceSnapshot>>();
 
   for (const target of targets) {
     if (target.sources.length === 0) {
@@ -249,19 +360,23 @@ export async function runRegulatoryClaimWatch(
 
       checkedSources++;
       try {
-        let responsePromise = sourceResponses.get(source.url);
-        if (responsePromise === undefined) {
-          responsePromise = fetcher(source.url);
-          sourceResponses.set(source.url, responsePromise);
+        let snapshotPromise = sourceResponses.get(source.url);
+        if (snapshotPromise === undefined) {
+          snapshotPromise = fetchSourceSnapshot(
+            fetcher,
+            source.url,
+            resolvedOptions,
+          );
+          sourceResponses.set(source.url, snapshotPromise);
         }
-        const response = (await responsePromise).clone();
-        if (!response.ok) {
+        const snapshot = await snapshotPromise;
+        if (!snapshot.ok) {
           findings.push({
             kind: "http-error",
             targetId: target.id,
             route: target.route,
             sourceUrl: source.url,
-            detail: `Public source returned HTTP ${String(response.status)}.`,
+            detail: `Public source returned HTTP ${String(snapshot.status)}.`,
           });
           continue;
         }
@@ -278,9 +393,8 @@ export async function runRegulatoryClaimWatch(
         }
 
         if (source.watch?.mode === "digest") {
-          const body = new Uint8Array(await response.arrayBuffer());
           const actual = createHash(source.watch.algorithm)
-            .update(body)
+            .update(snapshot.body)
             .digest("hex");
           if (actual !== source.watch.digest) {
             findings.push({
@@ -294,7 +408,7 @@ export async function runRegulatoryClaimWatch(
           continue;
         }
 
-        const contentType = response.headers.get("content-type") ?? "";
+        const contentType = snapshot.contentType;
         if (
           contentType.includes("application/pdf") ||
           contentType.includes("application/octet-stream")
@@ -309,7 +423,7 @@ export async function runRegulatoryClaimWatch(
           continue;
         }
 
-        const body = await response.text();
+        const body = new TextDecoder().decode(snapshot.body);
         const watchTexts =
           source.watch?.mode === "text" ? source.watch.texts : [source.locator];
         for (const watchText of watchTexts) {

@@ -15,7 +15,7 @@ import {
   Terminal,
 } from "@/components";
 import {
-  ARTICLE_50_PRIMARY_SOURCES,
+  ARTICLE_50_SUMMARY_SOURCES,
   ARTICLE_50_VERIFIED_ON,
 } from "@/lib/article-50-sources";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
@@ -503,7 +503,7 @@ export default function EuAiActPage() {
             Primary sources reviewed {ARTICLE_50_VERIFIED_ON}:{" "}
             <a
               className="cs-link"
-              href={ARTICLE_50_PRIMARY_SOURCES[0].url}
+              href={ARTICLE_50_SUMMARY_SOURCES[0].url}
               rel="noreferrer"
             >
               Regulation (EU) 2024/1689
@@ -511,7 +511,7 @@ export default function EuAiActPage() {
             ·{" "}
             <a
               className="cs-link"
-              href={ARTICLE_50_PRIMARY_SOURCES[2].url}
+              href={ARTICLE_50_SUMMARY_SOURCES[1].url}
               rel="noreferrer"
             >
               final Commission guidelines, paragraphs (153)–(154)

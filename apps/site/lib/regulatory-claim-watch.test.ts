@@ -47,6 +47,7 @@ describe("regulatory-claim watch discovery", () => {
       true,
     );
     expect(targets).toHaveLength(3);
+    expect(targets.map((target) => target.sources.length)).toEqual([2, 4, 4]);
     for (const target of targets) {
       expect(target.sources.length).toBeGreaterThan(0);
     }
@@ -62,9 +63,29 @@ describe("regulatory-claim watch discovery", () => {
     expect(() =>
       assertFrameworkSourceLinkage(
         "/frameworks/eu-ai-act",
-        'import { ARTICLE_50_PRIMARY_SOURCES, ARTICLE_50_VERIFIED_ON } from "@/lib/article-50-sources";',
+        "<main>2026-07-26</main>",
+        "2026-07-26",
+        KNOWN_TARGET.sources,
       ),
-    ).toThrow("does not render its declared Article 50 sources");
+    ).toThrow("does not render declared source");
+  });
+
+  test("framework discovery rejects comments, dead indexed access, and duplicate date tokens", () => {
+    const detachedSource = [
+      "<!-- https://example.com/source -->",
+      "ARTICLE_50_PRIMARY_SOURCES[0]",
+      "ARTICLE_50_VERIFIED_ON ARTICLE_50_VERIFIED_ON",
+      "<main>1970-01-01</main>",
+    ].join("");
+
+    expect(() =>
+      assertFrameworkSourceLinkage(
+        "/frameworks/eu-ai-act",
+        detachedSource,
+        KNOWN_TARGET.verifiedOn,
+        KNOWN_TARGET.sources,
+      ),
+    ).toThrow("does not render declared source");
   });
 
   test("every discovered target carries a valid verification date", () => {
@@ -231,6 +252,32 @@ describe("regulatory-claim source checks", () => {
     ]);
   });
 
+  test("reports a body that stalls after headers instead of hanging the advisory run", async () => {
+    const fetcher: SourceFetcher = async () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start() {
+            // Deliberately never enqueue or close: headers arrive, the body does not.
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "text/plain" },
+        },
+      );
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher, {
+      bodyTimeoutMs: 20,
+    });
+
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "fetch-failed",
+        detail: expect.stringContaining("body read exceeded"),
+      }),
+    ]);
+  });
+
   test("fetches a shared declared source once across all watched surfaces", async () => {
     let fetches = 0;
     const fetcher: SourceFetcher = async () => {
@@ -277,6 +324,24 @@ describe("regulatory-claim-watch workflow posture", () => {
     }
   });
 
+  test("empty command output produces an explicit non-PASS artifact while exiting zero", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "caisson-regulatory-watch-"));
+    try {
+      const reportPath = join(tempDir, "report.md");
+      const process = Bun.spawn([WORKFLOW_WRAPPER, reportPath, "true"], {
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      expect(await process.exited).toBe(0);
+      const report = await readFile(reportPath, "utf8");
+      expect(report).toContain("Watch produced no report.");
+      expect(report).toContain("No PASS is implied.");
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   test("stays weekly, dispatchable, read-only, report-only, and secret-free", async () => {
     const workflow = await Bun.file(
       join(REPO_ROOT, ".github/workflows/regulatory-claim-watch.yml"),
@@ -289,6 +354,11 @@ describe("regulatory-claim-watch workflow posture", () => {
     expect(workflow).toContain("report-only");
     expect(workflow).toContain("shell: bash");
     expect(workflow).toContain("run-regulatory-claim-watch.sh");
+    expect(workflow).toContain("initialize advisory report");
+    expect(workflow).toContain("continue-on-error: true");
+    expect(workflow).toContain("if: always()");
+    expect(workflow).toContain("timeout --kill-after=15s 8m");
+    expect(workflow).not.toContain("- name: install workspace deps");
     expect(workflow).not.toContain("| tee");
     expect(workflow).not.toContain("secrets.");
   });

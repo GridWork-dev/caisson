@@ -10,26 +10,9 @@ import {
 } from "./article-50-sources";
 import type { PageMeta } from "./metadata";
 import type { PageSection, PageSpec } from "./page-sections";
+import type { RegulatorySource } from "./regulatory-source";
 
-export interface WritingSource {
-  label: string;
-  url: string;
-  /** Article number, section, page, or other specific source locator — never a bare domain. */
-  locator: string;
-  /**
-   * Optional mechanical-watch instruction. Human-facing source precision always lives in
-   * `locator`; this only records what an unauthenticated weekly fetch can honestly inspect.
-   */
-  watch?:
-    | { mode: "text"; texts: readonly string[] }
-    | {
-        mode: "digest";
-        algorithm: "sha256";
-        digest: string;
-        reason: string;
-      }
-    | { mode: "reachable"; reason: string };
-}
+export type WritingSource = RegulatorySource;
 
 export interface WritingPiece {
   slug: string;
