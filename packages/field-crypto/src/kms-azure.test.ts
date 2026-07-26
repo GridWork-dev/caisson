@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import type { KeyWrapAlgorithm } from "@azure/keyvault-keys";
 import { ValidationError } from "@caisson/kernel";
 import {
   createAzureKeyVaultKmsClient,
@@ -443,6 +444,93 @@ describe("createAzureKeyVaultKmsClient", () => {
 
     expect(plaintext.equals(Buffer.alloc(32, 0x61))).toBe(true);
     expect(sdkPlaintext.equals(Buffer.alloc(32))).toBe(true);
+  });
+
+  test("enforces the deadline when Azure ignores cancellation and zeroizes a late unwrap", async () => {
+    const { client: sdk } = fakeAzureKeyVault();
+    const sdkPlaintext = Buffer.alloc(32, 0x61);
+    let resolveUnwrap!: () => void;
+    const lateUnwrap = new Promise<{
+      result: Uint8Array;
+      keyID: string;
+      algorithm: KeyWrapAlgorithm;
+    }>((resolve) => {
+      resolveUnwrap = () =>
+        resolve({
+          result: sdkPlaintext,
+          keyID: "https://caisson-test.vault.azure.net/keys/tenant-a/version-1",
+          algorithm: "RSA-OAEP-256",
+        });
+    });
+    const client = createAzureKeyVaultKmsClient({
+      keyName: "default-key",
+      purgeProtectionEnabled: false,
+      client: sdk,
+      cryptographyClient: (keyName) => ({
+        async wrapKey(algorithm) {
+          return {
+            result: Buffer.alloc(48, 0x71),
+            keyID: `https://caisson-test.vault.azure.net/keys/${keyName}/version-1`,
+            algorithm,
+          };
+        },
+        async unwrapKey() {
+          return lateUnwrap;
+        },
+      }),
+    });
+    const generated = await client.generateDataKey("tenant-a");
+
+    await expect(
+      client.decryptDataKey("tenant-a", generated.wrappedKey, {
+        timeoutMs: 5,
+      }),
+    ).rejects.toThrow(/exceeded 5ms/i);
+    resolveUnwrap();
+    await lateUnwrap;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(sdkPlaintext.equals(Buffer.alloc(32))).toBe(true);
+  });
+
+  test("shares one diminishing deadline across Azure delete, poll, and purge", async () => {
+    const seenTimeouts: number[] = [];
+    const { client: sdk } = fakeAzureKeyVault({
+      recoveryLevel: "Recoverable+Purgeable",
+    });
+    const client = createAzureKeyVaultKmsClient({
+      keyName: "default-key",
+      purgeProtectionEnabled: false,
+      purgeOnDelete: true,
+      client: {
+        ...sdk,
+        async beginDeleteKey(_keyName, options) {
+          seenTimeouts.push(options?.timeoutMs ?? 0);
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          return {
+            async pollUntilDone(pollOptions) {
+              seenTimeouts.push(pollOptions?.timeoutMs ?? 0);
+              await new Promise((resolve) => setTimeout(resolve, 5));
+              return {
+                properties: {
+                  recoveryLevel: "Recoverable+Purgeable",
+                  scheduledPurgeDate: PURGE_DATE,
+                },
+              };
+            },
+          };
+        },
+        async purgeDeletedKey(_keyName, options) {
+          seenTimeouts.push(options?.timeoutMs ?? 0);
+        },
+      },
+    });
+
+    await client.scheduleKeyDeletion("tenant-a", { timeoutMs: 1_000 });
+
+    expect(seenTimeouts).toHaveLength(3);
+    expect(seenTimeouts[1]).toBeLessThan(seenTimeouts[0] ?? 0);
+    expect(seenTimeouts[2]).toBeLessThan(seenTimeouts[1] ?? 0);
   });
 
   test("rejects an unwrap identity mismatch and still zeroizes the SDK plaintext", async () => {

@@ -202,6 +202,38 @@ export class KmsKeyProvider implements FieldKeyProvider {
     private readonly operationOptions?: KmsOperationOptions,
   ) {}
 
+  private assertWrappedDek(value: unknown): asserts value is Buffer {
+    if (!Buffer.isBuffer(value) || value.length === 0) {
+      throw new InternalError(
+        "field-crypto: KMS returned an invalid non-empty wrapped DEK",
+      );
+    }
+  }
+
+  private assertPlaintextDek(value: unknown): asserts value is Buffer {
+    if (!Buffer.isBuffer(value) || value.length !== 32) {
+      throw new InternalError(
+        "field-crypto: KMS returned an invalid 32-byte AES-256 DEK",
+      );
+    }
+  }
+
+  private async recoverWrappedVersion(
+    tenantId: string,
+    keyVersion: number,
+    preferDurableCurrent: boolean,
+  ): Promise<number | undefined> {
+    const wrapped = await this.store.getWrapped(tenantId, keyVersion);
+    if (wrapped === undefined) return undefined;
+    this.assertWrappedDek(wrapped);
+    if (preferDurableCurrent) {
+      const current = await this.store.currentVersion(tenantId);
+      if (current !== undefined) return current;
+    }
+    await this.store.setCurrentVersion(tenantId, keyVersion);
+    return keyVersion;
+  }
+
   /** Provision (or rotate to) a fresh wrapped DEK for a tenant; returns the new current version. */
   async provision(tenantId: string): Promise<number> {
     const cur = (await this.store.currentVersion(tenantId)) ?? 0;
@@ -211,16 +243,29 @@ export class KmsKeyProvider implements FieldKeyProvider {
         `field-crypto: key version overflow for tenant ${JSON.stringify(tenantId)}`,
       );
     }
-    const generated = await this.kms.generateDataKey(
+    const recovered = await this.recoverWrappedVersion(tenantId, next, false);
+    if (recovered !== undefined) return recovered;
+
+    const generated: unknown = await this.kms.generateDataKey(
       tenantId,
       this.operationOptions,
     );
+    const plaintextKey =
+      typeof generated === "object" && generated !== null
+        ? Reflect.get(generated, "plaintextKey")
+        : undefined;
     try {
-      await this.store.putWrapped(tenantId, next, generated.wrappedKey);
+      const wrappedKey =
+        typeof generated === "object" && generated !== null
+          ? Reflect.get(generated, "wrappedKey")
+          : undefined;
+      this.assertPlaintextDek(plaintextKey);
+      this.assertWrappedDek(wrappedKey);
+      await this.store.putWrappedIfAbsent(tenantId, next, wrappedKey);
       await this.store.setCurrentVersion(tenantId, next);
       return next;
     } finally {
-      generated.plaintextKey.fill(0);
+      if (Buffer.isBuffer(plaintextKey)) plaintextKey.fill(0);
     }
   }
 
@@ -234,16 +279,28 @@ export class KmsKeyProvider implements FieldKeyProvider {
   async ensureProvisioned(tenantId: string): Promise<number> {
     const current = await this.store.currentVersion(tenantId);
     if (current !== undefined) return current;
+    const recovered = await this.recoverWrappedVersion(tenantId, 1, true);
+    if (recovered !== undefined) return recovered;
 
-    const generated = await this.kms.generateDataKey(
+    const generated: unknown = await this.kms.generateDataKey(
       tenantId,
       this.operationOptions,
     );
+    const plaintextKey =
+      typeof generated === "object" && generated !== null
+        ? Reflect.get(generated, "plaintextKey")
+        : undefined;
     try {
+      const wrappedKey =
+        typeof generated === "object" && generated !== null
+          ? Reflect.get(generated, "wrappedKey")
+          : undefined;
+      this.assertPlaintextDek(plaintextKey);
+      this.assertWrappedDek(wrappedKey);
       const inserted = await this.store.putWrappedIfAbsent(
         tenantId,
         1,
-        generated.wrappedKey,
+        wrappedKey,
       );
       if (inserted) {
         await this.store.setCurrentVersion(tenantId, 1);
@@ -254,14 +311,15 @@ export class KmsKeyProvider implements FieldKeyProvider {
       // statement then sees both the winning wrapped DEK and its committed current-version row.
       const winner = await this.store.currentVersion(tenantId);
       if (winner === undefined) {
-        throw new InternalError(
-          "field-crypto: provisioning loser could not read the durable winner",
-          { tenantId },
-        );
+        // A prior process may have committed the append-only wrapped DEK and failed before its
+        // marker write. The loser can safely complete that idempotent transition without replacing
+        // key material.
+        await this.store.setCurrentVersion(tenantId, 1);
+        return 1;
       }
       return winner;
     } finally {
-      generated.plaintextKey.fill(0);
+      if (Buffer.isBuffer(plaintextKey)) plaintextKey.fill(0);
     }
   }
 
@@ -272,7 +330,19 @@ export class KmsKeyProvider implements FieldKeyProvider {
         `field-crypto: no wrapped DEK for tenant ${JSON.stringify(tenantId)} v${keyVersion} — provision first`,
       );
     }
-    return this.kms.decryptDataKey(tenantId, wrapped, this.operationOptions); // network behind the port; plaintext DEK is transient
+    this.assertWrappedDek(wrapped);
+    const plaintext: unknown = await this.kms.decryptDataKey(
+      tenantId,
+      wrapped,
+      this.operationOptions,
+    );
+    try {
+      this.assertPlaintextDek(plaintext);
+      return plaintext;
+    } catch (error) {
+      if (Buffer.isBuffer(plaintext)) plaintext.fill(0);
+      throw error;
+    }
   }
 
   async currentVersion(tenantId: string): Promise<number> {

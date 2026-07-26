@@ -113,6 +113,23 @@ function throwIfAborted(signal: AbortSignal): void {
   }
 }
 
+function assertCryptoKeyVersionName(
+  name: unknown,
+  parent: string,
+): asserts name is string {
+  const prefix = `${parent}/cryptoKeyVersions/`;
+  if (
+    typeof name !== "string" ||
+    !name.startsWith(prefix) ||
+    !/^[1-9]\d*$/.test(name.slice(prefix.length))
+  ) {
+    throw new InternalError(
+      "field-crypto: GCP KMS returned a CryptoKeyVersion outside the requested CryptoKey",
+      { parent },
+    );
+  }
+}
+
 /** The real GCP Cloud KMS `KmsClient` (ADR-0171) — see the module-level mapping comment for the three ops. */
 export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
   if (config.cryptoKeyName === undefined || config.cryptoKeyName.length === 0) {
@@ -259,17 +276,21 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
           let sawScheduled = false;
           let sawDestroyed = false;
           const scheduledFor: string[] = [];
+          const seenNames = new Set<string>();
           for (const v of versions) {
-            if (
-              typeof v.name !== "string" ||
-              v.name.length === 0 ||
-              v.state === undefined ||
-              v.state === null
-            ) {
+            if (v.state === undefined || v.state === null) {
               throw new InternalError(
                 "field-crypto: GCP KMS returned a CryptoKeyVersion without a provable name/state",
               );
             }
+            assertCryptoKeyVersionName(v.name, parent);
+            if (seenNames.has(v.name)) {
+              throw new InternalError(
+                "field-crypto: GCP KMS returned a duplicate CryptoKeyVersion",
+                { name: v.name },
+              );
+            }
+            seenNames.add(v.name);
             if (LIVE_VERSION_STATES.has(v.state)) {
               liveNames.push(v.name);
             } else if (DESTROY_SCHEDULED_VERSION_STATES.has(v.state)) {
@@ -292,6 +313,12 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
               { name },
               { timeout: remainingTimeoutMs() },
             );
+            if (version.name !== name) {
+              throw new InternalError(
+                "field-crypto: GCP KMS DestroyCryptoKeyVersion returned an unexpected CryptoKeyVersion",
+                { expected: name },
+              );
+            }
             if (
               version.state !== undefined &&
               version.state !== null &&

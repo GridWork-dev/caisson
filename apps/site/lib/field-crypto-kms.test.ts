@@ -214,6 +214,60 @@ describe("site Azure KMS production runtime", () => {
       /purge protection/i,
     );
   });
+
+  test("rejects an unknown Azure recovery level instead of inferring purge protection", async () => {
+    const { deps } = fakeRuntime("Unknown");
+    const kms = createSiteAzureKmsClient(ENV, deps);
+
+    await expect(kms.generateDataKey("acct-a")).rejects.toThrow(
+      /purge protection/i,
+    );
+  });
+
+  test("rejects an unexpected Azure vault authority before creating a credentialed crypto client", async () => {
+    let cryptographyClients = 0;
+    const deps: SiteAzureKmsDependencies = {
+      createCredential() {
+        return {
+          async getToken() {
+            return {
+              token: "test-token",
+              expiresOnTimestamp: Date.now() + 60_000,
+            };
+          },
+        };
+      },
+      createKeyClient() {
+        return {
+          async getKey(keyName) {
+            return {
+              id: `https://unexpected.example/keys/${keyName}/version-1`,
+              properties: { recoveryLevel: "Recoverable" },
+            };
+          },
+          async createRsaKey() {
+            throw new Error("not used");
+          },
+          async beginDeleteKey() {
+            throw new Error("not used");
+          },
+          async purgeDeletedKey() {
+            throw new Error("not used");
+          },
+        };
+      },
+      createCryptographyClient() {
+        cryptographyClients += 1;
+        throw new Error("credentialed crypto client must not be created");
+      },
+    };
+    const kms = createSiteAzureKmsClient(ENV, deps);
+
+    await expect(kms.generateDataKey("acct-a")).rejects.toThrow(
+      /expected vault/i,
+    );
+    expect(cryptographyClients).toBe(0);
+  });
 });
 
 function requestKms(): {
@@ -394,5 +448,60 @@ describe("site KMS request context", () => {
     await expect(
       withTenant(db, accountId, (tx) => tx.query("SELECT 1")),
     ).resolves.toBeDefined();
+  });
+
+  test("a late Azure plaintext cannot run the request callback and is zeroized", async () => {
+    const runtime = fakeRuntime();
+    const sdkPlaintext = Buffer.alloc(32, 0x7a);
+    let resolveUnwrap!: () => void;
+    const lateUnwrap = new Promise<{
+      readonly result: Uint8Array;
+      readonly keyID: string;
+      readonly algorithm: "RSA-OAEP-256";
+    }>((resolve) => {
+      resolveUnwrap = () =>
+        resolve({
+          result: sdkPlaintext,
+          keyID: `${ENV.AZURE_KEY_VAULT_URL}/keys/${siteAzureKeyName("caisson-field", "acct-site-kms-late")}/version-1`,
+          algorithm: "RSA-OAEP-256",
+        });
+    });
+    const deps: SiteAzureKmsDependencies = {
+      ...runtime.deps,
+      createCryptographyClient(keyId) {
+        const base = runtime.deps.createCryptographyClient(keyId);
+        return {
+          wrapKey: base.wrapKey.bind(base),
+          async unwrapKey() {
+            return lateUnwrap;
+          },
+        };
+      },
+    };
+    const kms = createSiteAzureKmsClient(ENV, deps);
+    const db = await getDb();
+    const accountId = "acct-site-kms-late";
+    let callbackCalled = false;
+
+    await expect(
+      withTenant(db, accountId, (tx) =>
+        withSiteKmsFieldCryptoContext(
+          tx,
+          accountId,
+          async () => {
+            callbackCalled = true;
+          },
+          kms,
+          5,
+        ),
+      ),
+    ).rejects.toThrow(/exceeded 5ms/i);
+    expect(callbackCalled).toBe(false);
+
+    resolveUnwrap();
+    await lateUnwrap;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(callbackCalled).toBe(false);
+    expect(sdkPlaintext.equals(Buffer.alloc(32))).toBe(true);
   });
 });

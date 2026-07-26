@@ -13,6 +13,7 @@ import type {
   KmsDeletionReceipt,
   KmsOperationOptions,
 } from "./kms-port.ts";
+import { withKmsOperationBudget } from "./kms-budget.ts";
 
 export interface AzureKeyVaultCryptographyClient {
   wrapKey(
@@ -63,6 +64,8 @@ export interface AzureKeyVaultClient {
 
 export interface AzureKeyVaultKmsClientConfig {
   readonly keyName: string;
+  /** Expected Azure Key Vault URL; production callers pin returned key identities to this origin. */
+  readonly expectedVaultUrl?: string;
   readonly purgeProtectionEnabled: boolean;
   readonly purgeOnDelete?: boolean;
   readonly wrapAlgorithm?: KeyWrapAlgorithm;
@@ -96,6 +99,12 @@ const keyNameSchema = z
 
 const azureKeyVaultKmsClientConfigSchema = strictObject({
   keyName: keyNameSchema,
+  expectedVaultUrl: z
+    .string()
+    .trim()
+    .url()
+    .refine((value) => new URL(value).protocol === "https:")
+    .optional(),
   purgeProtectionEnabled: z.boolean(),
   purgeOnDelete: z.boolean().optional().default(false),
   wrapAlgorithm: z
@@ -155,7 +164,11 @@ const azureWrappedDekSchema = strictObject({
     .regex(/^[0-9A-Za-z+/]+={0,2}$/),
 });
 
-function versionFromKeyId(keyId: string, expectedKeyName: string): string {
+function versionFromKeyId(
+  keyId: string,
+  expectedKeyName: string,
+  expectedVaultUrl?: string,
+): string {
   let parsed: URL;
   try {
     parsed = new URL(keyId);
@@ -171,6 +184,8 @@ function versionFromKeyId(keyId: string, expectedKeyName: string): string {
     parsed.password !== "" ||
     parsed.search !== "" ||
     parsed.hash !== "" ||
+    (expectedVaultUrl !== undefined &&
+      parsed.origin !== new URL(expectedVaultUrl).origin) ||
     segments.length !== 3 ||
     segments[0] !== "keys" ||
     segments[1] !== expectedKeyName
@@ -225,6 +240,24 @@ function decodeWrappedDek(
   };
 }
 
+function throwIfAborted(signal: AbortSignal): void {
+  if (signal.aborted) {
+    throw (
+      signal.reason ?? new Error("field-crypto: Azure KMS operation aborted")
+    );
+  }
+}
+
+function remainingOptions(
+  abortSignal: AbortSignal,
+  remainingTimeoutMs: () => number,
+): KmsOperationOptions {
+  return {
+    abortSignal,
+    timeoutMs: remainingTimeoutMs(),
+  };
+}
+
 export function createAzureKeyVaultKmsClient(
   config: AzureKeyVaultKmsClientConfig,
 ): KmsClient {
@@ -261,42 +294,52 @@ export function createAzureKeyVaultKmsClient(
     ): Promise<{ plaintextKey: Buffer; wrappedKey: Buffer }> {
       const plaintextKey = randomBytes(32);
       try {
-        const keyName = keyFor(keyId);
-        const result = await cryptographyClient(keyName).wrapKey(
-          parsed.wrapAlgorithm,
-          plaintextKey,
+        return await withKmsOperationBudget(
           options,
+          async (abortSignal, remainingTimeoutMs) => {
+            const keyName = keyFor(keyId);
+            const result = await cryptographyClient(keyName).wrapKey(
+              parsed.wrapAlgorithm,
+              plaintextKey,
+              remainingOptions(abortSignal, remainingTimeoutMs),
+            );
+            throwIfAborted(abortSignal);
+            if (
+              !(result.result instanceof Uint8Array) ||
+              result.result.length === 0
+            ) {
+              throw new InternalError(
+                "field-crypto: Azure Key Vault WrapKey returned no wrapped key",
+              );
+            }
+            if (result.keyID === undefined) {
+              throw new InternalError(
+                "field-crypto: Azure Key Vault WrapKey returned no versioned key identifier",
+              );
+            }
+            if (
+              result.algorithm !== undefined &&
+              result.algorithm !== parsed.wrapAlgorithm
+            ) {
+              throw new InternalError(
+                "field-crypto: Azure Key Vault WrapKey returned an unexpected algorithm",
+              );
+            }
+            const keyVersion = versionFromKeyId(
+              result.keyID,
+              keyName,
+              parsed.expectedVaultUrl,
+            );
+            return {
+              plaintextKey,
+              wrappedKey: encodeWrappedDek(
+                keyVersion,
+                parsed.wrapAlgorithm,
+                result.result,
+              ),
+            };
+          },
         );
-        if (
-          !(result.result instanceof Uint8Array) ||
-          result.result.length === 0
-        ) {
-          throw new InternalError(
-            "field-crypto: Azure Key Vault WrapKey returned no wrapped key",
-          );
-        }
-        if (result.keyID === undefined) {
-          throw new InternalError(
-            "field-crypto: Azure Key Vault WrapKey returned no versioned key identifier",
-          );
-        }
-        if (
-          result.algorithm !== undefined &&
-          result.algorithm !== parsed.wrapAlgorithm
-        ) {
-          throw new InternalError(
-            "field-crypto: Azure Key Vault WrapKey returned an unexpected algorithm",
-          );
-        }
-        const keyVersion = versionFromKeyId(result.keyID, keyName);
-        return {
-          plaintextKey,
-          wrappedKey: encodeWrappedDek(
-            keyVersion,
-            parsed.wrapAlgorithm,
-            result.result,
-          ),
-        };
       } catch (error) {
         plaintextKey.fill(0);
         throw error;
@@ -310,41 +353,55 @@ export function createAzureKeyVaultKmsClient(
     ): Promise<Buffer> {
       const keyName = keyFor(keyId);
       const encoded = decodeWrappedDek(wrappedKey, parsed.wrapAlgorithm);
-      const result = await cryptographyClient(
-        keyName,
-        encoded.keyVersion,
-      ).unwrapKey(parsed.wrapAlgorithm, encoded.ciphertext, options);
-      if (!(result.result instanceof Uint8Array)) {
-        throw new InternalError(
-          "field-crypto: Azure Key Vault UnwrapKey did not return a 32-byte DEK",
-        );
-      }
-      try {
-        if (result.result.length !== 32) {
-          throw new InternalError(
-            "field-crypto: Azure Key Vault UnwrapKey did not return a 32-byte DEK",
+      return withKmsOperationBudget(
+        options,
+        async (abortSignal, remainingTimeoutMs) => {
+          const result = await cryptographyClient(
+            keyName,
+            encoded.keyVersion,
+          ).unwrapKey(
+            parsed.wrapAlgorithm,
+            encoded.ciphertext,
+            remainingOptions(abortSignal, remainingTimeoutMs),
           );
-        }
-        if (
-          result.algorithm !== undefined &&
-          result.algorithm !== parsed.wrapAlgorithm
-        ) {
-          throw new InternalError(
-            "field-crypto: Azure Key Vault UnwrapKey returned an unexpected algorithm",
-          );
-        }
-        if (
-          result.keyID !== undefined &&
-          versionFromKeyId(result.keyID, keyName) !== encoded.keyVersion
-        ) {
-          throw new InternalError(
-            "field-crypto: Azure Key Vault UnwrapKey returned an unexpected key version",
-          );
-        }
-        return Buffer.from(result.result);
-      } finally {
-        result.result.fill(0);
-      }
+          if (!(result.result instanceof Uint8Array)) {
+            throw new InternalError(
+              "field-crypto: Azure Key Vault UnwrapKey did not return a 32-byte DEK",
+            );
+          }
+          try {
+            throwIfAborted(abortSignal);
+            if (result.result.length !== 32) {
+              throw new InternalError(
+                "field-crypto: Azure Key Vault UnwrapKey did not return a 32-byte DEK",
+              );
+            }
+            if (
+              result.algorithm !== undefined &&
+              result.algorithm !== parsed.wrapAlgorithm
+            ) {
+              throw new InternalError(
+                "field-crypto: Azure Key Vault UnwrapKey returned an unexpected algorithm",
+              );
+            }
+            if (
+              result.keyID !== undefined &&
+              versionFromKeyId(
+                result.keyID,
+                keyName,
+                parsed.expectedVaultUrl,
+              ) !== encoded.keyVersion
+            ) {
+              throw new InternalError(
+                "field-crypto: Azure Key Vault UnwrapKey returned an unexpected key version",
+              );
+            }
+            return Buffer.from(result.result);
+          } finally {
+            result.result.fill(0);
+          }
+        },
+      );
     },
 
     async scheduleKeyDeletion(
@@ -357,34 +414,51 @@ export function createAzureKeyVaultKmsClient(
         );
       }
       const keyName = keyFor(keyId);
-      const poller = await parsed.client.beginDeleteKey(keyName, options);
-      const deleted = await poller.pollUntilDone(options);
-      const recoveryLevel = deleted.properties.recoveryLevel;
-
-      if (parsed.purgeOnDelete) {
-        if (
-          recoveryLevel === undefined ||
-          !recoveryLevel.includes("Purgeable")
-        ) {
-          throw new InternalError(
-            "field-crypto: Azure Key Vault deletion response did not prove the key purgeable",
+      return withKmsOperationBudget(
+        options,
+        async (abortSignal, remainingTimeoutMs) => {
+          const poller = await parsed.client.beginDeleteKey(
+            keyName,
+            remainingOptions(abortSignal, remainingTimeoutMs),
           );
-        }
-        await parsed.client.purgeDeletedKey(keyName, options);
-        return { state: "purged", irreversible: true };
-      }
+          throwIfAborted(abortSignal);
+          const deleted = await poller.pollUntilDone(
+            remainingOptions(abortSignal, remainingTimeoutMs),
+          );
+          throwIfAborted(abortSignal);
+          const recoveryLevel = deleted.properties.recoveryLevel;
 
-      if (recoveryLevel === "Purgeable") {
-        return { state: "destroyed", irreversible: true };
-      }
-      const scheduledFor = deleted.properties.scheduledPurgeDate?.toISOString();
-      return scheduledFor === undefined
-        ? { state: "soft-deleted", irreversible: false }
-        : {
-            state: "soft-deleted",
-            irreversible: false,
-            scheduledFor,
-          };
+          if (parsed.purgeOnDelete) {
+            if (
+              recoveryLevel === undefined ||
+              !recoveryLevel.includes("Purgeable")
+            ) {
+              throw new InternalError(
+                "field-crypto: Azure Key Vault deletion response did not prove the key purgeable",
+              );
+            }
+            await parsed.client.purgeDeletedKey(
+              keyName,
+              remainingOptions(abortSignal, remainingTimeoutMs),
+            );
+            throwIfAborted(abortSignal);
+            return { state: "purged", irreversible: true };
+          }
+
+          if (recoveryLevel === "Purgeable") {
+            return { state: "destroyed", irreversible: true };
+          }
+          const scheduledFor =
+            deleted.properties.scheduledPurgeDate?.toISOString();
+          return scheduledFor === undefined
+            ? { state: "soft-deleted", irreversible: false }
+            : {
+                state: "soft-deleted",
+                irreversible: false,
+                scheduledFor,
+              };
+        },
+      );
     },
   };
 }

@@ -64,6 +64,7 @@ function fakeGcpKms(responses: {
       seen.push({ method: "destroyCryptoKeyVersion", request, options });
       return [
         responses.destroyCryptoKeyVersion?.(request) ?? {
+          name: request.name as string,
           state: "DESTROY_SCHEDULED",
           destroyTime: { seconds: 1_775_001_600 },
         },
@@ -198,6 +199,69 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
       irreversible: false,
       scheduledFor: "2026-04-01T00:00:00.000Z",
     });
+  });
+
+  test("rejects an out-of-parent version before issuing any destructive call", async () => {
+    const parent = "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a";
+    const { client: kms, seen } = fakeGcpKms({
+      listCryptoKeyVersions: () => [
+        {
+          name: "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-b/cryptoKeyVersions/1",
+          state: "ENABLED",
+        },
+      ],
+    });
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: kms,
+    });
+
+    await expect(client.scheduleKeyDeletion(parent)).rejects.toThrow(
+      /outside the requested CryptoKey/i,
+    );
+    expect(
+      seen.filter((call) => call.method === "destroyCryptoKeyVersion"),
+    ).toHaveLength(0);
+  });
+
+  test("rejects duplicate listed versions before issuing any destructive call", async () => {
+    const parent = "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a";
+    const duplicate = `${parent}/cryptoKeyVersions/1`;
+    const { client: kms, seen } = fakeGcpKms({
+      listCryptoKeyVersions: () => [
+        { name: duplicate, state: "ENABLED" },
+        { name: duplicate, state: "DISABLED" },
+      ],
+    });
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: kms,
+    });
+
+    await expect(client.scheduleKeyDeletion(parent)).rejects.toThrow(
+      /duplicate CryptoKeyVersion/i,
+    );
+    expect(
+      seen.filter((call) => call.method === "destroyCryptoKeyVersion"),
+    ).toHaveLength(0);
+  });
+
+  test("rejects a destroy response for a different CryptoKeyVersion", async () => {
+    const parent = "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a";
+    const { client: kms } = fakeGcpKms({
+      destroyCryptoKeyVersion: () => ({
+        name: `${parent}/cryptoKeyVersions/2`,
+        state: "DESTROY_SCHEDULED",
+      }),
+    });
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: kms,
+    });
+
+    await expect(client.scheduleKeyDeletion(parent)).rejects.toThrow(
+      /unexpected CryptoKeyVersion/i,
+    );
   });
 
   test("scheduleKeyDeletion destroys EVERY live version of a rotated key, skipping already-destroyed ones", async () => {
@@ -335,7 +399,14 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
             method: "destroy",
             timeout: options?.timeout ?? 0,
           });
-          return [{ state: "DESTROY_SCHEDULED" }, {}, {}];
+          return [
+            {
+              name: _request.name,
+              state: "DESTROY_SCHEDULED",
+            },
+            {},
+            {},
+          ];
         }) as unknown as GcpKmsSendable["destroyCryptoKeyVersion"],
       },
     });
@@ -367,9 +438,9 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
             {},
           ];
         }) as unknown as GcpKmsSendable["listCryptoKeyVersions"],
-        destroyCryptoKeyVersion: (async () => {
+        destroyCryptoKeyVersion: (async (request: { name?: string }) => {
           seen.push("destroy");
-          return [{ state: "DESTROY_SCHEDULED" }, {}, {}];
+          return [{ name: request.name, state: "DESTROY_SCHEDULED" }, {}, {}];
         }) as unknown as GcpKmsSendable["destroyCryptoKeyVersion"],
       },
     });

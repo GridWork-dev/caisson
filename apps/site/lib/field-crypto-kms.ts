@@ -209,11 +209,58 @@ function isNotFound(error: unknown): boolean {
   );
 }
 
+const PURGE_PROTECTED_RECOVERY_LEVELS = new Set([
+  "Recoverable",
+  "CustomizedRecoverable",
+  "RecoverableProtectedSubscription",
+  "CustomizedRecoverableProtectedSubscription",
+]);
+
+function assertExpectedKeyId(
+  keyId: string,
+  vaultUrl: string,
+  expectedKeyName: string,
+  expectedKeyVersion?: string,
+): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(keyId);
+  } catch {
+    throw new ConfigError(
+      "site field-crypto: Azure Key Vault returned an invalid key id",
+    );
+  }
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.origin !== new URL(vaultUrl).origin ||
+    parsed.username !== "" ||
+    parsed.password !== "" ||
+    parsed.search !== "" ||
+    parsed.hash !== "" ||
+    segments.length !== 3 ||
+    segments[0] !== "keys" ||
+    segments[1] !== expectedKeyName ||
+    !/^[0-9A-Za-z-]{1,127}$/.test(segments[2] ?? "") ||
+    (expectedKeyVersion !== undefined && segments[2] !== expectedKeyVersion)
+  ) {
+    throw new ConfigError(
+      "site field-crypto: Azure Key Vault returned a key id outside the expected vault and key scope",
+    );
+  }
+}
+
 function assertPurgeProtected(
   key: SiteAzureKey,
+  vaultUrl: string,
+  expectedKeyName: string,
+  expectedKeyVersion?: string,
 ): SiteAzureKey & { readonly id: string } {
   const recoveryLevel = key.properties.recoveryLevel;
-  if (recoveryLevel === undefined || recoveryLevel.includes("Purgeable")) {
+  if (
+    recoveryLevel === undefined ||
+    !PURGE_PROTECTED_RECOVERY_LEVELS.has(recoveryLevel)
+  ) {
     throw new ConfigError(
       "site field-crypto: Azure Key Vault key does not prove purge protection",
     );
@@ -223,6 +270,7 @@ function assertPurgeProtected(
       "site field-crypto: Azure Key Vault returned a key without an id",
     );
   }
+  assertExpectedKeyId(key.id, vaultUrl, expectedKeyName, expectedKeyVersion);
   return { ...key, id: key.id };
 }
 
@@ -252,6 +300,9 @@ export function createSiteAzureKmsClient(
           ? {}
           : { timeoutMs: operationOptions.timeoutMs }),
       }),
+      config.AZURE_KEY_VAULT_URL,
+      keyName,
+      keyVersion,
     );
 
   const getOrCreateProtectedKey = async (
@@ -272,11 +323,14 @@ export function createSiteAzureKmsClient(
         },
         operationOptions,
       ),
+      config.AZURE_KEY_VAULT_URL,
+      keyName,
     );
   };
 
   return createAzureKeyVaultKmsClient({
     keyName: config.AZURE_KEY_VAULT_KEY_NAME,
+    expectedVaultUrl: config.AZURE_KEY_VAULT_URL,
     purgeProtectionEnabled: true,
     wrapAlgorithm:
       config.AZURE_KEY_VAULT_WRAP_ALGORITHM satisfies KeyWrapAlgorithm,

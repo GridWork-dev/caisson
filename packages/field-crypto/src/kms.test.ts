@@ -121,6 +121,167 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     winner2.plaintextKey.fill(0);
   });
 
+  test("recovers an append-only winner after the version marker write fails", async () => {
+    const store = new InMemoryWrappedKeyStore();
+    const local = new LocalKmsClient(KEK);
+    let generations = 0;
+    let failMarkerWrite = true;
+    const client: KmsClient = {
+      async generateDataKey(scope, options) {
+        generations += 1;
+        void options;
+        return local.generateDataKey(scope);
+      },
+      decryptDataKey: local.decryptDataKey.bind(local),
+      scheduleKeyDeletion: local.scheduleKeyDeletion.bind(local),
+    };
+    const flakyStore = {
+      getWrapped: store.getWrapped.bind(store),
+      putWrappedIfAbsent: store.putWrappedIfAbsent.bind(store),
+      putWrapped: store.putWrapped.bind(store),
+      currentVersion: store.currentVersion.bind(store),
+      async setCurrentVersion(tenantId: string, keyVersion: number) {
+        if (failMarkerWrite) {
+          failMarkerWrite = false;
+          throw new Error("marker write failed");
+        }
+        await store.setCurrentVersion(tenantId, keyVersion);
+      },
+    };
+    const provider = new KmsKeyProvider(client, flakyStore);
+
+    await expect(provider.ensureProvisioned("acct_a")).rejects.toThrow(
+      "marker write failed",
+    );
+    expect(await store.getWrapped("acct_a", 1)).toBeDefined();
+    expect(await store.currentVersion("acct_a")).toBeUndefined();
+
+    expect(await provider.ensureProvisioned("acct_a")).toBe(1);
+    expect(await provider.keyFor("acct_a", 1)).toHaveLength(32);
+    expect(generations).toBe(1);
+  });
+
+  test("recovers an append-only rotation after the version marker write fails", async () => {
+    const store = new InMemoryWrappedKeyStore();
+    const local = new LocalKmsClient(KEK);
+    let generations = 0;
+    let markerWrites = 0;
+    const client: KmsClient = {
+      async generateDataKey(scope, options) {
+        generations += 1;
+        void options;
+        return local.generateDataKey(scope);
+      },
+      decryptDataKey: local.decryptDataKey.bind(local),
+      scheduleKeyDeletion: local.scheduleKeyDeletion.bind(local),
+    };
+    const flakyStore = {
+      getWrapped: store.getWrapped.bind(store),
+      putWrappedIfAbsent: store.putWrappedIfAbsent.bind(store),
+      putWrapped: store.putWrapped.bind(store),
+      currentVersion: store.currentVersion.bind(store),
+      async setCurrentVersion(tenantId: string, keyVersion: number) {
+        markerWrites += 1;
+        if (markerWrites === 2) throw new Error("rotation marker failed");
+        await store.setCurrentVersion(tenantId, keyVersion);
+      },
+    };
+    const provider = new KmsKeyProvider(client, flakyStore);
+
+    expect(await provider.provision("acct_a")).toBe(1);
+    await expect(provider.provision("acct_a")).rejects.toThrow(
+      "rotation marker failed",
+    );
+    expect(await store.currentVersion("acct_a")).toBe(1);
+    expect(await store.getWrapped("acct_a", 2)).toBeDefined();
+
+    expect(await provider.provision("acct_a")).toBe(2);
+    expect(await provider.keyFor("acct_a", 2)).toHaveLength(32);
+    expect(generations).toBe(2);
+  });
+
+  test("rejects malformed generated KMS material before immutable storage", async () => {
+    const cases: Array<{
+      readonly plaintextKey: unknown;
+      readonly wrappedKey: unknown;
+      readonly message: RegExp;
+    }> = [
+      {
+        plaintextKey: Buffer.alloc(31, 0x11),
+        wrappedKey: Buffer.from([1]),
+        message: /32-byte AES-256 DEK/i,
+      },
+      {
+        plaintextKey: Buffer.alloc(33, 0x22),
+        wrappedKey: Buffer.from([1]),
+        message: /32-byte AES-256 DEK/i,
+      },
+      {
+        plaintextKey: new Uint8Array(32),
+        wrappedKey: Buffer.from([1]),
+        message: /32-byte AES-256 DEK/i,
+      },
+      {
+        plaintextKey: Buffer.alloc(32, 0x33),
+        wrappedKey: Buffer.alloc(0),
+        message: /non-empty wrapped DEK/i,
+      },
+    ];
+
+    for (const candidate of cases) {
+      const store = new InMemoryWrappedKeyStore();
+      const client = {
+        async generateDataKey() {
+          return candidate;
+        },
+        async decryptDataKey() {
+          throw new Error("not used");
+        },
+        async scheduleKeyDeletion() {
+          return { state: "soft-deleted", irreversible: false } as const;
+        },
+      } as unknown as KmsClient;
+      const provider = new KmsKeyProvider(client, store);
+
+      await expect(provider.provision("acct_a")).rejects.toThrow(
+        candidate.message,
+      );
+      expect(await store.getWrapped("acct_a", 1)).toBeUndefined();
+      expect(await store.currentVersion("acct_a")).toBeUndefined();
+      if (Buffer.isBuffer(candidate.plaintextKey)) {
+        expect(
+          candidate.plaintextKey.equals(
+            Buffer.alloc(candidate.plaintextKey.length),
+          ),
+        ).toBe(true);
+      }
+    }
+  });
+
+  test("rejects and zeroizes malformed unwrapped KMS material", async () => {
+    const store = new InMemoryWrappedKeyStore();
+    await store.putWrapped("acct_a", 1, Buffer.from([1]));
+    await store.setCurrentVersion("acct_a", 1);
+    const malformed = Buffer.alloc(31, 0x44);
+    const client: KmsClient = {
+      async generateDataKey() {
+        throw new Error("not used");
+      },
+      async decryptDataKey() {
+        return malformed;
+      },
+      async scheduleKeyDeletion() {
+        return { state: "soft-deleted", irreversible: false };
+      },
+    };
+    const provider = new KmsKeyProvider(client, store);
+
+    await expect(provider.keyFor("acct_a", 1)).rejects.toThrow(
+      /32-byte AES-256 DEK/i,
+    );
+    expect(malformed.equals(Buffer.alloc(31))).toBe(true);
+  });
+
   test("keyFor before provision throws (no silent empty key)", async () => {
     const { provider } = freshProvider();
     await expect(provider.keyFor("acct_a", 1)).rejects.toThrow(
