@@ -71,6 +71,18 @@ describe("marketplace surface entries", () => {
 });
 
 describe("media manifest", () => {
+  test("every sellable module except ui-pro carries an interactive proof", () => {
+    for (const module of MODULE_PRICES) {
+      const pokes = mediaSlides("module", module.id).filter(
+        (slide) => slide.kind === "poke",
+      );
+      expect(
+        pokes.length,
+        `${module.id}: expected exactly one interactive poke`,
+      ).toBe(module.id === "ui-pro" ? 0 : 1);
+    }
+  });
+
   test("audit-worm carries its real code-artifact slide (ADR-0290 — no more video kind)", () => {
     const slides = mediaSlides("module", "audit-worm");
     expect(slides.some((s) => s.kind === "code-artifact")).toBe(true);

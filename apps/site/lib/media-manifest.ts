@@ -26,7 +26,7 @@ export type SlideKind =
 /** The interactive "poke" slides (ADR-0378 lock 2) — the one slide kind that genuinely owns
  *  interactive state: a deterministic in-browser run of the module's shipped mechanism (real
  *  WebCrypto / the package's own pure math, golden-pinned), with a tamper control and the
- *  client-side trust line. All 25 pokes shipped (kimi §B paradigm table); ui-pro is exempt —
+ *  client-side trust line. All 26 pokes shipped; ui-pro is exempt —
  *  its live component slide IS its poke. */
 export type PokeKey =
   | "field-crypto"
@@ -48,6 +48,7 @@ export type PokeKey =
   | "agent-trajectory"
   | "compliance-core"
   | "frameworks-pack"
+  | "oscal-spine"
   | "access-review"
   | "risk-register"
   | "trust-page"
@@ -437,6 +438,11 @@ const MODULE_POKES: Readonly<
     poke: "frameworks-pack",
     caption:
       "Pick a real crosswalk clause and watch the production toOscalCatalog turn the matching controls into an OSCAL v1.2.2 catalog, or come up empty when the clause is not mapped.",
+  },
+  "oscal-spine": {
+    poke: "oscal-spine",
+    caption:
+      "Choose a shipped framework identity and generate its deterministic OSCAL v1.2.2 Assessment Plan, then break the injected clock and watch the exporter fail closed.",
   },
   "access-review": {
     poke: "access-review",
