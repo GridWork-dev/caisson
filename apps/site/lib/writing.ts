@@ -159,7 +159,7 @@ export function writingPageSpec(piece: WritingPiece): PageSpec {
       kind: "section",
       eyebrow: "Verification",
       title: "Primary sources",
-      lede: sourceList(piece),
+      children: sourceList(piece),
       band: "surface",
     },
   ];
