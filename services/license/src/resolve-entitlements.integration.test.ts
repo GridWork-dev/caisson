@@ -202,6 +202,7 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
     const compatibilityIndex = loadRegistryIndex({
       schemaVersion: 1,
       modules: [
+        entry("@caisson/artifact-render", []),
         entry("@caisson/compliance-core", ["compliance"]),
         entry("@caisson/frameworks-pack", ["compliance"]),
         entry("@caisson/oscal-spine", ["compliance"]),
@@ -221,7 +222,11 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
         resolveAccountEntitlements(tx, acct, compatibilityIndex),
       );
       expect([...resolved].sort()).toEqual(
-        [`@caisson/${parent}`, "@caisson/oscal-spine"].sort(),
+        [
+          "@caisson/artifact-render",
+          `@caisson/${parent}`,
+          "@caisson/oscal-spine",
+        ].sort(),
       );
     }
   });
