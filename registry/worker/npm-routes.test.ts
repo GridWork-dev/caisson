@@ -366,6 +366,32 @@ describe("ADR-0384 parent purchases install the carved OSCAL package", () => {
       commercialBase("@caisson/compliance-core"),
       commercialBase("@caisson/frameworks-pack"),
       {
+        id: "@caisson/compliance",
+        latest: "1.0.0",
+        versions: [
+          {
+            version: "1.0.0",
+            publishedAt: "2026-01-01T00:00:00.000Z",
+            gateAttestation: "ci-run-1@deadbeef",
+            manifest: {
+              id: "@caisson/compliance",
+              version: "1.0.0",
+              kind: "bundle",
+              tier: "paid",
+              license: "LicenseRef-Caisson-Commercial",
+              priceCents: 164900,
+              editions: [],
+              members: {
+                "@caisson/compliance-core": "1.0.0",
+                "@caisson/frameworks-pack": "1.0.0",
+                "@caisson/oscal-spine": "1.0.0",
+              },
+              description: "Compliance bundle compatibility fixture.",
+            },
+          },
+        ],
+      },
+      {
         id: "@caisson/oscal-spine",
         latest: "2.0.0",
         versions: oscalVersions,
@@ -433,6 +459,49 @@ describe("ADR-0384 parent purchases install the carved OSCAL package", () => {
       expect(outOfWindow.status).toBe(404);
     });
   }
+
+  test("a pre-carve Compliance snapshot keeps OSCAL through packument, tarball, and update-window gates", async () => {
+    const bundleHandler = createNpmHandler(
+      compatibilityIndex,
+      compatibilitySidecar,
+      {
+        resolveEntitlements: () => ({
+          entitlements: ["compliance"],
+          entitledSince: {
+            compliance: "2026-07-24T00:00:00.000Z",
+          },
+          updatesWindows: { compliance: WINDOW },
+        }),
+      },
+    );
+
+    const packument = await bundleHandler(
+      req("/@caisson%2foscal-spine", { headers: AUTH }),
+    );
+    expect(packument.status).toBe(200);
+    const body = (await packument.json()) as {
+      "dist-tags": { latest: string };
+      versions: Record<string, unknown>;
+    };
+    expect(Object.keys(body.versions)).toEqual(["1.0.0"]);
+    expect(body["dist-tags"].latest).toBe("1.0.0");
+
+    const inWindow = await bundleHandler(
+      req("/@caisson/oscal-spine/-/oscal-spine-1.0.0.tgz", {
+        headers: AUTH,
+      }),
+      compatibilityEnv,
+    );
+    expect(inWindow.status).toBe(200);
+
+    const outOfWindow = await bundleHandler(
+      req("/@caisson/oscal-spine/-/oscal-spine-2.0.0.tgz", {
+        headers: AUTH,
+      }),
+      compatibilityEnv,
+    );
+    expect(outOfWindow.status).toBe(404);
+  });
 });
 
 describe("diagnostics + writes", () => {
