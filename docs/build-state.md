@@ -7,7 +7,7 @@ status: live
 
 ## Current state (2026-07-25)
 
-**ADR ceiling is `0383`; the audited base is `fe2dfaca`; the latest immutable release tag remains
+**ADR ceiling is `0389`; the audited base is `fe2dfaca`; the latest immutable release tag remains
 `v2026.07.20.3`.** The ADR-0379 full-state completion program is active on
 `feature/full-state-completion`; ADR-0380 closed its six fork rows and split the remaining build
 into two parallel worktree lanes — `feature/completion-lane-a` (code residuals plus the adapter
