@@ -1,11 +1,11 @@
 ---
-status: locked (ready to build)
+status: locked (implemented 2026-07-26)
 owner: operator
 ---
 
 # SPEC — The `/writing` surface, and correcting the live Article 50 copy
 
-- **Repo:** caisson · **Tags:** `ui`, `frontend` · **Status:** LOCKED, not started
+- **Repo:** caisson · **Tags:** `ui`, `frontend` · **Status:** LOCKED, implemented
 - **Lock:** **ADR-0391** (2026-07-26) — board fork D11 locked as _verify now, publish by
   2026-08-01, on a new `/writing` collection_, then reshaped the same day by three further
   operator locks after the existing live surface was discovered:
@@ -17,10 +17,9 @@ owner: operator
   framing) · ADR-0364 (the `nist-catalog-watch` advisory-watch precedent) · ADR-0237 F1/F2
   (the hub-and-spoke registry pattern this reuses).
 - **Grounding artifact:** this SPEC does not invent the article's facts. The verified claim
-  table, the draft, and the live-copy audit are produced by the parallel
-  `feature/ai-act-article-50` lane into `outputs/research/` and `outputs/drafts/`. **This
-  build is gated on that lane landing.** Copy that is not traceable to that verification does
-  not ship.
+  table, the draft, and the live-copy audit were completed at
+  `feature/ai-act-article-50` head `ae5c77d5` and read directly from that commit for the
+  implementation pass. Copy that is not traceable to that verification does not ship.
 - **Explicitly NOT opened:** an RSS or Atom feed; a second Fumadocs MDX collection; author
   bylines or multi-author attribution; comments; a newsletter; any content cadence commitment
   beyond the first piece; the `/frameworks` information architecture itself.
@@ -130,6 +129,9 @@ MDX collection — if the cadence ever justifies one, that is a later ADR, and t
 shape migrates to it cleanly.
 
 ## Tasks
+
+**Implementation status (2026-07-26):** Tasks 1–5 are complete on
+`feature/writing-surface`; verification and review evidence live in the branch/PR history.
 
 1. **Reground the three live surfaces** on primary sources, using the parallel lane's verified
    claim table and proposed wording. Replace every "independent reporting through 2026-07-07"
