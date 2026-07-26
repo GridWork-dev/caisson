@@ -63,6 +63,12 @@ function scopeContext(keyId: string): Record<string, string> {
   return { "caisson:field-crypto:scope": keyId };
 }
 
+function throwIfAborted(signal: AbortSignal): void {
+  if (signal.aborted) {
+    throw signal.reason ?? new Error("field-crypto: AWS KMS operation aborted");
+  }
+}
+
 /** The real AWS KMS `KmsClient` (ADR-0171 / ADR-0197) — see the module-level mapping comment for the three ops. */
 export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
   if (config.keyId === undefined || config.keyId.length === 0) {
@@ -83,27 +89,38 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
       keyId: string,
       options?: KmsOperationOptions,
     ): Promise<{ plaintextKey: Buffer; wrappedKey: Buffer }> {
-      const { Plaintext, CiphertextBlob } = await withKmsOperationBudget(
-        options,
-        (abortSignal) =>
-          sdk.send(
+      return withKmsOperationBudget(options, (abortSignal) =>
+        sdk
+          .send(
             new GenerateDataKeyCommand({
               KeyId: cmkFor(keyId),
               KeySpec: "AES_256",
               EncryptionContext: scopeContext(keyId),
             }),
             { abortSignal },
-          ),
+          )
+          .then(({ Plaintext, CiphertextBlob }) => {
+            let plaintextKey: Buffer | undefined;
+            try {
+              if (Plaintext === undefined || CiphertextBlob === undefined) {
+                throw new InternalError(
+                  "field-crypto: AWS KMS GenerateDataKey returned no key material",
+                );
+              }
+              throwIfAborted(abortSignal);
+              plaintextKey = Buffer.from(Plaintext);
+              return {
+                plaintextKey,
+                wrappedKey: Buffer.from(CiphertextBlob),
+              };
+            } catch (error) {
+              plaintextKey?.fill(0);
+              throw error;
+            } finally {
+              Plaintext?.fill(0);
+            }
+          }),
       );
-      if (Plaintext === undefined || CiphertextBlob === undefined) {
-        throw new InternalError(
-          "field-crypto: AWS KMS GenerateDataKey returned no key material",
-        );
-      }
-      return {
-        plaintextKey: Buffer.from(Plaintext),
-        wrappedKey: Buffer.from(CiphertextBlob),
-      };
     },
 
     async decryptDataKey(
@@ -111,24 +128,30 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
       wrappedKey: Buffer,
       options?: KmsOperationOptions,
     ): Promise<Buffer> {
-      const { Plaintext } = await withKmsOperationBudget(
-        options,
-        (abortSignal) =>
-          sdk.send(
+      return withKmsOperationBudget(options, (abortSignal) =>
+        sdk
+          .send(
             new DecryptCommand({
               KeyId: cmkFor(keyId),
               CiphertextBlob: wrappedKey,
               EncryptionContext: scopeContext(keyId),
             }),
             { abortSignal },
-          ),
+          )
+          .then(({ Plaintext }) => {
+            if (Plaintext === undefined) {
+              throw new InternalError(
+                "field-crypto: AWS KMS Decrypt returned no plaintext",
+              );
+            }
+            try {
+              throwIfAborted(abortSignal);
+              return Buffer.from(Plaintext);
+            } finally {
+              Plaintext.fill(0);
+            }
+          }),
       );
-      if (Plaintext === undefined) {
-        throw new InternalError(
-          "field-crypto: AWS KMS Decrypt returned no plaintext",
-        );
-      }
-      return Buffer.from(Plaintext);
     },
 
     async scheduleKeyDeletion(

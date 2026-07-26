@@ -143,8 +143,9 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
   });
 
   test("decryptDataKey targets the per-call tenant CryptoKey and matches the scope AAD", async () => {
+    const sdkPlaintext = new Uint8Array([9, 9]);
     const { client: kms, seen } = fakeGcpKms({
-      decrypt: () => ({ plaintext: new Uint8Array([9, 9]) }),
+      decrypt: () => ({ plaintext: sdkPlaintext }),
     });
     const client = createGcpKmsClient({
       cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
@@ -170,6 +171,7 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
       "caisson:field-crypto:scope=projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a",
     );
     expect(plaintext.equals(Buffer.from([9, 9]))).toBe(true);
+    expect(sdkPlaintext).toEqual(new Uint8Array(2));
   });
 
   test("scheduleKeyDeletion lists the tenant CryptoKey's versions and destroys the live one", async () => {
@@ -228,7 +230,7 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
     });
   });
 
-  test("every GCP operation receives the caller's gax timeout budget", async () => {
+  test("every GCP operation receives the remaining caller budget", async () => {
     const { client: kms, seen } = fakeGcpKms({
       encrypt: () => ({ ciphertext: new Uint8Array([1, 2, 3]) }),
       decrypt: () => ({ plaintext: new Uint8Array([9, 9]) }),
@@ -245,8 +247,53 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
 
     expect(seen).toHaveLength(4);
     for (const call of seen) {
-      expect(call.options).toEqual({ timeout: 1_234 });
+      const timeout = (call.options as { timeout?: number }).timeout;
+      expect(timeout).toBeGreaterThan(0);
+      expect(timeout).toBeLessThanOrEqual(1_234);
     }
+  });
+
+  test("multi-RPC GCP deletion passes a diminishing timeout to later calls", async () => {
+    const base = fakeGcpKms({});
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: {
+        ...base.client,
+        listCryptoKeyVersions: (async (
+          request: { parent?: unknown },
+          options?: unknown,
+        ) => {
+          base.seen.push({
+            method: "listCryptoKeyVersions",
+            request,
+            options,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          return [
+            [
+              {
+                name: `${String(request.parent)}/cryptoKeyVersions/1`,
+                state: "ENABLED",
+              },
+            ],
+            null,
+            {},
+          ];
+        }) as unknown as GcpKmsSendable["listCryptoKeyVersions"],
+      },
+    });
+
+    await client.scheduleKeyDeletion("tenant-a", { timeoutMs: 1_000 });
+
+    const listTimeout = (
+      base.seen.find((call) => call.method === "listCryptoKeyVersions")
+        ?.options as { timeout: number }
+    ).timeout;
+    const destroyTimeout = (
+      base.seen.find((call) => call.method === "destroyCryptoKeyVersion")
+        ?.options as { timeout: number }
+    ).timeout;
+    expect(destroyTimeout).toBeLessThan(listTimeout);
   });
 
   test("GCP generate aborts promptly and zeroizes its transient plaintext DEK", async () => {
@@ -272,6 +319,40 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
 
     await expect(pending).rejects.toThrow(/request cancelled/);
     expect(generatedPlaintext?.equals(Buffer.alloc(32))).toBe(true);
+  });
+
+  test("a late GCP decrypt response is zeroized after caller cancellation", async () => {
+    const sdkPlaintext = new Uint8Array([9, 8, 7]);
+    type DecryptResponse = [
+      { plaintext: Uint8Array },
+      undefined,
+      Record<string, never>,
+    ];
+    let resolveDecrypt!: (value: DecryptResponse) => void;
+    const lateResponse = new Promise<DecryptResponse>((resolve) => {
+      resolveDecrypt = resolve;
+    });
+    const base = fakeGcpKms({}).client;
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: {
+        ...base,
+        decrypt: (() => lateResponse) as unknown as GcpKmsSendable["decrypt"],
+      },
+    });
+    const controller = new AbortController();
+    const pending = client.decryptDataKey("acct_a", Buffer.from([1, 2, 3]), {
+      abortSignal: controller.signal,
+      timeoutMs: 1_000,
+    });
+
+    controller.abort(new Error("request cancelled"));
+    await expect(pending).rejects.toThrow(/request cancelled/);
+    resolveDecrypt([{ plaintext: sdkPlaintext }, undefined, {}]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(sdkPlaintext).toEqual(new Uint8Array(3));
   });
 
   test("scheduleKeyDeletion fails loud when the list returns no versions at all", async () => {

@@ -20,15 +20,19 @@ function abortReason(signal: AbortSignal): unknown {
 /**
  * Apply one caller-visible budget around a provider operation.
  *
- * `operation` also receives the derived signal and numeric timeout so native SDK cancellation and
- * deadlines remain active after the caller-facing race settles. GAX does not accept AbortSignal,
- * so its drivers use the timeout and check the signal between multi-RPC steps.
+ * `operation` also receives the derived signal and a remaining-time reader so native SDK
+ * cancellation and deadlines remain active after the caller-facing race settles. GAX does not
+ * accept AbortSignal, so its drivers consume the one diminishing budget across multi-RPC steps.
  */
 export async function withKmsOperationBudget<T>(
   options: KmsOperationOptions | undefined,
-  operation: (signal: AbortSignal, timeoutMs: number) => Promise<T>,
+  operation: (
+    signal: AbortSignal,
+    remainingTimeoutMs: () => number,
+  ) => Promise<T>,
 ): Promise<T> {
   const timeoutMs = operationTimeoutMs(options);
+  const deadlineAt = Date.now() + timeoutMs;
   const controller = new AbortController();
   const source = options?.abortSignal;
   const forwardAbort = (): void => {
@@ -46,12 +50,26 @@ export async function withKmsOperationBudget<T>(
       new Error(`field-crypto: KMS operation exceeded ${String(timeoutMs)}ms`),
     );
   }, timeoutMs);
+  const remainingTimeoutMs = (): number => {
+    const remaining = deadlineAt - Date.now();
+    if (remaining < 1) {
+      if (!controller.signal.aborted) {
+        controller.abort(
+          new Error(
+            `field-crypto: KMS operation exceeded ${String(timeoutMs)}ms`,
+          ),
+        );
+      }
+      throw abortReason(controller.signal);
+    }
+    return remaining;
+  };
 
   try {
     if (controller.signal.aborted) {
       throw abortReason(controller.signal);
     }
-    const pending = operation(controller.signal, timeoutMs);
+    const pending = operation(controller.signal, remainingTimeoutMs);
     return await new Promise<T>((resolve, reject) => {
       const rejectOnAbort = (): void => {
         reject(abortReason(controller.signal));

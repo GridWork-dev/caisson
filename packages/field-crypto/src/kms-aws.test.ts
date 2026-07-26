@@ -34,8 +34,9 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
   });
 
   test("generateDataKey TARGETS the per-call tenant CMK and binds the scope EncryptionContext", async () => {
+    const sdkPlaintext = new Uint8Array(32).fill(7);
     const { client: kms, seen } = fakeKms(() => ({
-      Plaintext: new Uint8Array(32).fill(7),
+      Plaintext: sdkPlaintext,
       CiphertextBlob: new Uint8Array([1, 2, 3]),
     }));
     const client = createAwsKmsClient({
@@ -55,6 +56,7 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     });
     expect(plaintextKey.equals(Buffer.alloc(32, 7))).toBe(true);
     expect(wrappedKey.equals(Buffer.from([1, 2, 3]))).toBe(true);
+    expect(sdkPlaintext).toEqual(new Uint8Array(32));
   });
 
   test("generateDataKey falls back to the default CMK only when no per-call scope is passed", async () => {
@@ -77,8 +79,9 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
   });
 
   test("decryptDataKey targets the per-call tenant CMK and matches the scope EncryptionContext", async () => {
+    const sdkPlaintext = new Uint8Array([9, 9]);
     const { client: kms, seen } = fakeKms(() => ({
-      Plaintext: new Uint8Array([9, 9]),
+      Plaintext: sdkPlaintext,
     }));
     const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
 
@@ -94,6 +97,7 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       EncryptionContext: { "caisson:field-crypto:scope": "alias/tenant-a" },
     });
     expect(plaintext.equals(Buffer.from([9, 9]))).toBe(true);
+    expect(sdkPlaintext).toEqual(new Uint8Array(2));
   });
 
   test("scheduleKeyDeletion TARGETS the per-call tenant CMK — not the shared default (blast-radius fix)", async () => {
@@ -200,13 +204,42 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     ).rejects.toThrow(/exceeded 5ms/);
   });
 
+  test("a late AWS decrypt response is zeroized after caller cancellation", async () => {
+    const sdkPlaintext = new Uint8Array([9, 8, 7]);
+    let resolveSend!: (value: { Plaintext: Uint8Array }) => void;
+    const lateResponse = new Promise<{ Plaintext: Uint8Array }>((resolve) => {
+      resolveSend = resolve;
+    });
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: {
+        send: (() => lateResponse) as unknown as KmsSendable["send"],
+      },
+    });
+    const controller = new AbortController();
+    const pending = client.decryptDataKey("acct_a", Buffer.from([1, 2, 3]), {
+      abortSignal: controller.signal,
+      timeoutMs: 1_000,
+    });
+
+    controller.abort(new Error("request cancelled"));
+    await expect(pending).rejects.toThrow(/request cancelled/);
+    resolveSend({ Plaintext: sdkPlaintext });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(sdkPlaintext).toEqual(new Uint8Array(3));
+  });
+
   test("generateDataKey fails closed when AWS returns no key material", async () => {
-    const { client: kms } = fakeKms(() => ({}));
+    const sdkPlaintext = new Uint8Array(32).fill(7);
+    const { client: kms } = fakeKms(() => ({ Plaintext: sdkPlaintext }));
     const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
 
     await expect(client.generateDataKey("acct_a")).rejects.toThrow(
       /no key material/,
     );
+    expect(sdkPlaintext).toEqual(new Uint8Array(32));
   });
 
   test("decryptDataKey fails closed when AWS returns no plaintext", async () => {
