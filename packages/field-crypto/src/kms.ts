@@ -227,7 +227,7 @@ export class LocalKmsClient implements KmsClient {
   private assertLive(keyId: string): void {
     if (this.shredded.has(keyId)) {
       throw new NotFoundError(
-        `field-crypto: key ${JSON.stringify(keyId)} was crypto-shredded — its data is unrecoverable`,
+        `field-crypto: key ${JSON.stringify(keyId)} was soft-deleted for this client instance — key operations are disabled`,
       );
     }
   }

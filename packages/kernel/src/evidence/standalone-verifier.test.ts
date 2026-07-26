@@ -17,6 +17,7 @@ import { buildRowReceipt, type RowReceipt } from "../audit-verify.ts";
 const VERIFIER_PATH = fileURLToPath(
   new URL("./standalone-verifier.mjs", import.meta.url),
 );
+const CHAIN_VERIFICATION = { valid: true, brokenAt: null } as const;
 
 async function runVerifier(
   args: readonly string[],
@@ -76,8 +77,10 @@ function buildFixture(): {
   receipts: RowReceipt[];
   keyId: string;
   publicKeySpkiBase64: string;
+  tenantId: string;
 } {
   const keyId = "test-anchor-key";
+  const tenantId = "11111111-1111-4111-8111-111111111111";
   const kp = generateKeyPairSync("ed25519");
   const publicKeySpkiBase64 = kp.publicKey
     .export({ format: "der", type: "spki" })
@@ -88,13 +91,28 @@ function buildFixture(): {
       .update(canonicalize([prevHash, payload]))
       .digest("hex");
   }
-  function signCore(core: {
+  function signedAnchor(core: {
     length: number;
     tipHash: string;
     genesisHash: string;
-  }): string {
-    const bytes = new TextEncoder().encode(canonicalize(core));
-    return sign(null, Buffer.from(bytes), kp.privateKey).toString("base64");
+  }) {
+    const envelope = {
+      domain: "caisson.audit-chain.anchor.v2",
+      v: 2,
+      accountId: tenantId,
+      anchor: core,
+    };
+    return {
+      ...core,
+      sig: sign(
+        null,
+        Buffer.from(new TextEncoder().encode(canonicalize(envelope))),
+        kp.privateKey,
+      ).toString("base64"),
+      keyId,
+      sigV: 2 as const,
+      sigAccountId: tenantId,
+    };
   }
 
   const genesisPayload: JsonValue = { event: "genesis", v: 1 };
@@ -102,20 +120,16 @@ function buildFixture(): {
   const row1Payload: JsonValue = { event: "next", v: 2 };
   const row1Hash = link(genesisHash, row1Payload);
 
-  const anchor0 = {
+  const anchor0 = signedAnchor({
     length: 1,
     tipHash: genesisHash,
     genesisHash,
-    sig: signCore({ length: 1, tipHash: genesisHash, genesisHash }),
-    keyId,
-  };
-  const anchor1 = {
+  });
+  const anchor1 = signedAnchor({
     length: 2,
     tipHash: row1Hash,
     genesisHash,
-    sig: signCore({ length: 2, tipHash: row1Hash, genesisHash }),
-    keyId,
-  };
+  });
 
   const r0 = buildRowReceipt({
     entry: {
@@ -144,7 +158,12 @@ function buildFixture(): {
     includeAnchorProvenance: true,
   });
 
-  return { receipts: [r0, r1], keyId, publicKeySpkiBase64 };
+  return {
+    receipts: [r0, r1],
+    keyId,
+    publicKeySpkiBase64,
+    tenantId,
+  };
 }
 
 async function withPackFile<T>(
@@ -163,9 +182,16 @@ async function withPackFile<T>(
 
 describe("verifyPack CLI (integration, subprocess)", () => {
   test("a healthy signed pack: all rows PASS, signature checked against the pinned key", async () => {
-    const { receipts, keyId, publicKeySpkiBase64 } = buildFixture();
+    const { receipts, keyId, publicKeySpkiBase64, tenantId } = buildFixture();
     await withPackFile(
-      { receipts, anchorAuth: { keyId, publicKeySpkiBase64 } },
+      {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId,
+        chainLength: 2,
+        receipts,
+        anchorAuth: { keyId, publicKeySpkiBase64 },
+      },
       async (path) => {
         const { stdout, stderr, exitCode } = await runVerifier([path]);
         expect(stderr).toBe("");
@@ -184,7 +210,7 @@ describe("verifyPack CLI (integration, subprocess)", () => {
   });
 
   test("a tampered payload FAILs the link leg without trusting the embedded checks block", async () => {
-    const { receipts, keyId, publicKeySpkiBase64 } = buildFixture();
+    const { receipts, keyId, publicKeySpkiBase64, tenantId } = buildFixture();
     const tampered: RowReceipt = {
       ...receipts[1]!,
       raw: { ...receipts[1]!.raw, payload: { event: "forged", v: 999 } },
@@ -193,7 +219,11 @@ describe("verifyPack CLI (integration, subprocess)", () => {
     };
     await withPackFile(
       {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
         receipts: [receipts[0]!, tampered],
+        chainLength: 2,
+        tenantId,
         anchorAuth: { keyId, publicKeySpkiBase64 },
       },
       async (path) => {
@@ -206,12 +236,91 @@ describe("verifyPack CLI (integration, subprocess)", () => {
   });
 
   test("a forged signature (wrong public key) FAILs even though link + anchor equality pass", async () => {
-    const { receipts, keyId } = buildFixture();
+    const { receipts, keyId, tenantId } = buildFixture();
     const otherKey = generateKeyPairSync("ed25519")
       .publicKey.export({ format: "der", type: "spki" })
       .toString("base64");
     await withPackFile(
-      { receipts, anchorAuth: { keyId, publicKeySpkiBase64: otherKey } },
+      {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId,
+        chainLength: 2,
+        receipts,
+        anchorAuth: { keyId, publicKeySpkiBase64: otherKey },
+      },
+      async (path) => {
+        const { exitCode, stdout } = await runVerifier([path]);
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain("signature=fail -> FAIL");
+      },
+    );
+  });
+
+  test("a pinned pack fails closed when a signature is stripped", async () => {
+    const { receipts, keyId, publicKeySpkiBase64, tenantId } = buildFixture();
+    const { sig: _sig, ...unsignedAnchor } = receipts[0]!.anchor;
+    const stripped: RowReceipt = {
+      ...receipts[0]!,
+      anchor: unsignedAnchor,
+    };
+
+    await withPackFile(
+      {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId,
+        chainLength: 1,
+        receipts: [stripped],
+        anchorAuth: { keyId, publicKeySpkiBase64 },
+      },
+      async (path) => {
+        const { exitCode, stdout } = await runVerifier([path]);
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain("signature=not available");
+        expect(stdout).toContain("-> FAIL");
+      },
+    );
+  });
+
+  test.each([
+    ["key id substitution", { keyId: "attacker-key" }],
+    ["malformed signature", { sig: "not-base64!" }],
+  ])("%s fails a pinned pack", async (_label, patch) => {
+    const { receipts, keyId, publicKeySpkiBase64, tenantId } = buildFixture();
+    const compromised: RowReceipt = {
+      ...receipts[0]!,
+      anchor: { ...receipts[0]!.anchor, ...patch },
+    };
+
+    await withPackFile(
+      {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId,
+        chainLength: 1,
+        receipts: [compromised],
+        anchorAuth: { keyId, publicKeySpkiBase64 },
+      },
+      async (path) => {
+        const { exitCode, stdout } = await runVerifier([path]);
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain("signature=fail -> FAIL");
+      },
+    );
+  });
+
+  test("a valid tenant-A signed chain cannot be replayed as tenant B", async () => {
+    const { receipts, keyId, publicKeySpkiBase64 } = buildFixture();
+    await withPackFile(
+      {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId: "22222222-2222-4222-8222-222222222222",
+        chainLength: 2,
+        receipts,
+        anchorAuth: { keyId, publicKeySpkiBase64 },
+      },
       async (path) => {
         const { exitCode, stdout } = await runVerifier([path]);
         expect(exitCode).toBe(1);
@@ -221,7 +330,7 @@ describe("verifyPack CLI (integration, subprocess)", () => {
   });
 
   test("a redacted row reports link as not-applicable, never fail, and never blocks PASS", async () => {
-    const { receipts, keyId, publicKeySpkiBase64 } = buildFixture();
+    const { receipts, keyId, publicKeySpkiBase64, tenantId } = buildFixture();
     const redactedRow1: RowReceipt = {
       ...receipts[1]!,
       redacted: true,
@@ -229,7 +338,11 @@ describe("verifyPack CLI (integration, subprocess)", () => {
     };
     await withPackFile(
       {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
         receipts: [receipts[0]!, redactedRow1],
+        chainLength: 2,
+        tenantId,
         anchorAuth: { keyId, publicKeySpkiBase64 },
       },
       async (path) => {
@@ -243,15 +356,144 @@ describe("verifyPack CLI (integration, subprocess)", () => {
   });
 
   test("no anchorAuth in the pack: signature reports not-available, never a silent pass/fail", async () => {
-    const { receipts } = buildFixture();
-    await withPackFile({ receipts }, async (path) => {
-      const { exitCode, stdout } = await runVerifier([path]);
-      expect(exitCode).toBe(0);
-      expect(stdout).toContain(
-        "signature=not available (unsigned or no pinned key) -> PASS",
-      );
-    });
+    const { receipts, tenantId } = buildFixture();
+    await withPackFile(
+      {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId,
+        chainLength: 2,
+        receipts,
+      },
+      async (path) => {
+        const { exitCode, stdout } = await runVerifier([path]);
+        expect(exitCode).toBe(0);
+        expect(stdout).toContain(
+          "signature=not available (unsigned or no pinned key) -> PASS",
+        );
+      },
+    );
   });
+
+  test.each([
+    ["an empty pack", { chainLength: 0, receipts: [] }],
+    ["a dropped receipt", { chainLength: 2, receipts: undefined }],
+    ["a duplicated receipt", { chainLength: 2, receipts: undefined }],
+    ["reordered receipts", { chainLength: 2, receipts: undefined }],
+    ["an interior sequence gap", { chainLength: 2, receipts: undefined }],
+    ["an anchor-length mismatch", { chainLength: 1, receipts: undefined }],
+  ])("%s fails closed before row verification", async (label, shape) => {
+    const { receipts, tenantId } = buildFixture();
+    const malformedReceipts =
+      label === "a dropped receipt"
+        ? [receipts[0]!]
+        : label === "a duplicated receipt"
+          ? [receipts[0]!, receipts[0]!]
+          : label === "reordered receipts"
+            ? [receipts[1]!, receipts[0]!]
+            : label === "an interior sequence gap"
+              ? [receipts[0]!, { ...receipts[1]!, seq: 2 }]
+              : label === "an anchor-length mismatch"
+                ? [
+                    {
+                      ...receipts[0]!,
+                      anchor: { ...receipts[0]!.anchor, length: 2 },
+                    },
+                  ]
+                : [];
+    await withPackFile(
+      {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId,
+        chainLength: shape.chainLength,
+        receipts: shape.receipts ?? malformedReceipts,
+      },
+      async (path) => {
+        const { exitCode, stdout } = await runVerifier([path]);
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain("incomplete or malformed");
+      },
+    );
+  });
+
+  test("rejects an unbounded or control-bearing tenant id", async () => {
+    const { receipts } = buildFixture();
+    await withPackFile(
+      {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId: `acct\u0000${"x".repeat(300)}`,
+        chainLength: 2,
+        receipts,
+      },
+      async (path) => {
+        const { exitCode, stdout } = await runVerifier([path]);
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain("incomplete or malformed");
+      },
+    );
+  });
+
+  test("an unsupported pack format fails closed", async () => {
+    const { receipts, tenantId } = buildFixture();
+    await withPackFile(
+      {
+        formatVersion: 2,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId,
+        chainLength: 2,
+        receipts,
+      },
+      async (path) => {
+        const { exitCode, stdout } = await runVerifier([path]);
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain("incomplete or malformed");
+      },
+    );
+  });
+
+  test("an unsupported receipt format fails closed", async () => {
+    const { receipts, tenantId } = buildFixture();
+    await withPackFile(
+      {
+        formatVersion: 1,
+        chainVerification: CHAIN_VERIFICATION,
+        tenantId,
+        chainLength: 2,
+        receipts: [{ ...receipts[0]!, v: 2 }, receipts[1]!],
+      },
+      async (path) => {
+        const { exitCode, stdout } = await runVerifier([path]);
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain("incomplete or malformed");
+      },
+    );
+  });
+
+  test.each([
+    ["missing", undefined],
+    ["invalid", { valid: false, brokenAt: 2 }],
+  ])(
+    "%s chain-level verification fails closed",
+    async (_label, chainVerification) => {
+      const { receipts, tenantId } = buildFixture();
+      await withPackFile(
+        {
+          formatVersion: 1,
+          ...(chainVerification === undefined ? {} : { chainVerification }),
+          tenantId,
+          chainLength: 2,
+          receipts,
+        },
+        async (path) => {
+          const { exitCode, stdout } = await runVerifier([path]);
+          expect(exitCode).toBe(1);
+          expect(stdout).toContain("incomplete or malformed");
+        },
+      );
+    },
+  );
 
   test("missing pack path arg exits 2 with a usage message on stderr", async () => {
     const { exitCode, stderr } = await runVerifier([]);

@@ -43,6 +43,8 @@ export interface ProofPanelProps {
    * client run the signature leg and earn the "(signature-checked)" seal; absent → the honest base seal.
    */
   pinnedAnchorKey?: PinnedAnchorKey;
+  /** Tenant-scoped WORM account independently known by the caller and bound into signature v2. */
+  expectedAnchorAccountId?: string;
 }
 
 type Phase =
@@ -133,6 +135,7 @@ export function ProofPanel({
   fetchProof,
   chainStatus,
   pinnedAnchorKey,
+  expectedAnchorAccountId,
 }: ProofPanelProps) {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [copied, setCopied] = useState(false);
@@ -158,7 +161,11 @@ export function ProofPanel({
   }, [seq, fetchProof]);
 
   const receipt = phase.kind === "loaded" ? phase.bundle.receipt : null;
-  const verify = useRowVerify(receipt, pinnedAnchorKey);
+  const verify = useRowVerify(
+    receipt,
+    pinnedAnchorKey,
+    expectedAnchorAccountId,
+  );
 
   if (phase.kind === "loading") {
     return (

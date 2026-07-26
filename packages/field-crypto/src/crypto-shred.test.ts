@@ -163,9 +163,11 @@ describe("cryptoShred (erasure ⟂ append-only chain — ADR-0055/0052, TM-F/TM-
       reason: "gdpr-art17",
       occurredAt: OCCURRED_AT,
     });
-    await expect(provider.provision("subject_a")).rejects.toThrow(
-      /crypto-shredded/,
+    const reprovision = provider.provision("subject_a");
+    await expect(reprovision).rejects.toThrow(
+      /soft-deleted for this client instance/,
     );
+    await expect(reprovision).rejects.not.toThrow(/unrecoverable/i);
   });
 
   test("shreddedThroughVersion records the highest provisioned version", async () => {

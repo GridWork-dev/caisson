@@ -7,8 +7,9 @@
 // bytes (the pack is itself hashable — `sha256` below).
 //
 // `receipts.json`'s shape is exactly what `standalone-verifier.mjs`'s CLI mode reads
-// (`{ receipts, anchorAuth? }`, plus informational fields it ignores) — `node verify.mjs
-// receipts.json` works with no further wiring, and no `@caisson/*` install (fork c/d: "verify
+// (`{ tenantId, chainLength, chainVerification, receipts, anchorAuth? }`; completeness fields are
+// validated before any row cryptography) — `node verify.mjs receipts.json` works with no further wiring (fork c/d:
+// "verify
 // without trusting caisson's UI").
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -36,9 +37,9 @@ export interface EvidencePackMeta {
   readonly chainLength: number;
   /** Injected wall-clock instant — stamped on the manifest/README, never computed here. */
   readonly now: Date;
-  /** Optional chain-level verdict, for the README's chain-vs-current-anchor framing (CR-04: external
-   *  anchoring, if any, attaches at THIS level, never per row). */
-  readonly chainVerification?: ChainVerification;
+  /** Required chain-level verdict. The standalone verifier refuses a pack unless the issuer's
+   *  full-chain verification was valid with no broken row at export time. */
+  readonly chainVerification: ChainVerification;
   /** Optional pinned anchor-signing public key. */
   readonly anchorAuth?: EvidencePackAnchorAuth;
 }
@@ -123,11 +124,16 @@ function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
     "`verify.mjs` recomputes, from the raw material in `receipts.json` — never from its embedded",
     "`checks` field, which records only what the issuing run computed — for every row:",
     "",
+    "Before checking rows, the verifier requires the issuer's full-chain snapshot verdict to be",
+    "`{ valid: true, brokenAt: null }`. That prevents a chain the issuer already detected as truncated",
+    "or broken from being exported as a passing pack. This embedded verdict is not a signed freshness",
+    "proof; confirm the pack's key fingerprint and any current external checkpoint out-of-band.",
+    "",
     "1. **Link recompute** — SHA-256(canonicalize([prevHash, payload])) equals the row's stored hash.",
     '   Reported "not applicable" for a redacted row (see below): the exported payload is masked, so',
     "   the original hash cannot be recomputed from it.",
     "2. **Per-length anchor equality** — the row's hash equals the tip committed in the write-once",
-    "   WORM anchor minted when this row was appended.",
+    "   WORM anchor minted at exactly `row.seq + 1` entries.",
     ...provenanceSection,
     "",
     "## The six per-row states these receipts encode",
@@ -177,9 +183,7 @@ export function buildEvidencePack(input: BuildEvidencePackInput): EvidencePack {
     generatedAt: meta.now.toISOString(),
     receipts: toJson(sorted),
   };
-  if (meta.chainVerification !== undefined) {
-    receiptsBody.chainVerification = toJson(meta.chainVerification);
-  }
+  receiptsBody.chainVerification = toJson(meta.chainVerification);
   if (meta.anchorAuth !== undefined) {
     receiptsBody.anchorAuth = toJson(meta.anchorAuth);
   }

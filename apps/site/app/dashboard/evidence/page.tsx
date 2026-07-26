@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
+import type { SessionContext } from "@caisson/auth";
+import type { RateDecision } from "@caisson/rate-limit";
 import { z } from "zod";
-import { TenantEvidenceDashboard } from "@/components/tenant-evidence-dashboard";
+import {
+  TenantEvidenceDashboard,
+  type TenantEvidenceDashboardProps,
+} from "@/components/tenant-evidence-dashboard";
 import { requireDashboardSession } from "@/lib/auth";
 import {
   TenantEvidenceProxyError,
@@ -11,6 +16,7 @@ import {
   assertTenantEvidenceScope,
   tenantEvidenceProxyFromEnv,
 } from "@/lib/tenant-evidence-runtime";
+import { checkTenantEvidenceRateLimit } from "@/lib/tenant-evidence-rate-limit";
 
 export const metadata: Metadata = { title: "Audit evidence" };
 
@@ -32,33 +38,52 @@ function unavailableMessage(
   return unavailableMessage;
 }
 
-export default async function DashboardEvidencePage({
-  searchParams,
-}: {
-  readonly searchParams: Promise<{ seq?: string | string[] }>;
-}) {
-  const session = await requireDashboardSession(PATH);
+export interface DashboardEvidenceDependencies {
+  readonly getSession: (path: string) => Promise<SessionContext>;
+  readonly checkRateLimit: (
+    accountId: string,
+  ) => RateDecision | Promise<RateDecision>;
+  readonly assertTenantScope: (accountId: string) => Promise<void>;
+  readonly getProxy: typeof tenantEvidenceProxyFromEnv;
+}
+
+const dashboardEvidenceDependencies: DashboardEvidenceDependencies = {
+  getSession: requireDashboardSession,
+  checkRateLimit: checkTenantEvidenceRateLimit,
+  assertTenantScope: assertTenantEvidenceScope,
+  getProxy: tenantEvidenceProxyFromEnv,
+};
+
+export async function loadDashboardEvidencePage(
+  searchParams: Promise<{ seq?: string | string[] }>,
+  deps: DashboardEvidenceDependencies = dashboardEvidenceDependencies,
+): Promise<TenantEvidenceDashboardProps> {
+  const session = await deps.getSession(PATH);
+  const rate = await deps.checkRateLimit(session.accountId);
+  if (!rate.allowed) {
+    return {
+      proofError: "The row proof is temporarily rate limited.",
+      latestPackError: "The evidence pack is temporarily rate limited.",
+    };
+  }
+
   try {
-    await assertTenantEvidenceScope(session.accountId);
+    await deps.assertTenantScope(session.accountId);
   } catch {
-    return (
-      <TenantEvidenceDashboard
-        proofError="The row proof is unavailable."
-        latestPackError="The evidence pack is unavailable."
-      />
-    );
+    return {
+      proofError: "The row proof is unavailable.",
+      latestPackError: "The evidence pack is unavailable.",
+    };
   }
 
   let proxy;
   try {
-    proxy = tenantEvidenceProxyFromEnv();
+    proxy = deps.getProxy();
   } catch {
-    return (
-      <TenantEvidenceDashboard
-        proofError="The row proof service is unavailable."
-        latestPackError="The evidence-pack service is unavailable."
-      />
-    );
+    return {
+      proofError: "The row proof service is unavailable.",
+      latestPackError: "The evidence-pack service is unavailable.",
+    };
   }
 
   let latestPack: LatestEvidencePackResponse | undefined;
@@ -95,13 +120,23 @@ export default async function DashboardEvidencePage({
     }
   }
 
+  return {
+    ...(proof === undefined ? {} : { proof }),
+    ...(proofSeq === undefined ? {} : { proofSeq }),
+    ...(proofError === undefined ? {} : { proofError }),
+    ...(latestPack === undefined ? {} : { latestPack }),
+    ...(latestPackError === undefined ? {} : { latestPackError }),
+  };
+}
+
+export default async function DashboardEvidencePage({
+  searchParams,
+}: {
+  readonly searchParams: Promise<{ seq?: string | string[] }>;
+}) {
   return (
     <TenantEvidenceDashboard
-      {...(proof === undefined ? {} : { proof })}
-      {...(proofSeq === undefined ? {} : { proofSeq })}
-      {...(proofError === undefined ? {} : { proofError })}
-      {...(latestPack === undefined ? {} : { latestPack })}
-      {...(latestPackError === undefined ? {} : { latestPackError })}
+      {...await loadDashboardEvidencePage(searchParams)}
     />
   );
 }

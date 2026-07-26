@@ -42,6 +42,8 @@ describe("AuditChainClient", () => {
     ]) {
       expect(html).toContain(label);
     }
+    expect(html).toContain("Chain root — server asserted");
+    expect(html).toContain("Verified — server asserted");
     expect(html).toContain("Chain anchored at length 6");
     expect(html).toContain("retained until 2033-07-25T00:00:00.000Z");
     expect(html.match(/>View</g)?.length).toBe(6);

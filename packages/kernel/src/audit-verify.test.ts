@@ -4,12 +4,12 @@ import { generateKeyPairSync, sign as nodeSign } from "node:crypto";
 import {
   anchorChain,
   buildChain,
-  canonicalize,
   hashChainLink,
   type AuditChainAnchor,
 } from "./audit-chain.ts";
 import {
   buildRowReceipt,
+  anchorSignatureEnvelopeBytes,
   classifyRowState,
   hashChainLinkAsync,
   verifyAnchorSignature,
@@ -25,6 +25,7 @@ const PAYLOADS = [
 ] as const;
 
 const CHAIN = buildChain(PAYLOADS);
+const ANCHOR_ACCOUNT = "11111111-1111-4111-8111-111111111111";
 /** The per-length anchor minted when row `i` was the tip (= anchorChain over the prefix `0..i`). */
 function anchorForRow(i: number): AuditChainAnchor {
   return anchorChain(CHAIN.slice(0, i + 1));
@@ -91,21 +92,21 @@ function signedAnchor(
   keyId = "test-anchor-key",
 ): { anchor: AuditChainAnchor; pinnedKey: PinnedAnchorKey } {
   const { publicKey, privateKey } = generateKeyPairSync("ed25519");
-  const core: Record<string, string | number> = {
-    length: base.length,
-    tipHash: base.tipHash,
+  const signatureAnchor: AuditChainAnchor = {
+    ...base,
+    sigV: 2,
+    sigAccountId: ANCHOR_ACCOUNT,
   };
-  if (base.genesisHash !== undefined) core.genesisHash = base.genesisHash;
   const sig = nodeSign(
     null,
-    Buffer.from(new TextEncoder().encode(canonicalize(core))),
+    Buffer.from(anchorSignatureEnvelopeBytes(signatureAnchor, ANCHOR_ACCOUNT)),
     privateKey,
   ).toString("base64");
   const publicKeySpkiBase64 = publicKey
     .export({ format: "der", type: "spki" })
     .toString("base64");
   return {
-    anchor: { ...base, sig, keyId },
+    anchor: { ...signatureAnchor, sig, keyId },
     pinnedKey: { keyId, publicKeySpkiBase64 },
   };
 }
@@ -113,19 +114,25 @@ function signedAnchor(
 describe("verifyAnchorSignature (leg 3)", () => {
   test("signed anchor + matching pinned key → pass (client checks a real signature)", async () => {
     const { anchor, pinnedKey } = signedAnchor(anchorForRow(1));
-    expect(await verifyAnchorSignature(anchor, pinnedKey)).toBe("pass");
+    expect(await verifyAnchorSignature(anchor, pinnedKey, ANCHOR_ACCOUNT)).toBe(
+      "pass",
+    );
   });
 
   test("forged signature (right key, wrong core) → fail", async () => {
     const { anchor, pinnedKey } = signedAnchor(anchorForRow(1));
     // Mutate the tipHash AFTER signing: the signature no longer covers these core bytes.
     const forged: AuditChainAnchor = { ...anchor, tipHash: "f".repeat(64) };
-    expect(await verifyAnchorSignature(forged, pinnedKey)).toBe("fail");
+    expect(await verifyAnchorSignature(forged, pinnedKey, ANCHOR_ACCOUNT)).toBe(
+      "fail",
+    );
   });
 
   test("unsigned anchor → na (nothing to check, never a false fail)", async () => {
     const { pinnedKey } = signedAnchor(anchorForRow(1));
-    expect(await verifyAnchorSignature(anchorForRow(1), pinnedKey)).toBe("na");
+    expect(
+      await verifyAnchorSignature(anchorForRow(1), pinnedKey, ANCHOR_ACCOUNT),
+    ).toBe("na");
   });
 
   test("no pinned key → na (the seal is withheld, the row is not tampered)", async () => {
@@ -133,10 +140,12 @@ describe("verifyAnchorSignature (leg 3)", () => {
     expect(await verifyAnchorSignature(anchor)).toBe("na");
   });
 
-  test("keyId mismatch → na (cannot verify against a key that isn't this anchor's)", async () => {
+  test("keyId mismatch → fail (a pinned identity cannot be substituted)", async () => {
     const { anchor } = signedAnchor(anchorForRow(1), "signer-A");
     const { pinnedKey } = signedAnchor(anchorForRow(1), "signer-B");
-    expect(await verifyAnchorSignature(anchor, pinnedKey)).toBe("na");
+    expect(await verifyAnchorSignature(anchor, pinnedKey, ANCHOR_ACCOUNT)).toBe(
+      "fail",
+    );
   });
 
   test("through verifyEntryAgainstAnchor: a forged signature classifies the row `tampered`", async () => {
@@ -144,6 +153,7 @@ describe("verifyAnchorSignature (leg 3)", () => {
     const forged: AuditChainAnchor = { ...anchor, tipHash: "f".repeat(64) };
     const legs = await verifyEntryAgainstAnchor(CHAIN[1]!, forged, {
       pinnedKey,
+      expectedAccountId: ANCHOR_ACCOUNT,
     });
     expect(legs.signature).toBe("fail");
     expect(classifyRowState(legs, { redacted: false })).toBe("tampered");
@@ -153,6 +163,7 @@ describe("verifyAnchorSignature (leg 3)", () => {
     const { anchor, pinnedKey } = signedAnchor(anchorForRow(1));
     const legs = await verifyEntryAgainstAnchor(CHAIN[1]!, anchor, {
       pinnedKey,
+      expectedAccountId: ANCHOR_ACCOUNT,
     });
     expect(legs).toEqual({
       linkRecompute: "pass",
@@ -160,6 +171,21 @@ describe("verifyAnchorSignature (leg 3)", () => {
       signature: "pass",
     });
     expect(classifyRowState(legs, { redacted: false })).toBe("verified");
+  });
+
+  test("a genuine signed row relabeled to another sequence is tampered", async () => {
+    const { anchor, pinnedKey } = signedAnchor(anchorForRow(0));
+    const relabeled = { ...CHAIN[0]!, seq: 99 };
+
+    const legs = await verifyEntryAgainstAnchor(relabeled, anchor, {
+      pinnedKey,
+      expectedAccountId: ANCHOR_ACCOUNT,
+    });
+
+    expect(legs.linkRecompute).toBe("pass");
+    expect(legs.signature).toBe("pass");
+    expect(legs.anchorEquality).toBe("fail");
+    expect(classifyRowState(legs, { redacted: false })).toBe("tampered");
   });
 });
 
@@ -222,6 +248,18 @@ describe("classifyRowState (six states)", () => {
     expect(classifyRowState(pass, { redacted: false, pending: true })).toBe(
       "pending",
     );
+  });
+  test("a required signature that is absent or unavailable is unverifiable, never verified", () => {
+    expect(
+      classifyRowState(
+        {
+          linkRecompute: "pass",
+          anchorEquality: "pass",
+          signature: "na",
+        },
+        { redacted: false, requireSignature: true },
+      ),
+    ).toBe("unverifiable");
   });
 });
 

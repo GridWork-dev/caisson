@@ -3,12 +3,14 @@
 // the redacted-row honest marking (leg 1 `na`), and strict-both-ways schema behavior.
 import { describe, expect, test } from "bun:test";
 import { generateKeyPairSync, sign as nodeSign } from "node:crypto";
-import { anchorChain, canonicalize, chainEntry } from "@caisson/kernel";
+import { anchorChain, chainEntry } from "@caisson/kernel";
+import { anchorSignatureEnvelopeBytes } from "@caisson/kernel/audit-verify";
 import type { AuditChainAnchor } from "@caisson/kernel";
 import type { RowProof } from "@caisson/audit-worm";
 import {
   assembleProofSuccess,
   AuditProofQuery,
+  parseProofResponse,
   ProofSuccessSchema,
   ProofUnverifiableSchema,
 } from "./audit-proof.ts";
@@ -26,22 +28,18 @@ function proofFor(payload: Parameters<typeof chainEntry>[1]): RowProof {
 function signedProofFor(payload: Parameters<typeof chainEntry>[1]): RowProof {
   const base = proofFor(payload);
   const { privateKey } = generateKeyPairSync("ed25519");
-  const core: Record<string, string | number> = {
-    length: base.anchorForRow.length,
-    tipHash: base.anchorForRow.tipHash,
-  };
-  if (base.anchorForRow.genesisHash !== undefined) {
-    core.genesisHash = base.anchorForRow.genesisHash;
-  }
+  const sigAccountId = "11111111-1111-4111-8111-111111111111";
   const sig = nodeSign(
     null,
-    Buffer.from(new TextEncoder().encode(canonicalize(core))),
+    Buffer.from(anchorSignatureEnvelopeBytes(base.anchorForRow, sigAccountId)),
     privateKey,
   ).toString("base64");
   const anchor: AuditChainAnchor = {
     ...base.anchorForRow,
     sig,
     keyId: "test-anchor-key",
+    sigV: 2,
+    sigAccountId,
   };
   return { ...base, anchorForRow: anchor };
 }
@@ -71,7 +69,15 @@ describe("assembleProofSuccess — a clean (non-redacted) row", () => {
     expect("key" in body.receipt.anchor).toBe(false);
     // Only public commitment/provenance fields cross the wire: length + tipHash, plus genesisHash and
     // (when signed) sig/keyId — the client needs the latter to run its own signature leg (GATE-1).
-    const allowed = ["length", "tipHash", "genesisHash", "sig", "keyId"];
+    const allowed = [
+      "length",
+      "tipHash",
+      "genesisHash",
+      "sig",
+      "keyId",
+      "sigV",
+      "sigAccountId",
+    ];
     expect(
       Object.keys(body.receipt.anchor).every((k) => allowed.includes(k)),
     ).toBe(true);
@@ -85,9 +91,44 @@ describe("assembleProofSuccess — a clean (non-redacted) row", () => {
     // The public signature material is present in the receipt (never the private key, never the WORM key).
     expect(body.receipt.anchor.sig).toBe(proof.anchorForRow.sig);
     expect(body.receipt.anchor.keyId).toBe("test-anchor-key");
+    expect(body.receipt.anchor.sigV).toBe(2);
+    expect(body.receipt.anchor.sigAccountId).toBe(
+      "11111111-1111-4111-8111-111111111111",
+    );
     expect("key" in body.receipt.anchor).toBe(false);
     // The outgoing body still strict-validates with the additive provenance fields present.
     expect(ProofSuccessSchema.safeParse(body).success).toBe(true);
+  });
+
+  test("the strict client parser preserves v2 signature identity end to end", async () => {
+    const body = await assembleProofSuccess(
+      signedProofFor({ event: "locked" }),
+      NOW,
+    );
+
+    const parsed = parseProofResponse(body);
+
+    expect("receipt" in parsed).toBe(true);
+    if ("receipt" in parsed) {
+      expect(parsed.receipt.anchor.sigV).toBe(2);
+      expect(parsed.receipt.anchor.sigAccountId).toBe(
+        "11111111-1111-4111-8111-111111111111",
+      );
+    }
+  });
+
+  test("the strict response boundary rejects unsupported receipt versions", async () => {
+    const body = await assembleProofSuccess(
+      signedProofFor({ event: "locked" }),
+      NOW,
+    );
+
+    expect(
+      ProofSuccessSchema.safeParse({
+        ...body,
+        receipt: { ...body.receipt, v: 2 },
+      }).success,
+    ).toBe(false);
   });
 });
 

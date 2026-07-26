@@ -511,7 +511,9 @@ describe("signed anchors (T-W2)", () => {
     if ("unverifiable" in proof) throw new Error("unexpected unverifiable");
     expect(proof.anchorForRow.sig).toBeDefined();
     expect(proof.anchorForRow.keyId).toBe("test-anchor-key");
-    expect(verifyAnchorSignature(proof.anchorForRow, anchorPubKey)).toBe(true);
+    expect(verifyAnchorSignature(proof.anchorForRow, anchorPubKey, acct)).toBe(
+      true,
+    );
   });
 
   test("the signed anchor's CORE bytes are byte-identical to the legacy unsigned body (the seam)", async () => {
@@ -530,7 +532,13 @@ describe("signed anchors (T-W2)", () => {
     expect(sParsed.sig).toBeDefined();
     expect(sParsed.keyId).toBe("test-anchor-key");
 
-    const { sig: _sig, keyId: _keyId, ...sCore } = sParsed;
+    const {
+      sig: _sig,
+      keyId: _keyId,
+      sigV: _sigV,
+      sigAccountId: _sigAccountId,
+      ...sCore
+    } = sParsed;
     // Strip the signature fields → the remaining core canonicalizes to the exact legacy bytes.
     expect(canonicalize(sCore as JsonValue)).toBe(uBody);
     expect(uBody.includes("sig")).toBe(false);
@@ -545,7 +553,9 @@ describe("signed anchors (T-W2)", () => {
     if ("unverifiable" in proof) throw new Error("unexpected unverifiable");
     expect(proof.anchorForRow.sig).toBeUndefined();
     // No signature present → the signature check is false, but the chain still verifies structurally.
-    expect(verifyAnchorSignature(proof.anchorForRow, anchorPubKey)).toBe(false);
+    expect(verifyAnchorSignature(proof.anchorForRow, anchorPubKey, acct)).toBe(
+      false,
+    );
   });
 
   test("a signed chain still verifies structurally (sig fields are ignored by verifyChain)", async () => {
@@ -566,11 +576,18 @@ describe("signed anchors (T-W2)", () => {
 
     // Tamper the tip: the signature was over the original core, so it no longer verifies.
     const tampered = { ...proof.anchorForRow, tipHash: "f".repeat(64) };
-    expect(verifyAnchorSignature(tampered, anchorPubKey)).toBe(false);
+    expect(verifyAnchorSignature(tampered, anchorPubKey, acct)).toBe(false);
 
     // A different public key never verifies this signature.
     const otherPub = generateKeyPairSync("ed25519").publicKey;
-    expect(verifyAnchorSignature(proof.anchorForRow, otherPub)).toBe(false);
+    expect(verifyAnchorSignature(proof.anchorForRow, otherPub, acct)).toBe(
+      false,
+    );
+
+    // A valid signed anchor from this tenant cannot be replayed as another tenant's commitment.
+    expect(
+      verifyAnchorSignature(proof.anchorForRow, anchorPubKey, randomUUID()),
+    ).toBe(false);
   });
 });
 

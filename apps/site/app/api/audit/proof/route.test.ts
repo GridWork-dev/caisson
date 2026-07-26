@@ -163,7 +163,7 @@ describe("GET /api/audit/proof", () => {
     expect(response.status).toBe(429);
     expect(response.headers.get("Retry-After")).toBe("17");
     expect(await response.json()).toEqual({ error: "rate limited" });
-    expect(order).toEqual(["scope", `rate:${ACCOUNT}`]);
+    expect(order).toEqual([`rate:${ACCOUNT}`]);
   });
 
   test("returns only the already-redacted proof bytes", async () => {

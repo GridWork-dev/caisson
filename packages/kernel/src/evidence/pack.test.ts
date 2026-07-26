@@ -8,10 +8,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { canonicalize, type JsonValue } from "../canonical.ts";
-import { buildRowReceipt, type RowReceipt } from "../audit-verify.ts";
+import {
+  anchorSignatureEnvelopeBytes,
+  buildRowReceipt,
+  type RowReceipt,
+} from "../audit-verify.ts";
 import { buildEvidencePack, EVIDENCE_PACK_FORMAT_VERSION } from "./pack.ts";
 
 const NOW = new Date("2026-07-13T12:00:00.000Z");
+const TENANT_ID = "11111111-1111-4111-8111-111111111111";
+const CHAIN_VERIFICATION = { valid: true, brokenAt: null } as const;
 
 function link(prevHash: string | null, payload: JsonValue): string {
   return createHash("sha256")
@@ -30,13 +36,25 @@ function buildSignedFixture(): {
     .export({ format: "der", type: "spki" })
     .toString("base64");
 
-  function signCore(core: {
+  function signAnchor(core: {
     length: number;
     tipHash: string;
     genesisHash: string;
-  }): string {
-    const bytes = new TextEncoder().encode(canonicalize(core));
-    return sign(null, Buffer.from(bytes), kp.privateKey).toString("base64");
+  }) {
+    const sigV = 2 as const;
+    const sigAccountId = TENANT_ID;
+    const signatureAnchor = { ...core, sigV, sigAccountId };
+    return {
+      ...signatureAnchor,
+      sig: sign(
+        null,
+        Buffer.from(
+          anchorSignatureEnvelopeBytes(signatureAnchor, sigAccountId),
+        ),
+        kp.privateKey,
+      ).toString("base64"),
+      keyId,
+    };
   }
 
   const genesisPayload: JsonValue = { event: "genesis", v: 1 };
@@ -44,20 +62,16 @@ function buildSignedFixture(): {
   const row1Payload: JsonValue = { event: "next", v: 2, password: "s3cr3t" };
   const row1Hash = link(genesisHash, row1Payload);
 
-  const anchor0 = {
+  const anchor0 = signAnchor({
     length: 1,
     tipHash: genesisHash,
     genesisHash,
-    sig: signCore({ length: 1, tipHash: genesisHash, genesisHash }),
-    keyId,
-  };
-  const anchor1 = {
+  });
+  const anchor1 = signAnchor({
     length: 2,
     tipHash: row1Hash,
     genesisHash,
-    sig: signCore({ length: 2, tipHash: row1Hash, genesisHash }),
-    keyId,
-  };
+  });
 
   const r0 = buildRowReceipt({
     entry: {
@@ -120,9 +134,10 @@ describe("buildEvidencePack", () => {
     const pack = buildEvidencePack({
       receipts,
       meta: {
-        tenantId: "tenant-1",
+        tenantId: TENANT_ID,
         chainLength: 2,
         now: NOW,
+        chainVerification: CHAIN_VERIFICATION,
         anchorAuth: { keyId, publicKeySpkiBase64 },
       },
     });
@@ -152,9 +167,10 @@ describe("buildEvidencePack", () => {
     const pack = buildEvidencePack({
       receipts: [receipts[0]!, tampered],
       meta: {
-        tenantId: "tenant-1",
+        tenantId: TENANT_ID,
         chainLength: 2,
         now: NOW,
+        chainVerification: CHAIN_VERIFICATION,
         anchorAuth: { keyId, publicKeySpkiBase64 },
       },
     });
@@ -167,9 +183,10 @@ describe("buildEvidencePack", () => {
   test("deterministic: input order never changes the receipts.json bytes or the pack digest", () => {
     const { receipts, keyId, publicKeySpkiBase64 } = buildSignedFixture();
     const meta = {
-      tenantId: "tenant-1",
+      tenantId: TENANT_ID,
       chainLength: 2,
       now: NOW,
+      chainVerification: CHAIN_VERIFICATION,
       anchorAuth: { keyId, publicKeySpkiBase64 },
     };
     const forward = buildEvidencePack({ receipts, meta });
@@ -192,9 +209,10 @@ describe("buildEvidencePack", () => {
     const pack = buildEvidencePack({
       receipts,
       meta: {
-        tenantId: "t",
+        tenantId: TENANT_ID,
         chainLength: 2,
         now: NOW,
+        chainVerification: CHAIN_VERIFICATION,
         anchorAuth: { keyId, publicKeySpkiBase64 },
       },
     });
@@ -213,9 +231,10 @@ describe("buildEvidencePack", () => {
       const pack = buildEvidencePack({
         receipts,
         meta: {
-          tenantId: "t",
+          tenantId: TENANT_ID,
           chainLength: 2,
           now: NOW,
+          chainVerification: CHAIN_VERIFICATION,
           anchorAuth: { keyId, publicKeySpkiBase64 },
         },
       });
@@ -229,7 +248,12 @@ describe("buildEvidencePack", () => {
       const { receipts } = buildSignedFixture();
       const pack = buildEvidencePack({
         receipts,
-        meta: { tenantId: "t", chainLength: 2, now: NOW },
+        meta: {
+          tenantId: TENANT_ID,
+          chainLength: 2,
+          now: NOW,
+          chainVerification: CHAIN_VERIFICATION,
+        },
       });
       const readme = pack.files.find((f) => f.name === "README.md")!.contents;
       expect(readme).toContain("locally recomputed");

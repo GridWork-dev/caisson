@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import type { AuditChainEntry, ChainVerification } from "@caisson/kernel";
-import type { RowState } from "@caisson/kernel/audit-verify";
+import type { PinnedAnchorKey, RowState } from "@caisson/kernel/audit-verify";
 import { fetchWithTimeout } from "@caisson/kernel/fetch";
 import { ChainViewer, type ProofBundleResponse } from "@caisson/audit-worm/ui";
 import { parseProofResponse } from "@/lib/audit-proof";
@@ -17,6 +17,8 @@ export interface AuditChainClientProps {
     readonly retainUntil?: string;
   };
   readonly redactedPaths: readonly string[];
+  readonly pinnedAnchorKey?: PinnedAnchorKey;
+  readonly anchorAccountId?: string;
 }
 
 export function AuditChainClient({
@@ -26,6 +28,8 @@ export function AuditChainClient({
   rowStatuses,
   anchorProvenance,
   redactedPaths,
+  pinnedAnchorKey,
+  anchorAccountId,
 }: AuditChainClientProps) {
   const distinctRedactedPaths = useMemo(
     () => [...new Set(redactedPaths)].sort(),
@@ -77,8 +81,13 @@ export function AuditChainClient({
         entries={entries}
         verification={verification}
         rowStatuses={rowStatuses}
+        rowStatusProvenance="server-asserted"
         anchorProvenance={anchorProvenance}
         fetchProof={fetchProof}
+        {...(pinnedAnchorKey === undefined ? {} : { pinnedAnchorKey })}
+        {...(anchorAccountId === undefined
+          ? {}
+          : { expectedAnchorAccountId: anchorAccountId })}
       />
     </div>
   );

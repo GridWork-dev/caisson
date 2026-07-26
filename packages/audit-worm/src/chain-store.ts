@@ -46,6 +46,10 @@ import {
   type JsonValue,
 } from "@caisson/kernel";
 import {
+  ANCHOR_SIGNATURE_VERSION,
+  anchorSignatureEnvelopeBytes,
+} from "@caisson/kernel/audit-verify";
+import {
   withTenant,
   type TenantExecutor,
   type Transactor,
@@ -75,6 +79,8 @@ const anchorSchema = strictObject({
   genesisHash: z.string().min(1).optional(),
   sig: z.string().min(1).optional(),
   keyId: z.string().min(1).optional(),
+  sigV: z.literal(ANCHOR_SIGNATURE_VERSION).optional(),
+  sigAccountId: z.string().uuid().optional(),
 });
 
 /** A row read back from `audit_chain_entry`. `payload` is jsonb — already a parsed JSON value. */
@@ -105,11 +111,10 @@ function anchorKey(accountId: string, length: number): string {
 }
 
 /**
- * The anchor's CANONICAL CORE bytes: `canonicalize({length, tipHash, genesisHash?})`. This is what the
- * anchor signature is computed OVER, and what an external-anchoring lane builds against — `sig`/`keyId`
- * are DELIBERATELY EXCLUDED (T-W2 seam), so the core stays byte-identical whether or not an anchor is
- * signed, and byte-identical to every legacy unsigned anchor. Never change these bytes (chain-format
- * break). `encodeStoredAnchor` is the WORM body; THIS is the signed/external core.
+ * The anchor's CANONICAL CORE bytes: `canonicalize({length, tipHash, genesisHash?})`. External
+ * anchoring builds against this stable legacy commitment. The v2 Ed25519 signature wraps these bytes
+ * in the account-bound envelope from `anchorSignatureEnvelopeBytes`; `sig`/`keyId` remain excluded
+ * from both forms. Never change the core bytes (chain-format break).
  */
 function encodeAnchor(anchor: AuditChainAnchor): Uint8Array {
   const obj: { [key: string]: JsonValue } = {
@@ -133,6 +138,10 @@ function encodeStoredAnchor(anchor: AuditChainAnchor): Uint8Array {
   if (anchor.genesisHash !== undefined) obj.genesisHash = anchor.genesisHash;
   if (anchor.sig !== undefined) obj.sig = anchor.sig;
   if (anchor.keyId !== undefined) obj.keyId = anchor.keyId;
+  if (anchor.sigV !== undefined) obj.sigV = anchor.sigV;
+  if (anchor.sigAccountId !== undefined) {
+    obj.sigAccountId = anchor.sigAccountId;
+  }
   return new TextEncoder().encode(canonicalize(obj));
 }
 
@@ -152,10 +161,16 @@ function decodeAnchor(body: Uint8Array): AuditChainAnchor {
     genesisHash?: string;
     sig?: string;
     keyId?: string;
+    sigV?: 2;
+    sigAccountId?: string;
   } = { length: a.length, tipHash: a.tipHash };
   if (a.genesisHash !== undefined) anchor.genesisHash = a.genesisHash;
   if (a.sig !== undefined) anchor.sig = a.sig;
   if (a.keyId !== undefined) anchor.keyId = a.keyId;
+  if (a.sigV !== undefined) anchor.sigV = a.sigV;
+  if (a.sigAccountId !== undefined) {
+    anchor.sigAccountId = a.sigAccountId;
+  }
   return anchor;
 }
 
@@ -169,8 +184,15 @@ function decodeAnchor(body: Uint8Array): AuditChainAnchor {
 export function verifyAnchorSignature(
   anchor: AuditChainAnchor,
   publicKey: KeyObject,
+  expectedAccountId: string,
 ): boolean {
-  if (anchor.sig === undefined) return false;
+  if (
+    anchor.sig === undefined ||
+    anchor.sigV !== ANCHOR_SIGNATURE_VERSION ||
+    anchor.sigAccountId !== expectedAccountId
+  ) {
+    return false;
+  }
   let sig: Buffer;
   try {
     sig = Buffer.from(anchor.sig, "base64");
@@ -178,7 +200,12 @@ export function verifyAnchorSignature(
     return false;
   }
   try {
-    return cryptoVerify(null, encodeAnchor(anchor), publicKey, sig);
+    return cryptoVerify(
+      null,
+      anchorSignatureEnvelopeBytes(anchor, expectedAccountId),
+      publicKey,
+      sig,
+    );
   } catch {
     return false;
   }
@@ -375,18 +402,20 @@ export class AuditChainStore {
       const entries = await loadEntries(tx, accountId);
       const anchor = anchorChain(entries);
 
-      // Sign the anchor's CANONICAL CORE bytes at mint when a signer is configured.
-      // `sig`+`keyId` are stored ALONGSIDE the core (additive optional fields), so legacy unsigned
-      // anchors stay structurally valid and the signed core stays byte-identical to the unsigned form
-      // — this is NOT a chain-format break and existing anchors need no migration. The signature is
-      // over the core the external-anchoring lane also uses, so both roots agree.
+      // Sign the v2 account-bound envelope over the stable canonical commitment at mint.
+      // Signature provenance is stored ALONGSIDE the core, so legacy unsigned anchors remain
+      // structurally valid and the external-anchoring commitment is unchanged.
       let anchorToStore: AuditChainAnchor = anchor;
       if (this.signer !== undefined) {
-        const sigBytes = await this.signer.sign(encodeAnchor(anchor));
+        const sigBytes = await this.signer.sign(
+          anchorSignatureEnvelopeBytes(anchor, accountId),
+        );
         anchorToStore = {
           ...anchor,
           sig: Buffer.from(sigBytes).toString("base64"),
           keyId: this.signer.keyId,
+          sigV: ANCHOR_SIGNATURE_VERSION,
+          sigAccountId: accountId,
         };
       }
 

@@ -20,6 +20,7 @@ import { TokenBucketLimiter } from "@caisson/rate-limit";
 import { ZodError } from "zod";
 import { json, requireAdmin } from "@/lib/admin-route";
 import { getAdminMutationDeps } from "@/lib/admin-mutations-runtime";
+import { adminAuditAnchorTrustFromEnv } from "@/lib/audit-anchor-trust";
 import {
   assembleProofSuccess,
   AuditProofQuery,
@@ -79,6 +80,7 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   const deps = await getAdminMutationDeps();
+  const anchorTrust = adminAuditAnchorTrustFromEnv();
 
   // The chain is keyed by the wormAnchorAccount-derived UUID (`append()` used it). UUIDs pass through;
   // opaque better-auth ids are deterministically derived, so `getRowProof` -> `anchorKey` ->
@@ -124,6 +126,15 @@ export async function GET(req: Request): Promise<Response> {
 
   // binding #3 (H3) redaction + L2 (no WORM key) + strict OUT: assemble redacts server-side and drops
   // the internal key; the outgoing body is strict-parsed so an unknown field is rejected on the way out.
-  const body = await assembleProofSuccess(proof, new Date());
+  const body = await assembleProofSuccess(
+    proof,
+    new Date(),
+    anchorTrust === null
+      ? undefined
+      : {
+          pinnedKey: anchorTrust.pinnedKey,
+          expectedAccountId: anchorAccount,
+        },
+  );
   return respond(ProofSuccessSchema.parse(body));
 }

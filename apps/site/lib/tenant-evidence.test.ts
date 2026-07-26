@@ -25,6 +25,10 @@ const PROOF = {
       length: 5,
       tipHash: "a".repeat(64),
       genesisHash: "c".repeat(64),
+      sig: "dGVzdC1zaWduYXR1cmU=",
+      keyId: "test-anchor-key",
+      sigV: 2,
+      sigAccountId: "11111111-1111-4111-8111-111111111111",
     },
     raw: {
       prevHash: "b".repeat(64),
@@ -166,6 +170,26 @@ describe("tenant evidence internal proxy client", () => {
       Response.json({
         ...PROOF,
         accountId: ACCOUNT,
+      })) as typeof fetchWithTimeout;
+    const proxy = createTenantEvidenceProxy(
+      parseTenantEvidenceProxyConfig({
+        url: "http://admin.railway.internal/api/internal/audit/proof",
+        internalHost: "admin.railway.internal",
+        secret: SECRET,
+      }),
+      fetchImpl,
+    );
+
+    await expect(proxy.getProof(ACCOUNT, 4)).rejects.toEqual(
+      new TenantEvidenceProxyError("unavailable"),
+    );
+  });
+
+  test("fails closed when the proof proxy returns an unsupported receipt version", async () => {
+    const fetchImpl = (async () =>
+      Response.json({
+        ...PROOF,
+        receipt: { ...PROOF.receipt, v: 2 },
       })) as typeof fetchWithTimeout;
     const proxy = createTenantEvidenceProxy(
       parseTenantEvidenceProxyConfig({

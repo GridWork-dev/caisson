@@ -6,9 +6,10 @@ import { act } from "react";
 import { generateKeyPairSync, sign as nodeSign } from "node:crypto";
 import { renderIntoJsdom } from "@caisson/testing";
 import { afterEach, describe, expect, test } from "bun:test";
-import { anchorChain, canonicalize, chainEntry } from "@caisson/kernel";
+import { anchorChain, chainEntry } from "@caisson/kernel";
 import {
   buildRowReceipt,
+  anchorSignatureEnvelopeBytes,
   type PinnedAnchorKey,
   type RowReceipt,
   type VerifyLegs,
@@ -20,6 +21,7 @@ import { useRowVerify } from "./use-row-verify.ts";
 const e0 = chainEntry(null, { event: "created" });
 const e1 = chainEntry(e0, { event: "locked", password: "hunter2" });
 const anchor2 = anchorChain([e0, e1]);
+const ANCHOR_ACCOUNT = "11111111-1111-4111-8111-111111111111";
 const PASS: VerifyLegs = { linkRecompute: "pass", anchorEquality: "pass" };
 
 /** A receipt whose anchor is signed with an ephemeral Ed25519 key + its matching pinned public key —
@@ -29,19 +31,19 @@ function signedReceiptAndKey(): {
   pinnedKey: PinnedAnchorKey;
 } {
   const { publicKey, privateKey } = generateKeyPairSync("ed25519");
-  const core: Record<string, string | number> = {
-    length: anchor2.length,
-    tipHash: anchor2.tipHash,
+  const signatureAnchor = {
+    ...anchor2,
+    sigV: 2 as const,
+    sigAccountId: ANCHOR_ACCOUNT,
   };
-  if (anchor2.genesisHash !== undefined) core.genesisHash = anchor2.genesisHash;
   const sig = nodeSign(
     null,
-    Buffer.from(new TextEncoder().encode(canonicalize(core))),
+    Buffer.from(anchorSignatureEnvelopeBytes(signatureAnchor, ANCHOR_ACCOUNT)),
     privateKey,
   ).toString("base64");
   const r = buildRowReceipt({
     entry: e1,
-    anchorForRow: { ...anchor2, sig, keyId: "test-anchor-key" },
+    anchorForRow: { ...signatureAnchor, sig, keyId: "test-anchor-key" },
     redacted: false,
     checks: PASS,
     verifiedAt: "2026-07-13T00:00:00.000Z",
@@ -207,6 +209,7 @@ describe("ProofPanel (T-U1)", () => {
           seq={1}
           fetchProof={fetchProof}
           pinnedAnchorKey={pinnedKey}
+          expectedAnchorAccountId={ANCHOR_ACCOUNT}
         />,
       );
       try {
@@ -260,6 +263,7 @@ describe("ProofPanel (T-U1)", () => {
           seq={1}
           fetchProof={fetchProof}
           pinnedAnchorKey={wrongKey}
+          expectedAnchorAccountId={ANCHOR_ACCOUNT}
         />,
       );
       try {
@@ -277,6 +281,70 @@ describe("ProofPanel (T-U1)", () => {
         h.unmount();
       }
     });
+
+    test.each([
+      [
+        "signature stripped",
+        (anchor: RowReceipt["anchor"]): RowReceipt["anchor"] => {
+          const { sig: _sig, ...unsigned } = anchor;
+          return unsigned;
+        },
+      ],
+      [
+        "key id swapped",
+        (anchor: RowReceipt["anchor"]): RowReceipt["anchor"] => ({
+          ...anchor,
+          keyId: "attacker-key",
+        }),
+      ],
+      [
+        "signature malformed",
+        (anchor: RowReceipt["anchor"]): RowReceipt["anchor"] => ({
+          ...anchor,
+          sig: "not-base64!",
+        }),
+      ],
+    ])(
+      "%s never earns a verified state with a pinned key",
+      async (_label, mutate) => {
+        const { receipt: signed, pinnedKey } = signedReceiptAndKey();
+        const compromised: RowReceipt = {
+          ...signed,
+          anchor: mutate(signed.anchor),
+        };
+        const fetchProof = async (): Promise<ProofBundleResponse> => ({
+          receipt: compromised,
+          redacted: false,
+          chainLength: 2,
+        });
+        const h = renderIntoJsdom(
+          <ProofPanel
+            seq={1}
+            fetchProof={fetchProof}
+            pinnedAnchorKey={pinnedKey}
+            expectedAnchorAccountId={ANCHOR_ACCOUNT}
+          />,
+        );
+        try {
+          await settle(() => {
+            const state = h.container
+              .querySelector('[data-phase="loaded"]')
+              ?.getAttribute("data-state");
+            return state !== undefined && state !== "pending";
+          });
+          expect(
+            h.container
+              .querySelector('[data-phase="loaded"]')
+              ?.getAttribute("data-state"),
+          ).not.toBe("verified");
+          expect(
+            h.container.querySelector('[data-testid="seal-caption"]'),
+          ).toBeNull();
+        } finally {
+          h.unmount();
+        }
+      },
+    );
 
     test("a redacted row shows the anchor-confirmed seal, never the verified seal", async () => {
       const masked = receipt({

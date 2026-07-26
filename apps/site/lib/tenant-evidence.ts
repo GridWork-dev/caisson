@@ -67,7 +67,7 @@ const accountIdSchema = z
   );
 
 const rowReceiptSchema = strictObject({
-  v: z.number().int(),
+  v: z.literal(1),
   seq: z.number().int().nonnegative(),
   hash: z.string().min(1),
   prevHash: z.string().min(1).nullable(),
@@ -77,6 +77,8 @@ const rowReceiptSchema = strictObject({
     genesisHash: z.string().min(1).optional(),
     sig: z.string().min(1).optional(),
     keyId: z.string().min(1).optional(),
+    sigV: z.literal(2).optional(),
+    sigAccountId: z.string().uuid().optional(),
   }),
   raw: strictObject({
     prevHash: z.string().min(1).nullable(),

@@ -1,12 +1,25 @@
 import type { RowProof, RowProofUnverifiable } from "@caisson/audit-worm";
-import type { AuditChainEntry, ChainVerification } from "@caisson/kernel";
+import {
+  ValidationError,
+  type AuditChainEntry,
+  type ChainVerification,
+  type JsonValue,
+} from "@caisson/kernel";
 import {
   classifyRowState,
   type RowReceipt,
   type RowState,
 } from "@caisson/kernel/audit-verify";
-import { buildEvidencePack, type EvidencePack } from "@caisson/kernel/evidence";
+import {
+  buildEvidencePack,
+  type EvidencePack,
+  type EvidencePackAnchorAuth,
+} from "@caisson/kernel/evidence";
+import { DEFAULT_REDACT_KEYS, redactValue } from "@caisson/kernel/redact";
 import { assembleProofSuccess } from "./audit-proof.ts";
+
+export const MAX_ADMIN_AUDIT_WINDOW_ENTRIES = 250;
+export const ADMIN_AUDIT_PROOF_CONCURRENCY = 8;
 
 export interface AuditProofSource {
   load(accountId: string): Promise<readonly AuditChainEntry[]>;
@@ -18,7 +31,10 @@ export interface AuditProofSource {
 }
 
 export interface AdminAuditWindow {
+  /** Raw rows stay server-side for verification and are never passed into a client component. */
   readonly entries: readonly AuditChainEntry[];
+  /** Server-redacted rows safe to serialize into the operator page's React payload. */
+  readonly displayEntries: readonly AuditChainEntry[];
   readonly verification: ChainVerification;
   readonly rowStatuses: readonly RowState[];
   readonly receipts: readonly RowReceipt[];
@@ -31,15 +47,43 @@ export async function buildAdminAuditWindow(input: {
   readonly accountId: string;
   readonly tenantId: string;
   readonly now: Date;
+  readonly anchorAuth?: EvidencePackAnchorAuth;
 }): Promise<AdminAuditWindow> {
-  const { source, accountId, tenantId, now } = input;
+  const { source, accountId, tenantId, now, anchorAuth } = input;
   const [entries, verification] = await Promise.all([
     source.load(accountId),
     source.verify(accountId),
   ]);
-  const proofs = await Promise.all(
-    entries.map((entry) => source.getRowProof(accountId, entry.seq)),
+  if (entries.length > MAX_ADMIN_AUDIT_WINDOW_ENTRIES) {
+    throw new ValidationError(
+      `audit window exceeds the maximum of ${String(MAX_ADMIN_AUDIT_WINDOW_ENTRIES)} entries`,
+      { chainLength: entries.length },
+    );
+  }
+  const proofs: Array<RowProof | RowProofUnverifiable> = new Array(
+    entries.length,
   );
+  let nextIndex = 0;
+  await Promise.all(
+    Array.from(
+      {
+        length: Math.min(ADMIN_AUDIT_PROOF_CONCURRENCY, entries.length),
+      },
+      async () => {
+        for (;;) {
+          const index = nextIndex;
+          nextIndex += 1;
+          const entry = entries[index];
+          if (entry === undefined) return;
+          proofs[index] = await source.getRowProof(accountId, entry.seq);
+        }
+      },
+    ),
+  );
+  const displayEntries = entries.map((entry) => ({
+    ...entry,
+    payload: redactValue(entry.payload, DEFAULT_REDACT_KEYS) as JsonValue,
+  }));
 
   const rowStatuses: RowState[] = [];
   const receipts: RowReceipt[] = [];
@@ -50,7 +94,13 @@ export async function buildAdminAuditWindow(input: {
       rowStatuses.push("unverifiable");
       continue;
     }
-    const assembled = await assembleProofSuccess(proof, now);
+    const assembled = await assembleProofSuccess(
+      proof,
+      now,
+      anchorAuth === undefined
+        ? undefined
+        : { pinnedKey: anchorAuth, expectedAccountId: accountId },
+    );
     receipts.push(assembled.receipt);
     for (const path of assembled.redactedPaths ?? []) {
       redactedPaths.add(path);
@@ -59,12 +109,18 @@ export async function buildAdminAuditWindow(input: {
       classifyRowState(assembled.receipt.checks, {
         redacted: assembled.redacted,
         isGenesis: entries[index]?.seq === 0,
+        requireSignature: anchorAuth !== undefined,
       }),
     );
   }
 
   const evidencePack =
-    entries.length > 0 && receipts.length === entries.length
+    entries.length > 0 &&
+    verification.valid === true &&
+    verification.brokenAt === null &&
+    receipts.length === entries.length &&
+    (anchorAuth === undefined ||
+      receipts.every((receipt) => receipt.checks.signature === "pass"))
       ? buildEvidencePack({
           receipts,
           meta: {
@@ -72,12 +128,14 @@ export async function buildAdminAuditWindow(input: {
             chainLength: entries.length,
             now,
             chainVerification: verification,
+            ...(anchorAuth === undefined ? {} : { anchorAuth }),
           },
         })
       : null;
 
   return {
     entries,
+    displayEntries,
     verification,
     rowStatuses,
     receipts,

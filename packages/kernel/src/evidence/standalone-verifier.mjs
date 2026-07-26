@@ -12,17 +12,18 @@
 //
 // What this recomputes, PER ROW, from the pack's raw material — it NEVER trusts the embedded `checks`
 // block (CR-06):
+//   0. full-chain gate   — the issuer's chain snapshot must report `{valid:true, brokenAt:null}`;
+//                           absent or detected-broken snapshots fail before row verification.
 //   1. link recompute    — SHA-256(canonicalize([prevHash, payload])) === hash (skipped, reported "na",
 //                           for a redacted row — the masked payload cannot recompute the original hash).
 //   2. anchor equality    — anchor.tipHash === hash (the per-row commitment; L2's public-tag rule, plain
 //                           equality is correct, not a secret compare).
-//   3. anchor signature   — OPTIONAL: only run when the receipt carries `anchor.sig` AND the pack
-//                           supplies a matching `anchorAuth.publicKeySpkiBase64` — the offline way to
-//                           verify authenticity without trusting Caisson. Absent either side,
-//                           this leg reports "not-available", never a silent pass or fail.
+//   3. anchor signature   — required when the pack supplies `anchorAuth`: v2 signature, pinned key id,
+//                           and tenant-bound WORM account must all match. A missing signature reports
+//                           "not-available" but still makes the overall verdict FAIL.
 //
-// A row's overall verdict is FAIL iff any of the three legs actually run and fail; "na"/"not-available"
-// legs never flip a PASS to FAIL (matching the six-state honest-marking rule).
+// A row's overall verdict is FAIL on a failed content/anchor leg, or whenever configured anchor
+// authentication does not produce a passing signature.
 
 // --- inlined canonicalize (byte-identical to @caisson/kernel canonical.ts) ----------------------
 function sortValue(value) {
@@ -46,6 +47,14 @@ export function canonicalize(value) {
 
 // --- inlined base64 <-> bytes (Buffer where available, atob/btoa fallback) ----------------------
 function base64ToBytes(b64) {
+  if (
+    typeof b64 !== "string" ||
+    b64.length === 0 ||
+    b64.length % 4 !== 0 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)
+  ) {
+    throw new Error("standalone-verifier: malformed base64");
+  }
   if (typeof Buffer !== "undefined")
     return new Uint8Array(Buffer.from(b64, "base64"));
   const bin = atob(b64);
@@ -107,20 +116,54 @@ async function verifyEd25519(coreBytes, sigBase64, publicKeySpkiBase64) {
   return verify(null, Buffer.from(coreBytes), pub, Buffer.from(sigBytes));
 }
 
-/** The anchor's signed CORE — must byte-match `audit-worm`'s `encodeAnchor` (genesisHash omitted when absent). */
-function anchorCoreBytes(anchor) {
+const ANCHOR_SIGNATURE_DOMAIN = "caisson.audit-chain.anchor.v2";
+const ANCHOR_SIGNATURE_VERSION = 2;
+
+function anchorSignatureEnvelopeBytes(anchor, accountId) {
   const core = { length: anchor.length, tipHash: anchor.tipHash };
   if (anchor.genesisHash !== undefined) core.genesisHash = anchor.genesisHash;
-  return new TextEncoder().encode(canonicalize(core));
+  return new TextEncoder().encode(
+    canonicalize({
+      domain: ANCHOR_SIGNATURE_DOMAIN,
+      v: ANCHOR_SIGNATURE_VERSION,
+      accountId,
+      anchor: core,
+    }),
+  );
+}
+
+async function wormAnchorAccount(id) {
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  ) {
+    return id.toLowerCase();
+  }
+  const hex = await sha256Hex(new TextEncoder().encode(id));
+  const variant = (
+    (Number.parseInt(hex.slice(16, 17), 16) & 0x3) |
+    0x8
+  ).toString(16);
+  const raw =
+    hex.slice(0, 12) + "8" + hex.slice(13, 16) + variant + hex.slice(17, 32);
+  return `${raw.slice(0, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}-${raw.slice(16, 20)}-${raw.slice(20, 32)}`;
 }
 
 /**
  * Verify one receipt against the pack's (optional) anchor-signing public key. Returns
  * `{ seq, link, anchorEquality, signature, overall }` — never reads the receipt's own `checks`.
  */
-export async function verifyReceipt(receipt, anchorAuth) {
+export async function verifyReceipt(receipt, anchorAuth, tenantId) {
+  const expectedAnchorLength =
+    Number.isSafeInteger(receipt.seq) &&
+    receipt.seq >= 0 &&
+    receipt.seq < Number.MAX_SAFE_INTEGER
+      ? receipt.seq + 1
+      : undefined;
   const anchorEquality =
-    receipt.anchor.tipHash === receipt.hash ? "pass" : "fail";
+    receipt.anchor.tipHash === receipt.hash &&
+    receipt.anchor.length === expectedAnchorLength
+      ? "pass"
+      : "fail";
 
   let link;
   if (receipt.redacted === true) {
@@ -134,32 +177,113 @@ export async function verifyReceipt(receipt, anchorAuth) {
   }
 
   let signature = "not-available";
-  if (
-    receipt.anchor.sig !== undefined &&
-    anchorAuth !== undefined &&
-    anchorAuth.keyId === receipt.anchor.keyId
-  ) {
-    const ok = await verifyEd25519(
-      anchorCoreBytes(receipt.anchor),
-      receipt.anchor.sig,
-      anchorAuth.publicKeySpkiBase64,
-    );
-    signature = ok ? "pass" : "fail";
+  if (anchorAuth !== undefined) {
+    const expectedAccountId = await wormAnchorAccount(tenantId);
+    if (
+      receipt.anchor.sig === undefined ||
+      receipt.anchor.sigV !== ANCHOR_SIGNATURE_VERSION
+    ) {
+      signature = "not-available";
+    } else if (
+      anchorAuth.keyId !== receipt.anchor.keyId ||
+      receipt.anchor.sigAccountId !== expectedAccountId
+    ) {
+      signature = "fail";
+    } else {
+      try {
+        const ok = await verifyEd25519(
+          anchorSignatureEnvelopeBytes(receipt.anchor, expectedAccountId),
+          receipt.anchor.sig,
+          anchorAuth.publicKeySpkiBase64,
+        );
+        signature = ok ? "pass" : "fail";
+      } catch {
+        signature = "fail";
+      }
+    }
   }
 
   const overall =
     // nosemgrep: no-insecure-token-compare -- link/anchorEquality/signature are pass/fail verdict strings, not secrets; the Ed25519 signature check itself is verifyEd25519 above. No timing side channel on a public verdict.
-    link === "fail" || anchorEquality === "fail" || signature === "fail"
+    link === "fail" ||
+    anchorEquality === "fail" ||
+    signature === "fail" ||
+    (anchorAuth !== undefined && signature !== "pass")
       ? "FAIL"
       : "PASS";
   return { seq: receipt.seq, link, anchorEquality, signature, overall };
 }
 
-/** Verify every receipt in a pack. Deterministic order: receipts are checked as given. */
+const MAX_PACK_CHAIN_LENGTH = 1_000_000;
+
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isBoundedString(value, max) {
+  return typeof value === "string" && value.length > 0 && value.length <= max;
+}
+
+/**
+ * Prove the pack is a complete, ordered chain snapshot before checking any row. This prevents a
+ * valid signed subset, duplicate, or relabeled historical row from earning a green pack verdict.
+ */
+function assertCompletePack(pack) {
+  if (!isRecord(pack) || pack.formatVersion !== 1)
+    throw new Error("invalid pack");
+  if (
+    !isRecord(pack.chainVerification) ||
+    pack.chainVerification.valid !== true ||
+    pack.chainVerification.brokenAt !== null
+  ) {
+    throw new Error("invalid chain verification");
+  }
+  if (
+    !isBoundedString(pack.tenantId, 256) ||
+    // eslint-disable-next-line no-control-regex -- fail closed on C0/C1 tenant-id bytes.
+    /[\u0000-\u001f\u007f-\u009f\s/\\]/u.test(pack.tenantId)
+  ) {
+    throw new Error("invalid tenant");
+  }
+  if (
+    !Number.isSafeInteger(pack.chainLength) ||
+    pack.chainLength <= 0 ||
+    pack.chainLength > MAX_PACK_CHAIN_LENGTH ||
+    !Array.isArray(pack.receipts) ||
+    pack.receipts.length !== pack.chainLength
+  ) {
+    throw new Error("invalid chain length");
+  }
+
+  let expectedPrevHash = null;
+  for (let index = 0; index < pack.receipts.length; index += 1) {
+    const receipt = pack.receipts[index];
+    if (
+      !isRecord(receipt) ||
+      receipt.v !== 1 ||
+      receipt.seq !== index ||
+      !isBoundedString(receipt.hash, 1024) ||
+      (receipt.prevHash !== null && !isBoundedString(receipt.prevHash, 1024)) ||
+      !isRecord(receipt.raw) ||
+      receipt.raw.prevHash !== receipt.prevHash ||
+      receipt.prevHash !== expectedPrevHash ||
+      typeof receipt.redacted !== "boolean" ||
+      !isRecord(receipt.anchor) ||
+      receipt.anchor.length !== index + 1 ||
+      !isBoundedString(receipt.anchor.tipHash, 1024)
+    ) {
+      throw new Error("invalid receipt sequence");
+    }
+    expectedPrevHash = receipt.hash;
+  }
+}
+
+/** Verify every receipt in a complete pack. Deterministic order: receipts are checked as given. */
 export async function verifyPack(pack) {
+  assertCompletePack(pack);
   const results = [];
   for (const receipt of pack.receipts) {
-    results.push(await verifyReceipt(receipt, pack.anchorAuth));
+    results.push(await verifyReceipt(receipt, pack.anchorAuth, pack.tenantId));
   }
   const failed = results.filter((r) => r.overall === "FAIL");
   return { results, ok: failed.length === 0, failedCount: failed.length };
@@ -180,10 +304,16 @@ async function runCli(argv) {
     );
     return 2;
   }
-  const fs = await import("node:fs/promises");
-  const raw = await fs.readFile(path, "utf8");
-  const pack = JSON.parse(raw);
-  const { results, ok, failedCount } = await verifyPack(pack);
+  let verification;
+  try {
+    const fs = await import("node:fs/promises");
+    const raw = await fs.readFile(path, "utf8");
+    verification = await verifyPack(JSON.parse(raw));
+  } catch {
+    process.stdout.write("FAIL — evidence pack is incomplete or malformed.\n");
+    return 1;
+  }
+  const { results, ok, failedCount } = verification;
   for (const r of results) {
     process.stdout.write(
       `row ${String(r.seq)}: link=${legendFor(r.link)} anchor-equality=${legendFor(r.anchorEquality)} signature=${legendFor(r.signature)} -> ${r.overall}\n`,

@@ -11,6 +11,7 @@ import { z } from "zod";
 import {
   buildRowReceipt,
   verifyEntryAgainstAnchor,
+  type PinnedAnchorKey,
   type RowReceipt,
 } from "@caisson/kernel/audit-verify";
 import {
@@ -32,18 +33,20 @@ import type { RowProof } from "@caisson/audit-worm";
  * NON-NEGATIVE INTEGER before it can reach WORM-key construction (a float/`"abc"`/negative is a 400).
  * Unknown query fields are rejected by `.strict()`.
  */
+export const AuditProofAccount = z
+  .string()
+  .trim()
+  .min(1)
+  .max(256)
+  .refine(
+    // eslint-disable-next-line no-control-regex -- this boundary rejects C0/C1 account-id bytes.
+    (value) => !/[\u0000-\u001f\u007f-\u009f\s/\\]/u.test(value),
+    "account id has whitespace, control characters, or path separators",
+  );
+
 export const AuditProofQuery = z
   .object({
-    account: z
-      .string()
-      .trim()
-      .min(1)
-      .max(256)
-      .refine(
-        // eslint-disable-next-line no-control-regex -- this boundary rejects C0/C1 account-id bytes.
-        (value) => !/[\u0000-\u001f\u007f-\u009f\s/\\]/u.test(value),
-        "account id has whitespace, control characters, or path separators",
-      ),
+    account: AuditProofAccount,
     seq: z.coerce.number().int().nonnegative(),
   })
   .strict();
@@ -51,7 +54,7 @@ export const AuditProofQuery = z
 /** The receipt schema, mirrored strict for the outgoing validation. `raw.payload` is arbitrary JSON. */
 const rowReceiptSchema = z
   .object({
-    v: z.number().int(),
+    v: z.literal(1),
     seq: z.number().int().nonnegative(),
     hash: z.string().min(1),
     prevHash: z.string().min(1).nullable(),
@@ -64,6 +67,8 @@ const rowReceiptSchema = z
         genesisHash: z.string().min(1).optional(),
         sig: z.string().min(1).optional(),
         keyId: z.string().min(1).optional(),
+        sigV: z.literal(2).optional(),
+        sigAccountId: z.string().uuid().optional(),
       })
       .strict(),
     raw: z
@@ -132,6 +137,10 @@ export function parseProofResponse(input: unknown): ProofResponse {
         : { genesisHash: anchor.genesisHash }),
       ...(anchor.sig === undefined ? {} : { sig: anchor.sig }),
       ...(anchor.keyId === undefined ? {} : { keyId: anchor.keyId }),
+      ...(anchor.sigV === undefined ? {} : { sigV: anchor.sigV }),
+      ...(anchor.sigAccountId === undefined
+        ? {}
+        : { sigAccountId: anchor.sigAccountId }),
     },
     checks: {
       linkRecompute: checks.linkRecompute,
@@ -194,6 +203,10 @@ function collectRedactedPaths(
 export async function assembleProofSuccess(
   proof: RowProof,
   now: Date,
+  trust?: {
+    readonly pinnedKey: PinnedAnchorKey;
+    readonly expectedAccountId: string;
+  },
 ): Promise<ProofSuccess> {
   const { entry, anchorForRow, chainLength } = proof;
 
@@ -209,6 +222,12 @@ export async function assembleProofSuccess(
 
   const checks = await verifyEntryAgainstAnchor(wireEntry, anchorForRow, {
     redacted,
+    ...(trust === undefined
+      ? {}
+      : {
+          pinnedKey: trust.pinnedKey,
+          expectedAccountId: trust.expectedAccountId,
+        }),
   });
   const receipt = buildRowReceipt({
     entry: wireEntry,

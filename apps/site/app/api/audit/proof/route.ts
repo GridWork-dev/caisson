@@ -66,17 +66,17 @@ export function createTenantProofRoute(
       return json({ error: "unauthenticated" }, 401);
     }
 
-    try {
-      await dependencies.assertTenantScope(session.accountId);
-    } catch {
-      return json({ error: "forbidden" }, 403);
-    }
-
     const rate = await dependencies.checkRateLimit(session.accountId);
     if (!rate.allowed) {
       const response = json({ error: "rate limited" }, 429);
       response.headers.set("Retry-After", String(rate.retryAfterSec));
       return response;
+    }
+
+    try {
+      await dependencies.assertTenantScope(session.accountId);
+    } catch {
+      return json({ error: "forbidden" }, 403);
     }
 
     try {

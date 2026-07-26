@@ -9,6 +9,8 @@ import {
 import { buildEvidencePack } from "@caisson/kernel/evidence";
 import { assembleProofSuccess, type ProofSuccess } from "./audit-proof.ts";
 import {
+  ADMIN_AUDIT_PROOF_CONCURRENCY,
+  MAX_ADMIN_AUDIT_WINDOW_ENTRIES,
   buildAdminAuditWindow,
   type AuditProofSource,
 } from "./audit-window.ts";
@@ -79,6 +81,9 @@ describe("buildAdminAuditWindow", () => {
     ]);
     expect(window.redactedPaths).toEqual(["credentials.token"]);
     expect(window.receipts).toHaveLength(2);
+    expect(JSON.stringify(window.displayEntries)).not.toContain("secret-a");
+    expect(JSON.stringify(window.displayEntries)).not.toContain("secret-b");
+    expect(JSON.stringify(window.displayEntries)).toContain("[redacted]");
   });
 
   test("marks an unreadable per-row anchor unverifiable and refuses a partial export", async () => {
@@ -101,6 +106,30 @@ describe("buildAdminAuditWindow", () => {
     });
 
     expect(window.rowStatuses).toEqual(["genesis", "unverifiable"]);
+    expect(window.evidencePack).toBeNull();
+  });
+
+  test("refuses an export when chain-level verification detects truncation", async () => {
+    const entries = buildChain([{ event: "first" }, { event: "second" }]);
+    const source = sourceFor(entries);
+
+    const window = await buildAdminAuditWindow({
+      source: {
+        ...source,
+        async verify() {
+          return { valid: false, brokenAt: entries.length };
+        },
+      },
+      accountId: "11111111-1111-4111-8111-111111111111",
+      tenantId: "buyer_account_01",
+      now: NOW,
+    });
+
+    expect(window.receipts).toHaveLength(2);
+    expect(window.verification).toEqual({
+      valid: false,
+      brokenAt: entries.length,
+    });
     expect(window.evidencePack).toBeNull();
   });
 
@@ -128,5 +157,81 @@ describe("buildAdminAuditWindow", () => {
     expect(window.evidencePack).toEqual(expected);
     expect(window.evidencePack?.sha256).toBe(expected.sha256);
     expect(window.evidencePack?.files).toEqual(expected.files);
+  });
+
+  test("refuses a signature-claimed export when its anchors are unsigned", async () => {
+    const entries = buildChain([{ event: "first" }]);
+    const window = await buildAdminAuditWindow({
+      source: sourceFor(entries),
+      accountId: "11111111-1111-4111-8111-111111111111",
+      tenantId: "buyer_account_01",
+      now: NOW,
+      anchorAuth: {
+        keyId: "anchor-v1",
+        publicKeySpkiBase64: "cHVibGljLWtleQ==",
+      },
+    });
+
+    expect(window.rowStatuses).toEqual(["unverifiable"]);
+    expect(window.evidencePack).toBeNull();
+  });
+
+  test("rejects an oversized chain before starting any per-row WORM proof reads", async () => {
+    const entries = buildChain(
+      Array.from(
+        { length: MAX_ADMIN_AUDIT_WINDOW_ENTRIES + 1 },
+        (_, index) => ({ index }),
+      ),
+    );
+    let proofReads = 0;
+    const source = sourceFor(entries);
+
+    await expect(
+      buildAdminAuditWindow({
+        source: {
+          ...source,
+          async getRowProof(accountId, seq) {
+            proofReads += 1;
+            return source.getRowProof(accountId, seq);
+          },
+        },
+        accountId: "11111111-1111-4111-8111-111111111111",
+        tenantId: "buyer_account_01",
+        now: NOW,
+      }),
+    ).rejects.toThrow(/exceeds the maximum/);
+    expect(proofReads).toBe(0);
+  });
+
+  test("bounds concurrent per-row WORM proof reads", async () => {
+    const entries = buildChain(
+      Array.from({ length: ADMIN_AUDIT_PROOF_CONCURRENCY * 2 }, (_, index) => ({
+        index,
+      })),
+    );
+    const source = sourceFor(entries);
+    let active = 0;
+    let maxActive = 0;
+
+    await buildAdminAuditWindow({
+      source: {
+        ...source,
+        async getRowProof(accountId, seq) {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+          await new Promise((resolve) => setTimeout(resolve, 2));
+          try {
+            return await source.getRowProof(accountId, seq);
+          } finally {
+            active -= 1;
+          }
+        },
+      },
+      accountId: "11111111-1111-4111-8111-111111111111",
+      tenantId: "buyer_account_01",
+      now: NOW,
+    });
+
+    expect(maxActive).toBeLessThanOrEqual(ADMIN_AUDIT_PROOF_CONCURRENCY);
   });
 });

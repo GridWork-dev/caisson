@@ -469,10 +469,26 @@ const EARLIER = new Date(Date.UTC(2032, 0, 1));
 
 /** Stub behaviour for an object currently locked GOVERNANCE until {@link CURRENT}. */
 function lockedGovernance(): S3StubBehavior {
+  let retention: {
+    Mode: "GOVERNANCE" | "COMPLIANCE";
+    RetainUntilDate: Date;
+  } = {
+    Mode: "GOVERNANCE",
+    RetainUntilDate: CURRENT,
+  };
   return {
     getRetention: () => ({
-      Retention: { Mode: "GOVERNANCE", RetainUntilDate: CURRENT },
+      Retention: retention,
     }),
+    putRetention: (input) => {
+      const next = input.Retention;
+      if (next?.Mode !== undefined && next.RetainUntilDate !== undefined) {
+        retention = {
+          Mode: next.Mode,
+          RetainUntilDate: next.RetainUntilDate,
+        };
+      }
+    },
     head: () => ({
       ContentLength: 3,
       ObjectLockRetainUntilDate: LATER,
@@ -505,7 +521,7 @@ describe("S3ArtifactStore.extendRetention (ADR-0202 — extend-only, mode-preser
     expect(meta.retainUntil).toBe(LATER);
     expect(meta.size).toBe(3);
 
-    expect(stub.calls.getRetention).toHaveLength(1);
+    expect(stub.calls.getRetention).toHaveLength(2);
     expect(stub.calls.putRetention).toHaveLength(1);
     const input = stub.calls.putRetention[0]!;
     expect(input.Bucket).toBe(BUCKET);
@@ -513,6 +529,63 @@ describe("S3ArtifactStore.extendRetention (ADR-0202 — extend-only, mode-preser
     expect(input.Retention?.Mode).toBe("GOVERNANCE"); // mode preserved, never escalated here
     expect(input.Retention?.RetainUntilDate).toBe(LATER);
   });
+
+  test("returns the authoritative post-write GetObjectRetention date, not the requested or HeadObject date", async () => {
+    const applied = new Date(Date.UTC(2035, 0, 1));
+    let reads = 0;
+    const stub = makeS3Stub({
+      getRetention: () => ({
+        Retention: {
+          Mode: "GOVERNANCE",
+          RetainUntilDate: reads++ === 0 ? CURRENT : applied,
+        },
+      }),
+      head: () => ({
+        ContentLength: 3,
+        ObjectLockRetainUntilDate: LATER,
+      }),
+    });
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+
+    const meta = await store.extendRetention(key, LATER);
+
+    expect(meta.retainUntil).toEqual(applied);
+    expect(stub.calls.getRetention).toHaveLength(2);
+  });
+
+  test.each([
+    [
+      "a shorter date",
+      {
+        Mode: "GOVERNANCE" as const,
+        RetainUntilDate: new Date(LATER.getTime() - 1),
+      },
+    ],
+    ["the wrong mode", { Mode: "COMPLIANCE" as const, RetainUntilDate: LATER }],
+    ["a missing mode", { RetainUntilDate: LATER }],
+  ])(
+    "rejects %s in the authoritative post-write readback",
+    async (_label, applied) => {
+      let reads = 0;
+      const stub = makeS3Stub({
+        getRetention: () => ({
+          Retention:
+            reads++ === 0
+              ? { Mode: "GOVERNANCE", RetainUntilDate: CURRENT }
+              : applied,
+        }),
+        head: () => ({ ContentLength: 3 }),
+      });
+      const store = new S3ArtifactStore({
+        client: stub.client,
+        bucket: BUCKET,
+      });
+
+      await expect(store.extendRetention(key, LATER)).rejects.toThrow(
+        /authoritative readback/i,
+      );
+    },
+  );
 
   test("targets the caller-recorded version throughout a retention extension", async () => {
     const stub = makeS3Stub(lockedGovernance());
@@ -544,9 +617,21 @@ describe("S3ArtifactStore.extendRetention (ADR-0202 — extend-only, mode-preser
   );
 
   test("an object with NO current retention gains one — extend-from-nothing strengthens", async () => {
+    let retained = false;
     const stub = makeS3Stub({
       getRetention: () => {
+        if (retained) {
+          return {
+            Retention: {
+              Mode: "GOVERNANCE",
+              RetainUntilDate: LATER,
+            },
+          };
+        }
         throw s3Error(404, "NoSuchObjectLockConfiguration");
+      },
+      putRetention: () => {
+        retained = true;
       },
       head: () => ({ ContentLength: 1 }),
     });
@@ -648,6 +733,45 @@ describe("S3ArtifactStore.escalateToCompliance (ADR-0202 riding the ADR-0051 thr
       expect(input.Retention?.RetainUntilDate).toBe(CURRENT);
     });
   });
+
+  test.each([
+    [
+      "a shorter date",
+      {
+        Mode: "COMPLIANCE" as const,
+        RetainUntilDate: new Date(CURRENT.getTime() - 1),
+      },
+    ],
+    [
+      "the wrong mode",
+      { Mode: "GOVERNANCE" as const, RetainUntilDate: CURRENT },
+    ],
+    ["a missing mode", { RetainUntilDate: CURRENT }],
+  ])(
+    "in production rejects %s in the authoritative COMPLIANCE readback",
+    async (_label, applied) => {
+      await inProduction(async () => {
+        let reads = 0;
+        const stub = makeS3Stub({
+          getRetention: () => ({
+            Retention:
+              reads++ === 0
+                ? { Mode: "GOVERNANCE", RetainUntilDate: CURRENT }
+                : applied,
+          }),
+          head: () => ({ ContentLength: 3 }),
+        });
+        const store = new S3ArtifactStore({
+          client: stub.client,
+          bucket: BUCKET,
+        });
+
+        await expect(
+          store.escalateToCompliance(key, CURRENT, validOptIn()),
+        ).rejects.toThrow(/authoritative readback/i);
+      });
+    },
+  );
 
   test("in production an EARLIER date is refused — escalation never shortens (monotonicity floor)", async () => {
     await inProduction(async () => {

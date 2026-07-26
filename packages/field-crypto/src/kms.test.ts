@@ -113,7 +113,7 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     });
     await expect(
       first.decryptDataKey("acct_a", generated.wrappedKey),
-    ).rejects.toThrow(/shredded/);
+    ).rejects.toThrow(/soft-deleted for this client instance/);
 
     // The local tombstone is process-memory only. Recreating the client with the same master
     // recovers the derived KEK, so this backend must never claim irreversible destruction.

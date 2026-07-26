@@ -16,7 +16,7 @@ import { setAdminAuthFixture, VERIFIED_ADMIN } from "@/lib/admin-auth-mock";
 import { getAdminDb } from "@/lib/admin-db";
 import { buildAdminAuditWindow } from "@/lib/audit-window";
 
-const { GET } = await import("./route.ts");
+const { GET, createAdminAuditExportRoute } = await import("./route.ts");
 
 type AdminDbGlobal = {
   caissonAdminTransactor?: unknown;
@@ -82,6 +82,30 @@ describe("GET /api/admin/audit/export", () => {
     setAdminAuthFixture();
 
     expect((await get(randomUUID())).status).toBe(401);
+  });
+
+  test("rate-limits the actual export path after auth and before WORM reads", async () => {
+    const order: string[] = [];
+    const limited = createAdminAuditExportRoute({
+      authenticate: async () => {
+        order.push("auth");
+        return "op@example.com";
+      },
+      checkRateLimit: (actor, account) => {
+        order.push(`rate:${actor}:${account}`);
+        return { allowed: false, retryAfterSec: 19 };
+      },
+    });
+
+    const response = await limited(
+      new Request(
+        "http://admin.local/api/admin/audit/export?account=acct_limited",
+      ),
+    );
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("19");
+    expect(order).toEqual(["auth", "rate:op@example.com:acct_limited"]);
   });
 
   test("returns buildEvidencePack's file map and sha256 verbatim", async () => {

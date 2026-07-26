@@ -18,6 +18,7 @@ import {
 const ACCOUNT_A = "11111111-1111-4111-8111-111111111111";
 const BUCKET = "caisson-worm-gcs";
 const RETAIN = new Date(Date.UTC(2033, 0, 1));
+const PROVIDER_GENERATION = "1742000000000042";
 
 interface GcsCall {
   url: string;
@@ -276,6 +277,7 @@ describe("GcsArtifactStore.get / head", () => {
             return new Response(bytes);
           }
           return json({
+            generation: PROVIDER_GENERATION,
             size: "3",
             contentType: "application/json",
             retention: {
@@ -311,6 +313,7 @@ describe("GcsArtifactStore.get / head", () => {
       router({
         onObjectGet: () =>
           json({
+            generation: PROVIDER_GENERATION,
             size: "42",
             contentType: "application/octet-stream",
             retention: {
@@ -372,6 +375,7 @@ describe("GcsArtifactStore.extendRetention (extend-only)", () => {
       router({
         onObjectGet: () =>
           json({
+            generation: PROVIDER_GENERATION,
             size: "3",
             retention: {
               mode: "Unlocked",
@@ -380,6 +384,7 @@ describe("GcsArtifactStore.extendRetention (extend-only)", () => {
           }),
         onPatch: () =>
           json({
+            generation: PROVIDER_GENERATION,
             size: "3",
             retention: {
               mode: "Unlocked",
@@ -494,6 +499,7 @@ describe("GcsArtifactStore.extendRetention (extend-only)", () => {
         router({
           onObjectGet: () =>
             json({
+              generation: PROVIDER_GENERATION,
               size: "3",
               retention: {
                 mode: "Unlocked",
@@ -516,9 +522,10 @@ describe("GcsArtifactStore.extendRetention (extend-only)", () => {
   test("an object with NO current retention gains one — extend-from-nothing strengthens", async () => {
     const { transport } = makeGcsStub(
       router({
-        onObjectGet: () => json({ size: "1" }),
+        onObjectGet: () => json({ generation: PROVIDER_GENERATION, size: "1" }),
         onPatch: () =>
           json({
+            generation: PROVIDER_GENERATION,
             size: "1",
             retention: {
               mode: "Unlocked",
@@ -642,7 +649,12 @@ describe("GcsArtifactStore.put — applied-retention assertion + header-injectio
       router({
         // GCS accepts the object but the resource echoes no retention — API drift; the object
         // would sit unprotected while the caller records a retain_until row.
-        onInsert: () => json({ size: "1", contentType: "text/plain" }),
+        onInsert: () =>
+          json({
+            generation: PROVIDER_GENERATION,
+            size: "1",
+            contentType: "text/plain",
+          }),
       }),
     );
     const store = await GcsArtifactStore.create({ transport, bucket: BUCKET });
@@ -660,6 +672,7 @@ describe("GcsArtifactStore.put — applied-retention assertion + header-injectio
       router({
         onInsert: () =>
           json({
+            generation: PROVIDER_GENERATION,
             size: "1",
             retention: {
               mode: "Unlocked",
@@ -678,6 +691,31 @@ describe("GcsArtifactStore.put — applied-retention assertion + header-injectio
         { retainUntil: RETAIN },
       ),
     ).rejects.toThrow(/did not apply the requested retention/);
+  });
+
+  test("an accepted insert with the wrong retention mode is refused", async () => {
+    const { transport } = makeGcsStub(
+      router({
+        onInsert: () =>
+          json({
+            generation: "1742000000000042",
+            size: "1",
+            retention: {
+              mode: "Locked",
+              retainUntilTime: RETAIN.toISOString(),
+            },
+          }),
+      }),
+    );
+    const store = await GcsArtifactStore.create({ transport, bucket: BUCKET });
+
+    await expect(
+      store.put(
+        buildArtifactKey(ACCOUNT_A, "anchors", "wrong-mode.json"),
+        new Uint8Array([1]),
+        { retainUntil: RETAIN },
+      ),
+    ).rejects.toThrow(/retention/i);
   });
 
   test("a contentType carrying CR/LF (MIME header injection) is rejected before any call", async () => {
@@ -720,5 +758,75 @@ describe("GcsArtifactStore.put — applied-retention assertion + header-injectio
         { retainUntil: RETAIN },
       ),
     ).rejects.toThrow(/generation/i);
+  });
+});
+
+describe("GcsArtifactStore provider response validation", () => {
+  const key = buildArtifactKey(ACCOUNT_A, "evidence", "provider.json");
+
+  test.each([
+    ["a missing generation", { size: "1" }],
+    [
+      "a malformed size",
+      { generation: "1742000000000042", size: "not-a-number" },
+    ],
+    ["a missing size", { generation: "1742000000000042" }],
+    [
+      "an invalid retention date",
+      {
+        generation: "1742000000000042",
+        size: "1",
+        retention: { mode: "Unlocked", retainUntilTime: "not-a-date" },
+      },
+    ],
+    [
+      "an unknown retention mode",
+      {
+        generation: "1742000000000042",
+        size: "1",
+        retention: {
+          mode: "Surprise",
+          retainUntilTime: RETAIN.toISOString(),
+        },
+      },
+    ],
+  ])("rejects %s in object metadata", async (_label, metadata) => {
+    const { transport } = makeGcsStub(
+      router({ onObjectGet: () => json(metadata) }),
+    );
+    const store = await GcsArtifactStore.create({ transport, bucket: BUCKET });
+
+    await expect(store.head(key)).rejects.toThrow(/metadata|validation/i);
+  });
+
+  test("rejects a PATCH response that keeps the wrong retention mode", async () => {
+    const generation = "1742000000000042";
+    const { transport } = makeGcsStub(
+      router({
+        onObjectGet: () =>
+          json({
+            generation,
+            size: "1",
+            retention: {
+              mode: "Unlocked",
+              retainUntilTime: CURRENT.toISOString(),
+            },
+          }),
+        onPatch: () =>
+          json({
+            generation,
+            size: "1",
+            retention: {
+              mode: "Locked",
+              retainUntilTime: LATER.toISOString(),
+            },
+          }),
+      }),
+    );
+    const store = await GcsArtifactStore.create({ transport, bucket: BUCKET });
+
+    await expect(store.extendRetention(key, LATER, generation)).rejects.toThrow(
+      /retention/i,
+    );
   });
 });
