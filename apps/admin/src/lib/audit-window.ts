@@ -15,7 +15,9 @@ import {
   type RowState,
 } from "@caisson/kernel/audit-verify";
 import {
+  assertEvidencePackKeyId,
   buildEvidencePack,
+  evidencePackManifestForInput,
   evidencePackSealPayloadBytes,
   type EvidencePack,
   type EvidencePackAnchorAuth,
@@ -57,6 +59,12 @@ export async function buildAdminAuditWindow(input: {
   readonly packSigner?: AnchorSigner;
 }): Promise<AdminAuditWindow> {
   const { source, accountId, tenantId, now, anchorAuth, packSigner } = input;
+  if (anchorAuth !== undefined) {
+    assertEvidencePackKeyId(anchorAuth.keyId);
+  }
+  if (packSigner !== undefined) {
+    assertEvidencePackKeyId(packSigner.keyId);
+  }
   const [entries, verification] = await Promise.all([
     source.load(accountId),
     source.verify(accountId),
@@ -146,8 +154,10 @@ export async function buildAdminAuditWindow(input: {
     } else if (packSigner !== undefined) {
       const signature = await packSigner.sign(
         evidencePackSealPayloadBytes({
-          receipts,
-          meta: baseMeta,
+          manifest: evidencePackManifestForInput({
+            receipts,
+            meta: baseMeta,
+          }),
           accountId,
         }),
       );
@@ -156,7 +166,7 @@ export async function buildAdminAuditWindow(input: {
         meta: {
           ...baseMeta,
           packSeal: {
-            v: 1,
+            v: 2,
             keyId: packSigner.keyId,
             accountId,
             sig: Buffer.from(signature).toString("base64"),

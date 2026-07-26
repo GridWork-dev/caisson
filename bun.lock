@@ -1461,6 +1461,24 @@
         "react-dom": "^19.0.0",
       },
     },
+    "packages/verify-pack": {
+      "name": "@caisson/verify-pack",
+      "version": "0.1.0",
+      "bin": {
+        "verify-pack": "./dist/cli.js",
+      },
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "registry": {
       "name": "@caisson/registry",
       "version": "0.0.20",
@@ -2008,6 +2026,8 @@
     "@caisson/ui": ["@caisson/ui@workspace:packages/ui"],
 
     "@caisson/ui-pro": ["@caisson/ui-pro@workspace:packages/ui-pro"],
+
+    "@caisson/verify-pack": ["@caisson/verify-pack@workspace:packages/verify-pack"],
 
     "@changesets/apply-release-plan": ["@changesets/apply-release-plan@7.1.1", "", { "dependencies": { "@changesets/config": "^3.1.4", "@changesets/get-version-range-type": "^0.4.0", "@changesets/git": "^3.0.4", "@changesets/should-skip-package": "^0.1.2", "@changesets/types": "^6.1.0", "@manypkg/get-packages": "^1.1.3", "detect-indent": "^6.0.0", "fs-extra": "^7.0.1", "lodash.startcase": "^4.4.0", "outdent": "^0.5.0", "prettier": "^2.7.1", "resolve-from": "^5.0.0", "semver": "^7.5.3" } }, "sha512-9qPCm/rLx/xoOFXIHGB229+4GOL76S4MC+7tyOuTsR6+1jYlfFDQORdvwR5hDA6y4FL2BPt3qpbcQIS+dW85LA=="],
 

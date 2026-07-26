@@ -8,10 +8,12 @@ import type {
 import {
   anchorChain,
   buildChain,
+  ValidationError,
   type AuditChainEntry,
   type ChainVerification,
 } from "@caisson/kernel";
 import { buildEvidencePack } from "@caisson/kernel/evidence";
+import { EVIDENCE_PACK_KEY_ID_MAX_LENGTH } from "@caisson/kernel/evidence";
 import { anchorSignatureEnvelopeBytes } from "@caisson/kernel/audit-verify";
 import { assembleProofSuccess, type ProofSuccess } from "./audit-proof.ts";
 import {
@@ -168,7 +170,7 @@ describe("buildAdminAuditWindow", () => {
   test("binds a signed export's terminal length and complete receipt set to a pack seal", async () => {
     const entries = buildChain([{ event: "first" }, { event: "second" }]);
     const accountId = "11111111-1111-4111-8111-111111111111";
-    const keyId = "test-anchor-key";
+    const keyId = "k".repeat(EVIDENCE_PACK_KEY_ID_MAX_LENGTH);
     const keyPair = generateKeyPairSync("ed25519");
     const signer: AnchorSigner = {
       keyId,
@@ -215,18 +217,55 @@ describe("buildAdminAuditWindow", () => {
     });
 
     expect(window.evidencePack).not.toBeNull();
-    const receiptsFile = window.evidencePack?.files.find(
-      (file) => file.name === "receipts.json",
-    );
-    const body = JSON.parse(receiptsFile?.contents ?? "{}") as {
-      packSeal?: { keyId?: string; accountId?: string; sig?: string };
-    };
-    expect(body.packSeal).toEqual({
+    expect(window.evidencePack?.packSeal).toEqual({
       keyId,
       accountId,
       sig: expect.any(String),
-      v: 1,
+      v: 2,
     });
+  });
+
+  test("rejects an overlong custom signer identity before loading or signing", async () => {
+    const keyId = "k".repeat(EVIDENCE_PACK_KEY_ID_MAX_LENGTH + 1);
+    let sourceCalls = 0;
+    let signCalls = 0;
+    const source: AuditProofSource = {
+      async load() {
+        sourceCalls += 1;
+        return [];
+      },
+      async verify() {
+        sourceCalls += 1;
+        return { valid: true, brokenAt: null };
+      },
+      async getRowProof() {
+        sourceCalls += 1;
+        throw new Error("must not read row proofs");
+      },
+    };
+    const signer: AnchorSigner = {
+      keyId,
+      async sign() {
+        signCalls += 1;
+        return new Uint8Array(64);
+      },
+    };
+
+    await expect(
+      buildAdminAuditWindow({
+        source,
+        accountId: "11111111-1111-4111-8111-111111111111",
+        tenantId: "buyer_account_01",
+        now: NOW,
+        anchorAuth: {
+          keyId,
+          publicKeySpkiBase64: "cHVibGljLWtleQ==",
+        },
+        packSigner: signer,
+      }),
+    ).rejects.toThrow(ValidationError);
+    expect(sourceCalls).toBe(0);
+    expect(signCalls).toBe(0);
   });
 
   test("refuses a signature-claimed export when its anchors are unsigned", async () => {

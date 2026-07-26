@@ -16,6 +16,10 @@ import {
   sign as cryptoSign,
 } from "node:crypto";
 import { ConfigError, ValidationError } from "@caisson/kernel";
+import {
+  EVIDENCE_PACK_KEY_ID_MAX_LENGTH,
+  isEvidencePackKeyId,
+} from "@caisson/kernel/evidence";
 import { z } from "zod";
 
 const ED25519_SIGNATURE_BYTES = 64;
@@ -60,9 +64,9 @@ export class Ed25519AnchorSigner implements AnchorSigner {
 
   constructor(keyId: string, privateKey: KeyObject) {
     const id = keyId.trim();
-    if (id.length === 0) {
+    if (!isEvidencePackKeyId(id)) {
       throw new ValidationError(
-        "anchor signer keyId must be a non-empty string",
+        `anchor signer keyId must be control-free and at most ${String(EVIDENCE_PACK_KEY_ID_MAX_LENGTH)} characters`,
       );
     }
     if (privateKey.type !== "private") {

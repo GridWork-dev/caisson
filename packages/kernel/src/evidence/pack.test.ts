@@ -1,13 +1,10 @@
-// pack.test.ts — T-E1 proof: the pack round-trips through the REAL standalone verifier (subprocess,
-// exactly as a third party would run it), is deterministic regardless of input order, and its README
-// never overclaims (SPEC copy law) relative to whether a pinned anchor-signing key was supplied.
+// pack.test.ts — T-E1 proof: the pack's detached signature authenticates every exported file,
+// assembly is deterministic regardless of input order, and its README never overclaims (SPEC copy
+// law) relative to whether a pinned anchor-signing key was supplied.
 import { describe, expect, test } from "bun:test";
-import { generateKeyPairSync, sign, createHash } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { generateKeyPairSync, sign, createHash, verify } from "node:crypto";
 import { canonicalize, type JsonValue } from "../canonical.ts";
+import { ValidationError } from "../errors.ts";
 import {
   anchorSignatureEnvelopeBytes,
   buildRowReceipt,
@@ -15,8 +12,10 @@ import {
 } from "../audit-verify.ts";
 import {
   buildEvidencePack,
+  evidencePackManifestForInput,
   evidencePackSealPayloadBytes,
   EVIDENCE_PACK_FORMAT_VERSION,
+  EVIDENCE_PACK_KEY_ID_MAX_LENGTH,
   type EvidencePackMeta,
 } from "./pack.ts";
 
@@ -117,15 +116,17 @@ function buildSignedFixture(): {
     return {
       ...base,
       packSeal: {
-        v: 1,
+        v: 2,
         keyId,
         accountId: TENANT_ID,
         sig: sign(
           null,
           Buffer.from(
             evidencePackSealPayloadBytes({
-              receipts,
-              meta: base,
+              manifest: evidencePackManifestForInput({
+                receipts,
+                meta: base,
+              }),
               accountId: TENANT_ID,
             }),
           ),
@@ -143,69 +144,106 @@ function buildSignedFixture(): {
   };
 }
 
-async function runVerifierOnPack(
-  receiptsJsonContents: string,
-): Promise<{ stdout: string; exitCode: number }> {
-  const dir = await mkdtemp(join(tmpdir(), "caisson-pack-test-"));
-  try {
-    const path = join(dir, "receipts.json");
-    await writeFile(path, receiptsJsonContents, "utf8");
-    const verifierPath = fileURLToPath(
-      new URL("./standalone-verifier.mjs", import.meta.url),
-    );
-    const proc = Bun.spawn(["bun", verifierPath, path], {
-      stdin: "ignore",
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const [stdout, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      proc.exited,
-    ]);
-    return { stdout, exitCode };
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-}
-
 describe("buildEvidencePack", () => {
-  test("round-trips through the real standalone verifier: healthy signed pack PASSes", async () => {
-    const { receipts, signedMetaFor } = buildSignedFixture();
+  test("the detached seal authenticates the canonical file manifest", () => {
+    const { receipts, publicKeySpkiBase64, signedMetaFor } =
+      buildSignedFixture();
     const pack = buildEvidencePack({
       receipts,
       meta: signedMetaFor(receipts),
     });
     expect(pack.formatVersion).toBe(EVIDENCE_PACK_FORMAT_VERSION);
-    const receiptsFile = pack.files.find((f) => f.name === "receipts.json");
-    expect(receiptsFile).toBeDefined();
-
-    const { stdout, exitCode } = await runVerifierOnPack(
-      receiptsFile!.contents,
-    );
-    expect(exitCode).toBe(0);
-    expect(stdout).toContain(
-      "row 0: link=pass anchor-equality=pass signature=pass -> PASS",
-    );
-    expect(stdout).toContain(
-      "row 1: link=pass anchor-equality=pass signature=pass -> PASS",
-    );
-    expect(stdout).toContain("PASS — all 2 row(s) verified from raw material.");
+    expect(pack.packSeal).toBeDefined();
+    expect(
+      verify(
+        null,
+        Buffer.from(
+          evidencePackSealPayloadBytes({
+            manifest: pack.manifest,
+            accountId: TENANT_ID,
+          }),
+        ),
+        {
+          key: Buffer.from(publicKeySpkiBase64, "base64"),
+          format: "der",
+          type: "spki",
+        },
+        Buffer.from(pack.packSeal?.sig ?? "", "base64"),
+      ),
+    ).toBe(true);
   });
 
-  test("a tampered row FAILs through the real verifier", async () => {
+  test("substituting a file no longer matches the signed manifest", () => {
     const { receipts, signedMetaFor } = buildSignedFixture();
-    const tampered: RowReceipt = {
-      ...receipts[1]!,
-      raw: { ...receipts[1]!.raw, payload: { event: "forged" } },
-    };
     const pack = buildEvidencePack({
-      receipts: [receipts[0]!, tampered],
-      meta: signedMetaFor([receipts[0]!, tampered]),
+      receipts,
+      meta: signedMetaFor(receipts),
     });
-    const receiptsFile = pack.files.find((f) => f.name === "receipts.json")!;
-    const { stdout, exitCode } = await runVerifierOnPack(receiptsFile.contents);
-    expect(exitCode).toBe(1);
-    expect(stdout).toContain("row 1: link=fail");
+    const readme = pack.files.find((file) => file.name === "README.md");
+    const signedDigest = pack.manifest.files.find(
+      (file) => file.name === "README.md",
+    )?.sha256;
+
+    expect(readme).toBeDefined();
+    expect(signedDigest).toBeDefined();
+    expect(
+      createHash("sha256")
+        .update(`${readme?.contents ?? ""}\nsubstituted`)
+        .digest("hex"),
+    ).not.toBe(signedDigest);
+  });
+
+  test("substituting the manifest invalidates the detached seal", () => {
+    const { receipts, publicKeySpkiBase64, signedMetaFor } =
+      buildSignedFixture();
+    const pack = buildEvidencePack({
+      receipts,
+      meta: signedMetaFor(receipts),
+    });
+    const substitutedManifest = {
+      ...pack.manifest,
+      files: pack.manifest.files.map((file) =>
+        file.name === "README.md" ? { ...file, sha256: "0".repeat(64) } : file,
+      ),
+    };
+
+    expect(
+      verify(
+        null,
+        Buffer.from(
+          evidencePackSealPayloadBytes({
+            manifest: substitutedManifest,
+            accountId: TENANT_ID,
+          }),
+        ),
+        {
+          key: Buffer.from(publicKeySpkiBase64, "base64"),
+          format: "der",
+          type: "spki",
+        },
+        Buffer.from(pack.packSeal?.sig ?? "", "base64"),
+      ),
+    ).toBe(false);
+  });
+
+  test("tampered receipt bytes have a different manifest digest", () => {
+    const { receipts, signedMetaFor } = buildSignedFixture();
+    const pack = buildEvidencePack({
+      receipts,
+      meta: signedMetaFor(receipts),
+    });
+    const receiptsFile = pack.files.find(
+      (file) => file.name === "receipts.json",
+    );
+    const signedDigest = pack.manifest.files.find(
+      (file) => file.name === "receipts.json",
+    )?.sha256;
+
+    expect(
+      createHash("sha256")
+        .update(`${receiptsFile?.contents ?? ""}\nforged`)
+        .digest("hex"),
+    ).not.toBe(signedDigest);
   });
 
   test("deterministic: input order never changes the receipts.json bytes or the pack digest", () => {
@@ -226,17 +264,66 @@ describe("buildEvidencePack", () => {
     expect(reversedReceipts).toBe(forwardReceipts);
   });
 
-  test("verify.mjs is embedded verbatim (byte-identical to the source file)", async () => {
+  test("ships no executable verifier and names the honest out-of-band path", () => {
     const { receipts, signedMetaFor } = buildSignedFixture();
     const pack = buildEvidencePack({
       receipts,
       meta: signedMetaFor(receipts),
     });
-    const embedded = pack.files.find((f) => f.name === "verify.mjs")!.contents;
-    const onDisk = await Bun.file(
-      new URL("./standalone-verifier.mjs", import.meta.url),
-    ).text();
-    expect(embedded).toBe(onDisk);
+    expect(pack.files.some((file) => file.name === "verify.mjs")).toBe(false);
+    const readme = pack.files.find(
+      (file) => file.name === "README.md",
+    )?.contents;
+    expect(readme).toContain("npx @caisson/verify-pack ./pack");
+    expect(readme).toContain("CAISSON_VERIFY_PACK_KEY_SHA256");
+    expect(readme).toContain("has not been published");
+    expect(readme).toContain("bun run packages/verify-pack/src/cli.ts ./pack");
+  });
+
+  test("mispaired anchor authentication and pack seal throws the typed validation error", () => {
+    const { receipts, signedMetaFor } = buildSignedFixture();
+    const signed = signedMetaFor(receipts);
+    const { packSeal: _packSeal, ...withoutPackSeal } = signed;
+
+    expect(() =>
+      buildEvidencePack({
+        receipts,
+        meta: withoutPackSeal,
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("rejects a key identity that the out-of-band verifier cannot parse", () => {
+    const { receipts, signedMetaFor } = buildSignedFixture();
+    const signed = signedMetaFor(receipts);
+    const keyId = "k".repeat(EVIDENCE_PACK_KEY_ID_MAX_LENGTH + 1);
+
+    expect(() =>
+      buildEvidencePack({
+        receipts,
+        meta: {
+          ...signed,
+          anchorAuth: { ...signed.anchorAuth!, keyId },
+          packSeal: { ...signed.packSeal!, keyId },
+        },
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("a canonical manifest covers every exported file name and digest", () => {
+    const { receipts, signedMetaFor } = buildSignedFixture();
+    const pack = buildEvidencePack({
+      receipts,
+      meta: signedMetaFor(receipts),
+    });
+    expect(pack.manifest.files.map((file) => file.name)).toEqual(
+      [...pack.files].map((file) => file.name).sort(),
+    );
+    for (const file of pack.files) {
+      expect(
+        pack.manifest.files.find((entry) => entry.name === file.name)?.sha256,
+      ).toBe(createHash("sha256").update(file.contents).digest("hex"));
+    }
   });
 
   describe("README honesty (SPEC copy law — never overclaim)", () => {
