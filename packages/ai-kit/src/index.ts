@@ -85,4 +85,8 @@ export type {
 // the injected wiring `@caisson/mcp-server`'s open-tier `run-tools.ts` seam calls into, since the
 // open package can never import this commercial edition at runtime.
 export { buildRunTools } from "./mcp-run-tools.ts";
-export type { RunStatusResult, RunToolsDeps } from "./mcp-run-tools.ts";
+export type {
+  FieldCryptoContextRunner,
+  RunStatusResult,
+  RunToolsDeps,
+} from "./mcp-run-tools.ts";

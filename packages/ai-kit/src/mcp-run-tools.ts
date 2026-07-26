@@ -28,10 +28,7 @@ import {
   type RunProjection,
   type RunStateSnapshot,
 } from "@caisson/agent-trajectory";
-import {
-  derivedContext,
-  type SyncFieldKeyProvider,
-} from "@caisson/field-crypto";
+import { type FieldCryptoContext } from "@caisson/field-crypto";
 import type { MeterConfig } from "@caisson/ai-meter";
 import {
   runToolLoop,
@@ -55,10 +52,16 @@ export interface RunToolsDeps {
   readonly maxSteps: number;
   readonly creditBudget: number;
   readonly maxOutputTokens?: number;
-  /** Builds the per-account `FieldCryptoContext` sealing `parked_state` (ADR-0361) — the SAME
-   *  provider a deployment already wires for BYOK (`byok-store.ts`) or any other field-crypto
-   *  column; no new key-material shape. */
-  readonly keyProvider: SyncFieldKeyProvider;
+  /** Binds the request-local field-crypto context sealing `parked_state` for the callback lifetime. */
+  readonly fieldCryptoContext: FieldCryptoContextRunner;
+}
+
+/** Async bind-time boundary supporting either a disposable KMS context or the dev derived adapter. */
+export interface FieldCryptoContextRunner {
+  <T>(
+    accountId: string,
+    fn: (ctx: FieldCryptoContext) => Promise<T>,
+  ): Promise<T>;
 }
 
 const runStartArgs = strictObject({ prompt: z.string().min(1).max(4000) });
@@ -79,11 +82,11 @@ interface RunToolCtx {
 function storesFor(
   deps: RunToolsDeps,
   accountId: string,
+  cryptoCtx: FieldCryptoContext,
 ): {
   store: ReturnType<typeof createPgTrajectoryStore>;
   runState: ReturnType<typeof createPgRunStateStore>;
 } {
-  const cryptoCtx = derivedContext(deps.keyProvider, accountId);
   return {
     store: createPgTrajectoryStore(deps.tx, accountId),
     runState: createPgRunStateStore(deps.tx, accountId, cryptoCtx),
@@ -101,36 +104,40 @@ export function buildRunTools(deps: RunToolsDeps): {
   return {
     async runStart({ accountId, args }): Promise<ToolLoopResult> {
       const input = parseStrict(runStartArgs, args);
-      const { store, runState } = storesFor(deps, accountId);
-      return runToolLoop({
-        tx: deps.tx,
-        accountId,
-        settings: deps.settings,
-        resolveModel: deps.resolveModel,
-        guard: deps.guard,
-        ...(deps.meter !== undefined ? { meter: deps.meter } : {}),
-        lane: deps.lane,
-        agentId: deps.agentId,
-        prompt: input.prompt,
-        tools: deps.tools,
-        maxSteps: deps.maxSteps,
-        creditBudget: deps.creditBudget,
-        store,
-        runState,
-        ...(deps.maxOutputTokens !== undefined
-          ? { maxOutputTokens: deps.maxOutputTokens }
-          : {}),
+      return deps.fieldCryptoContext(accountId, async (cryptoCtx) => {
+        const { store, runState } = storesFor(deps, accountId, cryptoCtx);
+        return runToolLoop({
+          tx: deps.tx,
+          accountId,
+          settings: deps.settings,
+          resolveModel: deps.resolveModel,
+          guard: deps.guard,
+          ...(deps.meter !== undefined ? { meter: deps.meter } : {}),
+          lane: deps.lane,
+          agentId: deps.agentId,
+          prompt: input.prompt,
+          tools: deps.tools,
+          maxSteps: deps.maxSteps,
+          creditBudget: deps.creditBudget,
+          store,
+          runState,
+          ...(deps.maxOutputTokens !== undefined
+            ? { maxOutputTokens: deps.maxOutputTokens }
+            : {}),
+        });
       });
     },
 
     async runStatus({ accountId, args }): Promise<RunStatusResult> {
       const input = parseStrict(runStatusArgs, args);
-      const { store, runState } = storesFor(deps, accountId);
-      const [snapshot, events] = await Promise.all([
-        runState.read(input.runId),
-        store.read(input.runId),
-      ]);
-      return { runState: snapshot, projection: project(events) };
+      return deps.fieldCryptoContext(accountId, async (cryptoCtx) => {
+        const { store, runState } = storesFor(deps, accountId, cryptoCtx);
+        const [snapshot, events] = await Promise.all([
+          runState.read(input.runId),
+          store.read(input.runId),
+        ]);
+        return { runState: snapshot, projection: project(events) };
+      });
     },
   };
 }
