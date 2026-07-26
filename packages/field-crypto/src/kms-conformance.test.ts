@@ -149,9 +149,10 @@ function fakeAzureBackend(): AzureKeyVaultClient {
   const kek = randomBytes(32);
   let deleted = false;
   return {
-    getCryptographyClient() {
+    getCryptographyClient(keyName, requestedVersion) {
+      const keyVersion = requestedVersion ?? "version-1";
       return {
-        async wrapKey(_algorithm, plaintext) {
+        async wrapKey(algorithm, plaintext) {
           if (deleted) {
             throw new Error("kms-conformance: fake Azure key was deleted");
           }
@@ -160,9 +161,13 @@ function fakeAzureBackend(): AzureKeyVaultClient {
             Buffer.from(plaintext),
             WRAP_AAD,
           );
-          return { result: Buffer.concat([nonce, ciphertext, tag]) };
+          return {
+            result: Buffer.concat([nonce, ciphertext, tag]),
+            keyID: `https://caisson-test.vault.azure.net/keys/${keyName}/${keyVersion}`,
+            algorithm,
+          };
         },
-        async unwrapKey(_algorithm, wrapped) {
+        async unwrapKey(algorithm, wrapped) {
           if (deleted) {
             throw new Error("kms-conformance: fake Azure key was deleted");
           }
@@ -172,6 +177,8 @@ function fakeAzureBackend(): AzureKeyVaultClient {
           const ciphertext = blob.subarray(12, blob.length - 16);
           return {
             result: aesGcm.decrypt(kek, { nonce, ciphertext, tag }, WRAP_AAD),
+            keyID: `https://caisson-test.vault.azure.net/keys/${keyName}/${keyVersion}`,
+            algorithm,
           };
         },
       };

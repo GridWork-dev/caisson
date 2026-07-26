@@ -40,7 +40,10 @@ export interface AzureKeyVaultClient {
    * Optional convenience seam for a composed facade. The official Azure `KeyClient` does not
    * expose cryptographic operations, so production callers normally inject `cryptographyClient`.
    */
-  getCryptographyClient?(keyName: string): AzureKeyVaultCryptographyClient;
+  getCryptographyClient?(
+    keyName: string,
+    keyVersion?: string,
+  ): AzureKeyVaultCryptographyClient;
   beginDeleteKey(
     keyName: string,
     options?: KmsOperationOptions,
@@ -236,8 +239,8 @@ export function createAzureKeyVaultKmsClient(
     parsed.cryptographyClient ??
     (facadeCryptographyClient === undefined
       ? undefined
-      : (keyName: string) =>
-          facadeCryptographyClient.call(parsed.client, keyName));
+      : (keyName: string, keyVersion?: string) =>
+          facadeCryptographyClient.call(parsed.client, keyName, keyVersion));
   if (cryptographyClient === undefined) {
     throw new ValidationError(
       "createAzureKeyVaultKmsClient requires an injected cryptographyClient when client is an Azure KeyClient",
