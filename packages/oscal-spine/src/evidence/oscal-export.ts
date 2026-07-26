@@ -36,7 +36,10 @@ import {
   strictObject,
   ValidationError,
 } from "@caisson/kernel";
-import type { EvidencePackManifest, ManifestControl } from "./pack-format.ts";
+import type {
+  OscalEvidencePackManifest,
+  OscalManifestControl,
+} from "../contracts.ts";
 
 /**
  * The OSCAL model version these bodies are authored against (NIST OSCAL JSON, csrc.nist.gov/ns/oscal).
@@ -259,7 +262,7 @@ const EXAMINE: readonly string[] = ["EXAMINE"];
 /** Build the metadata block shared by both documents — title + injected clock + chain-anchor binding. */
 function buildMetadata(
   title: string,
-  manifest: EvidencePackManifest,
+  manifest: OscalEvidencePackManifest,
   lastModified: string,
   options: OscalExportOptions,
 ): OscalMetadata {
@@ -300,7 +303,7 @@ function buildMetadata(
 }
 
 /** The flagged-evidence reasons for a gap control, joined for a finding/poam-item rationale. */
-function gapReason(control: ManifestControl): string {
+function gapReason(control: OscalManifestControl): string {
   return control.evidence
     .filter((e) => e.status === "flagged" && e.reason !== undefined)
     .map((e) => `${e.collectorId}: ${e.reason ?? ""}`)
@@ -358,7 +361,7 @@ function buildApRlink(
  * bad clock / malformed provenance.
  */
 export function toOscalAssessmentResults(
-  manifest: EvidencePackManifest,
+  manifest: OscalEvidencePackManifest,
   options: OscalExportOptions,
 ): OscalAssessmentResultsDocument {
   const lastModified = resolveNow(options);
@@ -478,7 +481,7 @@ export function toOscalAssessmentResults(
  * of the un-wired transport seam below). Deterministic given injected `now` + `newId`.
  */
 export function toOscalPlanOfActionAndMilestones(
-  manifest: EvidencePackManifest,
+  manifest: OscalEvidencePackManifest,
   options: OscalExportOptions,
 ): OscalPlanOfActionAndMilestonesDocument {
   const lastModified = resolveNow(options);
@@ -545,7 +548,7 @@ export function toOscalPlanOfActionAndMilestones(
 
 /** Map an evidence-pack manifest to BOTH OSCAL documents (SAR + POA&M) in one deterministic call. */
 export function toOscalBundle(
-  manifest: EvidencePackManifest,
+  manifest: OscalEvidencePackManifest,
   options: OscalExportOptions,
 ): OscalExportBundle {
   return {

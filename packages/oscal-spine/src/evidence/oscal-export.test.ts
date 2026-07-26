@@ -12,10 +12,7 @@ import {
   ValidationError,
   type JsonValue,
 } from "@caisson/kernel";
-import {
-  parseEvidencePackManifest,
-  type EvidencePackManifest,
-} from "./pack-format.ts";
+import type { OscalEvidencePackManifest } from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
   createOscalHttpTransport,
@@ -80,8 +77,8 @@ function fixtureRollup(): { cells: unknown[] } {
 }
 
 /** A two-control pack: one READY (2 passing items), one GAP (1 flagged item). */
-function fixtureManifest(): EvidencePackManifest {
-  return parseEvidencePackManifest({
+function fixtureManifest(): OscalEvidencePackManifest {
+  return {
     formatVersion: "2",
     crosswalkRollup: fixtureRollup(),
     tenantId: TENANT,
@@ -156,12 +153,12 @@ function fixtureManifest(): EvidencePackManifest {
       posture:
         "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item.",
     },
-  });
+  };
 }
 
 /** An all-ready pack (no gaps) — the clean-export case. */
-function cleanManifest(): EvidencePackManifest {
-  return parseEvidencePackManifest({
+function cleanManifest(): OscalEvidencePackManifest {
+  return {
     formatVersion: "2",
     crosswalkRollup: { cells: [] },
     tenantId: TENANT,
@@ -198,7 +195,7 @@ function cleanManifest(): EvidencePackManifest {
       totalEvidenceItems: 1,
       posture: "1 of 1 controls evidence-ready; no gaps recorded.",
     },
-  });
+  };
 }
 
 function asJson(value: unknown): JsonValue {

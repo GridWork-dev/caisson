@@ -5,10 +5,10 @@
 // to `oscal-cli validate`. Deterministic (fixed clock + id sequence) so a CI failure reproduces
 // identically on a local re-run.
 //
-// Usage: bun packages/compliance-core/scripts/gen-catalog-for-ci.ts <output-path>
+// Usage: bun packages/frameworks-pack/scripts/gen-catalog-for-ci.ts <output-path>
 import { writeFileSync } from "node:fs";
 import { euAiAct, hipaaSecurity, soc2Tsc } from "@caisson/frameworks-pack";
-import { toOscalCatalog } from "../src/evidence/oscal-catalog-export.ts";
+import { toOscalCatalog } from "@caisson/oscal-spine";
 
 function counterIds(): () => string {
   let n = 0;

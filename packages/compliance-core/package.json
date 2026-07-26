@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "The compliance evidence engine: typed collectors, a deterministic canonical evidence-pack format and generator with flag-never-guess blocking, and OSCAL exports (assessment plan, assessment results, plan of action and milestones, XML round-trip).",
+  "description": "The compliance evidence engine: typed collectors and a deterministic canonical evidence-pack format and generator with flag-never-guess blocking, with the complete @caisson/oscal-spine surface re-exported for compatibility.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -17,14 +17,14 @@
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src scripts",
-    "test": "bun test ./src ./scripts"
+    "lint": "eslint src",
+    "test": "bun test ./src"
   },
   "dependencies": {
-    "@caisson/artifact-render": "workspace:*",
     "@caisson/field-crypto": "workspace:*",
     "@caisson/frameworks-pack": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/oscal-spine": "workspace:*",
     "@caisson/risk-register": "workspace:*",
     "zod": "catalog:"
   },

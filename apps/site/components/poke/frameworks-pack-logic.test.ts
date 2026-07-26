@@ -1,10 +1,9 @@
 // Golden + real-package parity for the frameworks-pack poke's browser mirror
-// (frameworks-pack-logic.ts). Two independent anchors: (1) compliance-core's own committed golden
-// fixture packages/compliance-core/src/__golden__/oscal-catalog.merged.json (frameworks-pack's own
-// __golden__ dir has no OSCAL fixture -- the framework-catalog goldens there are a different
-// shape), and (2) the real `toOscalCatalog` + `soc2Tsc`/`hipaaSecurity`/`euAiAct` exports,
+// (frameworks-pack-logic.ts). Two independent anchors: (1) oscal-spine's committed
+// oscal-catalog.merged.json golden, and (2) the real `toOscalCatalog` +
+// `soc2Tsc`/`hipaaSecurity`/`euAiAct` exports,
 // imported here by relative path (apps/site declares neither @caisson/frameworks-pack nor
-// @caisson/compliance-core as a workspace dependency -- see frameworks-pack-logic.ts's header for
+// @caisson/oscal-spine as a workspace dependency -- see frameworks-pack-logic.ts's header for
 // why). Bun's test runtime is node-like, so the real packages' node:crypto imports resolve fine
 // here even though they cannot reach a browser bundle.
 import { readFileSync } from "node:fs";
@@ -15,8 +14,8 @@ import {
   hipaaSecurity,
   soc2Tsc,
 } from "../../../../packages/frameworks-pack/src/index.ts";
-import { OSCAL_VERSION as PKG_OSCAL_VERSION } from "../../../../packages/compliance-core/src/evidence/oscal-export.ts";
-import { toOscalCatalog as pkgToOscalCatalog } from "../../../../packages/compliance-core/src/evidence/oscal-catalog-export.ts";
+import { OSCAL_VERSION as PKG_OSCAL_VERSION } from "../../../../packages/oscal-spine/src/evidence/oscal-export.ts";
+import { toOscalCatalog as pkgToOscalCatalog } from "../../../../packages/oscal-spine/src/evidence/oscal-catalog-export.ts";
 
 import {
   CUSTOM_CLAUSE_KEY,
@@ -40,7 +39,7 @@ function counterIds(): () => string {
   };
 }
 
-describe("OSCAL_VERSION -- parity with the real compliance-core constant", () => {
+describe("OSCAL_VERSION -- parity with the real oscal-spine constant", () => {
   test("matches the real package's OSCAL_VERSION exactly", () => {
     expect(OSCAL_VERSION).toBe(PKG_OSCAL_VERSION);
     expect(OSCAL_VERSION).toBe("1.2.2");
@@ -142,7 +141,7 @@ describe("listClauses / findControlsByClause -- clause-to-control lookup", () =>
   });
 });
 
-describe("toOscalCatalog -- real-package parity (compliance-core's toOscalCatalog)", () => {
+describe("toOscalCatalog -- real-package parity (oscal-spine's toOscalCatalog)", () => {
   test("a single-pack export matches the real function byte-for-byte", () => {
     const mine = toOscalCatalog([soc2Tsc], {
       now: NOW,
@@ -159,7 +158,7 @@ describe("toOscalCatalog -- real-package parity (compliance-core's toOscalCatalo
     expect(mine).toEqual(real);
   });
 
-  test("the merged three-pack catalog matches the committed compliance-core golden fixture", () => {
+  test("the merged three-pack catalog matches the committed oscal-spine golden fixture", () => {
     const ALL_PACKS: readonly Framework[] = [soc2Tsc, hipaaSecurity, euAiAct];
     const doc = toOscalCatalog(ALL_PACKS, {
       now: NOW,
@@ -171,7 +170,7 @@ describe("toOscalCatalog -- real-package parity (compliance-core's toOscalCatalo
       readFileSync(
         join(
           import.meta.dir,
-          "../../../../packages/compliance-core/src/__golden__/oscal-catalog.merged.json",
+          "../../../../packages/oscal-spine/src/__golden__/oscal-catalog.merged.json",
         ),
         "utf8",
       ),

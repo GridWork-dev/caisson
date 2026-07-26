@@ -6,9 +6,10 @@ import { matchGolden } from "@caisson/testing";
 import {
   defineRegimeCrosswalk,
   exportRegimeCrosswalk,
+  nist80053Crosswalk,
   type RegimeCrosswalk,
   type RegimeCrosswalkInput,
-} from "./regime-crosswalk.ts";
+} from "@caisson/oscal-spine";
 import {
   gdprCrosswalk,
   iso27001Crosswalk,
@@ -16,12 +17,10 @@ import {
   regimeCrosswalks,
   soc2Crosswalk,
 } from "./regimes.ts";
-import { nist80053Crosswalk } from "./nist-800-53.ts";
 import { euAiAct } from "../frameworks/eu-ai-act.ts";
 import { hipaaSecurity } from "../frameworks/hipaa-security.ts";
 import { soc2Tsc } from "../frameworks/soc2-tsc.ts";
 import type { Framework } from "../registry/control.ts";
-import { loadVendoredNistControlIds } from "../vendor/nist-catalog-controls.ts";
 
 // matchGolden anchors __golden__/ to the URL handed to it. The frameworks-pack keeps ALL goldens in
 // ONE package-level dir (src/__golden__ — the manifest's gated `golden` path), so anchor at src/
@@ -357,13 +356,6 @@ describe("crosswalk exports are byte-stable (golden)", () => {
       exportRegimeCrosswalk(iso27001Crosswalk),
     );
   });
-  test("nist-800-53 crosswalk export", () => {
-    matchGolden(
-      PKG_SRC_META,
-      "crosswalk-nist-800-53",
-      exportRegimeCrosswalk(nist80053Crosswalk),
-    );
-  });
 });
 
 describe("Legal-gate guards (ADR-0333/ADR-0347 Group G) -- the ISO crosswalk never overclaims", () => {
@@ -453,13 +445,4 @@ describe("nist80053Crosswalk -- claim cap + required canonicalControlId (ADR-036
     );
     expect(nist80053Crosswalk.seedProvenance?.sourceUrl).toMatch(/^https:\/\//);
   });
-});
-
-describe("nist80053Crosswalk -- every cited 800-53 control id exists in the vendored catalog", () => {
-  const vendoredIds = loadVendoredNistControlIds();
-  for (const row of nist80053Crosswalk.rows) {
-    test(`${row.control} exists in the vendored NIST SP 800-53 rev5 catalog`, () => {
-      expect(vendoredIds.has(row.control.toUpperCase())).toBe(true);
-    });
-  }
 });

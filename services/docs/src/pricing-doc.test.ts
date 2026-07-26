@@ -15,7 +15,7 @@ const FACTS: PricingFacts = {
     {
       id: "compliance",
       label: "Compliance",
-      amount: 1449,
+      amount: 1649,
       unit: "once",
       from: false,
       note: "Own the source. Fail-closed RLS, WORM, audit chain.",
@@ -31,7 +31,7 @@ const FACTS: PricingFacts = {
     {
       id: "everything",
       label: "Everything",
-      amount: 2059,
+      amount: 2259,
       unit: "once",
       from: false,
       note: "The full catalog, one purchase.",
@@ -106,7 +106,7 @@ describe("generatePricingSources", () => {
 
   test("renders each bundle's committed price and composed modules", () => {
     const bundles = raw("pricing/bundles");
-    expect(bundles).toContain("## Compliance — $1,449");
+    expect(bundles).toContain("## Compliance — $1,649");
     expect(bundles).toContain("## AI-Production — $739");
     expect(bundles).toContain(
       "- **Field encryption** (`field-crypto`, $199): Per-tenant field encryption (HKDF-SHA256).",
@@ -182,14 +182,14 @@ describe("generatePricingSources", () => {
     const bumped: PricingFacts = {
       ...FACTS,
       bundles: FACTS.bundles.map((b) =>
-        b.id === "compliance" ? { ...b, amount: 1149 } : b,
+        b.id === "compliance" ? { ...b, amount: 1849 } : b,
       ),
     };
     const before = raw("pricing/bundles");
     const after = raw("pricing/bundles", bumped);
     expect(after).not.toBe(before);
-    expect(after).toContain("## Compliance — $1,149");
-    expect(after).not.toContain("## Compliance — $1,449");
+    expect(after).toContain("## Compliance — $1,849");
+    expect(after).not.toContain("## Compliance — $1,649");
   });
 
   test("every generated source chunks into valid DocChunks tagged kind:pricing", () => {

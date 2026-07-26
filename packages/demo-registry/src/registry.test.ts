@@ -52,7 +52,7 @@ describe("CATALOG_ENTRIES", () => {
     const mobileBuyBar = getCatalogEntry("ui.mobile-buy-bar")?.render?.();
     const moneyCell = getCatalogEntry("ui.money-cell")?.render?.();
 
-    expect(renderToStaticMarkup(mobileBuyBar)).toContain("$1,449");
-    expect(renderToStaticMarkup(moneyCell)).toContain("$1,449.00");
+    expect(renderToStaticMarkup(mobileBuyBar)).toContain("$1,649");
+    expect(renderToStaticMarkup(moneyCell)).toContain("$1,649.00");
   });
 });

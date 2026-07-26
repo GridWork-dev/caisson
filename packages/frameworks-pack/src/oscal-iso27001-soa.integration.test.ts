@@ -8,19 +8,21 @@ import { join } from "node:path";
 import { matchGolden } from "@caisson/testing";
 import { ValidationError } from "@caisson/kernel";
 import {
+  buildValidateArgs,
+  ISO27001_SOA_SOURCE_URN,
+  OSCAL_VERSION,
+  oscalCliAvailable,
+  toOscalIso27001Soa,
+  type OscalIso27001SoaOptions,
+} from "@caisson/oscal-spine";
+import {
   computeIso27001SoaRows,
   iso27001Crosswalk,
   type SoaRow,
 } from "@caisson/frameworks-pack";
-import { buildValidateArgs, oscalCliAvailable } from "./oscal-export-xml.ts";
-import { OSCAL_VERSION } from "./oscal-export.ts";
-import {
-  ISO27001_SOA_SOURCE_URN,
-  toOscalIso27001Soa,
-  type OscalIso27001SoaOptions,
-} from "./oscal-iso27001-soa.ts";
 
-const PKG_SRC_META = new URL("../index.ts", import.meta.url).href;
+const PKG_SRC_META = new URL("../../oscal-spine/src/index.ts", import.meta.url)
+  .href;
 const NOW = new Date("2026-07-19T00:00:00.000Z");
 const HAVE_CLI = oscalCliAvailable();
 

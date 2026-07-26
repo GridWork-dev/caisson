@@ -7,7 +7,7 @@
 import { describe, expect, test } from "bun:test";
 import { matchGolden } from "@caisson/testing";
 import { canonicalize, ValidationError, type JsonValue } from "@caisson/kernel";
-import type { EvidencePackFramework } from "./pack-format.ts";
+import type { OscalEvidencePackFramework } from "../contracts.ts";
 import { OSCAL_VERSION } from "./oscal-export.ts";
 import { toOscalAssessmentPlan } from "./oscal-assessment-plan.ts";
 
@@ -16,17 +16,17 @@ const NOW = new Date("2026-06-28T00:00:00.000Z");
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const SOC2: EvidencePackFramework = {
+const SOC2: OscalEvidencePackFramework = {
   id: "soc2-tsc",
   title: "SOC 2 — Trust Services Criteria",
   version: "2024.1",
 };
-const HIPAA: EvidencePackFramework = {
+const HIPAA: OscalEvidencePackFramework = {
   id: "hipaa-security",
   title: "HIPAA Security Rule",
   version: "2024.1",
 };
-const EU_AI_ACT: EvidencePackFramework = {
+const EU_AI_ACT: OscalEvidencePackFramework = {
   id: "eu-ai-act",
   title: "EU AI Act — High-Risk Obligations",
   version: "2024.1",
@@ -34,7 +34,7 @@ const EU_AI_ACT: EvidencePackFramework = {
 
 const FRAMEWORKS: readonly {
   readonly slug: string;
-  readonly framework: EvidencePackFramework;
+  readonly framework: OscalEvidencePackFramework;
 }[] = [
   { slug: "soc2", framework: SOC2 },
   { slug: "hipaa", framework: HIPAA },

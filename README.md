@@ -18,12 +18,12 @@ AI agent drives + a custom AI support service. Sold as whole bundles (one-time),
 
 | Bundle                | What                                                                                      | Price  | License                              |
 | --------------------- | ----------------------------------------------------------------------------------------- | ------ | ------------------------------------ |
-| **Compliance** (hero) | RLS + WORM + audit-chain + field-crypto + SOC2/HIPAA/EU-AI-Act evidence pack              | $1,049 | commercial                           |
+| **Compliance** (hero) | RLS + WORM + audit-chain + field-crypto + SOC2/HIPAA/EU-AI-Act evidence + OSCAL           | $1,649 | commercial                           |
 | **AI-Production**     | metered `infer()` gateway + spend-caps + credits + eval/CI + guardrails + prompt registry | $739   | commercial                           |
 | **Local-first**       | compute seam + sqlite-vec ANN + offline license + two-way sync + privacy gate             | $629   | commercial                           |
 | **Agentic-Dev**       | governed-agent kernel + tool-exec gate (also powers the generator + buyer MCP)            | $329   | commercial                           |
 | **Provenance**        | detached signing + append-only WORM audit chain + per-tenant field encryption             | $399   | commercial                           |
-| **Everything**        | every bundle + every à-la-carte module, one purchase                                      | $2,059 | commercial                           |
+| **Everything**        | every bundle + every à-la-carte module, one purchase                                      | $2,259 | commercial                           |
 | **Base**              | auth + fail-closed RLS + billing + design floor + buyer MCP (auth) + AGENTS.md            | free   | Apache-2.0 core + commercial modules |
 
 Licensing is **open-core**: the Base set is 16 Apache-2.0 packages (kernel, auth, tenancy-rls, ui,
@@ -42,14 +42,14 @@ What is actually on disk (verify against `packages/*/src` + `*.test.ts`; live pe
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
 | Substrate       | kernel · tenancy-rls · field-crypto · auth · billing · credits                                                                             | built + tested |
 | Generator       | cli (`create-caisson`)                                                                                                                     | built + tested |
-| Bundle packages | Compliance · AI-Production · Local-first · Agentic-Dev · Provenance · Everything (54 packages total — see `docs/state/package-catalog.md`) | shipped + live |
+| Bundle packages | Compliance · AI-Production · Local-first · Agentic-Dev · Provenance · Everything (63 packages total — see `docs/state/package-catalog.md`) | shipped + live |
 | Base + shared   | mcp-server · license-verify · email · jobs · ui                                                                                            | built          |
 
 ## Layout
 
 ```
 tooling/      # the one standards gate (eslint/tsconfig/testing)
-packages/     # 54 packages: kernel + base substrate + bundle packages + shared/harvest packages + cli (each independently sellable)
+packages/     # 63 packages: kernel + base substrate + bundle packages + shared/harvest packages + cli (each independently sellable)
 registry/     # versioned module sources the generator + buyer's agent pull from
 apps/         # 7 apps: 5 Next.js (ADR-0044) — site (marketing+docs) · admin (control-plane, absorbed studio) · compliance/ai-kit/local-ai reference; base + agent-dev = plain-TS consumers
 services/     # support-bot (Python) · license · docs · intel · betterstack-adapter

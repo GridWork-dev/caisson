@@ -105,7 +105,8 @@ describe("per-module bare-slug purchase-id form", () => {
   });
 
   test("RESERVED_MODULE_ENTITLEMENT_IDS holds exactly the open publishing-gap reservations", () => {
-    // Currently none open. The 2026-07-20 compliance-gap arming quartet (access-review,
+    // oscal-spine is reserved between this catalog PR and its first release-train index entry.
+    // The 2026-07-20 compliance-gap arming quartet (access-review,
     // risk-register, trust-page, artifact-render) graduated in the version cut that created
     // their first index entries — the exact path agent-usage took 2026-07-18, agent-trajectory
     // 2026-07-17, ui-pro 2026-07-07, and alerting/retention-runner before it. Index presence
@@ -113,7 +114,13 @@ describe("per-module bare-slug purchase-id form", () => {
     // in the post-publish PR; artifact-render stays sellable:false forever (published-never-
     // sold render substrate). The fail-soft branch stays covered by the temp-root fixture
     // suite in tooling/standards-gate catalog-checks.
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([]);
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([
+      "oscal-spine",
+    ]);
+  });
+
+  test("the pre-publish oscal-spine reservation fails soft until the release train indexes it", () => {
+    expect([...expandEntitlements(index, ["oscal-spine"])]).toEqual([]);
   });
 
   test("with the reservation gone, an unindexed ui-pro fails closed like any unknown id", () => {
@@ -574,7 +581,7 @@ describe("ADR-0257/0270 bundle vocabulary + purchase-alias spine", () => {
                 kind: "bundle",
                 editions: [],
                 tier: "paid",
-                priceCents: 205900,
+                priceCents: 225900,
                 license: "LicenseRef-Caisson-Commercial",
                 members: { "@caisson/credits": "0.1.0" },
                 description: "Explicit Everything membership rule fixture.",

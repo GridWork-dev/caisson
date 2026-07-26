@@ -418,12 +418,12 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
 export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   // Compliance bundle repriced as the three compliance-gap members joined (was 104900/ADR-0258;
   // before that 79900/ADR-0227 as an edition).
-  "@caisson/compliance": { cents: 144900, adr: "ADR-0373" },
+  "@caisson/compliance": { cents: 164900, adr: "ADR-0383" },
   "@caisson/ai-production": { cents: 73900, adr: "ADR-0258" },
   "@caisson/local-first": { cents: 62900, adr: "ADR-0258" },
   "@caisson/agentic-dev": { cents: 32900, adr: "ADR-0260" },
   "@caisson/provenance": { cents: 39900, adr: "ADR-0260" },
-  "@caisson/everything": { cents: 205900, adr: "ADR-0258" },
+  "@caisson/everything": { cents: 225900, adr: "ADR-0386" },
   "@caisson/audit-worm": { cents: 14900, adr: "ADR-0129" },
   // Local-first bundle repriced to the 3-way-carve sum-anchored $629 (was $349/ADR-0240).
   "@caisson/local-ai": { cents: 62900, adr: "ADR-0258" },
@@ -446,6 +446,7 @@ export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   "@caisson/org-controls": { cents: 24900, adr: "ADR-0257" },
   "@caisson/compliance-core": { cents: 29900, adr: "ADR-0260" },
   "@caisson/frameworks-pack": { cents: 24900, adr: "ADR-0260" },
+  "@caisson/oscal-spine": { cents: 24900, adr: "ADR-0383" },
   "@caisson/signing-primitive": { cents: 19900, adr: "ADR-0260" },
   "@caisson/billing-orchestration": { cents: 9900, adr: "ADR-0260" },
   "@caisson/local-sync": { cents: 19900, adr: "ADR-0258" },
@@ -505,18 +506,26 @@ interface CatalogManifest {
   priceCents?: number | null;
   kind?: string;
   sellable?: boolean;
+  members?: Record<string, string>;
 }
 
 /** Import a manifest's catalog fields; null if it can't be resolved (pre-install / broken load —
  *  the post-install gate pass re-runs it for real, mirroring checkManifestPriceAgreement's posture). */
-async function loadCatalogManifest(p: Pkg): Promise<CatalogManifest | null> {
-  if (!p.manifestPath) return null;
+async function loadCatalogManifestPath(
+  manifestPath: string,
+): Promise<CatalogManifest | null> {
   try {
-    const mod = await import(p.manifestPath);
+    const mod = await import(manifestPath);
     return (mod.default ?? mod.manifest ?? mod) as CatalogManifest;
   } catch {
     return null;
   }
+}
+
+async function loadCatalogManifest(p: Pkg): Promise<CatalogManifest | null> {
+  return p.manifestPath === null
+    ? null
+    : loadCatalogManifestPath(p.manifestPath);
 }
 
 /**
@@ -653,42 +662,15 @@ export async function checkPricebookPriceAgreement(
   return findings;
 }
 
-/** The registry index entry shape this file reads (a lean projection — members map only). */
-interface IndexEntry {
-  id: string;
-  latest: string;
-  versions: {
-    version: string;
-    manifest?: { members?: Record<string, unknown> };
-  }[];
-}
-
-/** Latest-version members map per indexed module id, read off the built registry index (ADR-0071). */
-function readIndexMembers(indexPath: string): Map<string, Set<string>> {
-  const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
-    modules: IndexEntry[];
-  };
-  const out = new Map<string, Set<string>>();
-  for (const e of idx.modules) {
-    const v =
-      e.versions.find((x) => x.version === e.latest) ??
-      e.versions[e.versions.length - 1];
-    out.set(e.id, new Set(Object.keys(v?.manifest?.members ?? {})));
-  }
-  return out;
-}
-
-/** The site's bundle id → registry meta-package id (hand-copy of apps/site/lib/pricing.test.ts's
- *  REGISTRY_BUNDLE_IDS). Compliance rides the @caisson/compliance edition entry (which carries the
- *  bundle members map); the other four persona/Provenance bundles are first-class kind:"bundle"
- *  entries. `everything` is omitted — it is never listed on a per-module `bundles[]` (it contains
- *  every sellable SKU by construction, ADR-0258). */
-const SITE_BUNDLE_TO_REGISTRY_ID: Record<string, string> = {
-  compliance: "@caisson/compliance",
-  "ai-production": "@caisson/ai-production",
-  "local-first": "@caisson/local-first",
-  "agentic-dev": "@caisson/agentic-dev",
-  provenance: "@caisson/provenance",
+/** The site's bundle id → current workspace manifest path. The release train snapshots these
+ * manifests into the append-only registry, so they are the correct parity source for a same-cut
+ * catalog addition that has not reached registry/index.json yet. */
+const SITE_BUNDLE_TO_MANIFEST_PATH: Record<string, string> = {
+  compliance: "packages/compliance/manifest.ts",
+  "ai-production": "packages/ai-production/manifest.ts",
+  "local-first": "packages/local-first/manifest.ts",
+  "agentic-dev": "packages/agentic-dev/manifest.ts",
+  provenance: "packages/provenance/manifest.ts",
 };
 
 interface SitePricingModule {
@@ -701,8 +683,9 @@ interface SitePricingModule {
  * catalog↔manifest parity (ADR-0248 F5). Promotes apps/site/lib/pricing.test.ts's membership lint to
  * the gate and adds a price cross-check, so the storefront can never advertise a grant or a price the
  * manifest layer doesn't back:
- *   (1) MEMBERSHIP (1:N) — every bundle the site lists a module under must be a bundle whose registry
- *       members map actually grants it (else the site sells a grant that doesn't exist).
+ *   (1) MEMBERSHIP (1:N) — every bundle the site lists a module under must be a current workspace
+ *       bundle manifest whose members map grants it (else the next release sells a grant that
+ *       doesn't exist).
  *   (2) PRICE — for every à-la-carte module the site prices whose id carries a PRICE_AUTHORITY row,
  *       the displayed USD must equal the locked cents.
  * Bundle DISPLAY prices are out of scope here: apps/site/lib/pricing.test.ts pins BUNDLE_PRICES to
@@ -711,14 +694,13 @@ interface SitePricingModule {
  */
 export async function checkCatalogParity(root: string): Promise<Finding[]> {
   const pricingPath = join(root, "apps/site/lib/pricing.ts");
-  const indexPath = join(root, "registry/index.json");
-  if (!existsSync(pricingPath) || !existsSync(indexPath)) {
+  if (!existsSync(pricingPath)) {
     return [
       {
         severity: "warn",
         rule: "catalog-parity",
         pkg: "(catalog)",
-        message: `apps/site/lib/pricing.ts or registry/index.json absent — catalog↔manifest parity skipped; CI must run it against the full tree.`,
+        message: `apps/site/lib/pricing.ts absent — catalog↔manifest parity skipped; CI must run it against the full tree.`,
       },
     ];
   }
@@ -729,14 +711,23 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
       MODULE_PRICES: readonly SitePricingModule[];
     };
     modules = pricing.MODULE_PRICES;
-    members = readIndexMembers(indexPath);
+    members = new Map<string, Set<string>>();
+    for (const [bundle, relativePath] of Object.entries(
+      SITE_BUNDLE_TO_MANIFEST_PATH,
+    )) {
+      const manifest = await loadCatalogManifestPath(join(root, relativePath));
+      if (manifest === null) {
+        throw new Error(`could not load ${relativePath}`);
+      }
+      members.set(bundle, new Set(Object.keys(manifest.members ?? {})));
+    }
   } catch (e) {
     return [
       {
         severity: "warn",
         rule: "catalog-parity",
         pkg: "(catalog)",
-        message: `could not load the site catalog or registry index (${(e as Error).message}) — catalog↔manifest parity skipped.`,
+        message: `could not load the site catalog or bundle manifests (${(e as Error).message}) — catalog↔manifest parity skipped.`,
       },
     ];
   }
@@ -744,11 +735,11 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
   const findings: Finding[] = [];
   for (const m of modules) {
     // (1) membership honesty (the promoted lint, 1:N): every bundle the site lists a module under
-    //     must be a bundle whose registry members map actually grants it. An empty bundles[] makes
-    //     no claim (a genuinely standalone SKU).
+    //     must be a bundle whose current workspace manifest grants it. An empty bundles[] makes no
+    //     claim (a genuinely standalone SKU).
     for (const bundle of m.bundles) {
-      const regId = SITE_BUNDLE_TO_REGISTRY_ID[bundle];
-      if (!regId) {
+      const manifestPath = SITE_BUNDLE_TO_MANIFEST_PATH[bundle];
+      if (!manifestPath) {
         findings.push({
           severity: "error",
           rule: "catalog-parity",
@@ -757,22 +748,20 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
         });
         continue;
       }
-      const map = members.get(regId);
+      const map = members.get(bundle);
       if (map === undefined) {
-        // A site-listed bundle with NO index entry would pass its membership claims unverified —
-        // error, not skip: all six bundles are indexed, so an absent members map is real drift.
         findings.push({
           severity: "error",
           rule: "catalog-parity",
           pkg: `@caisson/${m.id}`,
-          message: `apps/site lists @caisson/${m.id} in the ${bundle} bundle but ${regId} has no members map in the registry index — the membership claim cannot be verified; index the bundle or fix bundles[] (ADR-0257).`,
+          message: `apps/site lists @caisson/${m.id} in the ${bundle} bundle but ${manifestPath} has no readable members map — the membership claim cannot be verified (ADR-0257).`,
         });
       } else if (!map.has(`@caisson/${m.id}`)) {
         findings.push({
           severity: "error",
           rule: "catalog-parity",
           pkg: `@caisson/${m.id}`,
-          message: `apps/site lists @caisson/${m.id} in the ${bundle} bundle but it is absent from ${regId}'s registry members map — the site would sell a grant that doesn't exist; fix bundles[] or repin the members (ADR-0071).`,
+          message: `apps/site lists @caisson/${m.id} in the ${bundle} bundle but it is absent from ${manifestPath}'s members map — the next release would sell a grant that doesn't exist; fix bundles[] or repin the members (ADR-0071).`,
         });
       }
     }

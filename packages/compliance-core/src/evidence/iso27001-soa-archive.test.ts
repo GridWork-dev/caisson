@@ -19,7 +19,7 @@ import {
   buildIso27001SoaArchiveEntry,
   ISO27001_SOA_ARCHIVE_ENTRY,
   toOscalIso27001Soa,
-} from "./oscal-iso27001-soa.ts";
+} from "@caisson/oscal-spine";
 
 function baseInput(): GenerateEvidencePackInput {
   return {

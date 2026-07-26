@@ -226,18 +226,17 @@ jobs:
       - name: JSON to XML to validate round-trip (SAR + POA&M at v1.2.2)
         run: |
           oscal-cli --version
-          # The OSCAL export moved from packages/compliance to the compliance-core carve (ADR-0257 W1).
-          cd packages/compliance-core && bun test src/evidence/oscal-export-xml.test.ts
+          cd packages/oscal-spine && bun test src/evidence/oscal-export-xml.test.ts
       - name: generate + validate the caisson OSCAL catalog (oscal-spine SPEC task 2, v1.2.2)
         run: |
-          cd packages/compliance-core
+          cd packages/frameworks-pack
           bun run scripts/gen-catalog-for-ci.ts /tmp/caisson-catalog.oscal.json
           oscal-cli validate --disable-constraint-validation /tmp/caisson-catalog.oscal.json
       - name: validate the vendored NIST SP 800-53 rev5 catalog (corruption check, binding req 1)
         run: |
-          oscal-cli validate --disable-constraint-validation packages/frameworks-pack/src/vendor/nist-800-53-rev5-catalog.json
+          oscal-cli validate --disable-constraint-validation packages/oscal-spine/src/vendor/nist-800-53-rev5-catalog.json
       - name: generate + validate the ISO/IEC 27001:2022 Statement of Applicability (component-definition, v1.2.2)
         run: |
-          cd packages/compliance-core
+          cd packages/frameworks-pack
           bun run scripts/gen-iso27001-soa-for-ci.ts /tmp/caisson-iso27001-soa.oscal.json
           oscal-cli validate --disable-constraint-validation /tmp/caisson-iso27001-soa.oscal.json

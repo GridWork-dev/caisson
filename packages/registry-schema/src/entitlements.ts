@@ -100,7 +100,10 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the same commit that creates its purchase row (or its package).
  */
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
-  new Set<string>([]);
+  new Set<string>([
+    // Pre-publish reservation: remove when the release train appends oscal-spine@0.1.0.
+    "oscal-spine",
+  ]);
 // agent-usage graduated 2026-07-18: indexed (sellable:false) by the agent-runtime consume,
 // so grants resolve via the index; it stays unsellable and in no bundle until its own
 // publish gate (operator lock). agent-trajectory graduated earlier, at its first index entry.
