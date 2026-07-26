@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-25
+updated: 2026-07-26
 status: live
 grounds:
   - docs/ops/probe-accounts.md
@@ -183,13 +183,15 @@ overage rate.
 
 ### Pass bar
 
-**Overage up to ~$4-8/mo is pre-accepted** — this is a locked fork, not a threshold to
-enforce. See the `PF2-1 Blacksmith free-tier burn` row in `docs/state/decisions-and-forks.md`
-(provider-optimization forks, round 2): locked 2026-07-13 to option (a) — the operator read the
-usage page, accepts the overage and linked a payment method; CI stays heavy and full, with no
-PR-lane thinning and no jobs moved back to GitHub-hosted runners. The check here is **drift beyond that accepted
-band** — if projected overage exceeds ~$10/mo, that is new information the fork didn't
-account for and belongs back on the fork board, not silently absorbed.
+**Approximately $79/month is accepted through launch, with the alert re-baselined to $120.**
+ADR-0390 supersedes PF2-1's earlier ~$4-8/month acceptance after the 2026-07-26 usage read measured
+9,805 effective 4-vCPU-minutes for 2026-07-01..26 at approximately $0.008/minute: $66.35 due and
+$79.11 projected at month-end. CI stays heavy and full. Revisit the baseline after launch.
+
+Moving jobs to GitHub-hosted runners is not a cheaper fallback: this private repository's Free plan
+includes 2,000 minutes and then charges a comparable per-minute rate on runners with half the vCPUs.
+The check here is drift beyond the new accepted baseline. A projection above $120 reopens the cost
+fork; a projection near $79 does not.
 
 ### Evidence to record
 
@@ -197,7 +199,8 @@ account for and belongs back on the fork board, not silently absorbed.
 ## 2026-MM-DD — Gate D: Blacksmith minutes verified
 
 app.blacksmith.sh usage page: N effective 4vCPU-min this cycle (3,000 free), projected
-overage $N/mo. Within the PF2-1 accepted ~$4-8/mo band: {yes / no — reopen fork}.
+month-end spend $N. Within the ADR-0390 accepted ~$79 baseline and below the $120 alert:
+{yes / no — reopen fork}. Revisit after launch.
 ```
 
 ### Safe for a browser agent, or human-only

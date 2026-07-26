@@ -25,6 +25,8 @@
  *       --export-map=outputs/executions/paddle-production-map.json
  *                                                    # create, verify, export marker → live-id map
  *   bun tools/paddle-catalog-recreate.ts --self-check   # assert the plan/money math, exit
+ *   PADDLE_API_KEY=pdl_sdbx_... \
+ *     bun tools/paddle-catalog-recreate.ts --audit      # GET-only catalog classification
  *
  * Idempotency: every product carries custom_data.caisson_id (+ caisson_kind) and every price
  * carries custom_data.caisson_key. --execute looks products/prices up by those markers first and
@@ -242,11 +244,25 @@ function paddleBase(): string {
     : "https://sandbox-api.paddle.com";
 }
 
+function resolvePaddleUrl(pathOrUrl: string, description: string): string {
+  let url: URL;
+  try {
+    url = new URL(pathOrUrl, `${paddleBase()}/`);
+  } catch {
+    throw new Error(`refused unsafe Paddle ${description} URL`);
+  }
+  const base = new URL(paddleBase());
+  if (url.protocol !== "https:" || url.origin !== base.origin) {
+    throw new Error(`refused unsafe Paddle ${description} URL`);
+  }
+  return url.toString();
+}
+
 function requireApiKey(): string {
   const key = process.env.PADDLE_API_KEY;
   if (key === undefined || key.length === 0) {
     throw new Error(
-      "PADDLE_API_KEY is required for --execute or --export-map (fail-closed).",
+      "PADDLE_API_KEY is required for --execute, --audit, or --export-map (fail-closed).",
     );
   }
   return key;
@@ -326,7 +342,8 @@ const PaddleApiProductSchema = z
     description: z.string().nullable(),
     type: z.enum(["standard", "custom"]),
     tax_category: z.string(),
-    image_url: z.string(),
+    // Paddle's sandbox list endpoint can return null despite documenting URL-or-empty-string.
+    image_url: z.string().nullable(),
     custom_data: z.record(z.string(), z.unknown()).nullable(),
     status: z.enum(["active", "archived"]),
     import_meta: z.unknown().nullable(),
@@ -337,8 +354,12 @@ const PaddleApiProductSchema = z
   .strict();
 
 const PaddleApiProductsSchema = z.array(PaddleApiProductSchema);
+const PaddleAuditProductsSchema = z.array(
+  PaddleApiProductSchema.omit({ prices: true }),
+);
+const PaddleApiPricesSchema = z.array(PaddleApiPriceSchema);
 
-async function paddleRequest(
+export async function paddleRequest(
   apiKey: string,
   method: "GET" | "POST",
   pathOrUrl: string,
@@ -347,13 +368,12 @@ async function paddleRequest(
   data: unknown;
   meta?: { pagination?: { has_more?: boolean; next?: string } };
 }> {
-  const url = pathOrUrl.startsWith("http")
-    ? pathOrUrl
-    : `${paddleBase()}${pathOrUrl}`;
+  const url = resolvePaddleUrl(pathOrUrl, "request");
   const res = await fetchWithTimeout(
     url,
     {
       method,
+      redirect: "error",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -411,9 +431,269 @@ async function listExistingProducts(apiKey: string): Promise<PaddleObject[]> {
         })),
       })),
     );
-    next = meta?.pagination?.has_more ? meta.pagination.next : undefined;
+    next = nextPaddlePage(meta, "product");
   }
   return products;
+}
+
+interface PaddlePage {
+  data: unknown;
+  meta?: { pagination?: { has_more?: boolean; next?: string } };
+}
+
+export type AuditRequest = (
+  method: "GET",
+  pathOrUrl: string,
+) => Promise<PaddlePage>;
+
+export interface AuditCatalogSnapshot {
+  products: PaddleObject[];
+  prices: PaddlePrice[];
+}
+
+function nextPaddlePage(
+  meta: PaddlePage["meta"],
+  objectType: "product" | "price",
+): string | undefined {
+  if (meta?.pagination?.has_more !== true) return undefined;
+  const next = meta.pagination.next;
+  if (next === undefined || next.length === 0) {
+    throw new Error(
+      `Paddle ${objectType} pagination says has_more without a next URL`,
+    );
+  }
+  resolvePaddleUrl(next, `${objectType} pagination`);
+  return next;
+}
+
+/** GET every product and price independently. Prices are not taken from `include=prices`, whose
+ * per-product grids can paginate separately and silently truncate large products. */
+export async function loadAuditCatalog(
+  request: AuditRequest,
+): Promise<AuditCatalogSnapshot> {
+  const products: PaddleObject[] = [];
+  let productPage: string | undefined =
+    "/products?per_page=200&status=active,archived";
+  while (productPage !== undefined) {
+    const page = await request("GET", productPage);
+    const parsed = PaddleAuditProductsSchema.safeParse(page.data);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      throw new Error(
+        `Paddle returned an invalid audit product at "${issue?.path.join(".") ?? "unknown field"}"`,
+      );
+    }
+    products.push(
+      ...parsed.data.map((product) => ({
+        id: product.id,
+        name: product.name,
+        type: product.type,
+        tax_category: product.tax_category,
+        custom_data: product.custom_data,
+        status: product.status,
+        prices: [],
+      })),
+    );
+    productPage = nextPaddlePage(page.meta, "product");
+  }
+
+  const prices: PaddlePrice[] = [];
+  let pricePage: string | undefined =
+    "/prices?per_page=200&status=active,archived";
+  while (pricePage !== undefined) {
+    const page = await request("GET", pricePage);
+    const parsed = PaddleApiPricesSchema.safeParse(page.data);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      throw new Error(
+        `Paddle returned an invalid audit price at "${issue?.path.join(".") ?? "unknown field"}"`,
+      );
+    }
+    prices.push(
+      ...parsed.data.map((price) => ({
+        id: price.id,
+        product_id: price.product_id,
+        description: price.description,
+        type: price.type,
+        billing_cycle: price.billing_cycle,
+        unit_price: price.unit_price,
+        custom_data: price.custom_data,
+        status: price.status,
+      })),
+    );
+    pricePage = nextPaddlePage(page.meta, "price");
+  }
+
+  return { products, prices };
+}
+
+export interface CatalogAuditItem {
+  objectType: "product" | "price";
+  id: string;
+  marker: string | null;
+  status: "active" | "archived" | "missing";
+  label: string;
+  productId?: string;
+}
+
+export interface CatalogAuditReport {
+  expected: CatalogAuditItem[];
+  unknownMarker: CatalogAuditItem[];
+  unmarked: CatalogAuditItem[];
+  duplicateMarker: CatalogAuditItem[];
+  missing: CatalogAuditItem[];
+}
+
+function sortAuditItems(items: CatalogAuditItem[]): CatalogAuditItem[] {
+  return items.sort(
+    (a, b) =>
+      a.objectType.localeCompare(b.objectType) || a.id.localeCompare(b.id),
+  );
+}
+
+/** Classify each live object exactly once, then classify expected plan markers with no live
+ * object as MISSING. Duplicate detection is per marker namespace: products and prices cannot
+ * collide with each other. */
+export function classifyCatalogAudit(
+  plan: readonly PlanProduct[],
+  products: readonly PaddleObject[],
+  prices: readonly PaddlePrice[],
+): CatalogAuditReport {
+  const expectedProductMarkers = new Set<string>();
+  const expectedPriceMarkers = new Set<string>();
+  for (const product of plan) {
+    if (expectedProductMarkers.has(product.caissonId)) {
+      throw new Error(
+        `duplicate planned product marker "${product.caissonId}"`,
+      );
+    }
+    expectedProductMarkers.add(product.caissonId);
+    for (const price of product.prices) {
+      if (expectedPriceMarkers.has(price.key)) {
+        throw new Error(`duplicate planned price marker "${price.key}"`);
+      }
+      expectedPriceMarkers.add(price.key);
+    }
+  }
+
+  const liveProducts: CatalogAuditItem[] = products.map((product) => ({
+    objectType: "product",
+    id: product.id,
+    marker:
+      typeof product.custom_data?.caisson_id === "string"
+        ? product.custom_data.caisson_id
+        : null,
+    status: product.status,
+    label: product.name,
+  }));
+  const livePrices: CatalogAuditItem[] = prices.map((price) => ({
+    objectType: "price",
+    id: price.id,
+    marker:
+      typeof price.custom_data?.caisson_key === "string"
+        ? price.custom_data.caisson_key
+        : null,
+    status: price.status,
+    label: price.description,
+    productId: price.product_id,
+  }));
+
+  const report: CatalogAuditReport = {
+    expected: [],
+    unknownMarker: [],
+    unmarked: [],
+    duplicateMarker: [],
+    missing: [],
+  };
+
+  for (const [items, expectedMarkers] of [
+    [liveProducts, expectedProductMarkers],
+    [livePrices, expectedPriceMarkers],
+  ] as const) {
+    const markerCounts = new Map<string, number>();
+    for (const item of items) {
+      if (item.marker !== null) {
+        markerCounts.set(item.marker, (markerCounts.get(item.marker) ?? 0) + 1);
+      }
+    }
+    for (const item of items) {
+      if (item.marker === null) {
+        report.unmarked.push(item);
+      } else if ((markerCounts.get(item.marker) ?? 0) > 1) {
+        report.duplicateMarker.push(item);
+      } else if (expectedMarkers.has(item.marker)) {
+        report.expected.push(item);
+      } else {
+        report.unknownMarker.push(item);
+      }
+    }
+    const objectType = items === liveProducts ? "product" : "price";
+    for (const marker of expectedMarkers) {
+      if (!markerCounts.has(marker)) {
+        report.missing.push({
+          objectType,
+          id: marker,
+          marker,
+          status: "missing",
+          label: marker,
+        });
+      }
+    }
+  }
+
+  for (const items of Object.values(report)) sortAuditItems(items);
+  return report;
+}
+
+function auditItemLine(item: CatalogAuditItem): string {
+  const marker = item.marker === null ? "(none)" : item.marker;
+  const owner =
+    item.productId === undefined ? "" : ` product_id=${item.productId}`;
+  return `  ${item.objectType} ${item.id} status=${item.status} marker=${marker}${owner} label=${JSON.stringify(item.label)}`;
+}
+
+export function renderAuditReport(
+  report: CatalogAuditReport,
+  environment: "sandbox" | "production",
+): string {
+  const sections: Array<[string, readonly CatalogAuditItem[]]> = [
+    ["EXPECTED", report.expected],
+    ["UNKNOWN MARKER", report.unknownMarker],
+    ["UNMARKED (pre-script/manual)", report.unmarked],
+    ["DUPLICATE MARKER", report.duplicateMarker],
+    ["MISSING", report.missing],
+  ];
+  const lines = [`\nPaddle catalog audit [env: ${environment}]`];
+  for (const [label, items] of sections) {
+    lines.push(`\n${label} (${String(items.length)})`);
+    if (items.length === 0) lines.push("  (none)");
+    else lines.push(...items.map(auditItemLine));
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function auditHasDrift(report: CatalogAuditReport): boolean {
+  return (
+    report.unknownMarker.length > 0 ||
+    report.unmarked.length > 0 ||
+    report.duplicateMarker.length > 0 ||
+    report.missing.length > 0
+  );
+}
+
+async function auditCatalog(plan: readonly PlanProduct[]): Promise<void> {
+  const apiKey = requireApiKey();
+  const snapshot = await loadAuditCatalog((method, pathOrUrl) =>
+    paddleRequest(apiKey, method, pathOrUrl),
+  );
+  const report = classifyCatalogAudit(plan, snapshot.products, snapshot.prices);
+  process.stdout.write(renderAuditReport(report, paddleEnv()));
+  if (auditHasDrift(report)) {
+    throw new Error(
+      "Paddle catalog audit found drift; no catalog objects were changed.",
+    );
+  }
+  out("Paddle catalog audit: green — every live marker matches the plan.");
 }
 
 export interface CatalogMapping {
@@ -955,6 +1235,7 @@ async function main(): Promise<void> {
     throw new Error("--export-map requires a relative .json path");
   }
   const knownArgs = new Set([
+    "--audit",
     "--execute",
     "--self-check",
     ...(exportArgs.length === 1 ? [exportArgs[0] as string] : []),
@@ -964,15 +1245,26 @@ async function main(): Promise<void> {
     throw new Error(`unknown argument(s): ${unknown.join(", ")}`);
   }
   if (args.has("--self-check")) {
-    if (args.has("--execute") || exportPath !== undefined) {
+    if (
+      args.has("--audit") ||
+      args.has("--execute") ||
+      exportPath !== undefined
+    ) {
       throw new Error(
-        "--self-check cannot be combined with execution or export",
+        "--self-check cannot be combined with audit, execution, or export",
       );
     }
     selfCheck();
     return;
   }
   const plan = buildPlan();
+  if (args.has("--audit")) {
+    if (args.has("--execute") || exportPath !== undefined) {
+      throw new Error("--audit cannot be combined with execution or export");
+    }
+    await auditCatalog(plan);
+    return;
+  }
   if (args.has("--execute")) {
     await execute(plan);
   } else {
