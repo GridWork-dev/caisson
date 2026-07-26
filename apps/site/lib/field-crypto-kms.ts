@@ -6,12 +6,19 @@ import {
 } from "@azure/keyvault-keys";
 import type {
   AzureKeyVaultCryptographyClient,
+  FieldCryptoContext,
   KmsClient,
 } from "@caisson/field-crypto";
+import {
+  KmsKeyProvider,
+  PgWrappedKeyStore,
+  createAzureKeyVaultKmsClient,
+  withKmsFieldCryptoContext,
+} from "@caisson/field-crypto";
 import { ConfigError, InternalError, strictObject } from "@caisson/kernel";
+import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { createAzureKeyVaultKmsClient } from "@caisson/field-crypto";
 
 interface SiteTokenCredential {
   getToken(scopes: string | string[]): Promise<{
@@ -259,4 +266,41 @@ export function createSiteAzureKmsClient(
       },
     }),
   });
+}
+
+interface SiteAzureKmsGlobal {
+  caissonSiteAzureKmsClient?: KmsClient;
+}
+
+const globalKms = globalThis as unknown as SiteAzureKmsGlobal;
+
+/** HMR-safe Azure client singleton. It holds SDK clients only; plaintext DEKs remain request-local. */
+export function getSiteAzureKmsClient(): KmsClient {
+  if (globalKms.caissonSiteAzureKmsClient !== undefined) {
+    return globalKms.caissonSiteAzureKmsClient;
+  }
+  globalKms.caissonSiteAzureKmsClient = createSiteAzureKmsClient(process.env);
+  return globalKms.caissonSiteAzureKmsClient;
+}
+
+/**
+ * Bind a production tenant transaction to its KMS provider.
+ *
+ * The transaction-scoped advisory lock serializes first provisioning for one tenant, preventing
+ * Azure from creating two KEK versions while the append-only wrapped-DEK store elects one winner.
+ * Every unwrapped DEK is held only by `withKmsFieldCryptoContext` and zeroized before this returns.
+ */
+export async function withSiteKmsFieldCryptoContext<T>(
+  tx: TenantExecutor,
+  accountId: string,
+  fn: (ctx: FieldCryptoContext) => Promise<T>,
+  kms: KmsClient = getSiteAzureKmsClient(),
+): Promise<T> {
+  await tx.query(`SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`, [
+    "caisson:field-crypto",
+    accountId,
+  ]);
+  const provider = new KmsKeyProvider(kms, new PgWrappedKeyStore(tx));
+  await provider.ensureProvisioned(accountId);
+  return withKmsFieldCryptoContext(provider, accountId, fn);
 }

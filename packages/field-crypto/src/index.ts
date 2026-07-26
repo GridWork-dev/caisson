@@ -72,6 +72,13 @@ export {
 } from "./kms.ts";
 
 export {
+  type PgExecutor,
+  type AsyncKeyVersionStore,
+  PgKeyVersionStore,
+  PgWrappedKeyStore,
+} from "./store.pg.ts";
+
+export {
   type KmsSendable,
   type AwsKmsClientConfig,
   createAwsKmsClient,

@@ -15,10 +15,12 @@ import {
   DerivedKeyProvider,
   derivedContext,
   type SyncFieldKeyProvider,
+  withFieldCryptoContext,
 } from "@caisson/field-crypto";
 import { putTenantProviderKey } from "@caisson/ai-kit";
 import { getDb, withTenant } from "./db.ts";
 import { BYOK_PROVIDERS, type ByokProvider } from "./byok-providers.ts";
+import { withSiteKmsFieldCryptoContext } from "./field-crypto-kms.ts";
 
 // Re-export so existing server-side importers of ./byok keep working.
 export { BYOK_PROVIDERS, type ByokProvider };
@@ -121,37 +123,32 @@ export async function validateProviderKey(
   }
 }
 
-// --- field-crypto provider (env master secret, or a labelled dev vector) -------------------------
+// --- dev/test field-crypto provider (production is Azure KMS) ------------------------------------
 
 interface ByokGlobal {
-  caissonByokKeyProvider?: SyncFieldKeyProvider;
+  caissonByokDevKeyProvider?: SyncFieldKeyProvider;
 }
 const g = globalThis as unknown as ByokGlobal;
 
 /**
- * The field-crypto key provider backing the encrypted BYOK store. Prefers the real per-deployment
- * master secret (`MASTER_FIELD_KEY` / `FIELD_CRYPTO_SALT`); otherwise a labelled, deterministic DEMO
- * vector (NOT a production secret) so `bun dev` / `bun test` run zero-config — mirrors
- * `apps/local-ai`'s `demoProvider`. HMR-safe singleton (Next re-evaluates the module on every edit).
+ * The derived provider used only by dev/test. Self-hosting buyers may use the same two-variable
+ * primitive in their own integration, but Caisson's production site always uses Azure Key Vault.
  */
-export function getFieldKeyProvider(): SyncFieldKeyProvider {
-  if (g.caissonByokKeyProvider) return g.caissonByokKeyProvider;
+export function getDevFieldKeyProvider(): SyncFieldKeyProvider {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "BYOK field-crypto: the derived provider is disabled in production",
+    );
+  }
+  if (g.caissonByokDevKeyProvider) return g.caissonByokDevKeyProvider;
   const hasEnv =
     process.env.MASTER_FIELD_KEY !== undefined &&
     process.env.FIELD_CRYPTO_SALT !== undefined;
-  if (!hasEnv && process.env.NODE_ENV === "production") {
-    // Fail closed: never seal real tenant BYOK secrets under the public demo vector in production
-    // (security floor — no constant/hardcoded key material). A deployment MUST set both.
-    throw new Error(
-      "BYOK field-crypto is not configured: set MASTER_FIELD_KEY and FIELD_CRYPTO_SALT.",
-    );
-  }
-  // ponytail: dev/test fallback is a fixed reference vector, clearly not a real secret — a real
-  // deployment always sets MASTER_FIELD_KEY/FIELD_CRYPTO_SALT (same posture as local-ai).
-  g.caissonByokKeyProvider = hasEnv
+  // Dev/test fallback is a fixed reference vector, clearly not a real secret.
+  g.caissonByokDevKeyProvider = hasEnv
     ? DerivedKeyProvider.fromEnv(process.env)
     : new DerivedKeyProvider(Buffer.alloc(32, 0xa1), Buffer.alloc(32, 0xb2));
-  return g.caissonByokKeyProvider;
+  return g.caissonByokDevKeyProvider;
 }
 
 // --- write (validate → encrypt-on-write → upsert display metadata, ALL in one tenant transaction) -
@@ -174,24 +171,34 @@ export async function submitTenantKey(
   const validation = await validateProviderKey(provider, apiKey);
   if (!validation.ok) return { ok: false, reason: validation.reason };
 
-  const keyProvider = getFieldKeyProvider();
-  const ctx = derivedContext(keyProvider, accountId);
-  const keyVersion = ctx.currentVersion();
   const last4 = maskLast4(apiKey);
   const db = await getDb();
+  let keyVersion = 0;
 
   // The store + meta write share ONE tenant-scoped transaction (withTenant = BEGIN..COMMIT), so a
   // rotation is all-or-nothing. `putTenantProviderKey` seals + upserts the key; the meta row carries
   // NO secret (masked tail + version only).
   await withTenant(db, accountId, async (tx) => {
-    await putTenantProviderKey(tx, ctx, provider, apiKey);
-    await tx.query(
-      `INSERT INTO byok_key_meta (id, account_id, provider, last4, key_version, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, now(), now())
-       ON CONFLICT (account_id, provider)
-       DO UPDATE SET last4 = EXCLUDED.last4, key_version = EXCLUDED.key_version, updated_at = now()`,
-      [randomUUID(), accountId, provider, last4, keyVersion],
-    );
+    const persist = async (
+      ctx: Parameters<typeof putTenantProviderKey>[1],
+    ): Promise<void> => {
+      keyVersion = ctx.currentVersion();
+      await putTenantProviderKey(tx, ctx, provider, apiKey);
+      await tx.query(
+        `INSERT INTO byok_key_meta (id, account_id, provider, last4, key_version, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, now(), now())
+         ON CONFLICT (account_id, provider)
+         DO UPDATE SET last4 = EXCLUDED.last4, key_version = EXCLUDED.key_version, updated_at = now()`,
+        [randomUUID(), accountId, provider, last4, keyVersion],
+      );
+    };
+
+    if (process.env.NODE_ENV === "production") {
+      await withSiteKmsFieldCryptoContext(tx, accountId, persist);
+      return;
+    }
+    const ctx = derivedContext(getDevFieldKeyProvider(), accountId);
+    await withFieldCryptoContext(ctx, () => persist(ctx));
   });
 
   return {
