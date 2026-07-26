@@ -135,10 +135,12 @@ export const NON_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>([
 ]);
 
 /**
- * Direct-purchase compatibility grants for packages that permanently re-export a carved package.
+ * Compatibility grants for packages that permanently re-export a carved package.
  * This is deliberately NOT dependency closure: ADR-0238 rejected generic dependency-to-entitlement
  * expansion, while ADR-0384 explicitly guarantees that either OSCAL parent purchase keeps the
- * complete OSCAL surface after the carve. Only the two locked parent relationships live here.
+ * complete OSCAL surface after the carve. The relationship applies whether the parent was bought
+ * directly or arrived through a bundle, because pre-carve bundle buyers received the same exports.
+ * Only the two locked parent relationships live here.
  *
  * Keys and values are full registry module ids. A target grants only after it is indexed; while it
  * is a named pre-publish reservation the parent continues resolving to itself, so deployment before
@@ -398,6 +400,7 @@ export function expandEntitlements(
     if (isBundleId(id)) {
       for (const memberId of membersOfBundle(index, id, snapshot)) {
         members.add(memberId);
+        addCompatibilityReexports(memberId, allowlist, members);
       }
       continue;
     }
