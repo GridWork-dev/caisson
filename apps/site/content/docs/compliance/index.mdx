@@ -51,6 +51,32 @@ party can verify it wasn't edited after generation. `retention-runner` and `aler
 two operating controls (erasure, incident notification) the pack cites as evidence of an active
 program, not just point-in-time posture.
 
+### Verifying an exported audit pack
+
+The logical audit pack contains `receipts.json`, an auditor README, and a signed canonical manifest
+of every exported file name and SHA-256 digest. It deliberately contains no executable verifier.
+Verification belongs to the independently obtained commercial `@caisson/verify-pack` package:
+
+```bash
+export CAISSON_VERIFY_PACK_KEY_SHA256="<independently obtained 64-hex fingerprint>"
+npx @caisson/verify-pack ./pack
+```
+
+Obtain that fingerprint through a separately trusted issuer channel; the verifier refuses PASS if
+it is absent or differs from the candidate key inside the pack.
+
+`@caisson/verify-pack` has **not been published to a package registry yet** and remains private in
+the repository; publishing remains operator-gated, so that `npx` command does not resolve publicly
+today. Until the publish occurs, the available verification path is an independently trusted
+checkout of this repository:
+
+```bash
+bun run packages/verify-pack/src/cli.ts ./pack
+```
+
+The out-of-band guarantee becomes a registry-installable path only after that publish. No verifier
+travelling inside a pack is trusted or executed.
+
 ## Composing with the base
 
 Every collector reads facts gathered at the tenant boundary `@caisson/tenancy-rls` enforces:
@@ -58,8 +84,9 @@ Every collector reads facts gathered at the tenant boundary `@caisson/tenancy-rl
 snapshot.
 
 <Callout type="info" title="Not a compliance certification">
-  The Compliance bundle ships the technical controls the frameworks point at. It does not make an
-  organization compliant; that determination is your organization's and its auditor's to make.
+  The Compliance bundle ships the technical controls the frameworks point at. It
+  does not make an organization compliant; that determination is your
+  organization's and its auditor's to make.
 </Callout>
 
 ## Entitlement

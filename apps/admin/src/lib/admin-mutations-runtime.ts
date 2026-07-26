@@ -15,7 +15,7 @@ import {
   S3ArtifactStore,
   type ArtifactStore,
 } from "@caisson/audit-worm";
-import { fetchWithTimeout } from "@caisson/kernel";
+import { ConfigError, fetchWithTimeout } from "@caisson/kernel";
 import {
   BUNDLE_IDS,
   loadRegistryIndexFromFile,
@@ -28,6 +28,7 @@ import type {
 } from "@caisson/service-license";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { getAdminDb, readAdmin } from "./admin-db.ts";
+import { adminAuditAnchorTrustFromEnv } from "./audit-anchor-trust.ts";
 
 /**
  * The WORM object store for the mutation service's audit chain (Fork AM-4 provisioning).
@@ -45,6 +46,12 @@ export function wormStore(): ArtifactStore {
       client: new S3Client({ region: process.env.AWS_REGION ?? "us-east-1" }),
       bucket,
     });
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new ConfigError(
+      "CAISSON_ADMIN_WORM_BUCKET is required in production; local storage is not compliance-grade",
+      { keys: ["CAISSON_ADMIN_WORM_BUCKET"] },
+    );
   }
   const dir =
     process.env.CAISSON_ADMIN_WORM_DIR?.trim() ||
@@ -249,9 +256,14 @@ export function grantableEntitlementIds(): string[] {
 
 export async function getAdminMutationDeps(): Promise<AdminMutationDeps> {
   const db = await getAdminDb();
+  const anchorTrust = adminAuditAnchorTrustFromEnv();
   return {
     db,
-    worm: new AuditChainStore({ db, store: wormStore() }),
+    worm: new AuditChainStore({
+      db,
+      store: wormStore(),
+      ...(anchorTrust === null ? {} : { signer: anchorTrust.signer }),
+    }),
     issue: issueProxy,
     mintDiscount: mintDiscountProxy,
     publishDenySet: denySetPublisher(),

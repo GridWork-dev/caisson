@@ -11,12 +11,13 @@
 // carries its own `MIGRATION_FILE`/`readMigrations` copy — that duplication is what ADR-0090 retired.
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { MigrationAssembly, PackageMigrations } from "@caisson/kernel";
 import {
-  type SelectedPackage,
-  assembleSelected,
-  readPackageMigrations,
-} from "@caisson/migrate";
+  assembleMigrationsWithPinnedPrefix,
+  type MigrationAssembly,
+  type PackageMigrations,
+  type PinnedMigrationIdentity,
+} from "@caisson/kernel";
+import { type SelectedPackage, readPackageMigrations } from "@caisson/migrate";
 
 /** The monorepo `packages/` root, resolved from this module (…/compliance/src/migrate → …/packages). */
 const PACKAGES_ROOT = join(
@@ -71,6 +72,46 @@ const CONTRIBUTING: readonly SelectedPackage[] = [
 ];
 
 /**
+ * The composed global release order, including artifact-version persistence appended at version 8.
+ * Package-local ordinals are insufficient to preserve this ledger: any future package migration must
+ * append after this prefix instead of inserting ahead of an already-released downstream package.
+ */
+const RELEASED_GLOBAL_PREFIX: readonly PinnedMigrationIdentity[] = [
+  {
+    sourcePackage: "@caisson/field-crypto",
+    sourceName: "0001_field_keys.sql",
+  },
+  {
+    sourcePackage: "@caisson/field-crypto",
+    sourceName: "0002_field_keys_rls_nullif.sql",
+  },
+  {
+    sourcePackage: "@caisson/audit-worm",
+    sourceName: "0001_audit_chain.sql",
+  },
+  {
+    sourcePackage: "@caisson/audit-worm",
+    sourceName: "0002_versions.sql",
+  },
+  {
+    sourcePackage: "@caisson/audit-worm",
+    sourceName: "0003_rls_nullif.sql",
+  },
+  {
+    sourcePackage: "@caisson/compliance",
+    sourceName: "0001_impersonation_session.sql",
+  },
+  {
+    sourcePackage: "@caisson/compliance",
+    sourceName: "0002_impersonation_session_rls_nullif.sql",
+  },
+  {
+    sourcePackage: "@caisson/audit-worm",
+    sourceName: "0004_artifact_versions.sql",
+  },
+];
+
+/**
  * The compliance edition's contributing packages as kernel `PackageMigrations` (SQL read from disk in
  * the declared layering order via the shared `readPackageMigrations`). The kernel merge re-validates
  * names + re-sorts, so the read order is not load-bearing — the `dependsOn` edges are.
@@ -80,10 +121,14 @@ export function complianceMigrationPackages(): PackageMigrations[] {
 }
 
 /**
- * Assemble the compliance edition's full migration set into ONE ordered, globally-renumbered sequence
- * + ONE `schema_version` checksum ledger via the base assembler (kernel merge, ADR-0070/0090/0014).
- * Deterministic — a re-run is byte-identical, so the assembled sequence + ledger are golden-stable.
+ * Assemble the compliance edition's full migration set into ONE ordered global sequence and checksum
+ * ledger. The released prefix is identity-pinned; newly discovered package migrations append in the
+ * normal dependency order. Deterministic — a re-run is byte-identical and deployed ledgers upgrade
+ * without renumbering prior entries.
  */
 export function assembleComplianceMigrations(): MigrationAssembly {
-  return assembleSelected(CONTRIBUTING);
+  return assembleMigrationsWithPinnedPrefix(
+    complianceMigrationPackages(),
+    RELEASED_GLOBAL_PREFIX,
+  );
 }

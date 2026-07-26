@@ -43,5 +43,10 @@
     "table": "access_review_campaign",
     "package": "@caisson/access-review",
     "reason": "Open/close is the whole app write surface: SELECT+INSERT+column-scoped UPDATE (closed_at) only — never a full-row UPDATE or DELETE (ADR-0371); mirrors impersonation_session's ended_at."
+  },
+  {
+    "table": "worm_artifact_version",
+    "package": "@caisson/audit-worm",
+    "reason": "Immutable object-version identities (ADR-0380 lane A): SELECT+INSERT only, UPDATE/DELETE explicitly REVOKEd in 0004_artifact_versions.sql — mirrors audit_chain_entry. A recorded artifact version IS the WORM proof, so a compromised app query must be able to append a new version but never rewrite or drop one already committed."
   }
 ]

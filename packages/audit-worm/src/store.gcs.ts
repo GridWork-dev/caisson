@@ -31,6 +31,7 @@ import {
 import {
   ArtifactExistsError,
   assertSafeKey,
+  assertValidArtifactVersionId,
   assertValidRetainUntil,
   type ArtifactMeta,
   type ArtifactObject,
@@ -59,22 +60,75 @@ export interface GcsArtifactStoreConfig {
 }
 
 interface GcsRetentionResource {
-  mode?: string;
-  retainUntilTime?: string;
+  mode: GcsRetentionMode;
+  retainUntil: Date;
 }
 
 interface GcsObjectResource {
-  size?: string;
+  generation: string;
+  size: number;
   contentType?: string;
   retention?: GcsRetentionResource;
 }
 
-interface GcsBucketResource {
-  objectRetention?: { mode?: string };
+const JsonRecordSchema = z.record(z.string(), z.unknown());
+const GcsBucketProjectionSchema = strictObject({
+  objectRetention: strictObject({ mode: z.literal("Enabled") }),
+});
+const GcsRetentionProjectionSchema = strictObject({
+  mode: z.enum(["Unlocked", "Locked"]),
+  retainUntil: z
+    .string()
+    .datetime({ offset: true })
+    .transform((value) => new Date(value)),
+});
+const GcsObjectProjectionSchema = strictObject({
+  generation: z
+    .string()
+    .regex(/^[1-9][0-9]*$/)
+    .max(64),
+  size: z
+    .string()
+    .regex(/^(0|[1-9][0-9]*)$/)
+    .transform(Number)
+    .pipe(z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)),
+  contentType: z.string().min(1).max(1_024).optional(),
+  retention: GcsRetentionProjectionSchema.optional(),
+});
+
+function jsonRecord(input: unknown): Record<string, unknown> {
+  return parseStrict(JsonRecordSchema, input);
 }
 
-async function readJson<T>(res: Response): Promise<T> {
-  return (await res.json()) as T;
+/**
+ * GCS resources contain many provider-owned fields that may grow over time. Project only the
+ * fields this driver trusts, then strict-parse that projection so extra provider fields are ignored
+ * while every security-relevant field is runtime validated.
+ */
+function projectGcsObject(input: unknown): GcsObjectResource {
+  const raw = jsonRecord(input);
+  let retention: unknown;
+  if (raw.retention !== undefined) {
+    const rawRetention = jsonRecord(raw.retention);
+    retention = {
+      mode: rawRetention.mode,
+      retainUntil: rawRetention.retainUntilTime,
+    };
+  }
+  const parsed = parseStrict(GcsObjectProjectionSchema, {
+    generation: raw.generation,
+    size: raw.size,
+    contentType: raw.contentType,
+    retention,
+  });
+  return {
+    generation: parsed.generation,
+    size: parsed.size,
+    ...(parsed.contentType === undefined
+      ? {}
+      : { contentType: parsed.contentType }),
+    ...(parsed.retention === undefined ? {} : { retention: parsed.retention }),
+  };
 }
 
 /**
@@ -123,8 +177,18 @@ export class GcsArtifactStore implements ArtifactStore {
         { bucket: this.bucket, status: res.status },
       );
     }
-    const bucket = await readJson<GcsBucketResource>(res);
-    if (bucket.objectRetention?.mode !== "Enabled") {
+    try {
+      const raw = jsonRecord(await res.json());
+      parseStrict(GcsBucketProjectionSchema, {
+        objectRetention:
+          raw.objectRetention === undefined
+            ? undefined
+            : (() => {
+                const objectRetention = jsonRecord(raw.objectRetention);
+                return { mode: objectRetention.mode };
+              })(),
+      });
+    } catch {
       throw new ConfigError(
         "audit-worm: GCS bucket does not have Object Retention Lock enabled — refusing to " +
           "construct a store that cannot honor an arbitrary per-put retention (ADR-0267)",
@@ -181,35 +245,50 @@ export class GcsArtifactStore implements ArtifactStore {
         status: res.status,
       });
     }
-    const created = await readJson<GcsObjectResource>(res);
+    const created = await this.readObjectResource(res, key, "immutable insert");
     // Fail-closed: don't trust the accepted insert — assert GCS actually APPLIED the requested
     // retention (a NaN/absent applied time fails the comparison and refuses). Without this, an
     // API-drift insert that ignored the retention field would return success while the object
     // sits unprotected (ADR-0267).
-    const applied =
-      created.retention?.retainUntilTime === undefined
-        ? Number.NaN
-        : new Date(created.retention.retainUntilTime).getTime();
-    if (!(applied >= opts.retainUntil.getTime())) {
+    const applied = created.retention?.retainUntil.getTime() ?? Number.NaN;
+    if (
+      created.retention?.mode !== "Unlocked" ||
+      !(applied >= opts.retainUntil.getTime())
+    ) {
       throw new InternalError(
         "audit-worm: GCS accepted the insert but did not apply the requested retention — " +
           "treating the object as unprotected (ADR-0267)",
         {
           key,
           requested: opts.retainUntil.toISOString(),
-          applied: created.retention?.retainUntilTime,
+          appliedMode: created.retention?.mode,
+          appliedRetainUntil: Number.isFinite(applied)
+            ? created.retention?.retainUntil.toISOString()
+            : undefined,
         },
+      );
+    }
+    try {
+      assertValidArtifactVersionId(created.generation);
+    } catch {
+      throw new InternalError(
+        "audit-worm: GCS returned an invalid generation identity",
+        { key },
       );
     }
     return this.metaFromResource(key, created, contentType);
   }
 
-  async get(key: string): Promise<ArtifactObject> {
+  async get(key: string, versionId?: string): Promise<ArtifactObject> {
     assertSafeKey(key);
-    const meta = await this.headOrThrow(key);
-    const res = await this.transport(this.objectUrl(key, { alt: "media" }), {
-      method: "GET",
-    });
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
+    const meta = await this.headOrThrow(key, versionId);
+    const res = await this.transport(
+      this.objectUrl(key, { alt: "media" }, versionId),
+      {
+        method: "GET",
+      },
+    );
     if (res.status === 404) {
       throw new NotFoundError("artifact not found", { key });
     }
@@ -223,9 +302,12 @@ export class GcsArtifactStore implements ArtifactStore {
     return { ...meta, body };
   }
 
-  async head(key: string): Promise<ArtifactMeta | null> {
+  async head(key: string, versionId?: string): Promise<ArtifactMeta | null> {
     assertSafeKey(key);
-    const res = await this.transport(this.objectUrl(key), { method: "GET" });
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
+    const res = await this.transport(this.objectUrl(key, {}, versionId), {
+      method: "GET",
+    });
     if (res.status === 404) return null;
     if (!res.ok) {
       throw new InternalError("audit-worm: GCS object metadata read failed", {
@@ -233,7 +315,8 @@ export class GcsArtifactStore implements ArtifactStore {
         status: res.status,
       });
     }
-    const resource = await readJson<GcsObjectResource>(res);
+    const resource = await this.readObjectResource(res, key, "metadata read");
+    this.assertRequestedGeneration(key, versionId, resource.generation);
     return this.metaFromResource(key, resource);
   }
 
@@ -246,10 +329,12 @@ export class GcsArtifactStore implements ArtifactStore {
   async extendRetention(
     key: string,
     newRetainUntil: Date,
+    versionId?: string,
   ): Promise<ArtifactMeta> {
     assertSafeKey(key);
     assertValidRetainUntil(newRetainUntil);
-    const current = await this.headOrThrow(key);
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
+    const current = await this.headOrThrow(key, versionId);
     if (
       current.retainUntil !== undefined &&
       newRetainUntil.getTime() <= current.retainUntil.getTime()
@@ -264,7 +349,7 @@ export class GcsArtifactStore implements ArtifactStore {
         },
       );
     }
-    const res = await this.transport(this.objectUrl(key), {
+    const res = await this.transport(this.objectUrl(key, {}, versionId), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -283,15 +368,35 @@ export class GcsArtifactStore implements ArtifactStore {
         status: res.status,
       });
     }
-    const resource = await readJson<GcsObjectResource>(res);
-    return {
-      ...this.metaFromResource(key, resource),
-      retainUntil: newRetainUntil,
-    };
+    const resource = await this.readObjectResource(res, key, "retention PATCH");
+    this.assertRequestedGeneration(key, versionId, resource.generation);
+    const applied = resource.retention?.retainUntil.getTime() ?? Number.NaN;
+    if (
+      resource.retention?.mode !== "Unlocked" ||
+      !(applied >= newRetainUntil.getTime())
+    ) {
+      throw new InternalError(
+        "audit-worm: GCS retention PATCH did not apply the requested retention",
+        {
+          key,
+          requested: newRetainUntil.toISOString(),
+          appliedMode: resource.retention?.mode,
+          appliedRetainUntil: Number.isFinite(applied)
+            ? resource.retention?.retainUntil.toISOString()
+            : undefined,
+        },
+      );
+    }
+    return this.metaFromResource(key, resource);
   }
 
-  private objectUrl(key: string, query: Record<string, string> = {}): string {
+  private objectUrl(
+    key: string,
+    query: Record<string, string> = {},
+    versionId?: string,
+  ): string {
     const params = new URLSearchParams(query);
+    if (versionId !== undefined) params.set("generation", versionId);
     const qs = params.toString();
     return (
       `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(this.bucket)}` +
@@ -299,10 +404,42 @@ export class GcsArtifactStore implements ArtifactStore {
     );
   }
 
-  private async headOrThrow(key: string): Promise<ArtifactMeta> {
-    const meta = await this.head(key);
+  private async headOrThrow(
+    key: string,
+    versionId?: string,
+  ): Promise<ArtifactMeta> {
+    const meta = await this.head(key, versionId);
     if (meta === null) throw new NotFoundError("artifact not found", { key });
     return meta;
+  }
+
+  private assertRequestedGeneration(
+    key: string,
+    requested: string | undefined,
+    returned: string | undefined,
+  ): void {
+    if (requested === undefined) return;
+    if (returned !== requested) {
+      throw new InternalError(
+        "audit-worm: GCS exact-version response generation did not match the recorded generation",
+        { key, requestedGeneration: requested, returnedGeneration: returned },
+      );
+    }
+  }
+
+  private async readObjectResource(
+    response: Response,
+    key: string,
+    operation: string,
+  ): Promise<GcsObjectResource> {
+    try {
+      return projectGcsObject(await response.json());
+    } catch {
+      throw new InternalError(
+        "audit-worm: GCS object generation/size/retention metadata response failed validation",
+        { key, operation },
+      );
+    }
   }
 
   private metaFromResource(
@@ -310,11 +447,15 @@ export class GcsArtifactStore implements ArtifactStore {
     resource: GcsObjectResource,
     fallbackContentType?: string,
   ): ArtifactMeta {
-    const meta: ArtifactMeta = { key, size: Number(resource.size ?? 0) };
+    const meta: ArtifactMeta = {
+      key,
+      size: resource.size,
+      versionId: resource.generation,
+    };
     const contentType = resource.contentType ?? fallbackContentType;
     if (contentType !== undefined) meta.contentType = contentType;
-    if (resource.retention?.retainUntilTime !== undefined) {
-      meta.retainUntil = new Date(resource.retention.retainUntilTime);
+    if (resource.retention !== undefined) {
+      meta.retainUntil = resource.retention.retainUntil;
     }
     return meta;
   }

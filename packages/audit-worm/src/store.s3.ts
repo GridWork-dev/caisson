@@ -32,6 +32,7 @@ import {
 import {
   ArtifactExistsError,
   assertSafeKey,
+  assertValidArtifactVersionId,
   assertValidRetainUntil,
   type ArtifactMeta,
   type ArtifactObject,
@@ -51,6 +52,11 @@ export type S3Sendable = Pick<S3Client, "send">;
  * irreversible until `retain_until`. The literals match the AWS `ObjectLockMode` enum exactly.
  */
 export type RetentionMode = "GOVERNANCE" | "COMPLIANCE";
+
+interface RetentionReadback {
+  readonly mode: RetentionMode | undefined;
+  readonly retainUntil: Date | undefined;
+}
 
 /** The exact acknowledgement a buyer must echo to escalate an evidence class to COMPLIANCE. */
 export const COMPLIANCE_ACKNOWLEDGEMENT =
@@ -231,28 +237,41 @@ export class S3ArtifactStore implements ArtifactStore {
         ? { ServerSideEncryption: "aws:kms", SSEKMSKeyId: this.sseKmsKeyId }
         : {}),
     });
+    let output;
     try {
-      await this.client.send(command);
+      output = await this.client.send(command);
     } catch (err) {
       // 412 Precondition Failed == the key already holds an immutable object (WORM violation).
       if (httpStatusOf(err) === 412) throw new ArtifactExistsError(key);
       throw err;
     }
+    if (output.VersionId === undefined || output.VersionId.length === 0) {
+      throw new InternalError(
+        "audit-worm: S3 accepted the Object-Lock write but returned no version identity",
+        { key },
+      );
+    }
     const meta: ArtifactMeta = {
       key,
       size: body.byteLength,
+      versionId: output.VersionId,
       retainUntil: opts.retainUntil,
     };
     if (opts.contentType !== undefined) meta.contentType = opts.contentType;
     return meta;
   }
 
-  async get(key: string): Promise<ArtifactObject> {
+  async get(key: string, versionId?: string): Promise<ArtifactObject> {
     assertSafeKey(key);
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
     let output;
     try {
       output = await this.client.send(
-        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          ...(versionId !== undefined ? { VersionId: versionId } : {}),
+        }),
       );
     } catch (err) {
       if (httpStatusOf(err) === 404) {
@@ -265,18 +284,25 @@ export class S3ArtifactStore implements ArtifactStore {
         key,
       });
     }
+    this.assertRequestedVersion(key, versionId, output.VersionId);
     const body = await output.Body.transformToByteArray();
     return { ...this.metaFrom(key, body.byteLength, output), body };
   }
 
-  async head(key: string): Promise<ArtifactMeta | null> {
+  async head(key: string, versionId?: string): Promise<ArtifactMeta | null> {
     assertSafeKey(key);
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
     try {
       const output = await this.client.send(
-        new HeadObjectCommand({ Bucket: this.bucket, Key: key }),
+        new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          ...(versionId !== undefined ? { VersionId: versionId } : {}),
+        }),
       );
       const size =
         typeof output.ContentLength === "number" ? output.ContentLength : 0;
+      this.assertRequestedVersion(key, versionId, output.VersionId);
       return this.metaFrom(key, size, output);
     } catch (err) {
       if (httpStatusOf(err) === 404) return null;
@@ -296,28 +322,37 @@ export class S3ArtifactStore implements ArtifactStore {
   async extendRetention(
     key: string,
     newRetainUntil: Date,
+    versionId?: string,
   ): Promise<ArtifactMeta> {
     assertSafeKey(key);
     assertValidRetainUntil(newRetainUntil);
-    const current = await this.currentRetainUntil(key);
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
+    const current = await this.currentRetention(key, versionId);
     if (
-      current !== undefined &&
-      newRetainUntil.getTime() <= current.getTime()
+      current?.retainUntil !== undefined &&
+      newRetainUntil.getTime() <= current.retainUntil.getTime()
     ) {
       throw new ValidationError(
         "audit-worm: retention can only be EXTENDED — the new date must be strictly later than the current lock (ADR-0202)",
         {
           key,
-          currentRetainUntil: current.toISOString(),
+          currentRetainUntil: current.retainUntil.toISOString(),
           requested: newRetainUntil.toISOString(),
         },
       );
     }
-    await this.putRetention(key, this.mode, newRetainUntil);
-    // Read the object back for size/content-type, but return the date S3 just ACCEPTED — the
-    // authoritative value for the caller's `retain_until` row (row==object, ADR-0006/0051).
-    const meta = await this.headOrThrow(key);
-    return { ...meta, retainUntil: newRetainUntil };
+    await this.putRetention(key, this.mode, newRetainUntil, versionId);
+    // GetObjectRetention is the authoritative post-write read. PutObjectRetention's empty success
+    // body and HeadObject's optional lock fields cannot prove the date S3 actually applied.
+    const appliedRetainUntil = this.assertAppliedRetention(
+      key,
+      await this.currentRetention(key, versionId),
+      this.mode,
+      newRetainUntil,
+      "retention extension",
+    );
+    const meta = await this.headOrThrow(key, versionId);
+    return { ...meta, retainUntil: appliedRetainUntil };
   }
 
   /**
@@ -337,24 +372,36 @@ export class S3ArtifactStore implements ArtifactStore {
     key: string,
     retainUntil: Date,
     optIn: IrreversibleComplianceOptIn,
+    versionId?: string,
   ): Promise<ArtifactMeta> {
     assertSafeKey(key);
     assertValidRetainUntil(retainUntil);
+    if (versionId !== undefined) assertValidArtifactVersionId(versionId);
     this.assertComplianceAllowed(optIn);
-    const current = await this.currentRetainUntil(key);
-    if (current !== undefined && retainUntil.getTime() < current.getTime()) {
+    const current = await this.currentRetention(key, versionId);
+    if (
+      current?.retainUntil !== undefined &&
+      retainUntil.getTime() < current.retainUntil.getTime()
+    ) {
       throw new ValidationError(
         "audit-worm: COMPLIANCE escalation cannot shorten retention — the date must be at or later than the current lock (ADR-0202)",
         {
           key,
-          currentRetainUntil: current.toISOString(),
+          currentRetainUntil: current.retainUntil.toISOString(),
           requested: retainUntil.toISOString(),
         },
       );
     }
-    await this.putRetention(key, "COMPLIANCE", retainUntil);
-    const meta = await this.headOrThrow(key);
-    return { ...meta, retainUntil };
+    await this.putRetention(key, "COMPLIANCE", retainUntil, versionId);
+    const appliedRetainUntil = this.assertAppliedRetention(
+      key,
+      await this.currentRetention(key, versionId),
+      "COMPLIANCE",
+      retainUntil,
+      "COMPLIANCE escalation",
+    );
+    const meta = await this.headOrThrow(key, versionId);
+    return { ...meta, retainUntil: appliedRetainUntil };
   }
 
   /**
@@ -362,12 +409,23 @@ export class S3ArtifactStore implements ArtifactStore {
    * EXISTS but carries no retention (S3 answers `NoSuchObjectLockConfiguration` — extend-from-nothing
    * territory, not an error); any other 404 is a missing object → `NotFoundError`.
    */
-  private async currentRetainUntil(key: string): Promise<Date | undefined> {
+  private async currentRetention(
+    key: string,
+    versionId?: string,
+  ): Promise<RetentionReadback | undefined> {
     try {
       const output = await this.client.send(
-        new GetObjectRetentionCommand({ Bucket: this.bucket, Key: key }),
+        new GetObjectRetentionCommand({
+          Bucket: this.bucket,
+          Key: key,
+          ...(versionId !== undefined ? { VersionId: versionId } : {}),
+        }),
       );
-      return output.Retention?.RetainUntilDate;
+      const mode = output.Retention?.Mode;
+      return {
+        mode: mode === "GOVERNANCE" || mode === "COMPLIANCE" ? mode : undefined,
+        retainUntil: output.Retention?.RetainUntilDate,
+      };
     } catch (err) {
       if (errorNameOf(err) === "NoSuchObjectLockConfiguration") {
         return undefined;
@@ -379,16 +437,46 @@ export class S3ArtifactStore implements ArtifactStore {
     }
   }
 
+  private assertAppliedRetention(
+    key: string,
+    applied: RetentionReadback | undefined,
+    expectedMode: RetentionMode,
+    requested: Date,
+    operation: string,
+  ): Date {
+    const appliedTime = applied?.retainUntil?.getTime() ?? Number.NaN;
+    if (
+      applied?.mode !== expectedMode ||
+      !(appliedTime >= requested.getTime())
+    ) {
+      throw new InternalError(
+        `audit-worm: S3 accepted ${operation} but authoritative readback did not prove the requested lock`,
+        {
+          key,
+          expectedMode,
+          appliedMode: applied?.mode,
+          requested: requested.toISOString(),
+          appliedRetainUntil: Number.isFinite(appliedTime)
+            ? applied?.retainUntil?.toISOString()
+            : undefined,
+        },
+      );
+    }
+    return applied.retainUntil!;
+  }
+
   private async putRetention(
     key: string,
     mode: RetentionMode,
     retainUntil: Date,
+    versionId?: string,
   ): Promise<void> {
     try {
       await this.client.send(
         new PutObjectRetentionCommand({
           Bucket: this.bucket,
           Key: key,
+          ...(versionId !== undefined ? { VersionId: versionId } : {}),
           Retention: { Mode: mode, RetainUntilDate: retainUntil },
         }),
       );
@@ -400,10 +488,27 @@ export class S3ArtifactStore implements ArtifactStore {
     }
   }
 
-  private async headOrThrow(key: string): Promise<ArtifactMeta> {
-    const meta = await this.head(key);
+  private async headOrThrow(
+    key: string,
+    versionId?: string,
+  ): Promise<ArtifactMeta> {
+    const meta = await this.head(key, versionId);
     if (meta === null) throw new NotFoundError("artifact not found", { key });
     return meta;
+  }
+
+  private assertRequestedVersion(
+    key: string,
+    requested: string | undefined,
+    returned: string | undefined,
+  ): void {
+    if (requested === undefined) return;
+    if (returned !== requested) {
+      throw new InternalError(
+        "audit-worm: S3 exact-version response did not match the recorded object version",
+        { key, requestedVersionId: requested, returnedVersionId: returned },
+      );
+    }
   }
 
   /** Project an S3 get/head response into the port's `ArtifactMeta` (retention + content-type). */
@@ -413,9 +518,11 @@ export class S3ArtifactStore implements ArtifactStore {
     output: {
       ContentType?: string | undefined;
       ObjectLockRetainUntilDate?: Date | undefined;
+      VersionId?: string | undefined;
     },
   ): ArtifactMeta {
     const meta: ArtifactMeta = { key, size };
+    if (output.VersionId !== undefined) meta.versionId = output.VersionId;
     if (output.ObjectLockRetainUntilDate !== undefined) {
       meta.retainUntil = output.ObjectLockRetainUntilDate;
     }

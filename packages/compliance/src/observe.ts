@@ -8,7 +8,10 @@
 // the kernel sink redacts once more at the edge as a belt (ADR-0019). The clock is injected at the
 // edge (the caller passes the ISO-8601 instant) so emitted timestamps are deterministic + testable.
 import type { EventSink, OpsEvent } from "@caisson/kernel";
-import { ERASURE_CRYPTO_SHRED } from "@caisson/field-crypto";
+import {
+  ERASURE_CRYPTO_SHRED,
+  type KmsDeletionReceipt,
+} from "@caisson/field-crypto";
 
 // Single-source the erasure event name from `@caisson/field-crypto` (the same name minted into the
 // WORM chain) so the operational mirror can never drift from the evidentiary record.
@@ -38,9 +41,9 @@ export interface EvidenceGeneratedEvent {
 }
 
 /**
- * Operational summary of a crypto-shred erasure — opaque ids + the legal basis + the highest key
- * version destroyed. NEVER raw PII (the FACT of erasure is preserved forever in the immutable chain;
- * this is only its drop-able ops mirror).
+ * Operational summary of a crypto-shred request — opaque ids + the legal basis + the highest key
+ * version covered. NEVER raw PII (the FACT and provider-reported finality are preserved forever in
+ * the immutable chain; this is only its drop-able ops mirror).
  */
 export interface ErasureCryptoShredEvent {
   /** Owning tenant (opaque reference). */
@@ -49,8 +52,10 @@ export interface ErasureCryptoShredEvent {
   readonly subjectId: string;
   /** Legal basis recorded for the erasure, e.g. `"gdpr-art17"`. */
   readonly reason: string;
-  /** Highest key version destroyed by the shred (0 if the scope was never provisioned). */
+  /** Highest key version covered by the deletion request (0 if the scope was never provisioned). */
   readonly shreddedThroughVersion: number;
+  /** Exact provider-proven deletion state; pending/recoverable states stay explicit. */
+  readonly deletion: KmsDeletionReceipt;
   /** ISO-8601 erasure instant — injected at the edge. */
   readonly occurredAt: string;
 }
@@ -93,6 +98,7 @@ export async function emitErasureCryptoShred(
       subjectId: event.subjectId,
       reason: event.reason,
       shreddedThroughVersion: event.shreddedThroughVersion,
+      deletion: event.deletion,
     },
   };
   await sink.emit(ops);

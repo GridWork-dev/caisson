@@ -18,8 +18,9 @@ FIELD_CRYPTO_SALT, "caisson-field-crypto:v"+keyVersion+":"+tenantId)`. No per-te
 - **Key-version rotation registry.** Bump the current version; old envelopes keep decrypting (lazy
   re-encrypt on next write).
 - **Pluggable `FieldKeyProvider` port.** `DerivedKeyProvider` (default) or `KmsKeyProvider`
-  (envelope encryption, AWS + GCP wired (`createAwsKmsClient` / `createGcpKmsClient`), Azure/Vault
-  drop-in; network behind the port).
+  (envelope encryption, AWS + GCP + Azure wired through injected SDK clients; network behind the
+  port). Deletion returns the provider-proven state, so a recoverable cloud retention window is
+  never labeled irreversible.
 
 ## Use
 

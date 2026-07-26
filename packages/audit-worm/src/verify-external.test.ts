@@ -294,6 +294,39 @@ describe("verifyExternal — happy path (full CMS depth)", () => {
 });
 
 describe("verifyExternal — fail-closed", () => {
+  test("a versioned receipt without a durably recorded identity is refused", async () => {
+    const acct = randomUUID();
+    const bytes = new TextEncoder().encode(`{"length":12,"tipHash":"${acct}"}`);
+    const digest = sha256Hex(bytes);
+    const token = await signTsaToken(ctx, bytes, GEN_TIME);
+    await writeReceipt(acct, 12, {
+      anchorDigest: digest,
+      messageImprint: digest,
+      token,
+    });
+    const versionedStore: ArtifactStore = {
+      put: store.put.bind(store),
+      get: store.get.bind(store),
+      head: async (key, versionId) => {
+        void versionId;
+        const meta = await store.head(key);
+        return meta === null ? null : { ...meta, versionId: "provider-v1" };
+      },
+      extendRetention: store.extendRetention.bind(store),
+    };
+
+    const result = await verifyExternal(acct, {
+      store: versionedStore,
+      reader: fixedReader(bytes, 12),
+      target: TARGET,
+    });
+
+    expect(result.verified).toBe(false);
+    if (!result.verified) {
+      expect(result.reason).toContain("recorded version");
+    }
+  });
+
   test("no receipt → not verified", async () => {
     const acct = randomUUID();
     const bytes = new TextEncoder().encode(`{"length":1,"tipHash":"${acct}"}`);

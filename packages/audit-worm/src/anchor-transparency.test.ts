@@ -99,6 +99,7 @@ describe("anchorOutboxRowSchema", () => {
     anchorDigest: DIGEST,
     state: "pending",
     lastError: null,
+    receiptVersionId: null,
     createdAt: new Date("2026-07-13T00:00:00.000Z"),
     updatedAt: new Date("2026-07-13T00:00:00.000Z"),
   };

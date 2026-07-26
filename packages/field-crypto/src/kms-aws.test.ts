@@ -94,15 +94,24 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
   });
 
   test("scheduleKeyDeletion TARGETS the per-call tenant CMK — not the shared default (blast-radius fix)", async () => {
-    const { client: kms, seen } = fakeKms(() => ({}));
+    const deletionDate = new Date("2026-08-01T00:00:00.000Z");
+    const { client: kms, seen } = fakeKms(() => ({
+      KeyState: "PendingDeletion",
+      DeletionDate: deletionDate,
+    }));
     const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
 
-    await client.scheduleKeyDeletion("alias/tenant-a");
+    const receipt = await client.scheduleKeyDeletion("alias/tenant-a");
 
     expect(seen[0]).toBeInstanceOf(ScheduleKeyDeletionCommand);
     expect((seen[0] as ScheduleKeyDeletionCommand).input).toEqual({
       KeyId: "alias/tenant-a",
       PendingWindowInDays: 7,
+    });
+    expect(receipt).toEqual({
+      state: "pending-deletion",
+      irreversible: false,
+      scheduledFor: deletionDate.toISOString(),
     });
   });
 
@@ -116,7 +125,10 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
   });
 
   test("scheduleKeyDeletion honors a configured pendingWindowInDays", async () => {
-    const { client: kms, seen } = fakeKms(() => ({}));
+    const { client: kms, seen } = fakeKms(() => ({
+      KeyState: "PendingDeletion",
+      DeletionDate: new Date("2026-08-24T00:00:00.000Z"),
+    }));
     const client = createAwsKmsClient({
       keyId: "key-DEFAULT",
       pendingWindowInDays: 30,

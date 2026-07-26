@@ -40,6 +40,18 @@ test("no bucket env falls back to the local write-once store", () => {
   expect(wormStore()).toBeInstanceOf(LocalArtifactStore);
 });
 
+test("production refuses to downgrade to ephemeral local WORM storage", () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  delete process.env.CAISSON_ADMIN_WORM_BUCKET;
+  process.env.NODE_ENV = "production";
+  try {
+    expect(() => wormStore()).toThrow(/required in production/);
+  } finally {
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+  }
+});
+
 test("CAISSON_REGISTRY_INDEX_PATH is honored — cwd-independent, chdir-immune (CR-01)", () => {
   const dir = mkdtempSync(join(tmpdir(), "caisson-admin-index-test-"));
   const path = join(dir, "index.json");

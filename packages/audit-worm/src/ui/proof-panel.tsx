@@ -43,6 +43,8 @@ export interface ProofPanelProps {
    * client run the signature leg and earn the "(signature-checked)" seal; absent → the honest base seal.
    */
   pinnedAnchorKey?: PinnedAnchorKey;
+  /** Tenant-scoped WORM account independently known by the caller and bound into signature v2. */
+  expectedAnchorAccountId?: string;
 }
 
 type Phase =
@@ -133,6 +135,7 @@ export function ProofPanel({
   fetchProof,
   chainStatus,
   pinnedAnchorKey,
+  expectedAnchorAccountId,
 }: ProofPanelProps) {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [copied, setCopied] = useState(false);
@@ -158,7 +161,11 @@ export function ProofPanel({
   }, [seq, fetchProof]);
 
   const receipt = phase.kind === "loaded" ? phase.bundle.receipt : null;
-  const verify = useRowVerify(receipt, pinnedAnchorKey);
+  const verify = useRowVerify(
+    receipt,
+    pinnedAnchorKey,
+    expectedAnchorAccountId,
+  );
 
   if (phase.kind === "loading") {
     return (
@@ -205,7 +212,7 @@ export function ProofPanel({
       });
   };
 
-  // nosemgrep: no-insecure-token-compare -- verify.legs.signature is a pass/fail/na verdict, not a secret; the real Ed25519 check is crypto.subtle.verify in the kernel's verifyAnchorSignature. No timing side channel on a public verdict enum.
+  // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- verify.legs.signature is a pass/fail/na verdict, not a secret; the real Ed25519 check is crypto.subtle.verify in the kernel's verifyAnchorSignature. No timing side channel on a public verdict enum.
   const seal = sealCaption(verify.state, verify.legs?.signature === "pass");
 
   return (

@@ -79,6 +79,9 @@ beforeAll(async () => {
       join(AUDIT_WORM_MIGRATIONS, "0003_rls_nullif.sql"),
     ).text()) +
     (await Bun.file(
+      join(AUDIT_WORM_MIGRATIONS, "0004_artifact_versions.sql"),
+    ).text()) +
+    (await Bun.file(
       new URL("./migrations/0001_access_review_campaign.sql", import.meta.url),
     ).text());
   tp = await newTestPg();

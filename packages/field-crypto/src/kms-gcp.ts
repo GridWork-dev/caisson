@@ -38,7 +38,7 @@
 import { randomBytes } from "node:crypto";
 import { KeyManagementServiceClient, protos } from "@google-cloud/kms";
 import { ConfigError, InternalError, ValidationError } from "@caisson/kernel";
-import type { KmsClient } from "./kms-port.ts";
+import type { KmsClient, KmsDeletionReceipt } from "./kms-port.ts";
 
 /**
  * The injected GCP KMS transport — only the three RPCs this driver calls, collapsed to a `Pick<>`
@@ -70,6 +70,28 @@ const LIVE_VERSION_STATES = new Set<string | number>([
   "DISABLED",
   protos.google.cloud.kms.v1.CryptoKeyVersion.CryptoKeyVersionState.DISABLED,
 ]);
+const DESTROY_SCHEDULED_VERSION_STATES = new Set<string | number>([
+  "DESTROY_SCHEDULED",
+  protos.google.cloud.kms.v1.CryptoKeyVersion.CryptoKeyVersionState
+    .DESTROY_SCHEDULED,
+]);
+const DESTROYED_VERSION_STATES = new Set<string | number>([
+  "DESTROYED",
+  protos.google.cloud.kms.v1.CryptoKeyVersion.CryptoKeyVersionState.DESTROYED,
+]);
+
+function timestampToIso(timestamp: unknown): string | undefined {
+  if (typeof timestamp !== "object" || timestamp === null) return undefined;
+  const seconds = Reflect.get(timestamp, "seconds");
+  const nanos = Reflect.get(timestamp, "nanos");
+  if (seconds === undefined || seconds === null) return undefined;
+  const secondsNumber = Number(String(seconds));
+  const nanosNumber =
+    nanos === undefined || nanos === null ? 0 : Number(String(nanos));
+  const milliseconds = secondsNumber * 1_000 + nanosNumber / 1_000_000;
+  if (!Number.isFinite(milliseconds)) return undefined;
+  return new Date(milliseconds).toISOString();
+}
 
 /**
  * The `additionalAuthenticatedData` binding a wrapped DEK to its tenant/subject scope — mirrors
@@ -129,7 +151,7 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
       return Buffer.from(plaintext as Uint8Array);
     },
 
-    async scheduleKeyDeletion(keyId: string): Promise<void> {
+    async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
       // Refuse an empty scope: falling back to the default CryptoKey here would destroy its
       // versions for EVERY tenant that shares it as their fallback.
       if (keyId.length === 0) {
@@ -149,21 +171,74 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
         );
       }
       const liveNames: string[] = [];
+      let sawScheduled = false;
+      let sawDestroyed = false;
+      const scheduledFor: string[] = [];
       for (const v of versions) {
         if (
-          typeof v.name === "string" &&
-          v.name.length > 0 &&
-          v.state !== undefined &&
-          v.state !== null &&
-          LIVE_VERSION_STATES.has(v.state)
+          typeof v.name !== "string" ||
+          v.name.length === 0 ||
+          v.state === undefined ||
+          v.state === null
         ) {
+          throw new InternalError(
+            "field-crypto: GCP KMS returned a CryptoKeyVersion without a provable name/state",
+          );
+        }
+        if (LIVE_VERSION_STATES.has(v.state)) {
           liveNames.push(v.name);
+        } else if (DESTROY_SCHEDULED_VERSION_STATES.has(v.state)) {
+          sawScheduled = true;
+          const date = timestampToIso(v.destroyTime);
+          if (date !== undefined) scheduledFor.push(date);
+        } else if (DESTROYED_VERSION_STATES.has(v.state)) {
+          sawDestroyed = true;
+        } else {
+          throw new InternalError(
+            "field-crypto: GCP KMS returned a CryptoKeyVersion state that cannot prove destruction",
+            { state: String(v.state) },
+          );
         }
       }
-      // Zero live versions with some already destroyed/scheduled = an idempotent re-shred — done.
+      // Zero live versions with some already destroyed/scheduled = an idempotent re-shred.
       for (const name of liveNames) {
-        await sdk.destroyCryptoKeyVersion({ name });
+        const [version] = await sdk.destroyCryptoKeyVersion({ name });
+        if (
+          version.state !== undefined &&
+          version.state !== null &&
+          DESTROY_SCHEDULED_VERSION_STATES.has(version.state)
+        ) {
+          sawScheduled = true;
+          const date = timestampToIso(version.destroyTime);
+          if (date !== undefined) scheduledFor.push(date);
+        } else if (
+          version.state !== undefined &&
+          version.state !== null &&
+          DESTROYED_VERSION_STATES.has(version.state)
+        ) {
+          sawDestroyed = true;
+        } else {
+          throw new InternalError(
+            "field-crypto: GCP KMS DestroyCryptoKeyVersion did not prove DESTROY_SCHEDULED or DESTROYED",
+          );
+        }
       }
+      if (sawScheduled) {
+        const latest = scheduledFor.sort().at(-1);
+        return latest === undefined
+          ? { state: "destroy-scheduled", irreversible: false }
+          : {
+              state: "destroy-scheduled",
+              irreversible: false,
+              scheduledFor: latest,
+            };
+      }
+      if (sawDestroyed) {
+        return { state: "destroyed", irreversible: true };
+      }
+      throw new InternalError(
+        "field-crypto: GCP KMS crypto-shred returned no provable destruction state",
+      );
     },
   };
 }

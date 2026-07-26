@@ -17,6 +17,7 @@ import {
 } from "bun:test";
 import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
 import { canonicalize, chainEntry, type JsonValue } from "@caisson/kernel";
+import { wormAnchorAccount } from "@caisson/service-license";
 import { withTenant } from "@caisson/tenancy-rls";
 import { setAdminAuthFixture, VERIFIED_ADMIN } from "@/lib/admin-auth-mock";
 import { getAdminDb } from "@/lib/admin-db";
@@ -30,11 +31,15 @@ let pg: {
 };
 
 /** The `globalThis`-cached admin transactor (admin-db.ts) — reset so getAdminDb rebuilds under our env. */
-type AdminDbGlobal = { caissonAdminTransactor?: unknown };
+type AdminDbGlobal = {
+  caissonAdminTransactor?: unknown;
+  caissonAdminPglite?: { close(): Promise<void> };
+};
 const origDbUrl = process.env.CAISSON_ADMIN_DB_URL;
 const origBucket = process.env.CAISSON_ADMIN_WORM_BUCKET;
 const origWormDir = process.env.CAISSON_ADMIN_WORM_DIR;
 let origTransactor: unknown;
+let origPglite: AdminDbGlobal["caissonAdminPglite"];
 
 beforeAll(async () => {
   // Hermetic setup, independent of the ambient env AND of which admin test cached the shared
@@ -43,10 +48,13 @@ beforeAll(async () => {
   // would DNS-fail every seed. Capture the prior cache so afterAll can restore it EXACTLY (leaving
   // sibling test files untouched), then force the in-memory PGlite double + a LocalArtifactStore this
   // test seeds and the route reads back.
-  origTransactor = (globalThis as AdminDbGlobal).caissonAdminTransactor;
+  const adminGlobal = globalThis as AdminDbGlobal;
+  origTransactor = adminGlobal.caissonAdminTransactor;
+  origPglite = adminGlobal.caissonAdminPglite;
   delete process.env.CAISSON_ADMIN_DB_URL;
   delete process.env.CAISSON_ADMIN_WORM_BUCKET;
-  (globalThis as AdminDbGlobal).caissonAdminTransactor = undefined;
+  adminGlobal.caissonAdminTransactor = undefined;
+  adminGlobal.caissonAdminPglite = undefined;
   wormDir = await mkdtemp(join(tmpdir(), "caisson-proof-worm-"));
   process.env.CAISSON_ADMIN_WORM_DIR = wormDir; // the route's wormStore() reads this at call time
   const db = await getAdminDb();
@@ -55,6 +63,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  const adminGlobal = globalThis as AdminDbGlobal;
+  const ownedPglite = adminGlobal.caissonAdminPglite;
+  if (ownedPglite !== undefined && ownedPglite !== origPglite) {
+    await ownedPglite.close();
+  }
   await rm(wormDir, { recursive: true, force: true });
   // Restore the exact prior state so a sibling admin test file sees what it would have without us.
   if (origDbUrl !== undefined) process.env.CAISSON_ADMIN_DB_URL = origDbUrl;
@@ -63,7 +76,8 @@ afterAll(async () => {
   if (origWormDir !== undefined)
     process.env.CAISSON_ADMIN_WORM_DIR = origWormDir;
   else delete process.env.CAISSON_ADMIN_WORM_DIR;
-  (globalThis as AdminDbGlobal).caissonAdminTransactor = origTransactor;
+  adminGlobal.caissonAdminTransactor = origTransactor;
+  adminGlobal.caissonAdminPglite = origPglite;
 });
 
 beforeEach(() => {
@@ -81,9 +95,12 @@ function get(account: string, seq: number | string): Promise<Response> {
 }
 
 /** Seed a real chain (entries + per-length WORM anchors) for a fresh random account; return its id. */
-async function seed(payloads: JsonValue[]): Promise<string> {
-  const account = randomUUID();
-  for (const p of payloads) await store.append(account, p);
+async function seed(
+  payloads: JsonValue[],
+  account = randomUUID(),
+): Promise<string> {
+  const anchorAccount = wormAnchorAccount(account);
+  for (const p of payloads) await store.append(anchorAccount, p);
   return account;
 }
 
@@ -104,7 +121,7 @@ describe("GET /api/admin/audit/proof (T-A1)", () => {
     expect(res.status).toBe(400);
   });
 
-  test("non-uuid account (a path fragment) -> 400 (client can't influence the WORM key)", async () => {
+  test("path-fragment account -> 400 (client can't influence the WORM key)", async () => {
     const res = await get("../../etc/passwd", 0);
     expect(res.status).toBe(400);
   });
@@ -116,7 +133,18 @@ describe("GET /api/admin/audit/proof (T-A1)", () => {
   });
 
   test("healthy row -> 200 with a re-verifiable receipt, and the read is access-logged (M1)", async () => {
-    const account = await seed([{ event: "created", actor: "op" }]);
+    const account = await seed([
+      {
+        event: "erasure.crypto-shred",
+        deletion: { state: "soft-deleted", irreversible: false },
+        method: "kms-key-deletion",
+        tenantId: "tenant-1",
+        subjectId: "subject-1",
+        reason: "retention period elapsed",
+        occurredAt: "2026-07-25T12:00:00.000Z",
+        shreddedThroughVersion: 1,
+      },
+    ]);
     const res = await get(account, 0);
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
@@ -132,6 +160,17 @@ describe("GET /api/admin/audit/proof (T-A1)", () => {
       [account],
     );
     expect(log.rows.length).toBeGreaterThan(0);
+  });
+
+  test("a real opaque better-auth account id resolves through the lazy proof route", async () => {
+    const account = "k5G2mB9qL0xWc4vRt7nYs1uZp8dJh3fA";
+    await seed([{ event: "created", actor: "buyer" }], account);
+
+    const res = await get(account, 0);
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { chainLength?: number };
+    expect(body.chainLength).toBe(1);
   });
 
   test("redacted row -> 200 and no secret value crosses the wire (H3)", async () => {

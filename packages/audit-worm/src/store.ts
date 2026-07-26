@@ -10,10 +10,15 @@
 //      shortens or clamps; no de-escalation path exists in the port (ADR-0202).
 import { CaissonError, ValidationError } from "@caisson/kernel";
 
-/** Metadata for an artifact — never the body. `retainUntil` is the WORM lock expiry (ADR-0054). */
+/**
+ * Metadata for an artifact — never the body. `retainUntil` is the WORM lock expiry (ADR-0054).
+ * `versionId` is the provider's opaque identity for the exact immutable object version. Versioned
+ * backends populate it; backends without versioning leave it absent rather than fabricating one.
+ */
 export interface ArtifactMeta {
   key: string;
   size: number;
+  versionId?: string;
   retainUntil?: Date;
   contentType?: string;
 }
@@ -37,8 +42,15 @@ export interface PutOptions {
  */
 export interface ArtifactStore {
   put(key: string, body: Uint8Array, opts: PutOptions): Promise<ArtifactMeta>;
-  get(key: string): Promise<ArtifactObject>;
-  head(key: string): Promise<ArtifactMeta | null>;
+  /**
+   * Read an artifact. Passing the `versionId` returned by `put` targets that exact immutable
+   * provider version; omitting it preserves the original key-only contract for nonversioned stores.
+   */
+  get(key: string, versionId?: string): Promise<ArtifactObject>;
+  /**
+   * Read artifact metadata. Version-aware callers pass the `versionId` recorded from `put`.
+   */
+  head(key: string, versionId?: string): Promise<ArtifactMeta | null>;
   /**
    * Extend an existing artifact's retention (ADR-0202). STRICTLY monotonic: `newRetainUntil` must be
    * strictly LATER than the artifact's current retention or the store THROWS a `ValidationError` —
@@ -47,7 +59,11 @@ export interface ArtifactStore {
    * (mirrors `get`). Returns the updated metadata — the authoritative new date for the caller's DB
    * `retain_until` row update (the ADR-0006/0051 row==object invariant).
    */
-  extendRetention(key: string, newRetainUntil: Date): Promise<ArtifactMeta>;
+  extendRetention(
+    key: string,
+    newRetainUntil: Date,
+    versionId?: string,
+  ): Promise<ArtifactMeta>;
 }
 
 /**
@@ -58,6 +74,22 @@ export interface ArtifactStore {
 export function assertValidRetainUntil(d: Date): void {
   if (!(d instanceof Date) || Number.isNaN(d.getTime())) {
     throw new ValidationError("retention date is not a valid Date");
+  }
+}
+
+/**
+ * Guard a provider version identity before it reaches an SDK or URL. Version ids are opaque and
+ * therefore are never normalized; empty, oversized, or control-character values are refused.
+ */
+export function assertValidArtifactVersionId(versionId: string): void {
+  if (
+    typeof versionId !== "string" ||
+    versionId.length === 0 ||
+    versionId.length > 1024 ||
+    // eslint-disable-next-line no-control-regex -- opaque provider ids must reject every ASCII control byte.
+    /[\u0000-\u001f\u007f]/.test(versionId)
+  ) {
+    throw new ValidationError("artifact version id is invalid");
   }
 }
 

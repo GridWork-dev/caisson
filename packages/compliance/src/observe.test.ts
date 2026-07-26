@@ -45,6 +45,11 @@ describe("compliance operational telemetry (ADR-0075)", () => {
       subjectId: "subject-9",
       reason: "gdpr-art17",
       shreddedThroughVersion: 3,
+      deletion: {
+        state: "pending-deletion",
+        irreversible: false,
+        scheduledFor: "2026-02-09T00:00:00.000Z",
+      },
       occurredAt: "2026-02-02T00:00:00.000Z",
     });
 
@@ -59,6 +64,11 @@ describe("compliance operational telemetry (ADR-0075)", () => {
       subjectId: "subject-9",
       reason: "gdpr-art17",
       shreddedThroughVersion: 3,
+      deletion: {
+        state: "pending-deletion",
+        irreversible: false,
+        scheduledFor: "2026-02-09T00:00:00.000Z",
+      },
     });
   });
 });

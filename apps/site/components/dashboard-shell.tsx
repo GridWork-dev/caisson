@@ -16,6 +16,7 @@ const NAV_ITEMS: readonly Omit<AppShellNavItem, "active">[] = [
   { label: "License", href: "/dashboard/license", icon: "key" },
   { label: "AI keys", href: "/dashboard/ai-keys", icon: "lock" },
   { label: "Compliance", href: "/dashboard/compliance", icon: "shield" },
+  { label: "Evidence", href: "/dashboard/evidence", icon: "file-check" },
   { label: "Activity", href: "/dashboard/activity", icon: "gauge" },
   { label: "Plan", href: "/dashboard/plan", icon: "scale" },
   { label: "Invoices", href: "/dashboard/invoices", icon: "file-check" },

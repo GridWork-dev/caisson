@@ -10,6 +10,23 @@
  * per tenant) is what makes `scheduleKeyDeletion` a per-subject CRYPTO-SHRED: destroying a subject's
  * KEK renders every DEK wrapped under it permanently un-unwrappable.
  */
+export type KmsDeletionReceipt =
+  | {
+      /** The provider proved that key material no longer exists. */
+      readonly state: "destroyed" | "purged";
+      readonly irreversible: true;
+    }
+  | {
+      /**
+       * The provider accepted deletion, but key material is still cancellable or recoverable until
+       * the provider completes its retention window.
+       */
+      readonly state: "pending-deletion" | "destroy-scheduled" | "soft-deleted";
+      readonly irreversible: false;
+      /** Provider-reported completion/purge instant, when one was returned. */
+      readonly scheduledFor?: string;
+    };
+
 export interface KmsClient {
   /** Generate a fresh 32-byte DEK and return it alongside its KEK-wrapped form, under scope `keyId`. */
   generateDataKey(
@@ -18,12 +35,12 @@ export interface KmsClient {
   /** Unwrap a DEK previously wrapped under `keyId`. Throws once `keyId` has been crypto-shredded. */
   decryptDataKey(keyId: string, wrappedKey: Buffer): Promise<Buffer>;
   /**
-   * Schedule irreversible deletion of `keyId`'s key material — the crypto-shred primitive. After this
-   * the wrapped DEKs under `keyId` can never be unwrapped, so the field ciphertext they protect is
-   * unrecoverable WITHOUT mutating any append-only store (ADR-0055). Irreversible by design.
+   * Request deletion of `keyId`'s key material — the crypto-shred primitive. The receipt reports
+   * only the destruction state the provider proved: cloud retention windows remain explicitly
+   * pending/recoverable, while only provider-proved destruction or completed purge is irreversible.
    *
    * Requires an EXPLICIT, non-empty `keyId` (ADR-0197): every driver MUST throw rather than fall back
    * to a shared/default scope, because shredding a shared key would destroy every tenant's material.
    */
-  scheduleKeyDeletion(keyId: string): Promise<void>;
+  scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt>;
 }

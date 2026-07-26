@@ -91,18 +91,31 @@ function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+export const ANCHOR_SIGNATURE_VERSION = 2 as const;
+export const ANCHOR_SIGNATURE_DOMAIN = "caisson.audit-chain.anchor.v2" as const;
+
 /**
- * The anchor's signed CANONICAL CORE bytes — byte-identical to `audit-worm`'s `encodeAnchor`
- * (`genesisHash` carried only when present; `sig`/`keyId` EXCLUDED), so the client checks the exact
- * bytes the server signed. Never change these bytes (they are the cross-lane external-anchoring seam).
+ * Versioned signature envelope. The legacy/external anchor core stays byte-identical, while the
+ * signature additionally binds that commitment to one tenant-scoped WORM account so a valid anchor
+ * cannot be replayed as another tenant's evidence.
  */
-function anchorCoreBytes(anchor: AuditChainAnchor): Uint8Array<ArrayBuffer> {
+export function anchorSignatureEnvelopeBytes(
+  anchor: AuditChainAnchor,
+  accountId: string,
+): Uint8Array<ArrayBuffer> {
   const core: { [key: string]: JsonValue } = {
     length: anchor.length,
     tipHash: anchor.tipHash,
   };
   if (anchor.genesisHash !== undefined) core.genesisHash = anchor.genesisHash;
-  return new TextEncoder().encode(canonicalize(core));
+  return new TextEncoder().encode(
+    canonicalize({
+      domain: ANCHOR_SIGNATURE_DOMAIN,
+      v: ANCHOR_SIGNATURE_VERSION,
+      accountId,
+      anchor: core,
+    }),
+  );
 }
 
 /**
@@ -117,18 +130,34 @@ function anchorCoreBytes(anchor: AuditChainAnchor): Uint8Array<ArrayBuffer> {
 export async function verifyAnchorSignature(
   anchor: AuditChainAnchor,
   pinnedKey?: PinnedAnchorKey,
+  expectedAccountId?: string,
 ): Promise<LegResult> {
+  if (pinnedKey === undefined) {
+    return "na";
+  }
+  if (anchor.sig === undefined) return "na";
+  if (pinnedKey.keyId !== anchor.keyId) return "fail";
   if (
-    anchor.sig === undefined ||
-    pinnedKey === undefined ||
-    pinnedKey.keyId !== anchor.keyId
+    anchor.sigV !== ANCHOR_SIGNATURE_VERSION ||
+    anchor.sigAccountId === undefined ||
+    expectedAccountId === undefined
   ) {
     return "na";
   }
+  if (anchor.sigAccountId !== expectedAccountId) return "fail";
+  let publicKeyBytes: Uint8Array<ArrayBuffer>;
+  let signatureBytes: Uint8Array<ArrayBuffer>;
+  try {
+    publicKeyBytes = base64ToBytes(pinnedKey.publicKeySpkiBase64);
+    signatureBytes = base64ToBytes(anchor.sig);
+  } catch {
+    return "fail";
+  }
+  if (signatureBytes.byteLength !== 64) return "fail";
   try {
     const key = await crypto.subtle.importKey(
       "spki",
-      base64ToBytes(pinnedKey.publicKeySpkiBase64),
+      publicKeyBytes,
       { name: "Ed25519" },
       false,
       ["verify"],
@@ -136,12 +165,13 @@ export async function verifyAnchorSignature(
     const ok = await crypto.subtle.verify(
       { name: "Ed25519" },
       key,
-      base64ToBytes(anchor.sig),
-      anchorCoreBytes(anchor),
+      signatureBytes,
+      anchorSignatureEnvelopeBytes(anchor, expectedAccountId),
     );
     return ok ? "pass" : "fail";
   } catch {
-    // WebCrypto Ed25519 unavailable, or a malformed key/signature — can't check → `na`, never `fail`.
+    // WebCrypto Ed25519 unavailable or the pinned key cannot be imported: fail to an unchecked state.
+    // Callers with a required pinned key classify `na` as unverifiable, never verified.
     return "na";
   }
 }
@@ -149,9 +179,9 @@ export async function verifyAnchorSignature(
 /**
  * Run the per-row legs against the row's per-length WORM anchor.
  *
- * Leg 2 (anchor equality): `anchorForLen.tipHash === entry.hash`. These are PUBLIC integrity tags,
- * not secrets, so plain `===` is correct — `timingSafeEqual` is not required here (SECURITY-PREPLAN
- * Clarification, SPEC G7).
+ * Leg 2 (anchor equality): both `anchorForLen.tipHash === entry.hash` and
+ * `anchorForLen.length === entry.seq + 1`. These are PUBLIC integrity fields, not secrets, so plain
+ * equality is correct.
  *
  * Leg 1 (link recompute): recompute the link hash from `(prevHash, payload)` and compare to the
  * stored hash. A `redacted` row ships a MASKED payload that can never recompute the original hash, so
@@ -164,11 +194,28 @@ export async function verifyAnchorSignature(
 export async function verifyEntryAgainstAnchor(
   entry: AuditChainEntry,
   anchorForLen: AuditChainAnchor,
-  opts: { redacted?: boolean; pinnedKey?: PinnedAnchorKey } = {},
+  opts: {
+    redacted?: boolean;
+    pinnedKey?: PinnedAnchorKey;
+    expectedAccountId?: string;
+  } = {},
 ): Promise<VerifyLegs> {
+  const expectedAnchorLength =
+    Number.isSafeInteger(entry.seq) &&
+    entry.seq >= 0 &&
+    entry.seq < Number.MAX_SAFE_INTEGER
+      ? entry.seq + 1
+      : undefined;
   const anchorEquality: "pass" | "fail" =
-    anchorForLen.tipHash === entry.hash ? "pass" : "fail";
-  const signature = await verifyAnchorSignature(anchorForLen, opts.pinnedKey);
+    anchorForLen.tipHash === entry.hash &&
+    anchorForLen.length === expectedAnchorLength
+      ? "pass"
+      : "fail";
+  const signature = await verifyAnchorSignature(
+    anchorForLen,
+    opts.pinnedKey,
+    opts.expectedAccountId,
+  );
   if (opts.redacted === true) {
     return { linkRecompute: "na", anchorEquality, signature };
   }
@@ -189,18 +236,27 @@ export async function verifyEntryAgainstAnchor(
  */
 export function classifyRowState(
   legs: VerifyLegs,
-  opts: { redacted: boolean; isGenesis?: boolean; pending?: boolean },
+  opts: {
+    redacted: boolean;
+    isGenesis?: boolean;
+    pending?: boolean;
+    requireSignature?: boolean;
+  },
 ): RowState {
   if (opts.pending === true) return "pending";
   if (
     legs.anchorEquality === "fail" ||
     legs.linkRecompute === "fail" ||
-    // nosemgrep: no-insecure-token-compare -- `legs.signature` is a LegResult verdict ("pass"/"fail"/"na"), not a secret or signature value; the real Ed25519 check is crypto.subtle.verify in verifyAnchorSignature. No timing side channel exists on a public verdict enum.
+    // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- `legs.signature` is a LegResult verdict ("pass"/"fail"/"na"), not a secret or signature value; the real Ed25519 check is crypto.subtle.verify in verifyAnchorSignature. No timing side channel exists on a public verdict enum.
     legs.signature === "fail"
   ) {
     // A failing leg is tamper evidence (the proof panel names WHICH from the legs object) — a signed
     // anchor whose signature does not verify against the pinned key is a forged anchor.
     return "tampered";
+  }
+  // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- same verdict-enum rationale as above; `legs.signature` holds "pass"/"fail"/"na", never signature bytes.
+  if (opts.requireSignature === true && legs.signature !== "pass") {
+    return "unverifiable";
   }
   if (legs.linkRecompute === "na") {
     return opts.redacted
@@ -219,11 +275,9 @@ export const ROW_RECEIPT_VERSION = 1;
  * internal WORM key — L2). `checks`/`verifiedAt` are DERIVED/UNTRUSTED display fields: they record
  * what the issuing run computed and a verifier MUST ignore them, recomputing from `raw` (CR-06).
  *
- * `anchor.genesisHash`/`sig`/`keyId` are ADDITIVE, OPT-IN fields (T-E1 evidence-pack export, H4):
- * present only when the caller asks `buildRowReceipt` to include anchor provenance. Reconstructing the
- * signed core (`{length, tipHash, genesisHash?}`, matching `audit-worm`'s `encodeAnchor`) needs
- * `genesisHash` alongside `sig`/`keyId`, which is why the three travel together. Omitted by default —
- * every existing receipt shape (e.g. the live admin proof endpoint) is byte-identical to before.
+ * `anchor.genesisHash` plus the v2 `sig`/`keyId`/`sigV`/`sigAccountId` fields are ADDITIVE,
+ * OPT-IN provenance. Together they let a verifier reconstruct the account-bound signature envelope
+ * without exposing the internal WORM key.
  */
 export interface RowReceipt {
   readonly v: number;
@@ -236,6 +290,8 @@ export interface RowReceipt {
     readonly genesisHash?: string;
     readonly sig?: string;
     readonly keyId?: string;
+    readonly sigV?: 2;
+    readonly sigAccountId?: string;
   };
   readonly raw: {
     readonly prevHash: string | null;
@@ -258,9 +314,9 @@ export function buildRowReceipt(input: {
   checks: VerifyLegs;
   verifiedAt: string;
   /**
-   * Opt-in (T-E1 evidence-pack export, H4): also carry the anchor's `genesisHash`+`sig`+`keyId` so an
-   * offline verifier can reconstruct the exact signed core bytes and independently check anchor
-   * authenticity against a pinned public key — the offline counterpart of the signed-anchor check.
+   * Opt-in (T-E1 evidence-pack export, H4): also carry the anchor's public signature provenance so
+   * an offline verifier can reconstruct the v2 account-bound envelope and independently check it
+   * against a pinned public key.
    * Defaults to `false`; existing callers (the live admin proof endpoint) are unaffected.
    */
   includeAnchorProvenance?: boolean;
@@ -279,6 +335,8 @@ export function buildRowReceipt(input: {
     genesisHash?: string;
     sig?: string;
     keyId?: string;
+    sigV?: 2;
+    sigAccountId?: string;
   } = { length: anchorForRow.length, tipHash: anchorForRow.tipHash };
   if (includeAnchorProvenance === true) {
     if (anchorForRow.genesisHash !== undefined) {
@@ -286,6 +344,10 @@ export function buildRowReceipt(input: {
     }
     if (anchorForRow.sig !== undefined) anchor.sig = anchorForRow.sig;
     if (anchorForRow.keyId !== undefined) anchor.keyId = anchorForRow.keyId;
+    if (anchorForRow.sigV !== undefined) anchor.sigV = anchorForRow.sigV;
+    if (anchorForRow.sigAccountId !== undefined) {
+      anchor.sigAccountId = anchorForRow.sigAccountId;
+    }
   }
   return {
     v: ROW_RECEIPT_VERSION,

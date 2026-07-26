@@ -6,6 +6,7 @@
 // both import for real. `admin-auth-server.ts`'s OWN logic (env parsing, the databaseHooks gate,
 // better-auth wiring) is exercised via admin-auth-config.test.ts + admin-auth-server.pglite.test.ts
 // + the real better-auth build (`bunx next build`).
+import { createHmac } from "node:crypto";
 import { beforeEach, expect, test } from "bun:test";
 import { NextRequest } from "next/server";
 import { setAdminAuthFixture, VERIFIED_ADMIN } from "./admin-auth-mock.ts";
@@ -153,6 +154,92 @@ test("proxy: a verified session threads x-admin-actor and lets the request throu
   expect(res.headers.get("x-middleware-request-x-admin-actor")).toBe(
     "<email>",
   );
+});
+
+test("proxy: a valid account-bound service HMAC reaches the internal proof route without an admin session", async () => {
+  const secret = "test-proof-proxy-secret-with-32-bytes";
+  const accountId = "buyer_account_01";
+  const credential = createHmac("sha256", secret)
+    .update(accountId)
+    .digest("hex");
+  const originalSecret = process.env.CAISSON_PROOF_PROXY_SECRET;
+  const originalHost = process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST;
+  process.env.CAISSON_PROOF_PROXY_SECRET = secret;
+  process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST = "admin.railway.internal";
+  let routeReached = false;
+
+  try {
+    const req = new NextRequest(
+      "https://admin.railway.internal/api/internal/audit/proof",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${credential}`,
+          "content-type": "application/json",
+          "x-caisson-account-id": accountId,
+        },
+        body: JSON.stringify({ seq: 0 }),
+      },
+    );
+    const gate = await proxy(req);
+    if (gate.status === 200) routeReached = true;
+
+    expect(gate.status).toBe(200);
+    expect(routeReached).toBe(true);
+  } finally {
+    if (originalSecret === undefined)
+      delete process.env.CAISSON_PROOF_PROXY_SECRET;
+    else process.env.CAISSON_PROOF_PROXY_SECRET = originalSecret;
+    if (originalHost === undefined)
+      delete process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST;
+    else process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST = originalHost;
+  }
+});
+
+test("proxy: invalid HMAC or the public admin host cannot enter the internal proof route", async () => {
+  const secret = "test-proof-proxy-secret-with-32-bytes";
+  const accountId = "buyer_account_01";
+  const credential = createHmac("sha256", secret)
+    .update(accountId)
+    .digest("hex");
+  const originalSecret = process.env.CAISSON_PROOF_PROXY_SECRET;
+  const originalHost = process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST;
+  process.env.CAISSON_PROOF_PROXY_SECRET = secret;
+  process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST = "admin.railway.internal";
+
+  try {
+    const invalid = await proxy(
+      new NextRequest(
+        "https://admin.railway.internal/api/internal/audit/proof",
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${"0".repeat(64)}`,
+            "x-caisson-account-id": accountId,
+          },
+        },
+      ),
+    );
+    const publicOrigin = await proxy(
+      new NextRequest("https://admin.caisson.sh/api/internal/audit/proof", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${credential}`,
+          "x-caisson-account-id": accountId,
+        },
+      }),
+    );
+
+    expect(invalid.status).toBe(401);
+    expect(publicOrigin.status).toBe(401);
+  } finally {
+    if (originalSecret === undefined)
+      delete process.env.CAISSON_PROOF_PROXY_SECRET;
+    else process.env.CAISSON_PROOF_PROXY_SECRET = originalSecret;
+    if (originalHost === undefined)
+      delete process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST;
+    else process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST = originalHost;
+  }
 });
 
 // --- WR-03 regression: matcher exclusions must be ANCHORED, not prefix-matched -------------------

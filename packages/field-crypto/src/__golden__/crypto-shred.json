@@ -1,0 +1,13 @@
+{
+  "event": "erasure.crypto-shred",
+  "deletion": {
+    "state": "soft-deleted",
+    "irreversible": false
+  },
+  "method": "kms-key-deletion",
+  "tenantId": "tenant_1",
+  "subjectId": "subject_a",
+  "reason": "ccpa-1798.105",
+  "occurredAt": "2026-06-27T12:00:00.000Z",
+  "shreddedThroughVersion": 1
+}
