@@ -43,6 +43,8 @@ export interface AzureKeyVaultKmsClientConfig {
   readonly purgeOnDelete?: boolean;
   readonly wrapAlgorithm?: KeyWrapAlgorithm;
   readonly client: AzureKeyVaultClient;
+  /** Map a logical KMS scope to the concrete Azure key name. */
+  readonly scopeKeyName?: (keyId: string) => string;
   /** Build the official SDK's separate `CryptographyClient` for one key name. */
   readonly cryptographyClient?: (
     keyName: string,
@@ -87,6 +89,11 @@ const azureKeyVaultKmsClientConfigSchema = strictObject({
   client: z.custom<AzureKeyVaultClient>(isAzureKeyVaultClient, {
     message: "client must implement beginDeleteKey() and purgeDeletedKey()",
   }),
+  scopeKeyName: z
+    .custom<(keyId: string) => string>((value) => typeof value === "function", {
+      message: "scopeKeyName must map a logical scope to an Azure key name",
+    })
+    .optional(),
   cryptographyClient: z
     .custom<(keyName: string) => AzureKeyVaultCryptographyClient>(
       (value) => typeof value === "function",
@@ -120,8 +127,12 @@ export function createAzureKeyVaultKmsClient(
     );
   }
 
-  const keyFor = (keyId: string): string =>
-    keyId.length === 0 ? parsed.keyName : parseStrict(keyNameSchema, keyId);
+  const keyFor = (keyId: string): string => {
+    if (keyId.length === 0) return parsed.keyName;
+    const candidate =
+      parsed.scopeKeyName === undefined ? keyId : parsed.scopeKeyName(keyId);
+    return parseStrict(keyNameSchema, candidate);
+  };
 
   return {
     async generateDataKey(
@@ -168,7 +179,7 @@ export function createAzureKeyVaultKmsClient(
           "field-crypto: Azure Key Vault scheduleKeyDeletion requires an explicit keyId — refusing to delete the default key",
         );
       }
-      const keyName = parseStrict(keyNameSchema, keyId);
+      const keyName = keyFor(keyId);
       const poller = await parsed.client.beginDeleteKey(keyName);
       const deleted = await poller.pollUntilDone();
       const recoveryLevel = deleted.properties.recoveryLevel;

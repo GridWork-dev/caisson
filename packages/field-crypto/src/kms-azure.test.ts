@@ -108,6 +108,23 @@ describe("createAzureKeyVaultKmsClient", () => {
     });
   });
 
+  test("maps a logical tenant scope to a deterministic Azure key name", async () => {
+    const { client, seen } = fakeAzureKeyVault();
+    const kms = createAzureKeyVaultKmsClient({
+      keyName: "caisson-field",
+      purgeProtectionEnabled: true,
+      client,
+      scopeKeyName: (scope) => `caisson-field-${scope}`,
+    });
+
+    await kms.generateDataKey("tenant-a");
+
+    expect(seen[0]).toMatchObject({
+      method: "wrapKey",
+      keyName: "caisson-field-tenant-a",
+    });
+  });
+
   test("rejects purge-on-delete when configured purge protection makes immediate purge impossible", () => {
     const { client } = fakeAzureKeyVault();
     expect(() =>
