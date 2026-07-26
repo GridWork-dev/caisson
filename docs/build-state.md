@@ -7,7 +7,7 @@ status: live
 
 ## Current state (2026-07-25)
 
-**ADR ceiling is `0387`; the audited base is `fe2dfaca`; the latest immutable release tag remains
+**ADR ceiling is `0388`; the audited base is `fe2dfaca`; the latest immutable release tag remains
 `v2026.07.20.3`.** The ADR-0379 full-state completion program is active on
 `feature/full-state-completion`; ADR-0380 closed its six fork rows and split the remaining build
 into two parallel worktree lanes — `feature/completion-lane-a` (code residuals plus the adapter
@@ -25,6 +25,9 @@ design surface: the whole OSCAL surface moves into the new package with both par
 it and re-exporting (so no consumer breaks and a parent buyer receives the spine), the license is
 forced commercial by ADR-0094, and renewals set no new number — ADR-0260 §5's flat-40%-X9 formula
 already yields $99 for oscal-spine and moves the Compliance renewal $579 → $659 as a knock-on.
+ADR-0386 moved Everything to $2,259 with an $899 renewal as the whole-catalog bundle gained the
+new SKU. ADR-0388 then superseded its two-train sequence: this wave runs beside T8 and merges before
+the first release train.
 **Railway PITR is now the only open fork row.** The OSCAL wave is implemented on
 `feature/oscal-spine-wave`: the standalone commercial package owns the complete OSCAL surface,
 both parents re-export it, Compliance and Everything move together, and the catalog carries the

@@ -110,10 +110,13 @@ export type OscalManifestControl = DeepReadonly<
 const crosswalkRollupCellSchema = strictObject({
   framework: z.string().trim().min(1).max(80),
   reference: z.string().trim().min(1).max(200),
-  canonicalControlIds: z.array(z.string().regex(CANONICAL_CONTROL_ID)).min(1),
+  // Keep these two pointer arrays byte-for-byte compatible with compliance-core's public
+  // CrosswalkRollup contract. They are opaque identifiers at this boundary; tightening them to
+  // canonical-control syntax would make a manifest accepted by the parent fail after the carve.
+  canonicalControlIds: z.array(z.string()).min(1),
   status: z.enum(["ready", "gap", "unresolved"]),
   claim: z.enum(["maps-to", "implements"]),
-  evidencePointers: z.array(z.string().regex(CANONICAL_CONTROL_ID)).min(1),
+  evidencePointers: z.array(z.string()).min(1),
   note: z
     .string()
     .trim()

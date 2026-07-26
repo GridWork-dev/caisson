@@ -15,7 +15,7 @@ Success means:
 
 1. Caisson publishes dedicated refund and support routes using its already-approved policy and
    support addresses.
-2. The Paddle catalog tool validates and exports an exact 35-product/66-price production mapping
+2. The Paddle catalog tool validates and exports an exact 36-product/68-price production mapping
    without guessing, overwriting, or leaking credentials.
 3. The Mercury and Paddle browser prompts distinguish safe navigation from adult-only identity,
    attestation, credential, banking, and submission actions.
@@ -33,7 +33,7 @@ Success means:
 - Paddle: retain separate live and sandbox sellers; live descriptor `CAISSONSH`; `$100` payout
   threshold; adult-only access and 2FA.
 - Paddle payout classification remains unset until written CPA and Paddle guidance agree.
-- Paddle production catalog is exactly 35 products and 66 prices; controlled proof uses the `$49`
+- Paddle production catalog is exactly 36 products and 68 prices; controlled proof uses the `$49`
   Agent Runner module and ends in a refund.
 - Production webhook events are exactly `transaction.completed`, `subscription.created`,
   `subscription.updated`, `subscription.canceled`, and `adjustment.updated`.
