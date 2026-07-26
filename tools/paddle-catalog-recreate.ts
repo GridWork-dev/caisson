@@ -38,6 +38,7 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
 
 // Root tools/ scripts are linted by the root eslint pass (no-console); match the
 // tooling/scripts/sot-check.ts convention of writing straight to stdio.
@@ -81,10 +82,15 @@ export interface PlanPrice {
   /** Stable marker written to the Paddle price's custom_data.caisson_key for idempotent re-lookup. */
   key: string;
   description: string;
+  type: "standard";
+  status: "active";
   /** Integer minor units (cents); money is never a float (ADR-0007). */
   amountCents: number;
+  currencyCode: "USD";
   /** Present for a recurring price; omitted for a one-time price. */
   billingInterval?: "year";
+  /** Present with billingInterval; Paddle bills every one interval. */
+  billingFrequency?: 1;
 }
 
 export interface PlanProduct {
@@ -92,6 +98,8 @@ export interface PlanProduct {
   caissonId: string;
   kind: ProductKind;
   name: string;
+  type: "standard";
+  status: "active";
   /** Always "saas" per the catalog policy (tax category locks after the first sale). */
   taxCategory: "saas";
   prices: PlanPrice[];
@@ -120,12 +128,17 @@ export function buildPlan(): PlanProduct[] {
       caissonId: b.id,
       kind: "bundle",
       name: `Caisson — ${b.label}`,
+      type: "standard",
+      status: "active",
       taxCategory: "saas",
       prices: [
         {
           key: b.id,
           description: `${b.label} bundle — perpetual license`,
+          type: "standard",
+          status: "active",
           amountCents: toCents(b.amount),
+          currencyCode: "USD",
         },
       ],
     });
@@ -137,12 +150,17 @@ export function buildPlan(): PlanProduct[] {
       caissonId: m.id,
       kind: "module",
       name: `Caisson module — ${m.label}`,
+      type: "standard",
+      status: "active",
       taxCategory: "saas",
       prices: [
         {
           key: m.id,
           description: `${m.label} module — perpetual license`,
+          type: "standard",
+          status: "active",
           amountCents: toCents(m.amount),
+          currencyCode: "USD",
         },
       ],
     });
@@ -157,13 +175,19 @@ export function buildPlan(): PlanProduct[] {
       caissonId: p.id,
       kind: "subscription",
       name: `Caisson — ${p.label}`,
+      type: "standard",
+      status: "active",
       taxCategory: "saas",
       prices: [
         {
           key: p.id,
           description: `${p.label} — annual subscription`,
+          type: "standard",
+          status: "active",
           amountCents: toCents(p.amount),
+          currencyCode: "USD",
           billingInterval: "year",
+          billingFrequency: 1,
         },
       ],
     });
@@ -184,13 +208,18 @@ export function buildPlan(): PlanProduct[] {
     renewalPrices.push({
       key: `renew:${r.id}`,
       description: `${r.label} — 12-month updates renewal`,
+      type: "standard",
+      status: "active",
       amountCents: toCents(usd),
+      currencyCode: "USD",
     });
   }
   products.push({
     caissonId: "updates-renewal",
     kind: "renewal-parent",
     name: "Caisson — Updates Renewal",
+    type: "standard",
+    status: "active",
     taxCategory: "saas",
     prices: renewalPrices,
   });
@@ -223,11 +252,91 @@ function requireApiKey(): string {
   return key;
 }
 
+export interface PaddlePrice {
+  id: string;
+  product_id: string;
+  description: string;
+  type: "standard" | "custom";
+  billing_cycle: {
+    interval: "day" | "week" | "month" | "year";
+    frequency: number;
+  } | null;
+  unit_price: {
+    amount: string;
+    currency_code: string;
+  };
+  custom_data: Record<string, unknown> | null;
+  status: "active" | "archived";
+}
+
 export interface PaddleObject {
   id: string;
-  custom_data?: Record<string, unknown> | null;
-  prices?: PaddleObject[];
+  name: string;
+  type: "standard" | "custom";
+  tax_category: string;
+  custom_data: Record<string, unknown> | null;
+  status: "active" | "archived";
+  prices: PaddlePrice[];
 }
+
+const PaddleBillingCycleSchema = z
+  .object({
+    interval: z.enum(["day", "week", "month", "year"]),
+    frequency: z.number().int().positive(),
+  })
+  .strict();
+
+const PaddleUnitPriceSchema = z
+  .object({
+    amount: z.string().regex(/^\d+$/u),
+    currency_code: z.string().regex(/^[A-Z]{3}$/u),
+  })
+  .strict();
+
+const PaddleApiPriceSchema = z
+  .object({
+    id: z.string().min(1),
+    product_id: z.string().min(1),
+    description: z.string(),
+    type: z.enum(["standard", "custom"]),
+    name: z.string().nullable(),
+    billing_cycle: PaddleBillingCycleSchema.nullable(),
+    trial_period: z.unknown().nullable(),
+    tax_mode: z.string(),
+    unit_price: PaddleUnitPriceSchema,
+    unit_price_overrides: z.array(z.unknown()),
+    custom_data: z.record(z.string(), z.unknown()).nullable(),
+    status: z.enum(["active", "archived"]),
+    quantity: z
+      .object({
+        minimum: z.number().int().positive(),
+        maximum: z.number().int().positive().nullable(),
+      })
+      .strict(),
+    import_meta: z.unknown().nullable(),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .strict();
+
+const PaddleApiProductSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string(),
+    description: z.string().nullable(),
+    type: z.enum(["standard", "custom"]),
+    tax_category: z.string(),
+    image_url: z.string(),
+    custom_data: z.record(z.string(), z.unknown()).nullable(),
+    status: z.enum(["active", "archived"]),
+    import_meta: z.unknown().nullable(),
+    created_at: z.string(),
+    updated_at: z.string(),
+    prices: z.array(PaddleApiPriceSchema),
+  })
+  .strict();
+
+const PaddleApiProductsSchema = z.array(PaddleApiProductSchema);
 
 async function paddleRequest(
   apiKey: string,
@@ -266,41 +375,45 @@ async function paddleRequest(
   return { data: json.data, meta: json.meta };
 }
 
-/** List every existing product with its prices, keyed by custom_data.caisson_id (idempotency map). */
+/** List every active product and strictly parse the included active/archived price entities. */
 async function listExistingProducts(apiKey: string): Promise<PaddleObject[]> {
   const products: PaddleObject[] = [];
   let next: string | undefined =
     "/products?include=prices&per_page=100&status=active";
   while (next !== undefined) {
     const { data, meta } = await paddleRequest(apiKey, "GET", next);
-    products.push(...(data as PaddleObject[]));
+    const parsed = PaddleApiProductsSchema.safeParse(data);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const location =
+        issue === undefined ? "unknown field" : issue.path.join(".");
+      throw new Error(
+        `Paddle returned an invalid catalog snapshot at "${location}"`,
+      );
+    }
+    products.push(
+      ...parsed.data.map((product) => ({
+        id: product.id,
+        name: product.name,
+        type: product.type,
+        tax_category: product.tax_category,
+        custom_data: product.custom_data,
+        status: product.status,
+        prices: product.prices.map((price) => ({
+          id: price.id,
+          product_id: price.product_id,
+          description: price.description,
+          type: price.type,
+          billing_cycle: price.billing_cycle,
+          unit_price: price.unit_price,
+          custom_data: price.custom_data,
+          status: price.status,
+        })),
+      })),
+    );
     next = meta?.pagination?.has_more ? meta.pagination.next : undefined;
   }
   return products;
-}
-
-function existingProductsByMarker(
-  products: readonly PaddleObject[],
-): Map<string, PaddleObject> {
-  const byMarker = new Map<string, PaddleObject>();
-  for (const product of products) {
-    const marker = product.custom_data?.caisson_id;
-    if (typeof marker !== "string") continue;
-    if (byMarker.has(marker)) {
-      throw new Error(`duplicate product marker "${marker}" in Paddle`);
-    }
-    byMarker.set(marker, product);
-  }
-  return byMarker;
-}
-
-function existingPriceKeys(product: PaddleObject | undefined): Set<string> {
-  const keys = new Set<string>();
-  for (const pr of product?.prices ?? []) {
-    const k = pr.custom_data?.caisson_key;
-    if (typeof k === "string") keys.add(k);
-  }
-  return keys;
 }
 
 export interface CatalogMapping {
@@ -310,17 +423,33 @@ export interface CatalogMapping {
   readonly prices: Readonly<Record<string, string>>;
 }
 
-/**
- * Validate a Paddle snapshot against the complete desired plan and return the stable marker → id
- * mapping used for production wiring. Unmarked non-Caisson products are ignored; once a product
- * carries `caisson_id`, its product and every active price must match the plan exactly.
- */
-export function buildCatalogMapping(
+interface ValidatedCatalog {
+  readonly products: ReadonlyMap<string, PaddleObject>;
+  readonly prices: ReadonlyMap<string, PaddlePrice>;
+}
+
+function mismatch(
+  markerType: "product" | "price",
+  marker: string,
+  attribute: string,
+  expected: unknown,
+  actual: unknown,
+): never {
+  throw new Error(
+    `${attribute} mismatch for ${markerType} marker "${marker}": expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+  );
+}
+
+function validateCatalog(
   plan: readonly PlanProduct[],
   snapshot: readonly PaddleObject[],
-): CatalogMapping {
+  requireComplete: boolean,
+): ValidatedCatalog {
   const expectedProducts = new Map<string, PlanProduct>();
-  const expectedPrices = new Map<string, string>();
+  const expectedPrices = new Map<
+    string,
+    { readonly ownerMarker: string; readonly price: PlanPrice }
+  >();
 
   for (const product of plan) {
     if (expectedProducts.has(product.caissonId)) {
@@ -333,75 +462,248 @@ export function buildCatalogMapping(
       if (expectedPrices.has(price.key)) {
         throw new Error(`duplicate planned price marker "${price.key}"`);
       }
-      expectedPrices.set(price.key, product.caissonId);
+      if (!Number.isInteger(price.amountCents) || !(price.amountCents > 0)) {
+        throw new Error(
+          `invalid planned integer amount for price marker "${price.key}"`,
+        );
+      }
+      if (
+        (price.billingInterval === undefined) !==
+        (price.billingFrequency === undefined)
+      ) {
+        throw new Error(
+          `invalid planned billing cycle for price marker "${price.key}"`,
+        );
+      }
+      expectedPrices.set(price.key, {
+        ownerMarker: product.caissonId,
+        price,
+      });
     }
   }
 
-  const productEntries: Array<readonly [string, string]> = [];
-  const priceEntries: Array<readonly [string, string]> = [];
-  const seenProducts = new Set<string>();
-  const seenPrices = new Set<string>();
+  const activePriceCounts = new Map<string, number>();
+  for (const product of snapshot) {
+    for (const price of product.prices) {
+      const marker = price.custom_data?.caisson_key;
+      if (price.status !== "active" || typeof marker !== "string") continue;
+      activePriceCounts.set(marker, (activePriceCounts.get(marker) ?? 0) + 1);
+    }
+  }
+  for (const [marker, count] of activePriceCounts) {
+    if (count > 1) {
+      throw new Error(
+        `duplicate active price marker "${marker}" in Paddle (${count} prices)`,
+      );
+    }
+  }
 
+  const products = new Map<string, PaddleObject>();
+  const prices = new Map<string, PaddlePrice>();
   for (const product of snapshot) {
     const productMarker = product.custom_data?.caisson_id;
-    if (typeof productMarker !== "string") continue;
-    const plannedProduct = expectedProducts.get(productMarker);
-    if (!plannedProduct) {
-      throw new Error(`unexpected product marker "${productMarker}" in Paddle`);
+    const isMarkedProduct = typeof productMarker === "string";
+    if (isMarkedProduct) {
+      const plannedProduct = expectedProducts.get(productMarker);
+      if (!plannedProduct) {
+        throw new Error(
+          `unexpected product marker "${productMarker}" in Paddle`,
+        );
+      }
+      if (products.has(productMarker)) {
+        throw new Error(
+          `duplicate active product marker "${productMarker}" in Paddle`,
+        );
+      }
+      if (product.id.length === 0) {
+        throw new Error(`empty product id for marker "${productMarker}"`);
+      }
+      if (product.status !== plannedProduct.status) {
+        mismatch(
+          "product",
+          productMarker,
+          "status",
+          plannedProduct.status,
+          product.status,
+        );
+      }
+      if (product.name !== plannedProduct.name) {
+        mismatch(
+          "product",
+          productMarker,
+          "name",
+          plannedProduct.name,
+          product.name,
+        );
+      }
+      if (product.type !== plannedProduct.type) {
+        mismatch(
+          "product",
+          productMarker,
+          "type",
+          plannedProduct.type,
+          product.type,
+        );
+      }
+      if (product.tax_category !== plannedProduct.taxCategory) {
+        mismatch(
+          "product",
+          productMarker,
+          "tax category",
+          plannedProduct.taxCategory,
+          product.tax_category,
+        );
+      }
+      const actualKind = product.custom_data?.caisson_kind;
+      if (actualKind !== plannedProduct.kind) {
+        mismatch(
+          "product",
+          productMarker,
+          "kind",
+          plannedProduct.kind,
+          actualKind,
+        );
+      }
+      products.set(productMarker, product);
     }
-    if (seenProducts.has(productMarker)) {
-      throw new Error(`duplicate product marker "${productMarker}" in Paddle`);
-    }
-    if (product.id.length === 0) {
-      throw new Error(`empty product id for marker "${productMarker}"`);
-    }
-    seenProducts.add(productMarker);
-    productEntries.push([productMarker, product.id]);
 
-    const plannedKeys = new Set(
-      plannedProduct.prices.map((price) => price.key),
-    );
-    for (const price of product.prices ?? []) {
+    for (const price of product.prices) {
+      if (price.status !== "active") continue;
       const priceMarker = price.custom_data?.caisson_key;
       if (typeof priceMarker !== "string") {
+        if (isMarkedProduct) {
+          throw new Error(
+            `unmarked active price "${price.id}" on product "${productMarker}"`,
+          );
+        }
+        continue;
+      }
+      const expected = expectedPrices.get(priceMarker);
+      if (!expected) {
         throw new Error(
-          `unmarked active price "${price.id}" on product "${productMarker}"`,
+          `unexpected active price marker "${priceMarker}" in Paddle`,
         );
       }
-      if (!plannedKeys.has(priceMarker)) {
-        throw new Error(
-          `unexpected price marker "${priceMarker}" on product "${productMarker}"`,
+      if (
+        productMarker !== expected.ownerMarker ||
+        price.product_id !== product.id
+      ) {
+        mismatch(
+          "price",
+          priceMarker,
+          "owning product",
+          expected.ownerMarker,
+          typeof productMarker === "string"
+            ? `${productMarker} (${price.product_id})`
+            : `unmarked (${price.product_id})`,
         );
-      }
-      if (seenPrices.has(priceMarker)) {
-        throw new Error(`duplicate price marker "${priceMarker}" in Paddle`);
       }
       if (price.id.length === 0) {
         throw new Error(`empty price id for marker "${priceMarker}"`);
       }
-      seenPrices.add(priceMarker);
-      priceEntries.push([priceMarker, price.id]);
+      if (price.description !== expected.price.description) {
+        mismatch(
+          "price",
+          priceMarker,
+          "description",
+          expected.price.description,
+          price.description,
+        );
+      }
+      if (price.type !== expected.price.type) {
+        mismatch("price", priceMarker, "type", expected.price.type, price.type);
+      }
+      if (price.status !== expected.price.status) {
+        mismatch(
+          "price",
+          priceMarker,
+          "status",
+          expected.price.status,
+          price.status,
+        );
+      }
+      const expectedAmount = String(expected.price.amountCents);
+      if (price.unit_price.amount !== expectedAmount) {
+        mismatch(
+          "price",
+          priceMarker,
+          "amount",
+          expectedAmount,
+          price.unit_price.amount,
+        );
+      }
+      if (price.unit_price.currency_code !== expected.price.currencyCode) {
+        mismatch(
+          "price",
+          priceMarker,
+          "currency",
+          expected.price.currencyCode,
+          price.unit_price.currency_code,
+        );
+      }
+      const expectedBillingCycle =
+        expected.price.billingInterval === undefined
+          ? null
+          : {
+              interval: expected.price.billingInterval,
+              frequency: expected.price.billingFrequency,
+            };
+      if (
+        price.billing_cycle?.interval !== expectedBillingCycle?.interval ||
+        price.billing_cycle?.frequency !== expectedBillingCycle?.frequency
+      ) {
+        mismatch(
+          "price",
+          priceMarker,
+          "billing cycle",
+          expectedBillingCycle,
+          price.billing_cycle,
+        );
+      }
+      prices.set(priceMarker, price);
     }
   }
 
-  for (const marker of expectedProducts.keys()) {
-    if (!seenProducts.has(marker)) {
-      throw new Error(`missing product marker "${marker}" in Paddle`);
+  if (requireComplete) {
+    for (const marker of expectedProducts.keys()) {
+      if (!products.has(marker)) {
+        throw new Error(`missing active product marker "${marker}" in Paddle`);
+      }
+    }
+    for (const marker of expectedPrices.keys()) {
+      if (!prices.has(marker)) {
+        throw new Error(`missing active price marker "${marker}" in Paddle`);
+      }
     }
   }
-  for (const marker of expectedPrices.keys()) {
-    if (!seenPrices.has(marker)) {
-      throw new Error(`missing price marker "${marker}" in Paddle`);
-    }
-  }
+  return { products, prices };
+}
 
-  const sortedProducts = productEntries.sort(([a], [b]) => a.localeCompare(b));
-  const sortedPrices = priceEntries.sort(([a], [b]) => a.localeCompare(b));
+/**
+ * Validate a Paddle snapshot against the complete desired plan and return the stable marker → id
+ * mapping used for production wiring. Unmarked non-Caisson products are ignored; once a product
+ * carries `caisson_id`, its product and every active price must match the plan exactly.
+ */
+export function buildCatalogMapping(
+  plan: readonly PlanProduct[],
+  snapshot: readonly PaddleObject[],
+): CatalogMapping {
+  const validated = validateCatalog(plan, snapshot, true);
+  const sortedProducts = [...validated.products].sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
+  const sortedPrices = [...validated.prices].sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
   return {
     schemaVersion: 1,
     environment: "production",
-    products: Object.fromEntries(sortedProducts),
-    prices: Object.fromEntries(sortedPrices),
+    products: Object.fromEntries(
+      sortedProducts.map(([marker, product]) => [marker, product.id]),
+    ),
+    prices: Object.fromEntries(
+      sortedPrices.map(([marker, price]) => [marker, price.id]),
+    ),
   };
 }
 
@@ -437,7 +739,7 @@ async function createProduct(
   const { data } = await paddleRequest(apiKey, "POST", "/products", {
     name: prod.name,
     tax_category: prod.taxCategory,
-    type: "standard",
+    type: prod.type,
     custom_data: { caisson_id: prod.caissonId, caisson_kind: prod.kind },
   });
   return (data as PaddleObject).id;
@@ -451,10 +753,18 @@ async function createPrice(
   await paddleRequest(apiKey, "POST", "/prices", {
     product_id: productId,
     description: price.description,
-    type: "standard",
-    unit_price: { amount: String(price.amountCents), currency_code: "USD" },
+    type: price.type,
+    unit_price: {
+      amount: String(price.amountCents),
+      currency_code: price.currencyCode,
+    },
     ...(price.billingInterval
-      ? { billing_cycle: { interval: price.billingInterval, frequency: 1 } }
+      ? {
+          billing_cycle: {
+            interval: price.billingInterval,
+            frequency: price.billingFrequency,
+          },
+        }
       : {}),
     custom_data: { caisson_key: price.key },
   });
@@ -509,11 +819,15 @@ function printPlan(plan: PlanProduct[]): void {
 async function execute(plan: PlanProduct[]): Promise<void> {
   const apiKey = requireApiKey();
   out(`\nExecuting against Paddle [${paddleEnv()}] — ${paddleBase()}\n`);
-  const existing = existingProductsByMarker(await listExistingProducts(apiKey));
+  const existing = validateCatalog(
+    plan,
+    await listExistingProducts(apiKey),
+    false,
+  );
   let createdProducts = 0;
   let createdPrices = 0;
   for (const prod of plan) {
-    const found = existing.get(prod.caissonId);
+    const found = existing.products.get(prod.caissonId);
     let productId: string;
     if (found) {
       productId = found.id;
@@ -523,9 +837,8 @@ async function execute(plan: PlanProduct[]): Promise<void> {
       createdProducts += 1;
       out(`create product ${prod.caissonId} (${productId})`);
     }
-    const haveKeys = existingPriceKeys(found);
     for (const price of prod.prices) {
-      if (haveKeys.has(price.key)) {
+      if (existing.prices.has(price.key)) {
         out(`  skip price   ${price.key}`);
         continue;
       }
