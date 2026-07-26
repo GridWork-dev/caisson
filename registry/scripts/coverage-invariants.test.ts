@@ -8,6 +8,7 @@
 // green instead of discovering a dangling pin after the ledger append.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { RESERVED_MODULE_ENTITLEMENT_VERSIONS } from "@caisson/registry-schema";
 import { loadRegistryIndex } from "../schema/registry-index";
 import { INDEX_PATH, LEDGER_PATH, parseLedgerLines } from "./build-index";
 import {
@@ -211,6 +212,11 @@ describe("pre-publish pin check (the next version cut stays green)", () => {
         .map((d) => d.id),
     );
     const workspaceCurrent = new Set<string>();
+    const reservedFirstRelease = new Set(
+      [...RESERVED_MODULE_ENTITLEMENT_VERSIONS].map(
+        ([slug, version]) => `@caisson/${slug}@${version}`,
+      ),
+    );
     const manifests = [] as {
       id: string;
       version: string;
@@ -235,7 +241,8 @@ describe("pre-publish pin check (the next version cut stays green)", () => {
           continue;
         }
         const resolvesPublished = advertised.has(pair) && sidecarKeys.has(pair);
-        const resolvesThisCut = workspaceCurrent.has(pair);
+        const resolvesThisCut =
+          workspaceCurrent.has(pair) || reservedFirstRelease.has(pair);
         if (!resolvesPublished && !resolvesThisCut) {
           dangling.push(`${m.id}@${m.version} -> ${pair}`);
         }

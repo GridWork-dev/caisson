@@ -352,7 +352,7 @@ describe("OSCAL framework conformance — v1.2.2, all three frameworks (ADR-0179
         bundle.assessmentResults["assessment-results"].metadata[
           "oscal-version"
         ],
-      ).toBe("1.2.2");
+      ).toBe(OSCAL_VERSION);
       assertOscalShape(bundle);
     });
 

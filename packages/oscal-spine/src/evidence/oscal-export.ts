@@ -333,9 +333,26 @@ function buildApRlink(
       "media-type": "application/oscal-assessment-plan+json",
     };
   }
-  if (plan.rlinkHref.trim().length === 0) {
+  const href = plan.rlinkHref;
+  const withoutLeadingDot = href.startsWith("./") ? href.slice(2) : href;
+  const pathSegments = withoutLeadingDot.split("/");
+  const invalidHref =
+    href.trim().length === 0 ||
+    href !== href.trim() ||
+    href.startsWith("/") ||
+    href.startsWith("//") ||
+    /^[a-z][a-z0-9+.-]*:/i.test(href) ||
+    href.includes("\\") ||
+    href.includes("?") ||
+    href.includes("#") ||
+    href.includes("\0") ||
+    href.includes("%") ||
+    pathSegments.some(
+      (segment) => segment.length === 0 || segment === "." || segment === "..",
+    );
+  if (invalidHref) {
     throw new ValidationError(
-      "oscal export `assessmentPlan.rlinkHref` must be a non-empty relative path",
+      "oscal export `assessmentPlan.rlinkHref` must be a contained relative POSIX bundle path",
     );
   }
   if (plan.sha256 !== undefined && !SHA256_HEX.test(plan.sha256)) {
@@ -344,7 +361,7 @@ function buildApRlink(
     );
   }
   return {
-    href: plan.rlinkHref,
+    href,
     "media-type": "application/oscal-assessment-plan+json",
     ...(plan.sha256 !== undefined
       ? { hashes: [{ algorithm: "SHA-256", value: plan.sha256 }] }

@@ -342,6 +342,99 @@ describe("tarball — literal-slash path, re-checked entitlement, R2 bytes", () 
   });
 });
 
+describe("ADR-0384 parent purchases install the carved OSCAL package", () => {
+  const oscalVersions = [
+    {
+      version: "1.0.0",
+      publishedAt: "2026-01-01T00:00:00.000Z",
+      gateAttestation: "ci-run-1@deadbeef",
+      manifest: commercialBase("@caisson/oscal-spine").versions[0]?.manifest,
+    },
+    {
+      version: "2.0.0",
+      publishedAt: "2027-01-01T00:00:00.000Z",
+      gateAttestation: "ci-run-2@deadbeef",
+      manifest: {
+        ...commercialBase("@caisson/oscal-spine").versions[0]?.manifest,
+        version: "2.0.0",
+      },
+    },
+  ];
+  const compatibilityIndex = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [
+      commercialBase("@caisson/compliance-core"),
+      commercialBase("@caisson/frameworks-pack"),
+      {
+        id: "@caisson/oscal-spine",
+        latest: "2.0.0",
+        versions: oscalVersions,
+      },
+    ],
+  });
+  const compatibilitySidecar = loadTarballSidecar({
+    $comment: "ADR-0384 compatibility fixture",
+    tarballs: Object.fromEntries(
+      ["1.0.0", "2.0.0"].map((version) => [
+        `@caisson/oscal-spine@${version}`,
+        {
+          key: `oscal-spine/oscal-spine-${version}.tgz`,
+          shasum: "dddddddddddddddddddddddddddddddddddddddd",
+          integrity: "sha512-oscalCompatibilitySRI==",
+          size: 1,
+        },
+      ]),
+    ),
+  });
+  const compatibilityEnv: NpmEnv = {
+    TARBALLS: { get: () => Promise.resolve({ body: TGZ }) },
+  };
+  const WINDOW = "2026-12-31T00:00:00.000Z";
+
+  for (const parent of ["compliance-core", "frameworks-pack"] as const) {
+    const parentHandler = createNpmHandler(
+      compatibilityIndex,
+      compatibilitySidecar,
+      {
+        resolveEntitlements: () => ({
+          entitlements: [parent],
+          updatesWindows: { [parent]: WINDOW },
+        }),
+      },
+    );
+
+    test(`${parent} grants the OSCAL packument under the parent's updates window`, async () => {
+      const response = await parentHandler(
+        req("/@caisson%2foscal-spine", { headers: AUTH }),
+      );
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        "dist-tags": { latest: string };
+        versions: Record<string, unknown>;
+      };
+      expect(Object.keys(body.versions)).toEqual(["1.0.0"]);
+      expect(body["dist-tags"].latest).toBe("1.0.0");
+    });
+
+    test(`${parent} serves in-window OSCAL bytes and rejects out-of-window bytes`, async () => {
+      const inWindow = await parentHandler(
+        req("/@caisson/oscal-spine/-/oscal-spine-1.0.0.tgz", {
+          headers: AUTH,
+        }),
+        compatibilityEnv,
+      );
+      expect(inWindow.status).toBe(200);
+      const outOfWindow = await parentHandler(
+        req("/@caisson/oscal-spine/-/oscal-spine-2.0.0.tgz", {
+          headers: AUTH,
+        }),
+        compatibilityEnv,
+      );
+      expect(outOfWindow.status).toBe(404);
+    });
+  }
+});
+
 describe("diagnostics + writes", () => {
   test("GET /-/ping → 200 {}", async () => {
     const res = await handlerFor(null)(req("/-/ping"));
