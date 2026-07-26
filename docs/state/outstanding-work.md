@@ -110,14 +110,15 @@ releases and 6 minor package releases. They are consumed only by T7.
    answer → the state docs. Indivisible: the price-authority gate fails on a catalog where the
    pricebook and display sheet disagree. Deployed docs/support keep answering $1,449 until the fleet
    redeploy, so the runbook's probe becomes a post-deploy check rather than a pre-deploy assertion.
-   **ADR-0386 adds two edits and re-sequences the wave.** `BUNDLE_RETAIL.everything` moves
+   **ADR-0386 adds two edits; ADR-0388 supersedes its release sequence.** `BUNDLE_RETAIL.everything` moves
    **$2,059 → $2,259** and `PRICE_AUTHORITY["@caisson/everything"]` **205900 → 225900**, because the
    new $249 SKU joins the whole-catalog bundle and *no gate objects* — the below-sum lock gets easier
    as the member sum grows and the ladder only needs Everything ≥ Compliance, so the premium would
    have narrowed $610 → $410 with every check green. That carries
    `renewalAmount("everything")` **$819 → $899** through the ADR-0260 §5 formula, which
-   `apps/site/lib/pricing.test.ts` asserts. Sequencing: the wave runs **after** the fleet deploy and
-   the first release train, not before them — it earns its own second train.
+   `apps/site/lib/pricing.test.ts` asserts. ADR-0388 runs the wave in parallel with T8 and requires
+   both branches to merge before the first fleet release train; there is no second train or
+   stale-price first tag.
 7. **Grill remediation (COMPLETE):** an independent adversarial audit of the four open PRs
    ([report](../../outputs/audit/2026-07-25-open-pr-grill.md)) tested 44 hypotheses, refuted 39, and
    confirmed 5 — three on #335, one on #333, one on #334 — and confirmed zero cross-PR merge
