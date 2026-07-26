@@ -12,6 +12,14 @@ type OscalJsonValue =
   | OscalJsonValue[]
   | { [key: string]: OscalJsonValue };
 
+type DeepReadonly<T> = T extends (...args: never[]) => unknown
+  ? T
+  : T extends readonly (infer U)[]
+    ? readonly DeepReadonly<U>[]
+    : T extends object
+      ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+      : T;
+
 const jsonValueSchema: z.ZodType<OscalJsonValue> = z.lazy(() =>
   z.union([
     z.string(),
@@ -71,8 +79,8 @@ const manifestEvidenceItemSchema = strictObject({
     });
   }
 });
-export type OscalManifestEvidenceItem = z.infer<
-  typeof manifestEvidenceItemSchema
+export type OscalManifestEvidenceItem = DeepReadonly<
+  z.infer<typeof manifestEvidenceItemSchema>
 >;
 
 const manifestControlSchema = strictObject({
@@ -95,7 +103,9 @@ const manifestControlSchema = strictObject({
     });
   }
 });
-export type OscalManifestControl = z.infer<typeof manifestControlSchema>;
+export type OscalManifestControl = DeepReadonly<
+  z.infer<typeof manifestControlSchema>
+>;
 
 const crosswalkRollupCellSchema = strictObject({
   framework: z.string().trim().min(1).max(80),
@@ -114,14 +124,16 @@ const crosswalkRollupCellSchema = strictObject({
     })
     .optional(),
 });
-export type OscalCrosswalkRollupCell = z.infer<
-  typeof crosswalkRollupCellSchema
+export type OscalCrosswalkRollupCell = DeepReadonly<
+  z.infer<typeof crosswalkRollupCellSchema>
 >;
 
 const crosswalkRollupSchema = strictObject({
   cells: z.array(crosswalkRollupCellSchema),
 });
-export type OscalCrosswalkRollup = z.infer<typeof crosswalkRollupSchema>;
+export type OscalCrosswalkRollup = DeepReadonly<
+  z.infer<typeof crosswalkRollupSchema>
+>;
 
 const evidencePackFrameworkSchema = strictObject({
   id: z
@@ -130,8 +142,8 @@ const evidencePackFrameworkSchema = strictObject({
   title: z.string().trim().min(1).max(200),
   version: z.string().trim().min(1).max(40),
 });
-export type OscalEvidencePackFramework = z.infer<
-  typeof evidencePackFrameworkSchema
+export type OscalEvidencePackFramework = DeepReadonly<
+  z.infer<typeof evidencePackFrameworkSchema>
 >;
 
 const manifestSummarySchema = strictObject({
@@ -191,8 +203,8 @@ export const OscalEvidencePackManifestSchema = strictObject({
     }
   }
 });
-export type OscalEvidencePackManifest = z.infer<
-  typeof OscalEvidencePackManifestSchema
+export type OscalEvidencePackManifest = DeepReadonly<
+  z.infer<typeof OscalEvidencePackManifestSchema>
 >;
 
 /** Validate the standalone OSCAL input boundary with redaction-safe field-path errors. */
