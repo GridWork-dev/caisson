@@ -139,22 +139,27 @@ export function createAzureKeyVaultKmsClient(
       keyId: string,
     ): Promise<{ plaintextKey: Buffer; wrappedKey: Buffer }> {
       const plaintextKey = randomBytes(32);
-      const result = await cryptographyClient(keyFor(keyId)).wrapKey(
-        parsed.wrapAlgorithm,
-        plaintextKey,
-      );
-      if (
-        !(result.result instanceof Uint8Array) ||
-        result.result.length === 0
-      ) {
-        throw new InternalError(
-          "field-crypto: Azure Key Vault WrapKey returned no wrapped key",
+      try {
+        const result = await cryptographyClient(keyFor(keyId)).wrapKey(
+          parsed.wrapAlgorithm,
+          plaintextKey,
         );
+        if (
+          !(result.result instanceof Uint8Array) ||
+          result.result.length === 0
+        ) {
+          throw new InternalError(
+            "field-crypto: Azure Key Vault WrapKey returned no wrapped key",
+          );
+        }
+        return {
+          plaintextKey,
+          wrappedKey: Buffer.from(result.result),
+        };
+      } catch (error) {
+        plaintextKey.fill(0);
+        throw error;
       }
-      return {
-        plaintextKey,
-        wrappedKey: Buffer.from(result.result),
-      };
     },
 
     async decryptDataKey(keyId: string, wrappedKey: Buffer): Promise<Buffer> {
@@ -162,15 +167,20 @@ export function createAzureKeyVaultKmsClient(
         parsed.wrapAlgorithm,
         wrappedKey,
       );
-      if (
-        !(result.result instanceof Uint8Array) ||
-        result.result.length !== 32
-      ) {
+      if (!(result.result instanceof Uint8Array)) {
         throw new InternalError(
           "field-crypto: Azure Key Vault UnwrapKey did not return a 32-byte DEK",
         );
       }
-      return Buffer.from(result.result);
+      if (result.result.length !== 32) {
+        result.result.fill(0);
+        throw new InternalError(
+          "field-crypto: Azure Key Vault UnwrapKey did not return a 32-byte DEK",
+        );
+      }
+      const plaintextKey = Buffer.from(result.result);
+      result.result.fill(0);
+      return plaintextKey;
     },
 
     async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {

@@ -112,7 +112,13 @@ export async function kmsContext(
       continue;
     }
     if (result.status === "rejected") {
-      if (!failed) failure = result.reason;
+      if (!failed) {
+        failure =
+          result.reason ??
+          new InternalError(
+            "field-crypto: KMS provider rejected a DEK unwrap without an error",
+          );
+      }
       failed = true;
       continue;
     }
@@ -136,6 +142,7 @@ export async function kmsContext(
   }
 
   let disposed = false;
+  const workingKeys = new Set<Buffer>();
   const assertLive = (): void => {
     if (disposed) {
       throw new InternalError(
@@ -154,9 +161,11 @@ export async function kmsContext(
           `field-crypto: request KMS context has no prefetched key v${String(keyVersion)}`,
         );
       }
-      // Callers receive a short-lived working copy. sealField/openField zero it in finally while the
-      // request-local source stays usable for additional fields until dispose().
-      return Buffer.from(key);
+      // Track every working copy so even a caller that retains it cannot keep plaintext past scope.
+      // sealField/openField zero copies eagerly; dispose() is the mandatory backstop for all callers.
+      const workingKey = Buffer.from(key);
+      workingKeys.add(workingKey);
+      return workingKey;
     },
     currentVersion() {
       assertLive();
@@ -167,6 +176,8 @@ export async function kmsContext(
       disposed = true;
       for (const key of keys.values()) key.fill(0);
       keys.clear();
+      for (const workingKey of workingKeys) workingKey.fill(0);
+      workingKeys.clear();
     },
   };
 }

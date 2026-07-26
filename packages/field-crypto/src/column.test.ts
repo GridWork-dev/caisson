@@ -134,7 +134,9 @@ describe("request-scoped KMS context", () => {
       },
     };
 
-    await expect(kmsContext(provider, "acct_a")).rejects.toBeUndefined();
+    await expect(kmsContext(provider, "acct_a")).rejects.toThrow(
+      /rejected a DEK unwrap without an error/,
+    );
   });
 
   test("no plaintext DEK survives the request scope", async () => {
@@ -148,15 +150,18 @@ describe("request-scoped KMS context", () => {
       },
     };
     let captured: FieldCryptoContext | undefined;
+    let escapedWorkingKey: Buffer | undefined;
 
     await withKmsFieldCryptoContext(provider, "acct_a", (ctx) => {
       captured = ctx;
       expect(currentFieldCryptoContext()).toBe(ctx);
+      escapedWorkingKey = ctx.deriveKey(1);
       const sealed = sealField(ctx, "patient.ssn", "secret");
       expect(openField(ctx, "patient.ssn", sealed)).toBe("secret");
     });
 
     expect(unwrapped.equals(Buffer.alloc(32))).toBe(true);
+    expect(escapedWorkingKey?.equals(Buffer.alloc(32))).toBe(true);
     expect(() => captured?.deriveKey(1)).toThrow(/disposed/);
     expect(() => currentFieldCryptoContext()).toThrow(/fail-closed/);
   });

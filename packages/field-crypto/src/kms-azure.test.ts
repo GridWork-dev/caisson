@@ -31,7 +31,7 @@ function fakeAzureKeyVault(options?: { recoveryLevel?: string }): {
         async unwrapKey(_algorithm, value) {
           if (deleted) throw new Error("fake Azure key is deleted");
           seen.push({ method: "unwrapKey", keyName, value });
-          return { result: value.subarray(1) };
+          return { result: Uint8Array.from(value.subarray(1)) };
         },
       };
     },
@@ -156,6 +156,30 @@ describe("createAzureKeyVaultKmsClient", () => {
     });
   });
 
+  test("zeroizes the fresh plaintext DEK when Azure wrapping fails", async () => {
+    const { client: sdk } = fakeAzureKeyVault();
+    let attempted: Uint8Array | undefined;
+    const client = createAzureKeyVaultKmsClient({
+      keyName: "default-key",
+      purgeProtectionEnabled: false,
+      client: sdk,
+      cryptographyClient: () => ({
+        async wrapKey(_algorithm, key) {
+          attempted = key;
+          throw new Error("Azure wrap unavailable");
+        },
+        async unwrapKey() {
+          throw new Error("not used");
+        },
+      }),
+    });
+
+    await expect(client.generateDataKey("tenant-a")).rejects.toThrow(
+      "Azure wrap unavailable",
+    );
+    expect(Buffer.from(attempted ?? []).equals(Buffer.alloc(32))).toBe(true);
+  });
+
   test("uses the configured default only for non-destructive empty-scope calls", async () => {
     const { client: sdk, seen } = fakeAzureKeyVault();
     const client = createAzureKeyVaultKmsClient({
@@ -190,6 +214,29 @@ describe("createAzureKeyVaultKmsClient", () => {
       method: "unwrapKey",
       keyName: "tenant-a",
     });
+  });
+
+  test("copies then zeroizes the Azure SDK unwrap result", async () => {
+    const { client: sdk } = fakeAzureKeyVault();
+    const sdkPlaintext = Buffer.alloc(32, 0x61);
+    const client = createAzureKeyVaultKmsClient({
+      keyName: "default-key",
+      purgeProtectionEnabled: false,
+      client: sdk,
+      cryptographyClient: () => ({
+        async wrapKey() {
+          throw new Error("not used");
+        },
+        async unwrapKey() {
+          return { result: sdkPlaintext };
+        },
+      }),
+    });
+
+    const plaintext = await client.decryptDataKey("tenant-a", Buffer.alloc(48));
+
+    expect(plaintext.equals(Buffer.alloc(32, 0x61))).toBe(true);
+    expect(sdkPlaintext.equals(Buffer.alloc(32))).toBe(true);
   });
 
   test("soft-delete is reported as recoverable, never irreversible", async () => {
