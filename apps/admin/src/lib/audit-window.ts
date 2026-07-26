@@ -129,6 +129,7 @@ export async function buildAdminAuditWindow(input: {
     (anchorAuth === undefined ||
       (packSigner !== undefined &&
         packSigner.keyId === anchorAuth.keyId &&
+        // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- `checks.signature` is a per-receipt verdict enum ("pass"/"fail"/"na"), not signature bytes; the real Ed25519 verification already ran in assembleProofSuccess. No timing side channel on a public verdict.
         receipts.every((receipt) => receipt.checks.signature === "pass")));
 
   let evidencePack: EvidencePack | null = null;

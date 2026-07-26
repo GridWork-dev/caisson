@@ -212,7 +212,7 @@ export function ProofPanel({
       });
   };
 
-  // nosemgrep: no-insecure-token-compare -- verify.legs.signature is a pass/fail/na verdict, not a secret; the real Ed25519 check is crypto.subtle.verify in the kernel's verifyAnchorSignature. No timing side channel on a public verdict enum.
+  // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- verify.legs.signature is a pass/fail/na verdict, not a secret; the real Ed25519 check is crypto.subtle.verify in the kernel's verifyAnchorSignature. No timing side channel on a public verdict enum.
   const seal = sealCaption(verify.state, verify.legs?.signature === "pass");
 
   return (

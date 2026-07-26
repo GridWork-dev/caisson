@@ -247,13 +247,14 @@ export function classifyRowState(
   if (
     legs.anchorEquality === "fail" ||
     legs.linkRecompute === "fail" ||
-    // nosemgrep: no-insecure-token-compare -- `legs.signature` is a LegResult verdict ("pass"/"fail"/"na"), not a secret or signature value; the real Ed25519 check is crypto.subtle.verify in verifyAnchorSignature. No timing side channel exists on a public verdict enum.
+    // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- `legs.signature` is a LegResult verdict ("pass"/"fail"/"na"), not a secret or signature value; the real Ed25519 check is crypto.subtle.verify in verifyAnchorSignature. No timing side channel exists on a public verdict enum.
     legs.signature === "fail"
   ) {
     // A failing leg is tamper evidence (the proof panel names WHICH from the legs object) — a signed
     // anchor whose signature does not verify against the pinned key is a forged anchor.
     return "tampered";
   }
+  // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- same verdict-enum rationale as above; `legs.signature` holds "pass"/"fail"/"na", never signature bytes.
   if (opts.requireSignature === true && legs.signature !== "pass") {
     return "unverifiable";
   }

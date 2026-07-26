@@ -251,10 +251,11 @@ export async function verifyReceipt(receipt, anchorAuth, tenantId) {
   }
 
   const overall =
-    // nosemgrep: no-insecure-token-compare -- link/anchorEquality/signature are pass/fail verdict strings, not secrets; the Ed25519 signature check itself is verifyEd25519 above. No timing side channel on a public verdict.
     link === "fail" ||
     anchorEquality === "fail" ||
+    // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- link/anchorEquality/signature are pass/fail verdict strings, not secrets; the Ed25519 signature check itself is verifyEd25519 above. No timing side channel on a public verdict.
     signature === "fail" ||
+    // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- same verdict-string rationale as the line above.
     (anchorAuth !== undefined && signature !== "pass")
       ? "FAIL"
       : "PASS";
