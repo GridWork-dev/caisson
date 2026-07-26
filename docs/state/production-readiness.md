@@ -21,15 +21,15 @@ blocked until both technical and operator evidence is attached.
 
 ## Verdicts
 
-| Dimension               | Verdict                                      | Current state                                                                                                                                                     |
-| ----------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Repository              | **local gates green; certification pending** | 79 Bun workspaces; 218/218 tasks pass; the open-PR CI defect is resolved (all three PRs green), so only concurrent-worktree hygiene and the unmerged waves remain |
-| Deploy / infrastructure | **red parity**                               | Public probes answer, but license and admin manifest digests differ from repository/Worker                                                                        |
-| Security                | **gaps**                                     | Limiter policy implemented; four technical receipts and three adapter audits remain                                                                               |
-| Commerce                | **blocked**                                  | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                                               |
-| Operations              | **gaps**                                     | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                                      |
-| Buyer/product           | **gaps**                                     | Design-manifest residual complete; four already-locked families remain                                                                                            |
-| Release                 | **blocked**                                  | 33 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                                                      |
+| Dimension               | Verdict                                          | Current state                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repository              | **local gates green; certification pending**     | 80 Bun workspaces; 218/218 tasks passed on `b037b878`; PRs #332-#341 are merged or open-and-green, so only concurrent-worktree hygiene and the three in-flight waves remain |
+| Deploy / infrastructure | **red parity**                                   | Public probes answer, but license and admin manifest digests differ from repository/Worker                                                                                  |
+| Security                | **gaps**                                         | Limiter policy implemented; four technical receipts and three adapter audits remain                                                                                         |
+| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                                                         |
+| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                                                |
+| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt                                    |
+| Release                 | **blocked**                                      | 47 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                                                                |
 
 ## Evidence snapshot
 
@@ -44,20 +44,22 @@ blocked until both technical and operator evidence is attached.
   `92d930b6`.
 - Route-specific limiter infrastructure failures are enforced in `014ac4de`.
 - Dependency-patch ownership is enforced by the audit harness in `3e384bc5`.
-- `bun run sot` has every content/structure gate green. Its sole drift is branch hygiene because
-  `/home/gw/lab/caisson-paddle-onboarding` exists concurrently on
-  `feature/paddle-onboarding-setup`; this task did not remove another workstream.
-- There are 33 pending changeset files. Current resolution affects 41 patch packages and 4 minor
-  packages.
+- `bun run sot` has every content/structure gate green. Its sole drift is branch hygiene, because
+  three ADR-0328 wave worktrees run concurrently: `caisson-kms`
+  (`feature/field-crypto-kms-async`), `caisson-oscal` (`feature/oscal-spine-wave`), and
+  `caisson-boardwalk` (`feature/board-fork-walk-prep`). Expected during a parallel wave.
+- There are 47 pending changeset files. Current resolution affects 57 patch, 11 minor, and 2 major
+  packages; the majors are `@caisson/compliance` and `@caisson/field-crypto`.
 - Private-repository access has been authorized since 2026-06-30 (`gh auth status`: active
   `repo`-scoped token; `caisson-sh/caisson` confirmed private). Branch protection stays
   discipline-only on the Free plan (ADR-0327) and org 2FA was declined 2026-07-15, re-raise at
   launch — both accepted residuals. Current PRs, Actions, releases, and public-repository timing
   are certified in [2026-07-25 GitHub certification](../../outputs/executions/2026-07-25-github-certification.md).
-  That pass found an open-PR CI defect; its appended correction records the resolution — all three
-  open PRs (#332, #333, #334) now carry a fully green rollup. The unsigned-tag defect stands but is
-  no longer an open question: ADR-0382 lock 2 locked SSH signing going forward with an advisory
-  readiness check. Older GitHub tables are historical.
+  That pass found an open-PR CI defect; its appended correction records the resolution — the three
+  PRs it named (#332, #333, #334) carried a fully green rollup and have since merged, as have
+  #335-#340. The unsigned-tag defect stands but is no longer an open question: ADR-0382 lock 2
+  locked SSH signing going forward with an advisory readiness check. Older GitHub tables are
+  historical.
 
 ### Deploy and parity
 
@@ -81,9 +83,9 @@ digest parity, and health/checkout/entitlement/refund/RAG/support probe receipts
 - Compliance’s operative displayed price is $1,449.
 - Production Paddle approval, product/price IDs, adjustment handling, dunning cancellation, and
   live checkout/refund/entitlement proof remain open.
-- Dedicated refund/support routes and an exact 35-product/66-price mapping exporter are built on
-  `feature/paddle-onboarding-setup`; they are not production evidence until merged, deployed, and
-  probed. No live Paddle catalog mutation or production ID wiring has occurred.
+- Dedicated refund/support routes and an exact 35-product/66-price mapping exporter merged in #333;
+  they are still not production evidence, because nothing has been deployed or probed since. No live
+  Paddle catalog mutation or production ID wiring has occurred.
 - Fulfillment must recognize every current SKU and continue to reject unknown IDs.
 - EIN is complete; it is no longer a blocker.
 - Marketing remains public. Cart, dashboard, and checkout remain Cloudflare-gated.
