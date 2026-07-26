@@ -11,8 +11,15 @@
 #
 # The AI-pentest layer (ptai / HexStrike) is Claude-Code-driven, NOT run here — see
 # docs/security/tooling-playbook.md. Each tool self-skips if not installed (run install.sh).
-# Env: SEMGREP_PACKS (default "p/security-audit"; set "" for offline), SEMGREP_JOBS (set 1 on
-# this box if semgrep hits an io_uring crash), SECURITY_OUT_DIR (SARIF dir, default out-of-tree).
+# Env: SEMGREP_PACKS (default "p/security-audit"; set "" for offline), SEMGREP_JOBS,
+# SECURITY_OUT_DIR (SARIF dir, default out-of-tree).
+#
+# semgrep-core opens an io_uring queue at startup, which needs locked memory. Where RLIMIT_MEMLOCK
+# is small (8 MB on gw-ms-a2) it dies with "Cannot allocate memory io_uring_queue_init" and scans
+# ZERO files. SEMGREP_JOBS=1 does NOT help — the allocation happens before any parallelism. So the
+# driver pins EIO_BACKEND=posix unless the caller overrides it; results are identical, only the IO
+# strategy differs. Without it a local run is not "clean", it is dead, and anything that reads the
+# JSON without checking the exit code reads a false green.
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_common.sh"
 
 LAYER=ci; TARGET=""; STRICT_DIGESTS=0
@@ -34,7 +41,8 @@ sast_semgrep() {
   hr "SAST · semgrep (custom floor rules${SEMGREP_PACKS:+ + }${SEMGREP_PACKS-p/security-audit})"
   local cfg=(--config tools/security/semgrep-rules/) pack
   for pack in ${SEMGREP_PACKS-p/security-audit}; do cfg+=(--config "$pack"); done
-  SEMGREP_SEND_METRICS=off semgrep scan "${cfg[@]}" --metrics=off --error \
+  SEMGREP_SEND_METRICS=off EIO_BACKEND="${EIO_BACKEND:-posix}" \
+    semgrep scan "${cfg[@]}" --metrics=off --error \
     ${SEMGREP_JOBS:+-j "$SEMGREP_JOBS"} \
     --sarif --output "$OUT_DIR/semgrep.sarif" . && ok "semgrep clean" || { RC=1; warn "semgrep findings → $OUT_DIR/semgrep.sarif"; }
 }
