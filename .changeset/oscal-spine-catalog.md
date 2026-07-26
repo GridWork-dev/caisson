@@ -2,6 +2,7 @@
 "@caisson/oscal-spine": minor
 "@caisson/compliance-core": patch
 "@caisson/frameworks-pack": patch
+"@caisson/registry-schema": patch
 "@caisson/pricebook": minor
 "@caisson/compliance": patch
 "@caisson/everything": patch
