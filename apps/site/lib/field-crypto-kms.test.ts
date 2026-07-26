@@ -28,24 +28,57 @@ const ENV = {
   AZURE_CLIENT_SECRET: "client-secret",
 };
 
+const globalDb = globalThis as unknown as {
+  caissonTransactor?: unknown;
+  caissonPglite?: { close(): Promise<void> };
+};
+let hadDatabaseUrl: boolean;
+let priorDatabaseUrl: string | undefined;
+let hadTransactor: boolean;
+let priorTransactor: unknown;
+let hadPglite: boolean;
+let priorPglite: { close(): Promise<void> } | undefined;
+
 beforeAll(() => {
+  hadDatabaseUrl = Object.prototype.hasOwnProperty.call(
+    process.env,
+    "DATABASE_URL",
+  );
+  priorDatabaseUrl = process.env.DATABASE_URL;
+  hadTransactor = Object.prototype.hasOwnProperty.call(
+    globalDb,
+    "caissonTransactor",
+  );
+  priorTransactor = globalDb.caissonTransactor;
+  hadPglite = Object.prototype.hasOwnProperty.call(globalDb, "caissonPglite");
+  priorPglite = globalDb.caissonPglite;
+
   delete process.env.DATABASE_URL;
-  const globalDb = globalThis as unknown as {
-    caissonTransactor?: unknown;
-    caissonPglite?: unknown;
-  };
-  globalDb.caissonTransactor = undefined;
-  globalDb.caissonPglite = undefined;
+  delete globalDb.caissonTransactor;
+  delete globalDb.caissonPglite;
 });
 
 afterAll(async () => {
-  const globalDb = globalThis as unknown as {
-    caissonTransactor?: unknown;
-    caissonPglite?: { close(): Promise<void> };
-  };
-  await globalDb.caissonPglite?.close();
-  globalDb.caissonTransactor = undefined;
-  globalDb.caissonPglite = undefined;
+  const testPglite = globalDb.caissonPglite;
+  if (testPglite !== undefined && testPglite !== priorPglite) {
+    await testPglite.close();
+  }
+
+  if (hadDatabaseUrl && priorDatabaseUrl !== undefined) {
+    process.env.DATABASE_URL = priorDatabaseUrl;
+  } else {
+    delete process.env.DATABASE_URL;
+  }
+  if (hadTransactor) {
+    globalDb.caissonTransactor = priorTransactor;
+  } else {
+    delete globalDb.caissonTransactor;
+  }
+  if (hadPglite) {
+    globalDb.caissonPglite = priorPglite;
+  } else {
+    delete globalDb.caissonPglite;
+  }
 });
 
 function fakeRuntime(recoveryLevel = "Recoverable"): {
