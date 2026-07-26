@@ -6,20 +6,16 @@
 // back-matter AP resource, related-observation referential integrity). This is the credless/Java-less
 // conformance floor that runs on every CI leg; the ground-truth `oscal-cli validate` round-trip
 // (oscal-export-xml.test.ts) skips when the external tool is absent. NEW collectors (HIPAA field-crypto,
-// EU-AI-Act risk-register) are a LATER phase — these fixtures exercise the framework-agnostic emitter.
+// EU-AI-Act risk-register) are represented as stable manifest inputs so this package's conformance
+// suite remains independent of the commercial collectors that can feed those inputs at runtime.
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { matchGolden } from "@caisson/testing";
 import { canonicalize, type JsonValue } from "@caisson/kernel";
-import { ALG_AES_256_GCM, serializeEnvelope } from "@caisson/field-crypto";
-import {
-  parseEvidencePackManifest,
-  type EvidencePackManifest,
-} from "./pack-format.ts";
-import type { CollectorResult } from "./collector.ts";
-import { fieldCryptoPolicyCollector } from "./collectors/field-crypto-policy.ts";
-import { aiRiskRegisterCollector } from "./collectors/ai-risk-register.ts";
-import { defineRiskEntry } from "@caisson/risk-register";
+import type {
+  OscalEvidencePackManifest,
+  OscalManifestEvidenceItem,
+} from "../contracts.ts";
 import { toOscalAssessmentPlan } from "./oscal-assessment-plan.ts";
 import {
   OSCAL_VERSION,
@@ -82,15 +78,6 @@ function bundleOptions(fw: FrameworkCase): OscalExportOptions {
   };
 }
 
-/** A valid AES-256-GCM field-crypto envelope (base64) — the at-rest shape a PHI field carries. */
-const PHI_SAMPLE = serializeEnvelope({
-  algId: ALG_AES_256_GCM,
-  keyVersion: 1,
-  nonce: Buffer.alloc(12, 7),
-  ciphertext: Buffer.from("phi-ciphertext"),
-  tag: Buffer.alloc(16, 9),
-});
-
 /** A manifest control-input block. */
 interface ControlInput {
   readonly controlId: string;
@@ -98,51 +85,12 @@ interface ControlInput {
   readonly family: string;
   readonly statement: string;
   readonly crosswalk: readonly never[];
-  readonly evidence: readonly {
-    readonly collectorId: string;
-    readonly title: string;
-    readonly summary: string;
-    readonly status: "pass" | "flagged";
-    readonly reason?: string;
-    readonly facts: Record<string, unknown>;
-    readonly manualSlots: readonly {
-      id: string;
-      label: string;
-      required: boolean;
-      filled: boolean;
-    }[];
-  }[];
+  readonly evidence: readonly OscalManifestEvidenceItem[];
   readonly readiness: "ready" | "gap";
 }
 
-/** Map a real collector result into a manifest evidence-item input (drops nothing; edge-filled=false). */
-function evidenceFrom(
-  result: CollectorResult,
-): ControlInput["evidence"][number] {
-  return {
-    collectorId: result.item.collectorId,
-    title: result.item.title,
-    summary: result.item.summary,
-    status: result.status === "flagged" ? "flagged" : "pass",
-    ...(result.reason !== undefined ? { reason: result.reason } : {}),
-    facts: result.item.facts,
-    manualSlots: result.item.manualSlots.map((s) => ({
-      id: s.id,
-      label: s.label,
-      required: s.required,
-      filled: false,
-    })),
-  };
-}
-
-/** HIPAA §164.312 PHI encryption-at-rest control, evidenced by the real field-crypto collector. */
+/** HIPAA §164.312 input as emitted by the field-crypto collector at the package boundary. */
 function phiEncryptionControl(): ControlInput {
-  const result = fieldCryptoPolicyCollector().collect({
-    fields: [
-      { field: "patient.ssn", storedValue: PHI_SAMPLE },
-      { field: "patient.dob", storedValue: PHI_SAMPLE },
-    ],
-  });
   return {
     controlId: "DATA-PROTECTION.PHI-ENCRYPTION",
     title: "PHI encryption at rest",
@@ -150,39 +98,23 @@ function phiEncryptionControl(): ControlInput {
     statement:
       "Electronic PHI is encrypted at rest with per-tenant authenticated (AES-256-GCM) field encryption.",
     crosswalk: [],
-    evidence: [evidenceFrom(result)],
+    evidence: [
+      {
+        collectorId: "substrate.field-crypto-policy",
+        title: "PHI field encryption posture",
+        summary:
+          "all 2 PHI fields are encrypted at rest (AES-256-GCM field-crypto envelope)",
+        status: "pass",
+        facts: { encryptedFields: 2, plaintextFields: 0 },
+        manualSlots: [],
+      },
+    ],
     readiness: "ready",
   };
 }
 
-/** EU-AI-Act Art. 9 risk-management control, evidenced by the real ai-risk-register collector. */
+/** EU-AI-Act Art. 9 input as emitted by the risk-register collector at the package boundary. */
 function aiRiskRegisterControl(): ControlInput {
-  const result = aiRiskRegisterCollector({
-    controlId: "RISK-MANAGEMENT.AI-REGISTER",
-  }).collect({
-    entries: [
-      defineRiskEntry({
-        riskId: "R-1",
-        subject: "default lane (openai/gpt-4o)",
-        likelihood: "possible",
-        impact: "moderate",
-        treatmentPlan: "Mitigation in force for this lane.",
-        owner: "ai-safety@example.com",
-        evidenceDigest: "a".repeat(64),
-        crosswalk: [],
-      }),
-      defineRiskEntry({
-        riskId: "R-2",
-        subject: "vision lane (anthropic/claude)",
-        likelihood: "possible",
-        impact: "moderate",
-        treatmentPlan: "Mitigation in force for this lane.",
-        owner: "ai-safety@example.com",
-        evidenceDigest: "a".repeat(64),
-        crosswalk: [],
-      }),
-    ],
-  });
   return {
     controlId: "RISK-MANAGEMENT.AI-REGISTER",
     title: "AI risk register maintained",
@@ -190,7 +122,16 @@ function aiRiskRegisterControl(): ControlInput {
     statement:
       "A risk register enumerates each AI lane's risks; every entry is assessed with a treatment plan on record over the lifecycle.",
     crosswalk: [],
-    evidence: [evidenceFrom(result)],
+    evidence: [
+      {
+        collectorId: "substrate.ai-risk-register",
+        title: "AI risk register posture",
+        summary: "all 2 AI risks are assessed with a treatment plan on record",
+        status: "pass",
+        facts: { assessedRisks: 2, untreatedRisks: 0 },
+        manualSlots: [],
+      },
+    ],
     readiness: "ready",
   };
 }
@@ -206,7 +147,7 @@ function manifestFor(
   readyControlId: string,
   gapControlId: string,
   extra: readonly ControlInput[] = [],
-): EvidencePackManifest {
+): OscalEvidencePackManifest {
   const controls: readonly ControlInput[] = [
     {
       controlId: readyControlId,
@@ -259,7 +200,7 @@ function manifestFor(
   const gapWord = controlsWithGaps === 1 ? "gap" : "gaps";
   const tail =
     controlsWithGaps === 1 ? "a remediation item" : "remediation items";
-  return parseEvidencePackManifest({
+  return {
     formatVersion: "2",
     crosswalkRollup: { cells: [] },
     tenantId: "tenant-acme-prod",
@@ -273,7 +214,7 @@ function manifestFor(
       totalEvidenceItems,
       posture: `${String(controlsReady)} of ${String(controls.length)} controls evidence-ready; ${String(controlsWithGaps)} ${gapWord} recorded as ${tail}.`,
     },
-  });
+  };
 }
 
 interface FrameworkCase {

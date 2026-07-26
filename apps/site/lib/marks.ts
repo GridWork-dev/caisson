@@ -32,6 +32,7 @@ export const MODULE_MARKS: Record<string, IconName> = {
   "local-privacy": "local-privacy",
   "local-sync": "local-sync",
   "frameworks-pack": "frameworks-pack",
+  "oscal-spine": "frameworks-pack",
   "signing-primitive": "signing-primitive",
   credits: "credits",
 };

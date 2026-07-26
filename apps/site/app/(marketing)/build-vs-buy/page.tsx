@@ -38,7 +38,7 @@ export const metadata = buildMetadata({
   type: "article",
 });
 
-// The compliance bundle price ($1,449 once) and the optional updates cadence ($1,499/yr) both read
+// The compliance bundle price ($1,649 once) and the optional updates cadence ($1,499/yr) both read
 // from the committed sheet (lib/pricing) — never hand-typed, so a reprice can't strand this page.
 const COMPLIANCE_PRICE = bundlePrice("compliance");
 const UPDATES = priceById("compliance-updates");

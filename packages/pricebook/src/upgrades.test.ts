@@ -18,6 +18,7 @@ describe("resolveUpgradeCredit — fail-closed (ADR-0247 F8)", () => {
   test("a creditable member resolves to its retail", () => {
     expect(resolveUpgradeCredit("field-crypto", "compliance")).toBe(199);
     expect(resolveUpgradeCredit("compliance-core", "compliance")).toBe(299);
+    expect(resolveUpgradeCredit("oscal-spine", "compliance")).toBe(249);
   });
 
   test("an item that is NOT a member of the bundle THROWS (unmapped pair, never a silent 0)", () => {
@@ -55,11 +56,11 @@ describe("upgradeQuote — bundle − owned, floored at $0 (ADR-0247 F8)", () =>
   });
 
   test("owning a subset credits their retail, below the bundle price (below-sum)", () => {
-    // field-crypto (199) + audit-worm (149) = 348 credited off Compliance $1,449.
+    // field-crypto (199) + audit-worm (149) = 348 credited off Compliance $1,649.
     const q = upgradeQuote("compliance", ["field-crypto", "audit-worm"]);
     expect([...q.creditedItems].sort()).toEqual(["audit-worm", "field-crypto"]);
     expect(q.credit).toBe(348);
-    expect(q.upgradePrice).toBe(1449 - 348);
+    expect(q.upgradePrice).toBe(1649 - 348);
     expect(q.upgradePrice).toBeGreaterThan(0);
   });
 
@@ -120,6 +121,30 @@ describe("data integrity — the pre-declared money data holds its invariants", 
         `${bundleId}: member sum ${memberSum} must exceed retail ${BUNDLE_RETAIL[bundleId]}`,
       ).toBeGreaterThan(BUNDLE_RETAIL[bundleId]);
     }
+  });
+
+  test("the ADR-0383/0386 two-price move keeps the locked sums and ladder", () => {
+    const complianceSum = creditableMembers("compliance").reduce(
+      (sum, id) => sum + resolveUpgradeCredit(id, "compliance"),
+      0,
+    );
+    const everythingSum = creditableMembers("everything").reduce(
+      (sum, id) => sum + resolveUpgradeCredit(id, "everything"),
+      0,
+    );
+    expect(SKU_RETAIL["oscal-spine"]).toBe(249);
+    expect(BUNDLE_MEMBERSHIP_BOOK.compliance["oscal-spine"]).toBe(
+      "2026-07-25T00:00:00.000Z",
+    );
+    expect(BUNDLE_RETAIL.compliance).toBe(1649);
+    expect(BUNDLE_RETAIL.everything).toBe(2259);
+    expect(complianceSum).toBe(2319);
+    expect(everythingSum).toBe(4633);
+    expect(BUNDLE_RETAIL.compliance).toBeLessThan(complianceSum);
+    expect(BUNDLE_RETAIL.everything).toBeLessThan(everythingSum);
+    expect(BUNDLE_RETAIL.everything).toBeGreaterThanOrEqual(
+      BUNDLE_RETAIL.compliance,
+    );
   });
 
   test("every persona bundle's members are creditable; everything covers the whole priced catalog", () => {

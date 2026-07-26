@@ -12,7 +12,7 @@
 //      concept-only items with neither a showable component nor an artifact. Bundle slides use the
 //      parametrized composition pattern (one component, fed each bundle's real member modules).
 // Where none of those apply, the brand placeholder auto-fills slide 1 — never a fabricated
-// screenshot. All 32 catalog items resolve to real media (ADR-0290/0378) — the placeholder path stays as
+// screenshot. All 33 catalog items resolve to real media (ADR-0290/0378) — the placeholder path stays as
 // the defensive fallback for a future catalog item not yet wired in.
 import type { IconName } from "@caisson/ui/components";
 
@@ -65,7 +65,7 @@ export type DiagramKey =
   | "schematic-field-crypto"
   | "schematic-audit-worm"
   | "schematic-compliance"
-  // The ADR-0378 migrate-all wave: the remaining 23 module sheets + 5 bundle cross-sections.
+  // The ADR-0378 migrate-all wave plus the OSCAL carve: module sheets + 5 bundle cross-sections.
   | "schematic-ai-meter"
   | "schematic-guardrails"
   | "schematic-prompt-registry"
@@ -87,6 +87,7 @@ export type DiagramKey =
   | "schematic-agent-trajectory"
   | "schematic-compliance-core"
   | "schematic-frameworks-pack"
+  | "schematic-oscal-spine"
   | "schematic-access-review"
   | "schematic-risk-register"
   | "schematic-trust-page"
@@ -161,6 +162,7 @@ const DIAGRAM_ORDER: readonly DiagramKey[] = [
   "schematic-agent-trajectory",
   "schematic-compliance-core",
   "schematic-frameworks-pack",
+  "schematic-oscal-spine",
   "schematic-access-review",
   "schematic-risk-register",
   "schematic-trust-page",
@@ -192,7 +194,7 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
   "schematic-audit-worm":
     "The package in blueprint: every append mints a length-keyed anchor into write-once S3 Object-Lock storage, and verify() treats that store as the trusted length oracle, so a cut tail fails even when the surviving prefix hashes clean.",
   "schematic-compliance":
-    "The bundle in cross-section: commercial members at the module seam, composing onto the Apache-2.0 kernel and fail-closed RLS base, on Postgres and S3 Object-Lock bedrock; nine of the thirteen pinned members drawn.",
+    "The bundle in cross-section: commercial members at the module seam, composing onto the Apache-2.0 kernel and fail-closed RLS base, on Postgres and S3 Object-Lock bedrock; nine of the fourteen pinned members drawn.",
   "schematic-ai-meter":
     "The package in blueprint: reserve debits credits and checks the circuit breaker before the provider is ever called, and reconcile trues the charge to actual usage inside an atomic per-tenant spend window.",
   "schematic-guardrails":
@@ -235,6 +237,8 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
     "The package in blueprint: each collector answers pass, flagged, or unresolved, and generateEvidencePack throws a typed 422 before producing anything while a single control is unresolved.",
   "schematic-frameworks-pack":
     "The package in blueprint: every crosswalk row is a discriminated union on its claim, an implements claim requires a proof pointer, and a maps-to claim carries none, across three own-authored framework packs.",
+  "schematic-oscal-spine":
+    "The package in blueprint: structural evidence and framework inputs cross one deterministic adapter boundary into OSCAL v1.2.2 assessment, catalog, XML, and ISO 27001 SoA artifacts, checked against a hash-pinned NIST reference.",
   "schematic-access-review":
     "The package in blueprint: closeCampaign refuses to close before every reviewee has decided or the deadline passes, and an undecided reviewee lands unresolved on the closed record, never auto-approved.",
   "schematic-risk-register":
@@ -281,6 +285,7 @@ const DIAGRAM_TARGETS: Record<DiagramKey, ReadonlySet<string>> = {
   "schematic-agent-trajectory": new Set(["module:agent-trajectory"]),
   "schematic-compliance-core": new Set(["module:compliance-core"]),
   "schematic-frameworks-pack": new Set(["module:frameworks-pack"]),
+  "schematic-oscal-spine": new Set(["module:oscal-spine"]),
   "schematic-access-review": new Set(["module:access-review"]),
   "schematic-risk-register": new Set(["module:risk-register"]),
   "schematic-trust-page": new Set(["module:trust-page"]),

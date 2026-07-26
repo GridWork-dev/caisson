@@ -16,5 +16,5 @@
 ---
 
 Make price authority total over every sellable commercial module and bundle, remove the old $49
-placeholder exemption, mark retired aliases as non-sellable, and pin the current $1,449 Compliance
+placeholder exemption, mark retired aliases as non-sellable, and pin the current $1,649 Compliance
 price in component demos and fulfillment coverage.

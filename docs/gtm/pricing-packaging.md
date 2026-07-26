@@ -36,6 +36,12 @@ synthesis: surface a "weeks-of-engineering-saved" translation next to the anchor
 the finance/exec tier of the two-tier approval needs it, and buyers currently do the math
 themselves. Copy change only (ADR-0080 laws apply); anchors themselves stay ADR-0304-locked.
 
+## OSCAL catalog amendment (2026-07-25)
+
+The operative catalog supersedes the historical Stage-2/Stage-3 figures below: `oscal-spine`
+lists at $249 and joins Compliance; Compliance is $1,649 with a $659 renewal; Everything is
+$2,259 with an $899 renewal. The catalog now has 27 à-la-carte modules.
+
 ## Stage-3 amendments (ADR-0258, 2026-07-06) — three numbers move, two deferred items close
 
 The Stage-3 catalog-rework picker closed ADR-0260's two deferred items and recomputed where the
@@ -96,12 +102,12 @@ sections above show the derivation; this is the flat lookup, cents verified agai
 
 | SKU                                        | Price                      | Note                                                                                                                                                              |
 | ------------------------------------------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Compliance** (bundle, one-time)          | **$1,049**                 | Fail-closed RLS, WORM, audit chain, evidence packs, framework + signing carves. Supersedes the $799 edition (ADR-0227).                                           |
+| **Compliance** (bundle, one-time)          | **$1,649**                 | Fail-closed RLS, WORM, audit chain, evidence packs, framework + OSCAL + signing carves. Supersedes the $1,449 compliance-gap price.                               |
 | **AI-Production** (bundle, one-time)       | **$739**                   | Metering, guardrails, prompt versioning, CI eval harness; credits joined the member set at Stage 3 (ADR-0258), recompute over $629.                               |
 | **Local-first** (bundle, one-time)         | **$629**                   | On-device inference, privacy egress gate, local vector search; full 3-way carve (sync/inference/privacy), ADR-0258 supersedes the $349 edition (ADR-0240).        |
 | **Agentic-Dev** (bundle, one-time)         | **$329**                   | Governed-agent kernel: typed agent/skill/rule schema, guarded lifecycle, sandboxed execution.                                                                     |
 | **Provenance** (bundle, one-time, net-new) | **$399**                   | Detached signing, append-only WORM audit chain, per-tenant field encryption; $0 incremental into Everything (member-subset of Compliance).                        |
-| **Everything** (bundle, one-time)          | **$2,059**                 | Every sellable SKU incl. ui-pro (only private `brand` excluded); 0.75 × Σ(the five persona bundles), ADR-0258 supersedes Stage-2's $1,749.                        |
+| **Everything** (bundle, one-time)          | **$2,259**                 | Every sellable SKU incl. ui-pro and oscal-spine (only private `brand` excluded); preserves the locked $610 premium over Compliance.                               |
 | **Per-module à la carte**                  | $49–$299                   | Every sellable commercial SKU individually priced (ADR-0246 F1b) — see the module-catalog section below.                                                          |
 | **Compliance-Updates** (subscription)      | **$1,499/yr**              | Annual cadence per ADR-0095 §3, numbers per ADR-0106.                                                                                                             |
 | **Developer** (subscription)               | **$499/yr**                | Same.                                                                                                                                                             |
@@ -245,7 +251,7 @@ licensing is already per-org/no-seat via the EULA, now surfaced as advantage cop
 - **Pre-rework build-state prose**: `docs/build-state.md`/`docs/state/package-catalog.md` may
   still carry stale edition-era figures ("$799 compliance," "$749," "11 standalone modules," "12
   modules") in places not yet swept by the catalog-rework closeout PRs — this file states the
-  current live numbers (six bundles: $1,049/$739/$629/$329/$399/$2,059; 22 sellable modules) as
+  current live numbers (six bundles: $1,649/$739/$629/$329/$399/$2,259; 27 sellable modules) as
   ground truth per `apps/site/lib/pricing.ts`, verified directly against `BUNDLE_PRICES` and
   `MODULE_PRICES` in code, which matches ADR-0257/0258 exactly.
 - No numeric contradiction found between ADR-0227/0137/0238/0240 (the superseded edition chain)

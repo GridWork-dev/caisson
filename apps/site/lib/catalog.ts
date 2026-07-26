@@ -1,5 +1,5 @@
 // Bridges the marketing PRICE DISPLAY (`lib/pricing.ts`) to a cart/checkout-ready catalog: every
-// sellable one-time item (the 6 bundles and the 22 à-la-carte modules) carries the Paddle price id
+// sellable one-time item (the 6 bundles and the 27 à-la-carte modules) carries the Paddle price id
 // the cart's multi-item checkout passes to `Paddle.Checkout.open()`.
 //
 // CART IDS ARE KIND-NAMESPACED (`bundle:<slug>` / `module:<slug>`). A bundle id can collide with a
@@ -81,6 +81,7 @@ const MODULE_PRICE_IDS: Record<string, string> = {
   // the pricebook's W7 PURCHASE_BOOK rows).
   "compliance-core": "pri_01kwwqa0k69m965tx8hgsv904h",
   "frameworks-pack": "pri_01kwwqa0rkz3etv2yfd6c7jjad",
+  "oscal-spine": "pri_01kye9597z46149qg5xfrqxybk",
   "signing-primitive": "pri_01kwwqa0y1hn63taahdh7y03vf",
   credits: "pri_01kwwqa1413c33yfsrvjb4r34a",
   "local-sync": "pri_01kwwqa1b33ycmh114440xc6re",

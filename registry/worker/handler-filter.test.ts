@@ -474,7 +474,7 @@ describe("updates-window filtering on /modules/:id (ADR-0244/0255)", () => {
               kind: "bundle",
               tier: "paid",
               license: "LicenseRef-Caisson-Commercial",
-              priceCents: 205900,
+              priceCents: 225900,
               editions: [],
               members: { "@caisson/compliance": "2.0.0" },
               description: "everything bundle fixture",

@@ -54,6 +54,13 @@ describe("resolvePurchase (ADR-0113, fail-closed)", () => {
   test("the shipped book parses against its own schema", () => {
     expect(() => parsePurchaseBook(PURCHASE_BOOK)).not.toThrow();
   });
+
+  test("the OSCAL spine sandbox row grants only the standalone module", () => {
+    const entry = resolvePurchase("pri_01kye9597z46149qg5xfrqxybk");
+    expect<number>(entry.credits).toBe(0);
+    expect(entry.entitlements).toEqual(["oscal-spine"]);
+    expect(entry.purchaseTag).toBe("oscal-spine_module");
+  });
 });
 
 describe("per-module à-la-carte PLACEHOLDER rows", () => {

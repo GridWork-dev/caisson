@@ -37,9 +37,8 @@ describe("vendored NIST SP 800-53 rev5 catalog — pin drift guard", () => {
   });
 
   test("the pin's oscal-version matches the ADR-0179 OSCAL_VERSION CI pin", () => {
-    // Kept as a literal (not a cross-package import — frameworks-pack has no dependency on
-    // compliance-core, ADR-0003 down-only floor) so a future OSCAL_VERSION bump in
-    // @caisson/compliance-core's oscal-export.ts is caught by a human re-reading this assertion,
+    // Kept as a literal (not an exporter import) so a future OSCAL_VERSION bump in
+    // @caisson/oscal-spine's oscal-export.ts is caught by a human re-reading this assertion,
     // not silently drifted.
     expect(NIST_CATALOG_PIN.oscalVersion).toBe("1.2.2");
   });

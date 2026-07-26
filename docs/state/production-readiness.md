@@ -77,11 +77,11 @@ digest parity, and health/checkout/entitlement/refund/RAG/support probe receipts
 
 ### Commerce
 
-- The target catalog is 35 products and 66 prices, including 26 module SKUs.
-- Compliance’s operative displayed price is $1,449.
+- The target catalog is 36 products and 68 prices, including 27 module SKUs.
+- Compliance’s operative displayed price is $1,649; Everything is $2,259.
 - Production Paddle approval, product/price IDs, adjustment handling, dunning cancellation, and
   live checkout/refund/entitlement proof remain open.
-- Dedicated refund/support routes and an exact 35-product/66-price mapping exporter are built on
+- Dedicated refund/support routes and an exact 36-product/68-price mapping exporter are built on
   `feature/paddle-onboarding-setup`; they are not production evidence until merged, deployed, and
   probed. No live Paddle catalog mutation or production ID wiring has occurred.
 - Fulfillment must recognize every current SKU and continue to reject unknown IDs.

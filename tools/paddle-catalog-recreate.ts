@@ -13,7 +13,7 @@
  * hand-typed here, so the tool's catalog cannot drift from the site (or the pricebook, which
  * `pricing.test.ts` pins the same numbers against). Money stays integer cents (ADR-0007).
  *
- * Catalog shape (matches the runbook §2.2 table): 6 bundles + 22 à-la-carte modules (one-time) +
+ * Catalog shape (matches the runbook §2.2 table): 6 bundles + 27 à-la-carte modules (one-time) +
  * 2 annual subscriptions (Compliance-Updates, Developer) + 1 "Updates Renewal" product carrying a
  * per-SKU one-time renewal price. Enterprise is a Contact-us anchor with no price — no product.
  * Every product gets tax_category "saas".
@@ -144,7 +144,7 @@ export function buildPlan(): PlanProduct[] {
     });
   }
 
-  // 22 à-la-carte modules — one-time perpetual license.
+  // 27 à-la-carte modules — one-time perpetual license.
   for (const m of MODULE_PRICES) {
     products.push({
       caissonId: m.id,
@@ -879,20 +879,20 @@ function selfCheck(): void {
   const plan = buildPlan();
   const byKind = (k: ProductKind) => plan.filter((p) => p.kind === k);
   assert.equal(byKind("bundle").length, 6, "expected 6 bundles");
-  // 26 = the 22 of the sandbox big-bang era + agent-trajectory (2026-07-18, which shipped
-  // without bumping this pin) + the compliance-gap trio (access-review/risk-register/trust-page).
-  assert.equal(byKind("module").length, 26, "expected 26 modules");
+  // 27 = the 22 of the sandbox big-bang era + agent-trajectory + the compliance-gap trio +
+  // oscal-spine (2026-07-25).
+  assert.equal(byKind("module").length, 27, "expected 27 modules");
   assert.equal(byKind("subscription").length, 2, "expected 2 subscriptions");
   assert.equal(
     byKind("renewal-parent").length,
     1,
     "expected 1 renewal product",
   );
-  assert.equal(plan.length, 35, "expected 35 products total");
+  assert.equal(plan.length, 36, "expected 36 products total");
   assert.equal(
     plan.reduce((count, product) => count + product.prices.length, 0),
-    66,
-    "expected 66 prices total",
+    68,
+    "expected 68 prices total",
   );
 
   for (const prod of plan) {
@@ -912,16 +912,16 @@ function selfCheck(): void {
   // Pin the money math against the runbook §2.2 locked numbers.
   const bundleCents = (id: string) =>
     byKind("bundle").find((p) => p.caissonId === id)?.prices[0]?.amountCents;
-  assert.equal(bundleCents("compliance"), 144900, "compliance = $1,449.00");
-  assert.equal(bundleCents("everything"), 205900, "everything = $2,059.00");
+  assert.equal(bundleCents("compliance"), 164900, "compliance = $1,649.00");
+  assert.equal(bundleCents("everything"), 225900, "everything = $2,259.00");
 
   const renewalCents = (id: string) =>
     byKind("renewal-parent")[0]?.prices.find((pr) => pr.key === `renew:${id}`)
       ?.amountCents;
-  // ADR-0260 §5 flat-40%-X9 renewal ladder (runbook: $579/$289/$249/$129/$159/$819 —
-  // compliance moved $419 → $579 with the bundle's reprice to $1,449).
-  assert.equal(renewalCents("compliance"), 57900, "compliance renewal = $579");
-  assert.equal(renewalCents("everything"), 81900, "everything renewal = $819");
+  // ADR-0260 §5 flat-40%-X9 renewal ladder: the locked bundle reprices derive to $659 and $899.
+  assert.equal(renewalCents("compliance"), 65900, "compliance renewal = $659");
+  assert.equal(renewalCents("everything"), 89900, "everything renewal = $899");
+  assert.equal(renewalCents("oscal-spine"), 9900, "oscal-spine renewal = $99");
   assert.equal(
     renewalCents("agentic-dev"),
     12900,
@@ -939,7 +939,7 @@ function selfCheck(): void {
   assert.equal(subCents("developer"), 49900, "developer = $499/yr");
 
   out(
-    "self-check OK — 35 products, 66 prices, money math pinned to the runbook §2.2 catalog.",
+    "self-check OK — 36 products, 68 prices, money math pinned to the runbook §2.2 catalog.",
   );
 }
 

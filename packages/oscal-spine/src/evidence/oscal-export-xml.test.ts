@@ -13,7 +13,7 @@ import {
 } from "./oscal-export-xml.ts";
 import { toOscalBundle } from "./oscal-export.ts";
 import { toOscalAssessmentPlan } from "./oscal-assessment-plan.ts";
-import { parseEvidencePackManifest } from "./pack-format.ts";
+import type { OscalEvidencePackManifest } from "../contracts.ts";
 
 const HAVE_CLI = oscalCliAvailable();
 
@@ -42,7 +42,7 @@ describe("oscal-cli arg builders (pure, always run)", () => {
 });
 
 function sampleBundle(): ReturnType<typeof toOscalBundle> {
-  const manifest = parseEvidencePackManifest({
+  const manifest: OscalEvidencePackManifest = {
     formatVersion: "2",
     crosswalkRollup: { cells: [] },
     tenantId: "tenant-acme-prod",
@@ -79,7 +79,7 @@ function sampleBundle(): ReturnType<typeof toOscalBundle> {
       totalEvidenceItems: 1,
       posture: "1 of 1 controls evidence-ready; no gaps recorded.",
     },
-  });
+  };
   let n = 0;
   return toOscalBundle(manifest, {
     now: new Date("2026-06-28T00:00:00.000Z"),

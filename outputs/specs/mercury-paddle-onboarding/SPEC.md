@@ -53,6 +53,7 @@ Success means:
 
 - Route and rendering tests pin the refund/support pages and public support addresses.
 - Catalog tests reject missing, duplicate, unexpected, unmarked, or out-of-checkout mapping data.
-- `--self-check` confirms 35 products, 66 prices, and Compliance at `$1,449`.
+- `--self-check` confirms 36 products, 68 prices, Compliance at `$1,649`, and Everything at
+  `$2,259`.
 - Both prompts contain human takeover points, stop conditions, and redacted receipt formats.
 - Repository checks pass without changing the existing Cloudflare commerce policy.

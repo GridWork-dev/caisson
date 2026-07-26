@@ -83,7 +83,7 @@ const index = loadRegistryIndex({
             kind: "bundle",
             tier: "paid",
             license: "LicenseRef-Caisson-Commercial",
-            priceCents: 205900,
+            priceCents: 225900,
             editions: [],
             members: {
               "@caisson/ai-kit": "1.0.0",

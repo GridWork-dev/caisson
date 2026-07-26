@@ -17,9 +17,9 @@
 // workflow runs this mode and never treats its exit code as a gate (report-only, always exits 0).
 //
 // Usage:
-//   bun packages/compliance-core/scripts/vendor-nist-catalog.ts             # vendor (writes)
-//   bun packages/compliance-core/scripts/vendor-nist-catalog.ts --refetch   # diff-only report
-//   bun packages/compliance-core/scripts/vendor-nist-catalog.ts --sha <sha> [--refetch]
+//   bun packages/oscal-spine/scripts/vendor-nist-catalog.ts             # vendor (writes)
+//   bun packages/oscal-spine/scripts/vendor-nist-catalog.ts --refetch   # diff-only report
+//   bun packages/oscal-spine/scripts/vendor-nist-catalog.ts --sha <sha> [--refetch]
 import { createHash } from "node:crypto";
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -33,10 +33,10 @@ import {
   NIST_CATALOG_REPO,
   NIST_CATALOG_UPSTREAM_PATH,
   type NistCatalogDocument,
-} from "@caisson/frameworks-pack";
+} from "../src/index.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const VENDOR_DIR = join(HERE, "..", "..", "frameworks-pack", "src", "vendor");
+const VENDOR_DIR = join(HERE, "..", "src", "vendor");
 const VENDORED_CATALOG_PATH = join(
   VENDOR_DIR,
   NIST_CATALOG_PIN.vendoredFilename,
@@ -157,7 +157,7 @@ async function runVendor(sha: string): Promise<void> {
     `- sha256: ${digest}`,
     "",
     "Wrote the vendored bytes. Paste the four values above into",
-    "packages/frameworks-pack/src/vendor/nist-catalog-pin.ts",
+    "packages/oscal-spine/src/vendor/nist-catalog-pin.ts",
     "(NIST_CATALOG_COMMIT_SHA / NIST_CATALOG_VERSION / NIST_CATALOG_OSCAL_VERSION /",
     "NIST_CATALOG_SHA256) as a reviewed, human-authored edit — this script never rewrites that",
     "module itself.",
@@ -181,7 +181,7 @@ async function runRefetchDiff(sha: string): Promise<void> {
   );
   // Read the committed vendored file directly (this script already knows its own path) rather
   // than the removed `loadVendoredNistControlIds` package export — that I/O helper stays
-  // package-internal to frameworks-pack (SHIP-audit P2 fix: it ENOENTs from a built dist/ tree).
+  // package-internal to oscal-spine (SHIP-audit P2 fix: it ENOENTs from a built dist/ tree).
   const currentIds = extractControlIds(
     JSON.parse(
       readFileSync(VENDORED_CATALOG_PATH, "utf8"),

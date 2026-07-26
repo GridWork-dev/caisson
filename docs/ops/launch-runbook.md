@@ -174,11 +174,11 @@ compliance or production claim.
 
 Run `tools/paddle-catalog-recreate.ts` dry first. It must plan:
 
-- six bundles, including Compliance at $1,449;
-- 26 modules, including $49 `agent-runner` and `agent-trajectory`;
+- six bundles, including Compliance at $1,649 and Everything at $2,259;
+- 27 modules, including $249 `oscal-spine` and $49 `agent-runner` / `agent-trajectory`;
 - two annual subscriptions;
 - required renewal rows;
-- **35 products and 66 prices total**.
+- **36 products and 68 prices total**.
 
 Production IDs are new. Write them only to canonical catalog inputs, run catalog/fulfillment
 parity, and deploy all consumers together.
@@ -192,9 +192,12 @@ PADDLE_ENV=production bun tools/paddle-catalog-recreate.ts --execute \
 ```
 
 `PADDLE_API_KEY` must arrive from the secret source of truth, never the command line. The export
-fails closed unless all 35 product markers and all 66 price markers are present exactly once, with
+fails closed unless all 36 product markers and all 68 price markers are present exactly once, with
 no unexpected marked product or price. Wire the resulting non-secret IDs into every canonical
 consumer, deploy them together, verify parity, then revoke the temporary key.
+
+**Post-deploy price probe:** Docs-RAG and support-bot must answer Compliance at $1,649 and
+Everything at $2,259. Do not assert those answers before the fleet deploy reaches the new image.
 
 ### Controlled real transaction
 

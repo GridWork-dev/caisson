@@ -38,7 +38,8 @@ Use the repository hierarchy, not an external artifact:
 - [ ] Deploy site, admin, license, docs-RAG, support-bot, and registry Worker from that commit.
 - [ ] Apply migration `0030` through the migration hold point and attach the receipt.
 - [ ] Prove manifest-digest parity plus health, checkout, entitlement, refund, RAG, and support.
-- [ ] Confirm docs/support answers use $1,449 and license fulfillment recognizes all current SKUs.
+- [ ] After the fleet deploy, confirm docs/support answer Compliance at $1,649 and Everything at
+      $2,259, and license fulfillment recognizes all current SKUs.
 
 ## Gate C — commerce and Ring 3
 

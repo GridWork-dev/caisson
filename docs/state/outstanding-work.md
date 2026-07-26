@@ -95,28 +95,17 @@ releases and 6 minor package releases. They are consumed only by T7.
    tenant proof route, and buyer crosswalk remain held on their named fork-board rows.
 5. **Provider adapters:** add Inngest v4 jobs, Azure Key Vault KMS, and Azure Blob immutable
    storage in isolated implementation/review lanes.
-6. **oscal-spine SKU + Compliance reprice (ADR-0383 + ADR-0384, NOT STARTED):** a dedicated wave,
-   ordered because each step gates the next. Carve `@caisson/oscal-spine` out of `frameworks-pack`
-   and `compliance-core` — per ADR-0384 the **whole** OSCAL surface moves (not just the ADR-0363/0364
-   spine), both parents depend on it and **re-export** it so no consumer breaks, and the package is
-   `LicenseRef-Caisson-Commercial` → pricebook at $249 plus a Compliance membership entry,
-   `BUNDLE_RETAIL.compliance = 1649`, and a `RENEWAL_BOOK` row (32 → 33) → production catalog
-   **35/66 → 36/68** in `tools/paddle-catalog-recreate.ts` and every gate and runbook asserting the
-   count, including its `renewalCents("compliance")` assertion **57900 → 65900** (ADR-0384: the
-   reprice moves the Compliance renewal $579 → $659 through the locked 40%-X9 formula; oscal-spine's
-   own renewal derives to $99) → regenerate `packages/cli/registry-index.json` → the ~10 files
-   carrying $1,449 outside append-only history → the docs-RAG pricing corpus and the support-bot
-   answer → the state docs. Indivisible: the price-authority gate fails on a catalog where the
-   pricebook and display sheet disagree. Deployed docs/support keep answering $1,449 until the fleet
-   redeploy, so the runbook's probe becomes a post-deploy check rather than a pre-deploy assertion.
-   **ADR-0386 adds two edits and re-sequences the wave.** `BUNDLE_RETAIL.everything` moves
-   **$2,059 → $2,259** and `PRICE_AUTHORITY["@caisson/everything"]` **205900 → 225900**, because the
-   new $249 SKU joins the whole-catalog bundle and *no gate objects* — the below-sum lock gets easier
-   as the member sum grows and the ladder only needs Everything ≥ Compliance, so the premium would
-   have narrowed $610 → $410 with every check green. That carries
-   `renewalAmount("everything")` **$819 → $899** through the ADR-0260 §5 formula, which
-   `apps/site/lib/pricing.test.ts` asserts. Sequencing: the wave runs **after** the fleet deploy and
-   the first release train, not before them — it earns its own second train.
+6. **oscal-spine SKU + two-price catalog move (COMPLETE on
+   `feature/oscal-spine-wave`):** the whole OSCAL surface now lives in the standalone commercial
+   `@caisson/oscal-spine` package, both parents depend on and re-export it, and the pricebook carries
+   the $249 SKU plus its 2026-07-25 Compliance join. Compliance is $1,649 / $659 renewal; Everything
+   is $2,259 / $899 renewal. The Paddle plan is 36 products / 68 prices, and Sandbox carries real
+   purchase + renewal rows for the new module; `RENEWAL_BOOK` has 33 one-year-default rows. The
+   docs-RAG corpus, support answer source, runbooks, current state docs, storefront, manifests, and
+   price authority move together. The append-only registry ledger/index remains the published
+   history until the release train snapshots the current workspace manifests. **Merge point:
+   before the first release train** (operator amendment in the wave brief), so the next tag consumes
+   the complete catalog once rather than publishing an intermediate pricebook.
 7. **Grill remediation (COMPLETE):** an independent adversarial audit of the four open PRs
    ([report](../../outputs/audit/2026-07-25-open-pr-grill.md)) tested 44 hypotheses, refuted 39, and
    confirmed 5 — three on #335, one on #333, one on #334 — and confirmed zero cross-PR merge
@@ -147,12 +136,10 @@ releases and 6 minor package releases. They are consumed only by T7.
    an arming record; rotate `DOCS_SERVICE_TOKEN`, `SUPPORT_BOT_GRANT_TOKEN`, and `LICENSE_ISSUE_TOKEN`
    atomically — new value on every holder **before** restarting any, then verifier-before-issuer and
    re-probe both sides. A set-but-unrecorded value is adopted and recorded, never regenerated.
-10. **Release and deploy (after T8, per ADR-0386):** deploy six legs on one SHA, apply migration 0030
-    (operator/data-migration gate), run the parity and probe set; then consume the changesets in one
-    version PR, tag immutable bytes, and redeploy the Worker from that tag. The oscal wave earns a
-    **second** train. Accepted cost: two cycles, and a first tag whose pricebook knowingly advertises
-    the superseded $1,449/$2,059 — so `npm publish` should wait for the second train unless something
-    forces it earlier.
+10. **Release and deploy (after T8):** merge the completed OSCAL wave before the train, then deploy
+    six legs on one SHA, apply migration 0030 (operator/data-migration gate), run the parity and
+    probe set, consume all changesets in one version PR, tag immutable bytes, and redeploy the Worker
+    from that tag. The post-deploy docs/support probe asserts $1,649 and $2,259.
 
 ## Trigger-parked
 

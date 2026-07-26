@@ -87,7 +87,7 @@ const index = loadRegistryIndex({
             kind: "bundle",
             tier: "paid",
             license: "LicenseRef-Caisson-Commercial",
-            priceCents: 205900,
+            priceCents: 225900,
             editions: [],
             members: { "@caisson/field-crypto": "1.0.0" },
             description: "Everything bundle fixture.",

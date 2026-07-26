@@ -6,7 +6,8 @@
 //
 // `priceCents: 24900` is the locked standalone price for this carve ($249, ADR-0252); it must stay a
 // positive integer (ADR-0007). Dependencies are DOWN-ONLY (ADR-0003): the pack sits on the kernel's
-// validation floor and depends on nothing else — the Compliance edition composes it, never the reverse.
+// validation floor and re-exports the sideways module-tier `@caisson/oscal-spine` dependency — the
+// Compliance edition composes it, never the reverse.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -17,7 +18,7 @@ export default defineModule({
   tier: "paid",
   priceCents: 24900,
   license: pkg.license,
-  dependencies: ["@caisson/kernel"],
+  dependencies: ["@caisson/kernel", "@caisson/oscal-spine"],
   golden: "src/__golden__",
   stability: "alpha",
   description:

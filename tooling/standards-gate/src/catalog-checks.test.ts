@@ -128,7 +128,7 @@ describe("checkPriceCoverage", () => {
     );
     const bundle = manifestPkg(
       "@caisson/fixture-bundle",
-      `{ kind: "bundle", priceCents: 205900 }`,
+      `{ kind: "bundle", priceCents: 225900 }`,
     );
     const findings = await checkPriceCoverage([edition, bundle]);
     expect(findings).toHaveLength(2);
@@ -268,7 +268,7 @@ describe("checkOrphanSku", () => {
   });
 });
 
-// ─── catalog-parity failure paths (temp root with a fixture pricing.ts + index.json) ──────────────
+// ─── catalog-parity failure paths (temp root with pricing + workspace-manifest fixtures) ─────────
 describe("checkCatalogParity", () => {
   let root: string;
   beforeEach(() => {
@@ -278,7 +278,7 @@ describe("checkCatalogParity", () => {
 
   function writeCatalog(
     modulesLiteral: string,
-    indexMembers: Record<string, string>,
+    manifestMembers: Record<string, string>,
   ): void {
     const pricingDir = join(root, "apps", "site", "lib");
     mkdirSync(pricingDir, { recursive: true });
@@ -286,21 +286,21 @@ describe("checkCatalogParity", () => {
       join(pricingDir, "pricing.ts"),
       `export const MODULE_PRICES = ${modulesLiteral};\n`,
     );
-    mkdirSync(join(root, "registry"), { recursive: true });
-    writeFileSync(
-      join(root, "registry", "index.json"),
-      JSON.stringify({
-        modules: [
-          {
-            id: "@caisson/compliance",
-            latest: "1.0.0",
-            versions: [
-              { version: "1.0.0", manifest: { members: indexMembers } },
-            ],
-          },
-        ],
-      }),
-    );
+    for (const bundleId of [
+      "compliance",
+      "ai-production",
+      "local-first",
+      "agentic-dev",
+      "provenance",
+    ]) {
+      const manifestDir = join(root, "packages", bundleId);
+      mkdirSync(manifestDir, { recursive: true });
+      const members = bundleId === "compliance" ? manifestMembers : {};
+      writeFileSync(
+        join(manifestDir, "manifest.ts"),
+        `export default { id: "${bundleId}", members: ${JSON.stringify(members)} };\n`,
+      );
+    }
   }
 
   test("absent cross-surface files → a warn (skip), never a false error", async () => {
@@ -345,7 +345,7 @@ describe("checkCatalogParity", () => {
 
   test("a module with an empty bundles[] makes no membership claim to verify", async () => {
     writeCatalog(`[{ id: "ai-evals", amount: 199, bundles: [] }]`, {});
-    // No bundles listed → nothing to check against the index (a genuinely standalone SKU).
+    // No bundles listed → nothing to check against manifests (a genuinely standalone SKU).
     expect(await checkCatalogParity(root)).toEqual([]);
   });
 

@@ -49,10 +49,10 @@ function parityViolations(records: readonly ModulePageRecord[]): {
 }
 
 describe("MODULE_PAGES (depth-page records)", () => {
-  test("every sellable module has exactly one depth-page record (ADR-0380 26/26 parity)", () => {
+  test("every sellable module has exactly one depth-page record (27/27 parity)", () => {
     const recordIds = MODULE_PAGES.map((record) => record.slug);
-    expect(MODULE_PRICES).toHaveLength(26);
-    expect(MODULE_PAGES).toHaveLength(26);
+    expect(MODULE_PRICES).toHaveLength(27);
+    expect(MODULE_PAGES).toHaveLength(27);
     expect(new Set(recordIds).size).toBe(recordIds.length);
     expect(parityViolations(MODULE_PAGES)).toEqual({
       missing: [],

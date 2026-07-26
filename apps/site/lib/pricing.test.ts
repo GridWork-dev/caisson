@@ -113,12 +113,13 @@ describe("formatPrice / formatUsd", () => {
 describe("renewalAmount (ADR-0260 §5 40%-X9 ladder)", () => {
   test("matches the locked ladder points", () => {
     // The ADR's worked examples: $199→$79 · $149→$59 · $129→$49 · $99→$39 · $49→$19, plus the
-    // six bundle prices ($1,449→$579 · $739→$289 · $629→$249 · $329→$129 · $399→$159 · $2,059→$819).
+    // six bundle prices ($1,649→$659 · $739→$289 · $629→$249 · $329→$129 · $399→$159 · $2,259→$899).
     expect(renewalAmount("ai-meter")).toBe(79); // $199
     expect(renewalAmount("guardrails")).toBe(59); // $149
     expect(renewalAmount("prompt-registry")).toBe(39); // $99
-    expect(renewalAmount("compliance")).toBe(579); // $1,449
-    expect(renewalAmount("everything")).toBe(819); // $2,059
+    expect(renewalAmount("oscal-spine")).toBe(99); // $249
+    expect(renewalAmount("compliance")).toBe(659); // $1,649
+    expect(renewalAmount("everything")).toBe(899); // $2,259
   });
 
   test("every catalog entry yields a positive integer ending in 9, at most 40% of list", () => {
@@ -154,7 +155,7 @@ describe("multiYearRenewalAmount (R6 rider — mechanism only, floors to the nea
     // base=79 (ai-meter's 1-year renewal), 2 years, 10% off the naive total:
     // naive=158 -> *0.90=142.2 -> floor 142 -> nearest X9 at-or-below is 139.
     expect(multiYearRenewalAmount(79, 2, 1_000)).toBe(139);
-    // base=419 (an arbitrary input; compliance itself renews at 579), 3 years, 15% off: naive=1257 -> *0.85=1068.45 -> floor 1068 -> X9 1059.
+    // base=419 (an arbitrary input), 3 years, 15% off: naive=1257 -> *0.85=1068.45 -> floor 1068 -> X9 1059.
     expect(multiYearRenewalAmount(419, 3, 1_500)).toBe(1059);
   });
 
@@ -238,13 +239,13 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
   });
 
   test("the compliance member set nudges to the compliance bundle, never Everything", () => {
-    // Ten compliance members sum to $2,070 vs the $1,449 bundle (saves $621); Everything at
-    // $2,059 is dearer than the $1,449 persona bundle, so the persona bundle wins.
+    // Eleven compliance members sum to $2,319 vs the $1,649 bundle (saves $670); Everything at
+    // $2,259 is dearer than the $1,649 persona bundle, so the persona bundle wins.
     const ids = modulesByBundle("compliance").map((m) => m.id);
     const s = buildStackSummary(ids);
-    expect(s.total).toBe(2070);
+    expect(s.total).toBe(2319);
     expect(s.upgrade?.target).toBe("compliance");
-    expect(s.upgrade?.saves).toBe(2070 - 1449);
+    expect(s.upgrade?.saves).toBe(2319 - 1649);
   });
 
   test("no offer when a la carte is already the cheapest path", () => {
@@ -272,8 +273,8 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
     const s = buildStackSummary(MODULE_PRICES.map((m) => m.id));
     expect(s.total).toBe(moduleCatalogSubtotal());
     expect(s.upgrade?.target).toBe("everything");
-    expect(s.upgrade?.price).toBe(2059);
-    expect(s.upgrade?.saves).toBe(moduleCatalogSubtotal() - 2059);
+    expect(s.upgrade?.price).toBe(2259);
+    expect(s.upgrade?.saves).toBe(moduleCatalogSubtotal() - 2259);
   });
 
   test("an owned covering bundle suppresses the nudge (never stack a second covering bundle)", () => {
@@ -344,69 +345,77 @@ describe("BUNDLE_PRICES (ADR-0257 vocabulary · ADR-0258 numbers)", () => {
   });
 });
 
-describe("bundle membership honesty (the registry index is the entitlement truth)", () => {
-  // A bundle purchase expands to the registry index members map (expandEntitlements, ADR-0071/0257),
-  // so every `bundles[]` entry a module carries must match that map — registry members maps are the
-  // ONLY membership truth. This lint pins the site's hand-keyed `bundles[]` to them BIDIRECTIONALLY
-  // (over-claim AND under-claim) for every persona/Provenance bundle. Compliance rides the
-  // @caisson/compliance edition entry (which carries the bundle members map); the other four are
-  // first-class kind:"bundle" entries.
-  const REGISTRY_BUNDLE_IDS: Record<Exclude<BundleId, "everything">, string> = {
-    compliance: "@caisson/compliance",
-    "ai-production": "@caisson/ai-production",
-    "local-first": "@caisson/local-first",
-    "agentic-dev": "@caisson/agentic-dev",
-    provenance: "@caisson/provenance",
+describe("bundle membership honesty (workspace manifests are the next release truth)", () => {
+  // The version train snapshots each current workspace manifest into the append-only registry
+  // ledger. Pin the storefront against that next-release source, not the previously published
+  // index, so a same-cut new module cannot be omitted during the pre-release window.
+  type WorkspaceBundleManifest = {
+    readonly id: string;
+    readonly members?: Readonly<Record<string, string>>;
+  };
+  const BUNDLE_MANIFEST_URLS: Record<
+    Exclude<BundleId, "everything">,
+    string
+  > = {
+    compliance: new URL(
+      "../../../packages/compliance/manifest.ts",
+      import.meta.url,
+    ).href,
+    "ai-production": new URL(
+      "../../../packages/ai-production/manifest.ts",
+      import.meta.url,
+    ).href,
+    "local-first": new URL(
+      "../../../packages/local-first/manifest.ts",
+      import.meta.url,
+    ).href,
+    "agentic-dev": new URL(
+      "../../../packages/agentic-dev/manifest.ts",
+      import.meta.url,
+    ).href,
+    provenance: new URL(
+      "../../../packages/provenance/manifest.ts",
+      import.meta.url,
+    ).href,
   };
 
-  interface IndexModule {
-    id: string;
-    latest: string;
-    versions: readonly {
-      version: string;
-      manifest?: { members?: Record<string, unknown> };
-    }[];
-  }
-
-  async function bundleMembers(): Promise<Record<string, ReadonlySet<string>>> {
-    const index = (await Bun.file(
-      new URL("../../../registry/index.json", import.meta.url),
-    ).json()) as { modules: IndexModule[] };
-    const out: Record<string, ReadonlySet<string>> = {};
-    for (const regId of Object.values(REGISTRY_BUNDLE_IDS)) {
-      const entry = index.modules.find((m) => m.id === regId);
-      if (!entry) continue;
-      const latest =
-        entry.versions.find((v) => v.version === entry.latest) ??
-        entry.versions[entry.versions.length - 1];
-      out[regId] = new Set(Object.keys(latest?.manifest?.members ?? {}));
+  test("every module's bundles[] exactly matches the workspace members maps (both directions)", async () => {
+    const manifests = new Map<
+      Exclude<BundleId, "everything">,
+      WorkspaceBundleManifest
+    >();
+    for (const bundle of PERSONA_BUNDLE_IDS) {
+      const manifestModule = (await import(BUNDLE_MANIFEST_URLS[bundle])) as {
+        readonly default: WorkspaceBundleManifest;
+      };
+      manifests.set(bundle, manifestModule.default);
     }
-    return out;
-  }
 
-  test("every module's bundles[] exactly matches the registry members maps (both directions)", async () => {
-    const members = await bundleMembers();
     const violations: string[] = [];
     for (const m of MODULE_PRICES) {
       for (const bundle of PERSONA_BUNDLE_IDS) {
-        const regId = REGISTRY_BUNDLE_IDS[bundle];
-        const map = members[regId];
-        if (!map) {
+        const manifest = manifests.get(bundle);
+        if (manifest === undefined) {
+          violations.push(`${bundle}: workspace manifest failed to load`);
+          continue;
+        }
+        const map = manifest.members;
+        if (map === undefined) {
           violations.push(
-            `${bundle}: bundle missing from registry index (${regId})`,
+            `${bundle}: bundle manifest ${manifest.id} has no members map`,
           );
           continue;
         }
         const listed = m.bundles.includes(bundle);
-        const granted = map.has(`@caisson/${m.id}`);
+        const granted = Object.hasOwn(map, `@caisson/${m.id}`);
         if (listed && !granted) {
           violations.push(
-            `${m.id}: claims membership in ${bundle} but absent from ${regId}'s members map — fix bundles[] or repin the members`,
+            `${m.id}: claims membership in ${bundle} but absent from ${manifest.id}'s members map — fix bundles[] or repin the members`,
           );
         }
         if (!listed && granted) {
           violations.push(
-            `${m.id}: granted by ${regId}'s members map but not listed in bundles[] (under-claim) — add ${bundle}`,
+            `${m.id}: granted by ${manifest.id}'s members map but not listed in bundles[] (under-claim) — add ${bundle}`,
           );
         }
       }

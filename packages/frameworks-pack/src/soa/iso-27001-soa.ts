@@ -18,7 +18,7 @@
 // own scoping call, which this function never makes for them.
 import { z } from "zod";
 import { strictObject, parseStrict, ValidationError } from "@caisson/kernel";
-import type { RegimeCrosswalk } from "../crosswalks/regime-crosswalk.ts";
+import type { RegimeCrosswalk } from "@caisson/oscal-spine";
 
 /** Per-canonical-control-id evidence status for one pack run — mirrors
  *  `@caisson/compliance-core`'s `ControlStatus` (duplicated, not imported: down-only dependency
