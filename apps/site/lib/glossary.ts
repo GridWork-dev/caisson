@@ -7,7 +7,12 @@
 // no Zod parse layer; every term is type-checked at build, not validated at runtime.
 import { createElement, Fragment, type ReactNode } from "react";
 
+import {
+  ARTICLE_50_PRIMARY_SOURCES,
+  ARTICLE_50_VERIFIED_ON,
+} from "./article-50-sources";
 import type { PageSection, PageSpec } from "./page-sections";
+import type { RegulatorySource } from "./regulatory-source";
 
 /**
  * Render inline `` `code` `` markdown in glossary prose as styled `<code>` (visual-audit: the
@@ -77,6 +82,10 @@ export interface GlossaryTerm {
   sells: GlossaryTermSells;
   /** Curated cross-links (2-4 same-cluster slugs) — Fork D, no auto-linking. */
   related?: readonly string[];
+  /** Optional primary-source disclosure for claims that need reader-verifiable grounding. */
+  sources?: readonly RegulatorySource[];
+  /** ISO date on which the source reading behind this record was last checked. */
+  verifiedOn?: string;
 }
 
 // All 32 ADR-0235-locked terms: batch 1 (renderer + hub + the full 10-term compliance cluster +
@@ -2359,6 +2368,8 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         "What Article 50 requires, and how disclosure evidence supports review",
       ctaHref: "/frameworks/eu-ai-act/article-50",
     },
+    sources: ARTICLE_50_PRIMARY_SOURCES,
+    verifiedOn: ARTICLE_50_VERIFIED_ON,
     related: ["worm-audit-log", "hash-chain-audit-trail", "compliance-as-code"],
   },
   {
@@ -3331,6 +3342,48 @@ function relatedTermsSection(term: GlossaryTerm): PageSection | undefined {
   };
 }
 
+function primarySourcesSection(term: GlossaryTerm): PageSection | undefined {
+  if (
+    term.sources === undefined ||
+    term.sources.length === 0 ||
+    term.verifiedOn === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    kind: "section",
+    title: "Primary sources",
+    lede: `Sources verified ${term.verifiedOn}.`,
+    children: createElement(
+      "ul",
+      {
+        className: "cs-lede",
+        style: {
+          paddingLeft: "var(--cs-space-5)",
+          display: "grid",
+          gap: "var(--cs-space-2)",
+        },
+      },
+      term.sources.map((source) =>
+        createElement(
+          "li",
+          { key: `${source.url}#${source.locator}` },
+          createElement(
+            "a",
+            {
+              href: source.url,
+              className: "cs-link",
+              rel: "noreferrer",
+            },
+            source.label,
+          ),
+          ` — ${source.locator}`,
+        ),
+      ),
+    ),
+  };
+}
+
 /** breadcrumbNav, the on-page "Glossary / <term>" trail mirroring the JSON-LD breadcrumb the
  *  route already emits. Reuses <Hero>'s `ctas` slot the same way the module depth page's
  *  breadcrumb does (marketplace/modules/[slug]/page.tsx), with `cs-link` (not a bare `<a>`) so
@@ -3389,6 +3442,9 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       items: term.faq,
     },
   ];
+
+  const primarySources = primarySourcesSection(term);
+  if (primarySources) sections.push(primarySources);
 
   const related = relatedTermsSection(term);
   if (related) sections.push(related);
