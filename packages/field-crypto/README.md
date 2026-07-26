@@ -66,7 +66,8 @@ await withTenant(db, tenantId, async (tx) => {
 
 `withKmsFieldCryptoContext` unwraps every historical version at bind time and zeroizes those
 plaintext DEKs in `finally`. This preserves old-envelope reads after rotation without a
-process-lifetime plaintext-key cache.
+process-lifetime plaintext-key cache. Azure wrapped payloads also pin the exact KEK version returned
+by the wrap operation, so a later KEK rotation does not silently redirect historical unwraps.
 
 ## Derived-provider env
 
@@ -76,9 +77,10 @@ process-lifetime plaintext-key cache.
 | `FIELD_CRYPTO_SALT` | 32-byte per-deployment salt, hex (64 chars) | Non-secret; cross-deployment domain separation (ADR-0043 Fork 3). |
 
 Azure Key Vault production integrations require an HTTPS vault URL, a deterministic key-name
-prefix, `RSA-OAEP-256`, purge protection, and explicit service credentials. The generic package
-keeps those deployment choices behind `createAzureKeyVaultKmsClient`; the Caisson site wires and
-strictly validates them in its runtime.
+prefix, `RSA-OAEP-256`, purge protection, and a bounded request deadline. The generic package keeps
+those deployment choices behind `createAzureKeyVaultKmsClient`; the Caisson site wires
+`DefaultAzureCredential`, strictly validates its runtime policy variables, and supplies the request
+deadline.
 
 ## Tests
 

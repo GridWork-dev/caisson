@@ -22,7 +22,7 @@ Health and source parity are separate:
 | Admin                       | digest `97b183902c08`                                     | **DRIFT**                    |
 | Site                        | latest site-only source `ea2bee11`, deployment `3120a2ef` | not a fleet receipt          |
 | Docs-RAG / support-bot      | no current same-source receipt                            | uncertified                  |
-| Migration `0030`            | authored in source                                        | production apply unreceipted |
+| Migrations `0030` + `0032`  | authored in source                                        | production apply unreceipted |
 
 ADR-0379 supersedes any “fleet current” or CAISSON-150 defer wording below. The next production
 act is one approved immutable SHA across site, admin, license, docs-RAG, support-bot, and Worker,

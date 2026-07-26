@@ -35,10 +35,10 @@ move at once.
   dependency-patch audit ownership (`3e384bc5`).
 - **Catalog:** six bundles and 26 modules; Compliance is $1,449; production recreation is
   35 products and 66 prices.
-- **Release queue:** 33 changeset files currently resolve to 41 patch package releases and 4 minor
-  package releases.
+- **Release queue:** 49 pending changeset files, 47 release-bearing, currently resolve to 70 package
+  bumps: 56 patch, 12 minor, and 2 major.
 - **Fleet parity red:** repository/Worker digest `74e92a6813bc`; license `09adca8d32a5`; admin
-  `97b183902c08`; docs/support parity and migration `0030` lack current receipts.
+  `97b183902c08`; docs/support parity and migrations `0030` and `0032` lack current receipts.
 - **Locked residuals:** the generated 39-component DS manifest, source drift guard, and shared
   browser-rendered contrast matrix are complete locally. Four families remain held: three
   module-depth pages, admin proof viewer/export, tenant proof route, and buyer crosswalk.

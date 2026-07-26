@@ -15,8 +15,11 @@ row-count parity, including the requirement to recreate the `admin`, `admin_writ
 and `app` roles before `pg_restore` so RLS policy creation succeeds.
 
 That rehearsal is historical recovery evidence, not proof that today’s backup is recent. Verify
-Railway snapshot recency before launch. Migration `0030` exists in source and has no
-production-apply receipt.
+Railway snapshot recency before launch. Migrations `0030` and `0032` exist in source and have no
+production-apply receipts. A restore drill for the release that arms hosted field crypto must
+reapply the chain through `0032_field_crypto_keys.sql`, then receipt the restored
+`field_key_version` and `field_wrapped_dek` rows, forced RLS and tenant policies, and append-only
+wrapped-DEK triggers before running a real version-pinned Azure wrap/unwrap probe.
 
 ## Topology: one service, two application databases, one unused default
 

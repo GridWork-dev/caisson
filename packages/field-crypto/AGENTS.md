@@ -29,7 +29,11 @@ column-context`. Reuse the SAME `columnContext` string for a column on read and 
   current so historical envelopes stay readable; the helper zeroizes all request-local DEKs in
   `finally`. Never retain a `kmsContext()` or unwrapped key in a process-lifetime cache.
 - **Wrapped-DEK persistence is append-only.** Use `PgWrappedKeyStore` inside the already tenant-scoped
-  transaction. Rotation appends; it never overwrites or deletes a prior wrapped DEK.
+  transaction. Rotation appends; it never overwrites or deletes a prior wrapped DEK. Cloud wrapped
+  payloads must retain the exact KEK version returned by wrap so later rotations cannot redirect
+  historical unwraps.
+- **Every KMS operation is deadline-bounded.** Pass `KmsOperationOptions` through the client seam;
+  never hold a tenant transaction, advisory lock, or plaintext DEK across an unbounded provider call.
 - **Deletion receipts are literal provider truth.** Pending, scheduled, and soft-deleted keys remain
   recoverable and MUST report `irreversible: false`; only a proved destroy/purge reports `true`.
 

@@ -30,13 +30,13 @@ corresponding hold being released.
 - WORM remains GOVERNANCE pre-launch; launch requires a receipted forward-only COMPLIANCE
   escalation.
 - Health is green but source parity is red. License/admin digests differ from repository/Worker,
-  docs/support parity is uncertified, and migration `0030` is unreceipted.
+  docs/support parity is uncertified, and migrations `0030` and `0032` are unreceipted.
 
 ## Binding execution order
 
 ```mermaid
 flowchart LR
-    A["Wave 1 safety fixes"] --> B["Preliminary one-SHA fleet + migration 0030"]
+    A["Wave 1 safety fixes"] --> B["Preliminary one-SHA fleet + migrations through 0032"]
     B --> C["Locked product gaps + three adapters"]
     C --> D["Full gates + version PR"]
     D --> E["Immutable tag + exact-byte publish"]
@@ -46,9 +46,9 @@ flowchart LR
     H --> I["Paid/public launch"]
 ```
 
-The preliminary fleet reconciliation proves the current safety source and applies migration 0030.
-The final fleet reconciliation proves the immutable release tag. Paid/public launch is always
-after the release and final parity receipt.
+The preliminary fleet reconciliation proves the current safety source and applies the pending
+migration chain through `0032_field_crypto_keys.sql`. The final fleet reconciliation proves the
+immutable release tag. Paid/public launch is always after the release and final parity receipt.
 
 ## Act 1 — preliminary one-SHA fleet and migration
 
@@ -73,9 +73,12 @@ Preconditions:
 The Azure KMS set is the dangerous one: a deploy that omits or misconfigures it looks completely
 healthy and fails only in front of a paying buyer. Confirm every variable exists, verify vault purge
 protection and the service principal's key permissions, execute a real wrap/unwrap probe, and record
-the checks in the execution receipt. Tenant KEKs must not be rotated until a wrapped-DEK rewrap
-procedure exists; crypto-shred deletes a tenant KEK, while rotation without rewrap would strand its
-historical DEKs.
+the checks in the execution receipt. The runtime uses `DefaultAzureCredential`, with the three
+service-principal variables selecting its Railway credential branch. Each wrapped DEK pins the exact
+Azure KEK version used to wrap it, so rotation does not strand historical DEKs; do not delete a KEK
+version while wrapped rows still reference it. Crypto-shred deletes the tenant KEK through the
+provider and must record whether the provider reports recoverable soft deletion or irreversible
+purge.
 
 Deploy in verifier-before-issuer order whenever strict schemas or manifests change:
 
@@ -83,7 +86,10 @@ Deploy in verifier-before-issuer order whenever strict schemas or manifests chan
 2. Deploy registry Worker/verifiers first.
 3. Deploy docs-RAG and support-bot.
 4. Deploy site and admin.
-5. Pause; apply migration `0030` only after backup and rollback checks.
+5. Pause; apply the pending migration chain through `0032_field_crypto_keys.sql` only after backup
+   and rollback checks. Before any wrap probe, receipt that `field_key_version` and
+   `field_wrapped_dek` exist, both tables have forced RLS with tenant policies, and the wrapped-DEK
+   update/delete guards are installed.
 6. Deploy/restart license issuer last.
 7. Record provider deployment IDs, image digests, source SHA, manifest digest, and timestamps.
 
@@ -139,14 +145,14 @@ The release receipt binds commit, tag, package digests, registry index, and Work
 
 Redeploy site, admin, license, docs-RAG, and support-bot from the immutable release tag. Record:
 
-| Leg             | Required state                                            |
-| --------------- | --------------------------------------------------------- |
-| Site            | release tag, healthy                                      |
-| Admin           | release tag, matching manifest, GitHub OAuth healthy      |
-| License         | release tag, matching manifest, migration `0030` observed |
-| Docs-RAG        | release tag; $1,449 answer                                |
-| Support bot     | release tag; $1,449 answer                                |
-| Registry Worker | exact tagged index bytes and matching manifest            |
+| Leg             | Required state                                                     |
+| --------------- | ------------------------------------------------------------------ |
+| Site            | release tag, healthy                                               |
+| Admin           | release tag, matching manifest, GitHub OAuth healthy               |
+| License         | release tag, matching manifest, migrations through `0032` observed |
+| Docs-RAG        | release tag; $1,449 answer                                         |
+| Support bot     | release tag; $1,449 answer                                         |
+| Registry Worker | exact tagged index bytes and matching manifest                     |
 
 Repeat all health, dashboard, checkout sandbox, entitlement, refund, RAG, support, unknown-SKU,
 and manifest-parity probes. This is the production parity report used by launch acceptance.

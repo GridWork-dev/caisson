@@ -1,6 +1,6 @@
 ---
 title: field-crypto
-description: Per-tenant field encryption via HKDF key derivation, behind a pluggable FieldKeyProvider KMS port, one tenant's key never decrypts another tenant's data.
+description: Per-tenant field encryption with wrapped random DEKs or self-hosted HKDF derivation, behind a pluggable FieldKeyProvider KMS port.
 ---
 
 `@caisson/field-crypto` encrypts individual fields under a distinct tenant key. A KMS-backed
@@ -14,17 +14,18 @@ that could be skipped.
 
 - **Per-tenant field encryption**: encrypt and decrypt named fields (a patient SSN, a
   bank token) scoped to a tenant. The plaintext is never stored.
-- **HKDF key derivation**: per-tenant subkeys are derived deterministically from the root
-  key with HKDF-SHA256. The tenant id and key version are folded into the derivation, so it
-  is reproducible for one tenant/version and useless for any other.
+- **Two key-provider modes**: hosted KMS deployments generate a random DEK per tenant/version and
+  persist only its wrapped form; the zero-infra dev/self-hosted path derives per-tenant subkeys
+  deterministically from a root key with HKDF-SHA256.
 - **AAD-bound AES-256-GCM envelope**: every ciphertext binds tenant, key version, and
   column (and, for row-bound fields, row id) as GCM's additional authenticated data. A
   self-describing envelope carries its own format/algorithm/key-version header.
 - **Key-version rotation with no bulk re-encrypt**: bump a tenant's current version; older
   envelopes keep decrypting under the version they were written with.
-- **Crypto-shred erasure**: destroy a tenant or subject's key-encryption key through the
-  KMS port to make every ciphertext under it permanently unrecoverable, without mutating an
-  append-only audit chain.
+- **Crypto-shred erasure**: request deletion of a tenant or subject's key-encryption key through the
+  KMS port without mutating an append-only audit chain. Recoverability follows the provider's
+  deletion receipt: soft-deleted keys remain recoverable until their retention window closes or an
+  irreversible purge succeeds.
 
 ## Install
 
@@ -65,10 +66,11 @@ await crypto.decryptField(otherTenantId, sealed, "patient.ssn"); // throws: AEAD
 
 ## The guarantee
 
-The encryption key for tenant A is a pure function of the root key, A's id, and the key
-version. There is no shared field key, and no path where tenant B's subkey decrypts A's
-data, a ciphertext relocated to another tenant, column, or row fails to authenticate,
-never returns the wrong plaintext.
+There is no shared field key and no path where tenant B's key decrypts A's data. In the derived
+dev/self-hosted mode, tenant A's key is a pure function of the root key, A's id, and the key
+version. In hosted KMS mode, each random DEK is recovered from its append-only wrapped row using
+the exact Azure KEK version recorded in the wrapped payload. In either mode, ciphertext relocated
+to another tenant, column, or row fails authentication rather than returning the wrong plaintext.
 
 ## The Drizzle column path
 
@@ -153,11 +155,12 @@ without a process-lifetime plaintext-key cache.
 
 ## Crypto-shred erasure
 
-`cryptoShred` destroys a tenant or subject's KEK through the KMS port and mints an
-`erasure.crypto-shred` audit payload that carries no PII. Every ciphertext under that key
-becomes permanently unrecoverable, while an append-only WORM-anchored audit chain's
-committed bytes never change, `verifyChain` still passes after the shred, because the
-chain only ever committed the ciphertext envelope, never plaintext.
+`cryptoShred` requests destruction of a tenant or subject's KEK through the KMS port and mints an
+`erasure.crypto-shred` audit payload that carries no PII. Ciphertext becomes irrecoverable only
+when the provider receipt proves the key is no longer recoverable; an Azure soft-delete receipt
+alone does not make that claim. The append-only WORM-anchored audit chain's committed bytes never
+change, and `verifyChain` still passes after the shred, because the chain only ever committed the
+ciphertext envelope, never plaintext.
 
 ```ts
 import { cryptoShred } from "@caisson/field-crypto";
@@ -190,14 +193,16 @@ Only required for the `DerivedKeyProvider` dev/self-hosted path.
 | `AZURE_KEY_VAULT_KEY_NAME`         | Prefix for deterministic per-tenant KEKs                       |
 | `AZURE_KEY_VAULT_WRAP_ALGORITHM`   | Exactly `RSA-OAEP-256`                                         |
 | `AZURE_KEY_VAULT_PURGE_PROTECTION` | Exactly `enabled`; runtime also verifies the key recovery mode |
-| `AZURE_TENANT_ID`                  | Service-principal tenant                                       |
-| `AZURE_CLIENT_ID`                  | Service-principal client                                       |
-| `AZURE_CLIENT_SECRET`              | Service-principal secret                                       |
+| `AZURE_TENANT_ID`                  | Railway service-principal branch for `DefaultAzureCredential`  |
+| `AZURE_CLIENT_ID`                  | Railway service-principal branch for `DefaultAzureCredential`  |
+| `AZURE_CLIENT_SECRET`              | Railway service-principal branch for `DefaultAzureCredential`  |
 
-The hosted adapter creates Azure SDK clients from that explicit service principal, provisions a
-tenant KEK on first seal, and persists only wrapped DEKs in the tenant-scoped Postgres store.
-Self-hosted integrations construct their chosen KMS client (`createAwsKmsClient`,
-`createGcpKmsClient`, or `createAzureKeyVaultKmsClient`) and supply their own credential adapter.
+The hosted adapter creates Azure SDK clients through `DefaultAzureCredential`; Railway supplies its
+service-principal environment branch. It provisions a tenant KEK on first seal, pins every wrapped
+DEK to the exact Azure KEK version returned by the wrap operation, persists only wrapped DEKs in the
+tenant-scoped Postgres store, and bounds each provider request. Self-hosted integrations construct
+their chosen KMS client (`createAwsKmsClient`, `createGcpKmsClient`, or
+`createAzureKeyVaultKmsClient`) and supply their own credential adapter.
 
 ## Composing with the base
 

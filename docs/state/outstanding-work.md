@@ -32,7 +32,7 @@ and runtime evidence.
 | T1 — TypeScript dependency graph                 | **complete locally**          | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                                                                             |
 | T2 — total price authority                       | **complete locally**          | `f6122de8` + `92d930b6`; every sellable commercial package covered                                                                                 |
 | T3 — route-specific limiter policy               | **complete locally**          | `014ac4de`; webhook fail-open+alert, protected routes 503                                                                                          |
-| T4 — one-SHA fleet and migration 0030            | **blocked on T8 merge/arm**   | six runtime legs on one approved SHA; migration and parity receipts. ADR-0387 puts the KMS async wave AHEAD of the deploy — T4 no longer runs next |
+| T4 — one-SHA fleet and migrations through 0032   | **blocked on T8 merge/arm**   | six runtime legs on one approved SHA; migration and parity receipts. ADR-0387 puts the KMS async wave AHEAD of the deploy — T4 no longer runs next |
 | T5 — five locked product residuals               | **complete**                  | `b037b878` DS manifest; T5A merged in #332; T5B/C/E merged in #335                                                                                 |
 | T6 — Inngest + Azure Key Vault + Azure Blob WORM | **complete**                  | three isolated adapter reviews and changesets, merged in #335                                                                                      |
 | T7 — consolidated verification and release       | **after T8 + oscal-spine**    | green local/CI gates, immutable tag-to-bytes and deploy receipts. ADR-0388 puts the parallel oscal-spine wave before the first release train       |
@@ -42,10 +42,10 @@ and runtime evidence.
 catalog-mapping validation), #332 (`2cd41843`, module-depth pages), #336 (`70a438a4`, ADR-0386 +
 tracker), #337 (`d94f9d5f`, trivy local parity), #335 (`31bf5f1c`, lane A). Zero open PRs; the
 reconciled tree verified green end to end — 221/221 turbo tasks, 75 packages gate, sot green on every
-content gate, security scan `rc=0` at 3,969 real semgrep targets. T8 is the next PR from this branch.
+content gate, security scan `rc=0` at 3,980 real semgrep targets. T8 is the next PR from this branch.
 
-There are **39 pending changeset files**. Current Changesets resolution is 40 patch package
-releases and 6 minor package releases. They are consumed only by T7.
+There are **49 pending changeset files**, 47 of them release-bearing. Current Changesets resolution
+is 70 package bumps: 56 patch, 12 minor, and 2 major. They are consumed only by T7.
 
 ## Linear reconciliation
 
@@ -88,8 +88,10 @@ releases and 6 minor package releases. They are consumed only by T7.
    behavior. Complete locally in commits `c236681f`, `f6122de8`, `014ac4de`, `92d930b6`,
    and `3e384bc5`.
 3. **Fleet:** from one approved commit deploy site, admin, license, docs-RAG, support-bot, and
-   registry Worker; apply migration 0030; run parity, health, checkout, entitlement, refund, RAG,
-   and support probes. This is an explicit external-system/data-migration hold.
+   registry Worker; apply the pending migration chain through `0032_field_crypto_keys.sql`; receipt
+   the field-crypto schema, forced RLS, tenant policies, and append-only triggers; then run parity,
+   health, checkout, entitlement, refund, RAG, support, and KMS probes. This is an explicit
+   external-system/data-migration hold.
 4. **Locked product gaps:** the generated 39-component DS manifest, drift guard, and shared
    contrast gate are complete locally. Three module-depth pages, admin per-row proof/export,
    tenant proof route, and buyer crosswalk remain held on their named fork-board rows.
@@ -137,11 +139,12 @@ releases and 6 minor package releases. They are consumed only by T7.
 8. **T8 — field-crypto KMS async refactor (COMPLETE LOCALLY, ADR-0387/0389):** the selected boundary
    prefetches every historical DEK when a disposable request context binds, preserving synchronous
    `sealField`/`openField` and the no-remigration invariant without a process cache. The hosted site
-   wires Azure Key Vault with explicit service-principal auth, purge-protection checks, deterministic
-   tenant KEKs, an append-only tenant-scoped Postgres wrapped-DEK store, and one atomic first-seal
-   provisioning winner. Site BYOK and ai-kit MCP run tools now hold the context for their full async
-   operation; every source and working key buffer is zeroized at exit. KMS loss fails closed with no
-   derived or demo fallback. Merge, production arming, and the real wrap/unwrap probe remain pending.
+   wires Azure Key Vault through `DefaultAzureCredential`, purge-protection checks, deterministic
+   tenant KEKs, version-pinned wrapped DEKs, bounded provider calls, an append-only tenant-scoped
+   Postgres wrapped-DEK store, and one atomic first-seal provisioning winner. Site BYOK and ai-kit
+   MCP run tools now hold the context for their full async operation; every caller-owned source and
+   working key buffer is zeroized at exit. KMS loss fails closed with no derived or demo fallback.
+   Merge, production arming, and the real wrap/unwrap probe remain pending.
 9. **Arming pass (operator, ADR-0387):** verify every boot-blocking variable across all six legs has
    an arming record; rotate `DOCS_SERVICE_TOKEN`, `SUPPORT_BOT_GRANT_TOKEN`, and `LICENSE_ISSUE_TOKEN`
    atomically — new value on every holder **before** restarting any, then verifier-before-issuer and
