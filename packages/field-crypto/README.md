@@ -10,8 +10,9 @@ FIELD_CRYPTO_SALT, "caisson-field-crypto:v"+keyVersion+":"+tenantId)`. No per-te
   no backup surface; the tenant is bound into HKDF `info`, so one key compromise never crosses
   tenants. The encryption boundary **equals** the RLS tenant boundary (ADR-0005).
 - **AES-256-GCM behind an `AeadCipher` seam.** Zero dependency, FIPS-approved. Fresh CSPRNG nonce
-  per write; `tenant_id ∥ key_version ∥ column-context` bound as AAD (a ciphertext can't be moved
-  between rows, tenants, or columns). An alternate cipher is a drop-in.
+  per write; the transparent column binds `tenant_id ∥ key_version ∥ column-context` as AAD, so
+  ciphertext cannot move across tenants or columns. Use the explicit row-bound API with a stable
+  row ID when same-column relocation between rows must also fail authentication.
 - **Self-describing versioned envelope.** `[ver|alg|key_version|nonce|ciphertext|tag]` base64 →
   `text`. The decrypt path reads the version + alg + key version from the value itself, so rotation
   AND cipher migration need no out-of-band metadata.

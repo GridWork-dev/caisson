@@ -4,12 +4,14 @@ import {
   InMemoryWrappedKeyStore,
   type KeyValueStore,
   type KmsClient,
+  type WrappedKeyStore,
   KmsKeyProvider,
   LocalKmsClient,
   awsKmsClient,
 } from "./kms.ts";
 import { TenantFieldCrypto } from "./crypto.ts";
 import { parseEnvelope } from "./envelope.ts";
+import type { FieldKeyProvider } from "./provider.ts";
 
 /** An in-memory `KeyValueStore` fake — asserts `DbWrappedKeyStore` round-trips over ANY conforming KV, never a real DB. */
 function fakeKv(): KeyValueStore {
@@ -24,6 +26,15 @@ function fakeKv(): KeyValueStore {
     async putIfAbsent(key: string, value: string): Promise<boolean> {
       if (data.has(key)) return false;
       data.set(key, value);
+      return true;
+    },
+    async compareAndSwap(
+      key: string,
+      expected: string | undefined,
+      next: string,
+    ): Promise<boolean> {
+      if (data.get(key) !== expected) return false;
+      data.set(key, next);
       return true;
     },
   };
@@ -200,6 +211,43 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     expect(generations).toBe(2);
   });
 
+  test("orphan recovery returns a newer durable version instead of its stale candidate", async () => {
+    const store = new InMemoryWrappedKeyStore();
+    const local = new LocalKmsClient(KEK);
+    for (const keyVersion of [1, 2, 3]) {
+      const generated = await local.generateDataKey("acct_a");
+      await store.putWrapped("acct_a", keyVersion, generated.wrappedKey);
+      generated.plaintextKey.fill(0);
+    }
+    await store.setCurrentVersion("acct_a", 1);
+
+    const racingStore: WrappedKeyStore = {
+      getWrapped: store.getWrapped.bind(store),
+      putWrappedIfAbsent: store.putWrappedIfAbsent.bind(store),
+      putWrapped: store.putWrapped.bind(store),
+      currentVersion: store.currentVersion.bind(store),
+      async setCurrentVersion(tenantId, keyVersion) {
+        if (keyVersion === 2) {
+          await store.setCurrentVersion(tenantId, 3);
+        }
+        await store.setCurrentVersion(tenantId, keyVersion);
+      },
+    };
+    const provider = new KmsKeyProvider(
+      {
+        async generateDataKey() {
+          throw new Error("orphan recovery must not generate");
+        },
+        decryptDataKey: local.decryptDataKey.bind(local),
+        scheduleKeyDeletion: local.scheduleKeyDeletion.bind(local),
+      },
+      racingStore,
+    );
+
+    expect(await provider.provision("acct_a")).toBe(3);
+    expect(await store.currentVersion("acct_a")).toBe(3);
+  });
+
   test("concurrent explicit rotations keep one winner and reject the CAS loser", async () => {
     const store = new InMemoryWrappedKeyStore();
     const local = new LocalKmsClient(KEK);
@@ -254,6 +302,62 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     expect(
       plaintextKeys.every((key) => key.equals(Buffer.alloc(key.length))),
     ).toBe(true);
+  });
+
+  test("rejects an empty tenant before any KMS or persistence operation", async () => {
+    let kmsCalls = 0;
+    let storeCalls = 0;
+    const client: KmsClient = {
+      async generateDataKey() {
+        kmsCalls += 1;
+        return {
+          plaintextKey: Buffer.alloc(32, 0x11),
+          wrappedKey: Buffer.alloc(48, 0x22),
+        };
+      },
+      async decryptDataKey() {
+        kmsCalls += 1;
+        return Buffer.alloc(32, 0x33);
+      },
+      async scheduleKeyDeletion() {
+        kmsCalls += 1;
+        return { state: "soft-deleted", irreversible: false };
+      },
+    };
+    const store: WrappedKeyStore = {
+      async getWrapped() {
+        storeCalls += 1;
+        return undefined;
+      },
+      async putWrappedIfAbsent() {
+        storeCalls += 1;
+        return true;
+      },
+      async putWrapped() {
+        storeCalls += 1;
+      },
+      async currentVersion() {
+        storeCalls += 1;
+        return undefined;
+      },
+      async setCurrentVersion() {
+        storeCalls += 1;
+      },
+    };
+    const provider = new KmsKeyProvider(client, store);
+    const operations = [
+      () => provider.provision(""),
+      () => provider.ensureProvisioned(""),
+      () => provider.keyFor("", 1),
+      () => provider.currentVersion(""),
+      () => provider.scheduleKeyDeletion(""),
+    ];
+
+    for (const operation of operations) {
+      await expect(operation()).rejects.toThrow(/tenantId is required/i);
+    }
+    expect(kmsCalls).toBe(0);
+    expect(storeCalls).toBe(0);
   });
 
   test("rejects malformed generated KMS material before immutable storage", async () => {
@@ -382,6 +486,60 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     );
   });
 
+  test("TenantFieldCrypto zeroizes caller-owned key buffers on success and failure", async () => {
+    const encryptionKey = Buffer.alloc(32, 0x4a);
+    const encryptionProvider: FieldKeyProvider = {
+      async currentVersion() {
+        return 1;
+      },
+      async keyFor() {
+        return encryptionKey;
+      },
+    };
+    const sealed = await new TenantFieldCrypto(encryptionProvider).encryptField(
+      "acct_a",
+      "phi-secret",
+      "patient.note",
+    );
+    expect(encryptionKey.equals(Buffer.alloc(32))).toBe(true);
+
+    const decryptionKey = Buffer.alloc(32, 0x4a);
+    const decryptionProvider: FieldKeyProvider = {
+      async currentVersion() {
+        return 1;
+      },
+      async keyFor() {
+        return decryptionKey;
+      },
+    };
+    expect(
+      await new TenantFieldCrypto(decryptionProvider).decryptField(
+        "acct_a",
+        sealed,
+        "patient.note",
+      ),
+    ).toBe("phi-secret");
+    expect(decryptionKey.equals(Buffer.alloc(32))).toBe(true);
+
+    const rejectedKey = Buffer.alloc(32, 0x4a);
+    const rejectedProvider: FieldKeyProvider = {
+      async currentVersion() {
+        return 1;
+      },
+      async keyFor() {
+        return rejectedKey;
+      },
+    };
+    await expect(
+      new TenantFieldCrypto(rejectedProvider).decryptField(
+        "acct_a",
+        sealed,
+        "patient.other",
+      ),
+    ).rejects.toThrow();
+    expect(rejectedKey.equals(Buffer.alloc(32))).toBe(true);
+  });
+
   test("a different tenant's DEK cannot decrypt (cross-tenant isolation)", async () => {
     const { provider } = freshProvider();
     await provider.provision("acct_a");
@@ -454,6 +612,11 @@ describe("DbWrappedKeyStore (P2 DB-backed WrappedKeyStore)", () => {
         data.set(key, value);
         return true;
       },
+      async compareAndSwap(key, expected, next) {
+        if (data.get(key) !== expected) return false;
+        data.set(key, next);
+        return true;
+      },
     };
     const store = new DbWrappedKeyStore(kv);
     const first = Buffer.alloc(48, 0x11);
@@ -488,6 +651,95 @@ describe("DbWrappedKeyStore (P2 DB-backed WrappedKeyStore)", () => {
     // A different tenant/version is unaffected — namespacing isolates keys.
     expect(await store.getWrapped("acct_b", 1)).toBeUndefined();
     expect(await store.getWrapped("acct_a", 2)).toBeUndefined();
+  });
+
+  test("current-version writes are monotonic and malformed durable markers fail closed", async () => {
+    const store = new DbWrappedKeyStore(fakeKv());
+    await store.setCurrentVersion("acct_a", 3);
+    await store.setCurrentVersion("acct_a", 2);
+    expect(await store.currentVersion("acct_a")).toBe(3);
+
+    const malformed = fakeKv();
+    await malformed.put("field-crypto:current:acct_a", "NaN");
+    await expect(
+      new DbWrappedKeyStore(malformed).currentVersion("acct_a"),
+    ).rejects.toThrow(/invalid stored key version/i);
+  });
+
+  test("generic stores reject empty tenants and in-memory reads cannot mutate stored bytes", async () => {
+    for (const store of [
+      new InMemoryWrappedKeyStore(),
+      new DbWrappedKeyStore(fakeKv()),
+    ]) {
+      await expect(store.getWrapped("", 1)).rejects.toThrow(
+        /tenantId is required/i,
+      );
+      await expect(
+        store.putWrapped("", 1, Buffer.from("wrapped")),
+      ).rejects.toThrow(/tenantId is required/i);
+      await expect(
+        store.putWrappedIfAbsent("", 1, Buffer.from("wrapped")),
+      ).rejects.toThrow(/tenantId is required/i);
+      await expect(store.currentVersion("")).rejects.toThrow(
+        /tenantId is required/i,
+      );
+      await expect(store.setCurrentVersion("", 1)).rejects.toThrow(
+        /tenantId is required/i,
+      );
+    }
+
+    const memory = new InMemoryWrappedKeyStore();
+    const original = Buffer.from("append-only-wrapped-dek");
+    await memory.putWrapped("acct_a", 1, original);
+    const exposed = await memory.getWrapped("acct_a", 1);
+    exposed?.fill(0);
+    expect(await memory.getWrapped("acct_a", 1)).toEqual(original);
+  });
+
+  test("a stale orphan-recovery marker cannot move current backward", async () => {
+    const memory = new InMemoryWrappedKeyStore();
+    await memory.setCurrentVersion("acct_a", 3);
+    await memory.setCurrentVersion("acct_a", 2);
+    expect(await memory.currentVersion("acct_a")).toBe(3);
+
+    const db = new DbWrappedKeyStore(fakeKv());
+    await db.setCurrentVersion("acct_a", 3);
+    await db.setCurrentVersion("acct_a", 2);
+    expect(await db.currentVersion("acct_a")).toBe(3);
+  });
+
+  test("a failed marker CAS re-reads a concurrently advanced durable version", async () => {
+    const data = new Map<string, string>([
+      ["field-crypto:current:acct_a", "1"],
+    ]);
+    let firstCas = true;
+    const kv: KeyValueStore = {
+      async get(key) {
+        return data.get(key);
+      },
+      async put(key, value) {
+        data.set(key, value);
+      },
+      async putIfAbsent(key, value) {
+        if (data.has(key)) return false;
+        data.set(key, value);
+        return true;
+      },
+      async compareAndSwap(key, expected, next) {
+        if (firstCas) {
+          firstCas = false;
+          data.set(key, "3");
+        }
+        if (data.get(key) !== expected) return false;
+        data.set(key, next);
+        return true;
+      },
+    };
+    const store = new DbWrappedKeyStore(kv);
+
+    await store.setCurrentVersion("acct_a", 2);
+
+    expect(await store.currentVersion("acct_a")).toBe(3);
   });
 
   test("drives KmsKeyProvider end-to-end (provision + rotate) over a DB-backed store", async () => {

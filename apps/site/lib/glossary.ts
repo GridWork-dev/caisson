@@ -1040,7 +1040,63 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       label:
         "KmsKeyProvider.ensureProvisioned / keyFor: elect one wrapped-DEK winner and unwrap only for a request",
       lang: "ts",
-      code: "export class KmsKeyProvider implements FieldKeyProvider {\n  constructor(\n    private readonly kms: KmsClient,\n    private readonly store: WrappedKeyStore,\n    private readonly operationOptions: KmsOperationOptions,\n  ) {}\n\n  // First seal elects one append-only version-1 winner under concurrency.\n  async ensureProvisioned(tenantId: string): Promise<number> {\n    const current = await this.store.currentVersion(tenantId);\n    if (current !== undefined) return current;\n\n    const generated = await this.kms.generateDataKey(tenantId, this.operationOptions);\n    try {\n      const inserted = await this.store.putWrappedIfAbsent(\n        tenantId,\n        1,\n        generated.wrappedKey,\n      );\n      if (inserted) {\n        await this.store.setCurrentVersion(tenantId, 1);\n        return 1;\n      }\n\n      const winner = await this.store.currentVersion(tenantId);\n      if (winner === undefined) {\n        throw new InternalError(/* durable winner was not visible */);\n      }\n      return winner;\n    } finally {\n      generated.plaintextKey.fill(0);\n    }\n  }\n\n  // Request binding unwraps a stored version; its context zeroizes the result at exit.\n  async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {\n    const wrapped = await this.store.getWrapped(tenantId, keyVersion);\n    if (wrapped === undefined) {\n      throw new NotFoundError(/* no wrapped DEK for this tenant/version */);\n    }\n    return this.kms.decryptDataKey(tenantId, wrapped, this.operationOptions);\n  }\n}",
+      code: `export class KmsKeyProvider implements FieldKeyProvider {
+  constructor(
+    private readonly kms: KmsClient,
+    private readonly store: WrappedKeyStore,
+    private readonly operationOptions: KmsOperationOptions,
+  ) {}
+
+  private async recoverWrappedVersion(
+    tenantId: string,
+    keyVersion: number,
+  ): Promise<number | undefined> {
+    const wrapped = await this.store.getWrapped(tenantId, keyVersion);
+    if (wrapped === undefined) return undefined;
+    await this.store.setCurrentVersion(tenantId, keyVersion);
+    const current = await this.store.currentVersion(tenantId);
+    if (current === undefined) throw new InternalError(/* corrupt store */);
+    return current;
+  }
+
+  // First seal recovers a committed orphan or elects one append-only version-1 winner.
+  async ensureProvisioned(tenantId: string): Promise<number> {
+    const current = await this.store.currentVersion(tenantId);
+    if (current !== undefined) return current;
+    const recovered = await this.recoverWrappedVersion(tenantId, 1);
+    if (recovered !== undefined) return recovered;
+
+    const generated = await this.kms.generateDataKey(tenantId, this.operationOptions);
+    try {
+      const inserted = await this.store.putWrappedIfAbsent(
+        tenantId,
+        1,
+        generated.wrappedKey,
+      );
+      if (inserted) {
+        await this.store.setCurrentVersion(tenantId, 1);
+        return 1;
+      }
+
+      // A prior process may have committed the wrapped DEK before its marker write.
+      await this.store.setCurrentVersion(tenantId, 1);
+      const repaired = await this.store.currentVersion(tenantId);
+      if (repaired === undefined) throw new InternalError(/* corrupt store */);
+      return repaired;
+    } finally {
+      generated.plaintextKey.fill(0);
+    }
+  }
+
+  // Request binding unwraps a stored version; its context zeroizes the result at exit.
+  async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {
+    const wrapped = await this.store.getWrapped(tenantId, keyVersion);
+    if (wrapped === undefined) {
+      throw new NotFoundError(/* no wrapped DEK for this tenant/version */);
+    }
+    return this.kms.decryptDataKey(tenantId, wrapped, this.operationOptions);
+  }
+}`,
     },
     properties: [
       {

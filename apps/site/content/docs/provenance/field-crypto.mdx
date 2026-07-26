@@ -139,14 +139,20 @@ key after a KMS failure.
 ```ts
 import {
   KmsKeyProvider,
-  InMemoryWrappedKeyStore,
-  awsKmsClient,
+  PgWrappedKeyStore,
+  withKmsFieldCryptoContext,
 } from "@caisson/field-crypto";
 
-const kms = awsKmsClient({ keyId: process.env.KMS_KEY_ID! });
-const provider = new KmsKeyProvider(kms, new InMemoryWrappedKeyStore());
-
-await provider.provision(tenantId); // generates + wraps a fresh DEK for this tenant
+// `tenantScopedKmsClient` maps the logical tenant scope to a provider KEK.
+// Caisson's hosted adapter does this with a deterministic Azure key name.
+const provider = new KmsKeyProvider(
+  tenantScopedKmsClient,
+  new PgWrappedKeyStore(tx),
+);
+await provider.ensureProvisioned(tenantId);
+await withKmsFieldCryptoContext(provider, tenantId, async (ctx) => {
+  await writeEncryptedFields(tx, ctx);
+});
 ```
 
 Use `PgWrappedKeyStore` inside an RLS-scoped tenant transaction to persist wrapped DEKs

@@ -82,17 +82,20 @@ function openParkedState(
   );
 }
 
-interface Row {
+interface SnapshotRow {
   readonly status: RunStatus;
   readonly pending_tool_call_id: string | null;
-  readonly decision: "approved" | "denied" | null;
-  readonly claimed: boolean;
   readonly resume_seq: number;
-  readonly parked_state: string | null;
   readonly updated_at: unknown;
 }
 
-function toSnapshot(runId: string, row: Row): RunStateSnapshot {
+interface Row extends SnapshotRow {
+  readonly decision: "approved" | "denied" | null;
+  readonly claimed: boolean;
+  readonly parked_state: string | null;
+}
+
+function toSnapshot(runId: string, row: SnapshotRow): RunStateSnapshot {
   const updatedAt = row.updated_at;
   return {
     runId,
@@ -104,12 +107,24 @@ function toSnapshot(runId: string, row: Row): RunStateSnapshot {
   };
 }
 
-async function readRow(
+async function readTransitionRow(
   exec: TenantExecutor,
   runId: string,
 ): Promise<Row | undefined> {
   const res = await exec.query<Row>(
     `SELECT status, pending_tool_call_id, decision, claimed, resume_seq, parked_state, updated_at
+       FROM agent_run_state WHERE run_id = $1`,
+    [runId],
+  );
+  return res.rows[0];
+}
+
+async function readSnapshotRow(
+  exec: TenantExecutor,
+  runId: string,
+): Promise<SnapshotRow | undefined> {
+  const res = await exec.query<SnapshotRow>(
+    `SELECT status, pending_tool_call_id, resume_seq, updated_at
        FROM agent_run_state WHERE run_id = $1`,
     [runId],
   );
@@ -140,10 +155,20 @@ export function createPgRunStateStore(
       ? crypto
       : async <T>(fn: (ctx: FieldCryptoContext) => Promise<T>): Promise<T> =>
           fn(crypto);
+  const withValidatedCryptoContext: RunStateCryptoContextRunner = (fn) =>
+    withCryptoContext((ctx) => {
+      if (ctx.tenantId !== accountId) {
+        throw new ValidationError(
+          "run-state.pg: crypto context tenant does not match account",
+          { accountId, cryptoTenantId: ctx.tenantId },
+        );
+      }
+      return fn(ctx);
+    });
 
   return {
     park(input: ParkInput): Promise<void> {
-      return withCryptoContext((cryptoCtx) =>
+      return withValidatedCryptoContext((cryptoCtx) =>
         withTenant(tx, accountId, async (exec) => {
           // First-time park: no existing row, plain INSERT. Re-park (a later gated tool in the
           // SAME run, after a prior approval was claimed): CAS-guarded UPDATE — only proceeds while
@@ -198,7 +223,7 @@ export function createPgRunStateStore(
         if (won !== undefined)
           return { ...toSnapshot(runId, won), wasNoop: false };
 
-        const current = await readRow(exec, runId);
+        const current = await readTransitionRow(exec, runId);
         if (current === undefined) {
           throw new NotFoundError("unknown run", { runId });
         }
@@ -239,7 +264,7 @@ export function createPgRunStateStore(
         if (won !== undefined)
           return { ...toSnapshot(runId, won), wasNoop: false };
 
-        const current = await readRow(exec, runId);
+        const current = await readTransitionRow(exec, runId);
         if (current === undefined) {
           throw new NotFoundError("unknown run", { runId });
         }
@@ -260,7 +285,7 @@ export function createPgRunStateStore(
     },
 
     claimResume(runId: string, toolCallId: string): Promise<RunResumeMaterial> {
-      return withCryptoContext((cryptoCtx) =>
+      return withValidatedCryptoContext((cryptoCtx) =>
         withTenant(tx, accountId, async (exec) => {
           const res = await exec.query<Row>(
             `UPDATE agent_run_state
@@ -277,7 +302,7 @@ export function createPgRunStateStore(
             };
           }
 
-          const current = await readRow(exec, runId);
+          const current = await readTransitionRow(exec, runId);
           if (current === undefined) {
             throw new NotFoundError("unknown run", { runId });
           }
@@ -311,7 +336,7 @@ export function createPgRunStateStore(
 
     read(runId: string): Promise<RunStateSnapshot | undefined> {
       return withTenant(tx, accountId, async (exec) => {
-        const row = await readRow(exec, runId);
+        const row = await readSnapshotRow(exec, runId);
         return row === undefined ? undefined : toSnapshot(runId, row);
       });
     },

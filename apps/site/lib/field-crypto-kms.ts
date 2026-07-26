@@ -401,15 +401,12 @@ export async function withSiteKmsFieldCryptoContext<T>(
   kms: KmsClient = getSiteAzureKmsClient(),
   timeoutMs: number = SITE_KMS_REQUEST_TIMEOUT_MS,
 ): Promise<T> {
-  await tx.query(`SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`, [
-    "caisson:field-crypto",
-    accountId,
-  ]);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
     throw new ConfigError(
       "site field-crypto: KMS request timeout must be a positive integer",
     );
   }
+  const startedAt = performance.now();
   const controller = new AbortController();
   const timer = setTimeout(() => {
     controller.abort(
@@ -419,9 +416,26 @@ export async function withSiteKmsFieldCryptoContext<T>(
     );
   }, timeoutMs);
   try {
+    await tx.query(`SELECT set_config('lock_timeout', $1, true)`, [
+      `${String(timeoutMs)}ms`,
+    ]);
+    await tx.query(`SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`, [
+      "caisson:field-crypto",
+      accountId,
+    ]);
+    if (controller.signal.aborted) {
+      const reason = controller.signal.reason;
+      throw reason instanceof Error
+        ? reason
+        : new InternalError(
+            `site field-crypto: Azure KMS request exceeded ${String(timeoutMs)}ms`,
+          );
+    }
+    const elapsedMs = Math.ceil(performance.now() - startedAt);
+    const remainingMs = Math.max(1, timeoutMs - elapsedMs);
     const provider = new KmsKeyProvider(kms, new PgWrappedKeyStore(tx), {
       abortSignal: controller.signal,
-      timeoutMs,
+      timeoutMs: remainingMs,
     });
     await provider.ensureProvisioned(accountId);
     return await withKmsFieldCryptoContext(provider, accountId, fn);

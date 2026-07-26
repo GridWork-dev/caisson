@@ -17,6 +17,7 @@ import {
   type SiteAzureKmsDependencies,
 } from "./field-crypto-kms.ts";
 import { getDb, withTenant } from "./db.ts";
+import type { TenantExecutor } from "@caisson/tenancy-rls";
 
 const ENV = {
   AZURE_KEY_VAULT_URL: "https://caisson-test.vault.azure.net",
@@ -318,6 +319,56 @@ function requestKms(): {
 }
 
 describe("site KMS request context", () => {
+  test("validates and starts the database lock budget before advisory-lock acquisition", async () => {
+    const invalidQueries: string[] = [];
+    const invalidTx: TenantExecutor = {
+      async query<T>(sql: string): Promise<{ rows: T[] }> {
+        invalidQueries.push(sql);
+        return { rows: [] };
+      },
+      async exec() {},
+    };
+    await expect(
+      withSiteKmsFieldCryptoContext(
+        invalidTx,
+        "acct-invalid-timeout",
+        async () => undefined,
+        requestKms().client,
+        0,
+      ),
+    ).rejects.toThrow(/positive integer/i);
+    expect(invalidQueries).toEqual([]);
+
+    const lockQueries: Array<{
+      readonly sql: string;
+      readonly params?: unknown[];
+    }> = [];
+    const lockedTx: TenantExecutor = {
+      async query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }> {
+        lockQueries.push({ sql, params });
+        if (sql.includes("pg_advisory_xact_lock")) {
+          throw new Error("canceling statement due to lock timeout");
+        }
+        return { rows: [] };
+      },
+      async exec() {},
+    };
+    await expect(
+      withSiteKmsFieldCryptoContext(
+        lockedTx,
+        "acct-lock-timeout",
+        async () => undefined,
+        requestKms().client,
+        25,
+      ),
+    ).rejects.toThrow(/lock timeout/i);
+    expect(lockQueries).toHaveLength(2);
+    expect(lockQueries[0]?.sql).toContain("set_config");
+    expect(lockQueries[0]?.sql).toContain("lock_timeout");
+    expect(lockQueries[0]?.params).toEqual(["25ms"]);
+    expect(lockQueries[1]?.sql).toContain("pg_advisory_xact_lock");
+  });
+
   test("provisions on first seal and zeroizes every unwrapped DEK at scope exit", async () => {
     const runtime = requestKms();
     const accountId = "acct-site-kms-first-seal";
@@ -458,7 +509,8 @@ describe("site KMS request context", () => {
     ).rejects.toThrow(/exceeded 10ms/);
 
     expect(callbackCalled).toBe(false);
-    expect(observedTimeout).toBe(10);
+    expect(observedTimeout).toBeGreaterThan(0);
+    expect(observedTimeout).toBeLessThanOrEqual(10);
     await expect(
       withTenant(db, accountId, (tx) => tx.query("SELECT 1")),
     ).resolves.toBeDefined();

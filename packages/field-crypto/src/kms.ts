@@ -43,6 +43,38 @@ import type {
 // callers still import `KmsClient` from ./kms.ts.
 export type { KmsClient, KmsDeletionReceipt, KmsOperationOptions };
 
+const MAX_KEY_VERSION = 0xffff;
+
+function assertTenantId(tenantId: string): void {
+  if (tenantId.trim().length === 0) {
+    throw new ValidationError("field-crypto: tenantId is required");
+  }
+}
+
+function assertKeyVersion(keyVersion: number): void {
+  if (
+    !Number.isInteger(keyVersion) ||
+    keyVersion < 1 ||
+    keyVersion > MAX_KEY_VERSION
+  ) {
+    throw new ValidationError(
+      `field-crypto: key version must be an integer in 1..${String(MAX_KEY_VERSION)}`,
+      { keyVersion },
+    );
+  }
+}
+
+function parseStoredKeyVersion(value: string): number {
+  if (!/^[1-9][0-9]*$/.test(value)) {
+    throw new InternalError("field-crypto: invalid stored key version");
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > MAX_KEY_VERSION) {
+    throw new InternalError("field-crypto: invalid stored key version");
+  }
+  return parsed;
+}
+
 /** Persistence for each tenant's wrapped DEKs by version + the current version. DB-backed via `DbWrappedKeyStore` (P2, below). */
 export interface WrappedKeyStore {
   getWrapped(tenantId: string, keyVersion: number): Promise<Buffer | undefined>;
@@ -61,6 +93,7 @@ export interface WrappedKeyStore {
     wrapped: Buffer,
   ): Promise<void>;
   currentVersion(tenantId: string): Promise<number | undefined>;
+  /** Monotonic: a stale recovery writer must never lower a newer durable version. */
   setCurrentVersion(tenantId: string, keyVersion: number): Promise<void>;
 }
 
@@ -74,13 +107,18 @@ export class InMemoryWrappedKeyStore implements WrappedKeyStore {
     tenantId: string,
     keyVersion: number,
   ): Promise<Buffer | undefined> {
-    return this.wrapped.get(this.key(tenantId, keyVersion));
+    assertTenantId(tenantId);
+    assertKeyVersion(keyVersion);
+    const wrapped = this.wrapped.get(this.key(tenantId, keyVersion));
+    return wrapped === undefined ? undefined : Buffer.from(wrapped);
   }
   async putWrapped(
     tenantId: string,
     keyVersion: number,
     wrapped: Buffer,
   ): Promise<void> {
+    assertTenantId(tenantId);
+    assertKeyVersion(keyVersion);
     const key = this.key(tenantId, keyVersion);
     const existing = this.wrapped.get(key);
     if (existing !== undefined) {
@@ -102,16 +140,24 @@ export class InMemoryWrappedKeyStore implements WrappedKeyStore {
     keyVersion: number,
     wrapped: Buffer,
   ): Promise<boolean> {
+    assertTenantId(tenantId);
+    assertKeyVersion(keyVersion);
     const key = this.key(tenantId, keyVersion);
     if (this.wrapped.has(key)) return false;
     this.wrapped.set(key, Buffer.from(wrapped));
     return true;
   }
   async currentVersion(tenantId: string): Promise<number | undefined> {
+    assertTenantId(tenantId);
     return this.current.get(tenantId);
   }
   async setCurrentVersion(tenantId: string, keyVersion: number): Promise<void> {
-    this.current.set(tenantId, keyVersion);
+    assertTenantId(tenantId);
+    assertKeyVersion(keyVersion);
+    const current = this.current.get(tenantId);
+    if (current === undefined || keyVersion > current) {
+      this.current.set(tenantId, keyVersion);
+    }
   }
 }
 
@@ -125,6 +171,15 @@ export interface KeyValueStore {
   put(key: string, value: string): Promise<void>;
   /** Atomic compare-and-set used to elect one first-provision winner. */
   putIfAbsent(key: string, value: string): Promise<boolean>;
+  /**
+   * Atomically replace `expected` with `next`. `expected: undefined` means the key must not exist.
+   * Required for monotonic current-version transitions under overlapping recovery/rotation.
+   */
+  compareAndSwap(
+    key: string,
+    expected: string | undefined,
+    next: string,
+  ): Promise<boolean>;
 }
 
 /**
@@ -146,6 +201,8 @@ export class DbWrappedKeyStore implements WrappedKeyStore {
     tenantId: string,
     keyVersion: number,
   ): Promise<Buffer | undefined> {
+    assertTenantId(tenantId);
+    assertKeyVersion(keyVersion);
     const v = await this.kv.get(this.wrappedKey(tenantId, keyVersion));
     return v === undefined ? undefined : Buffer.from(v, "base64");
   }
@@ -181,6 +238,8 @@ export class DbWrappedKeyStore implements WrappedKeyStore {
     keyVersion: number,
     wrapped: Buffer,
   ): Promise<boolean> {
+    assertTenantId(tenantId);
+    assertKeyVersion(keyVersion);
     return this.kv.putIfAbsent(
       this.wrappedKey(tenantId, keyVersion),
       wrapped.toString("base64"),
@@ -188,12 +247,24 @@ export class DbWrappedKeyStore implements WrappedKeyStore {
   }
 
   async currentVersion(tenantId: string): Promise<number | undefined> {
+    assertTenantId(tenantId);
     const v = await this.kv.get(this.currentKey(tenantId));
-    return v === undefined ? undefined : Number(v);
+    return v === undefined ? undefined : parseStoredKeyVersion(v);
   }
 
   async setCurrentVersion(tenantId: string, keyVersion: number): Promise<void> {
-    await this.kv.put(this.currentKey(tenantId), String(keyVersion));
+    assertTenantId(tenantId);
+    assertKeyVersion(keyVersion);
+    const key = this.currentKey(tenantId);
+    const next = String(keyVersion);
+    for (;;) {
+      const currentRaw = await this.kv.get(key);
+      if (currentRaw !== undefined) {
+        const current = parseStoredKeyVersion(currentRaw);
+        if (current >= keyVersion) return;
+      }
+      if (await this.kv.compareAndSwap(key, currentRaw, next)) return;
+    }
   }
 }
 
@@ -235,17 +306,30 @@ export class KmsKeyProvider implements FieldKeyProvider {
     this.assertWrappedDek(wrapped);
     if (preferDurableCurrent) {
       const current = await this.store.currentVersion(tenantId);
-      if (current !== undefined) return current;
+      if (current !== undefined) {
+        assertKeyVersion(current);
+        return current;
+      }
     }
     await this.store.setCurrentVersion(tenantId, keyVersion);
-    return keyVersion;
+    const current = await this.store.currentVersion(tenantId);
+    if (current === undefined) {
+      throw new InternalError(
+        "field-crypto: recovered wrapped DEK version was not durably visible",
+      );
+    }
+    assertKeyVersion(current);
+    return current;
   }
 
   /** Provision (or rotate to) a fresh wrapped DEK for a tenant; returns the new current version. */
   async provision(tenantId: string): Promise<number> {
-    const cur = (await this.store.currentVersion(tenantId)) ?? 0;
+    assertTenantId(tenantId);
+    const storedCurrent = await this.store.currentVersion(tenantId);
+    if (storedCurrent !== undefined) assertKeyVersion(storedCurrent);
+    const cur = storedCurrent ?? 0;
     const next = cur + 1;
-    if (next > 0xffff) {
+    if (next > MAX_KEY_VERSION) {
       throw new ValidationError(
         `field-crypto: key version overflow for tenant ${JSON.stringify(tenantId)}`,
       );
@@ -294,8 +378,12 @@ export class KmsKeyProvider implements FieldKeyProvider {
    * overwriting the append-only winner.
    */
   async ensureProvisioned(tenantId: string): Promise<number> {
+    assertTenantId(tenantId);
     const current = await this.store.currentVersion(tenantId);
-    if (current !== undefined) return current;
+    if (current !== undefined) {
+      assertKeyVersion(current);
+      return current;
+    }
     const recovered = await this.recoverWrappedVersion(tenantId, 1, true);
     if (recovered !== undefined) return recovered;
 
@@ -341,6 +429,8 @@ export class KmsKeyProvider implements FieldKeyProvider {
   }
 
   async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {
+    assertTenantId(tenantId);
+    assertKeyVersion(keyVersion);
     const wrapped = await this.store.getWrapped(tenantId, keyVersion);
     if (wrapped === undefined) {
       throw new NotFoundError(
@@ -363,12 +453,14 @@ export class KmsKeyProvider implements FieldKeyProvider {
   }
 
   async currentVersion(tenantId: string): Promise<number> {
+    assertTenantId(tenantId);
     const v = await this.store.currentVersion(tenantId);
     if (v === undefined) {
       throw new NotFoundError(
         `field-crypto: tenant ${JSON.stringify(tenantId)} has no provisioned KMS key — call provision()`,
       );
     }
+    assertKeyVersion(v);
     return v;
   }
 
@@ -383,7 +475,10 @@ export class KmsKeyProvider implements FieldKeyProvider {
     readonly shreddedThroughVersion: number;
     readonly deletion: KmsDeletionReceipt;
   }> {
-    const through = (await this.store.currentVersion(tenantId)) ?? 0;
+    assertTenantId(tenantId);
+    const storedCurrent = await this.store.currentVersion(tenantId);
+    if (storedCurrent !== undefined) assertKeyVersion(storedCurrent);
+    const through = storedCurrent ?? 0;
     const deletion = await this.kms.scheduleKeyDeletion(
       tenantId,
       this.operationOptions,

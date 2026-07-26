@@ -128,6 +128,11 @@ describe("envelope-encryption production parity", () => {
     expect(term?.artifact.code).toContain(
       "this.kms.decryptDataKey(tenantId, wrapped, this.operationOptions)",
     );
+    expect(term?.artifact.code).toContain("recoverWrappedVersion");
+    expect(term?.artifact.code).toContain(
+      "await this.store.setCurrentVersion(tenantId, 1)",
+    );
+    expect(term?.artifact.code).not.toContain("durable winner was not visible");
   });
 
   test("describes the actual Azure default credential chain", () => {

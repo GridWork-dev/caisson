@@ -118,6 +118,7 @@ function fakeGcpBackend(): GcpKmsSendable {
       destroyed = true;
       return [
         {
+          name: (request as { readonly name?: string }).name,
           state: "DESTROY_SCHEDULED",
           destroyTime: { seconds: 1_775_001_600 },
         },
