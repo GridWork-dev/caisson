@@ -7,7 +7,7 @@ status: live
 
 ## Current state (2026-07-25)
 
-**ADR ceiling is `0383`; the audited base is `fe2dfaca`; the latest immutable release tag remains
+**ADR ceiling is `0388`; the audited base is `fe2dfaca`; the latest immutable release tag remains
 `v2026.07.20.3`.** The ADR-0379 full-state completion program is active on
 `feature/full-state-completion`; ADR-0380 closed its six fork rows and split the remaining build
 into two parallel worktree lanes — `feature/completion-lane-a` (code residuals plus the adapter
@@ -25,6 +25,17 @@ design surface: the whole OSCAL surface moves into the new package with both par
 it and re-exporting (so no consumer breaks and a parent buyer receives the spine), the license is
 forced commercial by ADR-0094, and renewals set no new number — ADR-0260 §5's flat-40%-X9 formula
 already yields $99 for oscal-spine and moves the Compliance renewal $579 → $659 as a knock-on.
+ADR-0385 then reshaped the auditor evidence pack out of an adversarial grill of the four open PRs:
+no embedded verifier, a new out-of-band `@caisson/verify-pack`, and a seal over a canonical file
+manifest. ADR-0386 caught a money drift no gate was shaped to see — once `oscal-spine` joined the
+catalog the Everything bundle no longer priced its own membership correctly, so it moves $2,059 →
+$2,259 — and granted a standing force-push allowance for `feature/*` branches during reconcile
+waves. ADR-0387 then chose what backs field-crypto in production: Azure Key Vault, with the async
+refactor landing BEFORE the fleet deploy, because `KmsKeyProvider` is async-only while both
+production consumers require `SyncFieldKeyProvider` — a code wave, not an environment swap. That
+pushed the deploy a full wave out, which freed the schedule ADR-0388 spends: the oscal-spine wave
+runs in parallel with that refactor and merges BEFORE the first release train, superseding
+ADR-0386's after-the-train sequencing and withdrawing its accepted two-cycle cost.
 **Railway PITR is now the only open fork row.** The wave's execution has NOT started: the
 repository still carries $1,449 everywhere, and the price-authority gate requires every surface to
 move at once.
@@ -35,13 +46,15 @@ move at once.
   dependency-patch audit ownership (`3e384bc5`).
 - **Catalog:** six bundles and 26 modules; Compliance is $1,449; production recreation is
   35 products and 66 prices.
-- **Release queue:** 33 changeset files currently resolve to 41 patch package releases and 4 minor
-  package releases.
+- **Release queue:** 47 changeset files currently resolve to 57 patch, 11 minor, and 2 major package
+  releases. The two majors are `@caisson/compliance` and `@caisson/field-crypto`.
 - **Fleet parity red:** repository/Worker digest `74e92a6813bc`; license `09adca8d32a5`; admin
   `97b183902c08`; docs/support parity and migration `0030` lack current receipts.
 - **Locked residuals:** the generated 39-component DS manifest, source drift guard, and shared
-  browser-rendered contrast matrix are complete locally. Four families remain held: three
-  module-depth pages, admin proof viewer/export, tenant proof route, and buyer crosswalk.
+  browser-rendered contrast matrix are complete locally, and the four buyer/product families that
+  were held — three module-depth pages, admin proof viewer/export, tenant proof route, and buyer
+  crosswalk — closed 2026-07-25 with per-item citations in
+  [`docs/state/production-readiness.md`](state/production-readiness.md).
 - **Three active adapter additions:** Inngest v4, Azure Key Vault KMS, and Azure Blob WORM.
 - **Certification holds:** private GitHub evidence, one-SHA deploy/migration, four technical
   receipts, two or three auditor acceptances, and all operator commerce/business gates.
