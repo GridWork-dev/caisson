@@ -2,6 +2,7 @@ import { DefaultAzureCredential } from "@azure/identity";
 import {
   CryptographyClient,
   KeyClient,
+  KnownDeletionRecoveryLevel,
   type KeyWrapAlgorithm,
 } from "@azure/keyvault-keys";
 import type {
@@ -209,11 +210,11 @@ function isNotFound(error: unknown): boolean {
   );
 }
 
-const PURGE_PROTECTED_RECOVERY_LEVELS = new Set([
-  "Recoverable",
-  "CustomizedRecoverable",
-  "RecoverableProtectedSubscription",
-  "CustomizedRecoverableProtectedSubscription",
+const PURGE_PROTECTED_RECOVERY_LEVELS = new Set<string>([
+  KnownDeletionRecoveryLevel.Recoverable,
+  KnownDeletionRecoveryLevel.CustomizedRecoverable,
+  KnownDeletionRecoveryLevel.RecoverableProtectedSubscription,
+  KnownDeletionRecoveryLevel.CustomizedRecoverableProtectedSubscription,
 ]);
 
 function assertExpectedKeyId(

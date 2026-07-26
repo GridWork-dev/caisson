@@ -215,6 +215,20 @@ describe("site Azure KMS production runtime", () => {
     );
   });
 
+  for (const recoveryLevel of [
+    "Recoverable+ProtectedSubscription",
+    "CustomizedRecoverable+ProtectedSubscription",
+  ]) {
+    test(`accepts Azure's purge-protected ${recoveryLevel} recovery level`, async () => {
+      const { deps } = fakeRuntime(recoveryLevel);
+      const kms = createSiteAzureKmsClient(ENV, deps);
+
+      const generated = await kms.generateDataKey("acct-a");
+      expect(generated.plaintextKey).toHaveLength(32);
+      generated.plaintextKey.fill(0);
+    });
+  }
+
   test("rejects an unknown Azure recovery level instead of inferring purge protection", async () => {
     const { deps } = fakeRuntime("Unknown");
     const kms = createSiteAzureKmsClient(ENV, deps);

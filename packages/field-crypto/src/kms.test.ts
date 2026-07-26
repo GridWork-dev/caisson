@@ -200,6 +200,62 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     expect(generations).toBe(2);
   });
 
+  test("concurrent explicit rotations keep one winner and reject the CAS loser", async () => {
+    const store = new InMemoryWrappedKeyStore();
+    const local = new LocalKmsClient(KEK);
+    const first = await local.generateDataKey("acct_a");
+    await store.putWrapped("acct_a", 1, first.wrappedKey);
+    await store.setCurrentVersion("acct_a", 1);
+    first.plaintextKey.fill(0);
+
+    let generated = 0;
+    let releaseBoth!: () => void;
+    const bothGenerating = new Promise<void>((resolve) => {
+      releaseBoth = resolve;
+    });
+    const plaintextKeys: Buffer[] = [];
+    const client: KmsClient = {
+      async generateDataKey() {
+        generated += 1;
+        const marker = generated;
+        const plaintextKey = Buffer.alloc(32, marker);
+        plaintextKeys.push(plaintextKey);
+        if (generated === 2) releaseBoth();
+        await bothGenerating;
+        return {
+          plaintextKey,
+          wrappedKey: Buffer.alloc(48, marker),
+        };
+      },
+      decryptDataKey: local.decryptDataKey.bind(local),
+      scheduleKeyDeletion: local.scheduleKeyDeletion.bind(local),
+    };
+    const provider = new KmsKeyProvider(client, store);
+
+    const outcomes = await Promise.allSettled([
+      provider.provision("acct_a"),
+      provider.provision("acct_a"),
+    ]);
+
+    expect(
+      outcomes.filter((outcome) => outcome.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(
+      outcomes.filter((outcome) => outcome.status === "rejected"),
+    ).toHaveLength(1);
+    const rejected = outcomes.find((outcome) => outcome.status === "rejected");
+    expect(rejected?.reason).toBeInstanceOf(Error);
+    expect((rejected?.reason as Error).message).toMatch(
+      /concurrent rotation|append-only/i,
+    );
+    expect(await store.currentVersion("acct_a")).toBe(2);
+    expect(await store.getWrapped("acct_a", 2)).toBeDefined();
+    expect(plaintextKeys).toHaveLength(2);
+    expect(
+      plaintextKeys.every((key) => key.equals(Buffer.alloc(key.length))),
+    ).toBe(true);
+  });
+
   test("rejects malformed generated KMS material before immutable storage", async () => {
     const cases: Array<{
       readonly plaintextKey: unknown;
@@ -217,7 +273,7 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
         message: /32-byte AES-256 DEK/i,
       },
       {
-        plaintextKey: new Uint8Array(32),
+        plaintextKey: new Uint8Array(32).fill(0x55),
         wrappedKey: Buffer.from([1]),
         message: /32-byte AES-256 DEK/i,
       },
@@ -248,12 +304,8 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
       );
       expect(await store.getWrapped("acct_a", 1)).toBeUndefined();
       expect(await store.currentVersion("acct_a")).toBeUndefined();
-      if (Buffer.isBuffer(candidate.plaintextKey)) {
-        expect(
-          candidate.plaintextKey.equals(
-            Buffer.alloc(candidate.plaintextKey.length),
-          ),
-        ).toBe(true);
+      if (candidate.plaintextKey instanceof Uint8Array) {
+        expect(candidate.plaintextKey.every((byte) => byte === 0)).toBe(true);
       }
     }
   });
@@ -280,6 +332,30 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
       /32-byte AES-256 DEK/i,
     );
     expect(malformed.equals(Buffer.alloc(31))).toBe(true);
+  });
+
+  test("rejects and zeroizes non-Buffer unwrapped KMS material", async () => {
+    const store = new InMemoryWrappedKeyStore();
+    await store.putWrapped("acct_a", 1, Buffer.from([1]));
+    await store.setCurrentVersion("acct_a", 1);
+    const malformed = new Uint8Array(32).fill(0x66);
+    const client = {
+      async generateDataKey() {
+        throw new Error("not used");
+      },
+      async decryptDataKey() {
+        return malformed;
+      },
+      async scheduleKeyDeletion() {
+        return { state: "soft-deleted", irreversible: false } as const;
+      },
+    } as unknown as KmsClient;
+    const provider = new KmsKeyProvider(client, store);
+
+    await expect(provider.keyFor("acct_a", 1)).rejects.toThrow(
+      /32-byte AES-256 DEK/i,
+    );
+    expect(malformed.every((byte) => byte === 0)).toBe(true);
   });
 
   test("keyFor before provision throws (no silent empty key)", async () => {
@@ -364,6 +440,40 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
 });
 
 describe("DbWrappedKeyStore (P2 DB-backed WrappedKeyStore)", () => {
+  test("atomically preserves the first append-only winner under concurrent puts", async () => {
+    const data = new Map<string, string>();
+    const kv: KeyValueStore = {
+      async get(key) {
+        return data.get(key);
+      },
+      async put(key, value) {
+        data.set(key, value);
+      },
+      async putIfAbsent(key, value) {
+        if (data.has(key)) return false;
+        data.set(key, value);
+        return true;
+      },
+    };
+    const store = new DbWrappedKeyStore(kv);
+    const first = Buffer.alloc(48, 0x11);
+    const second = Buffer.alloc(48, 0x22);
+
+    const outcomes = await Promise.allSettled([
+      store.putWrapped("acct_a", 1, first),
+      store.putWrapped("acct_a", 1, second),
+    ]);
+
+    expect(
+      outcomes.filter((outcome) => outcome.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(
+      outcomes.filter((outcome) => outcome.status === "rejected"),
+    ).toHaveLength(1);
+    const winner = await store.getWrapped("acct_a", 1);
+    expect(winner?.equals(first) || winner?.equals(second)).toBe(true);
+  });
+
   test("round-trips a wrapped DEK + current version through an injected KeyValueStore", async () => {
     const store = new DbWrappedKeyStore(fakeKv());
     expect(await store.getWrapped("acct_a", 1)).toBeUndefined();

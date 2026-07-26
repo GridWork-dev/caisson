@@ -82,14 +82,15 @@ interface RunToolCtx {
 function storesFor(
   deps: RunToolsDeps,
   accountId: string,
-  cryptoCtx: FieldCryptoContext,
 ): {
   store: ReturnType<typeof createPgTrajectoryStore>;
   runState: ReturnType<typeof createPgRunStateStore>;
 } {
   return {
     store: createPgTrajectoryStore(deps.tx, accountId),
-    runState: createPgRunStateStore(deps.tx, accountId, cryptoCtx),
+    runState: createPgRunStateStore(deps.tx, accountId, (fn) =>
+      deps.fieldCryptoContext(accountId, fn),
+    ),
   };
 }
 
@@ -104,40 +105,36 @@ export function buildRunTools(deps: RunToolsDeps): {
   return {
     async runStart({ accountId, args }): Promise<ToolLoopResult> {
       const input = parseStrict(runStartArgs, args);
-      return deps.fieldCryptoContext(accountId, async (cryptoCtx) => {
-        const { store, runState } = storesFor(deps, accountId, cryptoCtx);
-        return runToolLoop({
-          tx: deps.tx,
-          accountId,
-          settings: deps.settings,
-          resolveModel: deps.resolveModel,
-          guard: deps.guard,
-          ...(deps.meter !== undefined ? { meter: deps.meter } : {}),
-          lane: deps.lane,
-          agentId: deps.agentId,
-          prompt: input.prompt,
-          tools: deps.tools,
-          maxSteps: deps.maxSteps,
-          creditBudget: deps.creditBudget,
-          store,
-          runState,
-          ...(deps.maxOutputTokens !== undefined
-            ? { maxOutputTokens: deps.maxOutputTokens }
-            : {}),
-        });
+      const { store, runState } = storesFor(deps, accountId);
+      return runToolLoop({
+        tx: deps.tx,
+        accountId,
+        settings: deps.settings,
+        resolveModel: deps.resolveModel,
+        guard: deps.guard,
+        ...(deps.meter !== undefined ? { meter: deps.meter } : {}),
+        lane: deps.lane,
+        agentId: deps.agentId,
+        prompt: input.prompt,
+        tools: deps.tools,
+        maxSteps: deps.maxSteps,
+        creditBudget: deps.creditBudget,
+        store,
+        runState,
+        ...(deps.maxOutputTokens !== undefined
+          ? { maxOutputTokens: deps.maxOutputTokens }
+          : {}),
       });
     },
 
     async runStatus({ accountId, args }): Promise<RunStatusResult> {
       const input = parseStrict(runStatusArgs, args);
-      return deps.fieldCryptoContext(accountId, async (cryptoCtx) => {
-        const { store, runState } = storesFor(deps, accountId, cryptoCtx);
-        const [snapshot, events] = await Promise.all([
-          runState.read(input.runId),
-          store.read(input.runId),
-        ]);
-        return { runState: snapshot, projection: project(events) };
-      });
+      const { store, runState } = storesFor(deps, accountId);
+      const [snapshot, events] = await Promise.all([
+        runState.read(input.runId),
+        store.read(input.runId),
+      ]);
+      return { runState: snapshot, projection: project(events) };
     },
   };
 }

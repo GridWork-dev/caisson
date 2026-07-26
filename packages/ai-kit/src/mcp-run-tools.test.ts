@@ -1,5 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { AiSettings } from "@caisson/ai-config";
+import { AI_METER_SCHEMA_SQL, type MeterConfig } from "@caisson/ai-meter";
+import {
+  CREDIT_EXPIRY_MIGRATION_SQL,
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
+  grant,
+} from "@caisson/credits";
 import {
   InMemoryWrappedKeyStore,
   KmsKeyProvider,
@@ -7,8 +15,20 @@ import {
   withKmsFieldCryptoContext,
 } from "@caisson/field-crypto";
 import { localModerator } from "@caisson/guardrails";
-import { InMemoryEventSink } from "@caisson/kernel";
+import {
+  InMemoryEventSink,
+  asCredits,
+  asMicroUsdPerCredit,
+} from "@caisson/kernel";
 import { newTestPg, type TestPg } from "@caisson/testing";
+import { withTenant } from "@caisson/tenancy-rls";
+import type {
+  LanguageModelV4FinishReason,
+  LanguageModelV4Usage,
+} from "@ai-sdk/provider";
+import { MockLanguageModelV4 } from "ai/test";
+import { z } from "zod";
+import type { LoopTool } from "./agent-loop.ts";
 import { buildRunTools } from "./mcp-run-tools.ts";
 
 const ACCOUNT_ID = "acct_mcp_run_kms";
@@ -22,11 +42,27 @@ const SETTINGS: AiSettings = {
     },
   },
 };
+const METER: MeterConfig = {
+  priceBook: {
+    "openai/model": {
+      inputPerMTok: 1_000_000,
+      cachedInputPerMTok: 500_000,
+      outputPerMTok: 2_000_000,
+    },
+  },
+  conversion: { microUsdPerCredit: asMicroUsdPerCredit(100) },
+  now: new Date("2026-07-26T12:00:00Z"),
+};
 
 let testPg: TestPg;
 
 beforeAll(async () => {
   testPg = await newTestPg();
+  await testPg.exec(CREDIT_SCHEMA_SQL);
+  await testPg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await testPg.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await testPg.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
+  await testPg.exec(AI_METER_SCHEMA_SQL);
   const trajectory = await Bun.file(
     new URL(
       "../../agent-trajectory/src/migrations/0001_trajectory_event.sql",
@@ -55,7 +91,55 @@ afterAll(async () => {
 });
 
 describe("MCP run tools field-crypto context", () => {
-  test("holds the KMS context for run_status and zeroizes it after the callback", async () => {
+  test("run_status never acquires a KMS context", async () => {
+    let contextRuns = 0;
+    const tools = buildRunTools({
+      ...baseDeps(() => {
+        throw new Error("run_status must not resolve a model");
+      }),
+      fieldCryptoContext: async () => {
+        contextRuns += 1;
+        throw new Error("run_status must not acquire a KMS context");
+      },
+    });
+
+    const status = await tools.runStatus({
+      accountId: ACCOUNT_ID,
+      args: { runId: "missing-run" },
+    });
+
+    expect(status.runState).toBeUndefined();
+    expect(status.projection.status).toBe("pending");
+    expect(contextRuns).toBe(0);
+  });
+
+  test("a run that completes without parking never acquires a KMS context", async () => {
+    await seedCredits(ACCOUNT_ID);
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => textResult("done"),
+    });
+    let contextRuns = 0;
+    const tools = buildRunTools({
+      ...baseDeps(() => model, {}, ACCOUNT_ID),
+      fieldCryptoContext: async () => {
+        contextRuns += 1;
+        throw new Error("a completed run must not acquire a KMS context");
+      },
+    });
+
+    const result = await tools.runStart({
+      accountId: ACCOUNT_ID,
+      args: { prompt: "finish without tools" },
+    });
+
+    expect(result.status).toBe("completed");
+    expect(result.text).toBe("done");
+    expect(contextRuns).toBe(0);
+  });
+
+  test("the first park acquires one KMS context and zeroizes it after sealing", async () => {
+    const parkedAccount = `${ACCOUNT_ID}_park`;
+    await seedCredits(parkedAccount);
     const unwrapped: Buffer[] = [];
     const kms: KmsClient = {
       async generateDataKey() {
@@ -74,32 +158,18 @@ describe("MCP run tools field-crypto context", () => {
       },
     };
     const provider = new KmsKeyProvider(kms, new InMemoryWrappedKeyStore());
-    await provider.ensureProvisioned(ACCOUNT_ID);
+    await provider.ensureProvisioned(parkedAccount);
     let activeDuringCallback = false;
+    let contextRuns = 0;
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => toolCallResult("call-1"),
+    });
 
     const tools = buildRunTools({
-      tx: testPg.pg,
-      settings: SETTINGS,
-      resolveModel: () => {
-        throw new Error("run_status must not resolve a model");
-      },
-      guard: {
-        policy: {
-          policyName: "test",
-          moderator: localModerator([]),
-        },
-        runtime: {
-          tenantId: ACCOUNT_ID,
-          sink: new InMemoryEventSink(),
-        },
-      },
-      lane: "default",
-      agentId: "test-agent",
-      tools: {},
-      maxSteps: 1,
-      creditBudget: 1,
+      ...baseDeps(() => model, GATED_TOOLS, parkedAccount),
       fieldCryptoContext: (accountId, fn) =>
         withKmsFieldCryptoContext(provider, accountId, async (ctx) => {
+          contextRuns += 1;
           const workingKey = ctx.deriveKey(1);
           activeDuringCallback = workingKey.every((byte) => byte === 0x31);
           workingKey.fill(0);
@@ -107,15 +177,110 @@ describe("MCP run tools field-crypto context", () => {
         }),
     });
 
-    const status = await tools.runStatus({
-      accountId: ACCOUNT_ID,
-      args: { runId: "missing-run" },
+    const result = await tools.runStart({
+      accountId: parkedAccount,
+      args: { prompt: "use the gated tool" },
     });
 
-    expect(status.runState).toBeUndefined();
-    expect(status.projection.status).toBe("pending");
+    expect(result.status).toBe("parked");
     expect(activeDuringCallback).toBe(true);
+    expect(contextRuns).toBe(1);
     expect(unwrapped).toHaveLength(1);
     expect(unwrapped[0]?.every((byte) => byte === 0)).toBe(true);
   });
 });
+
+function sdkUsage(
+  inputTokens: number,
+  outputTokens: number,
+): LanguageModelV4Usage {
+  return {
+    inputTokens: {
+      total: inputTokens,
+      noCache: inputTokens,
+      cacheRead: 0,
+      cacheWrite: 0,
+    },
+    outputTokens: { total: outputTokens, text: outputTokens, reasoning: 0 },
+  };
+}
+
+function textResult(text: string) {
+  return {
+    finishReason: {
+      unified: "stop",
+      raw: "stop",
+    } as LanguageModelV4FinishReason,
+    usage: sdkUsage(10, 20),
+    content: [{ type: "text" as const, text }],
+    warnings: [],
+  };
+}
+
+function toolCallResult(toolCallId: string) {
+  return {
+    finishReason: {
+      unified: "tool-calls",
+      raw: "tool-calls",
+    } as LanguageModelV4FinishReason,
+    usage: sdkUsage(10, 5),
+    content: [
+      {
+        type: "tool-call" as const,
+        toolCallId,
+        toolName: "gated",
+        input: JSON.stringify({ value: "test" }),
+      },
+    ],
+    warnings: [],
+  };
+}
+
+const GATED_TOOLS: Readonly<Record<string, LoopTool>> = {
+  gated: {
+    description: "requires approval",
+    inputSchema: z.object({ value: z.string() }),
+    execute: async (input) => input,
+    approvalRequired: true,
+  },
+};
+
+function baseDeps(
+  resolveModel: () => MockLanguageModelV4,
+  tools: Readonly<Record<string, LoopTool>> = {},
+  accountId = ACCOUNT_ID,
+) {
+  return {
+    tx: testPg.pg,
+    settings: SETTINGS,
+    resolveModel,
+    guard: {
+      policy: {
+        policyName: "test",
+        moderator: localModerator([]),
+      },
+      runtime: {
+        tenantId: accountId,
+        sink: new InMemoryEventSink(),
+      },
+    },
+    meter: METER,
+    lane: "default",
+    agentId: "test-agent",
+    tools,
+    maxSteps: 1,
+    creditBudget: 10,
+    maxOutputTokens: 50,
+  };
+}
+
+async function seedCredits(accountId: string): Promise<void> {
+  await withTenant(testPg.pg, accountId, (tx) =>
+    grant(tx, {
+      accountId,
+      amount: asCredits(100),
+      eventType: "purchase",
+      sourceEventId: `seed-${accountId}`,
+    }),
+  );
+}

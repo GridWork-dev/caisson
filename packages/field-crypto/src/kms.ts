@@ -155,22 +155,24 @@ export class DbWrappedKeyStore implements WrappedKeyStore {
     keyVersion: number,
     wrapped: Buffer,
   ): Promise<void> {
+    const inserted = await this.putWrappedIfAbsent(
+      tenantId,
+      keyVersion,
+      wrapped,
+    );
+    if (inserted) return;
+
     const existing = await this.getWrapped(tenantId, keyVersion);
-    if (existing !== undefined) {
-      if (
-        existing.length === wrapped.length &&
-        timingSafeEqual(existing, wrapped)
-      ) {
-        return;
-      }
-      throw new ConflictError(
-        "field-crypto: a different wrapped DEK already exists for this tenant/version (append-only)",
-        { tenantId, keyVersion },
-      );
+    if (
+      existing !== undefined &&
+      existing.length === wrapped.length &&
+      timingSafeEqual(existing, wrapped)
+    ) {
+      return;
     }
-    await this.kv.put(
-      this.wrappedKey(tenantId, keyVersion),
-      wrapped.toString("base64"),
+    throw new ConflictError(
+      "field-crypto: a different wrapped DEK already exists for this tenant/version (append-only)",
+      { tenantId, keyVersion },
     );
   }
 
@@ -218,6 +220,11 @@ export class KmsKeyProvider implements FieldKeyProvider {
     }
   }
 
+  private wipeByteView(value: unknown): void {
+    if (!ArrayBuffer.isView(value)) return;
+    new Uint8Array(value.buffer, value.byteOffset, value.byteLength).fill(0);
+  }
+
   private async recoverWrappedVersion(
     tenantId: string,
     keyVersion: number,
@@ -261,11 +268,21 @@ export class KmsKeyProvider implements FieldKeyProvider {
           : undefined;
       this.assertPlaintextDek(plaintextKey);
       this.assertWrappedDek(wrappedKey);
-      await this.store.putWrappedIfAbsent(tenantId, next, wrappedKey);
+      const inserted = await this.store.putWrappedIfAbsent(
+        tenantId,
+        next,
+        wrappedKey,
+      );
+      if (!inserted) {
+        throw new ConflictError(
+          "field-crypto: concurrent rotation created this key version (append-only)",
+          { tenantId, keyVersion: next },
+        );
+      }
       await this.store.setCurrentVersion(tenantId, next);
       return next;
     } finally {
-      if (Buffer.isBuffer(plaintextKey)) plaintextKey.fill(0);
+      this.wipeByteView(plaintextKey);
     }
   }
 
@@ -319,7 +336,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
       }
       return winner;
     } finally {
-      if (Buffer.isBuffer(plaintextKey)) plaintextKey.fill(0);
+      this.wipeByteView(plaintextKey);
     }
   }
 
@@ -340,7 +357,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
       this.assertPlaintextDek(plaintext);
       return plaintext;
     } catch (error) {
-      if (Buffer.isBuffer(plaintext)) plaintext.fill(0);
+      this.wipeByteView(plaintext);
       throw error;
     }
   }
