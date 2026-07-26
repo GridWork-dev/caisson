@@ -1,5 +1,5 @@
 ---
-status: locked (ADR-0349, 2026-07-15)
+status: shipped (PRs #244, #272, #273, and #275)
 owner: operator
 tags: [ai, security, billing]
 ---

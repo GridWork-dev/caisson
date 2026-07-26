@@ -37,6 +37,7 @@ import {
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import { createApp, type IssueAppDeps } from "./app.ts";
+import type { RateLimiterInfraAlert } from "./alerting.ts";
 import type { ChargebackAlert } from "./chargeback-notify.ts";
 import type {
   PurchaseEmailNotice,
@@ -44,6 +45,7 @@ import type {
   RevokeEmailNotice,
 } from "./email-notify.ts";
 import {
+  ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
@@ -58,6 +60,7 @@ import {
 import type { PurchaseCapture } from "./posthog-capture.ts";
 import {
   loadRateLimitConfig,
+  type RateLimiter,
   type RateLimitConfig,
   TokenBucketLimiter,
 } from "./rate-limit.ts";
@@ -117,6 +120,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
   await tp.exec(RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL);
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
@@ -140,6 +144,8 @@ function makeApp(
   renewalEmailNotify: IssueAppDeps["renewalEmailNotify"] = async () => {},
   chargebackAlert: IssueAppDeps["chargebackAlert"] = async () => {},
   revokeEmailNotify: IssueAppDeps["revokeEmailNotify"] = async () => {},
+  limiter: IssueAppDeps["limiter"] = new TokenBucketLimiter(limiterConfig),
+  rateLimiterAlert: IssueAppDeps["rateLimiterAlert"] = async () => {},
 ): (req: Request) => Promise<Response> {
   return createApp({
     token: "unused-issue-token",
@@ -147,13 +153,14 @@ function makeApp(
     index,
     db: tp.pg,
     provider: p,
-    limiter: new TokenBucketLimiter(limiterConfig),
+    limiter,
     discordNotify,
     posthogCapture,
     purchaseEmailNotify,
     renewalEmailNotify,
     revokeEmailNotify,
     chargebackAlert,
+    rateLimiterAlert,
   });
 }
 
@@ -1043,6 +1050,43 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     expect(second.status).toBe(429);
   });
 
+  for (const stage of ["check", "checkGlobal"] as const) {
+    test(`/webhook fails open and alerts when limiter ${stage} throws`, async () => {
+      const alerts: RateLimiterInfraAlert[] = [];
+      const limiter: RateLimiter = {
+        check: () => {
+          if (stage === "check") throw new Error("limiter unavailable");
+          return { allowed: true, retryAfterSec: 0 };
+        },
+        checkGlobal: () => {
+          if (stage === "checkGlobal") throw new Error("limiter unavailable");
+          return { allowed: true, retryAfterSec: 0 };
+        },
+      };
+      const app = makeApp(
+        provider,
+        loadRateLimitConfig(),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        limiter,
+        async (alert) => {
+          alerts.push(alert);
+        },
+      );
+
+      // The limiter failure must not make the webhook unavailable. It proceeds to the independent
+      // HMAC boundary, where this deliberately unsigned request still fails closed.
+      const response = await app(webhookReq("{}", null));
+
+      expect(response.status).toBe(401);
+      expect(alerts).toEqual([{ bucket: "webhook", failureMode: "open" }]);
+    });
+  }
+
   test("rotating x-envoy-external-address does not mint a fresh /issue bucket (Strix vuln-0001)", async () => {
     // The exact pentest bypass: rotate the spoofable header on every request (no trusted X-Real-IP
     // present). clientIp no longer trusts x-envoy-external-address / x-forwarded-for, so all requests
@@ -1231,6 +1275,7 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
         renewalEmailNotify: async () => {},
         revokeEmailNotify: async () => {},
         chargebackAlert: async () => {},
+        rateLimiterAlert: async () => {},
       });
       const acct = "acct_txn_mint_hang";
       const t = Math.floor(Date.now() / 1000);

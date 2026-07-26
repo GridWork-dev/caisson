@@ -5,7 +5,7 @@
  * functional-token objects are passed in by the caller (no `@caisson/ui` runtime dependency) — any
  * theme shaped like this, including a buyer's own customized one, can be checked.
  */
-import { wcagContrast } from "culori";
+import { clampRgb, formatHex, parse, toGamut, wcagContrast } from "culori";
 
 /** Structurally the same key set as `@caisson/ui`'s `SemanticTheme`. Declared locally (not
  *  imported) so this package carries no `@caisson/ui` runtime dependency. */
@@ -31,6 +31,10 @@ export type ContrastTheme = Record<ContrastThemeKey, string>;
 export type FunctionalKey = "success" | "warning" | "danger" | "info";
 /** Structurally the same shape as `@caisson/ui`'s `FunctionalTokens`. */
 export type ContrastFunctional = Record<FunctionalKey, string>;
+
+export type CodeTokenKey = "codeString" | "codeKeyword";
+/** Structurally the same shape as `@caisson/ui`'s `CodeTokens`. */
+export type ContrastCode = Record<CodeTokenKey, string>;
 
 export interface ContrastViolation {
   mode: string;
@@ -87,6 +91,44 @@ const FUNCTIONAL_SURFACES: readonly ContrastThemeKey[] = [
   "surface1",
   "surface2",
 ];
+const CODE_KEYS: readonly CodeTokenKey[] = ["codeString", "codeKeyword"];
+
+const cssColor4ToGamut = toGamut("rgb", "oklch");
+
+function renderedHex(
+  color: string,
+  mapper: "channel-clamp" | "css-color-4",
+): string {
+  const parsed = parse(color);
+  if (parsed === undefined) throw new Error(`invalid CSS color: ${color}`);
+  if (parsed.alpha !== undefined && parsed.alpha < 1)
+    throw new Error(
+      `checked contrast colors must be opaque; received ${color}`,
+    );
+  const rendered =
+    mapper === "channel-clamp" ? clampRgb(parsed) : cssColor4ToGamut(parsed);
+  const hex = formatHex(rendered);
+  if (hex === undefined) throw new Error(`cannot render CSS color: ${color}`);
+  return hex;
+}
+
+/**
+ * Measure the stricter of the two browser gamut-mapping families Caisson supports. Raw OKLCH
+ * contrast can pass while the painted sRGB color fails, so every matrix consumer shares this one
+ * rendered-color calculation.
+ */
+export function renderedContrastRatio(fg: string, bg: string): number {
+  return Math.min(
+    wcagContrast(
+      renderedHex(fg, "channel-clamp"),
+      renderedHex(bg, "channel-clamp"),
+    ),
+    wcagContrast(
+      renderedHex(fg, "css-color-4"),
+      renderedHex(bg, "css-color-4"),
+    ),
+  );
+}
 
 function checkThemePairs(
   theme: ContrastTheme,
@@ -94,7 +136,7 @@ function checkThemePairs(
 ): ContrastViolation[] {
   const out: ContrastViolation[] = [];
   for (const p of PAIRS) {
-    const ratio = wcagContrast(theme[p.fg], theme[p.bg]);
+    const ratio = renderedContrastRatio(theme[p.fg], theme[p.bg]);
     if (ratio < p.min)
       out.push({ mode, fg: p.fg, bg: p.bg, ratio, min: p.min, use: p.use });
   }
@@ -109,7 +151,7 @@ function checkFunctionalPairs(
   const out: ContrastViolation[] = [];
   for (const k of FUNCTIONAL_KEYS) {
     for (const s of FUNCTIONAL_SURFACES) {
-      const ratio = wcagContrast(fn[k], theme[s]);
+      const ratio = renderedContrastRatio(fn[k], theme[s]);
       if (ratio < 4.5)
         out.push({
           mode,
@@ -124,17 +166,44 @@ function checkFunctionalPairs(
   return out;
 }
 
+function checkCodePairs(
+  theme: ContrastTheme,
+  code: ContrastCode,
+  mode: string,
+): ContrastViolation[] {
+  const out: ContrastViolation[] = [];
+  for (const key of CODE_KEYS) {
+    for (const surface of FUNCTIONAL_SURFACES) {
+      const ratio = renderedContrastRatio(code[key], theme[surface]);
+      if (ratio < 4.5)
+        out.push({
+          mode,
+          fg: key,
+          bg: surface,
+          ratio,
+          min: 4.5,
+          use: "code-syntax token",
+        });
+    }
+  }
+  return out;
+}
+
 /** Run the full WCAG contrast matrix (semantic fg/bg pairs + functional/status tokens) for one
  *  theme mode. `mode` is a caller-chosen label (e.g. `"dark"`/`"light"`) echoed onto each
- *  violation, not otherwise interpreted. Returns every violation found — an empty array means the
- *  theme is fully compliant. */
+ *  violation, not otherwise interpreted. `code` is optional for backward compatibility with
+ *  callers that only own the semantic + functional palette; when supplied, syntax-token contrast
+ *  is checked against the same surface ramp. Returns every violation found — an empty array means
+ *  the supplied palette is fully compliant. */
 export function checkContrast(
   theme: ContrastTheme,
   fn: ContrastFunctional,
   mode: string,
+  code?: ContrastCode,
 ): ContrastViolation[] {
   return [
     ...checkThemePairs(theme, mode),
     ...checkFunctionalPairs(theme, fn, mode),
+    ...(code === undefined ? [] : checkCodePairs(theme, code, mode)),
   ];
 }

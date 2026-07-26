@@ -69,6 +69,7 @@ const ASSEMBLED_LEDGER_FILENAMES = [
   "0028_demo_run_budget.sql",
   "0029_demo_run_leads.sql",
   "0030_renewal_extension_months.sql",
+  "0031_entitlement_grant_charged_amount.sql",
 ];
 
 test("assembled platform chain matches prod's positional ledger — append-only, never re-slot", () => {

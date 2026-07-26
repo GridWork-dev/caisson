@@ -1,6 +1,6 @@
 ---
 slug: visual-remediation-2026-07
-status: locked
+status: shipped
 date: 2026-07-21
 tags: [ui, frontend]
 adr: ADR-0374

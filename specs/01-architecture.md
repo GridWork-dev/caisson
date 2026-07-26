@@ -1,6 +1,7 @@
 # Architecture & Data Model — Concept Spec
 
-**Status:** spec-committed pending Gate 4. Option **C** (composable packages + generator/registry).
+**Status:** locked and implemented; Option **C** (composable packages + generator/registry).
+Current topology and residuals live in `docs/architecture.md` and `docs/build-state.md`.
 **Scope:** the monorepo shape, package graph, the seller-platform data model, and cross-cutting
 invariants. DDL/migrations are PLAN work — this is the shape they implement. ADRs:
 0001 (tooling), 0003 (package split), 0004 (generator), 0005 (RLS), 0006 (WORM/audit), 0007 (credits), 0008 (MCP auth).

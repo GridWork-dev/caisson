@@ -62,6 +62,18 @@ describe("REAL Paddle one-time price ids round-trip (parsePaddleEvent -> resolve
       priceId: "pri_01kwd76ck3w8myy4p4f1gj0dcy",
       entitlements: ["agentic-dev"],
     },
+    {
+      priceId: "pri_01ky0fgqdwpf6yaxzeef03q88e",
+      entitlements: ["access-review"],
+    },
+    {
+      priceId: "pri_01ky0fgqk5d855hfjdngjrvj89",
+      entitlements: ["risk-register"],
+    },
+    {
+      priceId: "pri_01ky0fgqqzmfbm2406q4rys44e",
+      entitlements: ["trust-page"],
+    },
   ];
 
   for (const { priceId, entitlements } of oneTimeCases) {

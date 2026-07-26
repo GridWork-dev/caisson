@@ -22,12 +22,17 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * Recipe REFERENCE component (ADR-0099) — the template every other kit primitive copies:
+ * Button — a primary or ghost action control with small/medium sizing and optional Radix Slot
+ * polymorphism. Recipe REFERENCE component (ADR-0099) — the template every other kit primitive
+ * copies:
  *   1. Radix behavior/polymorphism (here `Slot` for `asChild`); never a framework import.
  *   2. Co-located plain CSS (`button.css`) reading only `var(--cs-*)`.
  *   3. Variants as `data-*` attributes styled by attribute selectors — no variant logic in JS;
  *      light/dark "just works" by cascade.
  *   4. `forwardRef`, BEM block name `cs-button`.
+ *
+ * @a11y Native buttons default to `type="button"` to prevent accidental form submission; with
+ *   `asChild`, the caller owns the slotted element's native semantics and accessible name.
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   function Button(

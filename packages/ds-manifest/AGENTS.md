@@ -13,25 +13,26 @@ build-time generator without any of those needing to depend on each other.
 
 ## Public API
 
-| Symbol                    | Use                                                                                          |
-| ------------------------- | -------------------------------------------------------------------------------------------- |
-| `componentManifestSchema` | The Zod schema for a generated component manifest; `.strict()` at every level.               |
-| `parseComponentManifest`  | Validate + parse an unknown value into a `ComponentManifest`; throws on any mismatch.        |
-| `loadBaseManifest`        | Read + validate the committed base component manifest off disk.                              |
-| `checkContrast`           | Run the WCAG contrast matrix (semantic pairs + functional/status tokens) for one theme mode. |
+| Symbol                    | Use                                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| `componentManifestSchema` | The Zod schema for a generated component manifest; `.strict()` at every level.        |
+| `parseComponentManifest`  | Validate + parse an unknown value into a `ComponentManifest`; throws on any mismatch. |
+| `loadBaseManifest`        | Read + validate the committed base component manifest off disk.                       |
+| `checkContrast`           | Run the shared browser-rendered WCAG matrix, including optional code-syntax tokens.   |
+| `renderedContrastRatio`   | Score the stricter channel-clamp/CSS-Color-4 rendered sRGB contrast ratio.            |
 
 ## Invariants
 
 - Every exported function is pure: no network call, no renderer, no filesystem write. `loadBaseManifest`
   is the one read from disk, and it only ever reads the manifest bundled with this package.
 - `checkContrast` takes the theme/functional-token objects as arguments rather than importing
-  `@caisson/ui` — it stays in parity with the kit's own contrast gate without creating a runtime
-  dependency on it.
+  `@caisson/ui`; the kit calls this shared implementation in its own gate, so gamut mapping,
+  thresholds, semantic pairs, functional colors, and code-syntax colors cannot drift.
 - `componentManifestSchema` rejects an unrecognized field at any level (component, prop, or the
   manifest envelope itself) — a generator bug or a hand-edit typo fails loudly, not silently.
 
 ## Scope
 
-This package owns the shared shape and the pure checks. It does not generate the manifest from
-`@caisson/ui`'s source (that lives in the kit's own build-time script) and it does not decide who
-is allowed to call which check (that is the buyer MCP's entitlement gate).
+This package owns the shared shape, generated artifact, and pure checks. Generation from
+`@caisson/ui` source lives in the kit's build-time script; authorization remains the buyer MCP's
+entitlement-gate concern.

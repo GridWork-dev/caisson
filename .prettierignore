@@ -8,6 +8,8 @@ coverage/
 bun.lock
 # generated, drift-guarded by gen-tokens-css.ts
 packages/ui/styles/tokens.css
+# generated, drift-guarded by gen-manifest.ts
+packages/ds-manifest/src/base-manifest.json
 # CI-built by registry/scripts/build-index.ts (owns its canonical serialization). Prettier must NOT
 # touch it or it would fight the byte-identical rebuild check (ADR-0047).
 registry/index.json

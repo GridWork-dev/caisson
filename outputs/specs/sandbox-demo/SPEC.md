@@ -1,5 +1,5 @@
 ---
-status: locked (ADR-0350, 2026-07-16)
+status: shipped (PR #254 plus migration renumber PR #255)
 owner: operator
 ---
 

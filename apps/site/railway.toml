@@ -9,6 +9,9 @@
 #   MASTER_FIELD_KEY / FIELD_CRYPTO_SALT (required — field-crypto master secret for BYOK, ADR-0183; BYOK
 #                                        submit THROWS in production when unset, never seals under a demo vector)
 #   BETTER_AUTH_SECRET                  (required — better-auth session signing; /dashboard sign-in 503s without it)
+#   SESSION_TOKEN_HMAC_KEY              (required once DATABASE_URL + BETTER_AUTH_SECRET are set — ADR-0366 hashes
+#                                        session tokens at rest; auth-server.ts THROWS rather than store raw tokens,
+#                                        so a missing value is a crashed boot, not a degraded sign-in)
 #   BETTER_AUTH_URL                     (the canonical origin, e.g. https://caisson.sh — better-auth callback base)
 #   NEXT_PUBLIC_PADDLE_CLIENT_TOKEN     (Paddle.js client token — ADR-0116; MUST be a build ARG, see Dockerfile)
 #   NEXT_PUBLIC_PADDLE_ENV              ("sandbox" | "production"; defaults to sandbox; build ARG)

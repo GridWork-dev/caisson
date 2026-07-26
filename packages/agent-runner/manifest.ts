@@ -2,8 +2,8 @@
 // id/version/license/dependencies. `kind: "primitive"` — a governed run primitive, not a base
 // service or an edition (a primitive does not self-declare edition membership; the Agentic-Dev
 // edition carries it in its `members` pin map, exactly like tool-exec/field-crypto — ADR-0186 F1/F5
-// edition-only fold). Paid + LicenseRef-Caisson-Commercial; NO standalone SKU (ADR-0186 F5 per
-// ADR-0137 below-sum economics), so priceCents stays the established pre-launch placeholder.
+// edition-only fold). Paid + LicenseRef-Caisson-Commercial. ADR-0222 later superseded the original
+// bundle-only posture by locking a standalone $49 marketplace SKU.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -12,8 +12,7 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  // PLACEHOLDER anchor (ADR-0129 methodology); positive int required by the manifest refine
-  // (ADR-0007). Sold only via the Agentic-Dev edition fold (ADR-0186 F5).
+  // Standalone $49, locked by ADR-0222 and enforced through PRICE_AUTHORITY.
   priceCents: 4900,
   license: pkg.license,
   // agent-trajectory is a `primitive` too — a primitive depending on another primitive is legal

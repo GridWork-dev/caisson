@@ -55,6 +55,7 @@ import {
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import {
   computeUpdatesWindows,
+  ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
@@ -186,6 +187,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
   await tp.exec(RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL);
   // G7 (audit 2026-07-07): invoice.paid/purchase.completed now gate their grant + returned effect
@@ -2688,5 +2690,106 @@ describe("ADR-0315 affiliate attribution — discountId stamped on order_record 
     expect(
       entry?.orders.find((o) => o.orderId === "pay_aff_refund")?.clawback,
     ).toBe(true);
+  });
+});
+
+// ADR-0381 lock 2 — the per-grant paid amount an upgrade quote reads as its credit floor. The
+// number was always on the event (`lineItems[].chargedAmount`, minor units); these pin that it is
+// persisted when — and only when — it is genuinely a single SKU's price.
+describe("entitlement_grant.charged_amount (ADR-0381 lock 2)", () => {
+  async function chargedFor(
+    accountId: string,
+  ): Promise<{ amount: number | null; currency: string | null }[]> {
+    return withTenant(tp.pg, accountId, async (tx) => {
+      const r = await tx.query<{
+        charged_amount: number | null;
+        charged_currency: string | null;
+      }>(
+        `SELECT charged_amount, charged_currency FROM entitlement_grant
+         WHERE account_id = $1 ORDER BY entitlement_id`,
+        [accountId],
+      );
+      return r.rows.map((row) => ({
+        amount: row.charged_amount,
+        currency: row.charged_currency,
+      }));
+    });
+  }
+
+  test("a single-SKU line at quantity 1 records its charge and currency", async () => {
+    const acct = "acct_charged_ok";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "pay_charged_ok", [
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "txnitm_ok",
+            chargedAmount: 144900,
+          },
+        ]),
+      ),
+    );
+    expect(await chargedFor(acct)).toEqual([
+      { amount: 144900, currency: "usd" },
+    ]);
+  });
+
+  test("a quantity-2 line records NOTHING — the total is not the SKU's price", async () => {
+    const acct = "acct_charged_qty2";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "pay_charged_qty2", [
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 2,
+            itemId: "txnitm_qty2",
+            chargedAmount: 289800,
+          },
+        ]),
+      ),
+    );
+    // NULL, not 289800 — crediting double the price on a later upgrade is the bug this prevents.
+    expect(await chargedFor(acct)).toEqual([{ amount: null, currency: null }]);
+  });
+
+  test("a driver with no per-line data (chargedAmount 0) records NOTHING, not free", async () => {
+    const acct = "acct_charged_zero";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "pay_charged_zero", [
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "txnitm_zero",
+            chargedAmount: 0,
+          },
+        ]),
+      ),
+    );
+    expect(await chargedFor(acct)).toEqual([{ amount: null, currency: null }]);
+  });
+
+  test("amount and currency are written as a pair, never one without the other", async () => {
+    const acct = "acct_charged_pair";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "pay_charged_pair", [
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "txnitm_pair",
+            chargedAmount: 19900,
+          },
+        ]),
+      ),
+    );
+    for (const row of await chargedFor(acct)) {
+      expect(row.amount === null).toBe(row.currency === null);
+    }
   });
 });

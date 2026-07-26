@@ -79,6 +79,7 @@ import {
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import { CHECKOUT_ABANDONMENT_SCHEMA_SQL } from "./checkout-abandonment-store.ts";
 import {
+  ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
@@ -218,6 +219,7 @@ beforeAll(async () => {
   // ADR-0218 line_item_id on entitlement_grant — `grantEntitlements` (the paid-source seeder) needs it.
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
   await tp.exec(RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL);
   // ADR-0293: applyBillingEvent (called directly below, e.g. the operator-vs-Paddle-refund

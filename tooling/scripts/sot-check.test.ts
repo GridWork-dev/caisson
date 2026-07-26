@@ -268,6 +268,9 @@ describe("check #2 — frontmatter freshness", () => {
         (p) => gitLastCommitDate(dir, p),
       );
       expect(result.status).toBe("green");
+      expect(result.details).toContain(
+        "all grounds paths are at or before their doc's updated: date",
+      );
     });
   });
 

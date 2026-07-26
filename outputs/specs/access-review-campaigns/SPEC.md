@@ -1,5 +1,5 @@
 ---
-status: locked
+status: shipped (PR #305)
 locked_by: ADR-0371
 tags: [product]
 date: 2026-07-20

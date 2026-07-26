@@ -26,6 +26,7 @@ export default defineModule({
   editions: ["agent-dev"],
   tier: "paid",
   priceCents: 32900,
+  sellable: false,
   license: pkg.license,
   dependencies: [
     "@caisson/agent-kernel",

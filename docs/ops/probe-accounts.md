@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-22
+updated: 2026-07-25
 status: live
 grounds:
   - apps/site/live/probe-session.ts
@@ -37,6 +37,10 @@ only, per `identity/security.md`.
 
 ## 0. What already exists (don't re-provision)
 
+**Current status:** Ring-2 credentials and email verification are historical evidence and require
+a fresh §5 verification before they count as ready. Ring 3 is not created, allowlisted, or
+verified; CAISSON-104 remains operator-gated.
+
 Per ADR-0317's 2026-07-10 credential sweep, the **Ring-2 creds already exist** end to
 end: `~/.gridwork/caisson.env` has all four keys (confirmed present, values not
 inspected here):
@@ -72,18 +76,16 @@ anything else (`safety.md` preflight rejects "default, personal, shared" profile
 
 The site's better-auth instance requires email verification before a **password**
 account can sign in (`requireEmailVerification: true`, `apps/site/lib/auth-server.ts:148`)
-— sign-up itself is unauthenticated and fully scriptable. Route through the CF-Access
-service token (§2) since `/dashboard`+`/cart` — and the auth API sits behind the same
-gate as those paths' cookie flow — needs it (`infra/terraform/access.tf`, `site_gate`).
+— sign-up itself is unauthenticated and fully scriptable. `/api/auth/*` is public;
+Cloudflare Access covers `/dashboard*` and `/cart*` only
+(`infra/terraform/access.tf`, `site_gate`).
 
 ```bash
-source ~/.gridwork/caisson.env   # or export CAISSON_E2E_CF_CLIENT_ID/SECRET manually first time
+source ~/.gridwork/caisson.env
 
 curl -sS -X POST https://caisson.sh/api/auth/sign-up/email \
   -H "Origin: https://caisson.sh" \
   -H "Content-Type: application/json" \
-  -H "CF-Access-Client-Id: ${CAISSON_E2E_CF_CLIENT_ID}" \
-  -H "CF-Access-Client-Secret: ${CAISSON_E2E_CF_CLIENT_SECRET}" \
   -d '{
     "name": "Caisson E2E Probe",
     "email": "'"${CAISSON_E2E_ACCOUNT_EMAIL}"'",
@@ -117,8 +119,6 @@ source ~/.gridwork/caisson.env
 curl -sS -i -X POST https://caisson.sh/api/auth/sign-in/email \
   -H "Origin: https://caisson.sh" \
   -H "Content-Type: application/json" \
-  -H "CF-Access-Client-Id: ${CAISSON_E2E_CF_CLIENT_ID}" \
-  -H "CF-Access-Client-Secret: ${CAISSON_E2E_CF_CLIENT_SECRET}" \
   -d '{"email":"'"${CAISSON_E2E_ACCOUNT_EMAIL}"'","password":"'"${CAISSON_E2E_ACCOUNT_PASSWORD}"'"}' \
   | grep -i "^HTTP\|^set-cookie"
 ```
@@ -157,8 +157,7 @@ log.
 
 ### 2.3 Inject on every gated request
 
-Every request to `/dashboard*` or `/cart*` (including the auth POSTs in §1) MUST carry
-both headers:
+Every request to `/dashboard*` or `/cart*` MUST carry both headers:
 
 ```
 CF-Access-Client-Id: <CAISSON_E2E_CF_CLIENT_ID>
@@ -167,7 +166,9 @@ CF-Access-Client-Secret: <CAISSON_E2E_CF_CLIENT_SECRET>
 
 For a Playwright/Chrome context, set them once as `extraHTTPHeaders` on the browser
 context (`apps/site/live/buyer-dashboard-flow.live.test.ts:133-138`) rather than
-per-request — the pattern the Ring-2 Codex Computer-Use profile should mirror. Rotate
+per-request — the pattern the Ring-2 Codex Computer-Use profile should mirror. Keeping
+the headers on that context is convenient for gated navigation; public auth POSTs do not require
+them. Rotate
 by `terraform taint cloudflare_zero_trust_access_service_token.e2e_prober && terraform
 apply` — this is a real rotation (old token stops working immediately); update the env
 
@@ -292,8 +293,6 @@ Or a bare curl proving just the session establishes (no browser):
 source ~/.gridwork/caisson.env
 curl -sS -o /dev/null -w "%{http_code}\n" -X POST https://caisson.sh/api/auth/sign-in/email \
   -H "Origin: https://caisson.sh" -H "Content-Type: application/json" \
-  -H "CF-Access-Client-Id: ${CAISSON_E2E_CF_CLIENT_ID}" \
-  -H "CF-Access-Client-Secret: ${CAISSON_E2E_CF_CLIENT_SECRET}" \
   -d '{"email":"'"${CAISSON_E2E_ACCOUNT_EMAIL}"'","password":"'"${CAISSON_E2E_ACCOUNT_PASSWORD}"'"}'
 # expect: 200
 ```
@@ -362,6 +361,7 @@ anything the probe accounts touch afterward:
 | `ADMIN_BETTER_AUTH_SECRET` rotated                         | Every existing admin session (including the probe's) is invalidated (cookies are HMAC-signed with this secret) — re-run §3.4 interactive login only; no allowlist change.                                                                     |
 | Vault drift suspected                                      | `bun tooling/scripts/vault-parity-check.ts` (§4) — diffs by NAME only, flags anything present in one home but not the other.                                                                                                                  |
 
-Full re-provisioning from zero = §1 → §2 → §3 → §4 → §5, in that order (Ring 2 needs
-its CF-Access token before the first sign-up POST will even reach the site; Ring 3's
-allowlist entry must exist before the first interactive login attempt).
+Full re-provisioning from zero = §1 → §2 → §3 → §4 → §5. Ring-2 sign-up is public, so
+the Cloudflare service token can be recovered before or after account creation, but it must exist
+before dashboard/cart verification. Ring 3's allowlist entry must exist before its first
+interactive login attempt.

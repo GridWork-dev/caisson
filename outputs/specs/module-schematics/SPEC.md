@@ -1,6 +1,6 @@
 # SPEC — Module schematics design kickoff (ADR-0376 lock 2)
 
-status: SPEC locked (direction) — design kickoff pending, operator-in-loop
+status: SHIPPED — PR #326; production re-audit 729/729 fixed
 date: 2026-07-22
 tags: ui, frontend
 

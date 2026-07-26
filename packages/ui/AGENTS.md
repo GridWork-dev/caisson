@@ -7,6 +7,8 @@ Provides the typed OKLCH token floor: palette and type-scale token objects that 
 - Import tokens from `@caisson/ui/tokens`; the generated `tokens.css` is at `@caisson/ui/styles/tokens.css`.
 - Tokens are typed TypeScript objects — use them in code; do not hardcode hex/OKLCH values inline.
 - Regenerate `tokens.css` via `bun run gen:tokens` after any token-object change.
+- Regenerate the agent-readable component manifest via `bun run gen:manifest` after a component
+  barrel, prop, JSDoc, or co-located CSS change; `bun run check:manifest` must remain byte-clean.
 - The token contract is the stable surface; internal OKLCH values may change between releases.
 
 ## Scope
