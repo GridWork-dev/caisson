@@ -12,7 +12,10 @@ import {
   ValidationError,
   type JsonValue,
 } from "@caisson/kernel";
-import type { OscalEvidencePackManifest } from "../contracts.ts";
+import type {
+  OscalCrosswalkRollup,
+  OscalEvidencePackManifest,
+} from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
   createOscalHttpTransport,
@@ -53,7 +56,7 @@ function det(overrides?: Partial<OscalExportOptions>): OscalExportOptions {
 }
 
 /** The crosswalk rollup for `fixtureManifest()`'s two controls (ADR-0333/ADR-0347, v2). */
-function fixtureRollup(): { cells: unknown[] } {
+function fixtureRollup(): OscalCrosswalkRollup {
   return {
     cells: [
       {
@@ -485,6 +488,54 @@ describe("toOscalBundle — determinism + honesty + fail-closed", () => {
         det({ packSha256: "not-a-digest" }),
       ),
     ).toThrow(ValidationError);
+  });
+
+  test.each([
+    ["undefined rollup", undefined],
+    ["BigInt rollup", 1n],
+    [
+      "malformed rollup cell",
+      {
+        cells: [
+          {
+            framework: "SOC2-TSC",
+            reference: "CC6.1",
+            canonicalControlIds: [],
+            status: "invented",
+            claim: "maps-to",
+            evidencePointers: [],
+          },
+        ],
+      },
+    ],
+  ])("rejects a %s before OSCAL assembly", (_label, crosswalkRollup) => {
+    const invalid = {
+      ...fixtureManifest(),
+      crosswalkRollup,
+    } as unknown as OscalEvidencePackManifest;
+    expect(() => toOscalBundle(invalid, det())).toThrow(ValidationError);
+  });
+
+  test("rejects circular manifest data before OSCAL assembly", () => {
+    const circular: Record<string, unknown> = { cells: [] };
+    circular.self = circular;
+    const invalid = {
+      ...fixtureManifest(),
+      crosswalkRollup: circular,
+    } as unknown as OscalEvidencePackManifest;
+    expect(() => toOscalBundle(invalid, det())).toThrow(ValidationError);
+  });
+
+  test("rejects non-finite manifest numbers before OSCAL assembly", () => {
+    const manifest = fixtureManifest();
+    const invalid = {
+      ...manifest,
+      summary: {
+        ...manifest.summary,
+        totalControls: Number.POSITIVE_INFINITY,
+      },
+    };
+    expect(() => toOscalBundle(invalid, det())).toThrow(ValidationError);
   });
 });
 

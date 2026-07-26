@@ -40,6 +40,7 @@ import type {
   OscalEvidencePackManifest,
   OscalManifestControl,
 } from "../contracts.ts";
+import { parseOscalEvidencePackManifest } from "../contracts.ts";
 
 /**
  * The OSCAL model version these bodies are authored against (NIST OSCAL JSON, csrc.nist.gov/ns/oscal).
@@ -377,7 +378,7 @@ function buildApRlink(
  * linking its control's observations. Deterministic given injected `now` + `newId`. Fails closed on a
  * bad clock / malformed provenance.
  */
-export function toOscalAssessmentResults(
+function buildOscalAssessmentResults(
   manifest: OscalEvidencePackManifest,
   options: OscalExportOptions,
 ): OscalAssessmentResultsDocument {
@@ -489,6 +490,16 @@ export function toOscalAssessmentResults(
   };
 }
 
+export function toOscalAssessmentResults(
+  manifest: OscalEvidencePackManifest,
+  options: OscalExportOptions,
+): OscalAssessmentResultsDocument {
+  return buildOscalAssessmentResults(
+    parseOscalEvidencePackManifest(manifest),
+    options,
+  );
+}
+
 /**
  * Map an evidence-pack manifest to an OSCAL Plan of Action & Milestones (POA&M) document.
  *
@@ -497,7 +508,7 @@ export function toOscalAssessmentResults(
  * remediation). The tenant is identified via `system-id` (no SSP exists in v1; `import-ssp` is part
  * of the un-wired transport seam below). Deterministic given injected `now` + `newId`.
  */
-export function toOscalPlanOfActionAndMilestones(
+function buildOscalPlanOfActionAndMilestones(
   manifest: OscalEvidencePackManifest,
   options: OscalExportOptions,
 ): OscalPlanOfActionAndMilestonesDocument {
@@ -563,15 +574,26 @@ export function toOscalPlanOfActionAndMilestones(
   return { "plan-of-action-and-milestones": body };
 }
 
+export function toOscalPlanOfActionAndMilestones(
+  manifest: OscalEvidencePackManifest,
+  options: OscalExportOptions,
+): OscalPlanOfActionAndMilestonesDocument {
+  return buildOscalPlanOfActionAndMilestones(
+    parseOscalEvidencePackManifest(manifest),
+    options,
+  );
+}
+
 /** Map an evidence-pack manifest to BOTH OSCAL documents (SAR + POA&M) in one deterministic call. */
 export function toOscalBundle(
   manifest: OscalEvidencePackManifest,
   options: OscalExportOptions,
 ): OscalExportBundle {
+  const validated = parseOscalEvidencePackManifest(manifest);
   return {
-    assessmentResults: toOscalAssessmentResults(manifest, options),
-    planOfActionAndMilestones: toOscalPlanOfActionAndMilestones(
-      manifest,
+    assessmentResults: buildOscalAssessmentResults(validated, options),
+    planOfActionAndMilestones: buildOscalPlanOfActionAndMilestones(
+      validated,
       options,
     ),
   };
