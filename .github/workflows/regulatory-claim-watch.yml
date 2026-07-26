@@ -1,11 +1,12 @@
 name: regulatory-claim-watch
 # Weekly ADVISORY watch for the dated EU AI Act claims on the framework pages and in
 # WRITING_PIECES. The script discovers those checked-in targets, fetches only their declared
-# public primary sources, and reports unreachable sources or literal locators that disappeared.
-# It cannot interpret a changed regulation, determine legal correctness, or reliably inspect a
-# locator inside a PDF; those cases are reported for human review. Report-only: the script always
-# exits 0, this workflow is NOT a required check, and no source outage can block a merge. No
-# credential is used — every outbound request is an unauthenticated public read.
+# public primary sources, and reports unreachable sources or declared watch text that disappeared.
+# It cannot interpret a changed regulation, determine legal correctness, bypass an upstream
+# interstitial, or inspect a locator inside a PDF; reachability-only cases stay explicit in the
+# report. Report-only: the script always exits 0, this workflow is NOT a required check, and no
+# source outage can block a merge. No credential is used — every outbound request is an
+# unauthenticated public read.
 on:
   workflow_dispatch: {}
   schedule:

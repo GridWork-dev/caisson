@@ -39,6 +39,10 @@ describe("regulatory-claim watch discovery", () => {
     expect(targets.some((target) => target.route.startsWith("/writing/"))).toBe(
       true,
     );
+    expect(targets).toHaveLength(3);
+    for (const target of targets) {
+      expect(target.sources.length).toBeGreaterThan(0);
+    }
   });
 
   test("empty discovery throws instead of producing a false PASS", () => {
@@ -82,6 +86,39 @@ describe("regulatory-claim source checks", () => {
     expect(report.findings).toHaveLength(1);
     expect(report.findings[0]?.kind).toBe("locator-missing");
     expect(report.markdown).toContain("Article 50");
+  });
+
+  test("keeps a precise locator while reporting a declared reachability-only source as green", async () => {
+    const target: RegulatoryClaimTarget = {
+      ...KNOWN_TARGET,
+      sources: [
+        {
+          ...KNOWN_TARGET.sources[0]!,
+          locator: "Paragraph (153), pp. 49–50",
+          watch: {
+            mode: "reachable",
+            reason: "The official source is a PDF.",
+          },
+        },
+      ],
+    };
+    const fetcher: SourceFetcher = async () =>
+      new Response(new Uint8Array([37, 80, 68, 70]), {
+        status: 200,
+        headers: { "content-type": "application/pdf" },
+      });
+
+    const report = await runRegulatoryClaimWatch([target], fetcher);
+
+    expect(report.findings).toEqual([]);
+    expect(report.notes).toEqual([
+      expect.objectContaining({
+        kind: "reachability-only",
+        detail: expect.stringContaining("Paragraph (153), pp. 49–50"),
+      }),
+    ]);
+    expect(report.markdown).toContain("No mechanical drift detected");
+    expect(report.markdown).toContain("Reachability-only checks");
   });
 
   test("reports a target that declares no primary source", async () => {

@@ -1,17 +1,21 @@
 // Report-only regulatory-claim watch. It discovers the two dated EU AI Act framework surfaces
-// from their checked-in source plus every WRITING_PIECES record, then checks each declared public
-// primary source for HTTP reachability and the record's literal locator.
+// from their shared source contract plus every WRITING_PIECES record, then checks each declared
+// public primary source for HTTP reachability and text evidence where the upstream exposes it.
 //
 // This is deliberately mechanical: it can catch a removed source, a failed public read, a missing
-// source declaration, or a locator that disappeared from HTML/plain text. It cannot interpret a
-// changed regulation, decide whether prose remains legally correct, or extract a locator from a
-// PDF reliably. Those cases are reported for human review. The CLI catches every failure and
-// exits 0 because this weekly lane is advisory, never a merge gate.
-import { appendFileSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+// source declaration, or a declared watch phrase that disappeared from HTML/plain text. It cannot
+// interpret a changed regulation, decide whether prose remains legally correct, bypass an upstream
+// interstitial, or extract a locator from a PDF reliably. Reachability-only checks are disclosed as
+// notes, not mislabeled as legal verification. The CLI catches every failure and exits 0 because
+// this weekly lane is advisory, never a merge gate.
+import { appendFileSync } from "node:fs";
 
 import { fetchWithTimeout } from "@caisson/kernel";
 
+import {
+  ARTICLE_50_PRIMARY_SOURCES,
+  ARTICLE_50_VERIFIED_ON,
+} from "../lib/article-50-sources";
 import { WRITING_PIECES, type WritingSource } from "../lib/writing";
 
 const FETCH_TIMEOUT_MS = 30_000;
@@ -19,22 +23,22 @@ const FETCH_TIMEOUT_MS = 30_000;
 interface FrameworkTarget {
   id: string;
   route: string;
-  sourceFile: string;
-  locator: string;
+  verifiedOn: string;
+  sources: readonly WritingSource[];
 }
 
 const FRAMEWORK_TARGETS: readonly FrameworkTarget[] = [
   {
     id: "framework-eu-ai-act",
     route: "/frameworks/eu-ai-act",
-    sourceFile: "apps/site/app/frameworks/eu-ai-act/page.tsx",
-    locator: "Article 50",
+    verifiedOn: ARTICLE_50_VERIFIED_ON,
+    sources: ARTICLE_50_PRIMARY_SOURCES,
   },
   {
     id: "framework-eu-ai-act-article-50",
     route: "/frameworks/eu-ai-act/article-50",
-    sourceFile: "apps/site/app/frameworks/eu-ai-act/article-50/page.tsx",
-    locator: "Article 50",
+    verifiedOn: ARTICLE_50_VERIFIED_ON,
+    sources: ARTICLE_50_PRIMARY_SOURCES,
   },
 ];
 
@@ -61,60 +65,34 @@ export interface RegulatoryWatchFinding {
   detail: string;
 }
 
+export interface RegulatoryWatchNote {
+  kind: "reachability-only";
+  targetId: string;
+  route: string;
+  sourceUrl: string;
+  detail: string;
+}
+
 export interface RegulatoryWatchReport {
   checkedSources: number;
   findings: readonly RegulatoryWatchFinding[];
+  notes: readonly RegulatoryWatchNote[];
   markdown: string;
 }
 
 export type SourceFetcher = (url: string) => Promise<Response>;
 
-function discoverVerificationDate(source: string): string {
-  const factsVerified = source.match(
-    /facts verified\s+(\d{4}-\d{2}-\d{2})/i,
-  )?.[1];
-  if (factsVerified) return factsVerified;
-
-  const reportingThrough = source.match(
-    /reporting through\s+(\d{4}-\d{2}-\d{2})/i,
-  )?.[1];
-  return reportingThrough ?? "missing";
-}
-
-function trimUrlPunctuation(url: string): string {
-  return url.replace(/[),.;:]+$/u, "");
-}
-
-function discoverHttpsUrls(source: string): readonly string[] {
-  const matches = source.match(/https:\/\/[^\s"'`<>{}\\]+/gu) ?? [];
-  return [...new Set(matches.map(trimUrlPunctuation))].sort();
-}
-
-function discoverFrameworkTargets(
-  repoRoot: string,
-): readonly RegulatoryClaimTarget[] {
-  return FRAMEWORK_TARGETS.map((target) => {
-    const source = readFileSync(join(repoRoot, target.sourceFile), "utf8");
-    const urls = discoverHttpsUrls(source);
-    return {
-      id: target.id,
-      route: target.route,
-      verifiedOn: discoverVerificationDate(source),
-      sources: urls.map((url) => ({
-        label: new URL(url).hostname,
-        url,
-        locator: target.locator,
-      })),
-    };
-  });
-}
-
 /** Real-repo discovery. The test suite calls this against the checkout as the known-positive
- * smoke: a regex/path regression that discovers nothing must fail before the workflow can lie. */
+ * smoke: a registry regression that discovers nothing must fail before the workflow can lie. */
 export function discoverRegulatoryClaims(
-  repoRoot: string,
+  _repoRoot: string,
 ): readonly RegulatoryClaimTarget[] {
-  const frameworkTargets = discoverFrameworkTargets(repoRoot);
+  const frameworkTargets = FRAMEWORK_TARGETS.map((target) => ({
+    id: target.id,
+    route: target.route,
+    verifiedOn: target.verifiedOn,
+    sources: target.sources,
+  }));
   const writingTargets = WRITING_PIECES.map((piece) => ({
     id: `writing-${piece.slug}`,
     route: `/writing/${piece.slug}`,
@@ -143,10 +121,15 @@ function findingLine(finding: RegulatoryWatchFinding): string {
   return `- **${finding.kind}** · \`${finding.route}\`${source} — ${finding.detail}`;
 }
 
+function noteLine(note: RegulatoryWatchNote): string {
+  return `- **${note.kind}** · \`${note.route}\` · ${note.sourceUrl} — ${note.detail}`;
+}
+
 function renderReport(
   targets: readonly RegulatoryClaimTarget[],
   checkedSources: number,
   findings: readonly RegulatoryWatchFinding[],
+  notes: readonly RegulatoryWatchNote[],
 ): string {
   const lines = [
     "## Regulatory claim watch — report-only",
@@ -155,14 +138,18 @@ function renderReport(
     `- ${String(checkedSources)} source${checkedSources === 1 ? "" : "s"} checked`,
     `- ${String(findings.length)} finding${findings.length === 1 ? "" : "s"} for review`,
     "",
-    "Mechanical scope: public-source reachability and literal locator presence in HTML/plain text.",
-    "This report does not interpret legal meaning; PDFs and other non-text sources require manual review.",
+    "Mechanical scope: public-source reachability and declared watch-text presence where upstream text is observable.",
+    "This report does not interpret legal meaning; precise human-review locators remain attached to every source.",
   ];
 
   if (findings.length === 0) {
     lines.push("", "### No mechanical drift detected");
   } else {
     lines.push("", "### Findings", "", ...findings.map(findingLine));
+  }
+
+  if (notes.length > 0) {
+    lines.push("", "### Reachability-only checks", "", ...notes.map(noteLine));
   }
 
   lines.push(
@@ -180,6 +167,7 @@ export async function runRegulatoryClaimWatch(
 
   let checkedSources = 0;
   const findings: RegulatoryWatchFinding[] = [];
+  const notes: RegulatoryWatchNote[] = [];
 
   for (const target of targets) {
     if (target.sources.length === 0) {
@@ -231,6 +219,17 @@ export async function runRegulatoryClaimWatch(
           continue;
         }
 
+        if (source.watch?.mode === "reachable") {
+          notes.push({
+            kind: "reachability-only",
+            targetId: target.id,
+            route: target.route,
+            sourceUrl: source.url,
+            detail: `${source.watch.reason} Human locator: ${source.locator}`,
+          });
+          continue;
+        }
+
         const contentType = response.headers.get("content-type") ?? "";
         if (
           contentType.includes("application/pdf") ||
@@ -247,13 +246,15 @@ export async function runRegulatoryClaimWatch(
         }
 
         const body = await response.text();
-        if (!normalizeText(body).includes(normalizeText(source.locator))) {
+        const watchText =
+          source.watch?.mode === "text" ? source.watch.text : source.locator;
+        if (!normalizeText(body).includes(normalizeText(watchText))) {
           findings.push({
             kind: "locator-missing",
             targetId: target.id,
             route: target.route,
             sourceUrl: source.url,
-            detail: `Declared locator "${source.locator}" was not found in the fetched text.`,
+            detail: `Declared watch text "${watchText}" was not found; human locator: "${source.locator}".`,
           });
         }
       } catch (error) {
@@ -271,7 +272,8 @@ export async function runRegulatoryClaimWatch(
   return {
     checkedSources,
     findings,
-    markdown: renderReport(targets, checkedSources, findings),
+    notes,
+    markdown: renderReport(targets, checkedSources, findings, notes),
   };
 }
 
