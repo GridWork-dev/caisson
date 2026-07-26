@@ -101,7 +101,17 @@ releases and 4 minor package releases. They are consumed only by T7.
    pricebook and display sheet disagree. Deployed docs/support keep answering $1,449 until the fleet
    redeploy, so the runbook's probe becomes a post-deploy check rather than a pre-deploy assertion.
    Sequencing confirmed at the 2026-07-25 picker: runs **after** the reconcile, off a clean `main`.
-7. **Release:** reconcile all code waves, run audits and full gates, consume all changesets in one
+7. **Grill remediation (in flight):** an independent adversarial audit of the four open PRs
+   ([report](../../outputs/audit/2026-07-25-open-pr-grill.md)) tested 44 hypotheses, refuted 39, and
+   confirmed 5 — three on #335, one on #333, one on #334 — and confirmed zero cross-PR merge
+   conflicts. All four PRs were green on CI and #335's author self-reported code, security, and
+   adversarial reviews PASS; none of the five were gate-shaped, which is the case for keeping an
+   independent lane. The #334 currency defect is fixed (`09e8516f`). The two evidence-path P1s are
+   locked by **ADR-0385** (no bundled verifier; fail-closed per-event export allowlist) and are
+   building in lane A alongside the Inngest `singletonKey` P2; the #333 Paddle marker-only
+   validation P1 is building in the onboarding lane. **The reconcile waits on these** — merging a
+   confirmed P1 to main is not a trade worth making.
+8. **Release:** reconcile all code waves, run audits and full gates, consume all changesets in one
    version PR, tag immutable bytes, publish the tag, and redeploy the Worker from that tag.
 
 ## Trigger-parked
@@ -120,14 +130,15 @@ These are not part of the active completion program:
 
 ## Recently closed
 
-| Date       | Evidence                                                                   |
-| ---------- | -------------------------------------------------------------------------- |
-| 2026-07-25 | Generated 39-component design manifest and shared contrast gate            |
-| 2026-07-25 | Launch-critical dependency, price, and limiter safety fixes on this branch |
-| 2026-07-25 | Site truth-fix deployment recorded in deploy state                         |
-| 2026-07-24 | Visual re-audit: 729/729 fixed                                             |
-| 2026-07-23 | Media-overhaul program merged in PR #326                                   |
-| 2026-07-20 | Compliance-gap SKU release and $1,449 Compliance bundle                    |
+| Date       | Evidence                                                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-25 | Adversarial grill of the four open PRs — 44 candidates, 39 refuted, 5 confirmed ([report](../../outputs/audit/2026-07-25-open-pr-grill.md)) |
+| 2026-07-25 | Generated 39-component design manifest and shared contrast gate                                                                             |
+| 2026-07-25 | Launch-critical dependency, price, and limiter safety fixes on this branch                                                                  |
+| 2026-07-25 | Site truth-fix deployment recorded in deploy state                                                                                          |
+| 2026-07-24 | Visual re-audit: 729/729 fixed                                                                                                              |
+| 2026-07-23 | Media-overhaul program merged in PR #326                                                                                                    |
+| 2026-07-20 | Compliance-gap SKU release and $1,449 Compliance bundle                                                                                     |
 
 Older chronology remains in git, [build history](../archive/build-history.md), and
 [deploy state](../deploy/STATE.md).
