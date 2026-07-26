@@ -40,6 +40,20 @@ describe("Article 50 primary-source regrounding", () => {
     for (const source of ARTICLE_50_PRIMARY_SOURCES) {
       expect(source.locator.length).toBeGreaterThan(20);
     }
+    expect(ARTICLE_50_PRIMARY_SOURCES[2].watch).toMatchObject({
+      mode: "digest",
+      algorithm: "sha256",
+      digest:
+        "30861fc5de31205846f023068069c92fabc7271ebeac6af7bef68b97f0a33f66",
+    });
+    expect(ARTICLE_50_PRIMARY_SOURCES[3].watch).toMatchObject({
+      mode: "text",
+      texts: expect.arrayContaining([
+        "These transparency rules apply from 2 August 2026.",
+        "Grace period for marking obligation until December 2026 for generative AI systems placed on the market before 2 August 2026 (Article 50(2) AI Act, amended by AI Omnibus).",
+        "Deepfakes generated before 2 August 2026: no mandatory retroactive labelling but encouraged.",
+      ]),
+    });
   });
 
   test("all three live surfaces carry the narrow December transition", async () => {

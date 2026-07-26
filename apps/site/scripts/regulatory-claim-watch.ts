@@ -8,7 +8,9 @@
 // interstitial, or extract a locator from a PDF reliably. Reachability-only checks are disclosed as
 // notes, not mislabeled as legal verification. The CLI catches every failure and exits 0 because
 // this weekly lane is advisory, never a merge gate.
-import { appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { isAbsolute, resolve, sep } from "node:path";
 
 import { fetchWithTimeout } from "@caisson/kernel";
 
@@ -23,6 +25,7 @@ const FETCH_TIMEOUT_MS = 30_000;
 interface FrameworkTarget {
   id: string;
   route: string;
+  sourceFile: string;
   verifiedOn: string;
   sources: readonly WritingSource[];
 }
@@ -31,12 +34,14 @@ const FRAMEWORK_TARGETS: readonly FrameworkTarget[] = [
   {
     id: "framework-eu-ai-act",
     route: "/frameworks/eu-ai-act",
+    sourceFile: "apps/site/app/frameworks/eu-ai-act/page.tsx",
     verifiedOn: ARTICLE_50_VERIFIED_ON,
     sources: ARTICLE_50_PRIMARY_SOURCES,
   },
   {
     id: "framework-eu-ai-act-article-50",
     route: "/frameworks/eu-ai-act/article-50",
+    sourceFile: "apps/site/app/frameworks/eu-ai-act/article-50/page.tsx",
     verifiedOn: ARTICLE_50_VERIFIED_ON,
     sources: ARTICLE_50_PRIMARY_SOURCES,
   },
@@ -55,6 +60,7 @@ export type RegulatoryWatchFindingKind =
   | "fetch-failed"
   | "http-error"
   | "locator-missing"
+  | "digest-changed"
   | "manual-review";
 
 export interface RegulatoryWatchFinding {
@@ -85,14 +91,33 @@ export type SourceFetcher = (url: string) => Promise<Response>;
 /** Real-repo discovery. The test suite calls this against the checkout as the known-positive
  * smoke: a registry regression that discovers nothing must fail before the workflow can lie. */
 export function discoverRegulatoryClaims(
-  _repoRoot: string,
+  repoRoot: string,
 ): readonly RegulatoryClaimTarget[] {
-  const frameworkTargets = FRAMEWORK_TARGETS.map((target) => ({
-    id: target.id,
-    route: target.route,
-    verifiedOn: target.verifiedOn,
-    sources: target.sources,
-  }));
+  const resolvedRoot = resolve(repoRoot);
+  const frameworkTargets = FRAMEWORK_TARGETS.map((target) => {
+    if (isAbsolute(target.sourceFile)) {
+      throw new Error(
+        `regulatory-claim-watch framework source path must be relative: ${target.sourceFile}`,
+      );
+    }
+    const sourcePath = resolve(resolvedRoot, target.sourceFile);
+    if (
+      sourcePath !== resolvedRoot &&
+      !sourcePath.startsWith(`${resolvedRoot}${sep}`)
+    ) {
+      throw new Error(
+        `regulatory-claim-watch framework source escapes repository root: ${target.sourceFile}`,
+      );
+    }
+    const pageSource = readFileSync(sourcePath, "utf8");
+    assertFrameworkSourceLinkage(target.route, pageSource);
+    return {
+      id: target.id,
+      route: target.route,
+      verifiedOn: target.verifiedOn,
+      sources: target.sources,
+    };
+  });
   const writingTargets = WRITING_PIECES.map((piece) => ({
     id: `writing-${piece.slug}`,
     route: `/writing/${piece.slug}`,
@@ -100,6 +125,22 @@ export function discoverRegulatoryClaims(
     sources: piece.sources,
   }));
   return [...frameworkTargets, ...writingTargets];
+}
+
+export function assertFrameworkSourceLinkage(
+  route: string,
+  pageSource: string,
+): void {
+  const sourceUsage = /ARTICLE_50_PRIMARY_SOURCES(?:\s*\[|\s*\.map\s*\()/u.test(
+    pageSource,
+  );
+  const verifiedDateUses =
+    pageSource.match(/\bARTICLE_50_VERIFIED_ON\b/gu)?.length ?? 0;
+  if (!sourceUsage || verifiedDateUses < 2) {
+    throw new Error(
+      `regulatory-claim-watch target ${route} does not render its declared Article 50 sources and verification stamp`,
+    );
+  }
 }
 
 export function assertKnownPositive(
@@ -168,6 +209,7 @@ export async function runRegulatoryClaimWatch(
   let checkedSources = 0;
   const findings: RegulatoryWatchFinding[] = [];
   const notes: RegulatoryWatchNote[] = [];
+  const sourceResponses = new Map<string, Promise<Response>>();
 
   for (const target of targets) {
     if (target.sources.length === 0) {
@@ -207,7 +249,12 @@ export async function runRegulatoryClaimWatch(
 
       checkedSources++;
       try {
-        const response = await fetcher(source.url);
+        let responsePromise = sourceResponses.get(source.url);
+        if (responsePromise === undefined) {
+          responsePromise = fetcher(source.url);
+          sourceResponses.set(source.url, responsePromise);
+        }
+        const response = (await responsePromise).clone();
         if (!response.ok) {
           findings.push({
             kind: "http-error",
@@ -230,6 +277,23 @@ export async function runRegulatoryClaimWatch(
           continue;
         }
 
+        if (source.watch?.mode === "digest") {
+          const body = new Uint8Array(await response.arrayBuffer());
+          const actual = createHash(source.watch.algorithm)
+            .update(body)
+            .digest("hex");
+          if (actual !== source.watch.digest) {
+            findings.push({
+              kind: "digest-changed",
+              targetId: target.id,
+              route: target.route,
+              sourceUrl: source.url,
+              detail: `The official downloadable source changed (${source.watch.algorithm}: expected ${source.watch.digest}, received ${actual}). ${source.watch.reason} Human locator: ${source.locator}`,
+            });
+          }
+          continue;
+        }
+
         const contentType = response.headers.get("content-type") ?? "";
         if (
           contentType.includes("application/pdf") ||
@@ -246,16 +310,18 @@ export async function runRegulatoryClaimWatch(
         }
 
         const body = await response.text();
-        const watchText =
-          source.watch?.mode === "text" ? source.watch.text : source.locator;
-        if (!normalizeText(body).includes(normalizeText(watchText))) {
-          findings.push({
-            kind: "locator-missing",
-            targetId: target.id,
-            route: target.route,
-            sourceUrl: source.url,
-            detail: `Declared watch text "${watchText}" was not found; human locator: "${source.locator}".`,
-          });
+        const watchTexts =
+          source.watch?.mode === "text" ? source.watch.texts : [source.locator];
+        for (const watchText of watchTexts) {
+          if (!normalizeText(body).includes(normalizeText(watchText))) {
+            findings.push({
+              kind: "locator-missing",
+              targetId: target.id,
+              route: target.route,
+              sourceUrl: source.url,
+              detail: `Declared watch text "${watchText}" was not found; human locator: "${source.locator}".`,
+            });
+          }
         }
       } catch (error) {
         findings.push({

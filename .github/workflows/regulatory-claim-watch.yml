@@ -32,8 +32,11 @@ jobs:
       - name: install workspace deps
         run: bun install --frozen-lockfile
       - name: discover + check declared public sources (report-only, always exits 0)
+        shell: bash
         run: |
-          bun apps/site/scripts/regulatory-claim-watch.ts | tee regulatory-claim-watch-report.md
+          apps/site/scripts/run-regulatory-claim-watch.sh \
+            regulatory-claim-watch-report.md \
+            bun apps/site/scripts/regulatory-claim-watch.ts
       - name: upload the report artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

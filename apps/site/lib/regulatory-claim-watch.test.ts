@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  assertFrameworkSourceLinkage,
   assertKnownPositive,
   discoverRegulatoryClaims,
   runRegulatoryClaimWatch,
@@ -11,6 +14,10 @@ import {
 } from "../scripts/regulatory-claim-watch";
 
 const REPO_ROOT = fileURLToPath(new URL("../../..", import.meta.url));
+const WORKFLOW_WRAPPER = join(
+  REPO_ROOT,
+  "apps/site/scripts/run-regulatory-claim-watch.sh",
+);
 
 const KNOWN_TARGET: RegulatoryClaimTarget = {
   id: "known-positive",
@@ -49,6 +56,15 @@ describe("regulatory-claim watch discovery", () => {
     expect(() => assertKnownPositive([])).toThrow(
       "discovered zero regulatory claim targets",
     );
+  });
+
+  test("framework discovery rejects a page detached from the shared source contract", () => {
+    expect(() =>
+      assertFrameworkSourceLinkage(
+        "/frameworks/eu-ai-act",
+        'import { ARTICLE_50_PRIMARY_SOURCES, ARTICLE_50_VERIFIED_ON } from "@/lib/article-50-sources";',
+      ),
+    ).toThrow("does not render its declared Article 50 sources");
   });
 
   test("every discovered target carries a valid verification date", () => {
@@ -121,6 +137,69 @@ describe("regulatory-claim source checks", () => {
     expect(report.markdown).toContain("Reachability-only checks");
   });
 
+  test("checks every declared text anchor independently", async () => {
+    const target: RegulatoryClaimTarget = {
+      ...KNOWN_TARGET,
+      sources: [
+        {
+          ...KNOWN_TARGET.sources[0]!,
+          locator: "Claim-specific anchors",
+          watch: {
+            mode: "text",
+            texts: ["2 August 2026", "December 2026", "Article 50(2)"],
+          },
+        },
+      ],
+    };
+    const fetcher: SourceFetcher = async () =>
+      new Response("2 August 2026 · Article 50(2)", {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+
+    const report = await runRegulatoryClaimWatch([target], fetcher);
+
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "locator-missing",
+        detail: expect.stringContaining("December 2026"),
+      }),
+    ]);
+  });
+
+  test("reports a changed digest for an official downloadable source", async () => {
+    const target: RegulatoryClaimTarget = {
+      ...KNOWN_TARGET,
+      sources: [
+        {
+          ...KNOWN_TARGET.sources[0]!,
+          locator: "Paragraphs (153)–(154), pp. 49–50",
+          watch: {
+            mode: "digest",
+            algorithm: "sha256",
+            digest:
+              "30861fc5de31205846f023068069c92fabc7271ebeac6af7bef68b97f0a33f66",
+            reason: "The official source is a PDF.",
+          },
+        },
+      ],
+    };
+    const fetcher: SourceFetcher = async () =>
+      new Response("changed document", {
+        status: 200,
+        headers: { "content-type": "application/pdf" },
+      });
+
+    const report = await runRegulatoryClaimWatch([target], fetcher);
+
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "digest-changed",
+        detail: expect.stringContaining("official downloadable source changed"),
+      }),
+    ]);
+  });
+
   test("reports a target that declares no primary source", async () => {
     const noSource = { ...KNOWN_TARGET, sources: [] };
     const fetcher: SourceFetcher = async () =>
@@ -151,9 +230,53 @@ describe("regulatory-claim source checks", () => {
       }),
     ]);
   });
+
+  test("fetches a shared declared source once across all watched surfaces", async () => {
+    let fetches = 0;
+    const fetcher: SourceFetcher = async () => {
+      fetches++;
+      return new Response("Article 50", {
+        status: 200,
+        headers: { "content-type": "text/plain" },
+      });
+    };
+
+    const report = await runRegulatoryClaimWatch(
+      [
+        KNOWN_TARGET,
+        { ...KNOWN_TARGET, id: "second", route: "/fixture/second" },
+      ],
+      fetcher,
+    );
+
+    expect(report.checkedSources).toBe(2);
+    expect(report.findings).toEqual([]);
+    expect(fetches).toBe(1);
+  });
 });
 
 describe("regulatory-claim-watch workflow posture", () => {
+  test("a command failure produces an explicit non-PASS artifact while exiting zero", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "caisson-regulatory-watch-"));
+    try {
+      const reportPath = join(tempDir, "report.md");
+      const process = Bun.spawn(
+        [WORKFLOW_WRAPPER, reportPath, "bash", "-c", "exit 7"],
+        {
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
+
+      expect(await process.exited).toBe(0);
+      const report = await readFile(reportPath, "utf8");
+      expect(report).toContain("Watch failed before producing a report.");
+      expect(report).toContain("No PASS is implied.");
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   test("stays weekly, dispatchable, read-only, report-only, and secret-free", async () => {
     const workflow = await Bun.file(
       join(REPO_ROOT, ".github/workflows/regulatory-claim-watch.yml"),
@@ -164,9 +287,9 @@ describe("regulatory-claim-watch workflow posture", () => {
     expect(workflow).toContain('cron: "23 5 * * 0"');
     expect(workflow).toContain("contents: read");
     expect(workflow).toContain("report-only");
-    expect(workflow).toContain(
-      "bun apps/site/scripts/regulatory-claim-watch.ts",
-    );
+    expect(workflow).toContain("shell: bash");
+    expect(workflow).toContain("run-regulatory-claim-watch.sh");
+    expect(workflow).not.toContain("| tee");
     expect(workflow).not.toContain("secrets.");
   });
 });
