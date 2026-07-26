@@ -22,7 +22,12 @@ import {
   randomBytes,
   timingSafeEqual,
 } from "node:crypto";
-import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
+import {
+  ConflictError,
+  InternalError,
+  NotFoundError,
+  ValidationError,
+} from "@caisson/kernel";
 import { type FieldKeyProvider } from "./provider.ts";
 import { aesGcm } from "./cipher.ts";
 import { buildAad } from "./aad.ts";
@@ -235,9 +240,26 @@ export class KmsKeyProvider implements FieldKeyProvider {
       this.operationOptions,
     );
     try {
-      await this.store.putWrappedIfAbsent(tenantId, 1, generated.wrappedKey);
-      await this.store.setCurrentVersion(tenantId, 1);
-      return 1;
+      const inserted = await this.store.putWrappedIfAbsent(
+        tenantId,
+        1,
+        generated.wrappedKey,
+      );
+      if (inserted) {
+        await this.store.setCurrentVersion(tenantId, 1);
+        return 1;
+      }
+
+      // ON CONFLICT waits for a concurrent winner to commit. Under READ COMMITTED this fresh
+      // statement then sees both the winning wrapped DEK and its committed current-version row.
+      const winner = await this.store.currentVersion(tenantId);
+      if (winner === undefined) {
+        throw new InternalError(
+          "field-crypto: provisioning loser could not read the durable winner",
+          { tenantId },
+        );
+      }
+      return winner;
     } finally {
       generated.plaintextKey.fill(0);
     }

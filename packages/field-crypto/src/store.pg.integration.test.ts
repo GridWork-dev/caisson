@@ -98,14 +98,34 @@ describe("PgWrappedKeyStore + KmsKeyProvider — old versions stay decryptable",
 
     await withTenant(tp.pg, acct, async (tx) => {
       const store = new PgWrappedKeyStore(tx);
-      // Model the exact database state visible to a concurrent loser: the winner's atomic wrapped
-      // insert committed, but this transaction has not yet recorded the idempotent version row.
+      // Commit-equivalent winner state. The wrapper below models READ COMMITTED visibility: the
+      // loser's first version read happened before this winner committed, while the SQL CAS and
+      // required re-read happen after it became visible. PGlite has one connection, so it cannot
+      // run two simultaneous transactions; the real ON CONFLICT loser path still executes here.
       expect(await store.putWrappedIfAbsent(acct, 1, winner.wrappedKey)).toBe(
         true,
       );
+      await store.setCurrentVersion(acct, 1);
 
-      const loser = new KmsKeyProvider(new LocalKmsClient(master), store);
+      let currentReads = 0;
+      const staleFirstReadStore = {
+        getWrapped: store.getWrapped.bind(store),
+        putWrappedIfAbsent: store.putWrappedIfAbsent.bind(store),
+        putWrapped: store.putWrapped.bind(store),
+        async currentVersion(tenantId: string) {
+          currentReads += 1;
+          return currentReads === 1
+            ? undefined
+            : store.currentVersion(tenantId);
+        },
+        setCurrentVersion: store.setCurrentVersion.bind(store),
+      };
+      const loser = new KmsKeyProvider(
+        new LocalKmsClient(master),
+        staleFirstReadStore,
+      );
       expect(await loser.ensureProvisioned(acct)).toBe(1);
+      expect(currentReads).toBe(2);
       expect(await store.currentVersion(acct)).toBe(1);
       expect((await loser.keyFor(acct, 1)).equals(winner.plaintextKey)).toBe(
         true,

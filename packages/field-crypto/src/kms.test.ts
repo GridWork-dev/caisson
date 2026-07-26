@@ -88,6 +88,36 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     expect(await store.getWrapped("acct_a", 2)).toBeUndefined();
   });
 
+  test("a first-provision CAS loser re-reads and adopts the durable winner", async () => {
+    const store = new InMemoryWrappedKeyStore();
+    const winnerKms = new LocalKmsClient(KEK);
+    const winner = await winnerKms.generateDataKey("acct_a");
+    await store.putWrapped("acct_a", 1, winner.wrappedKey);
+    await store.setCurrentVersion("acct_a", 2);
+
+    let currentReads = 0;
+    const staleFirstReadStore = {
+      ...store,
+      getWrapped: store.getWrapped.bind(store),
+      putWrappedIfAbsent: store.putWrappedIfAbsent.bind(store),
+      putWrapped: store.putWrapped.bind(store),
+      async currentVersion(tenantId: string) {
+        currentReads += 1;
+        return currentReads === 1 ? undefined : store.currentVersion(tenantId);
+      },
+      setCurrentVersion: store.setCurrentVersion.bind(store),
+    };
+    const provider = new KmsKeyProvider(
+      new LocalKmsClient(KEK),
+      staleFirstReadStore,
+    );
+
+    expect(await provider.ensureProvisioned("acct_a")).toBe(2);
+    expect(currentReads).toBe(2);
+    expect(await store.currentVersion("acct_a")).toBe(2);
+    winner.plaintextKey.fill(0);
+  });
+
   test("keyFor before provision throws (no silent empty key)", async () => {
     const { provider } = freshProvider();
     await expect(provider.keyFor("acct_a", 1)).rejects.toThrow(
