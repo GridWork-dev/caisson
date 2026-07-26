@@ -1,37 +1,328 @@
 {
   "schemaVersion": 1,
-  "generatedFor": { "pkg": "@caisson/ui", "version": "0.6.0" },
+  "generatedFor": {
+    "pkg": "@caisson/ui",
+    "version": "0.6.2"
+  },
   "components": [
     {
-      "name": "Button",
-      "summary": "Recipe-reference interactive control — Radix Slot polymorphism, primary/ghost visual weight, sm/md sizing.",
+      "name": "Accordion",
+      "summary": "a native `<details>`/`<summary>` disclosure list, generalizing `Faq`'s pattern to any trigger/content pair. `type=\"single\"` gets mutual-exclusivity for free from the native `<details name>` group (broadly supported); no JS, no state, fully server-safe. Zero dependencies (ADR-0291).",
       "props": [
         {
-          "name": "variant",
-          "type": "\"primary\" | \"ghost\"",
+          "name": "items",
+          "type": "readonly AccordionItem[]",
+          "optional": false
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "type",
+          "type": "\"multiple\" | \"single\"",
           "optional": true,
-          "doc": "Visual weight: primary = accent fill (one of the <=10% accent slots), ghost = hairline."
+          "doc": "Multiple items may be open at once (default) — no cross-item coordination needed. Only one item open at a time, via the native `<details name>` exclusive-group — free, no JS. `name` must be unique per Accordion instance on the page (it is a document-wide grouping key), so it is required rather than defaulted."
+        }
+      ],
+      "variants": {
+        "type": [
+          "multiple",
+          "single"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-leading-relaxed",
+        "--cs-radius-lg",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-space-5",
+        "--cs-surface-1",
+        "--cs-text-base",
+        "--cs-tracking-tight",
+        "--cs-weight-semibold"
+      ],
+      "a11yNotes": [],
+      "recipeRules": [
+        "bem-naming",
+        "co-located-css-tokens-only",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "AppShell",
+      "summary": "a buyer-dashboard frame with responsive primary navigation, a persistent top bar, and a scrollable main-content landmark. Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`, `data-collapsed` / `data-mobile-nav-open` variants, BEM block `cs-shell`. `\"use client\"` (collapse + mobile-drawer state).",
+      "props": [
+        {
+          "name": "brand",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Brand slot rendered top-left. Optional and brand-neutral — the kit ships no default mark; the consumer passes its own (e.g. `<Wordmark />` from `@caisson/brand`)."
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": false,
+          "doc": "Main content region."
+        },
+        {
+          "name": "mobileNavFooter",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Extra content rendered inside the mobile off-canvas drawer only (CSS ≤48rem; invisible on desktop) — e.g. a Sign-out control the topbar can't always spare room for on a narrow viewport. Typically the same or a subset of what `topBar` already renders."
+        },
+        {
+          "name": "nav",
+          "type": "readonly AppShellNavItem[]",
+          "optional": false,
+          "doc": "Left-sidebar navigation items."
+        },
+        {
+          "name": "renderNavItem",
+          "type": "(item: AppShellNavItem, renderProps: AppShellNavItemRenderProps) => ReactNode",
+          "optional": true,
+          "doc": "Override how each nav item renders (e.g. a Next.js `<Link>`); defaults to a plain `<a href>` so the kit stays framework-agnostic."
+        },
+        {
+          "name": "topBar",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Top-bar content — account menu / actions. Right-aligned."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-accent-tint",
+        "--cs-bg",
+        "--cs-border",
+        "--cs-duration-base",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-font-sans",
+        "--cs-leading-tight",
+        "--cs-radius-md",
+        "--cs-scrim",
+        "--cs-shadow-md",
+        "--cs-space-1",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-surface-1",
+        "--cs-surface-2",
+        "--cs-text-sm",
+        "--cs-text-xs",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "The mobile-nav and collapse controls expose their state with `aria-expanded` or `aria-pressed`; the sidebar and main region retain native landmark semantics.",
+        "Rendered markup explicitly wires `aria-controls`, `aria-current`, `aria-expanded`, `aria-hidden`, `aria-label`, `aria-pressed`."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "client-only-when-stateful",
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "no-inline-style"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Badge",
+      "summary": "a compact solid-fill tag for counts, categories, and short labels (e.g. a module's category chip in a card grid, a cart-item count). Sibling to `StatusChip` (glyph + label, entitlement-flavored tones) but generic: no icon slot, no dot, just text — the kit's plain \"tag\" primitive the audit flagged as a gap.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true
         },
         {
           "name": "size",
-          "type": "\"sm\" | \"md\"",
+          "type": "BadgeSize",
           "optional": true
         },
+        {
+          "name": "tone",
+          "type": "BadgeTone",
+          "optional": true,
+          "doc": "Semantic tone → a local-indirection `--badge-fg` var (recipe rule 3). Defaults to `neutral`."
+        }
+      ],
+      "variants": {
+        "size": [
+          "md",
+          "sm"
+        ],
+        "tone": [
+          "accent",
+          "danger",
+          "neutral",
+          "success",
+          "warning"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-danger",
+        "--cs-fg-muted",
+        "--cs-leading-tight",
+        "--cs-radius-sm",
+        "--cs-space-0",
+        "--cs-space-1",
+        "--cs-space-2",
+        "--cs-success",
+        "--cs-surface-1",
+        "--cs-text-xs",
+        "--cs-warning",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "BundleCard",
+      "summary": "a featured-lead bundle link (V12; renamed from EditionCard when the editions dissolved into the six-bundle catalog, ADR-0257/0258), ported from the inline-style `apps/site` primitive to the recipe (ADR-0099): co-located CSS reading only `var(--cs-*)`, the `lead` variant expressed as the `data-lead` attribute, and a self-contained `.cs-edition` surface that replicates the interactive-card tonal hover + lift (no dependency on the sibling `card`). The `.cs-edition*` class names are part of the shipped CSS contract and stay unchanged.",
+      "props": [
+        {
+          "name": "href",
+          "type": "string",
+          "optional": false,
+          "doc": "Destination — BundleCard is ALWAYS a link, so it renders a plain `<a href>` (no framework)."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "optional": false,
+          "doc": "Domain glyph (Lucide / bespoke) via the one `<Icon>` surface — rendered at `size=\"lg\"`."
+        },
+        {
+          "name": "lead",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Featured-lead hierarchy (V12): spans the full grid row + accent border/tint."
+        },
+        {
+          "name": "line",
+          "type": "string",
+          "optional": false,
+          "doc": "One-line description under the head."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "optional": false,
+          "doc": "Bundle display name (rendered beside the glyph in the head)."
+        },
+        {
+          "name": "proof",
+          "type": "string",
+          "optional": true,
+          "doc": "One-line mono proof artifact (V8) — e.g. a CLI/CI line."
+        },
+        {
+          "name": "status",
+          "type": "ReactNode",
+          "optional": false,
+          "doc": "A `<StatusChip>`/badge node shown at the right of the head."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-accent-tint",
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-duration-base",
+        "--cs-duration-fast",
+        "--cs-duration-slow",
+        "--cs-ease-out",
+        "--cs-ease-reveal",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-glow-accent",
+        "--cs-radius-lg",
+        "--cs-shadow-md",
+        "--cs-shadow-sm",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-space-5",
+        "--cs-space-6",
+        "--cs-surface-1",
+        "--cs-surface-2",
+        "--cs-text-lg",
+        "--cs-text-xs",
+        "--cs-tracking-tight",
+        "--cs-weight-semibold"
+      ],
+      "a11yNotes": [
+        "Always renders a native anchor, so its full card content forms one keyboard-reachable link."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Button",
+      "summary": "a primary or ghost action control with small/medium sizing and optional Radix Slot polymorphism. Recipe REFERENCE component (ADR-0099) — the template every other kit primitive copies: 1. Radix behavior/polymorphism (here `Slot` for `asChild`); never a framework import. 2. Co-located plain CSS (`button.css`) reading only `var(--cs-*)`. 3. Variants as `data-*` attributes styled by attribute selectors — no variant logic in JS; light/dark \"just works\" by cascade. 4. `forwardRef`, BEM block name `cs-button`.",
+      "props": [
         {
           "name": "asChild",
           "type": "boolean",
           "optional": true,
-          "doc": "Render as the single child element instead of a <button> (Radix Slot); the child must accept className and data-* attributes."
+          "doc": "Render as the single child element instead of a `<button>` (Radix Slot). This is the framework-agnostic navigation seam: a Next consumer writes `<Button asChild><Link href=\"/x\">…</Link></Button>` so `@caisson/ui` never imports `next/link`. The child must accept `className` + `data-*` (Slot merges the kit's props onto it)."
         },
         {
           "name": "children",
           "type": "ReactNode",
           "optional": true
+        },
+        {
+          "name": "size",
+          "type": "ButtonSize",
+          "optional": true
+        },
+        {
+          "name": "variant",
+          "type": "ButtonVariant",
+          "optional": true,
+          "doc": "Visual weight: `primary` = accent fill (one of the ≤10% accent slots), `ghost` = hairline."
         }
       ],
       "variants": {
-        "variant": ["primary", "ghost"],
-        "size": ["sm", "md"]
+        "size": [
+          "md",
+          "sm"
+        ],
+        "variant": [
+          "ghost",
+          "primary"
+        ]
       },
       "tokenDeps": [
         "--cs-accent",
@@ -53,33 +344,32 @@
         "--cs-weight-medium"
       ],
       "a11yNotes": [
-        "Defaults the native type to \"button\" so it never accidentally submits a form.",
-        "Under asChild, the slotted child element must accept className and data-* attributes for the kit's styling to apply."
+        "Native buttons default to `type=\"button\"` to prevent accidental form submission; with `asChild`, the caller owns the slotted element's native semantics and accessible name."
       ],
       "recipeRules": [
-        "radix-behavior-for-polymorphism",
         "co-located-css-tokens-only",
         "data-star-variants-no-js-branching",
         "forwardref-bem-naming",
-        "tokens-only-no-inline-style"
+        "no-inline-style",
+        "radix-behavior-for-polymorphism",
+        "server-safe-by-default"
       ],
       "hasDataStar": true
     },
     {
       "name": "Card",
-      "summary": "Presentational panel primitive with an optional accent treatment and interactive hover affordance.",
+      "summary": "presentational panel primitive following the kit's shared component recipe: co-located CSS + data-* attribute variants, no bespoke styling (ADR-0099). Renders a single `<div>`, so it is server-safe and `forwardRef`s its DOM root. No Radix: a card never navigates or toggles. - `accent` → `data-accent` (boolean attribute), `interactive` → `data-interactive`; both styled by attribute selectors in `card.css` — no variant logic in JS. - Co-located CSS reads only `var(--cs-*)`; BEM block `cs-card`.",
       "props": [
         {
           "name": "accent",
           "type": "boolean",
           "optional": true,
-          "doc": "Accent treatment: accent border + tinted surface (one of the <=10% accent slots)."
+          "doc": "Accent treatment — accent border + tinted surface (one of the ≤10% accent slots)."
         },
         {
-          "name": "interactive",
-          "type": "boolean",
-          "optional": true,
-          "doc": "Tonal-hover affordance: border brighten + surface step + lift (motion-tokened)."
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true
         },
         {
           "name": "className",
@@ -87,9 +377,10 @@
           "optional": true
         },
         {
-          "name": "children",
-          "type": "ReactNode",
-          "optional": true
+          "name": "interactive",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Tonal-hover affordance: border brighten + surface step + lift (motion-tokened)."
         }
       ],
       "variants": {},
@@ -114,20 +405,785 @@
         "--cs-weight-semibold"
       ],
       "a11yNotes": [
-        "Renders a single native <div> with no implicit ARIA role — presentational only, server-safe."
+        "The root is a presentational `div` with no implicit role; interactive content must remain a real control or link supplied by the caller."
       ],
       "recipeRules": [
         "co-located-css-tokens-only",
         "data-star-variants-no-js-branching",
         "forwardref-bem-naming",
-        "tokens-only-no-inline-style"
+        "no-inline-style",
+        "server-safe-by-default"
       ],
       "hasDataStar": true
     },
     {
-      "name": "FormField",
-      "summary": "Label + control + helper/error wrapper that wires id/aria association for any single form control.",
+      "name": "Checkbox",
+      "summary": "a hand-rolled checkbox with a real `<input type=\"checkbox\">` for semantics/keyboard (layered full-bleed and transparent over the decorative box, so the whole ≥24px box is the hit target) plus a CSS-driven check mark (`:checked` sibling selector — no JS state). Zero-Radix, zero dependencies (ADR-0291): the \"check\" glyph reuses the kit's existing `<Icon>` surface.",
       "props": [
+        {
+          "name": "label",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Trailing label text/content. Omit to render the bare control (caller supplies its own `<label>`, e.g. wrapping a custom layout)."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-border-strong",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-focus",
+        "--cs-on-accent",
+        "--cs-radius-sm",
+        "--cs-space-2",
+        "--cs-space-6",
+        "--cs-surface-1",
+        "--cs-text-sm"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-hidden`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "CodeBlock",
+      "summary": "Recipe primitive (ADR-0099) — purely presentational, server-safe (no hook/handler/browser API, so no `\"use client\"`). Two shapes from one prop API: - `frame` → defers to the sibling `<Terminal>` primitive (chrome bar + body); terminal classes are owned there, never redefined here. - default → a `<pre class=\"cs-code\">` (the always-dark code surface) inside a non-scrolling `.cs-code-frame` wrapper that pins the right-edge scroll-shadow affordance in place. No `forwardRef`: the component branches between two roots (a `<Terminal>` wrapper vs a `.cs-code-frame` div), so there is no single stable DOM root to forward a ref to — unlike the `Button` reference.",
+      "props": [
+        {
+          "name": "code",
+          "type": "ReactNode",
+          "optional": false,
+          "doc": "The code body. String or tinted `ReactNode` — compose `<span className=\"cs-tok-danger\">` (etc.) for load-bearing tokens that must read as danger/accent/muted."
+        },
+        {
+          "name": "frame",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Wrap the code in terminal chrome (`<Terminal>`) instead of a bare `<pre>`."
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "optional": true,
+          "doc": "Accessible label; also the chrome-bar title when `frame` is set (defaults to `\"shell\"`)."
+        },
+        {
+          "name": "status",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "A `<StatusChip />` or text rendered in the terminal chrome bar (only when `frame`)."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-fg",
+        "--cs-font-mono",
+        "--cs-leading-snug",
+        "--cs-radius-md",
+        "--cs-radius-pill",
+        "--cs-space-5",
+        "--cs-surface-1",
+        "--cs-text-sm"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-label`."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "co-located-css-tokens-only",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "ConfirmDialog",
+      "summary": "a basic confirm/cancel prompt on the native-`<dialog>` `Dialog` primitive (focus trap, Escape, focus-return for free). Cancel is the escape hatch (Escape/backdrop also cancel); the confirm action carries the `danger` tone for destructive actions. For a retype-the-name armed confirmation, the commercial `TypeToConfirm` layers on this shape.",
+      "props": [
+        {
+          "name": "busy",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Confirm is disabled + labelled busy while an async action runs."
+        },
+        {
+          "name": "cancelLabel",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "confirmLabel",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "message",
+          "type": "ReactNode",
+          "optional": false,
+          "doc": "Body copy explaining the consequence."
+        },
+        {
+          "name": "onCancel",
+          "type": "() => void",
+          "optional": false
+        },
+        {
+          "name": "onConfirm",
+          "type": "() => void",
+          "optional": false
+        },
+        {
+          "name": "open",
+          "type": "boolean",
+          "optional": false
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "tone",
+          "type": "\"danger\" | \"default\"",
+          "optional": true,
+          "doc": "`danger` tints the confirm action for a destructive/irreversible action."
+        }
+      ],
+      "variants": {
+        "tone": [
+          "danger",
+          "default"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-danger",
+        "--cs-fg-muted",
+        "--cs-leading-normal",
+        "--cs-on-accent",
+        "--cs-space-3",
+        "--cs-space-5"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-busy`."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "client-only-when-stateful",
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "no-inline-style"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "CopyField",
+      "summary": "a read-only value with a one-click copy button. Writes to the clipboard and flips to a \"Copied\" confirmation for ~1.5s (announced via `role=\"status\"`). The value box is a read-only input so the text is selectable and screen-reader reachable; `secret` masks it until copied.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "optional": false,
+          "doc": "Accessible name for the field + copy button context (e.g. \"API key\")."
+        },
+        {
+          "name": "mono",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Render the value in the mono face (keys, ids, hashes). Default true."
+        },
+        {
+          "name": "secret",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Mask the value (dots) until copied — for secrets."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "optional": false,
+          "doc": "The value shown and copied."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-fg",
+        "--cs-focus",
+        "--cs-font-mono",
+        "--cs-radius-md",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-success",
+        "--cs-surface-1",
+        "--cs-surface-2",
+        "--cs-text-sm"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-label`, `role`."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "client-only-when-stateful",
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "no-inline-style"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "CredentialStrip",
+      "summary": "CredentialStrip (V7) — presentational compliance-framework strip. Recipe primitive (ADR-0099): - No Radix (no behavior/polymorphism), no `\"use client\"` (server-safe, no hook/handler). - Co-located plain CSS (`credential-strip.css`) reading only `var(--cs-*)`. - BEM block `cs-credentials` / elements `__item` `__sep` `__note`. No inline style. - `forwardRef` on the single `<div>` root, mirroring the Button reference shape.",
+      "props": [
+        {
+          "name": "items",
+          "type": "readonly string[]",
+          "optional": false,
+          "doc": "Framework names rendered inline, separated by a leading \"·\" from the second item on."
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "optional": true,
+          "doc": "Optional trailing note; wraps onto its own full-width row in muted text."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-border-strong",
+        "--cs-fg-muted",
+        "--cs-font-mono",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-space-5",
+        "--cs-text-xs",
+        "--cs-tracking-wide"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-hidden`, `aria-label`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "DataTable",
+      "summary": "typed generic columns (`{ key, header, render }`) + rows, with built-in `loading` (skeleton) and empty states already wired in. Numeric columns right-align with tabular figures.",
+      "props": [
+        {
+          "name": "columns",
+          "type": "readonly DataTableColumn<T>[]",
+          "optional": false
+        },
+        {
+          "name": "dense",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Tighten padding + shrink type for data-heavy grids."
+        },
+        {
+          "name": "empty",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Rendered in place of the table body when `rows` is empty and not `loading`. Defaults to a generic `<EmptyState>`."
+        },
+        {
+          "name": "filter",
+          "type": "string",
+          "optional": true,
+          "doc": "Controlled filter text (paired with `onFilterChange`)."
+        },
+        {
+          "name": "filterable",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Render a search box above the table. Filters rows whose `searchText` (or any sortable column's `sortValue`) contains `filter`, case-insensitively."
+        },
+        {
+          "name": "filterPlaceholder",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "loading",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Renders the built-in `LoadingState` (table variant) in place of `rows`."
+        },
+        {
+          "name": "loadingRows",
+          "type": "number",
+          "optional": true,
+          "doc": "Skeleton row count while `loading`. Default 5."
+        },
+        {
+          "name": "onFilterChange",
+          "type": "(value: string) => void",
+          "optional": true
+        },
+        {
+          "name": "onPageChange",
+          "type": "(page: number) => void",
+          "optional": true
+        },
+        {
+          "name": "onSortToggle",
+          "type": "(key: string) => void",
+          "optional": true,
+          "doc": "Header click handler; receives the clicked column key. Cycle asc→desc→null in the parent."
+        },
+        {
+          "name": "page",
+          "type": "number",
+          "optional": true,
+          "doc": "Current 0-indexed page (controlled). Default 0."
+        },
+        {
+          "name": "pageSize",
+          "type": "number",
+          "optional": true,
+          "doc": "Enable pagination at this page size. Rows are the post-filter/post-sort set."
+        },
+        {
+          "name": "rowKey",
+          "type": "(row: T, index: number) => string",
+          "optional": false,
+          "doc": "Stable row key extractor."
+        },
+        {
+          "name": "rows",
+          "type": "readonly T[]",
+          "optional": false
+        },
+        {
+          "name": "searchText",
+          "type": "(row: T) => string",
+          "optional": true,
+          "doc": "Extra searchable text per row (in addition to sortable columns)."
+        },
+        {
+          "name": "sort",
+          "type": "DataTableSort | null",
+          "optional": true,
+          "doc": "Current sort (controlled). The matching column's header shows the direction and carries `aria-sort`; rows are ordered by that column's `sortValue` during render. Pair with `onSortToggle` for interactivity, or set it statically for a server-sorted view."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-bg",
+        "--cs-border",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-font-mono",
+        "--cs-radius-lg",
+        "--cs-radius-md",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-space-6",
+        "--cs-space-8",
+        "--cs-surface-1",
+        "--cs-text-sm",
+        "--cs-text-xs",
+        "--cs-tracking-wide",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-hidden`, `aria-label`, `aria-sort`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "DetailList",
+      "summary": "a semantic `<dl>` of term/value rows, the shared shape for the key-value and link-row detail panels hand-rolled across dashboards. A row with `href` renders its value as a link. Use `columns` for a label-left / value-right record, `stacked` for a scannable read.",
+      "props": [
+        {
+          "name": "items",
+          "type": "readonly DetailItem[]",
+          "optional": false
+        },
+        {
+          "name": "layout",
+          "type": "\"stacked\" | \"columns\"",
+          "optional": true,
+          "doc": "Stack term-over-value (default) or lay them out in two columns."
+        }
+      ],
+      "variants": {
+        "layout": [
+          "columns",
+          "stacked"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-border",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-font-mono",
+        "--cs-link",
+        "--cs-space-1",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-text-sm",
+        "--cs-text-xs",
+        "--cs-tracking-normal",
+        "--cs-tracking-wide"
+      ],
+      "a11yNotes": [],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Dialog",
+      "summary": "a modal or edge-drawer built on the native `<dialog>` element opened with `showModal()`, which supplies the focus trap, Escape-to-close, inert background, and focus-return that a hand-rolled `role=\"dialog\"` div lacks (WCAG 2.4.11 / 2.1.2). Driven by the `open` prop; a backdrop click or Escape calls `onClose`. The close button and title live in a default header unless `hideHeader` is set.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": false
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true,
+          "doc": "Extra class merged onto the `<dialog>` element, for a consumer-specific override (e.g. an app pinning the drawer below its own fixed header)."
+        },
+        {
+          "name": "hideHeader",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Hide the default header (title + close button) to supply a fully custom body."
+        },
+        {
+          "name": "onClose",
+          "type": "() => void",
+          "optional": false,
+          "doc": "Called when the dialog closes (Escape, backdrop click, or the close button)."
+        },
+        {
+          "name": "open",
+          "type": "boolean",
+          "optional": false,
+          "doc": "Open/closed (controlled). Driven onto the native `<dialog>` via `showModal()`/`close()`."
+        },
+        {
+          "name": "side",
+          "type": "\"left\" | \"right\" | \"top\"",
+          "optional": true,
+          "doc": "Which edge the drawer slides from. Ignored for `modal`. Default \"right\". \"top\" is a full-width sheet capped to content height instead of a full-height side column — the shape a nav drawer under a fixed header bar wants."
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "optional": false,
+          "doc": "Accessible title, shown in the header and used as the dialog's `aria-label`."
+        },
+        {
+          "name": "variant",
+          "type": "\"modal\" | \"drawer\"",
+          "optional": true,
+          "doc": "Centered modal (default) or an edge sheet."
+        }
+      ],
+      "variants": {
+        "side": [
+          "left",
+          "right",
+          "top"
+        ],
+        "variant": [
+          "drawer",
+          "modal"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-bg",
+        "--cs-border",
+        "--cs-duration-base",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-radius-lg",
+        "--cs-radius-sm",
+        "--cs-scrim",
+        "--cs-shadow-md",
+        "--cs-space-1",
+        "--cs-space-4",
+        "--cs-space-5",
+        "--cs-space-6",
+        "--cs-surface-1",
+        "--cs-text-lg",
+        "--cs-weight-semibold"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-label`."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "client-only-when-stateful",
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "no-inline-style"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "EmptyState",
+      "summary": "the calm \"nothing here yet\" affordance for empty tables, lists, and search results (one of the three async states with `LoadingState` / `ErrorState`). `DataTable` renders this internally when `rows` is empty and not `loading`.",
+      "props": [
+        {
+          "name": "action",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Optional call-to-action slot (e.g. a `<Button>`)."
+        },
+        {
+          "name": "description",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Optional supporting line under the title (muted)."
+        },
+        {
+          "name": "icon",
+          "type": "string | null",
+          "optional": true,
+          "doc": "Leading glyph, centered in a soft tinted circle. Default `\"inbox\"`; pass `null` to omit."
+        },
+        {
+          "name": "title",
+          "type": "ReactNode",
+          "optional": false,
+          "doc": "The headline — what is empty, in plain English."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-leading-relaxed",
+        "--cs-radius-pill",
+        "--cs-space-12",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-space-6",
+        "--cs-surface-2",
+        "--cs-text-base",
+        "--cs-text-sm",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "The decorative leading icon is `aria-hidden`; the visible title and description carry the empty-state meaning as text.",
+        "Rendered markup explicitly wires `aria-hidden`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "ErrorState",
+      "summary": "the calm failure affordance for a failed fetch / thrown read (one of the three async states with `LoadingState` / `EmptyState`). A centered column: a tinted warning glyph, a plain-English title, a reassuring description, and an optional retry action.",
+      "props": [
+        {
+          "name": "action",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Optional action slot (e.g. a retry `<Button>`)."
+        },
+        {
+          "name": "description",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Supporting line; lead with reassurance, one next step."
+        },
+        {
+          "name": "icon",
+          "type": "string | null",
+          "optional": true,
+          "doc": "Leading glyph. Default `\"alert-triangle\"`; pass `null` to omit."
+        },
+        {
+          "name": "title",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Headline — what failed, in plain English. Default \"Something went wrong\"."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent-tint",
+        "--cs-danger",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-leading-relaxed",
+        "--cs-radius-pill",
+        "--cs-space-12",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-space-6",
+        "--cs-text-base",
+        "--cs-text-sm",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-hidden`, `role`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "Faq",
+      "summary": "a native `<details>`/`<summary>` disclosure list, following the kit's shared component recipe of co-located CSS + no bespoke styling (ADR-0099). Replaces the two divergent hand-rolled FAQ renders (a `Card`-grid on some pages, a bare flex-`div` on others) with ONE accessible primitive: keyboard focus, screen-reader semantics, and a no-JS toggle come free from `<details>`. Server-safe (no hooks/handlers). BEM block `cs-faq`; co-located CSS reads only `var(--cs-*)`. Visible-FAQ rendering only — a page's `faqPage` JSON-LD stays where it is.",
+      "props": [
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "defaultOpenFirst",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Open the first item by default (e.g. a lead FAQ). Off by default."
+        },
+        {
+          "name": "items",
+          "type": "readonly FaqItem[]",
+          "optional": false
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-leading-relaxed",
+        "--cs-radius-lg",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-space-5",
+        "--cs-surface-1",
+        "--cs-text-base",
+        "--cs-tracking-tight",
+        "--cs-weight-semibold"
+      ],
+      "a11yNotes": [],
+      "recipeRules": [
+        "bem-naming",
+        "co-located-css-tokens-only",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "FeatureGrid",
+      "summary": "the shared responsive card/feature grid, following the kit's shared component recipe of co-located CSS + no bespoke styling (ADR-0099). Collapses the hand-duplicated `<div className=\"cs-grid cs-grid--N\" style={{ marginTop }}>` pattern into one primitive: it reuses the existing kit-gated `cs-grid`/`cs-grid--N` layout (styles/base.css) and layers the standard top margin (skippable via `flush`). Server-safe; values via `var(--cs-*)`.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "cols",
+          "type": "2 | 3",
+          "optional": true,
+          "doc": "Column count at the widest breakpoint (collapses to 1 on narrow viewports). Default 2."
+        },
+        {
+          "name": "flush",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Drop the default top margin when the parent `Section` already supplies the rhythm."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-space-8"
+      ],
+      "a11yNotes": [
+        "The grid wrapper is layout-only and adds no role, so each child retains its own native heading, link, or control semantics."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "co-located-css-tokens-only",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "FormField",
+      "summary": "label + control + helper/error, the one shape the dashboard's hand-rolled forms (BYOK key entry, add-a-seat, compliance attestation) all share. Consolidates the duplicated inline `fieldStyle` objects those forms each re-declared.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactElement<unknown, string | JSXElementConstructor<any>>",
+          "optional": false,
+          "doc": "The single form control — an `<input>`, `<select>`, or `<textarea>`. It receives `id`, `aria-describedby`, and `aria-invalid` via Radix `Slot` (the same seam `Button`'s `asChild` uses) so the label and helper/error text associate correctly for assistive tech without every call site wiring it by hand."
+        },
+        {
+          "name": "error",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Validation failure message. Swaps in for `helperText`, marks the control `aria-invalid`, and is announced via `role=\"alert\"`."
+        },
+        {
+          "name": "helperText",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Supporting copy shown under the control. Hidden while `error` is set — the error takes its place so the two never compete for the same line."
+        },
         {
           "name": "label",
           "type": "ReactNode",
@@ -135,28 +1191,10 @@
           "doc": "The field's visible label text."
         },
         {
-          "name": "helperText",
-          "type": "ReactNode",
-          "optional": true,
-          "doc": "Supporting copy shown under the control; hidden while error is set."
-        },
-        {
-          "name": "error",
-          "type": "ReactNode",
-          "optional": true,
-          "doc": "Validation failure message; marks the control aria-invalid and is announced via role=\"alert\"."
-        },
-        {
           "name": "mono",
           "type": "boolean",
           "optional": true,
-          "doc": "Render the control in the brand's control-id monospace, for id/key/token-shaped fields."
-        },
-        {
-          "name": "children",
-          "type": "ReactElement",
-          "optional": false,
-          "doc": "The single form control — an <input>, <select>, or <textarea>."
+          "doc": "Render the control in the brand's control-ID monospace (Martian Mono, DESIGN.md §3) — for id/key/token-shaped fields, not free-text notes. Default `false`."
         }
       ],
       "variants": {},
@@ -175,40 +1213,341 @@
         "--cs-text-xs"
       ],
       "a11yNotes": [
-        "Associates the label to the control via htmlFor/id (React useId).",
-        "Wires aria-describedby to the helper or error text automatically.",
-        "Sets aria-invalid and role=\"alert\" on the error message when error is present.",
-        "The error message replaces helperText rather than rendering both at once."
+        "Rendered markup explicitly wires `aria-describedby`, `aria-invalid`, `role`."
       ],
       "recipeRules": [
-        "radix-slot-for-aria-wiring",
         "co-located-css-tokens-only",
         "data-star-variants-no-js-branching",
         "forwardref-bem-naming",
-        "tokens-only-no-inline-style"
+        "no-inline-style",
+        "radix-behavior-for-polymorphism",
+        "server-safe-by-default"
       ],
       "hasDataStar": true
     },
     {
-      "name": "Terminal",
-      "summary": "Framed evidence artifact — a chrome bar plus a monospace body, purely presentational.",
+      "name": "Hero",
+      "summary": "the split marketing header (V1). Recipe primitive (ADR-0099): 1. Purely presentational → no Radix, no framework import; server-safe (no hooks/handlers). 2. Co-located plain CSS (`hero.css`) reading only `var(--cs-*)`. 3. Layout + spacing live in CSS classes — every former inline `style={{…}}` is now a co-located class (`cs-hero__title` / `cs-hero__lede` / `cs-hero__credentials`). 4. `forwardRef` onto the single `<section>` root; BEM block `cs-hero`.",
       "props": [
+        {
+          "name": "artifact",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "The framed evidence artifact filling the right half (a `<Terminal/>`)."
+        },
+        {
+          "name": "credentials",
+          "type": "ReactNode",
+          "optional": true
+        },
+        {
+          "name": "ctas",
+          "type": "ReactNode",
+          "optional": true
+        },
+        {
+          "name": "eyebrow",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "lede",
+          "type": "ReactNode",
+          "optional": false
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "optional": false
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-space-12",
+        "--cs-space-3",
+        "--cs-space-5",
+        "--cs-space-8"
+      ],
+      "a11yNotes": [
+        "Renders a semantic `section` with the supplied title as its `h1`; caller-provided actions retain their native link or button semantics."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Icon",
+      "summary": "the one glyph surface for Lucide icons and registered Caisson domain marks. Decorative icons are hidden from assistive technology by default; supplying `aria-label` promotes the SVG to a named `img`. The fixed size union is expressed through `data-size` for token-driven CSS.",
+      "props": [
+        {
+          "name": "aria-label",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "size",
+          "type": "\"md\" | \"lg\"",
+          "optional": true
+        }
+      ],
+      "variants": {
+        "size": [
+          "lg",
+          "md"
+        ]
+      },
+      "tokenDeps": [],
+      "a11yNotes": [
+        "Omit `aria-label` for decorative glyphs; provide it to expose a named image."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "LedgerList",
+      "summary": "the credit-ledger transaction list. A muted column head plus one `<LedgerRow>` per entry, with the built-in `loading` (skeleton) and empty states already wired in.",
+      "props": [
+        {
+          "name": "empty",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Rendered when `entries` is empty and not `loading`. Defaults to a generic `<EmptyState>`."
+        },
+        {
+          "name": "entries",
+          "type": "readonly LedgerEntry[]",
+          "optional": false
+        },
+        {
+          "name": "loading",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Renders the built-in `LoadingState` (list variant) in place of `entries`."
+        },
+        {
+          "name": "loadingRows",
+          "type": "number",
+          "optional": true,
+          "doc": "Skeleton row count while `loading`. Default 5."
+        },
+        {
+          "name": "unit",
+          "type": "MoneyCellUnit",
+          "optional": true,
+          "doc": "Display unit for every row's delta/balance. Default `\"credits\"`."
+        }
+      ],
+      "variants": {
+        "unit": [
+          "credits",
+          "usd-cents"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-font-mono",
+        "--cs-radius-lg",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-surface-1",
+        "--cs-text-sm",
+        "--cs-text-xs",
+        "--cs-tracking-wide",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "The visual column header is `aria-hidden`; each transaction's date, reason, amount, and balance remain readable in DOM order.",
+        "Rendered markup explicitly wires `aria-hidden`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "LoadingState",
+      "summary": "the kit's async skeleton (one of the three async states with `EmptyState` / `ErrorState`). `DataTable` renders this internally while `loading`; views may also mount it directly above their own layout.",
+      "props": [
+        {
+          "name": "columns",
+          "type": "number",
+          "optional": true,
+          "doc": "Column count for `table`. Default 4."
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "optional": true,
+          "doc": "Accessible busy label, announced to screen readers. Default \"Loading\"."
+        },
+        {
+          "name": "rows",
+          "type": "number",
+          "optional": true,
+          "doc": "Row count for `table` / `list`. Default 5."
+        },
+        {
+          "name": "variant",
+          "type": "LoadingStateVariant",
+          "optional": true,
+          "doc": "Layout this skeleton stands in for, so it occupies the same shape as the real content and avoids layout shift once data arrives. Default `block`."
+        }
+      ],
+      "variants": {
+        "variant": [
+          "block",
+          "list",
+          "stat",
+          "table"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-radius-lg",
+        "--cs-radius-sm",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-space-5",
+        "--cs-surface-1",
+        "--cs-surface-2"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-busy`, `aria-hidden`, `aria-label`, `role`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "MetricStat",
+      "summary": "a single dashboard stat tile (credits balance, entitlement count, …). A small muted label, a large value in tabular figures, and an optional hint/delta line. `tone` tints the value + icon via tokens only, never a TS light/dark branch.",
+      "props": [
+        {
+          "name": "hint",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Optional supporting line below the value (a delta, qualifier, or caption)."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "optional": true,
+          "doc": "Optional leading glyph via the one `<Icon>` surface, tinted to match `tone`."
+        },
+        {
+          "name": "label",
+          "type": "ReactNode",
+          "optional": false,
+          "doc": "Small muted caption above the value (what is being measured)."
+        },
+        {
+          "name": "tone",
+          "type": "MetricStatTone",
+          "optional": true,
+          "doc": "Semantic register for the value + icon. Default `default`."
+        },
+        {
+          "name": "value",
+          "type": "ReactNode",
+          "optional": false,
+          "doc": "The headline figure, rendered large in tabular numerics (e.g. a `<MoneyCell>`)."
+        }
+      ],
+      "variants": {
+        "tone": [
+          "critical",
+          "default",
+          "positive",
+          "warning"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-danger",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-font-mono",
+        "--cs-leading-tight",
+        "--cs-radius-lg",
+        "--cs-space-2",
+        "--cs-space-5",
+        "--cs-success",
+        "--cs-surface-1",
+        "--cs-text-3xl",
+        "--cs-text-sm",
+        "--cs-text-xs",
+        "--cs-tracking-tight",
+        "--cs-tracking-wide",
+        "--cs-warning",
+        "--cs-weight-medium",
+        "--cs-weight-semibold"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-hidden`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "MobileBuyBar",
+      "summary": "Presentational recipe component (ADR-0099) — a persistent price + purchase bar pinned to the mobile viewport bottom, for a page whose full purchase card sinks below other content once the responsive grid collapses to one column (a long page's sticky sidebar rail only exists above that breakpoint). Always rendered — never conditionally mounted — so there is no hydration mismatch; visibility below the breakpoint is a pure CSS media query, the same pattern the rest of the kit uses for mobile-only chrome. No Radix: this never navigates or toggles, it only displays the caller's own action element (BEM block `cs-mobile-buy-bar`, co-located CSS reads only `var(--cs-*)`).",
+      "props": [
+        {
+          "name": "action",
+          "type": "ReactNode",
+          "optional": false,
+          "doc": "The purchase action, typically an Add-to-cart button — passed through as-is, never re-implemented here."
+        },
         {
           "name": "label",
           "type": "string",
           "optional": false,
-          "doc": "Chrome-bar label; also mirrored to the <pre> aria-label."
+          "doc": "The item being purchased (e.g. a module or edition name) — the same label the full purchase card shows."
         },
         {
-          "name": "status",
-          "type": "ReactNode",
-          "optional": true,
-          "doc": "A StatusChip or text rendered at the right of the chrome bar."
-        },
-        {
-          "name": "children",
-          "type": "ReactNode",
-          "optional": true
+          "name": "price",
+          "type": "string",
+          "optional": false,
+          "doc": "An already-formatted price string (e.g. \"$149\"), matching the full purchase card's own formatter."
         }
       ],
       "variants": {},
@@ -216,9 +1555,688 @@
         "--cs-border",
         "--cs-fg",
         "--cs-fg-muted",
+        "--cs-shadow-lg",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-surface-1",
+        "--cs-text-lg",
+        "--cs-text-xs",
+        "--cs-weight-semibold"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-label`, `role`."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "co-located-css-tokens-only",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "MoneyCell",
+      "summary": "renders an INTEGER credit/cent value via `formatMoneyCellValue` (ADR-0007). Purely presentational: no parsing, no inline editing — `DataTable` / `LedgerRow` cells compose it read-only.",
+      "props": [
+        {
+          "name": "sign",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Prefix non-negative values with a leading `+` (reconciliation / ledger diffs)."
+        },
+        {
+          "name": "signTone",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Color the figure by its own sign (positive = success, negative = danger) — for ledger deltas. Default `false` (neutral foreground)."
+        },
+        {
+          "name": "unit",
+          "type": "MoneyCellUnit",
+          "optional": true,
+          "doc": "Display unit. Default `\"usd-cents\"`."
+        },
+        {
+          "name": "value",
+          "type": "number",
+          "optional": false,
+          "doc": "Integer value in the unit's smallest denomination (cents for `usd-cents`, whole units for `credits`). Never a float (ADR-0007)."
+        }
+      ],
+      "variants": {
+        "unit": [
+          "credits",
+          "usd-cents"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-danger",
+        "--cs-fg-muted",
+        "--cs-font-mono",
+        "--cs-success"
+      ],
+      "a11yNotes": [
+        "The integer amount is always rendered as text; `data-sign` only adds visual tone and never carries the sign as color alone."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Pagination",
+      "summary": "an accessible page selector for tables and lists. Directive-free and hooks-free, so it renders in a server tree AS-IS; supply `onPageChange` from a client parent for interactivity. Prev/Next are disabled at the ends; the current page carries `aria-current=\"page\"`.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "optional": true,
+          "doc": "Accessible name for the nav landmark. Default \"Pagination\"."
+        },
+        {
+          "name": "onPageChange",
+          "type": "(page: number) => void",
+          "optional": true,
+          "doc": "Called with the next 0-indexed page. Omit for a static (server-rendered) pager."
+        },
+        {
+          "name": "page",
+          "type": "number",
+          "optional": false,
+          "doc": "Current page, 0-indexed."
+        },
+        {
+          "name": "pageCount",
+          "type": "number",
+          "optional": false,
+          "doc": "Total number of pages (>= 1)."
+        },
+        {
+          "name": "siblingCount",
+          "type": "number",
+          "optional": true,
+          "doc": "Max number buttons to show around the current page. Default 5."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-on-accent",
+        "--cs-radius-md",
+        "--cs-space-1",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-surface-1",
+        "--cs-surface-2",
+        "--cs-text-sm",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-current`, `aria-hidden`, `aria-label`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "Radio",
+      "summary": "a hand-rolled radio button: a real `<input type=\"radio\">` (semantics/keyboard/native grouping via `name`) layered full-bleed over a decorative circle, with a CSS `:checked` sibling selector drawing the filled dot — no JS state. Zero-Radix, zero dependencies (ADR-0291).",
+      "props": [
+        {
+          "name": "label",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Trailing label text/content. Omit to render the bare control."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-border-strong",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-focus",
+        "--cs-radius-pill",
+        "--cs-space-2",
+        "--cs-space-6",
+        "--cs-surface-1",
+        "--cs-text-sm"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-hidden`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Reveal",
+      "summary": "Fade-up-once scroll reveal (recipe kit port of the old `apps/site` primitive, ADR-0099).",
+      "props": [
+        {
+          "name": "as",
+          "type": "\"div\" | \"section\" | \"li\" | \"article\"",
+          "optional": true,
+          "doc": "Polymorphic root tag. Default `div`."
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": false
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "delay",
+          "type": "number",
+          "optional": true,
+          "doc": "Per-instance stagger, ms. Applied as `transitionDelay` — map an index over siblings (`delay={i * 70}`) for a cascading grid."
+        },
+        {
+          "name": "direction",
+          "type": "RevealDirection",
+          "optional": true,
+          "doc": "Which way the element travels into place. Default `up` (rises from below). `none` = fade only. Drives the pre-reveal offset via the `--cs-reveal-x` / `--cs-reveal-y` custom properties."
+        },
+        {
+          "name": "distance",
+          "type": "number",
+          "optional": true,
+          "doc": "Offset magnitude in px for the pre-reveal state. Default 12. Ignored when `direction=\"none\"`."
+        },
+        {
+          "name": "stagger",
+          "type": "number",
+          "optional": true,
+          "doc": "Cascade the DIRECT CHILDREN instead of this element: each child reveals `stagger` ms after the previous one (via `nth-child` `transition-delay` reading `--cs-reveal-stagger`). Use on a grid/list wrapper so its cards enter in sequence; the wrapper itself is not hidden. Children past the 6th share the last step (bounded — raise the ceiling in `reveal.css` if a grid grows)."
+        },
+        {
+          "name": "style",
+          "type": "CSSProperties",
+          "optional": true,
+          "doc": "Extra inline styles, merged after the component's own custom-property style (e.g. a grid's `marginTop`). Lets a Reveal double as a layout container without a wrapping element."
+        }
+      ],
+      "variants": {
+        "as": [
+          "article",
+          "div",
+          "li",
+          "section"
+        ],
+        "direction": [
+          "down",
+          "left",
+          "none",
+          "right",
+          "up"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-duration-slow",
+        "--cs-ease-reveal"
+      ],
+      "a11yNotes": [
+        "Reduced-motion users skip the observer and reveal immediately; without JavaScript, content remains visible rather than being trapped at `opacity: 0`."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "client-only-when-stateful",
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "typed-dynamic-style-seam"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Section",
+      "summary": "a semantic page section with optional eyebrow, heading, lede, band, and flush-edge treatments. Recipe primitive (ADR-0099); purely presentational (no Radix), server-safe. 3. Variants as `data-*`: `data-flush` (boolean) drops the hairline, `data-band` tones the background — styled by attribute selectors, no variant logic in JS. 4. `forwardRef` onto the single `<section>` root; BEM block name `cs-section`. The `.cs-section` shell + its `data-*` variants are a shared layout primitive in base.css (Hero + pages reuse it); the type/layout classes (`cs-container` / `cs-eyebrow` / `cs-section-title` / `cs-lede`) likewise live in base.css. This component owns no co-located CSS — it is composition.",
+      "props": [
+        {
+          "name": "as",
+          "type": "\"h1\" | \"h2\"",
+          "optional": true,
+          "doc": "Heading level for `title`. Use \"h1\" for a Section-led page's top header (one h1/page)."
+        },
+        {
+          "name": "band",
+          "type": "SectionBand",
+          "optional": true,
+          "doc": "Toned background band for section rhythm (V19)."
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true
+        },
+        {
+          "name": "eyebrow",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "flush",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Drop the top hairline (first section under the nav)."
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "lede",
+          "type": "ReactNode",
+          "optional": true
+        },
+        {
+          "name": "title",
+          "type": "ReactNode",
+          "optional": true
+        }
+      ],
+      "variants": {
+        "as": [
+          "h1",
+          "h2"
+        ],
+        "band": [
+          "surface",
+          "tint"
+        ]
+      },
+      "tokenDeps": [],
+      "a11yNotes": [
+        "The caller selects the heading level through `as`; the wrapper remains a native `section`."
+      ],
+      "recipeRules": [
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Select",
+      "summary": "a styled wrapper over the native `<select>`, so keyboard interaction, the native option list, type-ahead, and mobile pickers come for free (the free line). A caret glyph is drawn by CSS; the real control stays the native element. `aria-label` (or a wiring `<label>`) names it. The autocomplete/typeahead combobox is a heavier variant left to the commercial tier.",
+      "props": [
+        {
+          "name": "invalid",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Marks the control invalid (`aria-invalid` + danger chrome)."
+        },
+        {
+          "name": "options",
+          "type": "readonly SelectOption[]",
+          "optional": false
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "optional": true,
+          "doc": "Non-selectable leading hint rendered as a disabled empty option."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-bg",
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-danger",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-radius-md",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-space-6",
+        "--cs-text-sm"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-hidden`, `aria-invalid`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "SkuMatrix",
+      "summary": "SkuMatrix (V14 — editions × modules). Presentational; no Radix behavior needed. Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`, BEM block `cs-matrix`, `forwardRef` on the single DOM root (the scroll wrapper). The row-label weight that was an inline `style` in the old `apps/site` primitive is now the `.cs-matrix th[scope=\"row\"]` rule.",
+      "props": [
+        {
+          "name": "columns",
+          "type": "readonly string[]",
+          "optional": false,
+          "doc": "Column headers (editions); the leading \"Module\" header is fixed."
+        },
+        {
+          "name": "rows",
+          "type": "readonly SkuMatrixRow[]",
+          "optional": false,
+          "doc": "One row per module; each row has a `label` and a cell per column."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-bg",
+        "--cs-border",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-font-mono",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-text-sm",
+        "--cs-text-xs",
+        "--cs-tracking-wide",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-label`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "StatusChip",
+      "summary": "glyph + label status pill (ADR-0078 §7), never colour-alone.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true
+        },
+        {
+          "name": "dot",
+          "type": "boolean",
+          "optional": true,
+          "doc": "Show the leading status dot (inherits `currentColor` from the resolved tone)."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "optional": true,
+          "doc": "Optional leading glyph (Lucide / bespoke domain icon, via the one `<Icon>` surface)."
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "optional": false,
+          "doc": "The chip text (always present — meaning is carried by label + glyph, never colour-alone)."
+        },
+        {
+          "name": "tone",
+          "type": "StatusChipTone",
+          "optional": true,
+          "doc": "Semantic tone → a local-indirection `--chip-fg` var (recipe rule 3); defaults to `muted`."
+        }
+      ],
+      "variants": {
+        "tone": [
+          "accent",
+          "muted",
+          "success"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-border",
+        "--cs-fg-muted",
+        "--cs-font-mono",
+        "--cs-radius-pill",
+        "--cs-space-1",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-success",
+        "--cs-surface-1",
+        "--cs-text-xs",
+        "--cs-tracking-wide"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-hidden`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "StatusPill",
+      "summary": "entitlement/license status pill (active / expired / revoked / pending). Sibling to `StatusChip` (the generic glyph+label pill) but scoped to the buyer dashboard's entitlement domain, so callers get a typed `status` instead of a free `tone`. Never colour-alone: a status dot plus the always-present text label carry the meaning together.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Override the label; omit for the default plain-English label."
+        },
+        {
+          "name": "status",
+          "type": "EntitlementStatus",
+          "optional": false,
+          "doc": "Which lifecycle state to render — drives the tone + default label."
+        }
+      ],
+      "variants": {
+        "status": [
+          "active",
+          "expired",
+          "pending",
+          "revoked"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-danger",
+        "--cs-fg-muted",
+        "--cs-radius-pill",
+        "--cs-space-1",
+        "--cs-space-2",
+        "--cs-space-3",
+        "--cs-success",
+        "--cs-surface-1",
+        "--cs-text-xs",
+        "--cs-tracking-wide",
+        "--cs-warning",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-hidden`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Switch",
+      "summary": "an on/off control for an immediate-effect setting (distinct from Checkbox, which is a form-submission value). Implemented as `<button role=\"switch\" aria-checked>` per the WAI-ARIA Switch pattern (a `role=\"switch\"` override on `<input type=\"checkbox\">` is not reliably exposed by every AT, so the APG recommends the button build for JS-driven switches). Zero-Radix, zero dependencies (ADR-0291).",
+      "props": [
+        {
+          "name": "checked",
+          "type": "boolean",
+          "optional": false,
+          "doc": "On/off state (controlled — the switch has no internal state, like the rest of the kit's controlled primitives)."
+        },
+        {
+          "name": "label",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Trailing label text/content, rendered INSIDE the button so it feeds the button's normal accessible-name computation (a wrapping `<label>` is not reliably read by every AT for a `role=\"switch\"` button). Omit for an icon-only switch and pass `aria-label` instead."
+        },
+        {
+          "name": "onCheckedChange",
+          "type": "(checked: boolean) => void",
+          "optional": true
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-border-strong",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-on-accent",
+        "--cs-radius-pill",
+        "--cs-space-2",
+        "--cs-space-6",
+        "--cs-surface-1",
+        "--cs-text-sm"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-checked`, `aria-hidden`, `role`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": false
+    },
+    {
+      "name": "Tabs",
+      "summary": "a same-page panel switcher: `role=\"tablist\"`/`role=\"tab\"`/`role=\"tabpanel\"` per the WAI-ARIA Tabs authoring pattern, automatic activation (arrow keys move focus AND select), roving `tabindex` (only the active tab is Tab-reachable), Home/End jump to the first/last enabled tab, disabled tabs are skipped. Zero-Radix, zero dependencies (ADR-0291).",
+      "props": [
+        {
+          "name": "aria-label",
+          "type": "string",
+          "optional": true,
+          "doc": "Names the tablist for assistive tech when there is no adjacent visible heading."
+        },
+        {
+          "name": "items",
+          "type": "readonly TabItem[]",
+          "optional": false
+        },
+        {
+          "name": "onValueChange",
+          "type": "(id: string) => void",
+          "optional": false
+        },
+        {
+          "name": "orientation",
+          "type": "\"horizontal\" | \"vertical\"",
+          "optional": true
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "optional": false,
+          "doc": "The active tab id — controlled, like the kit's other stateful primitives (`Dialog`, `Toast`)."
+        }
+      ],
+      "variants": {
+        "orientation": [
+          "horizontal",
+          "vertical"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-accent",
+        "--cs-border",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-space-2",
+        "--cs-space-4",
+        "--cs-space-6",
+        "--cs-space-8",
+        "--cs-text-sm",
+        "--cs-weight-medium"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-controls`, `aria-disabled`, `aria-label`, `aria-labelledby`, `aria-orientation`, `aria-selected`, `role`."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "client-only-when-stateful",
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "no-inline-style"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Terminal",
+      "summary": "the framed evidence artifact (a chrome bar + a monospace body). Purely presentational (no Radix, server-safe per recipe rule 1). Built to the ADR-0099 recipe: - Co-located plain CSS (`terminal.css`) reading only `var(--cs-*)`. - BEM block `cs-terminal` / elements `cs-terminal__bar` + `cs-terminal__body`. - `forwardRef` onto the single DOM root, matching the Button reference.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": true
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "optional": false,
+          "doc": "Chrome-bar label; also mirrored to the `<pre>` `aria-label`."
+        },
+        {
+          "name": "status",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "A `<StatusChip/>` or text rendered at the right of the chrome bar."
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-fg",
+        "--cs-fg-muted",
         "--cs-font-mono",
         "--cs-leading-snug",
         "--cs-radius-lg",
+        "--cs-radius-pill",
         "--cs-shadow-lg",
         "--cs-space-2",
         "--cs-space-3",
@@ -230,14 +2248,118 @@
         "--cs-text-xs"
       ],
       "a11yNotes": [
-        "Mirrors the chrome-bar label onto the <pre> aria-label so screen readers get the same context sighted users do."
+        "Rendered markup explicitly wires `aria-label`."
       ],
       "recipeRules": [
         "co-located-css-tokens-only",
         "forwardref-bem-naming",
-        "tokens-only-no-inline-style"
+        "no-inline-style",
+        "server-safe-by-default"
       ],
       "hasDataStar": false
+    },
+    {
+      "name": "ThemeToggle",
+      "summary": "ThemeToggle (ADR-0100 F3) — an ICON control (no text), single button. 3-prong dark mode: before any click the document follows the OS via CSS (`prefers-color-scheme`); this toggle tracks that live and only PINS a choice on click (writes `data-theme` + localStorage). Paired with `themeInitScript` (theme-init.ts) for FOUC-free pinned loads.",
+      "props": [
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "variants": {},
+      "tokenDeps": [
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-duration-fast",
+        "--cs-ease-out",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-radius-md"
+      ],
+      "a11yNotes": [
+        "The native `type=\"button\"` control names the target mode (\"Switch to light/dark theme\"), so the icon-only affordance always has an accessible name.",
+        "Rendered markup explicitly wires `aria-label`."
+      ],
+      "recipeRules": [
+        "bem-naming",
+        "client-only-when-stateful",
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "no-inline-style"
+      ],
+      "hasDataStar": true
+    },
+    {
+      "name": "Toast",
+      "summary": "a single transient notification. `danger`/`warning` announce assertively (`role=\"alert\"`), info/success politely (`role=\"status\"`). Presentational + server-safe: the queue and auto-dismiss timers are the app's concern; mount toasts inside a `ToastRegion` so they share one live region.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "optional": false
+        },
+        {
+          "name": "onDismiss",
+          "type": "() => void",
+          "optional": true,
+          "doc": "Render a dismiss button that calls this."
+        },
+        {
+          "name": "title",
+          "type": "ReactNode",
+          "optional": true,
+          "doc": "Optional heading above the message."
+        },
+        {
+          "name": "tone",
+          "type": "ToastTone",
+          "optional": true
+        }
+      ],
+      "variants": {
+        "tone": [
+          "danger",
+          "info",
+          "success",
+          "warning"
+        ]
+      },
+      "tokenDeps": [
+        "--cs-bg",
+        "--cs-border",
+        "--cs-border-strong",
+        "--cs-danger",
+        "--cs-fg",
+        "--cs-fg-muted",
+        "--cs-focus",
+        "--cs-info",
+        "--cs-leading-snug",
+        "--cs-radius-md",
+        "--cs-radius-sm",
+        "--cs-shadow-md",
+        "--cs-space-1",
+        "--cs-space-3",
+        "--cs-space-4",
+        "--cs-space-5",
+        "--cs-space-6",
+        "--cs-success",
+        "--cs-text-sm",
+        "--cs-warning",
+        "--cs-weight-semibold"
+      ],
+      "a11yNotes": [
+        "Rendered markup explicitly wires `aria-label`, `aria-live`, `aria-relevant`, `role`."
+      ],
+      "recipeRules": [
+        "co-located-css-tokens-only",
+        "data-star-variants-no-js-branching",
+        "forwardref-bem-naming",
+        "no-inline-style",
+        "server-safe-by-default"
+      ],
+      "hasDataStar": true
     }
   ]
 }

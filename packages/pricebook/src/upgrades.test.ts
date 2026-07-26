@@ -134,3 +134,143 @@ describe("data integrity — the pre-declared money data holds its invariants", 
     expect(bundleMembershipTimeline("everything")).toEqual({});
   });
 });
+
+// ADR-0381 lock 2 — the paid-price floor on an upgrade credit. The paid amount is the buyer's own
+// recorded charge as a {amountMinorUnits, currency} pair (`entitlement_grant.charged_amount` +
+// `charged_currency`); the credit is never below it. The currency is load-bearing — 29900 is $299
+// in USD and ¥29,900 in JPY, so an integer alone cannot be compared against a USD retail.
+describe("upgrade credit honours what the buyer actually paid (ADR-0381 lock 2)", () => {
+  // `SKU_RETAIL` is keyed by plain string, so `noUncheckedIndexedAccess` widens a lookup to
+  // `number | undefined`. Resolve it once, loudly, rather than asserting at each call site.
+  const retailOf = (itemId: string): number => {
+    const retail = SKU_RETAIL[itemId];
+    if (retail === undefined) throw new Error(`no retail price for ${itemId}`);
+    return retail;
+  };
+
+  /** A USD charge in cents — the shape every pre-existing case in this block assumed. */
+  const usd = (amountMinorUnits: number) => ({
+    amountMinorUnits,
+    currency: "usd",
+  });
+
+  test("omitted paid amount credits at retail — the pre-0381 behaviour", () => {
+    expect(resolveUpgradeCredit("field-crypto", "compliance")).toBe(
+      retailOf("field-crypto"),
+    );
+    expect(resolveUpgradeCredit("field-crypto", "compliance", undefined)).toBe(
+      retailOf("field-crypto"),
+    );
+  });
+
+  test("a paid price ABOVE current retail wins — a price cut never strands the buyer", () => {
+    // Bought at $249 when the SKU listed higher; retail has since been cut to $199.
+    expect(resolveUpgradeCredit("field-crypto", "compliance", usd(24900))).toBe(
+      249,
+    );
+  });
+
+  test("a paid price BELOW retail does not reduce the credit — retail is the floor", () => {
+    // A discounted/affiliate purchase still credits the full retail, never the discounted amount.
+    expect(resolveUpgradeCredit("field-crypto", "compliance", usd(9900))).toBe(
+      retailOf("field-crypto"),
+    );
+  });
+
+  test("a fractional paid amount rounds UP, never below what was paid", () => {
+    // $299.50 paid must credit at least $299.50 — flooring to 299 would break the clause.
+    expect(resolveUpgradeCredit("field-crypto", "compliance", usd(29950))).toBe(
+      300,
+    );
+  });
+
+  test("a zero paid amount is not treated as unknown — retail still applies", () => {
+    expect(resolveUpgradeCredit("field-crypto", "compliance", usd(0))).toBe(
+      retailOf("field-crypto"),
+    );
+  });
+
+  test("a corrupt paid amount throws rather than crediting a fraction", () => {
+    expect(() =>
+      resolveUpgradeCredit("field-crypto", "compliance", usd(-1)),
+    ).toThrow();
+    expect(() =>
+      resolveUpgradeCredit("field-crypto", "compliance", usd(199.5)),
+    ).toThrow();
+  });
+
+  test("a quote applies the floor per item and leaves unpriced items at retail", () => {
+    const owned = ["field-crypto", "audit-worm"];
+    const base = upgradeQuote("compliance", owned);
+    // Only field-crypto has a recorded overpay; audit-worm keeps its retail credit.
+    const withPaid = upgradeQuote("compliance", owned, {
+      "field-crypto": usd(40000),
+    });
+    expect(withPaid.credit).toBe(base.credit - retailOf("field-crypto") + 400);
+    expect(withPaid.upgradePrice).toBe(
+      Math.max(0, BUNDLE_RETAIL.compliance - withPaid.credit),
+    );
+  });
+
+  test("an inherited Object.prototype key is never read as a paid amount", () => {
+    // `{}.constructor` is truthy; a bare index would smuggle it in as a money value.
+    const quote = upgradeQuote("compliance", ["field-crypto"], {});
+    expect(quote.credit).toBe(retailOf("field-crypto"));
+  });
+
+  // The grill's P2 on PR #334: the quote API took a bare integer and divided it by 100, so a
+  // ¥29,900 charge on a $249 SKU credited $299 — a currency converted by arithmetic accident.
+  test("a NON-USD charge falls back to retail rather than being read as cents", () => {
+    // 29900 is ¥29,900 (~$190 at any plausible rate), NOT 29,900 US cents.
+    expect(
+      resolveUpgradeCredit("field-crypto", "compliance", {
+        amountMinorUnits: 29900,
+        currency: "jpy",
+      }),
+    ).toBe(retailOf("field-crypto"));
+    // The bug's signature: the old code returned 299 here.
+    expect(
+      resolveUpgradeCredit("field-crypto", "compliance", {
+        amountMinorUnits: 29900,
+        currency: "jpy",
+      }),
+    ).not.toBe(299);
+  });
+
+  test("currency is matched case-insensitively — providers send USD and usd", () => {
+    expect(
+      resolveUpgradeCredit("field-crypto", "compliance", {
+        amountMinorUnits: 24900,
+        currency: "USD",
+      }),
+    ).toBe(249);
+  });
+
+  test("a paid amount with no currency is a corrupt pair and throws", () => {
+    // The CHECK constraint writes charged_amount and charged_currency together or not at all, so
+    // an amount without one means a tampered or hand-written row. Never assume USD.
+    expect(() =>
+      resolveUpgradeCredit("field-crypto", "compliance", {
+        amountMinorUnits: 24900,
+        currency: "   ",
+      }),
+    ).toThrow();
+  });
+
+  test("a non-USD entry in a quote leaves that item at retail", () => {
+    const quote = upgradeQuote("compliance", ["field-crypto", "audit-worm"], {
+      "field-crypto": { amountMinorUnits: 4000000, currency: "jpy" },
+    });
+    const base = upgradeQuote("compliance", ["field-crypto", "audit-worm"]);
+    expect(quote.credit).toBe(base.credit);
+  });
+
+  test("a credit is never below the buyer's paid price, across the whole catalog", () => {
+    for (const [itemId, retail] of Object.entries(SKU_RETAIL)) {
+      const cents = (retail + 50) * 100;
+      expect(
+        resolveUpgradeCredit(itemId, "everything", usd(cents)),
+      ).toBeGreaterThanOrEqual(cents / 100);
+    }
+  });
+});

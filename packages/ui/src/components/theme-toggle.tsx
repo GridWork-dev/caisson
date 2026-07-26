@@ -38,6 +38,9 @@ export interface ThemeToggleProps {
  * before any click the document follows the OS via CSS (`prefers-color-scheme`); this toggle tracks
  * that live and only PINS a choice on click (writes `data-theme` + localStorage). Paired with
  * `themeInitScript` (theme-init.ts) for FOUC-free pinned loads.
+ *
+ * @a11y The native `type="button"` control names the target mode ("Switch to light/dark theme"),
+ *   so the icon-only affordance always has an accessible name.
  */
 export function ThemeToggle({ className }: ThemeToggleProps) {
   // SSR-stable default = dark (the un-attributed :root default); resolved on mount to avoid mismatch.

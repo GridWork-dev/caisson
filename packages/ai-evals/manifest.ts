@@ -10,8 +10,7 @@
 // primitive->primitive (precedented by `@caisson/ai-meter` -> `@caisson/tenancy-rls`), still
 // down-only (ADR-0003), and still offline: agent-trajectory carries no store/network dependency of
 // its own on this path — grading model calls stay injected behind the Judge port exactly as before.
-// `priceCents` is a PLACEHOLDER pending the Pricing lock (a positive integer is required to validate;
-// the number is not the locked price).
+// Standalone pricing is locked at $199 by ADR-0129 and enforced through PRICE_AUTHORITY.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -20,7 +19,7 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
+  priceCents: 19900,
   license: pkg.license,
   dependencies: ["@caisson/agent-trajectory"],
   golden: "__evals__",

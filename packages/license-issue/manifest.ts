@@ -4,8 +4,8 @@
 // package.json keeps it OUT of every published tarball — the signing key never reaches a buyer repo —
 // but it is still a `packages/` member, so it carries the same commercial declaration the gate enforces:
 // `paid` + `LicenseRef-Caisson-Commercial` (ADR-0094/0097 open-core split — issuer is commercial, NOT
-// open Base). `priceCents` mirrors @caisson/license-verify's pre-launch placeholder anchor (4900);
-// final pricing is the open "Pricing numbers" board fork. ADR-0110.
+// open Base). The private issuer is internal infrastructure, never a storefront SKU; `sellable:
+// false` makes that boundary explicit while retaining its historical positive manifest value.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -15,6 +15,7 @@ export default defineModule({
   kind: "primitive",
   tier: "paid",
   priceCents: 4900,
+  sellable: false,
   license: "LicenseRef-Caisson-Commercial",
   dependencies: ["@caisson/kernel", "@caisson/license-verify", "@caisson/ui"],
   golden: "src/__golden__",

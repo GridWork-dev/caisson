@@ -10,6 +10,9 @@ export {
 } from "./schema.ts";
 export {
   checkContrast,
+  renderedContrastRatio,
+  type CodeTokenKey,
+  type ContrastCode,
   type ContrastFunctional,
   type ContrastTheme,
   type ContrastThemeKey,

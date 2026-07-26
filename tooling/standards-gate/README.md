@@ -19,8 +19,9 @@ signal) + dependency-cruiser (real module graph: dynamic/transitive reach + base
 
 ## Run alongside in CI (`.github/workflows/ci.yml` `standards-gate` job)
 
-`bunx eslint .` (provider-SDK static) · `bunx depcruise … --config .dependency-cruiser.cjs`
-(graph reach + down-only) · golden-file regression (ADR-0013 harness) · `changeset status`.
+`bunx eslint .` (provider-SDK static) · `bun tooling/scripts/dependency-graph-guard.ts`
+(TypeScript-enabled graph reach + down-only with coverage floors) · golden-file regression
+(ADR-0013 harness) · `changeset status`.
 
 ## Publish flow (ADR-0021)
 

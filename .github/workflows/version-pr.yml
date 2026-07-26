@@ -74,6 +74,10 @@ jobs:
           echo "[version-pr] $pending pending changeset(s)"
       - name: changeset version (consume)
         run: bunx changeset version
+      # The generated component manifest embeds @caisson/ui's package version. Refresh it after
+      # Changesets bumps package.json so the version PR cannot ship stale design metadata.
+      - name: regenerate version-coupled design manifest
+        run: bun run --filter @caisson/ui gen:manifest
       # The bumps change workspace package versions recorded in bun.lock — refresh it here (NOT
       # frozen) so the merge commit passes every `bun install --frozen-lockfile` gate downstream.
       - name: refresh bun.lock for the bumped versions
@@ -105,6 +109,7 @@ jobs:
           git switch -c "$branch"
           git add -A -- \
             ':(glob)**/package.json' ':(glob)**/CHANGELOG.md' '.changeset' bun.lock \
+            packages/ds-manifest/src/base-manifest.json \
             registry/ledger.jsonl registry/index.json registry/tarballs.json
           if git diff --cached --quiet; then
             echo "::error::changeset version produced no changes — nothing to PR"

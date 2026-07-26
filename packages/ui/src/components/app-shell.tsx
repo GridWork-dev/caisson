@@ -61,9 +61,13 @@ export interface AppShellProps {
 }
 
 /**
- * AppShell — see the file header. Recipe-compliant (ADR-0099): co-located CSS reading
- * only `var(--cs-*)`, `data-collapsed` / `data-mobile-nav-open` variants, BEM block
- * `cs-shell`. `"use client"` (collapse + mobile-drawer state).
+ * AppShell — a buyer-dashboard frame with responsive primary navigation, a persistent top bar,
+ * and a scrollable main-content landmark. Recipe-compliant (ADR-0099): co-located CSS reading only
+ * `var(--cs-*)`, `data-collapsed` / `data-mobile-nav-open` variants, BEM block `cs-shell`.
+ * `"use client"` (collapse + mobile-drawer state).
+ *
+ * @a11y The mobile-nav and collapse controls expose their state with `aria-expanded` or
+ *   `aria-pressed`; the sidebar and main region retain native landmark semantics.
  */
 export function AppShell({
   nav,

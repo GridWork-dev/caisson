@@ -380,12 +380,36 @@ export async function applyBillingEvent(
               lineChargedAmount: line.chargedAmount, // the proportional divisor for a dollar-partial claw
             });
           }
+          // ADR-0381 lock 2: stamp what the buyer paid, but only when this line's charge belongs to
+          // exactly ONE entitlement bought once — otherwise the line total is not a per-SKU price
+          // and recording it would overstate a later upgrade credit. Leaving the column NULL is the
+          // honest alternative: the quote reads NULL as "unknown" and credits at retail.
+          //   - `quantity === 1`: a quantity-2 line charges twice for one BINARY entitlement, so
+          //     its total is double the SKU's price.
+          //   - `chargedAmount > 0`: a driver with no per-line data (Stripe) reports 0, which is
+          //     "not reported", not "free".
+          //   - `entitlements.length === 1`: defensive, not a live case — every PURCHASE_BOOK row
+          //     today grants exactly one id (a BUNDLE is one id that expands to members downstream,
+          //     not N ids here). It guards a future combo SKU that grants two ids off one charge,
+          //     where splitting the total between them would be a guess.
+          const attributable =
+            purchase.entitlements.length === 1 &&
+            line.quantity === 1 &&
+            line.chargedAmount > 0;
           await grantEntitlements(tx, {
             accountId: ev.accountId,
             entitlementIds: purchase.entitlements,
             sourceEventId: ev.paymentId,
             source: { kind: "one_time", purchaseId: ev.paymentId },
             lineItemId: line.itemId,
+            ...(attributable
+              ? {
+                  charged: {
+                    amountMinorUnits: line.chargedAmount,
+                    currency: ev.currency,
+                  },
+                }
+              : {}),
           });
           for (const e of purchase.entitlements) grantedEntitlements.add(e);
         }

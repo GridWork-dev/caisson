@@ -316,7 +316,7 @@ export function checkFrontmatterFreshness(
     return {
       id,
       status: "green",
-      details: ["all grounds paths are at or after their doc's updated: date"],
+      details: ["all grounds paths are at or before their doc's updated: date"],
     };
   }
   return { id, status: "drift", details: all.map((f) => f.detail) };

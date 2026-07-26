@@ -59,13 +59,13 @@
       1.75rem 100% no-repeat local,
     radial-gradient(
         farthest-side at left center,
-        oklch(0.62 0.02 220 / 0.52),
+        color-mix(in oklab, var(--cs-border-strong) 52%, transparent),
         transparent
       )
       left center / 1rem 100% no-repeat scroll,
     radial-gradient(
         farthest-side at right center,
-        oklch(0.62 0.02 220 / 0.52),
+        color-mix(in oklab, var(--cs-border-strong) 52%, transparent),
         transparent
       )
       right center / 1rem 100% no-repeat scroll,

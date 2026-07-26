@@ -33,7 +33,9 @@ import { verifyLicenseWithKey } from "@caisson/license-verify";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
+import type { RateLimiterInfraAlert } from "./alerting.ts";
 import {
+  ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
@@ -42,7 +44,11 @@ import {
   extendUpdatesWindow,
   grantEntitlements,
 } from "./entitlement-store.ts";
-import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
+import {
+  loadRateLimitConfig,
+  type RateLimiter,
+  TokenBucketLimiter,
+} from "./rate-limit.ts";
 import {
   LICENSE_GRANT_SCHEMA_SQL,
   readLicenseGrant,
@@ -110,6 +116,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
   await tp.exec(RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
@@ -129,6 +136,7 @@ beforeAll(async () => {
     renewalEmailNotify: async () => {},
     revokeEmailNotify: async () => {},
     chargebackAlert: async () => {},
+    rateLimiterAlert: async () => {},
   });
 });
 afterAll(async () => {
@@ -146,6 +154,51 @@ const post = (body: string, auth?: string): Request =>
   });
 
 describe("POST /issue (ADR-0110)", () => {
+  for (const pathname of ["/issue", "/admin/affiliate/mint"] as const) {
+    for (const stage of ["check", "checkGlobal"] as const) {
+      test(`${pathname} fails closed with 503 and alerts when limiter ${stage} throws`, async () => {
+        const alerts: RateLimiterInfraAlert[] = [];
+        const limiter: RateLimiter = {
+          check: () => {
+            if (stage === "check") throw new Error("limiter unavailable");
+            return { allowed: true, retryAfterSec: 0 };
+          },
+          checkGlobal: () => {
+            if (stage === "checkGlobal") throw new Error("limiter unavailable");
+            return { allowed: true, retryAfterSec: 0 };
+          },
+        };
+        const limitedApp = createApp({
+          token: TOKEN,
+          signer,
+          index,
+          db: tp.pg,
+          provider: null,
+          limiter,
+          discordNotify: null,
+          posthogCapture: null,
+          purchaseEmailNotify: async () => {},
+          renewalEmailNotify: async () => {},
+          revokeEmailNotify: async () => {},
+          chargebackAlert: async () => {},
+          rateLimiterAlert: async (alert) => {
+            alerts.push(alert);
+          },
+        });
+
+        const response = await limitedApp(
+          new Request(`http://license.test${pathname}`, { method: "POST" }),
+        );
+
+        expect(response.status).toBe(503);
+        expect(await response.json()).toEqual({
+          error: "rate limiter unavailable",
+        });
+        expect(alerts).toEqual([{ bucket: "issue", failureMode: "closed" }]);
+      });
+    }
+  }
+
   test("issues a token for a purchased account that verifies to its resolved entitlements", async () => {
     const acct = "acct_issue_comp";
     await withTenant(tp.pg, acct, (tx) =>
@@ -432,6 +485,7 @@ describe("POST /issue admin-scoped credential (ADR-0220)", () => {
       renewalEmailNotify: async () => {},
       revokeEmailNotify: async () => {},
       chargebackAlert: async () => {},
+      rateLimiterAlert: async () => {},
     });
   });
 

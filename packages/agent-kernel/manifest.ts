@@ -2,9 +2,9 @@
 // id/version/license/dependencies. `kind: "base"` (ADR-0065) — the engine-neutral agent kernel both
 // base (cli/mcp-server) and the agent-dev edition consume DOWN-ONLY (never imports an edition,
 // ADR-0022). Paid + LicenseRef-Caisson-Commercial (ADR-0023/0050; AGPL flank closed).
-// `priceCents` is the established pre-launch placeholder anchor (4900) — final pricing is the open
-// "Pricing numbers" board fork, out of scope here. Relative import keeps `@caisson/registry` out of
-// the runtime dep set: the sole declared dependency is `@caisson/kernel`.
+// Standalone pricing is locked at $199 by ADR-0129 and enforced through PRICE_AUTHORITY. Relative
+// import keeps `@caisson/registry` out of the runtime dep set: the sole declared dependency is
+// `@caisson/kernel`.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -13,7 +13,7 @@ export default defineModule({
   version: pkg.version,
   kind: "base",
   tier: "paid",
-  priceCents: 4900,
+  priceCents: 19900,
   license: pkg.license,
   dependencies: ["@caisson/kernel"],
   golden: "src/__golden__",

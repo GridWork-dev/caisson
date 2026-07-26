@@ -175,6 +175,30 @@ export const RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL = `
 ALTER TABLE renewal_extension ADD COLUMN months integer;
 `;
 
+// ADR-0381 lock 2: record what the buyer ACTUALLY paid for this grant, so a later upgrade quote can
+// honour "a credit never falls below the buyer's own paid price" (`resolveUpgradeCredit`). The number
+// is available on every Paddle line at grant time (`lineItems[].chargedAmount`) and was simply never
+// persisted: `order_record.amount` is the whole TRANSACTION's grand total, which cannot be split
+// across a multi-line cart after the fact. Storing it at grant time is what makes the clause
+// enforceable offline, with no vendor read in the upgrade path.
+//
+// Minor units, matching the provider and `order_record.amount` — never dollars, never a float
+// (ADR-0007). NULLABLE and left NULL whenever the charge cannot be attributed to exactly one SKU:
+// an `admin_comp` grant, a driver with no per-line data (Stripe sends 0), a line whose price grants
+// several entitlements, or quantity > 1. NULL means "unknown", and the quote falls back to retail —
+// the honest answer, where a guessed split would silently over-credit every member of a bundle line
+// with the whole bundle's price. SEPARATE migration, never an edit to a frozen constant (ADR-0006
+// append-only); ships as `0031_entitlement_grant_charged_amount.sql`, a tail append after the
+// site-local 0027-0029 and the shared 0030.
+export const ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL = `
+ALTER TABLE entitlement_grant ADD COLUMN charged_amount integer;
+ALTER TABLE entitlement_grant ADD COLUMN charged_currency text;
+ALTER TABLE entitlement_grant ADD CONSTRAINT entitlement_grant_charged_amount_nonneg
+  CHECK (charged_amount IS NULL OR charged_amount >= 0);
+ALTER TABLE entitlement_grant ADD CONSTRAINT entitlement_grant_charged_pair
+  CHECK ((charged_amount IS NULL) = (charged_currency IS NULL));
+`;
+
 /** The provenance of a grant: a recurring subscription, or a one-time (non-subscription) purchase. */
 export type GrantSource =
   | { kind: "subscription"; subscriptionId: string }
@@ -196,6 +220,14 @@ export interface GrantEntitlementsInput {
    * which the `COALESCE(line_item_id, '')` index treats as the pre-0218 single-slot uniqueness.
    */
   lineItemId?: string;
+  /**
+   * What the buyer paid for THIS grant, in minor units, with its currency (ADR-0381 lock 2 — the
+   * upgrade-credit floor). Set both or neither; the DB CHECK enforces the pair. Omit whenever the
+   * charge cannot be attributed to exactly one SKU — the caller's job, not this function's, because
+   * only the caller knows how many entitlements the line bought. An omitted amount records NULL,
+   * which the upgrade quote reads as "unknown" and credits at retail.
+   */
+  charged?: { amountMinorUnits: number; currency: string };
 }
 
 function sourceColumns(source: GrantSource): {
@@ -228,12 +260,15 @@ export async function grantEntitlements(
   // the same single slot the pre-0218 uniqueness used, so subscription renewals + no-line drivers keep
   // collapsing to one row while distinct `txnitm_` ids give one row per cart line (fork B-1).
   const lineItemId = input.lineItemId ?? null;
+  // Both-or-neither, matching the `entitlement_grant_charged_pair` CHECK (ADR-0381 lock 2).
+  const chargedAmount = input.charged?.amountMinorUnits ?? null;
+  const chargedCurrency = input.charged?.currency ?? null;
   let granted = 0;
   for (const entitlementId of input.entitlementIds) {
     const inserted = await tx.query<{ id: string }>(
       `INSERT INTO entitlement_grant
-         (id, account_id, entitlement_id, source_kind, subscription_id, purchase_id, source_event_id, line_item_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         (id, account_id, entitlement_id, source_kind, subscription_id, purchase_id, source_event_id, line_item_id, charged_amount, charged_currency)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (account_id, entitlement_id, source_kind, COALESCE(subscription_id, purchase_id), COALESCE(line_item_id, ''))
        DO NOTHING
        RETURNING id`,
@@ -246,6 +281,8 @@ export async function grantEntitlements(
         cols.purchaseId,
         input.sourceEventId,
         lineItemId,
+        chargedAmount,
+        chargedCurrency,
       ],
     );
     if (inserted.rows.length > 0) granted += 1;

@@ -1,9 +1,7 @@
 /**
- * Typed reader for the committed component manifest. `base-manifest.json` (bundled alongside this
- * file) is a small hand-authored fixture covering four real `@caisson/ui` components — one for
- * every recipe shape the kit uses (Radix polymorphism, Radix aria-wiring, plain presentational,
- * and a component with no `data-*` variant at all) — standing in for the kit's own build-time
- * generator output until that generator lands and replaces this file with the real, full manifest.
+ * Typed reader for the committed component manifest. `base-manifest.json` is generated
+ * deterministically from @caisson/ui's authoritative component barrel, prop types, JSDoc, and
+ * co-located styles, then bundled alongside this file.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

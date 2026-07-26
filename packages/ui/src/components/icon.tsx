@@ -158,6 +158,13 @@ export interface IconProps {
   "aria-label"?: string;
 }
 
+/**
+ * Icon — the one glyph surface for Lucide icons and registered Caisson domain marks. Decorative
+ * icons are hidden from assistive technology by default; supplying `aria-label` promotes the SVG
+ * to a named `img`. The fixed size union is expressed through `data-size` for token-driven CSS.
+ *
+ * @a11y Omit `aria-label` for decorative glyphs; provide it to expose a named image.
+ */
 export const Icon = forwardRef<SVGSVGElement, IconProps>(function Icon(
   { name, size = "md", className, "aria-label": ariaLabel },
   ref,

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   CATALOG_ENTRIES,
   entriesByPackage,
@@ -45,5 +46,13 @@ describe("CATALOG_ENTRIES", () => {
     const uiEntries = entriesByPackage("@caisson/ui");
     expect(uiEntries.every((e) => e.package === "@caisson/ui")).toBe(true);
     expect(uiEntries.length).toBeGreaterThanOrEqual(30);
+  });
+
+  test("pins the current Compliance price in rendered buyer demos", () => {
+    const mobileBuyBar = getCatalogEntry("ui.mobile-buy-bar")?.render?.();
+    const moneyCell = getCatalogEntry("ui.money-cell")?.render?.();
+
+    expect(renderToStaticMarkup(mobileBuyBar)).toContain("$1,449");
+    expect(renderToStaticMarkup(moneyCell)).toContain("$1,449.00");
   });
 });

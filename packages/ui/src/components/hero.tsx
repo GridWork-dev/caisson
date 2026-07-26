@@ -24,6 +24,9 @@ export interface HeroProps {
  * The `cs-section` shell (+ `data-flush` for the flush top) and the `cs-display` / `cs-eyebrow` /
  * `cs-lede` / `cs-container` utilities are shared layout primitives in base.css — kept by className
  * here, their hero-specific spacing layered on via the `cs-hero__*` classes.
+ *
+ * @a11y Renders a semantic `section` with the supplied title as its `h1`; caller-provided actions
+ *   retain their native link or button semantics.
  */
 export const Hero = forwardRef<HTMLElement, HeroProps>(function Hero(
   { eyebrow, title, lede, ctas, credentials, artifact },

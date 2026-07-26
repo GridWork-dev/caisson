@@ -28,7 +28,6 @@
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "@caisson/ui": "workspace:*",
     "@types/culori": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:"

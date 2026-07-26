@@ -17,6 +17,9 @@ export interface FeatureGridProps extends HTMLAttributes<HTMLDivElement> {
  * hand-duplicated `<div className="cs-grid cs-grid--N" style={{ marginTop }}>` pattern into one
  * primitive: it reuses the existing kit-gated `cs-grid`/`cs-grid--N` layout (styles/base.css) and
  * layers the standard top margin (skippable via `flush`). Server-safe; values via `var(--cs-*)`.
+ *
+ * @a11y The grid wrapper is layout-only and adds no role, so each child retains its own native
+ *   heading, link, or control semantics.
  */
 export function FeatureGrid({
   cols = 2,

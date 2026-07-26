@@ -85,6 +85,9 @@ export interface LedgerListProps extends HTMLAttributes<HTMLDivElement> {
  *
  * Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`, BEM block
  * `cs-ledger`, `forwardRef` on the root. Presentational — no Radix.
+ *
+ * @a11y The visual column header is `aria-hidden`; each transaction's date, reason, amount, and
+ *   balance remain readable in DOM order.
  */
 export const LedgerList = forwardRef<HTMLDivElement, LedgerListProps>(
   function LedgerList(
