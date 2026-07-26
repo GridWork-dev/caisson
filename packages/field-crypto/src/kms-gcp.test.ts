@@ -29,27 +29,39 @@ function fakeGcpKms(responses: {
     destroyTime?: { seconds: number };
   };
   listCryptoKeyVersions?: (req: { parent?: unknown }) => FakeVersion[];
-}): { client: GcpKmsSendable; seen: { method: string; request: unknown }[] } {
-  const seen: { method: string; request: unknown }[] = [];
+}): {
+  client: GcpKmsSendable;
+  seen: { method: string; request: unknown; options?: unknown }[];
+} {
+  const seen: { method: string; request: unknown; options?: unknown }[] = [];
   const client: GcpKmsSendable = {
-    encrypt: (async (request: {
-      name?: unknown;
-      plaintext?: unknown;
-      additionalAuthenticatedData?: unknown;
-    }) => {
-      seen.push({ method: "encrypt", request });
+    encrypt: (async (
+      request: {
+        name?: unknown;
+        plaintext?: unknown;
+        additionalAuthenticatedData?: unknown;
+      },
+      options?: unknown,
+    ) => {
+      seen.push({ method: "encrypt", request, options });
       return [responses.encrypt?.(request) ?? {}, request, {}];
     }) as GcpKmsSendable["encrypt"],
-    decrypt: (async (request: {
-      name?: unknown;
-      ciphertext?: unknown;
-      additionalAuthenticatedData?: unknown;
-    }) => {
-      seen.push({ method: "decrypt", request });
+    decrypt: (async (
+      request: {
+        name?: unknown;
+        ciphertext?: unknown;
+        additionalAuthenticatedData?: unknown;
+      },
+      options?: unknown,
+    ) => {
+      seen.push({ method: "decrypt", request, options });
       return [responses.decrypt?.(request) ?? {}, request, {}];
     }) as GcpKmsSendable["decrypt"],
-    destroyCryptoKeyVersion: (async (request: { name?: unknown }) => {
-      seen.push({ method: "destroyCryptoKeyVersion", request });
+    destroyCryptoKeyVersion: (async (
+      request: { name?: unknown },
+      options?: unknown,
+    ) => {
+      seen.push({ method: "destroyCryptoKeyVersion", request, options });
       return [
         responses.destroyCryptoKeyVersion?.(request) ?? {
           state: "DESTROY_SCHEDULED",
@@ -59,8 +71,11 @@ function fakeGcpKms(responses: {
         {},
       ];
     }) as GcpKmsSendable["destroyCryptoKeyVersion"],
-    listCryptoKeyVersions: (async (request: { parent?: unknown }) => {
-      seen.push({ method: "listCryptoKeyVersions", request });
+    listCryptoKeyVersions: (async (
+      request: { parent?: unknown },
+      options?: unknown,
+    ) => {
+      seen.push({ method: "listCryptoKeyVersions", request, options });
       const versions = responses.listCryptoKeyVersions?.(request) ?? [
         {
           name: `${String(request.parent)}/cryptoKeyVersions/1`,
@@ -211,6 +226,52 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
       state: "destroy-scheduled",
       irreversible: false,
     });
+  });
+
+  test("every GCP operation receives the caller's gax timeout budget", async () => {
+    const { client: kms, seen } = fakeGcpKms({
+      encrypt: () => ({ ciphertext: new Uint8Array([1, 2, 3]) }),
+      decrypt: () => ({ plaintext: new Uint8Array([9, 9]) }),
+    });
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: kms,
+    });
+    const options = { timeoutMs: 1_234 };
+
+    await client.generateDataKey("tenant-a", options);
+    await client.decryptDataKey("tenant-a", Buffer.from([1, 2, 3]), options);
+    await client.scheduleKeyDeletion("tenant-a", options);
+
+    expect(seen).toHaveLength(4);
+    for (const call of seen) {
+      expect(call.options).toEqual({ timeout: 1_234 });
+    }
+  });
+
+  test("GCP generate aborts promptly and zeroizes its transient plaintext DEK", async () => {
+    let generatedPlaintext: Buffer | undefined;
+    const base = fakeGcpKms({}).client;
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: {
+        ...base,
+        encrypt: (async (request: { plaintext?: unknown }) => {
+          generatedPlaintext = request.plaintext as Buffer;
+          return new Promise(() => undefined);
+        }) as GcpKmsSendable["encrypt"],
+      },
+    });
+    const controller = new AbortController();
+    const pending = client.generateDataKey("tenant-a", {
+      abortSignal: controller.signal,
+      timeoutMs: 1_000,
+    });
+
+    controller.abort(new Error("request cancelled"));
+
+    await expect(pending).rejects.toThrow(/request cancelled/);
+    expect(generatedPlaintext?.equals(Buffer.alloc(32))).toBe(true);
   });
 
   test("scheduleKeyDeletion fails loud when the list returns no versions at all", async () => {

@@ -14,15 +14,18 @@ import { createAwsKmsClient, type KmsSendable } from "./kms-aws.ts";
 function fakeKms(respond: (command: unknown) => unknown): {
   client: KmsSendable;
   seen: unknown[];
+  seenOptions: unknown[];
 } {
   const seen: unknown[] = [];
+  const seenOptions: unknown[] = [];
   const client = {
-    send: async (command: unknown): Promise<unknown> => {
+    send: async (command: unknown, options?: unknown): Promise<unknown> => {
       seen.push(command);
+      seenOptions.push(options);
       return respond(command);
     },
   } as unknown as KmsSendable;
-  return { client, seen };
+  return { client, seen, seenOptions };
 }
 
 describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
@@ -141,6 +144,60 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       KeyId: "alias/tenant-a",
       PendingWindowInDays: 30,
     });
+  });
+
+  test("every AWS operation receives the caller's bounded abort budget", async () => {
+    const { client: kms, seenOptions } = fakeKms((command) => {
+      if (command instanceof GenerateDataKeyCommand) {
+        return {
+          Plaintext: new Uint8Array(32).fill(7),
+          CiphertextBlob: new Uint8Array([1, 2, 3]),
+        };
+      }
+      if (command instanceof DecryptCommand) {
+        return { Plaintext: new Uint8Array([9, 9]) };
+      }
+      return {
+        KeyState: "PendingDeletion",
+        DeletionDate: new Date("2026-08-01T00:00:00.000Z"),
+      };
+    });
+    const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+    const controller = new AbortController();
+    const options = { abortSignal: controller.signal, timeoutMs: 1_234 };
+
+    await client.generateDataKey("alias/tenant-a", options);
+    await client.decryptDataKey(
+      "alias/tenant-a",
+      Buffer.from([1, 2, 3]),
+      options,
+    );
+    await client.scheduleKeyDeletion("alias/tenant-a", options);
+
+    expect(seenOptions).toHaveLength(3);
+    for (const seen of seenOptions) {
+      expect((seen as { abortSignal?: AbortSignal }).abortSignal).toBeDefined();
+    }
+  });
+
+  test("AWS operations fail when their local deadline expires", async () => {
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: {
+        send: ((_: unknown, options?: { abortSignal?: AbortSignal }) =>
+          new Promise((_, reject) => {
+            options?.abortSignal?.addEventListener(
+              "abort",
+              () => reject(options.abortSignal?.reason),
+              { once: true },
+            );
+          })) as KmsSendable["send"],
+      },
+    });
+
+    await expect(
+      client.generateDataKey("alias/tenant-a", { timeoutMs: 5 }),
+    ).rejects.toThrow(/exceeded 5ms/);
   });
 
   test("generateDataKey fails closed when AWS returns no key material", async () => {

@@ -30,7 +30,12 @@ import {
   ScheduleKeyDeletionCommand,
 } from "@aws-sdk/client-kms";
 import { ConfigError, InternalError, ValidationError } from "@caisson/kernel";
-import type { KmsClient, KmsDeletionReceipt } from "./kms-port.ts";
+import { withKmsOperationBudget } from "./kms-budget.ts";
+import type {
+  KmsClient,
+  KmsDeletionReceipt,
+  KmsOperationOptions,
+} from "./kms-port.ts";
 
 /**
  * The injected KMS transport — only `send` is used, so the whole AWS SDK surface collapses to one
@@ -76,13 +81,19 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
   return {
     async generateDataKey(
       keyId: string,
+      options?: KmsOperationOptions,
     ): Promise<{ plaintextKey: Buffer; wrappedKey: Buffer }> {
-      const { Plaintext, CiphertextBlob } = await sdk.send(
-        new GenerateDataKeyCommand({
-          KeyId: cmkFor(keyId),
-          KeySpec: "AES_256",
-          EncryptionContext: scopeContext(keyId),
-        }),
+      const { Plaintext, CiphertextBlob } = await withKmsOperationBudget(
+        options,
+        (abortSignal) =>
+          sdk.send(
+            new GenerateDataKeyCommand({
+              KeyId: cmkFor(keyId),
+              KeySpec: "AES_256",
+              EncryptionContext: scopeContext(keyId),
+            }),
+            { abortSignal },
+          ),
       );
       if (Plaintext === undefined || CiphertextBlob === undefined) {
         throw new InternalError(
@@ -95,13 +106,22 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
       };
     },
 
-    async decryptDataKey(keyId: string, wrappedKey: Buffer): Promise<Buffer> {
-      const { Plaintext } = await sdk.send(
-        new DecryptCommand({
-          KeyId: cmkFor(keyId),
-          CiphertextBlob: wrappedKey,
-          EncryptionContext: scopeContext(keyId),
-        }),
+    async decryptDataKey(
+      keyId: string,
+      wrappedKey: Buffer,
+      options?: KmsOperationOptions,
+    ): Promise<Buffer> {
+      const { Plaintext } = await withKmsOperationBudget(
+        options,
+        (abortSignal) =>
+          sdk.send(
+            new DecryptCommand({
+              KeyId: cmkFor(keyId),
+              CiphertextBlob: wrappedKey,
+              EncryptionContext: scopeContext(keyId),
+            }),
+            { abortSignal },
+          ),
       );
       if (Plaintext === undefined) {
         throw new InternalError(
@@ -111,18 +131,26 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
       return Buffer.from(Plaintext);
     },
 
-    async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
+    async scheduleKeyDeletion(
+      keyId: string,
+      options?: KmsOperationOptions,
+    ): Promise<KmsDeletionReceipt> {
       // Refuse an empty scope: falling back to the default CMK here would crypto-shred EVERY tenant.
       if (keyId.length === 0) {
         throw new ValidationError(
           "field-crypto: AWS KMS scheduleKeyDeletion requires an explicit keyId — refusing to delete the default CMK",
         );
       }
-      const { KeyState, DeletionDate } = await sdk.send(
-        new ScheduleKeyDeletionCommand({
-          KeyId: keyId,
-          PendingWindowInDays: pendingWindowInDays,
-        }),
+      const { KeyState, DeletionDate } = await withKmsOperationBudget(
+        options,
+        (abortSignal) =>
+          sdk.send(
+            new ScheduleKeyDeletionCommand({
+              KeyId: keyId,
+              PendingWindowInDays: pendingWindowInDays,
+            }),
+            { abortSignal },
+          ),
       );
       if (KeyState !== "PendingDeletion" || DeletionDate === undefined) {
         throw new InternalError(
