@@ -227,15 +227,28 @@ interface Argv {
   sha: string | null;
 }
 
+const IMMUTABLE_GIT_SHA = /^[0-9a-f]{40}$/;
+
 export function parseArgv(argv: readonly string[]): Argv {
   let refetch = false;
   let sha: string | null = null;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--refetch") refetch = true;
-    else if (arg === "--sha") {
-      sha = argv[i + 1] ?? null;
+    if (arg === "--refetch") {
+      if (refetch) throw new Error("duplicate --refetch flag");
+      refetch = true;
+    } else if (arg === "--sha") {
+      if (sha !== null) throw new Error("duplicate --sha flag");
+      const candidate = argv[i + 1];
+      if (candidate === undefined || !IMMUTABLE_GIT_SHA.test(candidate)) {
+        throw new Error(
+          "--sha requires an exact lowercase 40-character git commit SHA",
+        );
+      }
+      sha = candidate;
       i++;
+    } else {
+      throw new Error(`unknown argument: ${JSON.stringify(arg)}`);
     }
   }
   return { refetch, sha };

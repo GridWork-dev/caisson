@@ -104,6 +104,14 @@ export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
     // Pre-publish reservation: remove when the release train appends oscal-spine@0.1.0.
     "oscal-spine",
   ]);
+/**
+ * Exact first-publish versions for the temporary reservations above. The pre-publish member-pin
+ * gate treats these pairs as resolving in the next release cut even though the workspace package
+ * itself still carries Changesets' 0.0.0 pre-release sentinel. Keep this map key-identical to
+ * {@link RESERVED_MODULE_ENTITLEMENT_IDS}; both entries leave when the first ledger row lands.
+ */
+export const RESERVED_MODULE_ENTITLEMENT_VERSIONS: ReadonlyMap<string, string> =
+  new Map<string, string>([["oscal-spine", "0.1.0"]]);
 // agent-usage graduated 2026-07-18: indexed (sellable:false) by the agent-runtime consume,
 // so grants resolve via the index; it stays unsellable and in no bundle until its own
 // publish gate (operator lock). agent-trajectory graduated earlier, at its first index entry.
@@ -124,6 +132,24 @@ export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
  */
 export const NON_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>([
   "priority-support",
+]);
+
+/**
+ * Direct-purchase compatibility grants for packages that permanently re-export a carved package.
+ * This is deliberately NOT dependency closure: ADR-0238 rejected generic dependency-to-entitlement
+ * expansion, while ADR-0384 explicitly guarantees that either OSCAL parent purchase keeps the
+ * complete OSCAL surface after the carve. Only the two locked parent relationships live here.
+ *
+ * Keys and values are full registry module ids. A target grants only after it is indexed; while it
+ * is a named pre-publish reservation the parent continues resolving to itself, so deployment before
+ * the release train cannot lock out an existing parent buyer.
+ */
+export const COMPATIBILITY_REEXPORT_ENTITLEMENTS: ReadonlyMap<
+  string,
+  readonly string[]
+> = new Map<string, readonly string[]>([
+  ["@caisson/compliance-core", ["@caisson/oscal-spine"]],
+  ["@caisson/frameworks-pack", ["@caisson/oscal-spine"]],
 ]);
 
 /** Boundary guard (ADR-0021 input-validation): the purchased ids are an array of bounded, non-empty
@@ -162,6 +188,26 @@ function bareSlug(moduleId: string): string {
   return moduleId.startsWith("@caisson/")
     ? moduleId.slice("@caisson/".length)
     : moduleId;
+}
+
+function addCompatibilityReexports(
+  grantorId: string,
+  allowlist: ReadonlySet<string>,
+  members: Set<string>,
+): void {
+  for (const targetId of COMPATIBILITY_REEXPORT_ENTITLEMENTS.get(grantorId) ??
+    []) {
+    if (allowlist.has(targetId)) {
+      members.add(targetId);
+      continue;
+    }
+    if (RESERVED_MODULE_ENTITLEMENT_IDS.has(bareSlug(targetId))) {
+      continue;
+    }
+    throw new Error(
+      `compatibility re-export target is neither indexed nor reserved: ${JSON.stringify(targetId)}`,
+    );
+  }
 }
 
 /**
@@ -357,6 +403,7 @@ export function expandEntitlements(
     }
     if (MODULE_ID_RE.test(id) && allowlist.has(id)) {
       members.add(id);
+      addCompatibilityReexports(id, allowlist, members);
       continue;
     }
     if (MODULE_SLUG_RE.test(id)) {
@@ -369,6 +416,7 @@ export function expandEntitlements(
       const candidate = `@caisson/${id}`;
       if (allowlist.has(candidate)) {
         members.add(candidate);
+        addCompatibilityReexports(candidate, allowlist, members);
         continue;
       }
       if (RESERVED_MODULE_ENTITLEMENT_IDS.has(id)) {

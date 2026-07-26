@@ -275,6 +275,32 @@ describe("toOscalAssessmentResults — SAR mapping", () => {
     ).toThrow(ValidationError);
   });
 
+  test.each([
+    "",
+    " ",
+    "/assessment-plan/ap.json",
+    "//host/share/ap.json",
+    "https://example.com/ap.json",
+    "file:assessment-plan/ap.json",
+    "C:\\assessment-plan\\ap.json",
+    "assessment-plan\\ap.json",
+    "../assessment-plan/ap.json",
+    "./assessment-plan/../ap.json",
+    "./assessment-plan/./ap.json",
+    "./assessment-plan//ap.json",
+    "./assessment-plan/ap.json?download=1",
+    "./assessment-plan/ap.json#fragment",
+    "./assessment-plan/%2e%2e/ap.json",
+    "./assessment-plan/%252e%252e/ap.json",
+  ])("ADR-0231: rejects uncontained assessment-plan rlink %s", (rlinkHref) => {
+    expect(() =>
+      toOscalAssessmentResults(
+        fixtureManifest(),
+        det({ assessmentPlan: { rlinkHref } }),
+      ),
+    ).toThrow(ValidationError);
+  });
+
   test("one finding per control with objective status derived from readiness", () => {
     const sar = toOscalAssessmentResults(fixtureManifest(), det())[
       "assessment-results"
