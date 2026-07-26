@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ReactElement } from "react";
+import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { GLOSSARY_TERMS, glossaryPageSpec, renderInlineCode } from "./glossary";
@@ -109,5 +109,38 @@ describe("glossaryPageSpec — the ordered section builder", () => {
     expect(html).toContain('href="/glossary"');
     expect(html).toContain("Glossary");
     expect(html).toContain(term.term);
+  });
+
+  test("the Article 50 spoke renders direct primary-source links, locators, and verification date", () => {
+    const term = GLOSSARY_TERMS.find(
+      (candidate) => candidate.slug === "eu-ai-act-article-50",
+    );
+    expect(term).toBeDefined();
+
+    const sourceSection = glossaryPageSpec(term!).sections.find(
+      (section) =>
+        section.kind === "section" && section.title === "Primary sources",
+    );
+    expect(sourceSection?.kind).toBe("section");
+    if (sourceSection?.kind !== "section") {
+      throw new Error("expected primary-source section");
+    }
+    const html = renderToStaticMarkup(
+      createElement(
+        "section",
+        null,
+        sourceSection.lede,
+        sourceSection.children,
+      ),
+    );
+    expect(html).toContain(
+      "https://eur-lex.europa.eu/eli/reg/2024/1689/oj?locale=en",
+    );
+    expect(html).toContain(
+      "https://ec.europa.eu/newsroom/dae/redirection/document/131215",
+    );
+    expect(html).toContain("Articles 50(1)–(5)");
+    expect(html).toContain("Paragraphs (5), (6), (69)–(74)");
+    expect(html).toContain("Sources verified 2026-07-26");
   });
 });
