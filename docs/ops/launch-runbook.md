@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-25
+updated: 2026-07-26
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -111,9 +111,10 @@ the generic credential steps cover these three.
 
 ## Act 2 — finish code waves and release candidate
 
-- [ ] Complete the five already-locked product residual families.
-- [ ] Complete Inngest v4 and Azure Blob WORM adapter lanes; verify the shipped Azure Key Vault
-      field-crypto lane against the armed production vault.
+- [x] Complete the five already-locked product residual families.
+- [x] Complete the Inngest v4, Azure Key Vault, and Azure Blob WORM adapter lanes.
+- [ ] Merge the request-scoped field-crypto KMS binding, then verify a real wrap/unwrap against the
+      armed production vault. No arming record exists yet.
 - [ ] Attach adapter code, security, and conformance reviews plus changesets.
 - [ ] Resolve every implementation-blocking fork in `docs/state/decisions-and-forks.md`.
 - [ ] Run `bun run check`, formatting, SOT, standards, dependency graph, registry index, OSCAL,

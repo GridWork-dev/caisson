@@ -46,7 +46,7 @@ Provider SDKs are isolated behind the package that owns each port:
 | -------------- | ---------------------- | ------------------------------------------------------------------- |
 | AI/model       | `ai-kit` / `ai-config` | frozen eight-adapter family                                         |
 | Jobs           | `jobs`                 | existing queue adapters; Inngest v4 is the active ADR-0379 addition |
-| KMS            | `field-crypto`         | existing KMS clients; Azure Key Vault is the active addition        |
+| KMS            | `field-crypto`         | AWS/GCP/Azure clients; hosted production uses Azure Key Vault       |
 | WORM artifacts | `audit-worm`           | S3/GCS/R2 family; Azure Blob is the active addition                 |
 
 Core contracts receive injected clients/config and do not read ambient provider credentials.

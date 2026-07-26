@@ -57,19 +57,19 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     slug: "field-crypto",
     metaTitle: "Field Encryption, Per-Tenant AES-256-GCM | Caisson",
     metaDescription:
-      "A distinct HKDF-SHA256 key per tenant, a self-describing AES-256-GCM envelope, and AAD that refuses a ciphertext moved across tenants, columns, or rows.",
+      "A distinct tenant key, KMS-wrapped in hosted production, plus a self-describing AES-256-GCM envelope and AAD that refuses relocated ciphertext.",
     heroOneLiner:
-      "One key per tenant, derived not stored, a ciphertext moved to another tenant fails to decrypt, provably.",
+      "One protected key per tenant, and ciphertext moved to another tenant fails to decrypt, provably.",
     definition:
-      "field-crypto derives a distinct AES-256-GCM key per tenant with HKDF-SHA256, seals values into a self-describing envelope, and binds tenant, column, and row identity into the AEAD's additional authenticated data, so a ciphertext copied to another tenant, column, or row fails to decrypt. A pluggable KMS seam and crypto-shred erasure ship in the same package.",
+      "field-crypto seals values under a distinct AES-256-GCM key per tenant, using HKDF-SHA256 for dev/self-hosted deployments or request-scoped KMS envelope encryption in hosted production. Its self-describing envelope binds tenant, column, and row identity into the AEAD's additional authenticated data, so relocated ciphertext fails to decrypt.",
     included: [
       {
         title: "Fail-closed on every read and write",
         body: "encryptedColumn() wires a Drizzle customType whose toDriver/fromDriver only run inside withFieldCryptoContext. Reach an encrypted column with no bound tenant context and currentFieldCryptoContext() throws InternalError instead of returning a partial or unscoped result.",
       },
       {
-        title: "Per-tenant key, derived not stored",
-        body: "deriveTenantKey() runs HKDF-SHA256 over a 32-byte MASTER_FIELD_KEY and a 32-byte FIELD_CRYPTO_SALT, folding the tenant id and key version into the HKDF info string. There is no key table to back up or leak, DerivedKeyProvider re-derives the key on demand.",
+        title: "Per-tenant keys, derived or KMS-wrapped",
+        body: "DerivedKeyProvider keeps the zero-infrastructure dev/self-hosted path by folding tenant id and key version into HKDF-SHA256. Caisson's hosted production site instead persists only append-only wrapped DEKs, unwraps every historical version into a disposable request context, and zeroizes all plaintext key buffers at exit.",
       },
       {
         title: "AAD binds tenant, column, and row",
