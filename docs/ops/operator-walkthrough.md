@@ -44,7 +44,7 @@ Use the repository hierarchy, not an external artifact:
 ## Gate C — commerce and Ring 3
 
 - [ ] Complete Paddle production approval.
-- [ ] Recreate the 35-product/66-price production catalog.
+- [ ] Recreate the 36-product/68-price production catalog.
 - [ ] Configure adjustment and dunning behavior.
 - [ ] Prove a real checkout, refund, and entitlement lifecycle.
 - [ ] Complete Mercury setup.

@@ -25,6 +25,8 @@ export type { PurchaseBookEntry } from "./purchases.ts";
 export {
   RENEWAL_BOOK_VERSION,
   RENEWAL_BOOK,
+  ACTIVE_RENEWAL_PRICE_IDS,
+  ARCHIVED_RENEWAL_PRICE_IDS,
   renewalBookEntrySchema,
   parseRenewalBook,
   isRenewalPrice,

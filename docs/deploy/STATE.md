@@ -34,9 +34,13 @@ The OSCAL wave carries the 36-product/68-price desired catalog, with Compliance 
 Everything at $2,259. Paddle Sandbox now has the standalone OSCAL product
 `pro_01kye9596gvz4c25pjj7hf4rz5`, purchase price
 `pri_01kye9597z46149qg5xfrqxybk`, and renewal price
-`pri_01kye959a399018w0hmvbeem7h`. No production catalog or fleet deployment changed; docs-RAG and
-support-bot remain on their old image until the post-merge fleet deploy, after which the Act 6 price
-probe must assert both new bundle prices.
+`pri_01kye959a399018w0hmvbeem7h`. The forward-only bundle reprice minted Compliance purchase
+`pri_01kyeczreqq58ze5en0p3f0jkc` and renewal `pri_01kyeczrnp20006sebn9gzg5zb`, plus Everything
+purchase `pri_01kyeczrjj0tzpwg7tv752e42s` and renewal `pri_01kyeczrrsq68b8wbx2atygs5a`; the four
+predecessor prices were archived, not mutated, and remain in the append-only fulfillment resolvers.
+No production catalog or fleet deployment changed; docs-RAG and support-bot remain on their old
+image until the post-merge fleet deploy, after which the Act 6 price probe must assert both new
+bundle prices.
 
 ## 2026-07-25 — clean-state wave live (site): truth-fixes + CVE batch
 

@@ -139,8 +139,8 @@ commercial where their code is proprietary and are not independently purchasable
 - `apps/site/lib/pricing.ts`, `packages/pricebook/src/upgrades.ts`, package manifests, Paddle
   catalog generation, and license fulfillment are parity-tested against one catalog.
 - Prices and credits are integers. Unknown product IDs fail closed.
-- Six bundles and 26 module SKUs are the only one-time product surface; production recreation is
-  35 products and 66 prices after subscriptions and renewal rows are included.
+- Six bundles and 27 module SKUs are the only one-time product surface; production recreation is
+  36 products and 68 prices after subscriptions and renewal rows are included.
 
 ## Decision lineage
 

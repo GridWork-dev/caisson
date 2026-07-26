@@ -4,7 +4,7 @@
  *
  * CAISSON-31 / launch-runbook §2.2. Paddle Sandbox and Production are separate catalogs with
  * separate ids — nothing carries over. This tool re-derives the ADR-0257/0258/0260 six-bundle
- * catalog from the display SOT and creates it in the target Paddle environment, replacing ~35
+ * catalog from the display SOT and creates it in the target Paddle environment, replacing 36
  * manual dashboard clicks with a repeatable, re-runnable script.
  *
  * SOT: `apps/site/lib/pricing.ts` — the display sheet the runbook §2.2 names as authoritative,

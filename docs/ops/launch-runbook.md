@@ -139,8 +139,8 @@ Redeploy site, admin, license, docs-RAG, and support-bot from the immutable rele
 | Site            | release tag, healthy                                      |
 | Admin           | release tag, matching manifest, GitHub OAuth healthy      |
 | License         | release tag, matching manifest, migration `0030` observed |
-| Docs-RAG        | release tag; $1,449 answer                                |
-| Support bot     | release tag; $1,449 answer                                |
+| Docs-RAG        | release tag; $1,649 Compliance; $2,259 Everything answers |
+| Support bot     | release tag; $1,649 Compliance; $2,259 Everything answers |
 | Registry Worker | exact tagged index bytes and matching manifest            |
 
 Repeat all health, dashboard, checkout sandbox, entitlement, refund, RAG, support, unknown-SKU,
