@@ -27,6 +27,7 @@ const EXPECTED_NAMES_IN_ORDER = [
   "0027_rate_limit.sql",
   "0028_demo_run_budget.sql",
   "0029_demo_run_leads.sql",
+  "0032_field_crypto_keys.sql",
 ];
 
 // The assembled platform chain as prod's positional `schema_version` ledger records it — the
@@ -70,6 +71,7 @@ const ASSEMBLED_LEDGER_FILENAMES = [
   "0029_demo_run_leads.sql",
   "0030_renewal_extension_months.sql",
   "0031_entitlement_grant_charged_amount.sql",
+  "0032_field_crypto_keys.sql",
 ];
 
 test("assembled platform chain matches prod's positional ledger — append-only, never re-slot", () => {
@@ -85,7 +87,7 @@ test("assembled platform chain matches prod's positional ledger — append-only,
   }
 });
 
-test("SITE_LOCAL_MIGRATIONS contains exactly the 8 expected apps/site-local migrations, in order", () => {
+test("SITE_LOCAL_MIGRATIONS contains exactly the 9 expected apps/site-local migrations, in order", () => {
   expect(SITE_LOCAL_MIGRATIONS.map((m) => m.name)).toEqual(
     EXPECTED_NAMES_IN_ORDER,
   );
@@ -100,14 +102,14 @@ test("deploy-migrate.ts's platformPackage() folds in the SAME SITE_LOCAL_MIGRATI
   expect(tail).toEqual(SITE_LOCAL_MIGRATIONS as (typeof tail)[number][]);
 });
 
-describe("db.ts's dev PGlite double applies the identical list (all 5 tables land)", () => {
+describe("db.ts's dev PGlite double applies the identical list", () => {
   let pg: PGlite | undefined;
 
   afterEach(async () => {
     await pg?.close();
   });
 
-  test("byok_key_meta, tenant_ai_credential, and compliance_attestation all exist — the exact CAISSON-64 crash surface", async () => {
+  test("BYOK, compliance, and wrapped field-key tables all exist", async () => {
     pg = new PGlite();
     // The exact call `db.ts`'s `bootstrapPglite()` makes — proves the PGlite consumer resolves
     // the SAME `SITE_LOCAL_MIGRATIONS` binding `deploy-migrate.ts` applies to a real Postgres.
@@ -116,7 +118,8 @@ describe("db.ts's dev PGlite double applies the identical list (all 5 tables lan
     const tables = await pg.query<{ relname: string }>(
       `SELECT relname FROM pg_class
        WHERE relname IN ('byok_key_meta', 'tenant_ai_credential', 'compliance_attestation',
-                          'ask_ai_spend', 'ask_ai_question')
+                          'ask_ai_spend', 'ask_ai_question', 'field_key_version',
+                          'field_wrapped_dek')
        ORDER BY relname`,
     );
     expect(tables.rows.map((r) => r.relname)).toEqual([
@@ -124,6 +127,8 @@ describe("db.ts's dev PGlite double applies the identical list (all 5 tables lan
       "ask_ai_spend",
       "byok_key_meta",
       "compliance_attestation",
+      "field_key_version",
+      "field_wrapped_dek",
       "tenant_ai_credential",
     ]);
   });

@@ -30,6 +30,8 @@ export { buildAad } from "./aad.ts";
 
 export { encryptField, decryptField } from "./encrypt-field.ts";
 
+export { FIELD_CRYPTO_KEY_SCHEMA_SQL } from "./schema.ts";
+
 export {
   type FieldKeyProvider,
   type SyncFieldKeyProvider,
