@@ -73,8 +73,8 @@ describe("buildCatalogMapping", () => {
   test("exports one exact product and price id for every planned marker", () => {
     const mapping = buildCatalogMapping(buildPlan(), completeSnapshot());
 
-    expect(Object.keys(mapping.products)).toHaveLength(35);
-    expect(Object.keys(mapping.prices)).toHaveLength(66);
+    expect(Object.keys(mapping.products)).toHaveLength(36);
+    expect(Object.keys(mapping.prices)).toHaveLength(68);
     expect(mapping.products.compliance).toBe("pro_000");
     expect(mapping.prices.compliance).toBe("pri_000_000");
     expect(mapping.prices["renew:agent-runner"]).toMatch(/^pri_/);

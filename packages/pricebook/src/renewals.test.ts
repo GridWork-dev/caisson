@@ -5,6 +5,8 @@ import { describe, expect, test } from "bun:test";
 import { PLAN_BOOK } from "./plans.ts";
 import { PURCHASE_BOOK } from "./purchases.ts";
 import {
+  ACTIVE_RENEWAL_PRICE_IDS,
+  ARCHIVED_RENEWAL_PRICE_IDS,
   RENEWAL_BOOK,
   isRenewalPrice,
   parseRenewalBook,
@@ -139,7 +141,24 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
     expect(
       resolveRenewal("pri_01kye959a399018w0hmvbeem7h").renewsEntitlement,
     ).toBe("oscal-spine");
-    expect(Object.keys(RENEWAL_BOOK).length).toBe(33);
+    expect(
+      resolveRenewal("pri_01kyeczrnp20006sebn9gzg5zb").renewsEntitlement,
+    ).toBe("compliance");
+    expect(
+      resolveRenewal("pri_01kyeczrrsq68b8wbx2atygs5a").renewsEntitlement,
+    ).toBe("everything");
+    expect(Object.keys(RENEWAL_BOOK).length).toBe(35);
+    expect(ACTIVE_RENEWAL_PRICE_IDS.size).toBe(33);
+    expect([...ARCHIVED_RENEWAL_PRICE_IDS].sort()).toEqual(
+      [
+        "pri_01kwvz6kzh4h43aec3r5rs5je4",
+        "pri_01kwvz6mcfzgjemqa72czdfkmq",
+      ].sort(),
+    );
+    for (const archived of ARCHIVED_RENEWAL_PRICE_IDS) {
+      expect(ACTIVE_RENEWAL_PRICE_IDS.has(archived)).toBe(false);
+      expect(() => resolveRenewal(archived)).not.toThrow();
+    }
   });
 });
 

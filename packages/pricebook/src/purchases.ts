@@ -369,6 +369,18 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     credits: NO_CREDITS,
     entitlements: ["everything"],
   },
+  // Forward-only reprices (ADR-0381): the old bundle price ids above remain resolvable forever,
+  // while checkout arms these new Sandbox ids at the 2026-07-25 catalog amounts.
+  pri_01kyeczreqq58ze5en0p3f0jkc: {
+    purchaseTag: "compliance_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["compliance"],
+  },
+  pri_01kyeczrjj0tzpwg7tv752e42s: {
+    purchaseTag: "everything_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["everything"],
+  },
   // oscal-spine joined the sandbox catalog 2026-07-25.
   pri_01kye9597z46149qg5xfrqxybk: {
     purchaseTag: "oscal-spine_module",

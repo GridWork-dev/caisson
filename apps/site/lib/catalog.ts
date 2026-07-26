@@ -37,12 +37,12 @@ export interface CatalogItem {
  *  not an open index signature — every bundle MUST resolve, so a future 7th bundle added to
  *  `pricing.ts` without a row here is a compile error, not a silent `undefined` at checkout time. */
 const BUNDLE_PRICE_IDS: Record<BundleId, string> = {
-  compliance: "pri_01kwwqa2hne35c1df5xe8p91z3",
+  compliance: "pri_01kyeczreqq58ze5en0p3f0jkc",
   "ai-production": "pri_01kwwqa2rcxtn8pt3dr3jdnnf0",
   "local-first": "pri_01kwwqa2xp3jp1qww2j5ya0meh",
   "agentic-dev": "pri_01kwwqa332mweg8veaarkygbae",
   provenance: "pri_01kwwqa3872cs4c53w8qhhz31k",
-  everything: "pri_01kwwqa3dfp8k0v5k3bbg3pd5f",
+  everything: "pri_01kyeczrjj0tzpwg7tv752e42s",
 };
 
 /** À-la-carte module slug -> the pricebook's REAL Paddle price id (`purchases.ts`'s per-module REAL
