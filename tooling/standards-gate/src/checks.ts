@@ -793,20 +793,37 @@ function parseReservedEntitlementIds(src: string): string[] {
   );
 }
 
+/** Extract `slug → first version` pairs from `RESERVED_MODULE_ENTITLEMENT_VERSIONS`. */
+function parseReservedEntitlementVersions(src: string): Map<string, string> {
+  const block = src.match(
+    /RESERVED_MODULE_ENTITLEMENT_VERSIONS[^=]*=\s*new Map(?:<[^>]*>)?\(\s*\[([\s\S]*?)\]\s*\)/,
+  );
+  const entries = new Map<string, string>();
+  if (!block?.[1]) return entries;
+  for (const match of block[1].matchAll(
+    /\[\s*["']([a-z0-9-]+)["']\s*,\s*["']([0-9]+\.[0-9]+\.[0-9]+)["']\s*\]/g,
+  )) {
+    const slug = match[1];
+    const version = match[2];
+    if (slug !== undefined && version !== undefined) entries.set(slug, version);
+  }
+  return entries;
+}
+
 /**
- * reserved-ids staleness (ADR-0248 F5, WARN). `RESERVED_MODULE_ENTITLEMENT_IDS` is a fail-soft
+ * Reserved-id lifecycle (ADR-0248 F5). `RESERVED_MODULE_ENTITLEMENT_IDS` is a fail-soft
  * carve-out for a SKU that is sold but not yet published — a purchased reserved id expands to nothing
- * rather than throwing. Once its package IS published to the registry index, the reservation is stale
- * and actively under-grants (the buyer's purchased id keeps expanding to nothing instead of the real
- * grant). WARN (not error) per the advisory-first tier: it flags the stale entries for removal
- * without blocking, since removal lands in the entitlement-expansion path (a separate wave's tree).
+ * rather than throwing. The matching first-version map lets bundle pins resolve during the same
+ * pre-publish cut. Their keys must remain identical, and both exceptions must leave atomically when
+ * the first registry row lands; otherwise a later missing pin can be hidden by a stale reservation.
  */
 export function checkReservedIdsStaleness(root: string): Finding[] {
   const entPath = join(root, "packages/registry-schema/src/entitlements.ts");
   const indexPath = join(root, "registry/index.json");
   if (!existsSync(entPath) || !existsSync(indexPath)) return [];
-  const reserved = parseReservedEntitlementIds(readFileSync(entPath, "utf8"));
-  if (reserved.length === 0) return [];
+  const source = readFileSync(entPath, "utf8");
+  const reserved = new Set(parseReservedEntitlementIds(source));
+  const reservedVersions = parseReservedEntitlementVersions(source);
   let indexed: Set<string>;
   try {
     const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
@@ -817,13 +834,22 @@ export function checkReservedIdsStaleness(root: string): Finding[] {
     return [];
   }
   const findings: Finding[] = [];
-  for (const id of reserved) {
-    if (indexed.has(`@caisson/${id}`)) {
+  const reservationKeys = new Set([...reserved, ...reservedVersions.keys()]);
+  for (const id of reservationKeys) {
+    if (!reserved.has(id) || !reservedVersions.has(id)) {
       findings.push({
-        severity: "warn",
+        severity: "error",
         rule: "reserved-ids-staleness",
         pkg: `@caisson/${id}`,
-        message: `RESERVED_MODULE_ENTITLEMENT_IDS still reserves "${id}" but @caisson/${id} is now published in the registry index — the fail-soft carve-out under-grants a buyer who purchased it (expands to nothing). Drop it from the reserved set so its bare slug resolves to the real grant (ADR-0071).`,
+        message: `pre-publish reservation keys drifted: "${id}" must appear in both RESERVED_MODULE_ENTITLEMENT_IDS and RESERVED_MODULE_ENTITLEMENT_VERSIONS, or in neither.`,
+      });
+    }
+    if (indexed.has(`@caisson/${id}`)) {
+      findings.push({
+        severity: "error",
+        rule: "reserved-ids-staleness",
+        pkg: `@caisson/${id}`,
+        message: `@caisson/${id} is published in the registry index but its pre-publish reservation remains — remove "${id}" from both RESERVED_MODULE_ENTITLEMENT_IDS and RESERVED_MODULE_ENTITLEMENT_VERSIONS in the version PR.`,
       });
     }
   }
