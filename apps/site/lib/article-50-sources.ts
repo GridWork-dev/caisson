@@ -1,4 +1,4 @@
-import type { WritingSource } from "./writing";
+import type { RegulatorySource } from "./regulatory-source";
 
 export const ARTICLE_50_VERIFIED_ON = "2026-07-26";
 
@@ -60,4 +60,10 @@ export const ARTICLE_50_PRIMARY_SOURCES = [
       ],
     },
   },
-] as const satisfies readonly WritingSource[];
+] as const satisfies readonly RegulatorySource[];
+
+/** The evergreen framework summary visibly cites only the authentic OJ text and final guidance. */
+export const ARTICLE_50_SUMMARY_SOURCES = [
+  ARTICLE_50_PRIMARY_SOURCES[0],
+  ARTICLE_50_PRIMARY_SOURCES[2],
+] as const satisfies readonly RegulatorySource[];
