@@ -76,6 +76,15 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
   }
   const defaultKeyId = config.keyId;
   const pendingWindowInDays = config.pendingWindowInDays ?? 7;
+  if (
+    !Number.isInteger(pendingWindowInDays) ||
+    pendingWindowInDays < 7 ||
+    pendingWindowInDays > 30
+  ) {
+    throw new ConfigError(
+      "createAwsKmsClient pendingWindowInDays must be an integer from 7 through 30",
+    );
+  }
   const sdk: KmsSendable =
     config.client ??
     new KMSClient(config.region !== undefined ? { region: config.region } : {});

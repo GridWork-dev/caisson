@@ -33,6 +33,18 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     expect(() => createAwsKmsClient({ keyId: "" })).toThrow(/keyId/);
   });
 
+  for (const pendingWindowInDays of [6, 31, 7.5, Number.NaN, Infinity]) {
+    test(`fails closed on invalid pendingWindowInDays ${String(pendingWindowInDays)}`, () => {
+      expect(() =>
+        createAwsKmsClient({
+          keyId: "key-DEFAULT",
+          pendingWindowInDays,
+          client: fakeKms(() => ({})).client,
+        }),
+      ).toThrow(/integer from 7 through 30/);
+    });
+  }
+
   test("generateDataKey TARGETS the per-call tenant CMK and binds the scope EncryptionContext", async () => {
     const sdkPlaintext = new Uint8Array(32).fill(7);
     const { client: kms, seen } = fakeKms(() => ({
@@ -229,6 +241,42 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     await Promise.resolve();
 
     expect(sdkPlaintext).toEqual(new Uint8Array(3));
+  });
+
+  test("a late AWS generated plaintext is zeroized after caller cancellation", async () => {
+    const sdkPlaintext = new Uint8Array(32).fill(9);
+    let resolveSend!: (value: {
+      Plaintext: Uint8Array;
+      CiphertextBlob: Uint8Array;
+    }) => void;
+    const lateResponse = new Promise<{
+      Plaintext: Uint8Array;
+      CiphertextBlob: Uint8Array;
+    }>((resolve) => {
+      resolveSend = resolve;
+    });
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: {
+        send: (() => lateResponse) as unknown as KmsSendable["send"],
+      },
+    });
+    const controller = new AbortController();
+    const pending = client.generateDataKey("acct_a", {
+      abortSignal: controller.signal,
+      timeoutMs: 1_000,
+    });
+
+    controller.abort(new Error("request cancelled"));
+    await expect(pending).rejects.toThrow(/request cancelled/);
+    resolveSend({
+      Plaintext: sdkPlaintext,
+      CiphertextBlob: new Uint8Array([1]),
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(sdkPlaintext).toEqual(new Uint8Array(32));
   });
 
   test("generateDataKey fails closed when AWS returns no key material", async () => {
