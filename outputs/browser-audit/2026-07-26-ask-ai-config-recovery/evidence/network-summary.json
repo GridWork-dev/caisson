@@ -1,0 +1,21 @@
+{
+  "capturedAt": "2026-07-26T13:22:28-04:00",
+  "page": "https://caisson.sh/docs",
+  "question": "What is included in the Compliance bundle?",
+  "requests": [
+    {
+      "method": "GET",
+      "origin": "https://hagen.challenges.cloudflare.com",
+      "purpose": "Private Access Token challenge leg",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "url": "https://caisson.sh/api/ask",
+      "status": 403
+    }
+  ],
+  "visibleState": "We couldn't verify your browser. Reload the page and try again.",
+  "classification": "turnstile_blocked_before_retrieval",
+  "secretValuesCaptured": false
+}
