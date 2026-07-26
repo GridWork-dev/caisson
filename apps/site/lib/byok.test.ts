@@ -49,6 +49,15 @@ function stubFetch(status: number): void {
     })) as unknown as typeof fetch;
 }
 
+function restoreEnv(
+  env: Record<string, string | undefined>,
+  name: string,
+  previous: string | undefined,
+): void {
+  if (previous === undefined) delete env[name];
+  else env[name] = previous;
+}
+
 test("maskLast4 reveals only the last 4 chars", () => {
   expect(maskLast4("sk-supersecret-abcd")).toBe("••••abcd");
 });
@@ -112,7 +121,7 @@ test("the derived BYOK provider is unreachable in production", () => {
     expect(() => getDevFieldKeyProvider()).toThrow(/disabled in production/);
   } finally {
     g.caissonByokDevKeyProvider = undefined;
-    env.NODE_ENV = previousNodeEnv;
+    restoreEnv(env, "NODE_ENV", previousNodeEnv);
   }
 });
 
@@ -133,9 +142,8 @@ test("production submission fails closed on missing KMS config without a demo fa
     ).rejects.toThrow(/Azure Key Vault/);
   } finally {
     g.caissonSiteAzureKmsClient = undefined;
-    env.NODE_ENV = previousNodeEnv;
-    if (previousVaultUrl === undefined) delete env.AZURE_KEY_VAULT_URL;
-    else env.AZURE_KEY_VAULT_URL = previousVaultUrl;
+    restoreEnv(env, "NODE_ENV", previousNodeEnv);
+    restoreEnv(env, "AZURE_KEY_VAULT_URL", previousVaultUrl);
   }
 });
 
