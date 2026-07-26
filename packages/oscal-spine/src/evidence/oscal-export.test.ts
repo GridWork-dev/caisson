@@ -446,6 +446,22 @@ describe("toOscalBundle — determinism + honesty + fail-closed", () => {
     expect(canonicalize(asJson(a))).toBe(canonicalize(asJson(b)));
   });
 
+  test("accepts every rollup pointer shape the parent manifest contract accepts", () => {
+    const manifest = fixtureManifest();
+    const parentCompatible = {
+      ...manifest,
+      crosswalkRollup: {
+        cells: manifest.crosswalkRollup.cells.map((cell) => ({
+          ...cell,
+          canonicalControlIds: ["vendor/control:id"],
+          evidencePointers: ["evidence://collector/result"],
+        })),
+      },
+    };
+
+    expect(() => toOscalBundle(parentCompatible, det())).not.toThrow();
+  });
+
   test("the default id source mints distinct random UUIDs per call", () => {
     const m = fixtureManifest();
     const a = toOscalAssessmentResults(m, { now: NOW })["assessment-results"];
