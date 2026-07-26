@@ -11,6 +11,7 @@ import type {
   RegimeCrosswalk as ParentRegimeCrosswalk,
 } from "./index.ts";
 import * as complianceCore from "./index.ts";
+import type { EvidencePackManifest } from "./evidence/pack-format.ts";
 import type {
   NistCatalogDocument as SpineNistCatalogDocument,
   OscalAssessmentPlan as SpineOscalAssessmentPlan,
@@ -48,6 +49,9 @@ type ParentTypes = [
   ParentRegimeCrosswalk,
 ];
 const TYPE_SURFACE_IS_IDENTICAL: Assert<Equal<SpineTypes, ParentTypes>> = true;
+const EVIDENCE_PACK_REMAINS_ASSIGNABLE: Assert<
+  EvidencePackManifest extends SpineOscalEvidencePackManifest ? true : false
+> = true;
 
 describe("@caisson/compliance-core OSCAL compatibility surface", () => {
   test("re-exports the whole OSCAL package surface unchanged", () => {
@@ -57,6 +61,10 @@ describe("@caisson/compliance-core OSCAL compatibility surface", () => {
         `missing or replaced OSCAL runtime export: ${name}`,
       ).toBe(value);
     }
+  });
+
+  test("the validated evidence-pack manifest remains assignable to the standalone OSCAL boundary", () => {
+    expect(EVIDENCE_PACK_REMAINS_ASSIGNABLE).toBe(true);
   });
 
   test("representative type-only exports remain exactly compatible", () => {
