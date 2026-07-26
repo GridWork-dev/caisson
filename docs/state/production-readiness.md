@@ -118,12 +118,22 @@ Arm anchoring only after its scheduler and TSA/Rekor/OTS egress ledger are ready
 Completed locally: generated 39-component design-system manifest, byte drift guard, and
 single-source browser-rendered contrast checks.
 
-Still open:
+**All four remaining residuals closed 2026-07-25** — verified in the merged tree, not inferred from
+the PR titles:
 
-1. Three module-depth pages for access-review, risk-register, and trust-page.
-2. Admin chain viewer row status, proof details, provenance, redacted export, and redaction count.
-3. Tenant self-service proof route with dashboard/demo integration.
-4. Buyer-dashboard crosswalk matrix.
+1. Module-depth pages for access-review, risk-register, and trust-page — records present in
+   `apps/site/lib/module-pages.ts` (#332).
+2. Admin chain viewer with proof details and redacted export — `apps/admin/src/app/api/admin/audit/`
+   `{proof,export}/route.ts` plus the internal proof seam at `api/internal/audit/proof` (#335).
+3. Tenant self-service proof route with dashboard integration — `apps/site/app/api/audit/proof/`
+   `route.ts` and `app/dashboard/evidence/page.tsx` (#335).
+4. Buyer crosswalk matrix — `apps/site/components/tenant-evidence-dashboard.tsx` via
+   `mapBuyerCrosswalk(latestPack.manifest)`, with `maps-to` and `implements` rendered as separately
+   labeled edge kinds and never summed into one coverage figure, per ADR-0380 lock 3 (#335).
+
+The evidence-export path these ship on was reshaped in the same wave by **ADR-0385**: the pack
+carries no executable verifier, verification moves to the out-of-band `@caisson/verify-pack`, and
+exports emit only fields their event schema names (fail closed).
 
 `substrate.field-crypto-policy` is no longer open — ADR-0381 drafted and locked its canonical
 control content, resolving the binding the collector shipped without.
