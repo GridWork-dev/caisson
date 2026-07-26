@@ -44,7 +44,7 @@ tracker), #337 (`d94f9d5f`, trivy local parity), #335 (`31bf5f1c`, lane A). Zero
 reconciled tree verified green end to end — 221/221 turbo tasks, 75 packages gate, sot green on every
 content gate, security scan `rc=0` at 3,980 real semgrep targets. T8 is the next PR from this branch.
 
-There are **49 pending changeset files**, 47 of them release-bearing. Current Changesets resolution
+There are **48 pending changeset files**, 47 of them release-bearing. Current Changesets resolution
 is 70 package bumps: 56 patch, 12 minor, and 2 major. They are consumed only by T7.
 
 ## Linear reconciliation

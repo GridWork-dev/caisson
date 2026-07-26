@@ -22,13 +22,13 @@ in [knowledge/decisions](../knowledge/decisions), and per-package depth in
 
 | Tree        | Count | Purpose                                                            |
 | ----------- | ----: | ------------------------------------------------------------------ |
-| `packages/` |    61 | framework-free capability units: 17 Apache-2.0 and 44 commercial   |
+| `packages/` |    62 | framework-free capability units: 17 Apache-2.0 and 45 commercial   |
 | `apps/`     |     7 | site, admin, and five reference/demo applications                  |
 | `services/` |     5 | four Bun services plus Python support-bot                          |
 | `registry/` |     1 | registry service, append-only ledger/index, and Cloudflare Worker  |
 | `tooling/`  |     6 | browser audit, design critic, eslint, standards, testing, tsconfig |
 
-The root has 79 Bun workspaces. The only Python projects are `services/support-bot` and
+The root has 80 Bun workspaces. The only Python projects are `services/support-bot` and
 `tools/assert-lane`; this surface is frozen at two. Retired self-hosted SigNoz infrastructure is
 not part of the live topology.
 

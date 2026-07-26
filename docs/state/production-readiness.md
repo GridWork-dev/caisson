@@ -29,7 +29,7 @@ blocked until both technical and operator evidence is attached.
 | Commerce                | **blocked**                                  | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                    |
 | Operations              | **gaps**                                     | Restore rehearsed July 11; current backup recency and provider-console checks still required                                           |
 | Buyer/product           | **gaps**                                     | Design-manifest residual complete; four already-locked families remain                                                                 |
-| Release                 | **blocked**                                  | 49 pending changeset files; no current CI/release certification or immutable tag-to-bytes receipt                                      |
+| Release                 | **blocked**                                  | 48 pending changeset files; no current CI/release certification or immutable tag-to-bytes receipt                                      |
 
 ## Evidence snapshot
 
@@ -47,7 +47,7 @@ blocked until both technical and operator evidence is attached.
 - Dependency-patch ownership is enforced by the audit harness in `3e384bc5`.
 - `bun run sot` has every content/structure gate green. Its sole expected drift is branch hygiene
   from concurrent worktrees; this task does not remove another workstream.
-- There are 49 pending changeset files, 47 of them release-bearing. `bun changeset status` resolves
+- There are 48 pending changeset files, 47 of them release-bearing. `bun changeset status` resolves
   them to 70 package bumps: 56 patch, 12 minor, and 2 major.
 - Private-repository access has been authorized since 2026-06-30 (`gh auth status`: active
   `repo`-scoped token; `caisson-sh/caisson` confirmed private). Branch protection stays
