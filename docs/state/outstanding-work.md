@@ -4,6 +4,7 @@ status: live
 grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
   - knowledge/decisions/ADR-0380-completion-fork-locks-and-module-depth-slice.md
+  - knowledge/decisions/ADR-0386-everything-reprice-release-sequencing-and-wave-force-push.md
   - outputs/specs/full-state-completion/SPEC.md
   - docs/state/decisions-and-forks.md
   - docs/state/production-readiness.md
@@ -24,35 +25,39 @@ and runtime evidence.
 
 ## State matrix
 
-| Workstream                                       | State                               | Exit evidence                                                                             |
-| ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------- |
-| T0 — canonical truth and issue reconciliation    | **complete locally**                | SOT content gates green; only concurrent-worktree hygiene remains                         |
-| T1 — TypeScript dependency graph                 | **complete locally**                | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                    |
-| T2 — total price authority                       | **complete locally**                | `f6122de8` + `92d930b6`; every sellable commercial package covered                        |
-| T3 — route-specific limiter policy               | **complete locally**                | `014ac4de`; webhook fail-open+alert, protected routes 503                                 |
-| T4 — one-SHA fleet and migration 0030            | **held: external + migration gate** | six runtime legs on one approved SHA; migration and parity receipts                       |
-| T5 — five locked product residuals               | **1 complete / 4 in build**         | `b037b878` DS manifest green; forks closed by ADR-0380 — T5B/C/E in lane A, T5A in lane B |
-| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **in build (lane A)**               | three isolated adapter reviews and changesets; KMS port widening is breaking              |
-| T7 — consolidated verification and release       | **held after code waves**           | green local/CI gates, immutable tag-to-bytes and deploy receipts                          |
+| Workstream                                       | State                                  | Exit evidence                                                                                                                                  |
+| ------------------------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| T0 — canonical truth and issue reconciliation    | **complete locally**                   | SOT content gates green; only concurrent-worktree hygiene remains                                                                              |
+| T1 — TypeScript dependency graph                 | **complete locally**                   | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                                                                         |
+| T2 — total price authority                       | **complete locally**                   | `f6122de8` + `92d930b6`; every sellable commercial package covered                                                                             |
+| T3 — route-specific limiter policy               | **complete locally**                   | `014ac4de`; webhook fail-open+alert, protected routes 503                                                                                      |
+| T4 — one-SHA fleet and migration 0030            | **next up: external + migration gate** | six runtime legs on one approved SHA; migration and parity receipts. Runs NOW off the reconciled `main` per ADR-0386, not after the oscal wave |
+| T5 — five locked product residuals               | **2 complete / 3 in build**            | `b037b878` DS manifest green; T5A module-depth pages merged in #332; T5B/C/E remain in lane A                                                  |
+| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **in build (lane A)**                  | three isolated adapter reviews and changesets; KMS port widening is breaking                                                                   |
+| T7 — consolidated verification and release       | **next up, then a second train**       | green local/CI gates, immutable tag-to-bytes and deploy receipts. ADR-0386 runs the train NOW; the oscal wave earns its own train after        |
 
-There are **33 pending changeset files**. Current Changesets resolution is 41 patch package
-releases and 4 minor package releases. They are consumed only by T7.
+Three of the four wave PRs are **merged to `main`**: #334 (`96aa01d2`, trunk), #333 (`6f44c60f`,
+Paddle onboarding + catalog-mapping validation), #332 (`2cd41843`, module-depth pages). Only #335
+(lane A) remains open.
+
+There are **39 pending changeset files**. Current Changesets resolution is 40 patch package
+releases and 6 minor package releases. They are consumed only by T7.
 
 ## Linear reconciliation
 
-| Issue       | State                   | Canonical disposition                                                        |
-| ----------- | ----------------------- | ---------------------------------------------------------------------------- |
-| CAISSON-150 | In Progress             | ADR-0379 completion program                                                  |
-| CAISSON-134 | In Progress             | three module-depth pages; fork closed by ADR-0380 lock 6, building in lane B |
-| CAISSON-104 | Todo                    | Ring-3 operator/external act using the corrected probe runbook               |
-| CAISSON-39  | Todo                    | D10 WORM receipt active; non-D10 evidence classes trigger-parked             |
-| CAISSON-113 | Backlog                 | narrowed to provider-console/key-parity reads                                |
-| CAISSON-151 | Backlog, due 2026-07-31 | time-gated through July 30                                                   |
-| CAISSON-105 | Backlog                 | business/public-release gated                                                |
-| CAISSON-101 | Backlog                 | trigger: real cassette/model change                                          |
-| CAISSON-78  | Backlog                 | trigger: material competitor event                                           |
-| CAISSON-130 | Backlog                 | trigger: future copy wave; frozen now                                        |
-| CAISSON-131 | **Done**                | July persona findings absorbed into the completed audit/remediation program  |
+| Issue       | State                   | Canonical disposition                                                       |
+| ----------- | ----------------------- | --------------------------------------------------------------------------- |
+| CAISSON-150 | In Progress             | ADR-0379 completion program                                                 |
+| CAISSON-134 | **Done**                | three module-depth pages; fork closed by ADR-0380 lock 6, merged in #332    |
+| CAISSON-104 | Todo                    | Ring-3 operator/external act using the corrected probe runbook              |
+| CAISSON-39  | Todo                    | D10 WORM receipt active; non-D10 evidence classes trigger-parked            |
+| CAISSON-113 | Backlog                 | narrowed to provider-console/key-parity reads                               |
+| CAISSON-151 | Backlog, due 2026-07-31 | time-gated through July 30                                                  |
+| CAISSON-105 | Backlog                 | business/public-release gated                                               |
+| CAISSON-101 | Backlog                 | trigger: real cassette/model change                                         |
+| CAISSON-78  | Backlog                 | trigger: material competitor event                                          |
+| CAISSON-130 | Backlog                 | trigger: future copy wave; frozen now                                       |
+| CAISSON-131 | **Done**                | July persona findings absorbed into the completed audit/remediation program |
 
 ## Operator and external gates
 
@@ -100,19 +105,33 @@ releases and 4 minor package releases. They are consumed only by T7.
    answer → the state docs. Indivisible: the price-authority gate fails on a catalog where the
    pricebook and display sheet disagree. Deployed docs/support keep answering $1,449 until the fleet
    redeploy, so the runbook's probe becomes a post-deploy check rather than a pre-deploy assertion.
-   Sequencing confirmed at the 2026-07-25 picker: runs **after** the reconcile, off a clean `main`.
+   **ADR-0386 adds two edits and re-sequences the wave.** `BUNDLE_RETAIL.everything` moves
+   **$2,059 → $2,259** and `PRICE_AUTHORITY["@caisson/everything"]` **205900 → 225900**, because the
+   new $249 SKU joins the whole-catalog bundle and *no gate objects* — the below-sum lock gets easier
+   as the member sum grows and the ladder only needs Everything ≥ Compliance, so the premium would
+   have narrowed $610 → $410 with every check green. That carries
+   `renewalAmount("everything")` **$819 → $899** through the ADR-0260 §5 formula, which
+   `apps/site/lib/pricing.test.ts` asserts. Sequencing: the wave runs **after** the fleet deploy and
+   the first release train, not before them — it earns its own second train.
 7. **Grill remediation (in flight):** an independent adversarial audit of the four open PRs
    ([report](../../outputs/audit/2026-07-25-open-pr-grill.md)) tested 44 hypotheses, refuted 39, and
    confirmed 5 — three on #335, one on #333, one on #334 — and confirmed zero cross-PR merge
    conflicts. All four PRs were green on CI and #335's author self-reported code, security, and
    adversarial reviews PASS; none of the five were gate-shaped, which is the case for keeping an
-   independent lane. The #334 currency defect is fixed (`09e8516f`). The two evidence-path P1s are
-   locked by **ADR-0385** (no bundled verifier; fail-closed per-event export allowlist) and are
-   building in lane A alongside the Inngest `singletonKey` P2; the #333 Paddle marker-only
-   validation P1 is building in the onboarding lane. **The reconcile waits on these** — merging a
-   confirmed P1 to main is not a trade worth making.
-8. **Release:** reconcile all code waves, run audits and full gates, consume all changesets in one
-   version PR, tag immutable bytes, publish the tag, and redeploy the Worker from that tag.
+   independent lane. **Four of the five are closed and merged.** The #334 currency defect is fixed
+   (`09e8516f`, in #334). The #333 Paddle marker-only validation P1 is fixed and merged (`6f44c60f`):
+   the recreate tool now validates `status`, `amount`, `currency_code`, and billing-cycle
+   interval/frequency against the planned catalog before accepting a mapping, behind nine
+   fail-closed tests. #332's four candidates were all refuted and it merged unchanged. **Only lane A
+   remains** — the two evidence-path P1s locked by **ADR-0385** (no bundled verifier; fail-closed
+   per-event export allowlist) plus the Inngest `singletonKey` P2, still building on #335.
+8. **Release and deploy (next up, per ADR-0386):** run the fleet deploy and the release train NOW
+   off the reconciled `main` rather than waiting for the oscal wave. Deploy six legs on one SHA,
+   apply migration 0030 (still an operator/data-migration gate), run the parity and probe set; then
+   consume the 39 changesets in one version PR, tag immutable bytes, and redeploy the Worker from
+   that tag. The oscal wave then earns a **second** train. Accepted cost of that order: two cycles,
+   and a first tag whose pricebook knowingly advertises the superseded $1,449/$2,059 — so `npm
+publish` should wait for the second train unless something forces it earlier.
 
 ## Trigger-parked
 
@@ -132,6 +151,7 @@ These are not part of the active completion program:
 
 | Date       | Evidence                                                                                                                                    |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-25 | Wave reconcile: #334, #333, #332 rebased and squash-merged to `main`; grill/paddle/lane-B worktrees closed out                              |
 | 2026-07-25 | Adversarial grill of the four open PRs — 44 candidates, 39 refuted, 5 confirmed ([report](../../outputs/audit/2026-07-25-open-pr-grill.md)) |
 | 2026-07-25 | Generated 39-component design manifest and shared contrast gate                                                                             |
 | 2026-07-25 | Launch-critical dependency, price, and limiter safety fixes on this branch                                                                  |
