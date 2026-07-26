@@ -1,10 +1,10 @@
 // Mirrors Railway project env vars into a local file for offline/editor use. Scripted version of
 // a manual `railway variables` mirror (two CLI workarounds below justified writing this down).
 //
-// READ-ONLY CONTRACT: this script only calls `railway whoami`, `railway status`, and
-// `railway variables` — all reads. It never calls `railway variables set`, `railway up`, or any
-// deploy/mutate command. Railway is the source of truth; this file is a mirror of it, never the
-// reverse.
+// READ-ONLY CONTRACT: this script only calls `railway whoami`, `railway status`, `railway
+// variables`, and the fixed `railway ssh` presence probes below — all reads. It never calls
+// `railway variables set`, `railway up`, or any deploy/mutate command. Railway is the source of
+// truth; this file is a mirror of it, never the reverse.
 //
 // CAISSON-38 CLEARED: admin.caisson.sh lost its HOSTNAME Railway variable and 502'd; this script
 // was investigated as the suspect ("env-sync prune"). It has no code path that can remove a
@@ -13,7 +13,9 @@
 // `HOSTNAME` name at container boot; fixed durably in apps/admin/Dockerfile (`ENV HOSTNAME=0.0.0.0`,
 // PR #151), independent of this or any Railway-side variable sync tool.
 //
-// Usage: bun tooling/scripts/railway-env-sync.ts --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+// Usage:
+//   bun tooling/scripts/railway-env-sync.ts --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+//   bun tooling/scripts/railway-env-sync.ts --configured-probe
 import { execFileSync } from "node:child_process";
 import {
   closeSync,
@@ -32,6 +34,13 @@ const ENV_FILE_PATH = join(homedir(), ".gridwork", "caisson.env");
 const GRIDWORK_ENV_PATH = join(homedir(), ".gridwork", "env");
 const REPO_ROOT = join(import.meta.dir, "..", "..");
 const LOCAL_ONLY_MARKER = "# === local-only (not on Railway) ===";
+const ASK_AI_SERVICE = "caisson-site";
+const ASK_AI_ENVIRONMENT = "production";
+export const ASK_AI_REQUIRED_VARIABLES = [
+  "DOCS_SERVICE_TOKEN",
+  "DOCS_QUERY_URL",
+] as const;
+type AskAiRequiredVariable = (typeof ASK_AI_REQUIRED_VARIABLES)[number];
 // Prefixes worth mirroring names-only from ~/.gridwork/env + repo .env.local files when they are
 // NOT already sourced from Railway (secrets/config caisson product code actually reads).
 const RELEVANT_PREFIX_RE =
@@ -384,8 +393,44 @@ export function buildLocalOnlyTail(names: readonly string[]): string {
  *  denylist of write ones — so a future `up`/`redeploy`/`run` call cannot slip in unnoticed. */
 const READ_ONLY_RAILWAY_VERBS = new Set(["whoami", "status", "variables"]);
 
+/** Build the only Railway SSH commands this script permits. `${NAME+x}` asks the remote shell
+ * whether NAME exists without expanding, reading, comparing, measuring, or printing its value. */
+export function buildConfiguredProbeArgs(variable: string): string[] {
+  if (!ASK_AI_REQUIRED_VARIABLES.includes(variable as AskAiRequiredVariable)) {
+    throw new Error(
+      `railway-env-sync configured probe refuses unknown variable name: ${variable}`,
+    );
+  }
+  return [
+    "ssh",
+    "--service",
+    ASK_AI_SERVICE,
+    "--environment",
+    ASK_AI_ENVIRONMENT,
+    "sh",
+    "-c",
+    `test "\${${variable}+x}" = x`,
+  ];
+}
+
+function isConfiguredProbeArgs(args: readonly string[]): boolean {
+  return ASK_AI_REQUIRED_VARIABLES.some((variable) => {
+    const allowed = buildConfiguredProbeArgs(variable);
+    return (
+      args.length === allowed.length &&
+      args.every((arg, index) => arg === allowed[index])
+    );
+  });
+}
+
 export function assertReadOnlyRailwayArgs(args: readonly string[]): void {
   const verb = args[0];
+  if (verb === "ssh") {
+    if (isConfiguredProbeArgs(args)) return;
+    throw new Error(
+      "railway-env-sync is a read-only mirror; refusing non-presence Railway SSH command",
+    );
+  }
   if (verb === undefined || !READ_ONLY_RAILWAY_VERBS.has(verb)) {
     throw new Error(
       `railway-env-sync is a read-only mirror; refusing non-read railway verb: ${String(verb)}`,
@@ -402,6 +447,57 @@ export function assertReadOnlyRailwayArgs(args: readonly string[]): void {
 function railway(args: string[]): string {
   assertReadOnlyRailwayArgs(args);
   return execFileSync("railway", args, { encoding: "utf8" });
+}
+
+export interface ConfiguredPresenceResult {
+  variable: AskAiRequiredVariable;
+  present: boolean;
+}
+
+/** Run the fixed Ask-AI presence probes. The injected runner returns only the command's boolean
+ * status; no variable value can enter this function or its report type. */
+export function checkConfiguredPresence(
+  run: (args: string[]) => boolean,
+): ConfiguredPresenceResult[] {
+  return ASK_AI_REQUIRED_VARIABLES.map((variable) => ({
+    variable,
+    present: run(buildConfiguredProbeArgs(variable)),
+  }));
+}
+
+export function printConfiguredPresence(
+  report: readonly ConfiguredPresenceResult[],
+  write: (text: string) => void = (text) => process.stdout.write(text),
+): void {
+  write(
+    `\nAsk-AI configured probe — ${ASK_AI_SERVICE} [${ASK_AI_ENVIRONMENT}]\n`,
+  );
+  for (const result of report) {
+    write(`  ${result.variable}: ${result.present ? "PRESENT" : "MISSING"}\n`);
+  }
+}
+
+function runConfiguredPresenceProbe(): void {
+  const report = checkConfiguredPresence((args) => {
+    try {
+      railway(args);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  printConfiguredPresence(report);
+  const missing = report
+    .filter((result) => !result.present)
+    .map((result) => result.variable);
+  if (missing.length > 0) {
+    throw new Error(
+      `Ask-AI configured probe failed on ${ASK_AI_SERVICE}; missing: ${missing.join(", ")}`,
+    );
+  }
+  process.stdout.write(
+    "Ask-AI configured probe: green — required variable names are present.\n",
+  );
 }
 
 /** Fail fast with a clear message when not logged in — every later call needs auth. */
@@ -465,7 +561,18 @@ function writeAtomic(path: string, content: string): void {
   renameSync(tmpPath, path);
 }
 
-export function parseArgv(argv: readonly string[]): { generatedAt: string } {
+export type ParsedArgs =
+  { mode: "sync"; generatedAt: string } | { mode: "configured-probe" };
+
+export function parseArgv(argv: readonly string[]): ParsedArgs {
+  if (argv.includes("--configured-probe")) {
+    if (argv.length !== 1) {
+      throw new Error(
+        "railway-env-sync: --configured-probe cannot be combined with sync arguments",
+      );
+    }
+    return { mode: "configured-probe" };
+  }
   let generatedAt: string | undefined;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] as string;
@@ -482,12 +589,17 @@ export function parseArgv(argv: readonly string[]): { generatedAt: string } {
         "trust its own clock (it may run under contexts without one), so the caller supplies it.",
     );
   }
-  return { generatedAt };
+  return { mode: "sync", generatedAt };
 }
 
 async function main(): Promise<void> {
-  const { generatedAt } = parseArgv(process.argv.slice(2));
+  const parsed = parseArgv(process.argv.slice(2));
   preflightAuth();
+  if (parsed.mode === "configured-probe") {
+    runConfiguredPresenceProbe();
+    return;
+  }
+  const { generatedAt } = parsed;
 
   const status = parseRailwayStatus(fetchStatus());
   const existingText = existsSync(ENV_FILE_PATH)

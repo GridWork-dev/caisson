@@ -2,10 +2,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import {
+  ASK_AI_REQUIRED_VARIABLES,
   assertReadOnlyRailwayArgs,
+  buildConfiguredProbeArgs,
   buildEnvironmentSection,
   buildLocalOnlyTail,
   buildServiceSection,
+  checkConfiguredPresence,
   computeDrift,
   extractEnvVarNames,
   filterRelevantNames,
@@ -281,13 +284,21 @@ describe("buildLocalOnlyTail", () => {
 describe("parseArgv", () => {
   test("accepts --generated-at <value>", () => {
     expect(parseArgv(["--generated-at", "2026-07-02T00:00:00Z"])).toEqual({
+      mode: "sync",
       generatedAt: "2026-07-02T00:00:00Z",
     });
   });
 
   test("accepts --generated-at=<value>", () => {
     expect(parseArgv(["--generated-at=2026-07-02T00:00:00Z"])).toEqual({
+      mode: "sync",
       generatedAt: "2026-07-02T00:00:00Z",
+    });
+  });
+
+  test("accepts the presence-only configured probe without a generated-at timestamp", () => {
+    expect(parseArgv(["--configured-probe"])).toEqual({
+      mode: "configured-probe",
     });
   });
 
@@ -299,6 +310,62 @@ describe("parseArgv", () => {
     expect(() => parseArgv(["--generated-at", "not-a-date"])).toThrow(
       /--generated-at/,
     );
+  });
+});
+
+describe("Ask-AI configured probe", () => {
+  test("checks only presence on caisson-site and never requests variable values", () => {
+    expect(ASK_AI_REQUIRED_VARIABLES).toEqual([
+      "DOCS_SERVICE_TOKEN",
+      "DOCS_QUERY_URL",
+    ]);
+
+    for (const variable of ASK_AI_REQUIRED_VARIABLES) {
+      const args = buildConfiguredProbeArgs(variable);
+      expect(args.slice(0, 5)).toEqual([
+        "ssh",
+        "--service",
+        "caisson-site",
+        "--environment",
+        "production",
+      ]);
+      expect(args).not.toContain("variables");
+      expect(args).not.toContain("--json");
+      expect(args).not.toContain("--kv");
+      expect(args.at(-1)).toBe(`test "\${${variable}+x}" = x`);
+      expect(() => assertReadOnlyRailwayArgs(args)).not.toThrow();
+    }
+  });
+
+  test("reports each configured name without reading, printing, or comparing a value", () => {
+    const calls: string[][] = [];
+    const report = checkConfiguredPresence((args) => {
+      calls.push([...args]);
+      return args.at(-1)?.includes("DOCS_SERVICE_TOKEN") ?? false;
+    });
+
+    expect(calls).toEqual(
+      ASK_AI_REQUIRED_VARIABLES.map((variable) =>
+        buildConfiguredProbeArgs(variable),
+      ),
+    );
+    expect(report).toEqual([
+      { variable: "DOCS_SERVICE_TOKEN", present: true },
+      { variable: "DOCS_QUERY_URL", present: false },
+    ]);
+  });
+
+  test("the Railway guard rejects every SSH command outside the fixed presence probes", () => {
+    expect(() =>
+      assertReadOnlyRailwayArgs([
+        "ssh",
+        "--service",
+        "caisson-site",
+        "sh",
+        "-c",
+        "env",
+      ]),
+    ).toThrow(/read-only mirror/);
   });
 });
 

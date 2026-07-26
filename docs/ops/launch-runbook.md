@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-25
+updated: 2026-07-26
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -9,6 +9,7 @@ grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
   - docs/ops/provider-console-checks.md
   - outputs/research/infra-provider-audit-2026-07-16.md
+  - tooling/scripts/railway-env-sync.ts
 ---
 
 # Caisson launch-act runbook
@@ -59,20 +60,35 @@ Preconditions:
       written into the execution receipt.
 - [ ] Railway backup recency is verified and the logical restore procedure is ready.
 - [ ] The external-system/data-migration hold is explicitly released.
-- [ ] Every boot-blocking secret below is present on its service. Check this before the deploy, not
-      after — two of the three fail in ways the deploy probe will not catch.
+- [ ] Every launch-critical variable below is present on its service. Check this before the deploy,
+      not after — several fail only after a clean boot and green deploy probe.
 
-### Boot-blocking secrets on `caisson-site`
+### Launch-critical variables on `caisson-site`
 
-| Variable                                 | Failure mode when unset                                                                                                                                                                                                                               | Armed?                                                    |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `SESSION_TOKEN_HMAC_KEY`                 | **Hard boot failure.** `apps/site/lib/auth-server.ts:151,265` throws rather than fall back to storing raw session tokens (ADR-0366). Loud and immediate — a crashed boot or failed health check.                                                      | Yes — `docs/deploy/STATE.md:281`                          |
-| `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT` | **Deferred throw, not a boot failure.** The site starts clean and passes every deploy probe; the first buyer BYOK submit then throws (`apps/site/lib/byok.ts:142-147`), because production refuses to seal real tenant secrets under the demo vector. | **No arming record exists** — verify on the service first |
-| `BETTER_AUTH_SECRET`                     | `/dashboard` sign-in 503s (`apps/site/railway.toml`).                                                                                                                                                                                                 | Yes                                                       |
+| Variable                                 | Failure mode when unset                                                                                                                                                                                                                                                                                                                    | Armed?                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `SESSION_TOKEN_HMAC_KEY`                 | **Hard boot failure.** `apps/site/lib/auth-server.ts:151,265` throws rather than fall back to storing raw session tokens (ADR-0366). Loud and immediate — a crashed boot or failed health check.                                                                                                                                           | Yes — `docs/deploy/STATE.md:281`                                               |
+| `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT` | **Deferred throw, not a boot failure.** The site starts clean and passes every deploy probe; the first buyer BYOK submit then throws (`apps/site/lib/byok.ts:142-147`), because production refuses to seal real tenant secrets under the demo vector.                                                                                      | **No arming record exists** — verify on the service first                      |
+| `BETTER_AUTH_SECRET`                     | `/dashboard` sign-in 503s (`apps/site/railway.toml`).                                                                                                                                                                                                                                                                                      | Yes                                                                            |
+| `DOCS_SERVICE_TOKEN`                     | **Silent Ask-AI feature death.** The site boots clean and passes every deploy probe; every `/api/ask` question then fails retrieval and escalates to the contact CTA. The route passes an empty fallback (`apps/site/app/api/ask/route.ts:67-69`), and retrieval rejects an empty token or URL (`apps/site/lib/ask-ai/retrieve.ts:57-62`). | **No arming record exists on `caisson-site` as of 2026-07-26** — run the probe |
+| `DOCS_QUERY_URL`                         | **Silent Ask-AI feature death.** The site boots clean and passes every deploy probe; every `/api/ask` question then fails retrieval and escalates to the contact CTA. The route passes an empty fallback (`apps/site/app/api/ask/route.ts:67-69`), and retrieval rejects an empty token or URL (`apps/site/lib/ask-ai/retrieve.ts:57-62`). | **No arming record exists on `caisson-site` as of 2026-07-26** — run the probe |
 
-The BYOK pair is the dangerous one: a deploy that omits it looks completely healthy and fails only
-in front of a paying buyer. Confirm both variables exist on the service before releasing the hold,
-and record the check in the execution receipt.
+The BYOK pair and Ask-AI pair share the dangerous property: a deploy that omits them looks healthy
+and fails only on the feature path. Confirm all four names exist on the service before releasing the
+hold, and record the check in the execution receipt.
+
+#### Named configured-probe step — Ask AI
+
+Run the existing Railway-side launch preflight in configured-probe mode:
+
+```bash
+bun tooling/scripts/railway-env-sync.ts --configured-probe
+```
+
+This mode checks only whether `DOCS_SERVICE_TOKEN` and `DOCS_QUERY_URL` exist on the deployed
+`caisson-site` environment. It uses fixed remote presence tests and reports only `PRESENT` or
+`MISSING`; it never requests, reads, prints, logs, measures, or compares either value. A missing
+name exits non-zero. Do not substitute the public `/healthz` route for this operator-run check.
 
 Deploy in verifier-before-issuer order whenever strict schemas or manifests change:
 
