@@ -93,14 +93,36 @@ describe("WRITING_PIECES registry", () => {
     expect(html).not.toMatch(/<p[^>]*><ul/u);
   });
 
-  test.skip("pending verified first piece: links to the evergreen Article 50 framework page", () => {
-    const firstRealPiece = WRITING_PIECES.find(
-      (piece) => !piece.slug.startsWith("fixture-"),
+  test("publishes the dated Article 50 analysis with the evergreen cross-link", () => {
+    const piece = WRITING_PIECES.find(
+      ({ slug }) => slug === "eu-ai-act-article-50-august-december-2026",
     );
-    expect(firstRealPiece).toBeDefined();
-    expect(firstRealPiece?.related).toContain(
-      "/frameworks/eu-ai-act/article-50",
+    expect(piece).toBeDefined();
+    expect(piece?.publishedOn).toBe("2026-07-26");
+    expect(piece?.verifiedOn).toBe("2026-07-26");
+    expect(piece?.related).toContain("/frameworks/eu-ai-act/article-50");
+  });
+
+  test("contains no fictional fixture after the verified piece lands", () => {
+    expect(
+      WRITING_PIECES.some((piece) => piece.slug.startsWith("fixture-")),
+    ).toBe(false);
+  });
+
+  test("keeps the first piece dated and differentiated from the evergreen obligations reference", () => {
+    const piece = WRITING_PIECES.find(
+      ({ slug }) => slug === "eu-ai-act-article-50-august-december-2026",
     );
+    const copy = JSON.stringify(piece?.sections);
+
+    expect(copy).toContain("July 20, 2026");
+    expect(copy).toContain("December 2, 2026");
+    expect(copy).toContain("/frameworks/eu-ai-act/article-50");
+    expect(copy).not.toContain("Four transparency duties");
+    expect(copy).not.toContain(
+      "Emotion recognition and biometric categorisation",
+    );
+    expect(copy).not.toContain("Penalty exposure");
   });
 });
 

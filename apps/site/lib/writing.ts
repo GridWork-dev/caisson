@@ -4,6 +4,10 @@
 // report-only regulatory-claim watch imports this registry directly.
 import { createElement } from "react";
 
+import {
+  ARTICLE_50_PRIMARY_SOURCES,
+  ARTICLE_50_VERIFIED_ON,
+} from "./article-50-sources";
 import type { PageMeta } from "./metadata";
 import type { PageSection, PageSpec } from "./page-sections";
 
@@ -12,6 +16,12 @@ export interface WritingSource {
   url: string;
   /** Article number, section, page, or other specific source locator — never a bare domain. */
   locator: string;
+  /**
+   * Optional mechanical-watch instruction. Human-facing source precision always lives in
+   * `locator`; this only records what an unauthenticated weekly fetch can honestly inspect.
+   */
+  watch?:
+    { mode: "text"; text: string } | { mode: "reachable"; reason: string };
 }
 
 export interface WritingPiece {
@@ -28,38 +38,86 @@ export interface WritingPiece {
   related: readonly string[];
 }
 
-// TASK-1/TASK-3 HANDOFF FIXTURE: this is deliberately fictional and contains no regulatory or
-// product claim. The verified Article 50 record from the parallel lane replaces it in this branch.
 export const WRITING_PIECES: readonly WritingPiece[] = [
   {
-    slug: "fixture-fictional-standard",
-    title: "Fixture: the fictional standard",
-    dek: "A deliberately fictional record used to exercise the writing registry, routes, metadata, and source contract.",
+    slug: "eu-ai-act-article-50-august-december-2026",
+    title:
+      "Article 50 still starts August 2. One transition runs to December 2.",
+    dek: "The Commission’s final July 2026 guidance keeps Article 50’s general application date and confines the later deadline to Article 50(2) for qualifying pre-August generative systems.",
     meta: {
-      title: "Fixture: the fictional standard",
+      title: "EU AI Act Article 50: the August and December 2026 dates",
       description:
-        "A deliberately fictional record used to exercise the Caisson writing-surface machinery without making a regulatory or product claim.",
-      path: "/writing/fixture-fictional-standard",
+        "What the European Commission’s final July 2026 Article 50 guidance settled: the August 2 application date, the narrow December 2 transition, and the separate rule for pre-existing content.",
+      path: "/writing/eu-ai-act-article-50-august-december-2026",
       type: "article",
     },
-    publishedOn: "1970-01-01",
-    verifiedOn: "1970-01-01",
-    sources: [
-      {
-        label: "IANA-reserved example domain",
-        url: "https://example.com/",
-        locator: "Example Domain",
-      },
-    ],
+    publishedOn: "2026-07-26",
+    verifiedOn: ARTICLE_50_VERIFIED_ON,
+    sources: ARTICLE_50_PRIMARY_SOURCES,
     sections: [
       {
         kind: "section",
-        title: "Fixture only",
-        lede: "This record validates the collection machinery. It makes no statement about a regulation, legal obligation, or Caisson capability.",
+        eyebrow: "Dated analysis · July 26, 2026",
+        title: "What the July 20, 2026 final guidance settled.",
+        lede: "Article 50 still generally applies from August 2, 2026. The Commission’s final guidance did not replace that date with December. It identified one targeted transition: providers of generative AI systems placed on the market or put into service before August 2 have until December 2, 2026 to conform with Article 50(2)’s machine-readable marking and detection duty.",
         band: "tint",
       },
+      {
+        kind: "section",
+        eyebrow: "The boundary",
+        title:
+          "The transition belongs to Article 50(2), not Article 50 as a whole.",
+        lede: "The final guidance starts from the general rule: all in-scope systems must comply on August 2, regardless of when they were placed on the market or put into service. It then gives qualifying pre-August generative systems a four-month transition for Article 50(2)’s marking and detection duty. The other Article 50 duties were not postponed.",
+      },
+      {
+        kind: "featureGrid",
+        cols: 3,
+        eyebrow: "One system, two clocks",
+        title: "A mixed product can cross both dates.",
+        items: [
+          {
+            title: "Direct interaction · August 2",
+            body: "For a system that is partly interactive and partly generative, the Article 50(1) interaction-disclosure duty still applies from August 2, 2026.",
+          },
+          {
+            title: "Qualifying generation · December 2",
+            body: "Only Article 50(2)’s marking and detection duty receives the transition, and only for a generative system placed on the market or put into service before August 2.",
+          },
+          {
+            title: "Everything else · August 2",
+            body: "The transition does not postpone the other Article 50 duties or create a general December application date.",
+          },
+        ],
+      },
+      {
+        kind: "section",
+        eyebrow: "Pre-existing content",
+        title: "The content cutoff is a separate rule.",
+        lede: "Article 50(2) outputs and Article 50(4) deepfakes generated or manipulated before August 2, 2026 do not require retroactive marking or labelling. Public-interest text receives that treatment only when it was both generated or manipulated and published before August 2; earlier-generated text published on or after that date must be labelled.",
+        band: "surface",
+      },
+      {
+        kind: "section",
+        eyebrow: "Source status",
+        title: "Final guidance, with a legal boundary.",
+        lede: "The Commission published and adopted the final guidelines on July 20, 2026. They are non-binding; only the Court of Justice of the European Union can ultimately give an authoritative interpretation of the AI Act. This dated source reading is not legal advice.",
+      },
+      {
+        kind: "cta",
+        eyebrow: "Evergreen reference",
+        title: "Need the durable Article 50 rule map?",
+        lede: "The framework page covers who Article 50 applies to, the four statutory duties, express exceptions, implementation considerations, and the evidence boundary. This dated piece stays focused on what the July guidance settled.",
+        primary: {
+          label: "Read what Article 50 requires",
+          href: "/frameworks/eu-ai-act/article-50",
+        },
+      },
     ],
-    related: [],
+    related: [
+      "/frameworks/eu-ai-act/article-50",
+      "/frameworks/eu-ai-act",
+      "/glossary/eu-ai-act-article-50",
+    ],
   },
 ];
 
