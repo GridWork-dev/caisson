@@ -46,9 +46,22 @@ function signedProofFor(payload: Parameters<typeof chainEntry>[1]): RowProof {
 
 const NOW = new Date("2026-07-13T00:00:00.000Z");
 
+function systemModePayload() {
+  return {
+    source: "admin_action",
+    action: "system_mode",
+    actorEmail: "operator@example.com",
+    targetAccountId: "system",
+    before: { mode: "active" },
+    after: { mode: "read_only" },
+    at: NOW.toISOString(),
+  } as const;
+}
+
 describe("assembleProofSuccess — a clean (non-redacted) row", () => {
   test("both legs pass and the receipt carries raw material sufficient to recompute", async () => {
-    const proof = proofFor({ event: "created", actor: "op" });
+    const payload = systemModePayload();
+    const proof = proofFor(payload);
     const body = await assembleProofSuccess(proof, NOW);
 
     expect(body.redacted).toBe(false);
@@ -57,13 +70,13 @@ describe("assembleProofSuccess — a clean (non-redacted) row", () => {
     expect(body.receipt.checks.anchorEquality).toBe("pass");
     // CR-06 raw material: prevHash + the (unredacted) payload are present for a client to recompute.
     expect(body.receipt.raw.prevHash).toBeNull();
-    expect(body.receipt.raw.payload).toEqual({ event: "created", actor: "op" });
+    expect(body.receipt.raw.payload).toEqual(payload);
     expect(body.receipt.hash).toBe(proof.entry.hash);
     expect(body.receipt.anchor.tipHash).toBe(proof.anchorForRow.tipHash);
   });
 
   test("L2 — the receipt never exports the internal WORM object key (only public commitment fields)", async () => {
-    const proof = proofFor({ event: "locked" });
+    const proof = proofFor(systemModePayload());
     const body = await assembleProofSuccess(proof, NOW);
     // The internal WORM key is NEVER exported (L2) — that is the invariant, not the exact field set.
     expect("key" in body.receipt.anchor).toBe(false);
@@ -86,7 +99,7 @@ describe("assembleProofSuccess — a clean (non-redacted) row", () => {
   });
 
   test("GATE-1 — a signed anchor's sig + keyId cross the wire so the client can check them", async () => {
-    const proof = signedProofFor({ event: "locked" });
+    const proof = signedProofFor(systemModePayload());
     const body = await assembleProofSuccess(proof, NOW);
     // The public signature material is present in the receipt (never the private key, never the WORM key).
     expect(body.receipt.anchor.sig).toBe(proof.anchorForRow.sig);
@@ -102,7 +115,7 @@ describe("assembleProofSuccess — a clean (non-redacted) row", () => {
 
   test("the strict client parser preserves v2 signature identity end to end", async () => {
     const body = await assembleProofSuccess(
-      signedProofFor({ event: "locked" }),
+      signedProofFor(systemModePayload()),
       NOW,
     );
 
@@ -119,7 +132,7 @@ describe("assembleProofSuccess — a clean (non-redacted) row", () => {
 
   test("the strict response boundary rejects unsupported receipt versions", async () => {
     const body = await assembleProofSuccess(
-      signedProofFor({ event: "locked" }),
+      signedProofFor(systemModePayload()),
       NOW,
     );
 
@@ -133,7 +146,66 @@ describe("assembleProofSuccess — a clean (non-redacted) row", () => {
 });
 
 describe("assembleProofSuccess — H3 server-side redaction", () => {
-  test("secret values never appear in the body or receipt; leg 1 is `na`", async () => {
+  test("export allowlists one real event schema and drops every unrecognized field", async () => {
+    const proof = proofFor({
+      source: "admin_action",
+      action: "system_mode",
+      actorEmail: "operator@example.com",
+      targetAccountId: "system",
+      before: { mode: "active", credentials: { value: "before-secret" } },
+      after: { mode: "read_only", auth: "after-secret" },
+      at: NOW.toISOString(),
+      credential: "outer-credential",
+      credentials: "outer-credentials",
+      auth: "outer-auth",
+      clientAssertion: "outer-assertion",
+      setCookie: "outer-cookie",
+    });
+
+    const body = await assembleProofSuccess(proof, NOW);
+    const serialized = JSON.stringify(body);
+
+    for (const secret of [
+      "before-secret",
+      "after-secret",
+      "outer-credential",
+      "outer-credentials",
+      "outer-auth",
+      "outer-assertion",
+      "outer-cookie",
+    ]) {
+      expect(serialized).not.toContain(secret);
+    }
+    expect(body.receipt.raw.payload).toEqual({
+      source: "admin_action",
+      action: "system_mode",
+      actorEmail: "operator@example.com",
+      targetAccountId: "system",
+      before: { mode: "active" },
+      after: { mode: "read_only" },
+      at: NOW.toISOString(),
+    });
+    expect(body.redacted).toBe(true);
+    expect(body.receipt.checks.linkRecompute).toBe("na");
+  });
+
+  test("an event type with no export schema emits no payload fields", async () => {
+    const body = await assembleProofSuccess(
+      proofFor({
+        event: "unregistered.event",
+        harmless: "also-not-allowlisted",
+        credentials: { value: "hunter2" },
+      }),
+      NOW,
+    );
+
+    expect(body.receipt.raw.payload).toEqual({});
+    expect(JSON.stringify(body)).not.toContain("hunter2");
+    expect(body.redacted).toBe(true);
+    expect(body.receipt.checks.linkRecompute).toBe("na");
+  });
+
+  test("an unregistered payload is dropped before it can expose secret values", async () => {
     const proof = proofFor({
       user: "alice",
       password: "hunter2",
@@ -146,13 +218,8 @@ describe("assembleProofSuccess — H3 server-side redaction", () => {
     expect(serialized).not.toContain("s3cr3t-token");
 
     expect(body.redacted).toBe(true);
-    expect(body.redactedPaths).toEqual(["nested.token", "password"]);
-    // The masked payload is what crosses the wire; the original is gone.
-    expect(body.receipt.raw.payload).toEqual({
-      user: "alice",
-      password: "[redacted]",
-      nested: { token: "[redacted]", keep: "ok" },
-    });
+    expect(body.redactedPaths).toEqual(["$.unrecognized"]);
+    expect(body.receipt.raw.payload).toEqual({});
     // Redacted -> the client can't recompute the original hash, so leg 1 is honestly `na`, not `fail`.
     expect(body.receipt.checks.linkRecompute).toBe("na");
     // Leg 2 still holds: the anchor commits to the ORIGINAL hash, which the entry still carries.
@@ -160,7 +227,7 @@ describe("assembleProofSuccess — H3 server-side redaction", () => {
     expect(body.receipt.redacted).toBe(true);
   });
 
-  test("reports a repeated nested secret as one distinct key path", async () => {
+  test("drops an unknown array branch as one distinct path", async () => {
     const proof = proofFor({
       rows: [
         { credentials: { token: "first" } },
@@ -170,10 +237,10 @@ describe("assembleProofSuccess — H3 server-side redaction", () => {
 
     const body = await assembleProofSuccess(proof, NOW);
 
-    expect(body.redactedPaths).toEqual(["rows.credentials.token"]);
+    expect(body.redactedPaths).toEqual(["$.unrecognized"]);
   });
 
-  test("redacts nested camelCase and snake_case compound credential keys at the admin proof boundary", async () => {
+  test("drops an unknown nested integration branch at the admin proof boundary", async () => {
     const proof = proofFor({
       integrations: {
         serviceCredentials: {
@@ -193,22 +260,8 @@ describe("assembleProofSuccess — H3 server-side redaction", () => {
     expect(serialized).not.toContain("camel-access-secret");
     expect(serialized).not.toContain("snake-refresh-secret");
     expect(body.redacted).toBe(true);
-    expect(body.redactedPaths).toEqual([
-      "integrations.api_credentials.refresh_token",
-      "integrations.serviceCredentials.accessToken",
-    ]);
-    expect(body.receipt.raw.payload).toEqual({
-      integrations: {
-        serviceCredentials: {
-          accessToken: "[redacted]",
-          safeLabel: "primary",
-        },
-        api_credentials: {
-          refresh_token: "[redacted]",
-          safeLabel: "backup",
-        },
-      },
-    });
+    expect(body.redactedPaths).toEqual(["$.unrecognized"]);
+    expect(body.receipt.raw.payload).toEqual({});
   });
 
   test("redacts a credential-shaped span stored under a benign key", async () => {
@@ -221,7 +274,25 @@ describe("assembleProofSuccess — H3 server-side redaction", () => {
 
     expect(serialized).not.toContain("sk-proj-abcdefghijklmnop");
     expect(body.redacted).toBe(true);
-    expect(body.redactedPaths).toEqual(["note"]);
+    expect(body.redactedPaths).toEqual(["$.unrecognized"]);
+  });
+
+  test("legacy non-object payloads are undisclosed rather than falsely marked tampered", async () => {
+    for (const payload of [
+      "legacy-event",
+      ["legacy-event"],
+      42,
+      true,
+      null,
+    ] as const) {
+      const body = await assembleProofSuccess(proofFor(payload), NOW);
+
+      expect(body.receipt.raw.payload).toEqual({});
+      expect(body.redactedPaths).toEqual(["$.unrecognized"]);
+      expect(body.redacted).toBe(true);
+      expect(body.receipt.checks.linkRecompute).toBe("na");
+      expect(body.receipt.checks.anchorEquality).toBe("pass");
+    }
   });
 });
 

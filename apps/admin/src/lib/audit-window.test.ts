@@ -87,11 +87,39 @@ describe("buildAdminAuditWindow", () => {
       "anchor-confirmed-original-not-disclosed",
       "anchor-confirmed-original-not-disclosed",
     ]);
-    expect(window.redactedPaths).toEqual(["credentials.token"]);
+    expect(window.redactedPaths).toEqual(["$.unrecognized"]);
     expect(window.receipts).toHaveLength(2);
     expect(JSON.stringify(window.displayEntries)).not.toContain("secret-a");
     expect(JSON.stringify(window.displayEntries)).not.toContain("secret-b");
     expect(JSON.stringify(window.displayEntries)).toContain("[redacted]");
+  });
+
+  test("display-only denylist defense redacts compound credential field names", async () => {
+    const entries = buildChain([
+      {
+        source: "admin_action",
+        action: "system_mode",
+        actorEmail: "operator@example.com",
+        targetAccountId: "system",
+        before: { mode: "active" },
+        after: { mode: "read_only" },
+        at: NOW.toISOString(),
+        serviceCredentials: { value: "hunter2" },
+        setCookieHeader: "opaque-cookie",
+      },
+    ]);
+
+    const window = await buildAdminAuditWindow({
+      source: sourceFor(entries),
+      accountId: "11111111-1111-4111-8111-111111111111",
+      tenantId: "buyer_account_01",
+      now: NOW,
+    });
+    const serialized = JSON.stringify(window.displayEntries);
+
+    expect(serialized).not.toContain("hunter2");
+    expect(serialized).not.toContain("opaque-cookie");
+    expect(serialized).toContain("[redacted]");
   });
 
   test("marks an unreadable per-row anchor unverifiable and refuses a partial export", async () => {
@@ -113,7 +141,10 @@ describe("buildAdminAuditWindow", () => {
       now: NOW,
     });
 
-    expect(window.rowStatuses).toEqual(["genesis", "unverifiable"]);
+    expect(window.rowStatuses).toEqual([
+      "anchor-confirmed-original-not-disclosed",
+      "unverifiable",
+    ]);
     expect(window.evidencePack).toBeNull();
   });
 

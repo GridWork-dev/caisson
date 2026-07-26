@@ -25,6 +25,7 @@ import {
   type JsonValue,
 } from "@caisson/kernel";
 import type { RowProof } from "@caisson/audit-worm";
+import { allowlistAuditExportPayload } from "./audit-export-payload.ts";
 
 /**
  * The strict query contract (binding #6, CR-07 §5). `account` accepts the real opaque better-auth id
@@ -210,12 +211,13 @@ export async function assembleProofSuccess(
 ): Promise<ProofSuccess> {
   const { entry, anchorForRow, chainLength } = proof;
 
-  const redactedPaths = new Set<string>();
-  collectRedactedPaths(entry.payload, DEFAULT_REDACT_KEYS, redactedPaths);
+  const allowlisted = allowlistAuditExportPayload(entry.payload);
+  const redactedPaths = new Set<string>(allowlisted.droppedPaths);
+  collectRedactedPaths(allowlisted.payload, DEFAULT_REDACT_KEYS, redactedPaths);
   const redacted = redactedPaths.size > 0;
 
   const wirePayload = redactValue(
-    entry.payload,
+    allowlisted.payload,
     DEFAULT_REDACT_KEYS,
   ) as JsonValue;
   const wireEntry: AuditChainEntry = { ...entry, payload: wirePayload };

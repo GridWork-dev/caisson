@@ -133,7 +133,18 @@ describe("GET /api/admin/audit/proof (T-A1)", () => {
   });
 
   test("healthy row -> 200 with a re-verifiable receipt, and the read is access-logged (M1)", async () => {
-    const account = await seed([{ event: "created", actor: "op" }]);
+    const account = await seed([
+      {
+        event: "erasure.crypto-shred",
+        deletion: { state: "soft-deleted", irreversible: false },
+        method: "kms-key-deletion",
+        tenantId: "tenant-1",
+        subjectId: "subject-1",
+        reason: "retention period elapsed",
+        occurredAt: "2026-07-25T12:00:00.000Z",
+        shreddedThroughVersion: 1,
+      },
+    ]);
     const res = await get(account, 0);
     expect(res.status).toBe(200);
     const body = (await res.json()) as {

@@ -27,6 +27,35 @@ describe("isRedactedKey", () => {
       expect(isRedactedKey(key, DEFAULT_REDACT_KEYS)).toBe(true);
     }
   });
+
+  test("redacts credential-name segments inside display-only compound keys", () => {
+    for (const key of [
+      "serviceCredentials",
+      "api_credentials",
+      "someAccessToken",
+      "setCookieHeader",
+      "clientAssertionJwt",
+    ]) {
+      expect(isRedactedKey(key, DEFAULT_REDACT_KEYS)).toBe(true);
+      expect(
+        JSON.stringify(redactValue({ [key]: "hunter2" }, DEFAULT_REDACT_KEYS)),
+      ).not.toContain("hunter2");
+    }
+    expect(isRedactedKey("monkey", DEFAULT_REDACT_KEYS)).toBe(false);
+  });
+
+  test.each([
+    "credential",
+    "credentials",
+    "auth",
+    "clientAssertion",
+    "setCookie",
+  ])("treats opaque values under %s as secret-bearing", (key) => {
+    expect(isRedactedKey(key, DEFAULT_REDACT_KEYS)).toBe(true);
+    expect(
+      JSON.stringify(redactValue({ [key]: "hunter2" }, DEFAULT_REDACT_KEYS)),
+    ).not.toContain("hunter2");
+  });
 });
 
 describe("redactValue", () => {
