@@ -1,4 +1,8 @@
-import type { RowProof, RowProofUnverifiable } from "@caisson/audit-worm";
+import type {
+  AnchorSigner,
+  RowProof,
+  RowProofUnverifiable,
+} from "@caisson/audit-worm";
 import {
   ValidationError,
   type AuditChainEntry,
@@ -12,8 +16,10 @@ import {
 } from "@caisson/kernel/audit-verify";
 import {
   buildEvidencePack,
+  evidencePackSealPayloadBytes,
   type EvidencePack,
   type EvidencePackAnchorAuth,
+  type EvidencePackMeta,
 } from "@caisson/kernel/evidence";
 import { DEFAULT_REDACT_KEYS, redactValue } from "@caisson/kernel/redact";
 import { assembleProofSuccess } from "./audit-proof.ts";
@@ -48,8 +54,9 @@ export async function buildAdminAuditWindow(input: {
   readonly tenantId: string;
   readonly now: Date;
   readonly anchorAuth?: EvidencePackAnchorAuth;
+  readonly packSigner?: AnchorSigner;
 }): Promise<AdminAuditWindow> {
-  const { source, accountId, tenantId, now, anchorAuth } = input;
+  const { source, accountId, tenantId, now, anchorAuth, packSigner } = input;
   const [entries, verification] = await Promise.all([
     source.load(accountId),
     source.verify(accountId),
@@ -114,24 +121,49 @@ export async function buildAdminAuditWindow(input: {
     );
   }
 
-  const evidencePack =
+  const canBuildEvidencePack =
     entries.length > 0 &&
     verification.valid === true &&
     verification.brokenAt === null &&
     receipts.length === entries.length &&
     (anchorAuth === undefined ||
-      receipts.every((receipt) => receipt.checks.signature === "pass"))
-      ? buildEvidencePack({
+      (packSigner !== undefined &&
+        packSigner.keyId === anchorAuth.keyId &&
+        receipts.every((receipt) => receipt.checks.signature === "pass")));
+
+  let evidencePack: EvidencePack | null = null;
+  if (canBuildEvidencePack) {
+    const baseMeta: Omit<EvidencePackMeta, "packSeal"> = {
+      tenantId,
+      chainLength: entries.length,
+      now,
+      chainVerification: verification,
+      ...(anchorAuth === undefined ? {} : { anchorAuth }),
+    };
+    if (anchorAuth === undefined) {
+      evidencePack = buildEvidencePack({ receipts, meta: baseMeta });
+    } else if (packSigner !== undefined) {
+      const signature = await packSigner.sign(
+        evidencePackSealPayloadBytes({
           receipts,
-          meta: {
-            tenantId,
-            chainLength: entries.length,
-            now,
-            chainVerification: verification,
-            ...(anchorAuth === undefined ? {} : { anchorAuth }),
+          meta: baseMeta,
+          accountId,
+        }),
+      );
+      evidencePack = buildEvidencePack({
+        receipts,
+        meta: {
+          ...baseMeta,
+          packSeal: {
+            v: 1,
+            keyId: packSigner.keyId,
+            accountId,
+            sig: Buffer.from(signature).toString("base64"),
           },
-        })
-      : null;
+        },
+      });
+    }
+  }
 
   return {
     entries,

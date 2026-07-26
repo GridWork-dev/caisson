@@ -78,7 +78,12 @@ export function createAdminAuditExportRoute(
       accountId: wormAnchorAccount(account),
       tenantId: account,
       now: new Date(),
-      ...(anchorTrust === null ? {} : { anchorAuth: anchorTrust.pinnedKey }),
+      ...(anchorTrust === null
+        ? {}
+        : {
+            anchorAuth: anchorTrust.pinnedKey,
+            packSigner: anchorTrust.signer,
+          }),
     });
 
     try {

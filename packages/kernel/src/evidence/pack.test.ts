@@ -13,7 +13,12 @@ import {
   buildRowReceipt,
   type RowReceipt,
 } from "../audit-verify.ts";
-import { buildEvidencePack, EVIDENCE_PACK_FORMAT_VERSION } from "./pack.ts";
+import {
+  buildEvidencePack,
+  evidencePackSealPayloadBytes,
+  EVIDENCE_PACK_FORMAT_VERSION,
+  type EvidencePackMeta,
+} from "./pack.ts";
 
 const NOW = new Date("2026-07-13T12:00:00.000Z");
 const TENANT_ID = "11111111-1111-4111-8111-111111111111";
@@ -29,6 +34,7 @@ function buildSignedFixture(): {
   receipts: RowReceipt[];
   keyId: string;
   publicKeySpkiBase64: string;
+  signedMetaFor(receipts: readonly RowReceipt[]): EvidencePackMeta;
 } {
   const keyId = "test-anchor-key";
   const kp = generateKeyPairSync("ed25519");
@@ -100,7 +106,41 @@ function buildSignedFixture(): {
     includeAnchorProvenance: true,
   });
 
-  return { receipts: [r0, r1], keyId, publicKeySpkiBase64 };
+  function signedMetaFor(receipts: readonly RowReceipt[]): EvidencePackMeta {
+    const base = {
+      tenantId: TENANT_ID,
+      chainLength: receipts.length,
+      now: NOW,
+      chainVerification: CHAIN_VERIFICATION,
+      anchorAuth: { keyId, publicKeySpkiBase64 },
+    };
+    return {
+      ...base,
+      packSeal: {
+        v: 1,
+        keyId,
+        accountId: TENANT_ID,
+        sig: sign(
+          null,
+          Buffer.from(
+            evidencePackSealPayloadBytes({
+              receipts,
+              meta: base,
+              accountId: TENANT_ID,
+            }),
+          ),
+          kp.privateKey,
+        ).toString("base64"),
+      },
+    };
+  }
+
+  return {
+    receipts: [r0, r1],
+    keyId,
+    publicKeySpkiBase64,
+    signedMetaFor,
+  };
 }
 
 async function runVerifierOnPack(
@@ -130,16 +170,10 @@ async function runVerifierOnPack(
 
 describe("buildEvidencePack", () => {
   test("round-trips through the real standalone verifier: healthy signed pack PASSes", async () => {
-    const { receipts, keyId, publicKeySpkiBase64 } = buildSignedFixture();
+    const { receipts, signedMetaFor } = buildSignedFixture();
     const pack = buildEvidencePack({
       receipts,
-      meta: {
-        tenantId: TENANT_ID,
-        chainLength: 2,
-        now: NOW,
-        chainVerification: CHAIN_VERIFICATION,
-        anchorAuth: { keyId, publicKeySpkiBase64 },
-      },
+      meta: signedMetaFor(receipts),
     });
     expect(pack.formatVersion).toBe(EVIDENCE_PACK_FORMAT_VERSION);
     const receiptsFile = pack.files.find((f) => f.name === "receipts.json");
@@ -159,20 +193,14 @@ describe("buildEvidencePack", () => {
   });
 
   test("a tampered row FAILs through the real verifier", async () => {
-    const { receipts, keyId, publicKeySpkiBase64 } = buildSignedFixture();
+    const { receipts, signedMetaFor } = buildSignedFixture();
     const tampered: RowReceipt = {
       ...receipts[1]!,
       raw: { ...receipts[1]!.raw, payload: { event: "forged" } },
     };
     const pack = buildEvidencePack({
       receipts: [receipts[0]!, tampered],
-      meta: {
-        tenantId: TENANT_ID,
-        chainLength: 2,
-        now: NOW,
-        chainVerification: CHAIN_VERIFICATION,
-        anchorAuth: { keyId, publicKeySpkiBase64 },
-      },
+      meta: signedMetaFor([receipts[0]!, tampered]),
     });
     const receiptsFile = pack.files.find((f) => f.name === "receipts.json")!;
     const { stdout, exitCode } = await runVerifierOnPack(receiptsFile.contents);
@@ -181,14 +209,8 @@ describe("buildEvidencePack", () => {
   });
 
   test("deterministic: input order never changes the receipts.json bytes or the pack digest", () => {
-    const { receipts, keyId, publicKeySpkiBase64 } = buildSignedFixture();
-    const meta = {
-      tenantId: TENANT_ID,
-      chainLength: 2,
-      now: NOW,
-      chainVerification: CHAIN_VERIFICATION,
-      anchorAuth: { keyId, publicKeySpkiBase64 },
-    };
+    const { receipts, signedMetaFor } = buildSignedFixture();
+    const meta = signedMetaFor(receipts);
     const forward = buildEvidencePack({ receipts, meta });
     const reversed = buildEvidencePack({
       receipts: [...receipts].reverse(),
@@ -205,16 +227,10 @@ describe("buildEvidencePack", () => {
   });
 
   test("verify.mjs is embedded verbatim (byte-identical to the source file)", async () => {
-    const { receipts, keyId, publicKeySpkiBase64 } = buildSignedFixture();
+    const { receipts, signedMetaFor } = buildSignedFixture();
     const pack = buildEvidencePack({
       receipts,
-      meta: {
-        tenantId: TENANT_ID,
-        chainLength: 2,
-        now: NOW,
-        chainVerification: CHAIN_VERIFICATION,
-        anchorAuth: { keyId, publicKeySpkiBase64 },
-      },
+      meta: signedMetaFor(receipts),
     });
     const embedded = pack.files.find((f) => f.name === "verify.mjs")!.contents;
     const onDisk = await Bun.file(
@@ -227,16 +243,10 @@ describe("buildEvidencePack", () => {
     const BANNED = [/impossible to tamper/i, /\bindependently verified\b/i];
 
     test("signed pack (anchorAuth present): claims the signature-checked seal, no banned strings", () => {
-      const { receipts, keyId, publicKeySpkiBase64 } = buildSignedFixture();
+      const { receipts, signedMetaFor } = buildSignedFixture();
       const pack = buildEvidencePack({
         receipts,
-        meta: {
-          tenantId: TENANT_ID,
-          chainLength: 2,
-          now: NOW,
-          chainVerification: CHAIN_VERIFICATION,
-          anchorAuth: { keyId, publicKeySpkiBase64 },
-        },
+        meta: signedMetaFor(receipts),
       });
       const readme = pack.files.find((f) => f.name === "README.md")!.contents;
       expect(readme).toContain("verified against write-once anchor");
@@ -244,7 +254,7 @@ describe("buildEvidencePack", () => {
       for (const pattern of BANNED) expect(readme).not.toMatch(pattern);
     });
 
-    test("unsigned pack (no anchorAuth): honest self-consistency claim only, no banned strings", () => {
+    test("unsigned pack: honestly refuses an authenticated PASS, no banned strings", () => {
       const { receipts } = buildSignedFixture();
       const pack = buildEvidencePack({
         receipts,
@@ -256,7 +266,7 @@ describe("buildEvidencePack", () => {
         },
       });
       const readme = pack.files.find((f) => f.name === "README.md")!.contents;
-      expect(readme).toContain("locally recomputed");
+      expect(readme).toContain("refuses an authenticated PASS");
       expect(readme).not.toContain("signature-checked");
       for (const pattern of BANNED) expect(readme).not.toMatch(pattern);
     });

@@ -7,10 +7,9 @@
 // bytes (the pack is itself hashable — `sha256` below).
 //
 // `receipts.json`'s shape is exactly what `standalone-verifier.mjs`'s CLI mode reads
-// (`{ tenantId, chainLength, chainVerification, receipts, anchorAuth? }`; completeness fields are
-// validated before any row cryptography) — `node verify.mjs receipts.json` works with no further wiring (fork c/d:
-// "verify
-// without trusting caisson's UI").
+// (`{ tenantId, chainLength, generatedAt, chainVerification, receipts, anchorAuth, packSeal }`;
+// completeness fields are validated before any row cryptography) — `node verify.mjs receipts.json`
+// works with no further wiring (fork c/d: "verify without trusting caisson's UI").
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { canonicalize } from "../canonical.ts";
@@ -20,6 +19,9 @@ import type { RowReceipt } from "../audit-verify.ts";
 /** The evidence-pack format version. Append-only (ADR-0006) — a breaking shape change mints a new
  *  version, never an in-place edit, so an old pack stays verifiable against the format it was built under. */
 export const EVIDENCE_PACK_FORMAT_VERSION = 1 as const;
+export const EVIDENCE_PACK_SEAL_VERSION = 1 as const;
+export const EVIDENCE_PACK_SEAL_DOMAIN =
+  "caisson.audit-chain.evidence-pack.v1" as const;
 
 /**
  * The anchor-signing public key a pack pins so its bundled verifier can independently check anchor
@@ -32,6 +34,17 @@ export interface EvidencePackAnchorAuth {
   readonly publicKeySpkiBase64: string;
 }
 
+/** Detached signature over the complete evidence-pack snapshot. Unlike per-row historical anchor
+ * signatures, this binds the declared terminal length and every receipt to one export. */
+export interface EvidencePackSeal {
+  readonly v: typeof EVIDENCE_PACK_SEAL_VERSION;
+  readonly keyId: string;
+  /** UUID-shaped WORM account bound by the same signer as the row anchors. */
+  readonly accountId: string;
+  /** Base64 Ed25519 signature over {@link evidencePackSealPayloadBytes}. */
+  readonly sig: string;
+}
+
 export interface EvidencePackMeta {
   readonly tenantId: string;
   readonly chainLength: number;
@@ -42,6 +55,8 @@ export interface EvidencePackMeta {
   readonly chainVerification: ChainVerification;
   /** Optional pinned anchor-signing public key. */
   readonly anchorAuth?: EvidencePackAnchorAuth;
+  /** Required alongside `anchorAuth` for an authenticated standalone PASS. */
+  readonly packSeal?: EvidencePackSeal;
 }
 
 export interface EvidencePackFile {
@@ -77,6 +92,51 @@ function keyFingerprint(publicKeySpkiBase64: string): string {
     .digest("hex");
 }
 
+export interface EvidencePackSealPayloadInput {
+  readonly receipts: readonly RowReceipt[];
+  readonly meta: Pick<
+    EvidencePackMeta,
+    "tenantId" | "chainLength" | "now" | "chainVerification" | "anchorAuth"
+  >;
+  readonly accountId: string;
+}
+
+/**
+ * Domain-separated bytes signed by the evidence-pack issuer. The receipt digest covers the complete
+ * ordered raw-material set; the terminal count, tenant/WORM identities, export instant, verification
+ * verdict, and pinned-key fingerprint are bound in the same signature.
+ */
+export function evidencePackSealPayloadBytes(
+  input: EvidencePackSealPayloadInput,
+): Uint8Array<ArrayBuffer> {
+  const { receipts, meta, accountId } = input;
+  if (meta.anchorAuth === undefined) {
+    throw new Error("evidence pack seal requires anchor authentication");
+  }
+  const sorted = [...receipts].sort((a, b) => a.seq - b.seq);
+  const receiptsJson = canonicalize(toJson(sorted));
+  const receiptsSha256 = createHash("sha256")
+    .update(receiptsJson)
+    .digest("hex");
+  return new TextEncoder().encode(
+    canonicalize({
+      domain: EVIDENCE_PACK_SEAL_DOMAIN,
+      v: EVIDENCE_PACK_SEAL_VERSION,
+      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,
+      tenantId: meta.tenantId,
+      accountId,
+      chainLength: meta.chainLength,
+      generatedAt: meta.now.toISOString(),
+      chainVerification: toJson(meta.chainVerification),
+      receiptsSha256,
+      anchorAuth: {
+        keyId: meta.anchorAuth.keyId,
+        publicKeySha256: keyFingerprint(meta.anchorAuth.publicKeySpkiBase64),
+      },
+    }),
+  );
+}
+
 /**
  * Render the auditor-facing README. The trust claim is stated VERBATIM and matches what
  * `verify.mjs` actually checks — never overclaiming (SPEC copy law): the strong "signature-checked"
@@ -85,7 +145,7 @@ function keyFingerprint(publicKeySpkiBase64: string): string {
  */
 function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
   const provenanceSection =
-    meta.anchorAuth !== undefined
+    meta.anchorAuth !== undefined && meta.packSeal !== undefined
       ? [
           "3. **Anchor signature** — each signed row's anchor is checked against the pinned public",
           `   key embedded below (keyId \`${meta.anchorAuth.keyId}\`, SHA-256 fingerprint`,
@@ -97,14 +157,18 @@ function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
           "(signature-checked)**: the trust root is independent of this pack's own claims — the",
           "verifier never trusts the `checks` field embedded in a receipt (that field records only",
           "what the *issuing* run computed), and the signature is rooted in a key you confirm separately.",
+          "",
+          "4. **Complete-snapshot seal** — the same pinned key signs the tenant, WORM account, terminal",
+          "   chain length, export instant, full-chain verdict, public-key fingerprint, and SHA-256",
+          "   digest of every ordered receipt. Removing a tail and lowering the declared length invalidates",
+          "   this seal. Replaying an older intact signed pack still requires an out-of-band freshness",
+          "   reference, such as a current external checkpoint.",
         ]
       : [
-          "This pack does not include an anchor-signing public key. `verify.mjs` therefore checks legs",
-          "1 and 2 only: internal consistency between each row and the anchor this export itself",
-          "embedded. That is a weaker, self-consistency claim — it does not, on its own, rule out a",
-          "compromised export process substituting a forged row alongside a matching forged anchor.",
-          "Treat rows in this pack as locally recomputed and consistent with the anchor this export",
-          "provided, not as independently rooted.",
+          "This pack does not include both an anchor-signing public key and a complete-snapshot seal.",
+          "`verify.mjs` therefore refuses an authenticated PASS. The embedded rows can still be inspected,",
+          "but internal consistency alone does not rule out a compromised export process substituting a",
+          "forged row, changing the declared terminal length, or removing signature metadata.",
         ];
 
   const lines: string[] = [
@@ -174,6 +238,16 @@ function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
  */
 export function buildEvidencePack(input: BuildEvidencePackInput): EvidencePack {
   const { receipts, meta } = input;
+  if (
+    (meta.anchorAuth === undefined) !== (meta.packSeal === undefined) ||
+    (meta.anchorAuth !== undefined &&
+      meta.packSeal !== undefined &&
+      meta.anchorAuth.keyId !== meta.packSeal.keyId)
+  ) {
+    throw new Error(
+      "evidence pack anchor authentication and seal must be configured together",
+    );
+  }
   const sorted = [...receipts].sort((a, b) => a.seq - b.seq);
 
   const receiptsBody: Record<string, JsonValue> = {
@@ -186,6 +260,9 @@ export function buildEvidencePack(input: BuildEvidencePackInput): EvidencePack {
   receiptsBody.chainVerification = toJson(meta.chainVerification);
   if (meta.anchorAuth !== undefined) {
     receiptsBody.anchorAuth = toJson(meta.anchorAuth);
+  }
+  if (meta.packSeal !== undefined) {
+    receiptsBody.packSeal = toJson(meta.packSeal);
   }
   const receiptsJson = canonicalize(receiptsBody);
 

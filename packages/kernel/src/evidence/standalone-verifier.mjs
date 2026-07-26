@@ -118,6 +118,8 @@ async function verifyEd25519(coreBytes, sigBase64, publicKeySpkiBase64) {
 
 const ANCHOR_SIGNATURE_DOMAIN = "caisson.audit-chain.anchor.v2";
 const ANCHOR_SIGNATURE_VERSION = 2;
+const EVIDENCE_PACK_SEAL_DOMAIN = "caisson.audit-chain.evidence-pack.v1";
+const EVIDENCE_PACK_SEAL_VERSION = 1;
 
 function anchorSignatureEnvelopeBytes(anchor, accountId) {
   const core = { length: anchor.length, tipHash: anchor.tipHash };
@@ -146,6 +148,51 @@ async function wormAnchorAccount(id) {
   const raw =
     hex.slice(0, 12) + "8" + hex.slice(13, 16) + variant + hex.slice(17, 32);
   return `${raw.slice(0, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}-${raw.slice(16, 20)}-${raw.slice(20, 32)}`;
+}
+
+async function evidencePackSealPayloadBytes(pack) {
+  const receiptsSha256 = await sha256Hex(
+    new TextEncoder().encode(canonicalize(pack.receipts)),
+  );
+  const publicKeySha256 = await sha256Hex(
+    base64ToBytes(pack.anchorAuth.publicKeySpkiBase64),
+  );
+  return new TextEncoder().encode(
+    canonicalize({
+      domain: EVIDENCE_PACK_SEAL_DOMAIN,
+      v: EVIDENCE_PACK_SEAL_VERSION,
+      formatVersion: 1,
+      tenantId: pack.tenantId,
+      accountId: pack.packSeal.accountId,
+      chainLength: pack.chainLength,
+      generatedAt: pack.generatedAt,
+      chainVerification: pack.chainVerification,
+      receiptsSha256,
+      anchorAuth: {
+        keyId: pack.anchorAuth.keyId,
+        publicKeySha256,
+      },
+    }),
+  );
+}
+
+async function verifyEvidencePackSeal(pack) {
+  const expectedAccountId = await wormAnchorAccount(pack.tenantId);
+  if (
+    pack.packSeal.accountId !== expectedAccountId ||
+    pack.packSeal.keyId !== pack.anchorAuth.keyId
+  ) {
+    return false;
+  }
+  try {
+    return await verifyEd25519(
+      await evidencePackSealPayloadBytes(pack),
+      pack.packSeal.sig,
+      pack.anchorAuth.publicKeySpkiBase64,
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -239,6 +286,25 @@ function assertCompletePack(pack) {
     throw new Error("invalid chain verification");
   }
   if (
+    !isBoundedString(pack.generatedAt, 64) ||
+    !Number.isFinite(Date.parse(pack.generatedAt)) ||
+    new Date(pack.generatedAt).toISOString() !== pack.generatedAt
+  ) {
+    throw new Error("invalid export instant");
+  }
+  if (
+    !isRecord(pack.anchorAuth) ||
+    !isBoundedString(pack.anchorAuth.keyId, 256) ||
+    !isBoundedString(pack.anchorAuth.publicKeySpkiBase64, 4096) ||
+    !isRecord(pack.packSeal) ||
+    pack.packSeal.v !== EVIDENCE_PACK_SEAL_VERSION ||
+    !isBoundedString(pack.packSeal.keyId, 256) ||
+    !isBoundedString(pack.packSeal.accountId, 64) ||
+    !isBoundedString(pack.packSeal.sig, 1024)
+  ) {
+    throw new Error("missing authenticated pack seal");
+  }
+  if (
     !isBoundedString(pack.tenantId, 256) ||
     // eslint-disable-next-line no-control-regex -- fail closed on C0/C1 tenant-id bytes.
     /[\u0000-\u001f\u007f-\u009f\s/\\]/u.test(pack.tenantId)
@@ -281,6 +347,9 @@ function assertCompletePack(pack) {
 /** Verify every receipt in a complete pack. Deterministic order: receipts are checked as given. */
 export async function verifyPack(pack) {
   assertCompletePack(pack);
+  if (!(await verifyEvidencePackSeal(pack))) {
+    throw new Error("invalid evidence-pack seal");
+  }
   const results = [];
   for (const receipt of pack.receipts) {
     results.push(await verifyReceipt(receipt, pack.anchorAuth, pack.tenantId));

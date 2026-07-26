@@ -3,10 +3,15 @@
 // self-contained asset embedded into a built pack's `verify.mjs`, not a TS module a caller imports.
 export {
   buildEvidencePack,
+  evidencePackSealPayloadBytes,
   EVIDENCE_PACK_FORMAT_VERSION,
+  EVIDENCE_PACK_SEAL_DOMAIN,
+  EVIDENCE_PACK_SEAL_VERSION,
   type BuildEvidencePackInput,
   type EvidencePack,
   type EvidencePackAnchorAuth,
   type EvidencePackFile,
   type EvidencePackMeta,
+  type EvidencePackSeal,
+  type EvidencePackSealPayloadInput,
 } from "./pack.ts";

@@ -72,7 +72,12 @@ export default async function AuditPage({
         accountId: anchor,
         tenantId: targetAccountId,
         now: new Date(),
-        ...(anchorTrust === null ? {} : { anchorAuth: anchorTrust.pinnedKey }),
+        ...(anchorTrust === null
+          ? {}
+          : {
+              anchorAuth: anchorTrust.pinnedKey,
+              packSigner: anchorTrust.signer,
+            }),
       });
       entries = window.displayEntries;
       verification = window.verification;

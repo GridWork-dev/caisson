@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import type { RowProof, RowProofUnverifiable } from "@caisson/audit-worm";
+import { generateKeyPairSync, sign } from "node:crypto";
+import type {
+  AnchorSigner,
+  RowProof,
+  RowProofUnverifiable,
+} from "@caisson/audit-worm";
 import {
   anchorChain,
   buildChain,
@@ -7,6 +12,7 @@ import {
   type ChainVerification,
 } from "@caisson/kernel";
 import { buildEvidencePack } from "@caisson/kernel/evidence";
+import { anchorSignatureEnvelopeBytes } from "@caisson/kernel/audit-verify";
 import { assembleProofSuccess, type ProofSuccess } from "./audit-proof.ts";
 import {
   ADMIN_AUDIT_PROOF_CONCURRENCY,
@@ -157,6 +163,70 @@ describe("buildAdminAuditWindow", () => {
     expect(window.evidencePack).toEqual(expected);
     expect(window.evidencePack?.sha256).toBe(expected.sha256);
     expect(window.evidencePack?.files).toEqual(expected.files);
+  });
+
+  test("binds a signed export's terminal length and complete receipt set to a pack seal", async () => {
+    const entries = buildChain([{ event: "first" }, { event: "second" }]);
+    const accountId = "11111111-1111-4111-8111-111111111111";
+    const keyId = "test-anchor-key";
+    const keyPair = generateKeyPairSync("ed25519");
+    const signer: AnchorSigner = {
+      keyId,
+      async sign(payload) {
+        return Uint8Array.from(
+          sign(null, Buffer.from(payload), keyPair.privateKey),
+        );
+      },
+    };
+    const source = sourceFor(entries);
+    const signedSource: AuditProofSource = {
+      ...source,
+      async getRowProof(requestAccountId, seq) {
+        const proof = await source.getRowProof(requestAccountId, seq);
+        if ("unverifiable" in proof) return proof;
+        const sig = await signer.sign(
+          anchorSignatureEnvelopeBytes(proof.anchorForRow, accountId),
+        );
+        return {
+          ...proof,
+          anchorForRow: {
+            ...proof.anchorForRow,
+            sig: Buffer.from(sig).toString("base64"),
+            keyId,
+            sigV: 2,
+            sigAccountId: accountId,
+          },
+        };
+      },
+    };
+
+    const window = await buildAdminAuditWindow({
+      source: signedSource,
+      accountId,
+      tenantId: accountId,
+      now: NOW,
+      anchorAuth: {
+        keyId,
+        publicKeySpkiBase64: keyPair.publicKey
+          .export({ format: "der", type: "spki" })
+          .toString("base64"),
+      },
+      packSigner: signer,
+    });
+
+    expect(window.evidencePack).not.toBeNull();
+    const receiptsFile = window.evidencePack?.files.find(
+      (file) => file.name === "receipts.json",
+    );
+    const body = JSON.parse(receiptsFile?.contents ?? "{}") as {
+      packSeal?: { keyId?: string; accountId?: string; sig?: string };
+    };
+    expect(body.packSeal).toEqual({
+      keyId,
+      accountId,
+      sig: expect.any(String),
+      v: 1,
+    });
   });
 
   test("refuses a signature-claimed export when its anchors are unsigned", async () => {
