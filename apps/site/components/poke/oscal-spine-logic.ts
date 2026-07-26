@@ -35,7 +35,9 @@ export interface AssessmentPlanDocument {
     };
     readonly "import-ssp": { readonly href: string };
     readonly "reviewed-controls": {
-      readonly "control-selections": readonly [{ readonly "include-all": {} }];
+      readonly "control-selections": readonly [
+        { readonly "include-all": Record<string, never> },
+      ];
     };
   };
 }
