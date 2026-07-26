@@ -6,6 +6,7 @@ grounds:
   - knowledge/decisions/ADR-0380-completion-fork-locks-and-module-depth-slice.md
   - knowledge/decisions/ADR-0386-everything-reprice-release-sequencing-and-wave-force-push.md
   - knowledge/decisions/ADR-0387-field-crypto-kms-backing-and-pre-deploy-arming-pass.md
+  - knowledge/decisions/ADR-0388-oscal-wave-runs-parallel-and-merges-before-the-first-train.md
   - outputs/specs/full-state-completion/SPEC.md
   - docs/state/decisions-and-forks.md
   - docs/state/production-readiness.md
@@ -35,7 +36,7 @@ and runtime evidence.
 | T4 — one-SHA fleet and migration 0030            | **blocked on T8**            | six runtime legs on one approved SHA; migration and parity receipts. ADR-0387 puts the KMS async wave AHEAD of the deploy — T4 no longer runs next |
 | T5 — five locked product residuals               | **complete**                 | `b037b878` DS manifest; T5A merged in #332; T5B/C/E merged in #335                                                                                 |
 | T6 — Inngest + Azure Key Vault + Azure Blob WORM | **complete**                 | three isolated adapter reviews and changesets, merged in #335                                                                                      |
-| T7 — consolidated verification and release       | **after T8**                 | green local/CI gates, immutable tag-to-bytes and deploy receipts. ADR-0386 runs the train before the oscal wave; the oscal wave earns a second     |
+| T7 — consolidated verification and release       | **after T8 + OSCAL**         | green local/CI gates, immutable tag-to-bytes and deploy receipts. ADR-0388 moves the OSCAL wave before the first and only train                    |
 | T8 — field-crypto KMS async refactor (NEW)       | **next up: SPEC then build** | ADR-0387; site BYOK and ai-kit MCP run tools off `SyncFieldKeyProvider`, Azure Key Vault wired, wrapped-DEK store homed, fail-closed on KMS loss   |
 
 **All five wave PRs are merged.** #334 (`96aa01d2`, trunk), #333 (`6f44c60f`, Paddle onboarding +

@@ -24,9 +24,9 @@ corresponding hold being released.
 - `/dashboard*` and `/cart*` remain Cloudflare Access gated. Checkout remains sandbox-only.
 - Admin uses in-app GitHub OAuth plus immutable numeric-user-ID allowlisting; no admin
   Cloudflare Access/JWT gate remains.
-- Paddle is the sole merchant of record. The catalog is six bundles and 26 modules; production
-  recreation is **35 products and 66 prices**.
-- Compliance is **$1,449**. This runbook does not reopen pricing.
+- Paddle is the sole merchant of record. The catalog is six bundles and 27 modules; production
+  recreation is **36 products and 68 prices**.
+- Compliance is **$1,649** and Everything is **$2,259**. This runbook does not reopen pricing.
 - WORM remains GOVERNANCE pre-launch; launch requires a receipted forward-only COMPLIANCE
   escalation.
 - Health is green but source parity is red. License/admin digests differ from repository/Worker,
@@ -86,8 +86,8 @@ Deploy in verifier-before-issuer order whenever strict schemas or manifests chan
 
 All six runtime legs must report the same approved source and manifest digest. Run health,
 authenticated dashboard, checkout sandbox, entitlement, refund, RAG, and support probes.
-Docs/support must answer $1,449; fulfillment must recognize every current product ID and reject an
-unknown ID.
+Docs/support must answer $1,649 for Compliance and $2,259 for Everything; fulfillment must
+recognize every current product ID and reject an unknown ID.
 
 ### Shared-bearer rotation is not a per-service operation
 

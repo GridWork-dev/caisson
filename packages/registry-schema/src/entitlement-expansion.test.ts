@@ -234,6 +234,25 @@ describe("ADR-0384 compatibility re-export entitlements", () => {
     schemaVersion: 1,
     modules: [
       {
+        id: "@caisson/compliance",
+        latest: "0.1.0",
+        versions: [
+          {
+            ...version("@caisson/compliance"),
+            manifest: {
+              ...manifest("@caisson/compliance"),
+              kind: "edition",
+              editions: ["compliance"],
+              members: {
+                "@caisson/compliance-core": "0.1.0",
+                "@caisson/frameworks-pack": "0.1.0",
+                "@caisson/oscal-spine": "0.1.0",
+              },
+            },
+          },
+        ],
+      },
+      {
         id: "@caisson/compliance-core",
         latest: "0.1.0",
         versions: [version("@caisson/compliance-core")],
@@ -269,6 +288,23 @@ describe("ADR-0384 compatibility re-export entitlements", () => {
       ).toEqual(expected);
     });
   }
+
+  test("a pre-carve Compliance buyer keeps OSCAL through its snapshotted parent grants", () => {
+    const granted = expandEntitlements(carved, ["compliance"], {
+      entitledSince: { compliance: "2026-07-24T00:00:00.000Z" },
+      membershipTimeline: {
+        compliance: {
+          "compliance-core": "2026-06-01T00:00:00.000Z",
+          "frameworks-pack": "2026-06-01T00:00:00.000Z",
+          "oscal-spine": "2026-07-25T00:00:00.000Z",
+        },
+      },
+    });
+
+    expect(granted).toContain("@caisson/compliance-core");
+    expect(granted).toContain("@caisson/frameworks-pack");
+    expect(granted).toContain("@caisson/oscal-spine");
+  });
 
   test("a standalone OSCAL purchase grants only OSCAL", () => {
     expect([...expandEntitlements(carved, ["oscal-spine"])]).toEqual([
