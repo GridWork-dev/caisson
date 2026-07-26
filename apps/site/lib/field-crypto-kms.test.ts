@@ -55,9 +55,10 @@ function fakeRuntime(recoveryLevel = "Recoverable"): {
   const seen: string[] = [];
   const keys = new Map<string, { id: string; recoveryLevel: string }>();
   const client: SiteAzureKeyClient = {
-    async getKey(keyName) {
-      seen.push(`get:${keyName}`);
-      const key = keys.get(keyName);
+    async getKey(keyName, options) {
+      const lookup = `${keyName}:${options?.keyVersion ?? "latest"}`;
+      seen.push(`get:${lookup}`);
+      const key = keys.get(lookup) ?? keys.get(`${keyName}:latest`);
       if (key === undefined) throw { statusCode: 404 };
       return { id: key.id, properties: { recoveryLevel: key.recoveryLevel } };
     },
@@ -67,7 +68,8 @@ function fakeRuntime(recoveryLevel = "Recoverable"): {
         id: `${ENV.AZURE_KEY_VAULT_URL}/keys/${keyName}/version-1`,
         recoveryLevel,
       };
-      keys.set(keyName, key);
+      keys.set(`${keyName}:version-1`, key);
+      keys.set(`${keyName}:latest`, key);
       return { id: key.id, properties: { recoveryLevel } };
     },
     async beginDeleteKey(keyName) {
@@ -89,8 +91,8 @@ function fakeRuntime(recoveryLevel = "Recoverable"): {
   };
   const wrapped = new Map<string, Buffer>();
   const deps: SiteAzureKmsDependencies = {
-    createCredential(tenantId, clientId, clientSecret) {
-      seen.push(`credential:${tenantId}:${clientId}:${clientSecret.length}`);
+    createCredential() {
+      seen.push("credential:default-chain");
       return {
         async getToken() {
           return {
@@ -106,15 +108,19 @@ function fakeRuntime(recoveryLevel = "Recoverable"): {
     },
     createCryptographyClient(keyId): AzureKeyVaultCryptographyClient {
       return {
-        async wrapKey(_algorithm, key) {
+        async wrapKey(algorithm, key) {
           const value = Buffer.from(key);
           wrapped.set(keyId, value);
-          return { result: Buffer.from([0xaa, ...value]) };
+          return {
+            result: Buffer.from([0xaa, ...value]),
+            keyID: keyId,
+            algorithm,
+          };
         },
-        async unwrapKey(_algorithm, encryptedKey) {
+        async unwrapKey(algorithm, encryptedKey) {
           const value = Buffer.from(encryptedKey).subarray(1);
           expect(wrapped.get(keyId)?.equals(value)).toBe(true);
-          return { result: value };
+          return { result: value, keyID: keyId, algorithm };
         },
       };
     },
@@ -123,7 +129,7 @@ function fakeRuntime(recoveryLevel = "Recoverable"): {
 }
 
 describe("site Azure KMS production runtime", () => {
-  test("requires HTTPS, the fixed wrap algorithm, purge protection, and service auth", () => {
+  test("requires HTTPS, the fixed wrap algorithm, and purge protection while using the default credential chain", () => {
     const { deps } = fakeRuntime();
     expect(() =>
       createSiteAzureKmsClient(
@@ -148,7 +154,7 @@ describe("site Azure KMS production runtime", () => {
         { ...ENV, AZURE_CLIENT_SECRET: undefined },
         deps,
       ),
-    ).toThrow(/service authentication/i);
+    ).not.toThrow();
   });
 
   test("uses a deterministic per-tenant key and round-trips a wrapped DEK", async () => {
@@ -163,7 +169,8 @@ describe("site Azure KMS production runtime", () => {
       ),
     ).toBe(true);
     expect(seen).toContain(`create:${expectedKeyName}`);
-    expect(seen).toContain("credential:tenant-id:client-id:13");
+    expect(seen).toContain("credential:default-chain");
+    expect(seen).toContain(`get:${expectedKeyName}:version-1`);
   });
 
   test("rejects a purgeable Azure key before wrapping any DEK", async () => {
@@ -303,5 +310,56 @@ describe("site KMS request context", () => {
       ),
     ).rejects.toThrow("vault unavailable");
     expect(callbackCalled).toBe(false);
+  });
+
+  test("a stalled unwrap is aborted by the request deadline and releases the transaction", async () => {
+    let callbackCalled = false;
+    let observedTimeout: number | undefined;
+    const client: KmsClient = {
+      async generateDataKey() {
+        return {
+          plaintextKey: Buffer.alloc(32, 0x44),
+          wrappedKey: Buffer.from([0x44]),
+        };
+      },
+      async decryptDataKey(_scope, _wrappedKey, options) {
+        observedTimeout = options?.timeoutMs;
+        return new Promise<Buffer>((_resolve, reject) => {
+          const signal = options?.abortSignal;
+          if (signal === undefined) {
+            reject(new Error("missing abort signal"));
+            return;
+          }
+          signal.addEventListener("abort", () => reject(signal.reason), {
+            once: true,
+          });
+        });
+      },
+      async scheduleKeyDeletion() {
+        return { state: "soft-deleted", irreversible: false };
+      },
+    };
+    const db = await getDb();
+    const accountId = "acct-site-kms-timeout";
+
+    await expect(
+      withTenant(db, accountId, (tx) =>
+        withSiteKmsFieldCryptoContext(
+          tx,
+          accountId,
+          async () => {
+            callbackCalled = true;
+          },
+          client,
+          10,
+        ),
+      ),
+    ).rejects.toThrow(/exceeded 10ms/);
+
+    expect(callbackCalled).toBe(false);
+    expect(observedTimeout).toBe(10);
+    await expect(
+      withTenant(db, accountId, (tx) => tx.query("SELECT 1")),
+    ).resolves.toBeDefined();
   });
 });

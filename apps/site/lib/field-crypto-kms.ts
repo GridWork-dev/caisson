@@ -1,4 +1,4 @@
-import { ClientSecretCredential } from "@azure/identity";
+import { DefaultAzureCredential } from "@azure/identity";
 import {
   CryptographyClient,
   KeyClient,
@@ -8,6 +8,7 @@ import type {
   AzureKeyVaultCryptographyClient,
   FieldCryptoContext,
   KmsClient,
+  KmsOperationOptions,
 } from "@caisson/field-crypto";
 import {
   KmsKeyProvider,
@@ -35,31 +36,37 @@ interface SiteAzureKey {
 }
 
 export interface SiteAzureKeyClient {
-  getKey(keyName: string): Promise<SiteAzureKey>;
+  getKey(
+    keyName: string,
+    options?: KmsOperationOptions & { readonly keyVersion?: string },
+  ): Promise<SiteAzureKey>;
   createRsaKey(
     keyName: string,
     options: {
       readonly keySize: number;
       readonly keyOps: readonly ["wrapKey", "unwrapKey"];
     },
+    operationOptions?: KmsOperationOptions,
   ): Promise<SiteAzureKey>;
-  beginDeleteKey(keyName: string): Promise<{
-    pollUntilDone(): Promise<{
+  beginDeleteKey(
+    keyName: string,
+    options?: KmsOperationOptions,
+  ): Promise<{
+    pollUntilDone(options?: KmsOperationOptions): Promise<{
       readonly properties: {
         readonly recoveryLevel?: string;
         readonly scheduledPurgeDate?: Date;
       };
     }>;
   }>;
-  purgeDeletedKey(keyName: string): Promise<void>;
+  purgeDeletedKey(
+    keyName: string,
+    options?: KmsOperationOptions,
+  ): Promise<void>;
 }
 
 export interface SiteAzureKmsDependencies {
-  createCredential(
-    tenantId: string,
-    clientId: string,
-    clientSecret: string,
-  ): SiteTokenCredential;
+  createCredential(): SiteTokenCredential;
   createKeyClient(
     vaultUrl: string,
     credential: SiteTokenCredential,
@@ -86,36 +93,70 @@ const azureKmsEnvironmentSchema = strictObject({
     .regex(/^[0-9A-Za-z-]+$/),
   AZURE_KEY_VAULT_WRAP_ALGORITHM: z.literal("RSA-OAEP-256"),
   AZURE_KEY_VAULT_PURGE_PROTECTION: z.literal("enabled"),
-  AZURE_TENANT_ID: z.string().trim().min(1).max(128),
-  AZURE_CLIENT_ID: z.string().trim().min(1).max(128),
-  AZURE_CLIENT_SECRET: z.string().min(1).max(4096),
 });
 
 type SiteAzureKmsEnvironment = z.infer<typeof azureKmsEnvironmentSchema>;
 
 const defaultDependencies: SiteAzureKmsDependencies = {
-  createCredential(tenantId, clientId, clientSecret) {
-    return new ClientSecretCredential(tenantId, clientId, clientSecret);
+  createCredential() {
+    return new DefaultAzureCredential();
   },
   createKeyClient(vaultUrl, credential) {
     const client = new KeyClient(vaultUrl, credential);
+    const sdkOptions = (
+      options?: KmsOperationOptions,
+    ): {
+      readonly abortSignal?: AbortSignal;
+      readonly requestOptions?: { readonly timeout: number };
+    } => ({
+      ...(options?.abortSignal === undefined
+        ? {}
+        : { abortSignal: options.abortSignal }),
+      ...(options?.timeoutMs === undefined
+        ? {}
+        : { requestOptions: { timeout: options.timeoutMs } }),
+    });
     return {
-      getKey: (keyName) => client.getKey(keyName),
-      createRsaKey: (keyName, options) =>
+      getKey: (keyName, options) =>
+        client.getKey(keyName, {
+          ...sdkOptions(options),
+          ...(options?.keyVersion === undefined
+            ? {}
+            : { version: options.keyVersion }),
+        }),
+      createRsaKey: (keyName, options, operationOptions) =>
         client.createRsaKey(keyName, {
           keySize: options.keySize,
           keyOps: [...options.keyOps],
+          ...sdkOptions(operationOptions),
         }),
-      beginDeleteKey: (keyName) => client.beginDeleteKey(keyName),
-      purgeDeletedKey: (keyName) => client.purgeDeletedKey(keyName),
+      beginDeleteKey: (keyName, options) =>
+        client.beginDeleteKey(keyName, sdkOptions(options)),
+      purgeDeletedKey: (keyName, options) =>
+        client.purgeDeletedKey(keyName, sdkOptions(options)),
     };
   },
   createCryptographyClient(keyId, credential) {
     const client = new CryptographyClient(keyId, credential);
     return {
-      wrapKey: (algorithm, key) => client.wrapKey(algorithm, key),
-      unwrapKey: (algorithm, encryptedKey) =>
-        client.unwrapKey(algorithm, encryptedKey),
+      wrapKey: (algorithm, key, options) =>
+        client.wrapKey(algorithm, key, {
+          ...(options?.abortSignal === undefined
+            ? {}
+            : { abortSignal: options.abortSignal }),
+          ...(options?.timeoutMs === undefined
+            ? {}
+            : { requestOptions: { timeout: options.timeoutMs } }),
+        }),
+      unwrapKey: (algorithm, encryptedKey, options) =>
+        client.unwrapKey(algorithm, encryptedKey, {
+          ...(options?.abortSignal === undefined
+            ? {}
+            : { abortSignal: options.abortSignal }),
+          ...(options?.timeoutMs === undefined
+            ? {}
+            : { requestOptions: { timeout: options.timeoutMs } }),
+        }),
     };
   },
 };
@@ -128,23 +169,11 @@ function parseEnvironment(
       "site field-crypto: Azure Key Vault purge protection must be enabled",
     );
   }
-  if (
-    source.AZURE_TENANT_ID === undefined ||
-    source.AZURE_CLIENT_ID === undefined ||
-    source.AZURE_CLIENT_SECRET === undefined
-  ) {
-    throw new ConfigError(
-      "site field-crypto: explicit Azure service authentication is required",
-    );
-  }
   const parsed = azureKmsEnvironmentSchema.safeParse({
     AZURE_KEY_VAULT_URL: source.AZURE_KEY_VAULT_URL,
     AZURE_KEY_VAULT_KEY_NAME: source.AZURE_KEY_VAULT_KEY_NAME,
     AZURE_KEY_VAULT_WRAP_ALGORITHM: source.AZURE_KEY_VAULT_WRAP_ALGORITHM,
     AZURE_KEY_VAULT_PURGE_PROTECTION: source.AZURE_KEY_VAULT_PURGE_PROTECTION,
-    AZURE_TENANT_ID: source.AZURE_TENANT_ID,
-    AZURE_CLIENT_ID: source.AZURE_CLIENT_ID,
-    AZURE_CLIENT_SECRET: source.AZURE_CLIENT_SECRET,
   });
   if (!parsed.success) {
     const keys = [
@@ -202,11 +231,7 @@ export function createSiteAzureKmsClient(
   dependencies: SiteAzureKmsDependencies = defaultDependencies,
 ): KmsClient {
   const config = parseEnvironment(source);
-  const credential = dependencies.createCredential(
-    config.AZURE_TENANT_ID,
-    config.AZURE_CLIENT_ID,
-    config.AZURE_CLIENT_SECRET,
-  );
+  const credential = dependencies.createCredential();
   const keyClient = dependencies.createKeyClient(
     config.AZURE_KEY_VAULT_URL,
     credential,
@@ -214,22 +239,39 @@ export function createSiteAzureKmsClient(
 
   const getProtectedKey = async (
     keyName: string,
+    keyVersion?: string,
+    operationOptions?: KmsOperationOptions,
   ): Promise<SiteAzureKey & { readonly id: string }> =>
-    assertPurgeProtected(await keyClient.getKey(keyName));
+    assertPurgeProtected(
+      await keyClient.getKey(keyName, {
+        ...(keyVersion === undefined ? {} : { keyVersion }),
+        ...(operationOptions?.abortSignal === undefined
+          ? {}
+          : { abortSignal: operationOptions.abortSignal }),
+        ...(operationOptions?.timeoutMs === undefined
+          ? {}
+          : { timeoutMs: operationOptions.timeoutMs }),
+      }),
+    );
 
   const getOrCreateProtectedKey = async (
     keyName: string,
+    operationOptions?: KmsOperationOptions,
   ): Promise<SiteAzureKey & { readonly id: string }> => {
     try {
-      return await getProtectedKey(keyName);
+      return await getProtectedKey(keyName, undefined, operationOptions);
     } catch (error) {
       if (!isNotFound(error)) throw error;
     }
     return assertPurgeProtected(
-      await keyClient.createRsaKey(keyName, {
-        keySize: 2048,
-        keyOps: ["wrapKey", "unwrapKey"],
-      }),
+      await keyClient.createRsaKey(
+        keyName,
+        {
+          keySize: 2048,
+          keyOps: ["wrapKey", "unwrapKey"],
+        },
+        operationOptions,
+      ),
     );
   };
 
@@ -241,9 +283,9 @@ export function createSiteAzureKmsClient(
     scopeKeyName: (scope) =>
       siteAzureKeyName(config.AZURE_KEY_VAULT_KEY_NAME, scope),
     client: {
-      beginDeleteKey: async (keyName) => {
-        await getProtectedKey(keyName);
-        return keyClient.beginDeleteKey(keyName);
+      beginDeleteKey: async (keyName, options) => {
+        await getProtectedKey(keyName, undefined, options);
+        return keyClient.beginDeleteKey(keyName, options);
       },
       async purgeDeletedKey() {
         throw new ConfigError(
@@ -251,18 +293,22 @@ export function createSiteAzureKmsClient(
         );
       },
     },
-    cryptographyClient: (keyName) => ({
-      async wrapKey(algorithm, key) {
-        const protectedKey = await getOrCreateProtectedKey(keyName);
+    cryptographyClient: (keyName, keyVersion) => ({
+      async wrapKey(algorithm, key, options) {
+        const protectedKey = await getOrCreateProtectedKey(keyName, options);
         return dependencies
           .createCryptographyClient(protectedKey.id, credential)
-          .wrapKey(algorithm, key);
+          .wrapKey(algorithm, key, options);
       },
-      async unwrapKey(algorithm, encryptedKey) {
-        const protectedKey = await getProtectedKey(keyName);
+      async unwrapKey(algorithm, encryptedKey, options) {
+        const protectedKey = await getProtectedKey(
+          keyName,
+          keyVersion,
+          options,
+        );
         return dependencies
           .createCryptographyClient(protectedKey.id, credential)
-          .unwrapKey(algorithm, encryptedKey);
+          .unwrapKey(algorithm, encryptedKey, options);
       },
     }),
   });
@@ -283,6 +329,9 @@ export function getSiteAzureKmsClient(): KmsClient {
   return globalKms.caissonSiteAzureKmsClient;
 }
 
+/** One overall Azure KMS deadline per tenant request, including SDK retries and credential work. */
+export const SITE_KMS_REQUEST_TIMEOUT_MS = 15_000;
+
 /**
  * Bind a production tenant transaction to its KMS provider.
  *
@@ -295,12 +344,33 @@ export async function withSiteKmsFieldCryptoContext<T>(
   accountId: string,
   fn: (ctx: FieldCryptoContext) => Promise<T>,
   kms: KmsClient = getSiteAzureKmsClient(),
+  timeoutMs: number = SITE_KMS_REQUEST_TIMEOUT_MS,
 ): Promise<T> {
   await tx.query(`SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`, [
     "caisson:field-crypto",
     accountId,
   ]);
-  const provider = new KmsKeyProvider(kms, new PgWrappedKeyStore(tx));
-  await provider.ensureProvisioned(accountId);
-  return withKmsFieldCryptoContext(provider, accountId, fn);
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
+    throw new ConfigError(
+      "site field-crypto: KMS request timeout must be a positive integer",
+    );
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    controller.abort(
+      new InternalError(
+        `site field-crypto: Azure KMS request exceeded ${String(timeoutMs)}ms`,
+      ),
+    );
+  }, timeoutMs);
+  try {
+    const provider = new KmsKeyProvider(kms, new PgWrappedKeyStore(tx), {
+      abortSignal: controller.signal,
+      timeoutMs,
+    });
+    await provider.ensureProvisioned(accountId);
+    return await withKmsFieldCryptoContext(provider, accountId, fn);
+  } finally {
+    clearTimeout(timer);
+  }
 }
