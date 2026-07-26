@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import WritingHubPage from "../app/(marketing)/writing/page";
 import { generateStaticParams } from "../app/(marketing)/writing/[slug]/page";
 import sitemap from "../app/sitemap";
+import { PageSections } from "../components/page-sections";
 import { MARKETING_ROUTES } from "./routes";
 import { WRITING_PIECES, writingPageSpec, type WritingPiece } from "./writing";
 
@@ -80,6 +82,15 @@ describe("WRITING_PIECES registry", () => {
       expect(spec.meta.type).toBe("article");
       expect(spec.sections.length).toBeGreaterThan(piece.sections.length);
     }
+  });
+
+  test("the primary-source list is section content, never a list nested inside a lede paragraph", () => {
+    const spec = writingPageSpec(WRITING_PIECES[0]!);
+    const html = renderToStaticMarkup(
+      createElement(PageSections, { sections: spec.sections }),
+    );
+    expect(html).toContain("<ul");
+    expect(html).not.toMatch(/<p[^>]*><ul/u);
   });
 
   test.skip("pending verified first piece: links to the evergreen Article 50 framework page", () => {
