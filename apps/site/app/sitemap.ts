@@ -5,6 +5,7 @@ import { COMPARISONS } from "@/lib/comparisons";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { MODULE_PAGES } from "@/lib/module-pages";
 import { MARKETING_ROUTES } from "@/lib/routes";
+import { WRITING_PIECES } from "@/lib/writing";
 
 export const dynamic = "force-static";
 
@@ -62,5 +63,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...marketing, ...docs, ...glossary, ...modules, ...comparisons];
+  // Dated-commentary spokes derive from WRITING_PIECES. The /writing hub is emitted once through
+  // MARKETING_ROUTES above; individual records never enter that hand-curated route registry.
+  const writing: MetadataRoute.Sitemap = WRITING_PIECES.map((piece) => ({
+    url: `${BASE}/writing/${piece.slug}`,
+    lastModified: BUILT_AT,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [
+    ...marketing,
+    ...docs,
+    ...glossary,
+    ...modules,
+    ...comparisons,
+    ...writing,
+  ];
 }

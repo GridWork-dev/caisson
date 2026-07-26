@@ -51,6 +51,7 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/marketplace", label: "Marketplace", priority: 0.9, changeFrequency: "weekly", group: "product", nav: true, footer: "product" }, // prettier-ignore
   { path: "/marketplace/plans", label: "Plans", priority: 0.85, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore
   { path: "/glossary", label: "Glossary", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
+  { path: "/writing", label: "Writing", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/compare", label: "Comparisons", priority: 0.75, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/stack-fit", label: "Stack fit", priority: 0.75, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/ui", label: "UI Pro showcase", navLabel: "UI Pro", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
