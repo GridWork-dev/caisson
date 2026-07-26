@@ -45,8 +45,8 @@ tracker), #337 (`d94f9d5f`, trivy local parity), #335 (`31bf5f1c`, lane A). Zero
 reconciled tree verified green end to end — 221/221 turbo tasks, 75 packages gate, sot green on every
 content gate, security scan `rc=0` at 3,969 real semgrep targets.
 
-There are **39 pending changeset files**. Current Changesets resolution is 40 patch package
-releases and 6 minor package releases. They are consumed only by T7.
+There are **48 pending changeset files**. Current Changesets resolution is 58 patch package
+releases, 12 minor package releases, and 2 major package releases. They are consumed only by T7.
 
 ## Linear reconciliation
 

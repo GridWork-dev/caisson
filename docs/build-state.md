@@ -36,8 +36,8 @@ real sandbox purchase/renewal rows.
   dependency-patch audit ownership (`3e384bc5`).
 - **Catalog:** six bundles and 27 modules; Compliance is $1,649 and Everything is $2,259;
   production recreation is 36 products and 68 prices.
-- **Release queue:** 33 changeset files currently resolve to 41 patch package releases and 4 minor
-  package releases.
+- **Release queue:** 48 changeset files currently resolve to 58 patch package releases, 12 minor
+  package releases, and 2 major package releases.
 - **Fleet parity red:** repository/Worker digest `74e92a6813bc`; license `09adca8d32a5`; admin
   `97b183902c08`; docs/support parity and migration `0030` lack current receipts.
 - **Locked residuals:** the generated 39-component DS manifest, source drift guard, and shared

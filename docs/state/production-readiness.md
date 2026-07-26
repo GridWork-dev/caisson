@@ -29,7 +29,7 @@ blocked until both technical and operator evidence is attached.
 | Commerce                | **blocked**                                  | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                                               |
 | Operations              | **gaps**                                     | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                                      |
 | Buyer/product           | **gaps**                                     | Design-manifest residual complete; four already-locked families remain                                                                                            |
-| Release                 | **blocked**                                  | 33 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                                                      |
+| Release                 | **blocked**                                  | 48 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                                                      |
 
 ## Evidence snapshot
 
@@ -47,8 +47,8 @@ blocked until both technical and operator evidence is attached.
 - `bun run sot` has every content/structure gate green. Its sole drift is branch hygiene because
   `/home/gw/lab/caisson-paddle-onboarding` exists concurrently on
   `feature/paddle-onboarding-setup`; this task did not remove another workstream.
-- There are 33 pending changeset files. Current resolution affects 41 patch packages and 4 minor
-  packages.
+- There are 48 pending changeset files. Current resolution affects 58 patch packages, 12 minor
+  packages, and 2 major packages.
 - Private-repository access has been authorized since 2026-06-30 (`gh auth status`: active
   `repo`-scoped token; `caisson-sh/caisson` confirmed private). Branch protection stays
   discipline-only on the Free plan (ADR-0327) and org 2FA was declined 2026-07-15, re-raise at
