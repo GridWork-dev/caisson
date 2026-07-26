@@ -147,16 +147,17 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
               { timeout: remainingTimeoutMs() },
             ),
         );
-        if (ciphertext === undefined || ciphertext === null) {
+        if (
+          !(ciphertext instanceof Uint8Array) ||
+          ciphertext.byteLength === 0
+        ) {
           throw new InternalError(
-            "field-crypto: GCP KMS Encrypt returned no ciphertext",
+            "field-crypto: GCP KMS Encrypt returned no ciphertext: wrapped ciphertext must be non-empty",
           );
         }
+        const wrappedKey = Buffer.from(ciphertext);
         succeeded = true;
-        return {
-          plaintextKey,
-          wrappedKey: Buffer.from(ciphertext as Uint8Array),
-        };
+        return { plaintextKey, wrappedKey };
       } finally {
         if (!succeeded) plaintextKey.fill(0);
       }
@@ -187,6 +188,11 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
                 );
               }
               try {
+                if (plaintext.byteLength !== 32) {
+                  throw new InternalError(
+                    "field-crypto: GCP KMS Decrypt returned a DEK that is not 32-byte AES-256 material",
+                  );
+                }
                 throwIfAborted(abortSignal);
                 return Buffer.from(plaintext);
               } finally {
@@ -214,11 +220,35 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
       return withKmsOperationBudget(
         options,
         async (abortSignal, remainingTimeoutMs) => {
-          const [versions] = await sdk.listCryptoKeyVersions(
-            { parent },
-            { timeout: remainingTimeoutMs() },
-          );
-          throwIfAborted(abortSignal);
+          const versions: protos.google.cloud.kms.v1.ICryptoKeyVersion[] = [];
+          let pageRequest: protos.google.cloud.kms.v1.IListCryptoKeyVersionsRequest | null =
+            { parent };
+          while (pageRequest !== null) {
+            throwIfAborted(abortSignal);
+            const pageResult: [
+              protos.google.cloud.kms.v1.ICryptoKeyVersion[],
+              protos.google.cloud.kms.v1.IListCryptoKeyVersionsRequest | null,
+              protos.google.cloud.kms.v1.IListCryptoKeyVersionsResponse,
+            ] = await sdk.listCryptoKeyVersions(pageRequest, {
+              autoPaginate: false,
+              timeout: remainingTimeoutMs(),
+            });
+            const [pageVersions, nextPageRequest] = pageResult;
+            throwIfAborted(abortSignal);
+            versions.push(...pageVersions);
+            if (nextPageRequest === null) {
+              pageRequest = null;
+            } else if (
+              typeof nextPageRequest.pageToken === "string" &&
+              nextPageRequest.pageToken.length > 0
+            ) {
+              pageRequest = { parent, pageToken: nextPageRequest.pageToken };
+            } else {
+              throw new InternalError(
+                "field-crypto: GCP KMS pagination returned an invalid next-page request",
+              );
+            }
+          }
           if (versions.length === 0) {
             throw new InternalError(
               "field-crypto: GCP KMS crypto-shred found no CryptoKeyVersions — a CryptoKey always has at least one; refusing to report an erasure that touched nothing",

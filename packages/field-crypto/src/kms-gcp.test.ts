@@ -143,7 +143,7 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
   });
 
   test("decryptDataKey targets the per-call tenant CryptoKey and matches the scope AAD", async () => {
-    const sdkPlaintext = new Uint8Array([9, 9]);
+    const sdkPlaintext = new Uint8Array(32).fill(9);
     const { client: kms, seen } = fakeGcpKms({
       decrypt: () => ({ plaintext: sdkPlaintext }),
     });
@@ -170,8 +170,8 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
     expect(req.additionalAuthenticatedData.toString("utf8")).toBe(
       "caisson:field-crypto:scope=projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a",
     );
-    expect(plaintext.equals(Buffer.from([9, 9]))).toBe(true);
-    expect(sdkPlaintext).toEqual(new Uint8Array(2));
+    expect(plaintext.equals(Buffer.alloc(32, 9))).toBe(true);
+    expect(sdkPlaintext).toEqual(new Uint8Array(32));
   });
 
   test("scheduleKeyDeletion lists the tenant CryptoKey's versions and destroys the live one", async () => {
@@ -233,7 +233,7 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
   test("every GCP operation receives the remaining caller budget", async () => {
     const { client: kms, seen } = fakeGcpKms({
       encrypt: () => ({ ciphertext: new Uint8Array([1, 2, 3]) }),
-      decrypt: () => ({ plaintext: new Uint8Array([9, 9]) }),
+      decrypt: () => ({ plaintext: new Uint8Array(32).fill(9) }),
     });
     const client = createGcpKmsClient({
       cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
@@ -294,6 +294,92 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
         ?.options as { timeout: number }
     ).timeout;
     expect(destroyTimeout).toBeLessThan(listTimeout);
+  });
+
+  test("manual GCP pagination consumes one diminishing budget across every page and destroy", async () => {
+    const seen: { method: string; timeout: number }[] = [];
+    const parent = "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a";
+    const base = fakeGcpKms({}).client;
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: {
+        ...base,
+        listCryptoKeyVersions: (async (
+          request: { parent?: string; pageToken?: string },
+          options?: { timeout?: number; autoPaginate?: boolean },
+        ) => {
+          seen.push({
+            method: `list:${request.pageToken ?? "first"}`,
+            timeout: options?.timeout ?? 0,
+          });
+          expect(options?.autoPaginate).toBe(false);
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          if (request.pageToken === undefined) {
+            return [
+              [{ name: `${parent}/cryptoKeyVersions/1`, state: "ENABLED" }],
+              { parent, pageToken: "next" },
+              {},
+            ];
+          }
+          return [
+            [{ name: `${parent}/cryptoKeyVersions/2`, state: "DESTROYED" }],
+            null,
+            {},
+          ];
+        }) as unknown as GcpKmsSendable["listCryptoKeyVersions"],
+        destroyCryptoKeyVersion: (async (
+          _request: { name?: string },
+          options?: { timeout?: number },
+        ) => {
+          seen.push({
+            method: "destroy",
+            timeout: options?.timeout ?? 0,
+          });
+          return [{ state: "DESTROY_SCHEDULED" }, {}, {}];
+        }) as unknown as GcpKmsSendable["destroyCryptoKeyVersion"],
+      },
+    });
+
+    await client.scheduleKeyDeletion(parent, { timeoutMs: 1_000 });
+
+    expect(seen.map(({ method }) => method)).toEqual([
+      "list:first",
+      "list:next",
+      "destroy",
+    ]);
+    expect(seen[1]?.timeout).toBeLessThan(seen[0]?.timeout ?? 0);
+    expect(seen[2]?.timeout).toBeLessThan(seen[1]?.timeout ?? 0);
+  });
+
+  test("GCP deletion starts no later page or destroy after the shared budget expires", async () => {
+    const seen: string[] = [];
+    const base = fakeGcpKms({}).client;
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: {
+        ...base,
+        listCryptoKeyVersions: (async () => {
+          seen.push("list:first");
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          return [
+            [{ name: "tenant-a/cryptoKeyVersions/1", state: "ENABLED" }],
+            { parent: "tenant-a", pageToken: "next" },
+            {},
+          ];
+        }) as unknown as GcpKmsSendable["listCryptoKeyVersions"],
+        destroyCryptoKeyVersion: (async () => {
+          seen.push("destroy");
+          return [{ state: "DESTROY_SCHEDULED" }, {}, {}];
+        }) as unknown as GcpKmsSendable["destroyCryptoKeyVersion"],
+      },
+    });
+
+    await expect(
+      client.scheduleKeyDeletion("tenant-a", { timeoutMs: 5 }),
+    ).rejects.toThrow(/exceeded 5ms/);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    expect(seen).toEqual(["list:first"]);
   });
 
   test("GCP generate aborts promptly and zeroizes its transient plaintext DEK", async () => {
@@ -411,5 +497,42 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
     await expect(
       client.decryptDataKey("acct_a", Buffer.from([1])),
     ).rejects.toThrow(/no plaintext/);
+  });
+
+  for (const length of [0, 31, 33]) {
+    test(`decryptDataKey rejects and zeroizes a ${String(length)}-byte GCP DEK`, async () => {
+      const sdkPlaintext = new Uint8Array(length).fill(7);
+      const { client: kms } = fakeGcpKms({
+        decrypt: () => ({ plaintext: sdkPlaintext }),
+      });
+      const client = createGcpKmsClient({
+        cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+        client: kms,
+      });
+
+      await expect(
+        client.decryptDataKey("acct_a", Buffer.from([1])),
+      ).rejects.toThrow(/32-byte/);
+      expect(sdkPlaintext).toEqual(new Uint8Array(length));
+    });
+  }
+
+  test("generateDataKey rejects empty GCP ciphertext and zeroizes the local DEK", async () => {
+    let localPlaintext: Buffer | undefined;
+    const { client: kms } = fakeGcpKms({
+      encrypt: (request) => {
+        localPlaintext = request.plaintext as Buffer;
+        return { ciphertext: new Uint8Array() };
+      },
+    });
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: kms,
+    });
+
+    await expect(client.generateDataKey("acct_a")).rejects.toThrow(
+      /wrapped ciphertext/,
+    );
+    expect(localPlaintext?.equals(Buffer.alloc(32))).toBe(true);
   });
 });

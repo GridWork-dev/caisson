@@ -102,9 +102,22 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
           .then(({ Plaintext, CiphertextBlob }) => {
             let plaintextKey: Buffer | undefined;
             try {
-              if (Plaintext === undefined || CiphertextBlob === undefined) {
+              if (!(Plaintext instanceof Uint8Array)) {
                 throw new InternalError(
                   "field-crypto: AWS KMS GenerateDataKey returned no key material",
+                );
+              }
+              if (Plaintext.byteLength !== 32) {
+                throw new InternalError(
+                  "field-crypto: AWS KMS GenerateDataKey returned a DEK that is not 32-byte AES-256 material",
+                );
+              }
+              if (
+                !(CiphertextBlob instanceof Uint8Array) ||
+                CiphertextBlob.byteLength === 0
+              ) {
+                throw new InternalError(
+                  "field-crypto: AWS KMS GenerateDataKey returned no key material: wrapped ciphertext is missing or empty",
                 );
               }
               throwIfAborted(abortSignal);
@@ -117,7 +130,7 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
               plaintextKey?.fill(0);
               throw error;
             } finally {
-              Plaintext?.fill(0);
+              if (Plaintext instanceof Uint8Array) Plaintext.fill(0);
             }
           }),
       );
@@ -139,12 +152,17 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
             { abortSignal },
           )
           .then(({ Plaintext }) => {
-            if (Plaintext === undefined) {
+            if (!(Plaintext instanceof Uint8Array)) {
               throw new InternalError(
                 "field-crypto: AWS KMS Decrypt returned no plaintext",
               );
             }
             try {
+              if (Plaintext.byteLength !== 32) {
+                throw new InternalError(
+                  "field-crypto: AWS KMS Decrypt returned a DEK that is not 32-byte AES-256 material",
+                );
+              }
               throwIfAborted(abortSignal);
               return Buffer.from(Plaintext);
             } finally {

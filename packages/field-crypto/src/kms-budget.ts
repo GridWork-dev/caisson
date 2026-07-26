@@ -32,7 +32,7 @@ export async function withKmsOperationBudget<T>(
   ) => Promise<T>,
 ): Promise<T> {
   const timeoutMs = operationTimeoutMs(options);
-  const deadlineAt = Date.now() + timeoutMs;
+  const deadlineAt = performance.now() + timeoutMs;
   const controller = new AbortController();
   const source = options?.abortSignal;
   const forwardAbort = (): void => {
@@ -51,7 +51,7 @@ export async function withKmsOperationBudget<T>(
     );
   }, timeoutMs);
   const remainingTimeoutMs = (): number => {
-    const remaining = deadlineAt - Date.now();
+    const remaining = deadlineAt - performance.now();
     if (remaining < 1) {
       if (!controller.signal.aborted) {
         controller.abort(

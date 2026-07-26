@@ -79,7 +79,7 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
   });
 
   test("decryptDataKey targets the per-call tenant CMK and matches the scope EncryptionContext", async () => {
-    const sdkPlaintext = new Uint8Array([9, 9]);
+    const sdkPlaintext = new Uint8Array(32).fill(9);
     const { client: kms, seen } = fakeKms(() => ({
       Plaintext: sdkPlaintext,
     }));
@@ -96,8 +96,8 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       CiphertextBlob: Buffer.from([1, 2, 3]),
       EncryptionContext: { "caisson:field-crypto:scope": "alias/tenant-a" },
     });
-    expect(plaintext.equals(Buffer.from([9, 9]))).toBe(true);
-    expect(sdkPlaintext).toEqual(new Uint8Array(2));
+    expect(plaintext.equals(Buffer.alloc(32, 9))).toBe(true);
+    expect(sdkPlaintext).toEqual(new Uint8Array(32));
   });
 
   test("scheduleKeyDeletion TARGETS the per-call tenant CMK — not the shared default (blast-radius fix)", async () => {
@@ -159,7 +159,7 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
         };
       }
       if (command instanceof DecryptCommand) {
-        return { Plaintext: new Uint8Array([9, 9]) };
+        return { Plaintext: new Uint8Array(32).fill(9) };
       }
       return {
         KeyState: "PendingDeletion",
@@ -249,5 +249,32 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     await expect(
       client.decryptDataKey("acct_a", Buffer.from([1])),
     ).rejects.toThrow(/no plaintext/);
+  });
+
+  for (const length of [0, 31, 33]) {
+    test(`decryptDataKey rejects and zeroizes a ${String(length)}-byte AWS DEK`, async () => {
+      const sdkPlaintext = new Uint8Array(length).fill(7);
+      const { client: kms } = fakeKms(() => ({ Plaintext: sdkPlaintext }));
+      const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+
+      await expect(
+        client.decryptDataKey("acct_a", Buffer.from([1])),
+      ).rejects.toThrow(/32-byte/);
+      expect(sdkPlaintext).toEqual(new Uint8Array(length));
+    });
+  }
+
+  test("generateDataKey rejects and zeroizes malformed AWS key material", async () => {
+    const sdkPlaintext = new Uint8Array(31).fill(7);
+    const { client: kms } = fakeKms(() => ({
+      Plaintext: sdkPlaintext,
+      CiphertextBlob: new Uint8Array(),
+    }));
+    const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+
+    await expect(client.generateDataKey("acct_a")).rejects.toThrow(
+      /32-byte|wrapped ciphertext/,
+    );
+    expect(sdkPlaintext).toEqual(new Uint8Array(31));
   });
 });
