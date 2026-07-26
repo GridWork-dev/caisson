@@ -67,7 +67,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // MARKETING_ROUTES above; individual records never enter that hand-curated route registry.
   const writing: MetadataRoute.Sitemap = WRITING_PIECES.map((piece) => ({
     url: `${BASE}/writing/${piece.slug}`,
-    lastModified: BUILT_AT,
+    lastModified: new Date(`${piece.publishedOn}T00:00:00.000Z`),
     changeFrequency: "weekly" as const,
     priority: 0.7,
   }));
