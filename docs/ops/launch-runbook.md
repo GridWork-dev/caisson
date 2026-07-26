@@ -64,15 +64,18 @@ Preconditions:
 
 ### Boot-blocking secrets on `caisson-site`
 
-| Variable                                 | Failure mode when unset                                                                                                                                                                                                                               | Armed?                                                    |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `SESSION_TOKEN_HMAC_KEY`                 | **Hard boot failure.** `apps/site/lib/auth-server.ts:151,265` throws rather than fall back to storing raw session tokens (ADR-0366). Loud and immediate — a crashed boot or failed health check.                                                      | Yes — `docs/deploy/STATE.md:281`                          |
-| `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT` | **Deferred throw, not a boot failure.** The site starts clean and passes every deploy probe; the first buyer BYOK submit then throws (`apps/site/lib/byok.ts:142-147`), because production refuses to seal real tenant secrets under the demo vector. | **No arming record exists** — verify on the service first |
-| `BETTER_AUTH_SECRET`                     | `/dashboard` sign-in 503s (`apps/site/railway.toml`).                                                                                                                                                                                                 | Yes                                                       |
+| Variable                                                                                                                                                                                   | Failure mode when unset                                                                                                                                                                                                                                                                                                                                            | Armed?                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `SESSION_TOKEN_HMAC_KEY`                                                                                                                                                                   | **Hard boot failure.** `apps/site/lib/auth-server.ts:151,265` throws rather than fall back to storing raw session tokens (ADR-0366). Loud and immediate — a crashed boot or failed health check.                                                                                                                                                                   | Yes — `docs/deploy/STATE.md:281`                          |
+| `AZURE_KEY_VAULT_URL` + `AZURE_KEY_VAULT_KEY_NAME` + `AZURE_KEY_VAULT_WRAP_ALGORITHM` + `AZURE_KEY_VAULT_PURGE_PROTECTION` + `AZURE_TENANT_ID` + `AZURE_CLIENT_ID` + `AZURE_CLIENT_SECRET` | **Deferred throw, not a boot failure.** The site starts clean and passes every deploy probe; the first buyer BYOK submit then throws because production never falls back from Azure KMS to the derived provider or demo vector. The algorithm must be `RSA-OAEP-256`, the sentinel must be `enabled`, and the live key recovery level must prove purge protection. | **No arming record exists** — verify on the service first |
+| `BETTER_AUTH_SECRET`                                                                                                                                                                       | `/dashboard` sign-in 503s (`apps/site/railway.toml`).                                                                                                                                                                                                                                                                                                              | Yes                                                       |
 
-The BYOK pair is the dangerous one: a deploy that omits it looks completely healthy and fails only
-in front of a paying buyer. Confirm both variables exist on the service before releasing the hold,
-and record the check in the execution receipt.
+The Azure KMS set is the dangerous one: a deploy that omits or misconfigures it looks completely
+healthy and fails only in front of a paying buyer. Confirm every variable exists, verify vault purge
+protection and the service principal's key permissions, execute a real wrap/unwrap probe, and record
+the checks in the execution receipt. Tenant KEKs must not be rotated until a wrapped-DEK rewrap
+procedure exists; crypto-shred deletes a tenant KEK, while rotation without rewrap would strand its
+historical DEKs.
 
 Deploy in verifier-before-issuer order whenever strict schemas or manifests change:
 
@@ -109,7 +112,8 @@ the generic credential steps cover these three.
 ## Act 2 — finish code waves and release candidate
 
 - [ ] Complete the five already-locked product residual families.
-- [ ] Complete Inngest v4, Azure Key Vault, and Azure Blob WORM adapter lanes.
+- [ ] Complete Inngest v4 and Azure Blob WORM adapter lanes; verify the shipped Azure Key Vault
+      field-crypto lane against the armed production vault.
 - [ ] Attach adapter code, security, and conformance reviews plus changesets.
 - [ ] Resolve every implementation-blocking fork in `docs/state/decisions-and-forks.md`.
 - [ ] Run `bun run check`, formatting, SOT, standards, dependency graph, registry index, OSCAL,

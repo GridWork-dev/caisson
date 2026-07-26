@@ -3,11 +3,12 @@ title: field-crypto
 description: Per-tenant field encryption via HKDF key derivation, behind a pluggable FieldKeyProvider KMS port, one tenant's key never decrypts another tenant's data.
 ---
 
-`@caisson/field-crypto` encrypts individual fields with a key derived per tenant. A single
-root key lives in your KMS (or an env-held master key for the zero-infra default); each
-tenant's subkey is derived from it with HKDF-SHA256, using the tenant id and key version as
-the HKDF `info`. One tenant's key cannot decrypt another tenant's ciphertext, the isolation
-is in the key derivation, not in an application check that could be skipped.
+`@caisson/field-crypto` encrypts individual fields under a distinct tenant key. A KMS-backed
+deployment wraps each tenant's data-encryption key under a tenant-specific key-encryption key;
+the dev/self-hosted zero-infra path can instead derive tenant keys with HKDF-SHA256 from an
+environment-held master key. One tenant's key cannot decrypt another tenant's ciphertext,
+the isolation is in the key material and authenticated envelope, not in an application check
+that could be skipped.
 
 ## What it does
 
@@ -33,8 +34,8 @@ bun add @caisson/field-crypto
 
 ## Quickstart
 
-The zero-infra default derives keys from an env-held master secret, no key table, no KMS
-call:
+The zero-infra dev/self-hosted path derives keys from an env-held master secret, no key table,
+no KMS call:
 
 ```bash
 # 32-byte values, hex-encoded (64 chars)
@@ -48,7 +49,11 @@ import { DerivedKeyProvider, TenantFieldCrypto } from "@caisson/field-crypto";
 const provider = DerivedKeyProvider.fromEnv(); // reads MASTER_FIELD_KEY + FIELD_CRYPTO_SALT
 const crypto = new TenantFieldCrypto(provider);
 
-const sealed = await crypto.encryptField(tenantId, "424-00-1234", "patient.ssn");
+const sealed = await crypto.encryptField(
+  tenantId,
+  "424-00-1234",
+  "patient.ssn",
+);
 const plain = await crypto.decryptField(tenantId, sealed, "patient.ssn");
 
 // A different tenant's id derives a different subkey → fails closed.
@@ -118,13 +123,16 @@ under the current one.
 ## The KMS port
 
 The `FieldKeyProvider` port is the seam: `DerivedKeyProvider` (above) is the zero-infra
-default; `KmsKeyProvider` wraps a per-tenant data-encryption key under a KMS-held
+dev/self-hosted choice; `KmsKeyProvider` wraps a per-tenant data-encryption key under a KMS-held
 key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. AWS and
-GCP KMS clients ship today; Azure Key Vault and HashiCorp Vault Transit implement the same
-three-method `KmsClient` port.
+GCP KMS and Azure Key Vault clients ship today behind the same three-method `KmsClient` port.
 
 ```ts
-import { KmsKeyProvider, InMemoryWrappedKeyStore, awsKmsClient } from "@caisson/field-crypto";
+import {
+  KmsKeyProvider,
+  InMemoryWrappedKeyStore,
+  awsKmsClient,
+} from "@caisson/field-crypto";
 
 const kms = awsKmsClient({ keyId: process.env.KMS_KEY_ID! });
 const provider = new KmsKeyProvider(kms, new InMemoryWrappedKeyStore());
@@ -132,8 +140,11 @@ const provider = new KmsKeyProvider(kms, new InMemoryWrappedKeyStore());
 await provider.provision(tenantId); // generates + wraps a fresh DEK for this tenant
 ```
 
-Swap `InMemoryWrappedKeyStore` for `DbWrappedKeyStore` (backed by any `get`/`put`
-key-value store you wire) to persist wrapped DEKs.
+Use `PgWrappedKeyStore` inside an RLS-scoped tenant transaction to persist wrapped DEKs
+append-only. Call `ensureProvisioned()` on first seal and bind the provider with
+`withKmsFieldCryptoContext()`. The bind unwraps every historical version for the request,
+then zeroizes every plaintext DEK in `finally`; old ciphertext stays readable after rotation
+without a process-lifetime plaintext-key cache.
 
 ## Crypto-shred erasure
 
@@ -157,13 +168,14 @@ const { auditPayload } = await cryptoShred(kmsProvider, {
 
 ## Configuration
 
-| Var | What | Notes |
-| --- | --- | --- |
-| `MASTER_FIELD_KEY` | 32-byte IKM, hex (64 chars) | Hard secret, read once, never logged. |
+| Var                 | What                                        | Notes                                           |
+| ------------------- | ------------------------------------------- | ----------------------------------------------- |
+| `MASTER_FIELD_KEY`  | 32-byte IKM, hex (64 chars)                 | Hard secret, read once, never logged.           |
 | `FIELD_CRYPTO_SALT` | 32-byte per-deployment salt, hex (64 chars) | Non-secret; cross-deployment domain separation. |
 
-Only required for the `DerivedKeyProvider` default. `KmsKeyProvider` reads its credentials
-through the KMS client you construct (`awsKmsClient`/`createGcpKmsClient`).
+Only required for the `DerivedKeyProvider` dev/self-hosted path. `KmsKeyProvider` reads its
+credentials through the KMS client you construct (`awsKmsClient`, `createGcpKmsClient`, or
+`createAzureKeyVaultKmsClient`).
 
 ## Composing with the base
 

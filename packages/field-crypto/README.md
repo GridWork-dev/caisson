@@ -5,7 +5,7 @@ stand on. ADR-0043 (per-tenant keys) · ADR-0046 (envelope) · ADR-0045 (cipher)
 
 ## What it gives you
 
-- **Per-tenant keys, derived (zero infra).** `tenant_key = HKDF-SHA256(MASTER_FIELD_KEY,
+- **Per-tenant keys, derived (dev/self-hosted zero infra).** `tenant_key = HKDF-SHA256(MASTER_FIELD_KEY,
 FIELD_CRYPTO_SALT, "caisson-field-crypto:v"+keyVersion+":"+tenantId)`. No per-tenant key storage,
   no backup surface; the tenant is bound into HKDF `info`, so one key compromise never crosses
   tenants. The encryption boundary **equals** the RLS tenant boundary (ADR-0005).
@@ -33,7 +33,7 @@ import {
   derivedContext,
 } from "@caisson/field-crypto";
 
-// Application path (async; works over any provider incl. KMS):
+// Derived path for dev/test or an explicitly selected self-hosted deployment:
 const provider = DerivedKeyProvider.fromEnv(); // MASTER_FIELD_KEY + FIELD_CRYPTO_SALT (hex 32B)
 const crypto = new TenantFieldCrypto(provider);
 const sealed = await crypto.encryptField(tenantId, "424-...", "patient.ssn");
@@ -45,12 +45,40 @@ const ssn = encryptedColumn("patient.ssn")("ssn");
 await withFieldCryptoContext(derivedContext(provider, tenantId), () => db.insert(...));
 ```
 
-## Env
+For a KMS-backed request, persist the wrapped DEKs in the same tenant transaction and bind the
+async provider before touching encrypted fields:
+
+```ts
+import {
+  KmsKeyProvider,
+  PgWrappedKeyStore,
+  withKmsFieldCryptoContext,
+} from "@caisson/field-crypto";
+
+await withTenant(db, tenantId, async (tx) => {
+  const provider = new KmsKeyProvider(kmsClient, new PgWrappedKeyStore(tx));
+  await provider.ensureProvisioned(tenantId);
+  await withKmsFieldCryptoContext(provider, tenantId, async (ctx) => {
+    await writeEncryptedFields(tx, ctx);
+  });
+});
+```
+
+`withKmsFieldCryptoContext` unwraps every historical version at bind time and zeroizes those
+plaintext DEKs in `finally`. This preserves old-envelope reads after rotation without a
+process-lifetime plaintext-key cache.
+
+## Derived-provider env
 
 | Var                 | What                                        | Notes                                                             |
 | ------------------- | ------------------------------------------- | ----------------------------------------------------------------- |
 | `MASTER_FIELD_KEY`  | 32-byte IKM, hex (64 chars)                 | Hard secret — read once, never logged.                            |
 | `FIELD_CRYPTO_SALT` | 32-byte per-deployment salt, hex (64 chars) | Non-secret; cross-deployment domain separation (ADR-0043 Fork 3). |
+
+Azure Key Vault production integrations require an HTTPS vault URL, a deterministic key-name
+prefix, `RSA-OAEP-256`, purge protection, and explicit service credentials. The generic package
+keeps those deployment choices behind `createAzureKeyVaultKmsClient`; the Caisson site wires and
+strictly validates them in its runtime.
 
 ## Tests
 
