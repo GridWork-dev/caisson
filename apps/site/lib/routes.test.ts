@@ -127,14 +127,24 @@ describe("derived route slices", () => {
     expect(lf?.navLabel).toBe("Local-first");
   });
 
-  test("LEGAL_ROUTES are the four legal pages", () => {
+  test("LEGAL_ROUTES include the dedicated refunds policy", () => {
     expect(LEGAL_ROUTES.map((r) => r.path)).toEqual([
       "/legal/privacy",
       "/legal/terms",
+      "/legal/refunds",
       "/legal/license",
       "/legal/eula",
     ]);
     expect(LEGAL_ROUTES.every((r) => r.group === "legal")).toBe(true);
+  });
+
+  test("support is a public resource route linked from the footer", () => {
+    const support = MARKETING_ROUTES.find((r) => r.path === "/support");
+    expect(support).toMatchObject({
+      label: "Support",
+      group: "trust",
+      footer: "resources",
+    });
   });
 
   test("derived slices are all subsets of the registry", () => {

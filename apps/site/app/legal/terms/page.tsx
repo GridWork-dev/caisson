@@ -238,8 +238,8 @@ export default function TermsPage() {
           approved refund is returned to your original payment method, where
           possible, within 14 days of approval. To request a refund, contact us
           at{" "}
-          <a href="mailto:admin@caisson.sh" className="cs-link">
-            admin@caisson.sh
+          <a href="mailto:support@caisson.sh" className="cs-link">
+            support@caisson.sh
           </a>{" "}
           with your order number, or contact Paddle directly through{" "}
           <a href="https://paddle.net" rel="noreferrer" className="cs-link">
@@ -261,8 +261,8 @@ export default function TermsPage() {
           For questions about your order, license, or a refund request that
           Paddle&apos;s own support cannot resolve, contact Caisson Software LLC
           at{" "}
-          <a href="mailto:admin@caisson.sh" className="cs-link">
-            admin@caisson.sh
+          <a href="mailto:support@caisson.sh" className="cs-link">
+            support@caisson.sh
           </a>
           .
         </p>
@@ -385,8 +385,8 @@ export default function TermsPage() {
           <br />
           Atlanta, Georgia, USA
           <br />
-          <a href="mailto:admin@caisson.sh" className="cs-link">
-            admin@caisson.sh
+          <a href="mailto:support@caisson.sh" className="cs-link">
+            support@caisson.sh
           </a>
         </p>
       </Section>
