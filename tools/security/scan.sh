@@ -48,7 +48,21 @@ sast_python() {
 sca_trivy() {
   have trivy || { skip "trivy"; return; }
   hr "SCA · trivy fs (vuln + secret + misconfig)"
+  # A tracked env file is the outcome that actually matters, and it is a git question, not a
+  # filesystem one. Checked here in its own right so the skip-globs below can never mute it.
+  local tracked_env
+  tracked_env="$(git -C "$REPO" ls-files -- '.env' '*/.env' '.env.local' '*/.env.local')"
+  if [[ -n "$tracked_env" ]]; then
+    RC=1
+    warn "env files are TRACKED in git — secrets must never be committed:"$'\n'"$tracked_env"
+  fi
+  # ponytail: scan what CI scans. dist/ and .next/ are build output and .env is gitignored, so a
+  # clean checkout has none of them. Scanning them locally reds the driver permanently on an
+  # operator box, which teaches everyone to ignore rc — the same false-signal failure as a scan
+  # that crashes and reports zero findings, just inverted.
   trivy fs --scanners vuln,secret,misconfig --severity CRITICAL,HIGH \
+    --skip-dirs '**/dist' --skip-dirs '**/.next' \
+    --skip-files '**/.env' --skip-files '**/.env.local' \
     --exit-code 1 --format sarif --output "$OUT_DIR/trivy.sarif" . \
     && ok "trivy clean" || { RC=1; warn "trivy findings → $OUT_DIR/trivy.sarif"; }
 }
