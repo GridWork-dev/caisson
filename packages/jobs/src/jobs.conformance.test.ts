@@ -3,10 +3,12 @@
 // (`enqueue(name, payload): Promise<void>`). New drivers extend the `drivers` array below; no
 // driver-specific assertions belong here (those live in each driver's own test file).
 import { describe, expect, test } from "bun:test";
+import { Inngest } from "inngest";
 import { z } from "zod";
 import { strictObject } from "@caisson/kernel";
 import {
   createInMemoryQueue,
+  createInngestJobQueue,
   defineTask,
   type JobConsumer,
   type JobQueue,
@@ -30,6 +32,20 @@ function fakeTriggerClient(): TriggerClient {
       return { id: "run_fake" };
     },
   };
+}
+
+function fakeInngestClient(): Inngest {
+  const testFetch = (async () =>
+    Response.json({
+      ids: ["evt_fake"],
+      status: 200,
+    })) as unknown as typeof fetch;
+  return new Inngest({
+    id: "caisson-jobs-conformance",
+    eventKey: "test-event-key",
+    fetch: testFetch,
+    isDev: false,
+  });
 }
 
 function fakePgBossClient(): PgBossClient {
@@ -100,6 +116,13 @@ const drivers: ReadonlyArray<{ name: string; queue: JobQueue & JobConsumer }> =
       queue: createTriggerJobQueue(
         [defineTask(taskName, payloadSchema, async () => {})],
         { client: fakeTriggerClient() },
+      ),
+    },
+    {
+      name: "inngest",
+      queue: createInngestJobQueue(
+        [defineTask(taskName, payloadSchema, async () => {})],
+        { client: fakeInngestClient() },
       ),
     },
     {

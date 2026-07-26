@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
+    "@azure/storage-blob": "^12",
     "@caisson/jobs": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",

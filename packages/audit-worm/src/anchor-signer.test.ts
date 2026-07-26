@@ -5,6 +5,7 @@ import {
   type KeyObject,
 } from "node:crypto";
 import { ConfigError, ValidationError } from "@caisson/kernel";
+import { EVIDENCE_PACK_KEY_ID_MAX_LENGTH } from "@caisson/kernel/evidence";
 import {
   ANCHOR_SIGNING_KEY_ENV,
   DEFAULT_ANCHOR_SIGNING_KEY_ID,
@@ -64,6 +65,23 @@ describe("Ed25519AnchorSigner.fromEnv", () => {
 });
 
 describe("Ed25519AnchorSigner constructor", () => {
+  test("accepts the verifier key-id limit and rejects one character more", () => {
+    const { privateKey } = generateKeyPairSync("ed25519");
+    expect(
+      new Ed25519AnchorSigner(
+        "k".repeat(EVIDENCE_PACK_KEY_ID_MAX_LENGTH),
+        privateKey,
+      ).keyId,
+    ).toHaveLength(EVIDENCE_PACK_KEY_ID_MAX_LENGTH);
+    expect(
+      () =>
+        new Ed25519AnchorSigner(
+          "k".repeat(EVIDENCE_PACK_KEY_ID_MAX_LENGTH + 1),
+          privateKey,
+        ),
+    ).toThrow(ValidationError);
+  });
+
   test("rejects a public key (requires a private key)", () => {
     const { publicKey } = generateKeyPairSync("ed25519");
     expect(() => new Ed25519AnchorSigner("k", publicKey)).toThrow(

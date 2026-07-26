@@ -21,12 +21,12 @@ import { type FieldKeyProvider } from "./provider.ts";
 import { aesGcm } from "./cipher.ts";
 import { buildAad } from "./aad.ts";
 import { createAwsKmsClient } from "./kms-aws.ts";
-import type { KmsClient } from "./kms-port.ts";
+import type { KmsClient, KmsDeletionReceipt } from "./kms-port.ts";
 
 // The KmsClient port lives in ./kms-port.ts (a leaf) to break the kms.ts ↔ kms-aws.ts type cycle
 // (dep-cruiser no-circular, tsPreCompilationDeps). Re-exported here for back-compat — index.ts and
 // callers still import `KmsClient` from ./kms.ts.
-export type { KmsClient };
+export type { KmsClient, KmsDeletionReceipt };
 
 /** Persistence for each tenant's wrapped DEKs by version + the current version. DB-backed via `DbWrappedKeyStore` (P2, below). */
 export interface WrappedKeyStore {
@@ -163,17 +163,19 @@ export class KmsKeyProvider implements FieldKeyProvider {
   }
 
   /**
-   * Crypto-shred this tenant/subject scope (ADR-0055, P2-9): schedule irreversible KEK deletion in the
-   * KMS. The append-only wrapped-DEK rows are LEFT IN PLACE — the store is immutable (ADR-0014) and
-   * once the KEK is gone they are inert, so every field ciphertext under this scope becomes
-   * unrecoverable WITHOUT ever mutating append-only storage. Returns the highest key version that
-   * existed at shred time (0 if the scope was never provisioned) for the erasure audit record.
+   * Request crypto-shred for this tenant/subject scope (ADR-0055, P2-9). The provider receipt states
+   * whether deletion is still recoverable or proved irreversible. The append-only wrapped-DEK rows
+   * are LEFT IN PLACE; their availability follows the provider-reported key state. Returns the
+   * highest key version covered by the request (0 if the scope was never provisioned).
    * Idempotent: re-shredding an already-shredded scope is a no-op success.
    */
-  async scheduleKeyDeletion(tenantId: string): Promise<number> {
+  async scheduleKeyDeletion(tenantId: string): Promise<{
+    readonly shreddedThroughVersion: number;
+    readonly deletion: KmsDeletionReceipt;
+  }> {
     const through = (await this.store.currentVersion(tenantId)) ?? 0;
-    await this.kms.scheduleKeyDeletion(tenantId);
-    return through;
+    const deletion = await this.kms.scheduleKeyDeletion(tenantId);
+    return { shreddedThroughVersion: through, deletion };
   }
 }
 
@@ -181,8 +183,9 @@ export class KmsKeyProvider implements FieldKeyProvider {
  * A LOCAL wrap double for tests + local dev — wraps each DEK with AES-256-GCM under a per-scope KEK
  * (a real AEAD wrap, so the envelope round-trips). It is NOT a KMS: the master KEK lives in process.
  * The per-`keyId` wrapping KEK is HKDF-derived from the master, so `scheduleKeyDeletion` is SELECTIVE
- * — shredding one scope leaves every other scope's KEK (and ciphertext) intact. Swap for
- * `awsKmsClient` (or a GCP/Azure/Vault impl) in production.
+ * — shredding one scope leaves every other scope's KEK (and ciphertext) intact. Its tombstone is
+ * process-memory only: recreating the client with the same master recovers the KEK, so the local
+ * backend reports recoverable soft deletion. Swap for a durable KMS driver in production.
  */
 export class LocalKmsClient implements KmsClient {
   /** Non-secret HKDF domain-separation salt for the per-scope KEK (local double only). */
@@ -191,7 +194,7 @@ export class LocalKmsClient implements KmsClient {
     .digest();
   /** Master KEK; each scope's wrapping KEK is HKDF-derived from it + the `keyId`. */
   private readonly master: Buffer;
-  /** Crypto-shredded key ids (in-process tombstone). Irreversible for the client's lifetime. */
+  /** Soft-deleted key ids (in-process tombstone only). */
   private readonly shredded = new Set<string>();
 
   constructor(masterKek: Buffer) {
@@ -220,11 +223,11 @@ export class LocalKmsClient implements KmsClient {
     return buildAad("kms", 0, `dek-wrap:${keyId}`);
   }
 
-  /** Reject any op on a crypto-shredded scope — fail-closed; the erasure is irreversible. */
+  /** Reject any op on a soft-deleted scope for this client instance. */
   private assertLive(keyId: string): void {
     if (this.shredded.has(keyId)) {
       throw new NotFoundError(
-        `field-crypto: key ${JSON.stringify(keyId)} was crypto-shredded — its data is unrecoverable`,
+        `field-crypto: key ${JSON.stringify(keyId)} was soft-deleted for this client instance — key operations are disabled`,
       );
     }
   }
@@ -257,7 +260,7 @@ export class LocalKmsClient implements KmsClient {
     );
   }
 
-  async scheduleKeyDeletion(keyId: string): Promise<void> {
+  async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
     // Refuse an empty scope — the port contract requires an explicit keyId for the crypto-shred, so a
     // missing scope can never fall through to a broader deletion (mirrors the AWS driver, ADR-0197).
     if (keyId.length === 0) {
@@ -265,9 +268,10 @@ export class LocalKmsClient implements KmsClient {
         "field-crypto: scheduleKeyDeletion requires an explicit keyId",
       );
     }
-    // Destroy the scope's KEK. Immediate in the local double (a real KMS schedules a pending-deletion
-    // window); the effect is identical — every DEK wrapped under `keyId` is now permanently inert.
+    // Tombstone this scope for the current process. The master remains available, so a new client can
+    // derive the same scope KEK; the receipt must report that recovery boundary truthfully.
     this.shredded.add(keyId);
+    return { state: "soft-deleted", irreversible: false };
   }
 }
 

@@ -1,9 +1,18 @@
 import type { ChainVerification, AuditChainEntry } from "@caisson/kernel";
-import { ChainViewer } from "@caisson/audit-worm/ui";
-import { wormAnchorAccount } from "@caisson/service-license";
+import { withAdminWrite } from "@caisson/org-controls";
+import {
+  insertAdminActionLog,
+  wormAnchorAccount,
+} from "@caisson/service-license";
 import { Button } from "@caisson/ui/components";
+import { headers } from "next/headers";
 import { adminDbConfigured } from "@/lib/admin-db";
 import { getAdminMutationDeps } from "@/lib/admin-mutations-runtime";
+import { checkAdminAuditWindowRateLimit } from "@/lib/admin-audit-window-rate-limit";
+import { AuditProofAccount } from "@/lib/audit-proof";
+import { buildAdminAuditWindow } from "@/lib/audit-window";
+import { adminAuditAnchorTrustFromEnv } from "@/lib/audit-anchor-trust";
+import { AuditChainClient } from "./audit-chain-client";
 
 // G30 — the per-tenant WORM audit-chain integrity view. `AuditChainStore.verify()` and
 // `ChainViewer` both already exist production-quality (@caisson/audit-worm); the mutation surface
@@ -14,29 +23,91 @@ import { getAdminMutationDeps } from "@/lib/admin-mutations-runtime";
 // mutation route already uses, then hands the result straight to `ChainViewer`.
 export const dynamic = "force-dynamic";
 
+export function parseAuditPageAccount(input: unknown): string | null {
+  const parsed = AuditProofAccount.safeParse(input);
+  return parsed.success ? parsed.data : null;
+}
+
 export default async function AuditPage({
   searchParams,
 }: {
   searchParams: Promise<{ account?: string }>;
 }) {
   const params = await searchParams;
-  const targetAccountId = params.account?.trim() ?? "";
+  const parsedTargetAccountId = parseAuditPageAccount(params.account);
+  const targetAccountId = parsedTargetAccountId ?? "";
   const configured = adminDbConfigured();
 
   let entries: readonly AuditChainEntry[] = [];
   let verification: ChainVerification = { valid: true, brokenAt: null };
+  let rowStatuses: Awaited<
+    ReturnType<typeof buildAdminAuditWindow>
+  >["rowStatuses"] = [];
+  let redactedPaths: readonly string[] = [];
+  let pinnedAnchorKey:
+    | NonNullable<ReturnType<typeof adminAuditAnchorTrustFromEnv>>["pinnedKey"]
+    | undefined;
+  let anchorAccountId: string | undefined;
   let loaded = false;
-  let loadError: string | null = null;
+  let loadError: string | null =
+    params.account !== undefined && parsedTargetAccountId === null
+      ? "chain read failed"
+      : null;
 
   if (configured && targetAccountId !== "") {
     try {
+      const actor = (await headers()).get("x-admin-actor");
+      if (actor === null) {
+        throw new Error("verified admin actor unavailable");
+      }
+      const rate = checkAdminAuditWindowRateLimit(actor, targetAccountId);
+      if (!rate.allowed) {
+        throw new Error("audit-chain verification is temporarily rate limited");
+      }
       const deps = await getAdminMutationDeps();
       const anchor = wormAnchorAccount(targetAccountId);
-      entries = await deps.worm.load(anchor);
-      verification = await deps.worm.verify(anchor);
+      const anchorTrust = adminAuditAnchorTrustFromEnv();
+      const window = await buildAdminAuditWindow({
+        source: deps.worm,
+        accountId: anchor,
+        tenantId: targetAccountId,
+        now: new Date(),
+        ...(anchorTrust === null
+          ? {}
+          : {
+              anchorAuth: anchorTrust.pinnedKey,
+              packSigner: anchorTrust.signer,
+            }),
+      });
+      entries = window.displayEntries;
+      verification = window.verification;
+      rowStatuses = window.rowStatuses;
+      redactedPaths = window.redactedPaths;
+      pinnedAnchorKey = anchorTrust?.pinnedKey;
+      anchorAccountId = anchor;
       loaded = true;
-    } catch (err) {
-      loadError = err instanceof Error ? err.message : "chain read failed";
+      try {
+        await withAdminWrite(deps.db, (tx) =>
+          insertAdminActionLog(tx, {
+            actorEmail: actor,
+            targetAccountId,
+            action: "audit_proof_read",
+            before: null,
+            after: {
+              source: "page",
+              range: "full",
+              chainLength: window.entries.length,
+            },
+          }),
+        );
+      } catch {
+        /* Access logging is best-effort for a read-only verdict. */
+      }
+    } catch (error) {
+      loadError =
+        error instanceof Error && /rate limited/u.test(error.message)
+          ? error.message
+          : "chain read failed";
     }
   }
 
@@ -84,7 +155,16 @@ export default async function AuditPage({
       ) : null}
 
       {loaded ? (
-        <ChainViewer entries={entries} verification={verification} />
+        <AuditChainClient
+          accountId={targetAccountId}
+          entries={entries}
+          verification={verification}
+          rowStatuses={rowStatuses}
+          anchorProvenance={{ length: entries.length }}
+          redactedPaths={redactedPaths}
+          {...(pinnedAnchorKey === undefined ? {} : { pinnedAnchorKey })}
+          {...(anchorAccountId === undefined ? {} : { anchorAccountId })}
+        />
       ) : (
         <p className="muted">
           {targetAccountId === ""

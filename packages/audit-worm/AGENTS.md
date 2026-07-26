@@ -21,10 +21,12 @@ it.
 - **"Current" is DERIVED, never stored.** `LockedVersionStore` computes the current version from a
   no-successor predicate AND cross-checks it against the kernel `currentVersions` model — a drift
   flags, never guesses. Do not add a `is_current` column.
-- **No live cloud on the CI path.** `S3ArtifactStore` takes an injected `S3Sendable =
-Pick<S3Client,"send">`; tests double it (no AWS call). The live S3 transport is the only
-  un-exercised path. `LocalArtifactStore` is a dev/test fs double — it IGNORES retention; never use
-  it where Object-Lock retention matters.
+- **No live cloud on the CI path.** Cloud stores take injected clients/transports and have separately
+  gated live proofs. `LocalArtifactStore` is a dev/test fs double — it IGNORES retention; never use
+  it where provider-enforced retention matters.
+- **Keep the exact immutable version.** When a backend returns `ArtifactMeta.versionId`, pass it to
+  later `get`, `head`, and `extendRetention` calls. Never let a newer current object stand in for the
+  recorded evidentiary version.
 - **COMPLIANCE mode is an irreversible footgun.** S3 Object-Lock defaults to GOVERNANCE.
   COMPLIANCE (which can brick a bucket until the retention term elapses) is reachable ONLY through the
   typed `irreversibleComplianceOptIn(...)` guard and is refused outside a real deployment. Never opt

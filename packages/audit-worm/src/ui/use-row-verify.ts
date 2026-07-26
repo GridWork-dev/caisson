@@ -35,6 +35,7 @@ export interface RowVerifyResult {
 export function useRowVerify(
   receipt: RowReceipt | null,
   pinnedKey?: PinnedAnchorKey,
+  expectedAccountId?: string,
 ): RowVerifyResult {
   const [result, setResult] = useState<RowVerifyResult>({
     state: "pending",
@@ -57,6 +58,8 @@ export function useRowVerify(
           genesisHash?: string;
           sig?: string;
           keyId?: string;
+          sigV?: 2;
+          sigAccountId?: string;
         } = { length: receipt.anchor.length, tipHash: receipt.anchor.tipHash };
         if (receipt.anchor.genesisHash !== undefined) {
           anchor.genesisHash = receipt.anchor.genesisHash;
@@ -65,10 +68,23 @@ export function useRowVerify(
         if (receipt.anchor.keyId !== undefined) {
           anchor.keyId = receipt.anchor.keyId;
         }
-        const opts: { redacted?: boolean; pinnedKey?: PinnedAnchorKey } = {
+        if (receipt.anchor.sigV !== undefined) {
+          anchor.sigV = receipt.anchor.sigV;
+        }
+        if (receipt.anchor.sigAccountId !== undefined) {
+          anchor.sigAccountId = receipt.anchor.sigAccountId;
+        }
+        const opts: {
+          redacted?: boolean;
+          pinnedKey?: PinnedAnchorKey;
+          expectedAccountId?: string;
+        } = {
           redacted: receipt.redacted,
         };
         if (pinnedKey !== undefined) opts.pinnedKey = pinnedKey;
+        if (expectedAccountId !== undefined) {
+          opts.expectedAccountId = expectedAccountId;
+        }
         const legs = await verifyEntryAgainstAnchor(
           {
             seq: receipt.seq,
@@ -82,6 +98,7 @@ export function useRowVerify(
         const state = classifyRowState(legs, {
           redacted: receipt.redacted,
           isGenesis: receipt.seq === 0,
+          requireSignature: pinnedKey !== undefined,
         });
         if (live) setResult({ state, legs });
       } catch {
@@ -93,7 +110,7 @@ export function useRowVerify(
     return () => {
       live = false;
     };
-  }, [receipt, pinnedKey]);
+  }, [receipt, pinnedKey, expectedAccountId]);
 
   return result;
 }

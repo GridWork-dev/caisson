@@ -15,5 +15,5 @@ export default defineModule({
   dependencies: ["@caisson/kernel"],
   golden: "src/__golden__",
   description:
-    "Per-tenant authenticated field encryption (HKDF + AES-256-GCM + versioned envelope + Drizzle column + pluggable KMS provider).",
+    "Per-tenant authenticated field encryption (HKDF + AES-256-GCM + versioned envelope + Drizzle column + AWS/GCP/Azure KMS providers with deletion-state receipts).",
 });

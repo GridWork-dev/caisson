@@ -159,6 +159,77 @@ describe("runAnchorCheckpoint — happy path + idempotency", () => {
     expect(r.status).toBe("empty");
     expect(log.calls).toBe(0);
   });
+
+  test("persists the receipt version and uses it for the next exact-version presence check", async () => {
+    const acct = randomUUID();
+    const bytes = new TextEncoder().encode(`{"length":4,"tipHash":"${acct}"}`);
+    const log = new CountingLog();
+    const headVersions: Array<string | undefined> = [];
+    const versioned: ArtifactStore = {
+      async put(key, body, opts) {
+        const meta = await store.put(key, body, opts);
+        return { ...meta, versionId: "receipt-version-4" };
+      },
+      get: (key) => store.get(key),
+      async head(key, versionId) {
+        headVersions.push(versionId);
+        return store.head(key);
+      },
+      extendRetention: (key, date) => store.extendRetention(key, date),
+    };
+
+    const checkpointDeps = deps(fixedReader(bytes, 4), log, versioned);
+    expect((await runAnchorCheckpoint(acct, checkpointDeps)).status).toBe(
+      "receipted",
+    );
+    expect((await runAnchorCheckpoint(acct, checkpointDeps)).status).toBe(
+      "skipped",
+    );
+    expect(headVersions.at(-1)).toBe("receipt-version-4");
+
+    const key: AnchorOutboxKey = {
+      accountId: acct,
+      target: "tsa",
+      anchorLength: 4,
+      anchorDigest: sha256Hex(bytes),
+    };
+    expect((await outbox.get(key))?.receiptVersionId).toBe("receipt-version-4");
+  });
+
+  test("a legacy receipt without a recorded provider identity is surfaced for reconciliation", async () => {
+    const acct = randomUUID();
+    const bytes = new TextEncoder().encode(`{"length":9,"tipHash":"${acct}"}`);
+    const log = new CountingLog();
+    const reader = fixedReader(bytes, 9);
+
+    expect((await runAnchorCheckpoint(acct, deps(reader, log))).status).toBe(
+      "receipted",
+    );
+
+    const versioned: ArtifactStore = {
+      put: store.put.bind(store),
+      get: store.get.bind(store),
+      async head(key, versionId) {
+        void versionId;
+        const meta = await store.head(key);
+        return meta === null ? null : { ...meta, versionId: "legacy-current" };
+      },
+      extendRetention: store.extendRetention.bind(store),
+    };
+
+    expect(
+      (await runAnchorCheckpoint(acct, deps(reader, log, versioned))).status,
+    ).toBe("needs_reconcile");
+
+    const key: AnchorOutboxKey = {
+      accountId: acct,
+      target: "tsa",
+      anchorLength: 9,
+      anchorDigest: sha256Hex(bytes),
+    };
+    expect((await outbox.get(key))?.state).toBe("needs_reconcile");
+    expect(log.calls).toBe(1);
+  });
 });
 
 describe("runAnchorCheckpoint — CR-02 crash windows resolve to needs_reconcile", () => {

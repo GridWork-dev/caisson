@@ -25,6 +25,12 @@ export interface PackageMigrations {
   readonly migrations: readonly MigrationFile[];
 }
 
+/** One already-released migration identity pinned into the global ledger prefix. */
+export interface PinnedMigrationIdentity {
+  readonly sourcePackage: string;
+  readonly sourceName: string;
+}
+
 /** One entry in the merged, globally-renumbered sequence. */
 export interface MergedMigration {
   /** 1-based global ordinal in the assembled sequence. */
@@ -123,30 +129,87 @@ export function assembleMigrations(
   packages: readonly PackageMigrations[],
 ): MigrationAssembly {
   const ordered = topoOrder(packages);
+  return assembleOrderedMigrations(
+    ordered.flatMap((pkg) =>
+      [...pkg.migrations]
+        .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+        .map((migration) => ({ sourcePackage: pkg.slug, migration })),
+    ),
+  );
+}
 
+/**
+ * Preserve an already-released global prefix while appending every newly discovered package
+ * migration in normal dependency order. Package-local ordinals cannot alone preserve a composed
+ * ledger: adding a migration to an earlier package would otherwise renumber later packages and make
+ * their recorded checksums fail closed as drift.
+ */
+export function assembleMigrationsWithPinnedPrefix(
+  packages: readonly PackageMigrations[],
+  pinnedPrefix: readonly PinnedMigrationIdentity[],
+): MigrationAssembly {
+  const ordered = topoOrder(packages).flatMap((pkg) =>
+    [...pkg.migrations]
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+      .map((migration) => ({ sourcePackage: pkg.slug, migration })),
+  );
+  const byIdentity = new Map(
+    ordered.map((entry) => [
+      `${entry.sourcePackage}\u0000${entry.migration.name}`,
+      entry,
+    ]),
+  );
+  const pinnedKeys = new Set<string>();
+  const pinned = pinnedPrefix.map((identity) => {
+    const key = `${identity.sourcePackage}\u0000${identity.sourceName}`;
+    if (pinnedKeys.has(key)) {
+      throw new Error(
+        `migration-assembly: duplicate pinned migration ${identity.sourcePackage}:${identity.sourceName}`,
+      );
+    }
+    pinnedKeys.add(key);
+    const entry = byIdentity.get(key);
+    if (entry === undefined) {
+      throw new Error(
+        `migration-assembly: missing pinned migration ${identity.sourcePackage}:${identity.sourceName}`,
+      );
+    }
+    return entry;
+  });
+
+  return assembleOrderedMigrations([
+    ...pinned,
+    ...ordered.filter(
+      (entry) =>
+        !pinnedKeys.has(`${entry.sourcePackage}\u0000${entry.migration.name}`),
+    ),
+  ]);
+}
+
+function assembleOrderedMigrations(
+  ordered: readonly {
+    readonly sourcePackage: string;
+    readonly migration: MigrationFile;
+  }[],
+): MigrationAssembly {
   const sequence: MergedMigration[] = [];
   let seq = 0;
-  for (const pkg of ordered) {
-    const migrations = [...pkg.migrations].sort((a, b) =>
-      a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
-    );
-    for (const migration of migrations) {
-      if (!MIGRATION_NAME.test(migration.name)) {
-        throw new Error(
-          `migration-assembly: invalid migration name ${migration.name}`,
-        );
-      }
-      seq += 1;
-      const base = migration.name.replace(/^\d+_/, "");
-      sequence.push({
-        seq,
-        filename: `${String(seq).padStart(4, "0")}_${base}`,
-        sql: migration.sql,
-        sourcePackage: pkg.slug,
-        sourceName: migration.name,
-        checksum: sha256(migration.sql),
-      });
+  for (const { sourcePackage, migration } of ordered) {
+    if (!MIGRATION_NAME.test(migration.name)) {
+      throw new Error(
+        `migration-assembly: invalid migration name ${migration.name}`,
+      );
     }
+    seq += 1;
+    const base = migration.name.replace(/^\d+_/, "");
+    sequence.push({
+      seq,
+      filename: `${String(seq).padStart(4, "0")}_${base}`,
+      sql: migration.sql,
+      sourcePackage,
+      sourceName: migration.name,
+      checksum: sha256(migration.sql),
+    });
   }
 
   const ledger: SchemaVersionEntry[] = sequence.map((entry) => ({

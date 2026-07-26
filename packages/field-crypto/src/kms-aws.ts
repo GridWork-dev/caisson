@@ -30,7 +30,7 @@ import {
   ScheduleKeyDeletionCommand,
 } from "@aws-sdk/client-kms";
 import { ConfigError, InternalError, ValidationError } from "@caisson/kernel";
-import type { KmsClient } from "./kms-port.ts";
+import type { KmsClient, KmsDeletionReceipt } from "./kms-port.ts";
 
 /**
  * The injected KMS transport — only `send` is used, so the whole AWS SDK surface collapses to one
@@ -111,19 +111,29 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
       return Buffer.from(Plaintext);
     },
 
-    async scheduleKeyDeletion(keyId: string): Promise<void> {
+    async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
       // Refuse an empty scope: falling back to the default CMK here would crypto-shred EVERY tenant.
       if (keyId.length === 0) {
         throw new ValidationError(
           "field-crypto: AWS KMS scheduleKeyDeletion requires an explicit keyId — refusing to delete the default CMK",
         );
       }
-      await sdk.send(
+      const { KeyState, DeletionDate } = await sdk.send(
         new ScheduleKeyDeletionCommand({
           KeyId: keyId,
           PendingWindowInDays: pendingWindowInDays,
         }),
       );
+      if (KeyState !== "PendingDeletion" || DeletionDate === undefined) {
+        throw new InternalError(
+          "field-crypto: AWS KMS did not prove PendingDeletion with a deletion date",
+        );
+      }
+      return {
+        state: "pending-deletion",
+        irreversible: false,
+        scheduledFor: DeletionDate.toISOString(),
+      };
     },
   };
 }

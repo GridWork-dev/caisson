@@ -101,6 +101,29 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
   test("awsKmsClient fails closed on a missing keyId (ADR-0171)", () => {
     expect(() => awsKmsClient({ keyId: "" })).toThrow(/keyId/);
   });
+
+  test("LocalKmsClient deletion receipt stays truthful across reinstantiation", async () => {
+    const first = new LocalKmsClient(KEK);
+    const generated = await first.generateDataKey("acct_a");
+    const deletion = await first.scheduleKeyDeletion("acct_a");
+
+    expect(deletion).toEqual({
+      state: "soft-deleted",
+      irreversible: false,
+    });
+    await expect(
+      first.decryptDataKey("acct_a", generated.wrappedKey),
+    ).rejects.toThrow(/soft-deleted for this client instance/);
+
+    // The local tombstone is process-memory only. Recreating the client with the same master
+    // recovers the derived KEK, so this backend must never claim irreversible destruction.
+    const restarted = new LocalKmsClient(KEK);
+    expect(
+      (await restarted.decryptDataKey("acct_a", generated.wrappedKey)).equals(
+        generated.plaintextKey,
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("DbWrappedKeyStore (P2 DB-backed WrappedKeyStore)", () => {

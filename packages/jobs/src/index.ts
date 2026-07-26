@@ -34,4 +34,6 @@ export type {
   BullMqShutdown,
   BullMqWorkerClient,
 } from "./bullmq.ts";
+export { createInngestJobQueue } from "./inngest.ts";
+export type { InngestClient, InngestJobQueueConfig } from "./inngest.ts";
 export { withAdvisoryXactLock } from "./advisory-lock.ts";

@@ -14,6 +14,10 @@
 // HTML redirect). CF-Access can keep gating at the edge in parallel during the ADR-0283 rollout
 // window (code-live-first, gate-drop-second) — this app no longer depends on it either way.
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  authenticateInternalProofRequest,
+  parseInternalProofAuthConfig,
+} from "@/lib/internal-proof-auth";
 import { verifyAdminSession } from "@/lib/admin-session";
 
 export const config = {
@@ -28,6 +32,7 @@ export const config = {
 /** Header carrying the verified admin actor email to route handlers (ADR-0220 — unchanged shape;
  *  only the verification mechanism behind it moved from CF-Access-JWT to better-auth+allowlist). */
 const ACTOR_HEADER = "x-admin-actor";
+const INTERNAL_PROOF_PATH = "/api/internal/audit/proof";
 
 function deny(req: NextRequest): NextResponse {
   if (req.nextUrl.pathname.startsWith("/api/")) {
@@ -53,6 +58,20 @@ function deny(req: NextRequest): NextResponse {
 }
 
 export async function proxy(req: NextRequest): Promise<NextResponse> {
+  if (req.nextUrl.pathname === INTERNAL_PROOF_PATH) {
+    const config = parseInternalProofAuthConfig({
+      secret: process.env.CAISSON_PROOF_PROXY_SECRET,
+      internalHost: process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST,
+    });
+    if (
+      config !== null &&
+      authenticateInternalProofRequest(req, config) !== null
+    ) {
+      return NextResponse.next();
+    }
+    return deny(req);
+  }
+
   const actor = await verifyAdminSession(req);
   if (actor === null) return deny(req);
   // Thread the VERIFIED actor to route handlers. `set` REPLACES any inbound x-admin-actor, so a

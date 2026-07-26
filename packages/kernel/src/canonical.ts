@@ -88,4 +88,8 @@ export interface AuditChainAnchor {
   readonly sig?: string;
   /** Optional anchor-signing identity id paired with {@link sig} (rotation/lookup; never a secret). */
   readonly keyId?: string;
+  /** Signature-envelope version. Version 2 binds the anchor to its tenant-scoped WORM account. */
+  readonly sigV?: 2;
+  /** UUID-shaped WORM account included in the version-2 signature envelope. */
+  readonly sigAccountId?: string;
 }

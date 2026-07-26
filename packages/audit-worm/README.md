@@ -15,9 +15,10 @@ bun add @caisson/audit-worm
 
 ## Surface
 
-- **`ArtifactStore`** — `LocalArtifactStore` (retention-ignored fs double) +
-  `S3ArtifactStore` (Object-Lock; GOVERNANCE default, COMPLIANCE only via the typed
-  `irreversibleComplianceOptIn` guard) behind an injected `S3Sendable` port (no live cloud in CI).
+- **`ArtifactStore`** — local, S3 Object-Lock, GCS Bucket Lock, R2, and Azure Blob version-level
+  WORM backends behind injected clients (no live cloud in CI). Version-capable backends return an
+  immutable object version id and target it on reads/retention extensions. S3 GOVERNANCE remains
+  the default; COMPLIANCE requires the typed `irreversibleComplianceOptIn` guard.
   `assertSafeKey` / `buildArtifactKey` enforce the `{account_id}/…` prefix; `retainUntilFrom` is the
   6–7yr HIPAA/SEC retention floor.
 - **`AuditChainStore`** — append-only per-tenant chain; every append mints a fresh length-keyed,

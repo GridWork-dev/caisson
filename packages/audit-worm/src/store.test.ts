@@ -81,11 +81,13 @@ describe("LocalArtifactStore (ADR-0054 dev/test backend)", () => {
       contentType: "application/octet-stream",
     });
     expect(putMeta.size).toBe(5);
+    expect(putMeta.versionId).toBeUndefined();
     expect(putMeta.retainUntil?.toISOString()).toBe(RETAIN.toISOString());
 
     const got = await store.get(key);
     expect([...got.body]).toEqual([1, 2, 3, 4, 5]);
     expect(got.size).toBe(5);
+    expect(got.versionId).toBeUndefined();
     expect(got.contentType).toBe("application/octet-stream");
     expect(got.retainUntil?.toISOString()).toBe(RETAIN.toISOString());
   });

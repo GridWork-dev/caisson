@@ -2,8 +2,9 @@
 // (ADR-0055 P2-9, ADR-0052). Reconciles the GDPR/CCPA right-to-erasure with the SEC-17a-4 / HIPAA
 // APPEND-ONLY audit chain: a subject's PII cannot be DELETEd from an immutable, hash-chained,
 // WORM-anchored record without breaking `verifyChain` — so the chain only ever commits the CIPHERTEXT
-// envelope (never plaintext), and erasure DESTROYS THE KEY. After the subject's KEK is crypto-shredded
-// the ciphertext is permanently unrecoverable, yet the chain payloads are byte-for-byte unchanged, so
+// envelope (never plaintext), and erasure REQUESTS KEY DELETION. The deletion receipt distinguishes
+// a provider-retained/recoverable key from one proved destroyed or purged. Once destruction completes,
+// the ciphertext is permanently unrecoverable while chain payloads remain byte-for-byte unchanged, so
 // `verifyChain(entries, anchor)` still passes. Erasure ⟂ immutability.
 //
 // INVARIANT (TM-F): chained PII MUST be committed as the `encryptField` ciphertext envelope, NEVER as
@@ -20,6 +21,7 @@ import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";
 import type { JsonValue } from "@caisson/kernel";
 import type { KmsKeyProvider } from "./kms.ts";
+import type { KmsDeletionReceipt } from "./kms-port.ts";
 
 /** The audit event name minted into the WORM chain (and the ops `EventSink`) on a crypto-shred. */
 export const ERASURE_CRYPTO_SHRED = "erasure.crypto-shred" as const;
@@ -51,29 +53,31 @@ const cryptoShredRequestSchema = strictObject({
 export type CryptoShredRequest = z.infer<typeof cryptoShredRequestSchema>;
 
 export interface CryptoShredReceipt {
-  /** Highest key version destroyed (0 if the scope was never provisioned). */
+  /** Highest key version covered by the deletion request (0 if the scope was never provisioned). */
   readonly shreddedThroughVersion: number;
+  /** The exact destruction state the KMS provider proved. */
+  readonly deletion: KmsDeletionReceipt;
   /** The `erasure.crypto-shred` audit payload — append to the WORM chain (it carries NO PII). */
   readonly auditPayload: JsonValue;
 }
 
 /**
- * Crypto-shred a subject/tenant scope: destroy its KEK through the KMS port (rendering every field
- * ciphertext under it permanently unrecoverable) and mint the `erasure.crypto-shred` audit payload for
- * the WORM chain. Fail-closed: a malformed request throws a `ValidationError` BEFORE any deletion is
- * scheduled. The returned payload is metadata-only (ids, reason, instant, versions, method) — it
- * commits the FACT of erasure to the immutable record without ever embedding the erased PII.
+ * Crypto-shred a subject/tenant scope: request deletion of its KEK through the KMS port and mint the
+ * provider-proven deletion state into the `erasure.crypto-shred` audit payload for the WORM chain.
+ * Fail-closed: a malformed request throws a `ValidationError` BEFORE any deletion is scheduled. The
+ * returned payload is metadata-only (ids, reason, instant, versions, method, deletion state) — it
+ * commits the FACT and current finality of erasure without ever embedding the erased PII.
  */
 export async function cryptoShred(
   provider: KmsKeyProvider,
   request: CryptoShredRequest,
 ): Promise<CryptoShredReceipt> {
   const req = parseStrict(cryptoShredRequestSchema, request);
-  const shreddedThroughVersion = await provider.scheduleKeyDeletion(
-    req.keyScopeId,
-  );
+  const { shreddedThroughVersion, deletion } =
+    await provider.scheduleKeyDeletion(req.keyScopeId);
   const auditPayload: JsonValue = {
     event: ERASURE_CRYPTO_SHRED,
+    deletion,
     method: SHRED_METHOD,
     tenantId: req.tenantId,
     subjectId: req.subjectId,
@@ -81,5 +85,5 @@ export async function cryptoShred(
     occurredAt: req.occurredAt,
     shreddedThroughVersion,
   };
-  return { shreddedThroughVersion, auditPayload };
+  return { shreddedThroughVersion, deletion, auditPayload };
 }

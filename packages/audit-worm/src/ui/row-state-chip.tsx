@@ -32,7 +32,24 @@ const CHIP: Record<
   "server-asserted": { tone: "muted", icon: "info", label: "Server-asserted" },
 };
 
-export function RowStateChip({ state }: { state: ChipState }) {
+export function RowStateChip({
+  state,
+  provenance,
+}: {
+  state: ChipState;
+  provenance?: "server-asserted";
+}) {
   const c = CHIP[state];
-  return <StatusChip tone={c.tone} icon={c.icon} label={c.label} dot />;
+  return (
+    <StatusChip
+      tone={c.tone}
+      icon={c.icon}
+      label={
+        provenance === "server-asserted"
+          ? `${c.label} — server asserted`
+          : c.label
+      }
+      dot
+    />
+  );
 }

@@ -22,6 +22,7 @@ export {
   type SafeKey,
   ArtifactExistsError,
   assertSafeKey,
+  assertValidArtifactVersionId,
   buildArtifactKey,
 } from "./store.ts";
 
@@ -57,6 +58,18 @@ export {
   R2ArtifactStore,
   createR2LockReader,
 } from "./store.r2.ts";
+
+// ADR-0379/0380 — Azure Blob version-level immutable storage backend.
+export {
+  type AzureBlobImmutabilityPolicy,
+  type AzureBlockBlobUploadOptions,
+  type AzureBlobProperties,
+  type AzureBlobClient,
+  type AzureBlockBlobClient,
+  type AzureBlobContainerClient,
+  type AzureBlobArtifactStoreConfig,
+  AzureBlobArtifactStore,
+} from "./store.azure.ts";
 
 export {
   MIN_RETENTION_YEARS,

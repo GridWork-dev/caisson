@@ -23,5 +23,5 @@ export default defineModule({
   ],
   golden: "src/__golden__",
   description:
-    "Write-once (WORM) artifact store (S3 Object-Lock seam) + SHA-256 append-only audit chain with a trusted WORM anchor + append-only locked-version DB with derived-current — the compliance evidentiary primitive.",
+    "Version-aware write-once artifact stores (S3/GCS/R2/Azure) + SHA-256 append-only audit chain with a trusted WORM anchor + append-only locked-version DB with derived-current.",
 });

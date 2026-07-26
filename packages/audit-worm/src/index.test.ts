@@ -18,6 +18,7 @@ import {
 import {
   ArtifactExistsError,
   AuditChainStore,
+  AzureBlobArtifactStore,
   DEFAULT_RETENTION_YEARS,
   LocalArtifactStore,
   LockedVersionStore,
@@ -37,6 +38,7 @@ describe("@caisson/audit-worm barrel", () => {
     expect(typeof buildArtifactKey).toBe("function");
     expect(typeof LocalArtifactStore).toBe("function");
     expect(typeof S3ArtifactStore).toBe("function");
+    expect(typeof AzureBlobArtifactStore).toBe("function");
     expect(typeof irreversibleComplianceOptIn).toBe("function");
     expect(ArtifactExistsError.prototype).toBeInstanceOf(Error);
     // Retention floor.

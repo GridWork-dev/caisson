@@ -51,6 +51,9 @@ export interface ChainViewerProps {
   /** Per-row six-state statuses, indexed by entry `seq` — the caller computes them from real anchors
    *  (client recompute, M3). When given, each row shows its six-state chip; absent -> no status column. */
   rowStatuses?: readonly RowState[];
+  /** Marks table statuses that were computed on the server, distinct from the expanded panel's
+   *  browser recomputation. Omit only when the caller genuinely computed the table states locally. */
+  rowStatusProvenance?: "server-asserted";
   /** Anchor provenance for the header line ("chain anchored at length N in write-once storage …"). */
   anchorProvenance?: { length: number; retainUntil?: string };
   /** Fetch a single row's proof bundle (calls the proof endpoint). When given, rows expand to a
@@ -59,6 +62,8 @@ export interface ChainViewerProps {
   /** The pinned anchor-signing public key, threaded to the expanded ProofPanel so its
    *  signature leg can run against a key delivered OUT-OF-BAND (app config), never the proof response. */
   pinnedAnchorKey?: PinnedAnchorKey;
+  /** Tenant-scoped WORM account bound into signed-anchor envelope v2. */
+  expectedAnchorAccountId?: string;
   /** Render the table's loading skeleton in place of rows. */
   loading?: boolean;
   /** Host-controlled page size — omit to render every entry. */
@@ -79,9 +84,11 @@ export function ChainViewer({
   entries,
   verification,
   rowStatuses,
+  rowStatusProvenance,
   anchorProvenance,
   fetchProof,
   pinnedAnchorKey,
+  expectedAnchorAccountId,
   loading,
   pageSize,
   page,
@@ -99,7 +106,14 @@ export function ChainViewer({
       header: "Status",
       render: (e) => {
         const s = rowStatuses[e.seq];
-        return s !== undefined ? <RowStateChip state={s} /> : null;
+        return s !== undefined ? (
+          <RowStateChip
+            state={s}
+            {...(rowStatusProvenance === undefined
+              ? {}
+              : { provenance: rowStatusProvenance })}
+          />
+        ) : null;
       },
     });
   }
@@ -210,6 +224,9 @@ export function ChainViewer({
               fetchProof={fetchProof}
               chainStatus={verification}
               {...(pinnedAnchorKey !== undefined ? { pinnedAnchorKey } : {})}
+              {...(expectedAnchorAccountId !== undefined
+                ? { expectedAnchorAccountId }
+                : {})}
             />
           ) : null}
         </div>

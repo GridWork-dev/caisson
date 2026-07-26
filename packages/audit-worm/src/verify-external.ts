@@ -40,6 +40,7 @@ import {
 } from "./anchor-transparency.ts";
 import { verifyRekorReceipt } from "./anchor-rekor.ts";
 import type { CurrentAnchorReader } from "./anchor-checkpoint.ts";
+import type { AnchorOutbox } from "./anchor-outbox.ts";
 
 /** id-kp-timeStamping — RFC-3161 requires the TSA signing cert to carry this EKU. */
 const EKU_TIMESTAMPING = "1.3.6.1.5.5.7.3.8";
@@ -78,6 +79,12 @@ export interface VerifyExternalDeps {
   readonly reader: CurrentAnchorReader;
   /** The anchor target (TSA `trusted-timestamped` or Rekor `externally-transparent`). */
   readonly target: TransparencyTarget;
+  /**
+   * Durable receipt identity reader. Production wiring should pass the same outbox used by the
+   * checkpoint writer so versioned backends verify the exact immutable receipt, never key-current.
+   * Optional only for backward compatibility with legacy/non-versioned deployments.
+   */
+  readonly receiptVersions?: Pick<AnchorOutbox, "get">;
   /**
    * Buyer-configured TSA CA root certificates (DER), Fork C. TSA path only. When provided, the token's
    * certificate chain is validated against them (`chainValidated: true`); when omitted, the signature +
@@ -140,19 +147,36 @@ export async function verifyExternal(
   const expectedDigest = sha256Hex(current.anchorBytes);
   const target = targetId(deps.target);
   const receiptKey = anchorReceiptKey(accountId, current.length, target);
+  const receiptVersionId =
+    (
+      await deps.receiptVersions?.get({
+        accountId,
+        target,
+        anchorLength: current.length,
+        anchorDigest: expectedDigest,
+      })
+    )?.receiptVersionId ?? undefined;
 
-  // (1) existence.
-  if ((await deps.store.head(receiptKey)) === null) {
+  // (1) existence. A versioned backend without a durable identity is unsafe: key-current can be a
+  // replacement or delete-marker successor, so refuse instead of silently verifying that object.
+  const receiptMeta = await deps.store.head(receiptKey, receiptVersionId);
+  if (receiptMeta === null) {
     return fail(
       grade,
       "no external-anchor receipt for the current anchor length",
+    );
+  }
+  if (receiptMeta.versionId !== undefined && receiptVersionId === undefined) {
+    return fail(
+      grade,
+      "external-anchor receipt has no recorded version identity",
     );
   }
 
   // Read + parse the receipt, fail-closed on any malformation.
   let receipt: AnchorReceipt;
   try {
-    const obj = await deps.store.get(receiptKey);
+    const obj = await deps.store.get(receiptKey, receiptVersionId);
     receipt = parseStrict(
       anchorReceiptSchema,
       JSON.parse(new TextDecoder().decode(obj.body)),

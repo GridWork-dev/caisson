@@ -56,6 +56,7 @@ export {
 
 export {
   type KmsClient,
+  type KmsDeletionReceipt,
   type WrappedKeyStore,
   type KeyValueStore,
   InMemoryWrappedKeyStore,
@@ -76,6 +77,13 @@ export {
   type GcpKmsClientConfig,
   createGcpKmsClient,
 } from "./kms-gcp.ts";
+
+export {
+  type AzureKeyVaultCryptographyClient,
+  type AzureKeyVaultClient,
+  type AzureKeyVaultKmsClientConfig,
+  createAzureKeyVaultKmsClient,
+} from "./kms-azure.ts";
 
 export {
   type CryptoShredRequest,

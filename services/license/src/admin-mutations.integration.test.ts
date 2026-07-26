@@ -250,7 +250,13 @@ beforeAll(async () => {
       import.meta.url,
     ),
   ).text();
-  await tp.exec(chainSql);
+  const versionIdentitySql = await Bun.file(
+    new URL(
+      "../../../packages/audit-worm/src/migrations/0004_artifact_versions.sql",
+      import.meta.url,
+    ),
+  ).text();
+  await tp.exec(chainSql + versionIdentitySql);
 
   wormDir = mkdtempSync(join(tmpdir(), "caisson-admin-worm-"));
   worm = new AuditChainStore({ db, store: new LocalArtifactStore(wormDir) });

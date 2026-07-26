@@ -62,8 +62,11 @@ describe("state machine — happy path", () => {
     await outbox.markSubmitted(key);
     expect((await outbox.get(key))?.state).toBe("submitted");
 
-    await outbox.markReceipted(key);
-    expect((await outbox.get(key))?.state).toBe("receipted");
+    await outbox.markReceipted(key, "receipt-version-1");
+    expect(await outbox.get(key)).toMatchObject({
+      state: "receipted",
+      receiptVersionId: "receipt-version-1",
+    });
   });
 
   test("enqueuePending is idempotent — a second call never resurrects or duplicates", async () => {

@@ -1,5 +1,5 @@
 // src/anchor-signer.ts — the DEDICATED anchor-signing identity for the WORM audit chain. Each
-// per-length anchor's CANONICAL CORE bytes are signed at mint so a client or
+// per-length anchor's account-bound v2 envelope is signed at mint so a client or
 // an offline pack verifier can check tamper-evidence against a pinned public key — making the trust
 // root independent of the row-serving API (SECURITY-PREPLAN H2/H4).
 //
@@ -12,9 +12,14 @@
 import {
   type KeyObject,
   createPrivateKey,
+  createPublicKey,
   sign as cryptoSign,
 } from "node:crypto";
 import { ConfigError, ValidationError } from "@caisson/kernel";
+import {
+  EVIDENCE_PACK_KEY_ID_MAX_LENGTH,
+  isEvidencePackKeyId,
+} from "@caisson/kernel/evidence";
 import { z } from "zod";
 
 const ED25519_SIGNATURE_BYTES = 64;
@@ -30,8 +35,8 @@ export const ANCHOR_SIGNING_KEY_ID_ENV = "CAISSON_ANCHOR_SIGNING_KEY_ID";
 
 /**
  * The anchor-signing port. `sign` returns a DETACHED 64-byte Ed25519 signature over the EXACT bytes
- * given (the store passes the canonical anchor CORE bytes). `keyId` is a rotation/lookup label, never
- * a secret. A buyer-supplied KMS asymmetric signer is a drop-in implementation of this same interface.
+ * given (the store passes the v2 domain/account-bound anchor envelope). `keyId` is a rotation/lookup
+ * label, never a secret. A buyer-supplied KMS asymmetric signer is a drop-in implementation.
  */
 export interface AnchorSigner {
   readonly keyId: string;
@@ -59,9 +64,9 @@ export class Ed25519AnchorSigner implements AnchorSigner {
 
   constructor(keyId: string, privateKey: KeyObject) {
     const id = keyId.trim();
-    if (id.length === 0) {
+    if (!isEvidencePackKeyId(id)) {
       throw new ValidationError(
-        "anchor signer keyId must be a non-empty string",
+        `anchor signer keyId must be control-free and at most ${String(EVIDENCE_PACK_KEY_ID_MAX_LENGTH)} characters`,
       );
     }
     if (privateKey.type !== "private") {
@@ -127,6 +132,17 @@ export class Ed25519AnchorSigner implements AnchorSigner {
       );
     }
     return Uint8Array.from(sig);
+  }
+
+  /** Matching public SPKI DER, safe for browser/offline-verifier configuration. */
+  publicKeySpkiBase64(): string {
+    // Node accepts a private KeyObject directly and derives only its public half. The installed Bun
+    // node typings lag that overload, hence the narrow signature cast; private bytes never export.
+    return createPublicKey(
+      this.#key as unknown as Parameters<typeof createPublicKey>[0],
+    )
+      .export({ format: "der", type: "spki" })
+      .toString("base64");
   }
 
   /** Never serialize the key — the KeyObject is opaque, but redact defensively if stringified. */
