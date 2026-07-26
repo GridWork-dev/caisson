@@ -10,6 +10,7 @@
 // this weekly lane is advisory, never a merge gate.
 import { appendFileSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { isIP } from "node:net";
 import { isAbsolute, resolve, sep } from "node:path";
 import { createElement, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -29,6 +30,8 @@ import { WRITING_PIECES } from "../lib/writing";
 const FETCH_TIMEOUT_MS = 30_000;
 const BODY_TIMEOUT_MS = 30_000;
 const MAX_BODY_BYTES = 32 * 1024 * 1024;
+const MAX_REDIRECTS = 5;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 interface FrameworkTarget {
   id: string;
@@ -98,6 +101,10 @@ export interface RegulatoryWatchReport {
 }
 
 export type SourceFetcher = (url: string) => Promise<Response>;
+type PublicSourceTransport = (
+  url: string,
+  init: RequestInit,
+) => Promise<Response>;
 
 export interface RegulatoryWatchOptions {
   bodyTimeoutMs?: number;
@@ -317,6 +324,103 @@ async function fetchSourceSnapshot(
   };
 }
 
+function assertTrustedSourceUrl(
+  url: URL,
+  trustedHosts: ReadonlySet<string>,
+  kind: "source" | "redirect target" | "response",
+): void {
+  if (url.protocol !== "https:") {
+    throw new Error(`${kind} must use https: ${url.href}`);
+  }
+  if (url.username !== "" || url.password !== "") {
+    throw new Error(`${kind} must not contain credentials: ${url.href}`);
+  }
+  if (url.port !== "" && url.port !== "443") {
+    throw new Error(`${kind} must use the default https port: ${url.href}`);
+  }
+  if (isIP(url.hostname) !== 0) {
+    throw new Error(`${kind} host must not be an IP literal: ${url.hostname}`);
+  }
+  if (!trustedHosts.has(url.hostname)) {
+    throw new Error(
+      `${kind} host is outside the declared source set: ${url.hostname}`,
+    );
+  }
+}
+
+async function discardResponseBody(response: Response): Promise<void> {
+  if (response.body === null) return;
+  await response.body.cancel().catch(() => undefined);
+}
+
+/**
+ * Build the production fetcher from the checked-in source declarations. Redirects are manual so
+ * every hop remains HTTPS and on a non-IP host already present in the declaration set; native
+ * redirect following would let an upstream 3xx silently leave that trust boundary.
+ */
+export function createPublicSourceFetcher(
+  sources: readonly RegulatorySource[],
+  transport: PublicSourceTransport = (url, init) =>
+    fetchWithTimeout(url, init, { timeoutMs: FETCH_TIMEOUT_MS }),
+): SourceFetcher {
+  const trustedHosts = new Set(
+    sources.map((source) => new URL(source.url).hostname),
+  );
+
+  return async (url) => {
+    let current = new URL(url);
+
+    for (
+      let redirectCount = 0;
+      redirectCount <= MAX_REDIRECTS;
+      redirectCount++
+    ) {
+      assertTrustedSourceUrl(
+        current,
+        trustedHosts,
+        redirectCount === 0 ? "source" : "redirect target",
+      );
+      const response = await transport(current.href, {
+        redirect: "manual",
+        headers: {
+          Accept:
+            "text/html,application/xhtml+xml,text/plain,application/pdf;q=0.8,*/*;q=0.5",
+          "User-Agent": "caisson-regulatory-claim-watch/1.0",
+        },
+      });
+
+      if (response.url !== "") {
+        const responseUrl = new URL(response.url);
+        assertTrustedSourceUrl(responseUrl, trustedHosts, "response");
+        if (response.redirected || responseUrl.href !== current.href) {
+          await discardResponseBody(response);
+          throw new Error(
+            `source transport followed an unvalidated redirect to ${responseUrl.href}`,
+          );
+        }
+      }
+
+      if (!REDIRECT_STATUSES.has(response.status)) return response;
+
+      const location = response.headers.get("location");
+      if (location === null) return response;
+      if (redirectCount === MAX_REDIRECTS) {
+        await discardResponseBody(response);
+        throw new Error(
+          `source exceeded ${String(MAX_REDIRECTS)} validated redirects`,
+        );
+      }
+
+      const next = new URL(location, current);
+      assertTrustedSourceUrl(next, trustedHosts, "redirect target");
+      await discardResponseBody(response);
+      current = next;
+    }
+
+    throw new Error("source redirect validation exhausted unexpectedly");
+  };
+}
+
 export async function runRegulatoryClaimWatch(
   targets: readonly RegulatoryClaimTarget[],
   fetcher: SourceFetcher,
@@ -468,19 +572,6 @@ export async function runRegulatoryClaimWatch(
   };
 }
 
-const fetchPublicSource: SourceFetcher = (url) =>
-  fetchWithTimeout(
-    url,
-    {
-      headers: {
-        Accept:
-          "text/html,application/xhtml+xml,text/plain,application/pdf;q=0.8,*/*;q=0.5",
-        "User-Agent": "caisson-regulatory-claim-watch/1.0",
-      },
-    },
-    { timeoutMs: FETCH_TIMEOUT_MS },
-  );
-
 function writeReport(report: string): void {
   process.stdout.write(`${report}\n`);
   const summaryPath = process.env.GITHUB_STEP_SUMMARY;
@@ -497,7 +588,10 @@ function writeReport(report: string): void {
 async function main(): Promise<void> {
   try {
     const targets = discoverRegulatoryClaims(process.cwd());
-    const report = await runRegulatoryClaimWatch(targets, fetchPublicSource);
+    const report = await runRegulatoryClaimWatch(
+      targets,
+      createPublicSourceFetcher(targets.flatMap((target) => target.sources)),
+    );
     writeReport(report.markdown);
   } catch (error) {
     writeReport(
