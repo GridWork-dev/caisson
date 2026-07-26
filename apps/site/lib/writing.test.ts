@@ -7,6 +7,7 @@ import { generateStaticParams } from "../app/(marketing)/writing/[slug]/page";
 import sitemap from "../app/sitemap";
 import { PageSections } from "../components/page-sections";
 import { MARKETING_ROUTES } from "./routes";
+import { techArticle } from "./jsonld";
 import { WRITING_PIECES, writingPageSpec, type WritingPiece } from "./writing";
 
 function isValidIsoDate(value: string): boolean {
@@ -20,6 +21,23 @@ function isValidIsoDate(value: string): boolean {
 
 function pieceHref(piece: WritingPiece): string {
   return `/writing/${piece.slug}`;
+}
+
+const EVERGREEN_ONLY_ARTICLE_50_CONCEPTS = [
+  /\bemotion[- ]recognition\b/iu,
+  /\bbiometric categorisation\b/iu,
+  /\bqualified law[- ]enforcement exception\b/iu,
+  /\bpersonal[- ]data law\b/iu,
+  /\baccessibility requirements\b/iu,
+  /\bEUR 15 million\b/iu,
+  /\bworldwide annual turnover\b/iu,
+  /\bmarket[- ]surveillance authorities\b/iu,
+] as const;
+
+function evergreenOnlyMatches(value: string): readonly RegExp[] {
+  return EVERGREEN_ONLY_ARTICLE_50_CONCEPTS.filter((pattern) =>
+    pattern.test(value),
+  );
 }
 
 describe("WRITING_PIECES registry", () => {
@@ -42,9 +60,15 @@ describe("WRITING_PIECES registry", () => {
   });
 
   test("every spoke is present in the sitemap", () => {
-    const urls = new Set(sitemap().map((entry) => entry.url));
+    const entries = sitemap();
+    const urls = new Set(entries.map((entry) => entry.url));
     for (const piece of WRITING_PIECES) {
       expect(urls.has(`https://caisson.sh${pieceHref(piece)}`)).toBe(true);
+      expect(
+        entries.find(
+          (entry) => entry.url === `https://caisson.sh${pieceHref(piece)}`,
+        )?.lastModified,
+      ).toEqual(new Date(`${piece.publishedOn}T00:00:00.000Z`));
     }
   });
 
@@ -123,6 +147,27 @@ describe("WRITING_PIECES registry", () => {
       "Emotion recognition and biometric categorisation",
     );
     expect(copy).not.toContain("Penalty exposure");
+    expect(evergreenOnlyMatches(copy)).toEqual([]);
+  });
+
+  test("the differentiation guard rejects a paraphrased evergreen obligation", () => {
+    expect(
+      evergreenOnlyMatches(
+        "Deployers must notify people exposed to emotion-recognition systems.",
+      ),
+    ).not.toEqual([]);
+  });
+
+  test("the shared TechArticle builder carries the real publication date", () => {
+    const piece = WRITING_PIECES[0]!;
+    expect(
+      techArticle({
+        headline: piece.title,
+        description: piece.dek,
+        url: `https://caisson.sh${pieceHref(piece)}`,
+        datePublished: piece.publishedOn,
+      }),
+    ).toMatchObject({ datePublished: "2026-07-26" });
   });
 });
 

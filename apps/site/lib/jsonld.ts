@@ -168,6 +168,7 @@ export function techArticle(opts: {
   headline: string;
   description: string;
   url: string;
+  datePublished?: string;
 }) {
   return {
     "@context": "https://schema.org",
@@ -175,6 +176,9 @@ export function techArticle(opts: {
     headline: opts.headline,
     description: opts.description,
     url: opts.url,
+    ...(opts.datePublished === undefined
+      ? {}
+      : { datePublished: opts.datePublished }),
     publisher: { "@id": ORG_ID },
   };
 }

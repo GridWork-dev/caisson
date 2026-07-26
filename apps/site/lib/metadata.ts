@@ -23,6 +23,8 @@ export interface PageMeta {
   ogImage?: string;
   /** OG type. */
   type?: "website" | "article";
+  /** Real publication date for article metadata. Omit for undated reference pages. */
+  publishedOn?: string;
 }
 
 /** Self-referencing canonical + OG + twitter summary_large_image from one args object. */
@@ -32,6 +34,7 @@ export function buildMetadata({
   path,
   ogImage = DEFAULT_OG,
   type = "website",
+  publishedOn,
 }: PageMeta): Metadata {
   const canonical = path === "/" ? SITE_URL : `${SITE_URL}${path}`;
   const ogTitle = title ? `${title} · ${SITE_NAME}` : DEFAULT_TITLE;
@@ -45,6 +48,9 @@ export function buildMetadata({
       title: ogTitle,
       description,
       images: [{ url: ogImage, width: 1200, height: 630, alt: ogTitle }],
+      ...(type === "article" && publishedOn !== undefined
+        ? { publishedTime: publishedOn }
+        : {}),
     },
     twitter: {
       card: "summary_large_image",

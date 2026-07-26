@@ -23,7 +23,10 @@ export async function generateMetadata(props: Params): Promise<Metadata> {
   const { slug } = await props.params;
   const piece = findWritingPiece(slug);
   if (!piece) notFound();
-  return buildMetadata(writingPageSpec(piece).meta);
+  return buildMetadata({
+    ...writingPageSpec(piece).meta,
+    publishedOn: piece.publishedOn,
+  });
 }
 
 export default async function WritingPiecePage(props: Params) {
@@ -37,6 +40,7 @@ export default async function WritingPiecePage(props: Params) {
     headline: piece.title,
     description: piece.dek,
     url: `${SITE_URL}${path}`,
+    datePublished: piece.publishedOn,
   });
   const breadcrumbLd = breadcrumb([
     { name: "Home", path: "/" },
