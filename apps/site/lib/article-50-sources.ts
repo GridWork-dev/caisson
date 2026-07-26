@@ -13,7 +13,7 @@ export const ARTICLE_50_PRIMARY_SOURCES = [
     label: "Regulation (EU) 2024/1689 on EUR-Lex",
     url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj?locale=en",
     locator:
-      "Articles 50(1)–(5), 99(4), 99(6), 100(3), and 113; OJ pp. 82–83, 115–117, and 123/144",
+      "Articles 3(3)–(4), 50(1)–(5), 99(4), 99(6), 100(3), and 113; OJ pp. 82–83, 115–117, and 123/144",
     watch: {
       mode: "reachable",
       reason:
@@ -37,7 +37,7 @@ export const ARTICLE_50_PRIMARY_SOURCES = [
     label: "European Commission final Article 50 guidelines",
     url: "https://ec.europa.eu/newsroom/dae/redirection/document/131215",
     locator:
-      "Paragraphs (5), (6), (69)–(74), and (153)–(154), pp. 3–4, 24–25, and 49–50",
+      "Paragraphs (5), (6), (69)–(74), (151), and (153)–(154), pp. 3–4, 24–25, and 49–50",
     watch: {
       mode: "digest",
       algorithm: "sha256",
@@ -50,7 +50,8 @@ export const ARTICLE_50_PRIMARY_SOURCES = [
   {
     label: "European Commission quick facts on AI transparency",
     url: "https://digital-strategy.ec.europa.eu/en/factpages/quick-facts-transparency-rules-ai-systems",
-    locator: "“Enforcement and penalties” → “Exceptions”",
+    locator:
+      "“Enforcement and penalties” → “Surveillance authorities”, “Penalties”, and “Exceptions”",
     watch: {
       mode: "text",
       texts: [
@@ -62,8 +63,18 @@ export const ARTICLE_50_PRIMARY_SOURCES = [
   },
 ] as const satisfies readonly RegulatorySource[];
 
-/** The evergreen framework summary visibly cites only the authentic OJ text and final guidance. */
+/**
+ * Claim-specific locators for the shorter evergreen framework summary. Keep the full source
+ * records above publication-complete for the detailed page and writing piece; this subset names
+ * only the clauses and guidance paragraphs the summary itself relies on.
+ */
 export const ARTICLE_50_SUMMARY_SOURCES = [
-  ARTICLE_50_PRIMARY_SOURCES[0],
-  ARTICLE_50_PRIMARY_SOURCES[2],
+  {
+    ...ARTICLE_50_PRIMARY_SOURCES[0],
+    locator: "Articles 50(1)–(2), 50(4), and 113; OJ pp. 82 and 123/144",
+  },
+  {
+    ...ARTICLE_50_PRIMARY_SOURCES[2],
+    locator: "Paragraphs (69)–(74) and (153)–(154), pp. 24–25 and 49–50",
+  },
 ] as const satisfies readonly RegulatorySource[];

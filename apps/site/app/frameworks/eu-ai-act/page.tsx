@@ -501,21 +501,19 @@ export default function EuAiActPage() {
             style={{ marginTop: "var(--cs-space-4)", maxWidth: "72ch" }}
           >
             Primary sources reviewed {ARTICLE_50_VERIFIED_ON}:{" "}
-            <a
-              className="cs-link"
-              href={ARTICLE_50_SUMMARY_SOURCES[0].url}
-              rel="noreferrer"
-            >
-              Regulation (EU) 2024/1689
-            </a>{" "}
-            ·{" "}
-            <a
-              className="cs-link"
-              href={ARTICLE_50_SUMMARY_SOURCES[1].url}
-              rel="noreferrer"
-            >
-              final Commission guidelines, paragraphs (153)–(154)
-            </a>
+            {ARTICLE_50_SUMMARY_SOURCES.map((source, index) => (
+              <span key={source.url}>
+                {index > 0 && (
+                  <>
+                    <br />
+                  </>
+                )}
+                <a className="cs-link" href={source.url} rel="noreferrer">
+                  {source.label}
+                </a>{" "}
+                — {source.locator}
+              </span>
+            ))}
           </p>
           <div
             className="cs-cta-row"

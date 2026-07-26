@@ -158,14 +158,16 @@ export function assertFrameworkSourceLinkage(
   sources: readonly RegulatorySource[],
 ): void {
   for (const source of sources) {
-    const escapedUrl = source.url
-      .replaceAll("&", "&amp;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+    const escapedUrl = escapeRenderedValue(source.url);
     if (!renderedMarkup.includes(`href="${escapedUrl}"`)) {
       throw new Error(
         `regulatory-claim-watch target ${route} does not render declared source ${source.url}`,
+      );
+    }
+    const escapedLocator = escapeRenderedValue(source.locator);
+    if (!renderedMarkup.includes(escapedLocator)) {
+      throw new Error(
+        `regulatory-claim-watch target ${route} does not render declared source locator ${source.locator}`,
       );
     }
   }
@@ -174,6 +176,15 @@ export function assertFrameworkSourceLinkage(
       `regulatory-claim-watch target ${route} does not render verification stamp ${verifiedOn}`,
     );
   }
+}
+
+function escapeRenderedValue(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#x27;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 export function assertKnownPositive(

@@ -139,8 +139,10 @@ describe("glossaryPageSpec — the ordered section builder", () => {
     expect(html).toContain(
       "https://ec.europa.eu/newsroom/dae/redirection/document/131215",
     );
-    expect(html).toContain("Articles 50(1)–(5)");
+    expect(html).toContain("Articles 3(3)–(4), 50(1)–(5)");
     expect(html).toContain("Paragraphs (5), (6), (69)–(74)");
+    expect(html).toContain("(151)");
+    expect(html).toContain("Surveillance authorities");
     expect(html).toContain("Sources verified 2026-07-26");
   });
 });

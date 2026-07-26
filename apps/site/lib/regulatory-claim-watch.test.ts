@@ -70,6 +70,17 @@ describe("regulatory-claim watch discovery", () => {
     ).toThrow("does not render declared source");
   });
 
+  test("framework discovery rejects a linked source whose exact locator is not rendered", () => {
+    expect(() =>
+      assertFrameworkSourceLinkage(
+        "/frameworks/eu-ai-act",
+        '<main><a href="https://example.com/source">source</a>1970-01-01</main>',
+        KNOWN_TARGET.verifiedOn,
+        KNOWN_TARGET.sources,
+      ),
+    ).toThrow("does not render declared source locator");
+  });
+
   test("framework discovery rejects comments, dead indexed access, and duplicate date tokens", () => {
     const detachedSource = [
       "<!-- https://example.com/source -->",
