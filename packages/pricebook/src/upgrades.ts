@@ -187,16 +187,34 @@ export function isCreditableMember(
 const BUNDLE_ID_SET: ReadonlySet<string> = new Set<string>(BUNDLE_IDS);
 
 /**
- * Convert a charged amount in MINOR units (the `entitlement_grant.charged_amount` column, the
- * provider's own unit) to the integer USD this module prices in, rounding UP.
+ * A recorded charge for ONE owned item: the provider's own minor units together with the currency
+ * they are denominated in — the `entitlement_grant.charged_amount` / `charged_currency` pair, which
+ * a CHECK constraint forces to be written together. The currency is not decoration: 29900 is
+ * $299.00 in USD and ¥29,900 in JPY, two amounts that differ by roughly 100x, and an integer alone
+ * cannot tell them apart.
+ */
+export interface PaidAmount {
+  /** The charge in the provider's minor units. Non-negative integer. */
+  readonly amountMinorUnits: number;
+  /** ISO-4217, compared case-insensitively (providers send both `USD` and `usd`). */
+  readonly currency: string;
+}
+
+/** The only currency this module prices in. `SKU_RETAIL`/`BUNDLE_RETAIL` are integer USD. */
+const CREDIT_CURRENCY = "usd";
+
+/**
+ * Convert a charged amount in USD MINOR units (cents) to the integer USD this module prices in,
+ * rounding UP. Callers MUST have established the amount is USD first — the /100 here is the
+ * two-decimal USD exponent, not a general minor-unit rule (JPY has none, KWD has three).
  *
  * Up, not nearest: this feeds the ADR-0381 floor "an upgrade credit never falls below what the buyer
  * actually paid". A buyer charged $149.50 (14950) must credit at least $149.50; `Math.round` would
  * return $150 here but `Math.floor` would return $149 — below what they paid, which is exactly the
  * clause's failure mode. Ceiling costs at most 99 cents and always errs toward the buyer.
  */
-function minorUnitsToUsdCeil(minorUnits: number): number {
-  return Math.ceil(minorUnits / 100);
+function usdCentsToUsdCeil(cents: number): number {
+  return Math.ceil(cents / 100);
 }
 
 /**
@@ -205,11 +223,18 @@ function minorUnitsToUsdCeil(minorUnits: number): number {
  * below the buyer's own paid price, so a later price CUT can never strand someone who bought at the
  * old higher number).
  *
- * `paidMinorUnits` is the buyer's recorded charge for this one item in the provider's minor units
- * (`entitlement_grant.charged_amount`), or `undefined` when nothing is recorded — an
- * `admin_comp` grant, a driver with no per-line data, or any line whose charge cannot be attributed
- * to a single SKU (see `grantEntitlements`). Undefined means "unknown", which falls back to retail:
- * the pre-0381 behaviour, and the only honest answer when no per-SKU amount exists.
+ * `paid` is the buyer's recorded charge for this one item ({@link PaidAmount}: the
+ * `entitlement_grant.charged_amount` / `charged_currency` pair), or `undefined` when nothing is
+ * recorded — an `admin_comp` grant, a driver with no per-line data, or any line whose charge cannot
+ * be attributed to a single SKU (see `grantEntitlements`). Undefined means "unknown", which falls
+ * back to retail: the pre-0381 behaviour, and the only honest answer when no per-SKU amount exists.
+ *
+ * A charge in a currency OTHER than USD also falls back to retail. Comparing ¥29,900 against a
+ * $249 retail requires an exchange rate, and this repo has no locked conversion policy — inventing
+ * one here would be a fabricated money number, which is worse than the miss. Disclosed residual:
+ * for a non-USD buyer the ADR-0381 floor degrades to retail, so a price CUT could in principle
+ * strand them. Closing that needs an integer, versioned FX policy as its own decision; until then
+ * the credit is never WRONG, only never above retail.
  *
  * FAIL-CLOSED (ADR-0247 F8): an unknown bundle, or an item that is NOT a creditable member of the
  * bundle (an unmapped pair), THROWS — never a silent $0 that would undercredit and overcharge the
@@ -222,7 +247,7 @@ function minorUnitsToUsdCeil(minorUnits: number): number {
 export function resolveUpgradeCredit(
   itemId: string,
   bundleId: string,
-  paidMinorUnits?: number,
+  paid?: PaidAmount,
 ): number {
   if (!BUNDLE_ID_SET.has(bundleId)) {
     throw new ConfigError(`unknown bundle id for upgrade credit: ${bundleId}`);
@@ -241,13 +266,22 @@ export function resolveUpgradeCredit(
       `creditable member ${itemId} has no retail price (upgrade-credit data gap)`,
     );
   }
-  if (paidMinorUnits === undefined) return retail;
-  if (!Number.isInteger(paidMinorUnits) || paidMinorUnits < 0) {
+  if (paid === undefined) return retail;
+  if (!Number.isInteger(paid.amountMinorUnits) || paid.amountMinorUnits < 0) {
     throw new ConfigError(
-      `paid amount for item ${itemId} is not a non-negative integer of minor units: ${String(paidMinorUnits)}`,
+      `paid amount for item ${itemId} is not a non-negative integer of minor units: ${String(paid.amountMinorUnits)}`,
     );
   }
-  return Math.max(retail, minorUnitsToUsdCeil(paidMinorUnits));
+  // A blank currency is a corrupt pair, not a missing amount — the CHECK constraint writes both or
+  // neither, so reaching here without one means the row was tampered with or hand-written. Throw
+  // rather than guessing USD, which is exactly the inference this whole change removes.
+  if (typeof paid.currency !== "string" || paid.currency.trim() === "") {
+    throw new ConfigError(
+      `paid amount for item ${itemId} carries no currency (charged_amount and charged_currency are written as a pair)`,
+    );
+  }
+  if (paid.currency.trim().toLowerCase() !== CREDIT_CURRENCY) return retail;
+  return Math.max(retail, usdCentsToUsdCeil(paid.amountMinorUnits));
 }
 
 /** An F8 upgrade quote: what the buyer pays to move from owned items to `bundle`. */
@@ -272,16 +306,17 @@ export interface UpgradeQuote {
  * {@link resolveUpgradeCredit}. `upgradePrice = max(0, bundleRetail − Σ credits)`. Pure + integer
  * USD, so the cart reads a pre-declared number and never recomputes `bundle − owned` ad-hoc.
  *
- * `paidMinorUnitsByItem` (ADR-0381 lock 2) optionally supplies what the buyer ACTUALLY paid per
- * owned item, in minor units — the caller's `entitlement_grant.charged_amount` read. Any item with
- * an entry credits at `max(retail, paid)`; omitted items credit at retail exactly as before. The
- * map is an input, never a lookup this module performs: the pricebook stays pure and free of DB
- * access, and the license/site layer owns the tenant-scoped read.
+ * `paidByItem` (ADR-0381 lock 2) optionally supplies what the buyer ACTUALLY paid per owned item as
+ * a {@link PaidAmount} — the caller's `entitlement_grant.charged_amount` + `charged_currency` read.
+ * A USD entry credits at `max(retail, paid)`; a non-USD entry and an omitted item both credit at
+ * retail (see {@link resolveUpgradeCredit} for why no rate is invented). The map is an input, never
+ * a lookup this module performs: the pricebook stays pure and free of DB access, and the
+ * license/site layer owns the tenant-scoped read.
  */
 export function upgradeQuote(
   bundleId: string,
   ownedItemIds: readonly string[],
-  paidMinorUnitsByItem?: Readonly<Record<string, number>>,
+  paidByItem?: Readonly<Record<string, PaidAmount>>,
 ): UpgradeQuote {
   if (!BUNDLE_ID_SET.has(bundleId)) {
     throw new ConfigError(`unknown bundle id for upgrade quote: ${bundleId}`);
@@ -299,9 +334,8 @@ export function upgradeQuote(
         bundle,
         // Absent key → undefined → retail. `Object.hasOwn` (not a bare index) so an item named
         // after an Object.prototype member can never inherit a bogus "paid amount".
-        paidMinorUnitsByItem !== undefined &&
-          Object.hasOwn(paidMinorUnitsByItem, id)
-          ? paidMinorUnitsByItem[id]
+        paidByItem !== undefined && Object.hasOwn(paidByItem, id)
+          ? paidByItem[id]
           : undefined,
       ),
     0,

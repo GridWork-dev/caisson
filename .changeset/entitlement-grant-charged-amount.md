@@ -23,4 +23,8 @@ sends zero. Both leave the column empty, which reads as unknown and credits at r
 inventing a per-item split.
 
 The quote function takes the paid amounts as an argument, so the pricebook stays free of database
-access and the tenant-scoped read stays with the caller.
+access and the tenant-scoped read stays with the caller. Each one is an amount together with its
+currency, never a bare integer: a charge of 29900 is $299 in one currency and roughly twice that in
+another, and the two cannot be told apart from the number alone. A charge in a currency the catalog
+does not price in credits at retail rather than being converted, because converting it would mean
+inventing an exchange rate.

@@ -52,7 +52,7 @@ export {
   resolveUpgradeCredit,
   upgradeQuote,
 } from "./upgrades.ts";
-export type { UpgradeQuote } from "./upgrades.ts";
+export type { PaidAmount, UpgradeQuote } from "./upgrades.ts";
 
 export {
   CREDIT_CONVERSION,
