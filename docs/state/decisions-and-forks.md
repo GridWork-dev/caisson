@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-25
 status: live
-adr_ceiling: 0387
+adr_ceiling: 0388
 ---
 
 # Decisions & Forks — live board
@@ -175,6 +175,8 @@ additional active queue.
 | Fork         | Why it remains open                                                                                                                                                     |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Railway PITR | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18. |
+
+_One more closed 2026-07-25 → **ADR-0388**: whether the oscal-spine wave waits for the first release train. It does not — it runs in parallel with T8 and merges BEFORE the train, superseding ADR-0386 decision 2, because ADR-0387 pushed the deploy a full wave out and that window is free schedule. Withdraws 0386's accepted two-cycle cost and its stale-price first tag._
 
 _Four more closed 2026-07-25 → **ADR-0387**: what backs field-crypto in production (Azure Key Vault KMS) · whether the deploy waits on the async refactor (it does — KMS is a code wave, not an environment swap) · the breadth of the arming act (full pass, all six legs) · what to do with a set-but-unrecorded value (adopt, never regenerate)._
 
