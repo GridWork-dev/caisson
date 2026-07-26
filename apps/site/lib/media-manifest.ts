@@ -465,6 +465,16 @@ const MODULE_POKES: Readonly<
   },
 };
 
+/** ADR-0380 lock 6: these three completion-wave depth pages lead with their already-shipped live
+ *  poke, then the already-shipped schematic. `omitCodeArtifact` is the existing depth-page signal;
+ *  every other depth page preserves the ADR-0378 schematic-first order, and `leadWithPoke` keeps
+ *  its existing card-viewer behavior. */
+const DEPTH_POKE_FIRST_MODULES = {
+  "access-review": true,
+  "risk-register": true,
+  "trust-page": true,
+} as const satisfies Partial<Record<PokeKey, true>>;
+
 /** Bundles borrow the hero member's poke VERBATIM (ADR-0378 lock 1 — borrow, never fork): the same
  *  component the module page renders, one manifest line per bundle. */
 const BUNDLE_POKES: Readonly<
@@ -592,7 +602,11 @@ export function mediaSlides(
     }
   }
 
-  if (options?.leadWithPoke && pokeSlide) {
+  const leadWithPoke =
+    options?.leadWithPoke === true ||
+    (options?.omitCodeArtifact === true &&
+      Object.hasOwn(DEPTH_POKE_FIRST_MODULES, id));
+  if (leadWithPoke && pokeSlide) {
     const at = slides.indexOf(pokeSlide);
     if (at > 0) {
       slides.splice(at, 1);
