@@ -313,8 +313,28 @@ describe("check #2 — frontmatter freshness", () => {
         (p) => gitLastCommitDate(dir, p),
       );
       expect(result.status).toBe("drift");
-      expect(result.details[0]).toContain("does not exist");
+      expect(result.details).toEqual([
+        'doc.md: grounds path "does/not/exist.ts" does not exist',
+      ]);
     });
+  });
+
+  test("green: external HTTP(S) grounds are not treated as repository paths", () => {
+    const doc: FrontmatterDoc = {
+      path: "doc.md",
+      text:
+        "---\nupdated: 2026-01-02\ngrounds:\n" +
+        "  - https://example.com/evidence\n" +
+        "  - http://example.com/archive\n---\n",
+    };
+    const result = checkFrontmatterFreshness(
+      [doc],
+      () => false,
+      () => {
+        throw new Error("external URLs must not reach git date lookup");
+      },
+    );
+    expect(result.status).toBe("green");
   });
 
   test("not checked (returns null) when grounds: is missing", () => {
