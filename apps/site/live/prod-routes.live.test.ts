@@ -9,7 +9,7 @@
 //
 // What it covers: drives a REAL Chromium browser (not a fetch) at a representative slice of the
 // real router tree — home, the marketplace hub, the /pricing -> /marketplace redirect
-// (ADR-0237 F1), /updates, the docs section, all four legal pages, sign-in, and a 3-module
+// (ADR-0237 F1), /updates, the docs section, all five legal pages, sign-in, and a 3-module
 // sample of the module depth pages (`lib/module-pages.ts` — the same registry `sitemap.ts` and
 // `scripts/visual-harness.ts` derive from, so this list can't silently drift from the real
 // catalog). Per route: the navigation succeeds (HTTP < 400), it lands on the expected path, no
