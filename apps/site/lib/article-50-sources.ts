@@ -27,7 +27,10 @@ export const ARTICLE_50_PRIMARY_SOURCES = [
       "Page header “Publication 20 July 2026”; introductory paragraph beginning “The Commission adopted these guidelines”",
     watch: {
       mode: "text",
-      text: "Publication 20 July 2026",
+      texts: [
+        "Publication 20 July 2026",
+        "The Commission adopted these guidelines",
+      ],
     },
   },
   {
@@ -36,9 +39,12 @@ export const ARTICLE_50_PRIMARY_SOURCES = [
     locator:
       "Paragraphs (5), (6), (69)–(74), and (153)–(154), pp. 3–4, 24–25, and 49–50",
     watch: {
-      mode: "reachable",
+      mode: "digest",
+      algorithm: "sha256",
+      digest:
+        "30861fc5de31205846f023068069c92fabc7271ebeac6af7bef68b97f0a33f66",
       reason:
-        "The official source is a 51-page PDF; the watch verifies the public download while the page locator remains the review anchor.",
+        "The official source is a 51-page PDF; any byte-level change is reported for human review against the precise page locator.",
     },
   },
   {
@@ -47,7 +53,11 @@ export const ARTICLE_50_PRIMARY_SOURCES = [
     locator: "“Enforcement and penalties” → “Exceptions”",
     watch: {
       mode: "text",
-      text: "Exceptions",
+      texts: [
+        "These transparency rules apply from 2 August 2026.",
+        "Grace period for marking obligation until December 2026 for generative AI systems placed on the market before 2 August 2026 (Article 50(2) AI Act, amended by AI Omnibus).",
+        "Deepfakes generated before 2 August 2026: no mandatory retroactive labelling but encouraged.",
+      ],
     },
   },
 ] as const satisfies readonly WritingSource[];

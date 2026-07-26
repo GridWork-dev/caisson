@@ -21,7 +21,14 @@ export interface WritingSource {
    * `locator`; this only records what an unauthenticated weekly fetch can honestly inspect.
    */
   watch?:
-    { mode: "text"; text: string } | { mode: "reachable"; reason: string };
+    | { mode: "text"; texts: readonly string[] }
+    | {
+        mode: "digest";
+        algorithm: "sha256";
+        digest: string;
+        reason: string;
+      }
+    | { mode: "reachable"; reason: string };
 }
 
 export interface WritingPiece {
