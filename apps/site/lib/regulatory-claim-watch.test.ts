@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   assertFrameworkSourceLinkage,
   assertKnownPositive,
+  createPublicSourceFetcher,
   discoverRegulatoryClaims,
   runRegulatoryClaimWatch,
   type RegulatoryClaimTarget,
@@ -289,6 +290,82 @@ describe("regulatory-claim source checks", () => {
     ]);
   });
 
+  test("reports a body that exceeds the declared byte cap", async () => {
+    const fetcher: SourceFetcher = async () =>
+      new Response(new Uint8Array([1, 2, 3, 4]), {
+        status: 200,
+        headers: { "content-type": "application/octet-stream" },
+      });
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher, {
+      maxBodyBytes: 3,
+    });
+
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "fetch-failed",
+        detail: expect.stringContaining("body exceeded 3 byte limit"),
+      }),
+    ]);
+  });
+
+  test("rejects redirects outside the declared HTTPS host set before a second request", async () => {
+    let fetches = 0;
+    const fetcher = createPublicSourceFetcher(
+      KNOWN_TARGET.sources,
+      async (_url, init) => {
+        fetches++;
+        expect(init.redirect).toBe("manual");
+        return new Response(null, {
+          status: 302,
+          headers: { location: "http://127.0.0.1/latest/meta-data" },
+        });
+      },
+    );
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+    expect(fetches).toBe(1);
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "fetch-failed",
+        detail: expect.stringContaining("redirect target must use https"),
+      }),
+    ]);
+  });
+
+  test("rejects IP-literal source hosts before issuing a request", async () => {
+    let fetches = 0;
+    const privateTarget: RegulatoryClaimTarget = {
+      ...KNOWN_TARGET,
+      sources: [
+        {
+          ...KNOWN_TARGET.sources[0]!,
+          url: "https://127.0.0.1/source",
+        },
+      ],
+    };
+    const fetcher = createPublicSourceFetcher(
+      privateTarget.sources,
+      async () => {
+        fetches++;
+        return new Response("unreachable");
+      },
+    );
+
+    const report = await runRegulatoryClaimWatch([privateTarget], fetcher);
+
+    expect(fetches).toBe(0);
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "fetch-failed",
+        detail: expect.stringContaining(
+          "source host must not be an IP literal",
+        ),
+      }),
+    ]);
+  });
+
   test("fetches a shared declared source once across all watched surfaces", async () => {
     let fetches = 0;
     const fetcher: SourceFetcher = async () => {
@@ -353,6 +430,34 @@ describe("regulatory-claim-watch workflow posture", () => {
     }
   });
 
+  test("unframed command output cannot masquerade as a watch report", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "caisson-regulatory-watch-"));
+    try {
+      const reportPath = join(tempDir, "report.md");
+      const process = Bun.spawn(
+        [
+          WORKFLOW_WRAPPER,
+          reportPath,
+          "bash",
+          "-c",
+          "printf 'install output\n'",
+        ],
+        {
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
+
+      expect(await process.exited).toBe(0);
+      const report = await readFile(reportPath, "utf8");
+      expect(report).toContain("Watch output was not a framed report.");
+      expect(report).toContain("No PASS is implied.");
+      expect(report).not.toContain("install output");
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   test("stays weekly, dispatchable, read-only, report-only, and secret-free", async () => {
     const workflow = await Bun.file(
       join(REPO_ROOT, ".github/workflows/regulatory-claim-watch.yml"),
@@ -369,7 +474,9 @@ describe("regulatory-claim-watch workflow posture", () => {
     expect(workflow).toContain("continue-on-error: true");
     expect(workflow).toContain("if: always()");
     expect(workflow).toContain("timeout --kill-after=15s 8m");
-    expect(workflow).not.toContain("- name: install workspace deps");
+    expect(workflow).toContain("- name: install workspace deps");
+    expect(workflow).toContain("INSTALL_OUTCOME");
+    expect(workflow).not.toContain("bash -c 'bun install");
     expect(workflow).not.toContain("| tee");
     expect(workflow).not.toContain("secrets.");
   });

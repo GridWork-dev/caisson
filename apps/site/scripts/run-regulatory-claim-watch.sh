@@ -20,5 +20,15 @@ if [[ ! -s "$report_path" ]]; then
     >"$report_path"
 fi
 
+first_line=""
+IFS= read -r first_line <"$report_path" || true
+if [[ "$first_line" != "## Regulatory claim watch — report-only" ]]; then
+  printf '%s\n' \
+    '## Regulatory claim watch — report-only' \
+    '' \
+    'Watch output was not a framed report. No PASS is implied.' \
+    >"$report_path"
+fi
+
 sed -n '1,200p' "$report_path"
 exit 0
