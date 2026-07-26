@@ -279,6 +279,7 @@ export function checkDocFreshness(
 
   const findings: FreshnessFinding[] = [];
   for (const g of grounds) {
+    if (g.startsWith("http://") || g.startsWith("https://")) continue;
     if (!pathExists(g)) {
       findings.push({
         file: doc.path,
