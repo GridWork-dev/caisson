@@ -40,6 +40,13 @@ describe("Article 50 primary-source regrounding", () => {
     for (const source of ARTICLE_50_PRIMARY_SOURCES) {
       expect(source.locator.length).toBeGreaterThan(20);
     }
+    expect(ARTICLE_50_PRIMARY_SOURCES[0].locator).toContain(
+      "Articles 3(3)–(4)",
+    );
+    expect(ARTICLE_50_PRIMARY_SOURCES[2].locator).toContain("(151)");
+    expect(ARTICLE_50_PRIMARY_SOURCES[3].locator).toContain(
+      "Surveillance authorities",
+    );
     expect(ARTICLE_50_PRIMARY_SOURCES[2].watch).toMatchObject({
       mode: "digest",
       algorithm: "sha256",
