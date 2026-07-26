@@ -61,7 +61,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     heroOneLiner:
       "One protected key per tenant, and ciphertext moved to another tenant fails to decrypt, provably.",
     definition:
-      "field-crypto seals values under a distinct AES-256-GCM key per tenant, using HKDF-SHA256 for dev/self-hosted deployments or request-scoped KMS envelope encryption in hosted production. Its self-describing envelope binds tenant, column, and row identity into the AEAD's additional authenticated data, so relocated ciphertext fails to decrypt.",
+      "field-crypto seals values under a distinct AES-256-GCM key per tenant, using HKDF-SHA256 for dev/self-hosted deployments or request-scoped KMS envelope encryption in hosted production. Its self-describing envelope always binds tenant and column identity into the AEAD's additional authenticated data; explicit row-bound fields bind row identity too.",
     included: [
       {
         title: "Fail-closed on every read and write",

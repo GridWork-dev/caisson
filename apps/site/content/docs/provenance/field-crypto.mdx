@@ -70,7 +70,9 @@ There is no shared field key and no path where tenant B's key decrypts A's data.
 dev/self-hosted mode, tenant A's key is a pure function of the root key, A's id, and the key
 version. In hosted KMS mode, each random DEK is recovered from its append-only wrapped row using
 the exact Azure KEK version recorded in the wrapped payload. In either mode, ciphertext relocated
-to another tenant, column, or row fails authentication rather than returning the wrong plaintext.
+to another tenant or column fails authentication rather than returning the wrong plaintext.
+Explicit row-bound `encryptField` calls also reject same-column relocation between rows; the
+transparent Drizzle column path has no row identifier and does not claim that stronger binding.
 
 ## The Drizzle column path
 
