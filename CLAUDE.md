@@ -188,10 +188,11 @@ Engineering lanes (`gw-typescript-pro`, `gw-code-reviewer`, `gw-security-auditor
 - **PostHog MCP** → project `caisson-prod` (US Cloud) — state it per dispatch, never assume carry-over.
 - **Linear MCP** → work items only (Linear owns WORK, git owns DECISIONS — §Issue tracking above).
 - **Cookiy MCP** → screeners / synthetic-persona tests / survey research; positioning research only, no PII.
-- **CI** → `runs-on: blacksmith-4vcpu-ubuntu-2404` (Blacksmith VM-per-job, ADR-0326; quality
-  macOS leg stays `[self-hosted, gw-macos-arm64]`). Credential jobs (publish · deploy-railway ·
-  mirror-sync · release-train) stay `ubuntu-latest`; `oscal-conformance` runs on Blacksmith too
-  (self-contained — installs its own JDK + oscal-cli per run). Review gate = the
+- **CI** → every Linux job runs on `blacksmith-4vcpu-ubuntu-2404` (Blacksmith VM-per-job,
+  ADR-0326; ADR-0365 moved release-train, publish, and mirror-sync off the retired credential-job
+  carve, and deploy-railway is on Blacksmith too). Only quality's macOS leg stays
+  `[self-hosted, gw-macos-arm64]`; `oscal-conformance` is self-contained on Blacksmith and installs
+  its own JDK + oscal-cli per run. Review gate = the
   in-session SHIP audit lane (§PR review gate above — Greptile retired 2026-07-06).
 - **GLM engine lane** (`gw engine glm "<task>"`) → bounded mechanical work on the z.ai subscription;
   sandboxed throwaway worktree, no secrets/MCPs, returns a diff — main thread owns git/PR.
