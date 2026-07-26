@@ -22,6 +22,7 @@ import {
 } from "./bundle-vocabulary";
 import {
   COMPATIBILITY_REEXPORT_ENTITLEMENTS,
+  INTERNAL_RUNTIME_ENTITLEMENTS,
   RESERVED_MODULE_ENTITLEMENT_IDS,
   RESERVED_MODULE_ENTITLEMENT_VERSIONS,
   baseModuleIds,
@@ -267,6 +268,11 @@ describe("ADR-0384 compatibility re-export entitlements", () => {
         latest: "0.1.0",
         versions: [version("@caisson/oscal-spine")],
       },
+      {
+        id: "@caisson/artifact-render",
+        latest: "0.1.0",
+        versions: [version("@caisson/artifact-render")],
+      },
     ],
   });
 
@@ -277,9 +283,19 @@ describe("ADR-0384 compatibility re-export entitlements", () => {
     ]);
   });
 
+  test("the internal runtime relation contains only the OSCAL renderer edge", () => {
+    expect([...INTERNAL_RUNTIME_ENTITLEMENTS.entries()]).toEqual([
+      ["@caisson/oscal-spine", ["@caisson/artifact-render"]],
+    ]);
+  });
+
   for (const parent of ["compliance-core", "frameworks-pack"] as const) {
     test(`${parent} grants the indexed OSCAL carve through bare and full purchase ids`, () => {
-      const expected = [`@caisson/${parent}`, "@caisson/oscal-spine"].sort();
+      const expected = [
+        `@caisson/${parent}`,
+        "@caisson/oscal-spine",
+        "@caisson/artifact-render",
+      ].sort();
       expect([...expandEntitlements(carved, [parent])].sort()).toEqual(
         expected,
       );
@@ -304,12 +320,13 @@ describe("ADR-0384 compatibility re-export entitlements", () => {
     expect(granted).toContain("@caisson/compliance-core");
     expect(granted).toContain("@caisson/frameworks-pack");
     expect(granted).toContain("@caisson/oscal-spine");
+    expect(granted).toContain("@caisson/artifact-render");
   });
 
-  test("a standalone OSCAL purchase grants only OSCAL", () => {
-    expect([...expandEntitlements(carved, ["oscal-spine"])]).toEqual([
-      "@caisson/oscal-spine",
-    ]);
+  test("a standalone OSCAL purchase grants only OSCAL and its named internal renderer", () => {
+    expect([...expandEntitlements(carved, ["oscal-spine"])].sort()).toEqual(
+      ["@caisson/oscal-spine", "@caisson/artifact-render"].sort(),
+    );
   });
 
   test("ordinary package dependencies never become entitlements", () => {

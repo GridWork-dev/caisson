@@ -343,22 +343,26 @@ describe("tarball — literal-slash path, re-checked entitlement, R2 bytes", () 
 });
 
 describe("ADR-0384 parent purchases install the carved OSCAL package", () => {
+  const commercialVersion = (id: string, version: string) => ({
+    version,
+    publishedAt:
+      version === "1.0.0"
+        ? "2026-01-01T00:00:00.000Z"
+        : "2027-01-01T00:00:00.000Z",
+    gateAttestation:
+      version === "1.0.0" ? "ci-run-1@deadbeef" : "ci-run-2@deadbeef",
+    manifest: {
+      ...commercialBase(id).versions[0]?.manifest,
+      version,
+    },
+  });
   const oscalVersions = [
-    {
-      version: "1.0.0",
-      publishedAt: "2026-01-01T00:00:00.000Z",
-      gateAttestation: "ci-run-1@deadbeef",
-      manifest: commercialBase("@caisson/oscal-spine").versions[0]?.manifest,
-    },
-    {
-      version: "2.0.0",
-      publishedAt: "2027-01-01T00:00:00.000Z",
-      gateAttestation: "ci-run-2@deadbeef",
-      manifest: {
-        ...commercialBase("@caisson/oscal-spine").versions[0]?.manifest,
-        version: "2.0.0",
-      },
-    },
+    commercialVersion("@caisson/oscal-spine", "1.0.0"),
+    commercialVersion("@caisson/oscal-spine", "2.0.0"),
+  ];
+  const rendererVersions = [
+    commercialVersion("@caisson/artifact-render", "1.0.0"),
+    commercialVersion("@caisson/artifact-render", "2.0.0"),
   ];
   const compatibilityIndex = loadRegistryIndex({
     schemaVersion: 1,
@@ -392,24 +396,64 @@ describe("ADR-0384 parent purchases install the carved OSCAL package", () => {
         ],
       },
       {
+        id: "@caisson/everything",
+        latest: "1.0.0",
+        versions: [
+          {
+            version: "1.0.0",
+            publishedAt: "2026-01-01T00:00:00.000Z",
+            gateAttestation: "ci-run-1@deadbeef",
+            manifest: {
+              id: "@caisson/everything",
+              version: "1.0.0",
+              kind: "bundle",
+              tier: "paid",
+              license: "LicenseRef-Caisson-Commercial",
+              priceCents: 225900,
+              editions: [],
+              members: {
+                "@caisson/oscal-spine": "1.0.0",
+              },
+              description: "Everything bundle compatibility fixture.",
+            },
+          },
+        ],
+      },
+      {
         id: "@caisson/oscal-spine",
         latest: "2.0.0",
         versions: oscalVersions,
+      },
+      {
+        id: "@caisson/artifact-render",
+        latest: "2.0.0",
+        versions: rendererVersions,
       },
     ],
   });
   const compatibilitySidecar = loadTarballSidecar({
     $comment: "ADR-0384 compatibility fixture",
     tarballs: Object.fromEntries(
-      ["1.0.0", "2.0.0"].map((version) => [
-        `@caisson/oscal-spine@${version}`,
-        {
-          key: `oscal-spine/oscal-spine-${version}.tgz`,
-          shasum: "dddddddddddddddddddddddddddddddddddddddd",
-          integrity: "sha512-oscalCompatibilitySRI==",
-          size: 1,
-        },
-      ]),
+      ["oscal-spine", "artifact-render"].flatMap((name) =>
+        ["1.0.0", "2.0.0"].map((version) => [
+          `@caisson/${name}@${version}`,
+          {
+            key: `${name}/${name}-${version}.tgz`,
+            shasum: "dddddddddddddddddddddddddddddddddddddddd",
+            integrity: "sha512-oscalCompatibilitySRI==",
+            size: 1,
+            ...(name === "oscal-spine"
+              ? {
+                  meta: {
+                    dependencies: {
+                      "@caisson/artifact-render": "1.0.0",
+                    },
+                  },
+                }
+              : {}),
+          },
+        ]),
+      ),
     ),
   });
   const compatibilityEnv: NpmEnv = {
@@ -502,6 +546,86 @@ describe("ADR-0384 parent purchases install the carved OSCAL package", () => {
     );
     expect(outOfWindow.status).toBe(404);
   });
+
+  const rendererCases = [
+    {
+      label: "standalone OSCAL",
+      entitlements: ["oscal-spine"],
+      entitledSince: {},
+    },
+    {
+      label: "compliance-core parent",
+      entitlements: ["compliance-core"],
+      entitledSince: {},
+    },
+    {
+      label: "frameworks-pack parent",
+      entitlements: ["frameworks-pack"],
+      entitledSince: {},
+    },
+    {
+      label: "pre-carve Compliance bundle",
+      entitlements: ["compliance"],
+      entitledSince: {
+        compliance: "2026-07-24T00:00:00.000Z",
+      },
+    },
+    {
+      label: "current Compliance bundle",
+      entitlements: ["compliance"],
+      entitledSince: {},
+    },
+    {
+      label: "current Everything bundle",
+      entitlements: ["everything"],
+      entitledSince: {},
+    },
+  ] as const;
+
+  for (const buyer of rendererCases) {
+    test(`${buyer.label} resolves the internal renderer under the originating update window`, async () => {
+      const buyerHandler = createNpmHandler(
+        compatibilityIndex,
+        compatibilitySidecar,
+        {
+          resolveEntitlements: () => ({
+            entitlements: buyer.entitlements,
+            entitledSince: buyer.entitledSince,
+            updatesWindows: {
+              [buyer.entitlements[0]]: WINDOW,
+            },
+          }),
+        },
+      );
+
+      const packument = await buyerHandler(
+        req("/@caisson%2fartifact-render", { headers: AUTH }),
+      );
+      expect(packument.status).toBe(200);
+      const body = (await packument.json()) as {
+        "dist-tags": { latest: string };
+        versions: Record<string, unknown>;
+      };
+      expect(Object.keys(body.versions)).toEqual(["1.0.0"]);
+      expect(body["dist-tags"].latest).toBe("1.0.0");
+
+      const inWindow = await buyerHandler(
+        req("/@caisson/artifact-render/-/artifact-render-1.0.0.tgz", {
+          headers: AUTH,
+        }),
+        compatibilityEnv,
+      );
+      expect(inWindow.status).toBe(200);
+
+      const outOfWindow = await buyerHandler(
+        req("/@caisson/artifact-render/-/artifact-render-2.0.0.tgz", {
+          headers: AUTH,
+        }),
+        compatibilityEnv,
+      );
+      expect(outOfWindow.status).toBe(404);
+    });
+  }
 });
 
 describe("diagnostics + writes", () => {
