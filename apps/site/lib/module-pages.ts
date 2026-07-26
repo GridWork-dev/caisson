@@ -1901,7 +1901,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Assessment artifacts from evidence you already generated",
-        body: "toOscalBundle projects an evidence-pack manifest into assessment-results and POA&M report fragments, while buildOscalAssessmentPlan emits the matching plan. Inputs are structural contracts, so the exporter does not reach back into the collector or storage layers.",
+        body: "toOscalBundle projects an evidence-pack manifest into assessment-results and POA&M report fragments, while toOscalAssessmentPlan emits the matching plan. Inputs are structural contracts, so the exporter does not reach back into the collector or storage layers.",
       },
       {
         title: "One deterministic canonical-control catalog",

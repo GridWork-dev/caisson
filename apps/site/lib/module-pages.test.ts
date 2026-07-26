@@ -112,6 +112,14 @@ describe("MODULE_PAGES (depth-page records)", () => {
     }
   });
 
+  test("the OSCAL page names the real assessment-plan export, never the retired copy name", () => {
+    const page = MODULE_PAGES.find((record) => record.slug === "oscal-spine");
+    expect(page).toBeDefined();
+    const copy = JSON.stringify(page);
+    expect(copy).toContain("toOscalAssessmentPlan");
+    expect(copy).not.toContain("buildOscalAssessmentPlan");
+  });
+
   test("every sells note's bundle-membership claims match the pricing truth", () => {
     // The registry members map is the entitlement truth (see pricing.test.ts). This lint replaced
     // the pre-fold-in "ai-evals is standalone-only" prose ban: ai-evals JOINED the ai-production
