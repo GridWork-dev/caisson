@@ -194,3 +194,31 @@ gated act, not a gap in this certification.
 - **GPG/SSH key provisioning for signed tags**, if the orchestrator decides DEFECT #3 (unsigned
   tags) needs fixing before launch — that's a decision + implementation task, not something this
   evidence pass resolves.
+
+## Correction — later on 2026-07-25
+
+Two of the three verdicts above have since changed. This section is appended rather than edited
+into the tables above, because the tables record what a live query returned at their stated time
+and rewriting them would destroy that evidence.
+
+**Open PRs: DEFECT → resolved.** All three open PRs now carry a fully green rollup. #332's `check`
+job — the failure this certification recorded — passed on a later push to the same branch; #333's
+`check` completed green after the query window closed; and #334, which did not exist when the
+tables above were written, opened and went green the same evening.
+
+| #   | Branch                            | Rollup at re-query                                             |
+| --- | --------------------------------- | -------------------------------------------------------------- |
+| 332 | `feature/module-depth-pages`      | all checks SUCCESS (`check` green on the later push)           |
+| 333 | `feature/paddle-onboarding-setup` | all checks SUCCESS                                             |
+| 334 | `feature/full-state-completion`   | all checks SUCCESS — opened after this certification's queries |
+
+The "what could not be determined" entry about #332's job log is therefore moot: the failing job
+was superseded, not diagnosed.
+
+**Releases and tags: DEFECT stands, now with a decision behind it.** Tags remain unsigned, but this
+is no longer an open question — ADR-0382 lock 2 locked SSH tag signing going forward, added
+`scripts/release-readiness.ts` check 0b, and recorded why the check is advisory rather than
+blocking (a tag's signature covers its own bytes, so an existing tag cannot become signed without
+the deletion-and-recreation the signature exists to prevent). Key creation and loading are operator
+acts; procedure in [release-tag-signing](../../docs/ops/release-tag-signing.md). The final "what
+could not be determined" entry is likewise closed by that ADR.
