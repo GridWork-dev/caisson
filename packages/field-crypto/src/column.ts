@@ -208,7 +208,10 @@ export function sealField(
   cipher: AeadCipher = aesGcm,
 ): string {
   const keyVersion = ctx.currentVersion();
-  const key = ctx.deriveKey(keyVersion);
+  // `deriveKey()` may return a context-owned cached buffer. Operate on a caller-owned copy so
+  // eager zeroization cannot corrupt the context's source key; disposable KMS contexts erase that
+  // source material at request exit.
+  const key = Buffer.from(ctx.deriveKey(keyVersion));
   try {
     const aad = buildAad(ctx.tenantId, keyVersion, columnContext);
     const { nonce, ciphertext, tag } = cipher.encrypt(
@@ -235,7 +238,7 @@ export function openField(
   stored: string,
 ): string {
   const env = parseEnvelope(stored);
-  const key = ctx.deriveKey(env.keyVersion);
+  const key = Buffer.from(ctx.deriveKey(env.keyVersion));
   try {
     const aad = buildAad(ctx.tenantId, env.keyVersion, columnContext);
     const cipher = cipherForAlg(env.algId);

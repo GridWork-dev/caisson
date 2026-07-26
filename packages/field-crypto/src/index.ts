@@ -62,6 +62,7 @@ export {
 export {
   type KmsClient,
   type KmsDeletionReceipt,
+  type KmsOperationOptions,
   type WrappedKeyStore,
   type KeyValueStore,
   InMemoryWrappedKeyStore,

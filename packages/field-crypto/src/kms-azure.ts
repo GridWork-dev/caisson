@@ -2,22 +2,37 @@ import type { KeyWrapAlgorithm } from "@azure/keyvault-keys";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import {
+  ConfigError,
   InternalError,
   ValidationError,
   parseStrict,
   strictObject,
 } from "@caisson/kernel";
-import type { KmsClient, KmsDeletionReceipt } from "./kms-port.ts";
+import type {
+  KmsClient,
+  KmsDeletionReceipt,
+  KmsOperationOptions,
+} from "./kms-port.ts";
 
 export interface AzureKeyVaultCryptographyClient {
   wrapKey(
     algorithm: KeyWrapAlgorithm,
     key: Uint8Array,
-  ): Promise<{ readonly result: Uint8Array }>;
+    options?: KmsOperationOptions,
+  ): Promise<{
+    readonly result: Uint8Array;
+    readonly keyID?: string;
+    readonly algorithm?: KeyWrapAlgorithm;
+  }>;
   unwrapKey(
     algorithm: KeyWrapAlgorithm,
     encryptedKey: Uint8Array,
-  ): Promise<{ readonly result: Uint8Array }>;
+    options?: KmsOperationOptions,
+  ): Promise<{
+    readonly result: Uint8Array;
+    readonly keyID?: string;
+    readonly algorithm?: KeyWrapAlgorithm;
+  }>;
 }
 
 export interface AzureKeyVaultClient {
@@ -26,15 +41,21 @@ export interface AzureKeyVaultClient {
    * expose cryptographic operations, so production callers normally inject `cryptographyClient`.
    */
   getCryptographyClient?(keyName: string): AzureKeyVaultCryptographyClient;
-  beginDeleteKey(keyName: string): Promise<{
-    pollUntilDone(): Promise<{
+  beginDeleteKey(
+    keyName: string,
+    options?: KmsOperationOptions,
+  ): Promise<{
+    pollUntilDone(options?: KmsOperationOptions): Promise<{
       readonly properties: {
         readonly recoveryLevel?: string;
         readonly scheduledPurgeDate?: Date;
       };
     }>;
   }>;
-  purgeDeletedKey(keyName: string): Promise<void>;
+  purgeDeletedKey(
+    keyName: string,
+    options?: KmsOperationOptions,
+  ): Promise<void>;
 }
 
 export interface AzureKeyVaultKmsClientConfig {
@@ -48,6 +69,7 @@ export interface AzureKeyVaultKmsClientConfig {
   /** Build the official SDK's separate `CryptographyClient` for one key name. */
   readonly cryptographyClient?: (
     keyName: string,
+    keyVersion?: string,
   ) => AzureKeyVaultCryptographyClient;
 }
 
@@ -95,15 +117,110 @@ const azureKeyVaultKmsClientConfigSchema = strictObject({
     })
     .optional(),
   cryptographyClient: z
-    .custom<(keyName: string) => AzureKeyVaultCryptographyClient>(
-      (value) => typeof value === "function",
-      {
-        message:
-          "cryptographyClient must construct an injected Azure CryptographyClient",
-      },
-    )
+    .custom<
+      (keyName: string, keyVersion?: string) => AzureKeyVaultCryptographyClient
+    >((value) => typeof value === "function", {
+      message:
+        "cryptographyClient must construct an injected Azure CryptographyClient",
+    })
     .optional(),
 });
+
+const azureKeyVersionSchema = z
+  .string()
+  .min(1)
+  .max(127)
+  .regex(/^[0-9A-Za-z-]+$/);
+
+const azureWrappedDekSchema = strictObject({
+  formatVersion: z.literal(1),
+  keyVersion: azureKeyVersionSchema,
+  wrapAlgorithm: z.enum([
+    "A128KW",
+    "A192KW",
+    "A256KW",
+    "RSA-OAEP",
+    "RSA-OAEP-256",
+    "RSA1_5",
+    "CKM_AES_KEY_WRAP",
+    "CKM_AES_KEY_WRAP_PAD",
+  ]),
+  ciphertext: z
+    .string()
+    .min(4)
+    .max(32_768)
+    .regex(/^[0-9A-Za-z+/]+={0,2}$/),
+});
+
+function versionFromKeyId(keyId: string, expectedKeyName: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(keyId);
+  } catch {
+    throw new ConfigError(
+      "field-crypto: Azure Key Vault WrapKey returned an invalid key identifier",
+    );
+  }
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username !== "" ||
+    parsed.password !== "" ||
+    parsed.search !== "" ||
+    parsed.hash !== "" ||
+    segments.length !== 3 ||
+    segments[0] !== "keys" ||
+    segments[1] !== expectedKeyName
+  ) {
+    throw new ConfigError(
+      "field-crypto: Azure Key Vault WrapKey returned a key identifier outside the expected key scope",
+    );
+  }
+  return parseStrict(azureKeyVersionSchema, segments[2]);
+}
+
+function encodeWrappedDek(
+  keyVersion: string,
+  wrapAlgorithm: KeyWrapAlgorithm,
+  ciphertext: Uint8Array,
+): Buffer {
+  return Buffer.from(
+    JSON.stringify({
+      formatVersion: 1,
+      keyVersion,
+      wrapAlgorithm,
+      ciphertext: Buffer.from(ciphertext).toString("base64"),
+    }),
+    "utf8",
+  );
+}
+
+function decodeWrappedDek(
+  wrappedKey: Buffer,
+  expectedAlgorithm: KeyWrapAlgorithm,
+): {
+  readonly keyVersion: string;
+  readonly ciphertext: Buffer;
+} {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(wrappedKey.toString("utf8"));
+  } catch {
+    throw new ValidationError(
+      "field-crypto: Azure wrapped DEK payload is malformed",
+    );
+  }
+  const parsed = parseStrict(azureWrappedDekSchema, raw);
+  if (parsed.wrapAlgorithm !== expectedAlgorithm) {
+    throw new ValidationError(
+      "field-crypto: Azure wrapped DEK algorithm does not match the configured algorithm",
+    );
+  }
+  return {
+    keyVersion: parsed.keyVersion,
+    ciphertext: Buffer.from(parsed.ciphertext, "base64"),
+  };
+}
 
 export function createAzureKeyVaultKmsClient(
   config: AzureKeyVaultKmsClientConfig,
@@ -137,12 +254,15 @@ export function createAzureKeyVaultKmsClient(
   return {
     async generateDataKey(
       keyId: string,
+      options?: KmsOperationOptions,
     ): Promise<{ plaintextKey: Buffer; wrappedKey: Buffer }> {
       const plaintextKey = randomBytes(32);
       try {
-        const result = await cryptographyClient(keyFor(keyId)).wrapKey(
+        const keyName = keyFor(keyId);
+        const result = await cryptographyClient(keyName).wrapKey(
           parsed.wrapAlgorithm,
           plaintextKey,
+          options,
         );
         if (
           !(result.result instanceof Uint8Array) ||
@@ -152,9 +272,27 @@ export function createAzureKeyVaultKmsClient(
             "field-crypto: Azure Key Vault WrapKey returned no wrapped key",
           );
         }
+        if (result.keyID === undefined) {
+          throw new InternalError(
+            "field-crypto: Azure Key Vault WrapKey returned no versioned key identifier",
+          );
+        }
+        if (
+          result.algorithm !== undefined &&
+          result.algorithm !== parsed.wrapAlgorithm
+        ) {
+          throw new InternalError(
+            "field-crypto: Azure Key Vault WrapKey returned an unexpected algorithm",
+          );
+        }
+        const keyVersion = versionFromKeyId(result.keyID, keyName);
         return {
           plaintextKey,
-          wrappedKey: Buffer.from(result.result),
+          wrappedKey: encodeWrappedDek(
+            keyVersion,
+            parsed.wrapAlgorithm,
+            result.result,
+          ),
         };
       } catch (error) {
         plaintextKey.fill(0);
@@ -162,36 +300,62 @@ export function createAzureKeyVaultKmsClient(
       }
     },
 
-    async decryptDataKey(keyId: string, wrappedKey: Buffer): Promise<Buffer> {
-      const result = await cryptographyClient(keyFor(keyId)).unwrapKey(
-        parsed.wrapAlgorithm,
-        wrappedKey,
-      );
+    async decryptDataKey(
+      keyId: string,
+      wrappedKey: Buffer,
+      options?: KmsOperationOptions,
+    ): Promise<Buffer> {
+      const keyName = keyFor(keyId);
+      const encoded = decodeWrappedDek(wrappedKey, parsed.wrapAlgorithm);
+      const result = await cryptographyClient(
+        keyName,
+        encoded.keyVersion,
+      ).unwrapKey(parsed.wrapAlgorithm, encoded.ciphertext, options);
       if (!(result.result instanceof Uint8Array)) {
         throw new InternalError(
           "field-crypto: Azure Key Vault UnwrapKey did not return a 32-byte DEK",
         );
       }
-      if (result.result.length !== 32) {
+      try {
+        if (result.result.length !== 32) {
+          throw new InternalError(
+            "field-crypto: Azure Key Vault UnwrapKey did not return a 32-byte DEK",
+          );
+        }
+        if (
+          result.algorithm !== undefined &&
+          result.algorithm !== parsed.wrapAlgorithm
+        ) {
+          throw new InternalError(
+            "field-crypto: Azure Key Vault UnwrapKey returned an unexpected algorithm",
+          );
+        }
+        if (
+          result.keyID !== undefined &&
+          versionFromKeyId(result.keyID, keyName) !== encoded.keyVersion
+        ) {
+          throw new InternalError(
+            "field-crypto: Azure Key Vault UnwrapKey returned an unexpected key version",
+          );
+        }
+        return Buffer.from(result.result);
+      } finally {
         result.result.fill(0);
-        throw new InternalError(
-          "field-crypto: Azure Key Vault UnwrapKey did not return a 32-byte DEK",
-        );
       }
-      const plaintextKey = Buffer.from(result.result);
-      result.result.fill(0);
-      return plaintextKey;
     },
 
-    async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
+    async scheduleKeyDeletion(
+      keyId: string,
+      options?: KmsOperationOptions,
+    ): Promise<KmsDeletionReceipt> {
       if (keyId.length === 0) {
         throw new ValidationError(
           "field-crypto: Azure Key Vault scheduleKeyDeletion requires an explicit keyId — refusing to delete the default key",
         );
       }
       const keyName = keyFor(keyId);
-      const poller = await parsed.client.beginDeleteKey(keyName);
-      const deleted = await poller.pollUntilDone();
+      const poller = await parsed.client.beginDeleteKey(keyName, options);
+      const deleted = await poller.pollUntilDone(options);
       const recoveryLevel = deleted.properties.recoveryLevel;
 
       if (parsed.purgeOnDelete) {
@@ -203,7 +367,7 @@ export function createAzureKeyVaultKmsClient(
             "field-crypto: Azure Key Vault deletion response did not prove the key purgeable",
           );
         }
-        await parsed.client.purgeDeletedKey(keyName);
+        await parsed.client.purgeDeletedKey(keyName, options);
         return { state: "purged", irreversible: true };
       }
 

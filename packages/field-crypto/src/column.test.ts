@@ -26,6 +26,23 @@ function freshProvider(): DerivedKeyProvider {
 }
 
 describe("encrypted column seam (sealField / openField)", () => {
+  test("generic operations never mutate a context-owned cached key", () => {
+    const cachedKey = Buffer.alloc(32, 0x6a);
+    const ctx: FieldCryptoContext = {
+      tenantId: "acct_cached",
+      deriveKey: () => cachedKey,
+      currentVersion: () => 1,
+    };
+
+    const first = sealField(ctx, "patient.ssn", "first");
+    const second = sealField(ctx, "patient.ssn", "second");
+
+    expect(cachedKey.equals(Buffer.alloc(32, 0x6a))).toBe(true);
+    expect(openField(ctx, "patient.ssn", first)).toBe("first");
+    expect(openField(ctx, "patient.ssn", second)).toBe("second");
+    expect(cachedKey.equals(Buffer.alloc(32, 0x6a))).toBe(true);
+  });
+
   test("seal → open round-trips under the same context", () => {
     const ctx = derivedContext(freshProvider(), "acct_a");
     const sealed = sealField(ctx, "patient.ssn", "424-12-9999");

@@ -12,9 +12,10 @@
 // CRYPTO-SHRED (P2 / ADR-0055): every key is scoped by a `keyId` (a per-tenant OR per-subject key
 // identifier). `scheduleKeyDeletion(keyId)` destroys that scope's KEK — the NIST SP 800-88
 // erasure-by-key-destruction primitive. Because the KEK is per-scope, the shred is SELECTIVE, and
-// because it acts on the KMS (not the store), it renders the field ciphertext under that scope
-// permanently unrecoverable WITHOUT mutating the append-only wrapped-DEK store (ADR-0014). The
-// erasure-vs-immutable-chain reconciliation lives in `crypto-shred.ts`.
+// because it acts on the KMS (not the store), it can render the field ciphertext under that scope
+// unrecoverable WITHOUT mutating the append-only wrapped-DEK store (ADR-0014). Provider receipts
+// remain literal: recoverable soft deletion is not called irreversible. The erasure-vs-immutable-
+// chain reconciliation lives in `crypto-shred.ts`.
 import {
   createHash,
   hkdfSync,
@@ -26,12 +27,16 @@ import { type FieldKeyProvider } from "./provider.ts";
 import { aesGcm } from "./cipher.ts";
 import { buildAad } from "./aad.ts";
 import { createAwsKmsClient } from "./kms-aws.ts";
-import type { KmsClient, KmsDeletionReceipt } from "./kms-port.ts";
+import type {
+  KmsClient,
+  KmsDeletionReceipt,
+  KmsOperationOptions,
+} from "./kms-port.ts";
 
 // The KmsClient port lives in ./kms-port.ts (a leaf) to break the kms.ts ↔ kms-aws.ts type cycle
 // (dep-cruiser no-circular, tsPreCompilationDeps). Re-exported here for back-compat — index.ts and
 // callers still import `KmsClient` from ./kms.ts.
-export type { KmsClient, KmsDeletionReceipt };
+export type { KmsClient, KmsDeletionReceipt, KmsOperationOptions };
 
 /** Persistence for each tenant's wrapped DEKs by version + the current version. DB-backed via `DbWrappedKeyStore` (P2, below). */
 export interface WrappedKeyStore {
@@ -189,6 +194,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
   constructor(
     private readonly kms: KmsClient,
     private readonly store: WrappedKeyStore,
+    private readonly operationOptions?: KmsOperationOptions,
   ) {}
 
   /** Provision (or rotate to) a fresh wrapped DEK for a tenant; returns the new current version. */
@@ -200,7 +206,10 @@ export class KmsKeyProvider implements FieldKeyProvider {
         `field-crypto: key version overflow for tenant ${JSON.stringify(tenantId)}`,
       );
     }
-    const generated = await this.kms.generateDataKey(tenantId);
+    const generated = await this.kms.generateDataKey(
+      tenantId,
+      this.operationOptions,
+    );
     try {
       await this.store.putWrapped(tenantId, next, generated.wrappedKey);
       await this.store.setCurrentVersion(tenantId, next);
@@ -221,7 +230,10 @@ export class KmsKeyProvider implements FieldKeyProvider {
     const current = await this.store.currentVersion(tenantId);
     if (current !== undefined) return current;
 
-    const generated = await this.kms.generateDataKey(tenantId);
+    const generated = await this.kms.generateDataKey(
+      tenantId,
+      this.operationOptions,
+    );
     try {
       await this.store.putWrappedIfAbsent(tenantId, 1, generated.wrappedKey);
       await this.store.setCurrentVersion(tenantId, 1);
@@ -238,7 +250,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
         `field-crypto: no wrapped DEK for tenant ${JSON.stringify(tenantId)} v${keyVersion} — provision first`,
       );
     }
-    return this.kms.decryptDataKey(tenantId, wrapped); // network behind the port; plaintext DEK is transient
+    return this.kms.decryptDataKey(tenantId, wrapped, this.operationOptions); // network behind the port; plaintext DEK is transient
   }
 
   async currentVersion(tenantId: string): Promise<number> {
@@ -263,7 +275,10 @@ export class KmsKeyProvider implements FieldKeyProvider {
     readonly deletion: KmsDeletionReceipt;
   }> {
     const through = (await this.store.currentVersion(tenantId)) ?? 0;
-    const deletion = await this.kms.scheduleKeyDeletion(tenantId);
+    const deletion = await this.kms.scheduleKeyDeletion(
+      tenantId,
+      this.operationOptions,
+    );
     return { shreddedThroughVersion: through, deletion };
   }
 }
