@@ -29,5 +29,7 @@ bun add @caisson/jobs
 - `createInngestJobQueue` — the Inngest v4 serverless driver (ADR-0379). The caller injects an
   already-configured `Inngest` client; construction registers each task with `createFunction()`,
   enqueue sends a same-name event, and `idempotencyKey` maps to a task-scoped native event `id`.
-  The caller serves `client.funcs` through its framework adapter. This package never reads
-  `INNGEST_EVENT_KEY` or any other ambient credential.
+  Inngest v4 singleton `skip` covers only already-executing runs, not the port's stronger queued-or-
+  active guarantee, so this adapter throws whenever `singletonKey` is supplied. The caller serves
+  `client.funcs` through its framework adapter. This package never reads `INNGEST_EVENT_KEY` or any
+  other ambient credential.

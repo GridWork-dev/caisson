@@ -45,16 +45,26 @@ type CapturedHandler = (input: { event: { data: unknown } }) => Promise<void>;
 function createCapturingClient(): {
   readonly client: InngestClient;
   readonly handlers: readonly CapturedHandler[];
+  readonly functionOptions: readonly unknown[];
+  readonly sentEvents: readonly unknown[];
 } {
   const handlers: CapturedHandler[] = [];
-  const send = (async () => ({ ids: ["evt_test"] })) as Inngest["send"];
-  const createFunction = ((_options: unknown, handler: unknown): object => {
+  const functionOptions: unknown[] = [];
+  const sentEvents: unknown[] = [];
+  const send = (async (event: unknown) => {
+    sentEvents.push(event);
+    return { ids: ["evt_test"] };
+  }) as Inngest["send"];
+  const createFunction = ((options: unknown, handler: unknown): object => {
+    functionOptions.push(options);
     handlers.push(handler as CapturedHandler);
     return {};
   }) as unknown as Inngest["createFunction"];
   return {
     client: { send, createFunction },
     handlers,
+    functionOptions,
+    sentEvents,
   };
 }
 
@@ -108,7 +118,9 @@ test("registers task functions and enqueue sends a validated event without runni
     [
       {
         name: "grant-credits",
-        data: { accountId: "acct_a", amount: 100 },
+        data: {
+          payload: { accountId: "acct_a", amount: 100 },
+        },
       },
     ],
   );
@@ -243,13 +255,78 @@ test("validates a delivered Inngest event before invoking the task handler", asy
   if (handler === undefined) throw new Error("task handler was not registered");
 
   await handler({
-    event: { data: { accountId: "acct_a", amount: 5 } },
+    event: {
+      data: {
+        payload: { accountId: "acct_a", amount: 5 },
+      },
+    },
   });
   expect(received).toEqual([{ accountId: "acct_a", amount: 5 }]);
 
   await expect(
     handler({
-      event: { data: { accountId: "acct_a", amount: "5" } },
+      event: {
+        data: {
+          payload: { accountId: "acct_a", amount: "5" },
+        },
+      },
     }),
   ).rejects.toThrow(ValidationError);
+
+  await expect(
+    handler({
+      event: {
+        data: {
+          payload: { accountId: "acct_a", amount: 5 },
+          attackerControlled: true,
+        },
+      },
+    }),
+  ).rejects.toThrow(ValidationError);
+});
+
+test("does not register Inngest's weaker active-run singleton as port conformance", () => {
+  const captured = createCapturingClient();
+  createInngestJobQueue(
+    [
+      defineTask(
+        "grant-credits",
+        strictObject({ accountId: z.string(), amount: z.number().int() }),
+        async () => {},
+      ),
+    ],
+    { client: captured.client },
+  );
+
+  expect(captured.functionOptions).toEqual([
+    {
+      id: "grant-credits",
+      triggers: [{ event: "grant-credits" }],
+    },
+  ]);
+});
+
+test("throws before send whenever singletonKey requests unsupported queued-or-active suppression", async () => {
+  const captured = createCapturingClient();
+  const queue = createInngestJobQueue(
+    [
+      defineTask(
+        "grant-credits",
+        strictObject({ accountId: z.string(), amount: z.number().int() }),
+        async () => {},
+      ),
+    ],
+    { client: captured.client },
+  );
+
+  await expect(
+    queue.enqueue(
+      "grant-credits",
+      { accountId: "acct_a", amount: 1 },
+      { singletonKey: "tenant_a:subject_1" },
+    ),
+  ).rejects.toThrow(
+    "Inngest v4 cannot honor the JobQueue queued-or-active singletonKey contract",
+  );
+  expect(captured.sentEvents).toEqual([]);
 });

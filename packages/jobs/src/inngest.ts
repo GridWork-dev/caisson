@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import type { Inngest } from "inngest";
 import { z } from "zod";
-import { NotFoundError, parseStrict, strictObject } from "@caisson/kernel";
+import {
+  NotFoundError,
+  parseStrict,
+  strictObject,
+  ValidationError,
+} from "@caisson/kernel";
 import {
   type EnqueueOptions,
   type JobConsumer,
@@ -31,6 +36,10 @@ const inngestJobQueueConfigSchema = strictObject({
   }),
 });
 
+const inngestTaskEventSchema = strictObject({
+  payload: z.unknown(),
+});
+
 function eventId(name: string, idempotencyKey: string): string {
   return createHash("sha256")
     .update(name)
@@ -55,7 +64,8 @@ export function createInngestJobQueue(
         triggers: [{ event: task.name }],
       },
       async (input: { event: { data?: unknown } }): Promise<void> => {
-        await task.handler(parseStrict(task.schema, input.event.data));
+        const event = parseStrict(inngestTaskEventSchema, input.event.data);
+        await task.handler(parseStrict(task.schema, event.payload));
       },
     );
   }
@@ -72,17 +82,20 @@ export function createInngestJobQueue(
           task: name,
         });
       }
+      if (options?.singletonKey !== undefined) {
+        throw new ValidationError(
+          "Inngest v4 cannot honor the JobQueue queued-or-active singletonKey contract",
+          { task: name, option: "singletonKey" },
+        );
+      }
       const validated = parseStrict(task.schema, payload);
       await validatedConfig.client.send({
         name,
-        data: validated,
+        data: { payload: validated },
         ...(options?.idempotencyKey !== undefined
           ? { id: eventId(name, options.idempotencyKey) }
           : {}),
       });
-      // `singletonKey` is intentionally not fabricated here: Inngest overlap control belongs on
-      // a function's concurrency config, which cannot safely derive a generic expression from an
-      // arbitrary task payload. This matches Trigger.dev's honest no-op posture.
     },
 
     async work(name: string): Promise<WorkHandle> {
