@@ -86,16 +86,21 @@ releases and 4 minor package releases. They are consumed only by T7.
    tenant proof route, and buyer crosswalk remain held on their named fork-board rows.
 5. **Provider adapters:** add Inngest v4 jobs, Azure Key Vault KMS, and Azure Blob immutable
    storage in isolated implementation/review lanes.
-6. **oscal-spine SKU + Compliance reprice (ADR-0383, NOT STARTED):** a dedicated wave, ordered
-   because each step gates the next. Carve `@caisson/oscal-spine` out of `frameworks-pack` and
-   `compliance-core` (no package boundary exists today, and every `SKU_RETAIL` key is a package) →
-   pricebook at $249 plus a Compliance membership entry and `BUNDLE_RETAIL.compliance = 1649` →
-   production catalog **35/66 → 36/68** in `tools/paddle-catalog-recreate.ts` and every gate and
-   runbook asserting the count → regenerate `packages/cli/registry-index.json` → the ~10 files
+6. **oscal-spine SKU + Compliance reprice (ADR-0383 + ADR-0384, NOT STARTED):** a dedicated wave,
+   ordered because each step gates the next. Carve `@caisson/oscal-spine` out of `frameworks-pack`
+   and `compliance-core` — per ADR-0384 the **whole** OSCAL surface moves (not just the ADR-0363/0364
+   spine), both parents depend on it and **re-export** it so no consumer breaks, and the package is
+   `LicenseRef-Caisson-Commercial` → pricebook at $249 plus a Compliance membership entry,
+   `BUNDLE_RETAIL.compliance = 1649`, and a `RENEWAL_BOOK` row (32 → 33) → production catalog
+   **35/66 → 36/68** in `tools/paddle-catalog-recreate.ts` and every gate and runbook asserting the
+   count, including its `renewalCents("compliance")` assertion **57900 → 65900** (ADR-0384: the
+   reprice moves the Compliance renewal $579 → $659 through the locked 40%-X9 formula; oscal-spine's
+   own renewal derives to $99) → regenerate `packages/cli/registry-index.json` → the ~10 files
    carrying $1,449 outside append-only history → the docs-RAG pricing corpus and the support-bot
    answer → the state docs. Indivisible: the price-authority gate fails on a catalog where the
    pricebook and display sheet disagree. Deployed docs/support keep answering $1,449 until the fleet
    redeploy, so the runbook's probe becomes a post-deploy check rather than a pre-deploy assertion.
+   Sequencing confirmed at the 2026-07-25 picker: runs **after** the reconcile, off a clean `main`.
 7. **Release:** reconcile all code waves, run audits and full gates, consume all changesets in one
    version PR, tag immutable bytes, publish the tag, and redeploy the Worker from that tag.
 

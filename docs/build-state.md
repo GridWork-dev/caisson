@@ -20,9 +20,14 @@ grant (migration `0031`, application still behind the operator's data-migration 
 release tags are signed going forward — leaving Railway PITR and the `oscal-spine` price as the
 only open rows.
 ADR-0383 then priced `oscal-spine` at $249, folded it into Compliance, and repriced that bundle
-$1,449 to $1,649 — superseding ADR-0381's price hold. Its execution is a dedicated wave and has
-NOT started: the repository still carries $1,449 everywhere, and the price-authority gate
-requires every surface to move at once.
+$1,449 to $1,649 — superseding ADR-0381's price hold. ADR-0384 closed the rest of that wave's
+design surface: the whole OSCAL surface moves into the new package with both parents depending on
+it and re-exporting (so no consumer breaks and a parent buyer receives the spine), the license is
+forced commercial by ADR-0094, and renewals set no new number — ADR-0260 §5's flat-40%-X9 formula
+already yields $99 for oscal-spine and moves the Compliance renewal $579 → $659 as a knock-on.
+**Railway PITR is now the only open fork row.** The wave's execution has NOT started: the
+repository still carries $1,449 everywhere, and the price-authority gate requires every surface to
+move at once.
 
 - **61 packages:** 17 Apache-2.0 and 44 commercial; 79 Bun workspaces total.
 - **Safety wave complete locally:** TypeScript-aware dependency graph (`c236681f`), total price
