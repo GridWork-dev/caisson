@@ -5,6 +5,7 @@ import {
   buildCatalogMapping,
   buildPlan,
   loadAuditCatalog,
+  paddleRequest,
   renderAuditReport,
   resolveExportPath,
   type PaddleObject,
@@ -375,6 +376,29 @@ describe("--audit", () => {
     };
   }
 
+  test("rejects redirects for authenticated Paddle requests", async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedInit: RequestInit | undefined;
+    globalThis.fetch = async (
+      _input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      capturedInit = init;
+      return new Response(JSON.stringify({ data: [] }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    };
+
+    try {
+      await paddleRequest("test-placeholder", "GET", "/products");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    expect(capturedInit?.redirect).toBe("error");
+  });
+
   test("classifies every live object exactly once and reports missing plan entries", () => {
     const products = [
       auditProduct(
@@ -492,5 +516,90 @@ describe("--audit", () => {
       { method: "GET", path: "/prices?after=pri_1" },
     ]);
     expect(calls.every((call) => call.method === "GET")).toBe(true);
+  });
+
+  test("refuses cross-origin or cleartext pagination before a follow-up GET", async () => {
+    for (const unsafeNext of [
+      "https://attacker.example/products?after=pro_1",
+      "http://sandbox-api.paddle.com/products?after=pro_1",
+    ]) {
+      const calls: string[] = [];
+      await expect(
+        loadAuditCatalog(async (_method, path) => {
+          calls.push(path);
+          if (calls.length === 1) {
+            return {
+              data: [],
+              meta: {
+                pagination: { has_more: true, next: unsafeNext },
+              },
+            };
+          }
+          throw new Error(`unsafe follow-up request reached ${path}`);
+        }),
+      ).rejects.toThrow(/refused unsafe Paddle product pagination URL/u);
+      expect(calls).toEqual(["/products?per_page=200&status=active,archived"]);
+    }
+  });
+
+  test("accepts Paddle's production-shaped nullable product image URL", async () => {
+    const snapshot = await loadAuditCatalog(async (_method, path) => ({
+      data: path.startsWith("/products")
+        ? [
+            {
+              id: "pro_nullable_image",
+              name: "Nullable image",
+              description: null,
+              type: "standard",
+              tax_category: "saas",
+              image_url: null,
+              custom_data: null,
+              status: "active",
+              import_meta: null,
+              created_at: "2026-07-26T00:00:00Z",
+              updated_at: "2026-07-26T00:00:00Z",
+            },
+          ]
+        : [],
+      meta: { pagination: { has_more: false, next: "" } },
+    }));
+
+    expect(snapshot.products).toEqual([
+      {
+        id: "pro_nullable_image",
+        name: "Nullable image",
+        type: "standard",
+        tax_category: "saas",
+        custom_data: null,
+        status: "active",
+        prices: [],
+      },
+    ]);
+    expect(snapshot.prices).toEqual([]);
+  });
+
+  test("keeps unrelated Paddle product fields strict", async () => {
+    await expect(
+      loadAuditCatalog(async (_method, path) => ({
+        data: path.startsWith("/products")
+          ? [
+              {
+                id: "pro_invalid_name",
+                name: null,
+                description: null,
+                type: "standard",
+                tax_category: "saas",
+                image_url: null,
+                custom_data: null,
+                status: "active",
+                import_meta: null,
+                created_at: "2026-07-26T00:00:00Z",
+                updated_at: "2026-07-26T00:00:00Z",
+              },
+            ]
+          : [],
+        meta: { pagination: { has_more: false, next: "" } },
+      })),
+    ).rejects.toThrow(/0\.name/u);
   });
 });

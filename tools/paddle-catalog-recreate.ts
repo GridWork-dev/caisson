@@ -244,6 +244,20 @@ function paddleBase(): string {
     : "https://sandbox-api.paddle.com";
 }
 
+function resolvePaddleUrl(pathOrUrl: string, description: string): string {
+  let url: URL;
+  try {
+    url = new URL(pathOrUrl, `${paddleBase()}/`);
+  } catch {
+    throw new Error(`refused unsafe Paddle ${description} URL`);
+  }
+  const base = new URL(paddleBase());
+  if (url.protocol !== "https:" || url.origin !== base.origin) {
+    throw new Error(`refused unsafe Paddle ${description} URL`);
+  }
+  return url.toString();
+}
+
 function requireApiKey(): string {
   const key = process.env.PADDLE_API_KEY;
   if (key === undefined || key.length === 0) {
@@ -328,7 +342,8 @@ const PaddleApiProductSchema = z
     description: z.string().nullable(),
     type: z.enum(["standard", "custom"]),
     tax_category: z.string(),
-    image_url: z.string(),
+    // Paddle's sandbox list endpoint can return null despite documenting URL-or-empty-string.
+    image_url: z.string().nullable(),
     custom_data: z.record(z.string(), z.unknown()).nullable(),
     status: z.enum(["active", "archived"]),
     import_meta: z.unknown().nullable(),
@@ -344,7 +359,7 @@ const PaddleAuditProductsSchema = z.array(
 );
 const PaddleApiPricesSchema = z.array(PaddleApiPriceSchema);
 
-async function paddleRequest(
+export async function paddleRequest(
   apiKey: string,
   method: "GET" | "POST",
   pathOrUrl: string,
@@ -353,13 +368,12 @@ async function paddleRequest(
   data: unknown;
   meta?: { pagination?: { has_more?: boolean; next?: string } };
 }> {
-  const url = pathOrUrl.startsWith("http")
-    ? pathOrUrl
-    : `${paddleBase()}${pathOrUrl}`;
+  const url = resolvePaddleUrl(pathOrUrl, "request");
   const res = await fetchWithTimeout(
     url,
     {
       method,
+      redirect: "error",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -417,7 +431,7 @@ async function listExistingProducts(apiKey: string): Promise<PaddleObject[]> {
         })),
       })),
     );
-    next = meta?.pagination?.has_more ? meta.pagination.next : undefined;
+    next = nextPaddlePage(meta, "product");
   }
   return products;
 }
@@ -437,17 +451,18 @@ export interface AuditCatalogSnapshot {
   prices: PaddlePrice[];
 }
 
-function nextAuditPage(
-  page: PaddlePage,
+function nextPaddlePage(
+  meta: PaddlePage["meta"],
   objectType: "product" | "price",
 ): string | undefined {
-  if (page.meta?.pagination?.has_more !== true) return undefined;
-  const next = page.meta.pagination.next;
+  if (meta?.pagination?.has_more !== true) return undefined;
+  const next = meta.pagination.next;
   if (next === undefined || next.length === 0) {
     throw new Error(
       `Paddle ${objectType} pagination says has_more without a next URL`,
     );
   }
+  resolvePaddleUrl(next, `${objectType} pagination`);
   return next;
 }
 
@@ -479,7 +494,7 @@ export async function loadAuditCatalog(
         prices: [],
       })),
     );
-    productPage = nextAuditPage(page, "product");
+    productPage = nextPaddlePage(page.meta, "product");
   }
 
   const prices: PaddlePrice[] = [];
@@ -506,7 +521,7 @@ export async function loadAuditCatalog(
         status: price.status,
       })),
     );
-    pricePage = nextAuditPage(page, "price");
+    pricePage = nextPaddlePage(page.meta, "price");
   }
 
   return { products, prices };
