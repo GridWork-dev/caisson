@@ -1,6 +1,6 @@
 import type { RegulatorySource } from "./regulatory-source";
 
-export const ARTICLE_50_VERIFIED_ON = "2026-07-26";
+export const ARTICLE_50_VERIFIED_ON = "2026-07-27";
 
 /**
  * Primary-source contract shared by the evergreen Article 50 surfaces, the dated writing
@@ -61,6 +61,31 @@ export const ARTICLE_50_PRIMARY_SOURCES = [
       ],
     },
   },
+  {
+    label: "Council adopted Digital Omnibus legislative text",
+    url: "https://data.consilium.europa.eu/doc/document/PE-30-2026-INIT/en/pdf",
+    locator:
+      "Article 111(4), p. 90/102, and Article 4, p. 101/102: systems “placed on the market before 2 August 2026”; compliance with Article 50(2) by 2 December 2026; entry into force on the third day after Official Journal publication",
+    watch: {
+      mode: "reachable",
+      reason:
+        "The Council source is a 102-page binary legislative PDF. The report-only watch verifies reachability; human review uses the precise article and page locator.",
+    },
+  },
+  {
+    label: "Council final-approval and next-steps notice",
+    url: "https://skribi.consilium.europa.eu/en/press/press-releases/2026/06/29/artificial-intelligence-council-gives-final-green-light-to-simplify-and-streamline-rules/",
+    locator:
+      "Page header dated 29 June 2026; opening paragraph beginning “Today, the Council gave its final green light”; “Next steps” paragraph on Official Journal publication and entry into force",
+    watch: {
+      mode: "text",
+      texts: [
+        "Today, the Council gave its final green light",
+        "The legislative act will be published in the EU’s official journal shortly",
+        "will enter into force on the third day after this publication",
+      ],
+    },
+  },
 ] as const satisfies readonly RegulatorySource[];
 
 /**
@@ -77,4 +102,6 @@ export const ARTICLE_50_SUMMARY_SOURCES = [
     ...ARTICLE_50_PRIMARY_SOURCES[2],
     locator: "Paragraphs (69)–(74) and (153)–(154), pp. 24–25 and 49–50",
   },
+  ARTICLE_50_PRIMARY_SOURCES[4],
+  ARTICLE_50_PRIMARY_SOURCES[5],
 ] as const satisfies readonly RegulatorySource[];

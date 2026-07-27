@@ -470,11 +470,12 @@ export default function EuAiActPage() {
             limited to high-risk systems: providers must disclose covered direct
             AI interaction, while providers of covered generative systems must
             make synthetic outputs machine-readably marked and detectable,
-            subject to the provision&rsquo;s exceptions. A targeted transition
-            gives providers of generative systems placed on the market or put
-            into service before August 2 until December 2, 2026 to conform with
-            Article 50(2)&rsquo;s marking and detection duty. The other Article
-            50 duties were not postponed.
+            subject to the provision&rsquo;s exceptions. The adopted Digital
+            Omnibus text awaits Official Journal publication and entry into
+            force. Once effective, it gives providers of generative AI systems
+            placed on the market before August 2 until December 2, 2026 to
+            conform with Article 50(2)&rsquo;s marking and detection duty. The
+            other Article 50 duties were not postponed.
           </p>
           <p
             className="cs-muted"

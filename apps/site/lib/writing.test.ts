@@ -137,7 +137,7 @@ describe("WRITING_PIECES registry", () => {
     );
     expect(piece).toBeDefined();
     expect(piece?.publishedOn).toBe("2026-07-26");
-    expect(piece?.verifiedOn).toBe("2026-07-26");
+    expect(piece?.verifiedOn).toBe("2026-07-27");
     expect(piece?.related).toContain("/frameworks/eu-ai-act/article-50");
   });
 

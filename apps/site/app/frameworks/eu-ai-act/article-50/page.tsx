@@ -72,7 +72,7 @@ const FAQ = [
   {
     question: "Was the August 2, 2026 date delayed?",
     answer:
-      "Not broadly. Article 50 generally applies from August 2, 2026, but a targeted transition gives providers of generative systems placed on the market or put into service before that date until December 2, 2026 to conform with Article 50(2)'s marking and detection duty. The other Article 50 duties were not postponed.",
+      "Not broadly. Article 50 generally applies from August 2, 2026. The adopted Digital Omnibus text awaits Official Journal publication and entry into force. Once effective, its new Article 111(4) gives providers of generative AI systems placed on the market before that date until December 2, 2026 to conform with Article 50(2)'s marking and detection duty. The other Article 50 duties were not postponed.",
   },
   {
     question: "What are the penalties for non-compliance?",
@@ -127,11 +127,13 @@ export default function Article50Page() {
         lede={
           <>
             Providers and deployers carry four distinct transparency duties,
-            subject to express exceptions. A targeted transition runs to
-            December 2, 2026 only for Article 50(2)&rsquo;s marking and
-            detection duty on qualifying pre-August generative systems. Here is
-            the durable rule map and the boundary between compliance and
-            supporting evidence.
+            subject to express exceptions. The adopted Digital Omnibus text
+            awaits Official Journal publication and entry into force. Once
+            effective, its targeted transition runs to December 2, 2026 only for
+            Article 50(2)&rsquo;s marking and detection duty on qualifying
+            generative systems placed on the market before August 2. Here is the
+            durable rule map and the boundary between compliance and supporting
+            evidence.
           </>
         }
         ctas={
@@ -157,7 +159,7 @@ export default function Article50Page() {
       <Section
         eyebrow="The short answer"
         title="Four duties that are not limited to high-risk systems."
-        lede="Article 50 reaches some ordinary products as well as high-risk systems. Article 50(1) covers systems intended to interact directly with people; Article 50(2) separately covers providers of systems generating specified synthetic content; Articles 50(3)–(4) assign deployer duties. Article 50 generally applies from August 2, 2026. The Digital Omnibus did not move that general date, but it added a targeted transition to December 2, 2026 for Article 50(2)’s marking and detection duty on qualifying systems placed on the market or put into service before August 2."
+        lede="Article 50 reaches some ordinary products as well as high-risk systems. Article 50(1) covers systems intended to interact directly with people; Article 50(2) separately covers providers of systems generating specified synthetic content; Articles 50(3)–(4) assign deployer duties. Article 50 generally applies from August 2, 2026. The adopted Digital Omnibus text awaits Official Journal publication and entry into force. Once effective, it adds a targeted transition to December 2, 2026 for Article 50(2)’s marking and detection duty on qualifying systems placed on the market before August 2."
         band="tint"
       />
 
@@ -277,9 +279,10 @@ export default function Article50Page() {
               postponed.
             </li>
             <li style={{ marginBottom: "var(--cs-space-2)" }}>
-              <strong>December 2, 2026</strong>: providers of generative systems
-              placed on the market or put into service before August 2 must
-              conform with Article 50(2)&rsquo;s marking and detection duty.
+              <strong>December 2, 2026</strong>: under the adopted Digital
+              Omnibus text, once it enters into force, providers of generative
+              AI systems placed on the market before August 2 must conform with
+              Article 50(2)&rsquo;s marking and detection duty.
             </li>
           </ul>
           <p
@@ -316,7 +319,7 @@ export default function Article50Page() {
         <Section
           eyebrow="Verification"
           title="Primary sources."
-          lede={`Reviewed ${ARTICLE_50_VERIFIED_ON}. The final Commission guidelines are non-binding; only the Court of Justice of the European Union can ultimately give an authoritative interpretation of the AI Act.`}
+          lede={`Reviewed ${ARTICLE_50_VERIFIED_ON}. The final Commission guidelines are non-binding; only the Court of Justice of the European Union can ultimately give an authoritative interpretation of the AI Act. The adopted Digital Omnibus text awaits Official Journal publication and entry into force.`}
         >
           <ul
             className="cs-lede"

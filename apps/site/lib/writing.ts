@@ -40,12 +40,12 @@ export const WRITING_PIECES: readonly WritingPiece[] = [
   {
     slug: "eu-ai-act-article-50-august-december-2026",
     title:
-      "Article 50 still starts August 2. One transition runs to December 2.",
-    dek: "The Commission’s final July 2026 guidance keeps Article 50’s general application date and confines the later deadline to Article 50(2) for qualifying pre-August generative systems.",
+      "Article 50 starts August 2. The adopted transition points to December 2.",
+    dek: "The Commission’s final July 2026 guidance keeps Article 50’s general application date. The adopted Digital Omnibus text narrows the later deadline to Article 50(2) for qualifying pre-August generative systems, but still awaits Official Journal publication and entry into force.",
     meta: {
       title: "EU AI Act Article 50: the August and December 2026 dates",
       description:
-        "What the European Commission’s final July 2026 Article 50 guidance settled: the August 2 application date, the narrow December 2 transition, and the separate rule for pre-existing content.",
+        "What the final July 2026 Article 50 guidance and adopted Digital Omnibus text establish about the August 2 date, the pending narrow December 2 transition, and pre-existing content.",
       path: "/writing/eu-ai-act-article-50-august-december-2026",
       type: "article",
     },
@@ -56,8 +56,8 @@ export const WRITING_PIECES: readonly WritingPiece[] = [
       {
         kind: "section",
         eyebrow: "Dated analysis · July 26, 2026",
-        title: "What the July 20, 2026 final guidance settled.",
-        lede: "Article 50 still generally applies from August 2, 2026. The Commission’s final guidance did not replace that date with December. It identified one targeted transition: providers of generative AI systems placed on the market or put into service before August 2 have until December 2, 2026 to conform with Article 50(2)’s machine-readable marking and detection duty.",
+        title: "What the final guidance and adopted Omnibus text establish.",
+        lede: "Article 50 still generally applies from August 2, 2026. The adopted Digital Omnibus text awaits Official Journal publication and entry into force. Once effective, its new Article 111(4) gives providers of generative AI systems placed on the market before August 2 until December 2, 2026 to conform with Article 50(2)’s machine-readable marking and detection duty.",
         band: "tint",
       },
       {
@@ -65,7 +65,7 @@ export const WRITING_PIECES: readonly WritingPiece[] = [
         eyebrow: "The boundary",
         title:
           "The transition belongs to Article 50(2), not Article 50 as a whole.",
-        lede: "The final guidance starts from the general rule: all in-scope systems must comply on August 2, regardless of when they were placed on the market or put into service. It then gives qualifying pre-August generative systems a four-month transition for Article 50(2)’s marking and detection duty. The other Article 50 duties were not postponed.",
+        lede: "The final guidance starts from the general rule: all in-scope systems must comply on August 2, regardless of when they were placed on the market or put into service. Separately, the adopted Digital Omnibus text gives qualifying generative systems placed on the market before August 2 a transition for Article 50(2)’s marking and detection duty once the amendment enters into force. The other Article 50 duties were not postponed.",
       },
       {
         kind: "featureGrid",
@@ -79,7 +79,7 @@ export const WRITING_PIECES: readonly WritingPiece[] = [
           },
           {
             title: "Qualifying generation · December 2",
-            body: "Only Article 50(2)’s marking and detection duty receives the transition, and only for a generative system placed on the market or put into service before August 2.",
+            body: "Under the adopted text, only Article 50(2)’s marking and detection duty receives the transition, and only for a generative AI system placed on the market before August 2.",
           },
           {
             title: "Everything else · August 2",
@@ -97,8 +97,8 @@ export const WRITING_PIECES: readonly WritingPiece[] = [
       {
         kind: "section",
         eyebrow: "Source status",
-        title: "Final guidance, with a legal boundary.",
-        lede: "The Commission published and adopted the final guidelines on July 20, 2026. They are non-binding; only the Court of Justice of the European Union can ultimately give an authoritative interpretation of the AI Act. This dated source reading is not legal advice.",
+        title: "Final guidance and an adopted amendment awaiting publication.",
+        lede: "The Commission published and adopted the final guidelines on July 20, 2026. They are non-binding; only the Court of Justice of the European Union can ultimately give an authoritative interpretation of the AI Act. The Council gave the Digital Omnibus final approval on June 29, but the act awaits Official Journal publication and entry into force. This dated source reading is not legal advice.",
       },
       {
         kind: "cta",

@@ -30,12 +30,14 @@ async function liveCopy(): Promise<readonly string[]> {
 
 describe("Article 50 primary-source regrounding", () => {
   test("declares the verified official sources with precise locators", () => {
-    expect(ARTICLE_50_VERIFIED_ON).toBe("2026-07-26");
+    expect(ARTICLE_50_VERIFIED_ON).toBe("2026-07-27");
     expect(ARTICLE_50_PRIMARY_SOURCES.map((source) => source.url)).toEqual([
       "https://eur-lex.europa.eu/eli/reg/2024/1689/oj?locale=en",
       "https://digital-strategy.ec.europa.eu/en/library/guidelines-transparency-obligations-providers-and-deployers-ai-systems",
       "https://ec.europa.eu/newsroom/dae/redirection/document/131215",
       "https://digital-strategy.ec.europa.eu/en/factpages/quick-facts-transparency-rules-ai-systems",
+      "https://data.consilium.europa.eu/doc/document/PE-30-2026-INIT/en/pdf",
+      "https://skribi.consilium.europa.eu/en/press/press-releases/2026/06/29/artificial-intelligence-council-gives-final-green-light-to-simplify-and-streamline-rules/",
     ]);
     for (const source of ARTICLE_50_PRIMARY_SOURCES) {
       expect(source.locator.length).toBeGreaterThan(20);
@@ -47,6 +49,8 @@ describe("Article 50 primary-source regrounding", () => {
     expect(ARTICLE_50_PRIMARY_SOURCES[3].locator).toContain(
       "Surveillance authorities",
     );
+    expect(ARTICLE_50_PRIMARY_SOURCES[4].locator).toContain("Article 111(4)");
+    expect(ARTICLE_50_PRIMARY_SOURCES[5].locator).toContain("Next steps");
     expect(ARTICLE_50_PRIMARY_SOURCES[2].watch).toMatchObject({
       mode: "digest",
       algorithm: "sha256",
@@ -61,13 +65,27 @@ describe("Article 50 primary-source regrounding", () => {
         "Deepfakes generated before 2 August 2026: no mandatory retroactive labelling but encouraged.",
       ]),
     });
+    expect(ARTICLE_50_PRIMARY_SOURCES[4].watch).toMatchObject({
+      mode: "reachable",
+    });
+    expect(ARTICLE_50_PRIMARY_SOURCES[5].watch).toMatchObject({
+      mode: "text",
+      texts: expect.arrayContaining([
+        "Today, the Council gave its final green light",
+        "The legislative act will be published in the EU’s official journal shortly",
+      ]),
+    });
   });
 
-  test("all three live surfaces carry the narrow December transition", async () => {
+  test("all three live surfaces carry the narrow adopted December transition", async () => {
     for (const copy of await liveCopy()) {
       expect(copy).toContain("December 2, 2026");
-      expect(copy).toContain("placed on the market or put into service before");
+      expect(copy).toContain("placed on the market before");
+      expect(copy).not.toContain(
+        "placed on the market or put into service before",
+      );
       expect(copy).toContain("marking and detection");
+      expect(copy).toContain("awaits Official Journal publication");
     }
   });
 
