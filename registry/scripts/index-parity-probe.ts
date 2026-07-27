@@ -35,6 +35,14 @@ const WORKER_INDEX_URL = "https://registry.caisson.sh/index.json";
 const LICENSE_HEALTH_URL = "https://license.caisson.sh/health";
 const ADMIN_HEALTHZ_URL = "https://admin.caisson.sh/healthz";
 const FETCH_TIMEOUT_MS = 8000;
+// A single blip must not render as UNREACHABLE. Observed 2026-07-27: one run reported
+// `admin UNREACHABLE` while admin was serving /healthz 200 with a valid digest, and the
+// immediate re-run showed the true DRIFT. In this report "unreachable" is indistinguishable
+// from a real outage and lands in launch-acceptance evidence, so a transient failure must be
+// retried out before the probe is willing to make that claim. Also covers the 502/503 window
+// of a rolling redeploy, which is exactly when this probe gets run.
+const FETCH_ATTEMPTS = 3;
+const FETCH_RETRY_DELAY_MS = 750;
 
 /** The parity digest: sha256 of the bytes, first 12 hex chars. Identical to the license service's
  *  boot-time computation (services/license/src/server.ts) so the two are byte-for-byte comparable. */
@@ -226,7 +234,7 @@ export function renderTable(report: ParityReport): string {
 
 /** Inlined fetch-with-timeout (registry/ cannot import @caisson/kernel — see the header). Never
  *  AbortSignal.timeout (Bun-forbidden). Returns the parsed JSON, or null on any failure/timeout. */
-async function fetchJson(url: string): Promise<unknown | null> {
+async function fetchJsonOnce(url: string): Promise<unknown | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => {
     controller.abort();
@@ -245,12 +253,28 @@ async function fetchJson(url: string): Promise<unknown | null> {
   }
 }
 
+/** Retry a leg before declaring it unreachable — see FETCH_ATTEMPTS. Only a leg that fails every
+ *  attempt is reported as unmeasured; one that answers on any attempt is measured normally. */
+export async function fetchJsonWithRetry(
+  url: string,
+  once: (target: string) => Promise<unknown | null> = fetchJsonOnce,
+  sleep: (ms: number) => Promise<void> = (ms) =>
+    new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<unknown | null> {
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
+    const result = await once(url);
+    if (result !== null) return result;
+    if (attempt < FETCH_ATTEMPTS) await sleep(FETCH_RETRY_DELAY_MS * attempt);
+  }
+  return null;
+}
+
 async function main(): Promise<void> {
   const repoBytes = readFileSync(INDEX_PATH);
   const [workerIndex, licenseHealth, adminHealthz] = await Promise.all([
-    fetchJson(WORKER_INDEX_URL),
-    fetchJson(LICENSE_HEALTH_URL),
-    fetchJson(ADMIN_HEALTHZ_URL),
+    fetchJsonWithRetry(WORKER_INDEX_URL),
+    fetchJsonWithRetry(LICENSE_HEALTH_URL),
+    fetchJsonWithRetry(ADMIN_HEALTHZ_URL),
   ]);
   const report = computeParity({
     repoBytes,

@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import {
   computeParity,
+  fetchJsonWithRetry,
   indexDigest12,
   renderTable,
 } from "./index-parity-probe.ts";
@@ -173,5 +174,49 @@ describe("renderTable", () => {
     expect(out).toContain("RESULT: PARITY OK");
     expect(out).toContain("admin");
     expect(out).toContain("OK");
+  });
+});
+
+describe("fetchJsonWithRetry", () => {
+  const noSleep = async (): Promise<void> => {};
+
+  test("a leg that blips once is still measured, not reported unreachable", async () => {
+    // The 2026-07-27 failure: admin answered /healthz 200 with a valid digest, but one transient
+    // fetch failure rendered the leg UNREACHABLE — indistinguishable from a real outage in a
+    // report that feeds launch acceptance.
+    let calls = 0;
+    const flaky = async (): Promise<unknown | null> => {
+      calls++;
+      return calls === 1 ? null : { ok: true, indexDigest: "abc123abc123" };
+    };
+    expect(
+      await fetchJsonWithRetry("https://example.test", flaky, noSleep),
+    ).toEqual({
+      ok: true,
+      indexDigest: "abc123abc123",
+    });
+    expect(calls).toBe(2);
+  });
+
+  test("a genuinely dead leg still reports unreachable, after exhausting attempts", async () => {
+    let calls = 0;
+    const dead = async (): Promise<unknown | null> => {
+      calls++;
+      return null;
+    };
+    expect(
+      await fetchJsonWithRetry("https://example.test", dead, noSleep),
+    ).toBeNull();
+    expect(calls).toBe(3);
+  });
+
+  test("a healthy leg costs exactly one call", async () => {
+    let calls = 0;
+    const healthy = async (): Promise<unknown | null> => {
+      calls++;
+      return { ok: true };
+    };
+    await fetchJsonWithRetry("https://example.test", healthy, noSleep);
+    expect(calls).toBe(1);
   });
 });

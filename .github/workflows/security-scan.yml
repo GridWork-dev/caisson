@@ -113,7 +113,19 @@ jobs:
     # CAISSON-96 draft guard — drafts skip; the ready_for_review trigger runs the full scan.
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 20
+    # 45, not 20: this job's runtime swings hard. On 2026-07-27 it hit the old 20-minute ceiling on
+    # `87202cd9` and then passed in ~3 minutes on an immediate re-run of the identical tree — a 7x
+    # spread. A timed-out job reports as `cancelled`, which reads like someone aborted it rather
+    # than a scan that never finished, and because this check is advisory nothing forced anyone to
+    # look. The ceiling now sits above the observed worst case so the result means something.
+    #
+    # NOT changed here: the `-j 1` below (and its SEMGREP_JOBS twin). Single-threading is a
+    # deliberate workaround for a semgrep-core io_uring crash, and that comment was written about
+    # the self-hosted fleet box — this job runs on a 4-vCPU Blacksmith VM, so the workaround may not
+    # apply and is likely the bulk of the runtime. Worth testing, but not worth guessing at inside a
+    # launch deploy: removing a crash workaround on inference is how you trade a slow check for a
+    # flaky one.
+    timeout-minutes: 45
     env:
       SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
       SEMGREP_JOBS: "1"
