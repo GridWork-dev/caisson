@@ -402,13 +402,17 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
     // this path at its encRef first-publish; the three compliance-gap SKUs — access-review,
     // risk-register, trust-page — completed the same two-consume arming 2026-07-20).
     // agent-usage stays indexed sellable:false with no membership until its own publish gate
-    // (2026-07-18 operator lock), and artifact-render is the published-never-sold render
-    // substrate (a dependency, not an entitlement) — both stay excepted indefinitely. Any
-    // OTHER module missing from everything's members and NOT named here still fails the guard.
-    const RIDER3_UNPUBLISHED = new Set([
-      "@caisson/agent-usage",
-      "@caisson/artifact-render",
-    ]);
+    // (2026-07-18 operator lock).
+    //
+    // artifact-render LEFT this allowlist when oscal-spine graduated in the 2026-07-27 cut. It is
+    // still published-never-sold and still appears in no members map anywhere — but it is now
+    // DELIVERED to an everything buyer, because the spine names it in INTERNAL_RUNTIME_ENTITLEMENTS
+    // and everything names the spine. Delivered is not sold: sellable:false is unchanged, and no
+    // price or bundle-membership row exists for it. Excepting it here would now under-count the
+    // served set and mask a real regression in the spine's renderer edge.
+    //
+    // Any OTHER module missing from everything's members and NOT named here still fails the guard.
+    const RIDER3_UNPUBLISHED = new Set(["@caisson/agent-usage"]);
     const everything = realIndex.modules.find(
       (m) => m.id === "@caisson/everything",
     );
@@ -622,12 +626,18 @@ describe("snapshot-at-sale member filter (ADR-0257 §1.2 — the wired D-axis)",
   // A compliance bundle whose members carry REAL pricebook join dates: audit-worm joined at
   // GENESIS (2026-06-01), compliance-core at the catalog rework (2026-07-06). The Worker injects
   // the pricebook membership timeline at expansion, so a buyer's signed `entitledSince` filters it.
+  // oscal-spine + artifact-render are present but incidental to this suite: since the spine
+  // graduated (indexed, no longer reserved) it is a named `compliance` member, so an index missing
+  // it makes the whole bundle expansion throw and the Worker fail-safes to the base floor — every
+  // assertion below would 404 for a reason that has nothing to do with snapshot-at-sale filtering.
   const snapIndex = loadRegistryIndex({
     schemaVersion: 1,
     modules: [
       entry("@caisson/kernel", []),
       entry("@caisson/audit-worm", ["compliance"]),
       entry("@caisson/compliance-core", ["compliance"]),
+      entry("@caisson/oscal-spine", ["compliance"]),
+      entry("@caisson/artifact-render", []),
     ],
   });
   const handlerSince = (since: string) =>

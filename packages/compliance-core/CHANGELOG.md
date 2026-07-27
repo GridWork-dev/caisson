@@ -1,5 +1,26 @@
 # @caisson/compliance-core
 
+## 0.6.2
+
+### Patch Changes
+
+- a21c478: Adds the standalone $249 OSCAL spine with assessment, results, POA&M, catalog, XML, ISO 27001,
+  NIST 800-53, and OLIR support while preserving both parent packages' public exports. The module
+  joins Compliance, moving Compliance to $1,649 with a $659 renewal and Everything to $2,259 with
+  an $899 renewal.
+- Updated dependencies [31bf5f1]
+- Updated dependencies [13e814d]
+- Updated dependencies [0d87855]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [a21c478]
+- Updated dependencies [96aa01d]
+  - @caisson/field-crypto@1.0.0
+  - @caisson/kernel@0.6.0
+  - @caisson/oscal-spine@0.1.0
+  - @caisson/frameworks-pack@0.6.1
+  - @caisson/risk-register@0.3.1
+
 ## 0.6.1
 
 ### Patch Changes

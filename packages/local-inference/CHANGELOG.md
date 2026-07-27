@@ -1,5 +1,15 @@
 # @caisson/local-inference
 
+## 0.1.7
+
+### Patch Changes
+
+- 36dd6ed: Bedrock rented transport surfaces bounded, credential-scrubbed AWS error diagnostics (`__type`/`message` + a 4KB-capped body) on non-2xx instead of status-only, making live-leg failures diagnosable without echoing SigV4 headers or credentials.
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+  - @caisson/local-privacy@0.1.7
+
 ## 0.1.6
 
 ### Patch Changes

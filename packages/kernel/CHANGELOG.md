@@ -1,5 +1,22 @@
 # @caisson/kernel
 
+## 0.6.0
+
+### Minor Changes
+
+- 31bf5f1: Evidence packs now use a v2 detached seal over a canonical manifest containing every exported file
+  name and SHA-256 digest, and no longer embed executable verifier code. The new commercial
+  `@caisson/verify-pack` package is the independently obtained verification path and requires an
+  issuer-key fingerprint obtained independently from the pack before it can report PASS.
+
+### Patch Changes
+
+- 31bf5f1: Harden deep redaction so compound credential keys and embedded sensitive spans cannot cross display
+  surfaces, and make audit proof/evidence-pack exports project payloads through a per-event-type
+  allowlist that drops unknown fields and fails closed for unknown event types. Also support
+  append-only composed migration prefixes and bind authenticated evidence packs to a signed complete
+  snapshot seal.
+
 ## 0.5.3
 
 ### Patch Changes

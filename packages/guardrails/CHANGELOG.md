@@ -1,5 +1,21 @@
 # @caisson/guardrails
 
+## 0.4.10
+
+### Patch Changes
+
+- 96aa01d: Make price authority total over every sellable commercial module and bundle, remove the old $49
+  placeholder exemption, mark retired aliases as non-sellable, and pin the current $1,649 Compliance
+  price in component demos and fulfillment coverage.
+- Updated dependencies [31bf5f1]
+- Updated dependencies [13e814d]
+- Updated dependencies [0d87855]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [96aa01d]
+  - @caisson/field-crypto@1.0.0
+  - @caisson/kernel@0.6.0
+
 ## 0.4.9
 
 ### Patch Changes

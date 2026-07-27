@@ -1,5 +1,26 @@
 # @caisson/email
 
+## 0.5.4
+
+### Patch Changes
+
+- 6d1c805: Email footer honesty fix: the shared "not a marketing message" transactional
+  claim was false on the nurture-follow-up lifecycle send. `EmailLayout` now
+  takes an optional `footerNote` prop (defaults to the transactional claim);
+  nurture-follow-up passes its own accurate note. Every template's footer also
+  now carries a support contact path (`support@caisson.sh`), which money
+  receipts previously had none of.
+- 6d1c805: Visual-audit tail sweep on the transactional templates: order ids, license
+  tokens, and CLI commands inline in body prose (e.g. `bunx @caisson-sh/cli@latest`,
+  a Paddle order id) now render through new `EmailMono`/`EmailLink` helpers on
+  `EmailLayout` instead of unstyled plain text, and the EULA URL spelled out in
+  several templates is now a real link. `waitlist-welcome` now passes its own
+  accurate `footerNote` (it's a growth send, not a transactional one). Em dashes
+  are replaced with plain punctuation across every template's body copy.
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+
 ## 0.5.3
 
 ### Patch Changes

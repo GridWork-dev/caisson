@@ -1,5 +1,17 @@
 # @caisson/access-review
 
+## 0.3.1
+
+### Patch Changes
+
+- 108a358: README refreshed: the module is now a standalone catalog listing and a member of the Compliance and Everything bundles.
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+  - @caisson/jobs@0.7.0
+  - @caisson/tenancy-rls@0.5.6
+
 ## 0.3.0
 
 ### Minor Changes

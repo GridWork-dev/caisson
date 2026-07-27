@@ -1,5 +1,20 @@
 # @caisson/service-docs
 
+## 0.0.12
+
+### Patch Changes
+
+- 108a358: Documentation-assistant pricing data updated for the repriced Compliance bundle and the three new compliance modules.
+- Updated dependencies [a00a9ef]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [96aa01d]
+- Updated dependencies [96aa01d]
+  - @caisson/observability@0.3.5
+  - @caisson/kernel@0.6.0
+  - @caisson/rate-limit@0.1.8
+  - @caisson/local-store@1.0.5
+
 ## 0.0.11
 
 ### Patch Changes

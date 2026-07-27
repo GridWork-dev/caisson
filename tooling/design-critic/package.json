@@ -1,6 +1,6 @@
 {
   "name": "@caisson/design-critic",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "type": "module",
   "description": "Advisory design critic (ADR-0101 Layer 3 — NON-BLOCKING). Stable-ID findings.toml ledger + reconcile() classifying each run new/regressed/closed/unchanged, so rewording never forks a finding and a fixed-then-reappearing issue flips to regressed. Informs; never gates a merge.",

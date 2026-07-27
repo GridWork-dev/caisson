@@ -1,5 +1,16 @@
 # @caisson/ai-evals
 
+## 0.4.5
+
+### Patch Changes
+
+- 96aa01d: Make price authority total over every sellable commercial module and bundle, remove the old $49
+  placeholder exemption, mark retired aliases as non-sellable, and pin the current $1,649 Compliance
+  price in component demos and fulfillment coverage.
+- Updated dependencies [13e814d]
+- Updated dependencies [96aa01d]
+  - @caisson/agent-trajectory@0.4.0
+
 ## 0.4.4
 
 ### Patch Changes

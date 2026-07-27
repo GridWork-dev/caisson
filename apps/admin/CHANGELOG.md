@@ -1,5 +1,59 @@
 # @caisson/admin
 
+## 0.1.0
+
+### Minor Changes
+
+- 31bf5f1: Add the account-bound internal proof seam and wire the admin audit viewer, lazy row proofs, and signed complete-snapshot evidence-pack export.
+
+### Patch Changes
+
+- 96aa01d: Let the architecture fleet overlay use a Railway project-scoped token instead of the
+  account-scoped one, falling back to the account token when the narrower pair isn't set.
+- af54102: Visual-remediation closeout: eyebrow variation pass across the bundle, security, procurement, marketplace, and legal page families; legal conspicuous clauses restyled from all-caps to bold sentence case on a set-off band (wording unchanged); clause-break dashes swept out of buyer-facing prose in comparisons, docs content, and legal pages; marketplace stack total docked as a mobile bottom bar with a live-region total; persistent header CTA demoted to secondary; docs search palette completes its tab semantics with a touch close control and suggested pages; admin top nav collapses behind a mobile disclosure panel.
+- 56e46f1: Visual-remediation residual batch: legal pages gain a fixed "On this page" jump-nav rail
+  occupying the flagged right-column dead space (62ch measure untouched); the footer
+  newsletter Turnstile widget survives sibling mounts (script-dedup race fixed, widget
+  cleanup on unmount); the visual harness drops third-party challenge-platform console
+  noise by source origin; light-mode surface-1 steps to oklch L 0.965 so cards read as
+  surfaces against the page background (contrast matrix re-verified); the admin
+  foundations accent-fork panels render as an explicit three-up grid instead of orphaning
+  Panel C in an empty quadrant.
+- Updated dependencies [6d1c805]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [25fd03c]
+- Updated dependencies [a00a9ef]
+- Updated dependencies [6d1c805]
+- Updated dependencies [6d1c805]
+- Updated dependencies [96aa01d]
+- Updated dependencies [96aa01d]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [96aa01d]
+- Updated dependencies [2cd4184]
+- Updated dependencies [a21c478]
+- Updated dependencies [108a358]
+- Updated dependencies [fe2dfac]
+- Updated dependencies [6d1c805]
+- Updated dependencies [56e46f1]
+  - @caisson/ui@0.6.3
+  - @caisson/audit-worm@2.2.0
+  - @caisson/registry-schema@0.5.8
+  - @caisson/observability@0.3.5
+  - @caisson/email@0.5.4
+  - @caisson/service-license@0.1.0
+  - @caisson/platform-migrations@0.3.0
+  - @caisson/kernel@0.6.0
+  - @caisson/rate-limit@0.1.8
+  - @caisson/brand@0.1.5
+  - @caisson/compliance-core@0.6.2
+  - @caisson/demo-registry@0.2.11
+  - @caisson/credits@0.5.10
+  - @caisson/platform-reads@0.2.9
+  - @caisson/auth@0.4.1
+  - @caisson/org-controls@0.3.5
+  - @caisson/tenancy-rls@0.5.6
+
 ## 0.0.17
 
 ### Patch Changes

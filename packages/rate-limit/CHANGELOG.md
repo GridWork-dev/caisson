@@ -1,5 +1,16 @@
 # @caisson/rate-limit
 
+## 0.1.8
+
+### Patch Changes
+
+- 96aa01d: Document caller-owned limiter infrastructure-failure policy while the license service now fails
+  open only for Paddle webhooks and fails protected issuer, admin, and evaluation routes closed.
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+  - @caisson/tenancy-rls@0.5.6
+
 ## 0.1.7
 
 ### Patch Changes

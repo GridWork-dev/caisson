@@ -108,25 +108,41 @@ describe("per-module bare-slug purchase-id form", () => {
   });
 
   test("RESERVED_MODULE_ENTITLEMENT_IDS holds exactly the open publishing-gap reservations", () => {
-    // oscal-spine is reserved between this catalog PR and its first release-train index entry.
-    // The 2026-07-20 compliance-gap arming quartet (access-review,
-    // risk-register, trust-page, artifact-render) graduated in the version cut that created
-    // their first index entries — the exact path agent-usage took 2026-07-18, agent-trajectory
-    // 2026-07-17, ui-pro 2026-07-07, and alerting/retention-runner before it. Index presence
-    // is not sellability: the three gap SKUs' sellable/price flip and bundle membership land
-    // in the post-publish PR; artifact-render stays sellable:false forever (published-never-
-    // sold render substrate). The fail-soft branch stays covered by the temp-root fixture
-    // suite in tooling/standards-gate catalog-checks.
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([
-      "oscal-spine",
-    ]);
-    expect([...RESERVED_MODULE_ENTITLEMENT_VERSIONS.entries()]).toEqual([
-      ["oscal-spine", "0.1.0"],
-    ]);
+    // Currently NONE. oscal-spine graduated in this release cut, taking the exact path
+    // agent-usage took 2026-07-18, agent-trajectory 2026-07-17, ui-pro 2026-07-07, and
+    // alerting/retention-runner before it: reserved between its catalog PR and its first
+    // release-train index entry, then unreserved in the version PR that publishes it (the
+    // reserved-ids-staleness gate fails the release otherwise). Index presence is not
+    // sellability — a SKU's sellable/price flip and bundle membership are separate acts.
+    // The fail-soft branch stays covered by the temp-root fixture suite in
+    // tooling/standards-gate catalog-checks.
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([]);
+    expect([...RESERVED_MODULE_ENTITLEMENT_VERSIONS.entries()]).toEqual([]);
   });
 
-  test("the pre-publish oscal-spine reservation fails soft until the release train indexes it", () => {
-    expect([...expandEntitlements(index, ["oscal-spine"])]).toEqual([]);
+  test("post-graduation, oscal-spine resolves from the real index and fails closed off it", () => {
+    // The graduation itself: while reserved, a bare `oscal-spine` fail-SOFT to nothing. Now that
+    // the train has indexed it, the fixture index (which does not ship it, and no longer carries a
+    // reservation) must fail CLOSED like any unknown id — the ui-pro shape below — while the REAL
+    // index resolves it to its actual grant.
+    expect(() => expandEntitlements(index, ["oscal-spine"])).toThrow(
+      /unknown purchased entitlement id/,
+    );
+    const realIndex = loadRegistryIndexFromFile(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "..",
+        "..",
+        "..",
+        "registry",
+        "index.json",
+      ),
+    );
+    // Resolves to the spine PLUS its named internal renderer (ADR-0384), not the spine alone.
+    expect([...expandEntitlements(realIndex, ["oscal-spine"])].sort()).toEqual([
+      "@caisson/artifact-render",
+      "@caisson/oscal-spine",
+    ]);
   });
 
   test("with the reservation gone, an unindexed ui-pro fails closed like any unknown id", () => {
@@ -335,20 +351,12 @@ describe("ADR-0384 compatibility re-export entitlements", () => {
     );
   });
 
-  test("before OSCAL is indexed, both existing parent grants remain usable without a phantom grant", () => {
-    const prepublish = loadRegistryIndex({
-      schemaVersion: 1,
-      modules: carved.modules.filter(
-        (entry) => entry.id !== "@caisson/oscal-spine",
-      ),
-    });
-    expect([...expandEntitlements(prepublish, ["compliance-core"])]).toEqual([
-      "@caisson/compliance-core",
-    ]);
-    expect([...expandEntitlements(prepublish, ["frameworks-pack"])]).toEqual([
-      "@caisson/frameworks-pack",
-    ]);
-  });
+  // Removed with the oscal-spine graduation: "before OSCAL is indexed, both existing parent grants
+  // remain usable without a phantom grant" built a synthetic index with the spine filtered out to
+  // cover the pre-publish window. The spine is now indexed and unreserved, so that index throws
+  // "neither indexed nor reserved" (correct fail-closed behaviour) and the window cannot recur.
+  // Its surviving invariant — a parent grant resolves, and pulls exactly the carve, no phantom —
+  // is pinned by the `${parent} grants the indexed OSCAL carve` cases above.
 });
 
 describe("NON_MODULE_ENTITLEMENT_IDS (ADR-0278/0288 — the priority-support brick guard)", () => {
@@ -768,15 +776,20 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
     "index.json",
   );
   const BUNDLE_EXPANSIONS: Readonly<Record<string, readonly string[]>> = {
+    // oscal-spine joined Compliance in this release cut (its first index entry, 0.1.0), and it
+    // carries artifact-render with it through INTERNAL_RUNTIME_ENTITLEMENTS — a code-level edge,
+    // not a members-map entry, so it appears in no manifest.
     compliance: [
       "@caisson/access-review",
       "@caisson/alerting",
+      "@caisson/artifact-render",
       "@caisson/audit-worm",
       "@caisson/compliance",
       "@caisson/compliance-core",
       "@caisson/field-crypto",
       "@caisson/frameworks-pack",
       "@caisson/kernel",
+      "@caisson/oscal-spine",
       "@caisson/retention-runner",
       "@caisson/risk-register",
       "@caisson/signing-primitive",
@@ -830,6 +843,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/ai-meter",
       "@caisson/ai-production",
       "@caisson/alerting",
+      "@caisson/artifact-render",
       "@caisson/audit-worm",
       "@caisson/billing-orchestration",
       "@caisson/compliance",
@@ -845,6 +859,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/local-store",
       "@caisson/local-sync",
       "@caisson/org-controls",
+      "@caisson/oscal-spine",
       "@caisson/platform-reads",
       "@caisson/pricebook",
       "@caisson/prompt-registry",
@@ -901,11 +916,27 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       (v) => v.version === everythingEntry.latest,
     )?.manifest;
     const indexed = new Set(realIndex.modules.map((m) => m.id));
-    const expected = Object.keys(latestManifest?.members ?? {})
+    const granted = Object.keys(latestManifest?.members ?? {}).filter((id) =>
+      indexed.has(id),
+    );
+    // Plus each granted member's INTERNAL_RUNTIME_ENTITLEMENTS. These are an explicit code-level
+    // map, not manifest members and not dependency closure, so the members map alone under-counts:
+    // since oscal-spine graduated, `everything` names the spine and the spine pulls its named
+    // renderer (@caisson/artifact-render), which appears in no members map anywhere.
+    const expected = [
+      ...new Set(
+        granted.flatMap((id) => [
+          id,
+          ...(INTERNAL_RUNTIME_ENTITLEMENTS.get(id) ?? []),
+        ]),
+      ),
+    ]
       .filter((id) => indexed.has(id))
       .sort();
     expect(expected.length).toBeGreaterThan(20);
     expect(bundle).toEqual(expected);
+    expect(bundle).toContain("@caisson/oscal-spine");
+    expect(bundle).toContain("@caisson/artifact-render");
     expect(bundle).not.toContain("@caisson/kernel");
     expect(bundle).toContain("@caisson/ui-pro");
   });

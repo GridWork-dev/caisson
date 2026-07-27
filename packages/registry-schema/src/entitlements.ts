@@ -101,8 +101,10 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  */
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
   new Set<string>([
-    // Pre-publish reservation: remove when the release train appends oscal-spine@0.1.0.
-    "oscal-spine",
+    // Empty: oscal-spine graduated in this release cut (the train appended oscal-spine@0.1.0, so
+    // grants now resolve through the index and the reservation would be stale). Add a slug here
+    // only while a module is SOLD but not yet published, and remove it in the version PR that
+    // publishes it — the reserved-ids-staleness gate fails the release otherwise.
   ]);
 /**
  * Exact first-publish versions for the temporary reservations above. The pre-publish member-pin
@@ -111,7 +113,7 @@ export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
  * {@link RESERVED_MODULE_ENTITLEMENT_IDS}; both entries leave when the first ledger row lands.
  */
 export const RESERVED_MODULE_ENTITLEMENT_VERSIONS: ReadonlyMap<string, string> =
-  new Map<string, string>([["oscal-spine", "0.1.0"]]);
+  new Map<string, string>([]);
 // agent-usage graduated 2026-07-18: indexed (sellable:false) by the agent-runtime consume,
 // so grants resolve via the index; it stays unsellable and in no bundle until its own
 // publish gate (operator lock). agent-trajectory graduated earlier, at its first index entry.

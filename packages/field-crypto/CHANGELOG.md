@@ -1,5 +1,48 @@
 # @caisson/field-crypto
 
+## 1.0.0
+
+### Major Changes
+
+- 31bf5f1: Return provider-proven deletion receipts from every KMS adapter, thread finality through crypto-shred receipts, and add Azure Key Vault support.
+
+### Minor Changes
+
+- 13e814d: Add disposable request-scoped KMS contexts with append-only Postgres wrapped-key persistence,
+  wire production BYOK to purge-protected Azure Key Vault keys, and let MCP run tools bind an async
+  field-crypto context and its tenant executor in one atomic transaction without retaining plaintext
+  keys between requests.
+
+  BREAKING for direct API consumers, carried as a minor bump because these packages are pre-1.0:
+
+  - `RunToolsDeps.keyProvider` (a `SyncFieldKeyProvider`) is REMOVED from `buildRunTools` and
+    replaced by a required `fieldCryptoContext` runner. Callers passing a key provider no longer
+    compile.
+  - `WrappedKeyStore` gains a required `putWrappedIfAbsent` member, so any external implementation
+    of that interface must add it.
+
+  Also bounds request-context prefetch with a new `maxPrefetchVersions` option (default 64), so a
+  tenant whose rotation depth exceeds what the request budget can serve fails with an error naming
+  that depth instead of an anonymous deadline timeout; accepts AWS multi-Region `mrk-` key
+  identifiers and reports replica-pending deletion without inventing a deletion date; requires an
+  explicit Azure service principal rather than resolving an ambient credential chain; and erases key
+  material returned by a provider call that completes after its deadline already elapsed.
+
+- 0d87855: Breaking: `FieldCryptoContext.deriveKey(version)` is replaced by `withKey(version, use)`. The context now lends a key buffer for one operation and zeroizes it when that operation returns or throws, instead of returning a buffer the caller retains until request exit. Sequential operations no longer accumulate working copies; nested calls hold one copy per active invocation, and a KMS context's prefetched key versions remain resident for the request as before. Callbacks must be synchronous — a promise-returning callback is now a type error and is also refused at runtime, because the key is wiped before the continuation would run.
+
+  Also breaking for implementers of `SyncFieldKeyProvider`: `deriveKey()` must return fresh, caller-owned material. The signature is unchanged, but the derived context now zeroizes what it returns in place, so a provider that returns a cached buffer has that cache wiped by the first operation. Previously only `keyFor()` carried this requirement. A provider that violates it is rejected with an all-zero-key error rather than silently encrypting under a known key; KMS providers returning an all-zero DEK are rejected at bind for the same reason.
+
+  Direct callers and context implementers must migrate. `FieldKeyProvider.keyFor` is unchanged.
+
+### Patch Changes
+
+- 96aa01d: Make price authority total over every sellable commercial module and bundle, remove the old $49
+  placeholder exemption, mark retired aliases as non-sellable, and pin the current $1,649 Compliance
+  price in component demos and fulfillment coverage.
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+
 ## 0.3.5
 
 ### Patch Changes
