@@ -1,5 +1,32 @@
 # @caisson/ui
 
+## 0.6.3
+
+### Patch Changes
+
+- 6d1c805: AppShell's main content region now has its own padding (with a `.cs-shell__bleed` opt-out for full-bleed content), and its sidebar nav items are keyed by label instead of href so a consumer passing duplicate placeholder hrefs no longer trips a React duplicate-key warning.
+- a00a9ef: Dependency baseline repair: the marketing site's motion library moves from the retired
+  framer-motion package to its motion successor (same API, new import path — the Living Chain
+  scroll sequence keeps its exact spring behavior), alongside a routine kysely and vite patch
+  refresh across the site and UI packages. The auth, telemetry, storybook, and playwright
+  version bumps from the original non-major batch were reverted pending their supply-chain
+  release-age window clearing naturally; none of them fixed a known vulnerability.
+- 96aa01d: Replace the four-component design-system fixture with a deterministic manifest generated from all
+  39 primary UI components, add a byte-for-byte drift guard, and centralize browser-rendered semantic,
+  functional, and code-token contrast validation in `@caisson/ds-manifest`.
+- 2cd4184: Complete the marketplace depth treatment for access reviews, the AI risk register, and the trust
+  page with source-grounded records, poke-first media, bespoke token-following glyphs, and a 26/26
+  sellable-module parity guard.
+- 6d1c805: Code blocks and terminals now show a persistent thin scrollbar and an overflow-only edge shadow instead of a near-invisible fade, so clipped code no longer reads as a hard cut. The light-mode accent is nudged one step darker so eyebrow and status text clears the AA contrast floor, and the contrast check now measures each colour the way both browser gamut-mapping engines paint it and takes the stricter result. Two new code-syntax colour tokens (a string colour and a keyword colour, one value per theme) give highlighted code a Caisson-palette scale instead of a generic one. Inline code in prose renders as a styled chip.
+- 56e46f1: Visual-remediation residual batch: legal pages gain a fixed "On this page" jump-nav rail
+  occupying the flagged right-column dead space (62ch measure untouched); the footer
+  newsletter Turnstile widget survives sibling mounts (script-dedup race fixed, widget
+  cleanup on unmount); the visual harness drops third-party challenge-platform console
+  noise by source origin; light-mode surface-1 steps to oklch L 0.965 so cards read as
+  surfaces against the page background (contrast matrix re-verified); the admin
+  foundations accent-fork panels render as an explicit three-up grid instead of orphaning
+  Panel C in an empty quadrant.
+
 ## 0.6.2
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @caisson/artifact-render
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+
 ## 0.2.0
 
 ### Minor Changes

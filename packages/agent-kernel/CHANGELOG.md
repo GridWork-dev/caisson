@@ -1,5 +1,16 @@
 # @caisson/agent-kernel
 
+## 0.6.4
+
+### Patch Changes
+
+- 96aa01d: Make price authority total over every sellable commercial module and bundle, remove the old $49
+  placeholder exemption, mark retired aliases as non-sellable, and pin the current $1,649 Compliance
+  price in component demos and fulfillment coverage.
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+
 ## 0.6.3
 
 ### Patch Changes

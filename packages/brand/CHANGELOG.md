@@ -1,5 +1,13 @@
 # @caisson/brand
 
+## 0.1.5
+
+### Patch Changes
+
+- 2cd4184: Complete the marketplace depth treatment for access reviews, the AI risk register, and the trust
+  page with source-grounded records, poke-first media, bespoke token-following glyphs, and a 26/26
+  sellable-module parity guard.
+
 ## 0.1.4
 
 ### Patch Changes

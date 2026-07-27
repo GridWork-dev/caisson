@@ -284,12 +284,18 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
     // A compliance bundle whose members carry REAL pricebook join dates: audit-worm joined at
     // GENESIS (2026-06-01), compliance-core at the catalog rework (2026-07-06). The gate injects
     // the pricebook timeline + the buyer's `entitledSince` (= their grant's granted_at).
+    // oscal-spine + artifact-render are incidental here: since the spine graduated (indexed, no
+    // longer reserved) it is a named `compliance` member, so an index missing it makes the whole
+    // expansion throw "neither indexed nor reserved" and every assertion below fails for a reason
+    // unrelated to snapshot-at-sale filtering.
     const snapIndex = loadRegistryIndex({
       schemaVersion: 1,
       modules: [
         entry("@caisson/kernel", []),
         entry("@caisson/audit-worm", ["compliance"]),
         entry("@caisson/compliance-core", ["compliance"]),
+        entry("@caisson/oscal-spine", ["compliance"]),
+        entry("@caisson/artifact-render", []),
       ],
     });
 
@@ -335,6 +341,15 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
           resolveAccountEntitlements(tx, late, snapIndex),
         )),
       ].sort(),
-    ).toEqual(["@caisson/audit-worm", "@caisson/compliance-core"]);
+      // compliance-core carries the OSCAL carve with it (ADR-0384: the parent re-exports the
+      // spine, and the spine names artifact-render). The EARLY buyer above is unaffected precisely
+      // because they never get compliance-core, so the closure never opens for them — which is the
+      // snapshot filter doing its job through a named-entitlement edge, not just a members map.
+    ).toEqual([
+      "@caisson/artifact-render",
+      "@caisson/audit-worm",
+      "@caisson/compliance-core",
+      "@caisson/oscal-spine",
+    ]);
   });
 });

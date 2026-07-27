@@ -1,5 +1,23 @@
 # @caisson/local-store
 
+## 1.0.5
+
+### Patch Changes
+
+- 96aa01d: Make price authority total over every sellable commercial module and bundle, remove the old $49
+  placeholder exemption, mark retired aliases as non-sellable, and pin the current $1,649 Compliance
+  price in component demos and fulfillment coverage.
+- Updated dependencies [6d1c805]
+- Updated dependencies [a00a9ef]
+- Updated dependencies [96aa01d]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [2cd4184]
+- Updated dependencies [6d1c805]
+- Updated dependencies [56e46f1]
+  - @caisson/ui@0.6.3
+  - @caisson/kernel@0.6.0
+
 ## 1.0.4
 
 ### Patch Changes

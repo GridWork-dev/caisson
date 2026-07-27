@@ -1,5 +1,20 @@
 # @caisson/standards-gate
 
+## 0.1.0
+
+### Minor Changes
+
+- 108a358: Adds a pricing-agreement check that keeps the catalog's locked prices and the commerce price book in exact agreement, so a reprice can never leave the displayed price or upgrade credits behind.
+
+### Patch Changes
+
+- 308327d: Bump dependency-cruiser devDependency ^16 -> ^18, aligning the nested pin with the root ^18 already live since #231; no behavior change (CI runs root 18.1.0 on Node 22 either way).
+- Updated dependencies [25fd03c]
+- Updated dependencies [a21c478]
+- Updated dependencies [108a358]
+  - @caisson/registry-schema@0.5.8
+  - @caisson/tenancy-rls@0.5.6
+
 ## 0.0.16
 
 ### Patch Changes

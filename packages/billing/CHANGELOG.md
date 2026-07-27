@@ -1,5 +1,13 @@
 # @caisson/billing
 
+## 0.6.5
+
+### Patch Changes
+
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+
 ## 0.6.4
 
 ### Patch Changes

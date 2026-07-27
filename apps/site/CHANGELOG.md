@@ -1,5 +1,183 @@
 # @caisson/site
 
+## 0.3.0
+
+### Minor Changes
+
+- 108a358: The three new compliance modules — access reviews ($199), AI risk register ($279), and trust page ($149) — debut on the marketplace with mechanism diagrams, bundle-page listings, and checkout wiring; the Compliance bundle displays $1,649 with a $659 yearly updates renewal.
+- 31bf5f1: Add the RLS-scoped tenant proof view and render persisted evidence-pack maps-to and implements edges separately.
+
+### Patch Changes
+
+- 45784c3: Media and marketplace program wave: an interactive poke slide for all twenty-one remaining modules (parity-pinned against the real packages), bespoke blueprint sheets for every module and bundle with the legacy shared mechanism diagrams retired, a sticky-toolbar marketplace catalog with bundle and module bands on the full container, the cart drawer widened with a true mobile bottom sheet and a marketplace-only summary strip replacing the stack rail and stack dock, and a homepage decision band replacing the stack builder.
+- a00a9ef: Dependency baseline repair: the marketing site's motion library moves from the retired
+  framer-motion package to its motion successor (same API, new import path — the Living Chain
+  scroll sequence keeps its exact spring behavior), alongside a routine kysely and vite patch
+  refresh across the site and UI packages. The auth, telemetry, storybook, and playwright
+  version bumps from the original non-major batch were reverted pending their supply-chain
+  release-age window clearing naturally; none of them fixed a known vulnerability.
+- 96aa01d: Record what a buyer paid for each entitlement, and use it as the floor on an upgrade credit.
+
+  An upgrade credit is the retail of each owned item the buyer is trading in. That understates the
+  credit for anyone who bought before a price cut: they paid more than the item now lists for, and the
+  old behaviour credited them the lower number. The credit now takes whichever is greater, the item's
+  retail or what the buyer actually paid.
+
+  Paying for that needs the buyer's own price, which was never stored. It has always been on the
+  provider event, one charge per line, but only the whole transaction's total was persisted, and a
+  total cannot be split across a multi-item cart afterwards. A new nullable column on the entitlement
+  grant records the line's charge and currency at grant time.
+
+  The amount is recorded only when the line's charge is genuinely one item's price. A line bought at
+  quantity two charges twice for a single entitlement, and a provider that reports no per-line figure
+  sends zero. Both leave the column empty, which reads as unknown and credits at retail, rather than
+  inventing a per-item split.
+
+  The quote function takes the paid amounts as an argument, so the pricebook stays free of database
+  access and the tenant-scoped read stays with the caller. Each one is an amount together with its
+  currency, never a bare integer: a charge of 29900 is $299 in one currency and roughly twice that in
+  another, and the two cannot be told apart from the number alone. A charge in a currency the catalog
+  does not price in credits at retail rather than being converted, because converting it would mean
+  inventing an exchange rate.
+
+- 13e814d: Add disposable request-scoped KMS contexts with append-only Postgres wrapped-key persistence,
+  wire production BYOK to purge-protected Azure Key Vault keys, and let MCP run tools bind an async
+  field-crypto context and its tenant executor in one atomic transaction without retaining plaintext
+  keys between requests.
+
+  BREAKING for direct API consumers, carried as a minor bump because these packages are pre-1.0:
+
+  - `RunToolsDeps.keyProvider` (a `SyncFieldKeyProvider`) is REMOVED from `buildRunTools` and
+    replaced by a required `fieldCryptoContext` runner. Callers passing a key provider no longer
+    compile.
+  - `WrappedKeyStore` gains a required `putWrappedIfAbsent` member, so any external implementation
+    of that interface must add it.
+
+  Also bounds request-context prefetch with a new `maxPrefetchVersions` option (default 64), so a
+  tenant whose rotation depth exceeds what the request budget can serve fails with an error naming
+  that depth instead of an anonymous deadline timeout; accepts AWS multi-Region `mrk-` key
+  identifiers and reports replica-pending deletion without inventing a deletion date; requires an
+  explicit Azure service principal rather than resolving an ambient credential chain; and erases key
+  material returned by a provider call that completes after its deadline already elapsed.
+
+- 45784c3: Interactive poke slides for field-crypto, audit-worm, ai-meter, and guardrails: real in-browser runs of each package mechanism (WebCrypto mirrors parity-pinned against package output and golden fixtures), a new poke slide kind in the media pipeline with sheet-then-poke ordering, and the carousel yielding arrow keys to interactive slides.
+- 2cd4184: Complete the marketplace depth treatment for access reviews, the AI risk register, and the trust
+  page with source-grounded records, poke-first media, bespoke token-following glyphs, and a 26/26
+  sellable-module parity guard.
+- 45784c3: The module-schematics pilot trio: a bespoke schematic vocabulary (blueprint linework
+  sheets for module pages, cross-section strata for bundle pages) rendered as
+  token-styled hairline SVG on a grid-paper ground, with three pilot sheets — the
+  field-crypto derivation/gate/envelope blueprint, the audit-worm chain/anchor/truncation
+  blueprint, and the Compliance bundle cross-section. The two module sheets replace the
+  shared generic diagrams on their own pages; the strata joins the compliance bundle's
+  carousel behind its composition slide.
+- 6f44c60: Publish dedicated refund-policy and buyer-support routes for Paddle verification, align Terms
+  support links on `support@caisson.sh`, and register both pages in the canonical sitemap/footer
+  route surface.
+- 96aa01d: Document the session-token HMAC key in the service env contract. The variable is required once the
+  database and auth secret are configured, and a missing value crashes the boot rather than degrading
+  sign-in, so it belongs in the same list as the other required service variables.
+- 96aa01d: Generate the docs source module before running the site test suite. One test file reaches the docs
+  source through the trust-signals helper, and that module is produced by the app build rather than
+  checked in. Nothing ordered the build ahead of the tests, so the suite passed or failed on whether a
+  previous build happened to leave the artifact behind. Generating it in the test script takes a few
+  milliseconds and makes the run self-sufficient.
+- ea2bee1: Truth-align two board-audit launch-blockers: the hero install block's chip states "private beta" (muted) instead of a success-tone "ready" while the CLI package is unpublished, and the compliance/provenance/home WORM copy states GOVERNANCE-mode Object Lock today with a typed, recorded escalation to COMPLIANCE at launch, dropping the COMPLIANCE-only leaked-root-key claim.
+- af54102: Visual-remediation closeout: eyebrow variation pass across the bundle, security, procurement, marketplace, and legal page families; legal conspicuous clauses restyled from all-caps to bold sentence case on a set-off band (wording unchanged); clause-break dashes swept out of buyer-facing prose in comparisons, docs content, and legal pages; marketplace stack total docked as a mobile bottom bar with a live-region total; persistent header CTA demoted to secondary; docs search palette completes its tab semantics with a touch close control and suggested pages; admin top nav collapses behind a mobile disclosure panel.
+- 5788b03: The marketplace hero artifact's label names the Everything bundle instead of silently
+  omitting it: "one base, 5 composable bundles + Everything" no longer contradicts the
+  page's own six-bundle lede and facet. The five-chip composition is unchanged;
+  Everything is the whole-catalog purchase, not a sixth thing composing alongside the
+  five it contains.
+- 78a3b8f: Close the six open live-reaudit ledger rows: the docs heading-anchor and code-copy
+  buttons (which ship without the size-token class hook) join the 44px invisible-catchment
+  pass via their aria-labels; the field-crypto code-panel label tightens so label plus file
+  path holds one line at desktop; the home lifecycle diagram's chain notation unifies on the
+  double-vertical-bar glyph the adjacent evidence card uses; the shared footer gains
+  dock-height clearance on the marketplace mobile cutover so the fixed stack dock never sits
+  over its last rows at full scroll; and the AI-Production lede gains a sentence reconciling
+  its call-path narration with the seven-module composition list.
+- 2bfc60e: Post-deploy re-audit nits: the terms page's inline EULA link gains the underlined link
+  treatment (it was color-alone), and the marketplace catalog section drops its duplicate
+  accent eyebrow so the hero carries the page's single accent kicker.
+- 56e46f1: Visual-remediation residual batch: legal pages gain a fixed "On this page" jump-nav rail
+  occupying the flagged right-column dead space (62ch measure untouched); the footer
+  newsletter Turnstile widget survives sibling mounts (script-dedup race fixed, widget
+  cleanup on unmount); the visual harness drops third-party challenge-platform console
+  noise by source origin; light-mode surface-1 steps to oklch L 0.965 so cards read as
+  surfaces against the page background (contrast matrix re-verified); the admin
+  foundations accent-fork panels render as an explicit three-up grid instead of orphaning
+  Panel C in an empty quadrant.
+- Updated dependencies [108a358]
+- Updated dependencies [0d87855]
+- Updated dependencies [6d1c805]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [25fd03c]
+- Updated dependencies [36dd6ed]
+- Updated dependencies [108a358]
+- Updated dependencies [a00a9ef]
+- Updated dependencies [6d1c805]
+- Updated dependencies [6d1c805]
+- Updated dependencies [96aa01d]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [13e814d]
+- Updated dependencies [0d87855]
+- Updated dependencies [96aa01d]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [96aa01d]
+- Updated dependencies [2cd4184]
+- Updated dependencies [a21c478]
+- Updated dependencies [96aa01d]
+- Updated dependencies [108a358]
+- Updated dependencies [fe2dfac]
+- Updated dependencies [6d1c805]
+- Updated dependencies [56e46f1]
+  - @caisson/access-review@0.3.1
+  - @caisson/ai-kit@0.6.0
+  - @caisson/ui@0.6.3
+  - @caisson/audit-worm@2.2.0
+  - @caisson/registry-schema@0.5.8
+  - @caisson/local-inference@0.1.7
+  - @caisson/pricebook@0.8.0
+  - @caisson/observability@0.3.5
+  - @caisson/email@0.5.4
+  - @caisson/service-license@0.1.0
+  - @caisson/platform-migrations@0.3.0
+  - @caisson/field-crypto@1.0.0
+  - @caisson/agent-trajectory@0.4.0
+  - @caisson/kernel@0.6.0
+  - @caisson/rate-limit@0.1.8
+  - @caisson/brand@0.1.5
+  - @caisson/compliance-core@0.6.2
+  - @caisson/frameworks-pack@0.6.1
+  - @caisson/agent-kernel@0.6.4
+  - @caisson/ai-evals@0.4.5
+  - @caisson/ai-meter@1.0.10
+  - @caisson/alerting@0.2.5
+  - @caisson/guardrails@0.4.10
+  - @caisson/local-store@1.0.5
+  - @caisson/prompt-registry@1.0.5
+  - @caisson/retention-runner@0.1.13
+  - @caisson/cli@0.7.6
+  - @caisson/demo-registry@0.2.11
+  - @caisson/ui-pro@0.3.4
+  - @caisson/risk-register@0.3.1
+  - @caisson/credits@0.5.10
+  - @caisson/platform-reads@0.2.9
+  - @caisson/artifact-render@0.2.1
+  - @caisson/auth@0.4.1
+  - @caisson/billing@0.6.5
+  - @caisson/billing-orchestration@0.3.5
+  - @caisson/local-privacy@0.1.7
+  - @caisson/local-sync@0.1.7
+  - @caisson/migrate@0.2.10
+  - @caisson/org-controls@0.3.5
+  - @caisson/signing-primitive@0.3.8
+  - @caisson/tenancy-rls@0.5.6
+  - @caisson/tool-exec@0.2.4
+  - @caisson/trust-page@0.3.1
+
 ## 0.2.14
 
 ### Patch Changes

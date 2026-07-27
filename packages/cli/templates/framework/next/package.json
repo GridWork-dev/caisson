@@ -9,13 +9,13 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "pg": "^8.16.0",
-    "@caisson/kernel": "^0.5.3",
-    "@caisson/auth": "^0.4.0",
-    "@caisson/tenancy-rls": "^0.5.5",
-    "@caisson/billing": "^0.6.4",
-    "@caisson/jobs": "^0.6.3",
-    "@caisson/email": "^0.5.3",
-    "@caisson/ai-config": "^0.3.5"
+    "@caisson/kernel": "^0.6.0",
+    "@caisson/auth": "^0.4.1",
+    "@caisson/tenancy-rls": "^0.5.6",
+    "@caisson/billing": "^0.6.5",
+    "@caisson/jobs": "^0.7.0",
+    "@caisson/email": "^0.5.4",
+    "@caisson/ai-config": "^0.3.6"
   },
   "devDependencies": {
     "@types/bun": "^1.1.14",

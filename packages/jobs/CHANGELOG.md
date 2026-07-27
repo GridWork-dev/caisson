@@ -1,5 +1,20 @@
 # @caisson/jobs
 
+## 0.7.0
+
+### Minor Changes
+
+- 31bf5f1: Add the injected Inngest v4 job-queue adapter with strict task validation, task-scoped native
+  idempotency, and a fail-loud rejection when `singletonKey` requests queued-or-active suppression
+  that Inngest v4 cannot guarantee.
+
+### Patch Changes
+
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+  - @caisson/tenancy-rls@0.5.6
+
 ## 0.6.3
 
 ### Patch Changes
