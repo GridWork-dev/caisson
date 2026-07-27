@@ -29,6 +29,8 @@ jobs:
         id: checkout
         if: always()
         continue-on-error: true
+        with:
+          persist-credentials: false
       - name: initialize advisory report
         if: always()
         shell: bash
