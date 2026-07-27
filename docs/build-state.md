@@ -44,8 +44,8 @@ re-walk's demand, instrumentation, and writing decisions.
 **Railway PITR is now the only open fork row.** The OSCAL wave is integrated locally during the
 2026-07-27 reconciliation: the standalone commercial package owns the complete OSCAL surface, both
 parents re-export it, Compliance and Everything move together, and the catalog carries the real
-sandbox purchase/renewal rows. The parallel field-crypto KMS wave remains separate pending fresh
-verification.
+sandbox purchase/renewal rows. The parallel field-crypto KMS wave has since merged (`13e814da`,
+#353) after four review rounds and is no longer separate.
 
 - **63 packages:** 17 Apache-2.0 and 46 commercial; 81 Bun workspaces total.
 - **Safety wave complete locally:** TypeScript-aware dependency graph (`c236681f`), total price
@@ -64,9 +64,9 @@ verification.
   were held — three module-depth pages, admin proof viewer/export, tenant proof route, and buyer
   crosswalk — closed 2026-07-25 with per-item citations in
   [`docs/state/production-readiness.md`](state/production-readiness.md).
-- **Provider adapters complete; consumer integration pending:** Inngest v4, Azure Key Vault KMS,
-  and Azure Blob WORM are present. The separate field-crypto async consumer refactor remains on
-  preserved head `415c9a13` pending fresh exact-head review.
+- **Provider adapters and consumer integration complete:** Inngest v4, Azure Key Vault KMS, and
+  Azure Blob WORM are present, and the field-crypto async consumer refactor merged in `13e814da`
+  (#353) — request-scoped KMS contexts with a bounded prefetch depth (ADR-0392).
 - **Certification holds:** private GitHub evidence, one-SHA deploy/migration, four technical
   receipts, two or three auditor acceptances, and all operator commerce/business gates.
 

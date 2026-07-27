@@ -170,3 +170,77 @@ disposition and KMS admission are decided.
 
 Trigger-parked items remain parked according to `docs/state/outstanding-work.md`; they are not
 silently promoted by this reconciliation.
+
+## Close-out (appended 2026-07-27, same day)
+
+The reconciliation is complete and pushed. Local `main` and `origin/main` are identical at
+`13e814da`.
+
+### Backlog dispositions
+
+| Item                          | Disposition                                                                                                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P0 — field-crypto KMS async   | **Merged** `13e814da` (#353) after four review rounds. See below.                                                                                                        |
+| P1 — PR #348 motion migration | **Closed** without admission. The framer-motion to motion swap was not repaired in this cycle; re-propose it as its own change when wanted.                              |
+| P1 — PR #351 dependency batch | Repaired as **#352** (`a00a9eff`) and merged. #351 stays **open by design**: the better-auth, `@opentelemetry/*`, storybook, and playwright bumps were reverted to mains |
+
+## Close-out (appended 2026-07-27, same day)
+
+The reconciliation is complete and pushed. Local `main` and `origin/main` are identical at
+`13e814da`.
+
+### Backlog dispositions
+
+| Item                          | Disposition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0 — field-crypto KMS async   | **Merged** `13e814da` (#353) after four review rounds. See below.                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| P1 — PR #348 motion migration | **Closed** without admission. The framer-motion to motion swap was not repaired in this cycle; re-propose it as its own change when wanted.                                                                                                                                                                                                                                                                                                                                                   |
+| P1 — PR #351 dependency batch | Repaired as **#352** (`a00a9eff`) and merged. #351 stays **open by design**: the better-auth, `@opentelemetry/*`, storybook, and playwright bumps were reverted to main's versions rather than exempted from the release-age gate — audited against osv-scanner, trivy, and upstream GHSA search, none fix a known advisory — so Renovate re-proposes them through #351 once they clear the 7-day window naturally. kysely 0.29.4 and vite 8.1.5 had already aged past the window and landed. |
+| P1 — release and fleet proof  | Now the front of the queue (T4, then T7). Unchanged in substance: deploy, migration, credential rotation, catalog mutation, and provider work remain operator/external-system gates.                                                                                                                                                                                                                                                                                                          |
+| P2 — remote reconciliation    | Done. #345 and #346 merged; #347, #348, #349, #350 closed.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| P2 — launch evidence          | Unchanged and still open.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+### The KMS admission, and why it took four rounds
+
+Worth recording because the shape repeated. The ADR-0389 design was correct at every round and never
+changed, and the no-remigration invariant held throughout. What kept failing was the **remediation**:
+
+1. **Round 1** found the record diverging from the code, and produced ADR-0392.
+2. **Round 2** found two P1s _in round 1's fixes_: `PendingReplicaDeletion` folded onto the
+   `pending-deletion` receipt state, minting a permanently-wrong row in the append-only WORM chain;
+   and an abort listener installed after the operation invocation, losing a synchronous abort and
+   resolving with a live plaintext DEK.
+3. **Round 3** found that round 2's abort fix orphaned a promise rejection — process-fatal under
+   Node's default policy, reachable from the GCP driver's non-async arrow — and that the RLS
+   preflight was still capable of a false green, because `SET LOCAL` outside a transaction block
+   emits a WARNING and takes no effect.
+4. **Round 4** found that round 3's fix reported provider failures in place of cancellations,
+   because it disposed of the abort rejection on _every_ synchronous throw rather than only the
+   duplicate-reason path.
+
+Each round's finding was in the previous round's _new_ code, never in the original design. The
+standing lesson for `packages/field-crypto/src/kms-budget.ts`: its settlement race has produced a
+defect on every edit so far, and every ordering (sync throw, sync abort, abort-then-throw, late
+resolve, late reject, double-settle) needs an explicit regression test before an edit lands.
+
+Both remaining lower-severity items were recorded rather than fixed: the `deriveKey` raw-DEK
+exposure is an **open operator fork** on the board, because eliminating it is a breaking change to a
+published seam; and ADR-0392 §5 narrows the zeroization guarantee to _no context-owned plaintext
+survives the request_, which is what the code actually delivers.
+
+### Gate state at close-out
+
+- `bun run check` — 224/224 tasks. The suite is load-sensitive: `@caisson/ai-kit` intermittently
+  trips PGlite hook/test timeouts under full parallel build load and passes isolated or at
+  `--concurrency=1`. Confirm a red run that way before believing it.
+- `bun run sot` — all content gates GREEN. `branch-hygiene` stays advisory-red on purpose: recovery
+  refs and six operator-owned wave worktrees are preserved, not destructively cleaned.
+- `gate`, `format:check`, and `security --layer ci` green; PR #353 CI fully green before merge.
+
+### Known drift left deliberately unfixed
+
+`docs/ops/launch-runbook.md` states Compliance at `$1,449` in five places while its own post-deploy
+probe requires `$1,649`. The committed prices are `164900` and `225900` in
+`packages/{compliance,everything}/manifest.ts` per ADR-0386, and **the buyer-facing surface carries
+no stale number** — this is internal operator-procedure drift only. Left for its own change rather
+than folded into a crypto branch.

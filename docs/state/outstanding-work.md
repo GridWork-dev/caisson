@@ -28,17 +28,17 @@ and runtime evidence.
 
 ## State matrix
 
-| Workstream                                       | State                        | Exit evidence                                                                                                                                      |
-| ------------------------------------------------ | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T0 — canonical truth and issue reconciliation    | **complete locally**         | SOT content gates green; recovery refs and operator-owned worktrees intentionally keep branch hygiene advisory-red                                 |
-| T1 — TypeScript dependency graph                 | **complete locally**         | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                                                                             |
-| T2 — total price authority                       | **complete locally**         | `f6122de8` + `92d930b6`; every sellable commercial package covered                                                                                 |
-| T3 — route-specific limiter policy               | **complete locally**         | `014ac4de`; webhook fail-open+alert, protected routes 503                                                                                          |
-| T4 — one-SHA fleet and migration 0030            | **blocked on T8**            | six runtime legs on one approved SHA; migration and parity receipts. ADR-0387 puts the KMS async wave AHEAD of the deploy — T4 no longer runs next |
-| T5 — five locked product residuals               | **complete**                 | `b037b878` DS manifest; T5A merged in #332; T5B/C/E merged in #335                                                                                 |
-| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **complete**                 | three isolated adapter reviews and changesets, merged in #335                                                                                      |
-| T7 — consolidated verification and release       | **after T8**                 | OSCAL is integrated locally; exit still needs green CI, immutable tag-to-bytes, deploy, and probe receipts                                         |
-| T8 — field-crypto KMS async refactor (NEW)       | **implemented; review next** | exact head `415c9a13` is preserved but not admitted; fresh tests and code/security/adversarial verdicts are required                               |
+| Workstream                                       | State                    | Exit evidence                                                                                                                                                                                                                          |
+| ------------------------------------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T0 — canonical truth and issue reconciliation    | **complete locally**     | SOT content gates green; recovery refs and operator-owned worktrees intentionally keep branch hygiene advisory-red                                                                                                                     |
+| T1 — TypeScript dependency graph                 | **complete locally**     | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                                                                                                                                                                 |
+| T2 — total price authority                       | **complete locally**     | `f6122de8` + `92d930b6`; every sellable commercial package covered                                                                                                                                                                     |
+| T3 — route-specific limiter policy               | **complete locally**     | `014ac4de`; webhook fail-open+alert, protected routes 503                                                                                                                                                                              |
+| T4 — one-SHA fleet and migration 0030            | **unblocked; runs next** | six runtime legs on one approved SHA; migration and parity receipts. ADR-0387 put the KMS async wave ahead of the deploy; T8 merged `13e814da`, so this is now the front of the queue. Run the ADR-0392 §preflight before arming Azure |
+| T5 — five locked product residuals               | **complete**             | `b037b878` DS manifest; T5A merged in #332; T5B/C/E merged in #335                                                                                                                                                                     |
+| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **complete**             | three isolated adapter reviews and changesets, merged in #335                                                                                                                                                                          |
+| T7 — consolidated verification and release       | **after T4**             | OSCAL is integrated locally; exit still needs green CI, immutable tag-to-bytes, deploy, and probe receipts                                                                                                                             |
+| T8 — field-crypto KMS async refactor             | **complete**             | merged `13e814da` (#353). Four review rounds; each of the first three found defects introduced by the previous round's fixes. ADR-0392 corrects three ADR-0389 claims and caps prefetch depth                                          |
 
 The earlier five-wave program is merged. The 2026-07-27 reconciliation cutoff found seven newer
 open PRs: writing #345, OSCAL #346, and Ask AI evidence #347 are represented on local `main`;
@@ -126,17 +126,20 @@ releases, 12 minor package releases, and 2 major package releases. They are cons
    deleted the 416-line embedded verifier outright, stood up `@caisson/verify-pack` with an honest
    "not published" section, made exports fail closed per event type with negative tests on the exact
    keys the grill found, and made Inngest **throw** on `singletonKey` rather than silently discard it.
-8. **T8 — field-crypto KMS async refactor (RESUMED, ADR-0387):** exact head `415c9a13` on
-   `feature/field-crypto-kms-async` contains the isolated implementation and is recoverably
-   snapshotted at `fix/reconcile-snapshot-kms-20260727`. It remains outside `main` because the
-   exact-head review processes were interrupted before returning verdicts. Fresh focused/full
-   tests plus code, security, and adversarial review are the current P0; only verified fixes and a
-   clean reconciliation onto current `main` can admit it.
+8. **T8 — field-crypto KMS async refactor (MERGED `13e814da`, #353, ADR-0387/0392):** admitted after
+   four review rounds. The rounds are worth recording because each of the first three found defects
+   introduced by the previous round's own fixes: round 2 found a wrong append-only WORM receipt state
+   and a lost synchronous abort that returned a live plaintext DEK; round 3 found that the abort fix
+   had orphaned a promise rejection (process-fatal on the GCP driver) and that the RLS preflight was
+   still capable of a false green; round 4 found that the round-3 fix reported provider failures in
+   place of cancellations. Treat any future edit to `kms-budget.ts`'s race as requiring the same
+   scrutiny. ADR-0392 supersedes ADR-0389 decisions 1 and 3 in their stated properties and caps
+   prefetch depth; the design itself was correct throughout and never changed.
 9. **Arming pass (operator, ADR-0387):** verify every boot-blocking variable across all six legs has
    an arming record; rotate `DOCS_SERVICE_TOKEN`, `SUPPORT_BOT_GRANT_TOKEN`, and `LICENSE_ISSUE_TOKEN`
    atomically — new value on every holder **before** restarting any, then verifier-before-issuer and
    re-probe both sides. A set-but-unrecorded value is adopted and recorded, never regenerated.
-10. **Release and deploy (after T8):** deploy six legs on one SHA, apply migration 0030
+10. **Release and deploy (T8 cleared; runs next):** deploy six legs on one SHA, apply migration 0030
     (operator/data-migration gate), run the parity and probe set, consume all changesets in one
     version PR, tag immutable bytes, and redeploy the Worker from that tag. The post-deploy
     docs/support probe asserts $1,649 and $2,259.

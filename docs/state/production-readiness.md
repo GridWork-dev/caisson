@@ -22,24 +22,28 @@ blocked until both technical and operator evidence is attached.
 
 ## Verdicts
 
-| Dimension               | Verdict                                          | Current state                                                                                                                            |
-| ----------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Repository              | **local gates green**                            | 81 Bun workspaces; 224/224 tasks, 904 site tests, and 76 package gates pass; field-crypto KMS remains outside main for fresh review      |
-| Deploy / infrastructure | **red parity**                                   | Public probes answer, but license and admin manifest digests differ from repository/Worker                                               |
-| Security                | **gaps**                                         | Limiter and provider adapters are implemented; four production technical receipts remain                                                 |
-| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                      |
-| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                             |
-| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt |
-| Release                 | **blocked**                                      | 49 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                             |
+| Dimension               | Verdict                                          | Current state                                                                                                                                   |
+| ----------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repository              | **local gates green**                            | 81 Bun workspaces; 224/224 tasks, 924 site tests, and 76 package gates pass; field-crypto KMS merged `13e814da` (#353) after four review rounds |
+| Deploy / infrastructure | **red parity**                                   | Public probes answer, but license and admin manifest digests differ from repository/Worker                                                      |
+| Security                | **gaps**                                         | Limiter and provider adapters are implemented; four production technical receipts remain                                                        |
+| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                             |
+| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                    |
+| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt        |
+| Release                 | **blocked**                                      | 49 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                                    |
 
 ## Evidence snapshot
 
 ### Repository and quality
 
-- Remote reconciliation base: `origin/main` at `2efeea98`. Local `main` adds the validated writing
-  surface, OSCAL spine/catalog, Ask AI evidence, and two independently verified supply-chain pins.
-- `bun run check` passed 224/224 tasks on the integrated writing-plus-OSCAL tree, including 904
-  site tests and 76 conforming package-gate checks.
+- Local `main` and `origin/main` are identical at `13e814da`; the 2026-07-27 reconciliation is
+  pushed. That tree carries the validated writing surface, OSCAL spine/catalog, Ask AI evidence,
+  two independently verified supply-chain pins, the dependency-baseline repair (#352), and the
+  field-crypto KMS async refactor (#353).
+- `bun run check` passed 224/224 tasks on that tree, including 924 site tests and 76 conforming
+  package-gate checks. Note the suite is load-sensitive: `@caisson/ai-kit` intermittently trips
+  PGlite hook/test timeouts under full parallel build load and passes isolated or at
+  `--concurrency=1`, which is how a red run should be confirmed before it is believed.
 - Dependency-cruiser false green is repaired in `c236681f`: TypeScript 6.0.3, 2,296 modules,
   1,630 TypeScript modules, 6,514 dependency edges, and `.ts`/`.tsx` sentinels.
 - Total price authority is enforced in `f6122de8`, with the catalog type restored in
