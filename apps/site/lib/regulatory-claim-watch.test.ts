@@ -36,7 +36,7 @@ const KNOWN_TARGET: RegulatoryClaimTarget = {
 describe("regulatory-claim watch discovery", () => {
   test("known-positive smoke discovers both framework pages and the writing registry", () => {
     const targets = discoverRegulatoryClaims(REPO_ROOT);
-    assertKnownPositive(targets);
+    assertKnownPositive(targets, { requireCanonicalTargets: true });
 
     expect(targets.map((target) => target.route)).toContain(
       "/frameworks/eu-ai-act",
@@ -58,6 +58,16 @@ describe("regulatory-claim watch discovery", () => {
     expect(() => assertKnownPositive([])).toThrow(
       "discovered zero regulatory claim targets",
     );
+  });
+
+  test("canonical discovery rejects the framework-only false green", () => {
+    const frameworkOnly = discoverRegulatoryClaims(REPO_ROOT).filter(
+      (target) => !target.id.startsWith("writing-"),
+    );
+
+    expect(() =>
+      assertKnownPositive(frameworkOnly, { requireCanonicalTargets: true }),
+    ).toThrow("discovered zero writing targets");
   });
 
   test("framework discovery rejects a page detached from the shared source contract", () => {
@@ -200,6 +210,32 @@ describe("regulatory-claim source checks", () => {
     ]);
   });
 
+  test.each([
+    ["an HTML comment", "<!-- Article 50 -->"],
+    ["a script payload", "<script>const marker = 'Article 50';</script>"],
+    [
+      "a style block",
+      "<style>.marker::after { content: 'Article 50'; }</style>",
+    ],
+    ["a template", "<template>Article 50</template>"],
+    ["a noscript block", "<noscript>Article 50</noscript>"],
+    ["an explicitly hidden subtree", "<div hidden>Article 50</div>"],
+    ["an aria-hidden subtree", '<div aria-hidden="true">Article 50</div>'],
+    ["a display-none subtree", '<div style="display: none">Article 50</div>'],
+  ])("ignores watch text that exists only in %s", async (_label, markup) => {
+    const fetcher: SourceFetcher = async () =>
+      new Response(`<main>Visible source text.</main>${markup}`, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+    expect(report.findings).toEqual([
+      expect.objectContaining({ kind: "locator-missing" }),
+    ]);
+  });
+
   test("reports a changed digest for an official downloadable source", async () => {
     const target: RegulatoryClaimTarget = {
       ...KNOWN_TARGET,
@@ -309,6 +345,49 @@ describe("regulatory-claim source checks", () => {
     ]);
   });
 
+  test("cancels a non-success response body before reporting its status", async () => {
+    let cancelled = false;
+    const fetcher: SourceFetcher = async () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start() {
+            // Keep the stream open until the watch explicitly cancels it.
+          },
+          cancel() {
+            cancelled = true;
+          },
+        }),
+        {
+          status: 404,
+          headers: { "content-type": "text/plain" },
+        },
+      );
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+    expect(cancelled).toBe(true);
+    expect(report.findings).toEqual([
+      expect.objectContaining({ kind: "http-error" }),
+    ]);
+  });
+
+  test.each(["Application/PDF", "Application/Octet-Stream"])(
+    "classifies mixed-case binary media type %s for manual review",
+    async (contentType) => {
+      const fetcher: SourceFetcher = async () =>
+        new Response(new Uint8Array([37, 80, 68, 70]), {
+          status: 200,
+          headers: { "content-type": contentType },
+        });
+
+      const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+      expect(report.findings).toEqual([
+        expect.objectContaining({ kind: "manual-review" }),
+      ]);
+    },
+  );
+
   test("rejects redirects outside the declared HTTPS host set before a second request", async () => {
     let fetches = 0;
     const fetcher = createPublicSourceFetcher(
@@ -334,6 +413,114 @@ describe("regulatory-claim source checks", () => {
     ]);
   });
 
+  test("rejects credential-bearing redirect targets before a second request", async () => {
+    let fetches = 0;
+    const fetcher = createPublicSourceFetcher(
+      KNOWN_TARGET.sources,
+      async () => {
+        fetches++;
+        return new Response(null, {
+          status: 302,
+          headers: {
+            location: "https://user:password@example.com/source",
+          },
+        });
+      },
+    );
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+    expect(fetches).toBe(1);
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "fetch-failed",
+        detail: expect.stringContaining(
+          "redirect target must not contain credentials",
+        ),
+      }),
+    ]);
+  });
+
+  test("rejects non-default HTTPS redirect ports before a second request", async () => {
+    let fetches = 0;
+    const fetcher = createPublicSourceFetcher(
+      KNOWN_TARGET.sources,
+      async () => {
+        fetches++;
+        return new Response(null, {
+          status: 302,
+          headers: { location: "https://example.com:8443/source" },
+        });
+      },
+    );
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+    expect(fetches).toBe(1);
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "fetch-failed",
+        detail: expect.stringContaining(
+          "redirect target must use the default https port",
+        ),
+      }),
+    ]);
+  });
+
+  test("rejects a sixth validated redirect instead of following indefinitely", async () => {
+    let fetches = 0;
+    const fetcher = createPublicSourceFetcher(
+      KNOWN_TARGET.sources,
+      async () => {
+        fetches++;
+        return new Response(null, {
+          status: 302,
+          headers: { location: `/redirect-${String(fetches)}` },
+        });
+      },
+    );
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+    expect(fetches).toBe(6);
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "fetch-failed",
+        detail: expect.stringContaining("exceeded 5 validated redirects"),
+      }),
+    ]);
+  });
+
+  test("rejects a transport that auto-follows redirects", async () => {
+    let fetches = 0;
+    const fetcher = createPublicSourceFetcher(
+      KNOWN_TARGET.sources,
+      async () => {
+        fetches++;
+        const response = new Response("unexpected final response", {
+          status: 200,
+        });
+        Object.defineProperties(response, {
+          redirected: { value: true },
+          url: { value: "https://example.com/final" },
+        });
+        return response;
+      },
+    );
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+    expect(fetches).toBe(1);
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        kind: "fetch-failed",
+        detail: expect.stringContaining(
+          "source transport followed an unvalidated redirect",
+        ),
+      }),
+    ]);
+  });
+
   test("rejects IP-literal source hosts before issuing a request", async () => {
     let fetches = 0;
     const privateTarget: RegulatoryClaimTarget = {
@@ -345,22 +532,59 @@ describe("regulatory-claim source checks", () => {
         },
       ],
     };
-    const fetcher = createPublicSourceFetcher(
-      privateTarget.sources,
-      async () => {
+    expect(() =>
+      createPublicSourceFetcher(privateTarget.sources, async () => {
         fetches++;
         return new Response("unreachable");
+      }),
+    ).toThrow("source host must not be an IP literal");
+    expect(fetches).toBe(0);
+  });
+
+  test.each(["[::1]", "[::ffff:127.0.0.1]", "[2606:4700:4700::1111]"])(
+    "rejects IPv6-literal source host %s before issuing a request",
+    async (host) => {
+      let fetches = 0;
+      const literalTarget: RegulatoryClaimTarget = {
+        ...KNOWN_TARGET,
+        sources: [
+          {
+            ...KNOWN_TARGET.sources[0]!,
+            url: `https://${host}/source`,
+          },
+        ],
+      };
+      expect(() =>
+        createPublicSourceFetcher(literalTarget.sources, async () => {
+          fetches++;
+          return new Response("unreachable");
+        }),
+      ).toThrow("source host must not be an IP literal");
+      expect(fetches).toBe(0);
+    },
+  );
+
+  test("rejects an IPv6-literal redirect before issuing a second request", async () => {
+    let fetches = 0;
+    const fetcher = createPublicSourceFetcher(
+      KNOWN_TARGET.sources,
+      async () => {
+        fetches++;
+        return new Response(null, {
+          status: 302,
+          headers: { location: "https://[::1]/latest/meta-data" },
+        });
       },
     );
 
-    const report = await runRegulatoryClaimWatch([privateTarget], fetcher);
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
 
-    expect(fetches).toBe(0);
+    expect(fetches).toBe(1);
     expect(report.findings).toEqual([
       expect.objectContaining({
         kind: "fetch-failed",
         detail: expect.stringContaining(
-          "source host must not be an IP literal",
+          "redirect target host must not be an IP literal",
         ),
       }),
     ]);
@@ -396,7 +620,13 @@ describe("regulatory-claim-watch workflow posture", () => {
     try {
       const reportPath = join(tempDir, "report.md");
       const process = Bun.spawn(
-        [WORKFLOW_WRAPPER, reportPath, "bash", "-c", "exit 7"],
+        [
+          WORKFLOW_WRAPPER,
+          reportPath,
+          "bash",
+          "-c",
+          "printf 'runtime diagnostic\\n' >&2; exit 7",
+        ],
         {
           stdout: "pipe",
           stderr: "pipe",
@@ -405,8 +635,12 @@ describe("regulatory-claim-watch workflow posture", () => {
 
       expect(await process.exited).toBe(0);
       const report = await readFile(reportPath, "utf8");
+      expect(report.startsWith("## Regulatory claim watch — report-only")).toBe(
+        true,
+      );
       expect(report).toContain("Watch failed before producing a report.");
       expect(report).toContain("No PASS is implied.");
+      expect(report).toContain("runtime diagnostic");
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
@@ -476,6 +710,7 @@ describe("regulatory-claim-watch workflow posture", () => {
     expect(workflow).toContain("timeout --kill-after=15s 8m");
     expect(workflow).toContain("- name: install workspace deps");
     expect(workflow).toContain("INSTALL_OUTCOME");
+    expect(workflow).toContain("persist-credentials: false");
     expect(workflow).not.toContain("bash -c 'bun install");
     expect(workflow).not.toContain("| tee");
     expect(workflow).not.toContain("secrets.");

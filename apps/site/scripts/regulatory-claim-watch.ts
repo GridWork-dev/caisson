@@ -12,6 +12,7 @@ import { appendFileSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { isAbsolute, resolve, sep } from "node:path";
+import { Parser } from "htmlparser2";
 import { createElement, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -155,7 +156,9 @@ export function discoverRegulatoryClaims(
     verifiedOn: piece.verifiedOn,
     sources: piece.sources,
   }));
-  return [...frameworkTargets, ...writingTargets];
+  const targets = [...frameworkTargets, ...writingTargets];
+  assertKnownPositive(targets, { requireCanonicalTargets: true });
+  return targets;
 }
 
 export function assertFrameworkSourceLinkage(
@@ -196,16 +199,94 @@ function escapeRenderedValue(value: string): string {
 
 export function assertKnownPositive(
   targets: readonly RegulatoryClaimTarget[],
+  options: { requireCanonicalTargets?: boolean } = {},
 ): void {
   if (targets.length === 0) {
     throw new Error(
       "regulatory-claim-watch discovered zero regulatory claim targets",
     );
   }
+  if (!options.requireCanonicalTargets) return;
+
+  const targetIds = new Set(targets.map((target) => target.id));
+  for (const frameworkTarget of FRAMEWORK_TARGETS) {
+    if (!targetIds.has(frameworkTarget.id)) {
+      throw new Error(
+        `regulatory-claim-watch missing canonical target ${frameworkTarget.id}`,
+      );
+    }
+  }
+  if (!targets.some((target) => target.id.startsWith("writing-"))) {
+    throw new Error("regulatory-claim-watch discovered zero writing targets");
+  }
 }
 
 function normalizeText(value: string): string {
   return value.replace(/\s+/gu, " ").trim().toLocaleLowerCase("en-US");
+}
+
+const NON_VISIBLE_HTML_TAGS = new Set([
+  "head",
+  "input",
+  "noscript",
+  "script",
+  "style",
+  "template",
+]);
+
+function hasHiddenStyle(style: string | undefined): boolean {
+  if (style === undefined) return false;
+  const declarations = style.toLocaleLowerCase("en-US").replace(/\s+/gu, "");
+  return (
+    declarations.includes("display:none") ||
+    declarations.includes("visibility:hidden")
+  );
+}
+
+function isNonVisibleElement(
+  tagName: string,
+  attributes: Readonly<Record<string, string>>,
+): boolean {
+  return (
+    NON_VISIBLE_HTML_TAGS.has(tagName.toLocaleLowerCase("en-US")) ||
+    Object.hasOwn(attributes, "hidden") ||
+    Object.hasOwn(attributes, "inert") ||
+    attributes["aria-hidden"]?.toLocaleLowerCase("en-US") === "true" ||
+    hasHiddenStyle(attributes.style)
+  );
+}
+
+function extractVisibleHtmlText(markup: string): string {
+  const chunks: string[] = [];
+  let nonVisibleDepth = 0;
+  const parser = new Parser(
+    {
+      onopentag(tagName, attributes) {
+        if (nonVisibleDepth > 0) {
+          nonVisibleDepth++;
+          return;
+        }
+        if (isNonVisibleElement(tagName, attributes)) {
+          nonVisibleDepth = 1;
+          return;
+        }
+        chunks.push(" ");
+      },
+      ontext(text) {
+        if (nonVisibleDepth === 0) chunks.push(text);
+      },
+      onclosetag() {
+        if (nonVisibleDepth > 0) {
+          nonVisibleDepth--;
+          return;
+        }
+        chunks.push(" ");
+      },
+    },
+    { decodeEntities: true },
+  );
+  parser.end(markup);
+  return chunks.join("");
 }
 
 function findingLine(finding: RegulatoryWatchFinding): string {
@@ -314,21 +395,34 @@ async function fetchSourceSnapshot(
   options: Required<RegulatoryWatchOptions>,
 ): Promise<SourceSnapshot> {
   const response = await fetcher(url);
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!response.ok) {
+    await discardResponseBody(response);
+    return {
+      ok: false,
+      status: response.status,
+      contentType,
+      body: new Uint8Array(),
+    };
+  }
   return {
-    ok: response.ok,
+    ok: true,
     status: response.status,
-    contentType: response.headers.get("content-type") ?? "",
-    body: response.ok
-      ? await readResponseBody(response, options)
-      : new Uint8Array(),
+    contentType,
+    body: await readResponseBody(response, options),
   };
 }
 
-function assertTrustedSourceUrl(
-  url: URL,
-  trustedHosts: ReadonlySet<string>,
-  kind: "source" | "redirect target" | "response",
-): void {
+type SourceUrlKind = "source" | "redirect target" | "response";
+
+function normalizedIpHostname(hostname: string): string {
+  return hostname.startsWith("[") && hostname.endsWith("]")
+    ? hostname.slice(1, -1)
+    : hostname;
+}
+
+function assertSafeSourceUrl(url: URL, kind: SourceUrlKind): void {
+  const ipHostname = normalizedIpHostname(url.hostname);
   if (url.protocol !== "https:") {
     throw new Error(`${kind} must use https: ${url.href}`);
   }
@@ -338,9 +432,17 @@ function assertTrustedSourceUrl(
   if (url.port !== "" && url.port !== "443") {
     throw new Error(`${kind} must use the default https port: ${url.href}`);
   }
-  if (isIP(url.hostname) !== 0) {
+  if (isIP(ipHostname) !== 0) {
     throw new Error(`${kind} host must not be an IP literal: ${url.hostname}`);
   }
+}
+
+function assertTrustedSourceUrl(
+  url: URL,
+  trustedHosts: ReadonlySet<string>,
+  kind: SourceUrlKind,
+): void {
+  assertSafeSourceUrl(url, kind);
   if (!trustedHosts.has(url.hostname)) {
     throw new Error(
       `${kind} host is outside the declared source set: ${url.hostname}`,
@@ -363,9 +465,12 @@ export function createPublicSourceFetcher(
   transport: PublicSourceTransport = (url, init) =>
     fetchWithTimeout(url, init, { timeoutMs: FETCH_TIMEOUT_MS }),
 ): SourceFetcher {
-  const trustedHosts = new Set(
-    sources.map((source) => new URL(source.url).hostname),
-  );
+  const trustedHosts = new Set<string>();
+  for (const source of sources) {
+    const declaredUrl = new URL(source.url);
+    assertSafeSourceUrl(declaredUrl, "source");
+    trustedHosts.add(declaredUrl.hostname);
+  }
 
   return async (url) => {
     let current = new URL(url);
@@ -523,7 +628,7 @@ export async function runRegulatoryClaimWatch(
           continue;
         }
 
-        const contentType = snapshot.contentType;
+        const contentType = snapshot.contentType.toLocaleLowerCase("en-US");
         if (
           contentType.includes("application/pdf") ||
           contentType.includes("application/octet-stream")
@@ -538,7 +643,12 @@ export async function runRegulatoryClaimWatch(
           continue;
         }
 
-        const body = new TextDecoder().decode(snapshot.body);
+        const decodedBody = new TextDecoder().decode(snapshot.body);
+        const body =
+          contentType.includes("text/html") ||
+          contentType.includes("application/xhtml+xml")
+            ? extractVisibleHtmlText(decodedBody)
+            : decodedBody;
         const watchTexts =
           source.watch?.mode === "text" ? source.watch.texts : [source.locator];
         for (const watchText of watchTexts) {

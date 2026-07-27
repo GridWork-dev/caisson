@@ -4,12 +4,26 @@ set -uo pipefail
 report_path="${1:?usage: run-regulatory-claim-watch.sh REPORT_PATH COMMAND [ARG...]}"
 shift
 
-if ! "$@" >"$report_path" 2>&1; then
-  printf '%s\n' \
-    '## Regulatory claim watch — report-only' \
-    '' \
-    'Watch failed before producing a report. No PASS is implied.' \
-    >"$report_path"
+command_output="$(mktemp)"
+cleanup() {
+  rm -f -- "$command_output"
+}
+trap cleanup EXIT
+
+if ! "$@" >"$command_output" 2>&1; then
+  {
+    printf '%s\n' \
+      '## Regulatory claim watch — report-only' \
+      '' \
+      'Watch failed before producing a report. No PASS is implied.' \
+      '' \
+      '### Bounded command diagnostic' \
+      ''
+    head -c 8192 "$command_output" | sed 's/^/    /'
+    printf '\n'
+  } >"$report_path"
+else
+  cp "$command_output" "$report_path"
 fi
 
 if [[ ! -s "$report_path" ]]; then
