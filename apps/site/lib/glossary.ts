@@ -2315,7 +2315,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "EU AI Act Article 50",
     cluster: "compliance",
     definition:
-      "EU AI Act Article 50 generally applies from August 2, 2026 and assigns providers and deployers separate transparency duties. A targeted transition gives providers of generative systems placed on the market or put into service before that date until December 2, 2026 to conform with Article 50(2)’s marking and detection duty; the other duties were not postponed.",
+      "EU AI Act Article 50 generally applies from August 2, 2026 and assigns providers and deployers separate transparency duties. The adopted Digital Omnibus text awaits Official Journal publication and entry into force. Once effective, its new Article 111(4) gives providers of generative AI systems placed on the market before that date until December 2, 2026 to conform with Article 50(2)’s marking and detection duty; the other duties were not postponed.",
     artifact: {
       label:
         "Record the Article 50 disclosure as a tamper-evident audit event, a verifiable answer to “did disclosure fire for this session?”",
@@ -2325,7 +2325,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     properties: [
       {
         title: "It applies to ordinary products, not just high-risk systems",
-        body: "Article 50(1) covers systems intended to interact directly with people; Article 50(2) separately covers providers of systems generating specified synthetic content. Each duty has conditions and exceptions. Article 50 generally applies from August 2, 2026, while the targeted Article 50(2) transition for qualifying pre-August generative systems ends December 2, 2026.",
+        body: "Article 50(1) covers systems intended to interact directly with people; Article 50(2) separately covers providers of systems generating specified synthetic content. Each duty has conditions and exceptions. Article 50 generally applies from August 2, 2026. Under the adopted Digital Omnibus text, once effective, the targeted Article 50(2) transition for qualifying systems placed on the market before that date ends December 2, 2026.",
       },
       {
         title: "Evidence supports the legal inquiry; it does not decide it",
@@ -2349,7 +2349,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "When does Article 50 become enforceable?",
         answer:
-          "Article 50 generally applies from August 2, 2026. A targeted transition gives providers of generative systems placed on the market or put into service before that date until December 2, 2026 to conform with Article 50(2)'s marking and detection duty; the other Article 50 duties were not postponed. Article 50 non-compliance can attract fines up to EUR 15 million or 3% of worldwide annual turnover, whichever is higher for an undertaking.",
+          "Article 50 generally applies from August 2, 2026. The adopted Digital Omnibus text awaits Official Journal publication and entry into force. Once effective, its new Article 111(4) gives providers of generative AI systems placed on the market before that date until December 2, 2026 to conform with Article 50(2)'s marking and detection duty; the other Article 50 duties were not postponed. Article 50 non-compliance can attract fines up to EUR 15 million or 3% of worldwide annual turnover, whichever is higher for an undertaking.",
       },
       {
         question: "Do pre-existing outputs need retroactive labels?",

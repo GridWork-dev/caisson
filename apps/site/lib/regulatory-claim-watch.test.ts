@@ -48,7 +48,7 @@ describe("regulatory-claim watch discovery", () => {
       true,
     );
     expect(targets).toHaveLength(3);
-    expect(targets.map((target) => target.sources.length)).toEqual([2, 4, 4]);
+    expect(targets.map((target) => target.sources.length)).toEqual([4, 6, 6]);
     for (const target of targets) {
       expect(target.sources.length).toBeGreaterThan(0);
     }
