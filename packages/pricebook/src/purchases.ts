@@ -25,7 +25,7 @@ import { planEntitlementsSchema } from "./plans.ts";
 const NO_CREDITS = asCredits(0);
 
 /** Append-only version stamp — a purchase-row change bumps this, never edits it in place (ADR-0006). */
-export const PURCHASE_BOOK_VERSION = "2026-07-20.1";
+export const PURCHASE_BOOK_VERSION = "2026-07-25.1";
 
 export const purchaseBookEntrySchema = strictObject({
   /** Stable internal purchase tag (NOT the Stripe id) — survives a price-id rotation. */
@@ -368,6 +368,24 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     purchaseTag: "everything_bundle",
     credits: NO_CREDITS,
     entitlements: ["everything"],
+  },
+  // Forward-only reprices (ADR-0381): the old bundle price ids above remain resolvable forever,
+  // while checkout arms these new Sandbox ids at the 2026-07-25 catalog amounts.
+  pri_01kyeczreqq58ze5en0p3f0jkc: {
+    purchaseTag: "compliance_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["compliance"],
+  },
+  pri_01kyeczrjj0tzpwg7tv752e42s: {
+    purchaseTag: "everything_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["everything"],
+  },
+  // oscal-spine joined the sandbox catalog 2026-07-25.
+  pri_01kye9597z46149qg5xfrqxybk: {
+    purchaseTag: "oscal-spine_module",
+    credits: NO_CREDITS,
+    entitlements: ["oscal-spine"],
   },
 };
 

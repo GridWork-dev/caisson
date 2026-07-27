@@ -8,7 +8,11 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BundleId } from "./bundle-vocabulary";
-import { expandEntitlements } from "./entitlements";
+import {
+  COMPATIBILITY_REEXPORT_ENTITLEMENTS,
+  INTERNAL_RUNTIME_ENTITLEMENTS,
+  expandEntitlements,
+} from "./entitlements";
 import type { ModuleManifest } from "./module-manifest";
 import { loadRegistryIndex, type RegistryIndex } from "./registry-index";
 
@@ -70,6 +74,24 @@ function stub(id: string): unknown {
 /** An index carrying the bundle plus a stub for every non-self member (all allowlisted). */
 function indexWithBundle(m: ModuleManifest): RegistryIndex {
   const memberIds = Object.keys(m.members);
+  const indexedIds = new Set(memberIds);
+  let added = true;
+  while (added) {
+    added = false;
+    for (const id of [...indexedIds]) {
+      for (const edges of [
+        COMPATIBILITY_REEXPORT_ENTITLEMENTS,
+        INTERNAL_RUNTIME_ENTITLEMENTS,
+      ]) {
+        for (const target of edges.get(id) ?? []) {
+          if (!indexedIds.has(target)) {
+            indexedIds.add(target);
+            added = true;
+          }
+        }
+      }
+    }
+  }
   return loadRegistryIndex({
     schemaVersion: 1,
     modules: [
@@ -85,18 +107,25 @@ function indexWithBundle(m: ModuleManifest): RegistryIndex {
           },
         ],
       },
-      ...memberIds.filter((id) => id !== m.id).map(stub),
+      ...[...indexedIds].filter((id) => id !== m.id).map(stub),
     ],
   });
 }
 
+function expectedMemberClosure(m: ModuleManifest): string[] {
+  const expected = new Set(Object.keys(m.members));
+  if (expected.has("@caisson/oscal-spine")) {
+    expected.add("@caisson/artifact-render");
+  }
+  return [...expected].sort();
+}
+
 describe("ADR-0257/0258 bundle manifests expand to their frozen members map", () => {
   for (const { id, slug } of SPECS) {
-    test(`${id} expands to exactly its members map (index-derived, allowlist-guarded)`, () => {
+    test(`${id} expands to its members plus only named compatibility/runtime closure`, () => {
       const m = mf(slug);
-      const expected = Object.keys(m.members).sort();
       expect([...expandEntitlements(indexWithBundle(m), [id])].sort()).toEqual(
-        expected,
+        expectedMemberClosure(m),
       );
     });
   }
@@ -138,10 +167,10 @@ describe("ADR-0258 §3 Everything = explicit full-catalog rule (ui-pro IN, priva
 
   test("everything reads its indexed bundle entry as the sole grant rule", () => {
     // With the @caisson/everything bundle entry present, expansion reads exactly its explicit
-    // members map — never base ∪ all editions.
+    // members map plus named internal closure — never base ∪ all editions.
     const m = mf("everything");
     expect(
       [...expandEntitlements(indexWithBundle(m), ["everything"])].sort(),
-    ).toEqual(Object.keys(m.members).sort());
+    ).toEqual(expectedMemberClosure(m));
   });
 });

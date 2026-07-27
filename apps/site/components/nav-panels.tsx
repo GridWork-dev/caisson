@@ -25,7 +25,7 @@ export interface NavCard {
   href: string;
   label: string;
   note: string;
-  /** Committed display price ("$1,449", "from $49") — only on commerce cards (ADR-0237 F4). */
+  /** Committed display price ("$1,649", "from $49") — only on commerce cards (ADR-0237 F4). */
   price?: string;
   /** Icon name from the @caisson/ui set (bespoke marks land with wave 2). */
   icon?: IconName;

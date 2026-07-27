@@ -22,6 +22,7 @@ import {
   AccessReviewSheet,
   ComplianceCoreSheet,
   FrameworksPackSheet,
+  OscalSpineSheet,
   RiskRegisterSheet,
   TrustPageSheet,
 } from "./schematic-sheets-compliance";
@@ -81,6 +82,7 @@ const DIAGRAMS: Record<DiagramKey, () => React.ReactElement> = {
   "schematic-agent-trajectory": AgentTrajectorySheet,
   "schematic-compliance-core": ComplianceCoreSheet,
   "schematic-frameworks-pack": FrameworksPackSheet,
+  "schematic-oscal-spine": OscalSpineSheet,
   "schematic-access-review": AccessReviewSheet,
   "schematic-risk-register": RiskRegisterSheet,
   "schematic-trust-page": TrustPageSheet,

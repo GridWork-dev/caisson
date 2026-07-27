@@ -71,6 +71,18 @@ describe("marketplace surface entries", () => {
 });
 
 describe("media manifest", () => {
+  test("every sellable module except ui-pro carries an interactive proof", () => {
+    for (const module of MODULE_PRICES) {
+      const pokes = mediaSlides("module", module.id).filter(
+        (slide) => slide.kind === "poke",
+      );
+      expect(
+        pokes.length,
+        `${module.id}: expected exactly one interactive poke`,
+      ).toBe(module.id === "ui-pro" ? 0 : 1);
+    }
+  });
+
   test("audit-worm carries its real code-artifact slide (ADR-0290 — no more video kind)", () => {
     const slides = mediaSlides("module", "audit-worm");
     expect(slides.some((s) => s.kind === "code-artifact")).toBe(true);
@@ -206,7 +218,7 @@ describe("media manifest", () => {
     }
   });
 
-  test("every catalog entry has real media — the ADR-0290 28/28 floor", () => {
+  test("every catalog entry has real media — the 33/33 floor", () => {
     for (const e of ALL_ENTRIES) {
       expect(entryHasMedia(e.kind, e.id)).toBe(true);
     }
@@ -246,7 +258,7 @@ describe("media manifest", () => {
     // The module depth pages build their carousel with omitCodeArtifact (WR-03), so a module whose
     // only slide is its code artifact ships the bare brand placeholder there — silently. Every
     // module must own a diagram or component slide, so its depth page always shows real media; a
-    // future module cannot pass the 28/28 floor above on its code artifact alone.
+    // future module cannot pass the catalog-wide floor above on its code artifact alone.
     for (const e of MODULE_ENTRIES) {
       const slides = mediaSlides("module", e.id, { omitCodeArtifact: true });
       expect(

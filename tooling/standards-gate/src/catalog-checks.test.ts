@@ -128,7 +128,7 @@ describe("checkPriceCoverage", () => {
     );
     const bundle = manifestPkg(
       "@caisson/fixture-bundle",
-      `{ kind: "bundle", priceCents: 205900 }`,
+      `{ kind: "bundle", priceCents: 225900 }`,
     );
     const findings = await checkPriceCoverage([edition, bundle]);
     expect(findings).toHaveLength(2);
@@ -268,7 +268,7 @@ describe("checkOrphanSku", () => {
   });
 });
 
-// ─── catalog-parity failure paths (temp root with a fixture pricing.ts + index.json) ──────────────
+// ─── catalog-parity failure paths (temp root with pricing + workspace-manifest fixtures) ─────────
 describe("checkCatalogParity", () => {
   let root: string;
   beforeEach(() => {
@@ -278,7 +278,7 @@ describe("checkCatalogParity", () => {
 
   function writeCatalog(
     modulesLiteral: string,
-    indexMembers: Record<string, string>,
+    manifestMembers: Record<string, string>,
   ): void {
     const pricingDir = join(root, "apps", "site", "lib");
     mkdirSync(pricingDir, { recursive: true });
@@ -286,21 +286,21 @@ describe("checkCatalogParity", () => {
       join(pricingDir, "pricing.ts"),
       `export const MODULE_PRICES = ${modulesLiteral};\n`,
     );
-    mkdirSync(join(root, "registry"), { recursive: true });
-    writeFileSync(
-      join(root, "registry", "index.json"),
-      JSON.stringify({
-        modules: [
-          {
-            id: "@caisson/compliance",
-            latest: "1.0.0",
-            versions: [
-              { version: "1.0.0", manifest: { members: indexMembers } },
-            ],
-          },
-        ],
-      }),
-    );
+    for (const bundleId of [
+      "compliance",
+      "ai-production",
+      "local-first",
+      "agentic-dev",
+      "provenance",
+    ]) {
+      const manifestDir = join(root, "packages", bundleId);
+      mkdirSync(manifestDir, { recursive: true });
+      const members = bundleId === "compliance" ? manifestMembers : {};
+      writeFileSync(
+        join(manifestDir, "manifest.ts"),
+        `export default { id: "${bundleId}", members: ${JSON.stringify(members)} };\n`,
+      );
+    }
   }
 
   test("absent cross-surface files → a warn (skip), never a false error", async () => {
@@ -345,7 +345,7 @@ describe("checkCatalogParity", () => {
 
   test("a module with an empty bundles[] makes no membership claim to verify", async () => {
     writeCatalog(`[{ id: "ai-evals", amount: 199, bundles: [] }]`, {});
-    // No bundles listed → nothing to check against the index (a genuinely standalone SKU).
+    // No bundles listed → nothing to check against manifests (a genuinely standalone SKU).
     expect(await checkCatalogParity(root)).toEqual([]);
   });
 
@@ -371,15 +371,28 @@ describe("checkReservedIdsStaleness", () => {
   });
   afterEach(() => rmSync(root, { recursive: true, force: true }));
 
-  function writeReserved(setLiteral: string, indexedIds: string[]): void {
+  function writeReserved(
+    setLiteral: string,
+    indexedIds: string[],
+    versionEntries?: readonly (readonly [string, string])[],
+  ): void {
     const dir = join(root, "packages", "registry-schema", "src");
     mkdirSync(dir, { recursive: true });
     // The `<string>` generic mirrors the REAL declaration in registry-schema — the parser regex
     // once required bare `new Set(` and silently no-opped on it (audit P2-2), so the fixture must
     // exercise the generic form or the test greens a broken parser.
+    const slugs = [...setLiteral.matchAll(/["']([a-z0-9-]+)["']/g)].map(
+      (match) => match[1] as string,
+    );
+    const versions =
+      versionEntries ?? slugs.map((slug) => [slug, "0.1.0"] as const);
     writeFileSync(
       join(dir, "entitlements.ts"),
-      `export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>(${setLiteral});\n`,
+      [
+        `export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>(${setLiteral});`,
+        `export const RESERVED_MODULE_ENTITLEMENT_VERSIONS: ReadonlyMap<string, string> = new Map<string, string>(${JSON.stringify(versions)});`,
+        "",
+      ].join("\n"),
     );
     mkdirSync(join(root, "registry"), { recursive: true });
     writeFileSync(
@@ -388,11 +401,11 @@ describe("checkReservedIdsStaleness", () => {
     );
   }
 
-  test("a reserved id whose package is now indexed is a stale warn", () => {
+  test("a reserved id whose package is now indexed fails the release gate", () => {
     writeReserved(`["ghost-pkg", "alerting"]`, ["@caisson/alerting"]);
     const f = checkReservedIdsStaleness(root);
     expect(f.map((x) => x.pkg)).toEqual(["@caisson/alerting"]);
-    expect(f[0]?.severity).toBe("warn");
+    expect(f[0]?.severity).toBe("error");
   });
 
   test("a reserved id whose package is NOT yet indexed is not flagged (still legitimately reserved)", () => {
@@ -403,5 +416,15 @@ describe("checkReservedIdsStaleness", () => {
   test("an empty reserved set produces nothing", () => {
     writeReserved(`[]`, ["@caisson/alerting"]);
     expect(checkReservedIdsStaleness(root)).toEqual([]);
+  });
+
+  test("the reserved id and first-version maps must have identical keys", () => {
+    writeReserved(`["ghost-pkg"]`, [], [["different-pkg", "0.1.0"]]);
+    const f = checkReservedIdsStaleness(root);
+    expect(f.map((x) => x.pkg).sort()).toEqual([
+      "@caisson/different-pkg",
+      "@caisson/ghost-pkg",
+    ]);
+    expect(f.every((finding) => finding.severity === "error")).toBe(true);
   });
 });

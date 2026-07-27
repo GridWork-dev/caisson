@@ -54,6 +54,13 @@ describe("resolvePurchase (ADR-0113, fail-closed)", () => {
   test("the shipped book parses against its own schema", () => {
     expect(() => parsePurchaseBook(PURCHASE_BOOK)).not.toThrow();
   });
+
+  test("the OSCAL spine sandbox row grants only the standalone module", () => {
+    const entry = resolvePurchase("pri_01kye9597z46149qg5xfrqxybk");
+    expect<number>(entry.credits).toBe(0);
+    expect(entry.entitlements).toEqual(["oscal-spine"]);
+    expect(entry.purchaseTag).toBe("oscal-spine_module");
+  });
 });
 
 describe("per-module à-la-carte PLACEHOLDER rows", () => {
@@ -215,4 +222,24 @@ describe("W7 catalog big-bang REAL rows (2026-07-06)", () => {
       expect(entry.purchaseTag).toBe(`${bundleId}_bundle`);
     });
   }
+});
+
+describe("ADR-0381 forward-only bundle reprices (2026-07-25)", () => {
+  test.each([
+    ["pri_01kyeczreqq58ze5en0p3f0jkc", "compliance"],
+    ["pri_01kyeczrjj0tzpwg7tv752e42s", "everything"],
+  ] as const)("%s grants the canonical %s bundle", (priceId, bundleId) => {
+    const entry = resolvePurchase(priceId);
+    expect(entry.entitlements).toEqual([bundleId]);
+    expect<number>(entry.credits).toBe(0);
+  });
+
+  test("the archived predecessor ids remain resolvable for delayed webhooks", () => {
+    expect(
+      resolvePurchase("pri_01kwwqa2hne35c1df5xe8p91z3").entitlements,
+    ).toEqual(["compliance"]);
+    expect(
+      resolvePurchase("pri_01kwwqa3dfp8k0v5k3bbg3pd5f").entitlements,
+    ).toEqual(["everything"]);
+  });
 });

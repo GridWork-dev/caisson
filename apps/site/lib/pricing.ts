@@ -65,7 +65,7 @@ export const BUNDLE_PRICES: readonly (PriceAnchor & { id: BundleId })[] = [
   {
     id: "compliance",
     label: "Compliance",
-    amount: 1449,
+    amount: 1649,
     unit: "once",
     from: false,
     note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, access reviews, the AI risk register, a buyer trust page, and the framework + signing carves.",
@@ -105,7 +105,7 @@ export const BUNDLE_PRICES: readonly (PriceAnchor & { id: BundleId })[] = [
   {
     id: "everything",
     label: "Everything",
-    amount: 2059,
+    amount: 2259,
     unit: "once",
     from: false,
     note: "The full catalog: every bundle and every à-la-carte module, one purchase.",
@@ -283,7 +283,15 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 249,
     bundles: ["compliance"],
     blurb:
-      "The framework control library: SOC 2, HIPAA, and EU AI Act mappings with OSCAL v1.2.2 export, the clause-to-control catalog the evidence packs render against.",
+      "The framework control library: SOC 2, HIPAA, and EU AI Act mappings, the clause-to-control catalog the evidence packs render against.",
+  },
+  {
+    id: "oscal-spine",
+    label: "OSCAL spine",
+    amount: 249,
+    bundles: ["compliance"],
+    blurb:
+      "OSCAL v1.2.2 expression for assessment plans, results, POA&Ms, merged catalogs, ISO 27001 statements of applicability, and the vendored NIST 800-53 crosswalk.",
   },
   {
     id: "signing-primitive",
@@ -489,7 +497,7 @@ export const PLAN_PRICES: readonly PriceAnchor[] = [
     amount: MODULE_MIN_AMOUNT,
     unit: "once",
     from: true,
-    note: "Take a single module à la carte: 26 standalone modules across the catalog.",
+    note: "Take a single module à la carte: 27 standalone modules across the catalog.",
   },
   {
     id: "compliance-updates",

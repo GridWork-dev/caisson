@@ -21,7 +21,7 @@ import { ConfigError } from "@caisson/kernel";
 import { BUNDLE_IDS, type BundleId } from "@caisson/registry-schema";
 
 /** Append-only version stamp — an upgrade-book change bumps this, never edits it in place. */
-export const UPGRADE_BOOK_VERSION = "2026-07-18.1";
+export const UPGRADE_BOOK_VERSION = "2026-07-25.1";
 
 /**
  * Every creditable commercial SKU → its retail price (integer USD, ADR-0258/0260). The single
@@ -39,6 +39,7 @@ export const SKU_RETAIL: Readonly<Record<string, number>> = {
   // Compliance carves (ADR-0257 §2b) + members
   "compliance-core": 299,
   "frameworks-pack": 249,
+  "oscal-spine": 249,
   "signing-primitive": 199,
   "audit-worm": 149,
   "field-crypto": 199,
@@ -73,14 +74,14 @@ export const SKU_RETAIL: Readonly<Record<string, number>> = {
 /** Each bundle's retail (integer USD, ADR-0258 final numbers) — the `bundle − owned` base of an F8
  *  upgrade quote. Keyed by the shared `BundleId` vocabulary (ADR-0257 — never re-keyed). */
 export const BUNDLE_RETAIL: Readonly<Record<BundleId, number>> = {
-  // Repriced 1049 -> 1449 at the 2026-07-20 pricing round as the three compliance-gap
-  // members joined (~70% of the enlarged member subtotal, the same below-sum band).
-  compliance: 1449,
+  // Repriced 1449 -> 1649 as oscal-spine joined on 2026-07-25; $1,649 is 71.1% of
+  // the enlarged $2,319 member subtotal and preserves the locked below-sum band.
+  compliance: 1649,
   "ai-production": 739,
   "local-first": 629,
   "agentic-dev": 329,
   provenance: 399,
-  everything: 2059,
+  everything: 2259,
 };
 
 /** The lock-date anchors the timeline is backfilled with (there are no live buyers pre-launch, so
@@ -90,6 +91,7 @@ const STAGE2 = "2026-07-01T00:00:00.000Z"; // Stage-2 harvest members (alerting/
 const CATALOG_REWORK = "2026-07-06T00:00:00.000Z"; // ADR-0257/0258 carves, fold-ins, net-new bundles
 const AGENT_RUNTIME = "2026-07-18T00:00:00.000Z"; // agent-runtime wave: agent-trajectory joins agentic-dev
 const COMPLIANCE_GAP = "2026-07-20T00:00:00.000Z"; // compliance-gap SKUs join (access-review/risk-register/trust-page)
+const OSCAL_SPINE = "2026-07-25T00:00:00.000Z"; // OSCAL surface carve joins Compliance
 
 /**
  * F7 bundle-membership TIMELINE: `bundleId → (memberSku → ISO join instant)`. A member's join date
@@ -106,6 +108,7 @@ export const BUNDLE_MEMBERSHIP_BOOK: Readonly<
   compliance: {
     "compliance-core": CATALOG_REWORK,
     "frameworks-pack": CATALOG_REWORK,
+    "oscal-spine": OSCAL_SPINE,
     "signing-primitive": CATALOG_REWORK,
     "audit-worm": GENESIS,
     "field-crypto": GENESIS,

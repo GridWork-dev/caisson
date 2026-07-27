@@ -1337,11 +1337,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     slug: "compliance-core",
     metaTitle: "Compliance Evidence Packs, Flag-Never-Guess | Caisson",
     metaDescription:
-      "generateEvidencePack refuses to assemble a pack while any control's evidence is unresolved, then produces a byte-stable, SHA-256-verifiable ZIP with a cross-framework crosswalk rollup and an OSCAL catalog export.",
+      "generateEvidencePack refuses to assemble a pack while any control's evidence is unresolved, then produces a byte-stable, SHA-256-verifiable ZIP with a cross-framework crosswalk rollup.",
     heroOneLiner:
       "generateEvidencePack won't produce a pack while any control's evidence is unresolved, what it does hand you is a byte-stable, SHA-256-verifiable ZIP.",
     definition:
-      "compliance-core is Caisson's evidence engine: generateEvidencePack composes typed EvidenceCollector results into a deterministic, byte-stable evidence pack, refusing to assemble anything while a control's evidence stays unresolved (flag-never-guess). computeCrosswalkRollup joins every framework pack's crosswalk pointers into one cross-framework view, and toOscalCatalog exports the canonical control catalog as a merged OSCAL document.",
+      "compliance-core is Caisson's evidence engine: generateEvidencePack composes typed EvidenceCollector results into a deterministic, byte-stable evidence pack, refusing to assemble anything while a control's evidence stays unresolved (flag-never-guess). computeCrosswalkRollup joins every framework pack's crosswalk pointers into one cross-framework view. It depends on and re-exports oscal-spine so existing OSCAL imports keep resolving while the dedicated package owns the formats.",
     included: [
       {
         title: "Flag-never-guess pack generation",
@@ -1364,8 +1364,8 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         body: "buildExternalAnchorEntry attaches the newest anchor receipt as its own archive entry plus a trusted-timestamped or externally-transparent grade tag on the result envelope, never a field in the canonical manifest.json (the receipt is non-deterministic; hashing it would break byte-stability). anchorGradePhrase keeps a private RFC-3161 receipt from ever claiming the public-transparency language reserved for the externally-transparent grade.",
       },
       {
-        title: "OSCAL catalog export, deduped and sorted",
-        body: "toOscalCatalog merges every shipped framework pack's controls into one OSCAL catalog document, dedupes a canonical control shared verbatim across multiple packs to a single entry (OSCAL forbids duplicate ids), and sorts groups and controls lexicographically so the same catalog input always produces byte-identical output.",
+        title: "Source-compatible OSCAL boundary",
+        body: "compliance-core depends on and re-exports @caisson/oscal-spine. Existing assessment-plan, assessment-results, POA&M, catalog, XML, and ISO 27001 SoA imports keep resolving through this package, while one dedicated package owns their implementation and conformance fixtures.",
       },
     ],
     artifact: {
@@ -1815,7 +1815,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     heroOneLiner:
       "A canonical control library where an `implements` claim without a linkable proof pointer fails to typecheck.",
     definition:
-      "frameworks-pack is Caisson's clean-room control library: defineFramework builds three own-authored packs (SOC 2 TSC, HIPAA Security, and the EU AI Act's high-risk obligations) plus five regime crosswalks (SOC 2, PCI DSS, GDPR, ISO 27001, NIST 800-53) whose rows are typed implements only behind a proof pointer and maps-to everywhere else, the NIST 800-53 rows checked against a vendored, hash-pinned rev5 OSCAL catalog.",
+      "frameworks-pack is Caisson's clean-room control library: defineFramework builds three own-authored packs (SOC 2 TSC, HIPAA Security, and the EU AI Act's high-risk obligations) plus four native regime crosswalks. It depends on and re-exports oscal-spine for the NIST SP 800-53 crosswalk, pinned reference catalog, and shared crosswalk contracts, preserving its existing public imports.",
     included: [
       {
         title: "Fail-closed control registry",
@@ -1832,7 +1832,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "NIST SP 800-53 rev5, vendored byte-exact and hash-pinned",
-        body: "NIST_CATALOG_PIN records the upstream commit SHA, the catalog's own internal OSCAL version (1.2.2), and a SHA-256 of the committed JSON bytes. extractControlIds walks the parsed catalog (base controls plus nested enhancements) into a control-id set every nist80053Crosswalk row is checked to exist against, a row citing a control the catalog doesn't have is a bug, not a typo left in prose.",
+        body: "The re-exported NIST_CATALOG_PIN from oscal-spine records the upstream commit SHA, the catalog's own OSCAL version (1.2.2), and a SHA-256 of the committed JSON bytes. extractControlIds walks base controls plus nested enhancements so every nist80053Crosswalk reference is checked against a real catalog id.",
       },
       {
         title:
@@ -1844,7 +1844,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       label:
         "RegimeCrosswalkRow, the claim discriminated union that makes an unproven `implements` a type error",
       lang: "ts",
-      file: "packages/frameworks-pack/src/crosswalks/regime-crosswalk.ts",
+      file: "packages/oscal-spine/src/crosswalks/regime-crosswalk.ts",
       code: '/**\n * An assertive row: the mechanism implements a technical control a live repo artifact proves. `proof`\n * is REQUIRED (the discriminated union makes an `implements` row without it a type error).\n */\nconst implementsRow = strictObject({\n  claim: z.literal("implements"),\n  ...rowBase,\n  proof: ProofPointer,\n});\n\n/** A conservative row: the mechanism maps to (shares a domain with) the requirement. No proof. */\nconst mapsToRow = strictObject({\n  claim: z.literal("maps-to"),\n  ...rowBase,\n});\n\n/** One crosswalk row — assertive (`implements` + proof) or conservative (`maps-to`), by `claim`. */\nexport const RegimeCrosswalkRow = z.discriminatedUnion("claim", [\n  implementsRow,\n  mapsToRow,\n]);\nexport type RegimeCrosswalkRow = z.infer<typeof RegimeCrosswalkRow>;',
       annotations: [
         "implementsRow spreads proof: ProofPointer into the schema itself, an implements claim with no linkable test/CI/live-verification artifact fails validation, it isn't a reviewer's judgment call.",
@@ -1875,7 +1875,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Do I need @caisson/compliance-core to use this, or does it work on its own?",
         answer:
-          "frameworks-pack depends on nothing but @caisson/kernel and zod, you get the framework catalogs, the five regime crosswalks, and the vendored NIST catalog as typed data on their own. compliance-core is the separate carve that renders these catalogs into an OSCAL export and the SOC 2/HIPAA evidence pack; both ship in the Compliance bundle.",
+          "No. frameworks-pack works on its own with @caisson/kernel, zod, and its @caisson/oscal-spine dependency. You get the framework catalogs, five regime crosswalks, and the re-exported pinned NIST reference data. compliance-core is the separate evidence-pack engine; all three packages ship in the Compliance bundle.",
       },
     ],
     relatedGlossary: [
@@ -1886,7 +1886,80 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "compliance",
-      note: `Sold standalone at ${modulePrice("frameworks-pack")}, or as the framework/crosswalk layer of the Compliance bundle alongside compliance-core (the evidence-pack generator that renders against these catalogs) and signing-primitive.`,
+      note: `Sold standalone at ${modulePrice("frameworks-pack")}, or as the framework/crosswalk layer of the Compliance bundle alongside compliance-core, oscal-spine, and signing-primitive.`,
+    },
+  },
+  {
+    slug: "oscal-spine",
+    metaTitle: "OSCAL Spine, Deterministic Compliance Exports | Caisson",
+    metaDescription:
+      "OSCAL v1.2.2 assessment, POA&M, catalog, XML, and ISO 27001 SoA exports with a hash-pinned NIST SP 800-53 rev5 reference catalog.",
+    heroOneLiner:
+      "One package owns every OSCAL artifact, conformance fixture, and pinned NIST reference your compliance pipeline depends on.",
+    definition:
+      "oscal-spine is Caisson's commercial OSCAL boundary. It turns structural evidence-pack and framework inputs into deterministic OSCAL v1.2.2 assessment plans, assessment results, POA&M fragments, catalogs, XML, and ISO 27001 SoA components. The same package owns the byte-pinned NIST SP 800-53 rev5 catalog and the own-authored OLIR relationship crosswalk checked against it.",
+    included: [
+      {
+        title: "Assessment artifacts from evidence you already generated",
+        body: "toOscalBundle projects an evidence-pack manifest into assessment-results and POA&M report fragments, while toOscalAssessmentPlan emits the matching plan. Inputs are structural contracts, so the exporter does not reach back into the collector or storage layers.",
+      },
+      {
+        title: "One deterministic canonical-control catalog",
+        body: "toOscalCatalog deduplicates shared canonical controls document-wide, sorts frameworks, groups, and controls before emission, and accepts injected clock and UUID seams. The same inputs and seams produce byte-identical JSON.",
+      },
+      {
+        title: "JSON, XML, and ISO 27001 SoA targets",
+        body: "The package keeps the JSON model, XML conversion path, and ISO 27001 SoA component-definition exporter together, with golden fixtures and oscal-cli conformance checks covering the public formats.",
+      },
+      {
+        title: "NIST SP 800-53 reference bytes are pinned",
+        body: "NIST_CATALOG_PIN travels as one coherent record: upstream repository and path, exact commit SHA, catalog and OSCAL versions, SHA-256, and vendored filename. A drift test hashes the committed bytes instead of trusting a moving branch.",
+      },
+      {
+        title: "Parent imports remain source-compatible",
+        body: "@caisson/compliance-core and @caisson/frameworks-pack both depend on and re-export oscal-spine. Existing buyers keep their import paths; buyers who need neither parent can purchase the OSCAL surface directly.",
+      },
+    ],
+    artifact: {
+      label:
+        "NIST_CATALOG_PIN, one immutable record for the vendored reference catalog",
+      lang: "ts",
+      file: "packages/oscal-spine/src/vendor/nist-catalog-pin.ts",
+      code: "export const NIST_CATALOG_PIN: NistCatalogPin = {\n  repo: NIST_CATALOG_REPO,\n  upstreamPath: NIST_CATALOG_UPSTREAM_PATH,\n  commitSha: NIST_CATALOG_COMMIT_SHA,\n  sourceUrl: NIST_CATALOG_SOURCE_URL,\n  catalogVersion: NIST_CATALOG_VERSION,\n  oscalVersion: NIST_CATALOG_OSCAL_VERSION,\n  sha256: NIST_CATALOG_SHA256,\n  vendoredFilename: NIST_CATALOG_VENDORED_FILENAME,\n};",
+      annotations: [
+        "The source URL is derived from the exact commit SHA, never from a moving main-branch URL.",
+        "The SHA-256 and OSCAL version travel with the source identity, so consumers cannot accidentally mix a new catalog with an old pin.",
+        "The vendored-byte test hashes the committed JSON and compares it with this record before crosswalk validation runs.",
+      ],
+    },
+    faq: [
+      {
+        question: "Does an OSCAL-valid export certify our system?",
+        answer:
+          "No. Schema conformance proves that the artifact is machine-readable OSCAL v1.2.2. Your assessor or authorizing official still determines whether the system and its evidence satisfy the framework.",
+      },
+      {
+        question:
+          "Will existing compliance-core or frameworks-pack imports break?",
+        answer:
+          "No. Both parent packages depend on and re-export oscal-spine, so their existing OSCAL, NIST catalog, and crosswalk imports keep resolving. The standalone package adds a direct purchase path without removing the compatibility paths.",
+      },
+      {
+        question:
+          "Why vendor the NIST catalog instead of fetching it at runtime?",
+        answer:
+          "A runtime fetch would make validation depend on mutable external state. The committed catalog is pinned to one upstream commit and SHA-256, so tests and exports resolve against the same reviewed reference bytes every time.",
+      },
+    ],
+    relatedGlossary: [
+      "oscal",
+      "compliance-crosswalk",
+      "control-to-code-mapping",
+      "audit-evidence-bundle",
+    ],
+    sells: {
+      edition: "compliance",
+      note: `Sold standalone at ${modulePrice("oscal-spine")}, or included in the ${bundlePrice("compliance")} Compliance bundle. compliance-core and frameworks-pack also depend on and re-export it for source compatibility.`,
     },
   },
   {

@@ -742,10 +742,10 @@
       "name": "@caisson/compliance-core",
       "version": "0.6.1",
       "dependencies": {
-        "@caisson/artifact-render": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
         "@caisson/frameworks-pack": "workspace:*",
         "@caisson/kernel": "workspace:*",
+        "@caisson/oscal-spine": "workspace:*",
         "@caisson/risk-register": "workspace:*",
         "zod": "catalog:",
       },
@@ -873,6 +873,7 @@
       "version": "0.6.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
+        "@caisson/oscal-spine": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -1164,6 +1165,22 @@
         "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "@clerk/backend": "^3.0.0",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/oscal-spine": {
+      "name": "@caisson/oscal-spine",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/artifact-render": "workspace:*",
+        "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -1979,6 +1996,8 @@
     "@caisson/observability": ["@caisson/observability@workspace:packages/observability"],
 
     "@caisson/org-controls": ["@caisson/org-controls@workspace:packages/org-controls"],
+
+    "@caisson/oscal-spine": ["@caisson/oscal-spine@workspace:packages/oscal-spine"],
 
     "@caisson/platform-migrations": ["@caisson/platform-migrations@workspace:packages/platform-migrations"],
 

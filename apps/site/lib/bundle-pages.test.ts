@@ -124,6 +124,7 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
     }
     expect(spellCount(0)).toBe("Zero");
     expect(spellCount(13)).toBe("Thirteen");
+    expect(spellCount(14)).toBe("Fourteen");
     expect(spellCount(16)).toBe("16");
   });
 });

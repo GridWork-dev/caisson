@@ -2,20 +2,20 @@
 import { describe, expect, test } from "bun:test";
 import { matchGolden } from "@caisson/testing";
 import {
+  OSCAL_VERSION,
+  toOscalCatalog,
+  type OscalCatalogExportOptions,
+} from "@caisson/oscal-spine";
+import {
   euAiAct,
   hipaaSecurity,
   soc2Tsc,
   type Framework,
 } from "@caisson/frameworks-pack";
-import { OSCAL_VERSION } from "./oscal-export.ts";
-import {
-  toOscalCatalog,
-  type OscalCatalogExportOptions,
-} from "./oscal-catalog-export.ts";
 
-// matchGolden anchors __golden__/ to the URL it is handed — ALL compliance goldens live in the ONE
-// package-level dir (src/__golden__), so anchor at src/ (one level up from evidence/).
-const PKG_SRC_META = new URL("../index.ts", import.meta.url).href;
+// The exporter and golden belong to oscal-spine; the framework data comes from this parent package.
+const PKG_SRC_META = new URL("../../oscal-spine/src/index.ts", import.meta.url)
+  .href;
 
 const NOW = new Date("2026-07-18T00:00:00.000Z");
 

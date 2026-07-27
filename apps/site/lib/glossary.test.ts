@@ -143,6 +143,6 @@ describe("glossaryPageSpec — the ordered section builder", () => {
     expect(html).toContain("Paragraphs (5), (6), (69)–(74)");
     expect(html).toContain("(151)");
     expect(html).toContain("Surveillance authorities");
-    expect(html).toContain("Sources verified 2026-07-26");
+    expect(html).toContain("Sources verified 2026-07-27");
   });
 });

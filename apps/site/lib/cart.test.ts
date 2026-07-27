@@ -193,9 +193,9 @@ test("CART_STORAGE_KEY is namespaced and non-empty", () => {
 describe("cartUpgrade (Everything nudge, ADR-0193/0258)", () => {
   const everything: CartItem = {
     id: "bundle:everything",
-    priceId: "pri_01kwwqa3dfp8k0v5k3bbg3pd5f",
+    priceId: "pri_01kyeczrjj0tzpwg7tv752e42s",
     label: "Everything",
-    amount: 2059,
+    amount: 2259,
     kind: "bundle",
   };
   const line = (
@@ -211,22 +211,22 @@ describe("cartUpgrade (Everything nudge, ADR-0193/0258)", () => {
   });
 
   test("suggests Everything when the cart totals more than it, with the real saving", () => {
-    // Three module lines totalling 2,257 > the 2,059 bundle → save 198. Everything covers EVERY
+    // Three module lines totalling 2,359 > the 2,259 bundle → save 100. Everything covers EVERY
     // sellable SKU by construction (the explicit full-catalog rule), so no line can disqualify.
     const u = cartUpgrade(
       [
         line("module", "compliance-core", 299),
         line("module", "org-controls", 249),
-        line("module", "field-crypto", 1709),
+        line("module", "field-crypto", 1811),
       ],
       everything,
     );
     expect(u?.bundle.kind).toBe("bundle");
-    expect(u?.saves).toBe(2257 - 2059);
+    expect(u?.saves).toBe(2359 - 2259);
   });
 
   test("no suggestion when the subtotal is at or below the bundle price", () => {
-    // 299 + 249 = 548 < 2,059 → the bundle would cost MORE, so no fabricated saving.
+    // 299 + 249 = 548 < 2,259 → the bundle would cost MORE, so no fabricated saving.
     expect(
       cartUpgrade(
         [
@@ -241,7 +241,7 @@ describe("cartUpgrade (Everything nudge, ADR-0193/0258)", () => {
   test("no suggestion when a bundle is already in the cart", () => {
     expect(
       cartUpgrade(
-        [line("bundle", "compliance", 1449), line("module", "ui-pro", 129)],
+        [line("bundle", "compliance", 1649), line("module", "ui-pro", 129)],
         everything,
       ),
     ).toBeUndefined();
@@ -249,5 +249,24 @@ describe("cartUpgrade (Everything nudge, ADR-0193/0258)", () => {
 
   test("no suggestion for an empty cart", () => {
     expect(cartUpgrade([], everything)).toBeUndefined();
+  });
+});
+
+describe("forward-only bundle reprices", () => {
+  test("persisted predecessor price ids are pruned while replacement ids remain live", () => {
+    const oldCompliance: CartItem = {
+      id: "bundle:compliance",
+      priceId: "pri_01kwwqa2hne35c1df5xe8p91z3",
+      label: "Compliance",
+      amount: 1449,
+      kind: "bundle",
+    };
+    const newCompliance: CartItem = {
+      ...oldCompliance,
+      priceId: "pri_01kyeczreqq58ze5en0p3f0jkc",
+      amount: 1649,
+    };
+    expect(pruneCart([oldCompliance], LIVE_PRICE_IDS)).toEqual([]);
+    expect(pruneCart([newCompliance], LIVE_PRICE_IDS)).toEqual([newCompliance]);
   });
 });

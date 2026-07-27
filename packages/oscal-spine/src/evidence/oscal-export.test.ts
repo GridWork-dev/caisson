@@ -12,10 +12,10 @@ import {
   ValidationError,
   type JsonValue,
 } from "@caisson/kernel";
-import {
-  parseEvidencePackManifest,
-  type EvidencePackManifest,
-} from "./pack-format.ts";
+import type {
+  OscalCrosswalkRollup,
+  OscalEvidencePackManifest,
+} from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
   createOscalHttpTransport,
@@ -56,7 +56,7 @@ function det(overrides?: Partial<OscalExportOptions>): OscalExportOptions {
 }
 
 /** The crosswalk rollup for `fixtureManifest()`'s two controls (ADR-0333/ADR-0347, v2). */
-function fixtureRollup(): { cells: unknown[] } {
+function fixtureRollup(): OscalCrosswalkRollup {
   return {
     cells: [
       {
@@ -80,8 +80,8 @@ function fixtureRollup(): { cells: unknown[] } {
 }
 
 /** A two-control pack: one READY (2 passing items), one GAP (1 flagged item). */
-function fixtureManifest(): EvidencePackManifest {
-  return parseEvidencePackManifest({
+function fixtureManifest(): OscalEvidencePackManifest {
+  return {
     formatVersion: "2",
     crosswalkRollup: fixtureRollup(),
     tenantId: TENANT,
@@ -156,12 +156,12 @@ function fixtureManifest(): EvidencePackManifest {
       posture:
         "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item.",
     },
-  });
+  };
 }
 
 /** An all-ready pack (no gaps) — the clean-export case. */
-function cleanManifest(): EvidencePackManifest {
-  return parseEvidencePackManifest({
+function cleanManifest(): OscalEvidencePackManifest {
+  return {
     formatVersion: "2",
     crosswalkRollup: { cells: [] },
     tenantId: TENANT,
@@ -198,7 +198,7 @@ function cleanManifest(): EvidencePackManifest {
       totalEvidenceItems: 1,
       posture: "1 of 1 controls evidence-ready; no gaps recorded.",
     },
-  });
+  };
 }
 
 function asJson(value: unknown): JsonValue {
@@ -274,6 +274,32 @@ describe("toOscalAssessmentResults — SAR mapping", () => {
             sha256: "not-a-digest",
           },
         }),
+      ),
+    ).toThrow(ValidationError);
+  });
+
+  test.each([
+    "",
+    " ",
+    "/assessment-plan/ap.json",
+    "//host/share/ap.json",
+    "https://example.com/ap.json",
+    "file:assessment-plan/ap.json",
+    "C:\\assessment-plan\\ap.json",
+    "assessment-plan\\ap.json",
+    "../assessment-plan/ap.json",
+    "./assessment-plan/../ap.json",
+    "./assessment-plan/./ap.json",
+    "./assessment-plan//ap.json",
+    "./assessment-plan/ap.json?download=1",
+    "./assessment-plan/ap.json#fragment",
+    "./assessment-plan/%2e%2e/ap.json",
+    "./assessment-plan/%252e%252e/ap.json",
+  ])("ADR-0231: rejects uncontained assessment-plan rlink %s", (rlinkHref) => {
+    expect(() =>
+      toOscalAssessmentResults(
+        fixtureManifest(),
+        det({ assessmentPlan: { rlinkHref } }),
       ),
     ).toThrow(ValidationError);
   });
@@ -420,6 +446,22 @@ describe("toOscalBundle — determinism + honesty + fail-closed", () => {
     expect(canonicalize(asJson(a))).toBe(canonicalize(asJson(b)));
   });
 
+  test("accepts every rollup pointer shape the parent manifest contract accepts", () => {
+    const manifest = fixtureManifest();
+    const parentCompatible = {
+      ...manifest,
+      crosswalkRollup: {
+        cells: manifest.crosswalkRollup.cells.map((cell) => ({
+          ...cell,
+          canonicalControlIds: ["vendor/control:id"],
+          evidencePointers: ["evidence://collector/result"],
+        })),
+      },
+    };
+
+    expect(() => toOscalBundle(parentCompatible, det())).not.toThrow();
+  });
+
   test("the default id source mints distinct random UUIDs per call", () => {
     const m = fixtureManifest();
     const a = toOscalAssessmentResults(m, { now: NOW })["assessment-results"];
@@ -462,6 +504,54 @@ describe("toOscalBundle — determinism + honesty + fail-closed", () => {
         det({ packSha256: "not-a-digest" }),
       ),
     ).toThrow(ValidationError);
+  });
+
+  test.each([
+    ["undefined rollup", undefined],
+    ["BigInt rollup", 1n],
+    [
+      "malformed rollup cell",
+      {
+        cells: [
+          {
+            framework: "SOC2-TSC",
+            reference: "CC6.1",
+            canonicalControlIds: [],
+            status: "invented",
+            claim: "maps-to",
+            evidencePointers: [],
+          },
+        ],
+      },
+    ],
+  ])("rejects a %s before OSCAL assembly", (_label, crosswalkRollup) => {
+    const invalid = {
+      ...fixtureManifest(),
+      crosswalkRollup,
+    } as unknown as OscalEvidencePackManifest;
+    expect(() => toOscalBundle(invalid, det())).toThrow(ValidationError);
+  });
+
+  test("rejects circular manifest data before OSCAL assembly", () => {
+    const circular: Record<string, unknown> = { cells: [] };
+    circular.self = circular;
+    const invalid = {
+      ...fixtureManifest(),
+      crosswalkRollup: circular,
+    } as unknown as OscalEvidencePackManifest;
+    expect(() => toOscalBundle(invalid, det())).toThrow(ValidationError);
+  });
+
+  test("rejects non-finite manifest numbers before OSCAL assembly", () => {
+    const manifest = fixtureManifest();
+    const invalid = {
+      ...manifest,
+      summary: {
+        ...manifest.summary,
+        totalControls: Number.POSITIVE_INFINITY,
+      },
+    };
+    expect(() => toOscalBundle(invalid, det())).toThrow(ValidationError);
   });
 });
 
