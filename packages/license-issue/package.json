@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tscn -p tsconfig.json && tscn -p tsconfig.ui.json",
     "lint": "eslint src",
-    "test": "bun test ./src"
+    "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",

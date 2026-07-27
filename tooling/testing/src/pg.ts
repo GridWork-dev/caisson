@@ -35,6 +35,24 @@ export interface TestPg {
  * Create an in-memory PGlite with a non-login `app` role provisioned. Apply your schema +
  * RLS policies + `GRANT ... TO app` via `exec`, then assert isolation through `asTenant` /
  * `asAppNoTenant`.
+ *
+ * COST — read this before putting a call in a `beforeEach`. Each call instantiates a fresh
+ * Postgres-in-WASM: measured 0.8-1.6s idle on a developer box, and it grows within a process when
+ * instances are held rather than closed (10 held: 718ms -> 1592ms; 10 closed: flat ~800ms). Always
+ * `close()` in `afterAll`/`afterEach`.
+ *
+ * That cost is the reason every `bun test` script in this repo carries `--timeout 60000` instead of
+ * bun's 5s default. Under the full `bun run check` graph, CPU contention pushed a single boot past
+ * 5s and failed the enclosing hook: `@caisson/ai-kit` flaked exactly that way while passing
+ * standalone, reporting `a beforeEach/afterEach hook timed out for this test`. Nothing was hanging
+ * — the budget was under 5x the idle cost of real work. The same 5s ceiling independently failed
+ * `@caisson/ui`, whose manifest generator takes ~4s for one pass and runs two in the determinism
+ * test, so the flag is repo-wide rather than scoped to PGlite consumers.
+ *
+ * The bound lives on each package's test script and NOT in the root `bunfig.toml`, because bun does
+ * not walk up the tree for bunfig and every package script runs with cwd inside the package —
+ * verified against a deliberately-slow hook, not assumed. There is no env-var equivalent;
+ * `BUN_TEST_TIMEOUT` is not a thing. A new package needs the flag on its own test script.
  */
 export async function newTestPg(): Promise<TestPg> {
   const pg = new PGlite();

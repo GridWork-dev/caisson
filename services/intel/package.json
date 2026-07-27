@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tscn -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src --path-ignore-patterns='**/*.eval.test.ts'",
+    "test": "bun test --timeout 60000 ./src --path-ignore-patterns='**/*.eval.test.ts'",
     "test:live": "bun test ./live",
     "eval": "bun test --timeout 600000 src/eval/intel-briefs.eval.test.ts",
     "eval:validate": "INTEL_EVAL_VALIDATE_ONLY=1 bun run eval",
