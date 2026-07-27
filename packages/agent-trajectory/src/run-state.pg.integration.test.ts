@@ -25,8 +25,12 @@ import {
 setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
-import { ConflictError, NotFoundError } from "@caisson/kernel";
+import {
+  buildTenantPolicySql,
+  type TenantExecutor,
+  type Transactor,
+} from "@caisson/tenancy-rls";
+import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
 import {
   DerivedKeyProvider,
   derivedContext,
@@ -73,6 +77,94 @@ afterAll(async () => {
 });
 
 describe("createPgRunStateStore — CAS transitions over a real Postgres", () => {
+  test("rejects direct and lazy crypto contexts for a different tenant before SQL mutation", async () => {
+    const accountId = randomUUID();
+    const otherAccountId = randomUUID();
+
+    const directRunId = randomUUID();
+    const direct = createPgRunStateStore(
+      tp.pg,
+      accountId,
+      cryptoCtxFor(otherAccountId),
+    );
+    await expect(
+      direct.park({
+        runId: directRunId,
+        toolCallId: "call-direct",
+        resumeSeq: 0,
+        parkedState: { secret: "direct" },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+
+    const lazyRunId = randomUUID();
+    const lazy = createPgRunStateStore(tp.pg, accountId, async (fn) =>
+      fn(tp.pg, cryptoCtxFor(otherAccountId)),
+    );
+    await expect(
+      lazy.park({
+        runId: lazyRunId,
+        toolCallId: "call-lazy",
+        resumeSeq: 0,
+        parkedState: { secret: "lazy" },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+
+    const rows = await tp.query<{ run_id: string }>(
+      `SELECT run_id FROM agent_run_state WHERE run_id = ANY($1::text[])`,
+      [[directRunId, lazyRunId]],
+    );
+    expect(rows).toHaveLength(0);
+  });
+
+  test("status reads use a snapshot-only query that omits parked_state", async () => {
+    const queries: string[] = [];
+    const executor: TenantExecutor = {
+      async query<T>(sql: string): Promise<{ rows: T[] }> {
+        queries.push(sql);
+        if (sql.includes("FROM pg_roles")) {
+          return {
+            rows: [{ rolsuper: false, rolbypassrls: false }] as T[],
+          };
+        }
+        if (sql.includes("FROM agent_run_state")) {
+          return {
+            rows: [
+              {
+                status: "parked",
+                pending_tool_call_id: "call-1",
+                resume_seq: 4,
+                updated_at: new Date("2026-07-26T00:00:00.000Z"),
+              },
+            ] as T[],
+          };
+        }
+        return { rows: [] };
+      },
+      async exec(sql: string) {
+        queries.push(sql);
+      },
+    };
+    const transactor: Transactor = {
+      transaction: (fn) => fn(executor),
+    };
+    const store = createPgRunStateStore(
+      transactor,
+      "acct-query-spy",
+      cryptoCtxFor("acct-query-spy"),
+    );
+
+    expect(await store.read("run-query-spy")).toMatchObject({
+      runId: "run-query-spy",
+      status: "parked",
+      resumeSeq: 4,
+    });
+    const statusQuery = queries.find((sql) =>
+      sql.includes("FROM agent_run_state"),
+    );
+    expect(statusQuery).toBeDefined();
+    expect(statusQuery).not.toContain("parked_state");
+  });
+
   test("park -> approve -> claimResume survives FRESH store objects (real-restart shape)", async () => {
     const acct = randomUUID();
     const runId = randomUUID();

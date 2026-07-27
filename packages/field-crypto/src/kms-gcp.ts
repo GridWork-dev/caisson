@@ -38,7 +38,12 @@
 import { randomBytes } from "node:crypto";
 import { KeyManagementServiceClient, protos } from "@google-cloud/kms";
 import { ConfigError, InternalError, ValidationError } from "@caisson/kernel";
-import type { KmsClient, KmsDeletionReceipt } from "./kms-port.ts";
+import { withKmsOperationBudget } from "./kms-budget.ts";
+import type {
+  KmsClient,
+  KmsDeletionReceipt,
+  KmsOperationOptions,
+} from "./kms-port.ts";
 
 /**
  * The injected GCP KMS transport — only the three RPCs this driver calls, collapsed to a `Pick<>`
@@ -102,6 +107,29 @@ function scopeAad(keyId: string): Buffer {
   return Buffer.from(`caisson:field-crypto:scope=${keyId}`, "utf8");
 }
 
+function throwIfAborted(signal: AbortSignal): void {
+  if (signal.aborted) {
+    throw signal.reason ?? new Error("field-crypto: GCP KMS operation aborted");
+  }
+}
+
+function assertCryptoKeyVersionName(
+  name: unknown,
+  parent: string,
+): asserts name is string {
+  const prefix = `${parent}/cryptoKeyVersions/`;
+  if (
+    typeof name !== "string" ||
+    !name.startsWith(prefix) ||
+    !/^[1-9]\d*$/.test(name.slice(prefix.length))
+  ) {
+    throw new InternalError(
+      "field-crypto: GCP KMS returned a CryptoKeyVersion outside the requested CryptoKey",
+      { parent },
+    );
+  }
+}
+
 /** The real GCP Cloud KMS `KmsClient` (ADR-0171) — see the module-level mapping comment for the three ops. */
 export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
   if (config.cryptoKeyName === undefined || config.cryptoKeyName.length === 0) {
@@ -119,36 +147,76 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
   return {
     async generateDataKey(
       keyId: string,
+      options?: KmsOperationOptions,
     ): Promise<{ plaintextKey: Buffer; wrappedKey: Buffer }> {
       const plaintextKey = randomBytes(32);
-      const [{ ciphertext }] = await sdk.encrypt({
-        name: cryptoKeyFor(keyId),
-        plaintext: plaintextKey,
-        additionalAuthenticatedData: scopeAad(keyId),
-      });
-      if (ciphertext === undefined || ciphertext === null) {
-        throw new InternalError(
-          "field-crypto: GCP KMS Encrypt returned no ciphertext",
+      let succeeded = false;
+      try {
+        const [{ ciphertext }] = await withKmsOperationBudget(
+          options,
+          (_abortSignal, remainingTimeoutMs) =>
+            sdk.encrypt(
+              {
+                name: cryptoKeyFor(keyId),
+                plaintext: plaintextKey,
+                additionalAuthenticatedData: scopeAad(keyId),
+              },
+              { timeout: remainingTimeoutMs() },
+            ),
         );
+        if (
+          !(ciphertext instanceof Uint8Array) ||
+          ciphertext.byteLength === 0
+        ) {
+          throw new InternalError(
+            "field-crypto: GCP KMS Encrypt returned no ciphertext: wrapped ciphertext must be non-empty",
+          );
+        }
+        const wrappedKey = Buffer.from(ciphertext);
+        succeeded = true;
+        return { plaintextKey, wrappedKey };
+      } finally {
+        if (!succeeded) plaintextKey.fill(0);
       }
-      return {
-        plaintextKey,
-        wrappedKey: Buffer.from(ciphertext as Uint8Array),
-      };
     },
 
-    async decryptDataKey(keyId: string, wrappedKey: Buffer): Promise<Buffer> {
-      const [{ plaintext }] = await sdk.decrypt({
-        name: cryptoKeyFor(keyId),
-        ciphertext: wrappedKey,
-        additionalAuthenticatedData: scopeAad(keyId),
-      });
-      if (plaintext === undefined || plaintext === null) {
-        throw new InternalError(
-          "field-crypto: GCP KMS Decrypt returned no plaintext",
-        );
-      }
-      return Buffer.from(plaintext as Uint8Array);
+    async decryptDataKey(
+      keyId: string,
+      wrappedKey: Buffer,
+      options?: KmsOperationOptions,
+    ): Promise<Buffer> {
+      return withKmsOperationBudget(
+        options,
+        (abortSignal, remainingTimeoutMs) =>
+          sdk
+            .decrypt(
+              {
+                name: cryptoKeyFor(keyId),
+                ciphertext: wrappedKey,
+                additionalAuthenticatedData: scopeAad(keyId),
+              },
+              { timeout: remainingTimeoutMs() },
+            )
+            .then(([result]) => {
+              const { plaintext } = result;
+              if (!(plaintext instanceof Uint8Array)) {
+                throw new InternalError(
+                  "field-crypto: GCP KMS Decrypt returned no plaintext",
+                );
+              }
+              try {
+                if (plaintext.byteLength !== 32) {
+                  throw new InternalError(
+                    "field-crypto: GCP KMS Decrypt returned a DEK that is not 32-byte AES-256 material",
+                  );
+                }
+                throwIfAborted(abortSignal);
+                return Buffer.from(plaintext);
+              } finally {
+                plaintext.fill(0);
+              }
+            }),
+      );
     },
 
     async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
@@ -163,7 +231,32 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
       // older versions whose wrapped DEKs would otherwise stay decryptable while the call reports
       // success (silently incomplete tenant crypto-erasure). List, then destroy each live version.
       const parent = cryptoKeyFor(keyId);
-      const [versions] = await sdk.listCryptoKeyVersions({ parent });
+      const versions: protos.google.cloud.kms.v1.ICryptoKeyVersion[] = [];
+      let pageRequest: protos.google.cloud.kms.v1.IListCryptoKeyVersionsRequest | null =
+        { parent };
+      while (pageRequest !== null) {
+        const pageResult: [
+          protos.google.cloud.kms.v1.ICryptoKeyVersion[],
+          protos.google.cloud.kms.v1.IListCryptoKeyVersionsRequest | null,
+          protos.google.cloud.kms.v1.IListCryptoKeyVersionsResponse,
+        ] = await sdk.listCryptoKeyVersions(pageRequest, {
+          autoPaginate: false,
+        });
+        const [pageVersions, nextPageRequest] = pageResult;
+        versions.push(...pageVersions);
+        if (nextPageRequest === null) {
+          pageRequest = null;
+        } else if (
+          typeof nextPageRequest.pageToken === "string" &&
+          nextPageRequest.pageToken.length > 0
+        ) {
+          pageRequest = { parent, pageToken: nextPageRequest.pageToken };
+        } else {
+          throw new InternalError(
+            "field-crypto: GCP KMS pagination returned an invalid next-page request",
+          );
+        }
+      }
       if (versions.length === 0) {
         throw new InternalError(
           "field-crypto: GCP KMS crypto-shred found no CryptoKeyVersions — a CryptoKey always has at least one; refusing to report an erasure that touched nothing",
@@ -173,18 +266,23 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
       const liveNames: string[] = [];
       let sawScheduled = false;
       let sawDestroyed = false;
+      let destroyedFinalityProved = true;
       const scheduledFor: string[] = [];
+      const seenNames = new Set<string>();
       for (const v of versions) {
-        if (
-          typeof v.name !== "string" ||
-          v.name.length === 0 ||
-          v.state === undefined ||
-          v.state === null
-        ) {
+        if (v.state === undefined || v.state === null) {
           throw new InternalError(
             "field-crypto: GCP KMS returned a CryptoKeyVersion without a provable name/state",
           );
         }
+        assertCryptoKeyVersionName(v.name, parent);
+        if (seenNames.has(v.name)) {
+          throw new InternalError(
+            "field-crypto: GCP KMS returned a duplicate CryptoKeyVersion",
+            { name: v.name },
+          );
+        }
+        seenNames.add(v.name);
         if (LIVE_VERSION_STATES.has(v.state)) {
           liveNames.push(v.name);
         } else if (DESTROY_SCHEDULED_VERSION_STATES.has(v.state)) {
@@ -193,6 +291,7 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
           if (date !== undefined) scheduledFor.push(date);
         } else if (DESTROYED_VERSION_STATES.has(v.state)) {
           sawDestroyed = true;
+          destroyedFinalityProved &&= v.reimportEligible === false;
         } else {
           throw new InternalError(
             "field-crypto: GCP KMS returned a CryptoKeyVersion state that cannot prove destruction",
@@ -200,9 +299,14 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
           );
         }
       }
-      // Zero live versions with some already destroyed/scheduled = an idempotent re-shred.
       for (const name of liveNames) {
         const [version] = await sdk.destroyCryptoKeyVersion({ name });
+        if (version.name !== name) {
+          throw new InternalError(
+            "field-crypto: GCP KMS DestroyCryptoKeyVersion returned an unexpected CryptoKeyVersion",
+            { expected: name },
+          );
+        }
         if (
           version.state !== undefined &&
           version.state !== null &&
@@ -217,6 +321,7 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
           DESTROYED_VERSION_STATES.has(version.state)
         ) {
           sawDestroyed = true;
+          destroyedFinalityProved &&= version.reimportEligible === false;
         } else {
           throw new InternalError(
             "field-crypto: GCP KMS DestroyCryptoKeyVersion did not prove DESTROY_SCHEDULED or DESTROYED",
@@ -234,6 +339,11 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
             };
       }
       if (sawDestroyed) {
+        if (!destroyedFinalityProved) {
+          throw new InternalError(
+            "field-crypto: GCP KMS DESTROYED state did not prove that external key material is non-re-importable",
+          );
+        }
         return { state: "destroyed", irreversible: true };
       }
       throw new InternalError(

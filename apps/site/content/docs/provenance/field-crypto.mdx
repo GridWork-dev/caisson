@@ -1,29 +1,31 @@
 ---
 title: field-crypto
-description: Per-tenant field encryption via HKDF key derivation, behind a pluggable FieldKeyProvider KMS port, one tenant's key never decrypts another tenant's data.
+description: Per-tenant field encryption with wrapped random DEKs or self-hosted HKDF derivation, behind a pluggable FieldKeyProvider KMS port.
 ---
 
-`@caisson/field-crypto` encrypts individual fields with a key derived per tenant. A single
-root key lives in your KMS (or an env-held master key for the zero-infra default); each
-tenant's subkey is derived from it with HKDF-SHA256, using the tenant id and key version as
-the HKDF `info`. One tenant's key cannot decrypt another tenant's ciphertext, the isolation
-is in the key derivation, not in an application check that could be skipped.
+`@caisson/field-crypto` encrypts individual fields under a distinct tenant key. A KMS-backed
+deployment wraps each tenant's data-encryption key under a tenant-specific key-encryption key;
+the dev/self-hosted zero-infra path can instead derive tenant keys with HKDF-SHA256 from an
+environment-held master key. One tenant's key cannot decrypt another tenant's ciphertext,
+the isolation is in the key material and authenticated envelope, not in an application check
+that could be skipped.
 
 ## What it does
 
 - **Per-tenant field encryption**: encrypt and decrypt named fields (a patient SSN, a
   bank token) scoped to a tenant. The plaintext is never stored.
-- **HKDF key derivation**: per-tenant subkeys are derived deterministically from the root
-  key with HKDF-SHA256. The tenant id and key version are folded into the derivation, so it
-  is reproducible for one tenant/version and useless for any other.
+- **Two key-provider modes**: hosted KMS deployments generate a random DEK per tenant/version and
+  persist only its wrapped form; the zero-infra dev/self-hosted path derives per-tenant subkeys
+  deterministically from a root key with HKDF-SHA256.
 - **AAD-bound AES-256-GCM envelope**: every ciphertext binds tenant, key version, and
   column (and, for row-bound fields, row id) as GCM's additional authenticated data. A
   self-describing envelope carries its own format/algorithm/key-version header.
 - **Key-version rotation with no bulk re-encrypt**: bump a tenant's current version; older
   envelopes keep decrypting under the version they were written with.
-- **Crypto-shred erasure**: destroy a tenant or subject's key-encryption key through the
-  KMS port to make every ciphertext under it permanently unrecoverable, without mutating an
-  append-only audit chain.
+- **Crypto-shred erasure**: request deletion of a tenant or subject's key-encryption key through the
+  KMS port without mutating an append-only audit chain. Recoverability follows the provider's
+  deletion receipt: soft-deleted keys remain recoverable until their retention window closes or an
+  irreversible purge succeeds.
 
 ## Install
 
@@ -33,8 +35,11 @@ bun add @caisson/field-crypto
 
 ## Quickstart
 
-The zero-infra default derives keys from an env-held master secret, no key table, no KMS
-call:
+The zero-infra dev/self-hosted path derives keys from an env-held master secret, no key table,
+no KMS call:
+
+Caisson's hosted production site does not use this path. Its BYOK seal path requires Azure Key
+Vault and fails closed when the vault, credentials, or purge-protection contract is unavailable.
 
 ```bash
 # 32-byte values, hex-encoded (64 chars)
@@ -48,7 +53,11 @@ import { DerivedKeyProvider, TenantFieldCrypto } from "@caisson/field-crypto";
 const provider = DerivedKeyProvider.fromEnv(); // reads MASTER_FIELD_KEY + FIELD_CRYPTO_SALT
 const crypto = new TenantFieldCrypto(provider);
 
-const sealed = await crypto.encryptField(tenantId, "424-00-1234", "patient.ssn");
+const sealed = await crypto.encryptField(
+  tenantId,
+  "424-00-1234",
+  "patient.ssn",
+);
 const plain = await crypto.decryptField(tenantId, sealed, "patient.ssn");
 
 // A different tenant's id derives a different subkey → fails closed.
@@ -57,10 +66,13 @@ await crypto.decryptField(otherTenantId, sealed, "patient.ssn"); // throws: AEAD
 
 ## The guarantee
 
-The encryption key for tenant A is a pure function of the root key, A's id, and the key
-version. There is no shared field key, and no path where tenant B's subkey decrypts A's
-data, a ciphertext relocated to another tenant, column, or row fails to authenticate,
-never returns the wrong plaintext.
+There is no shared field key and no path where tenant B's key decrypts A's data. In the derived
+dev/self-hosted mode, tenant A's key is a pure function of the root key, A's id, and the key
+version. In hosted KMS mode, each random DEK is recovered from its append-only wrapped row using
+the exact Azure KEK version recorded in the wrapped payload. In either mode, ciphertext relocated
+to another tenant or column fails authentication rather than returning the wrong plaintext.
+Explicit row-bound `encryptField` calls also reject same-column relocation between rows; the
+transparent Drizzle column path has no row identifier and does not claim that stronger binding.
 
 ## The Drizzle column path
 
@@ -118,30 +130,46 @@ under the current one.
 ## The KMS port
 
 The `FieldKeyProvider` port is the seam: `DerivedKeyProvider` (above) is the zero-infra
-default; `KmsKeyProvider` wraps a per-tenant data-encryption key under a KMS-held
-key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. AWS and
-GCP KMS clients ship today; Azure Key Vault and HashiCorp Vault Transit implement the same
-three-method `KmsClient` port.
+dev/self-hosted choice; `KmsKeyProvider` wraps a per-tenant data-encryption key under a KMS-held
+key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. AWS KMS,
+GCP KMS, and Azure Key Vault clients ship today behind the same three-method `KmsClient` port.
+Caisson's hosted production site wires the Azure client; it never falls back to a derived or demo
+key after a KMS failure.
 
 ```ts
-import { KmsKeyProvider, InMemoryWrappedKeyStore, awsKmsClient } from "@caisson/field-crypto";
+import {
+  KmsKeyProvider,
+  PgWrappedKeyStore,
+  withKmsFieldCryptoContext,
+} from "@caisson/field-crypto";
 
-const kms = awsKmsClient({ keyId: process.env.KMS_KEY_ID! });
-const provider = new KmsKeyProvider(kms, new InMemoryWrappedKeyStore());
-
-await provider.provision(tenantId); // generates + wraps a fresh DEK for this tenant
+// `tenantScopedKmsClient` maps the logical tenant scope to a provider KEK.
+// Caisson's hosted adapter does this with a deterministic Azure key name.
+const provider = new KmsKeyProvider(
+  tenantScopedKmsClient,
+  new PgWrappedKeyStore(tx),
+);
+await provider.ensureProvisioned(tenantId);
+await withKmsFieldCryptoContext(provider, tenantId, async (ctx) => {
+  await writeEncryptedFields(tx, ctx);
+});
 ```
 
-Swap `InMemoryWrappedKeyStore` for `DbWrappedKeyStore` (backed by any `get`/`put`
-key-value store you wire) to persist wrapped DEKs.
+Use `PgWrappedKeyStore` inside an RLS-scoped tenant transaction to persist wrapped DEKs
+append-only. Call `ensureProvisioned()` before you bind — a bind reads the current key version, so
+it allocates for read-only callers too — and bind the provider with
+`withKmsFieldCryptoContext()`. The bind unwraps every historical version for the request,
+then zeroizes every plaintext DEK in `finally`; old ciphertext stays readable after rotation
+without a process-lifetime plaintext-key cache.
 
 ## Crypto-shred erasure
 
-`cryptoShred` destroys a tenant or subject's KEK through the KMS port and mints an
-`erasure.crypto-shred` audit payload that carries no PII. Every ciphertext under that key
-becomes permanently unrecoverable, while an append-only WORM-anchored audit chain's
-committed bytes never change, `verifyChain` still passes after the shred, because the
-chain only ever committed the ciphertext envelope, never plaintext.
+`cryptoShred` requests destruction of a tenant or subject's KEK through the KMS port and mints an
+`erasure.crypto-shred` audit payload that carries no PII. Ciphertext becomes irrecoverable only
+when the provider receipt proves the key is no longer recoverable; an Azure soft-delete receipt
+alone does not make that claim. The append-only WORM-anchored audit chain's committed bytes never
+change, and `verifyChain` still passes after the shred, because the chain only ever committed the
+ciphertext envelope, never plaintext.
 
 ```ts
 import { cryptoShred } from "@caisson/field-crypto";
@@ -157,13 +185,36 @@ const { auditPayload } = await cryptoShred(kmsProvider, {
 
 ## Configuration
 
-| Var | What | Notes |
-| --- | --- | --- |
-| `MASTER_FIELD_KEY` | 32-byte IKM, hex (64 chars) | Hard secret, read once, never logged. |
+### Dev and self-hosted derived-key path
+
+| Var                 | What                                        | Notes                                           |
+| ------------------- | ------------------------------------------- | ----------------------------------------------- |
+| `MASTER_FIELD_KEY`  | 32-byte IKM, hex (64 chars)                 | Hard secret, read once, never logged.           |
 | `FIELD_CRYPTO_SALT` | 32-byte per-deployment salt, hex (64 chars) | Non-secret; cross-deployment domain separation. |
 
-Only required for the `DerivedKeyProvider` default. `KmsKeyProvider` reads its credentials
-through the KMS client you construct (`awsKmsClient`/`createGcpKmsClient`).
+Only required for the `DerivedKeyProvider` dev/self-hosted path.
+
+### Caisson hosted production
+
+| Var                                | Required value / purpose                                       |
+| ---------------------------------- | -------------------------------------------------------------- |
+| `AZURE_KEY_VAULT_URL`              | HTTPS Azure Key Vault URL                                      |
+| `AZURE_KEY_VAULT_KEY_NAME`         | Prefix for deterministic per-tenant KEKs                       |
+| `AZURE_KEY_VAULT_WRAP_ALGORITHM`   | Exactly `RSA-OAEP-256`                                         |
+| `AZURE_KEY_VAULT_PURGE_PROTECTION` | Exactly `enabled`; runtime also verifies the key recovery mode |
+| `AZURE_TENANT_ID`                  | Required; the service principal the adapter authenticates as   |
+| `AZURE_CLIENT_ID`                  | Required; the service principal the adapter authenticates as   |
+| `AZURE_CLIENT_SECRET`              | Required; the service principal's secret                       |
+
+The hosted adapter creates Azure SDK clients through an explicit `ClientSecretCredential` built
+from those three required variables. It never falls back to an ambient credential chain, so a
+missing or misspelled variable fails closed when the client is constructed rather than silently
+authenticating as whatever identity the host happens to offer. It provisions the tenant KEK when a KMS context is first
+bound — including a read-only one, since binding reads the current key version — pins every wrapped
+DEK to the exact Azure KEK version returned by the wrap operation, persists only wrapped DEKs in the
+tenant-scoped Postgres store, and bounds each provider request. Self-hosted integrations construct
+their chosen KMS client (`createAwsKmsClient`, `createGcpKmsClient`, or
+`createAzureKeyVaultKmsClient`) and supply their own credential adapter.
 
 ## Composing with the base
 

@@ -20,7 +20,7 @@
 import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";
 import type { AiSettings } from "@caisson/ai-config";
-import type { Transactor } from "@caisson/tenancy-rls";
+import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import {
   createPgRunStateStore,
   createPgTrajectoryStore,
@@ -28,10 +28,7 @@ import {
   type RunProjection,
   type RunStateSnapshot,
 } from "@caisson/agent-trajectory";
-import {
-  derivedContext,
-  type SyncFieldKeyProvider,
-} from "@caisson/field-crypto";
+import { type FieldCryptoContext } from "@caisson/field-crypto";
 import type { MeterConfig } from "@caisson/ai-meter";
 import {
   runToolLoop,
@@ -55,10 +52,16 @@ export interface RunToolsDeps {
   readonly maxSteps: number;
   readonly creditBudget: number;
   readonly maxOutputTokens?: number;
-  /** Builds the per-account `FieldCryptoContext` sealing `parked_state` (ADR-0361) — the SAME
-   *  provider a deployment already wires for BYOK (`byok-store.ts`) or any other field-crypto
-   *  column; no new key-material shape. */
-  readonly keyProvider: SyncFieldKeyProvider;
+  /** Binds one tenant transaction plus the request-local context sealing `parked_state`. */
+  readonly fieldCryptoContext: FieldCryptoContextRunner;
+}
+
+/** Async bind-time boundary supplying one scoped executor and disposable/dev crypto context. */
+export interface FieldCryptoContextRunner {
+  <T>(
+    accountId: string,
+    fn: (tx: TenantExecutor, ctx: FieldCryptoContext) => Promise<T>,
+  ): Promise<T>;
 }
 
 const runStartArgs = strictObject({ prompt: z.string().min(1).max(4000) });
@@ -83,10 +86,11 @@ function storesFor(
   store: ReturnType<typeof createPgTrajectoryStore>;
   runState: ReturnType<typeof createPgRunStateStore>;
 } {
-  const cryptoCtx = derivedContext(deps.keyProvider, accountId);
   return {
     store: createPgTrajectoryStore(deps.tx, accountId),
-    runState: createPgRunStateStore(deps.tx, accountId, cryptoCtx),
+    runState: createPgRunStateStore(deps.tx, accountId, (fn) =>
+      deps.fieldCryptoContext(accountId, fn),
+    ),
   };
 }
 

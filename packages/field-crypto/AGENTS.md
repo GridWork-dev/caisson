@@ -11,8 +11,9 @@ edition must know to wire field encryption correctly.
 - **AAD is mandatory and structural.** Every encrypt/decrypt binds `tenant_id ∥ key_version ∥
 column-context`. Reuse the SAME `columnContext` string for a column on read and write, or decrypt
   fails. Pick a stable, unique context per column (e.g. `"patient.ssn"`).
-- **Never log `MASTER_FIELD_KEY`.** It is read once via `DerivedKeyProvider.fromEnv` and held in a
-  private field. Do not stringify the provider into logs/telemetry/embeddings (its `toJSON` redacts).
+- **Never log key material or credentials.** `MASTER_FIELD_KEY` is read once by
+  `DerivedKeyProvider.fromEnv`; KMS plaintext DEKs exist only inside a request-scoped context. Do not
+  stringify providers, SDK credentials, wrapped keys, or plaintext keys into logs/telemetry/embeddings.
 - **Nonce is internal.** The cipher generates a fresh CSPRNG nonce per encrypt; never pass or reuse
   one. A `(key, nonce)` pair must never repeat.
 - **Rotation is a version bump, not a re-encrypt.** `KeyVersionRegistry.rotate(tenantId)` advances
@@ -21,12 +22,25 @@ column-context`. Reuse the SAME `columnContext` string for a column on read and 
 
 ## Choosing a provider
 
-- **`DerivedKeyProvider` (default)** — zero infra; per-tenant HKDF. Backs the sync Drizzle column.
-- **`KmsKeyProvider`** — envelope encryption; the KEK stays in the KMS. Async only — for the Drizzle
-  column under KMS, pre-resolve + cache DEKs into the sync context (P2 wiring). Supply a real
-  `KmsClient` (AWS/GCP/Azure); CI uses `LocalKmsClient` (a real local wrap, no cloud call).
-- **Deletion receipts are literal provider truth.** Pending, scheduled, and soft-deleted keys remain
-  recoverable and MUST report `irreversible: false`; only a proved destroy/purge reports `true`.
+- **`DerivedKeyProvider`** — zero infra; per-tenant HKDF. Use for dev/test or a self-hosted
+  integration that explicitly selects the two-variable deployment model.
+- **`KmsKeyProvider`** — envelope encryption; the KEK stays in the KMS. Call `ensureProvisioned()`
+  before binding — a bind reads the current version, so it allocates for read-only callers too
+  (ADR-0392 §3) — then `withKmsFieldCryptoContext()`. Bind time unwraps every version from 1 through
+  current so historical envelopes stay readable; the helper zeroizes all request-local DEKs in
+  `finally`. Never retain a `kmsContext()` or unwrapped key in a process-lifetime cache.
+- **Wrapped-DEK persistence is append-only.** Use `PgWrappedKeyStore` inside the already tenant-scoped
+  transaction. Rotation appends; it never overwrites or deletes a prior wrapped DEK. Cloud wrapped
+  payloads must retain the exact KEK version returned by wrap so later rotations cannot redirect
+  historical unwraps.
+- **Every KMS operation is deadline-bounded.** Pass `KmsOperationOptions` through the client seam;
+  never hold a tenant transaction, advisory lock, or plaintext DEK across an unbounded provider call.
+- **Deletion receipts are literal provider truth.** Pending, scheduled, soft-deleted, and
+  replica-pending keys remain recoverable and MUST report `irreversible: false`; only a proved
+  destroy/purge reports `true`. Never fold a new provider state into an existing one to avoid
+  touching the union — these receipts are permanent WORM rows, and `replica-pending-deletion` exists
+  because folding it into `pending-deletion` minted a record claiming a retention clock that had not
+  started. A state with no completion instant must not carry `scheduledFor`.
 
 ## Envelope (ADR-0046)
 

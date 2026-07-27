@@ -57,19 +57,19 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     slug: "field-crypto",
     metaTitle: "Field Encryption, Per-Tenant AES-256-GCM | Caisson",
     metaDescription:
-      "A distinct HKDF-SHA256 key per tenant, a self-describing AES-256-GCM envelope, and AAD that refuses a ciphertext moved across tenants, columns, or rows.",
+      "A distinct tenant key, KMS-wrapped in hosted production, plus a self-describing AES-256-GCM envelope and AAD that refuses relocated ciphertext.",
     heroOneLiner:
-      "One key per tenant, derived not stored, a ciphertext moved to another tenant fails to decrypt, provably.",
+      "One protected key per tenant, and ciphertext moved to another tenant fails to decrypt, provably.",
     definition:
-      "field-crypto derives a distinct AES-256-GCM key per tenant with HKDF-SHA256, seals values into a self-describing envelope, and binds tenant, column, and row identity into the AEAD's additional authenticated data, so a ciphertext copied to another tenant, column, or row fails to decrypt. A pluggable KMS seam and crypto-shred erasure ship in the same package.",
+      "field-crypto seals values under a distinct AES-256-GCM key per tenant, using HKDF-SHA256 for dev/self-hosted deployments or request-scoped KMS envelope encryption in hosted production. Its self-describing envelope always binds tenant and column identity into the AEAD's additional authenticated data; explicit row-bound fields bind row identity too.",
     included: [
       {
         title: "Fail-closed on every read and write",
         body: "encryptedColumn() wires a Drizzle customType whose toDriver/fromDriver only run inside withFieldCryptoContext. Reach an encrypted column with no bound tenant context and currentFieldCryptoContext() throws InternalError instead of returning a partial or unscoped result.",
       },
       {
-        title: "Per-tenant key, derived not stored",
-        body: "deriveTenantKey() runs HKDF-SHA256 over a 32-byte MASTER_FIELD_KEY and a 32-byte FIELD_CRYPTO_SALT, folding the tenant id and key version into the HKDF info string. There is no key table to back up or leak, DerivedKeyProvider re-derives the key on demand.",
+        title: "Per-tenant keys, derived or KMS-wrapped",
+        body: "DerivedKeyProvider keeps the zero-infrastructure dev/self-hosted path by folding tenant id and key version into HKDF-SHA256. Caisson's hosted production site instead persists only append-only wrapped DEKs, unwraps every historical version into a disposable request context, and zeroizes all plaintext key buffers at exit.",
       },
       {
         title: "AAD binds tenant, column, and row",
@@ -81,21 +81,22 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "KMS envelope encryption behind one port",
-        body: "KmsKeyProvider wraps a per-tenant data-encryption key under a KMS-held key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. awsKmsClient() is the wired AWS driver; the same three-method KmsClient port is the seam a GCP, Azure Key Vault, or Vault Transit driver drops into.",
+        body: "KmsKeyProvider wraps a per-tenant data-encryption key under a KMS-held key-encryption key that never leaves the KMS, only the wrapped DEK is persisted. AWS KMS, GCP KMS, and Azure Key Vault drivers ship behind the same three-method KmsClient port; Caisson's hosted production site uses Azure with required purge protection.",
       },
       {
         title: "Crypto-shred erasure without breaking the audit chain",
-        body: "cryptoShred() schedules KEK deletion through the KMS port and mints an erasure.crypto-shred audit payload that carries no PII. Every ciphertext under that key becomes permanently unrecoverable while the WORM-anchored hash chain's committed bytes never change, verifyChain still passes after the shred.",
+        body: "cryptoShred() requests KEK deletion through the KMS port and mints an erasure.crypto-shred audit payload that carries no PII plus the provider-proven deletion state. The authorized host must persist and reconcile recoverable receipts; permanent cryptographic erasure is claimed only when the provider proves it irreversible. The WORM-anchored hash chain's committed bytes never change, so verifyChain still passes.",
       },
     ],
     artifact: {
       label: "decryptField(), the isolation proof",
       lang: "ts",
       file: "packages/field-crypto/src/crypto.ts",
-      code: '  /**\n   * Decrypt a stored envelope for `tenantId`. The key version + algorithm come FROM the envelope\n   * (self-describing, ADR-0046), so a value written under an older version still decrypts after\n   * rotation. Throws on tamper, an AAD mismatch, or a cross-tenant key (the isolation proof).\n   */\n  async decryptField(\n    tenantId: string,\n    stored: string,\n    columnContext: string,\n  ): Promise<string> {\n    const env = parseEnvelope(stored);\n    const key = await this.provider.keyFor(tenantId, env.keyVersion);\n    const aad = buildAad(tenantId, env.keyVersion, columnContext);\n    const cipher = cipherForAlg(env.algId);\n    const plaintext = cipher.decrypt(\n      key,\n      { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },\n      aad,\n    );\n    return plaintext.toString("utf8");\n  }',
+      code: '  async decryptField(\n    tenantId: string,\n    stored: string,\n    columnContext: string,\n  ): Promise<string> {\n    const env = parseEnvelope(stored);\n    const key = await this.provider.keyFor(tenantId, env.keyVersion);\n    const aad = buildAad(tenantId, env.keyVersion, columnContext);\n    const cipher = cipherForAlg(env.algId);\n    let plaintext: Buffer | undefined;\n    try {\n      plaintext = cipher.decrypt(\n        key,\n        { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },\n        aad,\n      );\n      return plaintext.toString("utf8");\n    } finally {\n      plaintext?.fill(0);\n      key.fill(0);\n    }\n  }',
       annotations: [
         "parseEnvelope reads the key version back off the stored value itself, so a ciphertext written under an older version still decrypts after rotation, no migration job, no lookup table.",
         "buildAad binds tenant and column identity into the AEAD's additional authenticated data, decrypt under the wrong tenant or column and cipher.decrypt throws, it never returns the wrong plaintext.",
+        "The finally block zeroizes both the plaintext buffer and the unwrapped DEK when the call settles, whether it returns or throws. Request-scoped disposal on abort is a separate seam, withKmsFieldCryptoContext, and covers the keys that context owns.",
       ],
     },
     faq: [
@@ -112,13 +113,13 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Can I use our own KMS instead of the derived key?",
         answer:
-          "Yes. FieldKeyProvider is a two-method port (keyFor and currentVersion. DerivedKeyProvider (HKDF, zero infra) is the default; KmsKeyProvider wraps a per-tenant DEK under AWS KMS today through awsKmsClient(). GCP, Azure Key Vault, and Vault Transit map cleanly onto the same three-method KmsClient port) implement it to plug them in.",
+          "Yes. FieldKeyProvider is the two-method key port: the library's DerivedKeyProvider serves zero-infrastructure dev/self-hosted deployments, while KmsKeyProvider works with the shipped AWS, GCP, and Azure clients. Caisson's hosted production site binds Azure-backed keys in a disposable request context and never falls back after a KMS failure.",
       },
       {
         question:
           "How does this handle a GDPR or CCPA erasure request without breaking our immutable audit log?",
         answer:
-          "cryptoShred() destroys the tenant or subject's key-encryption key through the KMS port, so every ciphertext under it becomes permanently unrecoverable, while the append-only WORM chain never mutates, because it only ever committed the ciphertext envelope, never plaintext. The chain's verifyChain() still passes after a shred.",
+          "cryptoShred() validates that the destructive key scope matches the recorded tenant or subject, refuses an unprovisioned scope, requests deletion, and returns the KMS receipt. The authorized host persists and reconciles a soft-deleted or scheduled key until its retention or cancellation window closes; permanent erasure is recorded only after an irreversible receipt. The append-only WORM chain still verifies because it committed ciphertext, never plaintext.",
       },
     ],
     relatedGlossary: ["hipaa-technical-safeguards", "row-level-security"],

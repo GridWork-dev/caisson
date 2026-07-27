@@ -22,13 +22,13 @@ in [knowledge/decisions](../knowledge/decisions), and per-package depth in
 
 | Tree        | Count | Purpose                                                            |
 | ----------- | ----: | ------------------------------------------------------------------ |
-| `packages/` |    61 | framework-free capability units: 17 Apache-2.0 and 44 commercial   |
+| `packages/` |    62 | framework-free capability units: 17 Apache-2.0 and 45 commercial   |
 | `apps/`     |     7 | site, admin, and five reference/demo applications                  |
 | `services/` |     5 | four Bun services plus Python support-bot                          |
 | `registry/` |     1 | registry service, append-only ledger/index, and Cloudflare Worker  |
 | `tooling/`  |     6 | browser audit, design critic, eslint, standards, testing, tsconfig |
 
-The root has 79 Bun workspaces. The only Python projects are `services/support-bot` and
+The root has 80 Bun workspaces. The only Python projects are `services/support-bot` and
 `tools/assert-lane`; this surface is frozen at two. Retired self-hosted SigNoz infrastructure is
 not part of the live topology.
 
@@ -46,7 +46,7 @@ Provider SDKs are isolated behind the package that owns each port:
 | -------------- | ---------------------- | ------------------------------------------------------------------- |
 | AI/model       | `ai-kit` / `ai-config` | frozen eight-adapter family                                         |
 | Jobs           | `jobs`                 | existing queue adapters; Inngest v4 is the active ADR-0379 addition |
-| KMS            | `field-crypto`         | existing KMS clients; Azure Key Vault is the active addition        |
+| KMS            | `field-crypto`         | AWS/GCP/Azure clients; hosted production uses Azure Key Vault       |
 | WORM artifacts | `audit-worm`           | S3/GCS/R2 family; Azure Blob is the active addition                 |
 
 Core contracts receive injected clients/config and do not read ambient provider credentials.
@@ -87,8 +87,9 @@ contrast implementation, including semantic, functional, and code-syntax colors.
 | `registry.caisson.sh` | Cloudflare Worker         | live authenticated npm protocol        |
 
 Current health is not current parity. Repository/Worker use manifest digest `74e92a6813bc`;
-license uses `09adca8d32a5`; admin uses `97b183902c08`. Docs/support parity and migration `0030`
-still need receipts. One approved SHA across all six legs is the next production reconciliation.
+license uses `09adca8d32a5`; admin uses `97b183902c08`. Docs/support parity and site migrations
+`0030`–`0032` still need receipts. One approved SHA across all six legs is the next production
+reconciliation.
 
 ## Gate stack
 

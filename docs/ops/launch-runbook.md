@@ -31,13 +31,13 @@ corresponding hold being released.
 - WORM remains GOVERNANCE pre-launch; launch requires a receipted forward-only COMPLIANCE
   escalation.
 - Health is green but source parity is red. License/admin digests differ from repository/Worker,
-  docs/support parity is uncertified, and migration `0030` is unreceipted.
+  docs/support parity is uncertified, and site migrations `0030`–`0032` are unreceipted.
 
 ## Binding execution order
 
 ```mermaid
 flowchart LR
-    A["Wave 1 safety fixes"] --> B["Preliminary one-SHA fleet + migration 0030"]
+    A["Wave 1 safety fixes"] --> B["Preliminary one-SHA fleet + migrations through 0032"]
     B --> C["Locked product gaps + three adapters"]
     C --> D["Full gates + version PR"]
     D --> E["Immutable tag + exact-byte publish"]
@@ -47,9 +47,9 @@ flowchart LR
     H --> I["Paid/public launch"]
 ```
 
-The preliminary fleet reconciliation proves the current safety source and applies migration 0030.
-The final fleet reconciliation proves the immutable release tag. Paid/public launch is always
-after the release and final parity receipt.
+The preliminary fleet reconciliation proves the current safety source and applies the pending
+migration chain through `0032_field_crypto_keys.sql`. The final fleet reconciliation proves the
+immutable release tag. Paid/public launch is always after the release and final parity receipt.
 
 ## Act 1 — preliminary one-SHA fleet and migration
 
@@ -69,17 +69,17 @@ These are the nine enumerated feature gates that can survive a clean boot and th
 when the feature is used. The two admin mutation paths share one credential pair and therefore one
 arming row.
 
-| Seam                                          | Service                                 | Variables                                         | Launch class                               | Real degraded behavior when absent                                                                                                                                                                                                                                                                                                             | Arming action                                                                                                |
-| --------------------------------------------- | --------------------------------------- | ------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `site.ask-ai-docs-retrieval`                  | `caisson-site`                          | `DOCS_SERVICE_TOKEN` + `DOCS_QUERY_URL`           | **REQUIRED**                               | Docs retrieval raises “not configured”; `/api/ask` emits `retrieval_unavailable` and the buyer gets the escalation/contact path instead of an answer (`apps/site/lib/ask-ai/retrieve.ts:62`, `apps/site/lib/ask-ai/handler.ts:210-216`).                                                                                                       | Probe both names and record the receipt; no arming record existed on `caisson-site` as of 2026-07-26.        |
-| `site.ask-ai-generation`                      | `caisson-site`                          | `OPENROUTER_API_KEY`                              | **REQUIRED**                               | Retrieval may succeed, but generation raises “openrouter is not configured”; `/api/ask` emits `generation_failed` and falls back to escalation/contact (`apps/site/lib/ask-ai/openrouter.ts:70`, `apps/site/lib/ask-ai/handler.ts:210-216`).                                                                                                   | Probe and record the receipt.                                                                                |
-| `site.subscription-cancellation`              | `caisson-site`                          | `PADDLE_API_KEY`                                  | **REQUIRED**                               | An owned active subscription cannot be scheduled for cancellation: the Paddle adapter returns `cancellation is not configured` and the route maps the failure to HTTP 502 (`apps/site/lib/paddle-cancel.ts:42`, `apps/site/lib/subscription-cancel.ts`).                                                                                       | Probe and record the receipt.                                                                                |
-| `site.paddle-checkout`                        | `caisson-site`                          | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`                 | **REQUIRED**                               | Paddle never initializes; purchase and renewal controls are disabled as **Checkout unavailable**, so no checkout overlay opens (`apps/site/lib/paddle-checkout.ts:141`, `apps/site/components/cart-checkout-panel.tsx:175-179`, `apps/site/components/plan-purchase-row.tsx:132-136`, `apps/site/components/updates-window-card.tsx:111-115`). | Probe and record the receipt.                                                                                |
-| `site.byok-field-crypto`                      | `caisson-site`                          | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT`          | **REQUIRED**                               | The site and deploy probes stay green, but the first production BYOK submission throws because tenant secrets cannot use the deterministic demo vector (`apps/site/lib/byok.ts:146`).                                                                                                                                                          | Probe both names and record the receipt; the prior row had no arming record.                                 |
-| `site.authentication-runtime`                 | `caisson-site`                          | `DATABASE_URL` + `BETTER_AUTH_SECRET`             | **REQUIRED**                               | Better Auth resolves to a null runtime; auth endpoints return HTTP 503 and session reads behave unauthenticated while the public site can remain up (`apps/site/lib/auth-server.ts:240-256`).                                                                                                                                                  | Probe both names and record the receipt.                                                                     |
-| `admin.license-reissue-and-affiliate-minting` | `caisson-admin`                         | `CAISSON_LICENSE_ISSUE_URL` + `ADMIN_ISSUE_TOKEN` | **REQUIRED**                               | License reissue and affiliate minting both throw “not configured” before their mutation/audit rows are written (`apps/admin/src/lib/admin-mutations-runtime.ts:77,116`).                                                                                                                                                                       | Probe both names on `caisson-admin` and record the receipt.                                                  |
-| `admin.catalog-test-email-recipient`          | `caisson-admin`                         | `CATALOG_TEST_EMAIL_TO`                           | **OPTIONAL — operator-only test delivery** | The operator-only catalog test-email endpoint returns HTTP 503 and sends no test message; buyer email delivery does not depend on this recipient (`apps/admin/src/app/api/admin/catalog/send-test-email/route.ts:59`).                                                                                                                         | Absence is acceptable for launch, but the probe must report it as optional and missing.                      |
-| `local-ai.field-crypto`                       | `apps/local-ai` (not a Railway service) | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT`          | **OPTIONAL — not deployed**                | A future production run would throw; today development and test intentionally use the deterministic demo vector, and `apps/local-ai` is not deployed (`apps/local-ai/app/demo/pipeline.ts:291`).                                                                                                                                               | No Railway command. Keep the seam visible as optional/not deployed until that service gets a launch surface. |
+| Seam                                          | Service                                 | Variables                                                                                                                                                                                  | Launch class                               | Real degraded behavior when absent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Arming action                                                                                                                                                                                             |
+| --------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `site.ask-ai-docs-retrieval`                  | `caisson-site`                          | `DOCS_SERVICE_TOKEN` + `DOCS_QUERY_URL`                                                                                                                                                    | **REQUIRED**                               | Docs retrieval raises “not configured”; `/api/ask` emits `retrieval_unavailable` and the buyer gets the escalation/contact path instead of an answer (`apps/site/lib/ask-ai/retrieve.ts:62`, `apps/site/lib/ask-ai/handler.ts:210-216`).                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Probe both names and record the receipt; no arming record existed on `caisson-site` as of 2026-07-26.                                                                                                     |
+| `site.ask-ai-generation`                      | `caisson-site`                          | `OPENROUTER_API_KEY`                                                                                                                                                                       | **REQUIRED**                               | Retrieval may succeed, but generation raises “openrouter is not configured”; `/api/ask` emits `generation_failed` and falls back to escalation/contact (`apps/site/lib/ask-ai/openrouter.ts:70`, `apps/site/lib/ask-ai/handler.ts:210-216`).                                                                                                                                                                                                                                                                                                                                                                                                                                              | Probe and record the receipt.                                                                                                                                                                             |
+| `site.subscription-cancellation`              | `caisson-site`                          | `PADDLE_API_KEY`                                                                                                                                                                           | **REQUIRED**                               | An owned active subscription cannot be scheduled for cancellation: the Paddle adapter returns `cancellation is not configured` and the route maps the failure to HTTP 502 (`apps/site/lib/paddle-cancel.ts:42`, `apps/site/lib/subscription-cancel.ts`).                                                                                                                                                                                                                                                                                                                                                                                                                                  | Probe and record the receipt.                                                                                                                                                                             |
+| `site.paddle-checkout`                        | `caisson-site`                          | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`                                                                                                                                                          | **REQUIRED**                               | Paddle never initializes; purchase and renewal controls are disabled as **Checkout unavailable**, so no checkout overlay opens (`apps/site/lib/paddle-checkout.ts:141`, `apps/site/components/cart-checkout-panel.tsx:175-179`, `apps/site/components/plan-purchase-row.tsx:132-136`, `apps/site/components/updates-window-card.tsx:111-115`).                                                                                                                                                                                                                                                                                                                                            | Probe and record the receipt.                                                                                                                                                                             |
+| `site.byok-field-crypto`                      | `caisson-site`                          | `AZURE_KEY_VAULT_URL` + `AZURE_KEY_VAULT_KEY_NAME` + `AZURE_KEY_VAULT_WRAP_ALGORITHM` + `AZURE_KEY_VAULT_PURGE_PROTECTION` + `AZURE_TENANT_ID` + `AZURE_CLIENT_ID` + `AZURE_CLIENT_SECRET` | **REQUIRED**                               | **Deferred throw, not a boot failure.** The site starts clean and passes every deploy probe; the first buyer BYOK submit then throws, because production never falls back from Azure KMS to the derived provider or the demo vector. The wrap algorithm must be `RSA-OAEP-256`, the purge-protection sentinel must be `enabled`, and the live key's recovery level must prove purge protection (`apps/site/lib/field-crypto-kms.ts`). All three service-principal names are required and validated: the runtime constructs an explicit `ClientSecretCredential`, so a missing or misspelled one fails closed at construction rather than silently probing an ambient identity (ADR-0392). | Probe all seven names, verify vault purge protection and the principal's key permissions, run a real wrap/unwrap probe, and record every check in the execution receipt. **No arming record exists yet.** |
+| `site.authentication-runtime`                 | `caisson-site`                          | `DATABASE_URL` + `BETTER_AUTH_SECRET`                                                                                                                                                      | **REQUIRED**                               | Better Auth resolves to a null runtime; auth endpoints return HTTP 503 and session reads behave unauthenticated while the public site can remain up (`apps/site/lib/auth-server.ts:240-256`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Probe both names and record the receipt.                                                                                                                                                                  |
+| `admin.license-reissue-and-affiliate-minting` | `caisson-admin`                         | `CAISSON_LICENSE_ISSUE_URL` + `ADMIN_ISSUE_TOKEN`                                                                                                                                          | **REQUIRED**                               | License reissue and affiliate minting both throw “not configured” before their mutation/audit rows are written (`apps/admin/src/lib/admin-mutations-runtime.ts:77,116`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Probe both names on `caisson-admin` and record the receipt.                                                                                                                                               |
+| `admin.catalog-test-email-recipient`          | `caisson-admin`                         | `CATALOG_TEST_EMAIL_TO`                                                                                                                                                                    | **OPTIONAL — operator-only test delivery** | The operator-only catalog test-email endpoint returns HTTP 503 and sends no test message; buyer email delivery does not depend on this recipient (`apps/admin/src/app/api/admin/catalog/send-test-email/route.ts:59`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Absence is acceptable for launch, but the probe must report it as optional and missing.                                                                                                                   |
+| `local-ai.field-crypto`                       | `apps/local-ai` (not a Railway service) | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT`                                                                                                                                                   | **OPTIONAL — not deployed**                | A future production run would throw; today development and test intentionally use the deterministic demo vector, and `apps/local-ai` is not deployed (`apps/local-ai/app/demo/pipeline.ts:291`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | No Railway command. Keep the seam visible as optional/not deployed until that service gets a launch surface.                                                                                              |
 
 `PADDLE_ENV` and `NEXT_PUBLIC_PADDLE_ENV` are selectors, not fail-soft gates: when absent they
 default to sandbox rather than silently disabling the corresponding feature. They are deliberately
@@ -88,6 +88,61 @@ outside this presence inventory.
 `SESSION_TOKEN_HMAC_KEY` remains a separate **fail-hard** `caisson-site` prerequisite. Its absence
 throws during auth runtime construction instead of degrading silently
 (`apps/site/lib/auth-server.ts:151,265`; armed receipt: `docs/deploy/STATE.md:281`).
+
+#### BLOCKING preflight — `tenant_ai_credential` must be empty before Azure KMS is armed
+
+Arming Azure KMS is a **one-way door**. Production previously sealed `tenant_ai_credential` with
+`DerivedKeyProvider` at key version 1, and a freshly provisioned KMS tenant is also numbered
+version 1. The ADR-0046 envelope records only the version, so it cannot tell the two providers
+apart: any row written before the cutover decrypts afterwards as an AES-GCM tag failure
+**indistinguishable from tampering**. There is no rewrap helper, and BYOK ciphertext has no
+recovery path.
+
+The wave scoped re-encryption out on the premise that nothing is sealed yet. That premise is an
+assertion, not a fact — nothing in the code verifies it. Verify it here, before arming.
+
+**A bare `SELECT count(*)` is NOT a valid check and must never be used for this.**
+`tenant_ai_credential` carries `FORCE ROW LEVEL SECURITY` with a policy keyed on
+`app.current_account`. Without that GUC set, the count returns **0 even when rows exist** — for an
+ordinary role _and_ for the table owner, because the policy is FORCEd. The repository's own RLS
+suite pins exactly this behavior (`packages/tenancy-rls/src/rls.integration.test.ts`, "code that
+forgets withTenant entirely sees nothing"). A naive count here returns a false green and the next
+step destroys buyer data.
+
+Run the check so that insufficient privilege **errors** instead of silently filtering:
+
+```sql
+-- 1. Prove the role can actually see through RLS. EITHER column suffices — superusers bypass every
+--    policy regardless of the catalog bit, and BYPASSRLS grants it explicitly. Requiring both would
+--    send you to escalate a production role to SUPERUSER to satisfy a rule Postgres does not impose.
+SELECT rolsuper, rolbypassrls, rolsuper OR rolbypassrls AS bypasses_rls
+FROM pg_catalog.pg_roles
+WHERE rolname = current_user;
+
+-- 2. Count with row security off. Session-level SET, deliberately NOT `SET LOCAL`: run outside a
+--    transaction block `SET LOCAL` emits a WARNING and takes no effect, the count then silently
+--    filters to 0, and that is the exact false green this whole step exists to kill. Postgres
+--    ERRORS here if the role cannot bypass RLS, which is the point: a failure is loud, a filtered
+--    zero is not. Schema-qualified so a leftover temp/private relation of the same name in an
+--    earlier `search_path` entry cannot be counted instead.
+SET row_security = off;
+SELECT count(*) AS sealed_rows FROM public.tenant_ai_credential;  -- MUST be 0
+RESET row_security;
+```
+
+- **0 rows, with `bypasses_rls` true** — proceed, and record both the role capabilities and
+  the count in the execution receipt. A count without its accompanying privilege proof is not a
+  receipt.
+- **Any error, or `bypasses_rls` false** — STOP. You have not measured anything.
+- **Any `WARNING: SET LOCAL can only be used in transaction blocks`** (if you adapted the block) —
+  STOP. The count that followed it was filtered, not measured.
+- **Non-zero** — STOP. Do not arm Azure. Either truncate the table as part of the migration-0032
+  step (BYOK is write-only per ADR-0183, so buyers simply re-submit their keys), or start the KMS
+  version chain above the derived registry's high-water mark. Choosing silently is data loss.
+
+Blast radius is currently bounded only by the fact that `getTenantProviderKey` has no caller in
+`apps/site`, so nothing reads the column yet. That is luck, not a guard, and it stops being true
+the moment a read path ships.
 
 #### Named configured-probe step — fleet fail-soft inventory
 
@@ -110,7 +165,10 @@ Deploy in verifier-before-issuer order whenever strict schemas or manifests chan
 2. Deploy registry Worker/verifiers first.
 3. Deploy docs-RAG and support-bot.
 4. Deploy site and admin.
-5. Pause; apply migration `0030` only after backup and rollback checks.
+5. Pause; apply the pending migration chain through `0032_field_crypto_keys.sql` only after backup
+   and rollback checks. Before any wrap probe, receipt that `field_key_version` and
+   `field_wrapped_dek` exist, both tables have forced RLS with tenant policies, and the wrapped-DEK
+   update/delete guards are installed.
 6. Deploy/restart license issuer last.
 7. Record provider deployment IDs, image digests, source SHA, manifest digest, and timestamps.
 
@@ -138,8 +196,10 @@ the generic credential steps cover these three.
 
 ## Act 2 — finish code waves and release candidate
 
-- [ ] Complete the five already-locked product residual families.
-- [ ] Complete Inngest v4, Azure Key Vault, and Azure Blob WORM adapter lanes.
+- [x] Complete the five already-locked product residual families.
+- [x] Complete the Inngest v4, Azure Key Vault, and Azure Blob WORM adapter lanes.
+- [ ] Merge the request-scoped field-crypto KMS binding, then verify a real wrap/unwrap against the
+      armed production vault. No arming record exists yet.
 - [ ] Attach adapter code, security, and conformance reviews plus changesets.
 - [ ] Resolve every implementation-blocking fork in `docs/state/decisions-and-forks.md`.
 - [ ] Run `bun run check`, formatting, SOT, standards, dependency graph, registry index, OSCAL,
@@ -164,14 +224,14 @@ The release receipt binds commit, tag, package digests, registry index, and Work
 
 Redeploy site, admin, license, docs-RAG, and support-bot from the immutable release tag. Record:
 
-| Leg             | Required state                                            |
-| --------------- | --------------------------------------------------------- |
-| Site            | release tag, healthy                                      |
-| Admin           | release tag, matching manifest, GitHub OAuth healthy      |
-| License         | release tag, matching manifest, migration `0030` observed |
-| Docs-RAG        | release tag; $1,449 answer                                |
-| Support bot     | release tag; $1,449 answer                                |
-| Registry Worker | exact tagged index bytes and matching manifest            |
+| Leg             | Required state                                                     |
+| --------------- | ------------------------------------------------------------------ |
+| Site            | release tag, healthy                                               |
+| Admin           | release tag, matching manifest, GitHub OAuth healthy               |
+| License         | release tag, matching manifest, migrations through `0032` observed |
+| Docs-RAG        | release tag; $1,449 answer                                         |
+| Support bot     | release tag; $1,449 answer                                         |
+| Registry Worker | exact tagged index bytes and matching manifest                     |
 
 Repeat all health, dashboard, checkout sandbox, entitlement, refund, RAG, support, unknown-SKU,
 and manifest-parity probes. This is the production parity report used by launch acceptance.

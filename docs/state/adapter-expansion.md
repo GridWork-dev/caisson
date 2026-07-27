@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-07-26
 status: live
 ---
 
@@ -49,21 +49,21 @@ pattern) — never a fork of the port contract.
 
 ## Port → current drivers → expansion (full inventory)
 
-| Port                           | File:line                                                                         | Drivers today                                                                                         | Add                                                                                                                                     | Tier     |
-| ------------------------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `Emailer`                      | `packages/email/src/email.ts:15`                                                  | Resend (`:53`), Capture (test)                                                                        | **SMTP-generic**, **AWS SES**, Postmark                                                                                                 | 1        |
-| `KmsClient` + license `Signer` | `packages/field-crypto/src/kms.ts:30` · `packages/license-issue/src/signer.ts:47` | Local; **AWS KMS SHIPPED + live-proven** (`kms-aws.ts`, ADR-0171 — the "throws" note is pre-Stream-D) | GCP KMS (locked, Kickoff-F wave), Azure Key Vault, Vault                                                                                | 1 (seam) |
-| `SessionProvider`              | `packages/auth/src/session.ts:17`                                                 | better-auth; **WorkOS** SSO + **Clerk** session-verification (`org-controls/src/{workos,clerk}.ts`)   | Auth0/Okta                                                                                                                              | 1        |
-| `AnalyticsProvider`            | `packages/analytics/src/analytics.ts:27`                                          | Capture (test); **Plausible, PostHog, GA4** (`analytics/src/{plausible,posthog,ga4}.ts`, ADR-0287)    | (fully coded — this was the 1D scope)                                                                                                   | 1        |
-| `ArtifactStore`                | `packages/audit-worm/src/store.ts:35`                                             | S3 (`store.s3.ts`), Local                                                                             | GCS Bucket Lock + R2 bucket-locks per **ADR-0267** (the old "R2 S3-compat ~trivial" claim was WRONG — no Object Lock on R2), Azure Blob | 2        |
-| `JobQueue`                     | `packages/jobs/src/queue.ts:26`                                                   | Trigger.dev (`trigger-driver.ts:52`), pg-boss, **BullMQ** (`bullmq.ts`, ADR-0287), InMemory           | Inngest                                                                                                                                 | 2        |
-| AI inference                   | `packages/ai-config/src/config.ts:11` · `packages/ai-kit/src/providers.ts:20`     | openai, anthropic, google, openrouter, local                                                          | **AWS Bedrock**, **Azure OpenAI**, **Ollama**                                                                                           | 2        |
-| `BillingProvider`              | `packages/billing/src/provider.ts:23`                                             | Stripe (`:38`), Paddle (`:109`)                                                                       | LemonSqueezy, Polar                                                                                                                     | 3        |
-| `ChatPlatform` (support-bot)   | `services/support-bot/.../escalation.py:44`                                       | Discord (`bot.py`), **Slack** (`chat_slack.py`, ADR-0287) — escalation-notify only, config-selected   | Telegram; a Slack-native slash-command/listener surface                                                                                 | 3        |
-| MCP transport                  | `packages/mcp-server/src/stdio.ts:24`                                             | stdio only                                                                                            | **HTTP/SSE transport** (remote MCP)                                                                                                     | 3        |
-| Observability                  | `packages/observability/src/observability.ts:79`                                  | OTLP/HTTP single                                                                                      | OTLP/gRPC option (already backend-swappable via endpoint)                                                                               | 3        |
-| `Transactor` (DB)              | `packages/tenancy-rls/src/rls.ts:21`                                              | node-postgres/Neon (inject), PGlite (test), sqlite (local-first)                                      | Supabase explicit; Neon-serverless-HTTP **only if** RLS-tx model allows (needs TCP tx — careful)                                        | 3        |
-| `Embedder`                     | `packages/local-store/src/embedder.ts:14`                                         | OpenRouter (prod), Fake (ci)                                                                          | (already covered by inference expansion; Bedrock/Azure/local embed)                                                                     | 2        |
+| Port                           | File:line                                                                         | Drivers today                                                                                                   | Add                                                                                                                                     | Tier     |
+| ------------------------------ | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `Emailer`                      | `packages/email/src/email.ts:15`                                                  | Resend (`:53`), Capture (test)                                                                                  | **SMTP-generic**, **AWS SES**, Postmark                                                                                                 | 1        |
+| `KmsClient` + license `Signer` | `packages/field-crypto/src/kms.ts:30` · `packages/license-issue/src/signer.ts:47` | Local; **AWS, GCP, and Azure Key Vault SHIPPED** (AWS live-proven; Azure is the hosted-site production backend) | HashiCorp Vault                                                                                                                         | 1 (seam) |
+| `SessionProvider`              | `packages/auth/src/session.ts:17`                                                 | better-auth; **WorkOS** SSO + **Clerk** session-verification (`org-controls/src/{workos,clerk}.ts`)             | Auth0/Okta                                                                                                                              | 1        |
+| `AnalyticsProvider`            | `packages/analytics/src/analytics.ts:27`                                          | Capture (test); **Plausible, PostHog, GA4** (`analytics/src/{plausible,posthog,ga4}.ts`, ADR-0287)              | (fully coded — this was the 1D scope)                                                                                                   | 1        |
+| `ArtifactStore`                | `packages/audit-worm/src/store.ts:35`                                             | S3 (`store.s3.ts`), Local                                                                                       | GCS Bucket Lock + R2 bucket-locks per **ADR-0267** (the old "R2 S3-compat ~trivial" claim was WRONG — no Object Lock on R2), Azure Blob | 2        |
+| `JobQueue`                     | `packages/jobs/src/queue.ts:26`                                                   | Trigger.dev (`trigger-driver.ts:52`), pg-boss, **BullMQ** (`bullmq.ts`, ADR-0287), InMemory                     | Inngest                                                                                                                                 | 2        |
+| AI inference                   | `packages/ai-config/src/config.ts:11` · `packages/ai-kit/src/providers.ts:20`     | openai, anthropic, google, openrouter, local                                                                    | **AWS Bedrock**, **Azure OpenAI**, **Ollama**                                                                                           | 2        |
+| `BillingProvider`              | `packages/billing/src/provider.ts:23`                                             | Stripe (`:38`), Paddle (`:109`)                                                                                 | LemonSqueezy, Polar                                                                                                                     | 3        |
+| `ChatPlatform` (support-bot)   | `services/support-bot/.../escalation.py:44`                                       | Discord (`bot.py`), **Slack** (`chat_slack.py`, ADR-0287) — escalation-notify only, config-selected             | Telegram; a Slack-native slash-command/listener surface                                                                                 | 3        |
+| MCP transport                  | `packages/mcp-server/src/stdio.ts:24`                                             | stdio only                                                                                                      | **HTTP/SSE transport** (remote MCP)                                                                                                     | 3        |
+| Observability                  | `packages/observability/src/observability.ts:79`                                  | OTLP/HTTP single                                                                                                | OTLP/gRPC option (already backend-swappable via endpoint)                                                                               | 3        |
+| `Transactor` (DB)              | `packages/tenancy-rls/src/rls.ts:21`                                              | node-postgres/Neon (inject), PGlite (test), sqlite (local-first)                                                | Supabase explicit; Neon-serverless-HTTP **only if** RLS-tx model allows (needs TCP tx — careful)                                        | 3        |
+| `Embedder`                     | `packages/local-store/src/embedder.ts:14`                                         | OpenRouter (prod), Fake (ci)                                                                                    | (already covered by inference expansion; Bedrock/Azure/local embed)                                                                     | 2        |
 
 ---
 
@@ -82,12 +82,12 @@ _(Real lock: **ADR-0170**, not the `0119` pencil in this heading — see
 
 ### 1B. KMS wiring — `KmsClient` + license `KmsSigner` → **ADR-0120**
 
-- **Implement the throwing `awsKmsClient` seam** (`kms.ts:241`) over `@aws-sdk/client-kms`
-  (Encrypt/Decrypt/GenerateDataKey for envelope) + wire `KmsSigner` (`signer.ts:176`) to KMS Sign.
-  Then GCP KMS, Azure Key Vault, HashiCorp Vault.
-- Unblocks: **the Compliance edition's headline** — field-crypto envelope encryption + court-admissible
-  WORM + signed licenses are **dev-only today** (`LocalKmsClient`). Real KMS = enterprise-credible.
-- Highest revenue-risk gap; do first within Tier 1.
+- **SHIPPED:** AWS KMS, GCP KMS, and Azure Key Vault implement the envelope-encryption port. The
+  hosted site uses Azure through an explicit `ClientSecretCredential`, purge protection, version-pinned wrapped
+  DEKs, bounded provider calls, an append-only Postgres wrapped-DEK store, and disposable request
+  contexts.
+- `KmsSigner` remains the separate asymmetric signing seam; HashiCorp Vault is the remaining
+  on-demand field-crypto backend.
 
 ### 1C. Enterprise auth / SSO — `SessionProvider` → **ADR-0121** (WorkOS) / **ADR-0287** (Clerk)
 
@@ -167,8 +167,8 @@ so merging a wave never changes runtime behavior.
 - **SSO vendor (§1C) — RESOLVED, not a single pick.** Both **WorkOS** (SAML/SCIM directory sync,
   ADR-0172) and **Clerk** (session-token verification, ADR-0287) **SHIPPED**. Genuinely open: whether
   Auth0/Okta is worth a third driver, on enterprise demand.
-- **KMS providers (§1B) — RESOLVED, not AWS-only.** Both **AWS** (live-proven, ADR-0171) and **GCP**
-  (Kickoff-F wave, same ADR-0171 binding) **SHIPPED**. Genuinely open: Azure Key Vault / HashiCorp
-  Vault, build on demand.
+- **KMS providers (§1B) — RESOLVED, not AWS-only.** **AWS** (live-proven, ADR-0171), **GCP**, and
+  **Azure Key Vault** (hosted production, ADR-0387/0389) are shipped. Genuinely open: HashiCorp Vault,
+  build on demand.
 - Test-cred availability for SES / WorkOS / Clerk (needed to exercise the remaining live transports in
   CI; AWS KMS is already real-CMK live-proven — most others stay CI-dormant by design).

@@ -122,6 +122,10 @@ interface WrappedRow {
   readonly wrapped: Uint8Array;
 }
 
+interface InsertedRow {
+  readonly id: string;
+}
+
 /**
  * DB-backed wrapped-DEK store over `field_wrapped_dek` (+ `field_key_version` for the current
  * pointer), append-only. Implements the `WrappedKeyStore` interface (`kms.ts`) so `KmsKeyProvider`
@@ -182,6 +186,23 @@ export class PgWrappedKeyStore implements WrappedKeyStore {
       }
       throw err;
     }
+  }
+
+  async putWrappedIfAbsent(
+    tenantId: string,
+    keyVersion: number,
+    wrapped: Buffer,
+  ): Promise<boolean> {
+    assertTenantId(tenantId);
+    assertKeyVersion(keyVersion);
+    const result = await this.exec.query<InsertedRow>(
+      `INSERT INTO field_wrapped_dek (id, account_id, key_version, wrapped)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (account_id, key_version) DO NOTHING
+       RETURNING id`,
+      [randomUUID(), tenantId, keyVersion, wrapped],
+    );
+    return result.rows.length === 1;
   }
 
   async currentVersion(tenantId: string): Promise<number | undefined> {

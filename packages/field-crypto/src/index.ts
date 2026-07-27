@@ -30,6 +30,8 @@ export { buildAad } from "./aad.ts";
 
 export { encryptField, decryptField } from "./encrypt-field.ts";
 
+export { FIELD_CRYPTO_KEY_SCHEMA_SQL } from "./schema.ts";
+
 export {
   type FieldKeyProvider,
   type SyncFieldKeyProvider,
@@ -46,9 +48,15 @@ export { TenantFieldCrypto } from "./crypto.ts";
 
 export {
   type FieldCryptoContext,
+  type DisposableFieldCryptoContext,
+  type KmsContextOptions,
+  KMS_CONTEXT_PREFETCH_CONCURRENCY,
+  KMS_CONTEXT_MAX_PREFETCH_VERSIONS,
   withFieldCryptoContext,
   currentFieldCryptoContext,
   derivedContext,
+  kmsContext,
+  withKmsFieldCryptoContext,
   sealField,
   openField,
   encryptedColumn,
@@ -57,6 +65,7 @@ export {
 export {
   type KmsClient,
   type KmsDeletionReceipt,
+  type KmsOperationOptions,
   type WrappedKeyStore,
   type KeyValueStore,
   InMemoryWrappedKeyStore,
@@ -65,6 +74,13 @@ export {
   LocalKmsClient,
   awsKmsClient,
 } from "./kms.ts";
+
+export {
+  type PgExecutor,
+  type AsyncKeyVersionStore,
+  PgKeyVersionStore,
+  PgWrappedKeyStore,
+} from "./store.pg.ts";
 
 export {
   type KmsSendable,

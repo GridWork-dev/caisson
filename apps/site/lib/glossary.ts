@@ -1044,21 +1044,33 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Envelope encryption (DEK/KEK)",
     cluster: "security",
     definition:
-      "Envelope encryption wraps a data-encryption key (DEK) with a key-encryption key (KEK) that never leaves a KMS, so only the wrapped DEK is stored and the raw key material is never persisted. Caisson's KmsKeyProvider generates a DEK per tenant, stores just its KEK-wrapped form, and unwraps it through the KMS port on every read.",
+      "Envelope encryption wraps a data-encryption key (DEK) with a key-encryption key (KEK) that never leaves a KMS, so only the wrapped DEK is stored and the raw key material is never persisted. Caisson's KmsKeyProvider generates a DEK per tenant, stores just its KEK-wrapped form, and unwraps the tenant's historical versions through the KMS port when a request context binds.",
     artifact: {
       label:
-        "KmsKeyProvider.provision / keyFor: mint the DEK through the KMS, persist only its KEK-wrapped form",
+        "KmsKeyProvider.ensureProvisioned / keyFor: elect one wrapped-DEK winner and unwrap only for a request",
       lang: "ts",
-      code: "export class KmsKeyProvider implements FieldKeyProvider {\n  constructor(\n    private readonly kms: KmsClient,\n    private readonly store: WrappedKeyStore,\n  ) {}\n\n  // Mint a fresh DEK through the KMS; persist only its KEK-wrapped form.\n  async provision(tenantId: string): Promise<number> {\n    const cur = (await this.store.currentVersion(tenantId)) ?? 0;\n    const next = cur + 1;\n    const { wrappedKey } = await this.kms.generateDataKey(tenantId);\n    await this.store.putWrapped(tenantId, next, wrappedKey);\n    await this.store.setCurrentVersion(tenantId, next);\n    return next;\n  }\n\n  // Unwrap the stored DEK through the KMS on every read; plaintext never persists.\n  async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {\n    const wrapped = await this.store.getWrapped(tenantId, keyVersion);\n    if (wrapped === undefined) {\n      throw new NotFoundError(/* no wrapped DEK for this tenant/version */);\n    }\n    return this.kms.decryptDataKey(tenantId, wrapped);\n  }\n}",
+      code: `const provider = new KmsKeyProvider(
+  kms,
+  new PgWrappedKeyStore(tx),
+  { abortSignal },
+);
+await provider.ensureProvisioned(accountId);
+
+return withKmsFieldCryptoContext(
+  provider,
+  accountId,
+  async (ctx) => sealField(ctx, "patient.ssn", plaintext),
+  { abortSignal },
+);`,
     },
     properties: [
       {
-        title: "One KMS port, four drop-in backends",
-        body: "KmsClient exposes just three methods (generateDataKey, decryptDataKey, scheduleKeyDeletion). AWS KMS and GCP KMS drivers ship today (createAwsKmsClient, createGcpKmsClient, both live-tested); Azure Key Vault or Vault Transit would slot behind the same three-method port, but no driver for them ships yet. The field-crypto column and envelope format never know which backend is live.",
+        title: "Three shipped cloud backends, one KMS port",
+        body: "KmsClient exposes just three methods (generateDataKey, decryptDataKey, scheduleKeyDeletion). AWS KMS, GCP KMS, and Azure Key Vault drivers ship today behind that port; Caisson's hosted production site wires Azure through the default Azure credential chain with required purge protection. The field-crypto column and envelope format never know which backend is live.",
       },
       {
         title: "Only the wrapped DEK ever touches storage",
-        body: "generateDataKey returns the plaintext DEK and its KEK-wrapped form together; provision() persists only wrappedKey to the WrappedKeyStore. The plaintext key exists in memory just long enough to wrap or to encrypt a field, never logged, never written to disk.",
+        body: "generateDataKey returns the plaintext DEK and its KEK-wrapped form together; provisioning persists only wrappedKey to the WrappedKeyStore and zeroizes the generated plaintext in finally. Request binding unwraps historical DEKs into a disposable context that zeroizes every source and working buffer on exit; plaintext is never logged or written to disk.",
       },
       {
         title: "Rotation bumps a version, it never re-encrypts",
@@ -1066,7 +1078,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "A per-scope KEK makes crypto-shred selective",
-        body: "Every KMS operation is scoped by a keyId (a tenant or subject id); scheduleKeyDeletion(keyId) destroys only that scope's KEK, so shredding one tenant's key leaves every other tenant's wrapped DEKs, and their ciphertext, unaffected.",
+        body: "Every KMS operation is scoped by a keyId (a tenant or subject id); cryptoShred validates that the destructive scope matches the recorded tenant or subject and KmsKeyProvider refuses an unprovisioned scope before the cloud call. Deleting that KEK leaves every other tenant's wrapped DEKs and ciphertext unaffected.",
       },
     ],
     faq: [
@@ -1084,7 +1096,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Do I need a cloud KMS to use field-crypto?",
         answer:
-          "No. DerivedKeyProvider (HKDF-SHA256, zero infrastructure) is the default; KmsKeyProvider is the opt-in upgrade tier for teams that already run AWS KMS, or want a hardware-backed KEK. Both implement the same two-method FieldKeyProvider port, so swapping one for the other touches no calling code.",
+          "No. The library keeps DerivedKeyProvider as the zero-infrastructure dev and self-hosted path. Caisson's hosted production site instead requires Azure Key Vault and binds a disposable request-scoped KMS context; a KMS loss fails closed with no derived or demo fallback.",
       },
       {
         question:
@@ -1110,12 +1122,12 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Crypto-shredding",
     cluster: "security",
     definition:
-      "Crypto-shredding is cryptographic erasure: destroying a scope's encryption key so every ciphertext it protects becomes unrecoverable, the technical control GDPR and CCPA right-to-erasure requests point at, without deleting rows from an immutable audit chain. Caisson's field-crypto module schedules KEK deletion through a scope tied to one tenant, never a shared key, and mints an audit record carrying no PII.",
+      "Crypto-shredding is cryptographic erasure: destroying a scope's encryption key so every ciphertext it protects becomes unrecoverable, without deleting rows from an immutable audit chain. Caisson's field-crypto module requests KEK deletion through a scope tied to one tenant, never a shared key, and records the provider-proven deletion state without PII. A recoverable soft-delete receipt is not labeled permanent erasure.",
     artifact: {
       label:
-        "cryptoShred(): destroy the scope's KEK through the KMS port, mint the erasure.crypto-shred audit payload (no PII)",
+        "cryptoShred(): request scoped KEK deletion and record the provider-proven state (no PII)",
       lang: "ts",
-      code: "export async function cryptoShred(\n  provider: KmsKeyProvider,\n  request: CryptoShredRequest,\n): Promise<CryptoShredReceipt> {\n  const req = parseStrict(cryptoShredRequestSchema, request);\n  const shreddedThroughVersion = await provider.scheduleKeyDeletion(\n    req.keyScopeId,\n  );\n  const auditPayload: JsonValue = {\n    event: ERASURE_CRYPTO_SHRED,\n    method: SHRED_METHOD,\n    tenantId: req.tenantId,\n    subjectId: req.subjectId,\n    reason: req.reason,\n    occurredAt: req.occurredAt,\n    shreddedThroughVersion,\n  };\n  return { shreddedThroughVersion, auditPayload };\n}",
+      code: "export async function cryptoShred(\n  provider: KmsKeyProvider,\n  request: CryptoShredRequest,\n): Promise<CryptoShredReceipt> {\n  const req = parseStrict(cryptoShredRequestSchema, request);\n  const { shreddedThroughVersion, deletion } =\n    await provider.scheduleKeyDeletion(req.keyScopeId);\n  const auditPayload: JsonValue = {\n    event: ERASURE_CRYPTO_SHRED,\n    deletion,\n    method: SHRED_METHOD,\n    tenantId: req.tenantId,\n    subjectId: req.subjectId,\n    reason: req.reason,\n    occurredAt: req.occurredAt,\n    shreddedThroughVersion,\n  };\n  return { shreddedThroughVersion, deletion, auditPayload };\n}",
     },
     properties: [
       {
@@ -1124,15 +1136,15 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Selective because provisioning is per scope",
-        body: "KmsKeyProvider provisions one wrapped DEK version per tenant (or per subject, for a finer erasure grain), and scheduleKeyDeletion destroys only that scope's KEK: every other tenant's wrapped DEKs stay live, and unwrapping them continues to work.",
+        body: "KmsKeyProvider provisions one wrapped DEK version per tenant (or per subject, for a finer erasure grain), and scheduleKeyDeletion targets only that scope's KEK. Request-time abort budgets are not attached to destructive calls; the authorized host must persist the receipt and reconcile any pending provider state.",
       },
       {
         title: "The audit record carries no PII",
-        body: "cryptoShred's payload holds only opaque ids, the legal reason, the erasure instant, and the version destroyed, never the erased data itself, so it can be appended forever to the immutable WORM chain without ever recreating what the shred just destroyed.",
+        body: "cryptoShred's payload holds only opaque ids, the legal reason, the request instant, the covered version, and the provider's deletion state, never the erased data itself. It can remain in the immutable WORM chain without recreating the protected plaintext or overstating a recoverable soft delete.",
       },
       {
-        title: "Fail-closed before the deletion, not after",
-        body: "parseStrict validates the erasure request against a .strict() schema before scheduleKeyDeletion ever runs, so a malformed request throws before an irreversible key deletion is scheduled, not after.",
+        title: "Fail-closed scope and provisioning checks run first",
+        body: "parseStrict rejects malformed or mismatched tenant/subject scopes, then KmsKeyProvider requires a durable current-version marker before scheduleKeyDeletion can reach the provider. Caller authorization and durable retry reconciliation remain explicit host responsibilities.",
       },
     ],
     faq: [
@@ -1150,12 +1162,12 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Does crypto-shredding satisfy our GDPR Article 17 obligation on its own?",
         answer:
-          "Crypto-shredding ships the technical control Article 17 and CCPA §1798.105 ask for, a working erasure mechanism, and generates the audit evidence that a specific scope was destroyed on a specific date, for a specific reason. Whether a given request fully discharges your erasure obligation is a legal determination your organization makes, not a status the code can certify.",
+          "Crypto-shredding ships a technical erasure control and generates audit evidence that deletion was requested for a specific scope, when, why, and what finality the provider proved. Only an irreversible receipt proves permanent key destruction; whether a request fully discharges a legal obligation remains your organization's determination.",
       },
       {
         question: "Can a crypto-shredded key ever be recovered?",
         answer:
-          "No. AWS KMS's ScheduleKeyDeletion is irreversible once its pending window elapses, and the local test double marks the scope shredded immediately and permanently for that client instance's lifetime: every ciphertext wrapped under that key becomes inert, by design, with no recovery path.",
+          "It depends on the provider receipt. A soft-deleted or scheduled key can remain recoverable during its retention or cancellation window even though Caisson refuses to use the scope. Recovery is no longer possible only after the provider proves completed destruction or purge with an irreversible receipt.",
       },
     ],
     sells: {

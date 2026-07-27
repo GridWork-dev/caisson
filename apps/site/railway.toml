@@ -6,8 +6,13 @@
 #
 # Service env vars (set in the Railway service — NEVER committed):
 #   DATABASE_URL                       (required for real tenant reads; PGlite double when unset — dev only)
-#   MASTER_FIELD_KEY / FIELD_CRYPTO_SALT (required — field-crypto master secret for BYOK, ADR-0183; BYOK
-#                                        submit THROWS in production when unset, never seals under a demo vector)
+#   AZURE_KEY_VAULT_URL                 (required for production BYOK — HTTPS Azure vault URL)
+#   AZURE_KEY_VAULT_KEY_NAME            (required — prefix for deterministic per-tenant KEKs)
+#   AZURE_KEY_VAULT_WRAP_ALGORITHM       (required — exactly "RSA-OAEP-256")
+#   AZURE_KEY_VAULT_PURGE_PROTECTION     (required — exactly "enabled"; runtime also validates key recovery level)
+#   AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET
+#                                        (required — explicit service-principal authentication; BYOK submit
+#                                        THROWS when KMS is unavailable or invalid, never uses a derived/demo fallback)
 #   BETTER_AUTH_SECRET                  (required — better-auth session signing; /dashboard sign-in 503s without it)
 #   SESSION_TOKEN_HMAC_KEY              (required once DATABASE_URL + BETTER_AUTH_SECRET are set — ADR-0366 hashes
 #                                        session tokens at rest; auth-server.ts THROWS rather than store raw tokens,

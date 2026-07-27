@@ -26,18 +26,24 @@ export class TenantFieldCrypto {
     const keyVersion = await this.provider.currentVersion(tenantId);
     const key = await this.provider.keyFor(tenantId, keyVersion);
     const aad = buildAad(tenantId, keyVersion, columnContext);
-    const { nonce, ciphertext, tag } = this.cipher.encrypt(
-      key,
-      Buffer.from(plaintext, "utf8"),
-      aad,
-    );
-    return serializeEnvelope({
-      algId: this.cipher.algId,
-      keyVersion,
-      nonce,
-      ciphertext,
-      tag,
-    });
+    const plaintextBytes = Buffer.from(plaintext, "utf8");
+    try {
+      const { nonce, ciphertext, tag } = this.cipher.encrypt(
+        key,
+        plaintextBytes,
+        aad,
+      );
+      return serializeEnvelope({
+        algId: this.cipher.algId,
+        keyVersion,
+        nonce,
+        ciphertext,
+        tag,
+      });
+    } finally {
+      plaintextBytes.fill(0);
+      key.fill(0);
+    }
   }
 
   /**
@@ -54,11 +60,17 @@ export class TenantFieldCrypto {
     const key = await this.provider.keyFor(tenantId, env.keyVersion);
     const aad = buildAad(tenantId, env.keyVersion, columnContext);
     const cipher = cipherForAlg(env.algId);
-    const plaintext = cipher.decrypt(
-      key,
-      { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },
-      aad,
-    );
-    return plaintext.toString("utf8");
+    let plaintext: Buffer | undefined;
+    try {
+      plaintext = cipher.decrypt(
+        key,
+        { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },
+        aad,
+      );
+      return plaintext.toString("utf8");
+    } finally {
+      plaintext?.fill(0);
+      key.fill(0);
+    }
   }
 }

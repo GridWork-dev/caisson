@@ -23,15 +23,15 @@ parity evidence below is therefore unchanged.
 
 Health and source parity are separate:
 
-| Leg                         | Current evidence                                          | State                        |
-| --------------------------- | --------------------------------------------------------- | ---------------------------- |
-| Audited repository baseline | `fe2dfaca`; registry digest `74e92a6813bc` (53 entries)   | source                       |
-| Registry Worker             | 17 served entries match repository latest                 | OK                           |
-| License                     | digest `09adca8d32a5`                                     | **DRIFT**                    |
-| Admin                       | digest `97b183902c08`                                     | **DRIFT**                    |
-| Site                        | latest site-only source `ea2bee11`, deployment `3120a2ef` | not a fleet receipt          |
-| Docs-RAG / support-bot      | no current same-source receipt                            | uncertified                  |
-| Migration `0030`            | authored in source                                        | production apply unreceipted |
+| Leg                           | Current evidence                                          | State                        |
+| ----------------------------- | --------------------------------------------------------- | ---------------------------- |
+| Audited repository baseline   | `fe2dfaca`; registry digest `74e92a6813bc` (53 entries)   | source                       |
+| Registry Worker               | 17 served entries match repository latest                 | OK                           |
+| License                       | digest `09adca8d32a5`                                     | **DRIFT**                    |
+| Admin                         | digest `97b183902c08`                                     | **DRIFT**                    |
+| Site                          | latest site-only source `ea2bee11`, deployment `3120a2ef` | not a fleet receipt          |
+| Docs-RAG / support-bot        | no current same-source receipt                            | uncertified                  |
+| Site migrations `0030`–`0032` | authored in source                                        | production apply unreceipted |
 
 ADR-0379 supersedes any “fleet current” or CAISSON-150 defer wording below. The next production
 act is one approved immutable SHA across site, admin, license, docs-RAG, support-bot, and Worker,

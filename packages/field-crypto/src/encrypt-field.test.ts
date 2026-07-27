@@ -27,10 +27,54 @@ const OTHER_ROW = "00000000-0000-4000-8000-000000000002";
 const SSN = "078-05-1120";
 
 describe("encryptField (row-bound AAD, ADR-0055 — TM-E)", () => {
+  test("generic row-bound operations never mutate a context-owned cached key", () => {
+    const cachedKey = keyForTenant("acct_cached");
+    const original = Buffer.from(cachedKey);
+    const ctx: FieldCryptoContext = {
+      tenantId: "acct_cached",
+      deriveKey: () => cachedKey,
+      currentVersion: () => 1,
+    };
+
+    const first = encryptField(ctx, COL, ROW, "first");
+    const second = encryptField(ctx, COL, OTHER_ROW, "second");
+
+    expect(cachedKey.equals(original)).toBe(true);
+    expect(decryptField(ctx, COL, ROW, first)).toBe("first");
+    expect(decryptField(ctx, COL, OTHER_ROW, second)).toBe("second");
+    expect(cachedKey.equals(original)).toBe(true);
+  });
+
   test("round-trips a SEC/HIPAA field for the same tenant/column/row", () => {
     const ctx = ctxFor("acct_a");
     const sealed = encryptField(ctx, COL, ROW, SSN);
     expect(decryptField(ctx, COL, ROW, sealed)).toBe(SSN);
+  });
+
+  test("zeroizes each caller-owned working copy after encrypt and decrypt", () => {
+    const cachedKey = keyForTenant("acct_a");
+    const workingCopies: Buffer[] = [];
+    const ctx: FieldCryptoContext = {
+      tenantId: "acct_a",
+      deriveKey: () => cachedKey,
+      currentVersion: () => 1,
+    };
+    const observingCipher: AeadCipher = {
+      algId: aesGcm.algId,
+      encrypt(key, plaintext, aad) {
+        workingCopies.push(key);
+        return aesGcm.encrypt(key, plaintext, aad);
+      },
+      decrypt(key, parts, aad) {
+        workingCopies.push(key);
+        return aesGcm.decrypt(key, parts, aad);
+      },
+    };
+
+    const sealed = encryptField(ctx, COL, ROW, SSN, observingCipher);
+    expect(workingCopies[0]?.equals(Buffer.alloc(32))).toBe(true);
+    expect(decryptField(ctx, COL, ROW, sealed)).toBe(SSN);
+    expect(cachedKey.equals(keyForTenant("acct_a"))).toBe(true);
   });
 
   test("a cross-row relocate fails to authenticate (TM-E, closes TM2)", () => {

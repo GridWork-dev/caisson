@@ -36,7 +36,8 @@ Use the repository hierarchy, not an external artifact:
 
 - [ ] Select the approved immutable commit and rollback target.
 - [ ] Deploy site, admin, license, docs-RAG, support-bot, and registry Worker from that commit.
-- [ ] Apply migration `0030` through the migration hold point and attach the receipt.
+- [ ] Apply the pending migration chain through `0032_field_crypto_keys.sql`; attach schema,
+      forced-RLS, tenant-policy, and append-only-trigger receipts before the KMS probe.
 - [ ] Prove manifest-digest parity plus health, checkout, entitlement, refund, RAG, and support.
 - [ ] After the fleet deploy, confirm docs/support answer Compliance at $1,649 and Everything at
       $2,259, and license fulfillment recognizes all current SKUs.

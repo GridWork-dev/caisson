@@ -21,6 +21,9 @@ import { KeyVersionRegistry } from "./registry.ts";
  * version is baked into the HKDF `info` string, `derive.ts`); `KmsKeyProvider` keeps every
  * version's wrapped DEK in `WrappedKeyStore` (ADR-0046 self-describing envelope carries the
  * version to look up).
+ *
+ * OWNERSHIP: every `keyFor()` result is a caller-owned buffer. Callers overwrite it after use;
+ * providers must return a fresh buffer rather than shared or cached key material.
  */
 export interface FieldKeyProvider {
   keyFor(tenantId: string, keyVersion: number): Promise<Buffer>;

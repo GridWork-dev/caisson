@@ -51,20 +51,26 @@ export function encryptField(
 ): string {
   assertRowId(rowId);
   const keyVersion = ctx.currentVersion();
-  const key = ctx.deriveKey(keyVersion);
-  const aad = buildAad(ctx.tenantId, keyVersion, columnContext, rowId);
-  const { nonce, ciphertext, tag } = cipher.encrypt(
-    key,
-    Buffer.from(plaintext, "utf8"),
-    aad,
-  );
-  return serializeEnvelope({
-    algId: cipher.algId,
-    keyVersion,
-    nonce,
-    ciphertext,
-    tag,
-  });
+  // The context owns the resolved key and may cache it. Copy before use so eager cleanup never
+  // mutates provider-owned material; disposable KMS contexts erase their sources at scope exit.
+  const key = Buffer.from(ctx.deriveKey(keyVersion));
+  try {
+    const aad = buildAad(ctx.tenantId, keyVersion, columnContext, rowId);
+    const { nonce, ciphertext, tag } = cipher.encrypt(
+      key,
+      Buffer.from(plaintext, "utf8"),
+      aad,
+    );
+    return serializeEnvelope({
+      algId: cipher.algId,
+      keyVersion,
+      nonce,
+      ciphertext,
+      tag,
+    });
+  } finally {
+    key.fill(0);
+  }
 }
 
 /**
@@ -82,14 +88,18 @@ export function decryptField(
 ): string {
   assertRowId(rowId);
   const env = parseEnvelope(stored);
-  const key = ctx.deriveKey(env.keyVersion);
-  const aad = buildAad(ctx.tenantId, env.keyVersion, columnContext, rowId);
-  const cipher = cipherForAlg(env.algId);
-  return cipher
-    .decrypt(
-      key,
-      { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },
-      aad,
-    )
-    .toString("utf8");
+  const key = Buffer.from(ctx.deriveKey(env.keyVersion));
+  try {
+    const aad = buildAad(ctx.tenantId, env.keyVersion, columnContext, rowId);
+    const cipher = cipherForAlg(env.algId);
+    return cipher
+      .decrypt(
+        key,
+        { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },
+        aad,
+      )
+      .toString("utf8");
+  } finally {
+    key.fill(0);
+  }
 }
