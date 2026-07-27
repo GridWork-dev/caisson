@@ -11,11 +11,16 @@
 //
 // CRYPTO-SHRED (P2 / ADR-0055): every key is scoped by a `keyId` (a per-tenant OR per-subject key
 // identifier). `scheduleKeyDeletion(keyId)` destroys that scope's KEK — the NIST SP 800-88
-// erasure-by-key-destruction primitive. Because the KEK is per-scope, the shred is SELECTIVE, and
-// because it acts on the KMS (not the store), it can render the field ciphertext under that scope
-// unrecoverable WITHOUT mutating the append-only wrapped-DEK store (ADR-0014). Provider receipts
-// remain literal: recoverable soft deletion is not called irreversible. The erasure-vs-immutable-
-// chain reconciliation lives in `crypto-shred.ts`.
+// erasure-by-key-destruction primitive. Because the KEK is per-scope, the shred is selective ACROSS
+// scopes — other tenants are untouched — and because it acts on the KMS (not the store), it can
+// render the field ciphertext under that scope unrecoverable WITHOUT mutating the append-only
+// wrapped-DEK store (ADR-0014). Provider receipts remain literal: recoverable soft deletion is not
+// called irreversible. The erasure-vs-immutable-chain reconciliation lives in `crypto-shred.ts`.
+//
+// It is NOT selective WITHIN a scope. Request contexts prefetch every historical version (ADR-0389),
+// so once a scope's KEK is destroyed that tenant can no longer read OR write any encrypted field,
+// and re-provisioning stays blocked for the provider's retention window. Shredding a tenant ends
+// that tenant's encrypted-field lifetime; it does not erase one subset of their data.
 import {
   createHash,
   hkdfSync,

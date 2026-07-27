@@ -49,6 +49,9 @@ export { TenantFieldCrypto } from "./crypto.ts";
 export {
   type FieldCryptoContext,
   type DisposableFieldCryptoContext,
+  type KmsContextOptions,
+  KMS_CONTEXT_PREFETCH_CONCURRENCY,
+  KMS_CONTEXT_MAX_PREFETCH_VERSIONS,
   withFieldCryptoContext,
   currentFieldCryptoContext,
   derivedContext,

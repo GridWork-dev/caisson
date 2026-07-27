@@ -33,9 +33,26 @@ export interface KmsContextOptions {
   readonly abortSignal?: AbortSignal;
   /** Maximum concurrent unwraps. Defaults to 4 and is bounded to 1–16. */
   readonly concurrency?: number;
+  /**
+   * Maximum historical key versions this context will prefetch. Defaults to
+   * {@link KMS_CONTEXT_MAX_PREFETCH_VERSIONS}.
+   *
+   * The prefetch-all design (ADR-0389) costs provider round trips per version at EVERY context
+   * bind, and the hosted request budget is finite, so rotation depth and request latency are
+   * directly coupled. Uncapped, exceeding the budget surfaces as a bare deadline timeout that
+   * names nothing; capped, a tenant past the supported depth gets an error that says so.
+   */
+  readonly maxPrefetchVersions?: number;
 }
 
 export const KMS_CONTEXT_PREFETCH_CONCURRENCY = 4;
+
+/**
+ * Deliberately far below the 0xffff the key-version format allows: at roughly two provider round
+ * trips per version and 4-way concurrency this stays comfortably inside a 15s request budget,
+ * where the format ceiling would not. Raise it only with evidence that the budget still holds.
+ */
+export const KMS_CONTEXT_MAX_PREFETCH_VERSIONS = 64;
 
 const store = new AsyncLocalStorage<FieldCryptoContext>();
 
@@ -108,6 +125,17 @@ export async function kmsContext(
       "field-crypto: KMS context concurrency must be an integer from 1 through 16",
     );
   }
+  const maxPrefetchVersions =
+    options.maxPrefetchVersions ?? KMS_CONTEXT_MAX_PREFETCH_VERSIONS;
+  if (
+    !Number.isInteger(maxPrefetchVersions) ||
+    maxPrefetchVersions < 1 ||
+    maxPrefetchVersions > 0xffff
+  ) {
+    throw new ValidationError(
+      "field-crypto: KMS context maxPrefetchVersions must be an integer from 1 through 65535",
+    );
+  }
   if (isAborted(options.abortSignal)) {
     throw abortError(options.abortSignal);
   }
@@ -122,6 +150,17 @@ export async function kmsContext(
   ) {
     throw new InternalError(
       "field-crypto: KMS provider returned an invalid current key version",
+    );
+  }
+  // Fail with a diagnosis rather than an anonymous deadline timeout: prefetch-all means every bind
+  // pays for the tenant's whole rotation history, so past this depth the request budget is the real
+  // limit and the operator needs to know that is what happened.
+  if (currentVersion > maxPrefetchVersions) {
+    throw new InternalError(
+      `field-crypto: tenant has rotated to key version ${String(currentVersion)}, past the ` +
+        `${String(maxPrefetchVersions)}-version prefetch limit this request context supports; ` +
+        "raise maxPrefetchVersions only with evidence the KMS request budget still holds",
+      { tenantId, currentVersion, maxPrefetchVersions },
     );
   }
 

@@ -261,3 +261,43 @@ describe("request-scoped KMS context", () => {
     expect(() => currentFieldCryptoContext()).toThrow(/fail-closed/);
   });
 });
+
+describe("kmsContext prefetch depth cap", () => {
+  // Prefetch-all makes every bind pay for the tenant's whole rotation history, so rotation depth
+  // and request latency are coupled. Past the cap the failure names the depth, rather than
+  // surfacing later as an anonymous request-deadline timeout that diagnoses nothing.
+  function providerAtVersion(version: number): FieldKeyProvider {
+    return {
+      async currentVersion() {
+        return version;
+      },
+      async keyFor() {
+        return Buffer.alloc(32, 0x5a);
+      },
+    };
+  }
+
+  test("refuses a tenant rotated past the cap, naming the depth and the limit", async () => {
+    await expect(
+      kmsContext(providerAtVersion(9), "acct_deep", { maxPrefetchVersions: 8 }),
+    ).rejects.toThrow(/rotated to key version 9[\s\S]*8-version prefetch limit/);
+  });
+
+  test("still binds a tenant sitting exactly at the cap", async () => {
+    const ctx = await kmsContext(providerAtVersion(8), "acct_edge", {
+      maxPrefetchVersions: 8,
+    });
+    try {
+      expect(ctx.currentVersion()).toBe(8);
+      expect(ctx.deriveKey(1)).toHaveLength(32);
+    } finally {
+      ctx.dispose();
+    }
+  });
+
+  test("rejects a nonsensical cap instead of silently defaulting", async () => {
+    await expect(
+      kmsContext(providerAtVersion(1), "acct_bad", { maxPrefetchVersions: 0 }),
+    ).rejects.toThrow(/maxPrefetchVersions/);
+  });
+});
