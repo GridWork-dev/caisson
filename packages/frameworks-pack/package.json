@@ -17,11 +17,12 @@
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
-    "test": "bun test ./src"
+    "lint": "eslint src scripts",
+    "test": "bun test ./src ./scripts"
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
+    "@caisson/oscal-spine": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

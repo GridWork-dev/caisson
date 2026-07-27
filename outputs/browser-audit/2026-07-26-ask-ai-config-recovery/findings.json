@@ -1,0 +1,31 @@
+{
+  "advisory": true,
+  "runId": "2026-07-26-ask-ai-config-recovery",
+  "rootDir": "outputs/browser-audit/2026-07-26-ask-ai-config-recovery",
+  "classes": {},
+  "findings": [],
+  "coverageBlocks": [
+    {
+      "id": "CAISSON-PBA-BLOCK-ASK-AI-TURNSTILE",
+      "ring": "public",
+      "journey": "public-docs",
+      "url": "https://caisson.sh/docs",
+      "status": "blocked",
+      "blockedAt": "turnstile",
+      "observed": "The automated browser's Cloudflare challenge path returned a PAT 401 and /api/ask returned 403 challenge_failed.",
+      "notProven": [
+        "DOCS_QUERY_URL reaches the docs query service",
+        "DOCS_SERVICE_TOKEN authenticates the query",
+        "Ask AI streams a grounded answer",
+        "Ask AI renders citations"
+      ],
+      "evidence": [
+        "evidence/ask-ai-before.png",
+        "evidence/ask-ai-open.png",
+        "evidence/ask-ai-question.png",
+        "evidence/ask-ai-turnstile-blocked.png",
+        "evidence/network-summary.json"
+      ]
+    }
+  ]
+}

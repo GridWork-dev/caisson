@@ -49,6 +49,7 @@ export const MODULE_DB_POSTURE: Record<string, DbPosture> = {
   "agent-runner": "none",
   "compliance-core": "none",
   "frameworks-pack": "none",
+  "oscal-spine": "none",
   "signing-primitive": "none",
   "local-inference": "none",
   "local-privacy": "none",

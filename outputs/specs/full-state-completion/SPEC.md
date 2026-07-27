@@ -35,7 +35,8 @@ Success means:
 - Python remains limited to the two existing services.
 - Marketing remains public; cart, dashboard, and checkout remain Cloudflare-gated.
 - Buyer-facing site copy is unchanged in this program.
-- Compliance remains displayed at $1,449; pricing is reconciled, not reopened.
+- The locked catalog is carried without reinterpretation: Compliance $1,649, Everything $2,259,
+  and `oscal-spine` $249.
 - Outreach, interviews, and the demand clock wait for the four technical proof receipts.
 - All three adapters ship, each through an isolated implementation/review lane.
 - A single version/release train follows all local code waves.

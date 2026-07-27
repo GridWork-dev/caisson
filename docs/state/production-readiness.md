@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-26
+updated: 2026-07-27
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -9,6 +9,7 @@ grounds:
   - outputs/plans/full-state-completion/PLAN.md
   - registry/scripts/index-parity-probe.ts
   - outputs/executions/2026-07-25-github-certification.md
+  - outputs/executions/2026-07-27-project-reconciliation.md
   - outputs/research/infra-provider-audit-2026-07-16.md
   - docs/ops/provider-console-checks.md
 ---
@@ -21,43 +22,48 @@ blocked until both technical and operator evidence is attached.
 
 ## Verdicts
 
-| Dimension               | Verdict                                      | Current state                                                                                                                          |
-| ----------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Repository              | **local gates green; certification pending** | 80 Bun workspaces; 221/221 tasks pass on the T8 branch; only concurrent-worktree hygiene, review reruns, and the unmerged waves remain |
-| Deploy / infrastructure | **red parity**                               | Public probes answer, but license and admin manifest digests differ from repository/Worker                                             |
-| Security                | **gaps**                                     | Limiter policy implemented; four technical receipts and three adapter audits remain                                                    |
-| Commerce                | **blocked**                                  | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                    |
-| Operations              | **gaps**                                     | Restore rehearsed July 11; current backup recency and provider-console checks still required                                           |
-| Buyer/product           | **gaps**                                     | Design-manifest residual complete; four already-locked families remain                                                                 |
-| Release                 | **blocked**                                  | 48 pending changeset files; no current CI/release certification or immutable tag-to-bytes receipt                                      |
+| Dimension               | Verdict                                          | Current state                                                                                                                            |
+| ----------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Repository              | **local gates green**                            | 81 Bun workspaces; 224/224 tasks, 904 site tests, and 76 package gates pass; field-crypto KMS remains outside main for fresh review      |
+| Deploy / infrastructure | **red parity**                                   | Public probes answer, but license and admin manifest digests differ from repository/Worker                                               |
+| Security                | **gaps**                                         | Limiter and provider adapters are implemented; four production technical receipts remain                                                 |
+| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                      |
+| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                             |
+| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt |
+| Release                 | **blocked**                                      | 49 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                             |
 
 ## Evidence snapshot
 
 ### Repository and quality
 
-- Baseline audited `main`: `52b2f3ee`; the T8 branch is based on that revision.
-- `bun run check` passed all 221 tasks on the T8 branch before review remediation; formatting,
-  standards, manifest drift, and dependency-graph guards were green. Final remediation receipts
-  replace this branch-local evidence before the PR opens.
+- Remote reconciliation base: `origin/main` at `2efeea98`. Local `main` adds the validated writing
+  surface, OSCAL spine/catalog, Ask AI evidence, and two independently verified supply-chain pins.
+- `bun run check` passed 224/224 tasks on the integrated writing-plus-OSCAL tree, including 904
+  site tests and 76 conforming package-gate checks.
 - Dependency-cruiser false green is repaired in `c236681f`: TypeScript 6.0.3, 2,296 modules,
   1,630 TypeScript modules, 6,514 dependency edges, and `.ts`/`.tsx` sentinels.
 - Total price authority is enforced in `f6122de8`, with the catalog type restored in
   `92d930b6`.
 - Route-specific limiter infrastructure failures are enforced in `014ac4de`.
 - Dependency-patch ownership is enforced by the audit harness in `3e384bc5`.
-- `bun run sot` has every content/structure gate green. Its sole expected drift is branch hygiene
-  from concurrent worktrees; this task does not remove another workstream.
-- There are 48 pending changeset files, 47 of them release-bearing. `bun changeset status` resolves
-  them to 70 package bumps: 56 patch, 12 minor, and 2 major.
+- `bun run sot` content gates are green. Its branch-hygiene advisory remains intentionally red
+  because recovery refs and operator-owned wave worktrees are preserved rather than destructively
+  cleaned.
+- There are 49 pending changeset files. Current resolution affects 58 patch packages, 12 minor
+  packages, and 2 major packages.
 - Private-repository access has been authorized since 2026-06-30 (`gh auth status`: active
   `repo`-scoped token; `caisson-sh/caisson` confirmed private). Branch protection stays
   discipline-only on the Free plan (ADR-0327) and org 2FA was declined 2026-07-15, re-raise at
   launch — both accepted residuals. Current PRs, Actions, releases, and public-repository timing
-  are certified in [2026-07-25 GitHub certification](../../outputs/executions/2026-07-25-github-certification.md).
-  That pass found an open-PR CI defect; its appended correction records the resolution — all three
-  open PRs (#332, #333, #334) now carry a fully green rollup. The unsigned-tag defect stands but is
-  no longer an open question: ADR-0382 lock 2 locked SSH signing going forward with an advisory
-  readiness check. Older GitHub tables are historical.
+  were last broadly certified in
+  [2026-07-25 GitHub certification](../../outputs/executions/2026-07-25-github-certification.md).
+  That pass found an open-PR CI defect; its appended correction records the resolution — the three
+  PRs it named (#332, #333, #334) carried a fully green rollup and have since merged, as have
+  #335-#340. The unsigned-tag defect stands but is no longer an open question: ADR-0382 lock 2
+  locked SSH signing going forward with an advisory readiness check. The current seven-PR cutoff
+  and local dispositions are in the
+  [2026-07-27 reconciliation](../../outputs/executions/2026-07-27-project-reconciliation.md);
+  older GitHub tables are historical.
 
 ### Deploy and parity
 
@@ -78,13 +84,14 @@ health/checkout/entitlement/refund/RAG/support/KMS probe receipts.
 
 ### Commerce
 
-- The target catalog is 35 products and 66 prices, including 26 module SKUs.
-- Compliance’s operative displayed price is $1,449.
+- The target catalog is 36 products and 68 prices, including 27 module SKUs.
+- Compliance’s operative displayed price is $1,649; Everything is $2,259.
 - Production Paddle approval, product/price IDs, adjustment handling, dunning cancellation, and
   live checkout/refund/entitlement proof remain open.
-- Dedicated refund/support routes and an exact 35-product/66-price mapping exporter are built on
-  `feature/paddle-onboarding-setup`; they are not production evidence until merged, deployed, and
-  probed. No live Paddle catalog mutation or production ID wiring has occurred.
+- Dedicated refund/support routes merged in #333, and the OSCAL wave updates the mapping exporter
+  to the exact 36-product/68-price target. They are still not production evidence, because nothing
+  has been deployed or probed since. No live Paddle catalog mutation or production ID wiring has
+  occurred.
 - Fulfillment must recognize every current SKU and continue to reject unknown IDs.
 - EIN is complete; it is no longer a blocker.
 - Marketing remains public. Cart, dashboard, and checkout remain Cloudflare-gated.

@@ -4,7 +4,7 @@
  *
  * CAISSON-31 / launch-runbook §2.2. Paddle Sandbox and Production are separate catalogs with
  * separate ids — nothing carries over. This tool re-derives the ADR-0257/0258/0260 six-bundle
- * catalog from the display SOT and creates it in the target Paddle environment, replacing ~35
+ * catalog from the display SOT and creates it in the target Paddle environment, replacing 36
  * manual dashboard clicks with a repeatable, re-runnable script.
  *
  * SOT: `apps/site/lib/pricing.ts` — the display sheet the runbook §2.2 names as authoritative,
@@ -13,7 +13,7 @@
  * hand-typed here, so the tool's catalog cannot drift from the site (or the pricebook, which
  * `pricing.test.ts` pins the same numbers against). Money stays integer cents (ADR-0007).
  *
- * Catalog shape (matches the runbook §2.2 table): 6 bundles + 22 à-la-carte modules (one-time) +
+ * Catalog shape (matches the runbook §2.2 table): 6 bundles + 27 à-la-carte modules (one-time) +
  * 2 annual subscriptions (Compliance-Updates, Developer) + 1 "Updates Renewal" product carrying a
  * per-SKU one-time renewal price. Enterprise is a Contact-us anchor with no price — no product.
  * Every product gets tax_category "saas".
@@ -25,6 +25,8 @@
  *       --export-map=outputs/executions/paddle-production-map.json
  *                                                    # create, verify, export marker → live-id map
  *   bun tools/paddle-catalog-recreate.ts --self-check   # assert the plan/money math, exit
+ *   PADDLE_API_KEY=pdl_sdbx_... \
+ *     bun tools/paddle-catalog-recreate.ts --audit      # GET-only catalog classification
  *
  * Idempotency: every product carries custom_data.caisson_id (+ caisson_kind) and every price
  * carries custom_data.caisson_key. --execute looks products/prices up by those markers first and
@@ -144,7 +146,7 @@ export function buildPlan(): PlanProduct[] {
     });
   }
 
-  // 22 à-la-carte modules — one-time perpetual license.
+  // 27 à-la-carte modules — one-time perpetual license.
   for (const m of MODULE_PRICES) {
     products.push({
       caissonId: m.id,
@@ -242,11 +244,25 @@ function paddleBase(): string {
     : "https://sandbox-api.paddle.com";
 }
 
+function resolvePaddleUrl(pathOrUrl: string, description: string): string {
+  let url: URL;
+  try {
+    url = new URL(pathOrUrl, `${paddleBase()}/`);
+  } catch {
+    throw new Error(`refused unsafe Paddle ${description} URL`);
+  }
+  const base = new URL(paddleBase());
+  if (url.protocol !== "https:" || url.origin !== base.origin) {
+    throw new Error(`refused unsafe Paddle ${description} URL`);
+  }
+  return url.toString();
+}
+
 function requireApiKey(): string {
   const key = process.env.PADDLE_API_KEY;
   if (key === undefined || key.length === 0) {
     throw new Error(
-      "PADDLE_API_KEY is required for --execute or --export-map (fail-closed).",
+      "PADDLE_API_KEY is required for --execute, --audit, or --export-map (fail-closed).",
     );
   }
   return key;
@@ -326,7 +342,8 @@ const PaddleApiProductSchema = z
     description: z.string().nullable(),
     type: z.enum(["standard", "custom"]),
     tax_category: z.string(),
-    image_url: z.string(),
+    // Paddle's sandbox list endpoint can return null despite documenting URL-or-empty-string.
+    image_url: z.string().nullable(),
     custom_data: z.record(z.string(), z.unknown()).nullable(),
     status: z.enum(["active", "archived"]),
     import_meta: z.unknown().nullable(),
@@ -337,8 +354,12 @@ const PaddleApiProductSchema = z
   .strict();
 
 const PaddleApiProductsSchema = z.array(PaddleApiProductSchema);
+const PaddleAuditProductsSchema = z.array(
+  PaddleApiProductSchema.omit({ prices: true }),
+);
+const PaddleApiPricesSchema = z.array(PaddleApiPriceSchema);
 
-async function paddleRequest(
+export async function paddleRequest(
   apiKey: string,
   method: "GET" | "POST",
   pathOrUrl: string,
@@ -347,13 +368,12 @@ async function paddleRequest(
   data: unknown;
   meta?: { pagination?: { has_more?: boolean; next?: string } };
 }> {
-  const url = pathOrUrl.startsWith("http")
-    ? pathOrUrl
-    : `${paddleBase()}${pathOrUrl}`;
+  const url = resolvePaddleUrl(pathOrUrl, "request");
   const res = await fetchWithTimeout(
     url,
     {
       method,
+      redirect: "error",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -411,9 +431,269 @@ async function listExistingProducts(apiKey: string): Promise<PaddleObject[]> {
         })),
       })),
     );
-    next = meta?.pagination?.has_more ? meta.pagination.next : undefined;
+    next = nextPaddlePage(meta, "product");
   }
   return products;
+}
+
+interface PaddlePage {
+  data: unknown;
+  meta?: { pagination?: { has_more?: boolean; next?: string } };
+}
+
+export type AuditRequest = (
+  method: "GET",
+  pathOrUrl: string,
+) => Promise<PaddlePage>;
+
+export interface AuditCatalogSnapshot {
+  products: PaddleObject[];
+  prices: PaddlePrice[];
+}
+
+function nextPaddlePage(
+  meta: PaddlePage["meta"],
+  objectType: "product" | "price",
+): string | undefined {
+  if (meta?.pagination?.has_more !== true) return undefined;
+  const next = meta.pagination.next;
+  if (next === undefined || next.length === 0) {
+    throw new Error(
+      `Paddle ${objectType} pagination says has_more without a next URL`,
+    );
+  }
+  resolvePaddleUrl(next, `${objectType} pagination`);
+  return next;
+}
+
+/** GET every product and price independently. Prices are not taken from `include=prices`, whose
+ * per-product grids can paginate separately and silently truncate large products. */
+export async function loadAuditCatalog(
+  request: AuditRequest,
+): Promise<AuditCatalogSnapshot> {
+  const products: PaddleObject[] = [];
+  let productPage: string | undefined =
+    "/products?per_page=200&status=active,archived";
+  while (productPage !== undefined) {
+    const page = await request("GET", productPage);
+    const parsed = PaddleAuditProductsSchema.safeParse(page.data);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      throw new Error(
+        `Paddle returned an invalid audit product at "${issue?.path.join(".") ?? "unknown field"}"`,
+      );
+    }
+    products.push(
+      ...parsed.data.map((product) => ({
+        id: product.id,
+        name: product.name,
+        type: product.type,
+        tax_category: product.tax_category,
+        custom_data: product.custom_data,
+        status: product.status,
+        prices: [],
+      })),
+    );
+    productPage = nextPaddlePage(page.meta, "product");
+  }
+
+  const prices: PaddlePrice[] = [];
+  let pricePage: string | undefined =
+    "/prices?per_page=200&status=active,archived";
+  while (pricePage !== undefined) {
+    const page = await request("GET", pricePage);
+    const parsed = PaddleApiPricesSchema.safeParse(page.data);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      throw new Error(
+        `Paddle returned an invalid audit price at "${issue?.path.join(".") ?? "unknown field"}"`,
+      );
+    }
+    prices.push(
+      ...parsed.data.map((price) => ({
+        id: price.id,
+        product_id: price.product_id,
+        description: price.description,
+        type: price.type,
+        billing_cycle: price.billing_cycle,
+        unit_price: price.unit_price,
+        custom_data: price.custom_data,
+        status: price.status,
+      })),
+    );
+    pricePage = nextPaddlePage(page.meta, "price");
+  }
+
+  return { products, prices };
+}
+
+export interface CatalogAuditItem {
+  objectType: "product" | "price";
+  id: string;
+  marker: string | null;
+  status: "active" | "archived" | "missing";
+  label: string;
+  productId?: string;
+}
+
+export interface CatalogAuditReport {
+  expected: CatalogAuditItem[];
+  unknownMarker: CatalogAuditItem[];
+  unmarked: CatalogAuditItem[];
+  duplicateMarker: CatalogAuditItem[];
+  missing: CatalogAuditItem[];
+}
+
+function sortAuditItems(items: CatalogAuditItem[]): CatalogAuditItem[] {
+  return items.sort(
+    (a, b) =>
+      a.objectType.localeCompare(b.objectType) || a.id.localeCompare(b.id),
+  );
+}
+
+/** Classify each live object exactly once, then classify expected plan markers with no live
+ * object as MISSING. Duplicate detection is per marker namespace: products and prices cannot
+ * collide with each other. */
+export function classifyCatalogAudit(
+  plan: readonly PlanProduct[],
+  products: readonly PaddleObject[],
+  prices: readonly PaddlePrice[],
+): CatalogAuditReport {
+  const expectedProductMarkers = new Set<string>();
+  const expectedPriceMarkers = new Set<string>();
+  for (const product of plan) {
+    if (expectedProductMarkers.has(product.caissonId)) {
+      throw new Error(
+        `duplicate planned product marker "${product.caissonId}"`,
+      );
+    }
+    expectedProductMarkers.add(product.caissonId);
+    for (const price of product.prices) {
+      if (expectedPriceMarkers.has(price.key)) {
+        throw new Error(`duplicate planned price marker "${price.key}"`);
+      }
+      expectedPriceMarkers.add(price.key);
+    }
+  }
+
+  const liveProducts: CatalogAuditItem[] = products.map((product) => ({
+    objectType: "product",
+    id: product.id,
+    marker:
+      typeof product.custom_data?.caisson_id === "string"
+        ? product.custom_data.caisson_id
+        : null,
+    status: product.status,
+    label: product.name,
+  }));
+  const livePrices: CatalogAuditItem[] = prices.map((price) => ({
+    objectType: "price",
+    id: price.id,
+    marker:
+      typeof price.custom_data?.caisson_key === "string"
+        ? price.custom_data.caisson_key
+        : null,
+    status: price.status,
+    label: price.description,
+    productId: price.product_id,
+  }));
+
+  const report: CatalogAuditReport = {
+    expected: [],
+    unknownMarker: [],
+    unmarked: [],
+    duplicateMarker: [],
+    missing: [],
+  };
+
+  for (const [items, expectedMarkers] of [
+    [liveProducts, expectedProductMarkers],
+    [livePrices, expectedPriceMarkers],
+  ] as const) {
+    const markerCounts = new Map<string, number>();
+    for (const item of items) {
+      if (item.marker !== null) {
+        markerCounts.set(item.marker, (markerCounts.get(item.marker) ?? 0) + 1);
+      }
+    }
+    for (const item of items) {
+      if (item.marker === null) {
+        report.unmarked.push(item);
+      } else if ((markerCounts.get(item.marker) ?? 0) > 1) {
+        report.duplicateMarker.push(item);
+      } else if (expectedMarkers.has(item.marker)) {
+        report.expected.push(item);
+      } else {
+        report.unknownMarker.push(item);
+      }
+    }
+    const objectType = items === liveProducts ? "product" : "price";
+    for (const marker of expectedMarkers) {
+      if (!markerCounts.has(marker)) {
+        report.missing.push({
+          objectType,
+          id: marker,
+          marker,
+          status: "missing",
+          label: marker,
+        });
+      }
+    }
+  }
+
+  for (const items of Object.values(report)) sortAuditItems(items);
+  return report;
+}
+
+function auditItemLine(item: CatalogAuditItem): string {
+  const marker = item.marker === null ? "(none)" : item.marker;
+  const owner =
+    item.productId === undefined ? "" : ` product_id=${item.productId}`;
+  return `  ${item.objectType} ${item.id} status=${item.status} marker=${marker}${owner} label=${JSON.stringify(item.label)}`;
+}
+
+export function renderAuditReport(
+  report: CatalogAuditReport,
+  environment: "sandbox" | "production",
+): string {
+  const sections: Array<[string, readonly CatalogAuditItem[]]> = [
+    ["EXPECTED", report.expected],
+    ["UNKNOWN MARKER", report.unknownMarker],
+    ["UNMARKED (pre-script/manual)", report.unmarked],
+    ["DUPLICATE MARKER", report.duplicateMarker],
+    ["MISSING", report.missing],
+  ];
+  const lines = [`\nPaddle catalog audit [env: ${environment}]`];
+  for (const [label, items] of sections) {
+    lines.push(`\n${label} (${String(items.length)})`);
+    if (items.length === 0) lines.push("  (none)");
+    else lines.push(...items.map(auditItemLine));
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function auditHasDrift(report: CatalogAuditReport): boolean {
+  return (
+    report.unknownMarker.length > 0 ||
+    report.unmarked.length > 0 ||
+    report.duplicateMarker.length > 0 ||
+    report.missing.length > 0
+  );
+}
+
+async function auditCatalog(plan: readonly PlanProduct[]): Promise<void> {
+  const apiKey = requireApiKey();
+  const snapshot = await loadAuditCatalog((method, pathOrUrl) =>
+    paddleRequest(apiKey, method, pathOrUrl),
+  );
+  const report = classifyCatalogAudit(plan, snapshot.products, snapshot.prices);
+  process.stdout.write(renderAuditReport(report, paddleEnv()));
+  if (auditHasDrift(report)) {
+    throw new Error(
+      "Paddle catalog audit found drift; no catalog objects were changed.",
+    );
+  }
+  out("Paddle catalog audit: green — every live marker matches the plan.");
 }
 
 export interface CatalogMapping {
@@ -879,20 +1159,20 @@ function selfCheck(): void {
   const plan = buildPlan();
   const byKind = (k: ProductKind) => plan.filter((p) => p.kind === k);
   assert.equal(byKind("bundle").length, 6, "expected 6 bundles");
-  // 26 = the 22 of the sandbox big-bang era + agent-trajectory (2026-07-18, which shipped
-  // without bumping this pin) + the compliance-gap trio (access-review/risk-register/trust-page).
-  assert.equal(byKind("module").length, 26, "expected 26 modules");
+  // 27 = the 22 of the sandbox big-bang era + agent-trajectory + the compliance-gap trio +
+  // oscal-spine (2026-07-25).
+  assert.equal(byKind("module").length, 27, "expected 27 modules");
   assert.equal(byKind("subscription").length, 2, "expected 2 subscriptions");
   assert.equal(
     byKind("renewal-parent").length,
     1,
     "expected 1 renewal product",
   );
-  assert.equal(plan.length, 35, "expected 35 products total");
+  assert.equal(plan.length, 36, "expected 36 products total");
   assert.equal(
     plan.reduce((count, product) => count + product.prices.length, 0),
-    66,
-    "expected 66 prices total",
+    68,
+    "expected 68 prices total",
   );
 
   for (const prod of plan) {
@@ -912,16 +1192,16 @@ function selfCheck(): void {
   // Pin the money math against the runbook §2.2 locked numbers.
   const bundleCents = (id: string) =>
     byKind("bundle").find((p) => p.caissonId === id)?.prices[0]?.amountCents;
-  assert.equal(bundleCents("compliance"), 144900, "compliance = $1,449.00");
-  assert.equal(bundleCents("everything"), 205900, "everything = $2,059.00");
+  assert.equal(bundleCents("compliance"), 164900, "compliance = $1,649.00");
+  assert.equal(bundleCents("everything"), 225900, "everything = $2,259.00");
 
   const renewalCents = (id: string) =>
     byKind("renewal-parent")[0]?.prices.find((pr) => pr.key === `renew:${id}`)
       ?.amountCents;
-  // ADR-0260 §5 flat-40%-X9 renewal ladder (runbook: $579/$289/$249/$129/$159/$819 —
-  // compliance moved $419 → $579 with the bundle's reprice to $1,449).
-  assert.equal(renewalCents("compliance"), 57900, "compliance renewal = $579");
-  assert.equal(renewalCents("everything"), 81900, "everything renewal = $819");
+  // ADR-0260 §5 flat-40%-X9 renewal ladder: the locked bundle reprices derive to $659 and $899.
+  assert.equal(renewalCents("compliance"), 65900, "compliance renewal = $659");
+  assert.equal(renewalCents("everything"), 89900, "everything renewal = $899");
+  assert.equal(renewalCents("oscal-spine"), 9900, "oscal-spine renewal = $99");
   assert.equal(
     renewalCents("agentic-dev"),
     12900,
@@ -939,7 +1219,7 @@ function selfCheck(): void {
   assert.equal(subCents("developer"), 49900, "developer = $499/yr");
 
   out(
-    "self-check OK — 35 products, 66 prices, money math pinned to the runbook §2.2 catalog.",
+    "self-check OK — 36 products, 68 prices, money math pinned to the runbook §2.2 catalog.",
   );
 }
 
@@ -955,6 +1235,7 @@ async function main(): Promise<void> {
     throw new Error("--export-map requires a relative .json path");
   }
   const knownArgs = new Set([
+    "--audit",
     "--execute",
     "--self-check",
     ...(exportArgs.length === 1 ? [exportArgs[0] as string] : []),
@@ -964,15 +1245,26 @@ async function main(): Promise<void> {
     throw new Error(`unknown argument(s): ${unknown.join(", ")}`);
   }
   if (args.has("--self-check")) {
-    if (args.has("--execute") || exportPath !== undefined) {
+    if (
+      args.has("--audit") ||
+      args.has("--execute") ||
+      exportPath !== undefined
+    ) {
       throw new Error(
-        "--self-check cannot be combined with execution or export",
+        "--self-check cannot be combined with audit, execution, or export",
       );
     }
     selfCheck();
     return;
   }
   const plan = buildPlan();
+  if (args.has("--audit")) {
+    if (args.has("--execute") || exportPath !== undefined) {
+      throw new Error("--audit cannot be combined with execution or export");
+    }
+    await auditCatalog(plan);
+    return;
+  }
   if (args.has("--execute")) {
     await execute(plan);
   } else {

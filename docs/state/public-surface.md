@@ -66,9 +66,9 @@ The four persona **editions DISSOLVED into six bundles** 2026-07-06. **Complianc
 package id** (`@caisson/compliance`); its manifest flipped to `kind:"bundle"` at 104900 in the
 CAISSON-24 republish (2026-07-06, hygiene-package-standards session) — historical `kind:"edition"`
 ledger entries stay valid forever, ADR-0257 §1 forbids only the ledger REWRITE, never a newly
-appended version. The other five bundles are fresh `kind:"bundle"` meta-packages. Prices (full
-detail: `package-catalog.md` §2b): **Compliance $1,049 · AI-Production $739 · Local-first $629 ·
-Agentic-Dev $329 · Provenance $399 · Everything $2,059.**
+appended version. The other five bundles are fresh `kind:"bundle"` meta-packages. Current prices
+(full detail: `package-catalog.md` §2b): **Compliance $1,649 · AI-Production $739 · Local-first $629 ·
+Agentic-Dev $329 · Provenance $399 · Everything $2,259.**
 
 | Package                  | Bundle                                                               | How a buyer gets it                                                                                                                                                        |
 | ------------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

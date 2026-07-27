@@ -59,7 +59,7 @@ with real engineering attention — not a waitlist, not a discount code.
 
 ## Partner pricing
 
-List prices as of 2026-07-10; the 40% discount applies to list at purchase time.
+List prices as of 2026-07-25; the 40% discount applies to list at purchase time.
 
 | Bundle        | List   | Partner price |
 | ------------- | ------ | ------------- |
@@ -67,8 +67,8 @@ List prices as of 2026-07-10; the 40% discount applies to list at purchase time.
 | Provenance    | $399   | $239.40       |
 | Local-first   | $629   | $377.40       |
 | AI-Production | $739   | $443.40       |
-| Compliance    | $1,049 | $629.40       |
-| Everything    | $2,059 | $1,235.40     |
+| Compliance    | $1,649 | $989.40       |
+| Everything    | $2,259 | $1,355.40     |
 
 À-la-carte modules qualify for the same discount — terms agreed directly.
 

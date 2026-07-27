@@ -33,7 +33,8 @@ re-verify against.
 | License/entitlement verify (Ed25519 offline)                           | `packages/license-verify`                | 4 / 2                                           | BUILT |
 | Session/JWT seam                                                       | `packages/auth`                          | 3 / 1                                           | BUILT |
 | WORM ArtifactStore + chain-store + version-store                       | `packages/audit-worm`                    | 7 / 6                                           | BUILT |
-| Evidence-pack generation (collectors, pack-format, OSCAL export)       | `packages/compliance-core` (`evidence/`) | 13 / 9                                          | BUILT |
+| Evidence-pack generation (collectors, pack-format, crosswalk rollup)   | `packages/compliance-core` (`evidence/`) | 13 / 9                                          | BUILT |
+| OSCAL export + pinned NIST reference catalog                           | `packages/oscal-spine`                   | deterministic adapters + conformance fixtures   | BUILT |
 | Evidence-pack signing (Ed25519 + RFC-3161)                             | `packages/signing-primitive`             | 2 / 1                                           | BUILT |
 | Control-framework mappings (SOC2/HIPAA/EU-AI-Act, crosswalks)          | `packages/frameworks-pack`               | 7 / 3                                           | BUILT |
 | Guardrails (moderation + PII redaction, fail-closed)                   | `packages/guardrails`                    | 4 / 2                                           | BUILT |

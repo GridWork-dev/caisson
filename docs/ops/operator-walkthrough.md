@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-26
+updated: 2026-07-27
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -39,12 +39,13 @@ Use the repository hierarchy, not an external artifact:
 - [ ] Apply the pending migration chain through `0032_field_crypto_keys.sql`; attach schema,
       forced-RLS, tenant-policy, and append-only-trigger receipts before the KMS probe.
 - [ ] Prove manifest-digest parity plus health, checkout, entitlement, refund, RAG, and support.
-- [ ] Confirm docs/support answers use $1,449 and license fulfillment recognizes all current SKUs.
+- [ ] After the fleet deploy, confirm docs/support answer Compliance at $1,649 and Everything at
+      $2,259, and license fulfillment recognizes all current SKUs.
 
 ## Gate C — commerce and Ring 3
 
 - [ ] Complete Paddle production approval.
-- [ ] Recreate the 35-product/66-price production catalog.
+- [ ] Recreate the 36-product/68-price production catalog.
 - [ ] Configure adjustment and dunning behavior.
 - [ ] Prove a real checkout, refund, and entitlement lifecycle.
 - [ ] Complete Mercury setup.

@@ -15,8 +15,9 @@
 // (ADR-0359 prune fallout) from the stale first-publish pin (0.1.0, 2026-07-07 — the 0.0.0
 // pre-publish sentinel is history before that), which the prune delisted from the served surface;
 // historical everything releases keep that pin frozen in the append-only ledger. `priceCents:
-// 205900` is the locked bundle price ($2,059, ADR-0258 §3: 0.75 * Sum(personas), below-sum);
-// positive integer (ADR-0007). A bundle carries no composition code, so `dependencies` is empty
+// 225900` is the locked bundle price ($2,259, ADR-0386: preserving the $610 premium over
+// Compliance when the $249 OSCAL spine joins the catalog); positive integer (ADR-0007).
+// A bundle carries no composition code, so `dependencies` is empty
 // and this map is the sole membership truth.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
@@ -26,7 +27,7 @@ export default defineModule({
   version: pkg.version,
   kind: "bundle",
   tier: "paid",
-  priceCents: 205900,
+  priceCents: 225900,
   license: pkg.license,
   // The explicit full-catalog membership (ADR-0258 §3): the bundle self + every sellable commercial
   // SKU + ui-pro, every pin a real published version.
@@ -70,6 +71,7 @@ export default defineModule({
     "@caisson/local-store": "1.0.1",
     "@caisson/local-sync": "0.1.3",
     "@caisson/org-controls": "0.3.1",
+    "@caisson/oscal-spine": "0.1.0",
     "@caisson/platform-reads": "0.2.1",
     "@caisson/pricebook": "0.5.4",
     "@caisson/prompt-registry": "1.0.1",

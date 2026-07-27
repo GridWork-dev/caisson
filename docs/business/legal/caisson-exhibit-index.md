@@ -217,7 +217,7 @@ Do not send the entire packed corpus as if every passage is current. Assemble a 
 | **F-4** | `apps/site/app/legal/license/page.tsx` | Plain-language open/commercial split and perpetual-license/update promises. | Ensure it matches EULA and package manifests. |
 | **F-5** | `apps/site/lib/legal.ts` | Exact Paddle Merchant-of-Record disclosure used by the site. | Confirm the production page renders Paddle's then-current required wording. |
 | **F-6** | `docs/gtm/legal-entity.md` | Internal Merchant-of-Record, EULA, privacy, and entity issue inventory. | Correct stale EIN/entity status and resolve conflicts against official records. |
-| **F-7** | `docs/gtm/pricing-packaging.md` | Current six-bundle and 22-module pricing model, updates/renewal logic, and retired edition history. | Compare to live pricing source and Paddle catalog. |
+| **F-7** | `docs/gtm/pricing-packaging.md` | Current six-bundle and 27-module pricing model, updates/renewal logic, and retired edition history. | Compare to live pricing source and Paddle catalog. |
 | **F-8** | `docs/state/package-catalog.md` | Current package-by-package license, bundle membership, and build-status boundary. | Compare to manifests, release artifacts, and current branch. |
 | **F-9** | `docs/build-state.md` | Evidence of what is built, tested, partial, deployed, or pending. | Do not convert internal "built" labels into a legal warranty; verify current branch/deploy. |
 | **F-10** | `docs/state/go-live-legal-and-entity.md` and launch-runbook extracts | Operational dependencies for entity, Paddle, banking, legal pages, credentials, and production flip. | Reconcile against the new first-sale gate register and current approvals. |
@@ -228,8 +228,8 @@ Do not send the entire packed corpus as if every passage is current. Assemble a 
 
 - Current open Base: 15 Apache-2.0 packages.
 - Current commercial catalog: six bundles - Compliance, AI-Production, Local-first, Agentic-Dev, Provenance, and Everything.
-- Current bundle prices in the packed catalog: $1,049; $739; $629; $329; $399; and $2,059, respectively.
-- Current individually priced commercial catalog: 22 modules.
+- Current bundle prices: $1,649; $739; $629; $329; $399; and $2,259, respectively.
+- Current individually priced commercial catalog: 27 modules.
 - `credits` is commercial, not part of the open Base.
 - Local-first is commercial in the current catalog; older AGPL/open-flank language is superseded.
 - Older four-edition names and prices are historical and must not be used at checkout.

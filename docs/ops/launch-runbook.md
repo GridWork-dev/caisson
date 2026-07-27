@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-26
+updated: 2026-07-27
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -9,6 +9,7 @@ grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
   - docs/ops/provider-console-checks.md
   - outputs/research/infra-provider-audit-2026-07-16.md
+  - tooling/scripts/railway-env-sync.ts
 ---
 
 # Caisson launch-act runbook
@@ -59,26 +60,49 @@ Preconditions:
       written into the execution receipt.
 - [ ] Railway backup recency is verified and the logical restore procedure is ready.
 - [ ] The external-system/data-migration hold is explicitly released.
-- [ ] Every boot-blocking secret below is present on its service. Check this before the deploy, not
-      after — two of the three fail in ways the deploy probe will not catch.
+- [ ] Every launch-critical variable below is present on its service. Check this before the deploy,
+      not after — several fail only after a clean boot and green deploy probe.
 
-### Boot-blocking secrets on `caisson-site`
+### Fleet fail-soft configuration seams
 
-| Variable                                                                                                                                                                                   | Failure mode when unset                                                                                                                                                                                                                                                                                                                                            | Armed?                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| `SESSION_TOKEN_HMAC_KEY`                                                                                                                                                                   | **Hard boot failure.** `apps/site/lib/auth-server.ts:151,265` throws rather than fall back to storing raw session tokens (ADR-0366). Loud and immediate — a crashed boot or failed health check.                                                                                                                                                                   | Yes — `docs/deploy/STATE.md:281`                          |
-| `AZURE_KEY_VAULT_URL` + `AZURE_KEY_VAULT_KEY_NAME` + `AZURE_KEY_VAULT_WRAP_ALGORITHM` + `AZURE_KEY_VAULT_PURGE_PROTECTION` + `AZURE_TENANT_ID` + `AZURE_CLIENT_ID` + `AZURE_CLIENT_SECRET` | **Deferred throw, not a boot failure.** The site starts clean and passes every deploy probe; the first buyer BYOK submit then throws because production never falls back from Azure KMS to the derived provider or demo vector. The algorithm must be `RSA-OAEP-256`, the sentinel must be `enabled`, and the live key recovery level must prove purge protection. | **No arming record exists** — verify on the service first |
-| `BETTER_AUTH_SECRET`                                                                                                                                                                       | `/dashboard` sign-in 503s (`apps/site/railway.toml`).                                                                                                                                                                                                                                                                                                              | Yes                                                       |
+These are the nine enumerated feature gates that can survive a clean boot and then degrade only
+when the feature is used. The two admin mutation paths share one credential pair and therefore one
+arming row.
 
-The Azure KMS set is the dangerous one: a deploy that omits or misconfigures it looks completely
-healthy and fails only in front of a paying buyer. Confirm every variable exists, verify vault purge
-protection and the service principal's key permissions, execute a real wrap/unwrap probe, and record
-the checks in the execution receipt. The runtime uses `DefaultAzureCredential`, with the three
-service-principal variables selecting its Railway credential branch. Each wrapped DEK pins the exact
-Azure KEK version used to wrap it, so rotation does not strand historical DEKs; do not delete a KEK
-version while wrapped rows still reference it. Crypto-shred deletes the tenant KEK through the
-provider and must record whether the provider reports recoverable soft deletion or irreversible
-purge.
+| Seam                                          | Service                                 | Variables                                         | Launch class                               | Real degraded behavior when absent                                                                                                                                                                                                                                                                                                             | Arming action                                                                                                |
+| --------------------------------------------- | --------------------------------------- | ------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `site.ask-ai-docs-retrieval`                  | `caisson-site`                          | `DOCS_SERVICE_TOKEN` + `DOCS_QUERY_URL`           | **REQUIRED**                               | Docs retrieval raises “not configured”; `/api/ask` emits `retrieval_unavailable` and the buyer gets the escalation/contact path instead of an answer (`apps/site/lib/ask-ai/retrieve.ts:62`, `apps/site/lib/ask-ai/handler.ts:210-216`).                                                                                                       | Probe both names and record the receipt; no arming record existed on `caisson-site` as of 2026-07-26.        |
+| `site.ask-ai-generation`                      | `caisson-site`                          | `OPENROUTER_API_KEY`                              | **REQUIRED**                               | Retrieval may succeed, but generation raises “openrouter is not configured”; `/api/ask` emits `generation_failed` and falls back to escalation/contact (`apps/site/lib/ask-ai/openrouter.ts:70`, `apps/site/lib/ask-ai/handler.ts:210-216`).                                                                                                   | Probe and record the receipt.                                                                                |
+| `site.subscription-cancellation`              | `caisson-site`                          | `PADDLE_API_KEY`                                  | **REQUIRED**                               | An owned active subscription cannot be scheduled for cancellation: the Paddle adapter returns `cancellation is not configured` and the route maps the failure to HTTP 502 (`apps/site/lib/paddle-cancel.ts:42`, `apps/site/lib/subscription-cancel.ts`).                                                                                       | Probe and record the receipt.                                                                                |
+| `site.paddle-checkout`                        | `caisson-site`                          | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`                 | **REQUIRED**                               | Paddle never initializes; purchase and renewal controls are disabled as **Checkout unavailable**, so no checkout overlay opens (`apps/site/lib/paddle-checkout.ts:141`, `apps/site/components/cart-checkout-panel.tsx:175-179`, `apps/site/components/plan-purchase-row.tsx:132-136`, `apps/site/components/updates-window-card.tsx:111-115`). | Probe and record the receipt.                                                                                |
+| `site.byok-field-crypto`                      | `caisson-site`                          | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT`          | **REQUIRED**                               | The site and deploy probes stay green, but the first production BYOK submission throws because tenant secrets cannot use the deterministic demo vector (`apps/site/lib/byok.ts:146`).                                                                                                                                                          | Probe both names and record the receipt; the prior row had no arming record.                                 |
+| `site.authentication-runtime`                 | `caisson-site`                          | `DATABASE_URL` + `BETTER_AUTH_SECRET`             | **REQUIRED**                               | Better Auth resolves to a null runtime; auth endpoints return HTTP 503 and session reads behave unauthenticated while the public site can remain up (`apps/site/lib/auth-server.ts:240-256`).                                                                                                                                                  | Probe both names and record the receipt.                                                                     |
+| `admin.license-reissue-and-affiliate-minting` | `caisson-admin`                         | `CAISSON_LICENSE_ISSUE_URL` + `ADMIN_ISSUE_TOKEN` | **REQUIRED**                               | License reissue and affiliate minting both throw “not configured” before their mutation/audit rows are written (`apps/admin/src/lib/admin-mutations-runtime.ts:77,116`).                                                                                                                                                                       | Probe both names on `caisson-admin` and record the receipt.                                                  |
+| `admin.catalog-test-email-recipient`          | `caisson-admin`                         | `CATALOG_TEST_EMAIL_TO`                           | **OPTIONAL — operator-only test delivery** | The operator-only catalog test-email endpoint returns HTTP 503 and sends no test message; buyer email delivery does not depend on this recipient (`apps/admin/src/app/api/admin/catalog/send-test-email/route.ts:59`).                                                                                                                         | Absence is acceptable for launch, but the probe must report it as optional and missing.                      |
+| `local-ai.field-crypto`                       | `apps/local-ai` (not a Railway service) | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT`          | **OPTIONAL — not deployed**                | A future production run would throw; today development and test intentionally use the deterministic demo vector, and `apps/local-ai` is not deployed (`apps/local-ai/app/demo/pipeline.ts:291`).                                                                                                                                               | No Railway command. Keep the seam visible as optional/not deployed until that service gets a launch surface. |
+
+`PADDLE_ENV` and `NEXT_PUBLIC_PADDLE_ENV` are selectors, not fail-soft gates: when absent they
+default to sandbox rather than silently disabling the corresponding feature. They are deliberately
+outside this presence inventory.
+
+`SESSION_TOKEN_HMAC_KEY` remains a separate **fail-hard** `caisson-site` prerequisite. Its absence
+throws during auth runtime construction instead of degrading silently
+(`apps/site/lib/auth-server.ts:151,265`; armed receipt: `docs/deploy/STATE.md:281`).
+
+#### Named configured-probe step — fleet fail-soft inventory
+
+Run the existing Railway-side launch preflight in configured-probe mode:
+
+```bash
+bun tooling/scripts/railway-env-sync.ts --configured-probe
+```
+
+This mode checks every deployed name in the table on `caisson-site` and `caisson-admin`. It uses
+fixed remote presence tests and reports only the service, variable name, seam, launch class, and
+`PRESENT` or `MISSING`; it never requests, reads, prints, logs, measures, or compares a value.
+Missing **REQUIRED** names exit non-zero. Missing **OPTIONAL** names remain visible without failing
+the command. The undeployed local-AI seam prints `NOT PROBED (OPTIONAL)` and never produces an SSH
+command. Do not substitute public health routes for this operator-run check.
 
 Deploy in verifier-before-issuer order whenever strict schemas or manifests change:
 
@@ -206,6 +230,9 @@ PADDLE_ENV=production bun tools/paddle-catalog-recreate.ts --execute \
 fails closed unless all 35 product markers and all 66 price markers are present exactly once, with
 no unexpected marked product or price. Wire the resulting non-secret IDs into every canonical
 consumer, deploy them together, verify parity, then revoke the temporary key.
+
+**Post-deploy price probe:** Docs-RAG and support-bot must answer Compliance at $1,649 and
+Everything at $2,259. Do not assert those answers before the fleet deploy reaches the new image.
 
 ### Controlled real transaction
 

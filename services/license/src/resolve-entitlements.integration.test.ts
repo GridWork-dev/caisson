@@ -83,7 +83,7 @@ const index = loadRegistryIndex({
             kind: "bundle",
             tier: "paid",
             license: "LicenseRef-Caisson-Commercial",
-            priceCents: 205900,
+            priceCents: 225900,
             editions: [],
             members: {
               "@caisson/ai-kit": "1.0.0",
@@ -196,6 +196,39 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
       resolveAccountEntitlements(tx, acct, index),
     );
     expect([...resolved]).toEqual(["@caisson/audit-worm"]);
+  });
+
+  test("stored purchases of either OSCAL parent resolve the carved package without rewriting grants", async () => {
+    const compatibilityIndex = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        entry("@caisson/artifact-render", []),
+        entry("@caisson/compliance-core", ["compliance"]),
+        entry("@caisson/frameworks-pack", ["compliance"]),
+        entry("@caisson/oscal-spine", ["compliance"]),
+      ],
+    });
+    for (const parent of ["compliance-core", "frameworks-pack"] as const) {
+      const acct = `acct_oscal_${parent}`;
+      await withTenant(tp.pg, acct, (tx) =>
+        grantEntitlements(tx, {
+          accountId: acct,
+          entitlementIds: [parent],
+          sourceEventId: `in_${parent}`,
+          source: { kind: "one_time", purchaseId: `pi_${parent}` },
+        }),
+      );
+      const resolved = await withTenant(tp.pg, acct, (tx) =>
+        resolveAccountEntitlements(tx, acct, compatibilityIndex),
+      );
+      expect([...resolved].sort()).toEqual(
+        [
+          "@caisson/artifact-render",
+          `@caisson/${parent}`,
+          "@caisson/oscal-spine",
+        ].sort(),
+      );
+    }
   });
 
   test("priority-support alongside a real entitlement never bricks the account's expansion (ADR-0278/0288)", async () => {

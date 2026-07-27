@@ -1,14 +1,23 @@
 ---
-updated: 2026-07-26
+updated: 2026-07-27
 status: live
 grounds:
   - docs/build-state.md
   - docs/ops/launch-runbook.md
   - registry/scripts/index-parity-probe.ts
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
+  - outputs/executions/2026-07-27-project-reconciliation.md
 ---
 
 # Deploy log
+
+## 2026-07-27 — local reconciliation only; fleet unchanged
+
+Local `main` now represents the validated writing surface, OSCAL spine/catalog, Ask AI evidence,
+and checkout/Python supply-chain pin updates. The field-crypto KMS async branch remains outside
+`main` for fresh exact-head review. No PR was remotely merged, no artifact was published, no
+provider setting changed, no migration ran, and no service was deployed or restarted. The runtime
+parity evidence below is therefore unchanged.
 
 ## Current fleet parity — 2026-07-25
 
@@ -27,6 +36,20 @@ Health and source parity are separate:
 ADR-0379 supersedes any “fleet current” or CAISSON-150 defer wording below. The next production
 act is one approved immutable SHA across site, admin, license, docs-RAG, support-bot, and Worker,
 followed by migration and parity/probe receipts. This is an external-system/data-migration hold.
+
+## 2026-07-25 — OSCAL catalog source ready; sandbox rows minted
+
+The OSCAL wave carries the 36-product/68-price desired catalog, with Compliance at $1,649 and
+Everything at $2,259. Paddle Sandbox now has the standalone OSCAL product
+`pro_01kye9596gvz4c25pjj7hf4rz5`, purchase price
+`pri_01kye9597z46149qg5xfrqxybk`, and renewal price
+`pri_01kye959a399018w0hmvbeem7h`. The forward-only bundle reprice minted Compliance purchase
+`pri_01kyeczreqq58ze5en0p3f0jkc` and renewal `pri_01kyeczrnp20006sebn9gzg5zb`, plus Everything
+purchase `pri_01kyeczrjj0tzpwg7tv752e42s` and renewal `pri_01kyeczrrsq68b8wbx2atygs5a`; the four
+predecessor prices were archived, not mutated, and remain in the append-only fulfillment resolvers.
+No production catalog or fleet deployment changed; docs-RAG and support-bot remain on their old
+image until the post-merge fleet deploy, after which the Act 6 price probe must assert both new
+bundle prices.
 
 ## 2026-07-25 — clean-state wave live (site): truth-fixes + CVE batch
 

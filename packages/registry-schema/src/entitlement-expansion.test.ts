@@ -21,7 +21,10 @@ import {
   normalizeEntitlementId,
 } from "./bundle-vocabulary";
 import {
+  COMPATIBILITY_REEXPORT_ENTITLEMENTS,
+  INTERNAL_RUNTIME_ENTITLEMENTS,
   RESERVED_MODULE_ENTITLEMENT_IDS,
+  RESERVED_MODULE_ENTITLEMENT_VERSIONS,
   baseModuleIds,
   expandEntitlements,
   expandEntitlementsFromFile,
@@ -105,7 +108,8 @@ describe("per-module bare-slug purchase-id form", () => {
   });
 
   test("RESERVED_MODULE_ENTITLEMENT_IDS holds exactly the open publishing-gap reservations", () => {
-    // Currently none open. The 2026-07-20 compliance-gap arming quartet (access-review,
+    // oscal-spine is reserved between this catalog PR and its first release-train index entry.
+    // The 2026-07-20 compliance-gap arming quartet (access-review,
     // risk-register, trust-page, artifact-render) graduated in the version cut that created
     // their first index entries — the exact path agent-usage took 2026-07-18, agent-trajectory
     // 2026-07-17, ui-pro 2026-07-07, and alerting/retention-runner before it. Index presence
@@ -113,7 +117,16 @@ describe("per-module bare-slug purchase-id form", () => {
     // in the post-publish PR; artifact-render stays sellable:false forever (published-never-
     // sold render substrate). The fail-soft branch stays covered by the temp-root fixture
     // suite in tooling/standards-gate catalog-checks.
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([]);
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([
+      "oscal-spine",
+    ]);
+    expect([...RESERVED_MODULE_ENTITLEMENT_VERSIONS.entries()]).toEqual([
+      ["oscal-spine", "0.1.0"],
+    ]);
+  });
+
+  test("the pre-publish oscal-spine reservation fails soft until the release train indexes it", () => {
+    expect([...expandEntitlements(index, ["oscal-spine"])]).toEqual([]);
   });
 
   test("with the reservation gone, an unindexed ui-pro fails closed like any unknown id", () => {
@@ -191,6 +204,149 @@ describe("per-module bare-slug purchase-id form", () => {
     });
     expect([...expandEntitlements(published, ["alerting"])]).toEqual([
       "@caisson/alerting",
+    ]);
+  });
+});
+
+describe("ADR-0384 compatibility re-export entitlements", () => {
+  const manifest = (id: string) => ({
+    id,
+    version: "0.1.0",
+    kind: "base" as const,
+    editions: [],
+    tier: "paid" as const,
+    priceCents: 100,
+    license: "LicenseRef-Caisson-Commercial",
+    dependencies: [],
+    members: {},
+    entry: "src/index.ts",
+    agents: "AGENTS.md",
+    golden: "src/__golden__",
+    stability: "alpha" as const,
+    description: `${id} compatibility fixture`,
+  });
+  const version = (id: string) => ({
+    version: "0.1.0",
+    publishedAt: "2026-07-25T00:00:00.000Z",
+    gateAttestation: "test@0000000",
+    manifest: manifest(id),
+  });
+  const carved = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [
+      {
+        id: "@caisson/compliance",
+        latest: "0.1.0",
+        versions: [
+          {
+            ...version("@caisson/compliance"),
+            manifest: {
+              ...manifest("@caisson/compliance"),
+              kind: "edition",
+              editions: ["compliance"],
+              members: {
+                "@caisson/compliance-core": "0.1.0",
+                "@caisson/frameworks-pack": "0.1.0",
+                "@caisson/oscal-spine": "0.1.0",
+              },
+            },
+          },
+        ],
+      },
+      {
+        id: "@caisson/compliance-core",
+        latest: "0.1.0",
+        versions: [version("@caisson/compliance-core")],
+      },
+      {
+        id: "@caisson/frameworks-pack",
+        latest: "0.1.0",
+        versions: [version("@caisson/frameworks-pack")],
+      },
+      {
+        id: "@caisson/oscal-spine",
+        latest: "0.1.0",
+        versions: [version("@caisson/oscal-spine")],
+      },
+      {
+        id: "@caisson/artifact-render",
+        latest: "0.1.0",
+        versions: [version("@caisson/artifact-render")],
+      },
+    ],
+  });
+
+  test("the relation contains only the two operator-locked parent re-exports", () => {
+    expect([...COMPATIBILITY_REEXPORT_ENTITLEMENTS.entries()]).toEqual([
+      ["@caisson/compliance-core", ["@caisson/oscal-spine"]],
+      ["@caisson/frameworks-pack", ["@caisson/oscal-spine"]],
+    ]);
+  });
+
+  test("the internal runtime relation contains only the OSCAL renderer edge", () => {
+    expect([...INTERNAL_RUNTIME_ENTITLEMENTS.entries()]).toEqual([
+      ["@caisson/oscal-spine", ["@caisson/artifact-render"]],
+    ]);
+  });
+
+  for (const parent of ["compliance-core", "frameworks-pack"] as const) {
+    test(`${parent} grants the indexed OSCAL carve through bare and full purchase ids`, () => {
+      const expected = [
+        `@caisson/${parent}`,
+        "@caisson/oscal-spine",
+        "@caisson/artifact-render",
+      ].sort();
+      expect([...expandEntitlements(carved, [parent])].sort()).toEqual(
+        expected,
+      );
+      expect(
+        [...expandEntitlements(carved, [`@caisson/${parent}`])].sort(),
+      ).toEqual(expected);
+    });
+  }
+
+  test("a pre-carve Compliance buyer keeps OSCAL through its snapshotted parent grants", () => {
+    const granted = expandEntitlements(carved, ["compliance"], {
+      entitledSince: { compliance: "2026-07-24T00:00:00.000Z" },
+      membershipTimeline: {
+        compliance: {
+          "compliance-core": "2026-06-01T00:00:00.000Z",
+          "frameworks-pack": "2026-06-01T00:00:00.000Z",
+          "oscal-spine": "2026-07-25T00:00:00.000Z",
+        },
+      },
+    });
+
+    expect(granted).toContain("@caisson/compliance-core");
+    expect(granted).toContain("@caisson/frameworks-pack");
+    expect(granted).toContain("@caisson/oscal-spine");
+    expect(granted).toContain("@caisson/artifact-render");
+  });
+
+  test("a standalone OSCAL purchase grants only OSCAL and its named internal renderer", () => {
+    expect([...expandEntitlements(carved, ["oscal-spine"])].sort()).toEqual(
+      ["@caisson/oscal-spine", "@caisson/artifact-render"].sort(),
+    );
+  });
+
+  test("ordinary package dependencies never become entitlements", () => {
+    expect([...expandEntitlements(carved, ["oscal-spine"])]).not.toContain(
+      "@caisson/kernel",
+    );
+  });
+
+  test("before OSCAL is indexed, both existing parent grants remain usable without a phantom grant", () => {
+    const prepublish = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: carved.modules.filter(
+        (entry) => entry.id !== "@caisson/oscal-spine",
+      ),
+    });
+    expect([...expandEntitlements(prepublish, ["compliance-core"])]).toEqual([
+      "@caisson/compliance-core",
+    ]);
+    expect([...expandEntitlements(prepublish, ["frameworks-pack"])]).toEqual([
+      "@caisson/frameworks-pack",
     ]);
   });
 });
@@ -574,7 +730,7 @@ describe("ADR-0257/0270 bundle vocabulary + purchase-alias spine", () => {
                 kind: "bundle",
                 editions: [],
                 tier: "paid",
-                priceCents: 205900,
+                priceCents: 225900,
                 license: "LicenseRef-Caisson-Commercial",
                 members: { "@caisson/credits": "0.1.0" },
                 description: "Explicit Everything membership rule fixture.",

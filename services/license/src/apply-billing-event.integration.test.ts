@@ -2726,13 +2726,13 @@ describe("entitlement_grant.charged_amount (ADR-0381 lock 2)", () => {
             priceId: ONETIME_EDITION_ID,
             quantity: 1,
             itemId: "txnitm_ok",
-            chargedAmount: 144900,
+            chargedAmount: 164900,
           },
         ]),
       ),
     );
     expect(await chargedFor(acct)).toEqual([
-      { amount: 144900, currency: "usd" },
+      { amount: 164900, currency: "usd" },
     ]);
   });
 

@@ -108,7 +108,7 @@ export function entryByViewId(viewId: string): SurfaceEntry | undefined {
   return ALL_ENTRIES.find((e) => e.viewId === viewId);
 }
 
-/** Cross-kind price bands — the modules span $49–$299, the bundles $329–$2,059, so the bands widen to
+/** Cross-kind price bands — the modules span $49–$299, the bundles $329–$2,259, so the bands widen to
  *  cover both. Each entry lands in exactly one band (the boundaries partition the whole range). */
 export interface PriceBand {
   id: string;

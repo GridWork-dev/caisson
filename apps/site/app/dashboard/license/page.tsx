@@ -13,7 +13,7 @@
 import type { Metadata } from "next";
 import { EmptyState } from "@caisson/ui/components";
 import { readUpdatesWindows } from "@caisson/platform-reads";
-import { RENEWAL_BOOK, resolveRenewal } from "@caisson/pricebook";
+import { ACTIVE_RENEWAL_PRICE_IDS, resolveRenewal } from "@caisson/pricebook";
 import { normalizeEntitlementId } from "@caisson/registry-schema";
 import { renewalAmount } from "@/lib/pricing";
 import { readScoped } from "@/lib/db";
@@ -32,7 +32,7 @@ export const metadata: Metadata = { title: "License" };
 // alias point `expandEntitlements` uses, so a legacy-keyed row (`ai-kit`, `bundle`, …) resolves to
 // the canonical id an owned grant's normalized entitlementId will match.
 const RENEWAL_PRICE_BY_ENTITLEMENT: Record<string, string> = Object.fromEntries(
-  Object.keys(RENEWAL_BOOK).map((priceId) => [
+  [...ACTIVE_RENEWAL_PRICE_IDS].map((priceId) => [
     resolveRenewal(priceId).renewsEntitlement,
     priceId,
   ]),

@@ -33,8 +33,8 @@
 import {
   defineRegimeCrosswalk,
   type RegimeCrosswalk,
-} from "./regime-crosswalk.ts";
-import { nist80053Crosswalk } from "./nist-800-53.ts";
+  nist80053Crosswalk,
+} from "@caisson/oscal-spine";
 
 /** Caisson crosswalk data version — dated, versioned like the framework catalogs (bumped on any edit). */
 const CROSSWALK_VERSION = "2026.1";

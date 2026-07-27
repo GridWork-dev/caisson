@@ -381,19 +381,19 @@ The current packed catalog identifies these 15 packages as Apache-2.0 open Base 
 
 | Bundle | Current one-time price | Current product record | Status |
 |---|---:|---|---|
-| Compliance | $1,049 | Compliance core, frameworks, signing, WORM/audit, field crypto, alerting, and retention functions. | **BUILD/REFINEMENT PENDING** |
+| Compliance | $1,649 | Compliance core, frameworks, OSCAL spine, signing, WORM/audit, field crypto, alerting, and retention functions. | **BUILT; RELEASE PENDING** |
 | AI-Production | $739 | Metering, evals, guardrails, prompt registry, credits, and production gateway. | **BUILD/REFINEMENT PENDING** |
 | Local-first | $629 | Local store, sync, inference, privacy gate, and related local-first functions. | **BUILD/REFINEMENT PENDING** |
 | Agentic-Dev | $329 | Governed agent kernel, runner, tool-execution gate, and related controls. | **BUILD/REFINEMENT PENDING** |
 | Provenance | $399 | Signing, WORM audit chain, and field encryption composite. | **BUILD/REFINEMENT PENDING** |
-| Everything | $2,059 | Entire sellable catalog, excluding the private brand layer. | **BUILD/REFINEMENT PENDING** |
+| Everything | $2,259 | Entire sellable catalog, excluding the private brand layer. | **BUILT; RELEASE PENDING** |
 
-The packed current catalog also lists 22 individually priced commercial modules:
+The current catalog also lists 27 individually priced commercial modules:
 
-- **Compliance and provenance:** `compliance-core`, `frameworks-pack`, `signing-primitive`, `field-crypto`, `audit-worm`, `alerting`, `retention-runner`.
+- **Compliance and provenance:** `compliance-core`, `frameworks-pack`, `oscal-spine`, `signing-primitive`, `field-crypto`, `audit-worm`, `alerting`, `retention-runner`, `access-review`, `risk-register`, `trust-page`.
 - **AI production:** `ai-meter`, `ai-evals`, `guardrails`, `prompt-registry`, `credits`.
 - **Local-first:** `local-store`, `local-sync`, `local-inference`, `local-privacy`.
-- **Agentic development:** `agent-kernel`, `agent-runner`, `tool-exec`.
+- **Agentic development:** `agent-kernel`, `agent-runner`, `agent-trajectory`, `tool-exec`.
 - **Standalone / Everything-only:** `org-controls`, `billing-orchestration`, `ui-pro`.
 
 ### Intended license model

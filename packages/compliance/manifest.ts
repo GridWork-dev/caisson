@@ -6,9 +6,9 @@
 // package carries real composition code, so `dependencies` stays populated (down-only, ADR-0003).
 // Paid + LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050).
 //
-// `priceCents: 144900` is the locked Compliance bundle price ($1,449, the 2026-07-20 pricing
-// round — supersedes the ADR-0258 $1,049 as the three compliance-gap members join; ~70% of the
-// enlarged member subtotal, the same below-sum ratio band); it must stay a positive integer
+// `priceCents: 164900` is the locked Compliance bundle price ($1,649, the 2026-07-25 OSCAL-spine
+// round — supersedes the $1,449 compliance-gap price as the new member joins; 71.1% of the
+// enlarged $2,319 member subtotal); it must stay a positive integer
 // (ADR-0007). Evidence generation is
 // FREE in v1 (no @caisson/credits dependency): the bundle composes the WORM/crypto primitives
 // directly.
@@ -20,7 +20,7 @@ export default defineModule({
   version: pkg.version,
   kind: "bundle",
   tier: "paid",
-  priceCents: 144900,
+  priceCents: 164900,
   license: pkg.license,
   // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
   // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).
@@ -54,6 +54,9 @@ export default defineModule({
     // (members-fold republish, third wave).
     "@caisson/compliance-core": "0.3.1",
     "@caisson/frameworks-pack": "0.4.0",
+    // oscal-spine enters at its workspace version in the same release cut; the pre-publish
+    // coverage gate explicitly permits same-cut exact-version pins.
+    "@caisson/oscal-spine": "0.1.0",
     "@caisson/signing-primitive": "0.3.0",
     "@caisson/audit-worm": "2.1.0",
     "@caisson/field-crypto": "0.3.2",

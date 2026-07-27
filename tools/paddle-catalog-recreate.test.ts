@@ -1,11 +1,16 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  classifyCatalogAudit,
   buildCatalogMapping,
   buildPlan,
+  loadAuditCatalog,
+  paddleRequest,
+  renderAuditReport,
   resolveExportPath,
   type PaddleObject,
   type PaddlePrice,
+  type PlanProduct,
 } from "./paddle-catalog-recreate";
 
 type CompletePaddlePrice = PaddlePrice;
@@ -73,8 +78,8 @@ describe("buildCatalogMapping", () => {
   test("exports one exact product and price id for every planned marker", () => {
     const mapping = buildCatalogMapping(buildPlan(), completeSnapshot());
 
-    expect(Object.keys(mapping.products)).toHaveLength(35);
-    expect(Object.keys(mapping.prices)).toHaveLength(66);
+    expect(Object.keys(mapping.products)).toHaveLength(36);
+    expect(Object.keys(mapping.prices)).toHaveLength(68);
     expect(mapping.products.compliance).toBe("pro_000");
     expect(mapping.prices.compliance).toBe("pri_000_000");
     expect(mapping.prices["renew:agent-runner"]).toMatch(/^pri_/);
@@ -281,5 +286,320 @@ describe("resolveExportPath", () => {
     expect(() => resolveExportPath("map\u0000.json", "/repo")).toThrow(
       /null byte/,
     );
+  });
+});
+
+describe("--audit", () => {
+  const auditPlan: PlanProduct[] = [
+    {
+      caissonId: "expected",
+      kind: "module",
+      name: "Expected",
+      type: "standard",
+      status: "active",
+      taxCategory: "saas",
+      prices: [
+        {
+          key: "expected-price",
+          description: "Expected price",
+          type: "standard",
+          status: "active",
+          amountCents: 100,
+          currencyCode: "USD",
+        },
+      ],
+    },
+    {
+      caissonId: "duplicate",
+      kind: "module",
+      name: "Duplicate",
+      type: "standard",
+      status: "active",
+      taxCategory: "saas",
+      prices: [
+        {
+          key: "duplicate-price",
+          description: "Duplicate price",
+          type: "standard",
+          status: "active",
+          amountCents: 200,
+          currencyCode: "USD",
+        },
+      ],
+    },
+    {
+      caissonId: "missing",
+      kind: "module",
+      name: "Missing",
+      type: "standard",
+      status: "active",
+      taxCategory: "saas",
+      prices: [
+        {
+          key: "missing-price",
+          description: "Missing price",
+          type: "standard",
+          status: "active",
+          amountCents: 300,
+          currencyCode: "USD",
+        },
+      ],
+    },
+  ];
+
+  function auditProduct(
+    id: string,
+    marker: string | null,
+    priceId: string,
+    priceMarker: string | null,
+  ): PaddleObject {
+    return {
+      id,
+      name: id,
+      type: "standard",
+      tax_category: "saas",
+      status: "active",
+      custom_data: marker === null ? null : { caisson_id: marker },
+      prices: [
+        {
+          id: priceId,
+          product_id: id,
+          description: priceId,
+          type: "standard",
+          billing_cycle: null,
+          unit_price: { amount: "100", currency_code: "USD" },
+          status: "active",
+          custom_data:
+            priceMarker === null ? null : { caisson_key: priceMarker },
+        },
+      ],
+    };
+  }
+
+  test("rejects redirects for authenticated Paddle requests", async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedInit: RequestInit | undefined;
+    globalThis.fetch = async (
+      _input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      capturedInit = init;
+      return new Response(JSON.stringify({ data: [] }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    };
+
+    try {
+      await paddleRequest("test-placeholder", "GET", "/products");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    expect(capturedInit?.redirect).toBe("error");
+  });
+
+  test("classifies every live object exactly once and reports missing plan entries", () => {
+    const products = [
+      auditProduct(
+        "pro_expected",
+        "expected",
+        "pri_expected",
+        "expected-price",
+      ),
+      auditProduct("pro_unknown", "unknown", "pri_unknown", "unknown-price"),
+      auditProduct("pro_unmarked", null, "pri_unmarked", null),
+      auditProduct(
+        "pro_duplicate_1",
+        "duplicate",
+        "pri_duplicate_1",
+        "duplicate-price",
+      ),
+      auditProduct(
+        "pro_duplicate_2",
+        "duplicate",
+        "pri_duplicate_2",
+        "duplicate-price",
+      ),
+    ];
+    const prices = products.flatMap((product) => product.prices);
+
+    const report = classifyCatalogAudit(auditPlan, products, prices);
+
+    expect(report.expected).toHaveLength(2);
+    expect(report.unknownMarker).toHaveLength(2);
+    expect(report.unmarked).toHaveLength(2);
+    expect(report.duplicateMarker).toHaveLength(4);
+    expect(report.missing).toHaveLength(2);
+
+    const liveIds = [
+      ...report.expected,
+      ...report.unknownMarker,
+      ...report.unmarked,
+      ...report.duplicateMarker,
+    ].map((item) => item.id);
+    expect(new Set(liveIds).size).toBe(10);
+    expect(liveIds).toHaveLength(10);
+
+    const output = renderAuditReport(report, "sandbox");
+    expect(output).toContain("EXPECTED (2)");
+    expect(output).toContain("UNKNOWN MARKER (2)");
+    expect(output).toContain("UNMARKED (pre-script/manual) (2)");
+    expect(output).toContain("DUPLICATE MARKER (4)");
+    expect(output).toContain("MISSING (2)");
+    for (const id of [...liveIds, "missing", "missing-price"]) {
+      expect(output).toContain(id);
+    }
+  });
+
+  test("loads products and prices through GET-only pagination to exhaustion", async () => {
+    const calls: Array<{ method: string; path: string }> = [];
+    const pages = new Map<
+      string,
+      {
+        data: unknown;
+        meta: { pagination: { has_more: boolean; next: string } };
+      }
+    >([
+      [
+        "/products?per_page=200&status=active,archived",
+        {
+          data: [],
+          meta: {
+            pagination: { has_more: true, next: "/products?after=pro_1" },
+          },
+        },
+      ],
+      [
+        "/products?after=pro_1",
+        {
+          data: [],
+          meta: { pagination: { has_more: false, next: "" } },
+        },
+      ],
+      [
+        "/prices?per_page=200&status=active,archived",
+        {
+          data: [],
+          meta: {
+            pagination: { has_more: true, next: "/prices?after=pri_1" },
+          },
+        },
+      ],
+      [
+        "/prices?after=pri_1",
+        {
+          data: [],
+          meta: { pagination: { has_more: false, next: "" } },
+        },
+      ],
+    ]);
+
+    const snapshot = await loadAuditCatalog(async (method, path) => {
+      calls.push({ method, path });
+      const page = pages.get(path);
+      if (!page) throw new Error(`unexpected audit path: ${path}`);
+      return page;
+    });
+
+    expect(snapshot).toEqual({ products: [], prices: [] });
+    expect(calls).toEqual([
+      {
+        method: "GET",
+        path: "/products?per_page=200&status=active,archived",
+      },
+      { method: "GET", path: "/products?after=pro_1" },
+      {
+        method: "GET",
+        path: "/prices?per_page=200&status=active,archived",
+      },
+      { method: "GET", path: "/prices?after=pri_1" },
+    ]);
+    expect(calls.every((call) => call.method === "GET")).toBe(true);
+  });
+
+  test("refuses cross-origin or cleartext pagination before a follow-up GET", async () => {
+    for (const unsafeNext of [
+      "https://attacker.example/products?after=pro_1",
+      "http://sandbox-api.paddle.com/products?after=pro_1",
+    ]) {
+      const calls: string[] = [];
+      await expect(
+        loadAuditCatalog(async (_method, path) => {
+          calls.push(path);
+          if (calls.length === 1) {
+            return {
+              data: [],
+              meta: {
+                pagination: { has_more: true, next: unsafeNext },
+              },
+            };
+          }
+          throw new Error(`unsafe follow-up request reached ${path}`);
+        }),
+      ).rejects.toThrow(/refused unsafe Paddle product pagination URL/u);
+      expect(calls).toEqual(["/products?per_page=200&status=active,archived"]);
+    }
+  });
+
+  test("accepts Paddle's production-shaped nullable product image URL", async () => {
+    const snapshot = await loadAuditCatalog(async (_method, path) => ({
+      data: path.startsWith("/products")
+        ? [
+            {
+              id: "pro_nullable_image",
+              name: "Nullable image",
+              description: null,
+              type: "standard",
+              tax_category: "saas",
+              image_url: null,
+              custom_data: null,
+              status: "active",
+              import_meta: null,
+              created_at: "2026-07-26T00:00:00Z",
+              updated_at: "2026-07-26T00:00:00Z",
+            },
+          ]
+        : [],
+      meta: { pagination: { has_more: false, next: "" } },
+    }));
+
+    expect(snapshot.products).toEqual([
+      {
+        id: "pro_nullable_image",
+        name: "Nullable image",
+        type: "standard",
+        tax_category: "saas",
+        custom_data: null,
+        status: "active",
+        prices: [],
+      },
+    ]);
+    expect(snapshot.prices).toEqual([]);
+  });
+
+  test("keeps unrelated Paddle product fields strict", async () => {
+    await expect(
+      loadAuditCatalog(async (_method, path) => ({
+        data: path.startsWith("/products")
+          ? [
+              {
+                id: "pro_invalid_name",
+                name: null,
+                description: null,
+                type: "standard",
+                tax_category: "saas",
+                image_url: null,
+                custom_data: null,
+                status: "active",
+                import_meta: null,
+                created_at: "2026-07-26T00:00:00Z",
+                updated_at: "2026-07-26T00:00:00Z",
+              },
+            ]
+          : [],
+        meta: { pagination: { has_more: false, next: "" } },
+      })),
+    ).rejects.toThrow(/0\.name/u);
   });
 });

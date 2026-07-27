@@ -7,7 +7,12 @@
 // no Zod parse layer; every term is type-checked at build, not validated at runtime.
 import { createElement, Fragment, type ReactNode } from "react";
 
+import {
+  ARTICLE_50_PRIMARY_SOURCES,
+  ARTICLE_50_VERIFIED_ON,
+} from "./article-50-sources";
 import type { PageSection, PageSpec } from "./page-sections";
+import type { RegulatorySource } from "./regulatory-source";
 
 /**
  * Render inline `` `code` `` markdown in glossary prose as styled `<code>` (visual-audit: the
@@ -77,6 +82,10 @@ export interface GlossaryTerm {
   sells: GlossaryTermSells;
   /** Curated cross-links (2-4 same-cluster slugs) — Fork D, no auto-linking. */
   related?: readonly string[];
+  /** Optional primary-source disclosure for claims that need reader-verifiable grounding. */
+  sources?: readonly RegulatorySource[];
+  /** ISO date on which the source reading behind this record was last checked. */
+  verifiedOn?: string;
 }
 
 // All 32 ADR-0235-locked terms: batch 1 (renderer + hub + the full 10-term compliance cluster +
@@ -2318,7 +2327,7 @@ return withKmsFieldCryptoContext(
     term: "EU AI Act Article 50",
     cluster: "compliance",
     definition:
-      "EU AI Act Article 50 is the regulation's transparency chapter, enforceable from August 2, 2026: AI systems interacting with people must disclose it, and generated content must carry machine-readable marking, regardless of risk class. The obligation is disclosure-shaped; proving you met it needs a tamper-evident record that disclosure actually fired.",
+      "EU AI Act Article 50 generally applies from August 2, 2026 and assigns separate provider and deployer transparency duties. The adopted Digital Omnibus awaits Official Journal publication and entry into force. Once effective, Article 111(4) gives providers of generative AI systems placed on the market before that date until December 2, 2026 for Article 50(2) compliance.",
     artifact: {
       label:
         "Record the Article 50 disclosure as a tamper-evident audit event, a verifiable answer to “did disclosure fire for this session?”",
@@ -2328,39 +2337,51 @@ return withKmsFieldCryptoContext(
     properties: [
       {
         title: "It applies to ordinary products, not just high-risk systems",
-        body: "Unlike the Annex III high-risk regime, Article 50 covers any AI system that interacts directly with people, a SaaS chatbot, a support agent, a content generator. From August 2, 2026 (a date confirmed unmoved by the Digital Omnibus amendment, per reporting through 2026-07-07), the disclosure obligations are enforceable law.",
+        body: "Article 50(1) covers systems intended to interact directly with people; Article 50(2) separately covers providers of systems generating specified synthetic content. Each duty has conditions and exceptions. Article 50 generally applies from August 2, 2026. Under the adopted Digital Omnibus text, once effective, the targeted Article 50(2) transition for qualifying systems placed on the market before that date ends December 2, 2026.",
       },
       {
-        title: "The obligation is disclosure; the audit question is proof",
-        body: "A regulator or enterprise customer asking whether users knew they were talking to AI is asking for a record, not a recollection. Logging each disclosure event to a hash-chained, WORM-anchored audit trail turns the answer into something independently verifiable.",
+        title: "Evidence supports the legal inquiry; it does not decide it",
+        body: "A WORM audit trail can preserve evidence that a disclosure event was recorded. It is supporting evidence, not a substitute for the disclosure, timing, accessibility, marking, and detection requirements, and it does not by itself establish that Article 50 was satisfied.",
       },
       {
-        title: "Marking happens at the generation boundary",
-        body: "Article 50(2) requires machine-readable marking of synthetic audio, image, video, and text. Applying the marking where content is generated (and versioning that configuration in the repo) keeps the control testable in CI instead of a per-feature afterthought.",
+        title: "Marking and detection are one technical solution",
+        body: "Article 50(2) requires covered synthetic audio, image, video, and text outputs to be machine-readably marked and detectable, subject to express exceptions. The final guidance permits compliant marking post hoc, at the underlying model, or during inference.",
+      },
+      {
+        title: "Pre-existing content has a separate cutoff",
+        body: "Article 50(2) outputs and Article 50(4) deepfakes generated or manipulated before August 2, 2026 do not require retroactive marking or labelling. Public-interest text receives that treatment only when it was both generated or manipulated and published before August 2.",
       },
     ],
     faq: [
       {
         question: "Does Article 50 apply to my SaaS chatbot?",
         answer:
-          "If the chatbot interacts directly with people, yes, regardless of whether your system is high-risk. Users must be informed they are interacting with AI unless that is obvious from context to a reasonably well-informed person (Art. 50(1)). Generated-content marking (Art. 50(2)) applies separately if you produce synthetic content.",
+          "If the chatbot is intended to interact directly with people, Article 50(1) applies regardless of high-risk status. Users must be informed they are interacting with AI unless that is obvious in context to a reasonably well-informed, observant, and circumspect person. Article 50(2)'s marking and detection duty applies separately to covered synthetic content, subject to its express exceptions and the targeted transition for qualifying pre-August systems.",
       },
       {
         question: "When does Article 50 become enforceable?",
         answer:
-          "August 2, 2026, the AI Act's general application date. Independent reporting through 2026-07-07 confirmed it was not extended by the Digital Omnibus amendment. Penalties for transparency violations reach €15M or 3% of worldwide annual turnover, whichever is higher (Art. 99(4)).",
+          "Article 50 generally applies from August 2, 2026. The adopted Digital Omnibus text awaits Official Journal publication and entry into force. Once effective, its new Article 111(4) gives providers of generative AI systems placed on the market before that date until December 2, 2026 to conform with Article 50(2)'s marking and detection duty; the other Article 50 duties were not postponed. Article 50 non-compliance can attract fines up to EUR 15 million or 3% of worldwide annual turnover, whichever is higher for an undertaking.",
+      },
+      {
+        question: "Do pre-existing outputs need retroactive labels?",
+        answer:
+          "Article 50(2) outputs and Article 50(4) deepfakes generated or manipulated before August 2, 2026 do not require retroactive marking or labelling. Public-interest text generated earlier but published on or after August 2 must be labelled.",
       },
       {
         question: "Does Caisson make my product Article 50 compliant?",
         answer:
-          "No, the disclosure UI is your product surface and the legal determination is yours. Caisson ships the evidence discipline behind the obligation: disclosure events recorded to a tamper-evident, WORM-anchored audit chain and packaged into dated evidence bundles, so the record of disclosure is verifiable rather than asserted.",
+          "No. The disclosure UI is your product surface and the legal determination is yours. Caisson can preserve evidence that a disclosure event was recorded through a tamper-evident, WORM-anchored audit chain and dated evidence bundles. That supporting record does not itself establish that the disclosure, timing, accessibility, marking, or detection requirements were satisfied.",
       },
     ],
     sells: {
       edition: "Compliance",
-      ctaLabel: "What Article 50 requires, and the record that proves it",
+      ctaLabel:
+        "What Article 50 requires, and how disclosure evidence supports review",
       ctaHref: "/frameworks/eu-ai-act/article-50",
     },
+    sources: ARTICLE_50_PRIMARY_SOURCES,
+    verifiedOn: ARTICLE_50_VERIFIED_ON,
     related: ["worm-audit-log", "hash-chain-audit-trail", "compliance-as-code"],
   },
   {
@@ -3333,6 +3354,48 @@ function relatedTermsSection(term: GlossaryTerm): PageSection | undefined {
   };
 }
 
+function primarySourcesSection(term: GlossaryTerm): PageSection | undefined {
+  if (
+    term.sources === undefined ||
+    term.sources.length === 0 ||
+    term.verifiedOn === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    kind: "section",
+    title: "Primary sources",
+    lede: `Sources verified ${term.verifiedOn}.`,
+    children: createElement(
+      "ul",
+      {
+        className: "cs-lede",
+        style: {
+          paddingLeft: "var(--cs-space-5)",
+          display: "grid",
+          gap: "var(--cs-space-2)",
+        },
+      },
+      term.sources.map((source) =>
+        createElement(
+          "li",
+          { key: `${source.url}#${source.locator}` },
+          createElement(
+            "a",
+            {
+              href: source.url,
+              className: "cs-link",
+              rel: "noreferrer",
+            },
+            source.label,
+          ),
+          ` — ${source.locator}`,
+        ),
+      ),
+    ),
+  };
+}
+
 /** breadcrumbNav, the on-page "Glossary / <term>" trail mirroring the JSON-LD breadcrumb the
  *  route already emits. Reuses <Hero>'s `ctas` slot the same way the module depth page's
  *  breadcrumb does (marketplace/modules/[slug]/page.tsx), with `cs-link` (not a bare `<a>`) so
@@ -3391,6 +3454,9 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       items: term.faq,
     },
   ];
+
+  const primarySources = primarySourcesSection(term);
+  if (primarySources) sections.push(primarySources);
 
   const related = relatedTermsSection(term);
   if (related) sections.push(related);

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-26
+updated: 2026-07-27
 status: live
 grounds:
   - package.json
@@ -61,17 +61,17 @@ All are free and never individually sold. Open packages may depend only on other
 
 | Bundle        | One-time price | Renewal |
 | ------------- | -------------: | ------: |
-| Compliance    |     **$1,449** |    $579 |
+| Compliance    |     **$1,649** |    $659 |
 | AI-Production |           $739 |    $289 |
 | Local-first   |           $629 |    $249 |
 | Agentic-Dev   |           $329 |    $129 |
 | Provenance    |           $399 |    $159 |
-| Everything    |         $2,059 |    $819 |
+| Everything    |         $2,259 |    $899 |
 
-Compliance’s current manifest and storefront price are $1,449. Historical append-only ledger
+Compliance’s current manifest and storefront price are $1,649. Historical append-only ledger
 entries retain their then-current values and are not rewritten.
 
-### Twenty-six à-la-carte modules
+### Twenty-seven à-la-carte modules
 
 | Module                  | Price | Bundle membership                                  |
 | ----------------------- | ----: | -------------------------------------------------- |
@@ -94,6 +94,7 @@ entries retain their then-current values and are not rewritten.
 | `local-store`           |   $99 | Local-first, Agentic-Dev                           |
 | `local-sync`            |  $199 | Local-first                                        |
 | `org-controls`          |  $249 | Everything only                                    |
+| `oscal-spine`           |  $249 | Compliance                                         |
 | `prompt-registry`       |   $99 | AI-Production                                      |
 | `retention-runner`      |  $199 | Compliance                                         |
 | `risk-register`         |  $279 | Compliance                                         |
@@ -102,7 +103,7 @@ entries retain their then-current values and are not rewritten.
 | `trust-page`            |  $149 | Compliance                                         |
 | `ui-pro`                |  $129 | Everything only                                    |
 
-`PRICE_AUTHORITY` covers every row in this table. Its 35 entries also include the six bundle SKUs
+`PRICE_AUTHORITY` covers every row in this table. Its 36 entries also include the six bundle SKUs
 and three retired legacy aliases retained for historical resolution. The standards gate rejects
 every current sellable commercial module missing from price authority or the site catalog; the
 two legitimate $49 modules have no special exemption.
@@ -138,11 +139,11 @@ commercial where their code is proprietary and are not independently purchasable
 - `apps/site/lib/pricing.ts`, `packages/pricebook/src/upgrades.ts`, package manifests, Paddle
   catalog generation, and license fulfillment are parity-tested against one catalog.
 - Prices and credits are integers. Unknown product IDs fail closed.
-- Six bundles and 26 module SKUs are the only one-time product surface; production recreation is
-  35 products and 66 prices after subscriptions and renewal rows are included.
+- Six bundles and 27 module SKUs are the only one-time product surface; production recreation is
+  36 products and 68 prices after subscriptions and renewal rows are included.
 
 ## Decision lineage
 
 ADR-0094/0097 own open-core; ADR-0257/0258 own the six-bundle vocabulary; ADR-0260 owns renewal
-math; ADR-0373 owns the Compliance-gap SKUs and $1,449 bundle price; ADR-0379 owns total price
+math; ADR-0373 owns the Compliance-gap SKUs and their superseded $1,449 bundle price; ADR-0379 owns total price
 authority and explicit non-sellable posture.

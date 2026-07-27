@@ -1,6 +1,6 @@
 // Deterministic client-side mirror of @caisson/frameworks-pack's canonical-control model
-// (packages/frameworks-pack/src/registry/control.ts) plus @caisson/compliance-core's OSCAL
-// catalog export (packages/compliance-core/src/evidence/oscal-catalog-export.ts +
+// (packages/frameworks-pack/src/registry/control.ts) plus @caisson/oscal-spine's OSCAL
+// catalog export (packages/oscal-spine/src/evidence/oscal-catalog-export.ts +
 // oscal-export.ts) for the "frameworks-pack" poke (ADR-0378 lock 2, kimi CANDIDATES.md section B
 // build baseline). Nothing here fetches, persists, measures, or uses Date.now / Math.random in a
 // rendered-output path.
@@ -11,7 +11,7 @@
 // (node:fs / node:dns/promises). Neither package exposes a subpath export around those files (see
 // both package.json `exports` maps), so importing the real control model does not resolve in a
 // browser bundle (the same reasoning guardrails-logic.ts documents for the same kernel barrel).
-// toOscalCatalog (compliance-core/src/evidence/oscal-catalog-export.ts) additionally imports
+// toOscalCatalog (oscal-spine/src/evidence/oscal-catalog-export.ts) additionally imports
 // `randomUUID` from "node:crypto" directly at module scope, and that whole file depends on
 // "@caisson/frameworks-pack" -- doubly unresolvable client-side. `toOscalCatalog` below is a
 // line-for-line port of that function; the one substitution is the UUID source (the browser's
@@ -20,7 +20,7 @@
 // the default is never actually reached in a rendered path). Parity is pinned in
 // frameworks-pack-logic.test.ts against the real `toOscalCatalog` + the real `soc2Tsc` pack, both
 // imported by relative path -- apps/site depends on neither @caisson/frameworks-pack nor
-// @caisson/compliance-core as a workspace package.
+// @caisson/oscal-spine as a workspace package.
 
 // ---- Canonical control model (packages/frameworks-pack/src/registry/control.ts -- the real file's
 // runtime is a Zod `.strict()` schema; the shapes below are its inferred output, types only). -----
@@ -266,10 +266,10 @@ export function findControlsByClause(
   return { clauseFramework: fw, clauseReference: ref, matches };
 }
 
-// ---- OSCAL v1.2.2 catalog export (packages/compliance-core/src/evidence/oscal-catalog-export.ts
+// ---- OSCAL v1.2.2 catalog export (packages/oscal-spine/src/evidence/oscal-catalog-export.ts
 // `toOscalCatalog` + oscal-export.ts `OSCAL_VERSION`/`CAISSON_OSCAL_NS` -- verbatim port). --------
 
-/** Locked to NIST OSCAL v1.2.2 by ADR-0179 -- mirrors compliance-core's `OSCAL_VERSION` exactly. */
+/** Locked to NIST OSCAL v1.2.2 by ADR-0179 -- mirrors oscal-spine's `OSCAL_VERSION` exactly. */
 export const OSCAL_VERSION = "1.2.2" as const;
 
 /** The Caisson property/extension namespace stamped on OSCAL `prop` extensions. */
@@ -439,7 +439,7 @@ export const SAMPLE_NOW = new Date("2026-07-18T00:00:00.000Z");
 
 /**
  * A deterministic UUID sequence -- mirrors the real test suite's own `counterIds()` helper
- * (compliance-core/src/evidence/oscal-catalog-export.test.ts) so the rendered catalog is
+ * (oscal-spine/src/evidence/oscal-catalog-export.test.ts) so the rendered catalog is
  * reproducible across renders instead of drawing a fresh UUID on every keystroke.
  */
 export function makeCounterIds(): () => string {

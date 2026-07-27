@@ -93,7 +93,7 @@ describe("accountHoldsOrgControls — deny/allow matrix", () => {
   });
 
   test("ALLOW: an ACTIVE everything grant (bundle coverage, audit F4)", async () => {
-    // Stored grants are PURCHASED ids — the $2,059 Everything buyer's row says "everything", never
+    // Stored grants are PURCHASED ids — the $2,259 Everything buyer's row says "everything", never
     // a pre-expanded member list; the gate must honor the by-construction full-catalog rule.
     const db = await freshDb();
     await seedGrant({

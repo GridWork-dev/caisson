@@ -1,5 +1,5 @@
 // Bridges the marketing PRICE DISPLAY (`lib/pricing.ts`) to a cart/checkout-ready catalog: every
-// sellable one-time item (the 6 bundles and the 22 à-la-carte modules) carries the Paddle price id
+// sellable one-time item (the 6 bundles and the 27 à-la-carte modules) carries the Paddle price id
 // the cart's multi-item checkout passes to `Paddle.Checkout.open()`.
 //
 // CART IDS ARE KIND-NAMESPACED (`bundle:<slug>` / `module:<slug>`). A bundle id can collide with a
@@ -37,12 +37,12 @@ export interface CatalogItem {
  *  not an open index signature — every bundle MUST resolve, so a future 7th bundle added to
  *  `pricing.ts` without a row here is a compile error, not a silent `undefined` at checkout time. */
 const BUNDLE_PRICE_IDS: Record<BundleId, string> = {
-  compliance: "pri_01kwwqa2hne35c1df5xe8p91z3",
+  compliance: "pri_01kyeczreqq58ze5en0p3f0jkc",
   "ai-production": "pri_01kwwqa2rcxtn8pt3dr3jdnnf0",
   "local-first": "pri_01kwwqa2xp3jp1qww2j5ya0meh",
   "agentic-dev": "pri_01kwwqa332mweg8veaarkygbae",
   provenance: "pri_01kwwqa3872cs4c53w8qhhz31k",
-  everything: "pri_01kwwqa3dfp8k0v5k3bbg3pd5f",
+  everything: "pri_01kyeczrjj0tzpwg7tv752e42s",
 };
 
 /** À-la-carte module slug -> the pricebook's REAL Paddle price id (`purchases.ts`'s per-module REAL
@@ -81,6 +81,7 @@ const MODULE_PRICE_IDS: Record<string, string> = {
   // the pricebook's W7 PURCHASE_BOOK rows).
   "compliance-core": "pri_01kwwqa0k69m965tx8hgsv904h",
   "frameworks-pack": "pri_01kwwqa0rkz3etv2yfd6c7jjad",
+  "oscal-spine": "pri_01kye9597z46149qg5xfrqxybk",
   "signing-primitive": "pri_01kwwqa0y1hn63taahdh7y03vf",
   credits: "pri_01kwwqa1413c33yfsrvjb4r34a",
   "local-sync": "pri_01kwwqa1b33ycmh114440xc6re",

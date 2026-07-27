@@ -2,7 +2,7 @@
 # uploads the project root; the Dockerfile is selected via RAILWAY_DOCKERFILE_PATH=services/support-bot/
 # Dockerfile). All COPY paths are therefore repo-root-relative. The bot's gateway connection is
 # outbound; the only inbound surface is /health for the runner's liveness probe (binds $PORT).
-FROM python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1 AS base
+FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6 AS base
 
 # uv for fast, locked installs. Pinned to the same version CI uses (setup-uv 0.11.18) so the lock
 # format can't drift between the gate and the image.

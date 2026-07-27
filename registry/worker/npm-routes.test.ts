@@ -87,7 +87,7 @@ const index = loadRegistryIndex({
             kind: "bundle",
             tier: "paid",
             license: "LicenseRef-Caisson-Commercial",
-            priceCents: 205900,
+            priceCents: 225900,
             editions: [],
             members: { "@caisson/field-crypto": "1.0.0" },
             description: "Everything bundle fixture.",
@@ -340,6 +340,292 @@ describe("tarball — literal-slash path, re-checked entitlement, R2 bytes", () 
     );
     expect(res.status).toBe(404);
   });
+});
+
+describe("ADR-0384 parent purchases install the carved OSCAL package", () => {
+  const commercialVersion = (id: string, version: string) => ({
+    version,
+    publishedAt:
+      version === "1.0.0"
+        ? "2026-01-01T00:00:00.000Z"
+        : "2027-01-01T00:00:00.000Z",
+    gateAttestation:
+      version === "1.0.0" ? "ci-run-1@deadbeef" : "ci-run-2@deadbeef",
+    manifest: {
+      ...commercialBase(id).versions[0]?.manifest,
+      version,
+    },
+  });
+  const oscalVersions = [
+    commercialVersion("@caisson/oscal-spine", "1.0.0"),
+    commercialVersion("@caisson/oscal-spine", "2.0.0"),
+  ];
+  const rendererVersions = [
+    commercialVersion("@caisson/artifact-render", "1.0.0"),
+    commercialVersion("@caisson/artifact-render", "2.0.0"),
+  ];
+  const compatibilityIndex = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [
+      commercialBase("@caisson/compliance-core"),
+      commercialBase("@caisson/frameworks-pack"),
+      {
+        id: "@caisson/compliance",
+        latest: "1.0.0",
+        versions: [
+          {
+            version: "1.0.0",
+            publishedAt: "2026-01-01T00:00:00.000Z",
+            gateAttestation: "ci-run-1@deadbeef",
+            manifest: {
+              id: "@caisson/compliance",
+              version: "1.0.0",
+              kind: "bundle",
+              tier: "paid",
+              license: "LicenseRef-Caisson-Commercial",
+              priceCents: 164900,
+              editions: [],
+              members: {
+                "@caisson/compliance-core": "1.0.0",
+                "@caisson/frameworks-pack": "1.0.0",
+                "@caisson/oscal-spine": "1.0.0",
+              },
+              description: "Compliance bundle compatibility fixture.",
+            },
+          },
+        ],
+      },
+      {
+        id: "@caisson/everything",
+        latest: "1.0.0",
+        versions: [
+          {
+            version: "1.0.0",
+            publishedAt: "2026-01-01T00:00:00.000Z",
+            gateAttestation: "ci-run-1@deadbeef",
+            manifest: {
+              id: "@caisson/everything",
+              version: "1.0.0",
+              kind: "bundle",
+              tier: "paid",
+              license: "LicenseRef-Caisson-Commercial",
+              priceCents: 225900,
+              editions: [],
+              members: {
+                "@caisson/oscal-spine": "1.0.0",
+              },
+              description: "Everything bundle compatibility fixture.",
+            },
+          },
+        ],
+      },
+      {
+        id: "@caisson/oscal-spine",
+        latest: "2.0.0",
+        versions: oscalVersions,
+      },
+      {
+        id: "@caisson/artifact-render",
+        latest: "2.0.0",
+        versions: rendererVersions,
+      },
+    ],
+  });
+  const compatibilitySidecar = loadTarballSidecar({
+    $comment: "ADR-0384 compatibility fixture",
+    tarballs: Object.fromEntries(
+      ["oscal-spine", "artifact-render"].flatMap((name) =>
+        ["1.0.0", "2.0.0"].map((version) => [
+          `@caisson/${name}@${version}`,
+          {
+            key: `${name}/${name}-${version}.tgz`,
+            shasum: "dddddddddddddddddddddddddddddddddddddddd",
+            integrity: "sha512-oscalCompatibilitySRI==",
+            size: 1,
+            ...(name === "oscal-spine"
+              ? {
+                  meta: {
+                    dependencies: {
+                      "@caisson/artifact-render": "1.0.0",
+                    },
+                  },
+                }
+              : {}),
+          },
+        ]),
+      ),
+    ),
+  });
+  const compatibilityEnv: NpmEnv = {
+    TARBALLS: { get: () => Promise.resolve({ body: TGZ }) },
+  };
+  const WINDOW = "2026-12-31T00:00:00.000Z";
+
+  for (const parent of ["compliance-core", "frameworks-pack"] as const) {
+    const parentHandler = createNpmHandler(
+      compatibilityIndex,
+      compatibilitySidecar,
+      {
+        resolveEntitlements: () => ({
+          entitlements: [parent],
+          updatesWindows: { [parent]: WINDOW },
+        }),
+      },
+    );
+
+    test(`${parent} grants the OSCAL packument under the parent's updates window`, async () => {
+      const response = await parentHandler(
+        req("/@caisson%2foscal-spine", { headers: AUTH }),
+      );
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        "dist-tags": { latest: string };
+        versions: Record<string, unknown>;
+      };
+      expect(Object.keys(body.versions)).toEqual(["1.0.0"]);
+      expect(body["dist-tags"].latest).toBe("1.0.0");
+    });
+
+    test(`${parent} serves in-window OSCAL bytes and rejects out-of-window bytes`, async () => {
+      const inWindow = await parentHandler(
+        req("/@caisson/oscal-spine/-/oscal-spine-1.0.0.tgz", {
+          headers: AUTH,
+        }),
+        compatibilityEnv,
+      );
+      expect(inWindow.status).toBe(200);
+      const outOfWindow = await parentHandler(
+        req("/@caisson/oscal-spine/-/oscal-spine-2.0.0.tgz", {
+          headers: AUTH,
+        }),
+        compatibilityEnv,
+      );
+      expect(outOfWindow.status).toBe(404);
+    });
+  }
+
+  test("a pre-carve Compliance snapshot keeps OSCAL through packument, tarball, and update-window gates", async () => {
+    const bundleHandler = createNpmHandler(
+      compatibilityIndex,
+      compatibilitySidecar,
+      {
+        resolveEntitlements: () => ({
+          entitlements: ["compliance"],
+          entitledSince: {
+            compliance: "2026-07-24T00:00:00.000Z",
+          },
+          updatesWindows: { compliance: WINDOW },
+        }),
+      },
+    );
+
+    const packument = await bundleHandler(
+      req("/@caisson%2foscal-spine", { headers: AUTH }),
+    );
+    expect(packument.status).toBe(200);
+    const body = (await packument.json()) as {
+      "dist-tags": { latest: string };
+      versions: Record<string, unknown>;
+    };
+    expect(Object.keys(body.versions)).toEqual(["1.0.0"]);
+    expect(body["dist-tags"].latest).toBe("1.0.0");
+
+    const inWindow = await bundleHandler(
+      req("/@caisson/oscal-spine/-/oscal-spine-1.0.0.tgz", {
+        headers: AUTH,
+      }),
+      compatibilityEnv,
+    );
+    expect(inWindow.status).toBe(200);
+
+    const outOfWindow = await bundleHandler(
+      req("/@caisson/oscal-spine/-/oscal-spine-2.0.0.tgz", {
+        headers: AUTH,
+      }),
+      compatibilityEnv,
+    );
+    expect(outOfWindow.status).toBe(404);
+  });
+
+  const rendererCases = [
+    {
+      label: "standalone OSCAL",
+      entitlements: ["oscal-spine"],
+      entitledSince: {},
+    },
+    {
+      label: "compliance-core parent",
+      entitlements: ["compliance-core"],
+      entitledSince: {},
+    },
+    {
+      label: "frameworks-pack parent",
+      entitlements: ["frameworks-pack"],
+      entitledSince: {},
+    },
+    {
+      label: "pre-carve Compliance bundle",
+      entitlements: ["compliance"],
+      entitledSince: {
+        compliance: "2026-07-24T00:00:00.000Z",
+      },
+    },
+    {
+      label: "current Compliance bundle",
+      entitlements: ["compliance"],
+      entitledSince: {},
+    },
+    {
+      label: "current Everything bundle",
+      entitlements: ["everything"],
+      entitledSince: {},
+    },
+  ] as const;
+
+  for (const buyer of rendererCases) {
+    test(`${buyer.label} resolves the internal renderer under the originating update window`, async () => {
+      const buyerHandler = createNpmHandler(
+        compatibilityIndex,
+        compatibilitySidecar,
+        {
+          resolveEntitlements: () => ({
+            entitlements: buyer.entitlements,
+            entitledSince: buyer.entitledSince,
+            updatesWindows: {
+              [buyer.entitlements[0]]: WINDOW,
+            },
+          }),
+        },
+      );
+
+      const packument = await buyerHandler(
+        req("/@caisson%2fartifact-render", { headers: AUTH }),
+      );
+      expect(packument.status).toBe(200);
+      const body = (await packument.json()) as {
+        "dist-tags": { latest: string };
+        versions: Record<string, unknown>;
+      };
+      expect(Object.keys(body.versions)).toEqual(["1.0.0"]);
+      expect(body["dist-tags"].latest).toBe("1.0.0");
+
+      const inWindow = await buyerHandler(
+        req("/@caisson/artifact-render/-/artifact-render-1.0.0.tgz", {
+          headers: AUTH,
+        }),
+        compatibilityEnv,
+      );
+      expect(inWindow.status).toBe(200);
+
+      const outOfWindow = await buyerHandler(
+        req("/@caisson/artifact-render/-/artifact-render-2.0.0.tgz", {
+          headers: AUTH,
+        }),
+        compatibilityEnv,
+      );
+      expect(outOfWindow.status).toBe(404);
+    });
+  }
 });
 
 describe("diagnostics + writes", () => {

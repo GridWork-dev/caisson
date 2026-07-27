@@ -14,6 +14,10 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
+import {
+  ARTICLE_50_SUMMARY_SOURCES,
+  ARTICLE_50_VERIFIED_ON,
+} from "@/lib/article-50-sources";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { breadcrumb, serializeJsonLd, techArticle } from "@/lib/jsonld";
 
@@ -454,20 +458,24 @@ export default function EuAiActPage() {
         </Section>
       </Reveal>
 
-      {/* ===== Article 50 enforcement date (factual, dated — reads correctly before and after) ===== */}
+      {/* ===== Article 50 application date (evergreen summary) ===== */}
       <Reveal>
         <Section
           eyebrow="Article 50 · transparency"
-          title="Article 50 becomes enforceable August 2, 2026."
+          title="Article 50 applies from August 2, 2026."
           band="tint"
         >
           <p className="cs-lede" style={{ maxWidth: "72ch" }}>
-            The EU AI Act&rsquo;s transparency obligations (Regulation (EU)
-            2024/1689, Article 50) apply from August 2, 2026 (confirmed unmoved
-            by the Digital Omnibus amendment, independent reporting through
-            2026-07-07). They cover AI systems that interact with people
-            regardless of risk class: users must be told they are interacting
-            with AI, and generated content must carry machine-readable marking.
+            Article 50 generally applies from August 2, 2026. The duties are not
+            limited to high-risk systems: providers must disclose covered direct
+            AI interaction, while providers of covered generative systems must
+            make synthetic outputs machine-readably marked and detectable,
+            subject to the provision&rsquo;s exceptions. The adopted Digital
+            Omnibus text awaits Official Journal publication and entry into
+            force. Once effective, it gives providers of generative AI systems
+            placed on the market before August 2 until December 2, 2026 to
+            conform with Article 50(2)&rsquo;s marking and detection duty. The
+            other Article 50 duties were not postponed.
           </p>
           <p
             className="cs-muted"
@@ -476,9 +484,37 @@ export default function EuAiActPage() {
             The disclosure surface itself is your product&rsquo;s UI. What
             Caisson supplies is the evidence discipline behind it: disclosure
             events logged to the tamper-evident audit chain, configuration
-            versioned in your repo, and the dated evidence bundle that shows the
-            obligation was met, the same record-keeping spine the Annex IV map
-            above uses.
+            versioned in your repo, and a dated evidence bundle that preserves
+            evidence that a disclosure event was recorded. Whether the product
+            surface satisfies Article 50 remains a separate legal determination.
+          </p>
+          <p
+            className="cs-muted"
+            style={{ marginTop: "var(--cs-space-4)", maxWidth: "72ch" }}
+          >
+            Article 50(2) outputs and Article 50(4) deepfakes generated or
+            manipulated before August 2, 2026 do not require retroactive marking
+            or labelling. Public-interest text receives that treatment only when
+            it was both generated or manipulated and published before August 2.
+          </p>
+          <p
+            className="cs-footnote"
+            style={{ marginTop: "var(--cs-space-4)", maxWidth: "72ch" }}
+          >
+            Primary sources reviewed {ARTICLE_50_VERIFIED_ON}:{" "}
+            {ARTICLE_50_SUMMARY_SOURCES.map((source, index) => (
+              <span key={source.url}>
+                {index > 0 && (
+                  <>
+                    <br />
+                  </>
+                )}
+                <a className="cs-link" href={source.url} rel="noreferrer">
+                  {source.label}
+                </a>{" "}
+                — {source.locator}
+              </span>
+            ))}
           </p>
           <div
             className="cs-cta-row"
@@ -486,6 +522,12 @@ export default function EuAiActPage() {
           >
             <Button href="/frameworks/eu-ai-act/article-50" variant="ghost">
               What Article 50 requires, in detail
+            </Button>
+            <Button
+              href="/writing/eu-ai-act-article-50-august-december-2026"
+              variant="ghost"
+            >
+              What the July 2026 guidance settled
             </Button>
           </div>
         </Section>

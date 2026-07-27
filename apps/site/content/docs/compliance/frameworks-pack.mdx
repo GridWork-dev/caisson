@@ -38,7 +38,10 @@ import { soc2Tsc, hipaaSecurity, euAiAct } from "@caisson/frameworks-pack";
 
 // Each pack is a validated Framework: { id, title, version, description, controls[] }.
 for (const control of soc2Tsc.controls) {
-  console.log(control.id, control.crosswalk.map((c) => c.reference));
+  console.log(
+    control.id,
+    control.crosswalk.map((c) => c.reference),
+  );
 }
 ```
 
@@ -67,19 +70,20 @@ const artifact = exportRegimeCrosswalk(soc2Crosswalk);
 ```
 
 <Callout type="info" title="Maps to, not certified by">
-  Every crosswalk row is `"maps-to"` unless a live repo test or CI artifact proves the
-  control, in which case it is `"implements"` with a `proof` pointer. Neither claim is a
-  certification, Caisson holds no SOC 2 report, no HIPAA attestation, and no EU AI Act
-  conformity assessment on itself. The `buyerResponsibility` column on every row names what
-  stays yours.
+  Every crosswalk row is `"maps-to"` unless a live repo test or CI artifact
+  proves the control, in which case it is `"implements"` with a `proof` pointer.
+  Neither claim is a certification, Caisson holds no SOC 2 report, no HIPAA
+  attestation, and no EU AI Act conformity assessment on itself. The
+  `buyerResponsibility` column on every row names what stays yours.
 </Callout>
 
 ## Composition
 
-Depends only on `@caisson/kernel`: down-only, no edition or sibling-package dependency.
-The catalogs are consumed by `@caisson/compliance-core`, which assembles the evidence pack
-and generates the OSCAL export against the control ids defined here. `frameworks-pack` is
-one of the ten packages composed by the Compliance bundle.
+Depends on `@caisson/kernel` plus `@caisson/oscal-spine`, the commercial OSCAL boundary it
+re-exports for source compatibility. The framework catalogs are consumed by
+`@caisson/compliance-core`, which assembles the evidence pack; `oscal-spine` generates the
+machine-readable OSCAL artifacts against those control ids. All three are members of the
+Compliance bundle.
 
 ## License
 

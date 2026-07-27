@@ -49,10 +49,10 @@ function parityViolations(records: readonly ModulePageRecord[]): {
 }
 
 describe("MODULE_PAGES (depth-page records)", () => {
-  test("every sellable module has exactly one depth-page record (ADR-0380 26/26 parity)", () => {
+  test("every sellable module has exactly one depth-page record (27/27 parity)", () => {
     const recordIds = MODULE_PAGES.map((record) => record.slug);
-    expect(MODULE_PRICES).toHaveLength(26);
-    expect(MODULE_PAGES).toHaveLength(26);
+    expect(MODULE_PRICES).toHaveLength(27);
+    expect(MODULE_PAGES).toHaveLength(27);
     expect(new Set(recordIds).size).toBe(recordIds.length);
     expect(parityViolations(MODULE_PAGES)).toEqual({
       missing: [],
@@ -110,6 +110,14 @@ describe("MODULE_PAGES (depth-page records)", () => {
       expect(r.faq.length).toBeGreaterThanOrEqual(2);
       expect(r.sells.note.length).toBeGreaterThan(0);
     }
+  });
+
+  test("the OSCAL page names the real assessment-plan export, never the retired copy name", () => {
+    const page = MODULE_PAGES.find((record) => record.slug === "oscal-spine");
+    expect(page).toBeDefined();
+    const copy = JSON.stringify(page);
+    expect(copy).toContain("toOscalAssessmentPlan");
+    expect(copy).not.toContain("buildOscalAssessmentPlan");
   });
 
   test("every sells note's bundle-membership claims match the pricing truth", () => {
