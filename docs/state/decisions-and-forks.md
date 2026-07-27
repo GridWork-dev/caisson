@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-26
 status: live
-adr_ceiling: 0391
+adr_ceiling: 0392
 ---
 
 # Decisions & Forks — live board
@@ -190,6 +190,8 @@ additional active queue.
 | Railway PITR | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18. |
 
 _Six more closed 2026-07-26 → **ADR-0391**: D5 discounted-close evidence · D6 bounded-thesis tripwire · D7 three demand instruments · D11 Article 50 timing plus the new `/writing` surface · D13 economic-buyer map · D15 separate learning and revenue clocks._
+
+_Closed 2026-07-27 → **ADR-0392**: the prefetch-all KMS context's real bind cost, a bounded prefetch depth, provisioning that happens at bind rather than on first seal, and the within-tenant crypto-shred lockout prefetch-all implies. Supersedes ADR-0389 decisions 1 and 3 in their stated properties; the design itself stands._
 
 _One implementation fork closed 2026-07-25 → **ADR-0389**: the async boundary prefetches every
 historical key version into a request-local context, zeroizes the entire context on exit, and

@@ -75,7 +75,7 @@ arming row.
 | `site.ask-ai-generation`                      | `caisson-site`                          | `OPENROUTER_API_KEY`                              | **REQUIRED**                               | Retrieval may succeed, but generation raises “openrouter is not configured”; `/api/ask` emits `generation_failed` and falls back to escalation/contact (`apps/site/lib/ask-ai/openrouter.ts:70`, `apps/site/lib/ask-ai/handler.ts:210-216`).                                                                                                   | Probe and record the receipt.                                                                                |
 | `site.subscription-cancellation`              | `caisson-site`                          | `PADDLE_API_KEY`                                  | **REQUIRED**                               | An owned active subscription cannot be scheduled for cancellation: the Paddle adapter returns `cancellation is not configured` and the route maps the failure to HTTP 502 (`apps/site/lib/paddle-cancel.ts:42`, `apps/site/lib/subscription-cancel.ts`).                                                                                       | Probe and record the receipt.                                                                                |
 | `site.paddle-checkout`                        | `caisson-site`                          | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`                 | **REQUIRED**                               | Paddle never initializes; purchase and renewal controls are disabled as **Checkout unavailable**, so no checkout overlay opens (`apps/site/lib/paddle-checkout.ts:141`, `apps/site/components/cart-checkout-panel.tsx:175-179`, `apps/site/components/plan-purchase-row.tsx:132-136`, `apps/site/components/updates-window-card.tsx:111-115`). | Probe and record the receipt.                                                                                |
-| `site.byok-field-crypto`                      | `caisson-site`                          | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT`          | **REQUIRED**                               | The site and deploy probes stay green, but the first production BYOK submission throws because tenant secrets cannot use the deterministic demo vector (`apps/site/lib/byok.ts:146`).                                                                                                                                                          | Probe both names and record the receipt; the prior row had no arming record.                                 |
+| `site.byok-field-crypto`                      | `caisson-site`                          | `AZURE_KEY_VAULT_URL` + `AZURE_KEY_VAULT_KEY_NAME` + `AZURE_KEY_VAULT_WRAP_ALGORITHM` + `AZURE_KEY_VAULT_PURGE_PROTECTION` + `AZURE_TENANT_ID` + `AZURE_CLIENT_ID` + `AZURE_CLIENT_SECRET` | **REQUIRED**                               | **Deferred throw, not a boot failure.** The site starts clean and passes every deploy probe; the first buyer BYOK submit then throws, because production never falls back from Azure KMS to the derived provider or the demo vector. The wrap algorithm must be `RSA-OAEP-256`, the purge-protection sentinel must be `enabled`, and the live key's recovery level must prove purge protection (`apps/site/lib/field-crypto-kms.ts`). All three service-principal names are required and validated: the runtime constructs an explicit `ClientSecretCredential`, so a missing or misspelled one fails closed at construction rather than silently probing an ambient identity (ADR-0392). | Probe all seven names, verify vault purge protection and the principal's key permissions, run a real wrap/unwrap probe, and record every check in the execution receipt. **No arming record exists yet.** |
 | `site.authentication-runtime`                 | `caisson-site`                          | `DATABASE_URL` + `BETTER_AUTH_SECRET`             | **REQUIRED**                               | Better Auth resolves to a null runtime; auth endpoints return HTTP 503 and session reads behave unauthenticated while the public site can remain up (`apps/site/lib/auth-server.ts:240-256`).                                                                                                                                                  | Probe both names and record the receipt.                                                                     |
 | `admin.license-reissue-and-affiliate-minting` | `caisson-admin`                         | `CAISSON_LICENSE_ISSUE_URL` + `ADMIN_ISSUE_TOKEN` | **REQUIRED**                               | License reissue and affiliate minting both throw “not configured” before their mutation/audit rows are written (`apps/admin/src/lib/admin-mutations-runtime.ts:77,116`).                                                                                                                                                                       | Probe both names on `caisson-admin` and record the receipt.                                                  |
 | `admin.catalog-test-email-recipient`          | `caisson-admin`                         | `CATALOG_TEST_EMAIL_TO`                           | **OPTIONAL — operator-only test delivery** | The operator-only catalog test-email endpoint returns HTTP 503 and sends no test message; buyer email delivery does not depend on this recipient (`apps/admin/src/app/api/admin/catalog/send-test-email/route.ts:59`).                                                                                                                         | Absence is acceptable for launch, but the probe must report it as optional and missing.                      |
@@ -88,6 +88,31 @@ outside this presence inventory.
 `SESSION_TOKEN_HMAC_KEY` remains a separate **fail-hard** `caisson-site` prerequisite. Its absence
 throws during auth runtime construction instead of degrading silently
 (`apps/site/lib/auth-server.ts:151,265`; armed receipt: `docs/deploy/STATE.md:281`).
+
+#### BLOCKING preflight — `tenant_ai_credential` must be empty before Azure KMS is armed
+
+Arming Azure KMS is a **one-way door**. Production previously sealed `tenant_ai_credential` with
+`DerivedKeyProvider` at key version 1, and a freshly provisioned KMS tenant is also numbered
+version 1. The ADR-0046 envelope records only the version, so it cannot tell the two providers
+apart: any row written before the cutover decrypts afterwards as an AES-GCM tag failure
+**indistinguishable from tampering**. There is no rewrap helper, and BYOK ciphertext has no
+recovery path.
+
+The wave scoped re-encryption out on the premise that nothing is sealed yet. That premise is an
+assertion, not a fact — nothing in the code verifies it. Verify it here, before arming:
+
+```sql
+SELECT count(*) FROM tenant_ai_credential;  -- MUST be 0
+```
+
+- **0 rows** — proceed, and record the count in the execution receipt.
+- **Non-zero** — STOP. Do not arm Azure. Either truncate the table as part of the migration-0032
+  step (BYOK is write-only per ADR-0183, so buyers simply re-submit their keys), or start the KMS
+  version chain above the derived registry's high-water mark. Choosing silently is data loss.
+
+Blast radius is currently bounded only by the fact that `getTenantProviderKey` has no caller in
+`apps/site`, so nothing reads the column yet. That is luck, not a guard, and it stops being true
+the moment a read path ships.
 
 #### Named configured-probe step — fleet fail-soft inventory
 
