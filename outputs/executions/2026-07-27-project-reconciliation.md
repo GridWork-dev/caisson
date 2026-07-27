@@ -244,3 +244,64 @@ probe requires `$1,649`. The committed prices are `164900` and `225900` in
 `packages/{compliance,everything}/manifest.ts` per ADR-0386, and **the buyer-facing surface carries
 no stale number** — this is internal operator-procedure drift only. Left for its own change rather
 than folded into a crypto branch.
+
+## Board-clear addendum (appended 2026-07-27, same day)
+
+Three statements in the close-out above are no longer true. They are corrected here rather than
+edited in place, so the record of what was believed at close-out survives.
+
+### The load-sensitivity was a defect, not a property
+
+Close-out recorded `@caisson/ai-kit` as intermittently tripping PGlite hook/test timeouts under full
+parallel build load, and instructed confirming a red run at `--concurrency=1` before believing it.
+That guidance is retired. The cause was found and fixed in #356 (`db4c693a`).
+
+Bun's default test timeout is 5000ms, which is under 5x the idle cost of real work in this repo, so
+CPU contention alone decided pass or fail. Measured:
+
+- `newTestPg()` boots a Postgres-in-WASM at **0.8-1.6s idle**, and the cost **grows within a
+  process** when instances are held rather than closed (10 held: 718 -> 1592ms; 10 closed: flat
+  ~800ms). It sits inside `beforeEach` in seven `ai-kit` files.
+- `@caisson/ui`'s design-manifest generator takes **~4.0s for one pass**; the determinism test runs
+  two, and failed at 5540ms with its sibling passing at 4040ms. Structurally over budget, not
+  marginal.
+- `proof-panel.test.tsx`'s `settle()` flushed a fixed 3 passes with no predicate, measured at
+  exactly one pass of headroom — 2 suffice idle, 1 fails.
+
+The bound had to go on all 74 `bun test` scripts, not into one config: setting `timeout` in the root
+`bunfig.toml` and re-running a deliberately-slow 7s hook reproduced the failure again, because bun
+does not read bunfig from a package's working directory. `BUN_TEST_TIMEOUT` does not exist. Both
+were tested rather than assumed.
+
+Verified at `bun run check --force` with no turbo cache: **224/224 successful, 75 suites actually
+run, zero timeouts.**
+
+### The known drift is fixed
+
+`docs/ops/launch-runbook.md` no longer states Compliance at `$1,449`. #355 (`03198633`) trued nine
+stale claims — the price in five places plus the catalog counts (26 modules / 35 products / 66
+prices) that predated the oscal-spine wave — against `tools/paddle-catalog-recreate.ts`'s
+`selfCheck()`, which asserts 6 bundles / 27 modules / 36 products / 68 prices and cites this runbook
+as what it pins to. The tool and the runbook it named had drifted apart. Severity stated honestly:
+this could not have produced a wrong catalog, because the recreate tool fails closed on marker
+mismatch — it could have wasted a deploy window and produced a false-failed probe.
+
+### The worktrees are gone; the recovery refs are not
+
+`branch-hygiene` no longer reports six operator-owned wave worktrees. All six were removed after
+each was checked for unlanded work, along with seven branches whose PRs had merged or closed. One
+worktree (`caisson-writing`) held five modified tracked files; every one was **older** than `main`,
+not newer — its glossary still described Azure Key Vault as having no shipped driver. Dispatch
+briefs were archived before removal.
+
+Five reconcile-snapshot recovery refs are kept deliberately and are now the only thing branch-hygiene
+reports, which makes it a signal again rather than permanent noise.
+
+### Board state
+
+The PR board is empty. #354, #355, and #356 merged; #351 was closed as a `minimumReleaseAge`
+artifact rather than a defect — every job failed because `renovate/artifacts` could not update the
+lockfile inside the 7-day window, #352 had already reverted that batch deliberately, and none of its
+bumps fix a known advisory. Renovate re-proposes once the versions age naturally.
+
+T4 (six legs on one SHA, migration 0030) is now the only thing between here and T7.

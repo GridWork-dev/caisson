@@ -45,7 +45,8 @@ re-walk's demand, instrumentation, and writing decisions.
 2026-07-27 reconciliation: the standalone commercial package owns the complete OSCAL surface, both
 parents re-export it, Compliance and Everything move together, and the catalog carries the real
 sandbox purchase/renewal rows. The parallel field-crypto KMS wave has since merged (`13e814da`,
-#353) after four review rounds and is no longer separate.
+#353) after four review rounds and is no longer separate, followed by the scoped-key change
+(`0d878553`, #354) that closed the raw-DEK fork ADR-0392 deferred.
 
 - **63 packages:** 17 Apache-2.0 and 46 commercial; 81 Bun workspaces total.
 - **Safety wave complete locally:** TypeScript-aware dependency graph (`c236681f`), total price
@@ -53,10 +54,10 @@ sandbox purchase/renewal rows. The parallel field-crypto KMS wave has since merg
   dependency-patch audit ownership (`3e384bc5`).
 - **Catalog:** six bundles and 27 modules; Compliance is $1,649 and Everything is $2,259;
   production recreation is 36 products and 68 prices.
-- **Release queue:** 49 changeset files currently resolve to 58 patch package releases, 12 minor
+- **Release queue:** 54 changeset files currently resolve to 56 patch package releases, 14 minor
   package releases, and 2 major package releases.
-- **Reconciled verification:** 224/224 repository tasks, 904 site tests, and 76 package gates
-  passed on the locally integrated writing-plus-OSCAL tree.
+- **Reconciled verification:** 224/224 repository tasks and 76 package gates passed uncached
+  (`bun run check --force`, 75 suites actually run, zero timeouts) on `db4c693a`.
 - **Fleet parity red:** repository/Worker digest `74e92a6813bc`; license `09adca8d32a5`; admin
   `97b183902c08`; docs/support parity and site migrations `0030`–`0032` lack current receipts.
 - **Locked residuals:** the generated 39-component DS manifest, source drift guard, and shared
@@ -66,7 +67,10 @@ sandbox purchase/renewal rows. The parallel field-crypto KMS wave has since merg
   [`docs/state/production-readiness.md`](state/production-readiness.md).
 - **Provider adapters and consumer integration complete:** Inngest v4, Azure Key Vault KMS, and
   Azure Blob WORM are present, and the field-crypto async consumer refactor merged in `13e814da`
-  (#353) — request-scoped KMS contexts with a bounded prefetch depth (ADR-0392).
+  (#353) — request-scoped KMS contexts with a bounded prefetch depth (ADR-0392). The context now
+  **lends** keys through `withKey()` and zeroizes them at operation exit rather than returning raw
+  DEKs (`0d878553`, #354, ADR-0393), which also closed a latent unwiped-key leak on the derived
+  self-hosted path that the four KMS review rounds never looked at.
 - **Certification holds:** private GitHub evidence, one-SHA deploy/migration, four technical
   receipts, two or three auditor acceptances, and all operator commerce/business gates.
 
