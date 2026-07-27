@@ -49,7 +49,7 @@ const OBLIGATIONS = [
   {
     clause: "Art. 50(2)",
     who: "Providers",
-    what: "Providers, including GPAI providers, must make covered synthetic audio, image, video, and text machine-readably marked and detectable through effective, interoperable, robust, and reliable solutions as far as technically feasible. Editing, non-substantial-alteration, and qualified law-enforcement exceptions apply.",
+    what: "Providers of AI systems, including general-purpose AI systems, that generate covered synthetic audio, image, video, or text must make the outputs machine-readably marked and detectable through effective, interoperable, robust, and reliable solutions as far as technically feasible. Editing, non-substantial-alteration, and qualified law-enforcement exceptions apply.",
   },
   {
     clause: "Art. 50(3)",
