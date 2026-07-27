@@ -29,6 +29,16 @@ minimumReleaseAge = 604800
 #   (GHSA-mh99-v99m-4gvg DoS, GHSA-pm4m-ph32-ghv5 DoS, GHSA-6g55-p6wh-862q +
 #   GHSA-r28c-9q8g-f849 sourceMappingURL file reads, GHSA-5qjj-4xww-7phc flatten throw) —
 #   all patched versions published <7d before adoption; remove after 2026-08-01.
+# (2026-07-27 CAISSON dependency-baseline rework: the Renovate PR #351 non-major batch
+#  — better-auth/@better-auth/*, the @opentelemetry/* logs+trace+instrumentation set,
+#  storybook+@storybook/*+eslint-plugin-storybook, playwright — was NOT re-exempted here.
+#  Audited against osv-scanner + trivy + upstream changelogs/GHSA search: none of those
+#  bumps fix a known advisory (the two real OTel GHSAs in play, GHSA-q7rr-3cgh-j5r3 and
+#  GHSA-45rx-2jwx-cxfr, were already patched in the versions already on main before this
+#  batch). Those package updates were reverted out of PR #352 back to main's versions
+#  instead of exempted; Renovate will re-propose them once they clear the window
+#  naturally. kysely 0.29.4 and vite 8.1.5 needed no exemption either — both had already
+#  aged past 7 days by the time this landed.)
 minimumReleaseAgeExcludes = ["brace-expansion", "js-yaml", "postcss", "valibot", "fast-uri", "next", "@next/env", "@next/swc-darwin-arm64", "@next/swc-darwin-x64", "@next/swc-linux-arm64-gnu", "@next/swc-linux-arm64-musl", "@next/swc-linux-x64-gnu", "@next/swc-linux-x64-musl", "@next/swc-win32-arm64-msvc", "@next/swc-win32-x64-msvc"]
 
 # Repo-level Socket.dev bunfig scanner (ADR-0341 item 3) — READY TO FLIP, NOT LIVE.

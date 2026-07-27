@@ -13,8 +13,8 @@ import { SealBadge } from "@/components/seal-on-proof";
 import styles from "./living-chain.module.css";
 
 // Gate + rest frame for the Living Chain (ADR-0334 §4: the motion component loads via dynamic
-// import behind in-view + no-reduced-motion — framer-motion and the commercial ChainViewer tree
-// stay in a lazy chunk, never in first-load JS).
+// import behind in-view + no-reduced-motion — motion (formerly framer-motion) and the commercial
+// ChainViewer tree stay in a lazy chunk, never in first-load JS).
 //
 // The SSR'd rest frame below is the ADR-0334 §6 reduced-motion contract made literal: the FULL
 // chain, every hash visible, verdict stamped — no-JS, reduced-motion, and pre-upgrade visitors

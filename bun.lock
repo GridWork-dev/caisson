@@ -249,13 +249,13 @@
         "better-auth": "1.6.23",
         "culori": "catalog:",
         "drizzle-orm": "catalog:",
-        "framer-motion": "^12.42.2",
         "fumadocs-core": "^16.10.6",
         "fumadocs-mdx": "^15.0.13",
         "fumadocs-ui": "^16.10.6",
         "htmlparser2": "^8.0.2",
         "kysely": "0.29.3",
         "lucide-react": "catalog:",
+        "motion": "^12.42.2",
         "next": "catalog:",
         "pg": "catalog:",
         "posthog-js": "^1.396.3",
@@ -1179,7 +1179,7 @@
     },
     "packages/oscal-spine": {
       "name": "@caisson/oscal-spine",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@caisson/artifact-render": "workspace:*",
         "@caisson/kernel": "workspace:*",

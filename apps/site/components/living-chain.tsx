@@ -8,7 +8,7 @@ import {
   useSpring,
   useTransform,
   type MotionValue,
-} from "framer-motion";
+} from "motion/react";
 import { ChainViewer } from "@caisson/audit-worm/ui";
 import { StatusChip } from "@caisson/ui/components";
 
@@ -23,10 +23,10 @@ import { SealBadge } from "@/components/seal-on-proof";
 import styles from "./living-chain.module.css";
 
 // The Living Chain (ADR-0334 moment 4 — the flagship). ONE of the exactly-two library-bearing
-// components the ADR admits: framer-motion drives a ~260vh sticky evidence build of the REAL
-// SHA-256 chain. Motion NEVER enters @caisson/audit-worm — this site-local wrapper drives the
-// shipped <ChainViewer> purely through its public props (entries grow row by row; the verdict
-// stamp is the real `verifyChain` output baked in lib/audit-chain-sample.ts).
+// components the ADR admits: motion (formerly framer-motion) drives a ~260vh sticky evidence
+// build of the REAL SHA-256 chain. Motion NEVER enters @caisson/audit-worm — this site-local
+// wrapper drives the shipped <ChainViewer> purely through its public props (entries grow row by
+// row; the verdict stamp is the real `verifyChain` output baked in lib/audit-chain-sample.ts).
 //
 // Composition: left, the storytelling cards — each append lands with a spring, and the link's
 // prevHash chip visibly TRAVELS down the connector into the next card's prevHash slot (the hash
@@ -40,7 +40,7 @@ import styles from "./living-chain.module.css";
 // proof bundles. Never overclaim: the demo proves link consistency, not WORM anchoring.
 //
 // This file is reached ONLY via living-chain-lazy.tsx (in-view + no-reduced-motion gates), so
-// framer-motion stays in a lazy chunk (ADR-0334 §4/§7: never first-load, ≤60 KiB combined).
+// motion stays in a lazy chunk (ADR-0334 §4/§7: never first-load, ≤60 KiB combined).
 
 const N = CHAIN_ENTRIES.length; // 4 entries + 1 verdict stage
 // Each entry claims an equal progress band; the verdict takes the tail.
