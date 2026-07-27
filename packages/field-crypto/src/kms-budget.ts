@@ -125,12 +125,18 @@ export async function withKmsOperationBudget<T>(
       controller.signal.removeEventListener("abort", rejectOnAbort);
       // An operation can abort the controller and THEN throw synchronously: a non-async driver
       // arrow that evaluates `remainingTimeoutMs()` as an argument expression does exactly that on
-      // a spent budget (kms-gcp.ts passes `{ timeout: remainingTimeoutMs() }` to the SDK). By this
-      // point `rejectOnAbort` has already rejected `race`, and rethrowing here skips
-      // `return await race`, so nothing would ever subscribe to it — an unhandled rejection, which
-      // Node terminates the process over by default. The caller still receives `error`; this only
-      // discards the duplicate rejection that lost the race to the throw.
-      void race.catch(() => {});
+      // a spent budget (kms-gcp.ts passes `{ timeout: remainingTimeoutMs() }` to the SDK). Here
+      // `settled` is true only if `rejectOnAbort` fired — the `.then` below cannot have run, since
+      // `pending` was never assigned. So the abort already won the race and IS the first
+      // settlement: return it instead of the throw. Reporting the throw would let a cancellation
+      // surface as a provider failure whenever the two carry different reasons, which a host that
+      // distinguishes cancel-from-fail acts on differently. Returning also subscribes to `race`,
+      // so its rejection is never orphaned — an unhandled rejection here is process-fatal under
+      // Node's default policy. If the abort did NOT fire, `race` is merely pending, never
+      // rejected, so rethrowing leaves nothing to orphan.
+      if (settled) {
+        return await race;
+      }
       throw error;
     }
 

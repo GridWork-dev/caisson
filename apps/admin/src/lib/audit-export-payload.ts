@@ -135,8 +135,14 @@ const kmsDeletionReceipt = z.union([
   // An AWS multi-Region primary whose replicas are still live: accepted, but the retention clock
   // has not started and may never start. Distinct from pending-deletion so an auditor reading the
   // exported chain cannot mistake it for a running waiting period — and carried as its own member
-  // with NO `scheduledFor`, so a chain row asserting both "clock not started" and a completion
-  // instant fails the export rather than being published as a contradictory permanent record.
+  // with NO `scheduledFor`. Note where each half of that guarantee is actually enforced:
+  // `KmsDeletionReceipt` gives this state `scheduledFor?: never` (kms-port.ts), so the contradictory
+  // receipt cannot be CONSTRUCTED in the first place. At this boundary `allowlistedObject` filters
+  // rather than rejects, so a stored row that somehow carried both is published with the instant
+  // stripped — semantically correct, since this state has no completion date — and
+  // `containsDroppedFields` then marks that row with the `$.unrecognized` sentinel, so the
+  // stripping is disclosed rather than silent. It does NOT fail the export; do not rely on a
+  // runtime rejection here that does not exist.
   allowlistedObject({
     state: z.literal("replica-pending-deletion"),
     irreversible: z.literal(false),

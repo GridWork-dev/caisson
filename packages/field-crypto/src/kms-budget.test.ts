@@ -154,6 +154,30 @@ describe("withKmsOperationBudget late-result erasure", () => {
     }
   });
 
+  test("reports the abort, not the throw, when a synchronous operation does both", async () => {
+    // Abort and throw carry DIFFERENT reasons here. The abort settles the race first, so it is the
+    // first settlement and must be what the caller sees: a host that retries provider failures but
+    // not cancellations would otherwise retry work the caller explicitly cancelled.
+    const source = new AbortController();
+    const orphaned: unknown[] = [];
+    const capture = (reason: unknown): void => {
+      orphaned.push(reason);
+    };
+    process.on("unhandledRejection", capture);
+    try {
+      await expect(
+        withKmsOperationBudget({ abortSignal: source.signal }, () => {
+          source.abort(new Error("request cancelled"));
+          throw new Error("provider sync failure");
+        }),
+      ).rejects.toThrow(/cancelled/i);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(orphaned).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", capture);
+    }
+  });
+
   test("returns the value untouched when the operation wins the race", async () => {
     const plaintext = Buffer.alloc(32, 0x3d);
     const result = await withKmsOperationBudget(
