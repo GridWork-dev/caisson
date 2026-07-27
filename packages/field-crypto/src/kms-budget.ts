@@ -18,6 +18,26 @@ function abortReason(signal: AbortSignal): unknown {
 }
 
 /**
+ * Erase a provider result that arrived after the caller-facing race already settled.
+ *
+ * Without this the abort path leaks: `rejectOnAbort` settles the outer promise, the underlying
+ * provider call keeps running, and its eventual value — a plaintext DEK for `decryptDataKey`, or
+ * `{ plaintextKey }` for `generateDataKey` — is dropped for the GC with live key bytes in it.
+ * Every driver routes through this budget, so the wipe belongs here rather than in each one.
+ */
+function wipeLateResult(value: unknown): void {
+  if (value instanceof Uint8Array) {
+    value.fill(0);
+    return;
+  }
+  if (typeof value !== "object" || value === null) return;
+  for (const field of ["plaintextKey", "result"]) {
+    const inner: unknown = Reflect.get(value, field);
+    if (inner instanceof Uint8Array) inner.fill(0);
+  }
+}
+
+/**
  * Apply one caller-visible budget around a provider operation.
  *
  * `operation` also receives the derived signal and a remaining-time reader so native SDK
@@ -71,15 +91,27 @@ export async function withKmsOperationBudget<T>(
     }
     const pending = operation(controller.signal, remainingTimeoutMs);
     return await new Promise<T>((resolve, reject) => {
+      let settled = false;
       const rejectOnAbort = (): void => {
+        settled = true;
         reject(abortReason(controller.signal));
       };
       controller.signal.addEventListener("abort", rejectOnAbort, {
         once: true,
       });
-      pending.then(resolve, reject).finally(() => {
-        controller.signal.removeEventListener("abort", rejectOnAbort);
-      });
+      pending
+        .then((value) => {
+          // Losing the race must not mean losing the key bytes.
+          if (settled) {
+            wipeLateResult(value);
+            return;
+          }
+          settled = true;
+          resolve(value);
+        }, reject)
+        .finally(() => {
+          controller.signal.removeEventListener("abort", rejectOnAbort);
+        });
     });
   } finally {
     clearTimeout(timer);
