@@ -28,7 +28,7 @@ caisson-support-bot = "caisson_support_bot.__main__:main"
 dev = [
     "pytest>=9.1,<10",
     "pytest-asyncio>=1.4,<1.5",
-    "ruff>=0.15,<0.16",
+    "ruff>=0.16,<0.17",
     "pyright>=1.1.380",
 ]
 
