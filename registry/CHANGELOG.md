@@ -1,5 +1,27 @@
 # @caisson/registry
 
+## 0.0.21
+
+### Patch Changes
+
+- e6ee01a: The index parity probe now retries a leg before declaring it unreachable. A single transient fetch failure previously rendered as UNREACHABLE, which is indistinguishable from a real outage in a report that feeds launch acceptance; a leg is only called unmeasured after every attempt fails.
+- 108a358: Test coverage refreshed for the expanded bundle catalog; no runtime changes.
+- 108ce16: Prune the last stranded registry version: agent-trajectory 0.3.0 advertised a downloadable
+  archive that was never uploaded to the registry's storage. Its PR #312 carve-out ("until the
+  next consume repoints the pins") expired when #315/#317 repointed the agentic-dev and
+  everything bundle pins to agent-trajectory 0.3.4. Delisted append-only: publish history is
+  preserved, the version no longer appears in the served catalog, and every currently
+  installable version is unaffected.
+- Updated dependencies [25fd03c]
+- Updated dependencies [108a358]
+- Updated dependencies [96aa01d]
+- Updated dependencies [a21c478]
+- Updated dependencies [108a358]
+- Updated dependencies [fe2dfac]
+  - @caisson/registry-schema@0.5.8
+  - @caisson/pricebook@0.8.0
+  - @caisson/license-verify@0.3.6
+
 ## 0.0.20
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @caisson/risk-register
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [a21c478]
+  - @caisson/audit-worm@2.2.0
+  - @caisson/kernel@0.6.0
+  - @caisson/frameworks-pack@0.6.1
+
 ## 0.3.0
 
 ### Minor Changes

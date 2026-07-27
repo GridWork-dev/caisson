@@ -1,5 +1,16 @@
 # @caisson/registry-schema
 
+## 0.5.8
+
+### Patch Changes
+
+- 25fd03c: Remove the deprecated full-catalog fallback so a missing Everything bundle entry fails closed.
+- a21c478: Adds the standalone $249 OSCAL spine with assessment, results, POA&M, catalog, XML, ISO 27001,
+  NIST 800-53, and OLIR support while preserving both parent packages' public exports. The module
+  joins Compliance, moving Compliance to $1,649 with a $659 renewal and Everything to $2,259 with
+  an $899 renewal.
+- 108a358: Test fixtures refreshed for the expanded Compliance and Everything bundle compositions; no runtime changes.
+
 ## 0.5.7
 
 ### Patch Changes

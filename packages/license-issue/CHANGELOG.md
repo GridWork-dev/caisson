@@ -1,5 +1,21 @@
 # @caisson/license-issue
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [6d1c805]
+- Updated dependencies [a00a9ef]
+- Updated dependencies [96aa01d]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [2cd4184]
+- Updated dependencies [6d1c805]
+- Updated dependencies [56e46f1]
+  - @caisson/ui@0.6.3
+  - @caisson/kernel@0.6.0
+  - @caisson/license-verify@0.3.6
+
 ## 1.0.4
 
 ### Patch Changes

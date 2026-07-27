@@ -1,5 +1,13 @@
 # @caisson/service-betterstack-adapter
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+  - @caisson/kernel@0.6.0
+
 ## 0.0.6
 
 ### Patch Changes

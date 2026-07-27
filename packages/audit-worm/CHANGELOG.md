@@ -1,5 +1,32 @@
 # @caisson/audit-worm
 
+## 2.2.0
+
+### Minor Changes
+
+- 31bf5f1: Record immutable artifact version identities, target exact versions across cloud backends, and add the Azure Blob version-level WORM adapter.
+
+### Patch Changes
+
+- 31bf5f1: Evidence packs now use a v2 detached seal over a canonical manifest containing every exported file
+  name and SHA-256 digest, and no longer embed executable verifier code. The new commercial
+  `@caisson/verify-pack` package is the independently obtained verification path and requires an
+  issuer-key fingerprint obtained independently from the pack before it can report PASS.
+- Updated dependencies [6d1c805]
+- Updated dependencies [a00a9ef]
+- Updated dependencies [96aa01d]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [31bf5f1]
+- Updated dependencies [2cd4184]
+- Updated dependencies [6d1c805]
+- Updated dependencies [56e46f1]
+  - @caisson/ui@0.6.3
+  - @caisson/kernel@0.6.0
+  - @caisson/jobs@0.7.0
+  - @caisson/ui-pro@0.3.4
+  - @caisson/tenancy-rls@0.5.6
+
 ## 2.1.4
 
 ### Patch Changes
