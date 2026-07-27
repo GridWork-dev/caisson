@@ -126,8 +126,10 @@ function fakeRuntime(recoveryLevel = "Recoverable"): {
   };
   const wrapped = new Map<string, Buffer>();
   const deps: SiteAzureKmsDependencies = {
-    createCredential() {
-      seen.push("credential:default-chain");
+    createCredential(servicePrincipal) {
+      seen.push(
+        `credential:explicit:${servicePrincipal.tenantId}:${servicePrincipal.clientId}`,
+      );
       return {
         async getToken() {
           return {
@@ -164,7 +166,7 @@ function fakeRuntime(recoveryLevel = "Recoverable"): {
 }
 
 describe("site Azure KMS production runtime", () => {
-  test("requires HTTPS, the fixed wrap algorithm, and purge protection while using the default credential chain", () => {
+  test("requires HTTPS, the fixed wrap algorithm, purge protection, and an explicit service principal", () => {
     const { deps } = fakeRuntime();
     expect(() =>
       createSiteAzureKmsClient(
@@ -184,12 +186,34 @@ describe("site Azure KMS production runtime", () => {
         deps,
       ),
     ).toThrow(/purge protection/i);
-    expect(() =>
-      createSiteAzureKmsClient(
-        { ...ENV, AZURE_CLIENT_SECRET: undefined },
-        deps,
-      ),
-    ).not.toThrow();
+    // Each service-principal variable is REQUIRED. These previously parsed clean and the runtime
+    // fell through DefaultAzureCredential's probing chain to an ambient identity; a missing or
+    // misspelled variable must now fail closed at client construction.
+    for (const missing of [
+      "AZURE_TENANT_ID",
+      "AZURE_CLIENT_ID",
+      "AZURE_CLIENT_SECRET",
+    ] as const) {
+      expect(() =>
+        createSiteAzureKmsClient({ ...ENV, [missing]: undefined }, deps),
+      ).toThrow(new RegExp(missing));
+    }
+  });
+
+  test("builds the credential from the configured service principal, never an ambient identity", () => {
+    const { deps, seen } = fakeRuntime();
+    createSiteAzureKmsClient(ENV, deps);
+    expect(seen).toContain("credential:explicit:tenant-id:client-id");
+
+    // A parse failure must name the variable but never echo the secret value itself.
+    let message = "";
+    try {
+      createSiteAzureKmsClient({ ...ENV, AZURE_CLIENT_ID: "" }, deps);
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+    expect(message).toContain("AZURE_CLIENT_ID");
+    expect(message).not.toContain("client-secret");
   });
 
   test("uses a deterministic per-tenant key and round-trips a wrapped DEK", async () => {
@@ -204,7 +228,7 @@ describe("site Azure KMS production runtime", () => {
       ),
     ).toBe(true);
     expect(seen).toContain(`create:${expectedKeyName}`);
-    expect(seen).toContain("credential:default-chain");
+    expect(seen).toContain("credential:explicit:tenant-id:client-id");
     expect(seen).toContain(`get:${expectedKeyName}:version-1`);
   });
 

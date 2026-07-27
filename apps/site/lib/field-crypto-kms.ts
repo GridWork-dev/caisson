@@ -1,4 +1,4 @@
-import { DefaultAzureCredential } from "@azure/identity";
+import { ClientSecretCredential } from "@azure/identity";
 import {
   CryptographyClient,
   KeyClient,
@@ -70,8 +70,26 @@ export interface SiteAzureKeyClient {
   ): Promise<void>;
 }
 
+/**
+ * The explicit service-principal credential the deploy contract promises (`apps/site/railway.toml`,
+ * `docs/ops/launch-runbook.md`). Deliberately NOT `DefaultAzureCredential`: that is a probing chain,
+ * so a missing or misspelled variable falls through to workload identity, then to a managed-identity
+ * IMDS probe, then to the `az`/`pwsh`/`azd` CLIs — turning a config typo into a multi-second stall
+ * held under the per-account advisory lock, and, worse, authenticating as whatever ambient identity
+ * the host happens to offer rather than the principal the operator configured. On a per-tenant KEK
+ * that is an authorization boundary decided by the environment. Explicit construction fails closed
+ * at client-construction time instead.
+ */
+export interface SiteAzureKmsServicePrincipal {
+  readonly tenantId: string;
+  readonly clientId: string;
+  readonly clientSecret: string;
+}
+
 export interface SiteAzureKmsDependencies {
-  createCredential(): SiteTokenCredential;
+  createCredential(
+    servicePrincipal: SiteAzureKmsServicePrincipal,
+  ): SiteTokenCredential;
   createKeyClient(
     vaultUrl: string,
     credential: SiteTokenCredential,
@@ -98,13 +116,33 @@ const azureKmsEnvironmentSchema = strictObject({
     .regex(/^[0-9A-Za-z-]+$/),
   AZURE_KEY_VAULT_WRAP_ALGORITHM: z.literal("RSA-OAEP-256"),
   AZURE_KEY_VAULT_PURGE_PROTECTION: z.literal("enabled"),
+  // Required, not optional: these three are what make the credential explicit. Absent them the
+  // runtime would silently fall back to an ambient identity — see SiteAzureKmsDependencies.
+  AZURE_TENANT_ID: z
+    .string()
+    .trim()
+    .min(1)
+    .max(253)
+    .regex(/^[0-9A-Za-z.-]+$/),
+  AZURE_CLIENT_ID: z
+    .string()
+    .trim()
+    .min(1)
+    .max(253)
+    .regex(/^[0-9A-Za-z.-]+$/),
+  // Bounded but unpatterned: a client secret is opaque, and its parse errors must never echo it.
+  AZURE_CLIENT_SECRET: z.string().min(1).max(512),
 });
 
 type SiteAzureKmsEnvironment = z.infer<typeof azureKmsEnvironmentSchema>;
 
 const defaultDependencies: SiteAzureKmsDependencies = {
-  createCredential() {
-    return new DefaultAzureCredential();
+  createCredential(servicePrincipal) {
+    return new ClientSecretCredential(
+      servicePrincipal.tenantId,
+      servicePrincipal.clientId,
+      servicePrincipal.clientSecret,
+    );
   },
   createKeyClient(vaultUrl, credential) {
     const client = new KeyClient(vaultUrl, credential);
@@ -179,6 +217,9 @@ function parseEnvironment(
     AZURE_KEY_VAULT_KEY_NAME: source.AZURE_KEY_VAULT_KEY_NAME,
     AZURE_KEY_VAULT_WRAP_ALGORITHM: source.AZURE_KEY_VAULT_WRAP_ALGORITHM,
     AZURE_KEY_VAULT_PURGE_PROTECTION: source.AZURE_KEY_VAULT_PURGE_PROTECTION,
+    AZURE_TENANT_ID: source.AZURE_TENANT_ID,
+    AZURE_CLIENT_ID: source.AZURE_CLIENT_ID,
+    AZURE_CLIENT_SECRET: source.AZURE_CLIENT_SECRET,
   });
   if (!parsed.success) {
     const keys = [
@@ -284,7 +325,11 @@ export function createSiteAzureKmsClient(
   dependencies: SiteAzureKmsDependencies = defaultDependencies,
 ): KmsClient {
   const config = parseEnvironment(source);
-  const credential = dependencies.createCredential();
+  const credential = dependencies.createCredential({
+    tenantId: config.AZURE_TENANT_ID,
+    clientId: config.AZURE_CLIENT_ID,
+    clientSecret: config.AZURE_CLIENT_SECRET,
+  });
   const keyClient = dependencies.createKeyClient(
     config.AZURE_KEY_VAULT_URL,
     credential,
