@@ -63,7 +63,7 @@ via `apps/site/lib/stack-fit.ts` `MODULE_DB_POSTURE`, drift-pinned by test — s
 ## 5. Compliance edition
 
 - **Frameworks:** SOC2, HIPAA, EU AI Act (`packages/compliance`) — OSCAL v1.2.2 export (JSON + `oscal-cli` XML) across all three.
-- **Storage/crypto:** WORM `ArtifactStore` over three backends — S3 Object-Lock (live-proven against the real `caisson-worm` bucket), **GCS Object Retention Lock** and **R2 bucket-locks** (both coded 2026-07-06 per ADR-0267, self-skipping live proofs awaiting creds; R2's `extendRetention` only works under an `Indefinite` rule) — plus per-tenant field-crypto (HKDF+AES-256-GCM). KMS: AWS live-proven (2026-07-02 real-CMK proof) + **GCP Cloud KMS coded** (ADR-0171 binding, 2026-07-06).
+- **Storage/crypto:** WORM `ArtifactStore` over four backends — S3 Object-Lock (live-proven against the real `caisson-worm` bucket), **GCS Object Retention Lock**, **R2 bucket-locks**, and **Azure Blob immutability** (coded; cloud proofs remain credential-gated where noted in the live checklist) — plus per-tenant field-crypto (HKDF+AES-256-GCM). KMS: AWS live-proven, **GCP Cloud KMS shipped**, and **Azure Key Vault shipped and wired into the hosted site** with purge-protection checks and disposable request-scoped DEKs.
 
 ## 6. `adapter-expansion.md` is partially stale — reconcile before quoting it
 
@@ -79,10 +79,9 @@ this file's own recon:
 | `BillingProvider`: LemonSqueezy/Polar | "Add" (Tier 3)                    | **Already coded** — `packages/billing/src/{lemonsqueezy-webhook,polar-webhook}.ts` |
 | MCP transport: HTTP/SSE               | "stdio only" (Tier 3)             | **Both exist** — `mcp-server/src/{stdio,http}.ts` (ADR-0161)                       |
 
-Still genuinely open after the 2026-07-06 Kickoff-F wave (which shipped GCS/R2 storage, GCP KMS,
-Drizzle/Prisma bridges, groq/mistral/together lanes, 3 emitter targets, deploy templates): Azure
-Blob storage, job-queue drivers beyond Trigger.dev/pg-boss, Azure/Vault KMS, chat drivers beyond
-Discord. `adapter-expansion.md` carries the reconcile (ADR-0265 doc-correction pass).
+Still genuinely open after the later Azure adapter wave: Vault Transit KMS, additional job-queue
+drivers beyond the shipped set, and chat drivers beyond Discord/Slack. `adapter-expansion.md`
+remains a historical roadmap; this matrix is the current compatibility truth.
 
 ## 7. ADR-0287 catalog wave-1 S-effort driver batch (2026-07-07)
 

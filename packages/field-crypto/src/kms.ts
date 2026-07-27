@@ -296,6 +296,30 @@ export class KmsKeyProvider implements FieldKeyProvider {
     new Uint8Array(value.buffer, value.byteOffset, value.byteLength).fill(0);
   }
 
+  private operationAbortError(): Error {
+    const signal = this.operationOptions?.abortSignal;
+    return signal?.reason instanceof Error
+      ? signal.reason
+      : new InternalError("field-crypto: KMS operation aborted");
+  }
+
+  private throwIfOperationAborted(): void {
+    if (this.operationOptions?.abortSignal?.aborted === true) {
+      throw this.operationAbortError();
+    }
+  }
+
+  private wipeOnOperationAbort(value: unknown): () => void {
+    const signal = this.operationOptions?.abortSignal;
+    if (signal === undefined) return () => undefined;
+    const wipe = (): void => {
+      this.wipeByteView(value);
+    };
+    signal.addEventListener("abort", wipe, { once: true });
+    if (signal.aborted) wipe();
+    return () => signal.removeEventListener("abort", wipe);
+  }
+
   private async recoverWrappedVersion(
     tenantId: string,
     keyVersion: number,
@@ -325,7 +349,9 @@ export class KmsKeyProvider implements FieldKeyProvider {
   /** Provision (or rotate to) a fresh wrapped DEK for a tenant; returns the new current version. */
   async provision(tenantId: string): Promise<number> {
     assertTenantId(tenantId);
+    this.throwIfOperationAborted();
     const storedCurrent = await this.store.currentVersion(tenantId);
+    this.throwIfOperationAborted();
     if (storedCurrent !== undefined) assertKeyVersion(storedCurrent);
     const cur = storedCurrent ?? 0;
     const next = cur + 1;
@@ -345,6 +371,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
       typeof generated === "object" && generated !== null
         ? Reflect.get(generated, "plaintextKey")
         : undefined;
+    let stopAbortWipe = (): void => undefined;
     try {
       const wrappedKey =
         typeof generated === "object" && generated !== null
@@ -352,11 +379,14 @@ export class KmsKeyProvider implements FieldKeyProvider {
           : undefined;
       this.assertPlaintextDek(plaintextKey);
       this.assertWrappedDek(wrappedKey);
+      stopAbortWipe = this.wipeOnOperationAbort(plaintextKey);
+      this.throwIfOperationAborted();
       const inserted = await this.store.putWrappedIfAbsent(
         tenantId,
         next,
         wrappedKey,
       );
+      this.throwIfOperationAborted();
       if (!inserted) {
         throw new ConflictError(
           "field-crypto: concurrent rotation created this key version (append-only)",
@@ -364,8 +394,10 @@ export class KmsKeyProvider implements FieldKeyProvider {
         );
       }
       await this.store.setCurrentVersion(tenantId, next);
+      this.throwIfOperationAborted();
       return next;
     } finally {
+      stopAbortWipe();
       this.wipeByteView(plaintextKey);
     }
   }
@@ -379,7 +411,9 @@ export class KmsKeyProvider implements FieldKeyProvider {
    */
   async ensureProvisioned(tenantId: string): Promise<number> {
     assertTenantId(tenantId);
+    this.throwIfOperationAborted();
     const current = await this.store.currentVersion(tenantId);
+    this.throwIfOperationAborted();
     if (current !== undefined) {
       assertKeyVersion(current);
       return current;
@@ -395,6 +429,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
       typeof generated === "object" && generated !== null
         ? Reflect.get(generated, "plaintextKey")
         : undefined;
+    let stopAbortWipe = (): void => undefined;
     try {
       const wrappedKey =
         typeof generated === "object" && generated !== null
@@ -402,28 +437,44 @@ export class KmsKeyProvider implements FieldKeyProvider {
           : undefined;
       this.assertPlaintextDek(plaintextKey);
       this.assertWrappedDek(wrappedKey);
+      stopAbortWipe = this.wipeOnOperationAbort(plaintextKey);
+      this.throwIfOperationAborted();
       const inserted = await this.store.putWrappedIfAbsent(
         tenantId,
         1,
         wrappedKey,
       );
+      this.throwIfOperationAborted();
       if (inserted) {
         await this.store.setCurrentVersion(tenantId, 1);
+        this.throwIfOperationAborted();
         return 1;
       }
 
       // ON CONFLICT waits for a concurrent winner to commit. Under READ COMMITTED this fresh
       // statement then sees both the winning wrapped DEK and its committed current-version row.
       const winner = await this.store.currentVersion(tenantId);
+      this.throwIfOperationAborted();
       if (winner === undefined) {
         // A prior process may have committed the append-only wrapped DEK and failed before its
         // marker write. The loser can safely complete that idempotent transition without replacing
         // key material.
         await this.store.setCurrentVersion(tenantId, 1);
-        return 1;
+        this.throwIfOperationAborted();
+        const repaired = await this.store.currentVersion(tenantId);
+        this.throwIfOperationAborted();
+        if (repaired === undefined) {
+          throw new InternalError(
+            "field-crypto: repaired current-version marker was not durably visible",
+          );
+        }
+        assertKeyVersion(repaired);
+        return repaired;
       }
+      assertKeyVersion(winner);
       return winner;
     } finally {
+      stopAbortWipe();
       this.wipeByteView(plaintextKey);
     }
   }
@@ -445,6 +496,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
     );
     try {
       this.assertPlaintextDek(plaintext);
+      this.throwIfOperationAborted();
       return plaintext;
     } catch (error) {
       this.wipeByteView(plaintext);
@@ -468,8 +520,9 @@ export class KmsKeyProvider implements FieldKeyProvider {
    * Request crypto-shred for this tenant/subject scope (ADR-0055, P2-9). The provider receipt states
    * whether deletion is still recoverable or proved irreversible. The append-only wrapped-DEK rows
    * are LEFT IN PLACE; their availability follows the provider-reported key state. Returns the
-   * highest key version covered by the request (0 if the scope was never provisioned).
-   * Idempotent: re-shredding an already-shredded scope is a no-op success.
+   * highest key version covered by the request. A missing durable current-version marker is refused:
+   * callers cannot use this primitive to delete an unprovisioned or unbound external key scope.
+   * Destructive workflow retries/reconciliation belong at the authorized host boundary.
    */
   async scheduleKeyDeletion(tenantId: string): Promise<{
     readonly shreddedThroughVersion: number;
@@ -477,13 +530,17 @@ export class KmsKeyProvider implements FieldKeyProvider {
   }> {
     assertTenantId(tenantId);
     const storedCurrent = await this.store.currentVersion(tenantId);
-    if (storedCurrent !== undefined) assertKeyVersion(storedCurrent);
-    const through = storedCurrent ?? 0;
-    const deletion = await this.kms.scheduleKeyDeletion(
-      tenantId,
-      this.operationOptions,
-    );
-    return { shreddedThroughVersion: through, deletion };
+    if (storedCurrent === undefined) {
+      throw new NotFoundError(
+        `field-crypto: tenant ${JSON.stringify(tenantId)} has no provisioned KMS key — refusing destructive deletion`,
+      );
+    }
+    assertKeyVersion(storedCurrent);
+    // Request-time abort budgets are intentionally not forwarded to destructive operations. A
+    // provider acceptance followed by local timeout is ambiguous; the host must durably reconcile
+    // deletion state and record the returned receipt.
+    const deletion = await this.kms.scheduleKeyDeletion(tenantId);
+    return { shreddedThroughVersion: storedCurrent, deletion };
   }
 }
 

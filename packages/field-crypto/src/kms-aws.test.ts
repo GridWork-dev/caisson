@@ -114,17 +114,21 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
 
   test("scheduleKeyDeletion TARGETS the per-call tenant CMK — not the shared default (blast-radius fix)", async () => {
     const deletionDate = new Date("2026-08-01T00:00:00.000Z");
+    const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
+    const keyArn = `arn:aws:kms:us-east-1:111122223333:key/${keyId}`;
     const { client: kms, seen } = fakeKms(() => ({
+      KeyId: keyArn,
       KeyState: "PendingDeletion",
       DeletionDate: deletionDate,
+      PendingWindowInDays: 7,
     }));
     const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
 
-    const receipt = await client.scheduleKeyDeletion("alias/tenant-a");
+    const receipt = await client.scheduleKeyDeletion(keyId);
 
     expect(seen[0]).toBeInstanceOf(ScheduleKeyDeletionCommand);
     expect((seen[0] as ScheduleKeyDeletionCommand).input).toEqual({
-      KeyId: "alias/tenant-a",
+      KeyId: keyId,
       PendingWindowInDays: 7,
     });
     expect(receipt).toEqual({
@@ -132,6 +136,27 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       irreversible: false,
       scheduledFor: deletionDate.toISOString(),
     });
+  });
+
+  test("rejects aliases and provider responses that do not prove the requested deletion identity", async () => {
+    const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: fakeKms(() => ({
+        KeyId:
+          "arn:aws:kms:us-east-1:111122223333:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        KeyState: "PendingDeletion",
+        DeletionDate: new Date("2026-08-01T00:00:00.000Z"),
+        PendingWindowInDays: 7,
+      })).client,
+    });
+
+    await expect(client.scheduleKeyDeletion("alias/tenant-a")).rejects.toThrow(
+      /key ID or key ARN/i,
+    );
+    await expect(client.scheduleKeyDeletion(keyId)).rejects.toThrow(
+      /unexpected key identity/i,
+    );
   });
 
   test("scheduleKeyDeletion REFUSES a keyId-less shred (never crypto-shreds the default CMK)", async () => {
@@ -144,9 +169,12 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
   });
 
   test("scheduleKeyDeletion honors a configured pendingWindowInDays", async () => {
+    const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
     const { client: kms, seen } = fakeKms(() => ({
+      KeyId: `arn:aws:kms:us-east-1:111122223333:key/${keyId}`,
       KeyState: "PendingDeletion",
       DeletionDate: new Date("2026-08-24T00:00:00.000Z"),
+      PendingWindowInDays: 30,
     }));
     const client = createAwsKmsClient({
       keyId: "key-DEFAULT",
@@ -154,15 +182,33 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       client: kms,
     });
 
-    await client.scheduleKeyDeletion("alias/tenant-a");
+    await client.scheduleKeyDeletion(keyId);
 
     expect((seen[0] as ScheduleKeyDeletionCommand).input).toEqual({
-      KeyId: "alias/tenant-a",
+      KeyId: keyId,
       PendingWindowInDays: 30,
     });
   });
 
-  test("every AWS operation receives the caller's bounded abort budget", async () => {
+  test("rejects an AWS deletion response with a different accepted retention window", async () => {
+    const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      pendingWindowInDays: 30,
+      client: fakeKms(() => ({
+        KeyId: `arn:aws:kms:us-east-1:111122223333:key/${keyId}`,
+        KeyState: "PendingDeletion",
+        DeletionDate: new Date("2026-08-24T00:00:00.000Z"),
+        PendingWindowInDays: 7,
+      })).client,
+    });
+
+    await expect(client.scheduleKeyDeletion(keyId)).rejects.toThrow(
+      /requested retention window/i,
+    );
+  });
+
+  test("request-time abort budgets reach reversible AWS operations only", async () => {
     const { client: kms, seenOptions } = fakeKms((command) => {
       if (command instanceof GenerateDataKeyCommand) {
         return {
@@ -173,10 +219,7 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       if (command instanceof DecryptCommand) {
         return { Plaintext: new Uint8Array(32).fill(9) };
       }
-      return {
-        KeyState: "PendingDeletion",
-        DeletionDate: new Date("2026-08-01T00:00:00.000Z"),
-      };
+      throw new Error("destructive operation must not run in this test");
     });
     const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
     const controller = new AbortController();
@@ -188,9 +231,7 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       Buffer.from([1, 2, 3]),
       options,
     );
-    await client.scheduleKeyDeletion("alias/tenant-a", options);
-
-    expect(seenOptions).toHaveLength(3);
+    expect(seenOptions).toHaveLength(2);
     for (const seen of seenOptions) {
       expect((seen as { abortSignal?: AbortSignal }).abortSignal).toBeDefined();
     }

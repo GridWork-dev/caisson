@@ -28,7 +28,31 @@ export interface DisposableFieldCryptoContext extends FieldCryptoContext {
   dispose(): void;
 }
 
+/** Request-local controls for bounded KMS prefetch and plaintext lifetime. */
+export interface KmsContextOptions {
+  readonly abortSignal?: AbortSignal;
+  /** Maximum concurrent unwraps. Defaults to 4 and is bounded to 1–16. */
+  readonly concurrency?: number;
+}
+
+export const KMS_CONTEXT_PREFETCH_CONCURRENCY = 4;
+
 const store = new AsyncLocalStorage<FieldCryptoContext>();
+
+function abortError(signal: AbortSignal | undefined): Error {
+  return signal?.reason instanceof Error
+    ? signal.reason
+    : new InternalError("field-crypto: KMS context request aborted");
+}
+
+function isAborted(signal: AbortSignal | undefined): boolean {
+  return signal?.aborted === true;
+}
+
+function wipeByteView(value: unknown): void {
+  if (!ArrayBuffer.isView(value)) return;
+  new Uint8Array(value.buffer, value.byteOffset, value.byteLength).fill(0);
+}
 
 /** Run `fn` with the field-crypto tenant context bound. Wrap your tenant-scoped DB work in this. */
 export function withFieldCryptoContext<T>(
@@ -73,11 +97,24 @@ export function derivedContext(
 export async function kmsContext(
   provider: FieldKeyProvider,
   tenantId: string,
+  options: KmsContextOptions = {},
 ): Promise<DisposableFieldCryptoContext> {
-  if (tenantId.length === 0) {
+  if (tenantId.trim().length === 0) {
     throw new ValidationError("field-crypto: tenantId is required");
   }
+  const concurrency = options.concurrency ?? KMS_CONTEXT_PREFETCH_CONCURRENCY;
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 16) {
+    throw new ValidationError(
+      "field-crypto: KMS context concurrency must be an integer from 1 through 16",
+    );
+  }
+  if (isAborted(options.abortSignal)) {
+    throw abortError(options.abortSignal);
+  }
   const currentVersion = await provider.currentVersion(tenantId);
+  if (isAborted(options.abortSignal)) {
+    throw abortError(options.abortSignal);
+  }
   if (
     !Number.isInteger(currentVersion) ||
     currentVersion < 1 ||
@@ -88,54 +125,61 @@ export async function kmsContext(
     );
   }
 
-  const versions = Array.from(
-    { length: currentVersion },
-    (_, index) => index + 1,
-  );
-  const settled = await Promise.allSettled(
-    versions.map((version) => provider.keyFor(tenantId, version)),
-  );
   const keys = new Map<number, Buffer>();
-  let failed = false;
   let failure: unknown;
-
-  for (let index = 0; index < settled.length; index += 1) {
-    const result = settled[index];
-    const version = versions[index];
-    if (result === undefined || version === undefined) {
-      if (!failed) {
-        failure = new InternalError(
-          "field-crypto: KMS context prefetch result was incomplete",
+  let nextVersion = 1;
+  let stopScheduling = false;
+  const recordFailure = (error: unknown): void => {
+    if (failure === undefined) {
+      failure =
+        error ??
+        new InternalError(
+          "field-crypto: KMS provider rejected a DEK unwrap without an error",
         );
-      }
-      failed = true;
-      continue;
     }
-    if (result.status === "rejected") {
-      if (!failed) {
-        failure =
-          result.reason ??
-          new InternalError(
-            "field-crypto: KMS provider rejected a DEK unwrap without an error",
+    stopScheduling = true;
+  };
+  const worker = async (): Promise<void> => {
+    while (!stopScheduling) {
+      if (isAborted(options.abortSignal)) {
+        recordFailure(abortError(options.abortSignal));
+        return;
+      }
+      const version = nextVersion;
+      if (version > currentVersion) return;
+      nextVersion += 1;
+      let value: unknown;
+      try {
+        value = await provider.keyFor(tenantId, version);
+        if (isAborted(options.abortSignal)) {
+          wipeByteView(value);
+          recordFailure(abortError(options.abortSignal));
+          return;
+        }
+        if (!Buffer.isBuffer(value) || value.length !== 32) {
+          wipeByteView(value);
+          recordFailure(
+            new InternalError(
+              "field-crypto: KMS provider returned an invalid 32-byte Buffer DEK",
+            ),
           );
+          return;
+        }
+        keys.set(version, value);
+      } catch (error) {
+        wipeByteView(value);
+        recordFailure(error);
+        return;
       }
-      failed = true;
-      continue;
     }
-    if (result.value.length !== 32) {
-      if (!failed) {
-        failure = new InternalError(
-          "field-crypto: KMS provider returned a DEK that is not 32 bytes",
-        );
-      }
-      failed = true;
-      result.value.fill(0);
-      continue;
-    }
-    keys.set(version, result.value);
-  }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, currentVersion) }, async () =>
+      worker(),
+    ),
+  );
 
-  if (failed) {
+  if (failure !== undefined) {
     for (const key of keys.values()) key.fill(0);
     keys.clear();
     throw failure;
@@ -151,7 +195,7 @@ export async function kmsContext(
     }
   };
 
-  return {
+  const context: DisposableFieldCryptoContext = {
     tenantId,
     deriveKey(keyVersion) {
       assertLive();
@@ -174,12 +218,24 @@ export async function kmsContext(
     dispose() {
       if (disposed) return;
       disposed = true;
+      options.abortSignal?.removeEventListener("abort", disposeOnAbort);
       for (const key of keys.values()) key.fill(0);
       keys.clear();
       for (const workingKey of workingKeys) workingKey.fill(0);
       workingKeys.clear();
     },
   };
+  const disposeOnAbort = (): void => {
+    context.dispose();
+  };
+  options.abortSignal?.addEventListener("abort", disposeOnAbort, {
+    once: true,
+  });
+  if (isAborted(options.abortSignal)) {
+    context.dispose();
+    throw abortError(options.abortSignal);
+  }
+  return context;
 }
 
 /**
@@ -191,10 +247,15 @@ export async function withKmsFieldCryptoContext<T>(
   provider: FieldKeyProvider,
   tenantId: string,
   fn: (ctx: FieldCryptoContext) => Promise<T> | T,
+  options: KmsContextOptions = {},
 ): Promise<T> {
-  const ctx = await kmsContext(provider, tenantId);
+  const ctx = await kmsContext(provider, tenantId, options);
   try {
-    return await withFieldCryptoContext(ctx, () => fn(ctx));
+    const result = await withFieldCryptoContext(ctx, () => fn(ctx));
+    if (isAborted(options.abortSignal)) {
+      throw abortError(options.abortSignal);
+    }
+    return result;
   } finally {
     ctx.dispose();
   }

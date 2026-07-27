@@ -404,61 +404,41 @@ export function createAzureKeyVaultKmsClient(
       );
     },
 
-    async scheduleKeyDeletion(
-      keyId: string,
-      options?: KmsOperationOptions,
-    ): Promise<KmsDeletionReceipt> {
+    async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
       if (keyId.length === 0) {
         throw new ValidationError(
           "field-crypto: Azure Key Vault scheduleKeyDeletion requires an explicit keyId — refusing to delete the default key",
         );
       }
       const keyName = keyFor(keyId);
-      return withKmsOperationBudget(
-        options,
-        async (abortSignal, remainingTimeoutMs) => {
-          const poller = await parsed.client.beginDeleteKey(
-            keyName,
-            remainingOptions(abortSignal, remainingTimeoutMs),
-          );
-          throwIfAborted(abortSignal);
-          const deleted = await poller.pollUntilDone(
-            remainingOptions(abortSignal, remainingTimeoutMs),
-          );
-          throwIfAborted(abortSignal);
-          const recoveryLevel = deleted.properties.recoveryLevel;
+      const poller = await parsed.client.beginDeleteKey(keyName);
+      const deleted = await poller.pollUntilDone();
+      const recoveryLevel = deleted.properties.recoveryLevel;
 
-          if (parsed.purgeOnDelete) {
-            if (
-              recoveryLevel === undefined ||
-              !recoveryLevel.includes("Purgeable")
-            ) {
-              throw new InternalError(
-                "field-crypto: Azure Key Vault deletion response did not prove the key purgeable",
-              );
-            }
-            await parsed.client.purgeDeletedKey(
-              keyName,
-              remainingOptions(abortSignal, remainingTimeoutMs),
-            );
-            throwIfAborted(abortSignal);
-            return { state: "purged", irreversible: true };
-          }
+      if (parsed.purgeOnDelete) {
+        if (
+          recoveryLevel === undefined ||
+          !recoveryLevel.includes("Purgeable")
+        ) {
+          throw new InternalError(
+            "field-crypto: Azure Key Vault deletion response did not prove the key purgeable",
+          );
+        }
+        await parsed.client.purgeDeletedKey(keyName);
+        return { state: "purged", irreversible: true };
+      }
 
-          if (recoveryLevel === "Purgeable") {
-            return { state: "destroyed", irreversible: true };
-          }
-          const scheduledFor =
-            deleted.properties.scheduledPurgeDate?.toISOString();
-          return scheduledFor === undefined
-            ? { state: "soft-deleted", irreversible: false }
-            : {
-                state: "soft-deleted",
-                irreversible: false,
-                scheduledFor,
-              };
-        },
-      );
+      if (recoveryLevel === "Purgeable") {
+        return { state: "destroyed", irreversible: true };
+      }
+      const scheduledFor = deleted.properties.scheduledPurgeDate?.toISOString();
+      return scheduledFor === undefined
+        ? { state: "soft-deleted", irreversible: false }
+        : {
+            state: "soft-deleted",
+            irreversible: false,
+            scheduledFor,
+          };
     },
   };
 }

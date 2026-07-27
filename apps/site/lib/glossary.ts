@@ -1040,63 +1040,19 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       label:
         "KmsKeyProvider.ensureProvisioned / keyFor: elect one wrapped-DEK winner and unwrap only for a request",
       lang: "ts",
-      code: `export class KmsKeyProvider implements FieldKeyProvider {
-  constructor(
-    private readonly kms: KmsClient,
-    private readonly store: WrappedKeyStore,
-    private readonly operationOptions: KmsOperationOptions,
-  ) {}
+      code: `const provider = new KmsKeyProvider(
+  kms,
+  new PgWrappedKeyStore(tx),
+  { abortSignal },
+);
+await provider.ensureProvisioned(accountId);
 
-  private async recoverWrappedVersion(
-    tenantId: string,
-    keyVersion: number,
-  ): Promise<number | undefined> {
-    const wrapped = await this.store.getWrapped(tenantId, keyVersion);
-    if (wrapped === undefined) return undefined;
-    await this.store.setCurrentVersion(tenantId, keyVersion);
-    const current = await this.store.currentVersion(tenantId);
-    if (current === undefined) throw new InternalError(/* corrupt store */);
-    return current;
-  }
-
-  // First seal recovers a committed orphan or elects one append-only version-1 winner.
-  async ensureProvisioned(tenantId: string): Promise<number> {
-    const current = await this.store.currentVersion(tenantId);
-    if (current !== undefined) return current;
-    const recovered = await this.recoverWrappedVersion(tenantId, 1);
-    if (recovered !== undefined) return recovered;
-
-    const generated = await this.kms.generateDataKey(tenantId, this.operationOptions);
-    try {
-      const inserted = await this.store.putWrappedIfAbsent(
-        tenantId,
-        1,
-        generated.wrappedKey,
-      );
-      if (inserted) {
-        await this.store.setCurrentVersion(tenantId, 1);
-        return 1;
-      }
-
-      // A prior process may have committed the wrapped DEK before its marker write.
-      await this.store.setCurrentVersion(tenantId, 1);
-      const repaired = await this.store.currentVersion(tenantId);
-      if (repaired === undefined) throw new InternalError(/* corrupt store */);
-      return repaired;
-    } finally {
-      generated.plaintextKey.fill(0);
-    }
-  }
-
-  // Request binding unwraps a stored version; its context zeroizes the result at exit.
-  async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {
-    const wrapped = await this.store.getWrapped(tenantId, keyVersion);
-    if (wrapped === undefined) {
-      throw new NotFoundError(/* no wrapped DEK for this tenant/version */);
-    }
-    return this.kms.decryptDataKey(tenantId, wrapped, this.operationOptions);
-  }
-}`,
+return withKmsFieldCryptoContext(
+  provider,
+  accountId,
+  async (ctx) => sealField(ctx, "patient.ssn", plaintext),
+  { abortSignal },
+);`,
     },
     properties: [
       {
@@ -1113,7 +1069,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "A per-scope KEK makes crypto-shred selective",
-        body: "Every KMS operation is scoped by a keyId (a tenant or subject id); scheduleKeyDeletion(keyId) destroys only that scope's KEK, so shredding one tenant's key leaves every other tenant's wrapped DEKs, and their ciphertext, unaffected.",
+        body: "Every KMS operation is scoped by a keyId (a tenant or subject id); cryptoShred validates that the destructive scope matches the recorded tenant or subject and KmsKeyProvider refuses an unprovisioned scope before the cloud call. Deleting that KEK leaves every other tenant's wrapped DEKs and ciphertext unaffected.",
       },
     ],
     faq: [
@@ -1171,15 +1127,15 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Selective because provisioning is per scope",
-        body: "KmsKeyProvider provisions one wrapped DEK version per tenant (or per subject, for a finer erasure grain), and scheduleKeyDeletion targets only that scope's KEK. Caisson refuses that scope after an accepted deletion request; every other tenant's wrapped DEKs stay live and continue to unwrap.",
+        body: "KmsKeyProvider provisions one wrapped DEK version per tenant (or per subject, for a finer erasure grain), and scheduleKeyDeletion targets only that scope's KEK. Request-time abort budgets are not attached to destructive calls; the authorized host must persist the receipt and reconcile any pending provider state.",
       },
       {
         title: "The audit record carries no PII",
         body: "cryptoShred's payload holds only opaque ids, the legal reason, the request instant, the covered version, and the provider's deletion state, never the erased data itself. It can remain in the immutable WORM chain without recreating the protected plaintext or overstating a recoverable soft delete.",
       },
       {
-        title: "Fail-closed before the deletion, not after",
-        body: "parseStrict validates the erasure request against a .strict() schema before scheduleKeyDeletion ever runs, so a malformed request throws before any provider deletion request is made.",
+        title: "Fail-closed scope and provisioning checks run first",
+        body: "parseStrict rejects malformed or mismatched tenant/subject scopes, then KmsKeyProvider requires a durable current-version marker before scheduleKeyDeletion can reach the provider. Caller authorization and durable retry reconciliation remain explicit host responsibilities.",
       },
     ],
     faq: [

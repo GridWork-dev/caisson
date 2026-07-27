@@ -85,17 +85,18 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Crypto-shred erasure without breaking the audit chain",
-        body: "cryptoShred() requests KEK deletion through the KMS port and mints an erasure.crypto-shred audit payload that carries no PII plus the provider-proven deletion state. Caisson stops using the scope immediately; permanent cryptographic erasure is claimed only when the receipt is irreversible. The WORM-anchored hash chain's committed bytes never change, so verifyChain still passes.",
+        body: "cryptoShred() requests KEK deletion through the KMS port and mints an erasure.crypto-shred audit payload that carries no PII plus the provider-proven deletion state. The authorized host must persist and reconcile recoverable receipts; permanent cryptographic erasure is claimed only when the provider proves it irreversible. The WORM-anchored hash chain's committed bytes never change, so verifyChain still passes.",
       },
     ],
     artifact: {
       label: "decryptField(), the isolation proof",
       lang: "ts",
       file: "packages/field-crypto/src/crypto.ts",
-      code: '  /**\n   * Decrypt a stored envelope for `tenantId`. The key version + algorithm come FROM the envelope\n   * (self-describing, ADR-0046), so a value written under an older version still decrypts after\n   * rotation. Throws on tamper, an AAD mismatch, or a cross-tenant key (the isolation proof).\n   */\n  async decryptField(\n    tenantId: string,\n    stored: string,\n    columnContext: string,\n  ): Promise<string> {\n    const env = parseEnvelope(stored);\n    const key = await this.provider.keyFor(tenantId, env.keyVersion);\n    const aad = buildAad(tenantId, env.keyVersion, columnContext);\n    const cipher = cipherForAlg(env.algId);\n    const plaintext = cipher.decrypt(\n      key,\n      { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },\n      aad,\n    );\n    return plaintext.toString("utf8");\n  }',
+      code: '  async decryptField(\n    tenantId: string,\n    stored: string,\n    columnContext: string,\n  ): Promise<string> {\n    const env = parseEnvelope(stored);\n    const key = await this.provider.keyFor(tenantId, env.keyVersion);\n    const aad = buildAad(tenantId, env.keyVersion, columnContext);\n    const cipher = cipherForAlg(env.algId);\n    let plaintext: Buffer | undefined;\n    try {\n      plaintext = cipher.decrypt(\n        key,\n        { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },\n        aad,\n      );\n      return plaintext.toString("utf8");\n    } finally {\n      plaintext?.fill(0);\n      key.fill(0);\n    }\n  }',
       annotations: [
         "parseEnvelope reads the key version back off the stored value itself, so a ciphertext written under an older version still decrypts after rotation, no migration job, no lookup table.",
         "buildAad binds tenant and column identity into the AEAD's additional authenticated data, decrypt under the wrong tenant or column and cipher.decrypt throws, it never returns the wrong plaintext.",
+        "The finally block zeroizes both the plaintext buffer and the unwrapped DEK on success or failure.",
       ],
     },
     faq: [
@@ -118,7 +119,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "How does this handle a GDPR or CCPA erasure request without breaking our immutable audit log?",
         answer:
-          "cryptoShred() requests deletion of the tenant or subject's key-encryption key and records the KMS receipt. Caisson refuses further use of that scope immediately; a soft-deleted or scheduled key remains provider-recoverable until its retention or cancellation window closes, and permanent erasure is recorded only after an irreversible receipt. The append-only WORM chain still verifies because it committed ciphertext, never plaintext.",
+          "cryptoShred() validates that the destructive key scope matches the recorded tenant or subject, refuses an unprovisioned scope, requests deletion, and returns the KMS receipt. The authorized host persists and reconciles a soft-deleted or scheduled key until its retention or cancellation window closes; permanent erasure is recorded only after an irreversible receipt. The append-only WORM chain still verifies because it committed ciphertext, never plaintext.",
       },
     ],
     relatedGlossary: ["hipaa-technical-safeguards", "row-level-security"],

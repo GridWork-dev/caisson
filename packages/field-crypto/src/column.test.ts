@@ -156,6 +156,84 @@ describe("request-scoped KMS context", () => {
     );
   });
 
+  test("prefetch bounds concurrent unwraps while preserving every historical version", async () => {
+    let active = 0;
+    let peak = 0;
+    const seen: number[] = [];
+    const provider: FieldKeyProvider = {
+      async currentVersion() {
+        return 9;
+      },
+      async keyFor(_tenantId, version) {
+        active += 1;
+        peak = Math.max(peak, active);
+        seen.push(version);
+        await new Promise((resolve) => setTimeout(resolve, 2));
+        active -= 1;
+        return Buffer.alloc(32, version);
+      },
+    };
+
+    const ctx = await kmsContext(provider, "acct_a");
+    try {
+      expect(peak).toBeLessThanOrEqual(4);
+      expect(seen.sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      expect(ctx.deriveKey(1)).toEqual(Buffer.alloc(32, 1));
+      expect(ctx.deriveKey(9)).toEqual(Buffer.alloc(32, 9));
+    } finally {
+      ctx.dispose();
+    }
+  });
+
+  test("a malformed provider value wipes every prior byte view before failing closed", async () => {
+    const resolvedV1 = Buffer.alloc(32, 0x61);
+    const malformed = new Uint8Array(32).fill(0x62);
+    const provider = {
+      async currentVersion() {
+        return 2;
+      },
+      async keyFor(_tenantId: string, version: number): Promise<unknown> {
+        return version === 1 ? resolvedV1 : malformed;
+      },
+    } as unknown as FieldKeyProvider;
+
+    await expect(kmsContext(provider, "acct_a")).rejects.toThrow(
+      /invalid provider DEK|32-byte Buffer/i,
+    );
+    expect(resolvedV1.equals(Buffer.alloc(32))).toBe(true);
+    expect(malformed).toEqual(new Uint8Array(32));
+  });
+
+  test("an abort disposes prefetched and escaped keys before the callback settles", async () => {
+    const unwrapped = Buffer.alloc(32, 0x71);
+    const controller = new AbortController();
+    const provider: FieldKeyProvider = {
+      async currentVersion() {
+        return 1;
+      },
+      async keyFor() {
+        return unwrapped;
+      },
+    };
+    let escaped: Buffer | undefined;
+
+    const pending = withKmsFieldCryptoContext(
+      provider,
+      "acct_a",
+      async (ctx) => {
+        escaped = ctx.deriveKey(1);
+        controller.abort(new Error("request deadline"));
+        expect(() => ctx.deriveKey(1)).toThrow(/disposed/);
+        await Promise.resolve();
+      },
+      { abortSignal: controller.signal },
+    );
+
+    await expect(pending).rejects.toThrow(/request deadline/);
+    expect(unwrapped.equals(Buffer.alloc(32))).toBe(true);
+    expect(escaped?.equals(Buffer.alloc(32))).toBe(true);
+  });
+
   test("no plaintext DEK survives the request scope", async () => {
     const unwrapped = Buffer.alloc(32, 0x52);
     const provider: FieldKeyProvider = {

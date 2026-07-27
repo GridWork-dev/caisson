@@ -69,6 +69,25 @@ function throwIfAborted(signal: AbortSignal): void {
   }
 }
 
+const AWS_KMS_KEY_ID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+const AWS_KMS_KEY_ARN =
+  /^arn:[a-z0-9-]+:kms:[a-z0-9-]+:\d{12}:key\/([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})$/i;
+
+function deletionKeyIdentity(keyId: string): {
+  readonly requestedArn?: string;
+  readonly keyUuid: string;
+} {
+  if (AWS_KMS_KEY_ID.test(keyId)) return { keyUuid: keyId.toLowerCase() };
+  const match = AWS_KMS_KEY_ARN.exec(keyId);
+  const keyUuid = match?.[1];
+  if (keyUuid === undefined) {
+    throw new ValidationError(
+      "field-crypto: AWS KMS deletion requires a canonical key ID or key ARN; aliases are not accepted",
+    );
+  }
+  return { requestedArn: keyId, keyUuid: keyUuid.toLowerCase() };
+}
+
 /** The real AWS KMS `KmsClient` (ADR-0171 / ADR-0197) — see the module-level mapping comment for the three ops. */
 export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
   if (config.keyId === undefined || config.keyId.length === 0) {
@@ -182,30 +201,43 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
       );
     },
 
-    async scheduleKeyDeletion(
-      keyId: string,
-      options?: KmsOperationOptions,
-    ): Promise<KmsDeletionReceipt> {
+    async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
       // Refuse an empty scope: falling back to the default CMK here would crypto-shred EVERY tenant.
       if (keyId.length === 0) {
         throw new ValidationError(
           "field-crypto: AWS KMS scheduleKeyDeletion requires an explicit keyId — refusing to delete the default CMK",
         );
       }
-      const { KeyState, DeletionDate } = await withKmsOperationBudget(
-        options,
-        (abortSignal) =>
-          sdk.send(
-            new ScheduleKeyDeletionCommand({
-              KeyId: keyId,
-              PendingWindowInDays: pendingWindowInDays,
-            }),
-            { abortSignal },
-          ),
+      const expected = deletionKeyIdentity(keyId);
+      const {
+        KeyId,
+        KeyState,
+        DeletionDate,
+        PendingWindowInDays: acceptedWindow,
+      } = await sdk.send(
+        new ScheduleKeyDeletionCommand({
+          KeyId: keyId,
+          PendingWindowInDays: pendingWindowInDays,
+        }),
       );
-      if (KeyState !== "PendingDeletion" || DeletionDate === undefined) {
+      const returned =
+        typeof KeyId === "string" ? AWS_KMS_KEY_ARN.exec(KeyId) : null;
+      if (
+        returned?.[1]?.toLowerCase() !== expected.keyUuid ||
+        (expected.requestedArn !== undefined && KeyId !== expected.requestedArn)
+      ) {
         throw new InternalError(
-          "field-crypto: AWS KMS did not prove PendingDeletion with a deletion date",
+          "field-crypto: AWS KMS returned an unexpected key identity for deletion",
+        );
+      }
+      if (
+        KeyState !== "PendingDeletion" ||
+        !(DeletionDate instanceof Date) ||
+        !Number.isFinite(DeletionDate.getTime()) ||
+        acceptedWindow !== pendingWindowInDays
+      ) {
+        throw new InternalError(
+          "field-crypto: AWS KMS did not prove PendingDeletion with the requested retention window and deletion date",
         );
       }
       return {

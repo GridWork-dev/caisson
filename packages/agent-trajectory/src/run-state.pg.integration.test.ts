@@ -98,7 +98,7 @@ describe("createPgRunStateStore — CAS transitions over a real Postgres", () =>
 
     const lazyRunId = randomUUID();
     const lazy = createPgRunStateStore(tp.pg, accountId, async (fn) =>
-      fn(cryptoCtxFor(otherAccountId)),
+      fn(tp.pg, cryptoCtxFor(otherAccountId)),
     );
     await expect(
       lazy.park({

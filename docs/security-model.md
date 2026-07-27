@@ -27,7 +27,7 @@ re-verify against.
 | Audit chain (`anchorChain`/`verifyChain`/`canonicalize`)               | `packages/kernel` (`audit-chain.ts`)     | (in kernel)                                     | BUILT |
 | Append-only versioning (`validateVersionSet`)                          | `packages/kernel` (`versioning.ts`)      | (in kernel)                                     | BUILT |
 | Fail-closed RLS (`withTenant`)                                         | `packages/tenancy-rls`                   | 2 / 1                                           | BUILT |
-| Field-crypto (HKDF + AES-256-GCM + envelope + crypto-shred + KMS port) | `packages/field-crypto`                  | 13 / 9                                          | BUILT |
+| Field-crypto (HKDF + AES-256-GCM + envelope + crypto-shred + KMS port) | `packages/field-crypto`                  | 19 / 14                                         | BUILT |
 | Credit gate (debit-before-spend, 402)                                  | `packages/credits`                       | 3 / 2                                           | BUILT |
 | Billing webhook (HMAC)                                                 | `packages/billing`                       | 4 / 1                                           | BUILT |
 | License/entitlement verify (Ed25519 offline)                           | `packages/license-verify`                | 4 / 2                                           | BUILT |
@@ -143,7 +143,9 @@ exact relative paths from the repo root.
     KMS path stores a per-tenant/subject wrapped DEK and enables GDPR Art.17 erasure via
     `scheduleKeyDeletion` plus an `erasure.crypto-shred` audit event. **BINDING:** any PII inside a
     chained audit payload is committed as **ciphertext, not plaintext**, so `verifyChain` survives
-    key destruction.
+    key destruction. The low-level primitive validates the scope against the recorded tenant/subject
+    and refuses an unprovisioned scope; the authorized host persists and reconciles recoverable
+    deletion receipts instead of treating a request retry as proof of idempotent erasure.
   - **KMS port (`FieldKeyProvider`):** `DerivedKeyProvider` serves zero-infrastructure dev/self-hosted
     deployments; `KmsKeyProvider` drives the shipped AWS, GCP, and Azure envelope-encryption clients.
     Caisson's hosted site requires Azure, prefetches historical DEKs into a disposable request
@@ -155,7 +157,7 @@ exact relative paths from the repo root.
   `knowledge/decisions/ADR-0387-field-crypto-kms-backing-and-pre-deploy-arming-pass.md` (hosted
   Azure backing) · `knowledge/decisions/ADR-0389-request-scoped-prefetch-all-kms-context.md`
   (request lifetime).
-  Impl: `packages/field-crypto/src/{derive,cipher,envelope,aad,crypto-shred,encrypt-field,column,provider,kms}.ts`.
+  Impl: `packages/field-crypto/src/{derive,cipher,envelope,aad,crypto-shred,encrypt-field,column,provider,kms,kms-port,kms-budget,kms-aws,kms-gcp,kms-azure,schema,store.pg,crypto,registry,index}.ts`.
 
 ### 4. Evidence-pack signing
 

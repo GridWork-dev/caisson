@@ -13,11 +13,12 @@ import {
   createSiteAzureKmsClient,
   siteAzureKeyName,
   withSiteKmsFieldCryptoContext,
+  withSiteKmsFieldCryptoTransaction,
   type SiteAzureKeyClient,
   type SiteAzureKmsDependencies,
 } from "./field-crypto-kms.ts";
 import { getDb, withTenant } from "./db.ts";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 
 const ENV = {
   AZURE_KEY_VAULT_URL: "https://caisson-test.vault.azure.net",
@@ -346,8 +347,8 @@ describe("site KMS request context", () => {
     const lockedTx: TenantExecutor = {
       async query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }> {
         lockQueries.push({ sql, params });
-        if (sql.includes("pg_advisory_xact_lock")) {
-          throw new Error("canceling statement due to lock timeout");
+        if (sql.includes("pg_try_advisory_xact_lock")) {
+          throw new Error("stop after first lock attempt");
         }
         return { rows: [] };
       },
@@ -361,12 +362,85 @@ describe("site KMS request context", () => {
         requestKms().client,
         25,
       ),
-    ).rejects.toThrow(/lock timeout/i);
+    ).rejects.toThrow(/first lock attempt/i);
     expect(lockQueries).toHaveLength(2);
     expect(lockQueries[0]?.sql).toContain("set_config");
+    expect(lockQueries[0]?.sql).toContain("statement_timeout");
     expect(lockQueries[0]?.sql).toContain("lock_timeout");
-    expect(lockQueries[0]?.params).toEqual(["25ms"]);
-    expect(lockQueries[1]?.sql).toContain("pg_advisory_xact_lock");
+    expect(String(lockQueries[0]?.params?.[0])).toMatch(/^\d+ms$/);
+    expect(lockQueries[1]?.sql).toContain("pg_try_advisory_xact_lock");
+  });
+
+  test("does not issue an advisory-lock query after deadline setup consumes the budget", async () => {
+    const queries: string[] = [];
+    const tx: TenantExecutor = {
+      async query<T>(sql: string): Promise<{ rows: T[] }> {
+        queries.push(sql);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return { rows: [] };
+      },
+      async exec() {},
+    };
+
+    await expect(
+      withSiteKmsFieldCryptoContext(
+        tx,
+        "acct-expired-before-lock",
+        async () => undefined,
+        requestKms().client,
+        5,
+      ),
+    ).rejects.toThrow(/exceeded 5ms/i);
+    expect(queries.some((sql) => sql.includes("pg_advisory_xact_lock"))).toBe(
+      false,
+    );
+  });
+
+  test("uses non-blocking advisory-lock attempts under the remaining statement budget", async () => {
+    const queries: Array<{ sql: string; params?: unknown[] }> = [];
+    const tx: TenantExecutor = {
+      async query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }> {
+        queries.push({ sql, params });
+        if (sql.includes("set_config")) {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          return { rows: [] };
+        }
+        if (sql.includes("pg_try_advisory_xact_lock")) {
+          throw new Error("stop after proving query shape");
+        }
+        return { rows: [] };
+      },
+      async exec() {},
+    };
+
+    await expect(
+      withSiteKmsFieldCryptoContext(
+        tx,
+        "acct-remaining-lock-budget",
+        async () => undefined,
+        requestKms().client,
+        100,
+      ),
+    ).rejects.toThrow(/proving query shape/);
+    const config = queries.findLast(({ sql }) => sql.includes("set_config"));
+    const configured = Number.parseInt(
+      String(config?.params?.[0]).replace("ms", ""),
+      10,
+    );
+    expect(config?.sql).toContain("statement_timeout");
+    expect(config?.sql).toContain("lock_timeout");
+    expect(configured).toBeGreaterThan(0);
+    expect(configured).toBeLessThan(100);
+    expect(
+      queries.some(({ sql }) => sql.includes("pg_try_advisory_xact_lock")),
+    ).toBe(true);
+    expect(
+      queries.some(
+        ({ sql }) =>
+          sql.includes("pg_advisory_xact_lock") &&
+          !sql.includes("pg_try_advisory_xact_lock"),
+      ),
+    ).toBe(false);
   });
 
   test("provisions on first seal and zeroizes every unwrapped DEK at scope exit", async () => {
@@ -392,6 +466,43 @@ describe("site KMS request context", () => {
     ]);
     expect(envelope.length).toBeGreaterThan(0);
     expect(runtime.unwrapped).toHaveLength(1);
+    expect(runtime.unwrapped[0]?.every((byte) => byte === 0)).toBe(true);
+  });
+
+  test("binds tenant state and wrapped-key persistence inside one site transaction", async () => {
+    const runtime = requestKms();
+    const accountId = "acct-site-kms-atomic";
+    const platformDb = await getDb();
+    let transactionCalls = 0;
+    const db: Transactor = {
+      transaction<T>(fn: (tx: TenantExecutor) => Promise<T>): Promise<T> {
+        transactionCalls += 1;
+        return platformDb.transaction(fn);
+      },
+    };
+
+    const result = await withSiteKmsFieldCryptoTransaction(
+      db,
+      accountId,
+      async (tx, ctx) => {
+        const scoped = await tx.query<{ accountId: string }>(
+          `SELECT current_setting('app.current_account') AS "accountId"`,
+        );
+        return {
+          accountId: scoped.rows[0]?.accountId,
+          envelope: sealField(ctx, "run.state", "atomic-secret"),
+        };
+      },
+      runtime.client,
+    );
+
+    expect(transactionCalls).toBe(1);
+    expect(result.accountId).toBe(accountId);
+    expect(result.envelope.length).toBeGreaterThan(0);
+    expect(runtime.calls).toEqual([
+      `generate:${accountId}:1`,
+      `unwrap:${accountId}:1`,
+    ]);
     expect(runtime.unwrapped[0]?.every((byte) => byte === 0)).toBe(true);
   });
 
@@ -466,7 +577,7 @@ describe("site KMS request context", () => {
 
   test("a stalled unwrap is aborted by the request deadline and releases the transaction", async () => {
     let callbackCalled = false;
-    let observedTimeout: number | undefined;
+    let observedAbortSignal = false;
     const client: KmsClient = {
       async generateDataKey() {
         return {
@@ -475,13 +586,13 @@ describe("site KMS request context", () => {
         };
       },
       async decryptDataKey(_scope, _wrappedKey, options) {
-        observedTimeout = options?.timeoutMs;
         return new Promise<Buffer>((_resolve, reject) => {
           const signal = options?.abortSignal;
           if (signal === undefined) {
             reject(new Error("missing abort signal"));
             return;
           }
+          observedAbortSignal = true;
           signal.addEventListener("abort", () => reject(signal.reason), {
             once: true,
           });
@@ -509,8 +620,7 @@ describe("site KMS request context", () => {
     ).rejects.toThrow(/exceeded 10ms/);
 
     expect(callbackCalled).toBe(false);
-    expect(observedTimeout).toBeGreaterThan(0);
-    expect(observedTimeout).toBeLessThanOrEqual(10);
+    expect(observedAbortSignal).toBe(true);
     await expect(
       withTenant(db, accountId, (tx) => tx.query("SELECT 1")),
     ).resolves.toBeDefined();

@@ -132,6 +132,85 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     winner2.plaintextKey.fill(0);
   });
 
+  test("a CAS-loser marker repair returns a concurrent durable advance, never stale version 1", async () => {
+    const store = new InMemoryWrappedKeyStore();
+    const local = new LocalKmsClient(KEK);
+    const winner1 = await local.generateDataKey("acct_a");
+    const winner3 = await local.generateDataKey("acct_a");
+    await store.putWrapped("acct_a", 1, winner1.wrappedKey);
+    await store.putWrapped("acct_a", 3, winner3.wrappedKey);
+    await store.setCurrentVersion("acct_a", 3);
+
+    let currentReads = 0;
+    const racingStore: WrappedKeyStore = {
+      async getWrapped() {
+        return undefined;
+      },
+      async putWrappedIfAbsent() {
+        return false;
+      },
+      putWrapped: store.putWrapped.bind(store),
+      async currentVersion(tenantId) {
+        currentReads += 1;
+        if (currentReads <= 2) return undefined;
+        return store.currentVersion(tenantId);
+      },
+      async setCurrentVersion(tenantId, keyVersion) {
+        await store.setCurrentVersion(tenantId, 3);
+        await store.setCurrentVersion(tenantId, keyVersion);
+      },
+    };
+    const provider = new KmsKeyProvider(local, racingStore);
+
+    expect(await provider.ensureProvisioned("acct_a")).toBe(3);
+    expect(currentReads).toBe(3);
+    expect(await store.currentVersion("acct_a")).toBe(3);
+    winner1.plaintextKey.fill(0);
+    winner3.plaintextKey.fill(0);
+  });
+
+  test("generated plaintext is wiped when the request aborts during durable marker work", async () => {
+    const plaintextKey = Buffer.alloc(32, 0x7a);
+    const controller = new AbortController();
+    let wipedInsideStore = false;
+    const store: WrappedKeyStore = {
+      async getWrapped() {
+        return undefined;
+      },
+      async putWrappedIfAbsent() {
+        controller.abort(new Error("request deadline"));
+        wipedInsideStore = plaintextKey.equals(Buffer.alloc(32));
+        await Promise.resolve();
+        return true;
+      },
+      async putWrapped() {},
+      async currentVersion() {
+        return undefined;
+      },
+      async setCurrentVersion() {},
+    };
+    const provider = new KmsKeyProvider(
+      {
+        async generateDataKey() {
+          return { plaintextKey, wrappedKey: Buffer.from([1]) };
+        },
+        async decryptDataKey() {
+          throw new Error("not used");
+        },
+        async scheduleKeyDeletion() {
+          return { state: "soft-deleted", irreversible: false };
+        },
+      },
+      store,
+      { abortSignal: controller.signal, timeoutMs: 1_000 },
+    );
+    const pending = provider.ensureProvisioned("acct_a");
+
+    await expect(pending).rejects.toThrow(/request deadline/);
+    expect(wipedInsideStore).toBe(true);
+    expect(plaintextKey.equals(Buffer.alloc(32))).toBe(true);
+  });
+
   test("recovers an append-only winner after the version marker write fails", async () => {
     const store = new InMemoryWrappedKeyStore();
     const local = new LocalKmsClient(KEK);
@@ -470,6 +549,28 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     await expect(provider.currentVersion("acct_a")).rejects.toThrow(
       /no provisioned/,
     );
+  });
+
+  test("refuses destructive deletion for an unprovisioned scope before calling KMS", async () => {
+    let deletionCalls = 0;
+    const client: KmsClient = {
+      async generateDataKey() {
+        throw new Error("not used");
+      },
+      async decryptDataKey() {
+        throw new Error("not used");
+      },
+      async scheduleKeyDeletion() {
+        deletionCalls += 1;
+        return { state: "soft-deleted", irreversible: false };
+      },
+    };
+    const provider = new KmsKeyProvider(client, new InMemoryWrappedKeyStore());
+
+    await expect(provider.scheduleKeyDeletion("acct_a")).rejects.toThrow(
+      /no provisioned KMS key/i,
+    );
+    expect(deletionCalls).toBe(0);
   });
 
   test("round-trips a field through TenantFieldCrypto over KMS", async () => {

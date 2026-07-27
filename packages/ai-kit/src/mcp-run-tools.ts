@@ -20,7 +20,7 @@
 import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";
 import type { AiSettings } from "@caisson/ai-config";
-import type { Transactor } from "@caisson/tenancy-rls";
+import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import {
   createPgRunStateStore,
   createPgTrajectoryStore,
@@ -52,15 +52,15 @@ export interface RunToolsDeps {
   readonly maxSteps: number;
   readonly creditBudget: number;
   readonly maxOutputTokens?: number;
-  /** Binds the request-local field-crypto context sealing `parked_state` for the callback lifetime. */
+  /** Binds one tenant transaction plus the request-local context sealing `parked_state`. */
   readonly fieldCryptoContext: FieldCryptoContextRunner;
 }
 
-/** Async bind-time boundary supporting either a disposable KMS context or the dev derived adapter. */
+/** Async bind-time boundary supplying one scoped executor and disposable/dev crypto context. */
 export interface FieldCryptoContextRunner {
   <T>(
     accountId: string,
-    fn: (ctx: FieldCryptoContext) => Promise<T>,
+    fn: (tx: TenantExecutor, ctx: FieldCryptoContext) => Promise<T>,
   ): Promise<T>;
 }
 

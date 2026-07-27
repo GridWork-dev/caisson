@@ -184,15 +184,33 @@ describe("cryptoShred (erasure ⟂ append-only chain — ADR-0055/0052, TM-F/TM-
     expect(receipt.shreddedThroughVersion).toBe(2);
   });
 
-  test("shredding a never-provisioned scope is an idempotent no-op success (version 0)", async () => {
+  test("refuses a never-provisioned scope before touching an external destructive key", async () => {
     const provider = freshProvider();
-    const receipt = await cryptoShred(provider, {
-      keyScopeId: "subject_ghost",
+    await expect(
+      cryptoShred(provider, {
+        keyScopeId: "subject_ghost",
+        tenantId: "tenant_1",
+        subjectId: "subject_ghost",
+        reason: "gdpr-art17",
+        occurredAt: OCCURRED_AT,
+      }),
+    ).rejects.toThrow(/no provisioned KMS key/i);
+  });
+
+  test("rejects a destructive scope that is not bound to the recorded tenant or subject", async () => {
+    const provider = freshProvider();
+    await provider.provision("subject_a");
+
+    const rejected = cryptoShred(provider, {
+      keyScopeId: "subject_a",
       tenantId: "tenant_1",
-      subjectId: "subject_ghost",
+      subjectId: "subject_b",
       reason: "gdpr-art17",
       occurredAt: OCCURRED_AT,
     });
-    expect(receipt.shreddedThroughVersion).toBe(0);
+    await expect(rejected).rejects.toBeInstanceOf(ValidationError);
+    const stillLive = await provider.keyFor("subject_a", 1);
+    expect(stillLive).toHaveLength(32);
+    stillLive.fill(0);
   });
 });

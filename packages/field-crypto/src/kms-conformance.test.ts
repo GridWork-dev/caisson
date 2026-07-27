@@ -20,6 +20,7 @@ import {
 import { aesGcm } from "./cipher.ts";
 
 const WRAP_AAD = Buffer.from("kms-conformance-fake-aws-wrap");
+const CONFORMANCE_SCOPE = "1234abcd-12ab-34cd-56ef-1234567890ab";
 
 /**
  * A STATEFUL fake AWS KMS backend — genuinely AEAD-wraps/unwraps (not canned responses), so the
@@ -62,8 +63,10 @@ function fakeAwsBackend(): KmsSendable {
       if (command instanceof ScheduleKeyDeletionCommand) {
         shredded = true;
         return {
+          KeyId: `arn:aws:kms:us-east-1:111122223333:key/${String(command.input.KeyId)}`,
           KeyState: "PendingDeletion",
           DeletionDate: new Date("2026-08-01T00:00:00.000Z"),
+          PendingWindowInDays: command.input.PendingWindowInDays,
         };
       }
       throw new Error("kms-conformance: unexpected command");
@@ -251,25 +254,29 @@ for (const { name, state, irreversible, client } of drivers) {
   describe(`KmsClient port conformance: ${name}`, () => {
     test("generateDataKey wraps (the wrapped form is not the plaintext DEK)", async () => {
       const kms = client();
-      const { plaintextKey, wrappedKey } = await kms.generateDataKey("acct-a");
+      const { plaintextKey, wrappedKey } =
+        await kms.generateDataKey(CONFORMANCE_SCOPE);
       expect(plaintextKey.length).toBe(32);
       expect(wrappedKey.equals(plaintextKey)).toBe(false);
     });
 
     test("decryptDataKey round-trips a wrapped DEK back to its plaintext", async () => {
       const kms = client();
-      const { plaintextKey, wrappedKey } = await kms.generateDataKey("acct-a");
-      const unwrapped = await kms.decryptDataKey("acct-a", wrappedKey);
+      const { plaintextKey, wrappedKey } =
+        await kms.generateDataKey(CONFORMANCE_SCOPE);
+      const unwrapped = await kms.decryptDataKey(CONFORMANCE_SCOPE, wrappedKey);
       expect(unwrapped.equals(plaintextKey)).toBe(true);
     });
 
     test("scheduleKeyDeletion is fail-closed: the scope is unusable after", async () => {
       const kms = client();
-      const { wrappedKey } = await kms.generateDataKey("acct-a");
-      const receipt = await kms.scheduleKeyDeletion("acct-a");
+      const { wrappedKey } = await kms.generateDataKey(CONFORMANCE_SCOPE);
+      const receipt = await kms.scheduleKeyDeletion(CONFORMANCE_SCOPE);
       expect(receipt).toMatchObject({ state, irreversible });
-      await expect(kms.decryptDataKey("acct-a", wrappedKey)).rejects.toThrow();
-      await expect(kms.generateDataKey("acct-a")).rejects.toThrow();
+      await expect(
+        kms.decryptDataKey(CONFORMANCE_SCOPE, wrappedKey),
+      ).rejects.toThrow();
+      await expect(kms.generateDataKey(CONFORMANCE_SCOPE)).rejects.toThrow();
     });
 
     test("scheduleKeyDeletion refuses an empty keyId (no default-scope crypto-shred, ADR-0197)", async () => {

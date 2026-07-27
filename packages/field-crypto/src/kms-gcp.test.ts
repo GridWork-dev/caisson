@@ -5,6 +5,7 @@ import { createGcpKmsClient, type GcpKmsSendable } from "./kms-gcp.ts";
 interface FakeVersion {
   name?: string;
   state?: string | number;
+  reimportEligible?: boolean;
 }
 
 /**
@@ -201,6 +202,49 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
     });
   });
 
+  test("never reports a re-importable destroyed version as irreversible", async () => {
+    const parent = "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a";
+    const { client: kms } = fakeGcpKms({
+      listCryptoKeyVersions: () => [
+        {
+          name: `${parent}/cryptoKeyVersions/1`,
+          state: "DESTROYED",
+          reimportEligible: true,
+        },
+      ],
+    });
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: kms,
+    });
+
+    await expect(client.scheduleKeyDeletion(parent)).rejects.toThrow(
+      /re-import|irreversible/i,
+    );
+  });
+
+  test("requires explicit non-reimportability before reporting destroyed as irreversible", async () => {
+    const parent = "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a";
+    const { client: kms } = fakeGcpKms({
+      listCryptoKeyVersions: () => [
+        {
+          name: `${parent}/cryptoKeyVersions/1`,
+          state: "DESTROYED",
+          reimportEligible: false,
+        },
+      ],
+    });
+    const client = createGcpKmsClient({
+      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
+      client: kms,
+    });
+
+    await expect(client.scheduleKeyDeletion(parent)).resolves.toEqual({
+      state: "destroyed",
+      irreversible: true,
+    });
+  });
+
   test("rejects an out-of-parent version before issuing any destructive call", async () => {
     const parent = "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a";
     const { client: kms, seen } = fakeGcpKms({
@@ -294,7 +338,7 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
     });
   });
 
-  test("every GCP operation receives the remaining caller budget", async () => {
+  test("request-time budgets reach reversible GCP operations but never destructive deletion", async () => {
     const { client: kms, seen } = fakeGcpKms({
       encrypt: () => ({ ciphertext: new Uint8Array([1, 2, 3]) }),
       decrypt: () => ({ plaintext: new Uint8Array(32).fill(9) }),
@@ -307,61 +351,20 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
 
     await client.generateDataKey("tenant-a", options);
     await client.decryptDataKey("tenant-a", Buffer.from([1, 2, 3]), options);
-    await client.scheduleKeyDeletion("tenant-a", options);
+    await client.scheduleKeyDeletion("tenant-a");
 
     expect(seen).toHaveLength(4);
-    for (const call of seen) {
+    for (const call of seen.slice(0, 2)) {
       const timeout = (call.options as { timeout?: number }).timeout;
       expect(timeout).toBeGreaterThan(0);
       expect(timeout).toBeLessThanOrEqual(1_234);
     }
+    expect(seen[2]?.options).toEqual({ autoPaginate: false });
+    expect(seen[3]?.options).toBeUndefined();
   });
 
-  test("multi-RPC GCP deletion passes a diminishing timeout to later calls", async () => {
-    const base = fakeGcpKms({});
-    const client = createGcpKmsClient({
-      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
-      client: {
-        ...base.client,
-        listCryptoKeyVersions: (async (
-          request: { parent?: unknown },
-          options?: unknown,
-        ) => {
-          base.seen.push({
-            method: "listCryptoKeyVersions",
-            request,
-            options,
-          });
-          await new Promise((resolve) => setTimeout(resolve, 20));
-          return [
-            [
-              {
-                name: `${String(request.parent)}/cryptoKeyVersions/1`,
-                state: "ENABLED",
-              },
-            ],
-            null,
-            {},
-          ];
-        }) as unknown as GcpKmsSendable["listCryptoKeyVersions"],
-      },
-    });
-
-    await client.scheduleKeyDeletion("tenant-a", { timeoutMs: 1_000 });
-
-    const listTimeout = (
-      base.seen.find((call) => call.method === "listCryptoKeyVersions")
-        ?.options as { timeout: number }
-    ).timeout;
-    const destroyTimeout = (
-      base.seen.find((call) => call.method === "destroyCryptoKeyVersion")
-        ?.options as { timeout: number }
-    ).timeout;
-    expect(destroyTimeout).toBeLessThan(listTimeout);
-  });
-
-  test("manual GCP pagination consumes one diminishing budget across every page and destroy", async () => {
-    const seen: { method: string; timeout: number }[] = [];
+  test("manual GCP pagination visits every page before destroying live versions", async () => {
+    const seen: string[] = [];
     const parent = "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a";
     const base = fakeGcpKms({}).client;
     const client = createGcpKmsClient({
@@ -370,14 +373,10 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
         ...base,
         listCryptoKeyVersions: (async (
           request: { parent?: string; pageToken?: string },
-          options?: { timeout?: number; autoPaginate?: boolean },
+          options?: { autoPaginate?: boolean },
         ) => {
-          seen.push({
-            method: `list:${request.pageToken ?? "first"}`,
-            timeout: options?.timeout ?? 0,
-          });
+          seen.push(`list:${request.pageToken ?? "first"}`);
           expect(options?.autoPaginate).toBe(false);
-          await new Promise((resolve) => setTimeout(resolve, 10));
           if (request.pageToken === undefined) {
             return [
               [{ name: `${parent}/cryptoKeyVersions/1`, state: "ENABLED" }],
@@ -393,12 +392,10 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
         }) as unknown as GcpKmsSendable["listCryptoKeyVersions"],
         destroyCryptoKeyVersion: (async (
           _request: { name?: string },
-          options?: { timeout?: number },
+          options?: unknown,
         ) => {
-          seen.push({
-            method: "destroy",
-            timeout: options?.timeout ?? 0,
-          });
+          seen.push("destroy");
+          expect(options).toBeUndefined();
           return [
             {
               name: _request.name,
@@ -411,46 +408,9 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
       },
     });
 
-    await client.scheduleKeyDeletion(parent, { timeoutMs: 1_000 });
+    await client.scheduleKeyDeletion(parent);
 
-    expect(seen.map(({ method }) => method)).toEqual([
-      "list:first",
-      "list:next",
-      "destroy",
-    ]);
-    expect(seen[1]?.timeout).toBeLessThan(seen[0]?.timeout ?? 0);
-    expect(seen[2]?.timeout).toBeLessThan(seen[1]?.timeout ?? 0);
-  });
-
-  test("GCP deletion starts no later page or destroy after the shared budget expires", async () => {
-    const seen: string[] = [];
-    const base = fakeGcpKms({}).client;
-    const client = createGcpKmsClient({
-      cryptoKeyName: "projects/p/locations/l/keyRings/r/cryptoKeys/DEFAULT",
-      client: {
-        ...base,
-        listCryptoKeyVersions: (async () => {
-          seen.push("list:first");
-          await new Promise((resolve) => setTimeout(resolve, 20));
-          return [
-            [{ name: "tenant-a/cryptoKeyVersions/1", state: "ENABLED" }],
-            { parent: "tenant-a", pageToken: "next" },
-            {},
-          ];
-        }) as unknown as GcpKmsSendable["listCryptoKeyVersions"],
-        destroyCryptoKeyVersion: (async (request: { name?: string }) => {
-          seen.push("destroy");
-          return [{ name: request.name, state: "DESTROY_SCHEDULED" }, {}, {}];
-        }) as unknown as GcpKmsSendable["destroyCryptoKeyVersion"],
-      },
-    });
-
-    await expect(
-      client.scheduleKeyDeletion("tenant-a", { timeoutMs: 5 }),
-    ).rejects.toThrow(/exceeded 5ms/);
-    await new Promise((resolve) => setTimeout(resolve, 30));
-
-    expect(seen).toEqual(["list:first"]);
+    expect(seen).toEqual(["list:first", "list:next", "destroy"]);
   });
 
   test("GCP generate aborts promptly and zeroizes its transient plaintext DEK", async () => {

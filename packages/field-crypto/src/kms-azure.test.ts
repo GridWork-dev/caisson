@@ -493,8 +493,8 @@ describe("createAzureKeyVaultKmsClient", () => {
     expect(sdkPlaintext.equals(Buffer.alloc(32))).toBe(true);
   });
 
-  test("shares one diminishing deadline across Azure delete, poll, and purge", async () => {
-    const seenTimeouts: number[] = [];
+  test("does not attach request-time abort budgets to Azure delete, poll, or purge", async () => {
+    const seenOptions: unknown[] = [];
     const { client: sdk } = fakeAzureKeyVault({
       recoveryLevel: "Recoverable+Purgeable",
     });
@@ -505,12 +505,10 @@ describe("createAzureKeyVaultKmsClient", () => {
       client: {
         ...sdk,
         async beginDeleteKey(_keyName, options) {
-          seenTimeouts.push(options?.timeoutMs ?? 0);
-          await new Promise((resolve) => setTimeout(resolve, 5));
+          seenOptions.push(options);
           return {
             async pollUntilDone(pollOptions) {
-              seenTimeouts.push(pollOptions?.timeoutMs ?? 0);
-              await new Promise((resolve) => setTimeout(resolve, 5));
+              seenOptions.push(pollOptions);
               return {
                 properties: {
                   recoveryLevel: "Recoverable+Purgeable",
@@ -521,16 +519,14 @@ describe("createAzureKeyVaultKmsClient", () => {
           };
         },
         async purgeDeletedKey(_keyName, options) {
-          seenTimeouts.push(options?.timeoutMs ?? 0);
+          seenOptions.push(options);
         },
       },
     });
 
-    await client.scheduleKeyDeletion("tenant-a", { timeoutMs: 1_000 });
+    await client.scheduleKeyDeletion("tenant-a");
 
-    expect(seenTimeouts).toHaveLength(3);
-    expect(seenTimeouts[1]).toBeLessThan(seenTimeouts[0] ?? 0);
-    expect(seenTimeouts[2]).toBeLessThan(seenTimeouts[1] ?? 0);
+    expect(seenOptions).toEqual([undefined, undefined, undefined]);
   });
 
   test("rejects an unwrap identity mismatch and still zeroizes the SDK plaintext", async () => {

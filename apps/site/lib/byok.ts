@@ -181,10 +181,11 @@ export async function submitTenantKey(
   await withTenant(db, accountId, async (tx) => {
     const persist = async (
       ctx: Parameters<typeof putTenantProviderKey>[1],
+      exec = tx,
     ): Promise<void> => {
       keyVersion = ctx.currentVersion();
-      await putTenantProviderKey(tx, ctx, provider, apiKey);
-      await tx.query(
+      await putTenantProviderKey(exec, ctx, provider, apiKey);
+      await exec.query(
         `INSERT INTO byok_key_meta (id, account_id, provider, last4, key_version, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, now(), now())
          ON CONFLICT (account_id, provider)
@@ -194,7 +195,9 @@ export async function submitTenantKey(
     };
 
     if (process.env.NODE_ENV === "production") {
-      await withSiteKmsFieldCryptoContext(tx, accountId, persist);
+      await withSiteKmsFieldCryptoContext(tx, accountId, (ctx, budgetedTx) =>
+        persist(ctx, budgetedTx),
+      );
       return;
     }
     const ctx = derivedContext(getDevFieldKeyProvider(), accountId);

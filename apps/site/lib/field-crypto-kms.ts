@@ -18,7 +18,11 @@ import {
   withKmsFieldCryptoContext,
 } from "@caisson/field-crypto";
 import { ConfigError, InternalError, strictObject } from "@caisson/kernel";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+import {
+  withTenant,
+  type TenantExecutor,
+  type Transactor,
+} from "@caisson/tenancy-rls";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 
@@ -387,6 +391,40 @@ export function getSiteAzureKmsClient(): KmsClient {
 /** One overall Azure KMS deadline per tenant request, including SDK retries and credential work. */
 export const SITE_KMS_REQUEST_TIMEOUT_MS = 15_000;
 
+function siteKmsDeadlineError(timeoutMs: number): InternalError {
+  return new InternalError(
+    `site field-crypto: Azure KMS request exceeded ${String(timeoutMs)}ms`,
+  );
+}
+
+function throwIfSiteKmsAborted(signal: AbortSignal, timeoutMs: number): void {
+  if (!signal.aborted) return;
+  throw signal.reason instanceof Error
+    ? signal.reason
+    : siteKmsDeadlineError(timeoutMs);
+}
+
+async function waitForSiteKmsLockRetry(
+  signal: AbortSignal,
+  waitMs: number,
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(signal.reason);
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, waitMs);
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 /**
  * Bind a production tenant transaction to its KMS provider.
  *
@@ -397,7 +435,7 @@ export const SITE_KMS_REQUEST_TIMEOUT_MS = 15_000;
 export async function withSiteKmsFieldCryptoContext<T>(
   tx: TenantExecutor,
   accountId: string,
-  fn: (ctx: FieldCryptoContext) => Promise<T>,
+  fn: (ctx: FieldCryptoContext, tx: TenantExecutor) => Promise<T>,
   kms: KmsClient = getSiteAzureKmsClient(),
   timeoutMs: number = SITE_KMS_REQUEST_TIMEOUT_MS,
 ): Promise<T> {
@@ -406,40 +444,97 @@ export async function withSiteKmsFieldCryptoContext<T>(
       "site field-crypto: KMS request timeout must be a positive integer",
     );
   }
-  const startedAt = performance.now();
+  const deadlineAt = performance.now() + timeoutMs;
   const controller = new AbortController();
   const timer = setTimeout(() => {
-    controller.abort(
-      new InternalError(
-        `site field-crypto: Azure KMS request exceeded ${String(timeoutMs)}ms`,
-      ),
-    );
+    controller.abort(siteKmsDeadlineError(timeoutMs));
   }, timeoutMs);
-  try {
-    await tx.query(`SELECT set_config('lock_timeout', $1, true)`, [
-      `${String(timeoutMs)}ms`,
-    ]);
-    await tx.query(`SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`, [
-      "caisson:field-crypto",
-      accountId,
-    ]);
-    if (controller.signal.aborted) {
-      const reason = controller.signal.reason;
-      throw reason instanceof Error
-        ? reason
-        : new InternalError(
-            `site field-crypto: Azure KMS request exceeded ${String(timeoutMs)}ms`,
-          );
+  const remainingMs = (): number => {
+    throwIfSiteKmsAborted(controller.signal, timeoutMs);
+    const remaining = Math.floor(deadlineAt - performance.now());
+    if (remaining < 1) {
+      controller.abort(siteKmsDeadlineError(timeoutMs));
+      throw siteKmsDeadlineError(timeoutMs);
     }
-    const elapsedMs = Math.ceil(performance.now() - startedAt);
-    const remainingMs = Math.max(1, timeoutMs - elapsedMs);
-    const provider = new KmsKeyProvider(kms, new PgWrappedKeyStore(tx), {
-      abortSignal: controller.signal,
-      timeoutMs: remainingMs,
-    });
+    return remaining;
+  };
+  const configureDatabaseBudget = async (): Promise<void> => {
+    const timeout = `${String(remainingMs())}ms`;
+    await tx.query(
+      `SELECT set_config('statement_timeout', $1, true), set_config('lock_timeout', $1, true)`,
+      [timeout],
+    );
+    throwIfSiteKmsAborted(controller.signal, timeoutMs);
+  };
+  const budgetedTx: TenantExecutor = {
+    async query<R = Record<string, unknown>>(
+      sql: string,
+      params?: unknown[],
+    ): Promise<{ rows: R[] }> {
+      await configureDatabaseBudget();
+      const result = await tx.query<R>(sql, params);
+      throwIfSiteKmsAborted(controller.signal, timeoutMs);
+      return result;
+    },
+    async exec(sql: string): Promise<unknown> {
+      await configureDatabaseBudget();
+      const result = await tx.exec(sql);
+      throwIfSiteKmsAborted(controller.signal, timeoutMs);
+      return result;
+    },
+  };
+  try {
+    for (;;) {
+      await configureDatabaseBudget();
+      const lock = await tx.query<{ acquired: boolean }>(
+        `SELECT pg_try_advisory_xact_lock(hashtext($1), hashtext($2)) AS acquired`,
+        ["caisson:field-crypto", accountId],
+      );
+      throwIfSiteKmsAborted(controller.signal, timeoutMs);
+      if (lock.rows[0]?.acquired === true) break;
+      await waitForSiteKmsLockRetry(
+        controller.signal,
+        Math.min(5, remainingMs()),
+      );
+    }
+    const provider = new KmsKeyProvider(
+      kms,
+      new PgWrappedKeyStore(budgetedTx),
+      {
+        abortSignal: controller.signal,
+      },
+    );
     await provider.ensureProvisioned(accountId);
-    return await withKmsFieldCryptoContext(provider, accountId, fn);
+    return await withKmsFieldCryptoContext(
+      provider,
+      accountId,
+      (ctx) => fn(ctx, budgetedTx),
+      { abortSignal: controller.signal },
+    );
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Open the tenant transaction and bind its KMS context as one atomic unit. Runners persisting both
+ * wrapped keys and encrypted application state should use this seam so no nested tenant transaction
+ * can commit one side without the other.
+ */
+export function withSiteKmsFieldCryptoTransaction<T>(
+  db: Transactor,
+  accountId: string,
+  fn: (tx: TenantExecutor, ctx: FieldCryptoContext) => Promise<T>,
+  kms: KmsClient = getSiteAzureKmsClient(),
+  timeoutMs: number = SITE_KMS_REQUEST_TIMEOUT_MS,
+): Promise<T> {
+  return withTenant(db, accountId, (tx) =>
+    withSiteKmsFieldCryptoContext(
+      tx,
+      accountId,
+      (ctx, budgetedTx) => fn(budgetedTx, ctx),
+      kms,
+      timeoutMs,
+    ),
+  );
 }

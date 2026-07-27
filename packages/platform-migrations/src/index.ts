@@ -204,14 +204,14 @@ const PLATFORM_MIGRATIONS: readonly MigrationFile[] = [
  * together by filename — same slug, same shape, as the pre-extraction `platformPackage()`.
  *
  * `extra` entries' `name`s must NOT collide with the shared chain's own names above (`0001`–`0019`
- * plus `0023`–`0026` and `0030`) — a duplicate name is two migrations racing for the same renumbered
+ * plus `0023`–`0026` and `0030`–`0031`) — a duplicate name is two migrations racing for the same renumbered
  * slot, not a merge. Effective apply order is `assembleMigrations`'s sort-by-filename over the
  * COMBINED array, not this function's array-position: an `extra` entry's numeric prefix decides
  * where it lands, not where it sits in the array you pass in (apps/site/lib/deploy-migrate.ts
  * deliberately uses `0011`/`0012` to reproduce their pre-extraction slot — see its own module doc).
  * apps/site's extras have since claimed `0020`–`0022` and `0027`–`0029` (CAISSON-110 demo-run), and
- * the shared chain claimed `0025`–`0026` (ADR-0315) plus `0030` (CAISSON-128); the next free prefix
- * — for THIS chain or any caller with no historical slot to preserve — is `0031_*.sql` and up. A
+ * the shared chain claimed `0025`–`0026` (ADR-0315) plus `0030`–`0031`; apps/site has claimed
+ * `0032_field_crypto_keys.sql`. The next free prefix for either chain is `0033_*.sql` and up. A
  * mid-chain landing renumbers every later
  * migration's positional seq and fails the next real deploy closed on checksum drift (the
  * 2026-07-17 caisson-license failure); apps/site's `site-migrations.test.ts` golden-pins the

@@ -117,22 +117,16 @@ describe("envelope-encryption production parity", () => {
     ({ slug }) => slug === "envelope-encryption",
   );
 
-  test("shows the same bounded KMS operation seam used by production", () => {
+  test("shows the public request-scoped KMS seam used by production", () => {
     expect(term).toBeDefined();
-    expect(term?.artifact.code).toContain(
-      "private readonly operationOptions: KmsOperationOptions",
+    expect(term?.artifact.code).toContain("new PgWrappedKeyStore(tx)");
+    expect(term?.artifact.code).toContain("await provider.ensureProvisioned");
+    expect(term?.artifact.code).toContain("withKmsFieldCryptoContext");
+    expect(term?.artifact.code).toContain("{ abortSignal }");
+    expect(term?.artifact.code).toContain("sealField(ctx");
+    expect(term?.artifact.code).not.toContain(
+      "export class KmsKeyProvider implements",
     );
-    expect(term?.artifact.code).toContain(
-      "this.kms.generateDataKey(tenantId, this.operationOptions)",
-    );
-    expect(term?.artifact.code).toContain(
-      "this.kms.decryptDataKey(tenantId, wrapped, this.operationOptions)",
-    );
-    expect(term?.artifact.code).toContain("recoverWrappedVersion");
-    expect(term?.artifact.code).toContain(
-      "await this.store.setCurrentVersion(tenantId, 1)",
-    );
-    expect(term?.artifact.code).not.toContain("durable winner was not visible");
   });
 
   test("describes the actual Azure default credential chain", () => {

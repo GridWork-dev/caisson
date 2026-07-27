@@ -345,7 +345,9 @@ describe("parent-SPEC demo — start/park/approve/resume/finish across the CLI +
       maxOutputTokens: 50,
       fieldCryptoContext: async (accountId, fn) => {
         const ctx = derivedContext(KEY_PROVIDER, accountId);
-        return withFieldCryptoContext(ctx, () => fn(ctx));
+        return withTenant(tp.pg, accountId, (tx) =>
+          withFieldCryptoContext(ctx, () => fn(tx, ctx)),
+        );
       },
     });
 

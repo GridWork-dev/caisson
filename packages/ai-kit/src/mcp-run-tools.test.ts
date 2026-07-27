@@ -9,8 +9,10 @@ import {
   grant,
 } from "@caisson/credits";
 import {
+  FIELD_CRYPTO_KEY_SCHEMA_SQL,
   InMemoryWrappedKeyStore,
   KmsKeyProvider,
+  PgWrappedKeyStore,
   type KmsClient,
   withKmsFieldCryptoContext,
 } from "@caisson/field-crypto";
@@ -21,7 +23,11 @@ import {
   asMicroUsdPerCredit,
 } from "@caisson/kernel";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { withTenant } from "@caisson/tenancy-rls";
+import {
+  withTenant,
+  type TenantExecutor,
+  type Transactor,
+} from "@caisson/tenancy-rls";
 import type {
   LanguageModelV4FinishReason,
   LanguageModelV4Usage,
@@ -84,6 +90,7 @@ beforeAll(async () => {
   await testPg.exec(trajectory);
   await testPg.exec(runState);
   await testPg.exec(encryptedRunState);
+  await testPg.exec(FIELD_CRYPTO_KEY_SCHEMA_SQL);
 });
 
 afterAll(async () => {
@@ -168,13 +175,15 @@ describe("MCP run tools field-crypto context", () => {
     const tools = buildRunTools({
       ...baseDeps(() => model, GATED_TOOLS, parkedAccount),
       fieldCryptoContext: (accountId, fn) =>
-        withKmsFieldCryptoContext(provider, accountId, async (ctx) => {
-          contextRuns += 1;
-          const workingKey = ctx.deriveKey(1);
-          activeDuringCallback = workingKey.every((byte) => byte === 0x31);
-          workingKey.fill(0);
-          return fn(ctx);
-        }),
+        withTenant(testPg.pg, accountId, (exec) =>
+          withKmsFieldCryptoContext(provider, accountId, async (ctx) => {
+            contextRuns += 1;
+            const workingKey = ctx.deriveKey(1);
+            activeDuringCallback = workingKey.every((byte) => byte === 0x31);
+            workingKey.fill(0);
+            return fn(exec, ctx);
+          }),
+        ),
     });
 
     const result = await tools.runStart({
@@ -187,6 +196,75 @@ describe("MCP run tools field-crypto context", () => {
     expect(contextRuns).toBe(1);
     expect(unwrapped).toHaveLength(1);
     expect(unwrapped[0]?.every((byte) => byte === 0)).toBe(true);
+  });
+
+  test("the production-shaped runner shares one tenant transaction for wrapped keys and parked state", async () => {
+    const accountId = `${ACCOUNT_ID}_atomic`;
+    await seedCredits(accountId);
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => toolCallResult("call-atomic"),
+    });
+    const kms: KmsClient = {
+      async generateDataKey() {
+        return {
+          plaintextKey: Buffer.alloc(32, 0x41),
+          wrappedKey: Buffer.from([0x41]),
+        };
+      },
+      async decryptDataKey() {
+        return Buffer.alloc(32, 0x41);
+      },
+      async scheduleKeyDeletion() {
+        return { state: "soft-deleted", irreversible: false };
+      },
+    };
+    let transactionActive = false;
+    const guardedTx: Transactor = {
+      async transaction<T>(fn: (tx: TenantExecutor) => Promise<T>): Promise<T> {
+        if (transactionActive) throw new Error("nested tenant transaction");
+        transactionActive = true;
+        try {
+          return await testPg.pg.transaction((tx) =>
+            fn(tx as unknown as TenantExecutor),
+          );
+        } finally {
+          transactionActive = false;
+        }
+      },
+    };
+    const tools = buildRunTools({
+      ...baseDeps(() => model, GATED_TOOLS, accountId),
+      tx: guardedTx,
+      fieldCryptoContext: (requestedAccountId, fn) =>
+        withTenant(guardedTx, requestedAccountId, async (exec) => {
+          const provider = new KmsKeyProvider(kms, new PgWrappedKeyStore(exec));
+          await provider.ensureProvisioned(requestedAccountId);
+          return withKmsFieldCryptoContext(
+            provider,
+            requestedAccountId,
+            (ctx) => fn(exec, ctx),
+          );
+        }),
+    });
+
+    await expect(
+      tools.runStart({
+        accountId,
+        args: { prompt: "park atomically" },
+      }),
+    ).resolves.toMatchObject({ status: "parked" });
+
+    const rows = await withTenant(testPg.pg, accountId, (exec) =>
+      exec.query<{ wrapped_count: string; parked_count: string }>(
+        `SELECT
+           (SELECT count(*)::text FROM field_wrapped_dek) AS wrapped_count,
+           (SELECT count(*)::text FROM agent_run_state WHERE parked_state IS NOT NULL) AS parked_count`,
+      ),
+    );
+    expect(rows.rows[0]).toEqual({
+      wrapped_count: "1",
+      parked_count: "1",
+    });
   });
 });
 

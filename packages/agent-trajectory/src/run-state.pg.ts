@@ -18,10 +18,11 @@
 // unchanged: those paths just write NULL, no crypto involved either way.
 //
 // PER-CALL TENANT SCOPING (mirrors `store.pg.ts` — see its file header for the full rationale): a
-// `RunStateStore` is held for a run's whole life and its methods interleave with the loop's OWN
-// separate ai-meter `withTenant` calls; holding one pre-opened transaction across that span deadlocks
-// PGlite (a single connection) on the nested `withTenant`. Every method here opens its OWN
-// short-lived `withTenant` transaction instead. `@caisson/tenancy-rls` is a REAL runtime dependency.
+// `RunStateStore` is held for a run's whole life, so non-crypto methods open their OWN short-lived
+// `withTenant` transaction. Crypto methods instead receive BOTH the scoped executor and disposable
+// context from one runner: wrapped-key persistence and parked_state then commit atomically, without
+// a nested `withTenant` deadlock on PGlite's single connection. `@caisson/tenancy-rls` is a REAL
+// runtime dependency.
 import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
 import {
   withTenant,
@@ -132,17 +133,21 @@ async function readSnapshotRow(
 }
 
 export interface RunStateCryptoContextRunner {
-  <T>(fn: (ctx: FieldCryptoContext) => Promise<T>): Promise<T>;
+  <T>(
+    fn: (tx: TenantExecutor, ctx: FieldCryptoContext) => Promise<T>,
+  ): Promise<T>;
 }
 
 type RunStateCryptoContext = FieldCryptoContext | RunStateCryptoContextRunner;
 
-/** Build a PG-backed `RunStateStore` bound to one tenant. `tx` is the RAW `Transactor`; every
- *  method call opens its OWN short-lived `withTenant` transaction (see the file header).
+/** Build a PG-backed `RunStateStore` bound to one tenant. `tx` is the RAW `Transactor`; ordinary
+ *  methods open a short-lived `withTenant`, while crypto methods use the runner-supplied executor
+ *  and context as one atomic scope (see the file header).
  *  `accountId` is stamped on the first-time `park` INSERT and must equal the bound GUC or the RLS
  *  `WITH CHECK` clause rejects it. `crypto` is either a caller-supplied `FieldCryptoContext` or a
- *  lazy runner that acquires one only for `park`/`claimResume`; status and terminal bookkeeping
- *  never need plaintext key material. The context tenant MUST equal `accountId`, mirroring
+ *  lazy runner that acquires one only for `park`/`claimResume`; the runner MUST supply the same
+ *  tenant executor used to persist its wrapped keys. Status and terminal bookkeeping never need
+ *  plaintext key material. The context tenant MUST equal `accountId`, mirroring
  *  `@caisson/ai-kit`'s `putTenantProviderKey`/`getTenantProviderKey` convention (the RLS scope and
  *  the crypto AAD tenant binding must agree). */
 export function createPgRunStateStore(
@@ -153,28 +158,28 @@ export function createPgRunStateStore(
   const withCryptoContext: RunStateCryptoContextRunner =
     typeof crypto === "function"
       ? crypto
-      : async <T>(fn: (ctx: FieldCryptoContext) => Promise<T>): Promise<T> =>
-          fn(crypto);
+      : <T>(
+          fn: (exec: TenantExecutor, ctx: FieldCryptoContext) => Promise<T>,
+        ): Promise<T> => withTenant(tx, accountId, (exec) => fn(exec, crypto));
   const withValidatedCryptoContext: RunStateCryptoContextRunner = (fn) =>
-    withCryptoContext((ctx) => {
+    withCryptoContext((exec, ctx) => {
       if (ctx.tenantId !== accountId) {
         throw new ValidationError(
           "run-state.pg: crypto context tenant does not match account",
           { accountId, cryptoTenantId: ctx.tenantId },
         );
       }
-      return fn(ctx);
+      return fn(exec, ctx);
     });
 
   return {
     park(input: ParkInput): Promise<void> {
-      return withValidatedCryptoContext((cryptoCtx) =>
-        withTenant(tx, accountId, async (exec) => {
-          // First-time park: no existing row, plain INSERT. Re-park (a later gated tool in the
-          // SAME run, after a prior approval was claimed): CAS-guarded UPDATE — only proceeds while
-          // the run is "running" with no unclaimed pending call.
-          const res = await exec.query(
-            `INSERT INTO agent_run_state
+      return withValidatedCryptoContext(async (exec, cryptoCtx) => {
+        // First-time park: no existing row, plain INSERT. Re-park (a later gated tool in the
+        // SAME run, after a prior approval was claimed): CAS-guarded UPDATE — only proceeds while
+        // the run is "running" with no unclaimed pending call.
+        const res = await exec.query(
+          `INSERT INTO agent_run_state
              (run_id, account_id, status, pending_tool_call_id, decision, claimed, resume_seq, parked_state, updated_at)
            VALUES ($1, $2, 'parked', $3, NULL, false, $4, $5, now())
            ON CONFLICT (run_id) DO UPDATE
@@ -188,22 +193,21 @@ export function createPgRunStateStore(
              WHERE agent_run_state.status = 'running'
                AND agent_run_state.claimed = true
            RETURNING run_id`,
-            [
-              input.runId,
-              accountId,
-              input.toolCallId,
-              input.resumeSeq,
-              sealParkedState(cryptoCtx, input.runId, input.parkedState),
-            ],
+          [
+            input.runId,
+            accountId,
+            input.toolCallId,
+            input.resumeSeq,
+            sealParkedState(cryptoCtx, input.runId, input.parkedState),
+          ],
+        );
+        if (res.rows.length === 0) {
+          throw new ConflictError(
+            "cannot park: run is not in a claimable running state",
+            { runId: input.runId },
           );
-          if (res.rows.length === 0) {
-            throw new ConflictError(
-              "cannot park: run is not in a claimable running state",
-              { runId: input.runId },
-            );
-          }
-        }),
-      );
+        }
+      });
     },
 
     approve(
@@ -285,37 +289,35 @@ export function createPgRunStateStore(
     },
 
     claimResume(runId: string, toolCallId: string): Promise<RunResumeMaterial> {
-      return withValidatedCryptoContext((cryptoCtx) =>
-        withTenant(tx, accountId, async (exec) => {
-          const res = await exec.query<Row>(
-            `UPDATE agent_run_state
+      return withValidatedCryptoContext(async (exec, cryptoCtx) => {
+        const res = await exec.query<Row>(
+          `UPDATE agent_run_state
               SET claimed = true, updated_at = now()
             WHERE run_id = $1 AND pending_tool_call_id = $2 AND decision = 'approved' AND claimed = false
             RETURNING status, pending_tool_call_id, decision, claimed, resume_seq, parked_state, updated_at`,
-            [runId, toolCallId],
-          );
-          const won = res.rows[0];
-          if (won !== undefined) {
-            return {
-              resumeSeq: won.resume_seq,
-              parkedState: openParkedState(cryptoCtx, runId, won.parked_state),
-            };
-          }
+          [runId, toolCallId],
+        );
+        const won = res.rows[0];
+        if (won !== undefined) {
+          return {
+            resumeSeq: won.resume_seq,
+            parkedState: openParkedState(cryptoCtx, runId, won.parked_state),
+          };
+        }
 
-          const current = await readTransitionRow(exec, runId);
-          if (current === undefined) {
-            throw new NotFoundError("unknown run", { runId });
-          }
-          throw new ConflictError("nothing claimable for this run/toolCallId", {
-            runId,
-            toolCallId,
-            status: current.status,
-            pendingToolCallId: current.pending_tool_call_id,
-            decision: current.decision,
-            claimed: current.claimed,
-          });
-        }),
-      );
+        const current = await readTransitionRow(exec, runId);
+        if (current === undefined) {
+          throw new NotFoundError("unknown run", { runId });
+        }
+        throw new ConflictError("nothing claimable for this run/toolCallId", {
+          runId,
+          toolCallId,
+          status: current.status,
+          pendingToolCallId: current.pending_tool_call_id,
+          decision: current.decision,
+          claimed: current.claimed,
+        });
+      });
     },
 
     finish(runId: string): Promise<void> {

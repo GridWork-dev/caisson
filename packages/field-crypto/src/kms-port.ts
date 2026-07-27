@@ -54,8 +54,10 @@ export interface KmsClient {
    * Requires an EXPLICIT, non-empty `keyId` (ADR-0197): every driver MUST throw rather than fall back
    * to a shared/default scope, because shredding a shared key would destroy every tenant's material.
    */
-  scheduleKeyDeletion(
-    keyId: string,
-    options?: KmsOperationOptions,
-  ): Promise<KmsDeletionReceipt>;
+  /**
+   * Destructive calls deliberately do not accept a request-time abort budget. A provider may accept
+   * deletion immediately before a local timeout fires, leaving the caller without a receipt. Hosts
+   * must run this primitive in a durable, authorized workflow and persist/reconcile its receipt.
+   */
+  scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt>;
 }

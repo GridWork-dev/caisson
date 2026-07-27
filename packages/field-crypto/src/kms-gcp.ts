@@ -219,10 +219,7 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
       );
     },
 
-    async scheduleKeyDeletion(
-      keyId: string,
-      options?: KmsOperationOptions,
-    ): Promise<KmsDeletionReceipt> {
+    async scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt> {
       // Refuse an empty scope: falling back to the default CryptoKey here would destroy its
       // versions for EVERY tenant that shares it as their fallback.
       if (keyId.length === 0) {
@@ -234,128 +231,123 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
       // older versions whose wrapped DEKs would otherwise stay decryptable while the call reports
       // success (silently incomplete tenant crypto-erasure). List, then destroy each live version.
       const parent = cryptoKeyFor(keyId);
-      return withKmsOperationBudget(
-        options,
-        async (abortSignal, remainingTimeoutMs) => {
-          const versions: protos.google.cloud.kms.v1.ICryptoKeyVersion[] = [];
-          let pageRequest: protos.google.cloud.kms.v1.IListCryptoKeyVersionsRequest | null =
-            { parent };
-          while (pageRequest !== null) {
-            throwIfAborted(abortSignal);
-            const pageResult: [
-              protos.google.cloud.kms.v1.ICryptoKeyVersion[],
-              protos.google.cloud.kms.v1.IListCryptoKeyVersionsRequest | null,
-              protos.google.cloud.kms.v1.IListCryptoKeyVersionsResponse,
-            ] = await sdk.listCryptoKeyVersions(pageRequest, {
-              autoPaginate: false,
-              timeout: remainingTimeoutMs(),
-            });
-            const [pageVersions, nextPageRequest] = pageResult;
-            throwIfAborted(abortSignal);
-            versions.push(...pageVersions);
-            if (nextPageRequest === null) {
-              pageRequest = null;
-            } else if (
-              typeof nextPageRequest.pageToken === "string" &&
-              nextPageRequest.pageToken.length > 0
-            ) {
-              pageRequest = { parent, pageToken: nextPageRequest.pageToken };
-            } else {
-              throw new InternalError(
-                "field-crypto: GCP KMS pagination returned an invalid next-page request",
-              );
-            }
-          }
-          if (versions.length === 0) {
-            throw new InternalError(
-              "field-crypto: GCP KMS crypto-shred found no CryptoKeyVersions — a CryptoKey always has at least one; refusing to report an erasure that touched nothing",
-              { cryptoKeyName: parent },
-            );
-          }
-          const liveNames: string[] = [];
-          let sawScheduled = false;
-          let sawDestroyed = false;
-          const scheduledFor: string[] = [];
-          const seenNames = new Set<string>();
-          for (const v of versions) {
-            if (v.state === undefined || v.state === null) {
-              throw new InternalError(
-                "field-crypto: GCP KMS returned a CryptoKeyVersion without a provable name/state",
-              );
-            }
-            assertCryptoKeyVersionName(v.name, parent);
-            if (seenNames.has(v.name)) {
-              throw new InternalError(
-                "field-crypto: GCP KMS returned a duplicate CryptoKeyVersion",
-                { name: v.name },
-              );
-            }
-            seenNames.add(v.name);
-            if (LIVE_VERSION_STATES.has(v.state)) {
-              liveNames.push(v.name);
-            } else if (DESTROY_SCHEDULED_VERSION_STATES.has(v.state)) {
-              sawScheduled = true;
-              const date = timestampToIso(v.destroyTime);
-              if (date !== undefined) scheduledFor.push(date);
-            } else if (DESTROYED_VERSION_STATES.has(v.state)) {
-              sawDestroyed = true;
-            } else {
-              throw new InternalError(
-                "field-crypto: GCP KMS returned a CryptoKeyVersion state that cannot prove destruction",
-                { state: String(v.state) },
-              );
-            }
-          }
-          // Zero live versions with some already destroyed/scheduled = an idempotent re-shred.
-          for (const name of liveNames) {
-            throwIfAborted(abortSignal);
-            const [version] = await sdk.destroyCryptoKeyVersion(
-              { name },
-              { timeout: remainingTimeoutMs() },
-            );
-            if (version.name !== name) {
-              throw new InternalError(
-                "field-crypto: GCP KMS DestroyCryptoKeyVersion returned an unexpected CryptoKeyVersion",
-                { expected: name },
-              );
-            }
-            if (
-              version.state !== undefined &&
-              version.state !== null &&
-              DESTROY_SCHEDULED_VERSION_STATES.has(version.state)
-            ) {
-              sawScheduled = true;
-              const date = timestampToIso(version.destroyTime);
-              if (date !== undefined) scheduledFor.push(date);
-            } else if (
-              version.state !== undefined &&
-              version.state !== null &&
-              DESTROYED_VERSION_STATES.has(version.state)
-            ) {
-              sawDestroyed = true;
-            } else {
-              throw new InternalError(
-                "field-crypto: GCP KMS DestroyCryptoKeyVersion did not prove DESTROY_SCHEDULED or DESTROYED",
-              );
-            }
-          }
-          if (sawScheduled) {
-            const latest = scheduledFor.sort().at(-1);
-            return latest === undefined
-              ? { state: "destroy-scheduled", irreversible: false }
-              : {
-                  state: "destroy-scheduled",
-                  irreversible: false,
-                  scheduledFor: latest,
-                };
-          }
-          if (sawDestroyed) {
-            return { state: "destroyed", irreversible: true };
-          }
+      const versions: protos.google.cloud.kms.v1.ICryptoKeyVersion[] = [];
+      let pageRequest: protos.google.cloud.kms.v1.IListCryptoKeyVersionsRequest | null =
+        { parent };
+      while (pageRequest !== null) {
+        const pageResult: [
+          protos.google.cloud.kms.v1.ICryptoKeyVersion[],
+          protos.google.cloud.kms.v1.IListCryptoKeyVersionsRequest | null,
+          protos.google.cloud.kms.v1.IListCryptoKeyVersionsResponse,
+        ] = await sdk.listCryptoKeyVersions(pageRequest, {
+          autoPaginate: false,
+        });
+        const [pageVersions, nextPageRequest] = pageResult;
+        versions.push(...pageVersions);
+        if (nextPageRequest === null) {
+          pageRequest = null;
+        } else if (
+          typeof nextPageRequest.pageToken === "string" &&
+          nextPageRequest.pageToken.length > 0
+        ) {
+          pageRequest = { parent, pageToken: nextPageRequest.pageToken };
+        } else {
           throw new InternalError(
-            "field-crypto: GCP KMS crypto-shred returned no provable destruction state",
+            "field-crypto: GCP KMS pagination returned an invalid next-page request",
           );
-        },
+        }
+      }
+      if (versions.length === 0) {
+        throw new InternalError(
+          "field-crypto: GCP KMS crypto-shred found no CryptoKeyVersions — a CryptoKey always has at least one; refusing to report an erasure that touched nothing",
+          { cryptoKeyName: parent },
+        );
+      }
+      const liveNames: string[] = [];
+      let sawScheduled = false;
+      let sawDestroyed = false;
+      let destroyedFinalityProved = true;
+      const scheduledFor: string[] = [];
+      const seenNames = new Set<string>();
+      for (const v of versions) {
+        if (v.state === undefined || v.state === null) {
+          throw new InternalError(
+            "field-crypto: GCP KMS returned a CryptoKeyVersion without a provable name/state",
+          );
+        }
+        assertCryptoKeyVersionName(v.name, parent);
+        if (seenNames.has(v.name)) {
+          throw new InternalError(
+            "field-crypto: GCP KMS returned a duplicate CryptoKeyVersion",
+            { name: v.name },
+          );
+        }
+        seenNames.add(v.name);
+        if (LIVE_VERSION_STATES.has(v.state)) {
+          liveNames.push(v.name);
+        } else if (DESTROY_SCHEDULED_VERSION_STATES.has(v.state)) {
+          sawScheduled = true;
+          const date = timestampToIso(v.destroyTime);
+          if (date !== undefined) scheduledFor.push(date);
+        } else if (DESTROYED_VERSION_STATES.has(v.state)) {
+          sawDestroyed = true;
+          destroyedFinalityProved &&= v.reimportEligible === false;
+        } else {
+          throw new InternalError(
+            "field-crypto: GCP KMS returned a CryptoKeyVersion state that cannot prove destruction",
+            { state: String(v.state) },
+          );
+        }
+      }
+      for (const name of liveNames) {
+        const [version] = await sdk.destroyCryptoKeyVersion({ name });
+        if (version.name !== name) {
+          throw new InternalError(
+            "field-crypto: GCP KMS DestroyCryptoKeyVersion returned an unexpected CryptoKeyVersion",
+            { expected: name },
+          );
+        }
+        if (
+          version.state !== undefined &&
+          version.state !== null &&
+          DESTROY_SCHEDULED_VERSION_STATES.has(version.state)
+        ) {
+          sawScheduled = true;
+          const date = timestampToIso(version.destroyTime);
+          if (date !== undefined) scheduledFor.push(date);
+        } else if (
+          version.state !== undefined &&
+          version.state !== null &&
+          DESTROYED_VERSION_STATES.has(version.state)
+        ) {
+          sawDestroyed = true;
+          destroyedFinalityProved &&= version.reimportEligible === false;
+        } else {
+          throw new InternalError(
+            "field-crypto: GCP KMS DestroyCryptoKeyVersion did not prove DESTROY_SCHEDULED or DESTROYED",
+          );
+        }
+      }
+      if (sawScheduled) {
+        const latest = scheduledFor.sort().at(-1);
+        return latest === undefined
+          ? { state: "destroy-scheduled", irreversible: false }
+          : {
+              state: "destroy-scheduled",
+              irreversible: false,
+              scheduledFor: latest,
+            };
+      }
+      if (sawDestroyed) {
+        if (!destroyedFinalityProved) {
+          throw new InternalError(
+            "field-crypto: GCP KMS DESTROYED state did not prove that external key material is non-re-importable",
+          );
+        }
+        return { state: "destroyed", irreversible: true };
+      }
+      throw new InternalError(
+        "field-crypto: GCP KMS crypto-shred returned no provable destruction state",
       );
     },
   };
