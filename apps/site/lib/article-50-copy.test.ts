@@ -71,6 +71,15 @@ describe("Article 50 primary-source regrounding", () => {
     }
   });
 
+  test("uses the statutory system-provider category instead of GPAI-provider shorthand", async () => {
+    const articlePage = await Bun.file(ARTICLE_PAGE).text();
+
+    expect(articlePage).toContain(
+      "Providers of AI systems, including general-purpose AI systems, that generate",
+    );
+    expect(articlePage).not.toContain("GPAI providers");
+  });
+
   test("all three live surfaces state the pre-existing-content boundary", async () => {
     for (const copy of await liveCopy()) {
       expect(copy).toContain("do not require retroactive");
