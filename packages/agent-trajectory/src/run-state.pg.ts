@@ -18,10 +18,11 @@
 // unchanged: those paths just write NULL, no crypto involved either way.
 //
 // PER-CALL TENANT SCOPING (mirrors `store.pg.ts` — see its file header for the full rationale): a
-// `RunStateStore` is held for a run's whole life and its methods interleave with the loop's OWN
-// separate ai-meter `withTenant` calls; holding one pre-opened transaction across that span deadlocks
-// PGlite (a single connection) on the nested `withTenant`. Every method here opens its OWN
-// short-lived `withTenant` transaction instead. `@caisson/tenancy-rls` is a REAL runtime dependency.
+// `RunStateStore` is held for a run's whole life, so non-crypto methods open their OWN short-lived
+// `withTenant` transaction. Crypto methods instead receive BOTH the scoped executor and disposable
+// context from one runner: wrapped-key persistence and parked_state then commit atomically, without
+// a nested `withTenant` deadlock on PGlite's single connection. `@caisson/tenancy-rls` is a REAL
+// runtime dependency.
 import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
 import {
   withTenant,
@@ -82,17 +83,20 @@ function openParkedState(
   );
 }
 
-interface Row {
+interface SnapshotRow {
   readonly status: RunStatus;
   readonly pending_tool_call_id: string | null;
-  readonly decision: "approved" | "denied" | null;
-  readonly claimed: boolean;
   readonly resume_seq: number;
-  readonly parked_state: string | null;
   readonly updated_at: unknown;
 }
 
-function toSnapshot(runId: string, row: Row): RunStateSnapshot {
+interface Row extends SnapshotRow {
+  readonly decision: "approved" | "denied" | null;
+  readonly claimed: boolean;
+  readonly parked_state: string | null;
+}
+
+function toSnapshot(runId: string, row: SnapshotRow): RunStateSnapshot {
   const updatedAt = row.updated_at;
   return {
     runId,
@@ -104,7 +108,7 @@ function toSnapshot(runId: string, row: Row): RunStateSnapshot {
   };
 }
 
-async function readRow(
+async function readTransitionRow(
   exec: TenantExecutor,
   runId: string,
 ): Promise<Row | undefined> {
@@ -116,21 +120,61 @@ async function readRow(
   return res.rows[0];
 }
 
-/** Build a PG-backed `RunStateStore` bound to one tenant. `tx` is the RAW `Transactor`; every
- *  method call opens its OWN short-lived `withTenant` transaction (see the file header).
+async function readSnapshotRow(
+  exec: TenantExecutor,
+  runId: string,
+): Promise<SnapshotRow | undefined> {
+  const res = await exec.query<SnapshotRow>(
+    `SELECT status, pending_tool_call_id, resume_seq, updated_at
+       FROM agent_run_state WHERE run_id = $1`,
+    [runId],
+  );
+  return res.rows[0];
+}
+
+export interface RunStateCryptoContextRunner {
+  <T>(
+    fn: (tx: TenantExecutor, ctx: FieldCryptoContext) => Promise<T>,
+  ): Promise<T>;
+}
+
+type RunStateCryptoContext = FieldCryptoContext | RunStateCryptoContextRunner;
+
+/** Build a PG-backed `RunStateStore` bound to one tenant. `tx` is the RAW `Transactor`; ordinary
+ *  methods open a short-lived `withTenant`, while crypto methods use the runner-supplied executor
+ *  and context as one atomic scope (see the file header).
  *  `accountId` is stamped on the first-time `park` INSERT and must equal the bound GUC or the RLS
- *  `WITH CHECK` clause rejects it. `cryptoCtx` is the caller-supplied `FieldCryptoContext` sealing/
- *  opening `parked_state` (ADR-0361) — `cryptoCtx.tenantId` MUST equal `accountId`, mirroring
+ *  `WITH CHECK` clause rejects it. `crypto` is either a caller-supplied `FieldCryptoContext` or a
+ *  lazy runner that acquires one only for `park`/`claimResume`; the runner MUST supply the same
+ *  tenant executor used to persist its wrapped keys. Status and terminal bookkeeping never need
+ *  plaintext key material. The context tenant MUST equal `accountId`, mirroring
  *  `@caisson/ai-kit`'s `putTenantProviderKey`/`getTenantProviderKey` convention (the RLS scope and
  *  the crypto AAD tenant binding must agree). */
 export function createPgRunStateStore(
   tx: Transactor,
   accountId: string,
-  cryptoCtx: FieldCryptoContext,
+  crypto: RunStateCryptoContext,
 ): RunStateStore {
+  const withCryptoContext: RunStateCryptoContextRunner =
+    typeof crypto === "function"
+      ? crypto
+      : <T>(
+          fn: (exec: TenantExecutor, ctx: FieldCryptoContext) => Promise<T>,
+        ): Promise<T> => withTenant(tx, accountId, (exec) => fn(exec, crypto));
+  const withValidatedCryptoContext: RunStateCryptoContextRunner = (fn) =>
+    withCryptoContext((exec, ctx) => {
+      if (ctx.tenantId !== accountId) {
+        throw new ValidationError(
+          "run-state.pg: crypto context tenant does not match account",
+          { accountId, cryptoTenantId: ctx.tenantId },
+        );
+      }
+      return fn(exec, ctx);
+    });
+
   return {
     park(input: ParkInput): Promise<void> {
-      return withTenant(tx, accountId, async (exec) => {
+      return withValidatedCryptoContext(async (exec, cryptoCtx) => {
         // First-time park: no existing row, plain INSERT. Re-park (a later gated tool in the
         // SAME run, after a prior approval was claimed): CAS-guarded UPDATE — only proceeds while
         // the run is "running" with no unclaimed pending call.
@@ -183,7 +227,7 @@ export function createPgRunStateStore(
         if (won !== undefined)
           return { ...toSnapshot(runId, won), wasNoop: false };
 
-        const current = await readRow(exec, runId);
+        const current = await readTransitionRow(exec, runId);
         if (current === undefined) {
           throw new NotFoundError("unknown run", { runId });
         }
@@ -224,7 +268,7 @@ export function createPgRunStateStore(
         if (won !== undefined)
           return { ...toSnapshot(runId, won), wasNoop: false };
 
-        const current = await readRow(exec, runId);
+        const current = await readTransitionRow(exec, runId);
         if (current === undefined) {
           throw new NotFoundError("unknown run", { runId });
         }
@@ -245,7 +289,7 @@ export function createPgRunStateStore(
     },
 
     claimResume(runId: string, toolCallId: string): Promise<RunResumeMaterial> {
-      return withTenant(tx, accountId, async (exec) => {
+      return withValidatedCryptoContext(async (exec, cryptoCtx) => {
         const res = await exec.query<Row>(
           `UPDATE agent_run_state
               SET claimed = true, updated_at = now()
@@ -261,7 +305,7 @@ export function createPgRunStateStore(
           };
         }
 
-        const current = await readRow(exec, runId);
+        const current = await readTransitionRow(exec, runId);
         if (current === undefined) {
           throw new NotFoundError("unknown run", { runId });
         }
@@ -294,7 +338,7 @@ export function createPgRunStateStore(
 
     read(runId: string): Promise<RunStateSnapshot | undefined> {
       return withTenant(tx, accountId, async (exec) => {
-        const row = await readRow(exec, runId);
+        const row = await readSnapshotRow(exec, runId);
         return row === undefined ? undefined : toSnapshot(runId, row);
       });
     },

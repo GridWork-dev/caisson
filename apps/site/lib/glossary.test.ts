@@ -146,3 +146,29 @@ describe("glossaryPageSpec — the ordered section builder", () => {
     expect(html).toContain("Sources verified 2026-07-27");
   });
 });
+
+describe("envelope-encryption production parity", () => {
+  const term = GLOSSARY_TERMS.find(
+    ({ slug }) => slug === "envelope-encryption",
+  );
+
+  test("shows the public request-scoped KMS seam used by production", () => {
+    expect(term).toBeDefined();
+    expect(term?.artifact.code).toContain("new PgWrappedKeyStore(tx)");
+    expect(term?.artifact.code).toContain("await provider.ensureProvisioned");
+    expect(term?.artifact.code).toContain("withKmsFieldCryptoContext");
+    expect(term?.artifact.code).toContain("{ abortSignal }");
+    expect(term?.artifact.code).toContain("sealField(ctx");
+    expect(term?.artifact.code).not.toContain(
+      "export class KmsKeyProvider implements",
+    );
+  });
+
+  test("describes the actual Azure default credential chain", () => {
+    const backendCopy = term?.properties.find(
+      ({ title }) => title === "Three shipped cloud backends, one KMS port",
+    )?.body;
+    expect(backendCopy).toContain("default Azure credential chain");
+    expect(backendCopy).not.toContain("explicit service-principal");
+  });
+});

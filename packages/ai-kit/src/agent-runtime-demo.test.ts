@@ -58,7 +58,11 @@ import {
 } from "@caisson/guardrails";
 import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
-import { DerivedKeyProvider, derivedContext } from "@caisson/field-crypto";
+import {
+  DerivedKeyProvider,
+  derivedContext,
+  withFieldCryptoContext,
+} from "@caisson/field-crypto";
 import {
   createPgRunStateStore,
   createPgTrajectoryStore,
@@ -339,7 +343,12 @@ describe("parent-SPEC demo — start/park/approve/resume/finish across the CLI +
       maxSteps: 5,
       creditBudget: 100,
       maxOutputTokens: 50,
-      keyProvider: KEY_PROVIDER,
+      fieldCryptoContext: async (accountId, fn) => {
+        const ctx = derivedContext(KEY_PROVIDER, accountId);
+        return withTenant(tp.pg, accountId, (tx) =>
+          withFieldCryptoContext(ctx, () => fn(tx, ctx)),
+        );
+      },
     });
 
     const mcpOptions: McpServerOptions = {

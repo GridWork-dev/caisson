@@ -90,6 +90,59 @@ describe("PgKeyVersionStore — append-only current version (derived-key path)",
 });
 
 describe("PgWrappedKeyStore + KmsKeyProvider — old versions stay decryptable", () => {
+  test("a first-provision CAS loser adopts the durable version-1 winner and keeps the transaction usable", async () => {
+    const acct = randomUUID();
+    const master = Buffer.alloc(32, 0x45);
+    const winnerKms = new LocalKmsClient(master);
+    const winner = await winnerKms.generateDataKey(acct);
+
+    await withTenant(tp.pg, acct, async (tx) => {
+      const store = new PgWrappedKeyStore(tx);
+      // Commit-equivalent winner state. The wrapper below models READ COMMITTED visibility: the
+      // loser's first version read happened before this winner committed, while the SQL CAS and
+      // required re-read happen after it became visible. PGlite has one connection, so it cannot
+      // run two simultaneous transactions; the real ON CONFLICT loser path still executes here.
+      expect(await store.putWrappedIfAbsent(acct, 1, winner.wrappedKey)).toBe(
+        true,
+      );
+      await store.setCurrentVersion(acct, 1);
+
+      let currentReads = 0;
+      const staleFirstReadStore = {
+        getWrapped: store.getWrapped.bind(store),
+        putWrappedIfAbsent: store.putWrappedIfAbsent.bind(store),
+        putWrapped: store.putWrapped.bind(store),
+        async currentVersion(tenantId: string) {
+          currentReads += 1;
+          return currentReads === 1
+            ? undefined
+            : store.currentVersion(tenantId);
+        },
+        setCurrentVersion: store.setCurrentVersion.bind(store),
+      };
+      const loser = new KmsKeyProvider(
+        new LocalKmsClient(master),
+        staleFirstReadStore,
+      );
+      expect(await loser.ensureProvisioned(acct)).toBe(1);
+      expect(currentReads).toBe(2);
+      expect(await store.currentVersion(acct)).toBe(1);
+      expect((await loser.keyFor(acct, 1)).equals(winner.plaintextKey)).toBe(
+        true,
+      );
+      await expect(tx.query("SELECT 1")).resolves.toBeDefined();
+    });
+
+    winner.plaintextKey.fill(0);
+    const rows = await tp.query<{ count: number }>(
+      `SELECT count(*)::int AS count
+         FROM field_wrapped_dek
+        WHERE account_id = $1 AND key_version = 1`,
+      [acct],
+    );
+    expect(rows[0]?.count).toBe(1);
+  });
+
   test("a SEC/HIPAA field round-trips, and a v1 ciphertext still decrypts after rotation to v2", async () => {
     const acct = randomUUID();
     const kms = new LocalKmsClient(Buffer.alloc(32, 0x33));

@@ -28,6 +28,7 @@
 // grown to 0026_affiliate_code). The assembled-ledger golden in `site-migrations.test.ts` now
 // pins this — append-only, never re-slot.
 import { TENANT_AI_CREDENTIAL_SCHEMA_SQL } from "@caisson/ai-kit";
+import { FIELD_CRYPTO_KEY_SCHEMA_SQL } from "@caisson/field-crypto";
 import type { MigrationFile } from "@caisson/platform-migrations";
 import { RATE_LIMIT_SCHEMA_SQL } from "@caisson/rate-limit";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
@@ -106,4 +107,11 @@ export const SITE_LOCAL_MIGRATIONS: readonly MigrationFile[] = [
   // global (non-tenant), no RLS, same posture as the ask_ai_* counters (0011/0012).
   { name: "0028_demo_run_budget.sql", sql: DEMO_RUN_BUDGET_SCHEMA_SQL },
   { name: "0029_demo_run_leads.sql", sql: DEMO_RUN_LEADS_SCHEMA_SQL },
+  // ADR-0387/0389: durable append-only wrapped DEKs for the Azure KMS production path. Tail-only:
+  // the shared platform chain currently ends at 0031, so this extends rather than re-slots its
+  // positional ledger.
+  {
+    name: "0032_field_crypto_keys.sql",
+    sql: FIELD_CRYPTO_KEY_SCHEMA_SQL,
+  },
 ];

@@ -18,7 +18,10 @@ export {
   type RunStateStore,
   type RunStatus,
 } from "./run-state.ts";
-export { createPgRunStateStore } from "./run-state.pg.ts";
+export {
+  createPgRunStateStore,
+  type RunStateCryptoContextRunner,
+} from "./run-state.pg.ts";
 export {
   project,
   type RunProjection,

@@ -2,13 +2,13 @@
 // boundary, live-validation branching (no key in the error), masking, and the write-only round-trip
 // (submit -> masked metadata reads back; the plaintext is decryptable from the ENCRYPTED store but is
 // never surfaced by the read-back path). Uses the in-memory PGlite double (DATABASE_URL unset).
-import { afterEach, beforeAll, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, expect, test } from "bun:test";
 import { getTenantProviderKey } from "@caisson/ai-kit";
 import { derivedContext } from "@caisson/field-crypto";
 import { withTenant, getDb } from "./db.ts";
 import {
   ByokSubmitBody,
-  getFieldKeyProvider,
+  getDevFieldKeyProvider,
   maskLast4,
   readKeyStatuses,
   submitTenantKey,
@@ -27,6 +27,16 @@ beforeAll(() => {
   g.caissonPglite = undefined;
 });
 
+afterAll(async () => {
+  const g = globalThis as unknown as {
+    caissonTransactor?: unknown;
+    caissonPglite?: { close(): Promise<void> };
+  };
+  await g.caissonPglite?.close();
+  g.caissonTransactor = undefined;
+  g.caissonPglite = undefined;
+});
+
 const realFetch = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = realFetch;
@@ -37,6 +47,15 @@ function stubFetch(status: number): void {
     new Response(status === 200 ? "{}" : "err", {
       status,
     })) as unknown as typeof fetch;
+}
+
+function restoreEnv(
+  env: Record<string, string | undefined>,
+  name: string,
+  previous: string | undefined,
+): void {
+  if (previous === undefined) delete env[name];
+  else env[name] = previous;
 }
 
 test("maskLast4 reveals only the last 4 chars", () => {
@@ -92,28 +111,39 @@ test("the google probe carries the key in x-goog-api-key, never in the URL", asy
   expect(seenHeaders["x-goog-api-key"]).toBe(key);
 });
 
-test("getFieldKeyProvider fails closed in production when field-crypto env is unset", () => {
-  const g = globalThis as unknown as { caissonByokKeyProvider?: unknown };
+test("the derived BYOK provider is unreachable in production", () => {
+  const g = globalThis as unknown as { caissonByokDevKeyProvider?: unknown };
   const env = process.env as Record<string, string | undefined>; // NODE_ENV is typed read-only
-  const prev = {
-    node: env.NODE_ENV,
-    master: env.MASTER_FIELD_KEY,
-    salt: env.FIELD_CRYPTO_SALT,
-  };
+  const previousNodeEnv = env.NODE_ENV;
   try {
-    g.caissonByokKeyProvider = undefined;
-    delete env.MASTER_FIELD_KEY;
-    delete env.FIELD_CRYPTO_SALT;
+    g.caissonByokDevKeyProvider = undefined;
     env.NODE_ENV = "production";
-    // Must throw, not silently seal tenant keys under the public demo vector (security floor).
-    expect(() => getFieldKeyProvider()).toThrow(/not configured/);
+    expect(() => getDevFieldKeyProvider()).toThrow(/disabled in production/);
   } finally {
-    g.caissonByokKeyProvider = undefined;
-    env.NODE_ENV = prev.node;
-    if (prev.master === undefined) delete env.MASTER_FIELD_KEY;
-    else env.MASTER_FIELD_KEY = prev.master;
-    if (prev.salt === undefined) delete env.FIELD_CRYPTO_SALT;
-    else env.FIELD_CRYPTO_SALT = prev.salt;
+    g.caissonByokDevKeyProvider = undefined;
+    restoreEnv(env, "NODE_ENV", previousNodeEnv);
+  }
+});
+
+test("production submission fails closed on missing KMS config without a demo fallback", async () => {
+  stubFetch(200);
+  const g = globalThis as unknown as {
+    caissonSiteAzureKmsClient?: unknown;
+  };
+  const env = process.env as Record<string, string | undefined>;
+  const previousNodeEnv = env.NODE_ENV;
+  const previousVaultUrl = env.AZURE_KEY_VAULT_URL;
+  try {
+    g.caissonSiteAzureKmsClient = undefined;
+    env.NODE_ENV = "production";
+    delete env.AZURE_KEY_VAULT_URL;
+    await expect(
+      submitTenantKey("acct-kms-unconfigured", "openai", "sk-no-fallback-1234"),
+    ).rejects.toThrow(/Azure Key Vault/);
+  } finally {
+    g.caissonSiteAzureKmsClient = undefined;
+    restoreEnv(env, "NODE_ENV", previousNodeEnv);
+    restoreEnv(env, "AZURE_KEY_VAULT_URL", previousVaultUrl);
   }
 });
 
@@ -136,7 +166,7 @@ test("submit -> encrypted store round-trip; read-back is masked metadata only", 
   // The plaintext IS recoverable from the ENCRYPTED store (proves encrypt-on-write persisted it),
   // but only via the decrypting store call — never the buyer-facing read path.
   const db = await getDb();
-  const ctx = derivedContext(getFieldKeyProvider(), account);
+  const ctx = derivedContext(getDevFieldKeyProvider(), account);
   const decrypted = await withTenant(db, account, (tx) =>
     getTenantProviderKey(tx, ctx, "openai"),
   );

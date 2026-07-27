@@ -8,7 +8,8 @@
  * The KMS port. A production impl calls the cloud KMS; the test double wraps locally. Every operation
  * is scoped by `keyId` — a per-(tenant|subject) key identifier. Provisioning per SUBJECT (rather than
  * per tenant) is what makes `scheduleKeyDeletion` a per-subject CRYPTO-SHRED: destroying a subject's
- * KEK renders every DEK wrapped under it permanently un-unwrappable.
+ * KEK renders every DEK wrapped under it un-unwrappable once the provider proves destruction is
+ * irreversible.
  */
 export type KmsDeletionReceipt =
   | {
@@ -25,15 +26,44 @@ export type KmsDeletionReceipt =
       readonly irreversible: false;
       /** Provider-reported completion/purge instant, when one was returned. */
       readonly scheduledFor?: string;
+    }
+  | {
+      /**
+       * Deliberately NOT folded into `pending-deletion`. For an AWS multi-Region PRIMARY with
+       * live replicas the request is accepted but the waiting period has NOT started, and per the
+       * ScheduleKeyDeletion reference "this status can continue indefinitely" — the clock begins
+       * only once the last replica is deleted, not merely scheduled. These receipts are written
+       * verbatim into the append-only WORM chain, so a reader must be able to distinguish
+       * "retention running, completes at T" from "key material still resident in every replica
+       * Region, with no completion date in prospect".
+       *
+       * Split into its own member rather than added to the list above so that `scheduledFor` is
+       * structurally unavailable: no adapter can mint a permanent record that simultaneously says
+       * the retention clock has not started and supplies its completion date.
+       */
+      readonly state: "replica-pending-deletion";
+      readonly irreversible: false;
+      readonly scheduledFor?: never;
     };
+
+/** One bounded cloud-KMS operation budget, supplied by the request boundary. */
+export interface KmsOperationOptions {
+  readonly abortSignal?: AbortSignal;
+  readonly timeoutMs?: number;
+}
 
 export interface KmsClient {
   /** Generate a fresh 32-byte DEK and return it alongside its KEK-wrapped form, under scope `keyId`. */
   generateDataKey(
     keyId: string,
+    options?: KmsOperationOptions,
   ): Promise<{ plaintextKey: Buffer; wrappedKey: Buffer }>;
   /** Unwrap a DEK previously wrapped under `keyId`. Throws once `keyId` has been crypto-shredded. */
-  decryptDataKey(keyId: string, wrappedKey: Buffer): Promise<Buffer>;
+  decryptDataKey(
+    keyId: string,
+    wrappedKey: Buffer,
+    options?: KmsOperationOptions,
+  ): Promise<Buffer>;
   /**
    * Request deletion of `keyId`'s key material — the crypto-shred primitive. The receipt reports
    * only the destruction state the provider proved: cloud retention windows remain explicitly
@@ -41,6 +71,11 @@ export interface KmsClient {
    *
    * Requires an EXPLICIT, non-empty `keyId` (ADR-0197): every driver MUST throw rather than fall back
    * to a shared/default scope, because shredding a shared key would destroy every tenant's material.
+   */
+  /**
+   * Destructive calls deliberately do not accept a request-time abort budget. A provider may accept
+   * deletion immediately before a local timeout fires, leaving the caller without a receipt. Hosts
+   * must run this primitive in a durable, authorized workflow and persist/reconcile its receipt.
    */
   scheduleKeyDeletion(keyId: string): Promise<KmsDeletionReceipt>;
 }

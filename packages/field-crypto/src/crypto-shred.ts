@@ -48,12 +48,24 @@ const cryptoShredRequestSchema = strictObject({
   reason: z.string().min(1).max(512),
   /** ISO-8601 erasure instant — injected at the edge so the audit payload is deterministic. */
   occurredAt: z.string().datetime(),
+}).superRefine((request, ctx) => {
+  if (
+    request.keyScopeId !== request.tenantId &&
+    request.keyScopeId !== request.subjectId
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["keyScopeId"],
+      message:
+        "keyScopeId must equal the authorized tenantId or subjectId recorded by the erasure request",
+    });
+  }
 });
 
 export type CryptoShredRequest = z.infer<typeof cryptoShredRequestSchema>;
 
 export interface CryptoShredReceipt {
-  /** Highest key version covered by the deletion request (0 if the scope was never provisioned). */
+  /** Highest durably provisioned key version covered by the deletion request. */
   readonly shreddedThroughVersion: number;
   /** The exact destruction state the KMS provider proved. */
   readonly deletion: KmsDeletionReceipt;
@@ -67,6 +79,8 @@ export interface CryptoShredReceipt {
  * Fail-closed: a malformed request throws a `ValidationError` BEFORE any deletion is scheduled. The
  * returned payload is metadata-only (ids, reason, instant, versions, method, deletion state) — it
  * commits the FACT and current finality of erasure without ever embedding the erased PII.
+ * The host must authorize the tenant/subject before this call and durably reconcile any recoverable
+ * provider receipt; this low-level package does not claim request retries are deletion-idempotent.
  */
 export async function cryptoShred(
   provider: KmsKeyProvider,

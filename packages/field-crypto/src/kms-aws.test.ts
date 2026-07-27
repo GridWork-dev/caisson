@@ -14,15 +14,18 @@ import { createAwsKmsClient, type KmsSendable } from "./kms-aws.ts";
 function fakeKms(respond: (command: unknown) => unknown): {
   client: KmsSendable;
   seen: unknown[];
+  seenOptions: unknown[];
 } {
   const seen: unknown[] = [];
+  const seenOptions: unknown[] = [];
   const client = {
-    send: async (command: unknown): Promise<unknown> => {
+    send: async (command: unknown, options?: unknown): Promise<unknown> => {
       seen.push(command);
+      seenOptions.push(options);
       return respond(command);
     },
   } as unknown as KmsSendable;
-  return { client, seen };
+  return { client, seen, seenOptions };
 }
 
 describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
@@ -30,9 +33,22 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     expect(() => createAwsKmsClient({ keyId: "" })).toThrow(/keyId/);
   });
 
+  for (const pendingWindowInDays of [6, 31, 7.5, Number.NaN, Infinity, null]) {
+    test(`fails closed on invalid pendingWindowInDays ${String(pendingWindowInDays)}`, () => {
+      expect(() =>
+        createAwsKmsClient({
+          keyId: "key-DEFAULT",
+          pendingWindowInDays: pendingWindowInDays as number,
+          client: fakeKms(() => ({})).client,
+        }),
+      ).toThrow(/integer from 7 through 30/);
+    });
+  }
+
   test("generateDataKey TARGETS the per-call tenant CMK and binds the scope EncryptionContext", async () => {
+    const sdkPlaintext = new Uint8Array(32).fill(7);
     const { client: kms, seen } = fakeKms(() => ({
-      Plaintext: new Uint8Array(32).fill(7),
+      Plaintext: sdkPlaintext,
       CiphertextBlob: new Uint8Array([1, 2, 3]),
     }));
     const client = createAwsKmsClient({
@@ -52,6 +68,7 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     });
     expect(plaintextKey.equals(Buffer.alloc(32, 7))).toBe(true);
     expect(wrappedKey.equals(Buffer.from([1, 2, 3]))).toBe(true);
+    expect(sdkPlaintext).toEqual(new Uint8Array(32));
   });
 
   test("generateDataKey falls back to the default CMK only when no per-call scope is passed", async () => {
@@ -74,8 +91,9 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
   });
 
   test("decryptDataKey targets the per-call tenant CMK and matches the scope EncryptionContext", async () => {
+    const sdkPlaintext = new Uint8Array(32).fill(9);
     const { client: kms, seen } = fakeKms(() => ({
-      Plaintext: new Uint8Array([9, 9]),
+      Plaintext: sdkPlaintext,
     }));
     const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
 
@@ -90,22 +108,27 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       CiphertextBlob: Buffer.from([1, 2, 3]),
       EncryptionContext: { "caisson:field-crypto:scope": "alias/tenant-a" },
     });
-    expect(plaintext.equals(Buffer.from([9, 9]))).toBe(true);
+    expect(plaintext.equals(Buffer.alloc(32, 9))).toBe(true);
+    expect(sdkPlaintext).toEqual(new Uint8Array(32));
   });
 
   test("scheduleKeyDeletion TARGETS the per-call tenant CMK — not the shared default (blast-radius fix)", async () => {
     const deletionDate = new Date("2026-08-01T00:00:00.000Z");
+    const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
+    const keyArn = `arn:aws:kms:us-east-1:111122223333:key/${keyId}`;
     const { client: kms, seen } = fakeKms(() => ({
+      KeyId: keyArn,
       KeyState: "PendingDeletion",
       DeletionDate: deletionDate,
+      PendingWindowInDays: 7,
     }));
     const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
 
-    const receipt = await client.scheduleKeyDeletion("alias/tenant-a");
+    const receipt = await client.scheduleKeyDeletion(keyId);
 
     expect(seen[0]).toBeInstanceOf(ScheduleKeyDeletionCommand);
     expect((seen[0] as ScheduleKeyDeletionCommand).input).toEqual({
-      KeyId: "alias/tenant-a",
+      KeyId: keyId,
       PendingWindowInDays: 7,
     });
     expect(receipt).toEqual({
@@ -113,6 +136,116 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       irreversible: false,
       scheduledFor: deletionDate.toISOString(),
     });
+  });
+
+  test("scheduleKeyDeletion accepts a multi-Region mrk- key id and its ARN", async () => {
+    const deletionDate = new Date("2026-08-01T00:00:00.000Z");
+    const mrkId = "mrk-1234abcd12ab34cd56ef1234567890ab";
+    const mrkArn = `arn:aws:kms:us-east-1:111122223333:key/${mrkId}`;
+    for (const requested of [mrkId, mrkArn]) {
+      const { client: kms } = fakeKms(() => ({
+        KeyId: mrkArn,
+        KeyState: "PendingDeletion",
+        DeletionDate: deletionDate,
+        PendingWindowInDays: 7,
+      }));
+      const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+
+      // Previously a UUID-only pattern rejected every valid multi-Region key outright.
+      expect(await client.scheduleKeyDeletion(requested)).toEqual({
+        state: "pending-deletion",
+        irreversible: false,
+        scheduledFor: deletionDate.toISOString(),
+      });
+    }
+  });
+
+  test("scheduleKeyDeletion reports PendingReplicaDeletion as its own state, never as scheduled", async () => {
+    const mrkId = "mrk-1234abcd12ab34cd56ef1234567890ab";
+    const mrkArn = `arn:aws:kms:us-east-1:111122223333:key/${mrkId}`;
+    // A multi-Region primary with live replicas. Per the ScheduleKeyDeletion reference only
+    // DeletionDate is omitted; the accepted window IS returned, so the fixture carries it.
+    const { client: kms } = fakeKms(() => ({
+      KeyId: mrkArn,
+      KeyState: "PendingReplicaDeletion",
+      PendingWindowInDays: 7,
+    }));
+    const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+
+    const receipt = await client.scheduleKeyDeletion(mrkId);
+
+    // Distinct from "pending-deletion": the waiting period has NOT begun and can continue
+    // indefinitely. This receipt is written verbatim into the append-only WORM chain, so
+    // conflating the two would permanently record a running retention window that does not exist.
+    expect(receipt).toEqual({
+      state: "replica-pending-deletion",
+      irreversible: false,
+    });
+    expect(receipt.irreversible).toBe(false);
+    expect(receipt).not.toHaveProperty("scheduledFor");
+  });
+
+  test("scheduleKeyDeletion still proves the retention window on the replica-pending path", async () => {
+    const mrkId = "mrk-1234abcd12ab34cd56ef1234567890ab";
+    const mrkArn = `arn:aws:kms:us-east-1:111122223333:key/${mrkId}`;
+    // AWS accepting a window other than the one requested must fail here exactly as it does on the
+    // ordinary PendingDeletion path — the early return must not skip that proof.
+    const { client: kms } = fakeKms(() => ({
+      KeyId: mrkArn,
+      KeyState: "PendingReplicaDeletion",
+      PendingWindowInDays: 30,
+    }));
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: kms,
+      pendingWindowInDays: 7,
+    });
+
+    await expect(client.scheduleKeyDeletion(mrkId)).rejects.toThrow(
+      /retention window/i,
+    );
+  });
+
+  test("scheduleKeyDeletion rejects a replica-pending response that omits the window entirely", async () => {
+    const mrkId = "mrk-1234abcd12ab34cd56ef1234567890ab";
+    const mrkArn = `arn:aws:kms:us-east-1:111122223333:key/${mrkId}`;
+    // AWS documents PendingWindowInDays as returned on this path (only DeletionDate is omitted), so
+    // an absent window is a violated contract, not an optional field. Minting the permanent WORM
+    // receipt anyway would record a deletion whose retention terms were never proven.
+    const { client: kms } = fakeKms(() => ({
+      KeyId: mrkArn,
+      KeyState: "PendingReplicaDeletion",
+    }));
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: kms,
+      pendingWindowInDays: 7,
+    });
+
+    await expect(client.scheduleKeyDeletion(mrkId)).rejects.toThrow(
+      /retention window/i,
+    );
+  });
+
+  test("rejects aliases and provider responses that do not prove the requested deletion identity", async () => {
+    const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: fakeKms(() => ({
+        KeyId:
+          "arn:aws:kms:us-east-1:111122223333:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        KeyState: "PendingDeletion",
+        DeletionDate: new Date("2026-08-01T00:00:00.000Z"),
+        PendingWindowInDays: 7,
+      })).client,
+    });
+
+    await expect(client.scheduleKeyDeletion("alias/tenant-a")).rejects.toThrow(
+      /key ID or key ARN/i,
+    );
+    await expect(client.scheduleKeyDeletion(keyId)).rejects.toThrow(
+      /unexpected key identity/i,
+    );
   });
 
   test("scheduleKeyDeletion REFUSES a keyId-less shred (never crypto-shreds the default CMK)", async () => {
@@ -125,9 +258,12 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
   });
 
   test("scheduleKeyDeletion honors a configured pendingWindowInDays", async () => {
+    const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
     const { client: kms, seen } = fakeKms(() => ({
+      KeyId: `arn:aws:kms:us-east-1:111122223333:key/${keyId}`,
       KeyState: "PendingDeletion",
       DeletionDate: new Date("2026-08-24T00:00:00.000Z"),
+      PendingWindowInDays: 30,
     }));
     const client = createAwsKmsClient({
       keyId: "key-DEFAULT",
@@ -135,21 +271,153 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
       client: kms,
     });
 
-    await client.scheduleKeyDeletion("alias/tenant-a");
+    await client.scheduleKeyDeletion(keyId);
 
     expect((seen[0] as ScheduleKeyDeletionCommand).input).toEqual({
-      KeyId: "alias/tenant-a",
+      KeyId: keyId,
       PendingWindowInDays: 30,
     });
   });
 
+  test("rejects an AWS deletion response with a different accepted retention window", async () => {
+    const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      pendingWindowInDays: 30,
+      client: fakeKms(() => ({
+        KeyId: `arn:aws:kms:us-east-1:111122223333:key/${keyId}`,
+        KeyState: "PendingDeletion",
+        DeletionDate: new Date("2026-08-24T00:00:00.000Z"),
+        PendingWindowInDays: 7,
+      })).client,
+    });
+
+    await expect(client.scheduleKeyDeletion(keyId)).rejects.toThrow(
+      /requested retention window/i,
+    );
+  });
+
+  test("request-time abort budgets reach reversible AWS operations only", async () => {
+    const { client: kms, seenOptions } = fakeKms((command) => {
+      if (command instanceof GenerateDataKeyCommand) {
+        return {
+          Plaintext: new Uint8Array(32).fill(7),
+          CiphertextBlob: new Uint8Array([1, 2, 3]),
+        };
+      }
+      if (command instanceof DecryptCommand) {
+        return { Plaintext: new Uint8Array(32).fill(9) };
+      }
+      throw new Error("destructive operation must not run in this test");
+    });
+    const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+    const controller = new AbortController();
+    const options = { abortSignal: controller.signal, timeoutMs: 1_234 };
+
+    await client.generateDataKey("alias/tenant-a", options);
+    await client.decryptDataKey(
+      "alias/tenant-a",
+      Buffer.from([1, 2, 3]),
+      options,
+    );
+    expect(seenOptions).toHaveLength(2);
+    for (const seen of seenOptions) {
+      expect((seen as { abortSignal?: AbortSignal }).abortSignal).toBeDefined();
+    }
+  });
+
+  test("AWS operations fail when their local deadline expires", async () => {
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: {
+        send: ((_: unknown, options?: { abortSignal?: AbortSignal }) =>
+          new Promise((_, reject) => {
+            options?.abortSignal?.addEventListener(
+              "abort",
+              () => reject(options.abortSignal?.reason),
+              { once: true },
+            );
+          })) as KmsSendable["send"],
+      },
+    });
+
+    await expect(
+      client.generateDataKey("alias/tenant-a", { timeoutMs: 5 }),
+    ).rejects.toThrow(/exceeded 5ms/);
+  });
+
+  test("a late AWS decrypt response is zeroized after caller cancellation", async () => {
+    const sdkPlaintext = new Uint8Array([9, 8, 7]);
+    let resolveSend!: (value: { Plaintext: Uint8Array }) => void;
+    const lateResponse = new Promise<{ Plaintext: Uint8Array }>((resolve) => {
+      resolveSend = resolve;
+    });
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: {
+        send: (() => lateResponse) as unknown as KmsSendable["send"],
+      },
+    });
+    const controller = new AbortController();
+    const pending = client.decryptDataKey("acct_a", Buffer.from([1, 2, 3]), {
+      abortSignal: controller.signal,
+      timeoutMs: 1_000,
+    });
+
+    controller.abort(new Error("request cancelled"));
+    await expect(pending).rejects.toThrow(/request cancelled/);
+    resolveSend({ Plaintext: sdkPlaintext });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(sdkPlaintext).toEqual(new Uint8Array(3));
+  });
+
+  test("a late AWS generated plaintext is zeroized after caller cancellation", async () => {
+    const sdkPlaintext = new Uint8Array(32).fill(9);
+    let resolveSend!: (value: {
+      Plaintext: Uint8Array;
+      CiphertextBlob: Uint8Array;
+    }) => void;
+    const lateResponse = new Promise<{
+      Plaintext: Uint8Array;
+      CiphertextBlob: Uint8Array;
+    }>((resolve) => {
+      resolveSend = resolve;
+    });
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: {
+        send: (() => lateResponse) as unknown as KmsSendable["send"],
+      },
+    });
+    const controller = new AbortController();
+    const pending = client.generateDataKey("acct_a", {
+      abortSignal: controller.signal,
+      timeoutMs: 1_000,
+    });
+
+    controller.abort(new Error("request cancelled"));
+    await expect(pending).rejects.toThrow(/request cancelled/);
+    resolveSend({
+      Plaintext: sdkPlaintext,
+      CiphertextBlob: new Uint8Array([1]),
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(sdkPlaintext).toEqual(new Uint8Array(32));
+  });
+
   test("generateDataKey fails closed when AWS returns no key material", async () => {
-    const { client: kms } = fakeKms(() => ({}));
+    const sdkPlaintext = new Uint8Array(32).fill(7);
+    const { client: kms } = fakeKms(() => ({ Plaintext: sdkPlaintext }));
     const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
 
     await expect(client.generateDataKey("acct_a")).rejects.toThrow(
       /no key material/,
     );
+    expect(sdkPlaintext).toEqual(new Uint8Array(32));
   });
 
   test("decryptDataKey fails closed when AWS returns no plaintext", async () => {
@@ -159,5 +427,32 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     await expect(
       client.decryptDataKey("acct_a", Buffer.from([1])),
     ).rejects.toThrow(/no plaintext/);
+  });
+
+  for (const length of [0, 31, 33]) {
+    test(`decryptDataKey rejects and zeroizes a ${String(length)}-byte AWS DEK`, async () => {
+      const sdkPlaintext = new Uint8Array(length).fill(7);
+      const { client: kms } = fakeKms(() => ({ Plaintext: sdkPlaintext }));
+      const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+
+      await expect(
+        client.decryptDataKey("acct_a", Buffer.from([1])),
+      ).rejects.toThrow(/32-byte/);
+      expect(sdkPlaintext).toEqual(new Uint8Array(length));
+    });
+  }
+
+  test("generateDataKey rejects and zeroizes malformed AWS key material", async () => {
+    const sdkPlaintext = new Uint8Array(31).fill(7);
+    const { client: kms } = fakeKms(() => ({
+      Plaintext: sdkPlaintext,
+      CiphertextBlob: new Uint8Array(),
+    }));
+    const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+
+    await expect(client.generateDataKey("acct_a")).rejects.toThrow(
+      /32-byte|wrapped ciphertext/,
+    );
+    expect(sdkPlaintext).toEqual(new Uint8Array(31));
   });
 });
