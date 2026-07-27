@@ -8,7 +8,12 @@ import sitemap from "../app/sitemap";
 import { PageSections } from "../components/page-sections";
 import { MARKETING_ROUTES } from "./routes";
 import { techArticle } from "./jsonld";
-import { WRITING_PIECES, writingPageSpec, type WritingPiece } from "./writing";
+import {
+  WRITING_PIECES,
+  writingLastModified,
+  writingPageSpec,
+  type WritingPiece,
+} from "./writing";
 
 function isValidIsoDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -68,8 +73,17 @@ describe("WRITING_PIECES registry", () => {
         entries.find(
           (entry) => entry.url === `https://caisson.sh${pieceHref(piece)}`,
         )?.lastModified,
-      ).toEqual(new Date(`${piece.publishedOn}T00:00:00.000Z`));
+      ).toEqual(writingLastModified(piece));
     }
+  });
+
+  test("writing sitemap freshness advances when sources are reverified", () => {
+    expect(
+      writingLastModified({
+        publishedOn: "2026-07-20",
+        verifiedOn: "2026-07-26",
+      }),
+    ).toEqual(new Date("2026-07-26T00:00:00.000Z"));
   });
 
   test("every source URL is https", () => {

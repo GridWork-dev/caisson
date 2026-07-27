@@ -28,6 +28,14 @@ export interface WritingPiece {
   related: readonly string[];
 }
 
+export function writingLastModified(
+  piece: Pick<WritingPiece, "publishedOn" | "verifiedOn">,
+): Date {
+  const freshnessDate =
+    piece.verifiedOn > piece.publishedOn ? piece.verifiedOn : piece.publishedOn;
+  return new Date(`${freshnessDate}T00:00:00.000Z`);
+}
+
 export const WRITING_PIECES: readonly WritingPiece[] = [
   {
     slug: "eu-ai-act-article-50-august-december-2026",
