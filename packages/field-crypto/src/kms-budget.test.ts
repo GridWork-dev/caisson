@@ -122,6 +122,38 @@ describe("withKmsOperationBudget late-result erasure", () => {
     expect(plaintext.equals(Buffer.alloc(32))).toBe(true);
   });
 
+  test("does not orphan the abort rejection when a non-async operation throws synchronously", async () => {
+    // The GCP driver passes a NON-async arrow that evaluates `remainingTimeoutMs()` as an argument
+    // expression. On a spent budget that call aborts the controller and then throws, all before the
+    // helper reaches `await race`. The abort listener has already rejected `race`, so unless that
+    // rejection is disposed of it never gets a subscriber: an unhandled rejection, which Node
+    // terminates the process over by default. The caller catching the thrown error is not enough.
+    const orphaned: unknown[] = [];
+    const capture = (reason: unknown): void => {
+      orphaned.push(reason);
+    };
+    process.on("unhandledRejection", capture);
+    try {
+      // Exactly kms-gcp.ts's shape: an expression-body, NON-async arrow whose argument list
+      // evaluates `remainingTimeoutMs()` before the SDK call is ever made. `timeoutMs: 1` is spent
+      // by the helper's own synchronous setup, so `remaining < 1` aborts and throws every run.
+      const fakeEncrypt = (_args: { timeout: number }): Promise<Buffer> =>
+        Promise.resolve(Buffer.alloc(32, 0x11));
+      await expect(
+        withKmsOperationBudget(
+          { timeoutMs: 1 },
+          (_signal, remainingTimeoutMs) =>
+            fakeEncrypt({ timeout: remainingTimeoutMs() }),
+        ),
+      ).rejects.toThrow(/exceeded/i);
+      // Give the microtask queue and the rejection-tracking turn time to fire.
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(orphaned).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", capture);
+    }
+  });
+
   test("returns the value untouched when the operation wins the race", async () => {
     const plaintext = Buffer.alloc(32, 0x3d);
     const result = await withKmsOperationBudget(

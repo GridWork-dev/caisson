@@ -105,9 +105,16 @@ recorded as an **open fork for the operator**, not decided here.
 
 The retained copies are bounded by the request scope and are actively zeroed on success, failure,
 and abort, so this is a memory-residency cost, not a lifetime violation of ADR-0387. It is recorded
-rather than fixed. Customer-facing copy in `apps/site/lib/module-pages.ts` that described the
-zeroization as happening only "on success or failure" is corrected to name request exit and all
-three paths.
+rather than fixed. Note the residency is unbounded in ROW COUNT, not just in rotation depth: the
+decision-2 cap bounds versions per bind, nothing bounds `deriveKey` calls per request.
+
+The request-scoped, abort-covering disposal belongs to `withKmsFieldCryptoContext` in `column.ts`.
+It must not be attributed to `TenantFieldCrypto.decryptField`, which takes no `AbortSignal` and owns
+no request scope — its `finally` runs when that call settles. An earlier revision of this decision
+directed customer-facing copy in `apps/site/lib/module-pages.ts` to describe `decryptField` as
+zeroizing "at request exit ... and on abort"; that was wrong and produced a false buyer-facing
+claim. The copy now names call settlement for that snippet and points abort-time disposal at the
+context seam that actually implements it.
 
 ## Consequences
 

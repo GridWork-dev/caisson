@@ -492,8 +492,12 @@ export async function withSiteKmsFieldCryptoContext<T>(
   kms: KmsClient = getSiteAzureKmsClient(),
   timeoutMs: number = SITE_KMS_REQUEST_TIMEOUT_MS,
   // ADR-0392 decision 2 tells the operator to raise this "with evidence the request budget still
-  // holds". Without a pass-through that instruction is unfollowable: a tenant over the default cap
-  // is refused on reads AND writes, and the only remedy would be a code change plus a redeploy.
+  // holds"; a tenant over the default cap is refused on reads AND writes until they do. This
+  // parameter is what makes a raise expressible at all, and `withSiteKmsFieldCryptoTransaction`
+  // forwards it too, so neither site seam is a dead end. It is NOT a runtime dial:
+  // `KMS_CONTEXT_MAX_PREFETCH_VERSIONS` is a constant with no env override, so changing what
+  // production actually uses is still a code change — deliberately, since ADR-0392 §2 gates the
+  // raise on evidence rather than on a deploy-time variable.
   maxPrefetchVersions?: number,
 ): Promise<T> {
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
@@ -587,6 +591,10 @@ export function withSiteKmsFieldCryptoTransaction<T>(
   fn: (tx: TenantExecutor, ctx: FieldCryptoContext) => Promise<T>,
   kms: KmsClient = getSiteAzureKmsClient(),
   timeoutMs: number = SITE_KMS_REQUEST_TIMEOUT_MS,
+  // Forwarded, not dropped. This is the seam the doc comment above tells runners to prefer, so a
+  // cap raise that cannot pass through here leaves ADR-0392 §2's remedy exactly where it was
+  // before the pass-through existed: a code change plus a redeploy.
+  maxPrefetchVersions?: number,
 ): Promise<T> {
   return withTenant(db, accountId, (tx) =>
     withSiteKmsFieldCryptoContext(
@@ -595,6 +603,7 @@ export function withSiteKmsFieldCryptoTransaction<T>(
       (ctx, budgetedTx) => fn(budgetedTx, ctx),
       kms,
       timeoutMs,
+      maxPrefetchVersions,
     ),
   );
 }

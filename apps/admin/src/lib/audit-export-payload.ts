@@ -128,17 +128,18 @@ const kmsDeletionReceipt = z.union([
     irreversible: z.literal(true),
   }),
   allowlistedObject({
-    state: z.enum([
-      "pending-deletion",
-      "destroy-scheduled",
-      "soft-deleted",
-      // An AWS multi-Region primary whose replicas are still live: accepted, but the retention
-      // clock has not started and may never start. Distinct from pending-deletion so an auditor
-      // reading the exported chain cannot mistake it for a running waiting period.
-      "replica-pending-deletion",
-    ]),
+    state: z.enum(["pending-deletion", "destroy-scheduled", "soft-deleted"]),
     irreversible: z.literal(false),
     scheduledFor: timestamp.optional(),
+  }),
+  // An AWS multi-Region primary whose replicas are still live: accepted, but the retention clock
+  // has not started and may never start. Distinct from pending-deletion so an auditor reading the
+  // exported chain cannot mistake it for a running waiting period — and carried as its own member
+  // with NO `scheduledFor`, so a chain row asserting both "clock not started" and a completion
+  // instant fails the export rather than being published as a contradictory permanent record.
+  allowlistedObject({
+    state: z.literal("replica-pending-deletion"),
+    irreversible: z.literal(false),
   }),
 ]);
 

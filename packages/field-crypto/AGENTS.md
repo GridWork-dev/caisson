@@ -24,8 +24,9 @@ column-context`. Reuse the SAME `columnContext` string for a column on read and 
 
 - **`DerivedKeyProvider`** — zero infra; per-tenant HKDF. Use for dev/test or a self-hosted
   integration that explicitly selects the two-variable deployment model.
-- **`KmsKeyProvider`** — envelope encryption; the KEK stays in the KMS. Call `ensureProvisioned()` at
-  first seal, then `withKmsFieldCryptoContext()`. Bind time unwraps every version from 1 through
+- **`KmsKeyProvider`** — envelope encryption; the KEK stays in the KMS. Call `ensureProvisioned()`
+  before binding — a bind reads the current version, so it allocates for read-only callers too
+  (ADR-0392 §3) — then `withKmsFieldCryptoContext()`. Bind time unwraps every version from 1 through
   current so historical envelopes stay readable; the helper zeroizes all request-local DEKs in
   `finally`. Never retain a `kmsContext()` or unwrapped key in a process-lifetime cache.
 - **Wrapped-DEK persistence is append-only.** Use `PgWrappedKeyStore` inside the already tenant-scoped
@@ -34,8 +35,12 @@ column-context`. Reuse the SAME `columnContext` string for a column on read and 
   historical unwraps.
 - **Every KMS operation is deadline-bounded.** Pass `KmsOperationOptions` through the client seam;
   never hold a tenant transaction, advisory lock, or plaintext DEK across an unbounded provider call.
-- **Deletion receipts are literal provider truth.** Pending, scheduled, and soft-deleted keys remain
-  recoverable and MUST report `irreversible: false`; only a proved destroy/purge reports `true`.
+- **Deletion receipts are literal provider truth.** Pending, scheduled, soft-deleted, and
+  replica-pending keys remain recoverable and MUST report `irreversible: false`; only a proved
+  destroy/purge reports `true`. Never fold a new provider state into an existing one to avoid
+  touching the union — these receipts are permanent WORM rows, and `replica-pending-deletion` exists
+  because folding it into `pending-deletion` minted a record claiming a retention clock that had not
+  started. A state with no completion instant must not carry `scheduledFor`.
 
 ## Envelope (ADR-0046)
 

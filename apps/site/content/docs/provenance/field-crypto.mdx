@@ -156,7 +156,8 @@ await withKmsFieldCryptoContext(provider, tenantId, async (ctx) => {
 ```
 
 Use `PgWrappedKeyStore` inside an RLS-scoped tenant transaction to persist wrapped DEKs
-append-only. Call `ensureProvisioned()` on first seal and bind the provider with
+append-only. Call `ensureProvisioned()` before you bind — a bind reads the current key version, so
+it allocates for read-only callers too — and bind the provider with
 `withKmsFieldCryptoContext()`. The bind unwraps every historical version for the request,
 then zeroizes every plaintext DEK in `finally`; old ciphertext stays readable after rotation
 without a process-lifetime plaintext-key cache.
@@ -208,7 +209,8 @@ Only required for the `DerivedKeyProvider` dev/self-hosted path.
 The hosted adapter creates Azure SDK clients through an explicit `ClientSecretCredential` built
 from those three required variables. It never falls back to an ambient credential chain, so a
 missing or misspelled variable fails closed when the client is constructed rather than silently
-authenticating as whatever identity the host happens to offer. It provisions a tenant KEK on first seal, pins every wrapped
+authenticating as whatever identity the host happens to offer. It provisions the tenant KEK when a KMS context is first
+bound — including a read-only one, since binding reads the current key version — pins every wrapped
 DEK to the exact Azure KEK version returned by the wrap operation, persists only wrapped DEKs in the
 tenant-scoped Postgres store, and bounds each provider request. Self-hosted integrations construct
 their chosen KMS client (`createAwsKmsClient`, `createGcpKmsClient`, or

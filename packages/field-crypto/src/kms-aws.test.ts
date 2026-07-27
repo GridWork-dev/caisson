@@ -206,6 +206,27 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     );
   });
 
+  test("scheduleKeyDeletion rejects a replica-pending response that omits the window entirely", async () => {
+    const mrkId = "mrk-1234abcd12ab34cd56ef1234567890ab";
+    const mrkArn = `arn:aws:kms:us-east-1:111122223333:key/${mrkId}`;
+    // AWS documents PendingWindowInDays as returned on this path (only DeletionDate is omitted), so
+    // an absent window is a violated contract, not an optional field. Minting the permanent WORM
+    // receipt anyway would record a deletion whose retention terms were never proven.
+    const { client: kms } = fakeKms(() => ({
+      KeyId: mrkArn,
+      KeyState: "PendingReplicaDeletion",
+    }));
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: kms,
+      pendingWindowInDays: 7,
+    });
+
+    await expect(client.scheduleKeyDeletion(mrkId)).rejects.toThrow(
+      /retention window/i,
+    );
+  });
+
   test("rejects aliases and provider responses that do not prove the requested deletion identity", async () => {
     const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
     const client = createAwsKmsClient({

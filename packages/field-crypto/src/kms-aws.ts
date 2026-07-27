@@ -248,12 +248,13 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
       // receipts land verbatim in the append-only WORM chain; calling this a scheduled deletion
       // would mint a permanent record that a waiting period is running when none is.
       if (KeyState === "PendingReplicaDeletion") {
-        if (
-          acceptedWindow !== undefined &&
-          acceptedWindow !== pendingWindowInDays
-        ) {
+        // Absent window is a HARD failure, exactly as on the ordinary PendingDeletion path below.
+        // The comment above states AWS always reports the accepted window here, so tolerating
+        // `undefined` could never be defensive — it could only wave through the very protocol
+        // violation this assertion exists to catch, on the one path whose receipt is permanent.
+        if (acceptedWindow !== pendingWindowInDays) {
           throw new InternalError(
-            "field-crypto: AWS KMS did not accept the requested retention window for a replica-pending deletion",
+            "field-crypto: AWS KMS did not prove PendingReplicaDeletion with the requested retention window",
           );
         }
         // No scheduledFor: AWS cannot know one until the last replica is deleted.

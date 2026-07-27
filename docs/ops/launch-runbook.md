@@ -112,21 +112,30 @@ step destroys buyer data.
 Run the check so that insufficient privilege **errors** instead of silently filtering:
 
 ```sql
--- 1. Prove the role can actually see through RLS. Both must be true, or stop here.
-SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user;
+-- 1. Prove the role can actually see through RLS. EITHER column suffices — superusers bypass every
+--    policy regardless of the catalog bit, and BYPASSRLS grants it explicitly. Requiring both would
+--    send you to escalate a production role to SUPERUSER to satisfy a rule Postgres does not impose.
+SELECT rolsuper, rolbypassrls, rolsuper OR rolbypassrls AS bypasses_rls
+FROM pg_catalog.pg_roles
+WHERE rolname = current_user;
 
--- 2. Count with row security disabled. Postgres ERRORS here if the role cannot bypass RLS,
---    which is the point: a failure is loud, a filtered zero is not.
-BEGIN;
-SET LOCAL row_security = off;
-SELECT count(*) AS sealed_rows FROM tenant_ai_credential;  -- MUST be 0
-COMMIT;
+-- 2. Count with row security off. Session-level SET, deliberately NOT `SET LOCAL`: run outside a
+--    transaction block `SET LOCAL` emits a WARNING and takes no effect, the count then silently
+--    filters to 0, and that is the exact false green this whole step exists to kill. Postgres
+--    ERRORS here if the role cannot bypass RLS, which is the point: a failure is loud, a filtered
+--    zero is not. Schema-qualified so a leftover temp/private relation of the same name in an
+--    earlier `search_path` entry cannot be counted instead.
+SET row_security = off;
+SELECT count(*) AS sealed_rows FROM public.tenant_ai_credential;  -- MUST be 0
+RESET row_security;
 ```
 
-- **0 rows, from a role that bypasses RLS** — proceed, and record both the role capabilities and
+- **0 rows, with `bypasses_rls` true** — proceed, and record both the role capabilities and
   the count in the execution receipt. A count without its accompanying privilege proof is not a
   receipt.
-- **Any error, or a role without bypass** — STOP. You have not measured anything.
+- **Any error, or `bypasses_rls` false** — STOP. You have not measured anything.
+- **Any `WARNING: SET LOCAL can only be used in transaction blocks`** (if you adapted the block) —
+  STOP. The count that followed it was filtered, not measured.
 - **Non-zero** — STOP. Do not arm Azure. Either truncate the table as part of the migration-0032
   step (BYOK is write-only per ADR-0183, so buyers simply re-submit their keys), or start the KMS
   version chain above the derived registry's high-water mark. Choosing silently is data loss.

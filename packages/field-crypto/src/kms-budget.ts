@@ -123,6 +123,14 @@ export async function withKmsOperationBudget<T>(
       pending = operation(controller.signal, remainingTimeoutMs);
     } catch (error) {
       controller.signal.removeEventListener("abort", rejectOnAbort);
+      // An operation can abort the controller and THEN throw synchronously: a non-async driver
+      // arrow that evaluates `remainingTimeoutMs()` as an argument expression does exactly that on
+      // a spent budget (kms-gcp.ts passes `{ timeout: remainingTimeoutMs() }` to the SDK). By this
+      // point `rejectOnAbort` has already rejected `race`, and rethrowing here skips
+      // `return await race`, so nothing would ever subscribe to it — an unhandled rejection, which
+      // Node terminates the process over by default. The caller still receives `error`; this only
+      // discards the duplicate rejection that lost the race to the throw.
+      void race.catch(() => {});
       throw error;
     }
 

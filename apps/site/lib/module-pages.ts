@@ -96,7 +96,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       annotations: [
         "parseEnvelope reads the key version back off the stored value itself, so a ciphertext written under an older version still decrypts after rotation, no migration job, no lookup table.",
         "buildAad binds tenant and column identity into the AEAD's additional authenticated data, decrypt under the wrong tenant or column and cipher.decrypt throws, it never returns the wrong plaintext.",
-        "The finally block zeroizes both the plaintext buffer and the unwrapped DEK at request exit, on success, on failure, and on abort.",
+        "The finally block zeroizes both the plaintext buffer and the unwrapped DEK when the call settles, whether it returns or throws. Request-scoped disposal on abort is a separate seam, withKmsFieldCryptoContext, and covers the keys that context owns.",
       ],
     },
     faq: [
