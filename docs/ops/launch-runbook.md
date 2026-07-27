@@ -25,9 +25,10 @@ corresponding hold being released.
 - `/dashboard*` and `/cart*` remain Cloudflare Access gated. Checkout remains sandbox-only.
 - Admin uses in-app GitHub OAuth plus immutable numeric-user-ID allowlisting; no admin
   Cloudflare Access/JWT gate remains.
-- Paddle is the sole merchant of record. The catalog is six bundles and 26 modules; production
-  recreation is **35 products and 66 prices**.
-- Compliance is **$1,449**. This runbook does not reopen pricing.
+- Paddle is the sole merchant of record. The catalog is six bundles and 27 modules; production
+  recreation is **36 products and 68 prices**.
+- Compliance is **$1,649** and Everything is **$2,259** (ADR-0383/0384). This runbook does not
+  reopen pricing.
 - WORM remains GOVERNANCE pre-launch; launch requires a receipted forward-only COMPLIANCE
   escalation.
 - Health is green but source parity is red. License/admin digests differ from repository/Worker,
@@ -174,7 +175,7 @@ Deploy in verifier-before-issuer order whenever strict schemas or manifests chan
 
 All six runtime legs must report the same approved source and manifest digest. Run health,
 authenticated dashboard, checkout sandbox, entitlement, refund, RAG, and support probes.
-Docs/support must answer $1,449; fulfillment must recognize every current product ID and reject an
+Docs/support must answer $1,649; fulfillment must recognize every current product ID and reject an
 unknown ID.
 
 ### Shared-bearer rotation is not a per-service operation
@@ -229,8 +230,8 @@ Redeploy site, admin, license, docs-RAG, and support-bot from the immutable rele
 | Site            | release tag, healthy                                               |
 | Admin           | release tag, matching manifest, GitHub OAuth healthy               |
 | License         | release tag, matching manifest, migrations through `0032` observed |
-| Docs-RAG        | release tag; $1,449 answer                                         |
-| Support bot     | release tag; $1,449 answer                                         |
+| Docs-RAG        | release tag; $1,649 answer                                         |
+| Support bot     | release tag; $1,649 answer                                         |
 | Registry Worker | exact tagged index bytes and matching manifest                     |
 
 Repeat all health, dashboard, checkout sandbox, entitlement, refund, RAG, support, unknown-SKU,
@@ -264,11 +265,11 @@ compliance or production claim.
 
 Run `tools/paddle-catalog-recreate.ts` dry first. It must plan:
 
-- six bundles, including Compliance at $1,449;
-- 26 modules, including $49 `agent-runner` and `agent-trajectory`;
+- six bundles, including Compliance at $1,649 and Everything at $2,259;
+- 27 modules, including $49 `agent-runner` and `agent-trajectory` and $249 `oscal-spine`;
 - two annual subscriptions;
 - required renewal rows;
-- **35 products and 66 prices total**.
+- **36 products and 68 prices total**.
 
 Production IDs are new. Write them only to canonical catalog inputs, run catalog/fulfillment
 parity, and deploy all consumers together.
@@ -282,7 +283,7 @@ PADDLE_ENV=production bun tools/paddle-catalog-recreate.ts --execute \
 ```
 
 `PADDLE_API_KEY` must arrive from the secret source of truth, never the command line. The export
-fails closed unless all 35 product markers and all 66 price markers are present exactly once, with
+fails closed unless all 36 product markers and all 68 price markers are present exactly once, with
 no unexpected marked product or price. Wire the resulting non-secret IDs into every canonical
 consumer, deploy them together, verify parity, then revoke the temporary key.
 
