@@ -651,6 +651,9 @@ describe("site KMS request context", () => {
   });
 
   test("a late Azure plaintext cannot run the request callback and is zeroized", async () => {
+    // Long enough that the driver reliably reaches unwrapKey before the budget trips on this box;
+    // the unwrap itself never resolves until the test says so, so the abort still happens first.
+    const BUDGET_MS = 250;
     const runtime = fakeRuntime();
     const sdkPlaintext = Buffer.alloc(32, 0x7a);
     let resolveUnwrap!: () => void;
@@ -666,6 +669,14 @@ describe("site KMS request context", () => {
           algorithm: "RSA-OAEP-256",
         });
     });
+    // The driver must actually ENTER unwrapKey for this test to mean anything: if the budget
+    // expires first, `sdkPlaintext` never reaches the driver, and asserting it was zeroized would
+    // pass for the wrong reason. Signal entry so the assertion below can require it.
+    let enteredUnwrap = false;
+    let signalEntered!: () => void;
+    const entered = new Promise<void>((resolve) => {
+      signalEntered = resolve;
+    });
     const deps: SiteAzureKmsDependencies = {
       ...runtime.deps,
       createCryptographyClient(keyId) {
@@ -673,6 +684,8 @@ describe("site KMS request context", () => {
         return {
           wrapKey: base.wrapKey.bind(base),
           async unwrapKey() {
+            enteredUnwrap = true;
+            signalEntered();
             return lateUnwrap;
           },
         };
@@ -692,15 +705,23 @@ describe("site KMS request context", () => {
             callbackCalled = true;
           },
           kms,
-          5,
+          BUDGET_MS,
         ),
       ),
-    ).rejects.toThrow(/exceeded 5ms/i);
+    ).rejects.toThrow(new RegExp(`exceeded ${String(BUDGET_MS)}ms`, "i"));
     expect(callbackCalled).toBe(false);
+    await entered;
+    expect(enteredUnwrap).toBe(true);
 
     resolveUnwrap();
     await lateUnwrap;
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    // The driver's `finally { result.result.fill(0) }` sits behind the site wrapper's own async
+    // unwrapKey, so it lands an indeterminate number of continuation hops later. Poll to a bounded
+    // deadline rather than betting the assertion on a single macrotask.
+    const deadline = Date.now() + 2_000;
+    while (!sdkPlaintext.equals(Buffer.alloc(32)) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
     expect(callbackCalled).toBe(false);
     expect(sdkPlaintext.equals(Buffer.alloc(32))).toBe(true);
   });
