@@ -126,6 +126,25 @@ Closing, updating, or merging these PRs is a remote mutation and was not authori
   the reconciliation commit and terminal wrap. Branch hygiene remains intentionally advisory-red
   while the recovery refs and operator-owned worktrees are retained.
 
+## Resumed implementation
+
+The P0 field-crypto KMS work resumed in its existing isolated worktree at exact head
+`415c9a137febfeca858aba59952990fa4d33ef04`; no tracked KMS file changed during reconciliation.
+
+- Its full repository gate passed 221/221 tasks; the site suite passed 849/849 tests and the
+  standards gate checked 75 packages with 5 scaffold skips.
+- Exact-head review packs were prepared for the core implementation, consumers, and locked intent.
+- Fresh governed code-review, security-audit, and adversarial-review dispatches were attempted.
+  Current Codex headroom fell to 10%, their automatic OpenRouter spill returned empty output, and
+  therefore none produced a valid verdict.
+- A bounded main-thread review traced the final request budget, transaction seam, plaintext
+  ownership, and AWS/GCP/Azure deletion semantics against official provider documentation. This
+  supplied continuity but was not treated as the independent review gate.
+
+The branch remains recoverably deferred rather than silently admitted. Its next unblocked action is
+to obtain fresh exact-head independent verdicts when review capacity is available, address any
+verified finding, and then reconcile only the validated code onto current local main.
+
 ## Cleanup decision
 
 No branch, recovery ref, read-only PR ref, worktree, brief, or review pack was removed. Every
@@ -135,8 +154,8 @@ disposition and KMS admission are decided.
 
 ## Prioritized backlog
 
-1. **P0 — field-crypto KMS async refactor:** test exact head `415c9a13`, complete code/security/
-   adversarial reviews, address verified findings, then reconcile it onto current local main.
+1. **P0 — field-crypto KMS async refactor:** exact-head tests are green; obtain valid code/security/
+   adversarial verdicts, address verified findings, then reconcile it onto current local main.
 2. **P1 — PR #348 motion migration:** restore all imports to the new package, add the required
    changeset, and run site/build/E2E gates before admission.
 3. **P1 — PR #351 dependency batch:** split or repair the broad red update; do not combine it with
