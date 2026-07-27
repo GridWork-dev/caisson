@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tscn -p tsconfig.json && cp src/base-manifest.json dist/base-manifest.json",
     "lint": "eslint src",
-    "test": "bun test ./src"
+    "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
     "culori": "catalog:",

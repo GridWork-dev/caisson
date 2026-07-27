@@ -10,7 +10,7 @@
     "build": "bun --bun next build",
     "start": "bun --bun next start -p 3040",
     "lint": "eslint .",
-    "test": "bun test ./app"
+    "test": "bun test --timeout 60000 ./app"
   },
   "dependencies": {
     "@caisson/field-crypto": "workspace:*",

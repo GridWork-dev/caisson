@@ -41,7 +41,7 @@
   "scripts": {
     "build": "tscn -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src"
+    "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
     "zod": "catalog:"

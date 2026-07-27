@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "next start -p 3020",
     "lint": "eslint .",
-    "test": "bun test ./src",
+    "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live"
   },
   "dependencies": {

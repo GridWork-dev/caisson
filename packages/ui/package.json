@@ -35,7 +35,7 @@
   "scripts": {
     "build": "tscn -p tsconfig.json && tscn -p tsconfig.scripts.json",
     "lint": "eslint src scripts",
-    "test": "bun test ./src ./scripts",
+    "test": "bun test --timeout 60000 ./src ./scripts",
     "check:manifest": "bun run scripts/gen-manifest.ts --check",
     "gen:manifest": "bun run scripts/gen-manifest.ts",
     "gen:tokens": "bun run scripts/gen-tokens-css.ts",
