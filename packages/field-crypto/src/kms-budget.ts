@@ -26,14 +26,24 @@ function abortReason(signal: AbortSignal): unknown {
  * Every driver routes through this budget, so the wipe belongs here rather than in each one.
  */
 function wipeLateResult(value: unknown): void {
-  if (value instanceof Uint8Array) {
-    value.fill(0);
-    return;
-  }
-  if (typeof value !== "object" || value === null) return;
-  for (const field of ["plaintextKey", "result"]) {
-    const inner: unknown = Reflect.get(value, field);
-    if (inner instanceof Uint8Array) inner.fill(0);
+  // A best-effort wipe must never escape. This runs inside a `.then` whose promise is not awaited
+  // and has no catch, so a throw here — `fill` on a detached ArrayBuffer, a hostile getter reached
+  // by `Reflect.get` — would surface as an unhandled rejection and terminate the process, on the
+  // abort path, under exactly the load the budget exists to survive.
+  try {
+    if (value instanceof Uint8Array) {
+      value.fill(0);
+      return;
+    }
+    if (typeof value !== "object" || value === null) return;
+    // `result` is defensive: today every driver converts its SDK response to a Buffer before
+    // returning, so only the bare and `{ plaintextKey }` shapes reach here.
+    for (const field of ["plaintextKey", "result"]) {
+      const inner: unknown = Reflect.get(value, field);
+      if (inner instanceof Uint8Array) inner.fill(0);
+    }
+  } catch {
+    // Nothing actionable: the value is unreachable garbage either way.
   }
 }
 
@@ -89,30 +99,48 @@ export async function withKmsOperationBudget<T>(
     if (controller.signal.aborted) {
       throw abortReason(controller.signal);
     }
-    const pending = operation(controller.signal, remainingTimeoutMs);
-    return await new Promise<T>((resolve, reject) => {
-      let settled = false;
-      const rejectOnAbort = (): void => {
-        settled = true;
-        reject(abortReason(controller.signal));
-      };
-      controller.signal.addEventListener("abort", rejectOnAbort, {
-        once: true,
-      });
-      pending
-        .then((value) => {
-          // Losing the race must not mean losing the key bytes.
-          if (settled) {
-            wipeLateResult(value);
-            return;
-          }
-          settled = true;
-          resolve(value);
-        }, reject)
-        .finally(() => {
-          controller.signal.removeEventListener("abort", rejectOnAbort);
-        });
+    let settled = false;
+    let settleResolve!: (value: T) => void;
+    let settleReject!: (reason: unknown) => void;
+    const race = new Promise<T>((resolve, reject) => {
+      settleResolve = resolve;
+      settleReject = reject;
     });
+    const rejectOnAbort = (): void => {
+      settled = true;
+      settleReject(abortReason(controller.signal));
+    };
+    // Subscribe BEFORE invoking the operation. An async function runs synchronously up to its
+    // first await, so it can abort within that window — `remainingTimeoutMs()` aborts the
+    // controller directly when the budget is already spent. With the listener installed after the
+    // call, that abort had no subscriber: `settled` stayed false and the race then resolved with
+    // live key material despite the cancellation, unwiped. Abort events do not replay for
+    // listeners added later.
+    controller.signal.addEventListener("abort", rejectOnAbort, { once: true });
+
+    let pending: Promise<T>;
+    try {
+      pending = operation(controller.signal, remainingTimeoutMs);
+    } catch (error) {
+      controller.signal.removeEventListener("abort", rejectOnAbort);
+      throw error;
+    }
+
+    pending
+      .then((value) => {
+        // Losing the race must not mean losing the key bytes.
+        if (settled) {
+          wipeLateResult(value);
+          return;
+        }
+        settled = true;
+        settleResolve(value);
+      }, settleReject)
+      .finally(() => {
+        controller.signal.removeEventListener("abort", rejectOnAbort);
+      });
+
+    return await race;
   } finally {
     clearTimeout(timer);
     source?.removeEventListener("abort", forwardAbort);

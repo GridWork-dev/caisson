@@ -83,7 +83,7 @@ _(Real lock: **ADR-0170**, not the `0119` pencil in this heading — see
 ### 1B. KMS wiring — `KmsClient` + license `KmsSigner` → **ADR-0120**
 
 - **SHIPPED:** AWS KMS, GCP KMS, and Azure Key Vault implement the envelope-encryption port. The
-  hosted site uses Azure through `DefaultAzureCredential`, purge protection, version-pinned wrapped
+  hosted site uses Azure through an explicit `ClientSecretCredential`, purge protection, version-pinned wrapped
   DEKs, bounded provider calls, an append-only Postgres wrapped-DEK store, and disposable request
   contexts.
 - `KmsSigner` remains the separate asymmetric signing seam; HashiCorp Vault is the remaining

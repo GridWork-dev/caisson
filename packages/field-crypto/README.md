@@ -79,8 +79,9 @@ by the wrap operation, so a later KEK rotation does not silently redirect histor
 
 Azure Key Vault production integrations require an HTTPS vault URL, a deterministic key-name
 prefix, `RSA-OAEP-256`, purge protection, and a bounded request deadline. The generic package keeps
-those deployment choices behind `createAzureKeyVaultKmsClient`; the Caisson site wires
-`DefaultAzureCredential`, strictly validates its runtime policy variables, and supplies the request
+those deployment choices behind `createAzureKeyVaultKmsClient`; the Caisson site constructs an
+explicit `ClientSecretCredential` from required service-principal variables — never an ambient
+credential chain — strictly validates its runtime policy variables, and supplies the request
 deadline.
 
 ## Tests

@@ -236,12 +236,28 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
           "field-crypto: AWS KMS returned an unexpected key identity for deletion",
         );
       }
-      // A multi-Region PRIMARY that still has replicas: AWS accepts the request but cannot schedule
-      // the material for destruction until every replica is gone, so it returns neither a
-      // DeletionDate nor the accepted window. That is a legitimate accepted-but-recoverable state,
-      // not a protocol violation — reporting it beats failing an otherwise valid crypto-shred.
+      // A multi-Region PRIMARY that still has live replicas. AWS accepts the request, but per the
+      // ScheduleKeyDeletion reference the key "cannot be replicated or used in cryptographic
+      // operations. This status can continue indefinitely. When the last of its replicas keys is
+      // deleted (not just scheduled), the key state ... changes to PendingDeletion and its waiting
+      // period (PendingWindowInDays) begins."
+      //
+      // So the retention clock has NOT started and may never start. Only `DeletionDate` is absent
+      // from this response — the accepted window is still reported — so keep proving the window
+      // AWS accepted, and report a DISTINCT state rather than reusing `pending-deletion`. These
+      // receipts land verbatim in the append-only WORM chain; calling this a scheduled deletion
+      // would mint a permanent record that a waiting period is running when none is.
       if (KeyState === "PendingReplicaDeletion") {
-        return { state: "pending-deletion", irreversible: false };
+        if (
+          acceptedWindow !== undefined &&
+          acceptedWindow !== pendingWindowInDays
+        ) {
+          throw new InternalError(
+            "field-crypto: AWS KMS did not accept the requested retention window for a replica-pending deletion",
+          );
+        }
+        // No scheduledFor: AWS cannot know one until the last replica is deleted.
+        return { state: "replica-pending-deletion", irreversible: false };
       }
       if (
         KeyState !== "PendingDeletion" ||

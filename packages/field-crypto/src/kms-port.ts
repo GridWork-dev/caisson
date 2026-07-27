@@ -22,7 +22,20 @@ export type KmsDeletionReceipt =
        * The provider accepted deletion, but key material is still cancellable or recoverable until
        * the provider completes its retention window.
        */
-      readonly state: "pending-deletion" | "destroy-scheduled" | "soft-deleted";
+      readonly state:
+        | "pending-deletion"
+        | "destroy-scheduled"
+        | "soft-deleted"
+        /**
+         * Deliberately NOT folded into `pending-deletion`. For an AWS multi-Region PRIMARY with
+         * live replicas the request is accepted but the waiting period has NOT started, and per the
+         * ScheduleKeyDeletion reference "this status can continue indefinitely" — the clock begins
+         * only once the last replica is deleted, not merely scheduled. These receipts are written
+         * verbatim into the append-only WORM chain, so a reader must be able to distinguish
+         * "retention running, completes at T" from "key material still resident in every replica
+         * Region, with no completion date in prospect".
+         */
+        | "replica-pending-deletion";
       readonly irreversible: false;
       /** Provider-reported completion/purge instant, when one was returned. */
       readonly scheduledFor?: string;

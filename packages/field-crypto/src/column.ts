@@ -244,8 +244,11 @@ export async function kmsContext(
           `field-crypto: request KMS context has no prefetched key v${String(keyVersion)}`,
         );
       }
-      // Track every working copy so even a caller that retains it cannot keep plaintext past scope.
-      // sealField/openField zero copies eagerly; dispose() is the mandatory backstop for all callers.
+      // Track the buffer handed out so `dispose()` can zero it even if the caller keeps the
+      // reference. This bounds the buffers THIS context owns; it cannot bind a caller that copies
+      // the bytes elsewhere (`Buffer.from(ctx.deriveKey(v))`, a string, another typed array) —
+      // nothing in JavaScript can. The honest guarantee is "no context-owned plaintext survives
+      // the request", not "no plaintext survives the request". See ADR-0392 decision 5.
       const workingKey = Buffer.from(key);
       workingKeys.add(workingKey);
       return workingKey;

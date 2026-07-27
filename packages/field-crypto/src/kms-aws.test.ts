@@ -160,20 +160,50 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     }
   });
 
-  test("scheduleKeyDeletion reports PendingReplicaDeletion without inventing a deletion date", async () => {
+  test("scheduleKeyDeletion reports PendingReplicaDeletion as its own state, never as scheduled", async () => {
     const mrkId = "mrk-1234abcd12ab34cd56ef1234567890ab";
     const mrkArn = `arn:aws:kms:us-east-1:111122223333:key/${mrkId}`;
-    // A multi-Region primary with live replicas: AWS returns neither DeletionDate nor the window.
+    // A multi-Region primary with live replicas. Per the ScheduleKeyDeletion reference only
+    // DeletionDate is omitted; the accepted window IS returned, so the fixture carries it.
     const { client: kms } = fakeKms(() => ({
       KeyId: mrkArn,
       KeyState: "PendingReplicaDeletion",
+      PendingWindowInDays: 7,
     }));
     const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
 
     const receipt = await client.scheduleKeyDeletion(mrkId);
 
-    expect(receipt).toEqual({ state: "pending-deletion", irreversible: false });
+    // Distinct from "pending-deletion": the waiting period has NOT begun and can continue
+    // indefinitely. This receipt is written verbatim into the append-only WORM chain, so
+    // conflating the two would permanently record a running retention window that does not exist.
+    expect(receipt).toEqual({
+      state: "replica-pending-deletion",
+      irreversible: false,
+    });
     expect(receipt.irreversible).toBe(false);
+    expect(receipt).not.toHaveProperty("scheduledFor");
+  });
+
+  test("scheduleKeyDeletion still proves the retention window on the replica-pending path", async () => {
+    const mrkId = "mrk-1234abcd12ab34cd56ef1234567890ab";
+    const mrkArn = `arn:aws:kms:us-east-1:111122223333:key/${mrkId}`;
+    // AWS accepting a window other than the one requested must fail here exactly as it does on the
+    // ordinary PendingDeletion path — the early return must not skip that proof.
+    const { client: kms } = fakeKms(() => ({
+      KeyId: mrkArn,
+      KeyState: "PendingReplicaDeletion",
+      PendingWindowInDays: 30,
+    }));
+    const client = createAwsKmsClient({
+      keyId: "key-DEFAULT",
+      client: kms,
+      pendingWindowInDays: 7,
+    });
+
+    await expect(client.scheduleKeyDeletion(mrkId)).rejects.toThrow(
+      /retention window/i,
+    );
   });
 
   test("rejects aliases and provider responses that do not prove the requested deletion identity", async () => {

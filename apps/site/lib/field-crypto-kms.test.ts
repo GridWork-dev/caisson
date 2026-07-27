@@ -710,7 +710,13 @@ describe("site KMS request context", () => {
       ),
     ).rejects.toThrow(new RegExp(`exceeded ${String(BUDGET_MS)}ms`, "i"));
     expect(callbackCalled).toBe(false);
-    await entered;
+    // Bounded rather than a bare await: on a loaded worker the budget can elapse before the driver
+    // reaches unwrapKey, and that must fail on the assertion below rather than hang until the
+    // global runner timeout.
+    await Promise.race([
+      entered,
+      new Promise((resolve) => setTimeout(resolve, 2_000)),
+    ]);
     expect(enteredUnwrap).toBe(true);
 
     resolveUnwrap();

@@ -99,13 +99,34 @@ apart: any row written before the cutover decrypts afterwards as an AES-GCM tag 
 recovery path.
 
 The wave scoped re-encryption out on the premise that nothing is sealed yet. That premise is an
-assertion, not a fact — nothing in the code verifies it. Verify it here, before arming:
+assertion, not a fact — nothing in the code verifies it. Verify it here, before arming.
+
+**A bare `SELECT count(*)` is NOT a valid check and must never be used for this.**
+`tenant_ai_credential` carries `FORCE ROW LEVEL SECURITY` with a policy keyed on
+`app.current_account`. Without that GUC set, the count returns **0 even when rows exist** — for an
+ordinary role _and_ for the table owner, because the policy is FORCEd. The repository's own RLS
+suite pins exactly this behavior (`packages/tenancy-rls/src/rls.integration.test.ts`, "code that
+forgets withTenant entirely sees nothing"). A naive count here returns a false green and the next
+step destroys buyer data.
+
+Run the check so that insufficient privilege **errors** instead of silently filtering:
 
 ```sql
-SELECT count(*) FROM tenant_ai_credential;  -- MUST be 0
+-- 1. Prove the role can actually see through RLS. Both must be true, or stop here.
+SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user;
+
+-- 2. Count with row security disabled. Postgres ERRORS here if the role cannot bypass RLS,
+--    which is the point: a failure is loud, a filtered zero is not.
+BEGIN;
+SET LOCAL row_security = off;
+SELECT count(*) AS sealed_rows FROM tenant_ai_credential;  -- MUST be 0
+COMMIT;
 ```
 
-- **0 rows** — proceed, and record the count in the execution receipt.
+- **0 rows, from a role that bypasses RLS** — proceed, and record both the role capabilities and
+  the count in the execution receipt. A count without its accompanying privilege proof is not a
+  receipt.
+- **Any error, or a role without bypass** — STOP. You have not measured anything.
 - **Non-zero** — STOP. Do not arm Azure. Either truncate the table as part of the migration-0032
   step (BYOK is write-only per ADR-0183, so buyers simply re-submit their keys), or start the KMS
   version chain above the derived registry's high-water mark. Choosing silently is data loss.

@@ -201,12 +201,14 @@ Only required for the `DerivedKeyProvider` dev/self-hosted path.
 | `AZURE_KEY_VAULT_KEY_NAME`         | Prefix for deterministic per-tenant KEKs                       |
 | `AZURE_KEY_VAULT_WRAP_ALGORITHM`   | Exactly `RSA-OAEP-256`                                         |
 | `AZURE_KEY_VAULT_PURGE_PROTECTION` | Exactly `enabled`; runtime also verifies the key recovery mode |
-| `AZURE_TENANT_ID`                  | Railway service-principal branch for `DefaultAzureCredential`  |
-| `AZURE_CLIENT_ID`                  | Railway service-principal branch for `DefaultAzureCredential`  |
-| `AZURE_CLIENT_SECRET`              | Railway service-principal branch for `DefaultAzureCredential`  |
+| `AZURE_TENANT_ID`                  | Required; the service principal the adapter authenticates as   |
+| `AZURE_CLIENT_ID`                  | Required; the service principal the adapter authenticates as   |
+| `AZURE_CLIENT_SECRET`              | Required; the service principal's secret                       |
 
-The hosted adapter creates Azure SDK clients through `DefaultAzureCredential`; Railway supplies its
-service-principal environment branch. It provisions a tenant KEK on first seal, pins every wrapped
+The hosted adapter creates Azure SDK clients through an explicit `ClientSecretCredential` built
+from those three required variables. It never falls back to an ambient credential chain, so a
+missing or misspelled variable fails closed when the client is constructed rather than silently
+authenticating as whatever identity the host happens to offer. It provisions a tenant KEK on first seal, pins every wrapped
 DEK to the exact Azure KEK version returned by the wrap operation, persists only wrapped DEKs in the
 tenant-scoped Postgres store, and bounds each provider request. Self-hosted integrations construct
 their chosen KMS client (`createAwsKmsClient`, `createGcpKmsClient`, or

@@ -74,16 +74,40 @@ the claim to cross-tenant isolation was accurate and is unchanged.
 `kmsContext.deriveKey` returns a fresh copy per call and retains it until `dispose()`, so a request
 performing N x M field operations holds N x M plaintext DEK copies until scope exit.
 
-The obvious reduction — returning the context's canonical buffer instead — was **rejected as
-unsafe**. `provider.ts` documents `keyFor` results as caller-owned with "callers overwrite it after
-use"; a caller following that contract on a canonical buffer would zero the context's own key
-mid-request, silently breaking every later operation in that request. The consumers' defensive copy
-is correct and stays.
+Two reductions were proposed across the review rounds. Both are **rejected**, and the reason is the
+same in each case: the consumers' defensive copy is load-bearing.
+
+Returning the context's canonical buffer instead of a copy would let any caller that follows the
+"overwrite after use" convention zero the context's own key mid-request, silently breaking every
+later operation in that request. Having the four consumers zero the buffer they are handed, and
+dropping their second copy, fails for the mirror-image reason. `FieldCryptoContext` is implemented
+by `derivedContext`, by `kmsContext`, and by any caller-supplied context, and `column.test.ts`'s
+"generic operations never mutate a context-owned cached key" pins the rule: it builds a context
+whose `deriveKey` returns a cached buffer and asserts `sealField`/`openField` leave it intact
+across two operations. Consumers zeroing what they are handed would break that test and corrupt
+any context that legitimately caches.
+
+(Note for future readers, because a review round got this wrong: the "caller-owned buffer" wording
+in `provider.ts` governs `FieldKeyProvider.keyFor`, **not** `FieldCryptoContext.deriveKey`. These
+are different seams. The rejection rests on the context-implementation rule above, not on that
+sentence.)
+
+**The guarantee is narrowed here, not merely restated.** Tracking the handed-out buffer bounds
+what the CONTEXT owns. It cannot bind a caller that copies the bytes into anything else, and no
+JavaScript API can. The defensible claim is _"no context-owned plaintext survives the request"_ —
+not _"no plaintext survives the request"_. The code comment that asserted the stronger version has
+been corrected to match.
+
+Making the stronger guarantee true would mean not exposing raw DEKs at all — replacing `deriveKey`
+with callback-scoped cryptographic operations so key bytes never cross the API boundary. That is a
+breaking change to a published seam and a genuine architecture decision, not a cleanup. It is
+recorded as an **open fork for the operator**, not decided here.
 
 The retained copies are bounded by the request scope and are actively zeroed on success, failure,
 and abort, so this is a memory-residency cost, not a lifetime violation of ADR-0387. It is recorded
-rather than fixed. Customer-facing copy that described the zeroization more narrowly than the code
-behaves is corrected to "at request exit."
+rather than fixed. Customer-facing copy in `apps/site/lib/module-pages.ts` that described the
+zeroization as happening only "on success or failure" is corrected to name request exit and all
+three paths.
 
 ## Consequences
 

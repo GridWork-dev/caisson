@@ -130,8 +130,16 @@ const azureKmsEnvironmentSchema = strictObject({
     .min(1)
     .max(253)
     .regex(/^[0-9A-Za-z.-]+$/),
-  // Bounded but unpatterned: a client secret is opaque, and its parse errors must never echo it.
-  AZURE_CLIENT_SECRET: z.string().min(1).max(512),
+  // Bounded but unpatterned and un-trimmed: a client secret is opaque and may legitimately carry
+  // edge whitespace, and its parse errors must never echo it. A whitespace-ONLY value is still
+  // rejected here rather than deferred to a vague AAD failure at first token acquisition.
+  AZURE_CLIENT_SECRET: z
+    .string()
+    .min(1)
+    .max(512)
+    .refine((value) => value.trim().length > 0, {
+      message: "must not be blank",
+    }),
 });
 
 type SiteAzureKmsEnvironment = z.infer<typeof azureKmsEnvironmentSchema>;
@@ -483,6 +491,10 @@ export async function withSiteKmsFieldCryptoContext<T>(
   fn: (ctx: FieldCryptoContext, tx: TenantExecutor) => Promise<T>,
   kms: KmsClient = getSiteAzureKmsClient(),
   timeoutMs: number = SITE_KMS_REQUEST_TIMEOUT_MS,
+  // ADR-0392 decision 2 tells the operator to raise this "with evidence the request budget still
+  // holds". Without a pass-through that instruction is unfollowable: a tenant over the default cap
+  // is refused on reads AND writes, and the only remedy would be a code change plus a redeploy.
+  maxPrefetchVersions?: number,
 ): Promise<T> {
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
     throw new ConfigError(
@@ -554,7 +566,10 @@ export async function withSiteKmsFieldCryptoContext<T>(
       provider,
       accountId,
       (ctx) => fn(ctx, budgetedTx),
-      { abortSignal: controller.signal },
+      {
+        abortSignal: controller.signal,
+        ...(maxPrefetchVersions === undefined ? {} : { maxPrefetchVersions }),
+      },
     );
   } finally {
     clearTimeout(timer);
