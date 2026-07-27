@@ -22,8 +22,15 @@ import { KeyVersionRegistry } from "./registry.ts";
  * version's wrapped DEK in `WrappedKeyStore` (ADR-0046 self-describing envelope carries the
  * version to look up).
  *
- * OWNERSHIP: every `keyFor()` result is a caller-owned buffer. Callers overwrite it after use;
- * providers must return a fresh buffer rather than shared or cached key material.
+ * OWNERSHIP: every `keyFor()` AND `deriveKey()` result is a caller-owned buffer. Callers overwrite
+ * it after use; providers must return a fresh buffer rather than shared or cached key material.
+ *
+ * `deriveKey()` is named here explicitly because `derivedContext()` (column.ts) now zeroizes what
+ * this method returns, in place and with no defensive copy. A provider that returns a CACHED buffer
+ * from `deriveKey` therefore has its cache wiped by the first operation, and every later write
+ * encrypts under an all-zero key — which round-trips successfully, so the corruption is silent
+ * rather than loud. `derivedContext` fails closed on an all-zero key for exactly that reason, but
+ * the contract is the real guarantee and this sentence is what makes it binding.
  */
 export interface FieldKeyProvider {
   keyFor(tenantId: string, keyVersion: number): Promise<Buffer>;

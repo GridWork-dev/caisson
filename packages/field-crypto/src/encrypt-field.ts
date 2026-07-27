@@ -51,10 +51,8 @@ export function encryptField(
 ): string {
   assertRowId(rowId);
   const keyVersion = ctx.currentVersion();
-  // The context owns the resolved key and may cache it. Copy before use so eager cleanup never
-  // mutates provider-owned material; disposable KMS contexts erase their sources at scope exit.
-  const key = Buffer.from(ctx.deriveKey(keyVersion));
-  try {
+  // The key is lent for this operation only; the context wipes it when this callback returns.
+  return ctx.withKey(keyVersion, (key) => {
     const aad = buildAad(ctx.tenantId, keyVersion, columnContext, rowId);
     const { nonce, ciphertext, tag } = cipher.encrypt(
       key,
@@ -68,9 +66,7 @@ export function encryptField(
       ciphertext,
       tag,
     });
-  } finally {
-    key.fill(0);
-  }
+  });
 }
 
 /**
@@ -88,8 +84,7 @@ export function decryptField(
 ): string {
   assertRowId(rowId);
   const env = parseEnvelope(stored);
-  const key = Buffer.from(ctx.deriveKey(env.keyVersion));
-  try {
+  return ctx.withKey(env.keyVersion, (key) => {
     const aad = buildAad(ctx.tenantId, env.keyVersion, columnContext, rowId);
     const cipher = cipherForAlg(env.algId);
     return cipher
@@ -99,7 +94,5 @@ export function decryptField(
         aad,
       )
       .toString("utf8");
-  } finally {
-    key.fill(0);
-  }
+  });
 }
