@@ -15,7 +15,7 @@ grounds:
 
 # Package catalog — license, sale posture, and price
 
-The July 25 disk-truth view. This document owns the catalog summary; manifests, price authority,
+The July 26 disk-truth view. This document owns the catalog summary; manifests, price authority,
 and the standards gate are the executable sources. Build depth remains in
 [build-state](../build-state.md).
 
