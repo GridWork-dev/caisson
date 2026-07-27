@@ -1,14 +1,17 @@
 ---
-updated: 2026-07-25
+updated: 2026-07-27
 status: live
 ---
 
 # Build state & roadmap
 
-## Current state (2026-07-25)
+## Current state (2026-07-27)
 
-**ADR ceiling is `0388`; the audited base is `fe2dfaca`; the latest immutable release tag remains
-`v2026.07.20.3`.** The ADR-0379 full-state completion program is active on
+**ADR ceiling is `0391`; the remote reconciliation base is `origin/main` at `2efeea98`; the
+latest immutable release tag remains `v2026.07.20.3`.** Local `main` now carries the validated
+writing, OSCAL, Ask AI evidence, and supply-chain pin work cataloged in the
+[2026-07-27 reconciliation](../outputs/executions/2026-07-27-project-reconciliation.md).
+The ADR-0379 full-state completion program is active on
 `feature/full-state-completion`; ADR-0380 closed its six fork rows and split the remaining build
 into two parallel worktree lanes — `feature/completion-lane-a` (code residuals plus the adapter
 wave) and `feature/module-depth-pages` (the module-depth design slice, shipped as PR #332).
@@ -35,7 +38,9 @@ refactor landing BEFORE the fleet deploy, because `KmsKeyProvider` is async-only
 production consumers require `SyncFieldKeyProvider` — a code wave, not an environment swap. That
 pushed the deploy a full wave out, which freed the schedule ADR-0388 spends: the oscal-spine wave
 runs in parallel with that refactor and merges BEFORE the first release train, superseding
-ADR-0386's after-the-train sequencing and withdrawing its accepted two-cycle cost.
+ADR-0386's after-the-train sequencing and withdrawing its accepted two-cycle cost. ADR-0390 then
+locked the current launch-readiness and Blacksmith-cost posture, while ADR-0391 locked the board
+re-walk's demand, instrumentation, and writing decisions.
 **Railway PITR is now the only open fork row.** The OSCAL wave is integrated locally during the
 2026-07-27 reconciliation: the standalone commercial package owns the complete OSCAL surface, both
 parents re-export it, Compliance and Everything move together, and the catalog carries the real
@@ -50,6 +55,8 @@ verification.
   production recreation is 36 products and 68 prices.
 - **Release queue:** 49 changeset files currently resolve to 58 patch package releases, 12 minor
   package releases, and 2 major package releases.
+- **Reconciled verification:** 224/224 repository tasks, 904 site tests, and 76 package gates
+  passed on the locally integrated writing-plus-OSCAL tree.
 - **Fleet parity red:** repository/Worker digest `74e92a6813bc`; license `09adca8d32a5`; admin
   `97b183902c08`; docs/support parity and migration `0030` lack current receipts.
 - **Locked residuals:** the generated 39-component DS manifest, source drift guard, and shared
@@ -57,7 +64,9 @@ verification.
   were held — three module-depth pages, admin proof viewer/export, tenant proof route, and buyer
   crosswalk — closed 2026-07-25 with per-item citations in
   [`docs/state/production-readiness.md`](state/production-readiness.md).
-- **Three active adapter additions:** Inngest v4, Azure Key Vault KMS, and Azure Blob WORM.
+- **Provider adapters complete; consumer integration pending:** Inngest v4, Azure Key Vault KMS,
+  and Azure Blob WORM are present. The separate field-crypto async consumer refactor remains on
+  preserved head `415c9a13` pending fresh exact-head review.
 - **Certification holds:** private GitHub evidence, one-SHA deploy/migration, four technical
   receipts, two or three auditor acceptances, and all operator commerce/business gates.
 

@@ -1,14 +1,23 @@
 ---
-updated: 2026-07-26
+updated: 2026-07-27
 status: live
 grounds:
   - docs/build-state.md
   - docs/ops/launch-runbook.md
   - registry/scripts/index-parity-probe.ts
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
+  - outputs/executions/2026-07-27-project-reconciliation.md
 ---
 
 # Deploy log
+
+## 2026-07-27 — local reconciliation only; fleet unchanged
+
+Local `main` now represents the validated writing surface, OSCAL spine/catalog, Ask AI evidence,
+and checkout/Python supply-chain pin updates. The field-crypto KMS async branch remains outside
+`main` for fresh exact-head review. No PR was remotely merged, no artifact was published, no
+provider setting changed, no migration ran, and no service was deployed or restarted. The runtime
+parity evidence below is therefore unchanged.
 
 ## Current fleet parity — 2026-07-25
 
