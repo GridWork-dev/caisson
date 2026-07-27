@@ -76,7 +76,7 @@
     "react-dom": "catalog:",
     "storybook": "10.5.0",
     "typescript": "catalog:",
-    "vite": "8.1.5",
+    "vite": "8.1.4",
     "vitest": "4.1.10"
   }
 }
