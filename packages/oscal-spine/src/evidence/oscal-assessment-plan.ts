@@ -15,7 +15,7 @@
 // and its canonical SHA-256 is stable — the invariant the bundle's `hashes[]` and the goldens depend on.
 import { randomUUID } from "node:crypto";
 import { ValidationError } from "@caisson/kernel";
-import type { EvidencePackFramework } from "./pack-format.ts";
+import type { OscalEvidencePackFramework } from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,
@@ -55,7 +55,7 @@ const AP_IMPORT_SSP_HREF = "urn:caisson:oscal:assessment-plan:no-ssp";
  * bundle's `hashes[]` binding over its canonical bytes is stable. Fails closed on a bad clock.
  */
 export function toOscalAssessmentPlan(
-  framework: EvidencePackFramework,
+  framework: OscalEvidencePackFramework,
   options: OscalExportOptions,
 ): OscalAssessmentPlanDocument {
   if (Number.isNaN(options.now.getTime())) {

@@ -5,14 +5,14 @@
 // `oscal-cli validate`. Deterministic (fixed clock + id sequence) so a CI failure reproduces
 // identically on a local re-run.
 //
-// Usage: bun packages/compliance-core/scripts/gen-iso27001-soa-for-ci.ts <output-path>
+// Usage: bun packages/frameworks-pack/scripts/gen-iso27001-soa-for-ci.ts <output-path>
 import { writeFileSync } from "node:fs";
 import {
   computeIso27001SoaRows,
   iso27001Crosswalk,
   type ControlEvidenceStatus,
 } from "@caisson/frameworks-pack";
-import { toOscalIso27001Soa } from "../src/evidence/oscal-iso27001-soa.ts";
+import { toOscalIso27001Soa } from "@caisson/oscal-spine";
 
 function counterIds(): () => string {
   let n = 0;

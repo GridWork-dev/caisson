@@ -81,17 +81,44 @@ describe("parseArgv", () => {
     expect(parseArgv(["--refetch"])).toEqual({ refetch: true, sha: null });
   });
 
-  test("--sha <value> captures the next token", () => {
-    expect(parseArgv(["--sha", "abc123"])).toEqual({
+  test("--sha <value> accepts an exact immutable lowercase commit id", () => {
+    const sha = "0123456789abcdef0123456789abcdef01234567";
+    expect(parseArgv(["--sha", sha])).toEqual({
       refetch: false,
-      sha: "abc123",
+      sha,
     });
   });
 
   test("--refetch --sha <value> combine", () => {
-    expect(parseArgv(["--refetch", "--sha", "deadbeef"])).toEqual({
+    const sha = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
+    expect(parseArgv(["--refetch", "--sha", sha])).toEqual({
       refetch: true,
-      sha: "deadbeef",
+      sha,
     });
+  });
+
+  test.each([
+    ["missing", ["--sha"]],
+    ["short", ["--sha", "deadbeef"]],
+    ["uppercase", ["--sha", "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF"]],
+    ["branch", ["--sha", "main"]],
+    ["tag", ["--sha", "v1.2.2"]],
+    ["malformed", ["--sha", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"]],
+  ] as const)(
+    "%s --sha input fails before network or writes",
+    (_label, argv) => {
+      expect(() => parseArgv(argv)).toThrow(/exact lowercase 40-character/);
+    },
+  );
+
+  test("unknown and duplicate flags fail closed", () => {
+    expect(() => parseArgv(["--force"])).toThrow(/unknown argument/);
+    expect(() => parseArgv(["--refetch", "--refetch"])).toThrow(
+      /duplicate --refetch/,
+    );
+    const sha = "0123456789abcdef0123456789abcdef01234567";
+    expect(() => parseArgv(["--sha", sha, "--sha", sha])).toThrow(
+      /duplicate --sha/,
+    );
   });
 });

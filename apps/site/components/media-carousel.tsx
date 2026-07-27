@@ -123,6 +123,10 @@ const POKE_SLIDES: Record<PokeKey, ComponentType> = {
     ssr: false,
     loading: () => <MediaPlaceholder icon="boxes" />,
   }),
+  "oscal-spine": dynamic(() => import("./poke/oscal-spine-poke"), {
+    ssr: false,
+    loading: () => <MediaPlaceholder icon="boxes" />,
+  }),
   "access-review": dynamic(() => import("./poke/access-review-poke"), {
     ssr: false,
     loading: () => <MediaPlaceholder icon="boxes" />,

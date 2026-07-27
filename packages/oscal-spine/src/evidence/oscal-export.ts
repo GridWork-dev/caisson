@@ -36,7 +36,11 @@ import {
   strictObject,
   ValidationError,
 } from "@caisson/kernel";
-import type { EvidencePackManifest, ManifestControl } from "./pack-format.ts";
+import type {
+  OscalEvidencePackManifest,
+  OscalManifestControl,
+} from "../contracts.ts";
+import { parseOscalEvidencePackManifest } from "../contracts.ts";
 
 /**
  * The OSCAL model version these bodies are authored against (NIST OSCAL JSON, csrc.nist.gov/ns/oscal).
@@ -259,7 +263,7 @@ const EXAMINE: readonly string[] = ["EXAMINE"];
 /** Build the metadata block shared by both documents — title + injected clock + chain-anchor binding. */
 function buildMetadata(
   title: string,
-  manifest: EvidencePackManifest,
+  manifest: OscalEvidencePackManifest,
   lastModified: string,
   options: OscalExportOptions,
 ): OscalMetadata {
@@ -300,7 +304,7 @@ function buildMetadata(
 }
 
 /** The flagged-evidence reasons for a gap control, joined for a finding/poam-item rationale. */
-function gapReason(control: ManifestControl): string {
+function gapReason(control: OscalManifestControl): string {
   return control.evidence
     .filter((e) => e.status === "flagged" && e.reason !== undefined)
     .map((e) => `${e.collectorId}: ${e.reason ?? ""}`)
@@ -330,9 +334,26 @@ function buildApRlink(
       "media-type": "application/oscal-assessment-plan+json",
     };
   }
-  if (plan.rlinkHref.trim().length === 0) {
+  const href = plan.rlinkHref;
+  const withoutLeadingDot = href.startsWith("./") ? href.slice(2) : href;
+  const pathSegments = withoutLeadingDot.split("/");
+  const invalidHref =
+    href.trim().length === 0 ||
+    href !== href.trim() ||
+    href.startsWith("/") ||
+    href.startsWith("//") ||
+    /^[a-z][a-z0-9+.-]*:/i.test(href) ||
+    href.includes("\\") ||
+    href.includes("?") ||
+    href.includes("#") ||
+    href.includes("\0") ||
+    href.includes("%") ||
+    pathSegments.some(
+      (segment) => segment.length === 0 || segment === "." || segment === "..",
+    );
+  if (invalidHref) {
     throw new ValidationError(
-      "oscal export `assessmentPlan.rlinkHref` must be a non-empty relative path",
+      "oscal export `assessmentPlan.rlinkHref` must be a contained relative POSIX bundle path",
     );
   }
   if (plan.sha256 !== undefined && !SHA256_HEX.test(plan.sha256)) {
@@ -341,7 +362,7 @@ function buildApRlink(
     );
   }
   return {
-    href: plan.rlinkHref,
+    href,
     "media-type": "application/oscal-assessment-plan+json",
     ...(plan.sha256 !== undefined
       ? { hashes: [{ algorithm: "SHA-256", value: plan.sha256 }] }
@@ -357,8 +378,8 @@ function buildApRlink(
  * linking its control's observations. Deterministic given injected `now` + `newId`. Fails closed on a
  * bad clock / malformed provenance.
  */
-export function toOscalAssessmentResults(
-  manifest: EvidencePackManifest,
+function buildOscalAssessmentResults(
+  manifest: OscalEvidencePackManifest,
   options: OscalExportOptions,
 ): OscalAssessmentResultsDocument {
   const lastModified = resolveNow(options);
@@ -469,6 +490,16 @@ export function toOscalAssessmentResults(
   };
 }
 
+export function toOscalAssessmentResults(
+  manifest: OscalEvidencePackManifest,
+  options: OscalExportOptions,
+): OscalAssessmentResultsDocument {
+  return buildOscalAssessmentResults(
+    parseOscalEvidencePackManifest(manifest),
+    options,
+  );
+}
+
 /**
  * Map an evidence-pack manifest to an OSCAL Plan of Action & Milestones (POA&M) document.
  *
@@ -477,8 +508,8 @@ export function toOscalAssessmentResults(
  * remediation). The tenant is identified via `system-id` (no SSP exists in v1; `import-ssp` is part
  * of the un-wired transport seam below). Deterministic given injected `now` + `newId`.
  */
-export function toOscalPlanOfActionAndMilestones(
-  manifest: EvidencePackManifest,
+function buildOscalPlanOfActionAndMilestones(
+  manifest: OscalEvidencePackManifest,
   options: OscalExportOptions,
 ): OscalPlanOfActionAndMilestonesDocument {
   const lastModified = resolveNow(options);
@@ -543,15 +574,26 @@ export function toOscalPlanOfActionAndMilestones(
   return { "plan-of-action-and-milestones": body };
 }
 
+export function toOscalPlanOfActionAndMilestones(
+  manifest: OscalEvidencePackManifest,
+  options: OscalExportOptions,
+): OscalPlanOfActionAndMilestonesDocument {
+  return buildOscalPlanOfActionAndMilestones(
+    parseOscalEvidencePackManifest(manifest),
+    options,
+  );
+}
+
 /** Map an evidence-pack manifest to BOTH OSCAL documents (SAR + POA&M) in one deterministic call. */
 export function toOscalBundle(
-  manifest: EvidencePackManifest,
+  manifest: OscalEvidencePackManifest,
   options: OscalExportOptions,
 ): OscalExportBundle {
+  const validated = parseOscalEvidencePackManifest(manifest);
   return {
-    assessmentResults: toOscalAssessmentResults(manifest, options),
-    planOfActionAndMilestones: toOscalPlanOfActionAndMilestones(
-      manifest,
+    assessmentResults: buildOscalAssessmentResults(validated, options),
+    planOfActionAndMilestones: buildOscalPlanOfActionAndMilestones(
+      validated,
       options,
     ),
   };

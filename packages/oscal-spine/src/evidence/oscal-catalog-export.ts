@@ -17,7 +17,7 @@
 // byte-identical output — golden-fixturable.
 import { randomUUID } from "node:crypto";
 import { ValidationError } from "@caisson/kernel";
-import type { Framework } from "@caisson/frameworks-pack";
+import type { OscalFramework } from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,
@@ -99,7 +99,7 @@ function cmp(a: string, b: string): number {
  * sorted lexicographically for determinism. Fails closed on an invalid clock.
  */
 export function toOscalCatalog(
-  frameworks: readonly Framework[],
+  frameworks: readonly OscalFramework[],
   options: OscalCatalogExportOptions,
 ): OscalCatalogDocument {
   if (Number.isNaN(options.now.getTime())) {

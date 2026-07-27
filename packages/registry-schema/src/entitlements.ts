@@ -100,7 +100,18 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the same commit that creates its purchase row (or its package).
  */
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
-  new Set<string>([]);
+  new Set<string>([
+    // Pre-publish reservation: remove when the release train appends oscal-spine@0.1.0.
+    "oscal-spine",
+  ]);
+/**
+ * Exact first-publish versions for the temporary reservations above. The pre-publish member-pin
+ * gate treats these pairs as resolving in the next release cut even though the workspace package
+ * itself still carries Changesets' 0.0.0 pre-release sentinel. Keep this map key-identical to
+ * {@link RESERVED_MODULE_ENTITLEMENT_IDS}; both entries leave when the first ledger row lands.
+ */
+export const RESERVED_MODULE_ENTITLEMENT_VERSIONS: ReadonlyMap<string, string> =
+  new Map<string, string>([["oscal-spine", "0.1.0"]]);
 // agent-usage graduated 2026-07-18: indexed (sellable:false) by the agent-runtime consume,
 // so grants resolve via the index; it stays unsellable and in no bundle until its own
 // publish gate (operator lock). agent-trajectory graduated earlier, at its first index entry.
@@ -121,6 +132,38 @@ export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
  */
 export const NON_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>([
   "priority-support",
+]);
+
+/**
+ * Compatibility grants for packages that permanently re-export a carved package.
+ * This is deliberately NOT dependency closure: ADR-0238 rejected generic dependency-to-entitlement
+ * expansion, while ADR-0384 explicitly guarantees that either OSCAL parent purchase keeps the
+ * complete OSCAL surface after the carve. The relationship applies whether the parent was bought
+ * directly or arrived through a bundle, because pre-carve bundle buyers received the same exports.
+ * Only the two locked parent relationships live here.
+ *
+ * Keys and values are full registry module ids. A target grants only after it is indexed; while it
+ * is a named pre-publish reservation the parent continues resolving to itself, so deployment before
+ * the release train cannot lock out an existing parent buyer.
+ */
+export const COMPATIBILITY_REEXPORT_ENTITLEMENTS: ReadonlyMap<
+  string,
+  readonly string[]
+> = new Map<string, readonly string[]>([
+  ["@caisson/compliance-core", ["@caisson/oscal-spine"]],
+  ["@caisson/frameworks-pack", ["@caisson/oscal-spine"]],
+]);
+
+/**
+ * Named commercial runtime dependencies that are published but never sold independently. These
+ * edges exist solely so a package manager can resolve the dependency tree of an entitled package;
+ * they are not inferred from package manifests and do not create generic dependency closure.
+ */
+export const INTERNAL_RUNTIME_ENTITLEMENTS: ReadonlyMap<
+  string,
+  readonly string[]
+> = new Map<string, readonly string[]>([
+  ["@caisson/oscal-spine", ["@caisson/artifact-render"]],
 ]);
 
 /** Boundary guard (ADR-0021 input-validation): the purchased ids are an array of bounded, non-empty
@@ -159,6 +202,34 @@ function bareSlug(moduleId: string): string {
   return moduleId.startsWith("@caisson/")
     ? moduleId.slice("@caisson/".length)
     : moduleId;
+}
+
+function addNamedEntitlementClosure(
+  grantorId: string,
+  allowlist: ReadonlySet<string>,
+  members: Set<string>,
+  visited: Set<string> = new Set<string>(),
+): void {
+  if (visited.has(grantorId)) return;
+  visited.add(grantorId);
+  for (const edges of [
+    COMPATIBILITY_REEXPORT_ENTITLEMENTS,
+    INTERNAL_RUNTIME_ENTITLEMENTS,
+  ]) {
+    for (const targetId of edges.get(grantorId) ?? []) {
+      if (allowlist.has(targetId)) {
+        members.add(targetId);
+        addNamedEntitlementClosure(targetId, allowlist, members, visited);
+        continue;
+      }
+      if (RESERVED_MODULE_ENTITLEMENT_IDS.has(bareSlug(targetId))) {
+        continue;
+      }
+      throw new Error(
+        `named entitlement target is neither indexed nor reserved: ${JSON.stringify(targetId)}`,
+      );
+    }
+  }
 }
 
 /**
@@ -349,11 +420,13 @@ export function expandEntitlements(
     if (isBundleId(id)) {
       for (const memberId of membersOfBundle(index, id, snapshot)) {
         members.add(memberId);
+        addNamedEntitlementClosure(memberId, allowlist, members);
       }
       continue;
     }
     if (MODULE_ID_RE.test(id) && allowlist.has(id)) {
       members.add(id);
+      addNamedEntitlementClosure(id, allowlist, members);
       continue;
     }
     if (MODULE_SLUG_RE.test(id)) {
@@ -366,6 +439,7 @@ export function expandEntitlements(
       const candidate = `@caisson/${id}`;
       if (allowlist.has(candidate)) {
         members.add(candidate);
+        addNamedEntitlementClosure(candidate, allowlist, members);
         continue;
       }
       if (RESERVED_MODULE_ENTITLEMENT_IDS.has(id)) {

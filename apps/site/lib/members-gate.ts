@@ -19,7 +19,7 @@ import { readEntitlementGrants } from "./dashboard-reads.ts";
  * (ADR-0258), matched through the single alias point so a future module rename still counts (the
  * dissolved-edition aliases themselves were purged, ADR-0270 — legacy rows drain at deploy). Stored
  * grants are PURCHASED ids, never pre-expanded (`holdsOrgControls`'s "pre-expanded upstream"
- * contract does not hold on this path — audit F4 2026-07-06 — so the $2,059 Everything buyer was
+ * contract does not hold on this path — audit F4 2026-07-06 — so the $2,259 Everything buyer was
  * denied a surface they paid for). Tenant-scoped (ADR-0005 fail-closed RLS via withTenant) — a
  * forged account id sees nothing. Revoked grants are filtered out before the predicate.
  *

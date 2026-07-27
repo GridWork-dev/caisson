@@ -2,7 +2,7 @@ import { Boundary, Flow, Sheet, SNode, TitleBlock } from "./schematics";
 import styles from "./schematics.module.css";
 
 // Compliance-cluster blueprint sheets (ADR-0377 vocabulary, executing ADR-0378 lock 1
-// migrate-all): five module schematics for the compliance-gap SKUs, drawn against the same
+// migrate-all): compliance-cluster module schematics drawn against the same
 // blueprint linework register the two pilot sheets in ./schematics established. Each sheet
 // replaces a StageFlow mechanism diagram in marketplace-diagrams.tsx that targeted the same
 // module page (rls-deny for compliance-core, frameworks-oscal, access-review-campaign,
@@ -85,7 +85,7 @@ export function ComplianceCoreSheet() {
 // packages/frameworks-pack/src (registry/control.ts, crosswalks/regime-crosswalk.ts): every
 // canonical control's crosswalk resolves through RegimeCrosswalkRow, a discriminated union on
 // `claim`: "implements" type-requires a ProofPointer, "maps-to" carries none. Three own-authored
-// packs; the OSCAL v1.2.2 catalog export (compliance-core, consuming this package's Framework[])
+// packs; the OSCAL v1.2.2 catalog export (oscal-spine, consuming this package's Framework[])
 // addresses every control under a caisson URN.
 export function FrameworksPackSheet() {
   return (
@@ -133,12 +133,77 @@ export function FrameworksPackSheet() {
         packs: soc2-tsc · hipaa-security · eu-ai-act
       </text>
       <text x={12} y={142} className={styles.note}>
-        (compliance-core) OSCAL: urn:caisson:control:&lt;id&gt;
+        (oscal-spine) OSCAL: urn:caisson:control:&lt;id&gt;
       </text>
       <text x={12} y={156} className={styles.note}>
         SoA rows: applicable, unresolved, never guessed
       </text>
       <TitleBlock x={188} y={168} w={140} text="FRAMEWORKS-PACK · 1/1" />
+    </Sheet>
+  );
+}
+
+// ===== module:oscal-spine =====
+// packages/oscal-spine/src: structural evidence/framework inputs cross pure deterministic
+// adapters into OSCAL v1.2.2 artifacts; the vendored NIST SP 800-53 catalog is bound to one
+// upstream commit and SHA-256 before its crosswalk ids are accepted.
+export function OscalSpineSheet() {
+  return (
+    <Sheet
+      title="oscal-spine: structural inputs cross one deterministic adapter boundary into OSCAL v1.2.2 artifacts, with NIST reference bytes pinned by commit and SHA-256"
+      bar="packages/oscal-spine · adapters, conformance, pinned reference"
+    >
+      <SNode
+        x={12}
+        y={14}
+        w={118}
+        h={26}
+        head="structural inputs"
+        sub="evidence · frameworks · SoA"
+      />
+      <Flow x1={130} y1={27} x2={144} y2={27} />
+      <Boundary
+        x={144}
+        y={8}
+        w={166}
+        h={52}
+        label="deterministic OSCAL adapters"
+      />
+      <SNode
+        x={158}
+        y={25}
+        w={138}
+        h={26}
+        head="OSCAL v1.2.2"
+        sub="clock + UUID seams"
+      />
+      <Flow x1={227} y1={60} x2={227} y2={76} />
+      <SNode
+        x={26}
+        y={76}
+        w={126}
+        h={30}
+        head="assessment artifacts"
+        sub="AP · AR · POA&M · XML"
+      />
+      <SNode
+        x={174}
+        y={76}
+        w={126}
+        h={30}
+        head="catalog + SoA"
+        sub="deduped · sorted · valid"
+      />
+      <text x={12} y={128} className={styles.note}>
+        NIST SP 800-53 rev5: commit + SHA-256 pin
+      </text>
+      <text x={12} y={142} className={styles.note}>
+        oscal-cli conformance runs on committed goldens
+      </text>
+      <text x={12} y={156} className={styles.note}>
+        parents depend on + re-export this boundary
+      </text>
+      <TitleBlock x={188} y={168} w={140} text="OSCAL-SPINE · 1/1" />
     </Sheet>
   );
 }

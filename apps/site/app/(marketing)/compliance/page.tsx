@@ -248,7 +248,7 @@ export default function CompliancePage() {
       <Reveal>
         <Section
           title="What it composes"
-          lede="The Compliance bundle's core is a real runtime composition of ten @caisson/* packages, not a bundle of marketing copy: kernel (typed config, the SHA-256 chain primitive, append-only versioning), tenancy-rls (the fail-closed RLS guard), field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption), audit-worm (the append-only audit chain plus the S3 Object-Lock WORM adapter), migrate (the one migration assembler and runner, forward-only and checksum-drift-safe), alerting plus retention-runner (deduped alert delivery and policy-driven data retention), and the three carves, compliance-core (the evidence engine), frameworks-pack (the SOC 2 and HIPAA control mappings, PCI DSS and GDPR crosswalk exports, and OSCAL export), and signing-primitive (detached Ed25519 + RFC-3161 signing). alerting and retention-runner are wired in as real workspace dependencies and re-exported through the bundle's own index, not asserted in a manifest and left uncomposed. The purchase also includes three standalone compliance modules that run beside the composed core: access-review (attested access-review campaigns), risk-register (the AI risk register), and trust-page (the customer-facing trust page)."
+          lede="The Compliance bundle's core has ten direct @caisson/* dependencies: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, the shared commercial package that owns OSCAL assessment, catalog, XML, ISO 27001 SoA, and pinned NIST SP 800-53 surfaces. The purchase also includes three standalone compliance modules beside that runtime graph: access-review, risk-register, and trust-page."
         />
       </Reveal>
 
@@ -260,11 +260,11 @@ export default function CompliancePage() {
         />
       </Section>
 
-      {/* ===== The thirteen member packages ===== */}
+      {/* ===== The fourteen member packages ===== */}
       <Reveal>
         <Section
-          title="Thirteen packages, one bundle."
-          lede="Ten members form the composed runtime core, real workspace dependencies, not manifest claims. The other three are standalone compliance modules included in the same purchase. The ones also sold standalone carry their own price."
+          title="Fourteen packages, one bundle."
+          lede="Ten direct dependencies plus their shared OSCAL spine form the runtime graph. Three further standalone compliance modules are included in the same purchase. The ones also sold standalone carry their own price."
         >
           <FeatureGrid cols={3}>
             {MEMBER_MODULES.map((m) => (

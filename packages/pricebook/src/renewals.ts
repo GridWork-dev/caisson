@@ -15,7 +15,7 @@ import { z } from "zod";
 import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
 
 /** Append-only version stamp — a renewal-row change bumps this, never edits it in place (ADR-0006). */
-export const RENEWAL_BOOK_VERSION = "2026-07-19.1";
+export const RENEWAL_BOOK_VERSION = "2026-07-25.2";
 
 export const renewalBookEntrySchema = strictObject({
   /** The purchased id (edition/bundle/module slug) whose updates window this price renews. */
@@ -95,7 +95,26 @@ export const RENEWAL_BOOK: Record<string, RenewalBookEntry> = {
   pri_01ky0fgqtdyankb7fh999ak7xc: { renewsEntitlement: "access-review" },
   pri_01ky0fgqw89n4wrjysw4sgcray: { renewsEntitlement: "risk-register" },
   pri_01ky0fgqy145zagcq0n3btxr5k: { renewsEntitlement: "trust-page" },
+  // oscal-spine joined the sandbox catalog 2026-07-25. `years` stays unset: one year.
+  pri_01kye959a399018w0hmvbeem7h: { renewsEntitlement: "oscal-spine" },
+  // Forward-only bundle reprices (ADR-0381): the two original ids above remain resolvable for
+  // delayed/replayed provider events, while these are the active Sandbox renewal prices.
+  pri_01kyeczrnp20006sebn9gzg5zb: { renewsEntitlement: "compliance" },
+  pri_01kyeczrrsq68b8wbx2atygs5a: { renewsEntitlement: "everything" },
 };
+
+/** Archived provider ids remain in the append-only resolver but must never appear in renewal UI. */
+export const ARCHIVED_RENEWAL_PRICE_IDS: ReadonlySet<string> = new Set([
+  "pri_01kwvz6kzh4h43aec3r5rs5je4",
+  "pri_01kwvz6mcfzgjemqa72czdfkmq",
+]);
+
+/** The 33 currently armed renewal prices after excluding forward-only historical resolver rows. */
+export const ACTIVE_RENEWAL_PRICE_IDS: ReadonlySet<string> = new Set(
+  Object.keys(RENEWAL_BOOK).filter(
+    (priceId) => !ARCHIVED_RENEWAL_PRICE_IDS.has(priceId),
+  ),
+);
 
 /** Validate a renewal-book override at a boundary (Zod `.strict()` per row). */
 export function parseRenewalBook(

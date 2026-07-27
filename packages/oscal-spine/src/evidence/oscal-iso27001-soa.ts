@@ -26,7 +26,7 @@ import {
   assertReadinessLanguage,
   renderCitationRow,
 } from "@caisson/artifact-render";
-import type { SoaRow } from "@caisson/frameworks-pack";
+import type { OscalSoaRow } from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,
@@ -98,7 +98,7 @@ function cmp(a: string, b: string): number {
  * a meaningful SoA — the caller's scope was empty, which is a caller bug, not a valid export).
  */
 export function toOscalIso27001Soa(
-  rows: readonly SoaRow[],
+  rows: readonly OscalSoaRow[],
   options: OscalIso27001SoaOptions,
 ): OscalIso27001SoaDocument {
   if (Number.isNaN(options.now.getTime())) {

@@ -164,7 +164,7 @@ export const isDisposableDomain = (domain: string): boolean =>
 
 // The eval scope-ceiling floor (ADR-0274 §2 "unlocks the evaluated modules for the window" — an
 // unpaid trial, not a full-catalog grant). `expandEntitlements` only proves a requested id RESOLVES;
-// it says nothing about how MUCH access resolving it grants, so `everything` ($2,059, the full
+// it says nothing about how MUCH access resolving it grants, so `everything` ($2,259, the full
 // catalog) or several bundles at once would otherwise sail through as a "valid" eval scope. Bounded
 // here instead: an eval scope is either ONE bundle (never `everything`) alone, or a small module-only
 // set.

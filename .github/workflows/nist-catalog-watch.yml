@@ -1,7 +1,7 @@
 name: nist-catalog-watch
 # Weekly ADVISORY watch for the oscal-spine SPEC's F5 lock (ADR-0364, operator override of the
 # manual-v1 recommendation): does `usnistgov/oscal-content`'s vendored path have a newer commit
-# than the pinned SHA (packages/frameworks-pack/src/vendor/nist-catalog-pin.ts)? If so, structurally
+# than the pinned SHA (packages/oscal-spine/src/vendor/nist-catalog-pin.ts)? If so, structurally
 # diff its control-id set against the currently-committed catalog and flag which
 # `nist80053Crosswalk` rows' provenance just went stale. Report-only — modeled on the
 # toolchain-advisory lane: `vendor-nist-catalog.ts --refetch` does the actual work, always exits 0,
@@ -36,12 +36,12 @@ jobs:
         run: bun install --frozen-lockfile
       - name: refetch + structurally diff against the pinned catalog (report-only, always exits 0)
         run: |
-          cd packages/compliance-core
+          cd packages/oscal-spine
           bun scripts/vendor-nist-catalog.ts --refetch | tee nist-catalog-watch-report.md
       - name: upload the report artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: nist-catalog-watch-report
-          path: packages/compliance-core/nist-catalog-watch-report.md
+          path: packages/oscal-spine/nist-catalog-watch-report.md
           if-no-files-found: warn

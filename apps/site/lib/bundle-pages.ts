@@ -16,7 +16,7 @@
 import { type BundleId, bundlePrice } from "./pricing";
 
 // Spelled-out counts for composition headings (e.g. "Seven composed packages.") — small, fixed
-// vocabulary matching the site's existing voice ("Thirteen packages, one bundle.", "Five technical
+// vocabulary matching the site's existing voice ("Fourteen packages, one bundle.", "Five technical
 // controls…"). Never hand-type a count word beside a `.map()`-rendered grid (ADR-0082 F6): always
 // derive it from the same array the grid renders, through this one spot.
 const COUNT_WORDS = [
@@ -82,10 +82,10 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     hero: {
       eyebrow: "Compliance-grade infrastructure for regulated SaaS",
       title: "Audit-ready from the first commit.",
-      lede: "Compliance composes thirteen packages into one bundle: tenant isolation that fails closed, evidence that can't be overwritten, and a tamper-evident log that proves it. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck.",
+      lede: "Compliance delivers fourteen packages in one bundle: tenant isolation that fails closed, evidence that can't be overwritten, and machine-readable OSCAL exports backed by a pinned NIST catalog. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck.",
     },
     definition:
-      "Compliance composes thirteen @caisson/* packages into one bundle: fail-closed tenant isolation, an append-only audit chain over S3 Object-Lock WORM, per-tenant field encryption, alerting, a retention runner, an access-review campaign engine, an AI risk register, a buyer-facing trust page, and the evidence-pack generator that maps live controls to named SOC 2 and HIPAA clauses. Own the source, and wire it in before your first customer shares a row.",
+      "Compliance delivers fourteen @caisson/* packages in one bundle: fail-closed tenant isolation, an append-only audit chain over S3 Object-Lock WORM, per-tenant field encryption, alerting, a retention runner, an access-review campaign engine, an AI risk register, a buyer-facing trust page, and a dedicated OSCAL spine that maps evidence into machine-readable assessment, catalog, and ISO 27001 SoA artifacts. Own the source, and wire it in before your first customer shares a row.",
     members: [
       {
         id: "kernel",
@@ -139,7 +139,13 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "frameworks-pack",
         name: "Frameworks pack",
         oneLiner:
-          "SOC 2, HIPAA, and EU AI Act control mappings with OSCAL v1.2.2 export, the clause-to-control catalog the evidence packs render against.",
+          "SOC 2, HIPAA, and EU AI Act control mappings, the clause-to-control catalog the evidence packs render against.",
+      },
+      {
+        id: "oscal-spine",
+        name: "OSCAL spine",
+        oneLiner:
+          "Deterministic OSCAL v1.2.2 assessment, catalog, XML, and ISO 27001 SoA exports with a byte-pinned NIST SP 800-53 rev5 reference catalog.",
       },
       {
         id: "signing-primitive",
@@ -175,7 +181,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "Which packages does the bundle actually compose?",
         answer:
-          "Ten real workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. Access reviews, the AI risk register, and the trust-page generator are three further modules included in the same purchase, each ships as its own standalone package rather than a dependency the bundle's factory composes. Nothing on this page is a manifest claim without composed code behind it.",
+          "Ten direct workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, so the OSCAL package is a real shared dependency in that runtime graph. Access reviews, the AI risk register, and the trust-page generator are three further standalone modules in the same purchase. Nothing on this page is a manifest claim without code behind it.",
       },
       {
         question: "Do I own the source?",

@@ -1,6 +1,6 @@
 // src/vendor/nist-catalog-pin.ts — the ONE pinned-source-bundle constant for the vendored NIST SP
 // 800-53 rev5 OSCAL catalog (SPEC outputs/specs/oscal-spine, binding requirement 1). Every
-// consumer — the re-vendor script (packages/compliance-core/scripts/vendor-nist-catalog.ts), the
+// consumer — the re-vendor script (packages/oscal-spine/scripts/vendor-nist-catalog.ts), the
 // nist80053Crosswalk's `seedProvenance` (crosswalks/nist-800-53.ts), and the drift-guard unit test
 // (nist-catalog-pin.test.ts) — reads THIS module. Never a second, independently-drifting copy of
 // these values (the exact WR-08 failure the SPEC names).
@@ -29,7 +29,7 @@ export const NIST_CATALOG_SOURCE_URL = `https://raw.githubusercontent.com/${NIST
 export const NIST_CATALOG_VERSION = "5.2.0";
 
 /** The catalog's own internal `catalog.metadata["oscal-version"]` — must match the ADR-0179
- *  `OSCAL_VERSION` CI pin (`@caisson/compliance-core`'s `oscal-export.ts`). */
+ *  `OSCAL_VERSION` CI pin (`@caisson/oscal-spine`'s `oscal-export.ts`). */
 export const NIST_CATALOG_OSCAL_VERSION = "1.2.2";
 
 /** SHA-256 (lowercase hex) of the exact committed bytes of the sibling vendored JSON file. */

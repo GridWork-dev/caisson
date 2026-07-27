@@ -226,6 +226,9 @@ fails closed unless all 35 product markers and all 66 price markers are present 
 no unexpected marked product or price. Wire the resulting non-secret IDs into every canonical
 consumer, deploy them together, verify parity, then revoke the temporary key.
 
+**Post-deploy price probe:** Docs-RAG and support-bot must answer Compliance at $1,649 and
+Everything at $2,259. Do not assert those answers before the fleet deploy reaches the new image.
+
 ### Controlled real transaction
 
 1. Create the production webhook at `https://license.caisson.sh/webhook`.

@@ -38,12 +38,13 @@ Use the repository hierarchy, not an external artifact:
 - [ ] Deploy site, admin, license, docs-RAG, support-bot, and registry Worker from that commit.
 - [ ] Apply migration `0030` through the migration hold point and attach the receipt.
 - [ ] Prove manifest-digest parity plus health, checkout, entitlement, refund, RAG, and support.
-- [ ] Confirm docs/support answers use $1,449 and license fulfillment recognizes all current SKUs.
+- [ ] After the fleet deploy, confirm docs/support answer Compliance at $1,649 and Everything at
+      $2,259, and license fulfillment recognizes all current SKUs.
 
 ## Gate C — commerce and Ring 3
 
 - [ ] Complete Paddle production approval.
-- [ ] Recreate the 35-product/66-price production catalog.
+- [ ] Recreate the 36-product/68-price production catalog.
 - [ ] Configure adjustment and dunning behavior.
 - [ ] Prove a real checkout, refund, and entitlement lifecycle.
 - [ ] Complete Mercury setup.
