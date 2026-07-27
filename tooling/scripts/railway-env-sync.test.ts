@@ -4,8 +4,10 @@ import { describe, expect, test } from "bun:test";
 import {
   FLEET_CONFIGURATION_SEAMS,
   assertReadOnlyRailwayArgs,
+  assertProbeTransport,
   buildConfiguredProbeArgs,
   buildConfiguredProbeTargets,
+  buildControlProbeTargets,
   buildEnvironmentSection,
   buildLocalOnlyTail,
   buildServiceSection,
@@ -353,7 +355,15 @@ describe("fleet configured probe", () => {
       id: "site.byok-field-crypto",
       service: "caisson-site",
       environment: "production",
-      variables: ["MASTER_FIELD_KEY", "FIELD_CRYPTO_SALT"],
+      variables: [
+        "AZURE_KEY_VAULT_URL",
+        "AZURE_KEY_VAULT_KEY_NAME",
+        "AZURE_KEY_VAULT_WRAP_ALGORITHM",
+        "AZURE_KEY_VAULT_PURGE_PROTECTION",
+        "AZURE_TENANT_ID",
+        "AZURE_CLIENT_ID",
+        "AZURE_CLIENT_SECRET",
+      ],
       requirement: "required",
     },
     {
@@ -469,6 +479,28 @@ describe("fleet configured probe", () => {
     expect(output).not.toContain("secret-shaped-fixture-value");
   });
 
+  test("a broken transport is reported as unmeasured, never as absent variables", () => {
+    // The 2026-07-27 failure: `railway ssh` with no registered key exits non-zero for every probe,
+    // so all 11 required names read MISSING and the fleet looked entirely unarmed when it was not.
+    const deadTransport = (): boolean => false;
+    expect(
+      assertProbeTransport(deadTransport).map(
+        ({ service, environment }) => `${service}/${environment}`,
+      ),
+    ).toEqual(["caisson-site/production", "caisson-admin/production"]);
+
+    // A working transport yields no unreachable targets, so real absences still surface normally.
+    expect(assertProbeTransport(() => true)).toEqual([]);
+  });
+
+  test("control probes read only the injected service name and stay inside the read-only guard", () => {
+    for (const target of buildControlProbeTargets()) {
+      const args = buildConfiguredProbeArgs(target);
+      expect(args.at(-1)).toBe('test "${RAILWAY_SERVICE_NAME+x}" = x');
+      expect(() => assertReadOnlyRailwayArgs(args)).not.toThrow();
+    }
+  });
+
   test("the Railway guard rejects every SSH command outside the exact fleet presence probes", () => {
     expect(() =>
       assertReadOnlyRailwayArgs([
@@ -496,10 +528,18 @@ describe("fleet configured probe", () => {
       new URL("../../docs/ops/launch-runbook.md", import.meta.url),
       "utf8",
     );
+    // Bind each variable to its OWN seam's row, not to the document as a whole. Global containment
+    // could not catch the 2026-07-27 drift: this seam still probed MASTER_FIELD_KEY/FIELD_CRYPTO_SALT
+    // after ADR-0387 moved the site to Azure Key Vault, and both names passed because the separate
+    // local-ai row legitimately mentions them.
+    const rows = runbook.split("\n");
     for (const seam of expectedSeams) {
-      expect(runbook).toContain(`\`${seam.id}\``);
+      const row = rows.find((line) => line.includes(`\`${seam.id}\``));
+      expect(row, `no runbook row for seam ${seam.id}`).toBeDefined();
       for (const variable of seam.variables) {
-        expect(runbook).toContain(`\`${variable}\``);
+        expect(row, `${seam.id} row omits ${variable}`).toContain(
+          `\`${variable}\``,
+        );
       }
     }
     expect(runbook).toContain("OPTIONAL — operator-only test delivery");
