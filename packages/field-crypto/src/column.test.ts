@@ -27,10 +27,13 @@ function freshProvider(): DerivedKeyProvider {
 
 describe("encrypted column seam (sealField / openField)", () => {
   test("generic operations never mutate a context-owned cached key", () => {
+    // A context that lends its own cached buffer directly, with no defensive copy of its own.
+    // Under `withKey` the generic operations never wipe what they are lent — the lender decides —
+    // so this invariant now holds by construction rather than by each operation copying first.
     const cachedKey = Buffer.alloc(32, 0x6a);
     const ctx: FieldCryptoContext = {
       tenantId: "acct_cached",
-      deriveKey: () => cachedKey,
+      withKey: (_keyVersion, use) => use(cachedKey),
       currentVersion: () => 1,
     };
 
@@ -178,8 +181,12 @@ describe("request-scoped KMS context", () => {
     try {
       expect(peak).toBeLessThanOrEqual(4);
       expect(seen.sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-      expect(ctx.deriveKey(1)).toEqual(Buffer.alloc(32, 1));
-      expect(ctx.deriveKey(9)).toEqual(Buffer.alloc(32, 9));
+      expect(ctx.withKey(1, (key) => Buffer.from(key))).toEqual(
+        Buffer.alloc(32, 1),
+      );
+      expect(ctx.withKey(9, (key) => Buffer.from(key))).toEqual(
+        Buffer.alloc(32, 9),
+      );
     } finally {
       ctx.dispose();
     }
@@ -221,9 +228,11 @@ describe("request-scoped KMS context", () => {
       provider,
       "acct_a",
       async (ctx) => {
-        escaped = ctx.deriveKey(1);
+        escaped = ctx.withKey(1, (key) => key);
+        // Already zeroed here: the lend ended when the callback returned, long before dispose.
+        expect(escaped.equals(Buffer.alloc(32))).toBe(true);
         controller.abort(new Error("request deadline"));
-        expect(() => ctx.deriveKey(1)).toThrow(/disposed/);
+        expect(() => ctx.withKey(1, (key) => key)).toThrow(/disposed/);
         await Promise.resolve();
       },
       { abortSignal: controller.signal },
@@ -250,14 +259,17 @@ describe("request-scoped KMS context", () => {
     await withKmsFieldCryptoContext(provider, "acct_a", (ctx) => {
       captured = ctx;
       expect(currentFieldCryptoContext()).toBe(ctx);
-      escapedWorkingKey = ctx.deriveKey(1);
+      escapedWorkingKey = ctx.withKey(1, (key) => key);
+      // ADR-0393: a lent copy dies with ITS OPERATION, inside the request — not at dispose. A
+      // caller that smuggles the reference out of the callback finds it already zeroed.
+      expect(escapedWorkingKey.equals(Buffer.alloc(32))).toBe(true);
       const sealed = sealField(ctx, "patient.ssn", "secret");
       expect(openField(ctx, "patient.ssn", sealed)).toBe("secret");
     });
 
     expect(unwrapped.equals(Buffer.alloc(32))).toBe(true);
     expect(escapedWorkingKey?.equals(Buffer.alloc(32))).toBe(true);
-    expect(() => captured?.deriveKey(1)).toThrow(/disposed/);
+    expect(() => captured?.withKey(1, (key) => key)).toThrow(/disposed/);
     expect(() => currentFieldCryptoContext()).toThrow(/fail-closed/);
   });
 });
@@ -291,7 +303,7 @@ describe("kmsContext prefetch depth cap", () => {
     });
     try {
       expect(ctx.currentVersion()).toBe(8);
-      expect(ctx.deriveKey(1)).toHaveLength(32);
+      expect(ctx.withKey(1, (key) => key.length)).toBe(32);
     } finally {
       ctx.dispose();
     }

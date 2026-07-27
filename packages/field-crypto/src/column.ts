@@ -16,8 +16,20 @@ import type { FieldKeyProvider, SyncFieldKeyProvider } from "./provider.ts";
 /** The synchronous tenant context the column reads. Carries the tenant id + a sync key resolver. */
 export interface FieldCryptoContext {
   readonly tenantId: string;
-  /** Derive (or look up a pre-resolved) tenant key for a version — synchronously. */
-  deriveKey(keyVersion: number): Buffer;
+  /**
+   * Run one operation against the tenant key for `keyVersion` — synchronously.
+   *
+   * The key is LENT, never returned. The context owns the buffer passed to `use` and zeroizes it
+   * as soon as `use` returns or throws, so no key material outlives the single operation that
+   * needed it (ADR-0393, superseding ADR-0392 decision 5). This replaced a `deriveKey()` that
+   * returned the buffer: callers then held plaintext DEKs for the whole request, one per call,
+   * unbounded in row count.
+   *
+   * The honest boundary: a `use` that deliberately copies the bytes out (`Buffer.from(key)`, a
+   * string, another typed array) still escapes, and no JavaScript API can prevent that. What is
+   * eliminated is escape BY DEFAULT — the ergonomic path no longer hands back something to keep.
+   */
+  withKey<T>(keyVersion: number, use: (key: Buffer) => T): T;
   /** The version a new write encrypts under. */
   currentVersion(): number;
 }
@@ -99,7 +111,16 @@ export function derivedContext(
 ): FieldCryptoContext {
   return {
     tenantId,
-    deriveKey: (keyVersion) => provider.deriveKey(tenantId, keyVersion),
+    withKey(keyVersion, use) {
+      // `SyncFieldKeyProvider.deriveKey` returns caller-owned material (fresh HKDF output per
+      // call, see provider.ts), so this buffer is ours to wipe — no defensive copy needed.
+      const key = provider.deriveKey(tenantId, keyVersion);
+      try {
+        return use(key);
+      } finally {
+        key.fill(0);
+      }
+    },
     currentVersion: () => provider.currentVersionSync(tenantId),
   };
 }
@@ -225,7 +246,6 @@ export async function kmsContext(
   }
 
   let disposed = false;
-  const workingKeys = new Set<Buffer>();
   const assertLive = (): void => {
     if (disposed) {
       throw new InternalError(
@@ -236,7 +256,7 @@ export async function kmsContext(
 
   const context: DisposableFieldCryptoContext = {
     tenantId,
-    deriveKey(keyVersion) {
+    withKey(keyVersion, use) {
       assertLive();
       const key = keys.get(keyVersion);
       if (key === undefined) {
@@ -244,14 +264,16 @@ export async function kmsContext(
           `field-crypto: request KMS context has no prefetched key v${String(keyVersion)}`,
         );
       }
-      // Track the buffer handed out so `dispose()` can zero it even if the caller keeps the
-      // reference. This bounds the buffers THIS context owns; it cannot bind a caller that copies
-      // the bytes elsewhere (`Buffer.from(ctx.deriveKey(v))`, a string, another typed array) —
-      // nothing in JavaScript can. The honest guarantee is "no context-owned plaintext survives
-      // the request", not "no plaintext survives the request". See ADR-0392 decision 5.
+      // `use` gets a COPY, so a callback that follows the overwrite-after-use convention cannot
+      // zero the context's cached source and silently break every later operation in the request.
+      // The copy dies with the operation rather than at dispose(), so plaintext residency is now
+      // bounded by ONE operation instead of by the request's row count (ADR-0393).
       const workingKey = Buffer.from(key);
-      workingKeys.add(workingKey);
-      return workingKey;
+      try {
+        return use(workingKey);
+      } finally {
+        workingKey.fill(0);
+      }
     },
     currentVersion() {
       assertLive();
@@ -261,10 +283,10 @@ export async function kmsContext(
       if (disposed) return;
       disposed = true;
       options.abortSignal?.removeEventListener("abort", disposeOnAbort);
+      // Only the prefetched sources need erasing now: `withKey` wipes each lent copy when its
+      // operation returns, so no working buffer can still be alive here (ADR-0393).
       for (const key of keys.values()) key.fill(0);
       keys.clear();
-      for (const workingKey of workingKeys) workingKey.fill(0);
-      workingKeys.clear();
     },
   };
   const disposeOnAbort = (): void => {
@@ -311,11 +333,8 @@ export function sealField(
   cipher: AeadCipher = aesGcm,
 ): string {
   const keyVersion = ctx.currentVersion();
-  // `deriveKey()` may return a context-owned cached buffer. Operate on a caller-owned copy so
-  // eager zeroization cannot corrupt the context's source key; disposable KMS contexts erase that
-  // source material at request exit.
-  const key = Buffer.from(ctx.deriveKey(keyVersion));
-  try {
+  // The key is lent for this operation only; the context wipes it when this callback returns.
+  return ctx.withKey(keyVersion, (key) => {
     const aad = buildAad(ctx.tenantId, keyVersion, columnContext);
     const { nonce, ciphertext, tag } = cipher.encrypt(
       key,
@@ -329,9 +348,7 @@ export function sealField(
       ciphertext,
       tag,
     });
-  } finally {
-    key.fill(0);
-  }
+  });
 }
 
 /** Decrypt a stored envelope under a context (key version comes from the envelope). (Pure; testable.) */
@@ -341,8 +358,7 @@ export function openField(
   stored: string,
 ): string {
   const env = parseEnvelope(stored);
-  const key = Buffer.from(ctx.deriveKey(env.keyVersion));
-  try {
+  return ctx.withKey(env.keyVersion, (key) => {
     const aad = buildAad(ctx.tenantId, env.keyVersion, columnContext);
     const cipher = cipherForAlg(env.algId);
     return cipher
@@ -352,9 +368,7 @@ export function openField(
         aad,
       )
       .toString("utf8");
-  } finally {
-    key.fill(0);
-  }
+  });
 }
 
 /**
