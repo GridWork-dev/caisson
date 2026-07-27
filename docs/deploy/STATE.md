@@ -11,6 +11,68 @@ grounds:
 
 # Deploy log
 
+## 2026-07-27 — Act 1 executed: one-SHA fleet + migration chain through 0032; PARITY OK
+
+The ADR-0379 T4 hold was released by the operator and the preliminary one-SHA fleet ran end to end.
+**Every leg is built from `e6ee01a6`** (receipts in `docs/deploy/receipts/*.json`). The long-standing
+red parity is CLOSED.
+
+| Leg             | Evidence                                                             | State  |
+| --------------- | -------------------------------------------------------------------- | ------ |
+| Registry Worker | Cloudflare version `a515a0fe`; serves 17 anon-filtered entries       | **OK** |
+| Repository      | index digest `74e92a6813bc` · 53 entries                             | source |
+| License         | `09adca8d32a5`/49 entries → **`74e92a6813bc`/53**                    | **OK** |
+| Admin           | `97b183902c08` → **`74e92a6813bc`/53**                               | **OK** |
+| Site            | healthz 200; marketplace renders $1,649 / $2,259 / $249              | **OK** |
+| Docs-RAG        | 548 chunks, semantic index rebuilt (269 cache hits / 279 new embeds) | **OK** |
+| Support bot     | /health 200                                                          | **OK** |
+
+`bun registry/scripts/index-parity-probe.ts` → **`RESULT: PARITY OK`**.
+
+### Migration receipt (data-migration act)
+
+The migration is not a separate step: `services/license/railway.toml` runs
+`bun apps/site/lib/deploy-migrate.ts` as `preDeployCommand`, so deploying license LAST _is_ applying
+the chain. `schema_version` went **29 → 32** (`0030`, `0031`, `0032_field_crypto_keys.sql`).
+
+Post-migration structural receipt, per the runbook's pre-wrap requirement:
+
+| Assertion                                       | Result                                                 |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| `field_key_version` + `field_wrapped_dek` exist | both present                                           |
+| Forced RLS                                      | `rowsecurity` **and** `relforcerowsecurity` true, both |
+| Tenant policies                                 | `*_tenant_isolation` (cmd ALL) on both                 |
+| Append-only guards                              | `*_no_mutation` on **UPDATE and DELETE**, both tables  |
+
+Pre-migration backup: `~/backups/caisson-preT4/20260727T211420Z` — `pg_dumpall --globals-only` (6
+roles incl. `admin`/`admin_write`/`admin_app`/`app`) plus custom-format dumps of `railway` (47 data
+tables) and `admin_auth` (4), each verified readable with `pg_restore --list`.
+
+### BLOCKING preflight — `tenant_ai_credential` (ADR-0392)
+
+Run before any Azure arming, with the privilege proof the runbook requires (a bare count is a false
+green under FORCE RLS): `current_user = postgres`, `rolsuper = t`, `rolbypassrls = t`,
+`bypasses_rls = t`; `SET row_security = off` accepted with no `SET LOCAL` warning; **`sealed_rows = 0`**.
+The wave's premise holds — nothing is sealed, so the version-collision data-loss path is not live
+whenever Azure is eventually armed.
+
+### Buyer-flow probes
+
+| Probe                   | Result                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Paddle webhook → grant  | **PASS** — signed delivery drove verify → `applyBillingEvent` → real grant row → teardown                                 |
+| Site live suite         | **PASS** — 19 tests (buyer-dashboard flow, prod routes, analytics bundle)                                                 |
+| Unknown SKU             | **PASS** — HTTP 500 fail-closed; **0** grant rows written                                                                 |
+| Docs-RAG catalog answer | **PASS** — `Compliance — $1,649`, `Everything — $2,259`                                                                   |
+| Support-bot answer      | **PARTIAL** — retrieval source (docs-RAG) verified; the bot answers over Discord, so end-to-end needs an operator message |
+
+### Not armed, deliberately
+
+`site.byok-field-crypto` remains **unarmed**: zero of the seven `AZURE_*` names are on
+`caisson-site` and none exist in the secret source of truth — the Key Vault, key, and service
+principal were never provisioned. Operator-deferred for this deploy (reachable only via a buyer BYOK
+submit, which is gated and has no caller). It stays a REQUIRED seam blocking paid launch.
+
 ## 2026-07-27 — local reconciliation only; fleet unchanged
 
 Local `main` now represents the validated writing surface, OSCAL spine/catalog, Ask AI evidence,
@@ -19,7 +81,12 @@ and checkout/Python supply-chain pin updates. The field-crypto KMS async branch 
 provider setting changed, no migration ran, and no service was deployed or restarted. The runtime
 parity evidence below is therefore unchanged.
 
-## Current fleet parity — 2026-07-25
+## Current fleet parity — superseded 2026-07-27 (see the Act 1 entry above)
+
+The table below is the pre-Act-1 state, retained for history. Live parity is now **OK** on
+`e6ee01a6` / `74e92a6813bc`.
+
+## Historical fleet parity — 2026-07-25
 
 Health and source parity are separate:
 
