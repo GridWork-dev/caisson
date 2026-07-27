@@ -16,7 +16,7 @@ function keyForTenant(tenantId: string): Buffer {
 function ctxFor(tenantId: string, version = 1): FieldCryptoContext {
   return {
     tenantId,
-    deriveKey: () => keyForTenant(tenantId),
+    withKey: (_keyVersion, use) => use(keyForTenant(tenantId)),
     currentVersion: () => version,
   };
 }
@@ -30,9 +30,11 @@ describe("encryptField (row-bound AAD, ADR-0055 — TM-E)", () => {
   test("generic row-bound operations never mutate a context-owned cached key", () => {
     const cachedKey = keyForTenant("acct_cached");
     const original = Buffer.from(cachedKey);
+    // Lends its cached buffer directly, with no defensive copy. The generic row-bound operations
+    // must not wipe what they are lent — under `withKey` the lender owns that decision.
     const ctx: FieldCryptoContext = {
       tenantId: "acct_cached",
-      deriveKey: () => cachedKey,
+      withKey: (_keyVersion, use) => use(cachedKey),
       currentVersion: () => 1,
     };
 
@@ -51,12 +53,24 @@ describe("encryptField (row-bound AAD, ADR-0055 — TM-E)", () => {
     expect(decryptField(ctx, COL, ROW, sealed)).toBe(SSN);
   });
 
-  test("zeroizes each caller-owned working copy after encrypt and decrypt", () => {
+  test("runs the cipher on the lent buffer without copying it out of the lend", () => {
     const cachedKey = keyForTenant("acct_a");
     const workingCopies: Buffer[] = [];
+    // NOTE the boundary this test actually covers: the zeroization asserted below is performed by
+    // THIS mock's own `finally`, not by `encryptField`. What it pins is that the operation runs the
+    // cipher on the buffer it was lent and does not copy it out of scope — rewrite `encryptField`
+    // to stash a copy and the assertion fails. Production zeroization is covered against the real
+    // contexts in column.test.ts.
     const ctx: FieldCryptoContext = {
       tenantId: "acct_a",
-      deriveKey: () => cachedKey,
+      withKey(_keyVersion, use) {
+        const lent = Buffer.from(cachedKey);
+        try {
+          return use(lent);
+        } finally {
+          lent.fill(0);
+        }
+      },
       currentVersion: () => 1,
     };
     const observingCipher: AeadCipher = {

@@ -1,7 +1,7 @@
 ---
-updated: 2026-07-26
+updated: 2026-07-27
 status: live
-adr_ceiling: 0392
+adr_ceiling: 0393
 ---
 
 # Decisions & Forks — live board
@@ -185,14 +185,15 @@ Full per-round narrative (verbatim, unabridged) moved to `docs/archive/forks-boa
 This compact table is the active fork set. Historical/disposition material below is not an
 additional active queue.
 
-| Fork                                                   | Why it remains open                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Railway PITR                                           | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| **Raw-DEK exposure on `FieldCryptoContext.deriveKey`** | Opened 2026-07-27 by the T8 review rounds (ADR-0392 decision 5). `deriveKey` returns raw key bytes, so the context can only guarantee that _context-owned_ plaintext dies at request exit — a caller that copies the bytes elsewhere cannot be bound, by this or any JavaScript API. Making the stronger "no plaintext survives the request" claim true means replacing `deriveKey` with callback-scoped cryptographic operations so key bytes never cross the boundary: a breaking change to a published seam on a sold package. Options: (a) narrow the claim permanently and keep the ergonomic API, (b) migrate to callback-scoped ops behind a major bump, (c) offer both and deprecate the raw accessor. No recommendation locked; two independent reviewers raised it, neither proposed fix was safe as first stated. |
+| Fork         | Why it remains open                                                                                                                                                     |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Railway PITR | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18. |
 
 _Six more closed 2026-07-26 → **ADR-0391**: D5 discounted-close evidence · D6 bounded-thesis tripwire · D7 three demand instruments · D11 Article 50 timing plus the new `/writing` surface · D13 economic-buyer map · D15 separate learning and revenue clocks._
 
 _Closed 2026-07-27 → **ADR-0392**: the prefetch-all KMS context's real bind cost, a bounded prefetch depth, provisioning that happens at bind rather than on first seal, and the within-tenant crypto-shred lockout prefetch-all implies. Supersedes ADR-0389 decisions 1 and 3 in their stated properties; the design itself stands._
+
+_Closed 2026-07-27 → **ADR-0393**: the raw-DEK fork ADR-0392 decision 5 opened but deferred. `FieldCryptoContext.deriveKey` (which RETURNED a plaintext DEK) becomes `withKey(version, use)`, which lends a buffer the context zeroizes when the operation returns or throws. Residency drops from one retained copy per row to one lend at a time, and the never-mutate-a-cached-key invariant now holds by construction. Taken now precisely because the package is 0.3.5 pre-1.0 with zero live external consumers — the cost will never be lower. Supersedes ADR-0392 decision 5._
 
 _One implementation fork closed 2026-07-25 → **ADR-0389**: the async boundary prefetches every
 historical key version into a request-local context, zeroizes the entire context on exit, and

@@ -33,7 +33,9 @@ unseal through Azure Key Vault, with no plaintext DEK outliving a request.
 `packages/field-crypto/src/column.ts` is where the sync assumption actually lives:
 
 - `FieldCryptoContext` is `{ tenantId, deriveKey(keyVersion) → Buffer, currentVersion() → number }` —
-  both members **synchronous**.
+  both members **synchronous**. _(Shape as of this SPEC. ADR-0393 later replaced `deriveKey` with
+  `withKey(keyVersion, use)`, which lends the key rather than returning it; the synchronous
+  property this SPEC depends on is unchanged.)_
 - `sealField` / `unsealField` are sync pure functions over that context.
 - The context is bound per request through `AsyncLocalStorage`; `currentFieldCryptoContext()` throws
   when a query reaches an encrypted column unscoped (fail-closed, ADR-0005).

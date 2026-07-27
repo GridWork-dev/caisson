@@ -27,10 +27,13 @@ function freshProvider(): DerivedKeyProvider {
 
 describe("encrypted column seam (sealField / openField)", () => {
   test("generic operations never mutate a context-owned cached key", () => {
+    // A context that lends its own cached buffer directly, with no defensive copy of its own.
+    // Under `withKey` the generic operations never wipe what they are lent — the lender decides —
+    // so this invariant now holds by construction rather than by each operation copying first.
     const cachedKey = Buffer.alloc(32, 0x6a);
     const ctx: FieldCryptoContext = {
       tenantId: "acct_cached",
-      deriveKey: () => cachedKey,
+      withKey: (_keyVersion, use) => use(cachedKey),
       currentVersion: () => 1,
     };
 
@@ -41,6 +44,77 @@ describe("encrypted column seam (sealField / openField)", () => {
     expect(openField(ctx, "patient.ssn", first)).toBe("first");
     expect(openField(ctx, "patient.ssn", second)).toBe("second");
     expect(cachedKey.equals(Buffer.alloc(32, 0x6a))).toBe(true);
+  });
+
+  test("derivedContext fails closed when a provider hands back a cached, already-zeroed key", () => {
+    // A caching SyncFieldKeyProvider violates the OWNERSHIP contract, and `derivedContext` wipes
+    // what it is given in place. Without a guard the FIRST operation zeroes the provider's cache
+    // and every later write encrypts under an all-zero key — which decrypts fine, so the tenant
+    // silently stores data under a publicly known key with every check green. It must be loud.
+    const sharedCache = Buffer.alloc(32, 0x5b);
+    const cachingProvider = {
+      deriveKey: () => sharedCache,
+      currentVersionSync: () => 1,
+      keyFor: async () => Buffer.from(sharedCache),
+      currentVersion: async () => 1,
+    };
+    const ctx = derivedContext(cachingProvider, "acct_caching");
+
+    // First op succeeds and wipes the provider's cache, as the contract permits it to.
+    expect(sealField(ctx, "patient.ssn", "first")).toBeTruthy();
+    expect(sharedCache.equals(Buffer.alloc(32))).toBe(true);
+    // The second must refuse rather than encrypt under all zeroes.
+    expect(() => sealField(ctx, "patient.ssn", "second")).toThrow(
+      /all-zero key/i,
+    );
+  });
+
+  test("withKey refuses an async callback and adopts its orphaned rejection", async () => {
+    // `use` returns at its first await, so the key is zeroized while the continuation still means
+    // to use it. Silently that yields valid-looking ciphertext under an all-zero key — but the
+    // guard that makes it loud must not itself be fatal: `use()` has ALREADY produced a live
+    // pending promise, and a REJECTING one with no handler is an unhandled rejection, which Node
+    // terminates the process over. A resolving promise would not exercise this at all.
+    const ctx = derivedContext(freshProvider(), "acct_async");
+
+    // Probe with a hand-rolled thenable rather than a real promise: it records whether the guard
+    // attached a rejection handler BEFORE throwing. Asserting on `unhandledRejection` instead
+    // would be non-deterministic under `bun test` — that listener does not fire reliably here, so
+    // a test written that way passes against the un-fixed code and proves nothing.
+    const rejectionHandlers: unknown[] = [];
+    const thenable = {
+      then(_onFulfilled: unknown, onRejected: unknown) {
+        rejectionHandlers.push(onRejected);
+      },
+    };
+
+    expect(() =>
+      ctx.withKey(1, (() => thenable) as unknown as (key: Buffer) => number),
+    ).toThrow(/must be synchronous/i);
+    expect(rejectionHandlers).toHaveLength(1);
+    expect(typeof rejectionHandlers[0]).toBe("function");
+
+    // A real rejecting promise must not take the process down either.
+    const orphaned: unknown[] = [];
+    const capture = (reason: unknown): void => {
+      orphaned.push(reason);
+    };
+    process.on("unhandledRejection", capture);
+    try {
+      expect(() =>
+        ctx.withKey(1, ((): Promise<number> =>
+          Promise.reject(
+            new Error("continuation ran against a zeroized key"),
+          )) as unknown as (key: Buffer) => number),
+      ).toThrow(/must be synchronous/i);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(orphaned).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", capture);
+    }
+
+    // An iterable return is legitimate and must NOT be rejected.
+    expect(ctx.withKey(1, (key) => [key.length])).toEqual([32]);
   });
 
   test("seal → open round-trips under the same context", () => {
@@ -178,8 +252,12 @@ describe("request-scoped KMS context", () => {
     try {
       expect(peak).toBeLessThanOrEqual(4);
       expect(seen.sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-      expect(ctx.deriveKey(1)).toEqual(Buffer.alloc(32, 1));
-      expect(ctx.deriveKey(9)).toEqual(Buffer.alloc(32, 9));
+      expect(ctx.withKey(1, (key) => Buffer.from(key))).toEqual(
+        Buffer.alloc(32, 1),
+      );
+      expect(ctx.withKey(9, (key) => Buffer.from(key))).toEqual(
+        Buffer.alloc(32, 9),
+      );
     } finally {
       ctx.dispose();
     }
@@ -221,9 +299,11 @@ describe("request-scoped KMS context", () => {
       provider,
       "acct_a",
       async (ctx) => {
-        escaped = ctx.deriveKey(1);
+        escaped = ctx.withKey(1, (key) => key);
+        // Already zeroed here: the lend ended when the callback returned, long before dispose.
+        expect(escaped.equals(Buffer.alloc(32))).toBe(true);
         controller.abort(new Error("request deadline"));
-        expect(() => ctx.deriveKey(1)).toThrow(/disposed/);
+        expect(() => ctx.withKey(1, (key) => key)).toThrow(/disposed/);
         await Promise.resolve();
       },
       { abortSignal: controller.signal },
@@ -232,6 +312,61 @@ describe("request-scoped KMS context", () => {
     await expect(pending).rejects.toThrow(/request deadline/);
     expect(unwrapped.equals(Buffer.alloc(32))).toBe(true);
     expect(escaped?.equals(Buffer.alloc(32))).toBe(true);
+  });
+
+  test("dispose() during an active lend wipes it and refuses the result", async () => {
+    // A lend that is mid-callback has not reached its `finally`, so self-wiping completed lends is
+    // not enough — dispose has to reach the in-flight one. And once it has, everything the callback
+    // computes afterwards ran against an all-zero key, so the result must not be handed back.
+    const unwrapped = Buffer.alloc(32, 0x44);
+    const provider: FieldKeyProvider = {
+      async currentVersion() {
+        return 1;
+      },
+      async keyFor() {
+        return unwrapped;
+      },
+    };
+    const ctx = await kmsContext(provider, "acct_dispose");
+    let keyDuringDispose: Buffer | undefined;
+
+    expect(() =>
+      ctx.withKey(1, (key) => {
+        ctx.dispose();
+        keyDuringDispose = key;
+        return "computed after disposal";
+      }),
+    ).toThrow(/disposed during the operation/i);
+
+    expect(keyDuringDispose?.equals(Buffer.alloc(32))).toBe(true);
+  });
+
+  test("an abort raised inside a lend wipes it and refuses the result", async () => {
+    const unwrapped = Buffer.alloc(32, 0x45);
+    const controller = new AbortController();
+    const provider: FieldKeyProvider = {
+      async currentVersion() {
+        return 1;
+      },
+      async keyFor() {
+        return unwrapped;
+      },
+    };
+    const ctx = await kmsContext(provider, "acct_abort_lend", {
+      abortSignal: controller.signal,
+    });
+    let keyAfterAbort: Buffer | undefined;
+
+    expect(() =>
+      ctx.withKey(1, (key) => {
+        // The abort listener disposes synchronously, so this lands mid-lend.
+        controller.abort(new Error("request deadline"));
+        keyAfterAbort = key;
+        return "computed after abort";
+      }),
+    ).toThrow(/disposed during the operation/i);
+
+    expect(keyAfterAbort?.equals(Buffer.alloc(32))).toBe(true);
   });
 
   test("no plaintext DEK survives the request scope", async () => {
@@ -250,14 +385,17 @@ describe("request-scoped KMS context", () => {
     await withKmsFieldCryptoContext(provider, "acct_a", (ctx) => {
       captured = ctx;
       expect(currentFieldCryptoContext()).toBe(ctx);
-      escapedWorkingKey = ctx.deriveKey(1);
+      escapedWorkingKey = ctx.withKey(1, (key) => key);
+      // ADR-0393: a lent copy dies with ITS OPERATION, inside the request — not at dispose. A
+      // caller that smuggles the reference out of the callback finds it already zeroed.
+      expect(escapedWorkingKey.equals(Buffer.alloc(32))).toBe(true);
       const sealed = sealField(ctx, "patient.ssn", "secret");
       expect(openField(ctx, "patient.ssn", sealed)).toBe("secret");
     });
 
     expect(unwrapped.equals(Buffer.alloc(32))).toBe(true);
     expect(escapedWorkingKey?.equals(Buffer.alloc(32))).toBe(true);
-    expect(() => captured?.deriveKey(1)).toThrow(/disposed/);
+    expect(() => captured?.withKey(1, (key) => key)).toThrow(/disposed/);
     expect(() => currentFieldCryptoContext()).toThrow(/fail-closed/);
   });
 });
@@ -291,7 +429,7 @@ describe("kmsContext prefetch depth cap", () => {
     });
     try {
       expect(ctx.currentVersion()).toBe(8);
-      expect(ctx.deriveKey(1)).toHaveLength(32);
+      expect(ctx.withKey(1, (key) => key.length)).toBe(32);
     } finally {
       ctx.dispose();
     }

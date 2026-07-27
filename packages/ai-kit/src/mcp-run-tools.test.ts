@@ -178,9 +178,11 @@ describe("MCP run tools field-crypto context", () => {
         withTenant(testPg.pg, accountId, (exec) =>
           withKmsFieldCryptoContext(provider, accountId, async (ctx) => {
             contextRuns += 1;
-            const workingKey = ctx.deriveKey(1);
-            activeDuringCallback = workingKey.every((byte) => byte === 0x31);
-            workingKey.fill(0);
+            // ADR-0393: the key is lent for the callback only and wiped on return, so the liveness
+            // check has to happen INSIDE the lend — reading it afterwards would only see zeroes.
+            activeDuringCallback = ctx.withKey(1, (key) =>
+              key.every((byte) => byte === 0x31),
+            );
             return fn(exec, ctx);
           }),
         ),
