@@ -7,11 +7,11 @@
 // Stripe Connect cubes. Transform-only (translate/scale — the ADR-0307 floor); hover-driven
 // only, never keyboard-initiated (the focus ring stays still by design).
 //
-// ponytail: hand-rolled damped harmonic oscillator (~40 lines) instead of framer-motion's
-// animate() — two nodes × two values doesn't justify re-splitting the shared framer runtime
-// across a second async entry (measured: it pushed the framer-bearing lazy set from 42.6 to
-// 73.1 KiB gzip, past the ADR-0334 §7 ≤60 ceiling). The Living Chain stays the repo's ONE
-// framer-bearing component; this integrator is the same spring math, velocity included.
+// ponytail: hand-rolled damped harmonic oscillator (~40 lines) instead of motion's (formerly
+// framer-motion) animate() — two nodes × two values doesn't justify re-splitting the shared
+// motion runtime across a second async entry (measured: it pushed the motion-bearing lazy set
+// from 42.6 to 73.1 KiB gzip, past the ADR-0334 §7 ≤60 ceiling). The Living Chain stays the
+// repo's ONE motion-bearing component; this integrator is the same spring math, velocity included.
 
 interface SpringParams {
   stiffness: number;
