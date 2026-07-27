@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start -p 3040",
     "lint": "eslint .",
-    "test": "bun test ./lib"
+    "test": "bun test --timeout 60000 ./lib"
   },
   "dependencies": {
     "@caisson/audit-worm": "workspace:*",

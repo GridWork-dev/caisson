@@ -11,7 +11,7 @@
   },
   "scripts": {
     "lint": "echo 'eslint-config: config package, no self-lint'",
-    "test": "bun test boundaries.test.ts"
+    "test": "bun test --timeout 60000 boundaries.test.ts"
   },
   "dependencies": {
     "@eslint/js": "^10.0.0",

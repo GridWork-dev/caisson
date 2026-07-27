@@ -31,7 +31,7 @@
   "scripts": {
     "build": "bun run scripts/bundle-migrations.ts && bun run scripts/bundle-registry-index.ts && tscn -p tsconfig.json && tscn -p tsconfig.scripts.json && bun run scripts/add-shebang.ts",
     "lint": "eslint src scripts",
-    "test": "bun test ./src ./scripts"
+    "test": "bun test --timeout 60000 ./src ./scripts"
   },
   "dependencies": {
     "@caisson/ds-manifest": "workspace:*",

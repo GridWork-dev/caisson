@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start -p 3031",
     "lint": "eslint .",
-    "test": "bun test ./lib"
+    "test": "bun test --timeout 60000 ./lib"
   },
   "dependencies": {
     "@ai-sdk/provider": "^4.0.3",

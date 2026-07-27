@@ -23,7 +23,7 @@
   "scripts": {
     "build": "tscn -p tsconfig.json && mkdir -p dist/components && cp src/components/*.css dist/components/",
     "lint": "eslint src",
-    "test": "bun test ./src"
+    "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",

@@ -74,12 +74,22 @@ function receipt(
 }
 
 /**
- * Flush the pending fetch + async recompute microtasks/macrotasks so React settles. With an
- * `until` predicate, keeps flushing (bounded) until it holds — the WebCrypto verify chain
- * (SPKI import + subtle.verify) can outlast a fixed pass count on a slow CI box.
+ * Flush the pending fetch + async recompute microtasks/macrotasks so React settles. An `until`
+ * predicate exits early once it holds; without one, every pass runs.
+ *
+ * The bound is the same either way, deliberately. This used to flush a fixed 3 passes when no
+ * predicate was given, which measured as exactly one pass of headroom — 2 passes suffice on an idle
+ * box, 1 fails — so under the full-graph build load the WebCrypto verify chain (SPKI import +
+ * subtle.verify) needed one more macrotask turn than it got and this file flaked in CI while
+ * passing standalone. Flushing unconditionally costs ~2.5s across the file and cannot turn a
+ * passing assertion into a failing one, since every call site asserts after `settle` returns.
+ *
+ * ponytail: brute-force flush, not settlement detection. Detecting "the DOM stopped changing" would
+ * exit sooner but stops early in exactly the mid-chain macrotask gap that caused the flake. Swap
+ * only if the 2.5s starts mattering.
  */
 async function settle(until?: () => boolean): Promise<void> {
-  const maxPasses = until === undefined ? 3 : 200;
+  const maxPasses = 200;
   for (let i = 0; i < maxPasses; i += 1) {
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));

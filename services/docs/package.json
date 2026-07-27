@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tscn -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src",
+    "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live",
     "start": "bun run src/server.ts"
   },
