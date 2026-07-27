@@ -69,9 +69,15 @@ function throwIfAborted(signal: AbortSignal): void {
   }
 }
 
-const AWS_KMS_KEY_ID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
-const AWS_KMS_KEY_ARN =
-  /^arn:[a-z0-9-]+:kms:[a-z0-9-]+:\d{12}:key\/([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})$/i;
+// An AWS key identifier is EITHER a canonical UUID or a multi-Region `mrk-` id. Accepting only the
+// former rejected valid multi-Region CMKs outright, so a tenant holding one could never be shredded.
+const AWS_KMS_KEY_ID_BODY =
+  "(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|mrk-[0-9a-f]{32})";
+const AWS_KMS_KEY_ID = new RegExp(`^${AWS_KMS_KEY_ID_BODY}$`, "i");
+const AWS_KMS_KEY_ARN = new RegExp(
+  `^arn:[a-z0-9-]+:kms:[a-z0-9-]+:\\d{12}:key\\/(${AWS_KMS_KEY_ID_BODY})$`,
+  "i",
+);
 
 function deletionKeyIdentity(keyId: string): {
   readonly requestedArn?: string;
@@ -229,6 +235,13 @@ export function createAwsKmsClient(config: AwsKmsClientConfig): KmsClient {
         throw new InternalError(
           "field-crypto: AWS KMS returned an unexpected key identity for deletion",
         );
+      }
+      // A multi-Region PRIMARY that still has replicas: AWS accepts the request but cannot schedule
+      // the material for destruction until every replica is gone, so it returns neither a
+      // DeletionDate nor the accepted window. That is a legitimate accepted-but-recoverable state,
+      // not a protocol violation — reporting it beats failing an otherwise valid crypto-shred.
+      if (KeyState === "PendingReplicaDeletion") {
+        return { state: "pending-deletion", irreversible: false };
       }
       if (
         KeyState !== "PendingDeletion" ||

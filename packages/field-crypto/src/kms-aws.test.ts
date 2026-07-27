@@ -138,6 +138,44 @@ describe("createAwsKmsClient (ADR-0171 / ADR-0197 per-tenant CMK)", () => {
     });
   });
 
+  test("scheduleKeyDeletion accepts a multi-Region mrk- key id and its ARN", async () => {
+    const deletionDate = new Date("2026-08-01T00:00:00.000Z");
+    const mrkId = "mrk-1234abcd12ab34cd56ef1234567890ab";
+    const mrkArn = `arn:aws:kms:us-east-1:111122223333:key/${mrkId}`;
+    for (const requested of [mrkId, mrkArn]) {
+      const { client: kms } = fakeKms(() => ({
+        KeyId: mrkArn,
+        KeyState: "PendingDeletion",
+        DeletionDate: deletionDate,
+        PendingWindowInDays: 7,
+      }));
+      const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+
+      // Previously a UUID-only pattern rejected every valid multi-Region key outright.
+      expect(await client.scheduleKeyDeletion(requested)).toEqual({
+        state: "pending-deletion",
+        irreversible: false,
+        scheduledFor: deletionDate.toISOString(),
+      });
+    }
+  });
+
+  test("scheduleKeyDeletion reports PendingReplicaDeletion without inventing a deletion date", async () => {
+    const mrkId = "mrk-1234abcd12ab34cd56ef1234567890ab";
+    const mrkArn = `arn:aws:kms:us-east-1:111122223333:key/${mrkId}`;
+    // A multi-Region primary with live replicas: AWS returns neither DeletionDate nor the window.
+    const { client: kms } = fakeKms(() => ({
+      KeyId: mrkArn,
+      KeyState: "PendingReplicaDeletion",
+    }));
+    const client = createAwsKmsClient({ keyId: "key-DEFAULT", client: kms });
+
+    const receipt = await client.scheduleKeyDeletion(mrkId);
+
+    expect(receipt).toEqual({ state: "pending-deletion", irreversible: false });
+    expect(receipt.irreversible).toBe(false);
+  });
+
   test("rejects aliases and provider responses that do not prove the requested deletion identity", async () => {
     const keyId = "1234abcd-12ab-34cd-56ef-1234567890ab";
     const client = createAwsKmsClient({
