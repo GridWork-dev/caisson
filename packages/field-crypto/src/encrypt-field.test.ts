@@ -53,12 +53,14 @@ describe("encryptField (row-bound AAD, ADR-0055 — TM-E)", () => {
     expect(decryptField(ctx, COL, ROW, sealed)).toBe(SSN);
   });
 
-  test("zeroizes each lent key once its operation returns", () => {
+  test("runs the cipher on the lent buffer without copying it out of the lend", () => {
     const cachedKey = keyForTenant("acct_a");
     const workingCopies: Buffer[] = [];
-    // Mirrors what a real context does: lend a copy, wipe it when the operation returns. The
-    // cipher observes exactly the buffer the operation ran on, so the assertions below prove the
-    // lend is dead by the time `encryptField` hands back a value.
+    // NOTE the boundary this test actually covers: the zeroization asserted below is performed by
+    // THIS mock's own `finally`, not by `encryptField`. What it pins is that the operation runs the
+    // cipher on the buffer it was lent and does not copy it out of scope — rewrite `encryptField`
+    // to stash a copy and the assertion fails. Production zeroization is covered against the real
+    // contexts in column.test.ts.
     const ctx: FieldCryptoContext = {
       tenantId: "acct_a",
       withKey(_keyVersion, use) {

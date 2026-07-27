@@ -20,19 +20,35 @@ export interface FieldCryptoContext {
    * Run one operation against the tenant key for `keyVersion` — synchronously.
    *
    * The key is LENT, never returned. The context owns the buffer passed to `use` and zeroizes it
-   * as soon as `use` returns or throws, so no key material outlives the single operation that
-   * needed it (ADR-0393, superseding ADR-0392 decision 5). This replaced a `deriveKey()` that
-   * returned the buffer: callers then held plaintext DEKs for the whole request, one per call,
-   * unbounded in row count.
+   * as soon as `use` returns or throws (ADR-0393, superseding ADR-0392 decision 5). This replaced a
+   * `deriveKey()` that returned the buffer: callers then held plaintext DEKs for the whole request,
+   * one per call, unbounded in row count.
+   *
+   * Precisely what that buys: SEQUENTIAL operations no longer accumulate working copies. It is not
+   * "one lend at a time" — nested `withKey` calls hold one copy per active invocation — and it says
+   * nothing about a KMS context's PREFETCHED sources, which stay resident for the whole request by
+   * design (ADR-0389) and are erased at `dispose()`.
    *
    * The honest boundary: a `use` that deliberately copies the bytes out (`Buffer.from(key)`, a
    * string, another typed array) still escapes, and no JavaScript API can prevent that. What is
    * eliminated is escape BY DEFAULT — the ergonomic path no longer hands back something to keep.
    */
-  withKey<T>(keyVersion: number, use: (key: Buffer) => T): T;
+  withKey<T>(keyVersion: number, use: (key: Buffer) => SyncOnly<T>): T;
   /** The version a new write encrypts under. */
   currentVersion(): number;
 }
+
+/**
+ * Collapses a thenable return to `never`, so an `async` (or promise-returning) `withKey` callback
+ * is a TYPE error rather than a runtime one.
+ *
+ * This matters because the runtime backstop cannot be clean: by the time a thenable is observed,
+ * `use()` has already produced a live pending promise whose continuation will resume against the
+ * zeroized key. Catching the misuse at `bun run check` means the process never reaches that state.
+ * Every legitimate synchronous return (string, number, Buffer, arrays, booleans, objects) passes
+ * through unchanged.
+ */
+type SyncOnly<T> = T extends PromiseLike<unknown> ? never : T;
 
 /** A request-local KMS context whose plaintext DEKs can be actively zeroized at scope exit. */
 export interface DisposableFieldCryptoContext extends FieldCryptoContext {
@@ -104,6 +120,39 @@ export function currentFieldCryptoContext(): FieldCryptoContext {
   return ctx;
 }
 
+/**
+ * Fail closed when a `withKey` callback returns a thenable.
+ *
+ * `withKey` lends the key for a SYNCHRONOUS operation and zeroizes it when `use` returns. An
+ * `async` callback returns at its first `await`, so the key is wiped while the continuation still
+ * intends to use it — and the continuation then encrypts under an all-zero key, which round-trips
+ * successfully. That is silent confidentiality loss, strictly worse than the residency leak the
+ * old returning API produced for the same misuse, so it must be loud.
+ *
+ * Only thenables are rejected. Iterables are NOT: returning an array or any other iterable from a
+ * synchronous callback is legitimate, and a generator body is exotic enough not to justify
+ * false-positives on `Symbol.iterator`.
+ */
+function assertSyncUseResult(result: unknown): void {
+  if (
+    (typeof result === "object" || typeof result === "function") &&
+    result !== null &&
+    typeof Reflect.get(result, "then") === "function"
+  ) {
+    // ADOPT the orphan before throwing. `use()` has already returned a live pending promise whose
+    // continuation will resume against the key this frame's `finally` is about to zeroize, and
+    // will typically reject (AEAD authentication failure on an all-zero key). With no handler
+    // attached that is an unhandled rejection, which Node terminates the process over by default —
+    // so a guard meant to make a silent failure loud would instead take down every in-flight
+    // request on the instance. Swallowing here is safe precisely because the caller is getting a
+    // thrown error carrying the same diagnosis.
+    void (result as PromiseLike<unknown>).then(undefined, () => {});
+    throw new InternalError(
+      "field-crypto: withKey() callback must be synchronous — it returned a thenable, so the lent key was zeroized before the continuation could run",
+    );
+  }
+}
+
 /** Build a `FieldCryptoContext` from a sync provider (e.g. DerivedKeyProvider) for one tenant. */
 export function derivedContext(
   provider: SyncFieldKeyProvider,
@@ -112,11 +161,23 @@ export function derivedContext(
   return {
     tenantId,
     withKey(keyVersion, use) {
-      // `SyncFieldKeyProvider.deriveKey` returns caller-owned material (fresh HKDF output per
-      // call, see provider.ts), so this buffer is ours to wipe — no defensive copy needed.
+      // `SyncFieldKeyProvider.deriveKey` returns caller-owned material (provider.ts OWNERSHIP names
+      // this method explicitly), so this buffer is ours to wipe — no defensive copy needed.
       const key = provider.deriveKey(tenantId, keyVersion);
+      // A provider that violates that contract by returning a CACHED buffer gets its cache wiped
+      // by the first operation here. Without this guard the second operation would encrypt under
+      // an all-zero key and still round-trip, so the tenant would store "encrypted" data under a
+      // publicly known key with every check green. An all-zero HKDF output is otherwise a 2^-256
+      // event, so treating it as impossible is safe and this is the loud failure instead.
+      if (key.every((byte) => byte === 0)) {
+        throw new InternalError(
+          "field-crypto: sync provider returned an all-zero key — deriveKey() must return fresh, caller-owned material, not a cached buffer a prior operation already zeroized",
+        );
+      }
       try {
-        return use(key);
+        const result = use(key);
+        assertSyncUseResult(result);
+        return result;
       } finally {
         key.fill(0);
       }
@@ -225,6 +286,19 @@ export async function kmsContext(
           );
           return;
         }
+        // Length alone is not proof of a key. An all-zero unwrap passes every shape check, gets
+        // cached, and is then lent to every operation — so writes would be "encrypted" under a
+        // publicly known key and would still round-trip green. Same 2^-256 reasoning as the sync
+        // path's guard in `derivedContext`; this closes the asymmetry between the two contexts.
+        if (value.every((byte) => byte === 0)) {
+          wipeByteView(value);
+          recordFailure(
+            new InternalError(
+              "field-crypto: KMS provider returned an all-zero DEK — refusing to bind a context that would encrypt under a publicly known key",
+            ),
+          );
+          return;
+        }
         keys.set(version, value);
       } catch (error) {
         wipeByteView(value);
@@ -246,6 +320,12 @@ export async function kmsContext(
   }
 
   let disposed = false;
+  // Holds ONLY lends that are executing right now — each is removed in its own `finally`. This is
+  // not the old `workingKeys`, which retained every COMPLETED lend until dispose and is what made
+  // residency scale with the request's row count. A synchronous `use` cannot be interrupted by an
+  // event-loop-delivered abort, so this set is non-empty at dispose only when the callback itself
+  // disposed the context (directly, or by triggering the abort).
+  const activeLends = new Set<Buffer>();
   const assertLive = (): void => {
     if (disposed) {
       throw new InternalError(
@@ -269,10 +349,23 @@ export async function kmsContext(
       // The copy dies with the operation rather than at dispose(), so plaintext residency is now
       // bounded by ONE operation instead of by the request's row count (ADR-0393).
       const workingKey = Buffer.from(key);
+      activeLends.add(workingKey);
       try {
-        return use(workingKey);
+        const result = use(workingKey);
+        assertSyncUseResult(result);
+        // If the callback disposed the context (or aborted the request) partway through, `dispose`
+        // has already zeroized this lend underneath it — so anything computed after that point ran
+        // against an all-zero key. Refuse the result rather than hand back ciphertext that may be
+        // partly or wholly encrypted under a publicly known key.
+        if (disposed) {
+          throw new InternalError(
+            "field-crypto: KMS context was disposed during the operation — refusing a result computed across disposal",
+          );
+        }
+        return result;
       } finally {
         workingKey.fill(0);
+        activeLends.delete(workingKey);
       }
     },
     currentVersion() {
@@ -283,10 +376,13 @@ export async function kmsContext(
       if (disposed) return;
       disposed = true;
       options.abortSignal?.removeEventListener("abort", disposeOnAbort);
-      // Only the prefetched sources need erasing now: `withKey` wipes each lent copy when its
-      // operation returns, so no working buffer can still be alive here (ADR-0393).
       for (const key of keys.values()) key.fill(0);
       keys.clear();
+      // A lend whose callback is still running has NOT reached its `finally` yet, so completed
+      // lends being self-wiping is not sufficient — dispose must reach the in-flight one too, or a
+      // callback that disposes and then keeps running holds live plaintext past disposal.
+      for (const lend of activeLends) lend.fill(0);
+      activeLends.clear();
     },
   };
   const disposeOnAbort = (): void => {

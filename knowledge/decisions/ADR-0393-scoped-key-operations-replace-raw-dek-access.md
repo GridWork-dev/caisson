@@ -36,14 +36,31 @@ withKey<T>(keyVersion: number, use: (key: Buffer) => T): T;
 The context owns the buffer passed to `use` and zeroizes it as soon as `use` returns **or throws**.
 The call stays synchronous, so the Drizzle `toDriver`/`fromDriver` hot path is unaffected.
 
-### 2. Plaintext residency is bounded by ONE OPERATION, not by the request
+### 2. Sequential operations no longer accumulate working copies; prefetched sources stay request-scoped
 
-The `workingKeys` tracking set is **deleted**. It existed only to chase buffers the context had
-handed out; nothing is handed out now, so `dispose()` erases the prefetched sources and nothing
-else. A request decrypting N rows now holds at most one lent key at a time instead of N.
+Stated exactly, because an earlier draft of this decision was headed "residency is bounded by ONE
+OPERATION" and that is false in two ways worth naming:
 
-This also closes, rather than merely records, the unbounded-in-row-count residency noted in
-ADR-0392 decision 5.
+- **Nested lends.** Re-entrant `withKey` holds one copy per active invocation, not one overall.
+- **Prefetched sources.** A `kmsContext` unwraps every version 1..current and holds them as
+  plaintext for the whole request by design (ADR-0389); they are erased at `dispose()`. A tenant at
+  v12 therefore has 12 resident plaintext DEKs mid-request, entirely independently of lending.
+
+What genuinely changed: the old `workingKeys` set retained every **completed** lend until dispose,
+so a request decrypting N rows accumulated N live copies. That is gone. `dispose()` now erases the
+prefetched sources plus any lend still executing.
+
+That last clause is load-bearing. A lend whose callback is mid-flight has not reached its `finally`,
+so self-wiping completed lends is not sufficient — a callback that disposes the context (directly or
+by triggering the abort) and keeps running would otherwise hold live plaintext past disposal. The
+context tracks only ACTIVE lends for this, which is not a return to `workingKeys`: entries are
+removed in `finally`, so the set never grows with row count. And because dispose zeroizes that lend
+underneath a still-running callback, anything computed afterwards ran against an all-zero key — so
+`withKey` refuses to return a result produced across a disposal rather than hand back ciphertext
+that may be encrypted under a publicly known key.
+
+This narrows, rather than closes, the unbounded-residency point in ADR-0392 decision 5: the
+row-count dimension is closed; the rotation-depth dimension is inherent to prefetch-all.
 
 ### 3. The generic operations no longer wipe what they are lent — the lender does
 
@@ -67,6 +84,26 @@ survive the request"_.
 
 This distinction is recorded deliberately. The precise failure mode of the four T8 review rounds was
 a stated property outrunning what the code delivered; the fix for that is not a stronger sentence.
+
+### 5. Two fail-closed guards, because the misuse direction got worse
+
+Both were added after the security-audit lane on this change; each converts a silent failure into a
+loud one, and neither existed before because the old returning API failed differently.
+
+**All-zero key on the derived path.** `derivedContext` zeroizes what `deriveKey` returns, in place.
+A provider that violates the ownership contract by returning a CACHED buffer therefore has its cache
+wiped by the first operation, and every later write would encrypt under an all-zero key — which
+round-trips successfully, so the tenant stores data under a publicly known key with every check
+green. An all-zero HKDF output is otherwise a 2^-256 event, so it is treated as impossible and
+throws. The contract is the real guarantee (provider.ts OWNERSHIP now names `deriveKey` explicitly,
+which it previously did not while `derivedContext` depended on it); this is the loud backstop.
+
+**Thenable `use` callback.** `withKey<T>` cannot constrain `T`, so an `async` callback typechecks.
+It returns at its first `await`, the key is zeroized, and the continuation encrypts under all
+zeroes. Note the direction changed: the old returning API produced a residency LEAK for this same
+misuse — correct crypto, key alive too long — whereas the lend produces valid-looking ciphertext
+under a known key. Strictly worse, so `withKey` throws on a thenable result. Iterables are
+deliberately NOT rejected; an array return from a synchronous callback is legitimate.
 
 ## Consequences
 
