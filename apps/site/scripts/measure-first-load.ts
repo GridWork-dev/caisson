@@ -8,12 +8,12 @@
  * downloads (script[src] + link[rel=preload/modulepreload] under /_next/static/), and each is
  * gzipped here at level 9 — the same order of compression the CDN applies. Lazy chunks (motion,
  * hero field) never appear in the HTML, so they never count toward first load; `--grep` sums
- * the built chunks containing a marker string (e.g. "framer-motion") against their own ceiling.
+ * the built chunks containing a marker string (e.g. "motion") against their own ceiling.
  *
  * Usage (from apps/site, after `next build`):
  *   bun run scripts/measure-first-load.ts                 # home route first-load table
  *   bun run scripts/measure-first-load.ts --route /evidence
- *   bun run scripts/measure-first-load.ts --grep framer-motion   # lazy-chunk ceiling check
+ *   bun run scripts/measure-first-load.ts --grep motion          # lazy-chunk ceiling check
  *   bun run scripts/measure-first-load.ts --all-chunks           # every built chunk, desc
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
