@@ -280,7 +280,9 @@ describe("kmsContext prefetch depth cap", () => {
   test("refuses a tenant rotated past the cap, naming the depth and the limit", async () => {
     await expect(
       kmsContext(providerAtVersion(9), "acct_deep", { maxPrefetchVersions: 8 }),
-    ).rejects.toThrow(/rotated to key version 9[\s\S]*8-version prefetch limit/);
+    ).rejects.toThrow(
+      /rotated to key version 9[\s\S]*8-version prefetch limit/,
+    );
   });
 
   test("still binds a tenant sitting exactly at the cap", async () => {
