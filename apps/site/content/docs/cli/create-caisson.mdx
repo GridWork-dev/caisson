@@ -15,9 +15,13 @@ cd my-app
 bun install
 ```
 
-The first prompt picks your edition (Compliance, AI Production Kit, Local-first AI, Agentic-Dev) and
-the à-la-carte modules layered on top. The base substrate, `auth`, `tenancy-rls`, `billing`,
-`credits`: is always wired in.
+The first prompt asks what to generate — a licensed build or a demo. Then you name the project and
+select modules. A bundle is chosen with the `--edition <id>` flag rather than a wizard question;
+passing one pre-checks its current members in the module list, and you can still add or remove from
+there.
+The base substrate — `kernel`, `auth`, `tenancy-rls`, `ui`, `billing`, `jobs`, `email`,
+`ai-config`, `mcp-server`, `registry-schema`, `observability`, `rate-limit` — is always wired in.
+Paid modules such as `credits` are not part of it; they are entitlement-gated.
 
 ## The registry contract
 
