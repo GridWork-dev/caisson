@@ -651,7 +651,25 @@ export async function runRegulatoryClaimWatch(
             : decodedBody;
         const watchTexts =
           source.watch?.mode === "text" ? source.watch.texts : [source.locator];
-        for (const watchText of watchTexts) {
+        // A degenerate watch list asserts NOTHING while still incrementing `checkedSources`, so the
+        // report renders an affirmative "no mechanical drift detected" over a source nobody is
+        // actually watching. `[]` loops zero times; `[""]` is worse, since `includes("")` is always
+        // true. Treat both as a configuration defect rather than a pass — this is the surviving
+        // member of the false-green class the earlier fixes in this file were chasing.
+        const usableWatchTexts = watchTexts.filter(
+          (t) => normalizeText(t).length > 0,
+        );
+        if (usableWatchTexts.length === 0) {
+          findings.push({
+            kind: "locator-missing",
+            targetId: target.id,
+            route: target.route,
+            sourceUrl: source.url,
+            detail: `Source declares no non-empty watch text (human locator: "${source.locator}"), so this source was fetched but nothing was asserted against it.`,
+          });
+          continue;
+        }
+        for (const watchText of usableWatchTexts) {
           if (!normalizeText(body).includes(normalizeText(watchText))) {
             findings.push({
               kind: "locator-missing",

@@ -124,4 +124,9 @@ jobs:
       - name: leg 4 — site redeploy
         env:
           GH_TOKEN: ${{ github.token }}
-        run: /tmp/dispatch-and-wait.sh "${{ github.repository }}" deploy-railway.yml
+        # require_armed=true: an unarmed deploy leg must FAIL the train, not skip green. Found
+        # 2026-07-28 during v2026.07.27.1 — the train reported all legs green while the site kept
+        # serving the previous image, because RAILWAY_TOKEN is not a repo secret.
+        run: |
+          /tmp/dispatch-and-wait.sh "${{ github.repository }}" deploy-railway.yml \
+            -f require_armed=true
