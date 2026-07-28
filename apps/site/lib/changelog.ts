@@ -17,6 +17,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: readonly ChangelogEntry[] = [
   {
+    slug: "oscal-spine-v0-5",
+    date: "2026-07-28",
+    version: "v0.5",
+    title:
+      "oscal-spine ships as its own module; field-crypto moves to scoped key operations",
+    body: "The OSCAL surface — catalog loading, profile resolution, and component-definition assembly — moves out of the bundles it was embedded in and ships as @caisson/oscal-spine, installable on its own and included for Compliance and Everything buyers. field-crypto changes shape underneath: key material now lives in a request-scoped context that is provisioned when the context binds and zeroized when it unbinds, and callers borrow a key for the length of one operation instead of receiving one to hold. A key-management adapter for Azure Key Vault and an immutable-storage adapter for Azure Blob are available for deployments that want the key or the archive outside the application. Background jobs move to Inngest v4. Current prices for every module and bundle are on the marketplace page.",
+    tags: ["oscal-spine", "field-crypto", "catalog", "release"],
+  },
+  {
     slug: "catalog-release-v0-4",
     date: "2026-07-12",
     version: "v0.4",
