@@ -95,6 +95,56 @@ function parseDependencyCruiserGraph(input: unknown): DependencyCruiserGraph {
   };
 }
 
+/**
+ * Fail on any `severity: "error"` rule violation — the base↔edition down-only direction, the
+ * open↔commercial no-depend-up boundary, cycles.
+ *
+ * This is NOT redundant with the process exit code. `--output-type json` reports through
+ * dependency-cruiser's json reporter, which hardcodes `exitCode: 0` (the default `err` reporter is
+ * the one that returns `summary.error`), so `execFileSync` cannot throw on a violation. Switching
+ * the CI command to the JSON output silently disarmed the ADR-0022 gate; reading `summary.error`
+ * out of the payload we already parsed restores it without a second cruise.
+ *
+ * Absence fails closed: a missing or malformed `summary` means we did not measure violations, which
+ * must never read the same as measuring zero.
+ */
+export function assertNoDependencyViolations(input: unknown): void {
+  if (typeof input !== "object" || input === null) {
+    throw new Error("dependency-cruiser output must be an object");
+  }
+  const summary = (input as { summary?: unknown }).summary;
+  if (typeof summary !== "object" || summary === null) {
+    throw new Error(
+      "dependency-cruiser output has no summary; refusing to treat unmeasured violations as zero",
+    );
+  }
+  const errors = (summary as { error?: unknown }).error;
+  if (typeof errors !== "number" || !Number.isInteger(errors) || errors < 0) {
+    throw new Error(
+      "dependency-cruiser summary.error is missing or not a count; refusing to treat unmeasured violations as zero",
+    );
+  }
+  if (errors > 0) {
+    const violations = (summary as { violations?: unknown }).violations;
+    const detail = Array.isArray(violations)
+      ? violations
+          .filter(
+            (v): v is { from: string; to: string; rule: { name: string } } =>
+              typeof v === "object" &&
+              v !== null &&
+              (v as { rule?: { severity?: unknown } }).rule?.severity ===
+                "error",
+          )
+          .slice(0, 10)
+          .map((v) => `  ${v.rule.name}: ${v.from} -> ${v.to}`)
+          .join("\n")
+      : "";
+    throw new Error(
+      `dependency-cruiser found ${String(errors)} error-severity violation(s)${detail ? `:\n${detail}` : ""}`,
+    );
+  }
+}
+
 export function assertDependencyGraphCoverage(
   input: unknown,
   options: DependencyGraphGuardOptions = DEFAULT_OPTIONS,
@@ -163,11 +213,11 @@ export function runDependencyGraphGuard(): void {
       maxBuffer: 64 * 1024 * 1024,
     },
   );
-  const coverage = assertDependencyGraphCoverage(
-    JSON.parse(graphOutput) as unknown,
-  );
+  const graph = JSON.parse(graphOutput) as unknown;
+  const coverage = assertDependencyGraphCoverage(graph);
+  assertNoDependencyViolations(graph);
   process.stdout.write(
-    `dependency graph coverage: TypeScript ${info.typescriptVersion}; ${coverage.modules} modules; ${coverage.typescriptModules} TypeScript modules; ${coverage.dependencies} dependencies; sentinels present\n`,
+    `dependency graph coverage: TypeScript ${info.typescriptVersion}; ${coverage.modules} modules; ${coverage.typescriptModules} TypeScript modules; ${coverage.dependencies} dependencies; sentinels present; 0 error-severity violations\n`,
   );
 }
 
