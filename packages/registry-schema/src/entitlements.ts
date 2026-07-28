@@ -144,9 +144,12 @@ export const NON_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>([
  * directly or arrived through a bundle, because pre-carve bundle buyers received the same exports.
  * Only the two locked parent relationships live here.
  *
- * Keys and values are full registry module ids. A target grants only after it is indexed; while it
- * is a named pre-publish reservation the parent continues resolving to itself, so deployment before
- * the release train cannot lock out an existing parent buyer.
+ * Keys and values are full registry module ids. A target grants only after it is indexed. An
+ * unresolvable target (not indexed, not reserved) is SKIPPED per edge rather than throwing — the
+ * parent keeps everything else it resolves, so deployment before the release train cannot lock out
+ * an existing parent buyer. The loud half lives at build time: `checkNamedEntitlementTargets` in
+ * the standards gate fails the build when an edge names a target no index entry backs, so a
+ * runtime skip can never quietly become the normal case.
  */
 export const COMPATIBILITY_REEXPORT_ENTITLEMENTS: ReadonlyMap<
   string,
@@ -224,12 +227,21 @@ function addNamedEntitlementClosure(
         addNamedEntitlementClosure(targetId, allowlist, members, visited);
         continue;
       }
-      if (RESERVED_MODULE_ENTITLEMENT_IDS.has(bareSlug(targetId))) {
-        continue;
-      }
-      throw new Error(
-        `named entitlement target is neither indexed nor reserved: ${JSON.stringify(targetId)}`,
-      );
+      // FAIL SOFT, per edge (release audit v2026.07.27.1, F1). This used to throw, which
+      // rejected the buyer's ENTIRE purchased-id set over one unresolvable compatibility edge —
+      // an under-grant outage for a paying customer, since every caller (the Worker's gate, the
+      // license `/issue` path, `resolveAccountEntitlements`) shares this one function and would
+      // fall back to the free base floor.
+      //
+      // The reserved-id branch above used to be the safety net, but it is a TEMPORARY publishing
+      // gap by construction and the set is empty whenever no SKU is mid-graduation — as it is
+      // now, after oscal-spine graduated. So the throw's only remaining trigger was an edge added
+      // before its target ships, or a resolver deployed against an index that predates it.
+      //
+      // Skipping the edge cannot over-grant: the target is not in the allowlist, so it is not a
+      // servable module for anyone. The buyer keeps everything that DOES resolve, which is
+      // strictly better than losing all of it.
+      continue;
     }
   }
 }

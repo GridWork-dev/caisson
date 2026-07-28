@@ -28,6 +28,7 @@ import {
   checkOrphanSku,
   checkPricebookPriceAgreement,
   checkCatalogParity,
+  checkNamedEntitlementTargets,
   checkReservedIdsStaleness,
   checkCopyPaste,
   checkOpenCoreLicensing,
@@ -56,6 +57,7 @@ async function main(): Promise<number> {
     ...(await checkPricebookPriceAgreement(pkgs)), // PRICE_AUTHORITY ↔ pricebook SKU_RETAIL/BUNDLE_RETAIL agreement
     ...(await checkCatalogParity(root)), // site catalog ↔ registry members map + PRICE_AUTHORITY agreement
     ...checkReservedIdsStaleness(root), // ERROR: reservation maps drift or an indexed id remains reserved
+    ...checkNamedEntitlementTargets(root), // ERROR: a compat/runtime edge names a target no index backs
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
     ...(await checkRlsEquivalence(pkgs, root)), // ADR-0210/0005: hand-written RLS vs the generator
     ...checkShippedProse(pkgs, root), // shipped-prose gate: no internal-only vocabulary in buyer-visible source

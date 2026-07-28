@@ -9,8 +9,9 @@ grounds:
 
 # Signing release tags
 
-Operator-executed. Creating and loading the signing key touches a secret, so no agent performs any
-step on this page.
+Ordinary release mechanics — an agent may perform every step on this page, including generating the
+signing key (operator lock 2026-07-28, superseding the original "no agent performs any step here").
+The private key never leaves the box and is never printed; what gets published is the public half.
 
 ## Why the tag and not just the commit
 

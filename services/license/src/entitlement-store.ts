@@ -291,6 +291,51 @@ export async function grantEntitlements(
 }
 
 /**
+ * Net a dollar-partial refund off a line's recorded charge (release audit v2026.07.27.1, F2).
+ *
+ * `charged_amount` is stamped once at grant time and answers one question: what did this buyer
+ * actually pay for this SKU. `resolveUpgradeCredit` floors an upgrade credit at that number, so a
+ * partial refund that leaves the entitlement ACTIVE — the fork A-1 shape, where credits are clawed
+ * proportionally but access remains — used to leave the buyer credited for money that was returned
+ * to them. Subtracting keeps the column answering its own question.
+ *
+ * Floors at 0 rather than dropping to NULL: NULL means "unknown", which the quote reads as
+ * "credit at retail" — the strictly worse direction here, since a fully dollar-refunded line
+ * genuinely paid nothing. A row with no recorded charge stays NULL (still unknown, nothing to net).
+ * The both-or-neither CHECK is preserved because the currency is never touched.
+ *
+ * Idempotency is the CALLER's: the per-line clawback is keyed `${adjustmentId}:${itemId}`, so this
+ * runs once per adjustment per line. Must run inside `withTenant`.
+ */
+export async function reduceGrantChargedAmount(
+  tx: TenantExecutor,
+  input: {
+    accountId: string;
+    purchaseId: string;
+    lineItemId: string;
+    refundedMinorUnits: number;
+  },
+): Promise<number> {
+  if (!(input.refundedMinorUnits > 0)) return 0;
+  const r = await tx.query<{ id: string }>(
+    `UPDATE entitlement_grant
+        SET charged_amount = GREATEST(charged_amount - $4, 0)
+      WHERE account_id = $1
+        AND purchase_id = $2
+        AND line_item_id = $3
+        AND charged_amount IS NOT NULL
+      RETURNING id`,
+    [
+      input.accountId,
+      input.purchaseId,
+      input.lineItemId,
+      input.refundedMinorUnits,
+    ],
+  );
+  return r.rows.length;
+}
+
+/**
  * Read an account's ACTIVE purchased-id entitlements (the raw ids, NOT expanded), distinct across
  * sources — an account holding the same edition from two sources still reads it once. A fully-revoked
  * entitlement (refcount 0) drops out. RLS scopes the result to the bound account; the explicit

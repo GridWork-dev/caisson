@@ -40,6 +40,7 @@ import {
   grantEntitlements,
   grantOwnedCoverageMirrors,
   reconcileCoverageGrants,
+  reduceGrantChargedAmount,
   reverseRenewalExtensions,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
@@ -671,6 +672,17 @@ export async function applyBillingEvent(
           }
           continue;
         }
+        // Dollar-partial with the entitlement left INTACT: the buyer keeps access but got money
+        // back, so the charge recorded on the grant must fall by what was returned or a later
+        // upgrade credits them for it (release audit v2026.07.27.1, F2). Deliberately OUTSIDE the
+        // credits guard below — a module SKU can grant zero credits and still have been paid for,
+        // and that is exactly the row an upgrade quote reads.
+        await reduceGrantChargedAmount(tx, {
+          accountId: ev.accountId,
+          purchaseId: ev.paymentId,
+          lineItemId: item.itemId,
+          refundedMinorUnits: item.amountRefunded,
+        });
         // Dollar-partial: proportional claw, entitlement left intact (fork A-1). Skip when the line
         // granted no credits, its charged amount is unknown (can't proportion), the refund is zero, or
         // the line is already fully clawed.

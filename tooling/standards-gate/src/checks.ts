@@ -856,6 +856,79 @@ export function checkReservedIdsStaleness(root: string): Finding[] {
   return findings;
 }
 
+/** Extract every TARGET id from a `Map<string, readonly string[]>` of named entitlement edges. */
+function parseNamedEntitlementTargets(
+  src: string,
+  constName: string,
+): string[] {
+  const block = src.match(
+    new RegExp(
+      `${constName}[^=]*=\\s*new Map(?:<[\\s\\S]*?>)?\\(\\s*\\[([\\s\\S]*?)\\]\\s*\\)\\s*;`,
+    ),
+  );
+  if (!block?.[1]) return [];
+  // Each entry is `["@caisson/parent", ["@caisson/target", …]]` — the targets are every id after
+  // the first in the entry, so match the inner array specifically.
+  const targets: string[] = [];
+  for (const entry of block[1].matchAll(
+    /\[\s*["']@caisson\/[a-z0-9-]+["']\s*,\s*\[([\s\S]*?)\]\s*\]/g,
+  )) {
+    for (const id of (entry[1] ?? "").matchAll(
+      /["'](@caisson\/[a-z0-9-]+)["']/g,
+    )) {
+      if (id[1] !== undefined) targets.push(id[1]);
+    }
+  }
+  return targets;
+}
+
+/**
+ * Gate — named-entitlement edges resolve (release audit v2026.07.27.1, F1).
+ *
+ * `addNamedEntitlementClosure` SKIPS an edge whose target is neither indexed nor reserved, because
+ * throwing there would reject a paying buyer's entire entitlement set over one bad edge. That makes
+ * the runtime quiet by design, so the loudness has to live here: an edge naming a target no index
+ * entry backs is a build-time error, which is the moment it can still be fixed for free.
+ *
+ * Without this, adding a compatibility edge before its target ships would silently under-grant
+ * every holder of the parent, and nothing would say so.
+ */
+export function checkNamedEntitlementTargets(root: string): Finding[] {
+  const entPath = join(root, "packages/registry-schema/src/entitlements.ts");
+  const indexPath = join(root, "registry/index.json");
+  if (!existsSync(entPath) || !existsSync(indexPath)) return [];
+  const source = readFileSync(entPath, "utf8");
+  const reserved = new Set(parseReservedEntitlementIds(source));
+  let indexed: Set<string>;
+  try {
+    const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
+      modules: { id: string }[];
+    };
+    indexed = new Set(idx.modules.map((m) => m.id));
+  } catch {
+    return [];
+  }
+  const findings: Finding[] = [];
+  for (const constName of [
+    "COMPATIBILITY_REEXPORT_ENTITLEMENTS",
+    "INTERNAL_RUNTIME_ENTITLEMENTS",
+  ]) {
+    for (const target of parseNamedEntitlementTargets(source, constName)) {
+      const slug = target.startsWith("@caisson/")
+        ? target.slice("@caisson/".length)
+        : target;
+      if (indexed.has(target) || reserved.has(slug)) continue;
+      findings.push({
+        severity: "error",
+        rule: "named-entitlement-target-unresolvable",
+        pkg: target,
+        message: `${constName} names "${target}", which is neither in registry/index.json nor a pre-publish reservation. The runtime skips such an edge (so a buyer silently loses it) — index the target, or add it to RESERVED_MODULE_ENTITLEMENT_IDS until it publishes.`,
+      });
+    }
+  }
+  return findings;
+}
+
 /**
  * Gate #4 — TS-compiler copy-guard (ADR-0101). Flags a source module COPY-PASTED across packages:
  * two `src/**` modules in *different* workspace packages whose code is token-identical. The motivating

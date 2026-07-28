@@ -11,6 +11,7 @@ import {
   checkOrphanSku,
   checkPriceCoverage,
   checkPricebookPriceAgreement,
+  checkNamedEntitlementTargets,
   checkReservedIdsStaleness,
   PRICE_AUTHORITY,
 } from "./checks";
@@ -426,5 +427,80 @@ describe("checkReservedIdsStaleness", () => {
       "@caisson/ghost-pkg",
     ]);
     expect(f.every((finding) => finding.severity === "error")).toBe(true);
+  });
+});
+
+describe("checkNamedEntitlementTargets", () => {
+  let root: string;
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "gate-named-ent-"));
+  });
+  afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+  /** Mirrors the REAL declarations in registry-schema, generics and all — a parser that only
+   *  handles a simplified shape greens a gate that measures nothing (the release-audit B4 class). */
+  function writeEdges(
+    compat: string,
+    runtime: string,
+    indexedIds: string[],
+    reserved = "[]",
+  ): void {
+    const dir = join(root, "packages", "registry-schema", "src");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "entitlements.ts"),
+      [
+        `export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>(${reserved});`,
+        `export const COMPATIBILITY_REEXPORT_ENTITLEMENTS: ReadonlyMap<\n  string,\n  readonly string[]\n> = new Map<string, readonly string[]>(${compat});`,
+        `export const INTERNAL_RUNTIME_ENTITLEMENTS: ReadonlyMap<string, readonly string[]> = new Map<string, readonly string[]>(${runtime});`,
+        "",
+      ].join("\n"),
+    );
+    mkdirSync(join(root, "registry"), { recursive: true });
+    writeFileSync(
+      join(root, "registry", "index.json"),
+      JSON.stringify({ modules: indexedIds.map((id) => ({ id })) }),
+    );
+  }
+
+  test("an edge naming an unindexed, unreserved target is an ERROR", () => {
+    writeEdges(
+      `[["@caisson/compliance-core", ["@caisson/oscal-spine"]]]`,
+      `[]`,
+      ["@caisson/compliance-core"],
+    );
+    const f = checkNamedEntitlementTargets(root);
+    expect(f.map((x) => x.pkg)).toEqual(["@caisson/oscal-spine"]);
+    expect(f[0]?.severity).toBe("error");
+  });
+
+  test("an indexed target passes", () => {
+    writeEdges(
+      `[["@caisson/compliance-core", ["@caisson/oscal-spine"]]]`,
+      `[]`,
+      ["@caisson/compliance-core", "@caisson/oscal-spine"],
+    );
+    expect(checkNamedEntitlementTargets(root)).toEqual([]);
+  });
+
+  test("a target still under a pre-publish reservation passes", () => {
+    writeEdges(
+      `[["@caisson/compliance-core", ["@caisson/oscal-spine"]]]`,
+      `[]`,
+      ["@caisson/compliance-core"],
+      `["oscal-spine"]`,
+    );
+    expect(checkNamedEntitlementTargets(root)).toEqual([]);
+  });
+
+  test("the INTERNAL_RUNTIME map is checked too, not just the compat map", () => {
+    writeEdges(
+      `[]`,
+      `[["@caisson/oscal-spine", ["@caisson/artifact-render"]]]`,
+      ["@caisson/oscal-spine"],
+    );
+    expect(checkNamedEntitlementTargets(root).map((x) => x.pkg)).toEqual([
+      "@caisson/artifact-render",
+    ]);
   });
 });
