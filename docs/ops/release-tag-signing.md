@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-27
+updated: 2026-07-28
 status: live
 grounds:
   - knowledge/decisions/ADR-0382-upgrade-credit-floor-and-tag-signing.md
@@ -21,8 +21,9 @@ against a different commit, and each of those legs would follow it without compl
 already on our tags records who _claims_ to have cut it; a signature is what makes that claim
 checkable.
 
-Today `gh api repos/{owner}/{repo}/git/tags/<sha>` reports `verified: false`, `reason: "unsigned"`
-for every tag including `v2026.07.20.3`.
+Every tag through `v2026.07.20.3` reports `verified: false`, `reason: "unsigned"` from
+`gh api repos/{owner}/{repo}/git/tags/<sha>`. `v2026.07.27.1` is the first to report
+`verified: true` — see the status section below.
 
 ## One-time setup
 
@@ -76,10 +77,33 @@ tag cannot become signed without being deleted and recreated, which is exactly t
 signature is meant to prevent. A blocking check would therefore fail the train on history it cannot
 legitimately repair.
 
-So check 0b reports and does not fail. Promote it to blocking once the first signed tag has trained
-end to end: in `scripts/release-readiness.ts`, replace the `console.log` in `checkTagSigned`'s catch
-with `record("release tag signed", false, …)`. Leave the old unsigned tags alone — they are history,
-and rewriting them to satisfy a gate would defeat the gate.
+So check 0b reports and does not fail. Leave the old unsigned tags alone — they are history, and
+rewriting them to satisfy a gate would defeat the gate.
+
+### Status: the first signed tag exists, and promotion is NOT yet safe
+
+`v2026.07.27.1` (2026-07-28) is the first signed release tag. It verifies locally
+(`Good "git" signature for admin@caisson.sh`) and on GitHub
+(`repos/.../git/tags/<sha>` → `verified: true`, `reason: "valid"`), and it trained end to end —
+readiness 8/8, all propagation legs green.
+
+That satisfies the _first_ half of the old promotion condition, but promoting check 0b to blocking
+today would **fail every future train**. The readiness job runs `git tag -v` on a GitHub runner,
+which has no `~/.config/git/allowed_signers` — that file lives on the operator's box. In the
+`v2026.07.27.1` readiness run, CI reported the tag as _"UNSIGNED or its signer is not in the
+allowed-signers file"_ while the tag was in fact correctly signed. The check cannot currently tell
+those two cases apart, and in CI it is always the second.
+
+Promotion therefore needs a signer source CI can read, first:
+
+- commit an `allowed_signers` file to the repo and point `gpg.ssh.allowedSignersFile` at it in the
+  readiness job (the signing key's **public** half is not a secret), or
+- verify through the GitHub API's `verification.verified` on the tag object instead of `git tag -v`,
+  which needs no local trust store.
+
+Until one of those lands, the honest state is: tags are signed and verifiable by anyone with the
+public key, and the CI check remains advisory. Do not flip the `console.log` in `checkTagSigned`'s
+catch to a `record(..., false, …)` before then.
 
 ## What this does not do
 
