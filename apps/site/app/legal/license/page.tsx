@@ -287,12 +287,14 @@ export default function LicensePage() {
                   same bold monospace blurred the brand's own mono-as-evidence convention
                   (DESIGN.md §3 — mono reserved for control-ids/proof, not summary phrasing). */}
               <span style={{ fontSize: "var(--cs-text-sm)" }}>
-                Every <code className="mono">@caisson</code> module outside the
-                open Base set (including field-crypto, audit-worm,
-                signing-primitive, credits, and the local-first modules), the
-                registry service, and the six bundles that compose them:
-                Compliance, AI Production, Local-first AI, Agentic-Dev,
-                Provenance, and Everything.
+                The paid <code className="mono">@caisson</code> modules
+                (including field-crypto, audit-worm, signing-primitive, credits,
+                and the local-first modules), the registry service, and the six
+                bundles that compose them: Compliance, AI-Production,
+                Local-first, Agentic-Dev, Provenance, and Everything. A handful
+                of modules outside the Base set are nonetheless Apache-2.0 — the{" "}
+                <code className="mono">license</code> field in each
+                package&rsquo;s own manifest is what binds, not this summary.
               </span>
               <StatusChip label="Commercial" tone="muted" />
             </div>
