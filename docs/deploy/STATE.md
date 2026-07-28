@@ -11,6 +11,57 @@ grounds:
 
 # Deploy log
 
+## 2026-07-28 — v2026.07.27.1 released: train green, 50 tarballs published, full parity
+
+The re-cut tag shipped. `v2026.07.27` had been pushed on the version-PR merge and its train **failed
+at readiness R3** — `bun run sot` red on a package-count drift, plus a missing R4 audit and
+per-release checklist, both of which readiness reads from the **tagged tree**. `v2026.07.27.1` is the
+attestation-only successor: docs, the audit, the checklist, and fixes confined to unpacked trees, so
+every recorded tarball hash was untouched and the byte gate passed on the first ride.
+
+**Tag:** `v2026.07.27.1` → `8f930b6753d9`, the first **signed** release tag (SSH, ADR-0382;
+`git tag -v` → `Good "git" signature for admin@caisson.sh`). GitHub still shows it unverified until
+the signing key is registered on the account — the `gh` token lacks `admin:ssh_signing_key`, so that
+one step is outstanding and cosmetic (GitHub re-evaluates signatures at display time).
+
+**Train** (run 30363421552): readiness ✓ · leg 1 registry publish ✓ · leg 2 mirror sync ✓ · leg 3 npm
+mirror **skipped** (unarmed pre-launch, by design) · leg 4 site redeploy **inert — see below**.
+
+| Leg / probe        | Evidence                                                                                               | State  |
+| ------------------ | ------------------------------------------------------------------------------------------------------ | ------ |
+| Registry publish   | **50 uploaded, 4 already present**; every row "packed bytes match the recorded row"                    | **OK** |
+| R2 parity probe    | **350/350** advertised objects reproduce (was 300/350)                                                 | **OK** |
+| Index parity probe | repo `4810e38157c1`/54 · license · worker · admin all equal → `PARITY OK`                              | **OK** |
+| Registry Worker    | redeployed from the tagged index, version `07c65081`; serves 17 anon entries                           | **OK** |
+| Site               | `/updates` v0.5 entry + RSS live; marketplace renders $1,649 / $2,259 / $249                           | **OK** |
+| Docs-RAG           | `/health` 548 chunks; generated pricing corpus carries $1,649 / $2,259 / $249 and neither stale figure | **OK** |
+
+Railway services were deployed from the tag through the receipted immutable-input path
+(`tooling/scripts/railway-deploy.ts --ref v2026.07.27.1`): admin, license, site, docs — receipts in
+`docs/deploy/receipts/*.json`, all at `8f930b6753d9`. No new `.sql` migration landed between the
+Act 1 SHA and this tag, so the license pre-deploy chain re-ran idempotently and `schema_version`
+stays 32 — this was not a second migration act.
+
+### The train's site-redeploy leg ships nothing (found during this release)
+
+`deploy-railway.yml` guards on a `RAILWAY_TOKEN` **repo secret** that is not set. Its arm check
+writes `armed=false`, every subsequent step is `skipped`, and the job reports **success**. Three
+green `deploy-railway` runs in this session deployed nothing, and the train's leg 4 is decorative
+today: a release can report a fully green train while the site still serves the previous image. It
+was caught only because a post-deploy probe read the live `/updates` page and the new entry was
+absent. The inert-until-armed pattern is deliberate (ADR-0318 W3), but an unarmed leg inside an
+**armed** train is a false green — leg 1 already refuses to no-op for exactly this reason. Carried
+as a follow-up: either arm the secret or make the leg fail loud when the train is armed.
+
+### Post-deploy observation
+
+Raw docs-RAG `/query` retrieval did not surface the Compliance bundle price for direct phrasings
+("How much is the Compliance bundle"), and "Compliance renewal price" returned the $1,499 Updates
+**plan** instead. The corpus itself is correct — verified by regenerating the pricing sources, which
+contain $1,649 / $2,259 / $249 and neither stale figure — so this is retrieval ranking, not stale
+content. Carried as a follow-up, since a buyer asking the support bot a plain price question is the
+exact path affected.
+
 ## 2026-07-27 — Act 1 executed: one-SHA fleet + migration chain through 0032; PARITY OK
 
 The ADR-0379 T4 hold was released by the operator and the preliminary one-SHA fleet ran end to end.

@@ -37,7 +37,7 @@ and runtime evidence.
 | T4 — one-SHA fleet and migration 0030            | **complete**         | executed 2026-07-27 (`d99d5e95`): six legs on `e6ee01a6`, `RESULT: PARITY OK`, migration chain `schema_version` 29 → 32 with a pg_restore-verified backup and the structural receipt. The `tenant_ai_credential` BLOCKING preflight passed at `sealed_rows = 0`. `site.byok-field-crypto` stays unarmed — no Azure vault was ever provisioned |
 | T5 — five locked product residuals               | **complete**         | `b037b878` DS manifest; T5A merged in #332; T5B/C/E merged in #335                                                                                                                                                                                                                                                                            |
 | T6 — Inngest + Azure Key Vault + Azure Blob WORM | **complete**         | three isolated adapter reviews and changesets, merged in #335                                                                                                                                                                                                                                                                                 |
-| T7 — consolidated verification and release       | **in flight**        | the `v2026.07.27` train failed readiness R3 and is being re-cut as the attestation-only successor `v2026.07.27.1`; exit still needs green CI on the tag SHA, immutable tag-to-bytes, the R2 upload, Worker redeploy, and probe receipts                                                                                                       |
+| T7 — consolidated verification and release       | **complete**         | `v2026.07.27.1` released 2026-07-28 on `8f930b6753d9` — first signed tag, readiness 8/8, 50 tarballs published byte-exact, R2 parity 350/350, index parity OK across repo/license/worker/admin, Worker plus four Railway services redeployed from the tag ([deploy state](../deploy/STATE.md))                                                |
 | T8 — field-crypto KMS async refactor             | **complete**         | merged `13e814da` (#353). Four review rounds; each of the first three found defects introduced by the previous round's fixes. ADR-0392 corrects three ADR-0389 claims and caps prefetch depth                                                                                                                                                 |
 | T8b — scoped key operations (ADR-0393)           | **complete**         | merged `0d878553` (#354). `withKey()` lends and zeroizes instead of returning a raw DEK, closing the fork ADR-0392 deferred. Fixed a latent leak on the derived (non-KMS) path that all four T8 rounds missed                                                                                                                                 |
 
@@ -57,10 +57,9 @@ removed after each was checked for unlanded work; five reconcile-snapshot recove
 purpose, and they are now the only thing branch-hygiene reports.
 
 The changeset backlog is **drained**: the version PR (#359, `52376dee`) consumed all 54 files and
-bumped every package, so `bun run sot` now reports no packages to be bumped at any level. The
-resulting versions are advertised in `registry/tarballs.json` but their bytes are not in R2 yet —
-the daily R2 parity probe reads 300/350 objects reproducing, and the 50 missing rows are exactly
-this cut's un-uploaded versions. Publishing them is the T7 release leg.
+bumped every package, so `bun run sot` reports no packages to be bumped at any level. Those versions
+are now **published**: the `v2026.07.27.1` train uploaded 50 tarballs byte-exact and the R2 parity
+probe moved 300/350 → **350/350**.
 
 ## Linear reconciliation
 
@@ -176,23 +175,25 @@ These are not part of the active completion program:
 
 ## Recently closed
 
-| Date       | Evidence                                                                                                                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-07-28 | R4 release audit for `v2026.07.27.1`: security PASS-WITH-DISCLOSURES, code review FAIL on five blockers, all five confirmed and fixed pre-tag outside packed bytes |
-| 2026-07-28 | ADR-0022 dependency-graph gate repaired: `--output-type json` hardcodes `exitCode: 0`, so the boundary gate had been a no-op since the CI command changed          |
-| 2026-07-27 | T4 Act 1 executed: six legs on `e6ee01a6`, PARITY OK, migration chain 29 → 32 with backup and structural receipt                                                   |
-| 2026-07-27 | Board cleared: #354/#355/#356 merged, #351 closed as a `minimumReleaseAge` artifact rather than a defect, seven stale branches and six wave worktrees removed      |
-| 2026-07-27 | Test-timeout flake class closed at the cause (#356): bun's 5s default was under 5x the idle cost of real work; 224/224 uncached, zero timeouts                     |
-| 2026-07-27 | Launch runbook trued to the shipped catalog (#355): nine stale price and count claims against a probe that already asserted the new ones                           |
-| 2026-07-27 | Scoped key operations replace raw DEK access (#354, ADR-0393), closing the fork ADR-0392 deferred                                                                  |
-| 2026-07-25 | Wave reconcile: all five PRs (#332-#337) rebased and squash-merged to `main`; four lane worktrees and panes closed out                                             |
-| 2026-07-25 | Adversarial grill of the four open PRs — 44 candidates, 39 refuted, 5 confirmed ([report](../../outputs/audit/2026-07-25-open-pr-grill.md))                        |
-| 2026-07-25 | Generated 39-component design manifest and shared contrast gate                                                                                                    |
-| 2026-07-25 | Launch-critical dependency, price, and limiter safety fixes on this branch                                                                                         |
-| 2026-07-25 | Site truth-fix deployment recorded in deploy state                                                                                                                 |
-| 2026-07-24 | Visual re-audit: 729/729 fixed                                                                                                                                     |
-| 2026-07-23 | Media-overhaul program merged in PR #326                                                                                                                           |
-| 2026-07-20 | Compliance-gap SKU release and $1,449 Compliance bundle                                                                                                            |
+| Date       | Evidence                                                                                                                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-28 | `v2026.07.27.1` released and fully propagated: 50 tarballs published byte-exact, R2 350/350, index parity OK, first signed release tag                                                              |
+| 2026-07-28 | Release-train leg 4 found decorative: `deploy-railway` is unarmed (`RAILWAY_TOKEN` repo secret unset), skips every step, and reports green — a green train can leave the site on the previous image |
+| 2026-07-28 | R4 release audit for `v2026.07.27.1`: security PASS-WITH-DISCLOSURES, code review FAIL on five blockers, all five confirmed and fixed pre-tag outside packed bytes                                  |
+| 2026-07-28 | ADR-0022 dependency-graph gate repaired: `--output-type json` hardcodes `exitCode: 0`, so the boundary gate had been a no-op since the CI command changed                                           |
+| 2026-07-27 | T4 Act 1 executed: six legs on `e6ee01a6`, PARITY OK, migration chain 29 → 32 with backup and structural receipt                                                                                    |
+| 2026-07-27 | Board cleared: #354/#355/#356 merged, #351 closed as a `minimumReleaseAge` artifact rather than a defect, seven stale branches and six wave worktrees removed                                       |
+| 2026-07-27 | Test-timeout flake class closed at the cause (#356): bun's 5s default was under 5x the idle cost of real work; 224/224 uncached, zero timeouts                                                      |
+| 2026-07-27 | Launch runbook trued to the shipped catalog (#355): nine stale price and count claims against a probe that already asserted the new ones                                                            |
+| 2026-07-27 | Scoped key operations replace raw DEK access (#354, ADR-0393), closing the fork ADR-0392 deferred                                                                                                   |
+| 2026-07-25 | Wave reconcile: all five PRs (#332-#337) rebased and squash-merged to `main`; four lane worktrees and panes closed out                                                                              |
+| 2026-07-25 | Adversarial grill of the four open PRs — 44 candidates, 39 refuted, 5 confirmed ([report](../../outputs/audit/2026-07-25-open-pr-grill.md))                                                         |
+| 2026-07-25 | Generated 39-component design manifest and shared contrast gate                                                                                                                                     |
+| 2026-07-25 | Launch-critical dependency, price, and limiter safety fixes on this branch                                                                                                                          |
+| 2026-07-25 | Site truth-fix deployment recorded in deploy state                                                                                                                                                  |
+| 2026-07-24 | Visual re-audit: 729/729 fixed                                                                                                                                                                      |
+| 2026-07-23 | Media-overhaul program merged in PR #326                                                                                                                                                            |
+| 2026-07-20 | Compliance-gap SKU release and $1,449 Compliance bundle                                                                                                                                             |
 
 Older chronology remains in git, [build history](../archive/build-history.md), and
 [deploy state](../deploy/STATE.md).
