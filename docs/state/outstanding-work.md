@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-27
+updated: 2026-07-28
 status: live
 grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
@@ -28,18 +28,18 @@ and runtime evidence.
 
 ## State matrix
 
-| Workstream                                       | State                    | Exit evidence                                                                                                                                                                                                                                                                                                                                                                                              |
-| ------------------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T0 — canonical truth and issue reconciliation    | **complete**             | SOT content gates green; PR board empty; merged-PR branches and all wave worktrees removed 2026-07-27, five reconcile-snapshot recovery refs kept on purpose                                                                                                                                                                                                                                               |
-| T1 — TypeScript dependency graph                 | **complete locally**     | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                                                                                                                                                                                                                                                                                                                                     |
-| T2 — total price authority                       | **complete locally**     | `f6122de8` + `92d930b6`; every sellable commercial package covered                                                                                                                                                                                                                                                                                                                                         |
-| T3 — route-specific limiter policy               | **complete locally**     | `014ac4de`; webhook fail-open+alert, protected routes 503                                                                                                                                                                                                                                                                                                                                                  |
-| T4 — one-SHA fleet and migration 0030            | **unblocked; runs next** | six runtime legs on one approved SHA; migration and parity receipts. ADR-0387 put the KMS async wave ahead of the deploy; T8 and T8b are merged, so this is the front of the queue and the only thing between here and T7. Run the ADR-0392 §preflight before arming Azure. The runbook's catalog and price claims were nine-ways stale until #355 — deploy against the current file, not a cached reading |
-| T5 — five locked product residuals               | **complete**             | `b037b878` DS manifest; T5A merged in #332; T5B/C/E merged in #335                                                                                                                                                                                                                                                                                                                                         |
-| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **complete**             | three isolated adapter reviews and changesets, merged in #335                                                                                                                                                                                                                                                                                                                                              |
-| T7 — consolidated verification and release       | **after T4**             | OSCAL is integrated locally; exit still needs green CI, immutable tag-to-bytes, deploy, and probe receipts                                                                                                                                                                                                                                                                                                 |
-| T8 — field-crypto KMS async refactor             | **complete**             | merged `13e814da` (#353). Four review rounds; each of the first three found defects introduced by the previous round's fixes. ADR-0392 corrects three ADR-0389 claims and caps prefetch depth                                                                                                                                                                                                              |
-| T8b — scoped key operations (ADR-0393)           | **complete**             | merged `0d878553` (#354). `withKey()` lends and zeroizes instead of returning a raw DEK, closing the fork ADR-0392 deferred. Fixed a latent leak on the derived (non-KMS) path that all four T8 rounds missed                                                                                                                                                                                              |
+| Workstream                                       | State                | Exit evidence                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------ | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T0 — canonical truth and issue reconciliation    | **complete**         | SOT content gates green; PR board empty; merged-PR branches and all wave worktrees removed 2026-07-27, five reconcile-snapshot recovery refs kept on purpose                                                                                                                                                                                  |
+| T1 — TypeScript dependency graph                 | **complete locally** | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                                                                                                                                                                                                                                                                        |
+| T2 — total price authority                       | **complete locally** | `f6122de8` + `92d930b6`; every sellable commercial package covered                                                                                                                                                                                                                                                                            |
+| T3 — route-specific limiter policy               | **complete locally** | `014ac4de`; webhook fail-open+alert, protected routes 503                                                                                                                                                                                                                                                                                     |
+| T4 — one-SHA fleet and migration 0030            | **complete**         | executed 2026-07-27 (`d99d5e95`): six legs on `e6ee01a6`, `RESULT: PARITY OK`, migration chain `schema_version` 29 → 32 with a pg_restore-verified backup and the structural receipt. The `tenant_ai_credential` BLOCKING preflight passed at `sealed_rows = 0`. `site.byok-field-crypto` stays unarmed — no Azure vault was ever provisioned |
+| T5 — five locked product residuals               | **complete**         | `b037b878` DS manifest; T5A merged in #332; T5B/C/E merged in #335                                                                                                                                                                                                                                                                            |
+| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **complete**         | three isolated adapter reviews and changesets, merged in #335                                                                                                                                                                                                                                                                                 |
+| T7 — consolidated verification and release       | **in flight**        | the `v2026.07.27` train failed readiness R3 and is being re-cut as the attestation-only successor `v2026.07.27.1`; exit still needs green CI on the tag SHA, immutable tag-to-bytes, the R2 upload, Worker redeploy, and probe receipts                                                                                                       |
+| T8 — field-crypto KMS async refactor             | **complete**         | merged `13e814da` (#353). Four review rounds; each of the first three found defects introduced by the previous round's fixes. ADR-0392 corrects three ADR-0389 claims and caps prefetch depth                                                                                                                                                 |
+| T8b — scoped key operations (ADR-0393)           | **complete**         | merged `0d878553` (#354). `withKey()` lends and zeroizes instead of returning a raw DEK, closing the fork ADR-0392 deferred. Fixed a latent leak on the derived (non-KMS) path that all four T8 rounds missed                                                                                                                                 |
 
 The earlier five-wave program is merged. The 2026-07-27 reconciliation cutoff found seven newer
 open PRs: writing #345, OSCAL #346, and Ask AI evidence #347 are represented on local `main`;
@@ -56,8 +56,11 @@ none of its bumps fix a known advisory, and Renovate re-proposes once the versio
 removed after each was checked for unlanded work; five reconcile-snapshot recovery refs are kept on
 purpose, and they are now the only thing branch-hygiene reports.
 
-There are **54 pending changeset files**. Current Changesets resolution is 56 patch package
-releases, 14 minor package releases, and 2 major package releases. They are consumed only by T7.
+The changeset backlog is **drained**: the version PR (#359, `52376dee`) consumed all 54 files and
+bumped every package, so `bun run sot` now reports no packages to be bumped at any level. The
+resulting versions are advertised in `registry/tarballs.json` but their bytes are not in R2 yet —
+the daily R2 parity probe reads 300/350 objects reproducing, and the 50 missing rows are exactly
+this cut's un-uploaded versions. Publishing them is the T7 release leg.
 
 ## Linear reconciliation
 
@@ -148,10 +151,14 @@ releases, 14 minor package releases, and 2 major package releases. They are cons
    an arming record; rotate `DOCS_SERVICE_TOKEN`, `SUPPORT_BOT_GRANT_TOKEN`, and `LICENSE_ISSUE_TOKEN`
    atomically — new value on every holder **before** restarting any, then verifier-before-issuer and
    re-probe both sides. A set-but-unrecorded value is adopted and recorded, never regenerated.
-10. **Release and deploy (T8 cleared; runs next):** deploy six legs on one SHA, apply migration 0030
-    (operator/data-migration gate), run the parity and probe set, consume all changesets in one
-    version PR, tag immutable bytes, and redeploy the Worker from that tag. The post-deploy
-    docs/support probe asserts $1,649 and $2,259.
+10. **Release and deploy (Act 1 DONE; Act 2 in flight):** the fleet deploy, migration chain, and
+    parity/probe set ran 2026-07-27 and the version PR consumed every changeset. What remains is the
+    tag itself: `v2026.07.27` was pushed and its train **failed at readiness R3** — `bun run sot`
+    red on a package-count drift, plus a missing R4 audit and per-release checklist, which readiness
+    reads from the TAGGED tree. It is being re-cut as `v2026.07.27.1`, an attestation-only successor
+    carrying only docs, the audit, the checklist, and unpacked fixes, so the byte gate is untouched.
+    Then: R2 upload, mirror sync, Worker redeploy from the tag, and the post-deploy docs/support
+    probe asserting $1,649 and $2,259.
 
 ## Trigger-parked
 
@@ -169,20 +176,23 @@ These are not part of the active completion program:
 
 ## Recently closed
 
-| Date       | Evidence                                                                                                                                                      |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-07-27 | Board cleared: #354/#355/#356 merged, #351 closed as a `minimumReleaseAge` artifact rather than a defect, seven stale branches and six wave worktrees removed |
-| 2026-07-27 | Test-timeout flake class closed at the cause (#356): bun's 5s default was under 5x the idle cost of real work; 224/224 uncached, zero timeouts                |
-| 2026-07-27 | Launch runbook trued to the shipped catalog (#355): nine stale price and count claims against a probe that already asserted the new ones                      |
-| 2026-07-27 | Scoped key operations replace raw DEK access (#354, ADR-0393), closing the fork ADR-0392 deferred                                                             |
-| 2026-07-25 | Wave reconcile: all five PRs (#332-#337) rebased and squash-merged to `main`; four lane worktrees and panes closed out                                        |
-| 2026-07-25 | Adversarial grill of the four open PRs — 44 candidates, 39 refuted, 5 confirmed ([report](../../outputs/audit/2026-07-25-open-pr-grill.md))                   |
-| 2026-07-25 | Generated 39-component design manifest and shared contrast gate                                                                                               |
-| 2026-07-25 | Launch-critical dependency, price, and limiter safety fixes on this branch                                                                                    |
-| 2026-07-25 | Site truth-fix deployment recorded in deploy state                                                                                                            |
-| 2026-07-24 | Visual re-audit: 729/729 fixed                                                                                                                                |
-| 2026-07-23 | Media-overhaul program merged in PR #326                                                                                                                      |
-| 2026-07-20 | Compliance-gap SKU release and $1,449 Compliance bundle                                                                                                       |
+| Date       | Evidence                                                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-07-28 | R4 release audit for `v2026.07.27.1`: security PASS-WITH-DISCLOSURES, code review FAIL on five blockers, all five confirmed and fixed pre-tag outside packed bytes |
+| 2026-07-28 | ADR-0022 dependency-graph gate repaired: `--output-type json` hardcodes `exitCode: 0`, so the boundary gate had been a no-op since the CI command changed          |
+| 2026-07-27 | T4 Act 1 executed: six legs on `e6ee01a6`, PARITY OK, migration chain 29 → 32 with backup and structural receipt                                                   |
+| 2026-07-27 | Board cleared: #354/#355/#356 merged, #351 closed as a `minimumReleaseAge` artifact rather than a defect, seven stale branches and six wave worktrees removed      |
+| 2026-07-27 | Test-timeout flake class closed at the cause (#356): bun's 5s default was under 5x the idle cost of real work; 224/224 uncached, zero timeouts                     |
+| 2026-07-27 | Launch runbook trued to the shipped catalog (#355): nine stale price and count claims against a probe that already asserted the new ones                           |
+| 2026-07-27 | Scoped key operations replace raw DEK access (#354, ADR-0393), closing the fork ADR-0392 deferred                                                                  |
+| 2026-07-25 | Wave reconcile: all five PRs (#332-#337) rebased and squash-merged to `main`; four lane worktrees and panes closed out                                             |
+| 2026-07-25 | Adversarial grill of the four open PRs — 44 candidates, 39 refuted, 5 confirmed ([report](../../outputs/audit/2026-07-25-open-pr-grill.md))                        |
+| 2026-07-25 | Generated 39-component design manifest and shared contrast gate                                                                                                    |
+| 2026-07-25 | Launch-critical dependency, price, and limiter safety fixes on this branch                                                                                         |
+| 2026-07-25 | Site truth-fix deployment recorded in deploy state                                                                                                                 |
+| 2026-07-24 | Visual re-audit: 729/729 fixed                                                                                                                                     |
+| 2026-07-23 | Media-overhaul program merged in PR #326                                                                                                                           |
+| 2026-07-20 | Compliance-gap SKU release and $1,449 Compliance bundle                                                                                                            |
 
 Older chronology remains in git, [build history](../archive/build-history.md), and
 [deploy state](../deploy/STATE.md).
