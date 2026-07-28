@@ -1468,7 +1468,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     faq: [
       {
         question:
-          "Does a mid-cycle top-up charge grant the subscription's monthly credit allotment a second time?",
+          "Does a mid-cycle top-up charge grant the subscription's credit allotment a second time?",
         answer:
           "No. parsePaddleEvent reads the transaction's origin field: subscription_recurring maps to \"subscription_cycle\" (a renewal, grants), while subscription_charge (a mid-cycle addon or top-up) passes through as its own non-granting reason instead of being read as another cycle renewal. Only a reason in services/license's GRANTING_REASONS ever triggers a credit grant.",
       },

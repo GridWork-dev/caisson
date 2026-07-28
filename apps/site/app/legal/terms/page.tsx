@@ -249,7 +249,7 @@ export default function TermsPage() {
         </p>
         <p style={prose.paragraph}>
           An approved refund revokes the license entitlement granted by the
-          refunded purchase and returns any unused credits it granted; access
+          refunded purchase and removes any unused credits it granted; access
           already exercised and credits already spent are not affected. If a
           single order covered more than one bundle or module, tell us which
           item you are refunding: individual line items can be refunded on their

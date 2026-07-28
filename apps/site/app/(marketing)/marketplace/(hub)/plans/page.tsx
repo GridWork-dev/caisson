@@ -57,7 +57,7 @@ const PLANS_FAQ = [
   {
     question: "What do Developer plan credits cover?",
     answer:
-      "A monthly codegen and AI-feature credit allotment, plus package updates and entitlement-scoped pulls from the private registry while the plan is active.",
+      "An annual codegen and AI-feature credit allotment, plus package updates and entitlement-scoped pulls from the private registry while the plan is active.",
   },
   {
     question: "What happens after 12 months?",
@@ -95,7 +95,7 @@ const SUB_META: readonly SubMeta[] = [
     id: "developer",
     audience: "For the team building on the base every week.",
     includes: [
-      "Monthly codegen + AI-feature credit allotment",
+      "Annual codegen + AI-feature credit allotment",
       "Package updates while your subscription is active",
       "Private-registry pulls, entitlement-scoped",
       "Developer support — email and Discord, business-days response",
