@@ -4,9 +4,12 @@ name: deploy-railway
 # Railway service, not here). Touches NO DNS and NO CF Access.
 #
 # STAYS INERT UNTIL ARMED: the project token RAILWAY_TOKEN (scoped to caisson-prod) is not yet a repo
-# secret. The guard step below reads it and SKIPS every real step when it is absent, so the job runs
-# as a GREEN no-op — it never attempts a deploy and never reddens main. The operator ARMS it by adding
-# the RAILWAY_TOKEN secret at the cutover (deploy-runbook C2); it then self-enables on the next push.
+# secret. The guard step below reads it and SKIPS every real step when it is absent, so a push-triggered
+# run is a GREEN no-op — it never attempts a deploy and never reddens main. The operator ARMS it by
+# adding the RAILWAY_TOKEN secret at the cutover (deploy-runbook C2); it then self-enables on the next
+# push. ONE EXCEPTION: a caller that passes `require_armed=true` (the release train's leg 4) gets a hard
+# FAILURE instead of the green skip, because a train that reports a deploy it never performed is worse
+# than a red leg.
 # The static-export deploy-site.yml (Cloudflare Pages) it once coexisted with is already retired (its
 # CI half); deleting the Pages project itself is the DEPLOY-class teardown step C7.
 on:
