@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-28
+updated: 2026-07-29
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -22,15 +22,15 @@ blocked until both technical and operator evidence is attached.
 
 ## Verdicts
 
-| Dimension               | Verdict                                          | Current state                                                                                                                                                                   |
-| ----------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Repository              | **local gates green**                            | 81 Bun workspaces; 224/224 tasks uncached, 76 package gates pass; field-crypto KMS merged `13e814da` (#353) after four review rounds, scoped keys `0d878553` (#354) after three |
-| Deploy / infrastructure | **red parity**                                   | Public probes answer, but license and admin manifest digests differ from repository/Worker                                                                                      |
-| Security                | **gaps**                                         | Limiter and provider adapters are implemented; four production technical receipts remain                                                                                        |
-| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                                                             |
-| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                                                    |
-| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt                                        |
-| Release                 | **blocked**                                      | 54 pending changesets; no current CI/release certification or immutable tag-to-bytes receipt                                                                                    |
+| Dimension               | Verdict                                          | Current state                                                                                                                                                                                       |
+| ----------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repository              | **local gates green**                            | 81 Bun workspaces; 224/224 tasks uncached, 76 package gates pass; field-crypto KMS merged `13e814da` (#353) after four review rounds, scoped keys `0d878553` (#354) after three                     |
+| Deploy / infrastructure | **red parity**                                   | Public probes answer, but license and admin manifest digests differ from repository/Worker                                                                                                          |
+| Security                | **gaps**                                         | Limiter and provider adapters are implemented; four production technical receipts remain                                                                                                            |
+| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                                                                                 |
+| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                                                                        |
+| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt                                                            |
+| Release                 | **proven once**                                  | `v2026.07.27.1` released 2026-07-28: first signed tag, readiness 8/8, 50 tarballs published byte-exact, R2 parity 350/350. Six changesets have accumulated since on the post-tag remediation branch |
 
 ## Evidence snapshot
 
@@ -61,8 +61,9 @@ blocked until both technical and operator evidence is attached.
   closed PRs and all six wave worktrees were removed 2026-07-27 after each was checked for
   unlanded work. The one worktree with modified tracked files held content **older** than `main`,
   not newer.
-- There are 54 pending changeset files. Current resolution affects 56 patch packages, 14 minor
-  packages, and 2 major packages.
+- The 54-file changeset backlog was consumed by version PR #359 (`52376dee`) and those versions are
+  published. Six new changesets sit on `fix/post-tag-audit-remediation` — kernel, compliance,
+  ds-manifest, jobs, registry-schema, standards-gate — all patch.
 - Private-repository access has been authorized since 2026-06-30 (`gh auth status`: active
   `repo`-scoped token; `caisson-sh/caisson` confirmed private). Branch protection stays
   discipline-only on the Free plan (ADR-0327) and org 2FA was declined 2026-07-15, re-raise at
@@ -79,7 +80,13 @@ blocked until both technical and operator evidence is attached.
 
 ### Deploy and parity
 
-The current registry parity probe reports:
+**This table predates the release and has not been re-probed since.** The `v2026.07.27.1` train
+recorded index parity **OK across repository, license, Worker, and admin** on 2026-07-28
+([deploy state](../deploy/STATE.md)), which contradicts the two DRIFT rows below. Treat the release
+receipt as the newer evidence and this table as the last independent probe; re-run
+`registry/scripts/index-parity-probe.ts` before citing either as current.
+
+The last independent registry parity probe reported:
 
 | Leg                                  | Digest                                    | State               |
 | ------------------------------------ | ----------------------------------------- | ------------------- |
