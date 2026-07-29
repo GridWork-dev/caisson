@@ -53,17 +53,19 @@ test("platform migrations apply in order then are idempotent", async () => {
   // 0029_demo_run_leads (the sandbox demo-run store), taking the tail from 5 to 8 → +3 here.
   // ADR-0381 lock 2 appended the shared 0031_entitlement_grant_charged_amount (the per-grant paid
   // amount the upgrade-credit floor reads) → 31. ADR-0389 appends 0032_field_crypto_keys,
-  // which persists tenant-scoped wrapped DEKs for the production KMS path → 32.
+  // which persists tenant-scoped wrapped DEKs for the production KMS path → 32. ADR-0394 appends
+  // the shared 0033_entitlement_grant_refunded_amount (the refunded counterpart 0031 lacked, so a
+  // partial refund stops leaving that floor at a price the buyer no longer paid) → 33.
   expect(first.applied).toEqual([
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
   ]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
   expect(second.skipped).toEqual([
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
   ]);
 });
 

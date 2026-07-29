@@ -18,6 +18,7 @@ export {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_REFUNDED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,
   RENEWAL_EXTENSION_SCHEMA_SQL,
   RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
@@ -35,6 +36,8 @@ export {
   computeUpdatesWindows,
   extendUpdatesWindow,
   reverseRenewalExtensions,
+  recordLineRefund,
+  netCharged,
 } from "./entitlement-store.ts";
 export type {
   GrantEntitlementsInput,
@@ -47,6 +50,7 @@ export type {
   RevokeAdminCompInput,
   ExtendUpdatesWindowInput,
   ReverseRenewalExtensionsInput,
+  RecordLineRefundInput,
 } from "./entitlement-store.ts";
 
 // ADR-0293 — subscription-lifecycle status (G13/G14) + append-only order/invoice history (G26).

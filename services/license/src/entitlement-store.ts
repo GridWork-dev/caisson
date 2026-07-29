@@ -199,6 +199,89 @@ ALTER TABLE entitlement_grant ADD CONSTRAINT entitlement_grant_charged_pair
   CHECK ((charged_amount IS NULL) = (charged_currency IS NULL));
 `;
 
+// ADR-0394 (release-audit F2): `charged_amount` above is stamped once and NEVER mutates, so a later
+// partial refund used to leave the upgrade-credit floor sitting at a price the buyer no longer paid.
+// The refunded total lands HERE instead, and the quote nets the two at read time (`netCharged`).
+//
+// `refunded_adjustment_ids` is the idempotency anchor, and it is the reason this is two columns
+// rather than one. This service has no event-level dedupe by design (`app.ts` — "Paddle retry of the
+// same event_id re-applies as a no-op"), so every handler carries its own; an accumulating
+// `refunded_amount = refunded_amount + $n` redelivers exactly as badly as the in-place decrement
+// that was tried and reverted. The credit claw borrows its anchor from the `${adjustmentId}:${itemId}`
+// unique key on its ledger row, which is unavailable here: that row is not written at all when the
+// line granted zero credits — precisely the rows an upgrade quote reads.
+//
+// Tail append at the next free prefix; every slot at or below 0032 is checksum-pinned on the live DB
+// (ADR-0006). Ships as `0033_entitlement_grant_refunded_amount.sql`.
+export const ENTITLEMENT_GRANT_REFUNDED_AMOUNT_MIGRATION_SQL = `
+ALTER TABLE entitlement_grant ADD COLUMN refunded_amount integer;
+ALTER TABLE entitlement_grant ADD COLUMN refunded_adjustment_ids text[];
+ALTER TABLE entitlement_grant ADD CONSTRAINT entitlement_grant_refunded_amount_nonneg
+  CHECK (refunded_amount IS NULL OR refunded_amount >= 0);
+`;
+
+/**
+ * What the buyer effectively paid for a grant after refunds, in minor units — `charged − refunded`,
+ * floored at 0.
+ *
+ * NULL in, NULL out, deliberately: a NULL `charged_amount` means "this charge could not be
+ * attributed to exactly one SKU", and the quote reads that as unknown and credits at retail. Folding
+ * it to 0 here would silently turn "unknown" into "paid nothing" — a different and wrong answer.
+ * This is the ONLY supported way to turn the two columns into a paid amount; read them raw and the
+ * refund is what you forget.
+ */
+export function netCharged(
+  chargedAmount: number | null,
+  refundedAmount: number | null,
+): number | null {
+  if (chargedAmount === null) return null;
+  return Math.max(chargedAmount - (refundedAmount ?? 0), 0);
+}
+
+export interface RecordLineRefundInput {
+  /** The buyer account — MUST equal the `withTenant` scope. */
+  accountId: string;
+  /** The Paddle per-line join key (`txnitm_…`) whose grants this adjustment refunded. */
+  lineItemId: string;
+  /** THIS adjustment's refunded minor units for THIS line — a line total, never a cumulative one. */
+  amountMinorUnits: number;
+  /** The adjustment id; the applied-set member that makes a redelivery inert. */
+  adjustmentId: string;
+}
+
+/**
+ * Add one adjustment's refunded minor units to every active grant on `lineItemId`, idempotently.
+ * Must run inside `withTenant(pg, accountId, …)`. Returns the number of grant rows updated — 0 on a
+ * redelivery of the same adjustment, and 0 when the line has no grants (a credits-only line).
+ *
+ * The guard and the write are ONE statement on purpose: split into a read-then-write they would
+ * interleave, and two concurrent deliveries of the same adjustment would both observe an empty set
+ * and both add. `array_append` on the matched rows is what makes the second delivery match nothing.
+ */
+export async function recordLineRefund(
+  tx: TenantExecutor,
+  input: RecordLineRefundInput,
+): Promise<number> {
+  if (input.amountMinorUnits <= 0) return 0;
+  const updated = await tx.query<{ id: string }>(
+    `UPDATE entitlement_grant
+        SET refunded_amount = COALESCE(refunded_amount, 0) + $3,
+            refunded_adjustment_ids =
+              array_append(COALESCE(refunded_adjustment_ids, '{}'), $4)
+      WHERE account_id = $1
+        AND line_item_id = $2
+        AND NOT (COALESCE(refunded_adjustment_ids, '{}') @> ARRAY[$4::text])
+      RETURNING id`,
+    [
+      input.accountId,
+      input.lineItemId,
+      input.amountMinorUnits,
+      input.adjustmentId,
+    ],
+  );
+  return updated.rows.length;
+}
+
 /** The provenance of a grant: a recurring subscription, or a one-time (non-subscription) purchase. */
 export type GrantSource =
   | { kind: "subscription"; subscriptionId: string }

@@ -40,6 +40,7 @@ import {
   grantEntitlements,
   grantOwnedCoverageMirrors,
   reconcileCoverageGrants,
+  recordLineRefund,
   reverseRenewalExtensions,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
@@ -671,6 +672,17 @@ export async function applyBillingEvent(
           }
           continue;
         }
+        // ADR-0394 (release-audit F2): record the refunded dollars on the line's surviving grants so
+        // the upgrade-credit floor nets them later. Deliberately OUTSIDE the credit-claw guard
+        // below — a line that granted zero credits writes no clawback row at all, and those are
+        // exactly the rows an upgrade quote reads. Idempotent on its own applied-adjustment set, so
+        // a redelivery of this adjustment adds nothing (`recordLineRefund`'s single-statement guard).
+        await recordLineRefund(tx, {
+          accountId: ev.accountId,
+          lineItemId: item.itemId,
+          amountMinorUnits: item.amountRefunded,
+          adjustmentId: ev.adjustmentId,
+        });
         // Dollar-partial: proportional claw, entitlement left intact (fork A-1). Skip when the line
         // granted no credits, its charged amount is unknown (can't proportion), the refund is zero, or
         // the line is already fully clawed.

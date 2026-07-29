@@ -7,7 +7,7 @@ status: live
 
 ## Current state (2026-07-27)
 
-**ADR ceiling is `0393`; the remote reconciliation base is `origin/main` at `2efeea98`; the
+**ADR ceiling is `0394`; the remote reconciliation base is `origin/main` at `2efeea98`; the
 latest immutable release tag remains `v2026.07.20.3`.** Local `main` now carries the validated
 writing, OSCAL, Ask AI evidence, and supply-chain pin work cataloged in the
 [2026-07-27 reconciliation](../outputs/executions/2026-07-27-project-reconciliation.md).
