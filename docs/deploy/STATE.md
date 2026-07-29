@@ -25,8 +25,9 @@ the release receipt with a second, independent reading rather than citing the tr
 
 `RESULT: PARITY OK`, exit 0. Public HTTP: `caisson.sh`, `license/health`, `admin/healthz`, and
 `registry/index.json` all 200 under 400ms. Docs-RAG and support-bot have no public DNS by design —
-they are private Railway services, so their liveness is not externally probeable and stays uncertified
-by this method. This reading is what retires the DRIFT rows that
+they are private Railway services. The site's `POST /api/ask` proxy is the only outside path to
+docs-RAG and it is Turnstile-gated (`{"error":"challenge_failed"}`, 403), so both legs stay
+uncertified by any automatable method. This reading is what retires the DRIFT rows that
 [production readiness](../state/production-readiness.md) had been carrying since before the release.
 
 ## 2026-07-28 — v2026.07.27.1 released: train green, 50 tarballs published, full parity

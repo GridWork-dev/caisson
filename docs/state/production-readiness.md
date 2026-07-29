@@ -22,15 +22,15 @@ blocked until both technical and operator evidence is attached.
 
 ## Verdicts
 
-| Dimension               | Verdict                                          | Current state                                                                                                                                                                                                                             |
-| ----------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Repository              | **local gates green**                            | 81 Bun workspaces; 224/224 tasks uncached, 76 package gates pass; field-crypto KMS merged `13e814da` (#353) after four review rounds, scoped keys `0d878553` (#354) after three                                                           |
-| Deploy / infrastructure | **index parity OK; two legs uncertified**        | Re-probed independently 2026-07-29: repo/license/worker/admin all agree at `4810e38157c1`. Docs-RAG and support-bot are private services with no public DNS, so their source parity is unprobed                                           |
-| Security                | **gaps**                                         | Limiter and provider adapters are implemented; four production technical receipts remain                                                                                                                                                  |
-| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                                                                                                                       |
-| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                                                                                                              |
-| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt                                                                                                  |
-| Release                 | **proven once; leg 4 now blocks**                | `v2026.07.27.1` released 2026-07-28: first signed tag, readiness 8/8, 50 tarballs published byte-exact, R2 parity 350/350. The next train **fails at leg 4** until `RAILWAY_TOKEN` is armed — the silent-skip was made loud in `45683e6e` |
+| Dimension               | Verdict                                          | Current state                                                                                                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repository              | **local gates green**                            | 81 Bun workspaces; 224/224 tasks uncached, 76 package gates pass; field-crypto KMS merged `13e814da` (#353) after four review rounds, scoped keys `0d878553` (#354) after three                                                                 |
+| Deploy / infrastructure | **index parity OK; two legs uncertified**        | Re-probed independently 2026-07-29: repo/license/worker/admin all agree at `4810e38157c1`. Docs-RAG and support-bot are private services reachable only through a Turnstile-gated site proxy, so their source parity has no automatable receipt |
+| Security                | **gaps**                                         | Limiter and provider adapters are implemented; four production technical receipts remain                                                                                                                                                        |
+| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                                                                                                                             |
+| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                                                                                                                    |
+| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt                                                                                                        |
+| Release                 | **proven once; leg 4 now blocks**                | `v2026.07.27.1` released 2026-07-28: first signed tag, readiness 8/8, 50 tarballs published byte-exact, R2 parity 350/350. The next train **fails at leg 4** until `RAILWAY_TOKEN` is armed — the silent-skip was made loud in `45683e6e`       |
 
 ## Evidence snapshot
 
@@ -101,9 +101,12 @@ production-apply receipts — is also retired: the chain applied 2026-07-27 with
 pre-deploy re-ran it idempotently at 32.
 
 **What genuinely remains uncertified:** docs-RAG and support-bot source parity. Both are private
-Railway services with no public DNS, so no external probe can reach them and their liveness cannot be
-asserted by the method used above. Exit still requires all six runtime legs built from one approved
-SHA plus health/checkout/entitlement/refund/RAG/support/KMS probe receipts.
+Railway services with no public DNS, so the method used above cannot reach them. There is one
+indirect path — the site proxies docs-RAG at `POST /api/ask` — but it is Turnstile-gated (verified
+2026-07-29: `{"error":"challenge_failed"}`, HTTP 403), so it is a human path, not an automatable
+receipt. Certifying these two legs requires either an operator-run probe from inside the Railway
+network or a deliberate probe credential; neither exists today. Exit still requires all six runtime
+legs built from one approved SHA plus health/checkout/entitlement/refund/RAG/support/KMS receipts.
 
 ### Commerce
 
