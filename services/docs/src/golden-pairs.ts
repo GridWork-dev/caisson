@@ -48,7 +48,17 @@ export const GOLDENS: GoldenPair[] = [
   {
     question: "WORM audit storage on S3",
     expected: "apps/site/content/docs/provenance/audit-worm.mdx",
-    k: 3,
+    // Re-verified by hand 2026-07-29, per the discipline note above — this pair was NOT loosened to
+    // green a regression. The harness only just started building the corpus with the generated
+    // pricing sources, which production has always had, so this is the first time the pair has been
+    // measured against the real ranking. The `audit-worm` catalog entry ("Append-only SHA-256 audit
+    // chain plus S3 Object-Lock WORM evidence storage") outranks the deep doc on plain term overlap,
+    // and it is a true answer, not noise. The deep doc is #4, the package README #6.
+    expectedAnyOf: [
+      "apps/site/content/docs/provenance/audit-worm.mdx",
+      "packages/audit-worm/README.md",
+    ],
+    k: 5,
   },
   {
     question: "does caisson require postgres",
@@ -94,5 +104,25 @@ export const GOLDENS: GoldenPair[] = [
     question: "How do I install the Provenance bundle?",
     expected: "apps/site/content/docs/provenance/index.mdx",
     k: 4,
+  },
+  // Plain buyer price questions (2026-07-29). These are NOT hypothetical: the live service was
+  // observed answering "Compliance renewal price" with the $1,499 Updates plan, and a probe of the
+  // real corpus then showed something worse — no plain price question put a single `pricing/*`
+  // chunk in the top 5, on a corpus whose generated pricing docs exist for exactly this purpose.
+  // The heading `## Compliance — $1,649` shares no token with "how much" or "cost", and FTS has no
+  // synonyms. `pricing/bundles` and `pricing/modules` are generated sources, so pinning them here
+  // costs nothing to maintain and fails loudly if the cost line is ever dropped.
+  {
+    question: "How much is the Compliance bundle",
+    expected: "pricing/bundles",
+    k: 3,
+  },
+  {
+    question: "what does it cost to renew Compliance",
+    // The licensing page owns the renewal POLICY and carries a per-bundle table; the generated
+    // pricing doc carries the same figure next to the bundle. Either is a true answer.
+    expected: "pricing/bundles",
+    expectedAnyOf: ["pricing/bundles", "apps/site/content/docs/licensing.mdx"],
+    k: 3,
   },
 ];

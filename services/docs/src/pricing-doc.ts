@@ -26,6 +26,18 @@ const priceAnchorSchema = z
   })
   .strict();
 
+/**
+ * The 12-month updates-renewal price in whole USD, or `null` for a row with no renewal figure
+ * (unpriced SKUs, and list prices below the $23-ish floor where no X9 point exists — ADR-0130 keeps
+ * those number-free rather than fabricating one). NOT a field on the SOT's own row objects: it is
+ * `renewalAmount(id)`, the ADR-0260 §5 40%-floored-to-X9 function, evaluated per row at load time in
+ * `loadPricingFacts`. Projected in because a buyer asking "what does renewing Compliance cost" must
+ * land on the chunk that also carries "Compliance" and "$1,649" — the licensing page's renewal table
+ * has the number but not the bundle adjacency, which is why that question used to retrieve the
+ * $1,499 Updates plan instead (found on the live service 2026-07-28).
+ */
+const renewalSchema = z.number().int().positive().nullable();
+
 /** One à-la-carte module. Mirror of the SOT's `ModulePrice`. */
 const moduleFactSchema = z
   .object({
@@ -46,7 +58,8 @@ const moduleFactSchema = z
  */
 export const PricingFactsSchema = z
   .object({
-    bundles: z.array(priceAnchorSchema),
+    // Bundles carry a renewal figure; plans do not — a plan IS the recurring charge.
+    bundles: z.array(priceAnchorSchema.extend({ renewal: renewalSchema })),
     modules: z.array(moduleFactSchema),
     /** The subscription/per-module/enterprise anchors (the SOT's `PLAN_PRICES`). */
     plans: z.array(priceAnchorSchema),
@@ -76,6 +89,32 @@ function fmtPrice(p: PriceLike): string {
 /** Bare integer-USD for a module — always a one-time perpetual license (no unit suffix). */
 function moduleUsd(amount: number): string {
   return `$${amount.toLocaleString("en-US")}`;
+}
+
+/**
+ * The cost line for one bundle: the buyer's own words next to the number.
+ *
+ * Retrieval, not decoration. The FTS floor has no synonyms, so a heading that reads
+ * `## Compliance — $1,649` matches neither "how much is the Compliance bundle" nor "what does
+ * Compliance cost" — reproduced 2026-07-29 against the real corpus, where NO plain price question
+ * put a single `pricing/*` chunk in the top 5 even though the whole point of the generated pricing
+ * corpus (ADR-0234 F4) is answering exactly those. Cost/price/how-much/renew are the words buyers
+ * actually type, so they belong in the chunk that holds the figure.
+ */
+function costLine(
+  label: string,
+  price: string,
+  renewal: number | null,
+): string {
+  // Deliberately ONE terse sentence. A first draft spelled the renewal policy out per item and
+  // pushed `licensing.mdx` out of the top-k for "how do I renew my license" — 33 copies of the same
+  // explanation outrank the one page that actually owns the policy. The generated chunk carries the
+  // NUMBER for this item; the policy prose stays where it belongs, in one place.
+  const renewalPart =
+    renewal === null
+      ? ""
+      : `, then $${renewal.toLocaleString("en-US")} per year to keep updates`;
+  return `**How much does ${label} cost?** ${price} once${renewalPart}.`;
 }
 
 /** Build a `DocsSource` for one generated pricing markdown doc (kind `pricing`, open license). */
@@ -108,7 +147,27 @@ function bundlesDoc(facts: PricingFacts): string {
       bundle.id === "everything"
         ? facts.modules
         : facts.modules.filter((m) => m.bundles.includes(bundle.id));
-    lines.push(`## ${bundle.label} — ${fmtPrice(bundle)}`, "", bundle.note, "");
+    // A null-amount bundle would render "Contact us once." — the schema permits that shape (it is
+    // shared with the plans, where Enterprise is legitimately price-free), so skip the line rather
+    // than emit a sentence no buyer should read.
+    const cost =
+      bundle.amount === null
+        ? []
+        : [
+            costLine(
+              `the ${bundle.label} bundle`,
+              fmtPrice(bundle),
+              bundle.renewal,
+            ),
+            "",
+          ];
+    lines.push(
+      `## ${bundle.label} — ${fmtPrice(bundle)}`,
+      "",
+      ...cost,
+      bundle.note,
+      "",
+    );
     // CAISSON-43: name every member module (id + label + price + one-line description), not just
     // a bare price list — a support query asking "what's in bundle X" needs the module id an agent
     // can pass to `--module`/`generate`, and the blurb, to be answerable from this chunk alone.
@@ -140,6 +199,10 @@ function modulesDoc(facts: PricingFacts): string {
     "",
   ];
   for (const mod of facts.modules) {
+    // ponytail: no cost line on modules. Adding one to all 27 put "Audit chain + WORM — $149" above
+    // the audit-worm doc for "WORM audit storage on S3" (the label repeats the query term) and
+    // pushed licensing.mdx out of the top-5 for "how do I renew my license" (27 more "per year"
+    // chunks). The reported live defect was about BUNDLES; extend to modules only if one is reported.
     lines.push(`## ${mod.label} — ${moduleUsd(mod.amount)}`, "", mod.blurb, "");
     if (mod.bundles.length === 0) {
       lines.push(
