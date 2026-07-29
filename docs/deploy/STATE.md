@@ -11,6 +11,50 @@ grounds:
 
 # Deploy log
 
+## 2026-07-29 (PM) — `RAILWAY_TOKEN` armed + full fleet deploy off `f9c04f33`
+
+The DEPLOY act for the six PRs merged this sitting (#361–#366), and the close of the credential gap
+the 2026-07-28 entry below opened.
+
+**`RAILWAY_TOKEN` is now a repo secret** (operator-minted project token scoped to `caisson-prod`,
+environment `production`; set 18:49Z, `gh secret list` confirms the name). This closes the
+"next release train FAILS at leg 4" consequence recorded below — the train's leg 4 passes
+`require_armed=true` and will now find the token. **Second consequence, new:** `deploy-railway.yml`
+self-arms on path-triggered pushes, so the next merge touching `apps/site/**` or `packages/**`
+deploys `caisson-site` for real instead of skipping green. That job deploys the site **only** — it
+never migrates (see the 2026-07-15 migration lesson below), so arming did not put the platform
+chain on a push trigger.
+
+**Migration (the one real schema act):** `caisson-license`'s `preDeployCommand` printed
+`[deploy-migrate] platform: applied 1, skipped 32` — `schema_version` 32 → **33**. The single new
+entry is `0033_entitlement_grant_refunded_amount.sql` (ADR-0394, release-audit F2: `refunded_amount`
+
+- `refunded_adjustment_ids` + the non-negative CHECK). `0030`/`0031` were already live from the
+  07-28 deploy. Tail append past the checksum-pinned tail, so no repeat of the PR #254 mid-chain drift.
+
+**Deployed at `f9c04f33`** via the receipted immutable-input path
+(`tooling/scripts/railway-deploy.ts --ref f9c04f33`), locked order — license first, then the rest in
+parallel. Receipts in `docs/deploy/receipts/*.json`.
+
+| Surface             | Evidence                                                             | State  |
+| ------------------- | -------------------------------------------------------------------- | ------ |
+| caisson-license     | `applied 1, skipped 32`; `issuer serving on :8080`; `/health` 200    | **OK** |
+| caisson-site        | `/` `/healthz` `/marketplace` `/updates` all 200, ≤330ms             | **OK** |
+| caisson-admin       | `/healthz` 200                                                       | **OK** |
+| caisson-docs (RAG)  | `/health` 200 → `{"ok":true,"chunks":556}` (was 548)                 | **OK** |
+| caisson-support-bot | deploy complete; Online (private, no public DNS by design)           | **OK** |
+| Registry Worker     | `wrangler deploy` → version `1cc288cd`; `registry.caisson.sh` 200    | **OK** |
+| Index parity probe  | repo `4810e38157c1`/54 · license · worker (17) · admin → `PARITY OK` | **OK** |
+
+The Worker redeploy is not cosmetic: `registry/index.json` is unchanged since the last one, but the
+Worker bundles `@caisson/registry-schema`, which carries the F1 fail-soft in
+`addNamedEntitlementClosure` — an unresolvable compatibility edge is now skipped per-edge instead of
+throwing away the buyer's entire purchased-id set. That fix only reaches the edge gate through this
+deploy.
+
+**Not done here:** no version cut, no tag, no registry publish — changesets stay unconsumed for the
+next operator-gated release train. `npm` delivery stays unarmed (ADR-0329).
+
 ## 2026-07-29 — independent parity re-probe: still OK, one day after the release
 
 No deploy. `bun registry/scripts/index-parity-probe.ts` was re-run from a clean checkout to confirm
