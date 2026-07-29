@@ -473,8 +473,8 @@ export function AuditWormSheet() {
 // ===== Pilot 3 — Compliance bundle cross-section =====
 // The literal caisson: strata below the waterline. Members from the bundle's pinned manifest
 // (SPEC §3); kernel + tenancy-rls sit in the Apache-2.0 base band per the ADR-0094 open-core
-// split; Postgres + S3 Object-Lock are the real bedrock. 9 of 13 members drawn — the entry
-// package and the three 2026-07 SKU members are declared, not drawn.
+// split; Postgres + S3 Object-Lock are the real bedrock. 9 of 14 members drawn — the entry
+// package, oscal-spine, and the three 2026-07 SKU members are declared, not drawn.
 export function ComplianceCrossSection() {
   return (
     <Sheet

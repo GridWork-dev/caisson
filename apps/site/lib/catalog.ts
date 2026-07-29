@@ -77,8 +77,8 @@ const MODULE_PRICE_IDS: Record<string, string> = {
   "access-review": "pri_01ky0fgqdwpf6yaxzeef03q88e",
   "risk-register": "pri_01ky0fgqk5d855hfjdngjrvj89",
   "trust-page": "pri_01ky0fgqqzmfbm2406q4rys44e",
-  // The 11 carve/standalone SKUs from the W7 catalog big-bang (each matched one-for-one against
-  // the pricebook's W7 PURCHASE_BOOK rows).
+  // Twelve rows: the 11 carve/standalone SKUs from the W7 catalog big-bang, each matched
+  // one-for-one against the pricebook's W7 PURCHASE_BOOK rows, plus the later oscal-spine carve.
   "compliance-core": "pri_01kwwqa0k69m965tx8hgsv904h",
   "frameworks-pack": "pri_01kwwqa0rkz3etv2yfd6c7jjad",
   "oscal-spine": "pri_01kye9597z46149qg5xfrqxybk",

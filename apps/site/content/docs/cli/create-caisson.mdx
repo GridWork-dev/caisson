@@ -5,9 +5,9 @@ description: Scaffold a tailored codebase from the versioned module registry, by
 
 ## What it does
 
-`@caisson/cli` is the generator. You pick an edition and the modules you want; it assembles a
-tailored codebase by pulling versioned module sources from the Caisson registry. Editions are
-compositions of the same audited base, the generator composes, it never forks.
+`@caisson/cli` is the generator. You pick a bundle and the modules you want; it assembles a
+tailored codebase by pulling versioned module sources from the Caisson registry. Bundles are
+compositions of the same audited base: the generator composes, it never forks.
 
 ```bash
 bunx @caisson-sh/cli@latest my-app
@@ -15,12 +15,14 @@ cd my-app
 bun install
 ```
 
-The first prompt asks what to generate — a licensed build or a demo. Then you name the project and
+The first prompt asks what to generate — a licensed build, a free sample, or a demo. Then you name the project and
 select modules. A bundle is chosen with the `--edition <id>` flag rather than a wizard question;
 passing one pre-checks its current members in the module list, and you can still add or remove from
 there.
 The base substrate — `kernel`, `auth`, `tenancy-rls`, `ui`, `billing`, `jobs`, `email`,
-`ai-config`, `mcp-server`, `registry-schema`, `observability`, `rate-limit` — is always wired in.
+`ai-config`, `mcp-server`, `registry-schema`, `observability`, `rate-limit`, `analytics`, `cli`,
+`ds-manifest`, `license-verify`, `migrate` — is always free to install, independent of any
+entitlement.
 Paid modules such as `credits` are not part of it; they are entitlement-gated.
 
 ## The registry contract
@@ -28,19 +30,48 @@ Paid modules such as `credits` are not part of it; they are entitlement-gated.
 Every module the CLI emits is pulled from a **versioned** registry, not copied from a moving
 template. A generation resolves the module versions it used and pins them directly into the
 generated `package.json` `dependencies` (no separate lockfile) so the same inputs reproduce the
-same tree. The CLI and the buyer's AI agent read from the one registry, there is no second,
+same tree. The CLI and the buyer's AI agent read from the one registry: there is no second,
 drifting source.
 
+Pass `--dry-run` to see exactly what a selection resolves to before anything is written:
+
 ```bash
-$ bunx @caisson-sh/cli@latest my-app
-resolved  11 modules from registry @ 2026.6.0
-scaffold  compliance edition + base substrate -> ./my-app
-metered   11 codegen-credits
+$ bunx @caisson-sh/cli@latest my-app --edition compliance --dry-run
+create-caisson: dry-run — 11 files for "my-app" (compliance edition)
+  .github/workflows/ci.yml
+  .gitignore
+  .npmrc
+  AGENTS.md
+  README.md
+  eslint.config.js
+  package.json
+  src/__golden__/evidence.json
+  src/__golden__/smoke.json
+  src/golden.test.ts
+  tsconfig.json
+```
+
+The bundle's modules arrive as pinned `dependencies` in that `package.json` rather than as copied
+source, which is why the scaffold itself is small.
+
+Without `--dry-run` the same command writes the tree and prints the next steps:
+
+```bash
+$ bunx @caisson-sh/cli@latest my-app --edition compliance
+
+create-caisson: generated "my-app" → my-app
+
+Next steps:
+  1. cd my-app
+  2. Add your Caisson license key to .npmrc (see README.md)
+  3. bun install   # or: npm install
+  4. bun run build
 ```
 
 The contract it upholds: a generation is **reproducible** (exact module versions pinned into
-`package.json`, never a range) and **metered** (codegen-credits are integer units, never floats, a
-run debits an exact count, or it fails closed before writing).
+`package.json`, never a range) and **metered** (codegen-credits are integer units, never floats; a
+run debits an exact count, or it fails closed before writing). Metering applies to the hosted
+buyer-MCP path; the local binary above generates for free.
 
 ## Drive it from your agent
 
@@ -65,19 +96,19 @@ const result = await caisson.callTool("generate", {
 
 ### CLI flags
 
-| Flag                    | Value                                                                                             | Description                                                                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `<name>` (positional)   | slug                                                                                              | Shorthand for `--name <name>`: the advertised `bunx create-caisson my-app` quickstart. An explicit `--name` always wins on conflict. |
-| `--name <slug>`         | a-z0-9, kebab, max 64 chars                                                                       | Project name; the output directory unless `--out` is set.                                                                             |
-| `--module <id@version>` | repeatable                                                                                        | An exact `@caisson/<slug>@<version>` pin. Split on the _last_ `@`, so a scoped id keeps its leading `@`.                              |
+| Flag                    | Value                                                                                             | Description                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<name>` (positional)   | slug                                                                                              | Shorthand for `--name <name>`: the advertised `bunx create-caisson my-app` quickstart. An explicit `--name` always wins on conflict.                                                       |
+| `--name <slug>`         | a-z0-9, kebab, max 64 chars                                                                       | Project name; the output directory unless `--out` is set.                                                                                                                                  |
+| `--module <id@version>` | repeatable                                                                                        | An exact `@caisson/<slug>@<version>` pin. Split on the _last_ `@`, so a scoped id keeps its leading `@`.                                                                                   |
 | `--edition <e>`         | `compliance` \| `ai-production` \| `local-first` \| `agentic-dev` \| `provenance` \| `everything` | A bundle, exactly these six ids. Alone it auto-selects the bundle's current modules (override with `--module`). The retired ids `ai-kit` / `local-ai` / `agent-dev` are rejected outright. |
-| `--deploy <target>`     | `railway` \| `fly` \| `vercel`                                                                    | Layers that deploy target's template directory on top of base (+ edition).                                                            |
-| `--framework <target>`  | `next`                                                                                            | Layers a wired Next.js App-Router starter demonstrating auth/tenancy/billing/jobs/email/ai-config wiring on the base substrate.       |
-| `--sample <id>`         | e.g. `eu-ai-act-sample`                                                                           | A free, Apache-2.0 evaluation sample. No `--module`/`--edition`, no license key. Mutually exclusive with `--demo`.                    |
-| `--demo`                | flag                                                                                              | Full-catalog generation with every commercial module replaced by a watermarked stub. No license key, never for production.            |
-| `--out <dir>`           | path                                                                                              | Output directory (defaults to the project name).                                                                                      |
-| `--dry-run`             | flag                                                                                              | Print the file plan; write nothing.                                                                                                   |
-| `--help`, `-h`          | flag                                                                                              | Print usage.                                                                                                                          |
+| `--deploy <target>`     | `railway` \| `fly` \| `vercel`                                                                    | Layers that deploy target's template directory on top of base (+ bundle).                                                                                                                  |
+| `--framework <target>`  | `next`                                                                                            | Layers a wired Next.js App-Router starter demonstrating auth/tenancy/billing/jobs/email/ai-config wiring on the base substrate.                                                            |
+| `--sample <id>`         | e.g. `eu-ai-act-sample`                                                                           | A free, Apache-2.0 evaluation sample. No `--module`/`--edition`, no license key. Mutually exclusive with `--demo`.                                                                         |
+| `--demo`                | flag                                                                                              | Full-catalog generation with every commercial module replaced by a watermarked stub. No license key, never for production.                                                                 |
+| `--out <dir>`           | path                                                                                              | Output directory (defaults to the project name).                                                                                                                                           |
+| `--dry-run`             | flag                                                                                              | Print the file plan; write nothing.                                                                                                                                                        |
+| `--help`, `-h`          | flag                                                                                              | Print usage.                                                                                                                                                                               |
 
 Run with no flags in a terminal and `create-caisson` prompts for whatever's missing, licensed
 build vs. free sample vs. full-catalog demo, project name, modules. Any flag you _did_ pass is
@@ -125,7 +156,7 @@ interface RegistryIndex {
 }
 ```
 
-The index is built by a CI-only writer, never hand-appended, a version's presence here is what
+The index is built by a CI-only writer, never hand-appended: a version's presence here is what
 "published" means. A generation resolves against this index once and pins the exact versions it
 used into `package.json`; nothing re-resolves against `latest` after that.
 
@@ -147,11 +178,11 @@ function generate(
 `Selection` is a `.strict()` Zod object, a lowercase slug `projectName`, an optional bundle
 `edition`, `modules: { id, version }[]` (at least one, no duplicate ids), and optional
 `deployTarget` / `framework`. `validateSelection` parses it, then runs `assertKnownModule` /
-`assertKnownVersion` on every module, an unknown id or a stale version throws before the engine
+`assertKnownVersion` on every module: an unknown id or a stale version throws before the engine
 is ever invoked.
 
 The local `create-caisson` binary calls `generate` plus a disk `FileSetWriter` directly and stops
-there, it generates for free; the license key gates the package _install_, not the generation.
+there: it generates for free; the license key gates the package _install_, not the generation.
 The hosted buyer MCP instead drives the metered path:
 
 ```ts
@@ -177,16 +208,16 @@ interface GenerationOutcome {
 }
 ```
 
-`runGeneration` runs in one transaction: validate + compose the file set (edition member pins,
+`runGeneration` runs in one transaction: validate + compose the file set (bundle member pins,
 migration assembly, read-only), **debit before writing anything** (a short balance throws before
 any file touches disk), write via the injected `FileSetWriter`, then record one append-only audit
 row keyed on `(accountId, idempotencyKey)`. A retried call with the same key debits once and
 resolves to the same `generationId` instead of a duplicate row.
 
-`createFileSetWriter(raw?: unknown)`: Zod-validated to `{ overwrite?: boolean }`, default
-`overwrite: false`: is the disk writer: every path is checked for null bytes, absolute paths, and
+`createFileSetWriter(raw?: unknown)` — Zod-validated to `{ overwrite?: boolean }`, default
+`overwrite: false` — is the disk writer: every path is checked for null bytes, absolute paths, and
 `..` segments before anything is written, and the whole set lands via a sibling temp directory +
-atomic rename, a failed write leaves no partial tree.
+atomic rename; a failed write leaves no partial tree.
 
 ### MCP tool schemas
 

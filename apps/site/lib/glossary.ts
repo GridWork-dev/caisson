@@ -88,12 +88,13 @@ export interface GlossaryTerm {
   verifiedOn?: string;
 }
 
-// All 32 ADR-0235-locked terms: batch 1 (renderer + hub + the full 10-term compliance cluster +
-// two pilots, Fork C) followed by batches 2-3 (security, licensing, ai-infra remainders; the two
-// cross-cutting terms fold into compliance/ai-infra since the SPEC's binding cluster union has no
-// fifth value), plus the AEO/Kickoff-J additions the ADR-0367 expansion batch, and the batch-3 mechanism terms (7 more over
-// the post-0235 shipped surfaces: TSA, Rekor, evidence receipts, crosswalk, signed anchors,
-// agent trajectory, token hash-at-rest). Copy is adversarially verified per Fork B — do not
+// All 50 terms. The original 32 are ADR-0235-locked: batch 1 (renderer + hub + the full 10-term
+// compliance cluster + two pilots, Fork C) followed by batches 2-3 (security, licensing, ai-infra
+// remainders; the two cross-cutting terms fold into compliance/ai-infra since the SPEC's binding
+// cluster union has no fifth value). On top of those sit the AEO/Kickoff-J additions, the ADR-0367
+// expansion batch, and 7 batch-3 mechanism terms covering the post-0235 shipped surfaces: TSA,
+// Rekor, evidence receipts, crosswalk, signed anchors, agent trajectory, token hash-at-rest.
+// Copy is adversarially verified per Fork B — do not
 // rewrite; a typo fix is fine, a claim change is not. `related` entries are curated same-cluster
 // slugs (Fork D).
 export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
@@ -153,7 +154,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     sells: {
       edition: "Compliance",
       ctaLabel:
-        "See how the Compliance edition ships the WORM-anchored audit log",
+        "See how the Compliance bundle ships the WORM-anchored audit log",
       ctaHref: "/compliance",
     },
     related: [
@@ -168,7 +169,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Append-only audit log",
     cluster: "compliance",
     definition:
-      "An append-only audit log lets entries be inserted but never altered or deleted, enforced at the database-privilege level, not just app code. Caisson hash-chains each entry to its predecessor in the kernel, then the Compliance edition's audit-worm package anchors the chain's length and tip hash write-once to WORM storage, so tampering, reordering, or truncation each surface on verify.",
+      "An append-only audit log lets entries be inserted but never altered or deleted, enforced at the database-privilege level, not just app code. Caisson hash-chains each entry to its predecessor in the kernel, then the Compliance bundle's audit-worm package anchors the chain's length and tip hash write-once to WORM storage, so tampering, reordering, or truncation each surface on verify.",
     artifact: {
       label:
         "verifyChain: recompute + compare each link, return the first broken index",
@@ -220,7 +221,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     ],
     sells: {
       ctaLabel:
-        "See how the Compliance edition ships the WORM-anchored audit chain",
+        "See how the Compliance bundle ships the WORM-anchored audit chain",
       ctaHref: "/compliance",
       edition: "Compliance",
     },
@@ -336,7 +337,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     ],
     sells: {
       ctaLabel:
-        "See how the Compliance edition ships live WORM on S3 Object Lock",
+        "See how the Compliance bundle ships live WORM on S3 Object Lock",
       ctaHref: "/compliance",
       edition: "Compliance",
     },
@@ -351,7 +352,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "OSCAL",
     cluster: "compliance",
     definition:
-      "OSCAL is NIST's machine-readable format (XML or JSON) for security control catalogs, System Security Plans, and Assessment Results, the interchange layer FedRAMP and GRC tools expect. Caisson's Compliance edition maps each signed evidence pack into OSCAL v1.2.2 Security Assessment Results and Plan-of-Action-and-Milestones documents, bundled alongside a per-framework Assessment Plan and a SHA-256 integrity binding.",
+      "OSCAL is NIST's machine-readable format (XML or JSON) for security control catalogs, System Security Plans, and Assessment Results, the interchange layer FedRAMP and GRC tools expect. Caisson's Compliance bundle maps each signed evidence pack into OSCAL v1.2.2 Security Assessment Results and Plan-of-Action-and-Milestones documents, bundled alongside a per-framework Assessment Plan and a SHA-256 integrity binding.",
     artifact: {
       label:
         "toOscalAssessmentResults: readiness maps to satisfied/not-satisfied, gap reason recorded not guessed",
@@ -400,7 +401,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
     ],
     sells: {
-      ctaLabel: "See how the Compliance edition ships OSCAL evidence bundles",
+      ctaLabel: "See how the Compliance bundle ships OSCAL evidence bundles",
       ctaHref: "/compliance",
     },
     related: [
@@ -415,7 +416,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Control-to-code mapping",
     cluster: "compliance",
     definition:
-      "Control-to-code mapping links a compliance requirement (a SOC 2 Trust Services Criterion, a HIPAA technical safeguard) to the specific code that implements it and the evidence proving that code runs. Caisson's Compliance edition ships this as a canonical control registry crosswalked to CC6.x / 164.312 citations, with key controls wired to live evidence collectors.",
+      "Control-to-code mapping links a compliance requirement (a SOC 2 Trust Services Criterion, a HIPAA technical safeguard) to the specific code that implements it and the evidence proving that code runs. Caisson's Compliance bundle ships this as a canonical control registry crosswalked to CC6.x / 164.312 citations, with key controls wired to live evidence collectors.",
     artifact: {
       label:
         "soc2Tsc control: one canonical control crosswalked to both SOC 2 CC6.1 and HIPAA 164.312(d)",
@@ -464,7 +465,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
     ],
     sells: {
-      ctaLabel: "See the Compliance edition's control map",
+      ctaLabel: "See the Compliance bundle's control map",
       ctaHref: "/compliance",
     },
     related: [
@@ -530,7 +531,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     ],
     sells: {
       edition: "Compliance",
-      ctaLabel: "See how the Compliance edition ships evidence bundles",
+      ctaLabel: "See how the Compliance bundle ships evidence bundles",
       ctaHref: "/compliance",
     },
     related: ["hash-chain-audit-trail", "oscal", "control-to-code-mapping"],
@@ -585,7 +586,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
     ],
     sells: {
-      ctaLabel: "See how the Compliance edition ships WORM retention",
+      ctaLabel: "See how the Compliance bundle ships WORM retention",
       ctaHref: "/compliance",
       edition: "Compliance",
     },
@@ -600,7 +601,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "HIPAA technical safeguards",
     cluster: "compliance",
     definition:
-      "HIPAA technical safeguards are the five standards in 45 CFR §164.312 (access control (unique IDs, emergency access, auto-logoff, encryption), audit controls, integrity, authentication, and transmission security) protecting ePHI in information systems. Caisson's Compliance edition crosswalks every §164.312 citation to an own-authored canonical control, backing what it implements in code: fail-closed RLS, field encryption, the WORM audit log.",
+      "HIPAA technical safeguards are the five standards in 45 CFR §164.312 (access control (unique IDs, emergency access, auto-logoff, encryption), audit controls, integrity, authentication, and transmission security) protecting ePHI in information systems. Caisson's Compliance bundle crosswalks every §164.312 citation to an own-authored canonical control, backing what it implements in code: fail-closed RLS, field encryption, the WORM audit log.",
     artifact: {
       label:
         "hipaaSecurity control pack: 164.312(b) audit controls crosswalked to the WORM audit log",
@@ -649,7 +650,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
     ],
     sells: {
-      ctaLabel: "See the Compliance edition's HIPAA control pack",
+      ctaLabel: "See the Compliance bundle's HIPAA control pack",
       ctaHref: "/compliance",
       edition: "Compliance",
     },
@@ -705,12 +706,12 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Is this the same thing as the SOC 2 evidence pack?",
         answer:
-          "No, it's one input to it. The audit chain is the underlying tamper-evident log; the Compliance edition's evidence pack is the separate, signed bundle that collects the chain's verification result alongside RLS and WORM evidence for the auditor.",
+          "No, it's one input to it. The audit chain is the underlying tamper-evident log; the Compliance bundle's evidence pack is the separate, signed bundle that collects the chain's verification result alongside RLS and WORM evidence for the auditor.",
       },
     ],
     sells: {
       edition: "Compliance",
-      ctaLabel: "See how the Compliance edition ships the audit chain",
+      ctaLabel: "See how the Compliance bundle ships the audit chain",
       ctaHref: "/compliance",
     },
     related: [
@@ -768,7 +769,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Does RLS alone make us SOC 2 or HIPAA compliant?",
         answer:
-          "No, RLS ships the technical access control SOC2 CC6.x and HIPAA 164.312(a) require and generates the isolation proof as a test in the suite, but that control alone isn't compliance. The Compliance edition composes it with the audit chain, WORM evidence, and OSCAL mapping into the full evidence pack an audit needs.",
+          "No, RLS ships the technical access control SOC2 CC6.x and HIPAA 164.312(a) require and generates the isolation proof as a test in the suite, but that control alone isn't compliance. The Compliance bundle composes it with the audit chain, WORM evidence, and OSCAL mapping into the full evidence pack an audit needs.",
       },
     ],
     sells: {
@@ -892,9 +893,9 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         question:
-          "Do I need a paid edition to get fail-closed tenant isolation?",
+          "Do I need a paid bundle to get fail-closed tenant isolation?",
         answer:
-          "No. tenancy-rls, including assertRoleNotPrivileged and the fail-closed withTenant/withUser wrappers, ships in the Apache-2.0 Base substrate for free. Every paid edition builds on top of that same isolation floor; it is not a gated upsell.",
+          "No. tenancy-rls, including assertRoleNotPrivileged and the fail-closed withTenant/withUser wrappers, ships in the Apache-2.0 Base substrate for free. Every paid bundle builds on top of that same isolation floor; it is not a gated upsell.",
       },
     ],
     sells: {
@@ -959,7 +960,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
         question:
           "Does multi-tenant isolation alone make us SOC 2 or HIPAA compliant?",
         answer:
-          "No. It ships the technical control SOC 2 CC6.1 requires for logical access control and generates the isolation proof as a test in the suite, but that control alone is not a compliance certification. The Compliance edition composes it with the audit chain and evidence pack an audit needs.",
+          "No. It ships the technical control SOC 2 CC6.1 requires for logical access control and generates the isolation proof as a test in the suite, but that control alone is not a compliance certification. The Compliance bundle composes it with the audit chain and evidence pack an audit needs.",
       },
     ],
     sells: {
@@ -1186,7 +1187,7 @@ return withKmsFieldCryptoContext(
     term: "BYOK (bring your own key)",
     cluster: "security",
     definition:
-      "BYOK (bring your own key) lets a tenant supply its own AI provider API key instead of the shared lane, encrypted at rest under a per-tenant field-crypto envelope. Caisson's ai-kit resolves the key at inference time inside a tenant-scoped RLS transaction, debits zero credits only on allowlisted BYOK-covered actions, and never logs or persists the key in the clear.",
+      "BYOK (bring your own key) lets a tenant supply its own AI provider API key instead of the shared lane, encrypted at rest under a per-tenant field-crypto envelope. Caisson's AI-Production resolves the key at inference time inside a tenant-scoped RLS transaction, debits zero credits only on allowlisted BYOK-covered actions, and never logs or persists the key in the clear.",
     artifact: {
       label:
         "putTenantProviderKey: seals a tenant's own provider key into its field-crypto envelope, upsert not append",
@@ -1215,7 +1216,7 @@ return withKmsFieldCryptoContext(
       {
         question: "What does BYOK mean for an AI feature?",
         answer:
-          "Bring your own key means a tenant supplies its own provider API key (OpenAI, Anthropic, or another supported provider) instead of routing through Caisson's shared key. ai-kit stores it encrypted and resolves it ahead of the shared lane at inference time, so the call runs against the tenant's own provider account, quota, and bill.",
+          "Bring your own key means a tenant supplies its own provider API key (OpenAI, Anthropic, or another supported provider) instead of routing through Caisson's shared key. AI-Production stores it encrypted and resolves it ahead of the shared lane at inference time, so the call runs against the tenant's own provider account, quota, and bill.",
       },
       {
         question: "Does a BYOK key ever sit on Caisson's servers as plaintext?",
@@ -1449,7 +1450,7 @@ return withKmsFieldCryptoContext(
     term: "Software entitlement",
     cluster: "licensing",
     definition:
-      "A software entitlement is the record of exactly which purchased ids (editions, bundles, individual modules) an account is currently allowed to use. Caisson resolves entitlements from a signed license token at the registry edge, cross-checked against a live revocation deny-set, so a lapsed or revoked purchase reverts to the free base view immediately.",
+      "A software entitlement is the record of exactly which purchased ids (bundles, individual modules) an account is currently allowed to use. Caisson resolves entitlements from a signed license token at the registry edge, cross-checked against a live revocation deny-set, so a lapsed or revoked purchase reverts to the free base view immediately.",
     artifact: {
       label:
         "makeLicenseEntitlementResolver: verify the license token, check the edge revocation deny-set, return the entitlement ids or null",
@@ -1467,7 +1468,7 @@ return withKmsFieldCryptoContext(
       },
       {
         title: "Refcounted grants survive losing one source",
-        body: "The entitlement_grant junction stores one row per account, entitlement, and source. An account holds an entitlement while at least one active grant backs it, so a subscription and a one-time purchase of the same edition each have to be revoked before access is lost.",
+        body: "The entitlement_grant junction stores one row per account, entitlement, and source. An account holds an entitlement while at least one active grant backs it, so a subscription and a one-time purchase of the same bundle each have to be revoked before access is lost.",
       },
       {
         title: "Revoked, never deleted",
@@ -1478,7 +1479,7 @@ return withKmsFieldCryptoContext(
       {
         question: "What is a software entitlement?",
         answer:
-          "A software entitlement is the specific set of purchased ids, editions, bundles, or individual modules, an account is currently allowed to use. Caisson resolves it at request time from a signed license token, not from a client-supplied claim, so the caller can never assert its own access.",
+          "A software entitlement is the specific set of purchased ids, bundles, or individual modules, an account is currently allowed to use. Caisson resolves it at request time from a signed license token, not from a client-supplied claim, so the caller can never assert its own access.",
       },
       {
         question:
@@ -1488,9 +1489,9 @@ return withKmsFieldCryptoContext(
       },
       {
         question:
-          "If I hold the same edition from two sources (say a subscription plus a one-time purchase), what happens if I cancel one?",
+          "If I hold the same bundle from two sources (say a subscription plus a one-time purchase), what happens if I cancel one?",
         answer:
-          "Nothing changes. The entitlement_grant store keeps one row per account, entitlement, and source, so two active sources both have to be revoked before the entitlement is actually lost. Canceling the subscription revokes only its row; the one-time grant keeps the edition entitled.",
+          "Nothing changes. The entitlement_grant store keeps one row per account, entitlement, and source, so two active sources both have to be revoked before the entitlement is actually lost. Canceling the subscription revokes only its row; the one-time grant keeps the bundle entitled.",
       },
       {
         question:
@@ -1965,7 +1966,7 @@ return withKmsFieldCryptoContext(
       },
       {
         title: "The embedder is a port, never a bundled model",
-        body: "local-store depends on nothing that opens a socket or loads a model; embed() is an injected Embedder interface the consuming edition wires. An undefined embedder is a first-class, documented mode, not a fallback failure: the FTS5 floor alone runs fully offline.",
+        body: "local-store depends on nothing that opens a socket or loads a model; embed() is an injected Embedder interface the consuming bundle wires. An undefined embedder is a first-class, documented mode, not a fallback failure: the FTS5 floor alone runs fully offline.",
       },
       {
         title: "vec0's dimension is fixed at table creation",
@@ -1987,7 +1988,7 @@ return withKmsFieldCryptoContext(
         question:
           "How do local embeddings get produced without local-store bundling a model?",
         answer:
-          "local-store never imports a model or opens a socket. embed() is an Embedder port with a fixed dim, and the consuming edition wires the concrete backend, on-device such as ONNX or cloud. An unconfigured embedder is a documented first-class mode, not an error: retrieval falls back to the FTS5 floor alone.",
+          "local-store never imports a model or opens a socket. embed() is an Embedder port with a fixed dim, and the consuming bundle wires the concrete backend, on-device such as ONNX or cloud. An unconfigured embedder is a documented first-class mode, not an error: retrieval falls back to the FTS5 floor alone.",
       },
       {
         question:
@@ -2009,7 +2010,7 @@ return withKmsFieldCryptoContext(
     term: "Compliance-as-code",
     cluster: "compliance",
     definition:
-      "Compliance-as-code means the controls, the evidence that they hold, and the audit trail proving neither was altered all run as versioned, tested software rather than a spreadsheet assembled by hand once a year. Caisson's Compliance edition composes a typed control registry, a fail-closed evidence generator, and a WORM-anchored audit chain into one reachable runtime surface.",
+      "Compliance-as-code means the controls, the evidence that they hold, and the audit trail proving neither was altered all run as versioned, tested software rather than a spreadsheet assembled by hand once a year. Caisson's Compliance bundle composes a typed control registry, a fail-closed evidence generator, and a WORM-anchored audit chain into one reachable runtime surface.",
     artifact: {
       label:
         "createComplianceEdition: composes SOC2 alerting and CCPA/GDPR retention into one reachable Compliance edition surface, no credential at construction",
@@ -2044,7 +2045,7 @@ return withKmsFieldCryptoContext(
       },
       {
         question:
-          "Does compliance-as-code mean the Compliance edition makes us SOC 2 or HIPAA compliant?",
+          "Does compliance-as-code mean the Compliance bundle makes us SOC 2 or HIPAA compliant?",
         answer:
           "No. Compliance-as-code ships the technical controls a framework's clauses require and generates the evidence an auditor examines; it does not itself constitute a certification. The audit opinion covers your whole control environment, people and process included, which no codebase issues on your behalf.",
       },
@@ -2063,7 +2064,7 @@ return withKmsFieldCryptoContext(
     sells: {
       edition: "Compliance",
       ctaLabel:
-        "See how the Compliance edition runs compliance as code, not paperwork",
+        "See how the Compliance bundle runs compliance as code, not paperwork",
       ctaHref: "/compliance",
     },
     related: [
@@ -2088,15 +2089,15 @@ return withKmsFieldCryptoContext(
     properties: [
       {
         title: "Tools are registered, not hardcoded",
-        body: "Editions call registerTool() to add their own buyer tools through the same seam the three base tools (list_modules, describe_module, generate) use; retireTool() marks a name retired (410) instead of silently vanishing, so a name is always exactly one of active, retired, or unknown.",
+        body: "Bundles call registerTool() to add their own buyer tools through the same seam the three base tools (list_modules, describe_module, generate) use; retireTool() marks a name retired (410) instead of silently vanishing, so a name is always exactly one of active, retired, or unknown.",
       },
       {
         title: "Constant-time entitlement gate",
-        body: "isEntitled() scans every owned entitlement with no early return and compares each one timing-safe, so an edition tool a buyer does not own renders the identical 404 a nonexistent tool would, never leaking which is which.",
+        body: "isEntitled() scans every owned entitlement with no early return and compares each one timing-safe, so a bundle tool a buyer does not own renders the identical 404 a nonexistent tool would, never leaking which is which.",
       },
       {
         title: "Rate-limited before every dispatch, not just auth-gated",
-        body: "The checkRateLimit hook is awaited before any tool handler runs, for both base and edition tools. A genuine over-limit throws a 429, but a rate-limit store fault fails open (resolves and alerts) so an infrastructure blip never locks out a paying buyer.",
+        body: "The checkRateLimit hook is awaited before any tool handler runs, for both base and bundle tools. A genuine over-limit throws a 429, but a rate-limit store fault fails open (resolves and alerts) so an infrastructure blip never locks out a paying buyer.",
       },
       {
         title: "One core, two transports",
@@ -2441,7 +2442,7 @@ return withKmsFieldCryptoContext(
     sells: {
       edition: "Compliance",
       ctaLabel:
-        "See how the Compliance edition ships RFC 3161 external anchoring",
+        "See how the Compliance bundle ships RFC 3161 external anchoring",
       ctaHref: "/compliance",
     },
     related: ["worm-audit-log", "audit-evidence-bundle"],
@@ -2503,7 +2504,7 @@ return withKmsFieldCryptoContext(
     sells: {
       edition: "Compliance",
       ctaLabel:
-        "See how the Compliance edition ships public transparency-log anchoring",
+        "See how the Compliance bundle ships public transparency-log anchoring",
       ctaHref: "/compliance",
     },
     related: [
@@ -2568,8 +2569,7 @@ return withKmsFieldCryptoContext(
     ],
     sells: {
       edition: "Compliance",
-      ctaLabel:
-        "See how the Compliance edition ships per-row evidence receipts",
+      ctaLabel: "See how the Compliance bundle ships per-row evidence receipts",
       ctaHref: "/compliance",
     },
     related: [
@@ -2894,7 +2894,7 @@ return withKmsFieldCryptoContext(
     sells: {
       edition: "Compliance",
       ctaLabel:
-        "See how the Compliance edition anchors every checkpoint with a durable outbox",
+        "See how the Compliance bundle anchors every checkpoint with a durable outbox",
       ctaHref: "/compliance",
     },
     related: ["worm-audit-log", "rfc-3161-timestamping", "transparency-log"],
