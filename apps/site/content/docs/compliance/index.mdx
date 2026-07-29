@@ -70,28 +70,23 @@ program, not just point-in-time posture.
 ### Verifying an exported audit pack
 
 The logical audit pack contains `receipts.json`, an auditor README, and a signed canonical manifest
-of every exported file name and SHA-256 digest. It deliberately contains no executable verifier.
-Verification belongs to the independently obtained commercial `@caisson/verify-pack` package:
+of every exported file name and SHA-256 digest. It deliberately contains no executable verifier: a
+program travelling inside the archive it judges cannot establish its own integrity. The seal covers
+the manifest, so adding, removing, renaming, or substituting any file in the pack breaks the
+signature.
 
-```bash
-export CAISSON_VERIFY_PACK_KEY_SHA256="<independently obtained 64-hex fingerprint>"
-npx @caisson/verify-pack ./pack
-```
+Verification is out of band by design, and it needs one input the pack cannot supply: the issuer's
+Ed25519 key fingerprint, obtained through a separately trusted issuer channel. A check that reads
+the candidate key from the pack itself proves nothing, so verification refuses PASS when that
+fingerprint is absent or differs from the key inside the pack.
 
-Obtain that fingerprint through a separately trusted issuer channel; the verifier refuses PASS if
-it is absent or differs from the candidate key inside the pack.
+The format is inspectable rather than proprietary. The Apache-2.0 `@caisson/kernel` builds the
+canonical manifest and the exact bytes the seal signs (`@caisson/kernel/evidence`), and checks each
+row's link recompute, its per-length WORM anchor, and its anchor signature
+(`@caisson/kernel/audit-verify`).
 
-`@caisson/verify-pack` has **not been published to a package registry yet** and remains private in
-the repository; publishing remains operator-gated, so that `npx` command does not resolve publicly
-today. Until the publish occurs, the available verification path is an independently trusted
-checkout of this repository:
-
-```bash
-bun run packages/verify-pack/src/cli.ts ./pack
-```
-
-The out-of-band guarantee becomes a registry-installable path only after that publish. No verifier
-travelling inside a pack is trusted or executed.
+The sanctioned runner for that flow is the commercial `@caisson/verify-pack`. Caisson does not
+distribute it through a package registry, and it is not part of any bundle or module purchase.
 
 ## Composing with the base
 

@@ -274,10 +274,16 @@ describe("buildEvidencePack", () => {
     const readme = pack.files.find(
       (file) => file.name === "README.md",
     )?.contents;
-    expect(readme).toContain("npx @caisson/verify-pack ./pack");
     expect(readme).toContain("CAISSON_VERIFY_PACK_KEY_SHA256");
-    expect(readme).toContain("has not been published");
-    expect(readme).toContain("bun run packages/verify-pack/src/cli.ts ./pack");
+    expect(readme).toContain("@caisson/verify-pack");
+    expect(readme).toContain("not distributed through a package registry");
+    // No install command may appear. `npx @caisson/verify-pack` does not resolve (commercial, never
+    // registry-published) and the old in-repo fallback pointed an external auditor at a private
+    // repository. Both are commands the reader cannot run, so both are banned here by name.
+    expect(readme).not.toContain("npx @caisson/verify-pack");
+    expect(readme).not.toContain("bun run packages/verify-pack");
+    // The route that actually works for a reader with no relationship to the issuer.
+    expect(readme).toContain("@caisson/kernel/audit-verify");
   });
 
   test("mispaired anchor authentication and pack seal throws the typed validation error", () => {
