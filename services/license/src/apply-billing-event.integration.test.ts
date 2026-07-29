@@ -63,6 +63,7 @@ import {
   RENEWAL_EXTENSION_SCHEMA_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
+  netCharged,
   readEntitlements,
 } from "./entitlement-store.ts";
 import {
@@ -1479,6 +1480,151 @@ describe("applyBillingEvent — Paddle per-line partial refund (ADR-0218)", () =
     expect(prov).toEqual([
       { amount: -1666, rounding_raw: 1000, rounding_mode: "down" },
     ]);
+  });
+
+  // ADR-0394 at the HANDLER seam. The store primitive has its own tests; these drive a real
+  // refund.completed through applyBillingEvent, which is what the store tests cannot prove.
+  describe("refunded_amount netting through the handler (ADR-0394)", () => {
+    /** Every grant row's (charged, refunded) for one account, ordered by entitlement. */
+    async function paidRows(
+      acct: string,
+    ): Promise<{ charged: number | null; refunded: number | null }[]> {
+      const r = await tp.query<{
+        charged_amount: number | null;
+        refunded_amount: number | null;
+      }>(
+        `SELECT charged_amount, refunded_amount FROM entitlement_grant
+          WHERE account_id = $1 ORDER BY entitlement_id`,
+        [acct],
+      );
+      return r.map((row) => ({
+        charged: row.charged_amount,
+        refunded: row.refunded_amount,
+      }));
+    }
+
+    test("a dollar-partial on a ZERO-CREDIT line still records the refund — the case the clawback ledger never sees", async () => {
+      const acct = "acct_f2_handler_zero";
+      // An edition line grants an entitlement and NO credits, so no clawback row is ever written
+      // for it. That is exactly the row an upgrade quote reads, and why recordLineRefund sits
+      // outside the claw guard.
+      await withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(
+          tx,
+          purchaseCompletedMulti(acct, "txn_f2z", [
+            {
+              priceId: ONETIME_EDITION_ID,
+              quantity: 1,
+              itemId: "txnitm_f2z",
+              chargedAmount: 74900,
+            },
+          ]),
+        ),
+      );
+      expect(await paidRows(acct)).toEqual([
+        { charged: 74900, refunded: null },
+      ]);
+      await withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(
+          tx,
+          refundPerLine(acct, "txn_f2z", "adj_f2z", [
+            {
+              itemId: "txnitm_f2z",
+              amountRefunded: 20000,
+              fullyRefunded: false,
+            },
+          ]),
+        ),
+      );
+      expect(await paidRows(acct)).toEqual([
+        { charged: 74900, refunded: 20000 },
+      ]);
+      // The stamped charge never moves; the netted figure is what a quote must read.
+      expect(netCharged(74900, 20000)).toBe(54900);
+      // No clawback row exists for this line — the ledger anchor was genuinely unavailable here.
+      expect(
+        await tp.query(
+          `SELECT 1 FROM credit_event WHERE account_id = $1 AND event_type = 'refund_clawback'`,
+          [acct],
+        ),
+      ).toEqual([]);
+      // The entitlement survives a dollar-partial (fork A-1), so the row stays quote-visible.
+      expect(
+        await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+      ).toEqual(["compliance"]);
+    });
+
+    test("a redelivered adjustment is inert through the whole handler, not just the store call", async () => {
+      const acct = "acct_f2_handler_replay";
+      await withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(
+          tx,
+          purchaseCompletedMulti(acct, "txn_f2r", [
+            {
+              priceId: ONETIME_EDITION_ID,
+              quantity: 1,
+              itemId: "txnitm_f2r",
+              chargedAmount: 164900,
+            },
+          ]),
+        ),
+      );
+      const refund = () =>
+        withTenant(tp.pg, acct, (tx) =>
+          applyBillingEvent(
+            tx,
+            refundPerLine(acct, "txn_f2r", "adj_f2r", [
+              {
+                itemId: "txnitm_f2r",
+                amountRefunded: 40000,
+                fullyRefunded: false,
+              },
+            ]),
+          ),
+        );
+      await refund();
+      await refund(); // Paddle redelivers the same adjustment
+      // The reverted in-place decrement took 164900 -> 84900 on this exact sequence.
+      expect(await paidRows(acct)).toEqual([
+        { charged: 164900, refunded: 40000 },
+      ]);
+    });
+
+    test("a FULLY-refunded line records no refund — its grant is revoked, so there is no floor to net", async () => {
+      const acct = "acct_f2_handler_full";
+      await withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(
+          tx,
+          purchaseCompletedMulti(acct, "txn_f2f", [
+            {
+              priceId: ONETIME_EDITION_ID,
+              quantity: 1,
+              itemId: "txnitm_f2f",
+              chargedAmount: 74900,
+            },
+          ]),
+        ),
+      );
+      await withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(
+          tx,
+          refundPerLine(acct, "txn_f2f", "adj_f2f", [
+            {
+              itemId: "txnitm_f2f",
+              amountRefunded: 74900,
+              fullyRefunded: true,
+            },
+          ]),
+        ),
+      );
+      // Revoked, and deliberately no refunded_amount written (ADR-0394 decision 4).
+      expect(await paidRows(acct)).toEqual([
+        { charged: 74900, refunded: null },
+      ]);
+      expect(
+        await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+      ).toEqual([]);
+    });
   });
 
   test("per-line clawback is idempotent per (adjustment, item); two sequential partials both claw", async () => {

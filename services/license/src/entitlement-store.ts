@@ -250,9 +250,13 @@ export interface RecordLineRefundInput {
 }
 
 /**
- * Add one adjustment's refunded minor units to every active grant on `lineItemId`, idempotently.
+ * Add one adjustment's refunded minor units to EVERY grant on `lineItemId`, idempotently.
  * Must run inside `withTenant(pg, accountId, …)`. Returns the number of grant rows updated — 0 on a
  * redelivery of the same adjustment, and 0 when the line has no grants (a credits-only line).
+ *
+ * Deliberately not filtered to `status = 'active'`: an out-of-order partial-after-full lands its
+ * record on an already-revoked row, which is dead state rather than a defect (a revoked grant is
+ * never owned, so it cannot reach `paidByItem`) and is worth keeping for audit.
  *
  * The guard and the write are ONE statement on purpose: split into a read-then-write they would
  * interleave, and two concurrent deliveries of the same adjustment would both observe an empty set
