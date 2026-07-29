@@ -40,6 +40,7 @@ import {
   grantEntitlements,
   grantOwnedCoverageMirrors,
   reconcileCoverageGrants,
+  recordLineRefund,
   reverseRenewalExtensions,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
@@ -670,6 +671,30 @@ export async function applyBillingEvent(
             purchaseRemaining -= result.clawedBack;
           }
           continue;
+        }
+        // ADR-0394 (release-audit F2): record the refunded dollars on the line's surviving grants so
+        // the upgrade-credit floor nets them later. Deliberately OUTSIDE the credit-claw guard
+        // below — a line that granted zero credits writes no clawback row at all, and those are
+        // exactly the rows an upgrade quote reads. Idempotent on its own applied-adjustment set, so
+        // a redelivery of this adjustment adds nothing (`recordLineRefund`'s single-statement guard).
+        const refundRecorded = await recordLineRefund(tx, {
+          accountId: ev.accountId,
+          lineItemId: item.itemId,
+          amountMinorUnits: item.amountRefunded,
+          adjustmentId: ev.adjustmentId,
+        });
+        // Zero rows with a real refund amount means the grant is not here yet — a refund that
+        // overtook its own `transaction.completed`. The later grant then stamps a full
+        // `charged_amount` with no refund against it, and Paddle will not redeliver this adjustment
+        // (we acked it), so the netting is lost for that ordering. Nothing to repair in-band: there
+        // is no row to write to. Say so instead of discarding the signal, the way an unattributed
+        // purchase does. The sibling claw and line revoke have the identical hole by construction
+        // (an empty ledger reads 0, a revoke matches nothing), so this is the handler's standing
+        // ordering posture, not a new one — and it errs toward the buyer.
+        if (refundRecorded === 0 && item.amountRefunded > 0) {
+          process.stderr.write(
+            `[service-license] ALERT: refund ${ev.adjustmentId} for line ${item.itemId} (account ${ev.accountId}) matched no entitlement grant — recorded nothing; if the purchase arrives later its paid amount will not be netted\n`,
+          );
         }
         // Dollar-partial: proportional claw, entitlement left intact (fork A-1). Skip when the line
         // granted no credits, its charged amount is unknown (can't proportion), the refund is zero, or

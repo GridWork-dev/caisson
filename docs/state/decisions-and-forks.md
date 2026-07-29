@@ -1,7 +1,7 @@
 ---
-updated: 2026-07-27
+updated: 2026-07-29
 status: live
-adr_ceiling: 0393
+adr_ceiling: 0394
 ---
 
 # Decisions & Forks — live board
@@ -185,9 +185,11 @@ Full per-round narrative (verbatim, unabridged) moved to `docs/archive/forks-boa
 This compact table is the active fork set. Historical/disposition material below is not an
 additional active queue.
 
-| Fork         | Why it remains open                                                                                                                                                     |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Railway PITR | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18. |
+| Fork         | Why it remains open                                                                                                                                                                                                                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Railway PITR | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18 and again at the 2026-07-29 forks picker — nothing has changed the input: commerce is still sandbox, so there is no production transaction data to lose. |
+
+_Closed 2026-07-29 → **ADR-0394**: what to do about release-audit F2, the `charged_amount` that no refund path ever adjusted. The operator picked the netting column over a per-adjustment table and over accepting the over-credit: refunds accumulate in `refunded_amount`, the stamped charge stays immutable, and the applied-adjustment set on the same row supplies the idempotency anchor the clawback ledger could not (it writes no row at all for a zero-credit line). The in-place decrement stays forbidden — it was written, proven non-idempotent against PGlite, and reverted._
 
 _Six more closed 2026-07-26 → **ADR-0391**: D5 discounted-close evidence · D6 bounded-thesis tripwire · D7 three demand instruments · D11 Article 50 timing plus the new `/writing` surface · D13 economic-buyer map · D15 separate learning and revenue clocks._
 

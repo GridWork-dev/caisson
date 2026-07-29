@@ -40,6 +40,7 @@ async function withRenameAlias(
 import {
   ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_REFUNDED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
   RENEWAL_EXTENSION_SCHEMA_SQL,
@@ -50,8 +51,10 @@ import {
   extendUpdatesWindow,
   grantEntitlements,
   readEntitlements,
+  netCharged,
   readOneTimeEntitlements,
   reconcileCoverageGrants,
+  recordLineRefund,
   reverseRenewalExtensions,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
@@ -68,6 +71,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_REFUNDED_AMOUNT_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
   await tp.exec(RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL);
   await tp.exec(UPDATES_WINDOW_EXPIRY_NOTICE_SCHEMA_SQL);
@@ -1563,5 +1567,141 @@ describe("sweepUpdatesWindowExpiryNotices (G24, buyer-lifecycle audit 2026-07-07
       ),
     ).toBe(1);
     expect(second.sent.length).toBe(1);
+  });
+});
+
+describe("recordLineRefund (ADR-0394 / release-audit F2)", () => {
+  /** Grant one entitlement on `line` with a stamped charge, then return its stored row. */
+  async function grantWithCharge(
+    acct: string,
+    line: string,
+    amountMinorUnits: number,
+  ): Promise<void> {
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: `pi_${line}`,
+        source: onetime(`pi_${line}`),
+        lineItemId: line,
+        charged: { amountMinorUnits, currency: "USD" },
+      }),
+    );
+  }
+
+  async function refundState(
+    acct: string,
+  ): Promise<{ charged: number | null; refunded: number | null }> {
+    const r = await withTenant(tp.pg, acct, (tx) =>
+      tx.query<{
+        charged_amount: number | null;
+        refunded_amount: number | null;
+      }>(
+        `SELECT charged_amount, refunded_amount FROM entitlement_grant
+          WHERE account_id = $1`,
+        [acct],
+      ),
+    );
+    const row = r.rows[0];
+    return {
+      charged: row?.charged_amount ?? null,
+      refunded: row?.refunded_amount ?? null,
+    };
+  }
+
+  test("a redelivery of the SAME adjustment adds nothing -- the defect that killed the in-place decrement", async () => {
+    const acct = "acct_f2_replay";
+    await grantWithCharge(acct, "txnitm_f2a", 164900);
+    const first = await withTenant(tp.pg, acct, (tx) =>
+      recordLineRefund(tx, {
+        accountId: acct,
+        lineItemId: "txnitm_f2a",
+        amountMinorUnits: 40000,
+        adjustmentId: "adj_f2_1",
+      }),
+    );
+    expect(first).toBe(1);
+    // Paddle redelivers the same adjustment. The reverted in-place decrement took 164900 -> 84900
+    // here instead of 124900; this must be inert.
+    const replay = await withTenant(tp.pg, acct, (tx) =>
+      recordLineRefund(tx, {
+        accountId: acct,
+        lineItemId: "txnitm_f2a",
+        amountMinorUnits: 40000,
+        adjustmentId: "adj_f2_1",
+      }),
+    );
+    expect(replay).toBe(0);
+    const state = await refundState(acct);
+    expect(state.charged).toBe(164900); // stamped charge NEVER mutates
+    expect(state.refunded).toBe(40000);
+    expect(netCharged(state.charged, state.refunded)).toBe(124900);
+  });
+
+  test("two DISTINCT sequential adjustments both apply", async () => {
+    const acct = "acct_f2_two";
+    await grantWithCharge(acct, "txnitm_f2b", 100000);
+    for (const adj of ["adj_f2_a", "adj_f2_b"]) {
+      await withTenant(tp.pg, acct, (tx) =>
+        recordLineRefund(tx, {
+          accountId: acct,
+          lineItemId: "txnitm_f2b",
+          amountMinorUnits: 15000,
+          adjustmentId: adj,
+        }),
+      );
+    }
+    const state = await refundState(acct);
+    expect(state.refunded).toBe(30000);
+    expect(netCharged(state.charged, state.refunded)).toBe(70000);
+  });
+
+  test("a refund exceeding the charge floors the net at 0, never negative", async () => {
+    const acct = "acct_f2_over";
+    await grantWithCharge(acct, "txnitm_f2c", 9900);
+    await withTenant(tp.pg, acct, (tx) =>
+      recordLineRefund(tx, {
+        accountId: acct,
+        lineItemId: "txnitm_f2c",
+        amountMinorUnits: 99900,
+        adjustmentId: "adj_f2_over",
+      }),
+    );
+    const state = await refundState(acct);
+    expect(netCharged(state.charged, state.refunded)).toBe(0);
+  });
+
+  test("a line with no grants updates nothing (a credits-only line) and a zero refund is a no-op", async () => {
+    const acct = "acct_f2_none";
+    await grantWithCharge(acct, "txnitm_f2d", 5000);
+    expect(
+      await withTenant(tp.pg, acct, (tx) =>
+        recordLineRefund(tx, {
+          accountId: acct,
+          lineItemId: "txnitm_nonexistent",
+          amountMinorUnits: 1000,
+          adjustmentId: "adj_f2_none",
+        }),
+      ),
+    ).toBe(0);
+    expect(
+      await withTenant(tp.pg, acct, (tx) =>
+        recordLineRefund(tx, {
+          accountId: acct,
+          lineItemId: "txnitm_f2d",
+          amountMinorUnits: 0,
+          adjustmentId: "adj_f2_zero",
+        }),
+      ),
+    ).toBe(0);
+    expect((await refundState(acct)).refunded).toBeNull();
+  });
+
+  test("an unattributable charge stays unknown -- NULL in, NULL out, never 0", () => {
+    // Folding NULL to 0 would turn "we could not attribute this charge to one SKU" into "the buyer
+    // paid nothing", which credits at retail-minus-nothing instead of retail.
+    expect(netCharged(null, null)).toBeNull();
+    expect(netCharged(null, 5000)).toBeNull();
+    expect(netCharged(5000, null)).toBe(5000);
   });
 });
