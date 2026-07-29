@@ -76,7 +76,9 @@ const CONTRIBUTING: readonly SelectedPackage[] = [
  * Package-local ordinals are insufficient to preserve this ledger: any future package migration must
  * append after this prefix instead of inserting ahead of an already-released downstream package.
  */
-const RELEASED_GLOBAL_PREFIX: readonly PinnedMigrationIdentity[] = [
+/** Exported ONLY so the assembly test can assert every on-disk migration is pinned — see the
+ *  `every on-disk migration is pinned` case. Not part of the runtime contract. */
+export const RELEASED_GLOBAL_PREFIX: readonly PinnedMigrationIdentity[] = [
   {
     sourcePackage: "@caisson/field-crypto",
     sourceName: "0001_field_keys.sql",

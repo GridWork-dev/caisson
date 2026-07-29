@@ -27,7 +27,13 @@ import {
   runMigrations,
 } from "@caisson/migrate";
 import { type TestPg, newTestPg } from "@caisson/testing";
-import { assembleComplianceMigrations } from "./assemble.ts";
+import {
+  assembleComplianceMigrations,
+  complianceMigrationPackages,
+  // Aliased: the local `RELEASED_GLOBAL_PREFIX` below is the CHECKSUM contract (version+digest of
+  // the pre-0004 release); this is the assembler's identity PIN list. Same idea, different shape.
+  RELEASED_GLOBAL_PREFIX as PINNED_PREFIX,
+} from "./assemble.ts";
 
 /** The DB-side `schema_version` ledger (ADR-0014) — the runner's record of what has been applied. */
 const SCHEMA_VERSION_DDL = `CREATE TABLE IF NOT EXISTS schema_version (
@@ -326,5 +332,39 @@ describe("ledger fails closed (ADR-0006)", () => {
     await expect(runMigrations(assembly, pgApplier(tp))).rejects.toThrow(
       /checksum drift/,
     );
+  });
+});
+
+describe("released-migration pinning", () => {
+  // The assembler already refuses a pin that names a missing file and a duplicate pin. Nothing
+  // caught the reverse: a migration that exists on disk but was never pinned. That one lands in
+  // the UNPINNED tail, which is ordered by topological package order — so shipping an unpinned
+  // compliance migration and later adding a field-crypto one silently RENUMBERS the released
+  // migration, and every deployed ledger then reads it as checksum drift. Adding the pin in the
+  // same change as the migration is the whole convention; this is what enforces it.
+  test("every on-disk migration is pinned in RELEASED_GLOBAL_PREFIX", () => {
+    const pinned = new Set(
+      PINNED_PREFIX.map((p) => `${p.sourcePackage}\u0000${p.sourceName}`),
+    );
+    const unpinned: string[] = [];
+    for (const pkg of complianceMigrationPackages()) {
+      for (const migration of pkg.migrations) {
+        const key = `${pkg.slug}\u0000${migration.name}`;
+        if (!pinned.has(key)) unpinned.push(`${pkg.slug}:${migration.name}`);
+      }
+    }
+    expect(unpinned).toEqual([]);
+  });
+
+  test("no pin names a migration that is no longer on disk", () => {
+    const onDisk = new Set(
+      complianceMigrationPackages().flatMap((pkg) =>
+        pkg.migrations.map((m) => `${pkg.slug}\u0000${m.name}`),
+      ),
+    );
+    const dangling = PINNED_PREFIX.filter(
+      (p) => !onDisk.has(`${p.sourcePackage}\u0000${p.sourceName}`),
+    ).map((p) => `${p.sourcePackage}:${p.sourceName}`);
+    expect(dangling).toEqual([]);
   });
 });
