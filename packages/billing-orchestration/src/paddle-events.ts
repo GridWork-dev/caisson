@@ -193,7 +193,7 @@ function readLineItems(obj: Record<string, unknown>): {
  * `amountRefunded` still records the money movement) but now signals through the optional `onWarn`
  * so a malformed delivery is observable instead of a silent drop; `console.log` is banned
  * in product code, so the caller wires this to its own telemetry/log surface. An absent `items` yields
- * []. */
+ * []. THROWS on a repeated `item_id` across the surviving entries — see the comment at the check. */
 function readAdjustmentItems(
   obj: Record<string, unknown>,
   onWarn?: (message: string) => void,
@@ -228,6 +228,22 @@ function readAdjustmentItems(
         ? readMoneyMinorUnits((totals as Record<string, unknown>).total)
         : 0;
     out.push({ itemId, amountRefunded, fullyRefunded: type === "full" });
+  }
+  // Fail closed on a repeated `item_id` within ONE adjustment — the same contract `readLineItems`
+  // above already holds for `details.line_items`, which this path was simply missing. Without this
+  // check: each entry is applied against the grant row for its line, and the applier's idempotency
+  // anchor is the adjustment id recorded on that row, so the FIRST entry writes the adjustment id
+  // and every later entry sharing the itemId is then refused as a redelivery — correctly, by a
+  // guard that cannot tell this case from a real one. The refund under-records, the buyer keeps a
+  // credit floor higher than they paid for, and the webhook still acks 200. A non-2xx makes Paddle
+  // redeliver the whole adjustment instead, so a malformed delivery is visible rather than
+  // half-applied. Summing them would be guessing at intent on a shape Paddle does not legitimately
+  // produce.
+  const ids = out.map((entry) => entry.itemId);
+  if (new Set(ids).size !== ids.length) {
+    throw new ValidationError(
+      "Paddle adjustment has duplicate per-line join ids (data.items)",
+    );
   }
   return out;
 }

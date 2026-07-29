@@ -9,6 +9,9 @@ import {
   type PaidAmount,
   type UpgradeQuote,
 } from "@caisson/pricebook";
+import { readNetPaidByItem } from "@caisson/platform-reads";
+import { getSession } from "./auth.ts";
+import { readScoped } from "./db.ts";
 
 /**
  * The upgrade quote to `bundleId` for a signed-in buyer who already OWNS `ownedEntitlementIds` (their
@@ -23,8 +26,9 @@ import {
  * credits at `max(retail, paid)`, so a later price CUT never strands a buyer who paid the old higher
  * number; omitted items credit at retail, as do non-USD charges (the pricebook will not invent an
  * exchange rate). Optional because the columns are NULL wherever a charge could not be attributed
- * to a single SKU, and because the caller may not have the read yet — the floor is only ever applied
- * to amounts we actually recorded.
+ * to a single SKU — the floor is only ever applied to amounts we actually recorded. A caller with a
+ * signed-in buyer should get the map from {@link paidByItemForAccount} rather than reading the
+ * column itself; see the note there.
  */
 export function bundleUpgradeQuote(
   bundleId: string,
@@ -32,4 +36,29 @@ export function bundleUpgradeQuote(
   paidByItem?: Readonly<Record<string, PaidAmount>>,
 ): UpgradeQuote {
   return upgradeQuote(bundleId, ownedEntitlementIds, paidByItem);
+}
+
+/**
+ * The signed-in account's `paidByItem` map, or `undefined` for a signed-out visitor (nothing owned,
+ * so nothing to credit above retail).
+ *
+ * NO CALLER YET. This is the arming half of ADR-0394: nothing in the app renders or charges an
+ * upgrade price, so `bundleUpgradeQuote` has no live caller either and no buyer's credit is computed
+ * from this today. Wiring a checkout surface to it is a separate change.
+ *
+ * It exists ahead of that surface so the wiring cannot get the money wrong: `charged_amount` is what
+ * the buyer was charged and NOT what they kept — refunds accumulate separately — so a caller that
+ * SELECTs the column itself and passes it straight through would credit an upgrade against money
+ * already returned to the buyer's card. `readNetPaidByItem` nets the two and is pinned against the
+ * license service's own `netCharged`, so going through it is what keeps that impossible. Use it
+ * rather than adding a second read.
+ */
+export async function paidByItemForAccount(): Promise<
+  Readonly<Record<string, PaidAmount>> | undefined
+> {
+  const session = await getSession();
+  if (session === null) return undefined;
+  return readScoped(session.accountId, (tx) =>
+    readNetPaidByItem(tx, session.accountId),
+  );
 }
