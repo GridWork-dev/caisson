@@ -62,8 +62,9 @@ blocked until both technical and operator evidence is attached.
   unlanded work. The one worktree with modified tracked files held content **older** than `main`,
   not newer.
 - The 54-file changeset backlog was consumed by version PR #359 (`52376dee`) and those versions are
-  published. Seven new changesets sit on `fix/post-tag-audit-remediation` across six packages —
-  kernel, compliance, ds-manifest, jobs, registry-schema, and standards-gate twice — all patch.
+  published. Eight new changesets sit on `fix/post-tag-audit-remediation` across seven packages —
+  kernel, compliance, ds-manifest, jobs, registry-schema, service-docs, and standards-gate twice —
+  all patch.
 - Private-repository access has been authorized since 2026-06-30 (`gh auth status`: active
   `repo`-scoped token; `caisson-sh/caisson` confirmed private). Branch protection stays
   discipline-only on the Free plan (ADR-0327) and org 2FA was declined 2026-07-15, re-raise at

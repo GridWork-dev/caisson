@@ -59,10 +59,10 @@ purpose, and they are now the only thing branch-hygiene reports.
 
 The changeset backlog was **drained** by the version PR (#359, `52376dee`), which consumed all 54
 files and bumped every package. Those versions are now **published**: the `v2026.07.27.1` train
-uploaded 50 tarballs byte-exact and the R2 parity probe moved 300/350 → **350/350**. Seven new
-changesets have since accumulated on the post-tag remediation branch (T9 below), across six
-packages — kernel, compliance, ds-manifest, jobs, registry-schema, and standards-gate twice — so the
-next version PR has real work to consume.
+uploaded 50 tarballs byte-exact and the R2 parity probe moved 300/350 → **350/350**. Eight new
+changesets have since accumulated on the post-tag remediation branch (T9 below), across seven
+packages — kernel, compliance, ds-manifest, jobs, registry-schema, service-docs, and standards-gate
+twice — so the next version PR has real work to consume.
 
 **The next release train will fail at leg 4.** `45683e6e` made `deploy-railway`'s unarmed skip loud
 inside an armed train, which is correct and was the whole point, but it converts a silent no-op into

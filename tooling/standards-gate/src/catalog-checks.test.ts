@@ -3,7 +3,13 @@
 // clean — plus targeted failure-path cases (synthetic Pkg[] and temp-dir fixtures, the
 // checks.test.ts pattern) that prove each rule actually fires.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -568,4 +574,40 @@ describe("checkNamedEntitlementTargets", () => {
       "@caisson/artifact-render",
     ]);
   });
+
+  test("a reshaped declaration the regex cannot read is an ERROR, not a silent pass", () => {
+    // The gate is a regex over source text. Hoisting the entries to a named const is a perfectly
+    // ordinary refactor that makes it stop matching — and the runtime half skips unresolvable edges
+    // silently by design, so without this the two halves go quiet at the same moment.
+    writeEdges(`[]`, `[]`, []);
+    const entPath = join(root, "packages/registry-schema/src/entitlements.ts");
+    writeFileSync(
+      entPath,
+      readFileSync(entPath, "utf8").replace(
+        /export const COMPATIBILITY_REEXPORT_ENTITLEMENTS[^;]*;/,
+        "const COMPAT_ENTRIES = [];\nexport const COMPATIBILITY_REEXPORT_ENTITLEMENTS = new Map(COMPAT_ENTRIES);",
+      ),
+    );
+    expect(checkNamedEntitlementTargets(root).map((x) => x.rule)).toContain(
+      "named-entitlement-target-gate-blind",
+    );
+  });
 });
+
+// Known-positive against the REAL repository, not a fixture. Every test above writes the very
+// declaration it then parses, so a reshaping of the ACTUAL `entitlements.ts` — the failure this
+// gate's regex is most exposed to — is invisible to all of them. This one fails the day the parser
+// stops seeing the real file.
+describe("checkNamedEntitlementTargets against the real tree", () => {
+  test("the parser still resolves the live entitlements.ts, and the gate is not blind", () => {
+    const rules = new Set(
+      checkNamedEntitlementTargets(ROOT).map((f) => f.rule),
+    );
+    expect(rules.has("named-entitlement-target-gate-blind")).toBe(false);
+    expect(rules.has("named-entitlement-target-gate-unreadable")).toBe(false);
+  });
+});
+
+// Known-positive against the REAL repository, not a fixture. Every test above writes the
+// declaration it then parses, so a reshaping of the actual `entitlements.ts` — the failure mode this
+// gates

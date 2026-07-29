@@ -171,8 +171,20 @@ function bundlesDoc(facts: PricingFacts): string {
     // CAISSON-43: name every member module (id + label + price + one-line description), not just
     // a bare price list — a support query asking "what's in bundle X" needs the module id an agent
     // can pass to `--module`/`generate`, and the blurb, to be answerable from this chunk alone.
+    //
+    // The list sits under its own `###`, which is a RETRIEVAL decision rather than formatting.
+    // `parseSource` splits on `##`/`###`, so this keeps each bundle's price block a short, dense
+    // chunk. Left inline, Compliance's thirteen module blurbs rode in the same chunk as its price,
+    // and bm25's length normalization sank it below bundles whose lists happened to overflow into a
+    // second chunk — "How much is the Compliance bundle" came back with the Everything card, the
+    // same wrong-number class as the live defect this generated doc exists to answer.
+    //
+    // The bundles also stay ONE source on purpose. `DocsIndex.search` caps how many chunks one
+    // source may hold in a window (`perSourceCap`, 2); splitting them into six sources was tried
+    // and gave the six price cards twelve slots between them, which evicted `licensing.mdx` from
+    // the top-5 for "how do I renew my license". Rank inside the source, do not widen the source.
     if (modules.length > 0) {
-      lines.push("Modules included:", "");
+      lines.push(`### Modules included in ${bundle.label}`, "");
       for (const m of modules) {
         lines.push(
           `- **${m.label}** (\`${m.id}\`, ${moduleUsd(m.amount)}): ${m.blurb}`,

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-28
+updated: 2026-07-29
 status: live
 grounds:
   - docs/deploy/STATE.md
@@ -15,8 +15,11 @@ row-count parity, including the requirement to recreate the `admin`, `admin_writ
 and `app` roles before `pg_restore` so RLS policy creation succeeds.
 
 That rehearsal is historical recovery evidence, not proof that today’s backup is recent. Verify
-Railway snapshot recency before launch. Site migrations `0030`–`0032` exist in source and have no
-production-apply receipts. A restore drill for the release that arms hosted field crypto must
+Railway snapshot recency before launch. Site migrations `0030`–`0032` have since been applied in
+production — the chain ran 2026-07-27 taking `schema_version` 29 → 32 against a pg_restore-verified
+backup, and the tag's pre-deploy re-ran it idempotently at 32 ([deploy state](../deploy/STATE.md)) —
+so the no-receipt caveat this paragraph used to carry is retired. A restore drill for the release
+that arms hosted field crypto must still
 reapply the chain through `0032_field_crypto_keys.sql`, then receipt the restored
 `field_key_version` and `field_wrapped_dek` rows, forced RLS and tenant policies, and append-only
 wrapped-DEK triggers before running a real version-pinned Azure wrap/unwrap probe.

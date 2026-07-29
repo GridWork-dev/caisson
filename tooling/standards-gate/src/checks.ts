@@ -673,6 +673,21 @@ export async function checkPricebookPriceAgreement(
   const authoritySlugs = new Set(
     Object.keys(PRICE_AUTHORITY).map((id) => id.replace(/^@caisson\//, "")),
   );
+  // A slug in BOTH books falls through both legs: the forward leg picks exactly one book per
+  // authority row (`isBundle` short-circuits to BUNDLE_RETAIL), and the reverse leg tests only set
+  // membership against the union, so the shadowed SKU_RETAIL row is never price-compared and never
+  // orphan-flagged. Bundle ids and package slugs share one namespace — `compliance` is both a
+  // bundle id and packages/compliance — so this is a live collision risk, and an unexamined
+  // SKU_RETAIL row is a creditable money value (`upgrades.ts` reads its keys directly).
+  for (const slug of Object.keys(sku)) {
+    if (!(slug in bundles)) continue;
+    findings.push({
+      severity: "error",
+      rule: "pricebook-price-agreement",
+      pkg: `@caisson/${slug}`,
+      message: `pricebook carries "${slug}" in BOTH SKU_RETAIL ($${sku[slug]}) and BUNDLE_RETAIL ($${bundles[slug]}) — the bundle row wins every comparison and the SKU row is never checked against PRICE_AUTHORITY, while still feeding upgrade credits; keep the slug in exactly one book.`,
+    });
+  }
   for (const [book, rows] of Object.entries({
     SKU_RETAIL: sku,
     BUNDLE_RETAIL: bundles,
@@ -713,8 +728,13 @@ function readIndexMembers(indexPath: string): Map<string, Set<string>> | null {
         entry.versions[entry.versions.length - 1];
       out.set(entry.id, new Set(Object.keys(v?.manifest?.members ?? {})));
     }
+    // A shape change to the index (`modules` gone or no longer an array) throws in the loop above
+    // and lands here, indistinguishable from "no index yet" unless we say so — the caller treats
+    // null as the legitimate pre-publish skip. Re-throw the distinguishable case so the caller can
+    // report it instead of silently disabling the live leg forever.
     return out;
   } catch {
+    if (existsSync(indexPath)) throw new Error("index-unreadable");
     return null;
   }
 }
@@ -767,9 +787,23 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
       },
     ];
   }
-  // Read outside the try below: readIndexMembers already returns null on absent/unreadable, and an
-  // unpublished index must skip the live leg rather than warn the whole check away.
-  const indexMembers = readIndexMembers(join(root, "registry/index.json"));
+  // Read outside the try below: an ABSENT index (null) is the legitimate pre-publish posture and
+  // must skip the live leg rather than warn the whole check away. An index that exists but will not
+  // parse is a different thing entirely — it silently disabled this leg before, so it now reports.
+  let indexMembers: Map<string, Set<string>> | null;
+  try {
+    indexMembers = readIndexMembers(join(root, "registry/index.json"));
+  } catch {
+    return [
+      {
+        severity: "error",
+        rule: "catalog-parity-index-unreadable",
+        pkg: "registry/index.json",
+        message:
+          "registry/index.json exists but could not be read in the expected shape — the live membership leg did not run",
+      },
+    ];
+  }
   let modules: readonly SitePricingModule[];
   let members: Map<string, Set<string>>;
   try {
@@ -937,21 +971,29 @@ export function checkReservedIdsStaleness(root: string): Finding[] {
   return findings;
 }
 
-/** Extract every TARGET id from a `Map<string, readonly string[]>` of named entitlement edges. */
+/**
+ * Extract every TARGET id from a `Map<string, readonly string[]>` of named entitlement edges.
+ *
+ * `null` means the DECLARATION could not be found or parsed — distinct from `[]`, which means it
+ * parsed and is legitimately empty. This is a regex over source text, so any reshaping of the
+ * declaration (a `satisfies` clause, entries hoisted to a named const, a builder call) makes it stop
+ * seeing the real thing; collapsing that into `[]` would report a clean gate that measured nothing,
+ * while the runtime half skips unresolvable edges silently by design.
+ */
 function parseNamedEntitlementTargets(
   src: string,
   constName: string,
-): string[] {
+): string[] | null {
   const block = src.match(
     new RegExp(
       `${constName}[^=]*=\\s*new Map(?:<[\\s\\S]*?>)?\\(\\s*\\[([\\s\\S]*?)\\]\\s*\\)\\s*;`,
     ),
   );
-  if (!block?.[1]) return [];
+  if (!block) return null;
   // Each entry is `["@caisson/parent", ["@caisson/target", …]]` — the targets are every id after
   // the first in the entry, so match the inner array specifically.
   const targets: string[] = [];
-  for (const entry of block[1].matchAll(
+  for (const entry of (block[1] ?? "").matchAll(
     /\[\s*["']@caisson\/[a-z0-9-]+["']\s*,\s*\[([\s\S]*?)\]\s*\]/g,
   )) {
     for (const id of (entry[1] ?? "").matchAll(
@@ -980,6 +1022,7 @@ export function checkNamedEntitlementTargets(root: string): Finding[] {
   if (!existsSync(entPath) || !existsSync(indexPath)) return [];
   const source = readFileSync(entPath, "utf8");
   const reserved = new Set(parseReservedEntitlementIds(source));
+  const findings: Finding[] = [];
   let indexed: Set<string>;
   try {
     const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
@@ -987,14 +1030,35 @@ export function checkNamedEntitlementTargets(root: string): Finding[] {
     };
     indexed = new Set(idx.modules.map((m) => m.id));
   } catch {
-    return [];
+    // An index that EXISTS but will not parse is a broken gate, not a pre-publish posture — the
+    // absent case already returned above. Returning [] here would report PASS while measuring
+    // nothing, and the runtime half skips unresolvable edges silently by design, so both halves
+    // would go quiet at once.
+    return [
+      {
+        severity: "error",
+        rule: "named-entitlement-target-gate-unreadable",
+        pkg: "registry/index.json",
+        message:
+          "registry/index.json exists but could not be parsed — the named-entitlement target gate did not run",
+      },
+    ];
   }
-  const findings: Finding[] = [];
   for (const constName of [
     "COMPATIBILITY_REEXPORT_ENTITLEMENTS",
     "INTERNAL_RUNTIME_ENTITLEMENTS",
   ]) {
-    for (const target of parseNamedEntitlementTargets(source, constName)) {
+    const parsed = parseNamedEntitlementTargets(source, constName);
+    if (parsed === null) {
+      findings.push({
+        severity: "error",
+        rule: "named-entitlement-target-gate-blind",
+        pkg: "packages/registry-schema/src/entitlements.ts",
+        message: `could not parse ${constName} — its declaration shape changed and this gate is no longer reading it, so an unresolvable edge would now pass silently at build time AND be skipped silently at runtime.`,
+      });
+      continue;
+    }
+    for (const target of parsed) {
       const slug = target.startsWith("@caisson/")
         ? target.slice("@caisson/".length)
         : target;

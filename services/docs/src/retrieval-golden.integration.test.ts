@@ -16,7 +16,7 @@
 // defeats the test.
 import { afterAll, describe, expect, test } from "bun:test";
 import { buildCorpus, loadPricingFacts } from "./corpus.ts";
-import { GOLDENS, acceptedSources } from "./golden-pairs.ts";
+import { GOLDENS, satisfies } from "./golden-pairs.ts";
 import { DocsIndex } from "./index-store.ts";
 
 // Build the corpus the way `server.ts` does — WITH the generated pricing sources. This harness used
@@ -42,8 +42,7 @@ describe("golden retrieval (FTS floor, real corpus)", () => {
   for (const g of GOLDENS) {
     test(`"${g.question}" surfaces ${g.expected} in top-${String(g.k)}`, async () => {
       const hits = await index.search(g.question, g.k);
-      const accepted = new Set(acceptedSources(g));
-      expect(hits.some((h) => accepted.has(h.source))).toBe(true);
+      expect(hits.some((h) => satisfies(g, h))).toBe(true);
     });
   }
 

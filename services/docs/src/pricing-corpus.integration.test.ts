@@ -55,18 +55,33 @@ describe("pricing corpus (real SOT)", () => {
   });
 
   // the support bot escalated "what's in the compliance bundle" as unanswerable — the
-  // real SOT's compliance-bundle chunk must name its real member modules (id + a one-line
-  // description), not just the bundle's own price, so this single chunk answers the question.
-  test("the real compliance-bundle chunk names its real member modules", async () => {
+  // real SOT's compliance-bundle members chunk must name its real member modules (id + a one-line
+  // description), so this single chunk answers the question.
+  //
+  // The members list lives in its own `### Modules included in Compliance` section rather than
+  // inline under the price heading (2026-07-29): carried in the price chunk, its thirteen blurbs
+  // made that chunk long enough for bm25 length normalization to sink it, and "How much is the
+  // Compliance bundle" came back with the Everything card. CAISSON-43's requirement is unchanged
+  // and still asserted here — ONE chunk answers "what's in bundle X" — it is just the members chunk
+  // rather than the price chunk, and its heading names the bundle so it stands alone.
+  test("the real compliance-bundle members chunk names its real member modules", async () => {
     const facts = await loadPricingFacts();
     if (facts === null) throw new Error("pricing SOT not found");
     const corpus = buildCorpus({ pricingFacts: facts });
     const complianceChunk = corpus.chunks.find(
-      (c) => c.kind === "pricing" && c.text.startsWith("## Compliance —"),
+      (c) =>
+        c.kind === "pricing" &&
+        c.text.startsWith("### Modules included in Compliance"),
     );
     if (complianceChunk === undefined) {
-      throw new Error("no compliance-bundle pricing chunk in the corpus");
+      throw new Error("no compliance-bundle members chunk in the corpus");
     }
+    // The price chunk still exists and still carries both numbers on its own.
+    const priceChunk = corpus.chunks.find(
+      (c) => c.kind === "pricing" && c.text.startsWith("## Compliance —"),
+    );
+    expect(priceChunk?.text).toContain("$1,649");
+    expect(priceChunk?.text).toContain("$659");
     // The compliance bundle's real registry-index-pinned members (apps/site/lib/pricing.ts
     // `MODULE_PRICES` filtered by `bundles.includes("compliance")`).
     for (const id of [
