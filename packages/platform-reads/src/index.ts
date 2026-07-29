@@ -125,6 +125,79 @@ export async function readUpdatesWindows(
 }
 
 /**
+ * `readNetPaidByItem`'s extra `entitlement_grant` columns. Like `updates_expires_at` above, all
+ * three arrive by ALTER TABLE migration (`ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL` and
+ * `ENTITLEMENT_GRANT_REFUNDED_AMOUNT_MIGRATION_SQL` in `@caisson/service-license`) rather than the
+ * base CREATE TABLE the columns-contract test's DDL parser covers, so they are asserted by
+ * `net-paid.integration.test.ts` against the live columns on PGlite instead.
+ */
+export const NET_PAID_READ_COLUMNS = [
+  ...ENTITLEMENT_GRANT_READ_COLUMNS,
+  "charged_amount",
+  "charged_currency",
+  "refunded_amount",
+] as const;
+
+/** What one owned item's buyer actually paid, net of refunds. Structurally `@caisson/pricebook`'s
+ * `PaidAmount` — this package stays a leaf and does not import the pricebook to say so. */
+export interface NetPaidAmount {
+  readonly amountMinorUnits: number;
+  readonly currency: string;
+}
+
+/**
+ * What the account has actually paid, per owned entitlement id, net of refunds (ADR-0382 lock 2 for
+ * the charge, ADR-0394 for the netting) — the `paidByItem` producer for `@caisson/pricebook`'s
+ * upgrade quote, which credits an owned item at `max(retail, paid)` so a later price CUT never
+ * strands a buyer who paid the old higher number.
+ *
+ * Netting happens HERE, in SQL, because the alternative is a caller reading `charged_amount` raw and
+ * crediting a buyer for money that went back to their card. `charged_amount` is stamped once and
+ * never mutates; refunds accumulate in `refunded_amount`; the difference is what they are out of
+ * pocket, floored at 0. `net-paid.integration.test.ts` pins this expression against
+ * `@caisson/service-license`'s own `netCharged` so the two can never drift.
+ *
+ * ACTIVE grants only — a revoked grant is not owned, so it can never reach a quote. A NULL
+ * `charged_amount` (the charge could not be attributed to a single SKU) yields NO key rather than a
+ * zero: an omitted item credits at retail, and a zero would credit at nothing. Where one id has
+ * several active grants, the LARGEST net charge wins, matching `readUpdatesWindows`'s
+ * most-favorable-to-the-buyer fold directly above.
+ *
+ * Run inside `withTenant`. Throws if the migrations above have not been applied — deliberately, on a
+ * money path: an absent column must not read as "this buyer paid nothing".
+ */
+export async function readNetPaidByItem(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<Record<string, NetPaidAmount>> {
+  const r = await tx.query<{
+    entitlement_id: string;
+    net_paid: number | string;
+    charged_currency: string;
+  }>(
+    `SELECT DISTINCT ON (entitlement_id)
+            entitlement_id,
+            GREATEST(charged_amount - COALESCE(refunded_amount, 0), 0) AS net_paid,
+            charged_currency
+       FROM entitlement_grant
+      WHERE account_id = $1
+        AND status = 'active'
+        AND charged_amount IS NOT NULL
+      ORDER BY entitlement_id,
+               GREATEST(charged_amount - COALESCE(refunded_amount, 0), 0) DESC`,
+    [accountId],
+  );
+  const paid: Record<string, NetPaidAmount> = {};
+  for (const row of r.rows) {
+    paid[row.entitlement_id] = {
+      amountMinorUnits: Number(row.net_paid),
+      currency: row.charged_currency,
+    };
+  }
+  return paid;
+}
+
+/**
  * The `subscription_status` columns these reads depend on (ADR-0293 G13/G14). Exported so the
  * columns-contract test can assert every one is present in `@caisson/service-license`'s
  * `SUBSCRIPTION_STATUS_SCHEMA_SQL`.

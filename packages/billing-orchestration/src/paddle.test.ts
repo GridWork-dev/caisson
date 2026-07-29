@@ -716,6 +716,82 @@ describe("event mapping", () => {
     expect(warnings[1]).toMatch(/item_id/);
   });
 
+  test("a partial adjustment with a DUPLICATE item_id fails closed", () => {
+    // The adjustment mirror of the transaction-line case above. Two entries sharing one txnitm_ id
+    // both target the same grant row, and the applier's per-row adjustment-id anchor refuses the
+    // second as a redelivery — so the refund under-records, the buyer keeps a credit floor higher
+    // than they paid for, and the webhook still acks 200. Throw so Paddle redelivers the whole
+    // adjustment.
+    const event = {
+      event_id: "evt_partial_dup",
+      event_type: "adjustment.updated",
+      data: {
+        id: "adj_dup",
+        action: "refund",
+        status: "approved",
+        type: "partial",
+        transaction_id: "txn_x",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "5000" },
+        items: [
+          {
+            id: "adjitm_1",
+            item_id: "txnitm_a",
+            type: "partial",
+            totals: { total: "3000" },
+          },
+          {
+            id: "adjitm_2",
+            item_id: "txnitm_a", // same line as above — malformed delivery
+            type: "partial",
+            totals: { total: "2000" },
+          },
+        ],
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(() => parsePaddleEvent(event)).toThrow(/duplicate per-line join id/);
+  });
+
+  test("a partial adjustment whose duplicates are SKIPPED entries still parses", () => {
+    // The check runs on the surviving entries, not the raw `items` array: two malformed entries are
+    // both dropped before it, so a legitimate single-line adjustment beside them is unaffected. This
+    // is what keeps the new throw from turning the existing best-effort skip path into a hard fail.
+    const warnings: string[] = [];
+    const event = {
+      event_id: "evt_partial_dup_skipped",
+      event_type: "adjustment.updated",
+      data: {
+        id: "adj_dup_skipped",
+        action: "refund",
+        status: "approved",
+        type: "partial",
+        transaction_id: "txn_x",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "3000" },
+        items: [
+          {
+            id: "adjitm_1",
+            item_id: "txnitm_a",
+            type: "partial",
+            totals: { total: "3000" },
+          },
+          { id: "adjitm_2", type: "partial", totals: { total: "1000" } }, // no item_id — skipped
+          { id: "adjitm_3", type: "partial", totals: { total: "1000" } }, // no item_id — skipped
+        ],
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event, (message) => warnings.push(message));
+    expect(parsed?.type).toBe("refund.completed");
+    if (parsed?.type === "refund.completed") {
+      expect(parsed.items).toEqual([
+        { itemId: "txnitm_a", amountRefunded: 3000, fullyRefunded: false },
+      ]);
+    }
+    expect(warnings).toHaveLength(2);
+  });
+
   test("a well-formed partial adjustment emits no warnings (onWarn is opt-in noise-free)", () => {
     const warnings: string[] = [];
     const event = {
