@@ -99,6 +99,7 @@ test("platformMigrationsPackage() with no extra applies the shared chain (everyt
     "0026_affiliate_code.sql",
     "0030_renewal_extension_months.sql",
     "0031_entitlement_grant_charged_amount.sql",
+    "0033_entitlement_grant_refunded_amount.sql",
   ]);
   expect(assembly.sequence.map((m) => m.filename)).toEqual([
     "0001_app_role.sql",
@@ -124,6 +125,7 @@ test("platformMigrationsPackage() with no extra applies the shared chain (everyt
     "0021_affiliate_code.sql",
     "0022_renewal_extension_months.sql",
     "0023_entitlement_grant_charged_amount.sql",
+    "0024_entitlement_grant_refunded_amount.sql",
   ]);
 });
 
