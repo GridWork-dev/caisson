@@ -61,8 +61,8 @@ describe("pricing corpus (real SOT)", () => {
   // The members list lives in its own `### Modules included in Compliance` section rather than
   // inline under the price heading (2026-07-29): carried in the price chunk, its thirteen blurbs
   // made that chunk long enough for bm25 length normalization to sink it, and "How much is the
-  // Compliance bundle" came back with the Everything card. CAISSON-43's requirement is unchanged
-  // and still asserted here — ONE chunk answers "what's in bundle X" — it is just the members chunk
+  // Compliance bundle" came back with the Everything card. The requirement above is unchanged and
+  // still asserted here — ONE chunk answers "what's in bundle X" — it is just the members chunk
   // rather than the price chunk, and its heading names the bundle so it stands alone.
   test("the real compliance-bundle members chunk names its real member modules", async () => {
     const facts = await loadPricingFacts();
