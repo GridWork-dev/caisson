@@ -98,6 +98,24 @@ path updates it. `resolveUpgradeCredit` then floors an upgrade credit at the ori
 three stacked events plus a later price cut to bite, and over-credits only the refunded slice. Zero
 exposure today: Paddle SANDBOX, pre-launch, no price cuts recorded.
 
+> **Post-tag addendum (2026-07-29) — the obvious fix is wrong; F2 stays open.** The in-place
+> decrement (`SET charged_amount = GREATEST(charged_amount - refunded, 0)` in the dollar-partial
+> branch) was written, tested, and then **removed**, because it is not idempotent. This service has
+> no event-level dedupe by design — `app.ts:961`, "Paddle retry of the same event_id re-applies as a
+> no-op" — so every handler carries its own. The sibling credit claw gets idempotency from the
+> `${adjustmentId}:${itemId}` unique key on its ledger row; a bare UPDATE has no such anchor, and
+> `item.amountRefunded` is **this adjustment's** line total, not a cumulative one. Demonstrated
+> against PGlite: one redelivery of the same adjustment took a 164900 charge to 84900 instead of 124900. That trades a rare latent over-credit for a defect on the routine retry path — strictly
+> worse. A correct fix needs durable per-`(line, adjustment)` refund state, and there is none: the
+> clawback ledger row records credits clawed, not dollars refunded, and it is not written at all for
+> a SKU that grants zero credits — precisely the rows an upgrade quote reads. That is a schema
+> change, which is operator-gated, so it is **not** carried in the post-tag PR. Options for the
+> operator, unlocked: (a) add a `refunded_amount` column to `entitlement_grant` and net at read
+> time, keeping `charged_amount` immutable — recommended, since an immutable stamped charge is what
+> ADR-0381 lock 2 actually describes; (b) add a per-adjustment refund table keyed
+> `(purchase_id, line_item_id, adjustment_id)`; (c) accept the over-credit and cap upgrade credits
+> by policy instead. Do not re-attempt the in-place decrement.
+
 **F3 / P2 — the internal proof bearer is a static, non-expiring per-account credential.**
 `apps/admin/src/lib/internal-proof-auth.ts:60-75` — `HMAC-SHA256(secret, accountId)`, no
 timestamp or nonce, valid until the secret rotates. Compare is `timingSafeEqual` with a length
@@ -161,7 +179,8 @@ results at HEAD: registry-schema 88/88, registry worker + scripts 290/290, cli +
 in `65745ccc`, B4 in `ab8a98e1`. The site suite is 528/528 after the copy fixes and the repaired
 dependency gate passes 7/7 plus a clean live cruise.
 
-**Carried to the post-tag PR:** security F1-F5, plus the code-review lane's disclosed set — the
+**Carried to the post-tag PR:** security F1 and F3-F5 (**F2 is NOT carried** — see its addendum
+above; the fix needs a schema change and stays with the operator), plus the code-review lane's disclosed set — the
 `/legal/license` overclaim on two Apache-2.0 packages (`analytics`, `ds-manifest`), bundle docs that
 omit granted modules ($925 of catalog missing from the Everything page and 7-of-14 on Compliance),
 "the two Agentic-Dev SKUs sold standalone" where five are, the `regulatory-claim-watch` degenerate
