@@ -210,6 +210,43 @@ describe("regulatory-claim source checks", () => {
     ]);
   });
 
+  // A watch list that asserts nothing used to render an affirmative "no mechanical drift
+  // detected" while still counting the source as checked — a dead watch was indistinguishable
+  // from a healthy one. Both degenerate shapes are now findings.
+  test.each([
+    ["an empty texts array", [] as string[]],
+    ['a single empty string (includes("") is always true)', [""]],
+    ["whitespace-only text", ["   "]],
+  ])(
+    "a degenerate watch list is a finding, not a pass: %s",
+    async (_label, texts) => {
+      const target: RegulatoryClaimTarget = {
+        ...KNOWN_TARGET,
+        sources: [
+          {
+            ...KNOWN_TARGET.sources[0]!,
+            locator: "Claim-specific anchors",
+            watch: { mode: "text", texts },
+          },
+        ],
+      };
+      const fetcher: SourceFetcher = async () =>
+        new Response("anything at all", {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+
+      const report = await runRegulatoryClaimWatch([target], fetcher);
+
+      expect(report.findings).toEqual([
+        expect.objectContaining({
+          kind: "locator-missing",
+          detail: expect.stringContaining("nothing was asserted"),
+        }),
+      ]);
+    },
+  );
+
   test.each([
     ["an HTML comment", "<!-- Article 50 -->"],
     ["a script payload", "<script>const marker = 'Article 50';</script>"],
@@ -686,7 +723,14 @@ describe("regulatory-claim-watch workflow posture", () => {
       const report = await readFile(reportPath, "utf8");
       expect(report).toContain("Watch output was not a framed report.");
       expect(report).toContain("No PASS is implied.");
-      expect(report).not.toContain("install output");
+      // The unframed text is now PRESERVED rather than discarded. Discarding it was the more
+      // obvious way to stop a masquerade, but it also threw away real findings: the success path
+      // merges stderr into the report file, so one stray warning line ahead of a perfectly good
+      // report silently reduced it to three generic lines. Masquerade is prevented by the frame
+      // and the explicit "No PASS is implied" above, plus the four-space indent that renders the
+      // original as a literal block — it cannot be read as report prose.
+      expect(report).toContain("### Unframed output (bounded)");
+      expect(report).toContain("    install output");
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }

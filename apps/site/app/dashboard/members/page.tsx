@@ -218,7 +218,7 @@ export default async function DashboardMembersPage() {
           >
             <FormField
               label="Add a seat by user id"
-              helperText="Paste the exact account/user id of the person to add — invite-by-email isn't available yet."
+              helperText="Paste the exact account/user id of the person to add — seats are added by id, not by email invite."
               mono
             >
               <input

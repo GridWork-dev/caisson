@@ -601,8 +601,12 @@ export function checkOrphanSku(pkgs: Pkg[]): Finding[] {
  * pins manifests, and the site's displayed prices are test-pinned to the pricebook — but nothing
  * bridged the two, so a manifest reprice could leave the pricebook (and therefore the site display,
  * upgrade quotes, and renewal math) silently on the old number while every gate stayed green. This
- * check closes the bridge: for every PRICE_AUTHORITY row, the pricebook's SKU_RETAIL (modules) or
- * BUNDLE_RETAIL (bundles) entry must exist and agree at dollars * 100 === cents. Degrades to a
+ * check closes the bridge in BOTH directions: (a) for every PRICE_AUTHORITY row, the pricebook's
+ * SKU_RETAIL (modules) or BUNDLE_RETAIL (bundles) entry must exist and agree at dollars * 100 ===
+ * cents; (b) no pricebook row may name a slug PRICE_AUTHORITY does not lock — SKU_RETAIL doubles as
+ * the F8 upgrade-CREDIT table and the creditable-item vocabulary (`resolveUpgradeCredit` /
+ * `isPricedItem` read its keys), so an unlocked row is a live money number no ADR pins and no
+ * sibling check asserts. Degrades to a
  * VISIBLE warn when the pricebook can't be imported (legitimate pre-install; post-install it means
  * the bridge is not running) — a silent skip here would false-PASS the exact drift class this
  * check exists to catch.
@@ -659,7 +663,80 @@ export async function checkPricebookPriceAgreement(
       });
     }
   }
+  // Reverse direction (the missing leg): no pricebook row may name a slug PRICE_AUTHORITY does not
+  // lock. SKU_RETAIL is the F8 upgrade-CREDIT table AND the creditable-item vocabulary
+  // (`Object.keys(SKU_RETAIL)` / `Object.hasOwn(SKU_RETAIL, itemId)` in upgrades.ts), so an
+  // unlocked row is a live buyer-facing number that no ADR pins and that every sibling check
+  // (manifest-price-agreement, price-coverage, orphan-sku — all keyed off PRICE_AUTHORITY) skips.
+  // A STALE one is worse: a renamed/retired slug stays a quotable, creditable item id for a SKU
+  // that no longer ships. This mirrors checkOrphanSku on the pricebook side.
+  const authoritySlugs = new Set(
+    Object.keys(PRICE_AUTHORITY).map((id) => id.replace(/^@caisson\//, "")),
+  );
+  // A slug in BOTH books falls through both legs: the forward leg picks exactly one book per
+  // authority row (`isBundle` short-circuits to BUNDLE_RETAIL), and the reverse leg tests only set
+  // membership against the union, so the shadowed SKU_RETAIL row is never price-compared and never
+  // orphan-flagged. Bundle ids and package slugs share one namespace — `compliance` is both a
+  // bundle id and packages/compliance — so this is a live collision risk, and an unexamined
+  // SKU_RETAIL row is a creditable money value (`upgrades.ts` reads its keys directly).
+  for (const slug of Object.keys(sku)) {
+    if (!(slug in bundles)) continue;
+    findings.push({
+      severity: "error",
+      rule: "pricebook-price-agreement",
+      pkg: `@caisson/${slug}`,
+      message: `pricebook carries "${slug}" in BOTH SKU_RETAIL ($${sku[slug]}) and BUNDLE_RETAIL ($${bundles[slug]}) — the bundle row wins every comparison and the SKU row is never checked against PRICE_AUTHORITY, while still feeding upgrade credits; keep the slug in exactly one book.`,
+    });
+  }
+  for (const [book, rows] of Object.entries({
+    SKU_RETAIL: sku,
+    BUNDLE_RETAIL: bundles,
+  })) {
+    for (const [slug, dollars] of Object.entries(rows)) {
+      if (authoritySlugs.has(slug)) continue;
+      findings.push({
+        severity: "error",
+        rule: "pricebook-price-agreement",
+        pkg: `@caisson/${slug}`,
+        message: `pricebook ${book}.${slug} = $${dollars} but no PRICE_AUTHORITY row locks @caisson/${slug} — an unpinned price still feeds upgrade credits and checkout quotes, and a stale slug keeps quoting a SKU that no longer ships; add the authority row or drop the pricebook entry.`,
+      });
+    }
+  }
   return findings;
+}
+
+/** Latest-version members map per indexed module id, read off the PUBLISHED registry index — the
+ *  source `membersOfBundle` (@caisson/registry-schema) actually resolves a live buyer's grants
+ *  against (ADR-0071: "The registry INDEX is the single source of truth for membership"). null when
+ *  the index is absent or unreadable, which skips the live leg (pre-publish posture). */
+function readIndexMembers(indexPath: string): Map<string, Set<string>> | null {
+  try {
+    const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
+      modules: {
+        id: string;
+        latest: string;
+        versions: {
+          version: string;
+          manifest?: { members?: Record<string, unknown> };
+        }[];
+      }[];
+    };
+    const out = new Map<string, Set<string>>();
+    for (const entry of idx.modules) {
+      const v =
+        entry.versions.find((x) => x.version === entry.latest) ??
+        entry.versions[entry.versions.length - 1];
+      out.set(entry.id, new Set(Object.keys(v?.manifest?.members ?? {})));
+    }
+    // A shape change to the index (`modules` gone or no longer an array) throws in the loop above
+    // and lands here, indistinguishable from "no index yet" unless we say so — the caller treats
+    // null as the legitimate pre-publish skip. Re-throw the distinguishable case so the caller can
+    // report it instead of silently disabling the live leg forever.
+    return out;
+  } catch {
+    if (existsSync(indexPath)) throw new Error("index-unreadable");
+    return null;
+  }
 }
 
 /** The site's bundle id → current workspace manifest path. The release train snapshots these
@@ -683,9 +760,15 @@ interface SitePricingModule {
  * catalog↔manifest parity (ADR-0248 F5). Promotes apps/site/lib/pricing.test.ts's membership lint to
  * the gate and adds a price cross-check, so the storefront can never advertise a grant or a price the
  * manifest layer doesn't back:
- *   (1) MEMBERSHIP (1:N) — every bundle the site lists a module under must be a current workspace
- *       bundle manifest whose members map grants it (else the next release sells a grant that
- *       doesn't exist).
+ *   (1) MEMBERSHIP (1:N), NEXT RELEASE — every bundle the site lists a module under must be a
+ *       current workspace bundle manifest whose members map grants it (else the next release sells
+ *       a grant that doesn't exist). ERROR.
+ *   (1b) MEMBERSHIP, LIVE — the same claim re-checked against registry/index.json's PUBLISHED
+ *       bundle entry, which is what `membersOfBundle` resolves a real buyer's grants from
+ *       (ADR-0071). WARN, not error: the two-consume arming convention (publish the member first,
+ *       fold the membership after) makes the workspace legitimately run ahead of the index mid-cut,
+ *       so a red here would false-fail that convention's own PRs — but the window is exactly when
+ *       the storefront is advertising a grant nothing behind it backs, so it must stay visible.
  *   (2) PRICE — for every à-la-carte module the site prices whose id carries a PRICE_AUTHORITY row,
  *       the displayed USD must equal the locked cents.
  * Bundle DISPLAY prices are out of scope here: apps/site/lib/pricing.test.ts pins BUNDLE_PRICES to
@@ -701,6 +784,23 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
         rule: "catalog-parity",
         pkg: "(catalog)",
         message: `apps/site/lib/pricing.ts absent — catalog↔manifest parity skipped; CI must run it against the full tree.`,
+      },
+    ];
+  }
+  // Read outside the try below: an ABSENT index (null) is the legitimate pre-publish posture and
+  // must skip the live leg rather than warn the whole check away. An index that exists but will not
+  // parse is a different thing entirely — it silently disabled this leg before, so it now reports.
+  let indexMembers: Map<string, Set<string>> | null;
+  try {
+    indexMembers = readIndexMembers(join(root, "registry/index.json"));
+  } catch {
+    return [
+      {
+        severity: "error",
+        rule: "catalog-parity-index-unreadable",
+        pkg: "registry/index.json",
+        message:
+          "registry/index.json exists but could not be read in the expected shape — the live membership leg did not run",
       },
     ];
   }
@@ -762,6 +862,21 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
           rule: "catalog-parity",
           pkg: `@caisson/${m.id}`,
           message: `apps/site lists @caisson/${m.id} in the ${bundle} bundle but it is absent from ${manifestPath}'s members map — the next release would sell a grant that doesn't exist; fix bundles[] or repin the members (ADR-0071).`,
+        });
+      }
+      // (1b) LIVE honesty — the leg the workspace-manifest swap dropped. The site deploys from main,
+      //      but `membersOfBundle` (@caisson/registry-schema) resolves a buyer's grants from the
+      //      PUBLISHED index, not this workspace manifest, so a member the workspace grants and the
+      //      indexed bundle does not is being advertised to live buyers with nothing behind it.
+      //      WARN because the two-consume arming convention legitimately opens this window mid-cut;
+      //      the members-fold republish closes it. Skipped when the bundle is not indexed yet.
+      const indexed = indexMembers?.get(`@caisson/${bundle}`);
+      if (indexed !== undefined && !indexed.has(`@caisson/${m.id}`)) {
+        findings.push({
+          severity: "warn",
+          rule: "catalog-parity",
+          pkg: `@caisson/${m.id}`,
+          message: `apps/site advertises @caisson/${m.id} in the ${bundle} bundle but registry/index.json's published @caisson/${bundle} entry does not grant it — a buyer today resolves NO grant for it (membersOfBundle reads the index, ADR-0071); republish the bundle before the storefront can honestly sell it.`,
         });
       }
     }
@@ -850,6 +965,109 @@ export function checkReservedIdsStaleness(root: string): Finding[] {
         rule: "reserved-ids-staleness",
         pkg: `@caisson/${id}`,
         message: `@caisson/${id} is published in the registry index but its pre-publish reservation remains — remove "${id}" from both RESERVED_MODULE_ENTITLEMENT_IDS and RESERVED_MODULE_ENTITLEMENT_VERSIONS in the version PR.`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
+ * Extract every TARGET id from a `Map<string, readonly string[]>` of named entitlement edges.
+ *
+ * `null` means the DECLARATION could not be found or parsed — distinct from `[]`, which means it
+ * parsed and is legitimately empty. This is a regex over source text, so any reshaping of the
+ * declaration (a `satisfies` clause, entries hoisted to a named const, a builder call) makes it stop
+ * seeing the real thing; collapsing that into `[]` would report a clean gate that measured nothing,
+ * while the runtime half skips unresolvable edges silently by design.
+ */
+function parseNamedEntitlementTargets(
+  src: string,
+  constName: string,
+): string[] | null {
+  const block = src.match(
+    new RegExp(
+      `${constName}[^=]*=\\s*new Map(?:<[\\s\\S]*?>)?\\(\\s*\\[([\\s\\S]*?)\\]\\s*\\)\\s*;`,
+    ),
+  );
+  if (!block) return null;
+  // Each entry is `["@caisson/parent", ["@caisson/target", …]]` — the targets are every id after
+  // the first in the entry, so match the inner array specifically.
+  const targets: string[] = [];
+  for (const entry of (block[1] ?? "").matchAll(
+    /\[\s*["']@caisson\/[a-z0-9-]+["']\s*,\s*\[([\s\S]*?)\]\s*\]/g,
+  )) {
+    for (const id of (entry[1] ?? "").matchAll(
+      /["'](@caisson\/[a-z0-9-]+)["']/g,
+    )) {
+      if (id[1] !== undefined) targets.push(id[1]);
+    }
+  }
+  return targets;
+}
+
+/**
+ * Gate — named-entitlement edges resolve (release audit v2026.07.27.1, F1).
+ *
+ * `addNamedEntitlementClosure` SKIPS an edge whose target is neither indexed nor reserved, because
+ * throwing there would reject a paying buyer's entire entitlement set over one bad edge. That makes
+ * the runtime quiet by design, so the loudness has to live here: an edge naming a target no index
+ * entry backs is a build-time error, which is the moment it can still be fixed for free.
+ *
+ * Without this, adding a compatibility edge before its target ships would silently under-grant
+ * every holder of the parent, and nothing would say so.
+ */
+export function checkNamedEntitlementTargets(root: string): Finding[] {
+  const entPath = join(root, "packages/registry-schema/src/entitlements.ts");
+  const indexPath = join(root, "registry/index.json");
+  if (!existsSync(entPath) || !existsSync(indexPath)) return [];
+  const source = readFileSync(entPath, "utf8");
+  const reserved = new Set(parseReservedEntitlementIds(source));
+  const findings: Finding[] = [];
+  let indexed: Set<string>;
+  try {
+    const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
+      modules: { id: string }[];
+    };
+    indexed = new Set(idx.modules.map((m) => m.id));
+  } catch {
+    // An index that EXISTS but will not parse is a broken gate, not a pre-publish posture — the
+    // absent case already returned above. Returning [] here would report PASS while measuring
+    // nothing, and the runtime half skips unresolvable edges silently by design, so both halves
+    // would go quiet at once.
+    return [
+      {
+        severity: "error",
+        rule: "named-entitlement-target-gate-unreadable",
+        pkg: "registry/index.json",
+        message:
+          "registry/index.json exists but could not be parsed — the named-entitlement target gate did not run",
+      },
+    ];
+  }
+  for (const constName of [
+    "COMPATIBILITY_REEXPORT_ENTITLEMENTS",
+    "INTERNAL_RUNTIME_ENTITLEMENTS",
+  ]) {
+    const parsed = parseNamedEntitlementTargets(source, constName);
+    if (parsed === null) {
+      findings.push({
+        severity: "error",
+        rule: "named-entitlement-target-gate-blind",
+        pkg: "packages/registry-schema/src/entitlements.ts",
+        message: `could not parse ${constName} — its declaration shape changed and this gate is no longer reading it, so an unresolvable edge would now pass silently at build time AND be skipped silently at runtime.`,
+      });
+      continue;
+    }
+    for (const target of parsed) {
+      const slug = target.startsWith("@caisson/")
+        ? target.slice("@caisson/".length)
+        : target;
+      if (indexed.has(target) || reserved.has(slug)) continue;
+      findings.push({
+        severity: "error",
+        rule: "named-entitlement-target-unresolvable",
+        pkg: target,
+        message: `${constName} names "${target}", which is neither in registry/index.json nor a pre-publish reservation. The runtime skips such an edge (so a buyer silently loses it) — index the target, or add it to RESERVED_MODULE_ENTITLEMENT_IDS until it publishes.`,
       });
     }
   }

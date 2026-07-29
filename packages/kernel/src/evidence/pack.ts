@@ -182,9 +182,14 @@ export function evidencePackManifest(
 
 /**
  * Render the auditor-facing README. The trust claim is stated VERBATIM and matches what
- * `@caisson/verify-pack` actually checks — never overclaiming (SPEC copy law). The package is not
- * registry-published yet, so the README names both the intended post-publish command and the honest
- * in-repo verification path available today.
+ * `@caisson/verify-pack` actually checks — never overclaiming (SPEC copy law).
+ *
+ * It names NO install command, deliberately. `@caisson/verify-pack` is commercial and is not
+ * distributed through a package registry, so an `npx` line would be a copy-pasteable command that
+ * cannot resolve; and the in-repo `bun run packages/verify-pack/...` path this README used to offer
+ * as the fallback pointed an external auditor at a private repository they have no way to obtain.
+ * What it names instead is the route that genuinely does not depend on the issuer: the Apache-2.0
+ * `@caisson/kernel`, which is publicly installable and carries every primitive the checks rest on.
  */
 function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
   const provenanceSection =
@@ -223,25 +228,22 @@ function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
     "",
     "## How to verify — independently obtained verifier",
     "",
-    "This pack intentionally contains no executable verifier. Obtain `@caisson/verify-pack` separately",
-    "from the evidence pack. Obtain the issuer key fingerprint through a separate trusted channel,",
-    "then run:",
+    "This pack intentionally contains no executable verifier: a program travelling inside the archive",
+    "it judges cannot establish its own integrity. Verification needs two things this pack cannot",
+    "supply — a verifier obtained separately from it, and the issuer's key fingerprint obtained",
+    "through a separate trusted channel and supplied as `CAISSON_VERIFY_PACK_KEY_SHA256`.",
     "",
-    "```",
-    'export CAISSON_VERIFY_PACK_KEY_SHA256="<independently obtained 64-hex fingerprint>"',
-    "npx @caisson/verify-pack ./pack",
-    "```",
+    "**How to obtain a verifier.** The sanctioned runner is the commercial `@caisson/verify-pack`,",
+    "licensed from Caisson. It is not distributed through a package registry, so there is no public",
+    "install command for it; request it from Caisson directly.",
     "",
-    "**Current availability:** `@caisson/verify-pack` has not been published to a package registry.",
-    "The `npx` command above is the intended post-publish path and does not resolve publicly today.",
-    "Until the operator-gated publish occurs, verify from an independently trusted checkout of this",
-    "repository with:",
+    "**The format is inspectable rather than proprietary,** which is the path that does not depend on",
+    "the issuer at all. The Apache-2.0 `@caisson/kernel` is publicly installable and carries every",
+    "primitive the checks below rest on: `@caisson/kernel/evidence` rebuilds the canonical file",
+    "manifest and the exact bytes the seal signs, and `@caisson/kernel/audit-verify` recomputes each",
+    "row's hash link, checks its per-length write-once anchor, and verifies the anchor signature.",
     "",
-    "```",
-    "bun run packages/verify-pack/src/cli.ts ./pack",
-    "```",
-    "",
-    "The verifier refuses PASS unless the embedded key matches that independently supplied",
+    "Whichever route is taken, verification refuses PASS unless the embedded key matches that independently supplied",
     "fingerprint. It then checks the signed canonical file manifest and recomputes from",
     "the raw material in `receipts.json` — never from its embedded `checks` field, which records only",
     "what the issuing run computed — for every row:",

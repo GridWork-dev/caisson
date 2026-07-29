@@ -44,7 +44,7 @@ const PRODUCT_CONTROLS: ReadonlyArray<{
   {
     icon: "shield",
     label: "Resolve-and-recheck SSRF guard",
-    body: `packages/kernel's ssrf.ts stops DNS rebinding on every buyer- or config-supplied URL (the alerting webhook transports and the ai-kit provider baseUrl both route through it. assertSafePublicUrl rejects non-https, credentials-in-URL, and a literal private/loopback/link-local/metadata host at the config boundary; assertResolvedHostPublic then resolves the hostname and re-checks every returned A/AAAA record against the same denylist immediately before the outbound fetch, so a public name that DNS-rebinds to 127.0.0.1 or 169.254.169.254 is caught where a literal-only check can't see it. ssrfGuardedFetch forces redirect: "error") only the original host is re-checked, so a followed redirect could otherwise carry the request past the guard.`,
+    body: `packages/kernel's ssrf.ts stops DNS rebinding on every buyer- or config-supplied URL (the alerting webhook transports and the AI-Production provider baseUrl both route through it. assertSafePublicUrl rejects non-https, credentials-in-URL, and a literal private/loopback/link-local/metadata host at the config boundary; assertResolvedHostPublic then resolves the hostname and re-checks every returned A/AAAA record against the same denylist immediately before the outbound fetch, so a public name that DNS-rebinds to 127.0.0.1 or 169.254.169.254 is caught where a literal-only check can't see it. ssrfGuardedFetch forces redirect: "error") only the original host is re-checked, so a followed redirect could otherwise carry the request past the guard.`,
   },
   {
     icon: "worm",
@@ -123,7 +123,7 @@ const FAQ: ReadonlyArray<{ question: string; answer: string }> = [
     question:
       "What stops a DNS-rebinding attack against a webhook or provider URL I configure?",
     answer:
-      "packages/kernel's ssrf.ts resolves the hostname and re-checks every returned IP against a private/loopback/link-local/metadata denylist immediately before the outbound fetch, and forces the request to fail on any redirect. A literal-only check can't see a name that resolves into private space after the fact; the resolve-and-recheck design closes that gap for both the alerting transports and the ai-kit provider baseUrl.",
+      "packages/kernel's ssrf.ts resolves the hostname and re-checks every returned IP against a private/loopback/link-local/metadata denylist immediately before the outbound fetch, and forces the request to fail on any redirect. A literal-only check can't see a name that resolves into private space after the fact; the resolve-and-recheck design closes that gap for both the alerting transports and the AI-Production provider baseUrl.",
   },
   {
     question:

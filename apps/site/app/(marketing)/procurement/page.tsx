@@ -273,7 +273,7 @@ export default function ProcurementPage() {
             },
             {
               label: "Vulnerability reporting",
-              body: "Email security@caisson.sh with a description and reproduction steps. We triage every valid report. No formal bug-bounty yet.",
+              body: "Email security@caisson.sh with a description and reproduction steps. We triage every valid report. There is no formal bug-bounty program.",
             },
             {
               label: "Procurement questionnaires",

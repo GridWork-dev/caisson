@@ -12,14 +12,17 @@ import styles from "./marketplace-hero-artifact.module.css";
 // parametrization: the SAME composition pattern — chips composing onto ONE Apache-2.0 audited base —
 // renders either the whole catalog (the hero, all six bundles) or a single bundle's real member
 // modules (a bundle's media-carousel slide, closing the "4 media-less bundles" gap with one
-// component). Server-safe and presentational; every chip is derived from BUNDLE_PRICES/MODULE_PRICES
-// so it can never drift from the real catalog. No external assets — every glyph is an inline kit
+// component). Server-safe and presentational; the hero's chips derive from BUNDLE_PRICES and a bundle's
+// slide chips derive from bundle-pages.ts's real member list (never MODULE_PRICES — see the
+// BundleCompositionSlide doc comment below), so neither can drift from the real catalog. No external assets — every glyph is an inline kit
 // <Icon> (the site CSP blocks remote hosts).
 //
-// The base-slab capabilities are real, single-sourced facts about the open Apache-2.0 substrate
-// (BASE_PACKAGES, apps/site/lib/base-substrate.ts), matching the homepage's honest-artifact floor
-// (ADR-0082). WORM/audit-chain/metering are commercial-package capabilities (audit-worm/ai-meter),
-// NOT part of the free base — an audit-round F2 finding (ADR-0374) against the prior list.
+// The base-slab capabilities are hand-picked marketing labels for packages in the open Apache-2.0
+// substrate (BASE_PACKAGES, apps/site/lib/base-substrate.ts) — BASE_FACTS is a local literal, not
+// imported from that file, so keep the two in sync by hand. They match the homepage's
+// honest-artifact floor (ADR-0082). WORM/audit-chain/metering are commercial-package capabilities
+// (audit-worm/ai-meter), NOT part of the free base — an audit-round F2 finding (ADR-0374) against
+// the prior list.
 const BASE_FACTS = [
   "Postgres RLS",
   "auth + orgs",
@@ -100,10 +103,10 @@ export function MarketplaceHeroArtifact() {
  *  real member modules composing onto the base. Members come from `bundle-pages.ts` (the same
  *  record the bundle's own marketing page renders its "N composed packages" heading from), NOT
  *  `pricing.ts`'s `modulesByBundle` — that only returns modules with a standalone SKU, undercounting
- *  a bundle that also includes unpriced base packages (e.g. Compliance ships 13 composed packages,
- *  10 of them separately priced), which drifted this diagram's count from the page's own copy.
+ *  a bundle that also includes unpriced base packages (e.g. Compliance ships 14 composed packages,
+ *  11 of them separately priced), which drifted this diagram's count from the page's own copy.
  *  `everything` has no per-module `members[]` (it is the whole catalog by construction) so it
- *  reuses <MarketplaceHeroArtifact> itself rather than rendering an empty or all-22-modules list. */
+ *  reuses <MarketplaceHeroArtifact> itself rather than rendering an empty or all-27-modules list. */
 export function BundleCompositionSlide({ bundleId }: { bundleId: BundleId }) {
   if (bundleId === "everything") return <MarketplaceHeroArtifact />;
 

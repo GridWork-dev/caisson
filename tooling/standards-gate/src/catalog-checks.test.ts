@@ -3,7 +3,13 @@
 // clean — plus targeted failure-path cases (synthetic Pkg[] and temp-dir fixtures, the
 // checks.test.ts pattern) that prove each rule actually fires.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -11,6 +17,7 @@ import {
   checkOrphanSku,
   checkPriceCoverage,
   checkPricebookPriceAgreement,
+  checkNamedEntitlementTargets,
   checkReservedIdsStaleness,
   PRICE_AUTHORITY,
 } from "./checks";
@@ -187,7 +194,10 @@ describe("checkPricebookPriceAgreement", () => {
    * (BUNDLE_RETAIL empty — with no manifests in the fixture pkg set, nothing is exempted and every
    * row routes through SKU_RETAIL). `over` drifts a slug's dollars; `null` drops the row entirely.
    */
-  function fixturePricebook(over: Record<string, number | null> = {}): Pkg {
+  function fixturePricebook(
+    over: Record<string, number | null> = {},
+    extra: Record<string, number> = {},
+  ): Pkg {
     const rows = Object.entries(PRICE_AUTHORITY)
       .map(([id, { cents }]) => {
         const slug = id.replace("@caisson/", "");
@@ -195,6 +205,11 @@ describe("checkPricebookPriceAgreement", () => {
         return dollars == null ? null : `  "${slug}": ${dollars},`;
       })
       .filter((r) => r !== null)
+      .concat(
+        Object.entries(extra).map(
+          ([slug, dollars]) => `  "${slug}": ${dollars},`,
+        ),
+      )
       .join("\n");
     mkdirSync(join(dir, "src"), { recursive: true });
     writeFileSync(
@@ -242,6 +257,19 @@ describe("checkPricebookPriceAgreement", () => {
     expect(f[0]?.message).toContain("could not be imported");
   });
 
+  test("a pricebook row PRICE_AUTHORITY does not lock is an orphan error (the reverse direction)", async () => {
+    // SKU_RETAIL keys are the creditable-item vocabulary upgrade quotes read, so an unlocked row is
+    // a live money number no ADR pins — the mirror of checkOrphanSku on the pricebook side.
+    const f = await checkPricebookPriceAgreement([
+      fixturePricebook({}, { "ghost-sku": 499 }),
+    ]);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.severity).toBe("error");
+    expect(f[0]?.rule).toBe("pricebook-price-agreement");
+    expect(f[0]?.pkg).toBe("@caisson/ghost-sku");
+    expect(f[0]?.message).toContain("no PRICE_AUTHORITY row locks");
+  });
+
   test("no pricebook in the pkg set is out of scope", async () => {
     expect(await checkPricebookPriceAgreement([])).toEqual([]);
   });
@@ -279,6 +307,7 @@ describe("checkCatalogParity", () => {
   function writeCatalog(
     modulesLiteral: string,
     manifestMembers: Record<string, string>,
+    indexMembers?: Record<string, string>,
   ): void {
     const pricingDir = join(root, "apps", "site", "lib");
     mkdirSync(pricingDir, { recursive: true });
@@ -299,6 +328,25 @@ describe("checkCatalogParity", () => {
       writeFileSync(
         join(manifestDir, "manifest.ts"),
         `export default { id: "${bundleId}", members: ${JSON.stringify(members)} };\n`,
+      );
+    }
+    // Only written when a case exercises the PUBLISHED-index leg; its absence keeps that leg
+    // skipped, which is the pre-publish posture every other case in this block relies on.
+    if (indexMembers !== undefined) {
+      mkdirSync(join(root, "registry"), { recursive: true });
+      writeFileSync(
+        join(root, "registry", "index.json"),
+        JSON.stringify({
+          modules: [
+            {
+              id: "@caisson/compliance",
+              latest: "1.0.0",
+              versions: [
+                { version: "1.0.0", manifest: { members: indexMembers } },
+              ],
+            },
+          ],
+        }),
       );
     }
   }
@@ -346,6 +394,30 @@ describe("checkCatalogParity", () => {
   test("a module with an empty bundles[] makes no membership claim to verify", async () => {
     writeCatalog(`[{ id: "ai-evals", amount: 199, bundles: [] }]`, {});
     // No bundles listed → nothing to check against manifests (a genuinely standalone SKU).
+    expect(await checkCatalogParity(root)).toEqual([]);
+  });
+
+  test("a member the workspace manifest grants but the PUBLISHED index does not is a live-drift warn", async () => {
+    // The a21c4784 shape reproduced: site + workspace manifest agree, the published bundle entry
+    // does not carry the member yet, so a buyer today resolves no grant for it.
+    writeCatalog(
+      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }]`,
+      { "@caisson/audit-worm": "1.0.0" },
+      {},
+    );
+    const f = await checkCatalogParity(root);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.severity).toBe("warn");
+    expect(f[0]?.pkg).toBe("@caisson/audit-worm");
+    expect(f[0]?.message).toContain("registry/index.json");
+  });
+
+  test("a published index that already grants the member is clean", async () => {
+    writeCatalog(
+      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }]`,
+      { "@caisson/audit-worm": "1.0.0" },
+      { "@caisson/audit-worm": "1.0.0" },
+    );
     expect(await checkCatalogParity(root)).toEqual([]);
   });
 
@@ -428,3 +500,114 @@ describe("checkReservedIdsStaleness", () => {
     expect(f.every((finding) => finding.severity === "error")).toBe(true);
   });
 });
+
+describe("checkNamedEntitlementTargets", () => {
+  let root: string;
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "gate-named-ent-"));
+  });
+  afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+  /** Mirrors the REAL declarations in registry-schema, generics and all — a parser that only
+   *  handles a simplified shape greens a gate that measures nothing (the release-audit B4 class). */
+  function writeEdges(
+    compat: string,
+    runtime: string,
+    indexedIds: string[],
+    reserved = "[]",
+  ): void {
+    const dir = join(root, "packages", "registry-schema", "src");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "entitlements.ts"),
+      [
+        `export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>(${reserved});`,
+        `export const COMPATIBILITY_REEXPORT_ENTITLEMENTS: ReadonlyMap<\n  string,\n  readonly string[]\n> = new Map<string, readonly string[]>(${compat});`,
+        `export const INTERNAL_RUNTIME_ENTITLEMENTS: ReadonlyMap<string, readonly string[]> = new Map<string, readonly string[]>(${runtime});`,
+        "",
+      ].join("\n"),
+    );
+    mkdirSync(join(root, "registry"), { recursive: true });
+    writeFileSync(
+      join(root, "registry", "index.json"),
+      JSON.stringify({ modules: indexedIds.map((id) => ({ id })) }),
+    );
+  }
+
+  test("an edge naming an unindexed, unreserved target is an ERROR", () => {
+    writeEdges(
+      `[["@caisson/compliance-core", ["@caisson/oscal-spine"]]]`,
+      `[]`,
+      ["@caisson/compliance-core"],
+    );
+    const f = checkNamedEntitlementTargets(root);
+    expect(f.map((x) => x.pkg)).toEqual(["@caisson/oscal-spine"]);
+    expect(f[0]?.severity).toBe("error");
+  });
+
+  test("an indexed target passes", () => {
+    writeEdges(
+      `[["@caisson/compliance-core", ["@caisson/oscal-spine"]]]`,
+      `[]`,
+      ["@caisson/compliance-core", "@caisson/oscal-spine"],
+    );
+    expect(checkNamedEntitlementTargets(root)).toEqual([]);
+  });
+
+  test("a target still under a pre-publish reservation passes", () => {
+    writeEdges(
+      `[["@caisson/compliance-core", ["@caisson/oscal-spine"]]]`,
+      `[]`,
+      ["@caisson/compliance-core"],
+      `["oscal-spine"]`,
+    );
+    expect(checkNamedEntitlementTargets(root)).toEqual([]);
+  });
+
+  test("the INTERNAL_RUNTIME map is checked too, not just the compat map", () => {
+    writeEdges(
+      `[]`,
+      `[["@caisson/oscal-spine", ["@caisson/artifact-render"]]]`,
+      ["@caisson/oscal-spine"],
+    );
+    expect(checkNamedEntitlementTargets(root).map((x) => x.pkg)).toEqual([
+      "@caisson/artifact-render",
+    ]);
+  });
+
+  test("a reshaped declaration the regex cannot read is an ERROR, not a silent pass", () => {
+    // The gate is a regex over source text. Hoisting the entries to a named const is a perfectly
+    // ordinary refactor that makes it stop matching — and the runtime half skips unresolvable edges
+    // silently by design, so without this the two halves go quiet at the same moment.
+    writeEdges(`[]`, `[]`, []);
+    const entPath = join(root, "packages/registry-schema/src/entitlements.ts");
+    writeFileSync(
+      entPath,
+      readFileSync(entPath, "utf8").replace(
+        /export const COMPATIBILITY_REEXPORT_ENTITLEMENTS[^;]*;/,
+        "const COMPAT_ENTRIES = [];\nexport const COMPATIBILITY_REEXPORT_ENTITLEMENTS = new Map(COMPAT_ENTRIES);",
+      ),
+    );
+    expect(checkNamedEntitlementTargets(root).map((x) => x.rule)).toContain(
+      "named-entitlement-target-gate-blind",
+    );
+  });
+});
+
+// Known-positive against the REAL repository, not a fixture. Every test above writes the very
+// declaration it then parses, so a reshaping of the ACTUAL `entitlements.ts` — the failure this
+// gate's regex is most exposed to — is invisible to all of them. This one fails the day the parser
+// stops seeing the real file.
+describe("checkNamedEntitlementTargets against the real tree", () => {
+  test("the parser still resolves the live entitlements.ts, and the gate is not blind", () => {
+    const rules = new Set(
+      checkNamedEntitlementTargets(ROOT).map((f) => f.rule),
+    );
+    expect(rules.has("named-entitlement-target-gate-blind")).toBe(false);
+    expect(rules.has("named-entitlement-target-gate-unreadable")).toBe(false);
+  });
+});
+
+// Known-positive against the REAL repository, not a fixture. Every test above writes the
+// declaration it then parses, so a reshaping of the actual `entitlements.ts` — the failure mode this
+// gates

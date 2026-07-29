@@ -19,9 +19,9 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
-import { buildCorpus } from "../src/corpus.ts";
+import { buildCorpus, loadPricingFacts } from "../src/corpus.ts";
 import { CachedEmbedder } from "../src/embed-cache.ts";
-import { GOLDENS, acceptedSources } from "../src/golden-pairs.ts";
+import { GOLDENS, satisfies } from "../src/golden-pairs.ts";
 import { DocsIndex } from "../src/index-store.ts";
 import {
   createOpenRouterEmbedder,
@@ -42,7 +42,18 @@ const SEARCH_TEST_TIMEOUT_MS = 30_000; // one query-time embed call, generous fo
 // corpus/model change just misses and re-embeds those entries.
 const CACHE_PATH = join(tmpdir(), "caisson-docs-embed-cache.json");
 
-const corpus = buildCorpus(); // pure filesystem read — always cheap, no need to gate on HAVE_KEY
+// Build the corpus the way `server.ts` does — WITH the generated pricing sources. This file used to
+// call bare `buildCorpus()`, the same blind spot the CI harness carried: it shares `GOLDENS` with
+// that harness, so the pricing pairs could never pass here, and this is the ONE suite that exercises
+// the real hybrid path production serves on. Still a pure filesystem read, so no need to gate on
+// HAVE_KEY. Fails loud rather than degrading to a docs-only corpus.
+const pricingFacts = await loadPricingFacts();
+if (pricingFacts === null) {
+  throw new Error(
+    "loadPricingFacts() returned null — apps/site/lib/pricing.ts must be reachable for the pricing goldens",
+  );
+}
+const corpus = buildCorpus({ pricingFacts });
 
 let index: DocsIndex | undefined;
 let embedder: CachedEmbedder | undefined;
@@ -80,8 +91,7 @@ describe("golden retrieval (live hybrid fusion, real corpus + real OpenRouter em
       `"${g.question}" surfaces ${g.expected} in top-${String(g.k)}`,
       async () => {
         const hits = await liveIndex().search(g.question, g.k);
-        const accepted = new Set(acceptedSources(g));
-        expect(hits.some((h) => accepted.has(h.source))).toBe(true);
+        expect(hits.some((h) => satisfies(g, h))).toBe(true);
       },
       SEARCH_TEST_TIMEOUT_MS,
     );

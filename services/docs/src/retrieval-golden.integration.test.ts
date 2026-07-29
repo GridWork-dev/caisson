@@ -15,11 +15,23 @@
 // repl / a probe script) before touching the expectation — loosening k to green a regression
 // defeats the test.
 import { afterAll, describe, expect, test } from "bun:test";
-import { buildCorpus } from "./corpus.ts";
-import { GOLDENS, acceptedSources } from "./golden-pairs.ts";
+import { buildCorpus, loadPricingFacts } from "./corpus.ts";
+import { GOLDENS, satisfies } from "./golden-pairs.ts";
 import { DocsIndex } from "./index-store.ts";
 
-const corpus = buildCorpus();
+// Build the corpus the way `server.ts` does — WITH the generated pricing sources. This harness used
+// to call bare `buildCorpus()`, which meant the ~40 `pricing/*` chunks that answer every buyer price
+// question had ZERO golden coverage while the suite read as covering retrieval end to end. That gap
+// is how the live price-question failures reached production green.
+const pricingFacts = await loadPricingFacts();
+if (pricingFacts === null) {
+  // Fail loud rather than silently running a docs-only corpus: the pricing goldens below cannot
+  // pass without these sources, and a confusing top-k miss is a worse signal than a clear abort.
+  throw new Error(
+    "loadPricingFacts() returned null — apps/site/lib/pricing.ts must be reachable for the pricing goldens",
+  );
+}
+const corpus = buildCorpus({ pricingFacts });
 const index = await DocsIndex.build(corpus.chunks); // no embedder ⇒ deterministic FTS5 floor
 
 afterAll(() => {
@@ -30,8 +42,7 @@ describe("golden retrieval (FTS floor, real corpus)", () => {
   for (const g of GOLDENS) {
     test(`"${g.question}" surfaces ${g.expected} in top-${String(g.k)}`, async () => {
       const hits = await index.search(g.question, g.k);
-      const accepted = new Set(acceptedSources(g));
-      expect(hits.some((h) => accepted.has(h.source))).toBe(true);
+      expect(hits.some((h) => satisfies(g, h))).toBe(true);
     });
   }
 
