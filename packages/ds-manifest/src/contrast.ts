@@ -137,7 +137,11 @@ function checkThemePairs(
   const out: ContrastViolation[] = [];
   for (const p of PAIRS) {
     const ratio = renderedContrastRatio(theme[p.fg], theme[p.bg]);
-    if (ratio < p.min)
+    // `!(ratio >= min)`, not `ratio < min`: a NaN ratio makes every comparison false, so the
+    // `<` spelling passes an unmeasurable pair as compliant. renderedContrastRatio throws on
+    // unparseable input today, which is the only reason this was unreachable — that is a
+    // property of a collaborator, not of this check.
+    if (!(ratio >= p.min))
       out.push({ mode, fg: p.fg, bg: p.bg, ratio, min: p.min, use: p.use });
   }
   return out;
@@ -152,7 +156,7 @@ function checkFunctionalPairs(
   for (const k of FUNCTIONAL_KEYS) {
     for (const s of FUNCTIONAL_SURFACES) {
       const ratio = renderedContrastRatio(fn[k], theme[s]);
-      if (ratio < 4.5)
+      if (!(ratio >= 4.5))
         out.push({
           mode,
           fg: k,
@@ -175,7 +179,7 @@ function checkCodePairs(
   for (const key of CODE_KEYS) {
     for (const surface of FUNCTIONAL_SURFACES) {
       const ratio = renderedContrastRatio(code[key], theme[surface]);
-      if (ratio < 4.5)
+      if (!(ratio >= 4.5))
         out.push({
           mode,
           fg: key,
