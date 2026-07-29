@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-28
+updated: 2026-07-29
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,25 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-07-29 — independent parity re-probe: still OK, one day after the release
+
+No deploy. `bun registry/scripts/index-parity-probe.ts` was re-run from a clean checkout to confirm
+the release receipt with a second, independent reading rather than citing the train's own output:
+
+| Leg     | Result                                    |
+| ------- | ----------------------------------------- |
+| repo    | `4810e38157c1` · 54 entries               |
+| license | `4810e38157c1` == repo                    |
+| worker  | 17 served entries all match repo `latest` |
+| admin   | `4810e38157c1` == repo                    |
+
+`RESULT: PARITY OK`, exit 0. Public HTTP: `caisson.sh`, `license/health`, `admin/healthz`, and
+`registry/index.json` all 200 under 400ms. Docs-RAG and support-bot have no public DNS by design —
+they are private Railway services. The site's `POST /api/ask` proxy is the only outside path to
+docs-RAG and it is Turnstile-gated (`{"error":"challenge_failed"}`, 403), so both legs stay
+uncertified by any automatable method. This reading is what retires the DRIFT rows that
+[production readiness](../state/production-readiness.md) had been carrying since before the release.
 
 ## 2026-07-28 — v2026.07.27.1 released: train green, 50 tarballs published, full parity
 
@@ -50,8 +69,16 @@ green `deploy-railway` runs in this session deployed nothing, and the train's le
 today: a release can report a fully green train while the site still serves the previous image. It
 was caught only because a post-deploy probe read the live `/updates` page and the new entry was
 absent. The inert-until-armed pattern is deliberate (ADR-0318 W3), but an unarmed leg inside an
-**armed** train is a false green — leg 1 already refuses to no-op for exactly this reason. Carried
-as a follow-up: either arm the secret or make the leg fail loud when the train is armed.
+**armed** train is a false green — leg 1 already refuses to no-op for exactly this reason.
+
+**The fail-loud half is CLOSED** (`45683e6e`, post-tag remediation PR #360): `deploy-railway.yml`
+takes a `require_armed` input and the train's leg 4 passes `require_armed=true`, so an absent
+`RAILWAY_TOKEN` now aborts the train instead of skipping green. Path-triggered pushes still skip
+green, which is the deliberate inert-until-armed posture. **The consequence is operator-facing and
+immediate: the next release train FAILS at leg 4 until `RAILWAY_TOKEN` is added as a repo secret.**
+Arming it is a credential act and stays with the operator; until then, deploy from the operator box
+with `tooling/scripts/railway-deploy.ts --ref <tag>`, which is how every receipt in
+`docs/deploy/receipts/` was produced.
 
 ### Post-deploy observation
 
@@ -61,6 +88,23 @@ Raw docs-RAG `/query` retrieval did not surface the Compliance bundle price for 
 contain $1,649 / $2,259 / $249 and neither stale figure — so this is retrieval ranking, not stale
 content. Carried as a follow-up, since a buyer asking the support bot a plain price question is the
 exact path affected.
+
+**Root-caused and fixed 2026-07-29 (post-tag remediation PR #360).** Reproduced against the real
+corpus, where it was worse than observed: **no** plain price question put a single `pricing/*` chunk
+in the top 5 — not "how much is the Compliance bundle", not "how much is Everything" — on a corpus
+whose generated pricing docs exist for exactly that purpose. The cause is vocabulary, not ranking
+weights: the generated heading reads `## Compliance — $1,649`, which shares no token with "how
+much", "cost", or "price", and the FTS floor has no synonyms. Each bundle now carries a one-line
+answer in the buyer's own words with the renewal figure beside the list price, projected from the
+SOT's own `renewalAmount` rather than typed in.
+
+Two things worth keeping from the fix. First, the module cost lines were **reverted**: adding the
+same line to all 27 modules pushed `licensing.mdx` out of the top 5 for "how do I renew my license"
+and put the `audit-worm` price card above the `audit-worm` doc — 27 copies of one explanation
+outrank the single page that owns the topic. Second, and the reason this reached production green:
+`retrieval-golden.integration.test.ts` called bare `buildCorpus()`, so the ~40 pricing chunks the
+service actually serves had **zero** golden coverage while the suite read as end-to-end. It now
+builds the corpus the way `server.ts` does and fails loud if the pricing SOT is unreachable.
 
 ## 2026-07-27 — Act 1 executed: one-SHA fleet + migration chain through 0032; PARITY OK
 

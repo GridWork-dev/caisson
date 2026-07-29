@@ -72,6 +72,19 @@ jobs:
             regulatory-claim-watch-report.md \
             timeout --kill-after=15s 8m \
             bun apps/site/scripts/regulatory-claim-watch.ts
+      - name: publish report to the job summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -s regulatory-claim-watch-report.md ]]; then
+            cat regulatory-claim-watch-report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' \
+              '## Regulatory claim watch — report-only' \
+              '' \
+              'No report file was produced by this run. Inspect the raw job logs.' \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: upload the report artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

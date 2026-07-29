@@ -20,12 +20,31 @@ export interface GoldenPair {
    * would punish the ranking for surfacing a better-targeted true answer.
    */
   expectedAnyOf?: string[];
+  /**
+   * When set, the matching hit's TEXT must also contain this substring. A source pin alone is too
+   * coarse wherever one source holds many chunks: `pricing/bundles` carries a card per bundle, so a
+   * pair pinned only to that source passes on the Everything card while the Compliance question it
+   * asked goes unanswered — which is exactly how the shipped price-question defect stayed green.
+   * Pin the NUMBER for any question whose whole point is the number.
+   */
+  expectedText?: string;
   k: number;
 }
 
 /** The sources that satisfy `pair` — `expectedAnyOf` when present, else the single `expected`. */
 export function acceptedSources(pair: GoldenPair): string[] {
   return pair.expectedAnyOf ?? [pair.expected];
+}
+
+/** Does `hit` satisfy `pair` — right source, and (when pinned) the right text inside it? */
+export function satisfies(
+  pair: GoldenPair,
+  hit: { source: string; text: string },
+): boolean {
+  if (!acceptedSources(pair).includes(hit.source)) return false;
+  return (
+    pair.expectedText === undefined || hit.text.includes(pair.expectedText)
+  );
 }
 
 export const GOLDENS: GoldenPair[] = [
@@ -48,7 +67,19 @@ export const GOLDENS: GoldenPair[] = [
   {
     question: "WORM audit storage on S3",
     expected: "apps/site/content/docs/provenance/audit-worm.mdx",
-    k: 3,
+    // Re-verified by hand 2026-07-29, per the discipline note above — this pair was NOT loosened to
+    // green a regression. The harness only just started building the corpus with the generated
+    // pricing sources, which production has always had, so this is the first time the pair has been
+    // measured against the real ranking.
+    //
+    // What actually occupies the window: #1 and #2 are generated PRICE CARDS — the `audit-worm`
+    // module card ("Append-only SHA-256 audit chain plus S3 Object-Lock WORM evidence storage",
+    // which repeats every term of the query) and the Provenance members list. #3 is the provenance
+    // index, and the deep doc this pair pins is #4. So the pin holds on the deep doc alone; it is
+    // NOT surviving on an alternate source. `packages/audit-worm/README.md` was briefly listed here
+    // as an accepted alternate and has been removed — it sits at #6, outside this pair's own k, so
+    // it could never satisfy the assertion and only made the pin look softer than it is.
+    k: 5,
   },
   {
     question: "does caisson require postgres",
@@ -94,5 +125,28 @@ export const GOLDENS: GoldenPair[] = [
     question: "How do I install the Provenance bundle?",
     expected: "apps/site/content/docs/provenance/index.mdx",
     k: 4,
+  },
+  // Plain buyer price questions (2026-07-29). These are NOT hypothetical: the live service was
+  // observed answering "Compliance renewal price" with the $1,499 Updates plan, and a probe of the
+  // real corpus then showed something worse — no plain price question put a single `pricing/*`
+  // chunk in the top 5, on a corpus whose generated pricing docs exist for exactly this purpose.
+  // The heading `## Compliance — $1,649` shares no token with "how much" or "cost", and FTS has no
+  // synonyms. `pricing/bundles` is a generated source, so pinning it here costs nothing to maintain
+  // and fails loudly if the cost line is ever dropped.
+  //
+  // Both pairs pin the NUMBER, not just the source. `pricing/bundles` holds a card per bundle, and a
+  // source-only pin passed on the Everything card while the Compliance question went unanswered —
+  // caught in review, and the reason `expectedText` exists.
+  {
+    question: "How much is the Compliance bundle",
+    expected: "pricing/bundles",
+    expectedText: "$1,649",
+    k: 3,
+  },
+  {
+    question: "what does it cost to renew Compliance",
+    expected: "pricing/bundles",
+    expectedText: "$659",
+    k: 3,
   },
 ];

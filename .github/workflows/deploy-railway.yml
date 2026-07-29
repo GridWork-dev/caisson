@@ -4,9 +4,12 @@ name: deploy-railway
 # Railway service, not here). Touches NO DNS and NO CF Access.
 #
 # STAYS INERT UNTIL ARMED: the project token RAILWAY_TOKEN (scoped to caisson-prod) is not yet a repo
-# secret. The guard step below reads it and SKIPS every real step when it is absent, so the job runs
-# as a GREEN no-op — it never attempts a deploy and never reddens main. The operator ARMS it by adding
-# the RAILWAY_TOKEN secret at the cutover (deploy-runbook C2); it then self-enables on the next push.
+# secret. The guard step below reads it and SKIPS every real step when it is absent, so a push-triggered
+# run is a GREEN no-op — it never attempts a deploy and never reddens main. The operator ARMS it by
+# adding the RAILWAY_TOKEN secret at the cutover (deploy-runbook C2); it then self-enables on the next
+# push. ONE EXCEPTION: a caller that passes `require_armed=true` (the release train's leg 4) gets a hard
+# FAILURE instead of the green skip, because a train that reports a deploy it never performed is worse
+# than a red leg.
 # The static-export deploy-site.yml (Cloudflare Pages) it once coexisted with is already retired (its
 # CI half); deleting the Pages project itself is the DEPLOY-class teardown step C7.
 on:
@@ -22,6 +25,10 @@ on:
         description: "The git ref to deploy (checked out, ancestry-verified, archived clean)"
         required: false
         default: ""
+      require_armed:
+        description: "Set 'true' to FAIL when RAILWAY_TOKEN is absent instead of skipping green (the release train passes this)"
+        required: false
+        default: "false"
 
 permissions:
   contents: read
@@ -47,9 +54,18 @@ jobs:
         id: guard
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          REQUIRE_ARMED: ${{ github.event.inputs.require_armed || 'false' }}
         run: |
           if [ -n "${RAILWAY_TOKEN}" ]; then
             echo "armed=true" >> "$GITHUB_OUTPUT"
+          elif [ "${REQUIRE_ARMED}" = "true" ]; then
+            # Called by an ARMED release train. A green skip here is a false green of the worst
+            # kind: the train reports every leg passed while the site still serves the previous
+            # image, and the only thing that catches it is someone reading the live page. Leg 1
+            # (registry publish) already refuses to no-op with missing credentials for exactly
+            # this reason; this is that rule applied to the deploy leg.
+            echo "::error::deploy-railway was called with require_armed=true but RAILWAY_TOKEN is not set — refusing to report a green deploy that shipped nothing. Arm the secret, or deploy from the operator box with tooling/scripts/railway-deploy.ts."
+            exit 1
           else
             echo "armed=false" >> "$GITHUB_OUTPUT"
             echo "::notice::deploy-railway is inert — RAILWAY_TOKEN not set; skipping deploy (operator arms at cutover C2)"

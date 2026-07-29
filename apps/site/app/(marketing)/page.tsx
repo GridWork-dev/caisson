@@ -499,7 +499,8 @@ export default function HomePage() {
               className="cs-footnote"
               style={{ marginTop: "var(--cs-space-5)" }}
             >
-              One-time perpetual unless marked /mo.{" "}
+              Modules and bundles are one-time perpetual; subscriptions are
+              marked /yr.{" "}
               <Link href="/marketplace" className="cs-link">
                 Browse the full marketplace
               </Link>

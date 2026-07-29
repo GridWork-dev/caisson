@@ -98,6 +98,24 @@ path updates it. `resolveUpgradeCredit` then floors an upgrade credit at the ori
 three stacked events plus a later price cut to bite, and over-credits only the refunded slice. Zero
 exposure today: Paddle SANDBOX, pre-launch, no price cuts recorded.
 
+> **Post-tag addendum (2026-07-29) — the obvious fix is wrong; F2 stays open.** The in-place
+> decrement (`SET charged_amount = GREATEST(charged_amount - refunded, 0)` in the dollar-partial
+> branch) was written, tested, and then **removed**, because it is not idempotent. This service has
+> no event-level dedupe by design — `app.ts:961`, "Paddle retry of the same event_id re-applies as a
+> no-op" — so every handler carries its own. The sibling credit claw gets idempotency from the
+> `${adjustmentId}:${itemId}` unique key on its ledger row; a bare UPDATE has no such anchor, and
+> `item.amountRefunded` is **this adjustment's** line total, not a cumulative one. Demonstrated
+> against PGlite: one redelivery of the same adjustment took a 164900 charge to 84900 instead of 124900. That trades a rare latent over-credit for a defect on the routine retry path — strictly
+> worse. A correct fix needs durable per-`(line, adjustment)` refund state, and there is none: the
+> clawback ledger row records credits clawed, not dollars refunded, and it is not written at all for
+> a SKU that grants zero credits — precisely the rows an upgrade quote reads. That is a schema
+> change, which is operator-gated, so it is **not** carried in the post-tag PR. Options for the
+> operator, unlocked: (a) add a `refunded_amount` column to `entitlement_grant` and net at read
+> time, keeping `charged_amount` immutable — recommended, since an immutable stamped charge is what
+> ADR-0381 lock 2 actually describes; (b) add a per-adjustment refund table keyed
+> `(purchase_id, line_item_id, adjustment_id)`; (c) accept the over-credit and cap upgrade credits
+> by policy instead. Do not re-attempt the in-place decrement.
+
 **F3 / P2 — the internal proof bearer is a static, non-expiring per-account credential.**
 `apps/admin/src/lib/internal-proof-auth.ts:60-75` — `HMAC-SHA256(secret, accountId)`, no
 timestamp or nonce, valid until the secret rotates. Compare is `timingSafeEqual` with a length
@@ -161,7 +179,8 @@ results at HEAD: registry-schema 88/88, registry worker + scripts 290/290, cli +
 in `65745ccc`, B4 in `ab8a98e1`. The site suite is 528/528 after the copy fixes and the repaired
 dependency gate passes 7/7 plus a clean live cruise.
 
-**Carried to the post-tag PR:** security F1-F5, plus the code-review lane's disclosed set — the
+**Carried to the post-tag PR:** security F1 and F3-F5 (**F2 is NOT carried** — see its addendum
+above; the fix needs a schema change and stays with the operator), plus the code-review lane's disclosed set — the
 `/legal/license` overclaim on two Apache-2.0 packages (`analytics`, `ds-manifest`), bundle docs that
 omit granted modules ($925 of catalog missing from the Everything page and 7-of-14 on Compliance),
 "the two Agentic-Dev SKUs sold standalone" where five are, the `regulatory-claim-watch` degenerate
@@ -176,10 +195,53 @@ NaN-fail-open shape in `ds-manifest/src/contrast.ts:139,154`, the unpinned-migra
 while ADR-0385 requires the docs not imply `verify-pack` is installable. That is an ADR conflict, not
 a wording problem — it goes to `gw-architect`.
 
+> **Routing outcome (2026-07-29): NOT an ADR conflict — a copy fix, and a worse defect underneath.**
+> Rider 2 bans a _register_ (roadmap labels, "coming soon", future-phase framing), not the statement
+> of a present boundary, and its own floor sentence — "true-to-built still holds" — requires the
+> boundary be stated. ADR-0385 asks only that documentation not imply the package is installable.
+> Present-tense prose satisfies both, and no ADR needed amending. The larger finding: the fallback
+> the page offered instead of the `npx` line — verify from "an independently trusted checkout of this
+> repository" — names a repository the reader cannot obtain (`verify-pack` is `private: true`, absent
+> from `registry/tarballs.json`, and excluded from the public mirror by construction). Fixing only the
+> tense would have shipped cleaner prose that was still false, so both command blocks were removed in
+> favour of the route that genuinely does not depend on the issuer: the Apache-2.0 `@caisson/kernel`.
+> **The same text ships inside every evidence pack** (`packages/kernel/src/evidence/pack.ts`
+> `renderReadme`), where the reader is an external auditor with even less access to that checkout —
+> fixed in the same change, with its two pinning assertions inverted to ban both commands by name.
+
 **One correction to the changelog entry this session added:** the v0.5 body says "Background jobs move
 to Inngest v4". `packages/jobs` still ships the Trigger.dev, pg-boss, BullMQ, and in-memory drivers
 alongside the new Inngest one. A Trigger.dev buyer would read a removal. Carried to the post-tag PR
 with the rest of the copy set.
+
+## 4b. Post-tag PR — what actually landed (2026-07-29)
+
+Every carried item above is fixed on `fix/post-tag-audit-remediation` except F2 (reverted, see its
+addendum), F3 (its own disposition is "when the seam is next touched"), and F4/F5 (INFO, both
+explicitly "no action"). A verified recon pass over the carried copy set found **77 defects where the
+audit had named roughly 25** — the audit named classes, and reading each class exhaustively against
+the real catalog turned up the rest. Additions the audit did not name, each verified against code
+rather than prose:
+
+- A **fabricated terminal transcript** in `content/docs/cli/create-caisson.mdx`: none of its three
+  output lines exist in the binary, and it advertised metering on a path that generates for free. The
+  block now shows real captured output. Eight comma splices and a sentence that did not parse go with it.
+- **Retired package ids in live buyer copy** beyond the glossary: the AI-Production and Local-first
+  bundle pages, the tool-exec module page, and the public `/security` page all named ids that no
+  longer resolve as purchasable at all (`LEGACY_ENTITLEMENT_ALIASES` is empty per ADR-0270).
+- **Four stale counts** in diagram and header comments — the compliance cross-section and marketplace
+  hero undercounted the bundle by one after the spine carve and the catalog by five.
+- **A second `GITHUB_STEP_SUMMARY` writer**: the workflow fix alone would have double-posted every
+  successful run, because the watch script appended the summary itself. The script's append was
+  removed so one writer covers every path.
+
+Two of the audit's own carried items were **sharpened by attempting them**: F2 (the in-place
+decrement double-applies on webhook redelivery — reverted with a reproduction) and `checkCatalogParity`
+(the restored published-index leg is a **warn**, not an error, because the two-consume arming
+convention legitimately opens that window mid-cut). Both new parity cases were confirmed to fail
+against the unfixed checks before being accepted. Gates at branch tip: 224/224 turbo tasks, the
+standards gate at 81 packages / 0 errors / 0 warnings, and `bun run sot` green on every check except
+the local-only branch-hygiene ref list.
 
 ## 5. Proceed decision
 

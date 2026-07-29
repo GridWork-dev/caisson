@@ -37,11 +37,25 @@ fi
 first_line=""
 IFS= read -r first_line <"$report_path" || true
 if [[ "$first_line" != "## Regulatory claim watch — report-only" ]]; then
-  printf '%s\n' \
-    '## Regulatory claim watch — report-only' \
-    '' \
-    'Watch output was not a framed report. No PASS is implied.' \
-    >"$report_path"
+  # PRESERVE the output rather than replacing it. The success path captures stderr into the same
+  # file as stdout, so the common way to land here is a perfectly good framed report with a stray
+  # warning line ahead of it — and overwriting with three generic lines threw away every finding
+  # the watch had just made. The failure branch above already keeps a bounded diagnostic; this is
+  # the same courtesy on the path that actually produced results.
+  unframed="$(mktemp)"
+  cp -- "$report_path" "$unframed"
+  {
+    printf '%s\n' \
+      '## Regulatory claim watch — report-only' \
+      '' \
+      'Watch output was not a framed report. No PASS is implied.' \
+      '' \
+      '### Unframed output (bounded)' \
+      ''
+    head -c 8192 "$unframed" | sed 's/^/    /'
+    printf '\n'
+  } >"$report_path"
+  rm -f -- "$unframed"
 fi
 
 sed -n '1,200p' "$report_path"

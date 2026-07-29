@@ -351,12 +351,31 @@ describe("ADR-0384 compatibility re-export entitlements", () => {
     );
   });
 
-  // Removed with the oscal-spine graduation: "before OSCAL is indexed, both existing parent grants
-  // remain usable without a phantom grant" built a synthetic index with the spine filtered out to
-  // cover the pre-publish window. The spine is now indexed and unreserved, so that index throws
-  // "neither indexed nor reserved" (correct fail-closed behaviour) and the window cannot recur.
-  // Its surviving invariant — a parent grant resolves, and pulls exactly the carve, no phantom —
-  // is pinned by the `${parent} grants the indexed OSCAL carve` cases above.
+  // Restored, inverted, by release audit v2026.07.27.1 F1. This case used to be deleted on the
+  // grounds that an index missing the spine SHOULD throw ("correct fail-closed behaviour"). It is
+  // not fail-closed — it is fail-*everything*: the throw escapes expandEntitlements and rejects the
+  // buyer's entire purchased-id set, so a paying compliance-core holder drops to the free base
+  // floor over one unresolvable edge. Skipping the single edge cannot over-grant (the target is not
+  // in the allowlist, so nobody can be served it) and keeps the rest of the grant intact.
+  test("an unresolvable compat edge costs only that edge, never the whole grant", () => {
+    const withoutSpine = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: carved.modules.filter((m) => m.id !== "@caisson/oscal-spine"),
+    });
+    const granted = [...expandEntitlements(withoutSpine, ["compliance-core"])];
+    expect(granted).toContain("@caisson/compliance-core");
+    expect(granted).not.toContain("@caisson/oscal-spine");
+  });
+
+  test("an unresolvable edge does not throw the buyer's other entitlements away", () => {
+    const withoutSpine = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: carved.modules.filter((m) => m.id !== "@caisson/oscal-spine"),
+    });
+    expect(() =>
+      expandEntitlements(withoutSpine, ["compliance-core"]),
+    ).not.toThrow();
+  });
 });
 
 describe("NON_MODULE_ENTITLEMENT_IDS (ADR-0278/0288 — the priority-support brick guard)", () => {

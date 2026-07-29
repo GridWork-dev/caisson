@@ -181,8 +181,18 @@ export async function loadPricingFacts(
   const pricingPath = join(root, "apps/site/lib/pricing.ts");
   if (!existsSync(pricingPath)) return null;
   const mod = await import(pricingPath);
+  // `renewal` is the one projected field — the SOT exposes it as a FUNCTION (`renewalAmount`, the
+  // ADR-0260 §5 40%-floored-to-X9 ladder), not as a field on each row, so it is evaluated here
+  // rather than read. Same discipline as every other fact: computed from the SOT, never typed in.
+  const withRenewal = (rows: unknown): unknown =>
+    Array.isArray(rows)
+      ? rows.map((r: { id?: unknown }) => ({
+          ...r,
+          renewal: mod.renewalAmount(String(r.id)),
+        }))
+      : rows;
   return PricingFactsSchema.parse({
-    bundles: mod.BUNDLE_PRICES,
+    bundles: withRenewal(mod.BUNDLE_PRICES),
     modules: mod.MODULE_PRICES,
     plans: mod.PLAN_PRICES,
   });

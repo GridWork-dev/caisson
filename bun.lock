@@ -911,7 +911,7 @@
         "@caisson/tenancy-rls": "workspace:*",
         "@trigger.dev/sdk": "^4.4.6",
         "bullmq": "^5.60.0",
-        "inngest": "^4",
+        "inngest": "^4.13.0",
         "pg-boss": "^12.18.3",
         "zod": "catalog:",
       },
