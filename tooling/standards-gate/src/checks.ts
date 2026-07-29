@@ -601,8 +601,12 @@ export function checkOrphanSku(pkgs: Pkg[]): Finding[] {
  * pins manifests, and the site's displayed prices are test-pinned to the pricebook — but nothing
  * bridged the two, so a manifest reprice could leave the pricebook (and therefore the site display,
  * upgrade quotes, and renewal math) silently on the old number while every gate stayed green. This
- * check closes the bridge: for every PRICE_AUTHORITY row, the pricebook's SKU_RETAIL (modules) or
- * BUNDLE_RETAIL (bundles) entry must exist and agree at dollars * 100 === cents. Degrades to a
+ * check closes the bridge in BOTH directions: (a) for every PRICE_AUTHORITY row, the pricebook's
+ * SKU_RETAIL (modules) or BUNDLE_RETAIL (bundles) entry must exist and agree at dollars * 100 ===
+ * cents; (b) no pricebook row may name a slug PRICE_AUTHORITY does not lock — SKU_RETAIL doubles as
+ * the F8 upgrade-CREDIT table and the creditable-item vocabulary (`resolveUpgradeCredit` /
+ * `isPricedItem` read its keys), so an unlocked row is a live money number no ADR pins and no
+ * sibling check asserts. Degrades to a
  * VISIBLE warn when the pricebook can't be imported (legitimate pre-install; post-install it means
  * the bridge is not running) — a silent skip here would false-PASS the exact drift class this
  * check exists to catch.
@@ -659,7 +663,60 @@ export async function checkPricebookPriceAgreement(
       });
     }
   }
+  // Reverse direction (the missing leg): no pricebook row may name a slug PRICE_AUTHORITY does not
+  // lock. SKU_RETAIL is the F8 upgrade-CREDIT table AND the creditable-item vocabulary
+  // (`Object.keys(SKU_RETAIL)` / `Object.hasOwn(SKU_RETAIL, itemId)` in upgrades.ts), so an
+  // unlocked row is a live buyer-facing number that no ADR pins and that every sibling check
+  // (manifest-price-agreement, price-coverage, orphan-sku — all keyed off PRICE_AUTHORITY) skips.
+  // A STALE one is worse: a renamed/retired slug stays a quotable, creditable item id for a SKU
+  // that no longer ships. This mirrors checkOrphanSku on the pricebook side.
+  const authoritySlugs = new Set(
+    Object.keys(PRICE_AUTHORITY).map((id) => id.replace(/^@caisson\//, "")),
+  );
+  for (const [book, rows] of Object.entries({
+    SKU_RETAIL: sku,
+    BUNDLE_RETAIL: bundles,
+  })) {
+    for (const [slug, dollars] of Object.entries(rows)) {
+      if (authoritySlugs.has(slug)) continue;
+      findings.push({
+        severity: "error",
+        rule: "pricebook-price-agreement",
+        pkg: `@caisson/${slug}`,
+        message: `pricebook ${book}.${slug} = $${dollars} but no PRICE_AUTHORITY row locks @caisson/${slug} — an unpinned price still feeds upgrade credits and checkout quotes, and a stale slug keeps quoting a SKU that no longer ships; add the authority row or drop the pricebook entry.`,
+      });
+    }
+  }
   return findings;
+}
+
+/** Latest-version members map per indexed module id, read off the PUBLISHED registry index — the
+ *  source `membersOfBundle` (@caisson/registry-schema) actually resolves a live buyer's grants
+ *  against (ADR-0071: "The registry INDEX is the single source of truth for membership"). null when
+ *  the index is absent or unreadable, which skips the live leg (pre-publish posture). */
+function readIndexMembers(indexPath: string): Map<string, Set<string>> | null {
+  try {
+    const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
+      modules: {
+        id: string;
+        latest: string;
+        versions: {
+          version: string;
+          manifest?: { members?: Record<string, unknown> };
+        }[];
+      }[];
+    };
+    const out = new Map<string, Set<string>>();
+    for (const entry of idx.modules) {
+      const v =
+        entry.versions.find((x) => x.version === entry.latest) ??
+        entry.versions[entry.versions.length - 1];
+      out.set(entry.id, new Set(Object.keys(v?.manifest?.members ?? {})));
+    }
+    return out;
+  } catch {
+    return null;
+  }
 }
 
 /** The site's bundle id → current workspace manifest path. The release train snapshots these
@@ -683,9 +740,15 @@ interface SitePricingModule {
  * catalog↔manifest parity (ADR-0248 F5). Promotes apps/site/lib/pricing.test.ts's membership lint to
  * the gate and adds a price cross-check, so the storefront can never advertise a grant or a price the
  * manifest layer doesn't back:
- *   (1) MEMBERSHIP (1:N) — every bundle the site lists a module under must be a current workspace
- *       bundle manifest whose members map grants it (else the next release sells a grant that
- *       doesn't exist).
+ *   (1) MEMBERSHIP (1:N), NEXT RELEASE — every bundle the site lists a module under must be a
+ *       current workspace bundle manifest whose members map grants it (else the next release sells
+ *       a grant that doesn't exist). ERROR.
+ *   (1b) MEMBERSHIP, LIVE — the same claim re-checked against registry/index.json's PUBLISHED
+ *       bundle entry, which is what `membersOfBundle` resolves a real buyer's grants from
+ *       (ADR-0071). WARN, not error: the two-consume arming convention (publish the member first,
+ *       fold the membership after) makes the workspace legitimately run ahead of the index mid-cut,
+ *       so a red here would false-fail that convention's own PRs — but the window is exactly when
+ *       the storefront is advertising a grant nothing behind it backs, so it must stay visible.
  *   (2) PRICE — for every à-la-carte module the site prices whose id carries a PRICE_AUTHORITY row,
  *       the displayed USD must equal the locked cents.
  * Bundle DISPLAY prices are out of scope here: apps/site/lib/pricing.test.ts pins BUNDLE_PRICES to
@@ -704,6 +767,9 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
       },
     ];
   }
+  // Read outside the try below: readIndexMembers already returns null on absent/unreadable, and an
+  // unpublished index must skip the live leg rather than warn the whole check away.
+  const indexMembers = readIndexMembers(join(root, "registry/index.json"));
   let modules: readonly SitePricingModule[];
   let members: Map<string, Set<string>>;
   try {
@@ -762,6 +828,21 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
           rule: "catalog-parity",
           pkg: `@caisson/${m.id}`,
           message: `apps/site lists @caisson/${m.id} in the ${bundle} bundle but it is absent from ${manifestPath}'s members map — the next release would sell a grant that doesn't exist; fix bundles[] or repin the members (ADR-0071).`,
+        });
+      }
+      // (1b) LIVE honesty — the leg the workspace-manifest swap dropped. The site deploys from main,
+      //      but `membersOfBundle` (@caisson/registry-schema) resolves a buyer's grants from the
+      //      PUBLISHED index, not this workspace manifest, so a member the workspace grants and the
+      //      indexed bundle does not is being advertised to live buyers with nothing behind it.
+      //      WARN because the two-consume arming convention legitimately opens this window mid-cut;
+      //      the members-fold republish closes it. Skipped when the bundle is not indexed yet.
+      const indexed = indexMembers?.get(`@caisson/${bundle}`);
+      if (indexed !== undefined && !indexed.has(`@caisson/${m.id}`)) {
+        findings.push({
+          severity: "warn",
+          rule: "catalog-parity",
+          pkg: `@caisson/${m.id}`,
+          message: `apps/site advertises @caisson/${m.id} in the ${bundle} bundle but registry/index.json's published @caisson/${bundle} entry does not grant it — a buyer today resolves NO grant for it (membersOfBundle reads the index, ADR-0071); republish the bundle before the storefront can honestly sell it.`,
         });
       }
     }

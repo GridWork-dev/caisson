@@ -188,7 +188,10 @@ describe("checkPricebookPriceAgreement", () => {
    * (BUNDLE_RETAIL empty — with no manifests in the fixture pkg set, nothing is exempted and every
    * row routes through SKU_RETAIL). `over` drifts a slug's dollars; `null` drops the row entirely.
    */
-  function fixturePricebook(over: Record<string, number | null> = {}): Pkg {
+  function fixturePricebook(
+    over: Record<string, number | null> = {},
+    extra: Record<string, number> = {},
+  ): Pkg {
     const rows = Object.entries(PRICE_AUTHORITY)
       .map(([id, { cents }]) => {
         const slug = id.replace("@caisson/", "");
@@ -196,6 +199,11 @@ describe("checkPricebookPriceAgreement", () => {
         return dollars == null ? null : `  "${slug}": ${dollars},`;
       })
       .filter((r) => r !== null)
+      .concat(
+        Object.entries(extra).map(
+          ([slug, dollars]) => `  "${slug}": ${dollars},`,
+        ),
+      )
       .join("\n");
     mkdirSync(join(dir, "src"), { recursive: true });
     writeFileSync(
@@ -243,6 +251,19 @@ describe("checkPricebookPriceAgreement", () => {
     expect(f[0]?.message).toContain("could not be imported");
   });
 
+  test("a pricebook row PRICE_AUTHORITY does not lock is an orphan error (the reverse direction)", async () => {
+    // SKU_RETAIL keys are the creditable-item vocabulary upgrade quotes read, so an unlocked row is
+    // a live money number no ADR pins — the mirror of checkOrphanSku on the pricebook side.
+    const f = await checkPricebookPriceAgreement([
+      fixturePricebook({}, { "ghost-sku": 499 }),
+    ]);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.severity).toBe("error");
+    expect(f[0]?.rule).toBe("pricebook-price-agreement");
+    expect(f[0]?.pkg).toBe("@caisson/ghost-sku");
+    expect(f[0]?.message).toContain("no PRICE_AUTHORITY row locks");
+  });
+
   test("no pricebook in the pkg set is out of scope", async () => {
     expect(await checkPricebookPriceAgreement([])).toEqual([]);
   });
@@ -280,6 +301,7 @@ describe("checkCatalogParity", () => {
   function writeCatalog(
     modulesLiteral: string,
     manifestMembers: Record<string, string>,
+    indexMembers?: Record<string, string>,
   ): void {
     const pricingDir = join(root, "apps", "site", "lib");
     mkdirSync(pricingDir, { recursive: true });
@@ -300,6 +322,25 @@ describe("checkCatalogParity", () => {
       writeFileSync(
         join(manifestDir, "manifest.ts"),
         `export default { id: "${bundleId}", members: ${JSON.stringify(members)} };\n`,
+      );
+    }
+    // Only written when a case exercises the PUBLISHED-index leg; its absence keeps that leg
+    // skipped, which is the pre-publish posture every other case in this block relies on.
+    if (indexMembers !== undefined) {
+      mkdirSync(join(root, "registry"), { recursive: true });
+      writeFileSync(
+        join(root, "registry", "index.json"),
+        JSON.stringify({
+          modules: [
+            {
+              id: "@caisson/compliance",
+              latest: "1.0.0",
+              versions: [
+                { version: "1.0.0", manifest: { members: indexMembers } },
+              ],
+            },
+          ],
+        }),
       );
     }
   }
@@ -347,6 +388,30 @@ describe("checkCatalogParity", () => {
   test("a module with an empty bundles[] makes no membership claim to verify", async () => {
     writeCatalog(`[{ id: "ai-evals", amount: 199, bundles: [] }]`, {});
     // No bundles listed → nothing to check against manifests (a genuinely standalone SKU).
+    expect(await checkCatalogParity(root)).toEqual([]);
+  });
+
+  test("a member the workspace manifest grants but the PUBLISHED index does not is a live-drift warn", async () => {
+    // The a21c4784 shape reproduced: site + workspace manifest agree, the published bundle entry
+    // does not carry the member yet, so a buyer today resolves no grant for it.
+    writeCatalog(
+      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }]`,
+      { "@caisson/audit-worm": "1.0.0" },
+      {},
+    );
+    const f = await checkCatalogParity(root);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.severity).toBe("warn");
+    expect(f[0]?.pkg).toBe("@caisson/audit-worm");
+    expect(f[0]?.message).toContain("registry/index.json");
+  });
+
+  test("a published index that already grants the member is clean", async () => {
+    writeCatalog(
+      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }]`,
+      { "@caisson/audit-worm": "1.0.0" },
+      { "@caisson/audit-worm": "1.0.0" },
+    );
     expect(await checkCatalogParity(root)).toEqual([]);
   });
 
