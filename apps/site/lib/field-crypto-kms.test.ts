@@ -600,6 +600,12 @@ describe("site KMS request context", () => {
   });
 
   test("a stalled unwrap is aborted by the request deadline and releases the transaction", async () => {
+    // The budget has to outlast the DB preamble — set_config, the advisory lock, and first
+    // provisioning all spend it before the driver reaches decryptDataKey. At 10ms a loaded
+    // runner tripped the deadline inside PGlite instead: the request still rejected with the
+    // deadline error, so the throw assertion passed, but the KMS client was never entered and
+    // observedAbortSignal stayed false. 250ms matches the late-plaintext test below.
+    const BUDGET_MS = 250;
     let callbackCalled = false;
     let observedAbortSignal = false;
     const client: KmsClient = {
@@ -638,10 +644,10 @@ describe("site KMS request context", () => {
             callbackCalled = true;
           },
           client,
-          10,
+          BUDGET_MS,
         ),
       ),
-    ).rejects.toThrow(/exceeded 10ms/);
+    ).rejects.toThrow(new RegExp(`exceeded ${String(BUDGET_MS)}ms`));
 
     expect(callbackCalled).toBe(false);
     expect(observedAbortSignal).toBe(true);
