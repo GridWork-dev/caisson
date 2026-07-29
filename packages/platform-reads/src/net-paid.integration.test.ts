@@ -211,6 +211,54 @@ describe("readNetPaidByItem — the paidByItem producer (ADR-0382 lock 2 / ADR-0
     });
   });
 
+  test("a USD grant outranks a numerically LARGER non-USD one", async () => {
+    // Minor units are not comparable across currencies. ¥165,000 (no minor unit) beats $1,649 on the
+    // raw integer while being worth less, and only the USD row can lift credit above retail — rank
+    // by amount alone and the yen row shadows it, silently dropping the buyer's above-retail floor.
+    const acct = "acct_np_currency_rank";
+    await seedGrant({
+      acct,
+      entitlementId: "compliance",
+      purchaseId: "pay_np_8a",
+      lineItemId: "txnitm_np_8a",
+      charged: { amountMinorUnits: 164_900, currency: "usd" },
+    });
+    await seedGrant({
+      acct,
+      entitlementId: "compliance",
+      purchaseId: "pay_np_8b",
+      lineItemId: "txnitm_np_8b",
+      charged: { amountMinorUnits: 165_000, currency: "jpy" },
+    });
+    expect((await read(acct)).compliance).toEqual({
+      amountMinorUnits: 164_900,
+      currency: "usd",
+    });
+  });
+
+  test("the USD preference is case-insensitive (providers send USD and usd)", async () => {
+    const acct = "acct_np_currency_case";
+    await seedGrant({
+      acct,
+      entitlementId: "compliance",
+      purchaseId: "pay_np_9a",
+      lineItemId: "txnitm_np_9a",
+      charged: { amountMinorUnits: 164_900, currency: "USD" },
+    });
+    await seedGrant({
+      acct,
+      entitlementId: "compliance",
+      purchaseId: "pay_np_9b",
+      lineItemId: "txnitm_np_9b",
+      charged: { amountMinorUnits: 165_000, currency: "jpy" },
+    });
+    // An exact `charged_currency = 'usd'` comparison would rank this row below the yen one.
+    expect((await read(acct)).compliance).toEqual({
+      amountMinorUnits: 164_900,
+      currency: "USD",
+    });
+  });
+
   test("the SQL netting agrees with netCharged on every case", async () => {
     // The drift guard. GREATEST(charged − COALESCE(refunded,0), 0) in the query and
     // Math.max(charged − (refunded ?? 0), 0) in the service are the same money rule written twice;

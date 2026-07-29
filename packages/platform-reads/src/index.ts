@@ -159,9 +159,17 @@ export interface NetPaidAmount {
  *
  * ACTIVE grants only — a revoked grant is not owned, so it can never reach a quote. A NULL
  * `charged_amount` (the charge could not be attributed to a single SKU) yields NO key rather than a
- * zero: an omitted item credits at retail, and a zero would credit at nothing. Where one id has
- * several active grants, the LARGEST net charge wins, matching `readUpdatesWindows`'s
- * most-favorable-to-the-buyer fold directly above.
+ * zero: an omitted item credits at retail, and a zero would credit at nothing.
+ *
+ * Where one id has several active grants, USD wins first and the LARGEST net charge second — the
+ * most-favorable-to-the-buyer fold, in the order that actually delivers it. Only a USD entry can
+ * ever raise credit above retail (the pricebook sends every other currency straight to retail rather
+ * than invent a rate), and minor units are not comparable across currencies: ¥165,000 outranks
+ * $1,649 on the raw integer while being worth less, so ranking by amount alone would let a yen grant
+ * shadow the dollar grant that carries the buyer's above-retail floor and silently drop it. The
+ * currency term also gives ties a total order, so the pick is stable across reads. Compared
+ * case-insensitively — providers send both `USD` and `usd`, and the pricebook lowercases before its
+ * own check.
  *
  * Run inside `withTenant`. Throws if the migrations above have not been applied — deliberately, on a
  * money path: an absent column must not read as "this buyer paid nothing".
@@ -184,6 +192,7 @@ export async function readNetPaidByItem(
         AND status = 'active'
         AND charged_amount IS NOT NULL
       ORDER BY entitlement_id,
+               (lower(charged_currency) = 'usd') DESC,
                GREATEST(charged_amount - COALESCE(refunded_amount, 0), 0) DESC`,
     [accountId],
   );
