@@ -229,15 +229,16 @@ function readAdjustmentItems(
         : 0;
     out.push({ itemId, amountRefunded, fullyRefunded: type === "full" });
   }
-  // Fail closed on a repeated `item_id` within ONE adjustment — the same contract
-  // `readTransactionLines` above already holds for `details.line_items`, which this path was simply
-  // missing. Downstream, each entry is applied against the grant row for its line, and the applier's
-  // idempotency anchor is the adjustment id recorded on that row: the FIRST entry writes the
-  // adjustment id, and every later entry sharing the itemId is then correctly refused as a
-  // redelivery. The refund under-records, the buyer keeps a credit floor higher than they paid for,
-  // and the webhook still acks 200. A non-2xx makes Paddle redeliver the whole adjustment instead,
-  // so a malformed delivery is visible rather than half-applied. Summing them instead would be
-  // guessing at intent on a shape Paddle does not legitimately produce.
+  // Fail closed on a repeated `item_id` within ONE adjustment — the same contract `readLineItems`
+  // above already holds for `details.line_items`, which this path was simply missing. Without this
+  // check: each entry is applied against the grant row for its line, and the applier's idempotency
+  // anchor is the adjustment id recorded on that row, so the FIRST entry writes the adjustment id
+  // and every later entry sharing the itemId is then refused as a redelivery — correctly, by a
+  // guard that cannot tell this case from a real one. The refund under-records, the buyer keeps a
+  // credit floor higher than they paid for, and the webhook still acks 200. A non-2xx makes Paddle
+  // redeliver the whole adjustment instead, so a malformed delivery is visible rather than
+  // half-applied. Summing them would be guessing at intent on a shape Paddle does not legitimately
+  // produce.
   const ids = out.map((entry) => entry.itemId);
   if (new Set(ids).size !== ids.length) {
     throw new ValidationError(

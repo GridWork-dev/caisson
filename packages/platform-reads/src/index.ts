@@ -124,19 +124,12 @@ export async function readUpdatesWindows(
   return windows;
 }
 
-/**
- * `readNetPaidByItem`'s extra `entitlement_grant` columns. Like `updates_expires_at` above, all
- * three arrive by ALTER TABLE migration (`ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL` and
- * `ENTITLEMENT_GRANT_REFUNDED_AMOUNT_MIGRATION_SQL` in `@caisson/service-license`) rather than the
- * base CREATE TABLE the columns-contract test's DDL parser covers, so they are asserted by
- * `net-paid.integration.test.ts` against the live columns on PGlite instead.
- */
-export const NET_PAID_READ_COLUMNS = [
-  ...ENTITLEMENT_GRANT_READ_COLUMNS,
-  "charged_amount",
-  "charged_currency",
-  "refunded_amount",
-] as const;
+// `readNetPaidByItem` reads three columns beyond the contract list above — `charged_amount`,
+// `charged_currency`, `refunded_amount`. Like `updates_expires_at`, they arrive by ALTER TABLE
+// (`ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL` / `ENTITLEMENT_GRANT_REFUNDED_AMOUNT_MIGRATION_SQL`
+// in `@caisson/service-license`) rather than the base CREATE TABLE the columns-contract test's DDL
+// parser covers, so there is no constant for them: `net-paid.integration.test.ts` exercises the live
+// columns on PGlite instead, which is the only thing that would actually catch a rename.
 
 /** What one owned item's buyer actually paid, net of refunds. Structurally `@caisson/pricebook`'s
  * `PaidAmount` — this package stays a leaf and does not import the pricebook to say so. */
@@ -167,9 +160,9 @@ export interface NetPaidAmount {
  * than invent a rate), and minor units are not comparable across currencies: ¥165,000 outranks
  * $1,649 on the raw integer while being worth less, so ranking by amount alone would let a yen grant
  * shadow the dollar grant that carries the buyer's above-retail floor and silently drop it. The
- * currency term also gives ties a total order, so the pick is stable across reads. Compared
- * case-insensitively — providers send both `USD` and `usd`, and the pricebook lowercases before its
- * own check.
+ * currency term is compared case-insensitively — providers send both `USD` and `usd`, and the
+ * pricebook lowercases before its own check. `granted_at` breaks any remaining tie so the pick is
+ * stable across reads rather than whatever order the scan happened to produce.
  *
  * Run inside `withTenant`. Throws if the migrations above have not been applied — deliberately, on a
  * money path: an absent column must not read as "this buyer paid nothing".
@@ -193,7 +186,8 @@ export async function readNetPaidByItem(
         AND charged_amount IS NOT NULL
       ORDER BY entitlement_id,
                (lower(charged_currency) = 'usd') DESC,
-               GREATEST(charged_amount - COALESCE(refunded_amount, 0), 0) DESC`,
+               net_paid DESC,
+               granted_at DESC`,
     [accountId],
   );
   const paid: Record<string, NetPaidAmount> = {};

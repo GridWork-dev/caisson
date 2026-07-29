@@ -753,7 +753,7 @@ describe("event mapping", () => {
     expect(() => parsePaddleEvent(event)).toThrow(/duplicate per-line join id/);
   });
 
-  test("a partial adjustment whose duplicates are SKIPPED entries still parses", () => {
+  test("a partial adjustment whose malformed entries are dropped before the check still parses", () => {
     // The check runs on the surviving entries, not the raw `items` array: two malformed entries are
     // both dropped before it, so a legitimate single-line adjustment beside them is unaffected. This
     // is what keeps the new throw from turning the existing best-effort skip path into a hard fail.

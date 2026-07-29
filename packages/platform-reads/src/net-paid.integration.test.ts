@@ -263,13 +263,16 @@ describe("readNetPaidByItem — the paidByItem producer (ADR-0382 lock 2 / ADR-0
     // The drift guard. GREATEST(charged − COALESCE(refunded,0), 0) in the query and
     // Math.max(charged − (refunded ?? 0), 0) in the service are the same money rule written twice;
     // this is what fails if either side is edited alone.
-    const cases: { charged: number; refunds: number[] }[] = [
+    const cases: { charged: number | null; refunds: number[] }[] = [
       { charged: 164_900, refunds: [] },
       { charged: 164_900, refunds: [40_000] },
       { charged: 100_000, refunds: [60_000, 90_000] },
       { charged: 65_900, refunds: [65_900] },
       { charged: 0, refunds: [] },
       { charged: 1, refunds: [1] },
+      // The NULL case is what makes the `number | null` comparison below real rather than
+      // decorative: netCharged is NULL-in/NULL-out, and the read expresses that as an absent key.
+      { charged: null, refunds: [] },
     ];
     for (const [i, c] of cases.entries()) {
       const acct = `acct_np_parity_${String(i)}`;
@@ -279,7 +282,9 @@ describe("readNetPaidByItem — the paidByItem producer (ADR-0382 lock 2 / ADR-0
         entitlementId: "compliance",
         purchaseId: `pay_np_parity_${String(i)}`,
         lineItemId,
-        charged: { amountMinorUnits: c.charged, currency: "usd" },
+        ...(c.charged === null
+          ? {}
+          : { charged: { amountMinorUnits: c.charged, currency: "usd" } }),
       });
       for (const [j, amount] of c.refunds.entries()) {
         await refund(
