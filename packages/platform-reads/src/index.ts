@@ -124,6 +124,82 @@ export async function readUpdatesWindows(
   return windows;
 }
 
+// `readNetPaidByItem` reads three columns beyond the contract list above — `charged_amount`,
+// `charged_currency`, `refunded_amount`. Like `updates_expires_at`, they arrive by ALTER TABLE
+// (`ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL` / `ENTITLEMENT_GRANT_REFUNDED_AMOUNT_MIGRATION_SQL`
+// in `@caisson/service-license`) rather than the base CREATE TABLE the columns-contract test's DDL
+// parser covers, so there is no constant for them: `net-paid.integration.test.ts` exercises the live
+// columns on PGlite instead, which is the only thing that would actually catch a rename.
+
+/** What one owned item's buyer actually paid, net of refunds. Structurally `@caisson/pricebook`'s
+ * `PaidAmount` — this package stays a leaf and does not import the pricebook to say so. */
+export interface NetPaidAmount {
+  readonly amountMinorUnits: number;
+  readonly currency: string;
+}
+
+/**
+ * What the account has actually paid, per owned entitlement id, net of refunds (ADR-0382 lock 2 for
+ * the charge, ADR-0394 for the netting) — the `paidByItem` producer for `@caisson/pricebook`'s
+ * upgrade quote, which credits an owned item at `max(retail, paid)` so a later price CUT never
+ * strands a buyer who paid the old higher number.
+ *
+ * Netting happens HERE, in SQL, because the alternative is a caller reading `charged_amount` raw and
+ * crediting a buyer for money that went back to their card. `charged_amount` is stamped once and
+ * never mutates; refunds accumulate in `refunded_amount`; the difference is what they are out of
+ * pocket, floored at 0. `net-paid.integration.test.ts` pins this expression against
+ * `@caisson/service-license`'s own `netCharged` so the two can never drift.
+ *
+ * ACTIVE grants only — a revoked grant is not owned, so it can never reach a quote. A NULL
+ * `charged_amount` (the charge could not be attributed to a single SKU) yields NO key rather than a
+ * zero: an omitted item credits at retail, and a zero would credit at nothing.
+ *
+ * Where one id has several active grants, USD wins first and the LARGEST net charge second — the
+ * most-favorable-to-the-buyer fold, in the order that actually delivers it. Only a USD entry can
+ * ever raise credit above retail (the pricebook sends every other currency straight to retail rather
+ * than invent a rate), and minor units are not comparable across currencies: ¥165,000 outranks
+ * $1,649 on the raw integer while being worth less, so ranking by amount alone would let a yen grant
+ * shadow the dollar grant that carries the buyer's above-retail floor and silently drop it. The
+ * currency term is compared case-insensitively — providers send both `USD` and `usd`, and the
+ * pricebook lowercases before its own check. `granted_at` breaks any remaining tie so the pick is
+ * stable across reads rather than whatever order the scan happened to produce.
+ *
+ * Run inside `withTenant`. Throws if the migrations above have not been applied — deliberately, on a
+ * money path: an absent column must not read as "this buyer paid nothing".
+ */
+export async function readNetPaidByItem(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<Record<string, NetPaidAmount>> {
+  const r = await tx.query<{
+    entitlement_id: string;
+    net_paid: number | string;
+    charged_currency: string;
+  }>(
+    `SELECT DISTINCT ON (entitlement_id)
+            entitlement_id,
+            GREATEST(charged_amount - COALESCE(refunded_amount, 0), 0) AS net_paid,
+            charged_currency
+       FROM entitlement_grant
+      WHERE account_id = $1
+        AND status = 'active'
+        AND charged_amount IS NOT NULL
+      ORDER BY entitlement_id,
+               (lower(charged_currency) = 'usd') DESC,
+               net_paid DESC,
+               granted_at DESC`,
+    [accountId],
+  );
+  const paid: Record<string, NetPaidAmount> = {};
+  for (const row of r.rows) {
+    paid[row.entitlement_id] = {
+      amountMinorUnits: Number(row.net_paid),
+      currency: row.charged_currency,
+    };
+  }
+  return paid;
+}
+
 /**
  * The `subscription_status` columns these reads depend on (ADR-0293 G13/G14). Exported so the
  * columns-contract test can assert every one is present in `@caisson/service-license`'s
