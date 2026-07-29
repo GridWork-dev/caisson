@@ -8,7 +8,7 @@
 // interstitial, or extract a locator from a PDF reliably. Reachability-only checks are disclosed as
 // notes, not mislabeled as legal verification. The CLI catches every failure and exits 0 because
 // this weekly lane is advisory, never a merge gate.
-import { appendFileSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { isAbsolute, resolve, sep } from "node:path";
@@ -700,17 +700,16 @@ export async function runRegulatoryClaimWatch(
   };
 }
 
+/**
+ * Emit the report to stdout only. It deliberately does NOT write GITHUB_STEP_SUMMARY: this
+ * function is reached on the happy path alone, so when it owned the summary, every failure —
+ * bootstrap, the 8-minute timeout SIGKILL, a throw before the report was rendered — left the
+ * summary tab blank at exactly the moment a human needed the detail. The workflow now publishes
+ * the report file from a step with `if: always()`, which covers all of those, so writing here
+ * as well would double-post the successful run.
+ */
 function writeReport(report: string): void {
   process.stdout.write(`${report}\n`);
-  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
-  if (!summaryPath) return;
-  try {
-    appendFileSync(summaryPath, `${report}\n`);
-  } catch (error) {
-    process.stdout.write(
-      `_Could not append GITHUB_STEP_SUMMARY: ${error instanceof Error ? error.message : String(error)}_\n`,
-    );
-  }
 }
 
 async function main(): Promise<void> {

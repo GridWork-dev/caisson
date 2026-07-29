@@ -118,7 +118,12 @@ describe("WRITING_PIECES registry", () => {
       expect(spec.meta).toEqual(piece.meta);
       expect(spec.meta.path).toBe(pieceHref(piece));
       expect(spec.meta.type).toBe("article");
-      expect(spec.sections.length).toBeGreaterThan(piece.sections.length);
+      expect(spec.sections.length).toBe(
+        piece.sections.length + (piece.related.length > 0 ? 3 : 2),
+      );
+      expect(spec.sections).toContainEqual(
+        expect.objectContaining({ kind: "section", title: "Primary sources" }),
+      );
     }
   });
 
@@ -127,7 +132,13 @@ describe("WRITING_PIECES registry", () => {
     const html = renderToStaticMarkup(
       createElement(PageSections, { sections: spec.sections }),
     );
-    expect(html).toContain("<ul");
+    const sourcesHtml = html.slice(
+      html.indexOf("Primary sources"),
+      html.indexOf("Related reading") === -1
+        ? html.length
+        : html.indexOf("Related reading"),
+    );
+    expect(sourcesHtml).toContain("<ul");
     expect(html).not.toMatch(/<p[^>]*><ul/u);
   });
 
