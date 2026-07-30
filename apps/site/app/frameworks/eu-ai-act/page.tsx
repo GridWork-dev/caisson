@@ -32,13 +32,11 @@ export const metadata = buildMetadata({
 // Annex IV / Article → Caisson control mapping.
 // Honest scope: "produces the technical evidence" — never "makes you compliant".
 //
-// Import paths in the `evidence` snippets below track the version registry.caisson.sh SERVES, not
-// this worktree. @caisson/kernel is served at 0.6.0, where verifyChain is on the "." barrel; the
-// "@caisson/kernel/node" split is unpublished, so pointing a snippet there would hand buyers an
-// ERR_PACKAGE_PATH_NOT_EXPORTED. Flip them — with app/(marketing)/build-vs-buy and
-// content/docs/base/kernel.mdx — when the kernel minor publishes: the site deploys on merge to main
-// and the registry publish is a separate operator-gated train, so the two are never in step
-// automatically. Tracked in docs/state/outstanding-work.md.
+// Import paths in the `evidence` snippets below track the version registry.caisson.sh SERVES.
+// Flipped to "@caisson/kernel/node" in the same commit the kernel 0.7.0 minor is tagged from:
+// verifyChain moved off the "." barrel in that release, so against 0.7.0 the old path raises
+// "does not provide an export named 'verifyChain'". Flip per SYMBOL, not per block — canonicalize,
+// scrubDeep, scrubForEgress, looksLikeSecret, and assertNotReadOnly all stay on ".".
 const ANNEX_CONTROLS = [
   {
     icon: "audit-chain" as const,
@@ -47,7 +45,7 @@ const ANNEX_CONTROLS = [
     title: "Every inference hashes into an append-only chain.",
     body: "Article 12 requires high-risk AI systems to log events at a level sufficient to trace decisions back through time. Caisson's audit chain writes each event with SHA-256 over the previous hash, so tamper, truncation, and reorder each break the chain and surface on verify. What you hand an auditor is that same chain, run live.",
     evidence: `// kernel verifyChain — append-only SHA-256 audit chain
-import { verifyChain } from "@caisson/kernel";
+import { verifyChain } from "@caisson/kernel/node";
 
 const result = await verifyChain(db, { table: "ai_inference_log" });
 // { intact: true, rows: 7043, breaks: 0, root: "9c3a…f1" }

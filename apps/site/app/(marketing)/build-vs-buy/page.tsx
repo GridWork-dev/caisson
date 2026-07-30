@@ -263,19 +263,18 @@ export default function BuildVsBuyPage() {
           band="tint"
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
-            {/* The import path below tracks the version registry.caisson.sh SERVES, not this
-                worktree. @caisson/kernel is served at 0.6.0, where verifyChain is on the "." barrel;
-                the "@caisson/kernel/node" split is unpublished, so pointing this snippet there would
-                hand buyers an ERR_PACKAGE_PATH_NOT_EXPORTED. Flip it — with app/frameworks/eu-ai-act
-                and content/docs/base/kernel.mdx — when the kernel minor publishes: the site deploys
-                on merge to main and the registry publish is a separate operator-gated train, so the
-                two are never in step automatically. Tracked in docs/state/outstanding-work.md. */}
+            {/* The import path below tracks the version registry.caisson.sh SERVES. Flipped to
+                "@caisson/kernel/node" in the same commit the kernel 0.7.0 minor is tagged from:
+                verifyChain moved off the "." barrel in that release, so against 0.7.0 the old
+                path raises "does not provide an export named 'verifyChain'". Flip per SYMBOL, not
+                per block — canonicalize, scrubDeep, scrubForEgress, looksLikeSecret, and
+                assertNotReadOnly all stay on ".". */}
             <CodeBlock
               label="What you own instead of rent: controls as source"
               frame
               status={<StatusChip label="artifact" tone="accent" dot />}
               code={`// The controls a platform checks for — as code you own.
-import { verifyChain } from "@caisson/kernel";
+import { verifyChain } from "@caisson/kernel/node";
 
 // Append-only SHA-256 chain: tamper, truncate, or reorder
 // any row and the next link fails on verify.

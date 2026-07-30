@@ -17,6 +17,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: readonly ChangelogEntry[] = [
   {
+    slug: "kernel-browser-safe-v0-6",
+    date: "2026-07-30",
+    version: "v0.6",
+    title:
+      "The kernel's main entry is browser-safe; refunds now net against upgrade credit",
+    body: "@caisson/kernel reaches 0.7.0 and its main entry no longer reaches a Node built-in, so packages built on it — the trust-page generator and the artifact renderer among them — can be imported directly into a browser bundle. Everything that needs Node moved to a new @caisson/kernel/node entry point: constant-time secret comparison, audit-chain hashing, migration assembly, and the SSRF guard. That entry re-exports the main one in full, so server code that uses a moved function changes one import path and keeps the rest of its import list; nothing changed about what any of them do. If you import verifyChain, safeEqualFixed, assembleMigrations, or any of the SSRF helpers, point that import at @caisson/kernel/node — type-only imports need no change. Separately, a partial refund now reduces what a purchase counts as paid, so an upgrade quote credits what you were actually charged rather than the original amount, and a refund notice that names the same purchased line twice is rejected outright instead of being half-applied. The reference compliance pack gains a fourth control, risk identification and assessment, evidenced by a traversal of a scored AI risk register. @caisson/frameworks-pack gains a @caisson/frameworks-pack/registry entry point exposing the control model on its own. Full per-module detail ships in each package's changelog.",
+    tags: ["kernel", "browser-safe", "billing", "compliance", "release"],
+  },
+  {
     slug: "oscal-spine-v0-5",
     date: "2026-07-28",
     version: "v0.5",
