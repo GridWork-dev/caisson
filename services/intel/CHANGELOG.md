@@ -1,5 +1,15 @@
 # @caisson/service-intel
 
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+  - @caisson/kernel@0.7.0
+  - @caisson/alerting@0.2.6
+  - @caisson/observability@0.3.6
+
 ## 0.0.7
 
 ### Patch Changes

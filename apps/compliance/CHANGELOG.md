@@ -1,5 +1,20 @@
 # @caisson/app-compliance
 
+## 0.0.19
+
+### Patch Changes
+
+- f2cb853: The reference compliance leg now runs the AI risk-register collector alongside the audit-chain, WORM-retention, tenant-isolation, and impersonation collectors. Its generated SOC 2 pack carries a fourth control — risk identification and assessment — evidenced by a traversal of a fixed AI risk register that checks every scored risk carries a treatment plan on record. The collector was already shipped and tested; it simply never ran in the reference pack, so the pack under-represented what the evidence engine can attest.
+- Updated dependencies [e917c52]
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+  - @caisson/compliance@1.0.1
+  - @caisson/kernel@0.7.0
+  - @caisson/audit-worm@2.2.1
+  - @caisson/field-crypto@1.0.1
+  - @caisson/risk-register@0.3.2
+  - @caisson/tenancy-rls@0.5.7
+
 ## 0.0.18
 
 ### Patch Changes

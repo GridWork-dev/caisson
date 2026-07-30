@@ -1,5 +1,17 @@
 # @caisson/ai-meter
 
+## 1.0.11
+
+### Patch Changes
+
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+- Updated dependencies [b5cd9d6]
+  - @caisson/kernel@0.7.0
+  - @caisson/ui@0.6.4
+  - @caisson/credits@0.5.11
+  - @caisson/tenancy-rls@0.5.7
+
 ## 1.0.10
 
 ### Patch Changes

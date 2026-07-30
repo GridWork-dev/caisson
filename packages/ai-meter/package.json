@@ -1,6 +1,6 @@
 {
   "name": "@caisson/ai-meter",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

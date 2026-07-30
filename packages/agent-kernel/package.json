@@ -1,6 +1,6 @@
 {
   "name": "@caisson/agent-kernel",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

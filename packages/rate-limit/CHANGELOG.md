@@ -1,5 +1,14 @@
 # @caisson/rate-limit
 
+## 0.1.9
+
+### Patch Changes
+
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+  - @caisson/kernel@0.7.0
+  - @caisson/tenancy-rls@0.5.7
+
 ## 0.1.8
 
 ### Patch Changes

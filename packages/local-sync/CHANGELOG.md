@@ -1,5 +1,13 @@
 # @caisson/local-sync
 
+## 0.1.8
+
+### Patch Changes
+
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+  - @caisson/kernel@0.7.0
+
 ## 0.1.7
 
 ### Patch Changes
