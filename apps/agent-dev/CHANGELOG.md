@@ -1,5 +1,13 @@
 # @caisson/app-agent-dev
 
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies [f2cb853]
+  - @caisson/agent-dev@0.6.7
+  - @caisson/agent-runner@0.2.7
+
 ## 0.0.17
 
 ### Patch Changes

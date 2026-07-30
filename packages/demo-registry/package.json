@@ -1,6 +1,6 @@
 {
   "name": "@caisson/demo-registry",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",

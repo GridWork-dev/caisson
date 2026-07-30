@@ -182,6 +182,27 @@ fleet deploy off `f9c04f33` used.
     whole fleet off `f9c04f33` (`schema_version` 32 → 33). The next train is the one that consumes
     the 11 queued changesets, and its leg 4 is now armed.
 
+## Open after the v2026.07.30 train
+
+- **`native-ext (macos)` is red on every `main` push — operator decision, deferred 2026-07-30.**
+  The leg moved off the offline self-hosted Mac mini to a hosted `macos-15` runner; the hosted job
+  now fails in ~9s with zero steps and the annotation _"The job was not started because recent
+  account payments have failed or your spending limit needs to be increased."_ It is **not** in
+  `REQUIRED_CHECKS`, so it does not gate the release train — but macOS coverage for the
+  `local-store` native extension is dark until one of: the Actions spending limit is raised
+  (operator-only, Billing & plans), the Mac mini is brought back, or the macOS leg is dropped.
+- **Remove the legacy bare-hex branch from the internal-proof bearer.** `internal-proof-auth.ts`
+  accepts both `<unix-seconds>.<hmac>` and the old unbounded bare-hex form so the verifier could
+  deploy ahead of the issuer. The v2026.07.30 fleet deploy is the one that lands both halves; once
+  it has, delete the optional timestamp group from `BEARER` and the legacy branch below it. **Until
+  then a leaked pre-F3 credential is valid indefinitely — the change's whole purpose is unmet until
+  this lands.** Marked in-file with a `ponytail:` comment.
+- **Retire the remaining `components/poke/` mirrors.** ADR-0395 decision 2 covers `trust-page`,
+  `access-review`, `risk-register`, and `artifact-render`; the v2026.07.30 wave delivered the first
+  and last (the trust-page poke drives the real packages now). The `access-review`,
+  `risk-register`, and `frameworks-pack` mirrors remain, and those packages are still
+  declared-but-unimported in `apps/site`. Two of the three are priced SKUs.
+
 ## Trigger-parked
 
 These are not part of the active completion program:
@@ -192,20 +213,6 @@ These are not part of the active completion program:
 - CAISSON-78 until a competitor-event cadence fires.
 - CAISSON-130 until a future copy trigger; site copy is frozen in this program.
 - CAISSON-39 work outside the four D10 technical receipts.
-- Kernel `/node` import paths on the three buyer-facing surfaces
-  (`apps/site/app/(marketing)/build-vs-buy/page.tsx`,
-  `apps/site/app/frameworks/eu-ai-act/page.tsx`, and the security, audit-chain, and
-  migration-assembly blocks of `apps/site/content/docs/base/kernel.mdx`) until the kernel minor
-  publishes. They describe `@caisson/kernel` because that is what registry.caisson.sh serves at
-  0.6.0, where those symbols are on the `.` barrel; the `@caisson/kernel/node` split is in-repo and
-  unpublished, so describing it today would hand a licensed buyer an
-  `ERR_PACKAGE_PATH_NOT_EXPORTED`. Nothing couples the two: the site redeploys on any push to `main`
-  touching `apps/site/**` or `packages/**` (`deploy-railway.yml`), while the registry publish only
-  runs from `release-train.yml` on a published release, gated on `RELEASE_TRAIN_ARMED`. Flip all
-  three in the same change as the first release that carries the split, **per symbol, not per
-  block** — each of those doc sections mixes moved and unmoved exports (`canonicalize`, `scrubDeep`,
-  `scrubForEgress`, `looksLikeSecret`, and `assertNotReadOnly` stay on the `.` barrel; only the
-  hashing, constant-time-compare, SSRF, and migration-assembly functions move).
 - Affiliates, directories, multi-year pricing, production CMK, ISO claims, Railway PITR,
   vertical packages, MySQL, Socket, SOC 2, AuditKit, and rich OSCAL until their documented
   triggers fire.

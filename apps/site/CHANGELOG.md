@@ -1,5 +1,82 @@
 # @caisson/site
 
+## 0.3.1
+
+### Patch Changes
+
+- f2cb853: `@caisson/kernel`'s main entry point is now browser-safe. Everything that needs a Node built-in — constant-time secret comparison, audit-chain hashing, migration assembly, and the SSRF guard — moved to a new `@caisson/kernel/node` entry point. The main entry keeps the error model, the strict-schema helpers, canonical serialization and the audit-chain types, the money and version types, the timeout-bounded fetch, and the event sink.
+
+  Server-side code that used one of the moved functions changes a single import path: `@caisson/kernel/node` re-exports the main entry in full, so nothing else in that import list has to move. Nothing changed about what any of these functions do.
+
+  This is what lets packages built on the kernel — the trust-page generator and the artifact renderer among them — be imported directly into a browser bundle. Previously any import of the kernel dragged Node's crypto and DNS modules along with it, and a front end had to keep its own hand-written copy of that logic in step by hand. `@caisson/frameworks-pack` gains a matching `@caisson/frameworks-pack/registry` entry point exposing the control model on its own, for the same reason; its main entry is unchanged.
+
+- 488cbd4: The test covering the key-management request deadline now allows enough budget for the database preamble before the key unwrap begins. On a loaded machine the old budget could expire while the transaction was still setting up, so the request rejected for the right reason but never reached the key service — the test then failed on an assertion about the abort signal it never got to observe. The behavior under test is unchanged; only the test's own budget moved.
+- a5f9ea8: The figure behind an upgrade credit can now be read net of refunds: a partial refund is subtracted from what the buyer was charged, a charge in another currency can no longer outrank a dollar one on its raw number alone, and the read is checked against the licensing service's own arithmetic so the two cannot drift apart. What buyers are credited today is unchanged.
+
+  A refund notice that names the same purchased line twice is now rejected outright instead of being partly applied. Only the first mention was ever recorded, which quietly left the buyer holding more credit than their refund had left them; the provider is now asked to send the notice again rather than have it half-recorded.
+
+- 0739131: The internal proof bearer now carries a signed timestamp and is rejected outside a five-minute
+  acceptance window, so the credential expires instead of staying valid until the secret rotates.
+  The verifier still accepts the legacy untimestamped form during the verifier-first rollout, and
+  the internal-proof rate limiter no longer consumes an account token on a globally-denied request.
+- dba957b: The site now declares `server-only` as a dependency instead of relying on the framework to
+  substitute it at build time. The demo preview module imports it as a guard that fails the build if
+  that server module is ever pulled into a browser bundle, but the package was in no manifest and on
+  no lockfile — it resolved solely through an internal build alias. The guard therefore worked only
+  inside a full framework build and would have failed to resolve anywhere else, including a plain
+  test run. Nothing about the guard's behavior changes; it is now backed by a real installed package.
+- 764b027: The dated-commentary registry now has a drafting lane that is separate from the published one. A drafted piece is held in its own list that the hub, the spoke routes, the lookup helper, the sitemap, and the source watch all ignore, so a draft cannot reach the live site because someone forgot a filter; publishing is moving the record into the published list. The first draft is a piece stating legal conclusions about a live regulation, which the operator publishes after reviewing those conclusions.
+- Updated dependencies [e917c52]
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+- Updated dependencies [a5f9ea8]
+- Updated dependencies [894fc27]
+- Updated dependencies [b5cd9d6]
+  - @caisson/registry-schema@0.5.9
+  - @caisson/kernel@0.7.0
+  - @caisson/frameworks-pack@0.7.0
+  - @caisson/agent-kernel@0.6.5
+  - @caisson/ai-kit@0.6.1
+  - @caisson/alerting@0.2.6
+  - @caisson/audit-worm@2.2.1
+  - @caisson/billing@0.6.6
+  - @caisson/cli@0.7.7
+  - @caisson/compliance-core@0.6.3
+  - @caisson/field-crypto@1.0.1
+  - @caisson/local-inference@0.1.8
+  - @caisson/migrate@0.2.11
+  - @caisson/platform-migrations@0.3.1
+  - @caisson/risk-register@0.3.2
+  - @caisson/signing-primitive@0.3.9
+  - @caisson/platform-reads@0.2.10
+  - @caisson/billing-orchestration@0.3.6
+  - @caisson/service-license@0.1.1
+  - @caisson/ui@0.6.4
+  - @caisson/credits@0.5.11
+  - @caisson/pricebook@0.8.1
+  - @caisson/access-review@0.3.2
+  - @caisson/agent-trajectory@0.4.1
+  - @caisson/ai-meter@1.0.11
+  - @caisson/artifact-render@0.2.2
+  - @caisson/auth@0.4.2
+  - @caisson/email@0.5.5
+  - @caisson/guardrails@0.4.11
+  - @caisson/local-privacy@0.1.8
+  - @caisson/local-store@1.0.6
+  - @caisson/local-sync@0.1.8
+  - @caisson/observability@0.3.6
+  - @caisson/org-controls@0.3.6
+  - @caisson/prompt-registry@1.0.6
+  - @caisson/rate-limit@0.1.9
+  - @caisson/retention-runner@0.1.14
+  - @caisson/tenancy-rls@0.5.7
+  - @caisson/tool-exec@0.2.5
+  - @caisson/trust-page@0.3.2
+  - @caisson/ui-pro@0.3.5
+  - @caisson/demo-registry@0.2.12
+  - @caisson/brand@0.1.5
+  - @caisson/ai-evals@0.4.6
+
 ## 0.3.0
 
 ### Minor Changes

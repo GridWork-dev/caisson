@@ -1,5 +1,15 @@
 # @caisson/pricebook
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [e917c52]
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+  - @caisson/registry-schema@0.5.9
+  - @caisson/kernel@0.7.0
+
 ## 0.8.0
 
 ### Minor Changes

@@ -99,6 +99,23 @@ jobs:
       # of origin/main, stages a CLEAN `git archive` tree (no dirty working-tree state, no
       # untracked cruft, git's own normalized file modes), runs `railway up` from that staging
       # dir, and appends a single-use receipt — never a bare `railway up` off the live checkout.
+      #
+      # ORDER IS LOAD-BEARING: admin before site. admin is the internal-proof bearer VERIFIER and
+      # site is its ISSUER, and the two ship in the same commit (#370). A new issuer against an old
+      # verifier is a hard 401 on every buyer's evidence dashboard, because the pre-F3 verifier
+      # regex `^Bearer ([0-9a-f]{64})$` cannot match a `<unix-seconds>.<hmac>` credential. The new
+      # verifier accepts BOTH forms, so verifier-first is the safe order and issuer-first is not.
+      # Found by the v2026.07.30 release audit: until then this job deployed ONLY caisson-site, so
+      # no admin change had ever ridden the train and admin silently drifted behind main.
+      - name: deploy apps/admin to Railway (verifier — MUST precede the issuer)
+        if: steps.guard.outputs.armed == 'true'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DEPLOY_REF: ${{ steps.resolve-ref.outputs.ref }}
+        run: |
+          bun tooling/scripts/railway-deploy.ts \
+            --service caisson-admin \
+            --ref "$DEPLOY_REF"
       - name: deploy apps/site to Railway (immutable-input, receipt-gated)
         if: steps.guard.outputs.armed == 'true'
         env:

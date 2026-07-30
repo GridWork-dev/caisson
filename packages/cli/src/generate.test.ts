@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   BUNDLE_IDS,
@@ -460,11 +461,22 @@ describe("generate — framework templates (ADR-0287)", () => {
       start: "next start",
     });
     // the buyer's explicit --module selection is present alongside the framework's own deps.
+    // The kernel pin is read from the real package rather than hardcoded: this assertion is about
+    // COMPOSITION, and a literal here goes stale on every version bump for no added coverage
+    // (framework-template-pins.test.ts is what actually guards the pin values).
+    const kernelVersion = (
+      JSON.parse(
+        readFileSync(
+          join(import.meta.dir, "../../kernel/package.json"),
+          "utf8",
+        ),
+      ) as { version: string }
+    ).version;
     expect(parsed.dependencies).toMatchObject({
       "@caisson/credits": "0.2.0",
       "@caisson/field-crypto": "0.1.0",
       next: "^16.2.9",
-      "@caisson/kernel": "^0.6.0",
+      "@caisson/kernel": `^${kernelVersion}`,
     });
     expect(parsed.devDependencies).toMatchObject({
       typescript: "^5.6.0",

@@ -165,7 +165,11 @@ Deploy in verifier-before-issuer order whenever strict schemas or manifests chan
 1. Build every runtime from the approved commit, never a mutable branch head.
 2. Deploy registry Worker/verifiers first.
 3. Deploy docs-RAG and support-bot.
-4. Deploy site and admin.
+4. Deploy **admin, then site** — in that order, never together. admin is the internal-proof bearer
+   verifier and site is its issuer; a new issuer against an old verifier is a hard 401 on every
+   buyer's evidence dashboard, while a new verifier against an old issuer is safe because the
+   verifier accepts both credential forms. `deploy-railway.yml` enforces this order for the release
+   train; this step is the manual path and must match it.
 5. Pause; apply the pending migration chain through `0032_field_crypto_keys.sql` only after backup
    and rollback checks. Before any wrap probe, receipt that `field_key_version` and
    `field_wrapped_dek` exist, both tables have forced RLS with tenant policies, and the wrapped-DEK

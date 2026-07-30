@@ -1,5 +1,18 @@
 # @caisson/credits
 
+## 0.5.11
+
+### Patch Changes
+
+- Updated dependencies [e917c52]
+- Updated dependencies [e917c52]
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+  - @caisson/registry-schema@0.5.9
+  - @caisson/kernel@0.7.0
+  - @caisson/jobs@0.7.1
+  - @caisson/tenancy-rls@0.5.7
+
 ## 0.5.10
 
 ### Patch Changes

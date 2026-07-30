@@ -23,7 +23,7 @@
     },
     "apps/admin": {
       "name": "@caisson/admin",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
         "@caisson/audit-worm": "workspace:*",
@@ -68,7 +68,7 @@
     },
     "apps/agent-dev": {
       "name": "@caisson/app-agent-dev",
-      "version": "0.0.17",
+      "version": "0.0.18",
       "bin": {
         "caisson-agent-dev": "./src/index.ts",
       },
@@ -86,7 +86,7 @@
     },
     "apps/ai-kit": {
       "name": "@caisson/ai-kit-app",
-      "version": "0.0.20",
+      "version": "0.0.21",
       "dependencies": {
         "@ai-sdk/provider": "^4.0.3",
         "@caisson/ai-config": "workspace:*",
@@ -116,7 +116,7 @@
     },
     "apps/base": {
       "name": "@caisson/app-base",
-      "version": "0.0.20",
+      "version": "0.0.21",
       "dependencies": {
         "@caisson/auth": "workspace:*",
         "@caisson/billing": "workspace:*",
@@ -140,7 +140,7 @@
     },
     "apps/compliance": {
       "name": "@caisson/app-compliance",
-      "version": "0.0.18",
+      "version": "0.0.19",
       "dependencies": {
         "@caisson/audit-worm": "workspace:*",
         "@caisson/compliance": "workspace:*",
@@ -166,7 +166,7 @@
     },
     "apps/local-ai": {
       "name": "@caisson/local-ai-app",
-      "version": "0.0.12",
+      "version": "0.0.13",
       "dependencies": {
         "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -194,7 +194,7 @@
     },
     "apps/site": {
       "name": "@caisson/site",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "dependencies": {
         "@azure/identity": "^4",
         "@azure/keyvault-keys": "^4",
@@ -289,7 +289,7 @@
     },
     "packages/access-review": {
       "name": "@caisson/access-review",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "dependencies": {
         "@caisson/jobs": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -307,7 +307,7 @@
     },
     "packages/agent-dev": {
       "name": "@caisson/agent-dev",
-      "version": "0.6.6",
+      "version": "0.6.7",
       "dependencies": {
         "@caisson/agent-kernel": "workspace:*",
         "@caisson/agent-runner": "workspace:*",
@@ -326,7 +326,7 @@
     },
     "packages/agent-kernel": {
       "name": "@caisson/agent-kernel",
-      "version": "0.6.4",
+      "version": "0.6.5",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -341,7 +341,7 @@
     },
     "packages/agent-runner": {
       "name": "@caisson/agent-runner",
-      "version": "0.2.6",
+      "version": "0.2.7",
       "dependencies": {
         "@caisson/agent-trajectory": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -357,7 +357,7 @@
     },
     "packages/agent-trajectory": {
       "name": "@caisson/agent-trajectory",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "dependencies": {
         "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -374,7 +374,7 @@
     },
     "packages/agent-usage": {
       "name": "@caisson/agent-usage",
-      "version": "0.2.6",
+      "version": "0.2.7",
       "dependencies": {
         "@caisson/agent-trajectory": "workspace:*",
         "@caisson/ai-meter": "workspace:*",
@@ -394,7 +394,7 @@
     },
     "packages/ai-config": {
       "name": "@caisson/ai-config",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -409,7 +409,7 @@
     },
     "packages/ai-evals": {
       "name": "@caisson/ai-evals",
-      "version": "0.4.5",
+      "version": "0.4.6",
       "dependencies": {
         "@caisson/agent-trajectory": "workspace:*",
         "zod": "catalog:",
@@ -424,7 +424,7 @@
     },
     "packages/ai-kit": {
       "name": "@caisson/ai-kit",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "dependencies": {
         "@ai-sdk/amazon-bedrock": "^5.0.17",
         "@ai-sdk/anthropic": "^4.0.12",
@@ -462,7 +462,7 @@
     },
     "packages/ai-meter": {
       "name": "@caisson/ai-meter",
-      "version": "1.0.10",
+      "version": "1.0.11",
       "dependencies": {
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -498,7 +498,7 @@
     },
     "packages/alerting": {
       "name": "@caisson/alerting",
-      "version": "0.2.5",
+      "version": "0.2.6",
       "dependencies": {
         "@caisson/email": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -514,7 +514,7 @@
     },
     "packages/analytics": {
       "name": "@caisson/analytics",
-      "version": "0.2.5",
+      "version": "0.2.6",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
       },
@@ -528,7 +528,7 @@
     },
     "packages/artifact-render": {
       "name": "@caisson/artifact-render",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -572,7 +572,7 @@
     },
     "packages/audit-worm": {
       "name": "@caisson/audit-worm",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
         "@azure/storage-blob": "^12",
@@ -611,7 +611,7 @@
     },
     "packages/auth": {
       "name": "@caisson/auth",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -626,7 +626,7 @@
     },
     "packages/billing": {
       "name": "@caisson/billing",
-      "version": "0.6.5",
+      "version": "0.6.6",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -641,7 +641,7 @@
     },
     "packages/billing-orchestration": {
       "name": "@caisson/billing-orchestration",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "dependencies": {
         "@caisson/billing": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -678,7 +678,7 @@
     },
     "packages/cli": {
       "name": "@caisson/cli",
-      "version": "0.7.6",
+      "version": "0.7.7",
       "bin": {
         "create-caisson": "./dist/cli.js",
         "caisson": "./dist/caisson.js",
@@ -720,7 +720,7 @@
     },
     "packages/compliance": {
       "name": "@caisson/compliance",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "dependencies": {
         "@caisson/alerting": "workspace:*",
         "@caisson/audit-worm": "workspace:*",
@@ -744,7 +744,7 @@
     },
     "packages/compliance-core": {
       "name": "@caisson/compliance-core",
-      "version": "0.6.2",
+      "version": "0.6.3",
       "dependencies": {
         "@caisson/field-crypto": "workspace:*",
         "@caisson/frameworks-pack": "workspace:*",
@@ -765,7 +765,7 @@
     },
     "packages/credits": {
       "name": "@caisson/credits",
-      "version": "0.5.10",
+      "version": "0.5.11",
       "dependencies": {
         "@caisson/jobs": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -783,7 +783,7 @@
     },
     "packages/demo-registry": {
       "name": "@caisson/demo-registry",
-      "version": "0.2.11",
+      "version": "0.2.12",
       "dependencies": {
         "@caisson/ai-meter": "workspace:*",
         "@caisson/audit-harness": "workspace:*",
@@ -813,7 +813,7 @@
     },
     "packages/ds-manifest": {
       "name": "@caisson/ds-manifest",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "dependencies": {
         "culori": "catalog:",
         "zod": "catalog:",
@@ -829,7 +829,7 @@
     },
     "packages/email": {
       "name": "@caisson/email",
-      "version": "0.5.4",
+      "version": "0.5.5",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "nodemailer": "^9.0.3",
@@ -854,7 +854,7 @@
     },
     "packages/field-crypto": {
       "name": "@caisson/field-crypto",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "dependencies": {
         "@aws-sdk/client-kms": "^3.1075.0",
         "@azure/keyvault-keys": "^4",
@@ -874,7 +874,7 @@
     },
     "packages/frameworks-pack": {
       "name": "@caisson/frameworks-pack",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/oscal-spine": "workspace:*",
@@ -890,7 +890,7 @@
     },
     "packages/guardrails": {
       "name": "@caisson/guardrails",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -907,7 +907,7 @@
     },
     "packages/jobs": {
       "name": "@caisson/jobs",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -927,7 +927,7 @@
     },
     "packages/kernel": {
       "name": "@caisson/kernel",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "bin": {
         "caisson-gate": "./src/gate.ts",
       },
@@ -944,7 +944,7 @@
     },
     "packages/license-issue": {
       "name": "@caisson/license-issue",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/license-verify": "workspace:*",
@@ -975,7 +975,7 @@
     },
     "packages/license-verify": {
       "name": "@caisson/license-verify",
-      "version": "0.3.6",
+      "version": "0.3.7",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -990,7 +990,7 @@
     },
     "packages/local-ai": {
       "name": "@caisson/local-ai",
-      "version": "0.2.11",
+      "version": "0.2.12",
       "dependencies": {
         "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -1015,7 +1015,7 @@
     },
     "packages/local-inference": {
       "name": "@caisson/local-inference",
-      "version": "0.1.7",
+      "version": "0.1.8",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/local-privacy": "workspace:*",
@@ -1032,7 +1032,7 @@
     },
     "packages/local-privacy": {
       "name": "@caisson/local-privacy",
-      "version": "0.1.7",
+      "version": "0.1.8",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -1047,7 +1047,7 @@
     },
     "packages/local-store": {
       "name": "@caisson/local-store",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "sqlite-vec": "catalog:",
@@ -1078,7 +1078,7 @@
     },
     "packages/local-sync": {
       "name": "@caisson/local-sync",
-      "version": "0.1.7",
+      "version": "0.1.8",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -1093,7 +1093,7 @@
     },
     "packages/mcp-server": {
       "name": "@caisson/mcp-server",
-      "version": "0.6.6",
+      "version": "0.6.7",
       "dependencies": {
         "@caisson/ai-config": "workspace:*",
         "@caisson/ds-manifest": "workspace:*",
@@ -1113,7 +1113,7 @@
     },
     "packages/migrate": {
       "name": "@caisson/migrate",
-      "version": "0.2.10",
+      "version": "0.2.11",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
       },
@@ -1134,7 +1134,7 @@
     },
     "packages/observability": {
       "name": "@caisson/observability",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@opentelemetry/api": "^1.9.1",
@@ -1163,7 +1163,7 @@
     },
     "packages/org-controls": {
       "name": "@caisson/org-controls",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "dependencies": {
         "@caisson/auth": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -1181,7 +1181,7 @@
     },
     "packages/oscal-spine": {
       "name": "@caisson/oscal-spine",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@caisson/artifact-render": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -1197,7 +1197,7 @@
     },
     "packages/platform-migrations": {
       "name": "@caisson/platform-migrations",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "dependencies": {
         "@caisson/ai-meter": "workspace:*",
         "@caisson/auth": "workspace:*",
@@ -1224,7 +1224,7 @@
     },
     "packages/platform-reads": {
       "name": "@caisson/platform-reads",
-      "version": "0.2.9",
+      "version": "0.2.10",
       "dependencies": {
         "@caisson/tenancy-rls": "workspace:*",
       },
@@ -1239,7 +1239,7 @@
     },
     "packages/pricebook": {
       "name": "@caisson/pricebook",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
@@ -1255,7 +1255,7 @@
     },
     "packages/prompt-registry": {
       "name": "@caisson/prompt-registry",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -1290,7 +1290,7 @@
     },
     "packages/rate-limit": {
       "name": "@caisson/rate-limit",
-      "version": "0.1.8",
+      "version": "0.1.9",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -1305,7 +1305,7 @@
     },
     "packages/registry-schema": {
       "name": "@caisson/registry-schema",
-      "version": "0.5.8",
+      "version": "0.5.9",
       "dependencies": {
         "zod": "catalog:",
       },
@@ -1319,7 +1319,7 @@
     },
     "packages/retention-runner": {
       "name": "@caisson/retention-runner",
-      "version": "0.1.13",
+      "version": "0.1.14",
       "dependencies": {
         "@caisson/jobs": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -1335,7 +1335,7 @@
     },
     "packages/risk-register": {
       "name": "@caisson/risk-register",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "dependencies": {
         "@caisson/audit-worm": "workspace:*",
         "@caisson/frameworks-pack": "workspace:*",
@@ -1352,7 +1352,7 @@
     },
     "packages/signing-primitive": {
       "name": "@caisson/signing-primitive",
-      "version": "0.3.8",
+      "version": "0.3.9",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@noble/curves": "2.2.0",
@@ -1370,7 +1370,7 @@
     },
     "packages/tenancy-rls": {
       "name": "@caisson/tenancy-rls",
-      "version": "0.5.6",
+      "version": "0.5.7",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "pg": "catalog:",
@@ -1387,7 +1387,7 @@
     },
     "packages/tool-exec": {
       "name": "@caisson/tool-exec",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -1402,7 +1402,7 @@
     },
     "packages/trust-page": {
       "name": "@caisson/trust-page",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "dependencies": {
         "@caisson/artifact-render": "workspace:*",
         "@caisson/compliance-core": "workspace:*",
@@ -1419,7 +1419,7 @@
     },
     "packages/ui": {
       "name": "@caisson/ui",
-      "version": "0.6.3",
+      "version": "0.6.4",
       "dependencies": {
         "radix-ui": "^1.6.0",
         "zod": "catalog:",
@@ -1459,7 +1459,7 @@
     },
     "packages/ui-pro": {
       "name": "@caisson/ui-pro",
-      "version": "0.3.4",
+      "version": "0.3.5",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/ui": "workspace:*",
@@ -1485,7 +1485,7 @@
     },
     "packages/verify-pack": {
       "name": "@caisson/verify-pack",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "bin": {
         "verify-pack": "./dist/cli.js",
       },
@@ -1503,7 +1503,7 @@
     },
     "registry": {
       "name": "@caisson/registry",
-      "version": "0.0.21",
+      "version": "0.0.22",
       "dependencies": {
         "@caisson/license-verify": "workspace:*",
         "@caisson/pricebook": "workspace:*",
@@ -1521,7 +1521,7 @@
     },
     "services/betterstack-adapter": {
       "name": "@caisson/service-betterstack-adapter",
-      "version": "0.0.7",
+      "version": "0.0.8",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
@@ -1536,7 +1536,7 @@
     },
     "services/docs": {
       "name": "@caisson/service-docs",
-      "version": "0.0.12",
+      "version": "0.0.13",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/local-store": "workspace:*",
@@ -1556,7 +1556,7 @@
     },
     "services/intel": {
       "name": "@caisson/service-intel",
-      "version": "0.0.7",
+      "version": "0.0.8",
       "dependencies": {
         "@caisson/alerting": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -1577,7 +1577,7 @@
     },
     "services/license": {
       "name": "@caisson/service-license",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
         "@caisson/alerting": "workspace:*",
@@ -1648,7 +1648,7 @@
     },
     "tooling/standards-gate": {
       "name": "@caisson/standards-gate",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "caisson-gate": "./src/cli.ts",
       },

@@ -1,5 +1,15 @@
 # @caisson/jobs
 
+## 0.7.1
+
+### Patch Changes
+
+- e917c52: The Inngest driver now declares the minimum Inngest release it was built and tested against instead of accepting any release in that major line. Installs that resolve an older Inngest no longer satisfy the dependency and get a clear resolution error rather than a runtime failure.
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+  - @caisson/kernel@0.7.0
+  - @caisson/tenancy-rls@0.5.7
+
 ## 0.7.0
 
 ### Minor Changes

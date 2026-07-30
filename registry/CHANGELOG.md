@@ -1,5 +1,14 @@
 # @caisson/registry
 
+## 0.0.22
+
+### Patch Changes
+
+- Updated dependencies [e917c52]
+  - @caisson/registry-schema@0.5.9
+  - @caisson/pricebook@0.8.1
+  - @caisson/license-verify@0.3.7
+
 ## 0.0.21
 
 ### Patch Changes
