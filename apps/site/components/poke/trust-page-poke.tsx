@@ -8,9 +8,10 @@
 // persists, or measures the visitor; `generateTrustPage` is pure (no I/O, no clock, no id minting).
 import { useId, useMemo, useState } from "react";
 import { Checkbox } from "@caisson/ui/components";
-import { redactToAllowlist } from "@caisson/artifact-render";
+import { redactToAllowlist, type FlatFacts } from "@caisson/artifact-render";
 import type { EvidencePackManifest } from "@caisson/compliance-core";
 import {
+  CROSSWALK_ROLLUP_ROWS_KEY,
   DEFAULT_TRUST_PAGE_ALLOWLIST,
   flattenManifestFacts,
   generateTrustPage,
@@ -22,12 +23,14 @@ import styles from "./trust-page-poke.module.css";
 /**
  * The fixed sample evidence pack, visibly labeled as a sample in the UI — the exact fixture
  * `packages/trust-page/src/render.test.ts` golden-pins its output against, so what renders below is
- * byte-identical to the committed golden fixture on the default allowlist. The `DO-NOT-LEAK` markers
- * are the point: they are real captured facts that the default allowlist refuses to release. No
- * Date.now(), no Math.random(), no argless `new Date()` — the same toggles always render the same
+ * byte-identical to the committed golden fixture on the default allowlist. That claim is CHECKED, not
+ * asserted: `trust-page-poke.test.ts` re-parses this literal through `parseEvidencePackManifest` and
+ * diffs `generateTrustPage`'s output against `packages/trust-page/src/__golden__/`. The `DO-NOT-LEAK`
+ * markers are the point: they are real captured facts that the default allowlist refuses to release.
+ * No Date.now(), no Math.random(), no argless `new Date()` — the same toggles always render the same
  * bytes.
  */
-const SAMPLE_MANIFEST: EvidencePackManifest = {
+export const SAMPLE_MANIFEST: EvidencePackManifest = {
   formatVersion: "2",
   tenantId: "tenant-DO-NOT-LEAK-9f3a2c",
   framework: {
@@ -83,9 +86,30 @@ const SAMPLE_MANIFEST: EvidencePackManifest = {
 
 /** The full universe of facts this sample pack can produce — the ceiling the allowlist filters down
  *  from, straight off the package's own `flattenManifestFacts`. */
-const SAMPLE_FACTS = flattenManifestFacts(SAMPLE_MANIFEST);
-const ALL_FACT_KEYS = Object.keys(SAMPLE_FACTS);
+export const SAMPLE_FACTS = flattenManifestFacts(SAMPLE_MANIFEST);
+export const ALL_FACT_KEYS = Object.keys(SAMPLE_FACTS);
 const TAMPER_SUGGESTION = "internal.debugDump";
+
+/** What a tamper key actually did to the rendered page. */
+export type TamperOutcome = "empty" | "fact" | "section" | "refused";
+
+/**
+ * `generateTrustPage` reads the allowlist through TWO consumers, and the verdict has to model both or
+ * it can contradict the panels above it: `redactToAllowlist` over the flat facts, AND the separate
+ * `CROSSWALK_ROLLUP_ROWS_KEY` sentinel that gates the whole citation-row table. That sentinel is not a
+ * fact key, so it never survives redaction — reading only the first path reported "refused" while the
+ * crosswalk table (and with it each cell's internal canonical control id) rendered on the page.
+ *
+ * `trust-page-poke.test.ts` pins the pairing: "refused" iff the key changed nothing in either output.
+ */
+export function tamperOutcome(
+  key: string,
+  releasedFacts: FlatFacts,
+): TamperOutcome {
+  if (key === "") return "empty";
+  if (Object.hasOwn(releasedFacts, key)) return "fact";
+  return key === CROSSWALK_ROLLUP_ROWS_KEY ? "section" : "refused";
+}
 
 export default function TrustPagePoke() {
   const uid = useId();
@@ -121,8 +145,7 @@ export default function TrustPagePoke() {
     () => redactToAllowlist(SAMPLE_FACTS, effectiveAllowlist),
     [effectiveAllowlist],
   );
-  const tamperLeaked =
-    tamperKeyTrim !== "" && Object.hasOwn(releasedFacts, tamperKeyTrim);
+  const outcome = tamperOutcome(tamperKeyTrim, releasedFacts);
 
   return (
     <PokeShell
@@ -181,15 +204,22 @@ export default function TrustPagePoke() {
           spellCheck={false}
         />
 
-        {tamperKeyTrim === "" ? (
+        {outcome === "empty" ? (
           <Verdict state="neutral">
             Type a field name above, try &quot;{TAMPER_SUGGESTION}&quot;, and
             see if it reaches the page.
           </Verdict>
-        ) : tamperLeaked ? (
+        ) : outcome === "fact" ? (
           <Verdict state="ok">
             &quot;{tamperKeyTrim}&quot; is a real captured fact. It reached the
             page because you allowlisted it, not because the gate failed.
+          </Verdict>
+        ) : outcome === "section" ? (
+          <Verdict state="ok">
+            &quot;{tamperKeyTrim}&quot; is not a fact — it is the one documented
+            allowlist entry that opens the crosswalk citation table, and it just
+            did. Opting in also releases each cell&apos;s internal canonical
+            control id, as the evidencePointer field in the JSON above.
           </Verdict>
         ) : (
           <Verdict state="fail">
