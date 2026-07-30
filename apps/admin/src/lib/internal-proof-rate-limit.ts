@@ -40,17 +40,11 @@ export function createInternalProofRateLimit(
     now,
   );
   return (accountId) => {
-    const account = limiter.check(BUCKET, accountId);
+    // Charge the global flood ceiling first (release-audit v2026.07.27.1 F5): a globally-denied
+    // request must not also consume the account's own token.
     const global = limiter.checkGlobal(BUCKET);
-    return account.allowed && global.allowed
-      ? { allowed: true, retryAfterSec: 0 }
-      : {
-          allowed: false,
-          retryAfterSec: Math.max(
-            account.allowed ? 0 : account.retryAfterSec,
-            global.allowed ? 0 : global.retryAfterSec,
-          ),
-        };
+    if (!global.allowed) return global;
+    return limiter.check(BUCKET, accountId);
   };
 }
 
