@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-29
+updated: 2026-07-30
 status: live
 grounds:
   - package.json
@@ -22,13 +22,13 @@ in [knowledge/decisions](../knowledge/decisions), and per-package depth in
 
 | Tree        | Count | Purpose                                                            |
 | ----------- | ----: | ------------------------------------------------------------------ |
-| `packages/` |    62 | framework-free capability units: 17 Apache-2.0 and 45 commercial   |
+| `packages/` |    63 | framework-free capability units: 17 Apache-2.0 and 46 commercial   |
 | `apps/`     |     7 | site, admin, and five reference/demo applications                  |
 | `services/` |     5 | four Bun services plus Python support-bot                          |
 | `registry/` |     1 | registry service, append-only ledger/index, and Cloudflare Worker  |
 | `tooling/`  |     6 | browser audit, design critic, eslint, standards, testing, tsconfig |
 
-The root has 80 Bun workspaces. The only Python projects are `services/support-bot` and
+The root has 81 Bun workspaces. The only Python projects are `services/support-bot` and
 `tools/assert-lane`; this surface is frozen at two. Retired self-hosted SigNoz infrastructure is
 not part of the live topology.
 
@@ -86,10 +86,12 @@ contrast implementation, including semantic, functional, and code-syntax colors.
 | support bot           | Railway Python service    | no public hostname                     |
 | `registry.caisson.sh` | Cloudflare Worker         | live authenticated npm protocol        |
 
-Current health is not current parity. Repository/Worker use manifest digest `74e92a6813bc`;
-license uses `09adca8d32a5`; admin uses `97b183902c08`. Docs/support parity and site migrations
-`0030`–`0032` still need receipts. One approved SHA across all six legs is the next production
-reconciliation.
+All five Railway services carry 2026-07-29 receipts at `f9c04f33`
+([`docs/deploy/receipts/`](deploy/receipts/)), and the index parity probe reports
+`4810e38157c1`/54 entries equal across repo, license, Worker, and admin. Docs-RAG and support-bot
+are private services reachable only through a Turnstile-gated site proxy, so their source parity
+still has no automatable receipt — see
+[production readiness](state/production-readiness.md).
 
 ## Gate stack
 
@@ -104,5 +106,6 @@ reconciliation.
 | `deterministic`     | security scan and deterministic artifact checks                         |
 | `sot`               | ADR ceiling, state freshness, archive, tracker, and changeset drift     |
 
-Local gates are executable. Current GitHub Actions and release evidence cannot be certified until
-the private-repository connection is authorized.
+Local gates are executable. Private-repository access has been authorized since 2026-06-30, so
+GitHub Actions and release evidence are certifiable — the current dispositions live in
+[production readiness](state/production-readiness.md).

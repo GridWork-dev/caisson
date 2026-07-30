@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-29
+updated: 2026-07-30
 status: live
 grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
@@ -28,19 +28,20 @@ and runtime evidence.
 
 ## State matrix
 
-| Workstream                                       | State                 | Exit evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ------------------------------------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T0 — canonical truth and issue reconciliation    | **complete**          | SOT content gates green; PR board empty; merged-PR branches and all wave worktrees removed 2026-07-27, five reconcile-snapshot recovery refs kept on purpose                                                                                                                                                                                                                                                                                                                                                     |
-| T1 — TypeScript dependency graph                 | **complete locally**  | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| T2 — total price authority                       | **complete locally**  | `f6122de8` + `92d930b6`; every sellable commercial package covered                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| T3 — route-specific limiter policy               | **complete locally**  | `014ac4de`; webhook fail-open+alert, protected routes 503                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| T4 — one-SHA fleet and migration 0030            | **complete**          | executed 2026-07-27 (`d99d5e95`): six legs on `e6ee01a6`, `RESULT: PARITY OK`, migration chain `schema_version` 29 → 32 with a pg_restore-verified backup and the structural receipt. The `tenant_ai_credential` BLOCKING preflight passed at `sealed_rows = 0`. `site.byok-field-crypto` stays unarmed — no Azure vault was ever provisioned                                                                                                                                                                    |
-| T5 — five locked product residuals               | **complete**          | `b037b878` DS manifest; T5A merged in #332; T5B/C/E merged in #335                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **complete**          | three isolated adapter reviews and changesets, merged in #335                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| T7 — consolidated verification and release       | **complete**          | `v2026.07.27.1` released 2026-07-28 on `8f930b6753d9` — first signed tag, readiness 8/8, 50 tarballs published byte-exact, R2 parity 350/350, index parity OK across repo/license/worker/admin, Worker plus four Railway services redeployed from the tag ([deploy state](../deploy/STATE.md))                                                                                                                                                                                                                   |
-| T8 — field-crypto KMS async refactor             | **complete**          | merged `13e814da` (#353). Four review rounds; each of the first three found defects introduced by the previous round's fixes. ADR-0392 corrects three ADR-0389 claims and caps prefetch depth                                                                                                                                                                                                                                                                                                                    |
-| T8b — scoped key operations (ADR-0393)           | **complete**          | merged `0d878553` (#354). `withKey()` lends and zeroizes instead of returning a raw DEK, closing the fork ADR-0392 deferred. Fixed a latent leak on the derived (non-KMS) path that all four T8 rounds missed                                                                                                                                                                                                                                                                                                    |
-| T9 — post-tag audit remediation                  | **PR #360, CI green** | branch `fix/post-tag-audit-remediation`, 15 checks pass / 4 skipped / 0 fail. Carries every finding the `v2026.07.27.1` audit disclosed except F2, which was attempted, proven wrong, and reverted (see the addendum in the [release audit](../../outputs/audit/release-audit-v2026.07.27.1.md)); F3-F5 stay disclosed by their own dispositions. Also closes both follow-ups the release left open: the train's silent deploy leg, and the docs-RAG price-question failure ([deploy state](../deploy/STATE.md)) |
+| Workstream                                       | State                | Exit evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T0 — canonical truth and issue reconciliation    | **complete**         | SOT content gates green; PR board empty; merged-PR branches and all wave worktrees removed 2026-07-27, five reconcile-snapshot recovery refs kept on purpose                                                                                                                                                                                                                                                                                                 |
+| T1 — TypeScript dependency graph                 | **complete locally** | `c236681f`; 2,296 modules, 1,630 TypeScript modules, sentinels present                                                                                                                                                                                                                                                                                                                                                                                       |
+| T2 — total price authority                       | **complete locally** | `f6122de8` + `92d930b6`; every sellable commercial package covered                                                                                                                                                                                                                                                                                                                                                                                           |
+| T3 — route-specific limiter policy               | **complete locally** | `014ac4de`; webhook fail-open+alert, protected routes 503                                                                                                                                                                                                                                                                                                                                                                                                    |
+| T4 — one-SHA fleet and migration 0030            | **complete**         | executed 2026-07-27 (`d99d5e95`): six legs on `e6ee01a6`, `RESULT: PARITY OK`, migration chain `schema_version` 29 → 32 with a pg_restore-verified backup and the structural receipt. The `tenant_ai_credential` BLOCKING preflight passed at `sealed_rows = 0`. `site.byok-field-crypto` stays unarmed — no Azure vault was ever provisioned                                                                                                                |
+| T5 — five locked product residuals               | **complete**         | `b037b878` DS manifest; T5A merged in #332; T5B/C/E merged in #335                                                                                                                                                                                                                                                                                                                                                                                           |
+| T6 — Inngest + Azure Key Vault + Azure Blob WORM | **complete**         | three isolated adapter reviews and changesets, merged in #335                                                                                                                                                                                                                                                                                                                                                                                                |
+| T7 — consolidated verification and release       | **complete**         | `v2026.07.27.1` released 2026-07-28 on `8f930b6753d9` — first signed tag, readiness 8/8, 50 tarballs published byte-exact, R2 parity 350/350, index parity OK across repo/license/worker/admin, Worker plus four Railway services redeployed from the tag ([deploy state](../deploy/STATE.md))                                                                                                                                                               |
+| T8 — field-crypto KMS async refactor             | **complete**         | merged `13e814da` (#353). Four review rounds; each of the first three found defects introduced by the previous round's fixes. ADR-0392 corrects three ADR-0389 claims and caps prefetch depth                                                                                                                                                                                                                                                                |
+| T8b — scoped key operations (ADR-0393)           | **complete**         | merged `0d878553` (#354). `withKey()` lends and zeroizes instead of returning a raw DEK, closing the fork ADR-0392 deferred. Fixed a latent leak on the derived (non-KMS) path that all four T8 rounds missed                                                                                                                                                                                                                                                |
+| T9 — post-tag audit remediation                  | **complete**         | merged `e917c52f` (#360). Carried every finding the `v2026.07.27.1` audit disclosed except F2, which was attempted, proven wrong, and reverted (see the addendum in the [release audit](../../outputs/audit/release-audit-v2026.07.27.1.md)); F3-F5 stay disclosed by their own dispositions. Also closed both follow-ups the release left open: the train's silent deploy leg, and the docs-RAG price-question failure ([deploy state](../deploy/STATE.md)) |
+| T10 — refund netting against the upgrade credit  | **complete**         | merged `894fc270` (#361, ADR-0394, closes audit F2) and `a5f9ea8f` (#365) — the credit nets at the read and a repeated refund line fails closed; migration `0033_entitlement_grant_refunded_amount.sql` applied in the 2026-07-29 deploy (`schema_version` 32 → 33)                                                                                                                                                                                          |
 
 The earlier five-wave program is merged. The 2026-07-27 reconciliation cutoff found seven newer
 open PRs: writing #345, OSCAL #346, and Ask AI evidence #347 are represented on local `main`;
@@ -55,20 +56,30 @@ which is the supply-chain floor working as designed. #352 already reverted that 
 none of its bumps fix a known advisory, and Renovate re-proposes once the versions age naturally.
 #348 was closed earlier. Seven branches from merged or closed PRs and all six wave worktrees were
 removed after each was checked for unlanded work; five reconcile-snapshot recovery refs are kept on
-purpose, and they are now the only thing branch-hygiene reports.
+purpose.
+
+**The PR board is still empty as of 2026-07-30**, one sitting later: #360–#366 all merged
+2026-07-29 (post-tag remediation, refund netting, the KMS deadline-test budget, two runbook
+re-stamps, and two state reconciles), and the full fleet deploy off `f9c04f33` landed on top of
+them (`d7f7d834`). Branch-hygiene is advisory-red on the five recovery refs plus the ADR-0395
+parallel-wave lanes, which is the ADR-0328 convention working, not drift.
 
 The changeset backlog was **drained** by the version PR (#359, `52376dee`), which consumed all 54
 files and bumped every package. Those versions are now **published**: the `v2026.07.27.1` train
-uploaded 50 tarballs byte-exact and the R2 parity probe moved 300/350 → **350/350**. Eight new
-changesets have since accumulated on the post-tag remediation branch (T9 below), across seven
-packages — kernel, compliance, ds-manifest, jobs, registry-schema, service-docs, and standards-gate
-twice — so the next version PR has real work to consume.
+uploaded 50 tarballs byte-exact and the R2 parity probe moved 300/350 → **350/350**. **11 new
+changesets** have since landed on `main` from the #360–#366 sitting and currently resolve to 68
+patch package releases with no minor or major bumps, so the next version PR has real work to
+consume.
 
-**The next release train will fail at leg 4.** `45683e6e` made `deploy-railway`'s unarmed skip loud
-inside an armed train, which is correct and was the whole point, but it converts a silent no-op into
-a hard stop: `RAILWAY_TOKEN` must exist as a repo secret before the next tag rides. Arming it is a
-credential act and belongs to the operator. Until then the receipted path is
-`tooling/scripts/railway-deploy.ts --ref <tag>` from the operator box.
+**Leg 4 is armed.** `45683e6e` made `deploy-railway`'s unarmed skip loud inside an armed train,
+converting a silent no-op into a hard stop — and the operator closed it: `RAILWAY_TOKEN` is a repo
+secret as of 2026-07-29T18:49Z (`gh secret list`), scoped to `caisson-prod`/`production`. The next
+tag's leg 4 passes `require_armed=true` and deploys for real. Second consequence, recorded in
+[deploy state](../deploy/STATE.md): `deploy-railway.yml` also self-arms on path-triggered pushes,
+so a merge touching `apps/site/**` or `packages/**` now deploys `caisson-site` (site only — it
+never migrates). The receipted manual path
+`tooling/scripts/railway-deploy.ts --ref <ref>` remains available and is what the 2026-07-29 full
+fleet deploy off `f9c04f33` used.
 
 ## Linear reconciliation
 
@@ -159,14 +170,17 @@ credential act and belongs to the operator. Until then the receipted path is
    an arming record; rotate `DOCS_SERVICE_TOKEN`, `SUPPORT_BOT_GRANT_TOKEN`, and `LICENSE_ISSUE_TOKEN`
    atomically — new value on every holder **before** restarting any, then verifier-before-issuer and
    re-probe both sides. A set-but-unrecorded value is adopted and recorded, never regenerated.
-10. **Release and deploy (Act 1 DONE; Act 2 in flight):** the fleet deploy, migration chain, and
-    parity/probe set ran 2026-07-27 and the version PR consumed every changeset. What remains is the
-    tag itself: `v2026.07.27` was pushed and its train **failed at readiness R3** — `bun run sot`
-    red on a package-count drift, plus a missing R4 audit and per-release checklist, which readiness
-    reads from the TAGGED tree. It is being re-cut as `v2026.07.27.1`, an attestation-only successor
-    carrying only docs, the audit, the checklist, and unpacked fixes, so the byte gate is untouched.
-    Then: R2 upload, mirror sync, Worker redeploy from the tag, and the post-deploy docs/support
-    probe asserting $1,649 and $2,259.
+10. **Release and deploy (COMPLETE):** the fleet deploy, migration chain, and parity/probe set ran
+    2026-07-27, the version PR consumed every changeset, and `v2026.07.27` failed at readiness R3
+    (`bun run sot` red on a package-count drift, plus a missing R4 audit and per-release checklist,
+    which readiness reads from the TAGGED tree). It was re-cut as `v2026.07.27.1`, an
+    attestation-only successor carrying only docs, the audit, the checklist, and unpacked fixes, so
+    the byte gate stayed untouched. That successor **released 2026-07-28 and fully propagated**:
+    first signed tag, readiness 8/8, 50 tarballs published byte-exact, R2 parity 300/350 →
+    **350/350**, mirror sync, Worker redeploy from the tag, and the post-deploy docs/support probe
+    asserting $1,649 and $2,259. The 2026-07-29 sitting then merged #360–#366 and deployed the
+    whole fleet off `f9c04f33` (`schema_version` 32 → 33). The next train is the one that consumes
+    the 11 queued changesets, and its leg 4 is now armed.
 
 ## Trigger-parked
 
@@ -186,6 +200,9 @@ These are not part of the active completion program:
 
 | Date       | Evidence                                                                                                                                                                                                                                 |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-29 | Full fleet deploy off `f9c04f33`: all five Railway services receipted, migration `0033` applied (`schema_version` 32 → 33), Worker redeployed, index parity `4810e38157c1`/54 OK ([deploy state](../deploy/STATE.md))                    |
+| 2026-07-29 | `RAILWAY_TOKEN` armed as a repo secret (18:49Z, scoped `caisson-prod`/`production`) — the release train's leg 4 no longer blocks, and `deploy-railway.yml` self-arms on path-triggered pushes                                            |
+| 2026-07-29 | #360–#366 merged: post-tag audit remediation (#360), refund netting against the upgrade-credit floor (#361/#365, ADR-0394), KMS deadline-test budget (#363), two runbook re-stamps (#362), two state reconciles (#364/#366)              |
 | 2026-07-29 | Docs-RAG answered no plain price question at all — reproduced, root-caused to vocabulary (`## Compliance — $1,649` shares no token with "how much"), fixed, and covered by goldens that now build the corpus the service actually serves |
 | 2026-07-29 | Index parity independently re-probed: repo/license/worker/admin all `4810e38157c1`, retiring the DRIFT rows production readiness had carried since before the release                                                                    |
 | 2026-07-28 | `v2026.07.27.1` released and fully propagated: 50 tarballs published byte-exact, R2 350/350, index parity OK, first signed release tag                                                                                                   |

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-29
+updated: 2026-07-30
 status: live
 grounds:
   - package.json
@@ -15,7 +15,7 @@ grounds:
 
 # Package catalog — license, sale posture, and price
 
-The July 26 disk-truth view. This document owns the catalog summary; manifests, price authority,
+The 2026-07-30 disk-truth view. This document owns the catalog summary; manifests, price authority,
 and the standards gate are the executable sources. Build depth remains in
 [build-state](../build-state.md).
 
@@ -23,13 +23,13 @@ and the standards gate are the executable sources. Build depth remains in
 
 | Surface              |  Count | Members                                                            |
 | -------------------- | -----: | ------------------------------------------------------------------ |
-| Packages             |     62 | 17 Apache-2.0; 45 commercial                                       |
+| Packages             |     63 | 17 Apache-2.0; 46 commercial                                       |
 | Apps                 |      7 | `admin`, `site`, and five reference/demo apps                      |
 | Bun services         |      4 | `betterstack-adapter`, `docs`, `intel`, `license`                  |
 | Registry             |      1 | `@caisson/registry` plus its Worker                                |
 | Tooling workspaces   |      6 | browser audit, design critic, eslint, standards, testing, tsconfig |
 | Python projects      |      2 | `services/support-bot`, `tools/assert-lane` — frozen at two        |
-| Bun workspaces total | **80** | root `workspaces` discovery                                        |
+| Bun workspaces total | **81** | root `workspaces` discovery                                        |
 
 ## Open Base — 17 Apache-2.0 packages
 

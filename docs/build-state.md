@@ -1,14 +1,14 @@
 ---
-updated: 2026-07-28
+updated: 2026-07-30
 status: live
 ---
 
 # Build state & roadmap
 
-## Current state (2026-07-27)
+## Current state (2026-07-30)
 
-**ADR ceiling is `0394`; the remote reconciliation base is `origin/main` at `2efeea98`; the
-latest immutable release tag remains `v2026.07.20.3`.** Local `main` now carries the validated
+**ADR ceiling is `0395`; `origin/main` is at `d7f7d834`; the latest immutable release tag is
+`v2026.07.27.1`, released 2026-07-28 and fully propagated.** `main` carries the validated
 writing, OSCAL, Ask AI evidence, and supply-chain pin work cataloged in the
 [2026-07-27 reconciliation](../outputs/executions/2026-07-27-project-reconciliation.md).
 The ADR-0379 full-state completion program is active on
@@ -54,12 +54,16 @@ sandbox purchase/renewal rows. The parallel field-crypto KMS wave has since merg
   dependency-patch audit ownership (`3e384bc5`).
 - **Catalog:** six bundles and 27 modules; Compliance is $1,649 and Everything is $2,259;
   production recreation is 36 products and 68 prices.
-- **Release queue:** 54 changeset files currently resolve to 56 patch package releases, 14 minor
-  package releases, and 2 major package releases.
+- **Release queue:** 11 changeset files currently resolve to 68 patch package releases, with no
+  minor and no major bumps queued. The 54-file backlog this line used to name was drained by the
+  version PR (#359) and shipped in `v2026.07.27.1`.
 - **Reconciled verification:** 224/224 repository tasks and 76 package gates passed uncached
   (`bun run check --force`, 75 suites actually run, zero timeouts) on `db4c693a`.
-- **Fleet parity red:** repository/Worker digest `74e92a6813bc`; license `09adca8d32a5`; admin
-  `97b183902c08`; docs/support parity and site migrations `0030`–`0032` lack current receipts.
+- **Fleet parity OK:** all five Railway services (site, admin, license, docs-RAG, support-bot)
+  carry 2026-07-29 receipts at `f9c04f33` in [`docs/deploy/receipts/`](deploy/receipts/), and the
+  index parity probe reports `4810e38157c1`/54 entries equal across repo, license, Worker, and
+  admin. The `74e92a6813bc`/`09adca8d32a5`/`97b183902c08` digests this line used to carry are
+  every one of them behind that deploy.
 - **Locked residuals:** the generated 39-component DS manifest, source drift guard, and shared
   browser-rendered contrast matrix are complete locally, and the four buyer/product families that
   were held — three module-depth pages, admin proof viewer/export, tenant proof route, and buyer
