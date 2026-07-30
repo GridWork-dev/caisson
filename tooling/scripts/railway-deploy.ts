@@ -11,8 +11,9 @@
 // suggested `git add`/`git commit` is printed instead), matching how STATE.md entries are
 // handled -- this tool is not the SOT for deploy history, only the mechanism.
 //
-// RAILWAY_TOKEN stays unset in CI (arms nothing here); this ships tooling only. Deploying is a
-// separate operator-gated act (identity/doctrine.md, Autonomy line + DEPLOY).
+// Deploying is a separate operator-gated act (identity/doctrine.md, Autonomy line + DEPLOY);
+// RAILWAY_TOKEN is armed in CI as of 2026-07-30, so the workflow's own arm-guard is what keeps
+// this inert, not an absent credential.
 //
 // Usage: bun tooling/scripts/railway-deploy.ts --service <name> --ref <git-ref> [--force] [--dry-run]
 import { execFileSync } from "node:child_process";
@@ -219,6 +220,94 @@ export function resolveDeployedBy(
 }
 
 // ============================================================================================
+// Impure: deployment-status verification
+//
+// `railway up --ci` streams build logs and exits non-zero if that stream drops -- observed
+// 2026-07-30 as "Failed to stream build logs: Failed to retrieve build log" ~64s in, on five
+// consecutive runs whose deployments Railway's own ledger records as SUCCESS. The CLI's exit
+// code therefore cannot distinguish "the deploy failed" from "the log stream died", and a
+// false RED here is not cosmetic: the fleet workflow deploys the proof VERIFIER before its
+// ISSUER, so one flake on the first service skips the second and half-deploys the fleet.
+//
+// The verdict is the deployment's own terminal status. `--detach` would also dodge the log
+// stream, but it reports green the moment an upload is ACCEPTED -- a false green, the exact
+// failure the workflow's arm-guard exists to prevent. Polling for a terminal state is the
+// only shape that is neither.
+// ============================================================================================
+
+// Railway's CLI JSON envelope -- deliberately NOT .strict(): `meta` is a large vendor-owned
+// object that evolves on their release cadence, and a new key in it must never fail a deploy
+// verification. Same rule the repo applies to provider webhook envelopes.
+const DeploymentSchema = z.object({ id: z.string(), status: z.string() });
+const DeploymentListSchema = z.array(DeploymentSchema);
+export type Deployment = z.infer<typeof DeploymentSchema>;
+
+/** Anything not listed as terminal is treated as still in flight and re-polled -- an unknown
+ *  future status must not be read as either success or failure. */
+const TERMINAL_BAD = new Set(["FAILED", "CRASHED", "REMOVED", "SKIPPED"]);
+
+export function classifyDeployStatus(status: string): "ok" | "bad" | "pending" {
+  if (status === "SUCCESS") return "ok";
+  return TERMINAL_BAD.has(status) ? "bad" : "pending";
+}
+
+/** Newest deployment for the service, or `null` when it has none yet. */
+export function latestDeployment(
+  service: string,
+  cwd: string,
+  exec: ExecFileSyncFn = execFileSync,
+): Deployment | null {
+  const out = exec(
+    "railway",
+    ["deployment", "list", "--service", service, "--json", "--limit", "1"],
+    { cwd, encoding: "utf8" },
+  ) as string;
+  return DeploymentListSchema.parse(JSON.parse(out))[0] ?? null;
+}
+
+export const realSleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Blocks until a deployment NEWER than `priorId` reaches a terminal state. Throws unless that
+ *  state is SUCCESS -- including when the upload never produced a new deployment at all, which
+ *  is the genuine-failure case (`railway up` 500ing on upload, seen the same day). */
+export async function awaitDeployment(
+  service: string,
+  cwd: string,
+  priorId: string | null,
+  exec: ExecFileSyncFn = execFileSync,
+  sleep: (ms: number) => Promise<void> = realSleep,
+  pollMs = 10_000,
+  maxPolls = 90,
+  appearGrace = 6,
+): Promise<void> {
+  for (let poll = 0; poll < maxPolls; poll++) {
+    const latest = latestDeployment(service, cwd, exec);
+    if (!latest || latest.id === priorId) {
+      // No new deployment row yet. Brief grace for Railway to register it, then call it a
+      // genuine upload failure rather than burning the full poll budget.
+      if (poll >= appearGrace) {
+        throw new Error(
+          `railway-deploy: no new ${service} deployment was created -- the upload did not reach Railway`,
+        );
+      }
+    } else {
+      const verdict = classifyDeployStatus(latest.status);
+      if (verdict === "ok") return;
+      if (verdict === "bad") {
+        throw new Error(
+          `railway-deploy: ${service} deployment ${latest.id} ended ${latest.status}`,
+        );
+      }
+    }
+    await sleep(pollMs);
+  }
+  throw new Error(
+    `railway-deploy: timed out waiting for the ${service} deployment to reach a terminal state`,
+  );
+}
+
+// ============================================================================================
 // main
 // ============================================================================================
 
@@ -229,6 +318,7 @@ export function resolveDeployedBy(
 export async function main(
   args: Args,
   exec: ExecFileSyncFn = execFileSync,
+  sleep: (ms: number) => Promise<void> = realSleep,
 ): Promise<void> {
   const sha = resolveRef(args.ref, REPO_ROOT, exec);
   assertAncestorOfMain(sha, REPO_ROOT, exec);
@@ -265,11 +355,31 @@ export async function main(
     // ponytail: single-use gate holds only on the operator's on-box persistent checkout --
     // receipts are a local uncommitted ledger (never git-committed by this tool, see file
     // header), so a fresh clone/CI checkout reads empty here and the gate is a no-op there.
-    // Acceptable today because CI stays inert until RAILWAY_TOKEN is armed. Upgrade path if
-    // single-use must ever hold in CI: read from committed git state, or an O_EXCL lock.
+    // RAILWAY_TOKEN is armed in CI as of 2026-07-30, so the gate no longer holds where it now
+    // matters most. Upgrade path: read from committed git state, or an O_EXCL lock.
     checkReceiptCollision(existing, sha, args.force);
 
-    exec("railway", railwayArgs, { cwd: stageDir, stdio: "inherit" });
+    // Captured BEFORE the deploy so the verification below can tell OUR deployment from the
+    // one already sitting at the head of the ledger.
+    const priorId = latestDeployment(args.service, stageDir, exec)?.id ?? null;
+
+    let upExit: Error | null = null;
+    try {
+      exec("railway", railwayArgs, { cwd: stageDir, stdio: "inherit" });
+    } catch (err) {
+      // Not a verdict -- see the deployment-status section header. Recorded, then adjudicated
+      // against the deployment's real terminal status.
+      upExit = err as Error;
+      process.stderr.write(
+        `[railway-deploy] railway up exited non-zero (${upExit.message}) -- adjudicating against the deployment status\n`,
+      );
+    }
+    await awaitDeployment(args.service, stageDir, priorId, exec, sleep);
+    if (upExit) {
+      process.stdout.write(
+        "[railway-deploy] deployment reached SUCCESS despite that exit -- the CLI lost its log stream, the deploy landed\n",
+      );
+    }
 
     const updated = appendReceipt(existing, row);
     mkdirSync(dirname(path), { recursive: true });
