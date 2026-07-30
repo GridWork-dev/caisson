@@ -264,8 +264,11 @@ export interface FreshnessFinding {
   detail: string;
 }
 
-/** Findings for ONE doc. Docs missing `updated:` or `grounds:` are not checked (per
- *  SPEC, "missing grounds key = not checked") — returns null. */
+/** Findings for ONE doc. A doc with no `updated:` stamp is not checked — returns null.
+ *  A doc WITH a stamp is always checked against its OWN last commit (ADR-0395 §4: a doc
+ *  edited today and left stamped last week used to pass clean, because only `grounds:`
+ *  paths were ever compared — and the docs that drifted worst carry no `grounds:` at all).
+ *  The `grounds:` comparison still requires a `grounds:` key. */
 export function checkDocFreshness(
   doc: FrontmatterDoc,
   pathExists: (relPath: string) => boolean,
@@ -274,10 +277,24 @@ export function checkDocFreshness(
   const fm = parseFrontmatter(doc.text);
   if (!fm) return null;
   const updated = fm.raw.updated;
-  const grounds = fm.lists.grounds;
-  if (!updated || !grounds || grounds.length === 0) return null;
+  if (!updated) return null;
 
   const findings: FreshnessFinding[] = [];
+  // `groundsPath` is the doc itself here on purpose: it makes buildFreshnessEditSuggestions
+  // resolve the corrected stamp from the doc's own commit date with no extra branch.
+  const ownCommit = lastCommitDate(doc.path);
+  if (ownCommit && ownCommit > updated) {
+    findings.push({
+      file: doc.path,
+      groundsPath: doc.path,
+      kind: "stale",
+      detail: `${doc.path}: last committed ${ownCommit}, but its own updated: says ${updated}`,
+    });
+  }
+
+  const grounds = fm.lists.grounds;
+  if (!grounds || grounds.length === 0) return findings;
+
   for (const g of grounds) {
     if (g.startsWith("http://") || g.startsWith("https://")) continue;
     if (!pathExists(g)) {
@@ -317,7 +334,9 @@ export function checkFrontmatterFreshness(
     return {
       id,
       status: "green",
-      details: ["all grounds paths are at or before their doc's updated: date"],
+      details: [
+        "every doc and its grounds paths are at or before that doc's updated: date",
+      ],
     };
   }
   return { id, status: "drift", details: all.map((f) => f.detail) };
@@ -563,6 +582,50 @@ export type ChangesetOutcome =
   | { ok: false; unavailable: true }
   | { ok: false; unavailable: false; stdout: string; stderr: string };
 
+export type BumpLevel = "patch" | "minor" | "major";
+export type BumpCounts = Record<BumpLevel, number>;
+
+const BUMP_HEADER_RE = /^info Packages to be bumped at (patch|minor|major):?$/;
+const BUMP_NONE_RE = /^info NO packages to be bumped at (patch|minor|major)$/;
+
+/** Pure: count the packages `changeset status` says each level will bump. Parses the tool's
+ *  own output rather than re-deriving bumps from `.changeset/*.md` — the resolution (fan-out
+ *  through workspace dependents) is changesets' job, never ours. */
+export function countChangesetBumps(stdout: string): BumpCounts {
+  const counts: BumpCounts = { patch: 0, minor: 0, major: 0 };
+  let current: BumpLevel | null = null;
+  for (const raw of stdout.split("\n")) {
+    // strip the butterfly prefix changesets writes on every line
+    const line = raw.replace(/^\s*🦋\s*/u, "").trim();
+    const header = BUMP_HEADER_RE.exec(line);
+    if (header) {
+      current = header[1] as BumpLevel;
+      continue;
+    }
+    if (line === "---" || BUMP_NONE_RE.test(line)) {
+      current = null;
+      continue;
+    }
+    if (current !== null && line.startsWith("- ")) counts[current]++;
+  }
+  return counts;
+}
+
+/** On `main`, `changeset status --since=origin/main` self-compares to an empty diff and
+ *  reports "NO packages to be bumped" over a real queue (ADR-0395 §4). The gatherer drops
+ *  `--since` there; this renders what the queue actually resolves to. */
+export function summarizeQueuedChangesets(
+  stdout: string,
+  changesetFileCount: number,
+): string {
+  const { patch, minor, major } = countChangesetBumps(stdout);
+  const files = `${changesetFileCount} changeset file${changesetFileCount === 1 ? "" : "s"} queued`;
+  if (patch + minor + major === 0) {
+    return `${files}; resolving to no package releases`;
+  }
+  return `${files}, resolving to ${patch} patch / ${minor} minor / ${major} major package releases`;
+}
+
 export function evaluateChangesetOutcome(
   outcome: ChangesetOutcome,
 ): CheckResult {
@@ -721,22 +784,197 @@ export function diffPackageCounts(
   return findings;
 }
 
+// --- Summary totals (ADR-0395 §4) ---------------------------------------------------------
+//
+// The per-package table above is only half the claim surface: both build-state and the
+// package catalog also state census TOTALS in prose/summary rows, and nothing read them.
+// package-catalog's "62 packages / 45 commercial / 80 workspaces" sat wrong against disk
+// (63 / 46 / 81) through a green gate.
+
+export interface DiskTotals {
+  packages: number;
+  apache: number;
+  commercial: number;
+  workspaces: number;
+}
+
+export interface SummaryClaim {
+  /** repo-relative doc path */
+  file: string;
+  /** human label used in the drift message */
+  label: string;
+  /** capture group 1 must be the claimed number */
+  pattern: RegExp;
+  /** which disk total the claim must equal */
+  expect: keyof DiskTotals;
+}
+
+/** Every census total a source-of-truth doc states. A claim whose pattern stops matching is
+ *  reported as DRIFT, never silence — otherwise a reworded summary quietly leaves its number
+ *  unchecked again, which is the exact failure this check was extended to close. */
+export const SUMMARY_CLAIMS: readonly SummaryClaim[] = [
+  {
+    file: "docs/build-state.md",
+    label: "packages total",
+    pattern: /\*\*(\d+) packages:\*\*/,
+    expect: "packages",
+  },
+  {
+    file: "docs/build-state.md",
+    label: "Apache-2.0 packages",
+    pattern: /\*\*\d+ packages:\*\*\s*(\d+) Apache-2\.0/,
+    expect: "apache",
+  },
+  {
+    file: "docs/build-state.md",
+    label: "commercial packages",
+    pattern: /Apache-2\.0 and (\d+) commercial/,
+    expect: "commercial",
+  },
+  {
+    file: "docs/build-state.md",
+    label: "Bun workspaces",
+    pattern: /(\d+) Bun workspaces total/,
+    expect: "workspaces",
+  },
+  {
+    file: "docs/state/package-catalog.md",
+    label: "packages total",
+    pattern: /^\|\s*Packages\s*\|\s*(\d+)\s*\|/m,
+    expect: "packages",
+  },
+  {
+    file: "docs/state/package-catalog.md",
+    label: "Apache-2.0 packages",
+    pattern: /^\|\s*Packages\s*\|[^|]*\|\s*(\d+) Apache-2\.0/m,
+    expect: "apache",
+  },
+  {
+    file: "docs/state/package-catalog.md",
+    label: "commercial packages",
+    pattern: /Apache-2\.0;\s*(\d+) commercial/,
+    expect: "commercial",
+  },
+  {
+    file: "docs/state/package-catalog.md",
+    label: "Bun workspaces",
+    pattern: /^\|\s*Bun workspaces total\s*\|\s*\*\*(\d+)\*\*/m,
+    expect: "workspaces",
+  },
+  {
+    file: "docs/state/package-catalog.md",
+    label: "Open Base heading",
+    pattern: /^##\s*Open Base\s*—\s*(\d+) Apache-2\.0 packages/m,
+    expect: "apache",
+  },
+  {
+    file: "docs/state/public-surface.md",
+    label: "Apache-2.0 PUBLIC set heading",
+    pattern: /^##\s*1\..*Apache-2\.0 PUBLIC set \((\d+) packages\)/m,
+    expect: "apache",
+  },
+  {
+    file: "docs/architecture.md",
+    label: "packages total",
+    pattern: /^\|\s*`packages\/`\s*\|\s*(\d+)\s*\|/m,
+    expect: "packages",
+  },
+  {
+    file: "docs/architecture.md",
+    label: "Apache-2.0 packages",
+    pattern: /^\|\s*`packages\/`\s*\|[^|]*\|[^|]*?(\d+) Apache-2\.0/m,
+    expect: "apache",
+  },
+  {
+    file: "docs/architecture.md",
+    label: "commercial packages",
+    pattern: /^\|\s*`packages\/`\s*\|[^|]*\|[^|]*?and (\d+) commercial/m,
+    expect: "commercial",
+  },
+  {
+    file: "docs/architecture.md",
+    label: "Bun workspaces",
+    pattern: /The root has (\d+) Bun workspaces/,
+    expect: "workspaces",
+  },
+];
+
+export interface SummaryFinding {
+  file: string;
+  line: number | null;
+  detail: string;
+  suggestion: string;
+}
+
+/** Pure: diff every declared summary claim against disk truth. A doc absent from `docTexts`
+ *  is skipped (its existence is check #8's job, not this one). */
+export function diffSummaryTotals(
+  totals: DiskTotals,
+  docTexts: ReadonlyMap<string, string>,
+  claims: readonly SummaryClaim[] = SUMMARY_CLAIMS,
+): SummaryFinding[] {
+  const findings: SummaryFinding[] = [];
+  for (const claim of claims) {
+    const text = docTexts.get(claim.file);
+    if (text === undefined) continue;
+    const expected = totals[claim.expect];
+    const m = claim.pattern.exec(text);
+    if (!m) {
+      findings.push({
+        file: claim.file,
+        line: null,
+        detail:
+          `${claim.file}: the "${claim.label}" summary no longer matches the shape this gate reads ` +
+          `— restate it or update SUMMARY_CLAIMS (disk truth is ${expected})`,
+        suggestion: `restore a parseable "${claim.label}" summary stating ${expected}`,
+      });
+      continue;
+    }
+    const claimed = Number(m[1]);
+    if (claimed === expected) continue;
+    const line = lineNumberAt(text, m.index);
+    findings.push({
+      file: claim.file,
+      line,
+      detail: `${claim.file}${line === null ? "" : `:${line}`} summary says ${claimed} ${claim.label}, disk truth is ${expected}`,
+      suggestion: `${claim.label} -> ${expected}`,
+    });
+  }
+  return findings;
+}
+
+export interface SummaryTotalsInput {
+  totals: DiskTotals;
+  docTexts: ReadonlyMap<string, string>;
+}
+
 export function checkPackageCountParity(
   diskByPkg: ReadonlyMap<string, PackageCounts>,
   docText: string,
+  summary?: SummaryTotalsInput,
 ): CheckResult {
   const id = "package-count-parity";
   const findings = diffPackageCounts(diskByPkg, extractDocPackageRows(docText));
   const stale = findings.filter((f) => f.kind === "stale");
   const dead = findings.filter((f) => f.kind === "dead-row");
   const missing = findings.filter((f) => f.kind === "missing-row");
+  const summaryFindings = summary
+    ? diffSummaryTotals(summary.totals, summary.docTexts)
+    : [];
 
-  if (stale.length === 0 && dead.length === 0) {
+  if (stale.length === 0 && dead.length === 0 && summaryFindings.length === 0) {
     return {
       id,
       status: "green",
       details: [
         "all packages/* src/tests/loc cells match disk truth",
+        ...(summary
+          ? [
+              `summary totals agree with disk: ${summary.totals.packages} packages ` +
+                `(${summary.totals.apache} Apache-2.0 / ${summary.totals.commercial} commercial), ` +
+                `${summary.totals.workspaces} Bun workspaces`,
+            ]
+          : []),
         ...missing.map((f) => f.detail),
       ],
     };
@@ -747,6 +985,7 @@ export function checkPackageCountParity(
     details: [
       ...stale.map((f) => f.detail),
       ...dead.map((f) => f.detail),
+      ...summaryFindings.map((f) => f.detail),
       ...missing.map((f) => f.detail),
     ],
   };
@@ -756,12 +995,13 @@ export function buildPackageCountEditSuggestions(
   diskByPkg: ReadonlyMap<string, PackageCounts>,
   docText: string,
   docPath: string,
+  summary?: SummaryTotalsInput,
 ): EditSuggestion[] {
   const findings = diffPackageCounts(
     diskByPkg,
     extractDocPackageRows(docText),
   ).filter((f) => f.kind === "stale");
-  return findings.map((f) => {
+  const rowSuggestions = findings.map((f) => {
     const disk = diskByPkg.get(f.pkg) as PackageCounts;
     return {
       file: docPath,
@@ -769,6 +1009,15 @@ export function buildPackageCountEditSuggestions(
       suggestion: `\`${f.pkg}\` row -> ${formatDiskCell(disk)}`,
     };
   });
+  if (!summary) return rowSuggestions;
+  return [
+    ...rowSuggestions,
+    ...diffSummaryTotals(summary.totals, summary.docTexts).map((f) => ({
+      file: f.file,
+      line: f.line,
+      suggestion: f.suggestion,
+    })),
+  ];
 }
 
 // ============================================================================================
@@ -925,7 +1174,11 @@ function gatherAdrCeilingCheck(): {
   };
 }
 
-const FRESHNESS_EXTRA_PATHS = ["docs/architecture.md", "docs/deploy/STATE.md"];
+const FRESHNESS_EXTRA_PATHS = [
+  "docs/architecture.md",
+  "docs/build-state.md",
+  "docs/deploy/STATE.md",
+];
 
 function gatherFreshnessDocs(): FrontmatterDoc[] {
   const stateGlob = globRepoFiles("docs/state/*.md");
@@ -1142,6 +1395,39 @@ function gatherDiskPackageCounts(): Map<string, PackageCounts> {
 
 const BUILD_STATE_PATH = "docs/build-state.md";
 
+const APACHE_LICENSE = "Apache-2.0";
+const COMMERCIAL_LICENSE = "LicenseRef-Caisson-Commercial";
+
+/** Disk truth for the census totals: every workspace manifest the root `workspaces` globs
+ *  actually resolve to, and the `packages/*` subset split by SPDX license. */
+function gatherDiskTotals(): DiskTotals {
+  const root = JSON.parse(fileText("package.json")) as {
+    workspaces?: string[] | { packages?: string[] };
+  };
+  const globs = Array.isArray(root.workspaces)
+    ? root.workspaces
+    : (root.workspaces?.packages ?? []);
+  const manifests = new Set<string>();
+  for (const g of globs) {
+    for (const f of new Bun.Glob(`${g}/package.json`).scanSync({
+      cwd: REPO_ROOT,
+    })) {
+      manifests.add(f);
+    }
+  }
+  let packages = 0;
+  let apache = 0;
+  let commercial = 0;
+  for (const rel of manifests) {
+    if (!rel.startsWith("packages/")) continue;
+    packages++;
+    const license = (JSON.parse(fileText(rel)) as { license?: string }).license;
+    if (license === APACHE_LICENSE) apache++;
+    else if (license === COMMERCIAL_LICENSE) commercial++;
+  }
+  return { packages, apache, commercial, workspaces: manifests.size };
+}
+
 function gatherPackageCountCheck(): {
   result: CheckResult;
   suggestions: EditSuggestion[];
@@ -1150,12 +1436,19 @@ function gatherPackageCountCheck(): {
   const docText = pathExistsInRepo(BUILD_STATE_PATH)
     ? fileText(BUILD_STATE_PATH)
     : "";
+  const docTexts = new Map<string, string>();
+  for (const claim of SUMMARY_CLAIMS) {
+    if (docTexts.has(claim.file) || !pathExistsInRepo(claim.file)) continue;
+    docTexts.set(claim.file, fileText(claim.file));
+  }
+  const summary: SummaryTotalsInput = { totals: gatherDiskTotals(), docTexts };
   return {
-    result: checkPackageCountParity(diskByPkg, docText),
+    result: checkPackageCountParity(diskByPkg, docText, summary),
     suggestions: buildPackageCountEditSuggestions(
       diskByPkg,
       docText,
       BUILD_STATE_PATH,
+      summary,
     ),
   };
 }
@@ -1200,16 +1493,34 @@ function gatherChangesetCheck(): CheckResult {
         ],
       };
     }
+    // On `main`, `--since=origin/main` self-compares to an empty diff and reports "NO
+    // packages to be bumped" over a real queue (ADR-0395 §4). Drop the flag there and
+    // report what the queued changesets actually resolve to.
+    const onMain =
+      execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+        cwd: REPO_ROOT,
+        encoding: "utf8",
+      }).trim() === "main";
     const stdout = execFileSync(
       "bunx",
-      ["changeset", "status", "--since=origin/main"],
+      onMain
+        ? ["changeset", "status"]
+        : ["changeset", "status", "--since=origin/main"],
       {
         cwd: REPO_ROOT,
         encoding: "utf8",
         timeout: 30000,
       },
     );
-    return evaluateChangesetOutcome({ ok: true, stdout });
+    if (!onMain) return evaluateChangesetOutcome({ ok: true, stdout });
+    const queuedFiles = readdirSync(join(REPO_ROOT, ".changeset")).filter(
+      (f) => f.endsWith(".md") && f.toLowerCase() !== "readme.md",
+    ).length;
+    return {
+      id: "changeset-gate-preflight",
+      status: "green",
+      details: [summarizeQueuedChangesets(stdout, queuedFiles)],
+    };
   } catch (err) {
     const e = err as NodeJS.ErrnoException & {
       stdout?: string;
