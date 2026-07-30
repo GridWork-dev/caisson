@@ -2,14 +2,17 @@
 // no real git-archive/railway subprocess anywhere in this file (mirrors the `fakeExecFn` double
 // pattern in packages/tool-exec/src/tool-exec.test.ts).
 import { describe, expect, test } from "bun:test";
-import { rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import type { Args, ExecFileSyncFn } from "./railway-deploy";
 import {
   appendReceipt,
   archiveRefToDir,
   assertAncestorOfMain,
+  awaitDeployment,
   buildReceiptRow,
   checkReceiptCollision,
+  classifyDeployStatus,
+  latestDeployment,
   main,
   parseArgv,
   parseReceipts,
@@ -18,6 +21,15 @@ import {
   resolveRef,
   type Receipt,
 } from "./railway-deploy";
+
+/** Test double for the injectable sleep -- never actually waits. */
+const noSleep = (): Promise<void> => Promise.resolve();
+
+/** One `railway deployment list --json` answer. */
+const deploymentsJson = (
+  rows: ReadonlyArray<{ id: string; status: string }>,
+): string =>
+  JSON.stringify(rows.map((r) => ({ ...r, meta: { reason: "deploy" } })));
 
 /** Records every call; each entry in `script` answers the Nth call (or throws if it's an Error). */
 function fakeExec(script: ReadonlyArray<string | Buffer | Error>): {
@@ -279,5 +291,175 @@ describe("main -- P0 ordering: ancestry gates any deploy", () => {
     expect(calls).toHaveLength(2);
     expect(calls.every((c) => c.cmd === "git")).toBe(true);
     expect(calls.some((c) => c.cmd === "railway")).toBe(false);
+  });
+});
+
+describe("classifyDeployStatus", () => {
+  test("SUCCESS is the only ok state", () => {
+    expect(classifyDeployStatus("SUCCESS")).toBe("ok");
+  });
+
+  test("failure states are terminal-bad", () => {
+    for (const s of ["FAILED", "CRASHED", "REMOVED", "SKIPPED"]) {
+      expect(classifyDeployStatus(s)).toBe("bad");
+    }
+  });
+
+  test("in-flight and UNKNOWN-to-us states stay pending, never guessed either way", () => {
+    for (const s of [
+      "BUILDING",
+      "DEPLOYING",
+      "INITIALIZING",
+      "SOME_NEW_2027",
+    ]) {
+      expect(classifyDeployStatus(s)).toBe("pending");
+    }
+  });
+});
+
+describe("latestDeployment", () => {
+  test("returns the newest row and queries with --json --limit 1", () => {
+    const { fn, calls } = fakeExec([
+      deploymentsJson([{ id: "dep-1", status: "SUCCESS" }]),
+    ]);
+    expect(latestDeployment("caisson-site", "/stage", fn)).toEqual({
+      id: "dep-1",
+      status: "SUCCESS",
+    });
+    expect(calls[0]).toEqual({
+      cmd: "railway",
+      args: [
+        "deployment",
+        "list",
+        "--service",
+        "caisson-site",
+        "--json",
+        "--limit",
+        "1",
+      ],
+    });
+  });
+
+  test("a service with no deployments yet reads as null, not a throw", () => {
+    const { fn } = fakeExec(["[]"]);
+    expect(latestDeployment("caisson-site", "/stage", fn)).toBeNull();
+  });
+
+  test("tolerates unknown vendor keys -- a Railway CLI field addition must not fail a deploy", () => {
+    const { fn } = fakeExec([
+      JSON.stringify([
+        { id: "dep-1", status: "SUCCESS", meta: {}, somethingNew: 42 },
+      ]),
+    ]);
+    expect(latestDeployment("caisson-site", "/stage", fn)?.id).toBe("dep-1");
+  });
+});
+
+describe("awaitDeployment -- the deployment status is the verdict", () => {
+  test("returns once a NEW deployment reaches SUCCESS", async () => {
+    const { fn } = fakeExec([
+      deploymentsJson([{ id: "dep-2", status: "SUCCESS" }]),
+    ]);
+    await expect(
+      awaitDeployment("caisson-site", "/stage", "dep-1", fn, noSleep),
+    ).resolves.toBeUndefined();
+  });
+
+  test("polls through in-flight states before succeeding", async () => {
+    const { fn, calls } = fakeExec([
+      deploymentsJson([{ id: "dep-2", status: "BUILDING" }]),
+      deploymentsJson([{ id: "dep-2", status: "DEPLOYING" }]),
+      deploymentsJson([{ id: "dep-2", status: "SUCCESS" }]),
+    ]);
+    await awaitDeployment("caisson-site", "/stage", "dep-1", fn, noSleep);
+    expect(calls).toHaveLength(3);
+  });
+
+  test("a genuinely failed deployment still throws -- this is not a rubber stamp", async () => {
+    const { fn } = fakeExec([
+      deploymentsJson([{ id: "dep-2", status: "FAILED" }]),
+    ]);
+    await expect(
+      awaitDeployment("caisson-site", "/stage", "dep-1", fn, noSleep),
+    ).rejects.toThrow(/deployment dep-2 ended FAILED/);
+  });
+
+  test("an upload that never created a deployment fails after the grace window", async () => {
+    // The head of the ledger never moves off `dep-1` -- the `railway up` 500-on-upload case.
+    const { fn } = fakeExec(
+      Array.from({ length: 8 }, () =>
+        deploymentsJson([{ id: "dep-1", status: "SUCCESS" }]),
+      ),
+    );
+    await expect(
+      awaitDeployment("caisson-site", "/stage", "dep-1", fn, noSleep),
+    ).rejects.toThrow(/no new caisson-site deployment was created/);
+  });
+
+  test("a service with no deployments at all is treated the same way", async () => {
+    const { fn } = fakeExec(Array.from({ length: 8 }, () => "[]"));
+    await expect(
+      awaitDeployment("caisson-site", "/stage", null, fn, noSleep),
+    ).rejects.toThrow(/no new caisson-site deployment was created/);
+  });
+
+  test("gives up rather than hanging when nothing ever goes terminal", async () => {
+    const { fn } = fakeExec(
+      Array.from({ length: 12 }, () =>
+        deploymentsJson([{ id: "dep-2", status: "BUILDING" }]),
+      ),
+    );
+    await expect(
+      awaitDeployment("caisson-site", "/stage", "dep-1", fn, noSleep, 0, 10),
+    ).rejects.toThrow(/timed out waiting/);
+  });
+});
+
+describe("main -- a dropped log stream is not a failed deploy", () => {
+  // The 2026-07-30 regression: `railway up --ci` exited non-zero on "Failed to stream build
+  // logs" while Railway's ledger recorded the very same deployment as SUCCESS. A false RED
+  // here skipped the second service in the fleet workflow and half-deployed it.
+  const service = "zz-railway-deploy-selftest";
+  const path = receiptsPath(`${import.meta.dir}/../..`, service);
+  const sha = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
+
+  const script = (upAnswer: string | Error) => [
+    `${sha}\n`, // resolveRef
+    "", // assertAncestorOfMain
+    Buffer.from("tar-bytes"), // git archive
+    "", // tar -x
+    "Liam\n", // git config user.name
+    deploymentsJson([{ id: "dep-1", status: "SUCCESS" }]), // priorId capture
+    upAnswer, // railway up
+    deploymentsJson([{ id: "dep-2", status: "SUCCESS" }]), // awaitDeployment
+  ];
+  const args: Args = { service, ref: "HEAD", force: false, dryRun: false };
+
+  test("succeeds and still writes the receipt when railway up exits non-zero", async () => {
+    const { fn } = fakeExec(
+      script(new Error("Command failed: railway up --service x --ci")),
+    );
+    try {
+      await expect(main(args, fn, noSleep)).resolves.toBeUndefined();
+      expect(existsSync(path)).toBe(true);
+      const rows = parseReceipts(readFileSync(path, "utf8"));
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.sha).toBe(sha);
+    } finally {
+      rmSync(path, { force: true });
+    }
+  });
+
+  test("a clean railway up still verifies -- and a FAILED deployment throws, no receipt", async () => {
+    const { fn } = fakeExec([
+      ...script("").slice(0, 7),
+      deploymentsJson([{ id: "dep-2", status: "FAILED" }]),
+    ]);
+    try {
+      await expect(main(args, fn, noSleep)).rejects.toThrow(/ended FAILED/);
+      expect(existsSync(path)).toBe(false);
+    } finally {
+      rmSync(path, { force: true });
+    }
   });
 });
