@@ -135,8 +135,17 @@ describe("tenant evidence internal proxy client", () => {
     expect(result).toEqual(PROOF);
     expect(await seen?.json()).toEqual({ seq: 4 });
     expect(seen?.headers.get("x-caisson-account-id")).toBe(ACCOUNT);
-    expect(seen?.headers.get("authorization")).toBe(
-      `Bearer ${createHmac("sha256", SECRET).update(ACCOUNT).digest("hex")}`,
+    const authorization = seen?.headers.get("authorization") ?? "";
+    const parts = /^Bearer (\d+)\.([0-9a-f]{64})$/.exec(authorization);
+    expect(parts).not.toBeNull();
+    const issuedAtSec = Number(parts?.[1]);
+    expect(
+      Math.abs(Math.floor(Date.now() / 1000) - issuedAtSec),
+    ).toBeLessThanOrEqual(5);
+    expect(parts?.[2]).toBe(
+      createHmac("sha256", SECRET)
+        .update(`${issuedAtSec}\n${ACCOUNT}`)
+        .digest("hex"),
     );
   });
 

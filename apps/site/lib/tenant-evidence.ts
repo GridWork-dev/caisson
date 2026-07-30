@@ -146,7 +146,15 @@ export function parseTenantEvidenceProxyConfig(
 type FetchImpl = typeof fetchWithTimeout;
 
 function accountCredential(accountId: string, secret: string): string {
-  return createHmac("sha256", secret).update(accountId).digest("hex");
+  // Timestamped bearer (release-audit v2026.07.27.1 F3): the HMAC covers
+  // "<unix-seconds>\n<accountId>" so the credential expires inside the verifier's acceptance
+  // window instead of living until the secret rotates. The verifier (apps/admin
+  // internal-proof-auth.ts) deploys before this issuer and accepts both formats mid-rollout.
+  const issuedAtSec = Math.floor(Date.now() / 1000);
+  const mac = createHmac("sha256", secret)
+    .update(`${issuedAtSec}\n${accountId}`)
+    .digest("hex");
+  return `${issuedAtSec}.${mac}`;
 }
 
 async function parseJson(response: Response): Promise<unknown> {

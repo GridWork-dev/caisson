@@ -36,7 +36,18 @@ let evidencePackRoot: string;
 let store: AuditChainStore;
 let POST: ReturnType<typeof createInternalProofRoute>;
 
-function accountCredential(accountId: string): string {
+function accountCredential(
+  accountId: string,
+  issuedAtSec: number = Math.floor(Date.now() / 1000),
+): string {
+  const mac = createHmac("sha256", PROXY_SECRET)
+    .update(`${issuedAtSec}\n${accountId}`)
+    .digest("hex");
+  return `${issuedAtSec}.${mac}`;
+}
+
+/** The pre-F3 static format, accepted while the verifier deploys ahead of the issuer. */
+function legacyAccountCredential(accountId: string): string {
   return createHmac("sha256", PROXY_SECRET).update(accountId).digest("hex");
 }
 
@@ -207,6 +218,53 @@ describe("POST /api/internal/audit/proof", () => {
     expect(
       (await POST(request(accountId, { seq: 0 }, "0".repeat(64)))).status,
     ).toBe(401);
+  });
+
+  test("accepts the legacy untimestamped credential during the verifier-first rollout", async () => {
+    const accountId = randomUUID();
+    await seed(accountId, [{ event: "created" }]);
+
+    const response = await POST(
+      request(accountId, { seq: 0 }, legacyAccountCredential(accountId)),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  test("rejects a timestamped credential outside the acceptance window", async () => {
+    const accountId = randomUUID();
+    await seed(accountId, [{ event: "created" }]);
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    const stale = await POST(
+      request(
+        accountId,
+        { seq: 0 },
+        accountCredential(accountId, nowSec - 600),
+      ),
+    );
+    const future = await POST(
+      request(
+        accountId,
+        { seq: 0 },
+        accountCredential(accountId, nowSec + 600),
+      ),
+    );
+
+    expect(stale.status).toBe(401);
+    expect(future.status).toBe(401);
+  });
+
+  test("rejects a credential whose timestamp was altered after signing", async () => {
+    const accountId = randomUUID();
+    await seed(accountId, [{ event: "created" }]);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const signed = accountCredential(accountId, nowSec - 60);
+    const tampered = `${nowSec}.${signed.split(".")[1]}`;
+
+    const response = await POST(request(accountId, { seq: 0 }, tampered));
+
+    expect(response.status).toBe(401);
   });
 
   test("rejects client-supplied account fields at the strict body boundary", async () => {
