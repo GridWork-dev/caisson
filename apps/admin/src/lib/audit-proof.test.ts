@@ -3,7 +3,7 @@
 // the redacted-row honest marking (leg 1 `na`), and strict-both-ways schema behavior.
 import { describe, expect, test } from "bun:test";
 import { generateKeyPairSync, sign as nodeSign } from "node:crypto";
-import { anchorChain, chainEntry } from "@caisson/kernel";
+import { anchorChain, chainEntry } from "@caisson/kernel/node";
 import { anchorSignatureEnvelopeBytes } from "@caisson/kernel/audit-verify";
 import type { AuditChainAnchor } from "@caisson/kernel";
 import type { RowProof } from "@caisson/audit-worm";

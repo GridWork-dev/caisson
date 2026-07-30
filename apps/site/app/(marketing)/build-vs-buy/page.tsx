@@ -263,6 +263,13 @@ export default function BuildVsBuyPage() {
           band="tint"
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
+            {/* The import path below tracks the version registry.caisson.sh SERVES, not this
+                worktree. @caisson/kernel is served at 0.6.0, where verifyChain is on the "." barrel;
+                the "@caisson/kernel/node" split is unpublished, so pointing this snippet there would
+                hand buyers an ERR_PACKAGE_PATH_NOT_EXPORTED. Flip it — with app/frameworks/eu-ai-act
+                and content/docs/base/kernel.mdx — when the kernel minor publishes: the site deploys
+                on merge to main and the registry publish is a separate operator-gated train, so the
+                two are never in step automatically. Tracked in docs/state/outstanding-work.md. */}
             <CodeBlock
               label="What you own instead of rent: controls as source"
               frame

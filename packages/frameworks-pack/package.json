@@ -13,6 +13,11 @@
       "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./registry": {
+      "bun": "./src/registry/control.ts",
+      "types": "./dist/registry/control.d.ts",
+      "default": "./dist/registry/control.js"
     }
   },
   "scripts": {

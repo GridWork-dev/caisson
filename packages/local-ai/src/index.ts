@@ -63,7 +63,7 @@ export {
   fetchWithTimeout,
   assembleMigrations,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 
 // The `InferenceBackend` port + its backends (ADR-0064). The local store leaves the embedding an
 // injected seam; the edition wires it here. CI exercises ONLY the deterministic, zero-network

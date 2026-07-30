@@ -31,6 +31,14 @@ export const metadata = buildMetadata({
 
 // Annex IV / Article → Caisson control mapping.
 // Honest scope: "produces the technical evidence" — never "makes you compliant".
+//
+// Import paths in the `evidence` snippets below track the version registry.caisson.sh SERVES, not
+// this worktree. @caisson/kernel is served at 0.6.0, where verifyChain is on the "." barrel; the
+// "@caisson/kernel/node" split is unpublished, so pointing a snippet there would hand buyers an
+// ERR_PACKAGE_PATH_NOT_EXPORTED. Flip them — with app/(marketing)/build-vs-buy and
+// content/docs/base/kernel.mdx — when the kernel minor publishes: the site deploys on merge to main
+// and the registry publish is a separate operator-gated train, so the two are never in step
+// automatically. Tracked in docs/state/outstanding-work.md.
 const ANNEX_CONTROLS = [
   {
     icon: "audit-chain" as const,

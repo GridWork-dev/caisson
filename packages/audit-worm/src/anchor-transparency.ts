@@ -34,7 +34,7 @@ import {
   safeEqualFixed,
   strictObject,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import { buildArtifactKey } from "./store.ts";
 
 // --- trust grades (ADR-0332 CR-03) -------------------------------------------------------------

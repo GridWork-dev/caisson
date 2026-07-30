@@ -172,14 +172,52 @@
         }
       ],
       "readiness": "ready"
+    },
+    {
+      "controlId": "RISK-MANAGEMENT.ASSESSMENT",
+      "title": "Risk identification and assessment",
+      "family": "Risk Management",
+      "statement": "The organization identifies risks to the achievement of its security objectives, analyzes them for likelihood and impact, and determines how each risk will be managed; the assessment is refreshed on a defined cadence and after significant change.",
+      "crosswalk": [
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC3.1"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC3.2"
+        }
+      ],
+      "evidence": [
+        {
+          "collectorId": "substrate.ai-risk-register",
+          "title": "AI risk register assessed with treatment plans on record (EU AI Act Art. 9)",
+          "summary": "all 2 AI risks are assessed with a treatment plan on record",
+          "status": "pass",
+          "facts": {
+            "entryCount": 2,
+            "managedCount": 2,
+            "deficientRisks": []
+          },
+          "manualSlots": [
+            {
+              "id": "ai-risk-management-policy",
+              "label": "AI risk-management system policy (EU AI Act Art. 9)",
+              "required": false,
+              "filled": false
+            }
+          ]
+        }
+      ],
+      "readiness": "ready"
     }
   ],
   "summary": {
-    "totalControls": 3,
-    "controlsReady": 3,
+    "totalControls": 4,
+    "controlsReady": 4,
     "controlsWithGaps": 0,
-    "totalEvidenceItems": 4,
-    "posture": "3 of 3 controls evidence-ready; no gaps recorded."
+    "totalEvidenceItems": 5,
+    "posture": "4 of 4 controls evidence-ready; no gaps recorded."
   },
   "crosswalkRollup": {
     "cells": [
@@ -328,6 +366,30 @@
         "claim": "implements",
         "evidencePointers": [
           "DATA-PROTECTION.DISPOSAL"
+        ]
+      },
+      {
+        "framework": "SOC2-TSC",
+        "reference": "CC3.1",
+        "canonicalControlIds": [
+          "RISK-MANAGEMENT.ASSESSMENT"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "RISK-MANAGEMENT.ASSESSMENT"
+        ]
+      },
+      {
+        "framework": "SOC2-TSC",
+        "reference": "CC3.2",
+        "canonicalControlIds": [
+          "RISK-MANAGEMENT.ASSESSMENT"
+        ],
+        "status": "ready",
+        "claim": "maps-to",
+        "evidencePointers": [
+          "RISK-MANAGEMENT.ASSESSMENT"
         ]
       },
       {

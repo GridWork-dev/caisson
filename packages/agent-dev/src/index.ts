@@ -78,7 +78,7 @@ export {
   anchorChain,
   verifyChain,
   CaissonError,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 export type { AuditChainEntry, AuditChainAnchor } from "@caisson/kernel";
 
 // ── The composition factory ────────────────────────────────────────────────────────────────────

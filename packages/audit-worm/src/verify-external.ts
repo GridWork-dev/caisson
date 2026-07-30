@@ -27,7 +27,7 @@ import {
   setEngine,
 } from "pkijs";
 import { fromBER } from "asn1js";
-import { parseStrict, safeEqualFixed } from "@caisson/kernel";
+import { parseStrict, safeEqualFixed } from "@caisson/kernel/node";
 import type { ArtifactStore } from "./store.ts";
 import {
   anchorReceiptKey,

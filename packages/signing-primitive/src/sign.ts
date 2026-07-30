@@ -30,7 +30,7 @@ import {
   safeEqualFixed,
   ValidationError,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 
 /**
  * The minimal structural shape this module signs: any JSON-serializable, byte-stable manifest body

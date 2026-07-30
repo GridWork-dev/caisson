@@ -6,7 +6,7 @@ import { act } from "react";
 import { generateKeyPairSync, sign as nodeSign } from "node:crypto";
 import { renderIntoJsdom } from "@caisson/testing";
 import { afterEach, describe, expect, test } from "bun:test";
-import { anchorChain, chainEntry } from "@caisson/kernel";
+import { anchorChain, chainEntry } from "@caisson/kernel/node";
 import {
   buildRowReceipt,
   anchorSignatureEnvelopeBytes,

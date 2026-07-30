@@ -44,7 +44,7 @@ import {
   type AuditChainEntry,
   type ChainVerification,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import {
   ANCHOR_SIGNATURE_VERSION,
   anchorSignatureEnvelopeBytes,

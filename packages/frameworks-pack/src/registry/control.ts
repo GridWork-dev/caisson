@@ -11,6 +11,11 @@
  * Mirrors the `defineModule` precedent (registry/schema/module-manifest.ts): typed Zod `.strict()`
  * builders that parse-and-validate at author time and fail closed on the first violation. Depends
  * only on `@caisson/kernel` (the down-only floor, ADR-0003) -- no edition or sibling-primitive dep.
+ *
+ * This module is ALSO the package's `"./registry"` entry point, and it is browser-safe: it reaches
+ * only the node-free `@caisson/kernel` `.` barrel. The package's own `.` barrel is NOT browser-safe
+ * (it re-exports `@caisson/oscal-spine`, which imports `node:crypto`), so a consumer that needs the
+ * control model inside a bundle imports `@caisson/frameworks-pack/registry`, never `.`.
  */
 import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";

@@ -5,7 +5,7 @@ import {
   canonicalize,
   ValidationError,
   type AuditChainEntry,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import {
   flaggedResult,
   passResult,

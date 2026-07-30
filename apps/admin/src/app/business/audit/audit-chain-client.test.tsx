@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { buildChain } from "@caisson/kernel";
+import { buildChain } from "@caisson/kernel/node";
 import type { RowState } from "@caisson/kernel/audit-verify";
 import { AuditChainClient } from "./audit-chain-client.tsx";
 
