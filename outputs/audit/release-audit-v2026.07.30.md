@@ -214,3 +214,72 @@ in the version PR, per symbol.
 - **Two gate-shape notes:** `gatherDiskTotals` license buckets can disagree with the total if a
   manifest carries a third licence value (balanced today, 63 = 17 + 46), and `readIndexMembers`
   returns an empty member set rather than a shape error on an empty `versions` array.
+
+## 9. Addendum — one commit landed after this audit was written
+
+This audit was written against the cumulative diff through `ee467149` (the merged version PR).
+One commit landed after it and rides the same tag, so it is reviewed here rather than left
+outside the artifact.
+
+### `80748af3` — deploy verdict moves off the CLI exit code (CONFIRMED, FIXED)
+
+**What it fixes.** `railway up --ci` exits non-zero when its build-log stream drops. On
+2026-07-30 that happened on five consecutive `deploy-railway` runs — `Failed to stream build
+logs: Failed to retrieve build log`, ~64s in — while Railway's own deployment ledger recorded
+those same deployments as `SUCCESS`. The deployment id printed by the "failed" admin step,
+`e6893546-c5aa-4278-8b1e-2e0e1c116727`, is `SUCCESS` in the ledger.
+
+**Why it was blocking for this release.** Not cosmetic, and not merely noisy. BT-2 (§8) had
+just made `deploy-railway.yml` ship the internal-proof **verifier** before its **issuer**, so a
+flake on the first service skips the second — which is exactly what run `30562233469` did. Leg 4
+of the train would have failed the same way, _after_ legs 1–3 published irreversibly. The
+half-deploy was the damage; the false RED was the cause.
+
+**How it is fixed.** `railway-deploy.ts` records the newest deployment id before uploading, then
+polls `railway deployment list --json` for a terminal state and succeeds only on `SUCCESS`. The
+CLI's exit is logged but is no longer the verdict.
+
+**Why not `--detach`.** It also dodges the log stream, and it is strictly worse: it reports green
+the moment an upload is _accepted_. That is a false green — the failure mode the workflow's
+arm-guard exists to prevent, and the one previously recorded against this very workflow. Polling
+for a terminal state is the only shape that is neither a false red nor a false green.
+
+**Adversarial checks against "this is now a rubber stamp":**
+
+- A genuinely `FAILED`/`CRASHED`/`REMOVED`/`SKIPPED` deployment still throws. Tested.
+- An upload that never creates a deployment (the `railway up` 500-on-upload seen the same day)
+  fails fast after a short grace, rather than passing because nothing contradicted it. Tested,
+  both for "ledger head never moves" and "service has no deployments at all".
+- An **unrecognized** status stays `pending` and is re-polled — never guessed as success. A future
+  Railway status string cannot silently become a pass.
+- The correlation is by id against a pre-upload snapshot, so a pre-existing `SUCCESS` at the head
+  of the ledger cannot be mistaken for this run's deployment.
+- The CLI JSON envelope is parsed **non-strict** on purpose: `meta` is a large vendor-owned object
+  on Railway's release cadence. Same rule this repo applies to provider webhook envelopes — and
+  the inverse mistake (`.strict()` on a vendor envelope) is a recorded past incident here.
+
+39 unit tests pass, and `latestDeployment` was smoke-tested against the real CLI across
+`caisson-admin`, `caisson-site`, and `caisson-license`.
+
+### Fleet state this audit leaves behind
+
+`apps/admin` is deployed at `ee467149`; `apps/site` is at `dba957bb`. That split is **safe and
+verified**, not merely assumed: the deployed verifier's bearer regex makes the timestamp prefix
+optional, the skew check is gated on `timestamp !== undefined`, and the HMAC preimage branches on
+the same condition — so the new verifier accepts both the legacy bare-hex bearer the current site
+issues and the new timestamped form. New-verifier/old-issuer is the benign direction. It also
+means the tracked removal of the legacy branch must wait until site reaches `ee467149` or later.
+
+Site being one commit behind is additionally **required** until leg 1 publishes: `ee467149`'s
+`build-vs-buy` and `eu-ai-act` snippets point at `@caisson/kernel/node`, which does not exist at
+the currently-served kernel 0.6.0. The train's leg order (publish, then deploy) is what makes the
+flip correct, and the guard comment `#368` left in the page said so before this audit did.
+
+### Correction to §5, D-series
+
+An earlier reading of the deploy failures concluded the Railway deploy path was down and the
+fleet had stopped receiving deploys. That was **wrong**, and is corrected here: the deploys
+landed every time. The live-site probe that appeared to confirm an outage was not decisive — the
+changelog entry it looked for was introduced by `ee467149` itself, whose site step was skipped
+rather than attempted. Railway's deployment ledger is the authority for this question; the
+GitHub Actions conclusion is not, and that is precisely what `80748af3` fixes.
