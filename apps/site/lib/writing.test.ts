@@ -9,6 +9,8 @@ import { PageSections } from "../components/page-sections";
 import { MARKETING_ROUTES } from "./routes";
 import { techArticle } from "./jsonld";
 import {
+  findWritingPiece,
+  WRITING_DRAFTS,
   WRITING_PIECES,
   writingLastModified,
   writingPageSpec,
@@ -193,6 +195,55 @@ describe("WRITING_PIECES registry", () => {
         datePublished: piece.publishedOn,
       }),
     ).toMatchObject({ datePublished: "2026-07-26" });
+  });
+});
+
+describe("WRITING_DRAFTS", () => {
+  test("no draft reaches the hub, a spoke route, findWritingPiece, or the sitemap", () => {
+    const html = renderToStaticMarkup(WritingHubPage());
+    const params = generateStaticParams();
+    const urls = new Set(sitemap().map((entry) => entry.url));
+
+    expect(WRITING_DRAFTS.length).toBeGreaterThan(0);
+    for (const draft of WRITING_DRAFTS) {
+      expect(html).not.toContain(pieceHref(draft));
+      expect(params).not.toContainEqual({ slug: draft.slug });
+      expect(urls.has(`https://caisson.sh${pieceHref(draft)}`)).toBe(false);
+      expect(findWritingPiece(draft.slug)).toBeUndefined();
+      expect(WRITING_PIECES.some((piece) => piece.slug === draft.slug)).toBe(
+        false,
+      );
+    }
+  });
+
+  test("a draft still meets the published source and date invariants", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    for (const draft of WRITING_DRAFTS) {
+      expect(draft.sources.length).toBeGreaterThan(0);
+      for (const source of draft.sources) {
+        expect(new URL(source.url).protocol).toBe("https:");
+        expect(source.locator.trim().length).toBeGreaterThan(0);
+      }
+      expect(isValidIsoDate(draft.publishedOn)).toBe(true);
+      expect(isValidIsoDate(draft.verifiedOn)).toBe(true);
+      expect(draft.verifiedOn <= today).toBe(true);
+
+      const spec = writingPageSpec(draft);
+      expect(spec.meta.path).toBe(pieceHref(draft));
+      expect(spec.meta.type).toBe("article");
+    }
+  });
+
+  test("the Article 50 self-audit draft is present and unpublished", () => {
+    const draft = WRITING_DRAFTS.find(
+      ({ slug }) => slug === "auditing-our-own-article-50-claims",
+    );
+    expect(draft).toBeDefined();
+    expect(draft?.verifiedOn).toBe("2026-07-27");
+    expect(draft?.related).toContain("/frameworks/eu-ai-act/article-50");
+    expect(
+      findWritingPiece("auditing-our-own-article-50-claims"),
+    ).toBeUndefined();
   });
 });
 
