@@ -17,6 +17,7 @@
     "@caisson/compliance": "workspace:*",
     "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/risk-register": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "@electric-sql/pglite": "catalog:",
     "next": "catalog:",

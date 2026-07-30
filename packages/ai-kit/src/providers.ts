@@ -27,7 +27,7 @@ import {
   fetchWithTimeout,
   ssrfGuardedFetch,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import type { AiSettings, ProviderConfig } from "@caisson/ai-config";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";

@@ -8,7 +8,7 @@
 // apps/site-local `ask_ai_*` entries and re-checking that digest is the load-bearing proof that the
 // extraction moved bytes, not migrations.
 import { expect, test } from "bun:test";
-import { assembleMigrations } from "@caisson/kernel";
+import { assembleMigrations } from "@caisson/kernel/node";
 import { platformMigrationsPackage } from "./index.ts";
 
 /** The two apps/site-local migrations `platformMigrationsPackage`'s `extra` param folds back in —

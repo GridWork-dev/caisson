@@ -26,7 +26,7 @@ import {
   safeEqualFixed,
   safeEqualVariable,
   strictObject,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import {
   type RegistryIndex,
   EDITIONS,

@@ -5,7 +5,7 @@ import {
   verifyChain,
   type AuditChainEntry,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import type { AppendResult, AuditChainStore } from "@caisson/audit-worm";
 import { computeResidual } from "./model.ts";
 import { recordResidualOverride } from "./override.ts";

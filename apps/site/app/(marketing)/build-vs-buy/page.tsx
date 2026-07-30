@@ -268,7 +268,7 @@ export default function BuildVsBuyPage() {
               frame
               status={<StatusChip label="artifact" tone="accent" dot />}
               code={`// The controls a platform checks for — as code you own.
-import { verifyChain } from "@caisson/kernel";
+import { verifyChain } from "@caisson/kernel/node";
 
 // Append-only SHA-256 chain: tamper, truncate, or reorder
 // any row and the next link fails on verify.

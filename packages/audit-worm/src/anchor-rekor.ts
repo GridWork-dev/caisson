@@ -23,7 +23,7 @@ import {
   fetchWithTimeout,
   safeEqualFixed,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import {
   isIrreversiblePublicityOptIn,
   transparencyReceiptSchema,

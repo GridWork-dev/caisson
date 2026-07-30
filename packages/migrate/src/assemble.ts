@@ -12,7 +12,7 @@ import {
   type MigrationFile,
   type PackageMigrations,
   assembleMigrations,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import type { EmittedFile, EmittedFileSet } from "./emit.ts";
 
 /** A forward-only package migration on disk: `NNNN_<name>.sql`. */

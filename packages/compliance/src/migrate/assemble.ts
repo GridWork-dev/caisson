@@ -16,7 +16,7 @@ import {
   type MigrationAssembly,
   type PackageMigrations,
   type PinnedMigrationIdentity,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import { type SelectedPackage, readPackageMigrations } from "@caisson/migrate";
 
 /** The monorepo `packages/` root, resolved from this module (…/compliance/src/migrate → …/packages). */

@@ -27,7 +27,7 @@ import {
   NotFoundError,
   ValidationError,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 import { LocalArtifactStore } from "./store.local.ts";
 import {

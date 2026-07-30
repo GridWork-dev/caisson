@@ -16,7 +16,7 @@ import {
   test,
 } from "bun:test";
 import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
-import { canonicalize, chainEntry, type JsonValue } from "@caisson/kernel";
+import { canonicalize, chainEntry, type JsonValue } from "@caisson/kernel/node";
 import { wormAnchorAccount } from "@caisson/service-license";
 import { withTenant } from "@caisson/tenancy-rls";
 import { setAdminAuthFixture, VERIFIED_ADMIN } from "@/lib/admin-auth-mock";

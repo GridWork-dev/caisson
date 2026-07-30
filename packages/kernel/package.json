@@ -14,6 +14,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./node": {
+      "bun": "./src/node.ts",
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
     "./fetch": {
       "bun": "./src/fetch.ts",
       "types": "./dist/fetch.d.ts",

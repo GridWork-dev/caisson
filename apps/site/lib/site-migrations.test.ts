@@ -7,7 +7,7 @@
 // PGlite is flaky under parallel workers — run apps/site with `--concurrency=1`.
 import { afterEach, describe, expect, test } from "bun:test";
 import { PGlite } from "@electric-sql/pglite";
-import { assembleMigrations } from "@caisson/kernel";
+import { assembleMigrations } from "@caisson/kernel/node";
 import {
   applyAll,
   platformMigrationsPackage,

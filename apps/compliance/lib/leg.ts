@@ -13,7 +13,8 @@
 //      (T4, ADR-0053), and store the artifact bytes under a tenant-scoped WORM key with a 7-yr
 //      retention term. Prove `verifyChain` passes against the trusted anchor.
 //   3. EMIT + VALIDATE  — gather REAL substrate facts (chain integrity, FORCE-RLS posture, WORM
-//      retention) through the T11 collectors, generate the deterministic control→evidence pack (T13,
+//      retention, the impersonation dual trail, and the AI risk register's treatment-plan coverage)
+//      through the T11 collectors, generate the deterministic control→evidence pack (T13,
 //      ADR-0058) for TWO frameworks (SOC2-TSC + HIPAA-Security, ADR-0057 — the same 3 collector
 //      results cited against each framework's own control ids), validate each against the canonical
 //      format contract (T12), sign each per-tenant (Ed25519, T14, ADR-0056), and mirror an
@@ -43,9 +44,11 @@ import {
   encryptField,
   parseEnvelope,
 } from "@caisson/field-crypto";
+import { defineRiskEntry } from "@caisson/risk-register";
 import {
   Ed25519Signer,
   EvidencePackBlockedError,
+  aiRiskRegisterCollector,
   beginImpersonation,
   chainVerifyCollector,
   computeCrosswalkRollup,
@@ -68,6 +71,7 @@ import {
   withImpersonation,
   withTenantCrypto,
   wormRetentionCollector,
+  type AiRiskEntryFact,
   type CollectorResult,
   type CrosswalkRollup,
   type EvidenceControlPlan,
@@ -112,6 +116,40 @@ const IMPERSONATION_OPERATOR = "support-operator-7";
 const IMPERSONATION_REASON =
   "Investigate a buyer-reported evidence-pack generation failure (support ticket CS-1042).";
 const IMPERSONATION_TTL_MS = 15 * 60 * 1000;
+
+/**
+ * The fixed AI risk register this leg attests (`@caisson/risk-register`). Authored through the
+ * package's own `defineRiskEntry`, so the residual is COMPUTED from likelihood x impact and never
+ * accepted as input — a hand-written `residual` cannot enter this array. Fixed rows + fixed digests
+ * keep the collector's evidence bytes reproducible for a fixed (tenantId, now). Both entries carry a
+ * treatment plan, so the collector returns `pass`; an entry with `treatmentPlan: null` would flag the
+ * control, which is the collector's real Art. 9 gap signal, not a leg failure mode to demonstrate
+ * here (step 4 already proves flag-never-guess through the unresolved path).
+ */
+const DEMO_AI_RISK_REGISTER: readonly AiRiskEntryFact[] = [
+  defineRiskEntry({
+    riskId: "AI-R-1",
+    subject:
+      "Evidence-pack summarization lane emits an overclaiming posture string",
+    likelihood: "possible",
+    impact: "major",
+    treatmentPlan:
+      "Readiness-language filter runs fail-closed at every render boundary; posture copy is schema-bounded.",
+    owner: "compliance@caisson.sh",
+    evidenceDigest: "a".repeat(64),
+  }),
+  defineRiskEntry({
+    riskId: "AI-R-2",
+    subject:
+      "Model provider outage degrades the support-bot answer quality without notice",
+    likelihood: "unlikely",
+    impact: "moderate",
+    treatmentPlan:
+      "Provider health is probed on a cadence; the bot fails closed to a human-handoff message.",
+    owner: "platform@caisson.sh",
+    evidenceDigest: "b".repeat(64),
+  }),
+];
 
 // --- Result shape (the four exit checks, surfaced for the app route + the integration test) -------
 
@@ -502,6 +540,16 @@ export async function runComplianceLeg(
   const impersonationResult =
     impersonationCollector().collect(impersonationFact);
 
+  // The AI risk register (`@caisson/risk-register`) traversed by the T11 risk-register collector.
+  // Its DEFAULT control id is EU-AI-Act `RISK-MANAGEMENT.AI-LIFECYCLE`; this leg emits SOC2 + HIPAA
+  // packs, so it is cited against SOC2's own risk-identification control — the same "one substrate
+  // fact, each framework's own control ids" pattern the chain/WORM/RLS results already use. The
+  // control's statement is the exact question the collector answers: risks identified, analyzed for
+  // likelihood and impact, and each one's management determined.
+  const aiRiskResult = aiRiskRegisterCollector({
+    controlId: "RISK-MANAGEMENT.ASSESSMENT",
+  }).collect({ entries: DEMO_AI_RISK_REGISTER });
+
   const controls = [
     controlPlan(soc2Tsc, "AUDIT.IMMUTABLE-LOG", [chainResult]),
     controlPlan(soc2Tsc, "DATA-PROTECTION.DISPOSAL", [wormResult]),
@@ -510,6 +558,7 @@ export async function runComplianceLeg(
       rlsResult,
       impersonationResult,
     ]),
+    controlPlan(soc2Tsc, "RISK-MANAGEMENT.ASSESSMENT", [aiRiskResult]),
   ];
   const generateInput: GenerateEvidencePackInput = {
     tenantId,

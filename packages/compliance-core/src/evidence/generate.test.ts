@@ -6,7 +6,7 @@ import {
   canonicalize,
   ValidationError,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import { matchGolden } from "@caisson/testing";
 import {
   flaggedResult,
