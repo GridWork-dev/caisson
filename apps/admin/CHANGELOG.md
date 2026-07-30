@@ -1,5 +1,43 @@
 # @caisson/admin
 
+## 0.1.1
+
+### Patch Changes
+
+- f2cb853: `@caisson/kernel`'s main entry point is now browser-safe. Everything that needs a Node built-in — constant-time secret comparison, audit-chain hashing, migration assembly, and the SSRF guard — moved to a new `@caisson/kernel/node` entry point. The main entry keeps the error model, the strict-schema helpers, canonical serialization and the audit-chain types, the money and version types, the timeout-bounded fetch, and the event sink.
+
+  Server-side code that used one of the moved functions changes a single import path: `@caisson/kernel/node` re-exports the main entry in full, so nothing else in that import list has to move. Nothing changed about what any of these functions do.
+
+  This is what lets packages built on the kernel — the trust-page generator and the artifact renderer among them — be imported directly into a browser bundle. Previously any import of the kernel dragged Node's crypto and DNS modules along with it, and a front end had to keep its own hand-written copy of that logic in step by hand. `@caisson/frameworks-pack` gains a matching `@caisson/frameworks-pack/registry` entry point exposing the control model on its own, for the same reason; its main entry is unchanged.
+
+- 0739131: The internal proof bearer now carries a signed timestamp and is rejected outside a five-minute
+  acceptance window, so the credential expires instead of staying valid until the secret rotates.
+  The verifier still accepts the legacy untimestamped form during the verifier-first rollout, and
+  the internal-proof rate limiter no longer consumes an account token on a globally-denied request.
+- Updated dependencies [e917c52]
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+- Updated dependencies [a5f9ea8]
+- Updated dependencies [894fc27]
+- Updated dependencies [b5cd9d6]
+  - @caisson/registry-schema@0.5.9
+  - @caisson/kernel@0.7.0
+  - @caisson/audit-worm@2.2.1
+  - @caisson/compliance-core@0.6.3
+  - @caisson/platform-migrations@0.3.1
+  - @caisson/platform-reads@0.2.10
+  - @caisson/service-license@0.1.1
+  - @caisson/ui@0.6.4
+  - @caisson/credits@0.5.11
+  - @caisson/auth@0.4.2
+  - @caisson/email@0.5.5
+  - @caisson/observability@0.3.6
+  - @caisson/org-controls@0.3.6
+  - @caisson/rate-limit@0.1.9
+  - @caisson/tenancy-rls@0.5.7
+  - @caisson/demo-registry@0.2.12
+  - @caisson/brand@0.1.5
+
 ## 0.1.0
 
 ### Minor Changes

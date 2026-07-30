@@ -1,5 +1,15 @@
 # @caisson/standards-gate
 
+## 0.1.1
+
+### Patch Changes
+
+- e917c52: Adds a build-time check that every named entitlement edge points at a module the registry index actually carries. The runtime now skips an unresolvable edge instead of failing the whole grant, so this gate is what keeps a missing target loud at the moment it is still free to fix.
+- e917c52: Both catalog parity checks gain the direction they were missing. The price check now also fails when the pricebook carries a row no price lock backs, which previously passed forever even though such a row still feeds upgrade credits and checkout quotes, and a renamed or retired one keeps quoting a product that no longer ships. The membership check now re-runs its claim against the published registry index as well as the workspace manifests, since the index is what a live buyer's grants actually resolve from; a gap there is reported as a warning, because publishing a member before folding it into its bundle legitimately opens that window for one release.
+- Updated dependencies [e917c52]
+  - @caisson/registry-schema@0.5.9
+  - @caisson/tenancy-rls@0.5.7
+
 ## 0.1.0
 
 ### Minor Changes

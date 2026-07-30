@@ -1,5 +1,16 @@
 # @caisson/access-review
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [e917c52]
+- Updated dependencies [e917c52]
+- Updated dependencies [f2cb853]
+  - @caisson/kernel@0.7.0
+  - @caisson/jobs@0.7.1
+  - @caisson/tenancy-rls@0.5.7
+
 ## 0.3.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@caisson/signing-primitive",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {
