@@ -23,6 +23,11 @@ import {
   buildFreshnessEditSuggestions,
   buildPackageCountEditSuggestions,
   buildTrackerEditSuggestions,
+  countChangesetBumps,
+  diffSummaryTotals,
+  summarizeQueuedChangesets,
+  SUMMARY_CLAIMS,
+  type DiskTotals,
   checkAdrCeilingParity,
   checkArchiveIntegrity,
   checkArchivedDocImmutable,
@@ -269,7 +274,7 @@ describe("check #2 — frontmatter freshness", () => {
       );
       expect(result.status).toBe("green");
       expect(result.details).toContain(
-        "all grounds paths are at or before their doc's updated: date",
+        "every doc and its grounds paths are at or before that doc's updated: date",
       );
     });
   });
@@ -330,25 +335,71 @@ describe("check #2 — frontmatter freshness", () => {
     const result = checkFrontmatterFreshness(
       [doc],
       () => false,
-      () => {
-        throw new Error("external URLs must not reach git date lookup");
+      (p) => {
+        if (p.startsWith("http"))
+          throw new Error("external URLs must not reach git date lookup");
+        return null;
       },
     );
     expect(result.status).toBe("green");
   });
 
-  test("not checked (returns null) when grounds: is missing", () => {
+  test("not checked (returns null) only when updated: is missing", () => {
     const doc: FrontmatterDoc = {
       path: "doc.md",
-      text: "---\nupdated: 2026-01-02\n---\n",
+      text: "---\nstatus: live\ngrounds:\n  - src.ts\n---\n",
     };
     expect(
       checkDocFreshness(
         doc,
         () => true,
-        () => null,
+        () => "2026-06-01",
       ),
     ).toBeNull();
+  });
+
+  // ADR-0395 §4: the doc's OWN path is now in the comparison. The docs that drifted worst
+  // (docs/build-state.md) carry no `grounds:` at all, so the own-path check must run without one.
+  test("drift: a doc committed after its own updated: date, with no grounds: key at all", () => {
+    const doc: FrontmatterDoc = {
+      path: "docs/build-state.md",
+      text: "---\nupdated: 2026-07-28\nstatus: live\n---\n",
+    };
+    const result = checkFrontmatterFreshness(
+      [doc],
+      () => true,
+      () => "2026-07-29",
+    );
+    expect(result.status).toBe("drift");
+    expect(result.details).toEqual([
+      "docs/build-state.md: last committed 2026-07-29, but its own updated: says 2026-07-28",
+    ]);
+    expect(
+      buildFreshnessEditSuggestions(
+        [doc],
+        () => true,
+        () => "2026-07-29",
+      ),
+    ).toEqual([
+      {
+        file: "docs/build-state.md",
+        line: 2,
+        suggestion: "updated: 2026-07-29",
+      },
+    ]);
+  });
+
+  test("green: a doc whose own commit is at/before its updated: date", () => {
+    const doc: FrontmatterDoc = {
+      path: "doc.md",
+      text: "---\nupdated: 2026-07-30\nstatus: live\n---\n",
+    };
+    const result = checkFrontmatterFreshness(
+      [doc],
+      () => true,
+      () => "2026-07-30",
+    );
+    expect(result.status).toBe("green");
   });
 });
 
@@ -668,6 +719,67 @@ describe("check #6 — changeset gate preflight", () => {
     const result = evaluateChangesetOutcome({ ok: false, unavailable: true });
     expect(result.status).toBe("skip");
   });
+
+  // ADR-0395 §4: on `main`, `--since=origin/main` self-compares to an empty diff and printed
+  // "NO packages to be bumped" over a real 11-file / 68-package queue. The gatherer drops
+  // `--since` there and renders what the queue actually resolves to.
+  test("countChangesetBumps reads the real queued set out of changeset's own output", () => {
+    const stdout = [
+      "🦋  info Packages to be bumped at patch:",
+      "🦋  info ",
+      "🦋  - @caisson/kernel",
+      "🦋  - @caisson/billing",
+      "🦋  ---",
+      "🦋  info NO packages to be bumped at minor",
+      "🦋  ---",
+      "🦋  info NO packages to be bumped at major",
+    ].join("\n");
+    expect(countChangesetBumps(stdout)).toEqual({
+      patch: 2,
+      minor: 0,
+      major: 0,
+    });
+    expect(summarizeQueuedChangesets(stdout, 11)).toBe(
+      "11 changeset files queued, resolving to 2 patch / 0 minor / 0 major package releases",
+    );
+  });
+
+  test("countChangesetBumps keeps each level's members separate", () => {
+    const stdout = [
+      "🦋  info Packages to be bumped at patch:",
+      "🦋  - @caisson/kernel",
+      "🦋  ---",
+      "🦋  info Packages to be bumped at minor:",
+      "🦋  - @caisson/ui",
+      "🦋  - @caisson/auth",
+      "🦋  ---",
+      "🦋  info Packages to be bumped at major:",
+      "🦋  - @caisson/cli",
+    ].join("\n");
+    expect(countChangesetBumps(stdout)).toEqual({
+      patch: 1,
+      minor: 2,
+      major: 1,
+    });
+  });
+
+  test("an empty queue reads as no releases, not as a parse failure", () => {
+    const stdout = [
+      "🦋  info NO packages to be bumped at patch",
+      "🦋  ---",
+      "🦋  info NO packages to be bumped at minor",
+      "🦋  ---",
+      "🦋  info NO packages to be bumped at major",
+    ].join("\n");
+    expect(countChangesetBumps(stdout)).toEqual({
+      patch: 0,
+      minor: 0,
+      major: 0,
+    });
+    expect(summarizeQueuedChangesets(stdout, 0)).toBe(
+      "0 changeset files queued; resolving to no package releases",
+    );
+  });
 });
 
 // ============================================================================================
@@ -822,6 +934,100 @@ describe("check #7 — package count parity", () => {
         suggestion: "`ai-evals` row -> 12 / 7 / 1323",
       },
     ]);
+  });
+
+  // ADR-0395 §4: the per-package rows were the ONLY thing this check read, so
+  // package-catalog's "62 packages / 45 commercial / 80 workspaces" sat wrong against disk
+  // (63 / 46 / 81) behind a green gate.
+  describe("summary totals", () => {
+    const totals: DiskTotals = {
+      packages: 63,
+      apache: 17,
+      commercial: 46,
+      workspaces: 81,
+    };
+
+    test("green: every declared claim matches disk truth", () => {
+      const findings = diffSummaryTotals(
+        totals,
+        new Map([
+          [
+            "docs/build-state.md",
+            "- **63 packages:** 17 Apache-2.0 and 46 commercial; 81 Bun workspaces total.\n",
+          ],
+        ]),
+        SUMMARY_CLAIMS.filter((c) => c.file === "docs/build-state.md"),
+      );
+      expect(findings).toEqual([]);
+    });
+
+    test("drift: each wrong total is reported against the disk number", () => {
+      const findings = diffSummaryTotals(
+        totals,
+        new Map([
+          [
+            "docs/state/package-catalog.md",
+            [
+              "| Packages             |     62 | 17 Apache-2.0; 45 commercial |",
+              "| Bun workspaces total | **80** | root discovery               |",
+              "",
+              "## Open Base — 17 Apache-2.0 packages",
+            ].join("\n"),
+          ],
+        ]),
+        SUMMARY_CLAIMS.filter(
+          (c) => c.file === "docs/state/package-catalog.md",
+        ),
+      );
+      expect(findings.map((f) => f.suggestion)).toEqual([
+        "packages total -> 63",
+        "commercial packages -> 46",
+        "Bun workspaces -> 81",
+      ]);
+      expect(findings[0]?.detail).toContain(
+        "docs/state/package-catalog.md:1 summary says 62 packages total, disk truth is 63",
+      );
+    });
+
+    test("drift: a claim whose pattern stopped matching is reported, never silently skipped", () => {
+      const findings = diffSummaryTotals(
+        totals,
+        new Map([
+          ["docs/build-state.md", "the package census now lives elsewhere\n"],
+        ]),
+        SUMMARY_CLAIMS.filter((c) => c.file === "docs/build-state.md"),
+      );
+      expect(findings).toHaveLength(4);
+      expect(findings[0]?.line).toBeNull();
+      expect(findings[0]?.detail).toContain("no longer matches the shape");
+    });
+
+    test("a doc absent from the text map is skipped (existence is check #8's job)", () => {
+      expect(diffSummaryTotals(totals, new Map())).toEqual([]);
+    });
+
+    test("checkPackageCountParity: rows green but a summary total wrong is still drift", () => {
+      const disk = new Map<string, PackageCounts>([
+        ["kernel", { src: 13, tests: 10, loc: 1427 }],
+      ]);
+      const result = checkPackageCountParity(
+        disk,
+        "| `kernel` | 13 / 10 / 1427 | built |",
+        {
+          totals,
+          docTexts: new Map([
+            [
+              "docs/build-state.md",
+              "- **62 packages:** 17 Apache-2.0 and 46 commercial; 81 Bun workspaces total.\n",
+            ],
+          ]),
+        },
+      );
+      expect(result.status).toBe("drift");
+      expect(result.details.some((d) => d.includes("packages total"))).toBe(
+        true,
+      );
+    });
   });
 });
 
