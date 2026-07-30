@@ -11,6 +11,51 @@ grounds:
 
 # Deploy log
 
+## 2026-07-30 (PM) — release train `v2026.07.30` off `d9ae893e` (first fully automated leg 4)
+
+The DEPLOY act for the `v2026.07.30` release train. **The first ride where leg 4 deployed by itself**
+— every prior fleet deploy in this log was run by hand from the operator's box.
+
+**Leg 4 deployed `caisson-admin` (19:21:41Z) then `caisson-site` (19:24:27Z), in that order.** The
+ordering is load-bearing and now enforced in the workflow: `apps/admin` is the internal-proof bearer
+VERIFIER and `apps/site` is its ISSUER, so a new issuer against an old verifier is a hard 401 on every
+buyer evidence dashboard. Both at `d9ae893e`; receipts appended in `docs/deploy/receipts/`.
+
+**What made that possible:** `railway up --ci` exits non-zero when its build-log stream drops, and did
+so on five consecutive runs today whose deployments Railway's ledger records as `SUCCESS`. That false
+RED was not cosmetic — on run `30562233469` it failed the admin step and skipped site, half-deploying
+the fleet. `80748af3` moved the verdict off the CLI exit code onto the deployment's own terminal
+status (`--detach` was rejected: it reports green on upload acceptance, a false green).
+
+**The registry Worker is still a manual step.** The train has no leg for it, and it is not optional:
+leg 1 uploads tarballs to R2, but `deploy-entry.ts` inlines `registry/index.json` into the Worker
+bundle at build time, so a published version is not _resolvable_ until the Worker is redeployed. Run
+by hand here (`registry/worker/deploy.sh` → version `d5e82c9b`). Between leg 4 and that redeploy the
+site advertised `@caisson/kernel/node` while the registry still resolved 0.6.0, where that entry point
+does not exist. Tracked as a train gap in `docs/state/outstanding-work.md`.
+
+**Edge propagation is not instant.** For roughly a minute after the Worker deploy the packument still
+served the previous `dist-tags.latest`. A probe fired immediately after `wrangler deploy` reads stale;
+give it a minute before concluding a deploy failed.
+
+| Surface             | Evidence                                                                          | State  |
+| ------------------- | --------------------------------------------------------------------------------- | ------ |
+| caisson-admin       | Railway `f343ee3b` SUCCESS 19:21:41Z (verifier, deployed first)                   | **OK** |
+| caisson-site        | Railway `0411ebf6` SUCCESS 19:24:27Z; `/updates` shows `kernel-browser-safe-v0-6` | **OK** |
+| Registry Worker     | `wrangler deploy` → version `d5e82c9b`; `registry.caisson.sh` 200                 | **OK** |
+| Registry resolution | `@caisson/kernel` packument + `/modules` both `0.7.0`; `@caisson/ui` `0.6.4`      | **OK** |
+| Buyer install path  | clean-env `bun add @caisson/kernel` → **0.7.0**, exports include `./node`         | **OK** |
+| Tarball integrity   | `kernel-0.7.0.tgz` 200, 76576 bytes — matches the `tarballs.json` row exactly     | **OK** |
+| Entitlement gating  | anonymous `/index.json` serves **17** modules (the Apache-2.0 base) — unchanged   | **OK** |
+| Public mirror       | caisson-oss HEAD `97856957` "mirror sync from d9ae893"                            | **OK** |
+
+**Not deployed this ride:** `caisson-license`, `caisson-docs`, `caisson-support-bot` remain at
+`f9c04f33`. Leg 4 covers admin + site only; nothing in this release changed those services. **No
+migration ran** — `0033` was already applied in the 2026-07-29 deploy below.
+
+**npm leg skipped** by operator lock — `RELEASE_NPM_MIRROR_ARMED` is deliberately unset, so
+`bunx @caisson-sh/cli@latest` still 404s. Expected, not a failure.
+
 ## 2026-07-29 (PM) — `RAILWAY_TOKEN` armed + full fleet deploy off `f9c04f33`
 
 The DEPLOY act for the six PRs merged this sitting (#361–#366), and the close of the credential gap
