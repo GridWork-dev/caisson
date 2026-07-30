@@ -39,7 +39,7 @@ import {
   ValidationError,
   type MigrationAssembly,
   type PackageMigrations,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 
 /** The contributing package slugs — the down-only DAG `assembleMigrations` topo-orders (ADR-0003). */
 const LOCAL_STORE_SLUG = "@caisson/local-store";

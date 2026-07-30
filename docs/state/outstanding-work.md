@@ -192,6 +192,20 @@ These are not part of the active completion program:
 - CAISSON-78 until a competitor-event cadence fires.
 - CAISSON-130 until a future copy trigger; site copy is frozen in this program.
 - CAISSON-39 work outside the four D10 technical receipts.
+- Kernel `/node` import paths on the three buyer-facing surfaces
+  (`apps/site/app/(marketing)/build-vs-buy/page.tsx`,
+  `apps/site/app/frameworks/eu-ai-act/page.tsx`, and the security, audit-chain, and
+  migration-assembly blocks of `apps/site/content/docs/base/kernel.mdx`) until the kernel minor
+  publishes. They describe `@caisson/kernel` because that is what registry.caisson.sh serves at
+  0.6.0, where those symbols are on the `.` barrel; the `@caisson/kernel/node` split is in-repo and
+  unpublished, so describing it today would hand a licensed buyer an
+  `ERR_PACKAGE_PATH_NOT_EXPORTED`. Nothing couples the two: the site redeploys on any push to `main`
+  touching `apps/site/**` or `packages/**` (`deploy-railway.yml`), while the registry publish only
+  runs from `release-train.yml` on a published release, gated on `RELEASE_TRAIN_ARMED`. Flip all
+  three in the same change as the first release that carries the split, **per symbol, not per
+  block** — each of those doc sections mixes moved and unmoved exports (`canonicalize`, `scrubDeep`,
+  `scrubForEgress`, `looksLikeSecret`, and `assertNotReadOnly` stay on the `.` barrel; only the
+  hashing, constant-time-compare, SSRF, and migration-assembly functions move).
 - Affiliates, directories, multi-year pricing, production CMK, ISO claims, Railway PITR,
   vertical packages, MySQL, Socket, SOC 2, AuditKit, and rich OSCAL until their documented
   triggers fire.

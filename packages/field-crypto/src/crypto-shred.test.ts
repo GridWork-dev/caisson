@@ -7,7 +7,7 @@ import {
   ValidationError,
   verifyChain,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import {
   InMemoryWrappedKeyStore,
   KmsKeyProvider,

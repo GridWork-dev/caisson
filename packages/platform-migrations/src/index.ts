@@ -29,7 +29,7 @@ import {
   type MigrationFile,
   type PackageMigrations,
   assembleMigrations,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import {
   type MigrationApplier,
   type MigrationRunResult,

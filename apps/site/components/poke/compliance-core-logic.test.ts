@@ -10,7 +10,7 @@ import { join } from "node:path";
 import {
   anchorChain as realAnchorChain,
   buildChain as realBuildChain,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import { hashChainLinkAsync as realHashChainLinkAsync } from "@caisson/kernel/audit-verify";
 import {
   serializeEnvelope as realSerializeEnvelope,

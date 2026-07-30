@@ -10,7 +10,7 @@
 // canonical controls exactly the way a canonical control points at an external framework.
 import { z } from "zod";
 import { strictObject, parseStrict } from "@caisson/kernel";
-import { CrosswalkReference } from "@caisson/frameworks-pack";
+import { CrosswalkReference } from "@caisson/frameworks-pack/registry";
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 

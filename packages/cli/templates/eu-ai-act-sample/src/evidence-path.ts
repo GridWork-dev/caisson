@@ -11,7 +11,7 @@
 // This is a SAMPLE, not the product: no WORM store, no evidence-pack generator, no compliance
 // control catalogue. The full evidence-pack pipeline (versioned packs, control mapping, retention
 // policy) ships in the commercial Compliance edition — this file imports NOTHING from it.
-import { anchorChain, buildChain, verifyChain } from "@caisson/kernel";
+import { anchorChain, buildChain, verifyChain } from "@caisson/kernel/node";
 import type {
   AuditChainAnchor,
   AuditChainEntry,

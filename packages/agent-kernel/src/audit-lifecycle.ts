@@ -21,7 +21,7 @@ import {
   validateVersionSet,
   currentVersions,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import type {
   AuditChainEntry,
   AuditChainAnchor,

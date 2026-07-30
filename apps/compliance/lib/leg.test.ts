@@ -62,7 +62,9 @@ describe("compliance reference app — the full leg end to end", () => {
     expect(result.evidence.deterministic).toBe(true);
     expect(result.evidence.validatedAgainstFormat).toBe(true);
     expect(result.evidence.signatureValid).toBe(true);
-    expect(result.evidence.controlCount).toBe(3);
+    // Four SOC2 controls: immutable log, disposal, logical access, and risk identification — the
+    // last cited from the AI risk register's treatment-plan traversal (aiRiskRegisterCollector).
+    expect(result.evidence.controlCount).toBe(4);
     expect(result.evidence.controlsWithGaps).toBe(0);
     expect(result.evidence.sha256).toMatch(/^[0-9a-f]{64}$/);
     // Readiness copy only — never an attestation (ADR-0058 / TM-K).

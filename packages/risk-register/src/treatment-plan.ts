@@ -10,7 +10,7 @@ import {
   strictObject,
   type JsonValue,
 } from "@caisson/kernel";
-import { CrosswalkReference } from "@caisson/frameworks-pack";
+import { CrosswalkReference } from "@caisson/frameworks-pack/registry";
 import {
   computeResidual,
   Impact,

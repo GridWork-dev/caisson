@@ -11,7 +11,7 @@ import {
   hashChainLink as kernelHashChainLink,
   verifyChain as kernelVerifyChain,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import {
   DEFAULT_RETENTION_YEARS as PKG_DEFAULT_YEARS,
   MIN_RETENTION_YEARS as PKG_MIN_YEARS,

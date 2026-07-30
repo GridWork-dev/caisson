@@ -11,7 +11,7 @@ import {
   ValidationError,
   type AuditChainEntry,
   type ChainVerification,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import { buildEvidencePack } from "@caisson/kernel/evidence";
 import { EVIDENCE_PACK_KEY_ID_MAX_LENGTH } from "@caisson/kernel/evidence";
 import { anchorSignatureEnvelopeBytes } from "@caisson/kernel/audit-verify";

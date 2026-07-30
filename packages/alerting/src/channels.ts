@@ -14,7 +14,7 @@ import {
   fetchWithTimeout,
   InternalError,
   strictObject,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import { z } from "zod";
 import type { Emailer } from "@caisson/email";
 import type { AlertEvent, AlertSeverity } from "./types.ts";

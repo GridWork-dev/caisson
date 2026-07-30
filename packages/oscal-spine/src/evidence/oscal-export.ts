@@ -35,7 +35,7 @@ import {
   InternalError,
   strictObject,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson/kernel/node";
 import type {
   OscalEvidencePackManifest,
   OscalManifestControl,
