@@ -136,7 +136,81 @@ release and is not a blocker for it, but it is the highest-leverage unpaid debt 
 
 ## 7. Not covered
 
-- The independent adversarial verification pass (see §Lane).
-- Live-transport behavior: no live leg was exercised by this audit. The checklist's live-hybrid
-  retrieval gate (`--local`) is a separate box.
 - `apps/site` visual/UI regression — no browser lane ran.
+- Runtime behavior of the deployed fleet beyond the endpoint probes and the live retrieval leg.
+
+## 8. The independent SHIP-audit lanes
+
+Both lanes ran against `v2026.07.27.1..b5cd9d61` without sight of §2–§6, so their agreement is
+evidence and their disagreement is signal. **They found three blockers the main-thread pass
+missed — one of which would have broken production for every buyer.** That is the case for the
+lane, stated plainly.
+
+### BT-2 — the train deploys the bearer _issuer_ without the _verifier_ (CONFIRMED, was going to ship)
+
+`release-train.yml` leg 4 dispatches `deploy-railway.yml`, which deploys **one service**:
+`--service caisson-site`, hardcoded, no service input. The F3 change (#370) ships the issuer
+(`apps/site/lib/tenant-evidence.ts`, now minting `<unix-sec>.<hmac>`) and the verifier
+(`apps/admin/.../internal-proof-auth.ts`, which accepts both forms) in the **same commit** — and
+the file's own comment names the required order: _the verifier deploys before the issuer._
+
+Verified independently: `git merge-base --is-ancestor 07391314 f9c04f33` → **NO**. Live admin is
+running the pre-F3 verifier, whose regex is `^Bearer ([0-9a-f]{64})$` and cannot match a
+timestamped credential. So an unmodified ride publishes a site that mints bearers the live admin
+rejects → **hard 401 on the buyer evidence dashboard and the audit-proof route, for every buyer,
+until someone manually deploys admin.** `docs/ops/launch-runbook.md` states the ordering principle
+but lumps "deploy site and admin" into one unordered step, so the manual path is unguarded too.
+
+This is a standing gap, not a one-release accident: _no_ admin/license/docs/support-bot change has
+ever ridden the train. Disposition is the operator's — see the release checklist.
+
+### BT-1 — `bun run sot` was RED on `main`, and it is a blocking readiness check (CONFIRMED, FIXED)
+
+`dba957bb` moved `docs/ops/db-restore.md`, a declared `grounds:` path of
+`docs/ops/incident-response.md`, without restamping the dependent. Reproduced. `release-readiness.ts`
+runs `bun run sot` as check 4 and `propagate` declares `needs: readiness`, so **publishing the
+Release would have stopped the train at leg 0** — no publish, no mirror, no deploy. Fixed in the
+version PR. This is the freshness gate's new `grounds:` cascade doing exactly its job, one release
+after being taught to see.
+
+### BT-3 — the kernel doc flip (CONFIRMED, FIXED)
+
+Independently reached the same conclusion as D3, and **corrected its error identity**: the failure
+is `SyntaxError: does not provide an export named 'verifyChain'`, not the
+`ERR_PACKAGE_PATH_NOT_EXPORTED` the in-code comments predicted — that is the inverse error. Fixed
+in the version PR, per symbol.
+
+### Where the lanes were wrong, and where this audit was
+
+- **The security lane's D1 timing claim is wrong.** It held that the F3 legacy-bearer branch is
+  already removable because "the fleet deploy after this change" is in-range at `d7f7d834`.
+  Verified false: `d7f7d834` is commit 11 of 17 and #370 is commit 14 — the deploy **precedes** the
+  change, and `git show d7f7d834:apps/admin/src/lib/internal-proof-auth.ts` contains no
+  `TIMESTAMP_WINDOW_SEC`. The deploy that carries the verifier is _this train's leg 4_. Acting on
+  that finding would have removed the compatibility branch mid-rollout and caused the very outage
+  BT-2 describes. The finding itself (unbounded legacy credential) is real; only its timing was not.
+- **This audit's §2 "whole-repo gates: sot green" was stale.** It was true on the branch where it
+  was run and false on `main` by the time the wave landed. The code lane caught it. A gate result is
+  only as good as the tree it was run against.
+- **Neither lane, nor this audit, found the sibling-churn (§4).** Tooling did.
+
+### Additional disclosures from the lanes (verified, none blocking)
+
+- **`browser-safety.test.ts` misses three taint forms.** Empirically mutation-tested by the code
+  lane: it catches `node:`-prefixed static imports, but a bare `from "crypto"`, a dynamic
+  `await import("node:crypto")`, and a node-only third-party dep (`pg`) all pass. Bundlers polyfill
+  the first two identically. The repo is clean today (zero bare node-builtin specifiers) and no
+  eslint rule backstops it.
+- **`changeset-gate-preflight` reports GREEN unconditionally on `main`.** The widened gate is
+  honest in its text but hardcodes `status: "green"` on `main`, so `[GREEN]` there is a label with
+  no assertion behind it. It was already blind there, so nothing regressed — but two of the three
+  repaired gates genuinely assert and this one still does not.
+- **Scalar / whole-transaction partial refunds never record `refunded_amount`.** `recordLineRefund`
+  is called only in the per-line branch; a provider partial arriving with `items: []` leaves the
+  upgrade-credit floor at the pre-refund price. Latent — `paidByItemForAccount` has no caller.
+- **`readAdjustmentItems` can poison-pill a delivery.** Throwing on a duplicate `item_id` returns
+  non-2xx, so the provider redelivers the same malformed adjustment indefinitely. Deliberate, but
+  there is no dead-letter path if the "shape the provider never produces" assumption is ever wrong.
+- **Two gate-shape notes:** `gatherDiskTotals` license buckets can disagree with the total if a
+  manifest carries a third licence value (balanced today, 63 = 17 + 46), and `readIndexMembers`
+  returns an empty member set rather than a shape error on an empty `versions` array.
