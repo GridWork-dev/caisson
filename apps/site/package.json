@@ -16,6 +16,8 @@
     "remotion:render": "node node_modules/.bin/remotion render remotion/index.ts AuditWormDemo public/videos/audit-worm-demo.mp4 --codec=h264"
   },
   "dependencies": {
+    "@azure/identity": "^4",
+    "@azure/keyvault-keys": "^4",
     "@better-auth/kysely-adapter": "1.6.23",
     "@caisson/access-review": "workspace:*",
     "@caisson/agent-kernel": "workspace:*",
@@ -61,8 +63,6 @@
     "@caisson/trust-page": "workspace:*",
     "@caisson/ui": "workspace:*",
     "@caisson/ui-pro": "workspace:*",
-    "@azure/identity": "^4",
-    "@azure/keyvault-keys": "^4",
     "@electric-sql/pglite": "catalog:",
     "@orama/orama": "^3.1.18",
     "@paddle/paddle-js": "^1.4.2",
@@ -82,6 +82,7 @@
     "posthog-js": "^1.396.3",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "server-only": "^0.0.1",
     "three": "^0.185.1",
     "web-vitals": "^5.3.0",
     "zod": "catalog:"

@@ -3,12 +3,21 @@
   "workspaces": {
     ".": {},
     "tooling/*": {},
+    "tooling/standards-gate": {
+      "ignoreDependencies": ["zod"]
+    },
     "packages/*": {},
+    "packages/billing-orchestration": {
+      "ignoreDependencies": ["playwright"]
+    },
     "apps/*": {},
     "registry": {},
     "services/license": {},
-    "services/docs": {},
-    "services/intel": {}
+    "services/docs": {
+      "ignoreDependencies": ["sqlite-vec"]
+    },
+    "services/intel": {},
+    "services/betterstack-adapter": {}
   },
   "ignore": ["**/dist/**", "**/*.d.ts", "**/CHANGELOG.md"]
 }

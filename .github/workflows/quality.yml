@@ -223,12 +223,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: linux
-            runs-on: blacksmith-4vcpu-ubuntu-2404
-          - platform: macos
-            runs-on: macos-15
-    runs-on: ${{ matrix.runs-on }}
+        platform: [linux, macos]
+    # runs-on is resolved INLINE rather than carried as a second matrix key: GitHub names a matrix
+    # job after every dimension that varies, so `include:` with a `runs-on` key renamed this check
+    # `native-ext (macos, macos-15)` and orphaned the `native-ext (macos)` name the required-check
+    # convention pins. Keep the runner out of the matrix and the name stays stable across a runner swap.
+    runs-on: ${{ matrix.platform == 'macos' && 'macos-15' || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
