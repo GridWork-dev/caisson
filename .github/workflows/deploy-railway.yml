@@ -101,12 +101,15 @@ jobs:
       # dir, and appends a single-use receipt — never a bare `railway up` off the live checkout.
       #
       # ORDER IS LOAD-BEARING: admin before site. admin is the internal-proof bearer VERIFIER and
-      # site is its ISSUER, and the two ship in the same commit (#370). A new issuer against an old
-      # verifier is a hard 401 on every buyer's evidence dashboard, because the pre-F3 verifier
-      # regex `^Bearer ([0-9a-f]{64})$` cannot match a `<unix-seconds>.<hmac>` credential. The new
-      # verifier accepts BOTH forms, so verifier-first is the safe order and issuer-first is not.
+      # site is its ISSUER. The standing rule is that the verifier must already understand every
+      # format the live issuer can send, which only verifier-first guarantees: a new issuer against
+      # an old verifier is a hard 401 on every buyer's evidence dashboard (the pre-F3 verifier regex
+      # `^Bearer ([0-9a-f]{64})$` could not match a `<unix-seconds>.<hmac>` credential at all).
       # Found by the v2026.07.30 release audit: until then this job deployed ONLY caisson-site, so
       # no admin change had ever ridden the train and admin silently drifted behind main.
+      # The dual-format acceptance that made the F3 rollout itself safe is GONE as of 2026-07-31
+      # (see internal-proof-auth.ts) — that was a one-release transition, not the rule. The rule is
+      # this ordering.
       - name: deploy apps/admin to Railway (verifier — MUST precede the issuer)
         if: steps.guard.outputs.armed == 'true'
         env:

@@ -28,14 +28,18 @@ const configSchema = z
     internalHost: privateHostSchema,
   })
   .strict();
-// Credential formats (release-audit v2026.07.27.1 F3): the issuer now sends
-// "<unix-seconds>.<hmac-hex>" where the HMAC covers "<unix-seconds>\n<accountId>" (the account id
-// schema rejects whitespace, so "\n" is an unambiguous separator), giving the bearer a bounded
-// lifetime instead of being valid until the secret rotates. The bare-hex legacy form (HMAC over
-// the account id alone, no expiry) stays accepted so the verifier (admin) can deploy before the
-// issuer (site) without 401ing the seam mid-rollout.
-// ponytail: remove the legacy branch once the fleet deploy after this change lands.
-const BEARER = /^Bearer (?:(\d{1,13})\.)?([0-9a-f]{64})$/u;
+// Credential format (release-audit v2026.07.27.1 F3): the issuer sends "<unix-seconds>.<hmac-hex>"
+// where the HMAC covers "<unix-seconds>\n<accountId>" (the account id schema rejects whitespace, so
+// "\n" is an unambiguous separator), giving the bearer a bounded lifetime instead of being valid
+// until the secret rotates.
+//
+// The pre-F3 bare-hex form (HMAC over the account id alone, no expiry) was accepted alongside it
+// ONLY so this verifier could deploy ahead of the issuer without 401ing the seam mid-rollout. That
+// window closed with the v2026.07.30 train, whose leg 4 deployed both halves at `d9ae893e` — admin
+// 19:21:41Z, then site 19:24:27Z — so the timestamp is now mandatory. Keeping it optional would
+// have left F3 unmet: a leaked pre-F3 credential stays valid until the secret rotates, which is the
+// exact hole the timestamp exists to close.
+const BEARER = /^Bearer (\d{1,13})\.([0-9a-f]{64})$/u;
 /** Accept a timestamped credential minted within this many seconds, either direction (skew). */
 const TIMESTAMP_WINDOW_SEC = 300;
 
@@ -69,21 +73,15 @@ export function authenticateInternalProofRequest(
 
   const match = request.headers.get("authorization")?.match(BEARER);
   if (match === undefined || match === null) return null;
-  const timestamp = match[1];
-  if (timestamp !== undefined) {
-    const issuedAtSec = Number.parseInt(timestamp, 10);
-    const nowSec = Math.floor(nowMs / 1000);
-    // Fail-closed shape: the negated comparison rejects on NaN instead of falling through.
-    if (!(Math.abs(nowSec - issuedAtSec) <= TIMESTAMP_WINDOW_SEC)) return null;
-  }
+  const timestamp = match[1] ?? "";
+  const issuedAtSec = Number.parseInt(timestamp, 10);
+  const nowSec = Math.floor(nowMs / 1000);
+  // Fail-closed shape: the negated comparison rejects on NaN instead of falling through.
+  if (!(Math.abs(nowSec - issuedAtSec) <= TIMESTAMP_WINDOW_SEC)) return null;
   const supplied = Buffer.from(match[2] ?? "", "utf8");
   const expected = Buffer.from(
     createHmac("sha256", config.secret)
-      .update(
-        timestamp === undefined
-          ? accountResult.data
-          : `${timestamp}\n${accountResult.data}`,
-      )
+      .update(`${timestamp}\n${accountResult.data}`)
       .digest("hex"),
     "utf8",
   );
