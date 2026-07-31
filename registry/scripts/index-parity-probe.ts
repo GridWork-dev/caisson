@@ -20,6 +20,11 @@
 //              unauthenticated Railway readiness route, so this leg is externally reachable). Equal ⇒
 //              the admin image baked the SAME index.
 //
+// USAGE: `bun registry/scripts/index-parity-probe.ts [--only worker[,license,admin]]`. The default
+// probes every leg (the fleet-parity posture). `--only` scopes the run to the surfaces a caller just
+// deployed — the release train's Worker leg runs `--only worker`, because it redeploys the edge
+// before it redeploys admin/site and a full-fleet probe would red on legs it has not reached yet.
+//
 // registry/ is NOT a workspace member, so `@caisson/*` bare specifiers do not resolve here — this file
 // uses only relative imports, node built-ins, and zod. `fetchWithTimeout` is inlined for the same
 // reason (it mirrors @caisson/kernel's helper: an explicit AbortController, never the Bun-forbidden
@@ -76,6 +81,11 @@ export interface LegResult {
   readonly detail: string;
 }
 
+export type ParityLeg = LegResult["leg"];
+
+/** The legs that cost a network round trip. `repo` is local and is always the reference row. */
+export const PROBED_LEGS = ["license", "worker", "admin"] as const;
+
 export interface ParityInputs {
   /** The git-tracked registry/index.json bytes (the reference). */
   readonly repoBytes: Uint8Array | string;
@@ -85,6 +95,15 @@ export interface ParityInputs {
   readonly workerIndex: unknown | null;
   /** Parsed admin /healthz JSON, or null when the app was unreachable. */
   readonly adminHealthz: unknown | null;
+  /**
+   * Restrict the report to these legs; the local `repo` reference row is always emitted. Default
+   * (undefined) is every leg — the full fleet-parity posture this probe was written for.
+   *
+   * A post-deploy gate should scope itself to the surface it just deployed: the release train
+   * redeploys the Worker before it redeploys admin/site, so a full-fleet probe run at that moment
+   * would red on legs the train has not reached yet. See .github/workflows/deploy-worker.yml.
+   */
+  readonly legs?: readonly ParityLeg[] | undefined;
 }
 
 export interface ParityReport {
@@ -101,6 +120,8 @@ export interface ParityReport {
  */
 export function computeParity(inputs: ParityInputs): ParityReport {
   const rows: LegResult[] = [];
+  const want = (leg: ParityLeg): boolean =>
+    inputs.legs === undefined || inputs.legs.includes(leg);
 
   // --- repo (reference) ---
   const repoDigest = indexDigest12(inputs.repoBytes);
@@ -121,8 +142,14 @@ export function computeParity(inputs: ParityInputs): ParityReport {
       detail: `${repoDigest} — UNPARSEABLE repo index.json`,
     });
     // A broken reference makes every comparison meaningless — report and bail to drift.
-    for (const leg of ["license", "worker", "admin"] as const) {
-      rows.push({ leg, status: "drift", detail: "skipped (repo unparseable)" });
+    for (const leg of PROBED_LEGS) {
+      if (want(leg)) {
+        rows.push({
+          leg,
+          status: "drift",
+          detail: "skipped (repo unparseable)",
+        });
+      }
     }
     return { rows, drift: true };
   }
@@ -134,60 +161,71 @@ export function computeParity(inputs: ParityInputs): ParityReport {
   });
 
   // --- license (strong: raw-byte digest equality) ---
-  rows.push(
-    digestLegResult("license", "/health", inputs.licenseHealth, repoDigest),
-  );
+  if (want("license")) {
+    rows.push(
+      digestLegResult("license", "/health", inputs.licenseHealth, repoDigest),
+    );
+  }
 
   // --- worker (served entries must be no-staler than repo) ---
-  if (inputs.workerIndex === null) {
-    rows.push({
-      leg: "worker",
-      status: "unreachable",
-      detail: "GET /index.json failed",
-    });
-  } else {
-    const parsed = IndexShape.safeParse(inputs.workerIndex);
-    if (!parsed.success) {
-      rows.push({
-        leg: "worker",
-        status: "drift",
-        detail: "Worker index did not parse",
-      });
-    } else {
-      const mismatches: string[] = [];
-      for (const m of parsed.data.modules) {
-        const repoVersion = repoLatest.get(m.id);
-        if (repoVersion === undefined) {
-          mismatches.push(`${m.id} served but absent from repo`);
-        } else if (repoVersion !== m.latest) {
-          mismatches.push(`${m.id} worker@${m.latest} != repo@${repoVersion}`);
-        }
-      }
-      rows.push(
-        mismatches.length === 0
-          ? {
-              leg: "worker",
-              status: "ok",
-              detail: `${String(parsed.data.modules.length)} served entries all match repo latest`,
-            }
-          : {
-              leg: "worker",
-              status: "drift",
-              detail: mismatches.join("; "),
-            },
-      );
-    }
+  if (want("worker")) {
+    rows.push(workerLegResult(inputs.workerIndex, repoLatest));
   }
 
   // --- admin (strong: raw-byte digest equality, same shape as license) ---
-  rows.push(
-    digestLegResult("admin", "/healthz", inputs.adminHealthz, repoDigest),
-  );
+  if (want("admin")) {
+    rows.push(
+      digestLegResult("admin", "/healthz", inputs.adminHealthz, repoDigest),
+    );
+  }
 
   const drift = rows.some(
     (r) => r.status === "drift" || r.status === "unreachable",
   );
   return { rows, drift };
+}
+
+/** Compare the anon-filtered view the Worker SERVES against the repo reference: every served entry
+ *  must exist in the repo index at the same `latest`. Deliberately not a byte digest — the Worker
+ *  filters by license, so its response is a subset and a raw-byte comparison is meaningless. This
+ *  proves no STALE version is served; it cannot prove anon-COMPLETENESS (a missing entry may simply
+ *  be gated), and it is blind to a release that bumps only commercial modules. Strengthening that
+ *  would need the Worker to report a digest over its whole baked index at /health. */
+function workerLegResult(
+  workerIndex: unknown | null,
+  repoLatest: ReadonlyMap<string, string>,
+): LegResult {
+  if (workerIndex === null) {
+    return {
+      leg: "worker",
+      status: "unreachable",
+      detail: "GET /index.json failed",
+    };
+  }
+  const parsed = IndexShape.safeParse(workerIndex);
+  if (!parsed.success) {
+    return {
+      leg: "worker",
+      status: "drift",
+      detail: "Worker index did not parse",
+    };
+  }
+  const mismatches: string[] = [];
+  for (const m of parsed.data.modules) {
+    const repoVersion = repoLatest.get(m.id);
+    if (repoVersion === undefined) {
+      mismatches.push(`${m.id} served but absent from repo`);
+    } else if (repoVersion !== m.latest) {
+      mismatches.push(`${m.id} worker@${m.latest} != repo@${repoVersion}`);
+    }
+  }
+  return mismatches.length === 0
+    ? {
+        leg: "worker",
+        status: "ok",
+        detail: `${String(parsed.data.modules.length)} served entries all match repo latest`,
+      }
+    : { leg: "worker", status: "drift", detail: mismatches.join("; ") };
 }
 
 /** Compare a service's reported digest (license `/health` or admin `/healthz` — identical shape,
@@ -269,18 +307,51 @@ export async function fetchJsonWithRetry(
   return null;
 }
 
+/**
+ * `--only worker` / `--only license,admin` — scope the run to the named legs. Undefined when the
+ * flag is absent (probe everything). THROWS on an unknown or empty leg name rather than narrowing
+ * to nothing: this probe is used as a deploy gate, and a typo that silently probed zero legs would
+ * exit 0 and certify a deploy nobody checked.
+ */
+export function parseOnlyFlag(
+  argv: readonly string[],
+): readonly ParityLeg[] | undefined {
+  const at = argv.indexOf("--only");
+  if (at === -1) return undefined;
+  const legs = (argv[at + 1] ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  const unknown = legs.filter(
+    (l) => !(PROBED_LEGS as readonly string[]).includes(l),
+  );
+  if (legs.length === 0 || unknown.length > 0) {
+    throw new Error(
+      `--only takes a comma-separated subset of ${PROBED_LEGS.join(",")}` +
+        (unknown.length > 0
+          ? ` (unknown: ${unknown.join(",")})`
+          : " (got none)"),
+    );
+  }
+  return legs as readonly ParityLeg[];
+}
+
 async function main(): Promise<void> {
+  const legs = parseOnlyFlag(process.argv);
+  const want = (leg: ParityLeg): boolean =>
+    legs === undefined || legs.includes(leg);
   const repoBytes = readFileSync(INDEX_PATH);
   const [workerIndex, licenseHealth, adminHealthz] = await Promise.all([
-    fetchJsonWithRetry(WORKER_INDEX_URL),
-    fetchJsonWithRetry(LICENSE_HEALTH_URL),
-    fetchJsonWithRetry(ADMIN_HEALTHZ_URL),
+    want("worker") ? fetchJsonWithRetry(WORKER_INDEX_URL) : null,
+    want("license") ? fetchJsonWithRetry(LICENSE_HEALTH_URL) : null,
+    want("admin") ? fetchJsonWithRetry(ADMIN_HEALTHZ_URL) : null,
   ]);
   const report = computeParity({
     repoBytes,
     licenseHealth,
     workerIndex,
     adminHealthz,
+    legs,
   });
   process.stdout.write(`${renderTable(report)}\n`);
   process.exit(report.drift ? 1 : 0);

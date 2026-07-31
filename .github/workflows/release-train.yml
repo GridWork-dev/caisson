@@ -2,10 +2,13 @@ name: release-train
 # The ADR-0318 release train (R1–R4), reworked commit-addressable by ADR-0325. Publishing a
 # GitHub Release is THE trigger (R1) — its tag MUST target the merged version-PR commit
 # (version-pr.yml authored it; push-to-main CI proved it green). Everything rides it (R2):
-# registry tarball publish → public-mirror sync → mirror npm publish → site redeploy, in that
-# order, each leg a dispatch of the existing workflow that already owns the capability (no
-# duplicated publish logic). Legs 1 and 2 receive the release tag so they act on EXACTLY the
-# tagged bytes — one SHA anchors source, ledger, tarballs, mirror, and evidence. The readiness
+# registry tarball publish → registry Worker deploy → public-mirror sync → mirror npm publish →
+# site redeploy, in that order, each leg a dispatch of the existing workflow that already owns the
+# capability (no duplicated publish logic). Legs 1, 1b and 2 receive the release tag so they act on
+# EXACTLY the tagged bytes — one SHA anchors source, ledger, tarballs, edge catalog, mirror, and
+# evidence. Leg 1b was added 2026-07-31: leg 1 uploads bytes to R2 but the Worker inlines
+# registry/index.json at BUILD time, so without a Worker deploy a green train can leave the edge
+# resolving the previous release (observed on v2026.07.30). The readiness
 # job (R3, scripts/release-readiness.ts) runs first and any red check — including tag-not-on-main
 # — stops the train before it touches an external surface.
 #
@@ -104,6 +107,19 @@ jobs:
         run: |
           /tmp/dispatch-and-wait.sh "${{ github.repository }}" publish.yml \
             -f dry_run=false -f tag="$RELEASE_TAG"
+      # Leg 1 uploaded the tarball BYTES; this makes them RESOLVABLE. deploy-entry.ts inlines
+      # registry/index.json into the Worker bundle at build time, so without this leg the edge keeps
+      # serving its previously-baked catalog and `bun add @caisson/<pkg>` returns the last release —
+      # exactly what happened on v2026.07.30, where a fully green train left the site advertising an
+      # entry point the registry could not resolve. Numbered 1b, not 5, because the order is
+      # load-bearing: after the bytes exist (leg 1), before the site advertises them (leg 4).
+      - name: leg 1b — registry Worker deploy (bake the tagged index onto the live edge)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }} # env-indirect, never inlined in run:
+        run: |
+          /tmp/dispatch-and-wait.sh "${{ github.repository }}" deploy-worker.yml \
+            -f ref="$RELEASE_TAG"
       - name: leg 2 — public mirror sync (exported at the release tag)
         env:
           GH_TOKEN: ${{ github.token }}
