@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-29
+updated: 2026-07-31
 status: live
 grounds:
   - knowledge/decisions/ADR-0382-upgrade-credit-floor-and-tag-signing.md
@@ -16,8 +16,9 @@ The private key never leaves the box and is never printed; what gets published i
 ## Why the tag and not just the commit
 
 Every downstream leg of the release train resolves the **tag**, not a SHA: the registry publish
-verifies and uploads the tagged bytes, the mirror sync exports at the tag, and the fleet redeploys
-from the tag. A tag is a mutable pointer. Anyone with push access can delete one and recreate it
+verifies and uploads the tagged bytes, the registry Worker deploy bakes the tagged index onto the
+live edge, the mirror sync exports at the tag, and the fleet redeploys from the tag. A tag is a
+mutable pointer. Anyone with push access can delete one and recreate it
 against a different commit, and each of those legs would follow it without complaint. The annotation
 already on our tags records who _claims_ to have cut it; a signature is what makes that claim
 checkable.

@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-30
+updated: 2026-07-31
 status: live
 grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
@@ -64,12 +64,11 @@ re-stamps, and two state reconciles), and the full fleet deploy off `f9c04f33` l
 them (`d7f7d834`). Branch-hygiene is advisory-red on the five recovery refs plus the ADR-0395
 parallel-wave lanes, which is the ADR-0328 convention working, not drift.
 
-The changeset backlog was **drained** by the version PR (#359, `52376dee`), which consumed all 54
-files and bumped every package. Those versions are now **published**: the `v2026.07.27.1` train
-uploaded 50 tarballs byte-exact and the R2 parity probe moved 300/350 → **350/350**. **11 new
-changesets** have since landed on `main` from the #360–#366 sitting and currently resolve to 68
-patch package releases with no minor or major bumps, so the next version PR has real work to
-consume.
+The changeset backlog has been drained **twice**: by the version PR #359 (`52376dee`, 54 files, every
+package bumped, published by the `v2026.07.27.1` train — 50 tarballs byte-exact, R2 parity 300/350 →
+**350/350**), and again by version PR #374 (`ee467149`), which consumed the 11 changesets from the
+#360–#366 sitting and shipped as `v2026.07.30`. `.changeset/` is therefore empty on `main` as of
+2026-07-30; the two files on the current branch are this sitting's own.
 
 **Leg 4 is armed.** `45683e6e` made `deploy-railway`'s unarmed skip loud inside an armed train,
 converting a silent no-op into a hard stop — and the operator closed it: `RAILWAY_TOKEN` is a repo
@@ -182,6 +181,28 @@ fleet deploy off `f9c04f33` used.
     whole fleet off `f9c04f33` (`schema_version` 32 → 33). The next train is the one that consumes
     the 11 queued changesets, and its leg 4 is now armed.
 
+## Closed 2026-07-31
+
+- **The registry-Worker release leg exists.** `deploy-worker.yml` deploys the Worker from an
+  ancestry-verified ref and then proves the live edge serves that ref's index before reporting green;
+  the train runs it as **leg 1b** — after leg 1 uploads the bytes, before leg 4 puts the site live,
+  because a resolvable version whose bytes 404 is worse than a stale one and the site must never
+  advertise what the registry cannot resolve. The verification reuses the existing parity probe,
+  which grew a `--only <legs>` flag so a post-deploy gate can scope itself to the surface it just
+  deployed; the flag fails closed on an unknown leg rather than narrowing to nothing. `wrangler` is
+  pinned at `4.106.0` instead of resolving whatever npm serves the day a release runs.
+- **The legacy bare-hex internal-proof bearer is gone.** The timestamp group is mandatory and the
+  acceptance-window check unconditional, keeping the `!(x <= bound)` shape that rejects on NaN. The
+  dual acceptance existed only so the verifier could deploy ahead of the issuer; the `v2026.07.30`
+  train closed that window at `d9ae893e` (admin 19:21:41Z, then site 19:24:27Z). Until this landed a
+  leaked pre-F3 credential was valid until the shared secret rotated — the change shipped in that
+  release was not yet doing its job. **It takes effect only when admin redeploys.**
+- **CI-run deploy receipts stopped drifting silently.** `railway-deploy.ts` still does not commit
+  them — a deploy job holding `contents:write` is the provenance defect ADR-0325 removed from
+  `publish.yml` — but when `GITHUB_STEP_SUMMARY` is set it writes the receipt into the run's job
+  summary, stating on its face that the committed ledger was not updated. Whether CI should instead
+  commit them back is still open and is the operator's call; what is closed is the silence.
+
 ## Open after the v2026.07.30 train
 
 - **`native-ext (macos)` is red on every `main` push — operator decision, deferred 2026-07-30.**
@@ -191,35 +212,18 @@ fleet deploy off `f9c04f33` used.
   `REQUIRED_CHECKS`, so it does not gate the release train — but macOS coverage for the
   `local-store` native extension is dark until one of: the Actions spending limit is raised
   (operator-only, Billing & plans), the Mac mini is brought back, or the macOS leg is dropped.
-- **Remove the legacy bare-hex branch from the internal-proof bearer — UNBLOCKED 2026-07-30.**
-  `internal-proof-auth.ts` accepts both `<unix-seconds>.<hmac>` and the old unbounded bare-hex form
-  so the verifier could deploy ahead of the issuer. **The precondition is now met:** the
-  `v2026.07.30` train's leg 4 deployed both halves at `d9ae893e` — admin 19:21:41Z, then site
-  19:24:27Z. Delete the optional timestamp group from `BEARER` and the legacy branch below it, plus
-  the matching branch in the issuer. **Until that lands a leaked pre-F3 credential is valid
-  indefinitely — the change's whole purpose is unmet.** Marked in-file with a `ponytail:` comment.
-  This is now the highest-value open item on this list: it is a live credential-lifetime hole, and
-  nothing else blocks it.
-- **The release train has no registry-Worker leg — a published version is not resolvable without
-  one.** Leg 1 uploads tarballs to R2, but `registry/worker/deploy-entry.ts` inlines
-  `registry/index.json` into the Worker bundle at build time, so the edge keeps serving its
-  previously-baked index until `registry/worker/deploy.sh` is run by hand. On the `v2026.07.30`
-  ride that left a real window: leg 4 put the site live advertising `@caisson/kernel/node` while
-  the registry still resolved `0.6.0`, where that entry point does not exist — a buyer following
-  the new docs would have hit a broken import. Closed manually (Worker version `d5e82c9b`).
-  Readiness check 4b does **not** catch this: it validates the _repo's_ index/tarball consistency,
-  never what the live edge actually serves. Two candidate fixes, operator's call: add a leg 5 that
-  runs the Worker deploy (needs `CLOUDFLARE_API_TOKEN` as a release secret — it is already a repo
-  secret), or add a post-train probe that fails loudly when the live packument's `dist-tags.latest`
-  disagrees with the repo index. The probe is the cheaper half and catches the class even if the
-  deploy stays manual.
-- **CI-run deploys never commit their receipts back.** `railway-deploy.ts` writes
-  `docs/deploy/receipts/<service>.json` and deliberately does not commit it (it prints the suggested
-  `git add`). That was fine while deploys were operator-run from the box; now that leg 4 deploys
-  autonomously, the committed receipts silently drift from reality — they still read `f9c04f33`
-  until someone notices. Reconstructed by hand for this ride from Railway's ledger. Either have the
-  workflow commit them back, or stop treating the committed file as machine truth and read the
-  Railway ledger instead.
+- **`caisson-license` is one registry index behind — found 2026-07-31, needs one operator-gated
+  redeploy.** The parity probe reads repo/Worker/admin at `dc5ee000aebf` and license still at
+  `4810e38157c1`, the pre-release index. Not an outage (`license/health` 200 in 86ms) and not a new
+  failure mode — it is the F-1 residual the probe exists to catch. **The cause is structural and is
+  the same class as the Worker-leg gap:** four surfaces bake `registry/index.json` into their build
+  (Worker bundle, license image, admin image, repo file), and the train's leg 4 deploys exactly two
+  services, `caisson-admin` and `caisson-site`. So every release leaves license one index behind.
+  Fix is `bun tooling/scripts/railway-deploy.ts --service caisson-license --ref <release-sha>`;
+  structurally, leg 4 should cover every index-baking surface rather than two. See
+  [deploy state](../deploy/STATE.md).
+- **`native-ext (macos)` is still red on every `main` push — unchanged, operator-only.** Repeated
+  from the entry above because it is the one item on this list nothing in-repo can move.
 - **Retire the remaining `components/poke/` mirrors.** ADR-0395 decision 2 covers `trust-page`,
   `access-review`, `risk-register`, and `artifact-render`; the v2026.07.30 wave delivered the first
   and last (the trust-page poke drives the real packages now). The `access-review`,

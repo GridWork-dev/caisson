@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-30
+updated: 2026-07-31
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,34 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-07-31 — no deploy; parity re-probe finds the license leg one index behind
+
+`bun registry/scripts/index-parity-probe.ts`, run from a clean checkout of `main`:
+
+| Leg     | Result                                    | State     |
+| ------- | ----------------------------------------- | --------- |
+| repo    | `dc5ee000aebf` · 54 entries               | OK        |
+| license | `4810e38157c1` != repo                    | **DRIFT** |
+| worker  | 17 served entries all match repo `latest` | OK        |
+| admin   | `dc5ee000aebf` == repo                    | OK        |
+
+`RESULT: DRIFT DETECTED`, exit 1. Public HTTP is healthy on all three reachable surfaces
+(`caisson.sh` 200/156ms, `admin/healthz` 200/172ms, `license/health` 200/86ms) — this is a staleness
+drift, not an outage.
+
+**The cause is structural, and it is the same class as the Worker-leg gap recorded below.** Four
+surfaces bake `registry/index.json` into their build: the Worker bundle, the license image, the admin
+image, and the repo file itself. The release train's leg 4 (`deploy-railway.yml`) deploys exactly two
+services — `caisson-admin` and `caisson-site`. So the `v2026.07.30` train moved repo, Worker (by
+hand), and admin onto `dc5ee000aebf` and left license on the index it was last deployed with, which
+is the one from the 2026-07-29 fleet deploy. Every release will do this until a leg covers every
+index-baking surface. Closing it needs a receipted `caisson-license` redeploy at the release SHA —
+an operator-gated act, tracked in [outstanding work](../state/outstanding-work.md).
+
+**The Worker half of that class is now fixed in CI.** `deploy-worker.yml` deploys the Worker from an
+ancestry-verified ref and then proves the live edge serves that ref's index before reporting green;
+the train runs it as leg 1b, after leg 1 uploads the bytes and before leg 4 puts the site live.
 
 ## 2026-07-30 (PM) — release train `v2026.07.30` off `d9ae893e` (first fully automated leg 4)
 
@@ -27,12 +55,12 @@ RED was not cosmetic — on run `30562233469` it failed the admin step and skipp
 the fleet. `80748af3` moved the verdict off the CLI exit code onto the deployment's own terminal
 status (`--detach` was rejected: it reports green on upload acceptance, a false green).
 
-**The registry Worker is still a manual step.** The train has no leg for it, and it is not optional:
-leg 1 uploads tarballs to R2, but `deploy-entry.ts` inlines `registry/index.json` into the Worker
-bundle at build time, so a published version is not _resolvable_ until the Worker is redeployed. Run
-by hand here (`registry/worker/deploy.sh` → version `d5e82c9b`). Between leg 4 and that redeploy the
-site advertised `@caisson/kernel/node` while the registry still resolved 0.6.0, where that entry point
-does not exist. Tracked as a train gap in `docs/state/outstanding-work.md`.
+**The registry Worker was a manual step on this ride** (fixed 2026-07-31 — see the entry above). The
+train had no leg for it, and it is not optional: leg 1 uploads tarballs to R2, but `deploy-entry.ts`
+inlines `registry/index.json` into the Worker bundle at build time, so a published version is not
+_resolvable_ until the Worker is redeployed. Run by hand here (`registry/worker/deploy.sh` → version
+`d5e82c9b`). Between leg 4 and that redeploy the site advertised `@caisson/kernel/node` while the
+registry still resolved 0.6.0, where that entry point does not exist.
 
 **Edge propagation is not instant.** For roughly a minute after the Worker deploy the packument still
 served the previous `dist-tags.latest`. A probe fired immediately after `wrangler deploy` reads stale;
