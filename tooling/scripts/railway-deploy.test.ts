@@ -16,6 +16,7 @@ import {
   main,
   parseArgv,
   parseReceipts,
+  receiptEvidenceMarkdown,
   receiptsPath,
   resolveDeployedBy,
   resolveRef,
@@ -461,5 +462,28 @@ describe("main -- a dropped log stream is not a failed deploy", () => {
     } finally {
       rmSync(path, { force: true });
     }
+  });
+});
+
+describe("receiptEvidenceMarkdown", () => {
+  const row: Receipt = {
+    sha: "d9ae893e1234567890abcdef1234567890abcdef",
+    deployedAt: "2026-07-30T19:21:41.000Z",
+    deployedBy: "github-actions (release-train leg 4)",
+  };
+
+  test("carries the whole receipt row verbatim as JSON", () => {
+    const md = receiptEvidenceMarkdown("caisson-admin", row);
+    const fenced = md.split("```json")[1]?.split("```")[0] ?? "";
+    expect(JSON.parse(fenced)).toEqual(row);
+  });
+
+  // The limitation belongs in the summary BODY, not only in a log line that scrolls away: someone
+  // reading this run page months later must not take it for a committed ledger entry.
+  test("states on its face that the committed ledger was not updated", () => {
+    const md = receiptEvidenceMarkdown("caisson-site", row);
+    expect(md).toContain("caisson-site");
+    expect(md).toContain("not** committed");
+    expect(md).toContain("docs/deploy/receipts/");
   });
 });

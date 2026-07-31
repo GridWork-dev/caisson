@@ -18,6 +18,7 @@
 // Usage: bun tooling/scripts/railway-deploy.ts --service <name> --ref <git-ref> [--force] [--dry-run]
 import { execFileSync } from "node:child_process";
 import {
+  appendFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -130,6 +131,23 @@ export function appendReceipt(
 
 export function receiptsPath(repoRoot: string, service: string): string {
   return join(repoRoot, "docs", "deploy", "receipts", `${service}.json`);
+}
+
+/** The receipt rendered for a CI run's job summary. States the limitation in the body rather than
+ *  only in a log line, because the summary is what someone reads months later when asking what
+ *  shipped -- an unqualified receipt on a run page would read as if the ledger had been updated. */
+export function receiptEvidenceMarkdown(service: string, row: Receipt): string {
+  return [
+    `### Railway deploy receipt -- \`${service}\``,
+    "",
+    "Written here, **not** committed to `docs/deploy/receipts/` -- that file carries operator-run",
+    "deploys only, and a CI checkout is discarded. This run page is the receipt.",
+    "",
+    "```json",
+    JSON.stringify(row, null, 2),
+    "```",
+    "",
+  ].join("\n");
 }
 
 // ============================================================================================
@@ -388,13 +406,31 @@ export async function main(
     process.stdout.write(
       `[railway-deploy] deployed ${args.service} @ ${sha}\n`,
     );
-    process.stdout.write(
-      "[railway-deploy] receipt appended -- this tool never commits it. Suggested:\n",
-    );
-    process.stdout.write(`  git add ${relative(REPO_ROOT, path)}\n`);
-    process.stdout.write(
-      `  git commit -m "chore(deploy): record ${args.service} deploy receipt for ${sha.slice(0, 12)}"\n`,
-    );
+
+    // A CI run writes that receipt into a checkout that is then thrown away, so
+    // docs/deploy/receipts/ carries operator-run deploys ONLY and reads stale after an autonomous
+    // one (the v2026.07.30 train's leg 4 was the first, and nothing said so). This tool still does
+    // not commit: a deploy job holding contents:write is the provenance defect ADR-0325 removed
+    // from publish.yml. What changes here is that the drift stops being SILENT -- in CI the receipt
+    // is written to the run's job summary, which is permanent and attributable, and the log says
+    // plainly that the committed ledger was not updated.
+    const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+    if (summaryPath !== undefined && summaryPath !== "") {
+      appendFileSync(summaryPath, receiptEvidenceMarkdown(args.service, row));
+      process.stdout.write(
+        "[railway-deploy] receipt written to this run's job summary. The committed ledger at " +
+          `${relative(REPO_ROOT, path)} was NOT updated -- a CI checkout is discarded. For this ` +
+          "deploy, the run page and Railway's own deployment ledger are the evidence.\n",
+      );
+    } else {
+      process.stdout.write(
+        "[railway-deploy] receipt appended -- this tool never commits it. Suggested:\n",
+      );
+      process.stdout.write(`  git add ${relative(REPO_ROOT, path)}\n`);
+      process.stdout.write(
+        `  git commit -m "chore(deploy): record ${args.service} deploy receipt for ${sha.slice(0, 12)}"\n`,
+      );
+    }
   } finally {
     rmSync(stageDir, { recursive: true, force: true });
   }
