@@ -46,7 +46,8 @@ function accountCredential(
   return `${issuedAtSec}.${mac}`;
 }
 
-/** The pre-F3 static format, accepted while the verifier deploys ahead of the issuer. */
+/** The pre-F3 static format: a correctly-signed but UNBOUNDED credential. Accepted only during the
+ *  verifier-ahead-of-issuer rollout; rejected since the v2026.07.30 deploy closed that window. */
 function legacyAccountCredential(accountId: string): string {
   return createHmac("sha256", PROXY_SECRET).update(accountId).digest("hex");
 }
@@ -220,7 +221,11 @@ describe("POST /api/internal/audit/proof", () => {
     ).toBe(401);
   });
 
-  test("accepts the legacy untimestamped credential during the verifier-first rollout", async () => {
+  // The rollout window is closed (v2026.07.30 leg 4 deployed verifier then issuer at d9ae893e).
+  // This credential is signed with the REAL secret and is still refused — the only thing wrong with
+  // it is that it carries no expiry, which is precisely what F3 exists to forbid. A regression that
+  // re-optionalised the timestamp would make every leaked pre-F3 bearer valid forever again.
+  test("rejects the legacy untimestamped credential now that the rollout window is closed", async () => {
     const accountId = randomUUID();
     await seed(accountId, [{ event: "created" }]);
 
@@ -228,7 +233,7 @@ describe("POST /api/internal/audit/proof", () => {
       request(accountId, { seq: 0 }, legacyAccountCredential(accountId)),
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(401);
   });
 
   test("rejects a timestamped credential outside the acceptance window", async () => {

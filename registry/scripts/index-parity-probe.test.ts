@@ -1,13 +1,14 @@
 // Tests for registry/scripts/index-parity-probe.ts (CAISSON-37 / F-1 residual). No live network —
 // computeParity is pure over injected fixtures.
-// NOTE: registry/ is not a workspace member, so @caisson/* bare specifiers do not resolve here —
-// these tests use only relative imports + node built-ins.
+// NOTE: registry/ IS a workspace member (@caisson/registry), but the probe is deliberately
+// self-contained (see its header) — these tests match it: relative imports + node built-ins only.
 import { createHash } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import {
   computeParity,
   fetchJsonWithRetry,
   indexDigest12,
+  parseOnlyFlag,
   renderTable,
 } from "./index-parity-probe.ts";
 
@@ -218,5 +219,115 @@ describe("fetchJsonWithRetry", () => {
     };
     await fetchJsonWithRetry("https://example.test", healthy, noSleep);
     expect(calls).toBe(1);
+  });
+});
+
+describe("parseOnlyFlag", () => {
+  test("is undefined when the flag is absent (probe every leg)", () => {
+    expect(parseOnlyFlag(["bun", "probe.ts"])).toBeUndefined();
+  });
+
+  test("parses one leg and a comma list, trimming whitespace", () => {
+    expect(parseOnlyFlag(["--only", "worker"])).toEqual(["worker"]);
+    expect(parseOnlyFlag(["--only", "license, admin"])).toEqual([
+      "license",
+      "admin",
+    ]);
+  });
+
+  // The `=` form must not read as flag-absent: that would silently probe EVERY leg — the exact
+  // "certify something nobody asked for" failure the fail-closed contract below exists to kill.
+  test("parses the --only=legs form identically", () => {
+    expect(parseOnlyFlag(["--only=worker"])).toEqual(["worker"]);
+    expect(parseOnlyFlag(["--only=license, admin"])).toEqual([
+      "license",
+      "admin",
+    ]);
+    expect(() => parseOnlyFlag(["--only=wroker"])).toThrow(/unknown: wroker/);
+    expect(() => parseOnlyFlag(["--only="])).toThrow(/got none/);
+  });
+
+  // Fail-closed: this probe gates a deploy, so a typo must NOT narrow to "probe nothing" and exit 0.
+  test("throws on an unknown leg rather than narrowing to nothing", () => {
+    expect(() => parseOnlyFlag(["--only", "wroker"])).toThrow(
+      /unknown: wroker/,
+    );
+    expect(() => parseOnlyFlag(["--only", "repo"])).toThrow(/unknown: repo/);
+  });
+
+  test("throws on an empty or missing value", () => {
+    expect(() => parseOnlyFlag(["--only", ""])).toThrow(/got none/);
+    expect(() => parseOnlyFlag(["--only", " , "])).toThrow(/got none/);
+    expect(() => parseOnlyFlag(["--only"])).toThrow(/got none/);
+  });
+});
+
+describe("computeParity leg scoping", () => {
+  const legsOf = (report: ReturnType<typeof computeParity>): string[] =>
+    report.rows.map((r) => r.leg);
+
+  test("--only worker reports repo + worker and nothing else", () => {
+    const report = computeParity({
+      repoBytes: REPO,
+      licenseHealth: null,
+      workerIndex: WORKER_OK,
+      adminHealthz: null,
+      legs: ["worker"],
+    });
+    expect(legsOf(report)).toEqual(["repo", "worker"]);
+    expect(report.drift).toBe(false);
+  });
+
+  // The release train redeploys the Worker BEFORE admin/site, so at that moment the other surfaces
+  // legitimately still bake the previous index. A scoped run must not red on them.
+  test("an unreached admin/license does not red a worker-scoped run", () => {
+    const staleAdmin = {
+      ok: true,
+      indexDigest: "ffffffffffff",
+      indexEntries: 2,
+    };
+    const scoped = computeParity({
+      repoBytes: REPO,
+      licenseHealth: staleAdmin,
+      workerIndex: WORKER_OK,
+      adminHealthz: staleAdmin,
+      legs: ["worker"],
+    });
+    expect(scoped.drift).toBe(false);
+    // ...while the unscoped run over the identical inputs still catches them.
+    const full = computeParity({
+      repoBytes: REPO,
+      licenseHealth: staleAdmin,
+      workerIndex: WORKER_OK,
+      adminHealthz: staleAdmin,
+    });
+    expect(full.drift).toBe(true);
+  });
+
+  test("a stale worker still reds its own scoped run", () => {
+    const report = computeParity({
+      repoBytes: REPO,
+      licenseHealth: null,
+      workerIndex: {
+        schemaVersion: 1,
+        modules: [{ id: "@caisson/kernel", latest: "1.1.0" }],
+      },
+      adminHealthz: null,
+      legs: ["worker"],
+    });
+    expect(report.drift).toBe(true);
+    expect(renderTable(report)).toContain("worker@1.1.0 != repo@1.2.0");
+  });
+
+  test("an unparseable repo index still reports only the scoped legs", () => {
+    const report = computeParity({
+      repoBytes: "{ not json",
+      licenseHealth: null,
+      workerIndex: null,
+      adminHealthz: null,
+      legs: ["worker"],
+    });
+    expect(legsOf(report)).toEqual(["repo", "worker"]);
+    expect(report.drift).toBe(true);
   });
 });

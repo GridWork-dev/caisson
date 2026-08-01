@@ -2,11 +2,12 @@ name: quality
 # The NON-required quality gates — split out of ci.yml so they can be path-filtered without
 # risking a required check (branch protection only watches standards-gate/check/registry-index,
 # which stay unconditional in ci.yml). On PULL REQUESTS each job may skip when its package tree
-# is untouched: skip just means "nothing to validate," never "merge blocked." On MAIN PUSHES
-# every job runs unconditionally (operator call 2026-07-09) — main is the full-truth signal, so
-# a docs-only commit still exercises eval, token-drift, and native-ext. The `!cancelled()` in
-# each job's `if` replaces the implicit success() gate so a failed/flaky `changes` job cannot
-# skip the push path — on PRs a failed `changes` still skips (its outputs read empty).
+# is untouched: skip just means "nothing to validate," never "merge blocked." On MAIN PUSHES AND
+# MANUAL DISPATCHES every job runs unconditionally (operator call 2026-07-09) — main is the
+# full-truth signal, so a docs-only commit still exercises eval, token-drift, and native-ext. The
+# `!cancelled()` in each job's `if` replaces the implicit success() gate so a failed/flaky
+# `changes` job cannot skip the push path — on PRs a failed `changes` still skips (its outputs
+# read empty).
 #
 # DRAFT PRs run nothing (CAISSON-96): the guard sits on `changes` + the two unconditioned jobs
 # (knip, evidence-pack); the path-conditioned jobs inherit it — a skipped `changes` leaves their
@@ -17,9 +18,15 @@ on:
   pull_request:
     # Defaults plus ready_for_review — flipping a draft to ready fires the full run (CAISSON-96).
     types: [opened, synchronize, reopened, ready_for_review]
+  # Manual full-suite lever: re-run every gate against any ref without waiting for a push, and
+  # without inventing a no-op commit to trip a path filter. Path-conditioned jobs read
+  # `!= 'pull_request'`, so a dispatch runs the FULL suite — the same semantics as a main push.
+  workflow_dispatch:
 
+# event_name in the group: without it a manual full-suite dispatch on main and a main-push run
+# share one group and cancel each other mid-flight.
 concurrency:
-  group: "quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  group: "quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}"
   cancel-in-progress: true
 
 permissions:
@@ -48,20 +55,29 @@ jobs:
       - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
         id: filter
         with:
+          # Every filter carries this workflow file. A change to a gate must RUN that gate on the PR
+          # that changes it — without this, editing quality.yml (a runner swap, a step, an `if`)
+          # could only ever be validated after merge, on a main push, which is the worst place to
+          # discover it was wrong. deploy-railway.yml already self-triggers this way; this is that
+          # rule applied to the gates. Cost is bounded: it only fires on PRs that touch this file.
           filters: |
             eval:
               - 'packages/**'
               - 'apps/**'
               - 'services/intel/**'
+              - '.github/workflows/quality.yml'
             ui:
               - 'packages/ui/**'
               - 'packages/ds-manifest/src/base-manifest.json'
+              - '.github/workflows/quality.yml'
             local-store:
               - 'packages/local-store/**'
+              - '.github/workflows/quality.yml'
             site:
               - 'apps/site/**'
               - 'packages/ui/**'
               - 'packages/ui-pro/**'
+              - '.github/workflows/quality.yml'
 
   # The deterministic eval gate (ADR-0062). A DISTINCT turbo `eval` task — separate from `test` —
   # runs every non-intel committed suite against its JSON baseline (regression-vs-baseline,
@@ -76,7 +92,7 @@ jobs:
   # are untouched; always runs on main pushes.
   eval:
     needs: changes
-    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.eval == 'true') }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.eval == 'true') }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
@@ -100,7 +116,7 @@ jobs:
   # set is armed, a missing/invalid model response fails closed (never replays a verdict).
   intel-eval:
     needs: changes
-    if: ${{ !cancelled() && github.event_name == 'push' }}
+    if: ${{ !cancelled() && github.event_name != 'pull_request' }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     permissions:
@@ -131,7 +147,7 @@ jobs:
   # runs on main pushes.
   token-drift:
     needs: changes
-    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.ui == 'true') }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.ui == 'true') }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
@@ -188,7 +204,7 @@ jobs:
   # runs on main pushes.
   anti-slop:
     needs: changes
-    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.site == 'true') }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.site == 'true') }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 10
     steps:
@@ -219,7 +235,7 @@ jobs:
   # always runs on main pushes.
   native-ext:
     needs: changes
-    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.local-store == 'true') }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.local-store == 'true') }}
     strategy:
       fail-fast: false
       matrix:
@@ -228,7 +244,15 @@ jobs:
     # job after every dimension that varies, so `include:` with a `runs-on` key renamed this check
     # `native-ext (macos, macos-15)` and orphaned the `native-ext (macos)` name the required-check
     # convention pins. Keep the runner out of the matrix and the name stays stable across a runner swap.
-    runs-on: ${{ matrix.platform == 'macos' && 'macos-15' || 'blacksmith-4vcpu-ubuntu-2404' }}
+    #
+    # The macOS leg moved off GitHub-hosted `macos-15` to Blacksmith 2026-08-01. The hosted runner
+    # had failed in ~9s with ZERO steps on every main push — "recent account payments have failed or
+    # your spending limit needs to be increased" — so macOS coverage for the local-store native
+    # extension was dark while the check sat permanently red. Blacksmith's macOS runners are Apple
+    # Silicon M4 (ARM64, the same architecture GitHub's macos-15 already used) and track GitHub's
+    # runner images, so the Homebrew SQLite step below is unaffected. This also makes quality.yml
+    # 100% Blacksmith, finishing the ADR-0365 fleet sweep that left this one leg hosted.
+    runs-on: ${{ matrix.platform == 'macos' && 'blacksmith-6vcpu-macos-15' || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -270,7 +294,7 @@ jobs:
   # renders) is untouched; always runs on main pushes.
   site-e2e:
     needs: changes
-    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.site == 'true') }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.site == 'true') }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     steps:

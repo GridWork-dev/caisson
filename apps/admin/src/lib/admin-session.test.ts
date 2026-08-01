@@ -17,6 +17,17 @@ const { proxy, config: proxyConfig } = await import("../proxy.ts");
 
 const REQ = new Request("https://admin.caisson.sh/business");
 
+/** The internal-proof bearer the site issues (F3): "<unix-seconds>.<hmac over ts\naccountId>".
+ *  The unbounded pre-F3 form these tests used to build is no longer accepted — see
+ *  internal-proof-auth.ts. */
+function timestampedCredential(accountId: string, secret: string): string {
+  const issuedAtSec = Math.floor(Date.now() / 1000);
+  const mac = createHmac("sha256", secret)
+    .update(`${issuedAtSec}\n${accountId}`)
+    .digest("hex");
+  return `${issuedAtSec}.${mac}`;
+}
+
 beforeEach(() => {
   setAdminAuthFixture();
 });
@@ -159,9 +170,7 @@ test("proxy: a verified session threads x-admin-actor and lets the request throu
 test("proxy: a valid account-bound service HMAC reaches the internal proof route without an admin session", async () => {
   const secret = "test-proof-proxy-secret-with-32-bytes";
   const accountId = "buyer_account_01";
-  const credential = createHmac("sha256", secret)
-    .update(accountId)
-    .digest("hex");
+  const credential = timestampedCredential(accountId, secret);
   const originalSecret = process.env.CAISSON_PROOF_PROXY_SECRET;
   const originalHost = process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST;
   process.env.CAISSON_PROOF_PROXY_SECRET = secret;
@@ -199,9 +208,9 @@ test("proxy: a valid account-bound service HMAC reaches the internal proof route
 test("proxy: invalid HMAC or the public admin host cannot enter the internal proof route", async () => {
   const secret = "test-proof-proxy-secret-with-32-bytes";
   const accountId = "buyer_account_01";
-  const credential = createHmac("sha256", secret)
-    .update(accountId)
-    .digest("hex");
+  // Deliberately VALID — the public-origin leg below must fail on the host alone, so the
+  // credential must not be a second reason for the 401.
+  const credential = timestampedCredential(accountId, secret);
   const originalSecret = process.env.CAISSON_PROOF_PROXY_SECRET;
   const originalHost = process.env.CAISSON_PROOF_PROXY_INTERNAL_HOST;
   process.env.CAISSON_PROOF_PROXY_SECRET = secret;
