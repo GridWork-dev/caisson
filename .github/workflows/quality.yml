@@ -53,20 +53,29 @@ jobs:
       - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
         id: filter
         with:
+          # Every filter carries this workflow file. A change to a gate must RUN that gate on the PR
+          # that changes it — without this, editing quality.yml (a runner swap, a step, an `if`)
+          # could only ever be validated after merge, on a main push, which is the worst place to
+          # discover it was wrong. deploy-railway.yml already self-triggers this way; this is that
+          # rule applied to the gates. Cost is bounded: it only fires on PRs that touch this file.
           filters: |
             eval:
               - 'packages/**'
               - 'apps/**'
               - 'services/intel/**'
+              - '.github/workflows/quality.yml'
             ui:
               - 'packages/ui/**'
               - 'packages/ds-manifest/src/base-manifest.json'
+              - '.github/workflows/quality.yml'
             local-store:
               - 'packages/local-store/**'
+              - '.github/workflows/quality.yml'
             site:
               - 'apps/site/**'
               - 'packages/ui/**'
               - 'packages/ui-pro/**'
+              - '.github/workflows/quality.yml'
 
   # The deterministic eval gate (ADR-0062). A DISTINCT turbo `eval` task — separate from `test` —
   # runs every non-intel committed suite against its JSON baseline (regression-vs-baseline,
