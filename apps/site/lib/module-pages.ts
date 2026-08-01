@@ -390,7 +390,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       label:
         "scanCampaignDecisions, the flag-never-guess decision fold over the audit chain",
       lang: "ts",
-      file: "packages/access-review/src/campaign.ts",
+      file: "packages/access-review/src/decisions.ts",
       code: 'export function scanCampaignDecisions(\n  entries: readonly AuditChainEntry[],\n  campaignId: string,\n  reviewees: readonly string[],\n): CampaignDecisionScan {\n  const decisions = new Map<string, ReviewDecision>();\n  // "Latest wins" depends on seq-ascending iteration order — sort defensively rather than trust\n  // the caller\'s ordering (entries is fully in memory already, so this is one cheap pass).\n  const bySeq = [...entries].sort((a, b) => a.seq - b.seq);\n  for (const entry of bySeq) {\n    const decision = decisionFromEntry(entry, campaignId);\n    if (decision !== null)\n      decisions.set(decision.revieweeId, decision.decision);\n  }\n  const unresolved = reviewees.filter((r) => !decisions.has(r));\n  return { decisions, unresolved };\n}',
       annotations: [
         "scanCampaignDecisions sorts by seq before folding, so a revised decision supersedes the earlier append even when the caller supplied entries out of order.",

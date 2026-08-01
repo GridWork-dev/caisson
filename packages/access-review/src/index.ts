@@ -6,7 +6,6 @@
 // silently approved. A composable module only — no reviewer-facing UI/portal; rendering is a
 // consuming app's job.
 export {
-  REVIEW_DECISIONS,
   MAX_CAMPAIGN_WINDOW_MS,
   membershipSnapshotSchema,
   openCampaignSchema,
@@ -14,7 +13,6 @@ export {
   closeCampaignSchema,
 } from "./schema.ts";
 export type {
-  ReviewDecision,
   MembershipSnapshot,
   OpenCampaignInput,
   RecordDecisionInput,
@@ -29,20 +27,20 @@ export {
 } from "./snapshot.ts";
 
 export {
+  REVIEW_DECISIONS,
   CAMPAIGN_OPENED_RECORD,
   CAMPAIGN_DECISION_RECORD,
   CAMPAIGN_CLOSED_RECORD,
-  openCampaign,
-  recordDecision,
-  closeCampaign,
   scanCampaignDecisions,
-} from "./campaign.ts";
+} from "./decisions.ts";
+export type { ReviewDecision, CampaignDecisionScan } from "./decisions.ts";
+
+export { openCampaign, recordDecision, closeCampaign } from "./campaign.ts";
 export type {
   CampaignChainStore,
   CampaignDeps,
   AccessReviewCampaign,
   ClosedAccessReviewCampaign,
-  CampaignDecisionScan,
 } from "./campaign.ts";
 
 export {
