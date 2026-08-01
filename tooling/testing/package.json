@@ -10,7 +10,12 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./golden-module": "./golden-module.ts"
+    "./golden-module": "./golden-module.ts",
+    "./module-graph": {
+      "bun": "./src/module-graph.ts",
+      "types": "./dist/module-graph.d.ts",
+      "default": "./dist/module-graph.js"
+    }
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
