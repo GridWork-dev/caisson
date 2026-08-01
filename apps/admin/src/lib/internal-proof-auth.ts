@@ -73,10 +73,12 @@ export function authenticateInternalProofRequest(
 
   const match = request.headers.get("authorization")?.match(BEARER);
   if (match === undefined || match === null) return null;
+  // Group 1 is mandatory in BEARER, so `match[1]` is always present on a match — the `?? ""`
+  // only satisfies noUncheckedIndexedAccess. The negated comparison stays as the repo's standing
+  // fail-closed idiom: any non-finite parse result rejects instead of falling through.
   const timestamp = match[1] ?? "";
   const issuedAtSec = Number.parseInt(timestamp, 10);
   const nowSec = Math.floor(nowMs / 1000);
-  // Fail-closed shape: the negated comparison rejects on NaN instead of falling through.
   if (!(Math.abs(nowSec - issuedAtSec) <= TIMESTAMP_WINDOW_SEC)) return null;
   const supplied = Buffer.from(match[2] ?? "", "utf8");
   const expected = Buffer.from(
