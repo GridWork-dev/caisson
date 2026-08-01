@@ -12,14 +12,14 @@ import {
   ValidationError,
   type JsonValue,
 } from "@caisson/kernel";
-import type {
-  OscalCrosswalkRollup,
-  OscalEvidencePackManifest,
-} from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
-  createOscalHttpTransport,
   OSCAL_VERSION,
+  type OscalCrosswalkRollup,
+  type OscalEvidencePackManifest,
+} from "../contracts.ts";
+import {
+  createOscalHttpTransport,
   OscalDeliveryConfigSchema,
   toOscalAssessmentResults,
   toOscalBundle,

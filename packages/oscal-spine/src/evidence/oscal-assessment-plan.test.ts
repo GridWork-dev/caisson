@@ -8,7 +8,7 @@ import { describe, expect, test } from "bun:test";
 import { matchGolden } from "@caisson/testing";
 import { canonicalize, ValidationError, type JsonValue } from "@caisson/kernel";
 import type { OscalEvidencePackFramework } from "../contracts.ts";
-import { OSCAL_VERSION } from "./oscal-export.ts";
+import { OSCAL_VERSION } from "../contracts.ts";
 import { toOscalAssessmentPlan } from "./oscal-assessment-plan.ts";
 
 const PKG_SRC_META = new URL("../index.ts", import.meta.url).href;

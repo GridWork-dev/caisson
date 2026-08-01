@@ -37,13 +37,14 @@ import {
   type CloseCampaignInput,
   type OpenCampaignInput,
   type RecordDecisionInput,
-  type ReviewDecision,
 } from "./schema.ts";
-
-/** Chain-payload discriminators — mirrors the impersonation module's own dual-record kinds. */
-export const CAMPAIGN_OPENED_RECORD = "access-review.campaign.opened";
-export const CAMPAIGN_DECISION_RECORD = "access-review.decision";
-export const CAMPAIGN_CLOSED_RECORD = "access-review.campaign.closed";
+import {
+  CAMPAIGN_CLOSED_RECORD,
+  CAMPAIGN_DECISION_RECORD,
+  CAMPAIGN_OPENED_RECORD,
+  evaluateCampaignClose,
+  scanCampaignDecisions,
+} from "./decisions.ts";
 
 /** The one seam this kernel needs from the audit chain — structurally satisfied by the real
  *  `AuditChainStore` (`append` + `load`, ADR-0052). Kept as a port so this module and its unit
@@ -243,66 +244,6 @@ export async function recordDecision(
   return { seq: entry.seq };
 }
 
-/** One reviewee's latest recorded decision, plus the roster's still-undecided members. */
-export interface CampaignDecisionScan {
-  readonly decisions: ReadonlyMap<string, ReviewDecision>;
-  readonly unresolved: readonly string[];
-}
-
-/** Reads one chain entry as a decision record for `campaignId`, or `null` if it isn't one — a
- *  plain runtime check (no fancy type predicate), matching the impersonation module's
- *  `isDualRecord` style. */
-function decisionFromEntry(
-  entry: AuditChainEntry,
-  campaignId: string,
-): { revieweeId: string; decision: ReviewDecision } | null {
-  const payload = entry.payload;
-  if (
-    typeof payload !== "object" ||
-    payload === null ||
-    Array.isArray(payload)
-  ) {
-    return null;
-  }
-  const record = payload as { readonly [key: string]: JsonValue };
-  if (
-    record["kind"] !== CAMPAIGN_DECISION_RECORD ||
-    record["campaignId"] !== campaignId
-  ) {
-    return null;
-  }
-  const revieweeId = record["revieweeId"];
-  const decision = record["decision"];
-  if (typeof revieweeId !== "string") return null;
-  if (decision !== "approve" && decision !== "revoke") return null;
-  return { revieweeId, decision };
-}
-
-/**
- * Scan a loaded chain for one campaign's decision trail: the LATEST decision per reviewee (later
- * `seq` wins — a revised decision supersedes an earlier one) and the roster members with no
- * decision at all. Pure — operates on entries the caller already loaded, never fetches. This is
- * the flag-never-guess output `closeCampaign` reports as-is — an undecided reviewee is NEVER
- * counted as approved.
- */
-export function scanCampaignDecisions(
-  entries: readonly AuditChainEntry[],
-  campaignId: string,
-  reviewees: readonly string[],
-): CampaignDecisionScan {
-  const decisions = new Map<string, ReviewDecision>();
-  // "Latest wins" depends on seq-ascending iteration order — sort defensively rather than trust
-  // the caller's ordering (entries is fully in memory already, so this is one cheap pass).
-  const bySeq = [...entries].sort((a, b) => a.seq - b.seq);
-  for (const entry of bySeq) {
-    const decision = decisionFromEntry(entry, campaignId);
-    if (decision !== null)
-      decisions.set(decision.revieweeId, decision.decision);
-  }
-  const unresolved = reviewees.filter((r) => !decisions.has(r));
-  return { decisions, unresolved };
-}
-
 /**
  * Close a campaign: due (now >= deadline) OR complete (every reviewee decided) — refuses
  * (`ConflictError`) otherwise, so a scheduler can never prematurely close a campaign still in its
@@ -341,14 +282,12 @@ export async function closeCampaign(
     parsed.campaignId,
     campaign.reviewees,
   );
-  const isComplete = scan.unresolved.length === 0;
-  const isDue = now.getTime() >= campaign.deadlineAt.getTime();
-  if (!isComplete && !isDue) {
-    throw new ConflictError(
-      "access-review campaign is neither complete nor past its deadline",
-      { campaignId: parsed.campaignId },
-    );
-  }
+  const verdict = evaluateCampaignClose(
+    scan,
+    parsed.campaignId,
+    now.getTime() >= campaign.deadlineAt.getTime(),
+  );
+  if (verdict.outcome === "refused") throw verdict.error;
 
   await withTenant(deps.db, parsed.accountId, async (tx) => {
     const res = await tx.query<{ id: string }>(
@@ -369,9 +308,9 @@ export async function closeCampaign(
     kind: CAMPAIGN_CLOSED_RECORD,
     campaignId: parsed.campaignId,
     closedAt: now.toISOString(),
-    reason: isComplete ? "completed" : "deadline",
-    unresolved: scan.unresolved,
+    reason: verdict.reason,
+    unresolved: verdict.unresolved,
   });
 
-  return { ...campaign, closedAt: now, unresolved: scan.unresolved };
+  return { ...campaign, closedAt: now, unresolved: verdict.unresolved };
 }

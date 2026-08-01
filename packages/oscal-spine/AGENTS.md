@@ -11,3 +11,9 @@ reference axis.
 - OLIR rows remain own-authored mappings with NIST IR 8278A relationship vocabulary.
 - No dependency on either parent package: `@caisson/compliance-core` and
   `@caisson/frameworks-pack` depend on and re-export this package.
+- Two entry points: `.` is the full node-capable surface; `./browser` is the browser-safe subset
+  (contracts, crosswalk model, catalog pin, pure catalog + assessment-plan exporters — id seam
+  defaults to the WebCrypto global, Node >= 20.12). A client bundle imports `./browser`, never
+  `.`; a module joins `./browser` only if its whole graph passes the package's static
+  source-graph walk (`src/browser-safety.test.ts`), and every `./browser` name must also exist
+  on `.`.

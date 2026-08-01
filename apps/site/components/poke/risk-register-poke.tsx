@@ -4,35 +4,106 @@
 // likelihood x impact sliders and watch the residual come out of computeResidual(), never typed
 // in directly. Recording an override never edits that computed value: it appends a separate,
 // accountable exception record (kind "risk.residual-overridden") that governs effectiveResidual
-// going forward, exactly like a real register does. Every function driving this component is the
-// pure mirror in `risk-register-logic.ts` (see that file's header for why the real package isn't
-// imported directly into a client bundle). Nothing here fetches, persists, or measures the
-// visitor.
-import { useId, useMemo, useState } from "react";
+// going forward, exactly like a real register does.
+//
+// This component drives the REAL @caisson/risk-register — the hand-ported mirror
+// (risk-register-logic.ts) is deleted. The package's `.` barrel is browser-safe (its only
+// audit-worm imports are statement-level `import type`, erased at emit; @caisson/kernel's `.`
+// barrel has been browser-safe since the ./node split), so the real defineRiskEntry /
+// buildRiskTreatmentPlan / computeResidual run in the client bundle, and the real ASYNC
+// recordResidualOverride runs against an injected in-memory chain port (its only I/O is the
+// caller-injected `chain.append`; all validation is synchronous and runs before the first await).
+// Proven by a static source-graph walk in risk-register-poke.test.ts — NOT by a build; a bundler
+// substitutes node builtins instead of failing on them. Nothing here fetches, persists, or
+// measures the visitor; the clock is the fixed SAMPLE_NOW (no Date.now(), no argless new Date()).
+import { useId, useMemo, useRef, useState } from "react";
 import { Button, StatusChip } from "@caisson/ui/components";
-
-import { PokeShell, Verdict } from "./poke-rig";
+import { ValidationError } from "@caisson/kernel";
+import type { AuditChainEntry, JsonValue } from "@caisson/kernel";
+import type { AppendResult, AuditChainStore } from "@caisson/audit-worm";
 import {
-  IMPACTS,
-  LIKELIHOODS,
-  SAMPLE_IMPACT,
-  SAMPLE_LIKELIHOOD,
-  SAMPLE_NOW,
-  SAMPLE_OWNER,
-  SAMPLE_RISK_ID,
-  SAMPLE_SUBJECT,
-  computeResidual,
-  deriveEffectiveResidual,
-  recordResidualOverride,
-  residualMatrix,
-} from "./risk-register-logic";
-import type {
   Impact,
   Likelihood,
-  RecordOverrideOutcome,
+  buildRiskTreatmentPlan,
+  computeResidual,
+  defineRiskEntry,
+  recordResidualOverride,
+} from "@caisson/risk-register";
+import type {
+  Residual,
   RiskResidualOverrideRecord,
-} from "./risk-register-logic";
+} from "@caisson/risk-register";
+
+import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./risk-register-poke.module.css";
+
+// ---- Sample register row (the golden fixture's own R-1 risk: possible x major) -----------------
+// Pinned to packages/risk-register/src/__golden__/risk-treatment-plan.txt so the poke's fixture
+// IS the package's fixture — risk-register-poke.test.ts asserts the exact golden match.
+
+export const SAMPLE_RISK_ID = "R-1";
+export const SAMPLE_SUBJECT = "R-1 lane";
+export const SAMPLE_OWNER = "safety@example.com";
+export const SAMPLE_LIKELIHOOD: Likelihood = "possible";
+export const SAMPLE_IMPACT: Impact = "major";
+export const SAMPLE_TREATMENT_PLAN = "plan";
+export const SAMPLE_EVIDENCE_DIGEST = "a".repeat(64);
+export const SAMPLE_TENANT_ID = "tenant-acme";
+export const SAMPLE_ACCOUNT_ID = "acct-sample";
+/** Fixed sample instant, no Date.now() / argless new Date() in any rendered path. */
+export const SAMPLE_NOW = new Date("2026-07-22T00:00:00.000Z");
+
+export const LIKELIHOODS = Likelihood.options;
+export const IMPACTS = Impact.options;
+
+/** Not a hash, and deliberately not hash-shaped. Real chain hashing is `chainEntry` in
+ *  @caisson/kernel/node (node:crypto) and cannot run in a browser, so this double never mints
+ *  one and the UI never renders these fields — only the returned `record` and the append count.
+ *  It implements nothing the package implements; it only satisfies the injected
+ *  `Pick<AuditChainStore, "append">` port so the REAL recordResidualOverride runs unmodified. */
+export const NOT_A_CHAIN_HASH = "not-a-real-chain-hash-browser-poke";
+
+export function browserChainDouble(): Pick<AuditChainStore, "append"> {
+  const entries: AuditChainEntry[] = [];
+  return {
+    append: (_accountId: string, payload: JsonValue): Promise<AppendResult> => {
+      const entry: AuditChainEntry = {
+        seq: entries.length,
+        prevHash: entries.at(-1)?.hash ?? null,
+        payload,
+        hash: NOT_A_CHAIN_HASH,
+      };
+      entries.push(entry);
+      return Promise.resolve({
+        entry,
+        anchor: { length: entries.length, tipHash: NOT_A_CHAIN_HASH },
+      });
+    },
+  };
+}
+
+/** One cell of the full likelihood x impact grid — a rendering enumeration over the real
+ *  primitive (the ordinal tables live in the package's model.ts, nowhere here). */
+export interface ResidualCell {
+  readonly likelihood: Likelihood;
+  readonly impact: Impact;
+  readonly residual: Residual;
+}
+
+/** Every likelihood x impact combination the real ordinal product can produce (25 cells). */
+export function residualMatrix(): readonly ResidualCell[] {
+  const cells: ResidualCell[] = [];
+  for (const likelihood of LIKELIHOODS) {
+    for (const impact of IMPACTS) {
+      cells.push({
+        likelihood,
+        impact,
+        residual: computeResidual(likelihood, impact),
+      });
+    }
+  }
+  return cells;
+}
 
 const LIKELIHOOD_LABEL: Record<Likelihood, string> = {
   rare: "Rare",
@@ -51,6 +122,12 @@ const IMPACT_LABEL: Record<Impact, string> = {
 
 const MATRIX = residualMatrix();
 
+interface Rejection {
+  readonly code: string;
+  readonly httpStatus: number;
+  readonly message: string;
+}
+
 export default function RiskRegisterPoke() {
   const uid = useId();
   const [likelihoodIdx, setLikelihoodIdx] = useState(
@@ -59,10 +136,6 @@ export default function RiskRegisterPoke() {
   const [impactIdx, setImpactIdx] = useState(IMPACTS.indexOf(SAMPLE_IMPACT));
   const likelihood = LIKELIHOODS[likelihoodIdx] ?? SAMPLE_LIKELIHOOD;
   const impact = IMPACTS[impactIdx] ?? SAMPLE_IMPACT;
-  const computed = useMemo(
-    () => computeResidual(likelihood, impact),
-    [likelihood, impact],
-  );
 
   const [overrideLikelihoodIdx, setOverrideLikelihoodIdx] = useState(
     LIKELIHOODS.indexOf("unlikely"),
@@ -75,29 +148,72 @@ export default function RiskRegisterPoke() {
   const [who, setWho] = useState("");
   const [why, setWhy] = useState("");
 
+  const chainRef = useRef(browserChainDouble());
   const [chain, setChain] = useState<readonly RiskResidualOverrideRecord[]>([]);
-  const [lastOutcome, setLastOutcome] = useState<RecordOverrideOutcome | null>(
-    null,
-  );
+  const [rejection, setRejection] = useState<Rejection | null>(null);
 
   const latestOverride =
     chain.length === 0 ? null : (chain[chain.length - 1] ?? null);
-  const effective = deriveEffectiveResidual(computed, latestOverride);
+
+  // The real authoring path: the entry's residual is derived by the package, never typed in.
+  const entry = useMemo(
+    () =>
+      defineRiskEntry({
+        riskId: SAMPLE_RISK_ID,
+        subject: SAMPLE_SUBJECT,
+        likelihood,
+        impact,
+        treatmentPlan: SAMPLE_TREATMENT_PLAN,
+        owner: SAMPLE_OWNER,
+        evidenceDigest: SAMPLE_EVIDENCE_DIGEST,
+        crosswalk: [],
+      }),
+    [likelihood, impact],
+  );
+
+  // effectiveResidual comes off the real artifact builder's row — the treatment-plan invariant
+  // lives in exactly one place: the package. (Conditional key spread, never an explicit
+  // `undefined` — exactOptionalPropertyTypes, matching treatment-plan.ts's own convention.)
+  const { plan } = useMemo(
+    () =>
+      buildRiskTreatmentPlan({
+        tenantId: SAMPLE_TENANT_ID,
+        risks: [entry],
+        ...(latestOverride === null
+          ? {}
+          : { overridesByRiskId: new Map([[SAMPLE_RISK_ID, latestOverride]]) }),
+      }),
+    [entry, latestOverride],
+  );
+  const row = plan.risks[0];
+  const computed = row?.computedResidual ?? computeResidual(likelihood, impact);
+  const effective = row?.effectiveResidual ?? computed;
 
   function onRecord(): void {
-    const outcome = recordResidualOverride({
-      riskId: SAMPLE_RISK_ID,
-      computed,
-      overrideLikelihood,
-      overrideImpact,
-      who,
-      why,
-      now: SAMPLE_NOW,
-    });
-    setLastOutcome(outcome);
-    if (outcome.outcome === "recorded") {
-      setChain((prev) => [...prev, outcome.record]);
-    }
+    void (async () => {
+      try {
+        const { record } = await recordResidualOverride({
+          chain: chainRef.current,
+          accountId: SAMPLE_ACCOUNT_ID,
+          riskId: SAMPLE_RISK_ID,
+          computed: entry.residual,
+          overrideLikelihood,
+          overrideImpact,
+          who,
+          why,
+          now: SAMPLE_NOW,
+        });
+        setRejection(null);
+        setChain((prev) => [...prev, record]);
+      } catch (err) {
+        if (!(err instanceof ValidationError)) throw err;
+        setRejection({
+          code: err.code,
+          httpStatus: err.httpStatus,
+          message: err.message,
+        });
+      }
+    })();
   }
 
   return (
@@ -262,14 +378,14 @@ export default function RiskRegisterPoke() {
           </Button>
         </fieldset>
 
-        {lastOutcome === null ? null : lastOutcome.outcome === "rejected" ? (
+        {rejection !== null ? (
           <div className={styles.outputPanel}>
-            <Verdict state="fail">Refused. {lastOutcome.error.message}</Verdict>
+            <Verdict state="fail">Refused. {rejection.message}</Verdict>
             <dl className={styles.register}>
               <dt>code</dt>
-              <dd>{lastOutcome.error.code}</dd>
+              <dd>{rejection.code}</dd>
               <dt>httpStatus</dt>
-              <dd>{lastOutcome.error.httpStatus}</dd>
+              <dd>{rejection.httpStatus}</dd>
             </dl>
             <p className={styles.note}>
               {SAMPLE_RISK_ID}&apos;s residual stays exactly what
@@ -277,7 +393,7 @@ export default function RiskRegisterPoke() {
               appended.
             </p>
           </div>
-        ) : (
+        ) : latestOverride === null ? null : (
           <div className={styles.outputPanel}>
             <Verdict state="ok">
               Recorded. {SAMPLE_RISK_ID}&apos;s computed residual is untouched,
@@ -285,17 +401,17 @@ export default function RiskRegisterPoke() {
             </Verdict>
             <dl className={styles.register}>
               <dt>kind</dt>
-              <dd>{lastOutcome.record.kind}</dd>
+              <dd>{latestOverride.kind}</dd>
               <dt>computed</dt>
-              <dd>{lastOutcome.record.computed}</dd>
+              <dd>{latestOverride.computed}</dd>
               <dt>override</dt>
-              <dd>{lastOutcome.record.override}</dd>
+              <dd>{latestOverride.override}</dd>
               <dt>who</dt>
-              <dd>{lastOutcome.record.who}</dd>
+              <dd>{latestOverride.who}</dd>
               <dt>why</dt>
-              <dd>{lastOutcome.record.why}</dd>
+              <dd>{latestOverride.why}</dd>
               <dt>at</dt>
-              <dd>{lastOutcome.record.at}</dd>
+              <dd>{latestOverride.at}</dd>
             </dl>
           </div>
         )}

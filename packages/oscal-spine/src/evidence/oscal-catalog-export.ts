@@ -15,15 +15,13 @@
 // minting is a SEAM (`newId`, default `crypto.randomUUID`). Groups and controls are sorted
 // lexicographically by id regardless of input order, so the same catalog set always produces
 // byte-identical output — golden-fixturable.
-import { randomUUID } from "node:crypto";
 import { ValidationError } from "@caisson/kernel";
-import type { OscalFramework } from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,
-  type OscalMetadata,
-  type OscalProp,
-} from "./oscal-export.ts";
+  type OscalFramework,
+} from "../contracts.ts";
+import type { OscalMetadata, OscalProp } from "./oscal-export.ts";
 
 /** One prose part of a control body (`statement`, and optionally `guidance`). */
 interface OscalCatalogPart {
@@ -107,7 +105,7 @@ export function toOscalCatalog(
       "oscal catalog export requires a valid `now` instant",
     );
   }
-  const newId = options.newId ?? randomUUID;
+  const newId = options.newId ?? (() => crypto.randomUUID());
 
   // DEDUP IS GLOBAL, BY CONTROL ID -- NOT per-family. A shared control (e.g. AUDIT.IMMUTABLE-LOG,
   // reused verbatim on id/title/statement across soc2-tsc and eu-ai-act) is NOT guaranteed to

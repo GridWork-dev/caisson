@@ -2,40 +2,71 @@
 
 // The access-review module's poke (ADR-0378 lock 2) — a live run of the campaign closer against a
 // fixed sample roster. Decide each reviewee, then try to close. Closing early with anyone still
-// undecided is refused (the typed ConflictError closeCampaign itself throws); closing past the
-// deadline reports the undecided as unresolved, never auto-approved. Every function driving this
-// component is the pure mirror in `access-review-logic.ts` (see that file's header for why the
-// real package isn't imported directly into a client bundle). Nothing here fetches, persists, or
-// measures the visitor.
+// undecided is refused (the SAME typed ConflictError closeCampaign itself throws — closeCampaign
+// delegates to evaluateCampaignClose, so there is one guard, not a mirror of one); closing past
+// the deadline reports the undecided as unresolved, never auto-approved.
+//
+// This component drives the REAL @caisson/access-review: the hand-ported mirror
+// (access-review-logic.ts) is deleted. The pure half of the campaign kernel lives in the
+// package's src/decisions.ts — no node builtin, no @caisson/tenancy-rls, no db; its only
+// non-relative edge is the browser-safe @caisson/kernel barrel — and is imported here by
+// RELATIVE path (an internal module, deliberately not a public entry point of the sold package).
+// Browser-safety is proven by the static source-graph walk in risk-register-poke.test.ts /
+// access-review-poke.test.ts — NOT by a build; a bundler substitutes node builtins instead of
+// failing on them. Nothing here fetches, persists, or measures the visitor.
 import { useCallback, useId, useMemo, useState } from "react";
 import { Button, Checkbox, StatusChip } from "@caisson/ui/components";
+import type { AuditChainEntry } from "@caisson/kernel";
 
-import { PokeShell, Verdict } from "./poke-rig";
 import {
   CAMPAIGN_CLOSED_RECORD,
   CAMPAIGN_DECISION_RECORD,
   REVIEW_DECISIONS,
-  evaluateClose,
+  evaluateCampaignClose,
   scanCampaignDecisions,
-} from "./access-review-logic";
+} from "../../../../packages/access-review/src/decisions.ts";
 import type {
   CampaignCloseVerdict,
-  DecisionChainEntry,
   ReviewDecision,
-} from "./access-review-logic";
+} from "../../../../packages/access-review/src/decisions.ts";
+
+import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./access-review-poke.module.css";
 
 // A sample campaign roster (campaign.ts's AccessReviewCampaign shape: one reviewer, a frozen
-// reviewee list). Labeled as sample below; nothing here is a real access grant.
-const SAMPLE_CAMPAIGN_ID = "8f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
+// reviewee list). Labeled as sample below; nothing here is a real access grant. Exported so the
+// poke test drives the same fixtures the UI does.
+export const SAMPLE_CAMPAIGN_ID = "8f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
 const SAMPLE_REVIEWER_ID = "reviewer-jordan";
-const SAMPLE_REVIEWEES: readonly string[] = [
+export const SAMPLE_REVIEWEES: readonly string[] = [
   "morgan.lee",
   "priya.nair",
   "sam.osei",
   "chidi.eze",
   "dana.ruiz",
 ];
+
+/** A sample decision entry for the poke's in-memory log. The prevHash/hash strings are INERT
+ *  sample values — never rendered, never read by scanCampaignDecisions (it reads only seq +
+ *  payload); real chain hashing is @caisson/audit-worm's job and is not what this poke
+ *  demonstrates. They exist only to satisfy the real AuditChainEntry shape. */
+export function decisionEntry(
+  seq: number,
+  revieweeId: string,
+  decision: ReviewDecision,
+): AuditChainEntry {
+  return {
+    seq,
+    prevHash: seq === 0 ? null : `sample-${seq - 1}`,
+    hash: `sample-${seq}`,
+    payload: {
+      kind: CAMPAIGN_DECISION_RECORD,
+      campaignId: SAMPLE_CAMPAIGN_ID,
+      revieweeId,
+      decision,
+    },
+  };
+}
 
 const DECISION_LABEL: Record<ReviewDecision, string> = {
   approve: "Approve",
@@ -44,7 +75,7 @@ const DECISION_LABEL: Record<ReviewDecision, string> = {
 
 export default function AccessReviewPoke() {
   const uid = useId();
-  const [log, setLog] = useState<readonly DecisionChainEntry[]>([]);
+  const [log, setLog] = useState<readonly AuditChainEntry[]>([]);
   const [isDue, setIsDue] = useState(false);
   const [verdict, setVerdict] = useState<CampaignCloseVerdict | null>(null);
 
@@ -59,15 +90,7 @@ export default function AccessReviewPoke() {
       if (closed) return; // recordDecision refuses once closeCampaign has run (campaign.ts).
       setLog((prev) => [
         ...prev,
-        {
-          seq: prev.length,
-          payload: {
-            kind: CAMPAIGN_DECISION_RECORD,
-            campaignId: SAMPLE_CAMPAIGN_ID,
-            revieweeId,
-            decision,
-          },
-        },
+        decisionEntry(prev.length, revieweeId, decision),
       ]);
       setVerdict(null);
     },
@@ -75,7 +98,7 @@ export default function AccessReviewPoke() {
   );
 
   const onClose = useCallback(() => {
-    setVerdict(evaluateClose(scan, SAMPLE_CAMPAIGN_ID, isDue));
+    setVerdict(evaluateCampaignClose(scan, SAMPLE_CAMPAIGN_ID, isDue));
   }, [scan, isDue]);
 
   const onReset = useCallback(() => {
@@ -176,7 +199,7 @@ export default function AccessReviewPoke() {
               <dt>httpStatus</dt>
               <dd>{verdict.error.httpStatus}</dd>
               <dt>details.campaignId</dt>
-              <dd>{verdict.error.details.campaignId}</dd>
+              <dd>{String(verdict.error.details?.["campaignId"] ?? "")}</dd>
             </dl>
             <p className={styles.note}>
               No {CAMPAIGN_CLOSED_RECORD} record is appended. The refusal

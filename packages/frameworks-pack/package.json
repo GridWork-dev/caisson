@@ -18,7 +18,15 @@
       "bun": "./src/registry/control.ts",
       "types": "./dist/registry/control.d.ts",
       "default": "./dist/registry/control.js"
+    },
+    "./browser": {
+      "bun": "./src/browser.ts",
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
     }
+  },
+  "engines": {
+    "node": ">=20.12.0"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
