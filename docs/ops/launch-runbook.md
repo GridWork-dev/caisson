@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-30
+updated: 2026-08-01
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -31,8 +31,10 @@ corresponding hold being released.
   reopen pricing.
 - WORM remains GOVERNANCE pre-launch; launch requires a receipted forward-only COMPLIANCE
   escalation.
-- Health is green but source parity is red. License/admin digests differ from repository/Worker,
-  docs/support parity is uncertified, and site migrations `0030`–`0032` are unreceipted.
+- Health is green and index parity is **OK** as of 2026-08-01 — repository, license, Worker and
+  admin all report `dc5ee000aebf` over 54 entries. Docs/support parity stays uncertified (both are
+  private services behind a Turnstile-gated proxy, so no automatable receipt exists), and site
+  migrations `0030`–`0032` are unreceipted.
 
 ## Binding execution order
 
@@ -167,14 +169,22 @@ Deploy in verifier-before-issuer order whenever strict schemas or manifests chan
 3. Deploy docs-RAG and support-bot.
 4. Deploy **admin, then site** — in that order, never together. admin is the internal-proof bearer
    verifier and site is its issuer; a new issuer against an old verifier is a hard 401 on every
-   buyer's evidence dashboard, while a new verifier against an old issuer is safe because the
-   verifier accepts both credential forms. `deploy-railway.yml` enforces this order for the release
-   train; this step is the manual path and must match it.
+   buyer's evidence dashboard. A new verifier against an old issuer is safe only while the issuer's
+   credential FORMAT is unchanged — it is not safe by construction. The dual-format acceptance that
+   made the F3 rollout safe in either direction was removed 2026-07-31 once both halves were
+   deployed, because an unbounded credential that never expires is the hole F3 exists to close.
+   Treat verifier-first as the rule and format compatibility as the thing to check, not assume.
+   `deploy-railway.yml` enforces this order for the release train; this step is the manual path and
+   must match it.
 5. Pause; apply the pending migration chain through `0032_field_crypto_keys.sql` only after backup
    and rollback checks. Before any wrap probe, receipt that `field_key_version` and
    `field_wrapped_dek` exist, both tables have forced RLS with tenant policies, and the wrapped-DEK
    update/delete guards are installed.
-6. Deploy/restart license issuer last.
+6. Deploy/restart license issuer last. `deploy-railway.yml` now carries this step too, so the
+   release train's leg 4 covers it — previously it deployed only admin and site, which is how
+   license came to sit a full release behind on the baked `registry/index.json`. The step is
+   dispatch-only: license is the only one of the three with a `preDeployCommand` that runs
+   migrations, and that must never fire unattended on a push.
 7. Record provider deployment IDs, image digests, source SHA, manifest digest, and timestamps.
 
 All six runtime legs must report the same approved source and manifest digest. Run health,
