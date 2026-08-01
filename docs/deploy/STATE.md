@@ -11,6 +11,19 @@ grounds:
 
 # Deploy log
 
+## 2026-08-01 — caisson-license redeployed at the release SHA; fleet parity restored
+
+`bun tooling/scripts/railway-deploy.ts --service caisson-license --ref d9ae893e` — the receipted
+operator-gated redeploy the 2026-07-31 entry below called for. Receipt appended to
+[receipts/caisson-license.json](receipts/caisson-license.json) (`d9ae893e` at
+`2026-08-01T09:53:43.911Z`); Railway deployment `dd6af196` SUCCESS; `license/health` reports
+`dc5ee000aebf`/54; the full four-leg parity probe returns **`PARITY OK`**.
+
+The structural half landed the same day: `deploy-railway.yml` gained a dispatch-only
+`caisson-license` step (between admin and site — after its verifiers, before the image that needs
+its `preDeployCommand` migrations), so leg 4 now covers every Railway index-baking surface and this
+drift class stops recurring.
+
 ## 2026-07-31 — no deploy; parity re-probe finds the license leg one index behind
 
 `bun registry/scripts/index-parity-probe.ts`, run from a clean checkout of `main`:

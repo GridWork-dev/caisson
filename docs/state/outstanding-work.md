@@ -214,9 +214,10 @@ fleet deploy off `f9c04f33` used.
 - **`caisson-license` is back on the current index, and leg 4 now covers it.** Redeployed at the
   `v2026.07.30` tag (`d9ae893e`) — Railway deployment `dd6af196` SUCCESS, `/health` reporting
   `dc5ee000aebf`/54, and the full four-leg probe returning **`PARITY OK`**. `deploy-railway.yml`
-  gained a license step so this stops recurring, placed FIRST (it is the backend the other two call)
-  and **dispatch-only**: license is the only one of the three with a `preDeployCommand` that runs
-  migrations, so the automatic push path must not carry it. The push paths also gained
+  gained a license step so this stops recurring, placed BETWEEN admin and site (after its
+  verifiers — the leg-1b Worker and admin — and before site, so its `preDeployCommand` migrations
+  land ahead of the new site image) and **dispatch-only**: license is the only one of the three
+  with a `preDeployCommand` that runs migrations, so the automatic push path must not carry it. The push paths also gained
   `apps/admin/**`, which the job has always deployed but never triggered on.
 - **CI-run deploy receipts stopped drifting silently.** `railway-deploy.ts` still does not commit
   them — a deploy job holding `contents:write` is the provenance defect ADR-0325 removed from
@@ -226,19 +227,11 @@ fleet deploy off `f9c04f33` used.
 
 ## Open after the v2026.07.30 train
 
-_Nothing in this section is blocked on an operator decision any more; the two entries that were
-moved to the closed section below._
+_Nothing in this section is blocked on an operator decision any more; the entries that were, moved
+to the closed section below. The `caisson-license` index-drift entry closed 2026-08-01 — receipted
+redeploy at `d9ae893e` (Railway `dd6af196`), full four-leg probe `PARITY OK`, and leg 4 now carries
+the license service structurally — see the closed section and [deploy state](../deploy/STATE.md)._
 
-- **`caisson-license` is one registry index behind — found 2026-07-31, needs one operator-gated
-  redeploy.** The parity probe reads repo/Worker/admin at `dc5ee000aebf` and license still at
-  `4810e38157c1`, the pre-release index. Not an outage (`license/health` 200 in 86ms) and not a new
-  failure mode — it is the F-1 residual the probe exists to catch. **The cause is structural and is
-  the same class as the Worker-leg gap:** four surfaces bake `registry/index.json` into their build
-  (Worker bundle, license image, admin image, repo file), and the train's leg 4 deploys exactly two
-  services, `caisson-admin` and `caisson-site`. So every release leaves license one index behind.
-  Fix is `bun tooling/scripts/railway-deploy.ts --service caisson-license --ref <release-sha>`;
-  structurally, leg 4 should cover every index-baking surface rather than two. See
-  [deploy state](../deploy/STATE.md).
 - **Retire the remaining `components/poke/` mirrors.** ADR-0395 decision 2 covers `trust-page`,
   `access-review`, `risk-register`, and `artifact-render`; the v2026.07.30 wave delivered the first
   and last (the trust-page poke drives the real packages now). The `access-review`,
