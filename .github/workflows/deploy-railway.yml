@@ -15,8 +15,13 @@ name: deploy-railway
 on:
   push:
     branches: [main]
+    # These paths gate the AUTOMATIC path only, which deploys admin + site. `services/license/**`
+    # is deliberately absent: the license step is dispatch-only (it runs migrations — see the step).
+    # `apps/admin/**` is present because this job deploys admin and an admin-only change previously
+    # did not trigger it at all, so admin could drift behind main until some other tree changed.
     paths:
       - "apps/site/**"
+      - "apps/admin/**"
       - "packages/**"
       - ".github/workflows/deploy-railway.yml"
   workflow_dispatch:
@@ -110,6 +115,27 @@ jobs:
       # The dual-format acceptance that made the F3 rollout itself safe is GONE as of 2026-07-31
       # (see internal-proof-auth.ts) — that was a one-release transition, not the rule. The rule is
       # this ordering.
+      # services/license goes FIRST — it is the backend both of the others call, and it is one of
+      # the surfaces that bakes registry/index.json into its image. Leaving it out is what let the
+      # v2026.07.30 train publish a new index and move repo, Worker and admin onto it while license
+      # kept serving the previous one (`4810e38157c1` vs `dc5ee000aebf`, caught by the parity probe
+      # 2026-07-31 and closed by a hand redeploy). Every release did that; now leg 4 covers it.
+      #
+      # DISPATCH-ONLY, deliberately. license is the ONLY one of the three with a preDeployCommand
+      # (`bun apps/site/lib/deploy-migrate.ts` — see services/license/railway.toml), so including it
+      # in the automatic push-triggered path would run schema migrations against production on any
+      # merge touching packages/**, unattended. A workflow_dispatch is an explicit act: the release
+      # train's leg 4, or an operator running it by hand. Push-triggered runs keep deploying admin
+      # and site only, exactly as before.
+      - name: deploy services/license to Railway (backend + index-baking surface; dispatch only)
+        if: steps.guard.outputs.armed == 'true' && github.event_name == 'workflow_dispatch'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DEPLOY_REF: ${{ steps.resolve-ref.outputs.ref }}
+        run: |
+          bun tooling/scripts/railway-deploy.ts \
+            --service caisson-license \
+            --ref "$DEPLOY_REF"
       - name: deploy apps/admin to Railway (verifier — MUST precede the issuer)
         if: steps.guard.outputs.armed == 'true'
         env:
