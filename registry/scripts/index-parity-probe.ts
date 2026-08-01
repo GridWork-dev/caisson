@@ -25,10 +25,11 @@
 // deployed — the release train's Worker leg runs `--only worker`, because it redeploys the edge
 // before it redeploys admin/site and a full-fleet probe would red on legs it has not reached yet.
 //
-// registry/ is NOT a workspace member, so `@caisson/*` bare specifiers do not resolve here — this file
-// uses only relative imports, node built-ins, and zod. `fetchWithTimeout` is inlined for the same
-// reason (it mirrors @caisson/kernel's helper: an explicit AbortController, never the Bun-forbidden
-// AbortSignal.timeout).
+// registry/ IS a workspace member (`@caisson/registry`), but this probe stays deliberately
+// self-contained — relative imports, node built-ins, and zod only — so it runs from a fresh
+// checkout without building any workspace package first. `fetchWithTimeout` is inlined for the
+// same reason (it mirrors @caisson/kernel's helper: an explicit AbortController, never the
+// Bun-forbidden AbortSignal.timeout).
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -308,17 +309,23 @@ export async function fetchJsonWithRetry(
 }
 
 /**
- * `--only worker` / `--only license,admin` — scope the run to the named legs. Undefined when the
- * flag is absent (probe everything). THROWS on an unknown or empty leg name rather than narrowing
- * to nothing: this probe is used as a deploy gate, and a typo that silently probed zero legs would
- * exit 0 and certify a deploy nobody checked.
+ * `--only worker` / `--only license,admin` / `--only=worker` — scope the run to the named legs.
+ * Undefined when the flag is absent (probe everything). THROWS on an unknown or empty leg name
+ * rather than narrowing to nothing: this probe is used as a deploy gate, and a typo that silently
+ * probed zero legs would exit 0 and certify a deploy nobody checked. The `=` form is accepted for
+ * the same reason — treating `--only=worker` as flag-absent would silently probe EVERY leg and
+ * red on surfaces the caller never deployed.
  */
 export function parseOnlyFlag(
   argv: readonly string[],
 ): readonly ParityLeg[] | undefined {
-  const at = argv.indexOf("--only");
+  const at = argv.findIndex((a) => a === "--only" || a.startsWith("--only="));
   if (at === -1) return undefined;
-  const legs = (argv[at + 1] ?? "")
+  const flag = argv[at] ?? "";
+  const raw = flag.startsWith("--only=")
+    ? flag.slice("--only=".length)
+    : (argv[at + 1] ?? "");
+  const legs = raw
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);

@@ -1,7 +1,7 @@
 // Tests for registry/scripts/index-parity-probe.ts (CAISSON-37 / F-1 residual). No live network —
 // computeParity is pure over injected fixtures.
-// NOTE: registry/ is not a workspace member, so @caisson/* bare specifiers do not resolve here —
-// these tests use only relative imports + node built-ins.
+// NOTE: registry/ IS a workspace member (@caisson/registry), but the probe is deliberately
+// self-contained (see its header) — these tests match it: relative imports + node built-ins only.
 import { createHash } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import {
@@ -233,6 +233,18 @@ describe("parseOnlyFlag", () => {
       "license",
       "admin",
     ]);
+  });
+
+  // The `=` form must not read as flag-absent: that would silently probe EVERY leg — the exact
+  // "certify something nobody asked for" failure the fail-closed contract below exists to kill.
+  test("parses the --only=legs form identically", () => {
+    expect(parseOnlyFlag(["--only=worker"])).toEqual(["worker"]);
+    expect(parseOnlyFlag(["--only=license, admin"])).toEqual([
+      "license",
+      "admin",
+    ]);
+    expect(() => parseOnlyFlag(["--only=wroker"])).toThrow(/unknown: wroker/);
+    expect(() => parseOnlyFlag(["--only="])).toThrow(/got none/);
   });
 
   // Fail-closed: this probe gates a deploy, so a typo must NOT narrow to "probe nothing" and exit 0.

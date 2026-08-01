@@ -81,9 +81,13 @@ jobs:
       # the operator chasing a stale bundle that did not exist.
       - name: verify the live edge serves this ref's index
         run: |
+          # The anonymous probe sees only the entries the edge serves UNENTITLED (the Apache-2.0
+          # base set, ~17 of 54) — the entitlement resolver hides commercial entries, so a release
+          # bumping only commercial modules can pass here while the commercial catalog still
+          # propagates. The probe's doc comment records the same limit; the notice stays qualified.
           for attempt in 1 2 3 4 5; do
             if bun registry/scripts/index-parity-probe.ts --only worker; then
-              echo "::notice::registry.caisson.sh serves the deployed index (attempt ${attempt})"
+              echo "::notice::registry.caisson.sh serves the deployed index — public-entry scope; commercial entries are not anonymously probeable (attempt ${attempt})"
               exit 0
             fi
             if [ "$attempt" -lt 5 ]; then
