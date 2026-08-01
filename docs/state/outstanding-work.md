@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-30
+updated: 2026-08-01
 status: live
 grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
@@ -220,11 +220,12 @@ fleet deploy off `f9c04f33` used.
   until someone notices. Reconstructed by hand for this ride from Railway's ledger. Either have the
   workflow commit them back, or stop treating the committed file as machine truth and read the
   Railway ledger instead.
-- **Retire the remaining `components/poke/` mirrors.** ADR-0395 decision 2 covers `trust-page`,
-  `access-review`, `risk-register`, and `artifact-render`; the v2026.07.30 wave delivered the first
-  and last (the trust-page poke drives the real packages now). The `access-review`,
-  `risk-register`, and `frameworks-pack` mirrors remain, and those packages are still
-  declared-but-unimported in `apps/site`. Two of the three are priced SKUs.
+- **Retire the remaining `components/poke/` mirrors.** The named tranche is DONE (2026-08-01,
+  ADR-0396, PR #377): `risk-register`, `access-review`, `frameworks-pack`, and `oscal-spine` pokes
+  all drive their real packages, proven by static source-graph walks
+  (`@caisson/testing/module-graph`). ~17 other `*-logic.ts` mirrors remain in the poke directory;
+  every one cites the retracted pre-ADR-0395 kernel-barrel premise in its header, and they retire
+  against the ADR-0396 pattern as follow-ups, one PR per cluster.
 
 ## Trigger-parked
 
