@@ -180,11 +180,15 @@ Deploy in verifier-before-issuer order whenever strict schemas or manifests chan
    and rollback checks. Before any wrap probe, receipt that `field_key_version` and
    `field_wrapped_dek` exist, both tables have forced RLS with tenant policies, and the wrapped-DEK
    update/delete guards are installed.
-6. Deploy/restart license issuer last. `deploy-railway.yml` now carries this step too, so the
-   release train's leg 4 covers it — previously it deployed only admin and site, which is how
-   license came to sit a full release behind on the baked `registry/index.json`. The step is
-   dispatch-only: license is the only one of the three with a `preDeployCommand` that runs
-   migrations, and that must never fire unattended on a push.
+6. Deploy/restart the license issuer after its verifiers — the leg-1b registry Worker and admin.
+   In THIS hand-run procedure that means last, which is safe only because step 5 already applied
+   the migration chain by hand. The release train's leg 4 has no hand-applied step 5, so there
+   license takes the middle slot (admin -> license -> site): its `preDeployCommand` is the only
+   path that applies platform migrations, and a new site image must never serve against a schema
+   its release's migrations have not reached. `deploy-railway.yml` carries the step — previously
+   leg 4 deployed only admin and site, which is how license came to sit a full release behind on
+   the baked `registry/index.json`. The step is dispatch-only: the migration must never fire
+   unattended on a push.
 7. Record provider deployment IDs, image digests, source SHA, manifest digest, and timestamps.
 
 All six runtime legs must report the same approved source and manifest digest. Run health,
