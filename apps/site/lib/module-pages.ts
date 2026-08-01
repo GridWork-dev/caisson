@@ -1819,6 +1819,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "frameworks-pack is Caisson's clean-room control library: defineFramework builds three own-authored packs (SOC 2 TSC, HIPAA Security, and the EU AI Act's high-risk obligations) plus four native regime crosswalks. It depends on and re-exports oscal-spine for the NIST SP 800-53 crosswalk, pinned reference catalog, and shared crosswalk contracts, preserving its existing public imports.",
     included: [
       {
+        title: "Browser-safe entry points",
+        body: "Import @caisson/frameworks-pack/browser inside a client bundle for the control model, the three packs, the regime crosswalks, the SoA computation, and the browser half of the OSCAL surface together, or ./registry for the model alone. The main entry keeps the complete node-capable surface, and every browser-entry export is also on it.",
+      },
+      {
         title: "Fail-closed control registry",
         body: "defineControl and defineFramework run every control through Zod's parseStrict at author time: canonicalControlId must match the uppercase dotted-segment pattern, crosswalk references must be unique on (framework, reference), and control ids must be unique within a Framework, an authoring mistake throws at module load, not at render time.",
       },
@@ -1900,6 +1904,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     definition:
       "oscal-spine is Caisson's commercial OSCAL boundary. It turns structural evidence-pack and framework inputs into deterministic OSCAL v1.2.2 assessment plans, assessment results, POA&M fragments, catalogs, XML, and ISO 27001 SoA components. The same package owns the byte-pinned NIST SP 800-53 rev5 catalog and the own-authored OLIR relationship crosswalk checked against it.",
     included: [
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/oscal-spine/browser inside a client bundle for the contracts, crosswalk model, catalog pin, and the pure catalog and assessment-plan exporters; its id seam defaults to the WebCrypto global crypto.randomUUID (Node 20.12 or later). The main entry keeps the full node-capable surface, and every browser-entry export is also on it.",
+      },
       {
         title: "Assessment artifacts from evidence you already generated",
         body: "toOscalBundle projects an evidence-pack manifest into assessment-results and POA&M report fragments, while toOscalAssessmentPlan emits the matching plan. Inputs are structural contracts, so the exporter does not reach back into the collector or storage layers.",

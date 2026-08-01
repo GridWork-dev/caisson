@@ -3,28 +3,140 @@
 // The frameworks-pack module's poke (ADR-0378 lock 2, kimi CANDIDATES.md section B build
 // baseline) -- a live, deterministic clause-to-control mapper. Pick a real crosswalk reference
 // from the shipped SOC 2 pack (or type your own) and watch it resolve to the canonical control(s)
-// that cite it, exported as a real OSCAL v1.2.2 catalog document. Every function driving this
-// component is the pure mirror in `frameworks-pack-logic.ts` (see that file's header for why the
-// real packages aren't imported directly into a client bundle). Nothing here fetches, persists, or
-// measures the visitor.
+// that cite it, exported as a real OSCAL v1.2.2 catalog document.
+//
+// This component drives the REAL packages through their browser-safe entries
+// (`@caisson/frameworks-pack/browser` + `@caisson/oscal-spine/browser`, ADR-0396) -- the
+// hand-ported mirror (frameworks-pack-logic.ts) is deleted, and SAMPLE_FRAMEWORK is a SELECTION
+// over the real `soc2Tsc` pack, never a copy of it. Browser-safety is proven by each package's
+// own static source-graph walk (browser-safety.test.ts), NOT by a build -- a bundler substitutes
+// node builtins instead of failing on them. The real toOscalCatalog throws kernel's
+// ValidationError on an invalid clock; this poke never renders that path (SAMPLE_NOW is a fixed
+// valid instant). Nothing here fetches, persists, or measures the visitor.
 import { useId, useMemo, useState } from "react";
 import { CodeBlock, Radio, Select } from "@caisson/ui/components";
 import type { SelectOption } from "@caisson/ui/components";
+import { soc2Tsc } from "@caisson/frameworks-pack/browser";
+import type {
+  CanonicalControl,
+  Framework,
+} from "@caisson/frameworks-pack/browser";
+import { OSCAL_VERSION, toOscalCatalog } from "@caisson/oscal-spine/browser";
 
 import { PokeShell, Verdict } from "./poke-rig";
-import {
-  CUSTOM_CLAUSE_KEY,
-  OSCAL_VERSION,
-  SAMPLE_FRAMEWORK,
-  SAMPLE_NOW,
-  clauseKey,
-  findControlsByClause,
-  listClauses,
-  makeCounterIds,
-  toOscalCatalog,
-} from "./frameworks-pack-logic";
-import type { Framework } from "./frameworks-pack-logic";
 import styles from "./frameworks-pack-poke.module.css";
+
+// ---- Sample data: six of the SOC2-TSC pack's seventeen own-authored controls, SELECTED from the
+// real `soc2Tsc` export (same object references -- the poke test pins reference identity, so
+// nothing here can drift from the package). Labeled as a sample in the UI. ----------------------
+
+export const SAMPLE_CONTROL_IDS = new Set<string>([
+  "GOVERNANCE.SECURITY-RESPONSIBILITY",
+  "ACCESS-CONTROL.LOGICAL",
+  "ACCESS-CONTROL.MFA",
+  "DATA-PROTECTION.ENCRYPTION",
+  "DATA-PROTECTION.DISPOSAL",
+  "AUDIT.IMMUTABLE-LOG",
+]);
+
+export const SAMPLE_FRAMEWORK: Framework = {
+  ...soc2Tsc,
+  controls: soc2Tsc.controls.filter((c) => SAMPLE_CONTROL_IDS.has(c.id)),
+};
+
+// ---- Clause-to-control lookup (composition over the real model -- original to this poke, not a
+// mirror of any single package function). Exported for the poke test. ---------------------------
+
+/** Sentinel Select value for "type your own clause" -- never a real (framework, reference) pair. */
+export const CUSTOM_CLAUSE_KEY = "__custom__";
+
+/** Encode a (framework, reference) pair as one opaque Select option value. */
+export function clauseKey(framework: string, reference: string): string {
+  return `${framework}::${reference}`;
+}
+
+export interface ClauseOption {
+  readonly key: string;
+  readonly framework: string;
+  readonly reference: string;
+  readonly controlCount: number;
+}
+
+/**
+ * Every distinct (framework, reference) crosswalk pair cited anywhere in `framework`'s controls,
+ * with how many controls cite it. Sorted by reference then framework for a stable render order.
+ */
+export function listClauses(framework: Framework): ClauseOption[] {
+  const counts = new Map<
+    string,
+    { framework: string; reference: string; count: number }
+  >();
+  for (const control of framework.controls) {
+    for (const x of control.crosswalk) {
+      const key = clauseKey(x.framework, x.reference);
+      const existing = counts.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        counts.set(key, {
+          framework: x.framework,
+          reference: x.reference,
+          count: 1,
+        });
+      }
+    }
+  }
+  return [...counts.entries()]
+    .map(([key, v]) => ({
+      key,
+      framework: v.framework,
+      reference: v.reference,
+      controlCount: v.count,
+    }))
+    .sort(
+      (a, b) =>
+        a.reference.localeCompare(b.reference) ||
+        a.framework.localeCompare(b.framework),
+    );
+}
+
+export interface ClauseLookupResult {
+  readonly clauseFramework: string;
+  readonly clauseReference: string;
+  readonly matches: readonly CanonicalControl[];
+}
+
+/** Every control in `framework` whose crosswalk cites `(clauseFramework, clauseReference)` exactly. */
+export function findControlsByClause(
+  framework: Framework,
+  clauseFramework: string,
+  clauseReference: string,
+): ClauseLookupResult {
+  const fw = clauseFramework.trim();
+  const ref = clauseReference.trim();
+  const matches = framework.controls.filter((c) =>
+    c.crosswalk.some((x) => x.framework === fw && x.reference === ref),
+  );
+  return { clauseFramework: fw, clauseReference: ref, matches };
+}
+
+// ---- Deterministic sample clock/id seam for the poke's rendered output -------------------------
+
+/** A fixed sample instant -- never `Date.now()` / an argless `new Date()` in a rendered path. */
+export const SAMPLE_NOW = new Date("2026-07-18T00:00:00.000Z");
+
+/**
+ * A deterministic UUID sequence -- mirrors the real test suite's own `counterIds()` helper
+ * (oscal-spine/src/evidence/oscal-catalog-export.test.ts) so the rendered catalog is
+ * reproducible across renders instead of drawing a fresh UUID on every keystroke.
+ */
+export function makeCounterIds(): () => string {
+  let n = 0;
+  return () => {
+    n += 1;
+    return `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  };
+}
 
 // Every real (framework, reference) crosswalk pair the sample pack ships, plus the "type your own"
 // escape hatch -- computed once from SAMPLE_FRAMEWORK (a constant), never per render.
@@ -67,7 +179,7 @@ export default function FrameworksPackPoke() {
     if (lookup.matches.length === 0) return null;
     const synthetic: Framework = {
       ...SAMPLE_FRAMEWORK,
-      controls: lookup.matches,
+      controls: [...lookup.matches],
     };
     return toOscalCatalog([synthetic], {
       now: SAMPLE_NOW,

@@ -228,6 +228,7 @@
         "@caisson/migrate": "workspace:*",
         "@caisson/observability": "workspace:*",
         "@caisson/org-controls": "workspace:*",
+        "@caisson/oscal-spine": "workspace:*",
         "@caisson/platform-migrations": "workspace:*",
         "@caisson/platform-reads": "workspace:*",
         "@caisson/pricebook": "workspace:*",
