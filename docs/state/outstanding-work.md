@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-31
+updated: 2026-08-01
 status: live
 grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md
@@ -197,6 +197,27 @@ fleet deploy off `f9c04f33` used.
   train closed that window at `d9ae893e` (admin 19:21:41Z, then site 19:24:27Z). Until this landed a
   leaked pre-F3 credential was valid until the shared secret rotated — the change shipped in that
   release was not yet doing its job. **It takes effect only when admin redeploys.**
+- **`native-ext (macos)` is green again — the leg moved to Blacksmith.** It had failed in ~9s with
+  zero steps on every `main` push (_"recent account payments have failed or your spending limit
+  needs to be increased"_), leaving macOS coverage for the `local-store` native extension dark while
+  the check sat permanently red. Blacksmith ships macOS runners on Apple Silicon M4 — the same ARM64
+  architecture GitHub-hosted `macos-15` already used — and their images track GitHub's, so the
+  Homebrew extension-capable-SQLite step is unaffected and it was a one-line `runs-on` swap. Proven
+  on run `30694817883`: **13 steps, 29 seconds, the real `vec0 + FTS5 + RRF` suite green.** This also
+  finishes the ADR-0365 fleet sweep — `quality.yml` is now 100% Blacksmith.
+- **A gate now runs on the PR that edits it.** `quality.yml`'s paths-filter listed only package
+  trees, so a change to the workflow itself tripped no filter and could only be validated after
+  merge, on a `main` push. Every filter now carries `.github/workflows/quality.yml` (the same
+  self-trigger `deploy-railway.yml` already had). That is what let the runner swap above be proven
+  before merge rather than assumed. `quality.yml` also gained `workflow_dispatch` for full-suite
+  re-runs against any ref.
+- **`caisson-license` is back on the current index, and leg 4 now covers it.** Redeployed at the
+  `v2026.07.30` tag (`d9ae893e`) — Railway deployment `dd6af196` SUCCESS, `/health` reporting
+  `dc5ee000aebf`/54, and the full four-leg probe returning **`PARITY OK`**. `deploy-railway.yml`
+  gained a license step so this stops recurring, placed FIRST (it is the backend the other two call)
+  and **dispatch-only**: license is the only one of the three with a `preDeployCommand` that runs
+  migrations, so the automatic push path must not carry it. The push paths also gained
+  `apps/admin/**`, which the job has always deployed but never triggered on.
 - **CI-run deploy receipts stopped drifting silently.** `railway-deploy.ts` still does not commit
   them — a deploy job holding `contents:write` is the provenance defect ADR-0325 removed from
   `publish.yml` — but when `GITHUB_STEP_SUMMARY` is set it writes the receipt into the run's job
@@ -205,13 +226,9 @@ fleet deploy off `f9c04f33` used.
 
 ## Open after the v2026.07.30 train
 
-- **`native-ext (macos)` is red on every `main` push — operator decision, deferred 2026-07-30.**
-  The leg moved off the offline self-hosted Mac mini to a hosted `macos-15` runner; the hosted job
-  now fails in ~9s with zero steps and the annotation _"The job was not started because recent
-  account payments have failed or your spending limit needs to be increased."_ It is **not** in
-  `REQUIRED_CHECKS`, so it does not gate the release train — but macOS coverage for the
-  `local-store` native extension is dark until one of: the Actions spending limit is raised
-  (operator-only, Billing & plans), the Mac mini is brought back, or the macOS leg is dropped.
+_Nothing in this section is blocked on an operator decision any more; the two entries that were
+moved to the closed section below._
+
 - **`caisson-license` is one registry index behind — found 2026-07-31, needs one operator-gated
   redeploy.** The parity probe reads repo/Worker/admin at `dc5ee000aebf` and license still at
   `4810e38157c1`, the pre-release index. Not an outage (`license/health` 200 in 86ms) and not a new
@@ -222,8 +239,6 @@ fleet deploy off `f9c04f33` used.
   Fix is `bun tooling/scripts/railway-deploy.ts --service caisson-license --ref <release-sha>`;
   structurally, leg 4 should cover every index-baking surface rather than two. See
   [deploy state](../deploy/STATE.md).
-- **`native-ext (macos)` is still red on every `main` push — unchanged, operator-only.** Repeated
-  from the entry above because it is the one item on this list nothing in-repo can move.
 - **Retire the remaining `components/poke/` mirrors.** ADR-0395 decision 2 covers `trust-page`,
   `access-review`, `risk-register`, and `artifact-render`; the v2026.07.30 wave delivered the first
   and last (the trust-page poke drives the real packages now). The `access-review`,

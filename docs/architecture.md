@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-30
+updated: 2026-08-01
 status: live
 grounds:
   - package.json
@@ -86,9 +86,10 @@ contrast implementation, including semantic, functional, and code-syntax colors.
 | support bot           | Railway Python service    | no public hostname                     |
 | `registry.caisson.sh` | Cloudflare Worker         | live authenticated npm protocol        |
 
-All five Railway services carry 2026-07-29 receipts at `f9c04f33`
-([`docs/deploy/receipts/`](deploy/receipts/)), and the index parity probe reports
-`4810e38157c1`/54 entries equal across repo, license, Worker, and admin. Docs-RAG and support-bot
+Admin, site and license run the `v2026.07.30` release commit `d9ae893e`; docs-RAG and support-bot
+still carry their 2026-07-29 receipts at `f9c04f33`
+([`docs/deploy/receipts/`](deploy/receipts/)). The index parity probe reports
+`dc5ee000aebf`/54 entries equal across repo, license, Worker, and admin. Docs-RAG and support-bot
 are private services reachable only through a Turnstile-gated site proxy, so their source parity
 still has no automatable receipt — see
 [production readiness](state/production-readiness.md).
