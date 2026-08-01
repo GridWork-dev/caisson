@@ -17,8 +17,8 @@ import type {
   OscalManifestEvidenceItem,
 } from "../contracts.ts";
 import { toOscalAssessmentPlan } from "./oscal-assessment-plan.ts";
+import { OSCAL_VERSION } from "../contracts.ts";
 import {
-  OSCAL_VERSION,
   toOscalBundle,
   type OscalExportBundle,
   type OscalExportOptions,

@@ -14,8 +14,11 @@
  *
  * This module is ALSO the package's `"./registry"` entry point, and it is browser-safe: it reaches
  * only the node-free `@caisson/kernel` `.` barrel. The package's own `.` barrel is NOT browser-safe
- * (it re-exports `@caisson/oscal-spine`, which imports `node:crypto`), so a consumer that needs the
- * control model inside a bundle imports `@caisson/frameworks-pack/registry`, never `.`.
+ * — it re-exports `@caisson/oscal-spine`, whose delivery transport and vendored-catalog reader are
+ * irreducibly node-only (node:child_process / node:fs in oscal-export-xml.ts and
+ * nist-catalog-controls.ts). A bundle consumer imports `@caisson/frameworks-pack/browser` for the
+ * model + packs + browser-safe OSCAL surface together (ADR-0396), or `./registry` for the model
+ * alone.
  */
 import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";

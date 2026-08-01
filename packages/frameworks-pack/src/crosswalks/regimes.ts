@@ -34,7 +34,7 @@ import {
   defineRegimeCrosswalk,
   type RegimeCrosswalk,
   nist80053Crosswalk,
-} from "@caisson/oscal-spine";
+} from "@caisson/oscal-spine/browser";
 
 /** Caisson crosswalk data version — dated, versioned like the framework catalogs (bumped on any edit). */
 const CROSSWALK_VERSION = "2026.1";

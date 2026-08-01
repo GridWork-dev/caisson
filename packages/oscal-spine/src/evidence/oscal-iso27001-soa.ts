@@ -26,13 +26,12 @@ import {
   assertReadinessLanguage,
   renderCitationRow,
 } from "@caisson/artifact-render";
-import type { OscalSoaRow } from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,
-  type OscalMetadata,
-  type OscalProp,
-} from "./oscal-export.ts";
+  type OscalSoaRow,
+} from "../contracts.ts";
+import type { OscalMetadata, OscalProp } from "./oscal-export.ts";
 
 /** A stable Caisson URN identifying the ISO/IEC 27001:2022 Annex A crosswalk this SoA is sourced
  *  from — an honest identifier, never a fake resolvable URL (mirrors `oscal-assessment-plan.ts`'s
