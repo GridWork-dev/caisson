@@ -148,8 +148,9 @@ type FetchImpl = typeof fetchWithTimeout;
 function accountCredential(accountId: string, secret: string): string {
   // Timestamped bearer (release-audit v2026.07.27.1 F3): the HMAC covers
   // "<unix-seconds>\n<accountId>" so the credential expires inside the verifier's acceptance
-  // window instead of living until the secret rotates. The verifier (apps/admin
-  // internal-proof-auth.ts) deploys before this issuer and accepts both formats mid-rollout.
+  // window instead of living until the secret rotates. This is now the ONLY format the verifier
+  // (apps/admin internal-proof-auth.ts) accepts — the dual-format rollout window closed with the
+  // v2026.07.30 deploy — so the two still ship together and admin still deploys first.
   const issuedAtSec = Math.floor(Date.now() / 1000);
   const mac = createHmac("sha256", secret)
     .update(`${issuedAtSec}\n${accountId}`)
