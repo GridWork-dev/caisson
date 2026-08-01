@@ -59,11 +59,12 @@ sandbox purchase/renewal rows. The parallel field-crypto KMS wave has since merg
   version PR (#359) and shipped in `v2026.07.27.1`.
 - **Reconciled verification:** 224/224 repository tasks and 76 package gates passed uncached
   (`bun run check --force`, 75 suites actually run, zero timeouts) on `db4c693a`.
-- **Fleet parity OK:** all five Railway services (site, admin, license, docs-RAG, support-bot)
-  carry 2026-07-29 receipts at `f9c04f33` in [`docs/deploy/receipts/`](deploy/receipts/), and the
-  index parity probe reports `4810e38157c1`/54 entries equal across repo, license, Worker, and
-  admin. The `74e92a6813bc`/`09adca8d32a5`/`97b183902c08` digests this line used to carry are
-  every one of them behind that deploy.
+- **Fleet parity OK:** admin, site and license run the `v2026.07.30` release commit `d9ae893e`;
+  docs-RAG and support-bot still carry their 2026-07-29 receipts at `f9c04f33` in
+  [`docs/deploy/receipts/`](deploy/receipts/). The index parity probe reports `dc5ee000aebf`/54
+  entries equal across repo, license, Worker, and admin. Getting there took a hand redeploy: the
+  train's leg 4 covered only admin and site, so license sat a full release behind on the baked
+  index until 2026-08-01. Leg 4 now carries a license step.
 - **Locked residuals:** the generated 39-component DS manifest, source drift guard, and shared
   browser-rendered contrast matrix are complete locally, and the four buyer/product families that
   were held — three module-depth pages, admin proof viewer/export, tenant proof route, and buyer

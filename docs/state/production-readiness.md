@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-30
+updated: 2026-08-01
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -22,21 +22,23 @@ blocked until both technical and operator evidence is attached.
 
 ## Verdicts
 
-| Dimension               | Verdict                                          | Current state                                                                                                                                                                                                                                                                                                |
-| ----------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Repository              | **local gates green**                            | 81 Bun workspaces; 224/224 tasks uncached, 76 package gates pass; field-crypto KMS merged `13e814da` (#353) after four review rounds, scoped keys `0d878553` (#354) after three                                                                                                                              |
-| Deploy / infrastructure | **index parity OK; two legs uncertified**        | Re-probed independently 2026-07-29: repo/license/worker/admin all agree at `4810e38157c1`. Docs-RAG and support-bot are private services reachable only through a Turnstile-gated site proxy, so their source parity has no automatable receipt                                                              |
-| Security                | **gaps**                                         | Limiter and provider adapters are implemented; four production technical receipts remain                                                                                                                                                                                                                     |
-| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                                                                                                                                                                                          |
-| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                                                                                                                                                                                 |
-| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt                                                                                                                                                                     |
-| Release                 | **proven once; leg 4 armed**                     | `v2026.07.27.1` released 2026-07-28: first signed tag, readiness 8/8, 50 tarballs published byte-exact, R2 parity 350/350. `RAILWAY_TOKEN` armed 2026-07-29T18:49Z, so the next train's leg 4 deploys for real instead of blocking — the silent-skip made loud in `45683e6e` is now closed at the credential |
+| Dimension               | Verdict                                          | Current state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repository              | **local gates green**                            | 81 Bun workspaces; 224/224 tasks uncached, 76 package gates pass; field-crypto KMS merged `13e814da` (#353) after four review rounds, scoped keys `0d878553` (#354) after three                                                                                                                                                                                                                                                                                                                                                  |
+| Deploy / infrastructure | **index parity OK; two legs uncertified**        | A 2026-07-31 probe caught `caisson-license` a full release behind on the baked index (`4810e38157c1` vs `dc5ee000aebf`) because the train deployed admin and site only. Redeployed at the release tag 2026-08-01 and re-probed: all four legs `dc5ee000aebf`, `RESULT: PARITY OK`. `deploy-railway.yml` now carries a license step so it stops recurring. Docs-RAG and support-bot are private services reachable only through a Turnstile-gated site proxy, so their source parity has no automatable receipt                   |
+| Security                | **gaps**                                         | Limiter and provider adapters are implemented; four production technical receipts remain                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Commerce                | **blocked**                                      | Sandbox built; Paddle production approval/catalog and real transaction proof absent                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Operations              | **gaps**                                         | Restore rehearsed July 11; current backup recency and provider-console checks still required                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Buyer/product           | **local build complete; unproven in production** | Design-manifest residual and all four locked families closed 2026-07-25, verified in the merged tree; none have a deployed probe receipt                                                                                                                                                                                                                                                                                                                                                                                         |
+| Release                 | **proven twice; leg 4 autonomous**               | `v2026.07.27.1` (2026-07-28, first signed tag) then `v2026.07.30` (2026-07-30), readiness 8/8 both rides. On the second, **leg 4 deployed by itself** — admin 19:21:41Z then site 19:24:27Z, the load-bearing verifier-before-issuer order — and the false RED that had half-deployed the fleet was root-caused to `railway up --ci` reading a dropped log stream as failure (`80748af3` adjudicates on the deployment's terminal status). Leg 1b (registry Worker) added 2026-07-31; leg 3 (npm) stays dormant by operator lock |
 
 ## Evidence snapshot
 
 ### Repository and quality
 
-- Local `main` and `origin/main` are identical at `d7f7d834`. That tree carries the validated
+- Local `main` and `origin/main` are identical at `3e16282e`, the `v2026.07.30` close-out. That tree
+  carries everything below plus the release itself: the version PR (#374), the deploy-status fix
+  (`80748af3`), and the release attestation. It carries the validated
   writing surface, OSCAL spine/catalog, Ask AI evidence, two independently verified supply-chain
   pins, the dependency-baseline repair (#352), the field-crypto KMS async refactor (#353), the
   scoped-key change that replaced raw DEK access (#354), the runbook catalog truing (#355), the
@@ -66,9 +68,10 @@ blocked until both technical and operator evidence is attached.
   real queued set on `main` instead of self-comparing to an empty diff. Branch-hygiene stays
   advisory-red on the five deliberately preserved reconcile-snapshot recovery refs plus whatever
   parallel-wave lanes are open at the time — the ADR-0328 convention, not drift.
-- The 54-file changeset backlog was consumed by version PR #359 (`52376dee`) and those versions are
-  published. **11 changesets are queued on `main`** from the #360–#366 sitting, resolving to 68
-  patch package releases with no minor and no major bumps.
+- The changeset backlog has been drained twice and both sets are published: version PR #359
+  (`52376dee`, 54 files) shipped as `v2026.07.27.1`, and version PR #374 (`ee467149`) consumed the 11
+  changesets from the #360–#366 sitting and shipped as `v2026.07.30`. **`.changeset/` is empty on
+  `main`.**
 - Private-repository access has been authorized since 2026-06-30 (`gh auth status`: active
   `repo`-scoped token; `caisson-sh/caisson` confirmed private). Branch protection stays
   discipline-only on the Free plan (ADR-0327) and org 2FA was declined 2026-07-15, re-raise at
@@ -85,20 +88,26 @@ blocked until both technical and operator evidence is attached.
 
 ### Deploy and parity
 
-**The DRIFT this section carried for weeks is closed.** `registry/scripts/index-parity-probe.ts` was
-re-run 2026-07-29 as an independent reading rather than a citation of the train's own output, and all
-four legs agree:
+**Re-opened 2026-07-31 on the license leg, closed 2026-08-01.** The 2026-07-29 reading had all four
+legs equal at `4810e38157c1`. The `v2026.07.30` train then published a new index (`dc5ee000aebf`, 54
+entries) and moved the Worker, admin, and site onto it — but **not** the license service, which kept
+serving the pre-release index. `RESULT: DRIFT DETECTED`, exit 1.
+
+The cause was structural, not a one-off: the train's leg 4 (`deploy-railway.yml`) deployed
+`caisson-admin` and `caisson-site` and nothing else, while `caisson-license` bakes
+`registry/index.json` into its image the same way. Every release left license one index behind.
+
+Closed by a receipted redeploy at the release tag (`d9ae893e`; Railway deployment `dd6af196`
+SUCCESS) plus a license step on leg 4 so it stops recurring. Re-probed after the deploy:
 
 | Leg              | Digest                                    | State |
 | ---------------- | ----------------------------------------- | ----- |
-| Repository index | `4810e38157c1` — 54 entries               | OK    |
-| License service  | `4810e38157c1` == repo                    | OK    |
+| Repository index | `dc5ee000aebf` — 54 entries               | OK    |
+| License service  | `dc5ee000aebf` == repo                    | OK    |
 | Registry Worker  | 17 served entries match repository latest | OK    |
-| Admin            | `4810e38157c1` == repo                    | OK    |
+| Admin            | `dc5ee000aebf` == repo                    | OK    |
 
-`RESULT: PARITY OK`, exit 0. The earlier table read 53 entries at `74e92a6813bc` with license and
-admin drifted; the six-leg fleet deploy (2026-07-27) and the tag redeploy (2026-07-28) landed between
-that probe and this one, which is what moved every leg onto the same index.
+`RESULT: PARITY OK`, exit 0.
 
 The migration claim this section used to carry — that `0030`–`0032` were authored without
 production-apply receipts — is also retired: the chain applied 2026-07-27 with `schema_version`

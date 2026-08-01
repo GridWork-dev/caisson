@@ -2,10 +2,13 @@ name: release-train
 # The ADR-0318 release train (R1–R4), reworked commit-addressable by ADR-0325. Publishing a
 # GitHub Release is THE trigger (R1) — its tag MUST target the merged version-PR commit
 # (version-pr.yml authored it; push-to-main CI proved it green). Everything rides it (R2):
-# registry tarball publish → public-mirror sync → mirror npm publish → site redeploy, in that
-# order, each leg a dispatch of the existing workflow that already owns the capability (no
-# duplicated publish logic). Legs 1 and 2 receive the release tag so they act on EXACTLY the
-# tagged bytes — one SHA anchors source, ledger, tarballs, mirror, and evidence. The readiness
+# registry tarball publish → registry Worker deploy → public-mirror sync → mirror npm publish →
+# site redeploy, in that order, each leg a dispatch of the existing workflow that already owns the
+# capability (no duplicated publish logic). Legs 1, 1b and 2 receive the release tag so they act on
+# EXACTLY the tagged bytes — one SHA anchors source, ledger, tarballs, edge catalog, mirror, and
+# evidence. Leg 1b was added 2026-07-31: leg 1 uploads bytes to R2 but the Worker inlines
+# registry/index.json at BUILD time, so without a Worker deploy a green train can leave the edge
+# resolving the previous release (observed on v2026.07.30). The readiness
 # job (R3, scripts/release-readiness.ts) runs first and any red check — including tag-not-on-main
 # — stops the train before it touches an external surface.
 #
@@ -71,7 +74,7 @@ jobs:
     environment: release # ADR-0327 rider 2 (definition-first; free-plan protection rules can't enforce yet)
     permissions:
       contents: read
-      actions: write # dispatch same-repo workflows (publish.yml, mirror-sync.yml, deploy-railway.yml)
+      actions: write # dispatch same-repo workflows (publish.yml, deploy-worker.yml, mirror-sync.yml, deploy-railway.yml)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # Dispatch a workflow and block until its run concludes; fail the train on a red leg.
@@ -104,6 +107,19 @@ jobs:
         run: |
           /tmp/dispatch-and-wait.sh "${{ github.repository }}" publish.yml \
             -f dry_run=false -f tag="$RELEASE_TAG"
+      # Leg 1 uploaded the tarball BYTES; this makes them RESOLVABLE. deploy-entry.ts inlines
+      # registry/index.json into the Worker bundle at build time, so without this leg the edge keeps
+      # serving its previously-baked catalog and `bun add @caisson/<pkg>` returns the last release —
+      # exactly what happened on v2026.07.30, where a fully green train left the site advertising an
+      # entry point the registry could not resolve. Numbered 1b, not 5, because the order is
+      # load-bearing: after the bytes exist (leg 1), before the site advertises them (leg 4).
+      - name: leg 1b — registry Worker deploy (bake the tagged index onto the live edge)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }} # env-indirect, never inlined in run:
+        run: |
+          /tmp/dispatch-and-wait.sh "${{ github.repository }}" deploy-worker.yml \
+            -f ref="$RELEASE_TAG"
       - name: leg 2 — public mirror sync (exported at the release tag)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -124,9 +140,16 @@ jobs:
       - name: leg 4 — site redeploy
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }} # env-indirect, never inlined in run:
         # require_armed=true: an unarmed deploy leg must FAIL the train, not skip green. Found
         # 2026-07-28 during v2026.07.27.1 — the train reported all legs green while the site kept
         # serving the previous image, because RAILWAY_TOKEN is not a repo secret.
+        #
+        # ref=$RELEASE_TAG: without it, deploy-railway.yml's resolve-ref falls back to the
+        # dispatched run's github.sha — main HEAD at dispatch time, not the tag. Any merge to main
+        # during the multi-leg window would then bake a DIFFERENT registry/index.json into
+        # license/admin than leg 1b baked into the Worker, and the parity probe would red on a
+        # train that "worked". One SHA anchors every leg only if every leg is told which SHA.
         run: |
           /tmp/dispatch-and-wait.sh "${{ github.repository }}" deploy-railway.yml \
-            -f require_armed=true
+            -f require_armed=true -f ref="$RELEASE_TAG"
