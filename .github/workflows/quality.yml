@@ -23,8 +23,10 @@ on:
   # `!= 'pull_request'`, so a dispatch runs the FULL suite — the same semantics as a main push.
   workflow_dispatch:
 
+# event_name in the group: without it a manual full-suite dispatch on main and a main-push run
+# share one group and cancel each other mid-flight.
 concurrency:
-  group: "quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  group: "quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}"
   cancel-in-progress: true
 
 permissions:

@@ -74,7 +74,7 @@ jobs:
     environment: release # ADR-0327 rider 2 (definition-first; free-plan protection rules can't enforce yet)
     permissions:
       contents: read
-      actions: write # dispatch same-repo workflows (publish.yml, mirror-sync.yml, deploy-railway.yml)
+      actions: write # dispatch same-repo workflows (publish.yml, deploy-worker.yml, mirror-sync.yml, deploy-railway.yml)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # Dispatch a workflow and block until its run concludes; fail the train on a red leg.
@@ -140,9 +140,16 @@ jobs:
       - name: leg 4 — site redeploy
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }} # env-indirect, never inlined in run:
         # require_armed=true: an unarmed deploy leg must FAIL the train, not skip green. Found
         # 2026-07-28 during v2026.07.27.1 — the train reported all legs green while the site kept
         # serving the previous image, because RAILWAY_TOKEN is not a repo secret.
+        #
+        # ref=$RELEASE_TAG: without it, deploy-railway.yml's resolve-ref falls back to the
+        # dispatched run's github.sha — main HEAD at dispatch time, not the tag. Any merge to main
+        # during the multi-leg window would then bake a DIFFERENT registry/index.json into
+        # license/admin than leg 1b baked into the Worker, and the parity probe would red on a
+        # train that "worked". One SHA anchors every leg only if every leg is told which SHA.
         run: |
           /tmp/dispatch-and-wait.sh "${{ github.repository }}" deploy-railway.yml \
-            -f require_armed=true
+            -f require_armed=true -f ref="$RELEASE_TAG"
