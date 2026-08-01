@@ -6,6 +6,7 @@
 // campaign.integration.test.ts.
 import { describe, expect, test } from "bun:test";
 import {
+  ConflictError,
   ValidationError,
   parseStrict,
   type AuditChainEntry,
@@ -16,13 +17,17 @@ import {
   recordDecisionSchema,
 } from "./schema.ts";
 import {
-  CAMPAIGN_DECISION_RECORD,
   closeCampaign,
   openCampaign,
   recordDecision,
-  scanCampaignDecisions,
   type CampaignDeps,
 } from "./campaign.ts";
+import {
+  CAMPAIGN_DECISION_RECORD,
+  evaluateCampaignClose,
+  scanCampaignDecisions,
+  type CampaignDecisionScan,
+} from "./decisions.ts";
 
 const ACCOUNT = "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
 const CAMPAIGN = "1a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
@@ -200,5 +205,48 @@ describe("scanCampaignDecisions — pure, flag-never-guess", () => {
     ];
     const scan = scanCampaignDecisions(entries, CAMPAIGN, ["alice"]);
     expect(scan.unresolved).toEqual(["alice"]);
+  });
+});
+
+describe("evaluateCampaignClose — the extracted close guard closeCampaign throws through", () => {
+  const complete: CampaignDecisionScan = {
+    decisions: new Map(),
+    unresolved: [],
+  };
+  const partial: CampaignDecisionScan = {
+    decisions: new Map(),
+    unresolved: ["alice", "bob"],
+  };
+
+  test("refuses while incomplete and not due, with the typed ConflictError", () => {
+    const verdict = evaluateCampaignClose(partial, CAMPAIGN, false);
+    if (verdict.outcome !== "refused") {
+      throw new Error("expected a refusal");
+    }
+    expect(verdict.error).toBeInstanceOf(ConflictError);
+    expect(verdict.error.code).toBe("conflict");
+    expect(verdict.error.httpStatus).toBe(409);
+    expect(verdict.error.details?.["campaignId"]).toBe(CAMPAIGN);
+  });
+
+  test("closes 'completed' when every reviewee decided", () => {
+    expect(evaluateCampaignClose(complete, CAMPAIGN, false)).toEqual({
+      outcome: "closed",
+      reason: "completed",
+      unresolved: [],
+    });
+  });
+
+  test("closes 'deadline' with the undecided still listed, never approved", () => {
+    expect(evaluateCampaignClose(partial, CAMPAIGN, true)).toEqual({
+      outcome: "closed",
+      reason: "deadline",
+      unresolved: ["alice", "bob"],
+    });
+  });
+
+  test("'completed' wins when the campaign is both complete and due", () => {
+    const verdict = evaluateCampaignClose(complete, CAMPAIGN, true);
+    expect(verdict.outcome === "closed" && verdict.reason).toBe("completed");
   });
 });

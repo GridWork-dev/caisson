@@ -8,6 +8,14 @@ Clean-room authorship: crosswalk references are pointers to an external requirem
 copied control text. The evidence engine (`@caisson/compliance-core`) consumes catalogs of this
 shape to assemble a control-to-evidence pack.
 
+## Entry points
+
+- `.` — the full surface, including the complete `@caisson/oscal-spine` re-export (node-capable).
+- `./registry` — the control model alone (browser-safe).
+- `./browser` — the model, the three packs, the regime crosswalks, the SoA computation, and the
+  browser half of the OSCAL surface, safe inside a client bundle. Every name on `./browser` is
+  also on `.`.
+
 ```ts
 import {
   defineFramework,

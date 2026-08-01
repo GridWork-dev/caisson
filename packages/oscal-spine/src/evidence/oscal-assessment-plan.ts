@@ -13,15 +13,16 @@
 //
 // DETERMINISM (mirrors the SAR/POA&M mapper): `now` + `newId` are injected, so the body is byte-stable
 // and its canonical SHA-256 is stable — the invariant the bundle's `hashes[]` and the goldens depend on.
-import { randomUUID } from "node:crypto";
 import { ValidationError } from "@caisson/kernel";
-import type { OscalEvidencePackFramework } from "../contracts.ts";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,
-  type OscalExportOptions,
-  type OscalMetadata,
-  type OscalReviewedControls,
+  type OscalEvidencePackFramework,
+} from "../contracts.ts";
+import type {
+  OscalExportOptions,
+  OscalMetadata,
+  OscalReviewedControls,
 } from "./oscal-export.ts";
 
 /** `import-ssp` on an assessment-plan — the system-security-plan the assessment is planned against. */
@@ -63,7 +64,7 @@ export function toOscalAssessmentPlan(
       "oscal assessment-plan requires a valid `now` instant",
     );
   }
-  const newId = options.newId ?? randomUUID;
+  const newId = options.newId ?? (() => crypto.randomUUID());
   const metadata: OscalMetadata = {
     title: `Assessment Plan — ${framework.title}`,
     "last-modified": options.now.toISOString(),

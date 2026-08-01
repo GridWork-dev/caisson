@@ -40,17 +40,11 @@ import type {
   OscalEvidencePackManifest,
   OscalManifestControl,
 } from "../contracts.ts";
-import { parseOscalEvidencePackManifest } from "../contracts.ts";
-
-/**
- * The OSCAL model version these bodies are authored against (NIST OSCAL JSON, csrc.nist.gov/ns/oscal).
- * Locked to v1.2.2 (NIST's latest stable, 2026-04-30) by ADR-0179 — the single `oscal-cli validate`
- * conformance target. A FedRAMP-package buyer down-converts (the 1.0.4 dual-target mode is not built).
- */
-export const OSCAL_VERSION = "1.2.2" as const;
-
-/** The Caisson property/extension namespace stamped on OSCAL `prop`/`link` extensions. */
-export const CAISSON_OSCAL_NS = "https://caisson.sh/ns/oscal";
+import {
+  CAISSON_OSCAL_NS,
+  OSCAL_VERSION,
+  parseOscalEvidencePackManifest,
+} from "../contracts.ts";
 
 /**
  * The legacy Caisson-hosted per-framework Assessment-Plan (AP) artifact URL (ADR-0179). It was the

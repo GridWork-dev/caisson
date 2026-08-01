@@ -6,16 +6,11 @@
 // begin boundary (src/impersonation/session.ts).
 import { z } from "zod";
 import { strictObject } from "@caisson/kernel";
+import { REVIEW_DECISIONS } from "./decisions.ts";
 
 /** A reviewer/reviewee id — an opaque external identifier (email, username, account id). Bounded
  *  so a malformed import can't smuggle an unbounded string into a WORM-logged payload. */
 const memberId = z.string().trim().min(1).max(320);
-
-/** The two decisions a reviewer may record. "Unresolved" is never a decision value — it is the
- *  ABSENCE of one, computed by `scanCampaignDecisions`, never chosen by a reviewer or a caller
- *  (flag-never-guess: an undecided reviewee is reported, never inferred as approved). */
-export const REVIEW_DECISIONS = ["approve", "revoke"] as const;
-export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
 
 /** A campaign window ceiling — one year. A recurring review cadence longer than that is a
  *  misconfiguration, not a legitimate use: an unbounded deadline defeats the audit story (a

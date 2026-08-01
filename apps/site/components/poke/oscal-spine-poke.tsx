@@ -2,21 +2,44 @@
 
 // The standalone OSCAL module's deterministic proof: select one of the three shipped framework
 // identities and generate the matching OSCAL v1.2.2 Assessment Plan, or break the injected clock
-// and watch the same fail-closed validation the package ships. The browser-safe mirror is
-// byte-parity-tested against the real `toOscalAssessmentPlan` implementation.
+// and watch the REAL fail-closed validation the package ships (kernel's ValidationError, not a
+// mirror of it). This component drives the real `toOscalAssessmentPlan` through
+// `@caisson/oscal-spine/browser` (ADR-0396) — the hand-ported mirror (oscal-spine-logic.ts) is
+// deleted, and the framework identities are derived from the real shipped packs, never copied.
+// Browser-safety is proven by the package's own static source-graph walk, not by a build.
 import { useId, useMemo, useState } from "react";
 import { CodeBlock, Radio, Select } from "@caisson/ui/components";
 import type { SelectOption } from "@caisson/ui/components";
-
-import { PokeShell, Verdict } from "./poke-rig";
+import {
+  euAiAct,
+  hipaaSecurity,
+  soc2Tsc,
+} from "@caisson/frameworks-pack/browser";
 import {
   OSCAL_VERSION,
-  SAMPLE_FRAMEWORKS,
-  SAMPLE_NOW,
-  makeCounterIds,
   toOscalAssessmentPlan,
-} from "./oscal-spine-logic";
+} from "@caisson/oscal-spine/browser";
+
+import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./frameworks-pack-poke.module.css";
+
+// The three shipped packs' identities, derived (not copied) — exactly the
+// OscalEvidencePackFramework triple the real function takes. Exported for the poke test.
+export const SAMPLE_FRAMEWORKS = [soc2Tsc, hipaaSecurity, euAiAct].map(
+  ({ id, title, version }) => ({ id, title, version }),
+);
+
+/** A fixed sample instant -- never `Date.now()` / an argless `new Date()` in a rendered path. */
+export const SAMPLE_NOW = new Date("2026-07-25T12:00:00.000Z");
+
+/** A deterministic UUID sequence, so the rendered document is stable across renders. */
+export function makeCounterIds(): () => string {
+  let n = 0;
+  return () => {
+    n += 1;
+    return `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  };
+}
 
 const OPTIONS: SelectOption[] = SAMPLE_FRAMEWORKS.map((framework) => ({
   value: framework.id,
