@@ -10,7 +10,11 @@
 // WHAT IS REAL vs WHAT IS A PORT. The hand-ported mirror (billing-orchestration-logic.ts) is deleted:
 // the claim-key decision now runs the shipped `assertValidSourceEventId` from
 // @caisson/billing-orchestration/browser, and the failure is the shipped @caisson/kernel
-// ValidationError, message verbatim. What CANNOT be real is the claim itself: it is an
+// ValidationError — its identity (name, code, httpStatus) and its words rendered as thrown, with only
+// the em-dash clause break swapped for a comma so a package message stays inside the site's copy law
+// (ADR-0375 lock 1, which the deleted mirror satisfied by rewording the same string). See
+// `verdictProse` below; nothing else about the message is the poke's. What CANNOT be real is the
+// claim itself: it is an
 // `INSERT … ON CONFLICT DO NOTHING RETURNING` against a TenantExecutor inside the caller's tenant
 // transaction, so `claimTable` below is an in-memory PORT standing in for `billing_processed_event`
 // the way a test double does — and billing-orchestration-poke.test.ts pins it against the REAL
@@ -224,6 +228,16 @@ interface VerdictLine {
   message: string;
 }
 
+/**
+ * A shipped error message is internal prose and free to use an em dash as a clause break; a rendered
+ * verdict line is buyer-facing prose and is not (ADR-0375 lock 1). Swap that one break for a comma and
+ * leave every other character alone, so the sentence a visitor reads is still the package's own words
+ * rather than a poke-authored paraphrase that could drift from it.
+ */
+export function verdictProse(message: string): string {
+  return message.replace(/\s+—\s+/g, ", ");
+}
+
 export default function BillingOrchestrationPoke() {
   const [providerId, setProviderId] = useState<ProviderId>(DEFAULT_PROVIDER.id);
   const [type, setType] = useState<DomainBillingEventType>(
@@ -278,7 +292,7 @@ export default function BillingOrchestrationPoke() {
         if (err instanceof ValidationError) {
           setVerdict({
             state: "fail",
-            message: `${err.name} (${err.code}, ${err.httpStatus}). ${err.message}`,
+            message: `${err.name} (${err.code}, ${err.httpStatus}). ${verdictProse(err.message)}`,
           });
           return;
         }
