@@ -64,6 +64,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "field-crypto seals values under a distinct AES-256-GCM key per tenant, using HKDF-SHA256 for dev/self-hosted deployments or request-scoped KMS envelope encryption in hosted production. Its self-describing envelope always binds tenant and column identity into the AEAD's additional authenticated data; explicit row-bound fields bind row identity too.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/field-crypto/browser inside a client bundle, a Cloudflare Worker, or any other WebCrypto-only runtime for the same HKDF derivation, AES-256-GCM seal and open, row-bound AAD, and envelope codec the server runs, over crypto.subtle and Uint8Array instead of node:crypto and Buffer (Node 20.12 or later). The main entry keeps the full surface including the KMS and Drizzle halves, every browser-entry export is also on it, and both directions of the interop are pinned byte-for-byte against the same fixtures.",
+      },
+      {
         title: "Fail-closed on every read and write",
         body: "encryptedColumn() wires a Drizzle customType whose toDriver/fromDriver only run inside withFieldCryptoContext. Reach an encrypted column with no bound tenant context and currentFieldCryptoContext() throws InternalError instead of returning a partial or unscoped result.",
       },
@@ -1981,6 +1985,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     definition:
       "signing-primitive produces a detached Ed25519 signature over a canonical, chain-anchored evidence manifest, bound to the WORM audit chain's tip hash and signed under a per-tenant key that is deliberately distinct from the Caisson license-issuer key. An optional RFC-3161 timestamp countersigns the signature, and a separate deployment-level Ed25519ph signer anchors receipts into Sigstore Rekor's public transparency log.",
     included: [
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/signing-primitive/browser inside a client bundle for the verify half: the signable-payload construction, verifyEvidenceSignature over the same @noble/ed25519 primitive the server signs with, and the RFC-3161 test double (Node 20.12 or later). A relying party can check your evidence pack entirely in their own browser. The signing identity stays off that entry on purpose, a tenant seed does not belong in a bundle users download, and every browser-entry export is also on the main entry.",
+      },
       {
         title: "Per-tenant Ed25519Signer, never the license key",
         body: "Ed25519Signer holds a 32-byte tenant seed in a private #secretKey field, never logged or serialized; construction throws ValidationError on an empty keyId or a wrong-length key. It is deliberately distinct from Caisson's own license-issuer key, a buyer proves provenance of their own evidence with their own identity.",
