@@ -47,6 +47,17 @@ twice. Built from `normalizePrompt`/`shingle`/`computeMinHashSignature`/`lshBand
 enforces a policy, and moves zero wallet balance; `reserve()`'s own idempotency separately catches
 a literal `callId` retry.
 
+## Entry points
+
+Three: `.` is the full node-capable surface, `./ui` is the usage chart, and `./browser` is the
+browser-safe subset — the price book + cost normalizer, the estimator, and the spend-policy
+vocabulary (`DEFAULT_SCOPE`, `BreakerState`, `SpendCapError`). A client bundle imports `./browser`,
+never `.`. `reserve()`/`reconcile()`, the stored breaker and the DDL are deliberately absent from
+it: they take a `TenantExecutor` and move a real wallet. A module joins `./browser` only if its
+whole value-import graph passes the package's static source-graph walk
+(`src/browser-safety.test.ts` — never a bundler exit code), and every `./browser` name must also
+exist on `.`.
+
 ## Out of scope
 
 No provider-SDK import (the gateway `@caisson/ai-kit` owns that boundary, ADR-0011/0059). No live
