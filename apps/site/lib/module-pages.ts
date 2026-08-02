@@ -672,11 +672,15 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         title: "Reflexivity queue for judge/human disagreement",
         body: "captureDisagreement() enqueues a case only when the model verdict and a human verdict disagree; consolidateReflexivityQueue() dedupes and caps the list for operator review. Nothing here auto-writes a committed dataset, merging a candidate back in stays a human act.",
       },
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/ai-evals/browser inside a client bundle for the gate's rules with no file I/O: the baseline boundary schema, compareToBaseline, the pre-bless eligibility check, the bless merge, and wilsonLowerBound. gateAgainstBaseline stays on the main entry because it reads and writes the committed baseline file, and every browser-entry export is also on the main entry.",
+      },
     ],
     artifact: {
       label: "The fail-closed regression compare",
       lang: "ts",
-      file: "packages/ai-evals/src/baseline.ts",
+      file: "packages/ai-evals/src/baseline-compare.ts",
       code: 'export function compareToBaseline(\n  run: EvalRun,\n  baseline: BaselineFile,\n): BaselineComparison {\n  const findings: RegressionFinding[] = [];\n\n  if (run.score + EPS < run.threshold) {\n    findings.push({\n      kind: "below-threshold",\n      actual: run.score,\n      baseline: run.threshold,\n      detail: `score ${run.score} < threshold ${run.threshold}`,\n    });\n  }\n\n  const prior = baseline.evals[run.name];\n  if (prior === undefined) {\n    findings.push({\n      kind: "missing-baseline",\n      actual: run.score,\n      detail: `no committed baseline for eval "${run.name}" — bless to record it`,\n    });\n    return { eval: run.name, passed: false, findings, blessed: false };\n  }',
       annotations: [
         "The EPS tolerance on the threshold compare (run.score + EPS < run.threshold) avoids a false regression from float rounding noise, not just a strict less-than.",
@@ -900,15 +904,21 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         title: "Validated memory-item boundary",
         body: "MemoryItemSchema is a Zod .strict() boundary: UUID ids, bounded text (100k chars) and scope (256 chars), optional string-to-string metadata. Unknown keys are rejected, not silently dropped.",
       },
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/local-store/browser inside a client bundle for fuseByRrf and RRF_K, the fusion arithmetic with no database attached, to merge leg rankings your server or worker already produced. Retrieval itself stays on the main entry: the vec0 KNN and FTS5 legs need bun:sqlite and the sqlite-vec native extension. Every browser-entry export is also on the main entry.",
+      },
     ],
     artifact: {
-      label: "LocalStore.hybridSearch, vec0 KNN + FTS5 fused by RRF (RRF_K=60)",
+      label:
+        "fuseByRrf, the Reciprocal Rank Fusion hybridSearch merges both legs through (RRF_K=60)",
       lang: "ts",
-      file: "packages/local-store/src/store.ts",
-      code: "  hybridSearch(opts: HybridSearchOptions): SearchHit[] {\n    const limit = opts.limit ?? 10;\n    const legLimit = Math.max(limit * 8, 50);\n\n    const vecRanks = this.vecLeg(opts.queryVector, legLimit);\n    const ftsRanks = this.ftsLeg(opts.queryText, legLimit);\n\n    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs.\n    const fused = new Map<number, number>();\n    for (const [rowid, rank] of vecRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n    for (const [rowid, rank] of ftsRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n\n    const ranked = [...fused.entries()]\n      // score descending; deterministic tie-break by rowid ascending (stable, env-free).\n      .sort((a, b) => b[1] - a[1] || a[0] - b[0])\n      .slice(0, limit);\n    if (ranked.length === 0) return [];\n\n    return ranked.map(([rowid, score]) => ({ id: this.docId(rowid), score }));\n  }",
+      file: "packages/local-store/src/rrf.ts",
+      code: 'export function fuseByRrf(\n  legs: readonly RrfLeg[],\n  opts: RrfOptions = {},\n): RrfRow[] {\n  const rrfK = opts.rrfK ?? RRF_K;\n  assertPositive(rrfK, "rrfK");\n  const fused = new Map<number, number>();\n  for (const leg of legs) {\n    assertPositive(leg.weight, "RRF leg weight");\n    for (const [key, rank] of leg.ranks) {\n      fused.set(key, (fused.get(key) ?? 0) + leg.weight / (rrfK + rank));\n    }\n  }\n  const ranked = [...fused.entries()].sort(\n    (a, b) => b[1] - a[1] || a[0] - b[0],\n  );\n  const rows = opts.limit === undefined ? ranked : ranked.slice(0, opts.limit);\n  return rows.map(([key, score]) => ({ key, score }));\n}',
       annotations: [
-        "The fused map sums 1/(RRF_K + rank) across both legs, a doc that only hits in the vector leg or only the FTS5 leg still scores, it isn't dropped for missing the other.",
-        "The sort's tie-break is a.rowid - b.rowid, deterministic ranking with no dependence on wall-clock time or run-to-run ordering.",
+        "fuseByRrf sums weight/(RRF_K + rank) across every leg a document appears in, a doc that only hits in the vector leg or only the FTS5 leg still scores, it isn't dropped for missing the other.",
+        "The sort's tie-break is key ascending, which is rowid order for hybridSearch, deterministic ranking with no dependence on wall-clock time or run-to-run ordering.",
+        "The fusion has no database attached, which is why it is also the whole of the browser entry point while the vec0 and FTS5 legs stay server-side.",
       ],
     },
     faq: [
