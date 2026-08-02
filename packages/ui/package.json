@@ -71,7 +71,7 @@
     "eslint": "catalog:",
     "eslint-plugin-storybook": "10.5.0",
     "lucide-react": "catalog:",
-    "playwright": "1.61.1",
+    "playwright": "1.62.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "storybook": "10.5.0",
