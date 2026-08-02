@@ -1192,7 +1192,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Default-deny allowlist, fail-closed",
-        body: "createToolProposer builds its registry from config.allowlist, a name not registered there throws NotFoundError before anything spawns. An empty allowlist refuses every call; there's no wildcard escape hatch.",
+        body: "createToolProposer builds its registry from the allowlist it is handed (createToolExec passes config.allowlist straight through), a name not registered there throws NotFoundError before anything spawns. An empty allowlist refuses every call; there's no wildcard escape hatch.",
       },
       {
         title: "Argv arrays, never a shell",
