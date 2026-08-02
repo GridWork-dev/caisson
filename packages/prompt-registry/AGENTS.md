@@ -27,6 +27,14 @@ Production Kit gateway must know to use the prompt registry correctly.
   version fails closed (no dangling pointer).
 - `resolvePrompt(tx, accountId, ref)` parses any of the three and returns the version.
 
+## Entry points
+
+`.` is the full surface. `@caisson/prompt-registry/browser` is the client-safe subset — addressing
+(`parsePromptRef`) plus the render boundary (`renderPrompt`, `buildVarSchema`, the message and var
+schemas) — and never carries a registry function or the schema module, because those take a
+`TenantExecutor` and RLS is the tenant boundary. Import from `./browser` in a client bundle; import
+from `.` on the server. Never widen `./browser` with a name that is not already on `.`.
+
 ## Variable schema
 
 `var_spec` is a serializable `{ name: "string" | "number" | "boolean" }` map (names are identifiers).

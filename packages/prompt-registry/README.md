@@ -19,6 +19,17 @@ Production Kit edition (ADR-0061). Built on `@caisson/kernel` (versioning + erro
   or forge a role. The render contract is golden-pinned (`src/__golden__/render.json`).
 - **Fail-closed tenant isolation.** Both tables are FORCE-RLS; every call runs inside `withTenant`.
 
+## Entry points
+
+- `.` — the full surface: the schema, the registry API, addressing, and templating (node-capable,
+  reaches `@caisson/tenancy-rls` and the `pg` driver through the schema module).
+- `./browser` — addressing (`parsePromptRef`) and the injection-safe templating boundary
+  (`renderPrompt`, `buildVarSchema`, and the message/var schemas), safe inside a client bundle. The
+  registry functions and the schema are deliberately absent: each takes a `TenantExecutor` and runs
+  SQL, and fail-closed tenant isolation belongs on the server. Every name on `./browser` is also on
+  `.`.
+- `./ui` — the React surface.
+
 ## Usage
 
 ```ts
