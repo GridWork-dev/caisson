@@ -6,7 +6,10 @@
 // polyfill and exits 0 (~428KB observed). The proof has to live in the source graph.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -20,6 +23,12 @@ describe("`./browser` is browser-safe", () => {
   test("no module reachable from src/browser.ts imports a node builtin (transitive)", () => {
     expect(walk.offenders).toEqual([]);
     expect(walk.unresolved).toEqual([]);
+  });
+
+  test("no package module introduces an untracked node global", () => {
+    expect(
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
+    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
   });
 
   test("guard the guard: the walk crossed into @caisson/kernel, not just this package", () => {
@@ -40,6 +49,14 @@ describe("`./browser` is browser-safe", () => {
       false,
     );
     expect(walk.files.some((f) => f.startsWith("packages/jobs/"))).toBe(false);
+    expect(
+      walk.files
+        .filter((file) => file.startsWith("packages/credits/src/"))
+        .sort(),
+    ).toEqual([
+      "packages/credits/src/browser.ts",
+      "packages/credits/src/fifo.ts",
+    ]);
   });
 
   test("the unwalked external frontier is exactly the known browser-safe set", () => {

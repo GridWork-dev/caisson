@@ -26,9 +26,16 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { InsufficientCreditsError, asCredits } from "@caisson/kernel";
+import {
+  InsufficientCreditsError,
+  ValidationError,
+  asCredits,
+} from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
@@ -71,6 +78,12 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     expect(walk.unresolved).toEqual([]);
   });
 
+  test("no package or poke module introduces an untracked node global", () => {
+    expect(
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
+    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
+  });
+
   test("the walk really crossed into the packages, past the first hop", () => {
     expect(walk.files).toContain("packages/credits/src/fifo.ts");
     expect(walk.files).toContain("packages/kernel/src/errors.ts");
@@ -83,6 +96,14 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
       false,
     );
     expect(walk.files.some((f) => f.startsWith("packages/jobs/"))).toBe(false);
+    expect(
+      walk.files
+        .filter((file) => file.startsWith("packages/credits/src/"))
+        .sort(),
+    ).toEqual([
+      "packages/credits/src/browser.ts",
+      "packages/credits/src/fifo.ts",
+    ]);
   });
 
   test("the unwalked external frontier is exactly the known browser-safe set", () => {
@@ -174,6 +195,20 @@ describe("the rendered FIFO attribution IS the package's plan, not a restated on
     for (const bad of [0, -5, 1.5]) {
       expect(() => applyDebit(initialWallet(), bad, "codegen_debit")).toThrow();
     }
+  });
+
+  test("a malformed demo remainder fails before it can mutate the wallet", () => {
+    const wallet = initialWallet();
+    const malformed: Wallet = {
+      ...wallet,
+      grants: wallet.grants.map((grant, index) =>
+        index === 0 ? { ...grant, consumed: Number.NaN } : grant,
+      ),
+    };
+    expect(() => applyDebit(malformed, 1, "codegen_debit")).toThrow(
+      ValidationError,
+    );
+    expect(malformed.ledger).toEqual([]);
   });
 
   test("a failed debit returns the wallet unchanged (debit-before-spend)", () => {
