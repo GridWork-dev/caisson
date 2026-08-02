@@ -1,6 +1,7 @@
 ---
 "@caisson/agent-kernel": minor
 "@caisson/local-sync": minor
+"@caisson/local-ai": patch
 "@caisson/site": patch
 ---
 
