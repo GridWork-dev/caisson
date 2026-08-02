@@ -4,16 +4,9 @@
 // spawn, and the validated result is used directly as an `execFile` argv array — never a shell
 // string, never concatenated. `execSync`/`exec`/`shell: true` are never used anywhere in this file.
 import { execFile as execFileCb } from "node:child_process";
-import type { ZodType } from "zod";
-import { NotFoundError, parseStrict } from "@caisson/kernel";
-
-/** A registered allowlist entry: a logical name, the real executable, and its argv-array schema. */
-export interface CommandSpec {
-  readonly name: string;
-  readonly command: string;
-  /** Validates the caller-supplied `args` INTO the exact argv array passed to `execFile`. */
-  readonly argsSchema: ZodType<string[]>;
-}
+import { NotFoundError } from "@caisson/kernel";
+import { createToolProposer } from "./propose.ts";
+import type { CommandSpec, ProposedToolCall } from "./propose.ts";
 
 /** Structured argument provenance for one governed call. Plain data, not WORM. */
 export interface ExecResult {
@@ -90,19 +83,6 @@ export interface ToolExecConfig {
   readonly now?: () => number;
 }
 
-/**
- * A validated, not-yet-executed call (ADR-0360 S3 two-phase gate): the allowlist lookup + Zod
- * validation have already run, so `execute` never re-validates `args` — the recorded `args` here
- * ARE the exact argv `execute` will spawn. Serializable (plain data) so a caller can park it in an
- * external approval store between `propose` and `execute` without re-deriving anything.
- */
-export interface ProposedToolCall {
-  readonly name: string;
-  readonly command: string;
-  readonly args: readonly string[];
-  readonly reason?: string;
-}
-
 export interface ToolExec {
   run(name: string, args: unknown, reason?: string): Promise<ExecResult>;
   /**
@@ -137,9 +117,9 @@ export interface ToolExec {
  * path is unchanged for non-gated tools.
  */
 export function createToolExec(config: ToolExecConfig): ToolExec {
-  const registry = new Map<string, CommandSpec>(
-    config.allowlist.map((spec) => [spec.name, spec]),
-  );
+  // The lookup + validation gate is the pure `./propose.ts` module — one implementation, shared by
+  // `run` and `propose` so the single-phase and two-phase paths can never drift apart.
+  const gate = createToolProposer(config.allowlist);
   const cwd = config.cwd ?? process.cwd();
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const execFn = config.execFn ?? defaultExecFn;
@@ -172,14 +152,8 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
       args: unknown,
       reason?: string,
     ): Promise<ExecResult> {
-      const spec = registry.get(name);
-      if (spec === undefined) {
-        throw new NotFoundError(`No command registered for "${name}"`, {
-          command: name,
-        });
-      }
-      const validatedArgs = parseStrict(spec.argsSchema, args);
-      return spawn(spec.command, validatedArgs, reason);
+      const proposed = gate.propose(name, args, reason);
+      return spawn(proposed.command, proposed.args, reason);
     },
 
     async propose(
@@ -187,23 +161,11 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
       args: unknown,
       reason?: string,
     ): Promise<ProposedToolCall> {
-      const spec = registry.get(name);
-      if (spec === undefined) {
-        throw new NotFoundError(`No command registered for "${name}"`, {
-          command: name,
-        });
-      }
-      const validatedArgs = parseStrict(spec.argsSchema, args);
-      const proposed: ProposedToolCall = {
-        name,
-        command: spec.command,
-        args: validatedArgs,
-      };
-      return reason === undefined ? proposed : { ...proposed, reason };
+      return gate.propose(name, args, reason);
     },
 
     async execute(proposed: ProposedToolCall): Promise<ExecResult> {
-      const spec = registry.get(proposed.name);
+      const spec = gate.lookup(proposed.name);
       if (spec === undefined || spec.command !== proposed.command) {
         throw new NotFoundError(
           `No command registered for "${proposed.name}" matching its proposed command (allowlist changed since propose)`,

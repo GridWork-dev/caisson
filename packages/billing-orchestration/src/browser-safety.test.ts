@@ -5,7 +5,10 @@
 // reaches `pg` through @caisson/tenancy-rls, so "the site built fine" would have proven nothing.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -21,6 +24,12 @@ describe("`./browser` is browser-safe", () => {
     expect(walk.unresolved).toEqual([]);
   });
 
+  test("nor introduces an untracked node global", () => {
+    expect(
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
+    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
+  });
+
   test("guard the guard: the walk crossed the package boundary into kernel", () => {
     // The entry's own subgraph is two files, so files.length can never carry the cross-package
     // claim — this is the assertion that fails if @caisson/* resolution silently goes blind and
@@ -31,6 +40,16 @@ describe("`./browser` is browser-safe", () => {
     expect(walk.files.some((f) => f.startsWith("packages/kernel/src/"))).toBe(
       true,
     );
+    expect(
+      walk.files
+        .filter((file) =>
+          file.startsWith("packages/billing-orchestration/src/"),
+        )
+        .sort(),
+    ).toEqual([
+      "packages/billing-orchestration/src/browser.ts",
+      "packages/billing-orchestration/src/event-keys.ts",
+    ]);
   });
 
   test("the server-only half stays out of the entry's graph", () => {
@@ -85,7 +104,10 @@ describe("`./browser` is a subset of `.`", () => {
       (name) => !Object.hasOwn(barrel, name),
     );
     expect(missing).toEqual([]);
-    expect(Object.keys(browser).length).toBeGreaterThan(0);
+    expect(Object.keys(browser).sort()).toEqual([
+      "assertValidSourceEventId",
+      "sideEffectEventKey",
+    ]);
     expect(Object.keys(browser).length).toBeLessThan(
       Object.keys(barrel).length,
     );

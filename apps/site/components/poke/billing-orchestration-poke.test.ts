@@ -33,7 +33,10 @@ import {
   setDefaultTimeout,
   test,
 } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 import { ValidationError } from "@caisson/kernel";
 import { DomainBillingEventSchema } from "@caisson/billing";
 import {
@@ -85,6 +88,12 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     expect(walk.unresolved).toEqual([]);
   });
 
+  test("no package or poke module introduces an untracked node global", () => {
+    expect(
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
+    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
+  });
+
   test("the walk really crossed into the package, past the first hop", () => {
     // Guard the guard: the UI kit alone contributes dozens of files, so files.length can never
     // prove the billing-orchestration edges resolved. event-keys.ts is reachable only through
@@ -94,6 +103,16 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
       "packages/billing-orchestration/src/event-keys.ts",
     );
     expect(walk.files).toContain("packages/kernel/src/errors.ts");
+    expect(
+      walk.files
+        .filter((file) =>
+          file.startsWith("packages/billing-orchestration/src/"),
+        )
+        .sort(),
+    ).toEqual([
+      "packages/billing-orchestration/src/browser.ts",
+      "packages/billing-orchestration/src/event-keys.ts",
+    ]);
   });
 
   test("the server-only half of the package never enters the client graph", () => {

@@ -17,6 +17,13 @@ stderr, ok, reason?, at }` — a plain-data audit record (not WORM), with output
 - **Injected everything.** `cwd`, `timeoutMs`, the spawn seam (`execFn`), and the clock (`now`) are
   all config — no module-level secrets/constants for endpoints or executables.
 
+## Entry points
+
+- `.` — the full surface, node-capable (`createToolExec` and its `execFile` spawn seam).
+- `./browser` — the browser-safe subset: `createToolProposer`, the default-deny lookup + Zod argv
+  validation with no spawn attached, so the gate can decide inside a client bundle. It is the same
+  implementation `createToolExec` runs. Every name on `./browser` is also on `.`.
+
 ## Use
 
 ```ts

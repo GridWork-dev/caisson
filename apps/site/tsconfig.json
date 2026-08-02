@@ -20,7 +20,10 @@
   "exclude": [
     "node_modules",
     "out",
-    ".next",
+    ".next/cache",
+    ".next/server",
+    ".next/standalone",
+    ".next/static",
     "functions",
     "remotion",
     "remotion.config.ts"

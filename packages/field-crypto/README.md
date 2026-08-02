@@ -23,6 +23,16 @@ FIELD_CRYPTO_SALT, "caisson-field-crypto:v"+keyVersion+":"+tenantId)`. No per-te
   port). Deletion returns the provider-proven state, so a recoverable cloud retention window is
   never labeled irreversible.
 
+## Entry points
+
+- `.` — the full surface, node-capable (KMS adapters, the Drizzle column, the Postgres stores).
+- `./browser` — per-tenant HKDF derivation, AES-256-GCM seal/open, the row-bound AAD tuple, and the
+  envelope codec, over WebCrypto and `Uint8Array` instead of `node:crypto` and `Buffer`: safe inside
+  a client bundle or any WebCrypto-only runtime (Node >= 20.12). The `…Async` / `…Bytes` names are
+  the browser half of the same vocabulary, not a second format — both directions of the interop are
+  pinned byte-for-byte against the shipped `__golden__` fixtures. Every name on `./browser` is also
+  on `.`.
+
 ## Use
 
 ```ts

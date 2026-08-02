@@ -4,8 +4,8 @@
 // whole pipeline is deterministically testable.
 import { dedup, rateCap, quietHours } from "./pipeline.ts";
 import type { OpenIncident, QuietHoursPolicy } from "./pipeline.ts";
-import { deliverAll } from "./channels.ts";
-import type { AlertChannel, DeliveryResult } from "./channels.ts";
+import { deliverAll } from "./delivery.ts";
+import type { AlertChannel, DeliveryResult } from "./delivery.ts";
 import type { AlertAuditSink, AlertOutcome } from "./audit.ts";
 import type { AlertEvent, RateCapPolicy } from "./types.ts";
 

@@ -1,28 +1,31 @@
 "use client";
 
-// The agent-runner module's poke (ADR-0378 lock 2) -- a live, deterministic run of
-// @caisson/agent-runner's env scrubber against a fixed sample parent env. Every function driving
-// this component is the pure mirror in `agent-runner-logic.ts` (see that file's header for why the
-// real package isn't imported directly into a client bundle). Nothing here fetches, persists, or
-// measures the visitor.
+// The agent-runner module's poke (ADR-0378 lock 2) -- a live, deterministic run of the REAL
+// @caisson/agent-runner env scrubber against a fixed sample parent env. The hand-ported mirror
+// (agent-runner-logic.ts) is retired per ADR-0396: buildEngineEnv, CLAUDE_CLI_PROFILE and
+// PASSTHROUGH_KEYS come from the package's browser-safe `./browser` entry, which is the same
+// src/engine-env.ts module the runner itself imports (the detached spawn and the on-disk run
+// registry stay behind `.`). Only the sample parent env and the added-key ordering below are
+// poke-local. Nothing here fetches, persists, or measures the visitor.
 import { useId, useMemo, useState } from "react";
 import { Checkbox, DetailList, StatusChip } from "@caisson/ui/components";
 import type { DetailItem } from "@caisson/ui/components";
-
-import { PokeShell, Verdict } from "./poke-rig";
 import {
   CLAUDE_CLI_PROFILE,
   PASSTHROUGH_KEYS,
-  addedKeys,
   buildEngineEnv,
-} from "./agent-runner-logic";
-import type { EnvScrubError } from "./agent-runner-logic";
+} from "@caisson/agent-runner/browser";
+import type { ProviderConfig } from "@caisson/agent-runner/browser";
+import { isCaissonError } from "@caisson/kernel";
+import type { CaissonError } from "@caisson/kernel";
+
+import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./agent-runner-poke.module.css";
 
 // A fixed sample parent env (packages/agent-runner/src/leak-guard.test.ts POLLUTED uses the same
 // shape of canary). Values are made up for this demo and prefixed SAMPLE_ where they impersonate a
 // credential -- PATH/LANG/etc. carry no secret, so they are left as ordinary-looking shell values.
-const SAMPLE_PARENT_ENV: Record<string, string> = {
+export const SAMPLE_PARENT_ENV: Record<string, string> = {
   PATH: "/usr/bin:/bin",
   LANG: "en_US.UTF-8",
   LC_ALL: "en_US.UTF-8",
@@ -47,12 +50,61 @@ const OTHER_SAMPLE_KEYS = Object.keys(SAMPLE_PARENT_ENV).filter(
 
 // Fixed sample spawn parameters -- not secrets, but not real either. authKey is clearly labeled.
 const SAMPLE_AUTH_KEY = "SAMPLE_sk-ant-oat01-00000000";
-const SAMPLE_BASE_URL = "https://api.anthropic.com";
-const MALICIOUS_BASE_URL = "javascript:alert(1)"; // the exact attack the real leak-guard test uses
+export const SAMPLE_BASE_URL = "https://api.anthropic.com";
+// the exact attack the real leak-guard test uses
+export const MALICIOUS_BASE_URL = "javascript:alert(1)";
 const SAMPLE_HOME = "/var/agent-runner-runs/SAMPLE-run/home";
 const SAMPLE_CONFIG_DIR = "/var/agent-runner-runs/SAMPLE-run/home/config";
 
+/**
+ * Poke-local presentation composition: the keys buildEngineEnv ADDS beyond a surviving passthrough
+ * key, in the order it sets them, so the two output panels can be split. The package has no such
+ * export -- this reads the same provider fields the scrub does, and the poke test pins it against
+ * the real output so a drift in either direction fails.
+ */
+export function addedKeys(provider: ProviderConfig): string[] {
+  const keys = ["HOME", provider.baseUrlEnv, provider.authEnv];
+  if (provider.configDirEnv !== undefined) keys.push(provider.configDirEnv);
+  if (provider.modelEnv !== undefined) keys.push(provider.modelEnv);
+  keys.push(
+    "DISABLE_AUTOUPDATER",
+    "DISABLE_TELEMETRY",
+    "DISABLE_ERROR_REPORTING",
+  );
+  return keys;
+}
+
 const ADDED_KEYS = new Set(addedKeys(CLAUDE_CLI_PROFILE));
+
+export type ScrubResult =
+  | { readonly ok: true; readonly env: Record<string, string> }
+  | { readonly ok: false; readonly error: CaissonError };
+
+/**
+ * Poke-local presentation shaping ONLY: the scrub throws (that is its fail-closed contract), and a
+ * React render wants a value. Every code/status/message/detail rendered below is the real kernel
+ * ValidationError's.
+ */
+export function scrubSample(
+  parentEnv: Readonly<Record<string, string>>,
+  baseUrl: string,
+): ScrubResult {
+  try {
+    return {
+      ok: true,
+      env: buildEngineEnv(parentEnv, {
+        provider: CLAUDE_CLI_PROFILE,
+        authKey: SAMPLE_AUTH_KEY,
+        baseUrl,
+        home: SAMPLE_HOME,
+        configDir: SAMPLE_CONFIG_DIR,
+      }),
+    };
+  } catch (err) {
+    if (isCaissonError(err)) return { ok: false, error: err };
+    throw err;
+  }
+}
 
 export default function AgentRunnerPoke() {
   const uid = useId();
@@ -76,22 +128,14 @@ export default function AgentRunnerPoke() {
     return env;
   }, [present]);
 
-  const result = useMemo(():
-    | { ok: true; env: Record<string, string> }
-    | { ok: false; error: EnvScrubError } => {
-    try {
-      const env = buildEngineEnv(parentEnv, {
-        provider: CLAUDE_CLI_PROFILE,
-        authKey: SAMPLE_AUTH_KEY,
-        baseUrl: tamperBaseUrl ? MALICIOUS_BASE_URL : SAMPLE_BASE_URL,
-        home: SAMPLE_HOME,
-        configDir: SAMPLE_CONFIG_DIR,
-      });
-      return { ok: true, env };
-    } catch (err) {
-      return { ok: false, error: err as EnvScrubError };
-    }
-  }, [parentEnv, tamperBaseUrl]);
+  const result = useMemo(
+    () =>
+      scrubSample(
+        parentEnv,
+        tamperBaseUrl ? MALICIOUS_BASE_URL : SAMPLE_BASE_URL,
+      ),
+    [parentEnv, tamperBaseUrl],
+  );
 
   const toDetailItems = (entries: [string, string][]): DetailItem[] =>
     entries.map(([k, v]) => ({ term: k, description: v, mono: true }));
