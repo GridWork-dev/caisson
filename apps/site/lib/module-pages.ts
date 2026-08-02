@@ -950,6 +950,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "Agent kernel is the engine-neutral base for governed AI agent work: a Zod schema for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship), allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident audit-chain recorder. It imports no vendor SDK and runs no LLM: composition only, consumed by both the base CLI and the Agentic-Dev bundle.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/agent-kernel/browser inside a client bundle for the artifact schema and its authoring helpers, the lifecycle act FSM, the governance decision algebra, and the redacting logger. The main entry keeps the complete node-capable surface (the execFile command handler and the audited hash-chain lifecycle), and every browser-entry export is also on it.",
+      },
+      {
         title: "Typed agent/skill/rule schema",
         body: "AgentArtifact, SkillArtifact, and RuleArtifact are a Zod discriminatedUnion on kind, built on @caisson/kernel's strictObject: an unknown field is rejected outright, not silently dropped. A bad artifact fails through parseArtifact as a redaction-safe ValidationError, never the rejected values.",
       },
