@@ -107,7 +107,7 @@ phase, no dates.
 
 ## Guardrails held throughout
 
-Source repos read-only · **pro-private `media-pipeline` = patterns only, zero code in any
+Source repos read-only · **pro-private (a private GridWork repo) = patterns only, zero code in any
 deliverable** · every research gate honored (converge → report → wait) · never auto-decide a fork
 (`CLAUDE.md` operator rule).
 

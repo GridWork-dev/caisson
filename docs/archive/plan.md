@@ -1,6 +1,6 @@
 # Build Plan — Caisson (phase-based, exit criteria, no dates)
 
-Implements `specs/00-product-spec.md §5`. Per gridwork-core: spec-first, atomic commits,
+Implements `specs/00-product-spec.md §5`. Per a private GridWork repo: spec-first, atomic commits,
 golden-file regression before any compliance logic, no product code before Gate 4. Each phase
 lists tasks + an **exit gate** (the verify). `tooling/` standards seam first; the module
 production-standards pipeline is a **separate dedicated session** (D9) — P0 fixes the seam only.
