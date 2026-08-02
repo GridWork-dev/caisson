@@ -225,9 +225,6 @@ export async function timestampCountersignsSignatureAsync(
 ): Promise<boolean> {
   try {
     const expected = await sha256Hex(hexToBytes(signature.signature));
-    // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- both operands are public
-    // sha256 imprints of an already-public detached signature, never a secret; the constant-time path
-    // is timestampCountersignsSignature (node), whose verdict this is pinned equal to.
     return (
       token.messageImprint.length === expected.length &&
       token.messageImprint === expected
