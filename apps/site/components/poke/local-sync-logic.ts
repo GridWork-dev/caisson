@@ -1,9 +1,10 @@
 // Deterministic in-browser mirror of the @caisson/local-sync reconciliation primitive for the
 // "Converge two devices" poke (ADR-0378 lock 2). The real merge (packages/local-sync/src/reconcile.ts
-// + tombstone.ts + clock.ts) is plain TypeScript with no browser-hostile calls of its own, but it
-// imports `TenancyError` from the @caisson/kernel barrel, which transitively pulls node:crypto /
-// node:dns and cannot enter the browser bundle (the exact constraint audit-worm-logic.ts documents for
-// the same barrel). So the merge is mirrored here verbatim — no hashing is involved in this primitive,
+// + tombstone.ts + clock.ts) is plain TypeScript with no browser-hostile calls of its own, but the
+// package exposes it only through a barrel that also exports `ChangesetLog` from changeset.ts, which
+// reaches `bun:sqlite` and `node:crypto`. That barrel cannot enter the browser bundle — the same
+// barrel-versus-safe-entry constraint documented by audit-worm-poke.tsx. So the merge is mirrored
+// here verbatim — no hashing is involved in this primitive,
 // so no WebCrypto is needed either, only the same comparisons and folds the real functions perform —
 // and local-sync-logic.test.ts pins every mirrored output byte-identical to the real package under bun,
 // plus the shipped packages/local-sync/src/__golden__ fixtures. Nothing here fetches, persists, or
@@ -72,8 +73,9 @@ export function compareStamps(a: HlcStamp, b: HlcStamp): number {
 
 /**
  * Tenant-partition mismatch. The real functions throw kernel's `TenancyError`; this browser mirror
- * throws a plain class (no kernel import) — the parity test asserts the THROW, not the error class,
- * exactly as audit-worm-logic.ts's `retainUntilFrom` mirror does for its own kernel-typed error.
+ * throws a local class (no kernel import). The parity test checks that both this path and the
+ * relative-imported package path fail with their respective classes, following the relative-source
+ * convention in audit-worm-poke.test.ts.
  */
 export class TenantPartitionError extends Error {}
 
