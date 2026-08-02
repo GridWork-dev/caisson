@@ -13,7 +13,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 import { AuthzError } from "@caisson/kernel";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import { assertCanManageMembers } from "@caisson/org-controls";
@@ -39,6 +42,12 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     expect(walk.unresolved).toEqual([]);
   });
 
+  test("no package or poke module introduces an untracked node global", () => {
+    expect(
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
+    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
+  });
+
   test("the external frontier is exactly this set — neither the Clerk SDK nor the Postgres driver", () => {
     expect(walk.external).toEqual(["lucide-react", "radix-ui", "react", "zod"]);
   });
@@ -46,9 +55,14 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   test("the walk crossed into the browser entry and NEVER the server-only halves", () => {
     expect(walk.files).toContain("packages/org-controls/src/browser.ts");
     expect(walk.files).toContain("packages/org-controls/src/gate.ts");
-    for (const f of ["membership.ts", "clerk.ts", "workos.ts"]) {
-      expect(walk.files).not.toContain(`packages/org-controls/src/${f}`);
-    }
+    expect(
+      walk.files
+        .filter((file) => file.startsWith("packages/org-controls/src/"))
+        .sort(),
+    ).toEqual([
+      "packages/org-controls/src/browser.ts",
+      "packages/org-controls/src/gate.ts",
+    ]);
     expect(walk.files.some((f) => f.startsWith("packages/tenancy-rls/"))).toBe(
       false,
     );

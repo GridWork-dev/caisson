@@ -9,7 +9,10 @@
 // have called the whole barrel clean.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -25,6 +28,17 @@ describe("`./browser` is browser-safe", () => {
     expect(walk.unresolved).toEqual([]);
   });
 
+  test("nor introduces a node global — the walker's other taint channel", () => {
+    const globals = nodeGlobalTaint(walk.files, {
+      workspaceRoot: WORKSPACE_ROOT,
+    });
+    // The browser entry adds no Node global. Name the one accepted hit inherited from the kernel
+    // barrel so a new Buffer/process/require use anywhere in the graph fails this exact assertion.
+    expect(globals).toEqual([
+      { file: "packages/kernel/src/config.ts", spec: "process" },
+    ]);
+  });
+
   test("the external frontier carries no server-only package", () => {
     // zod rides in through the kernel barrel and is browser-safe; the two that are not must be
     // unreachable, and this is the ONLY channel that can say so (they are not `node:` specifiers).
@@ -36,12 +50,16 @@ describe("`./browser` is browser-safe", () => {
     expect(walk.files.some((f) => f.includes("packages/kernel/src/"))).toBe(
       true,
     );
-    // The db-bound and SSO halves stay out of the graph entirely.
-    for (const f of ["membership.ts", "clerk.ts", "workos.ts"]) {
-      expect(walk.files.some((p) => p.endsWith(`org-controls/src/${f}`))).toBe(
-        false,
-      );
-    }
+    // Exact allowlist: no membership, Clerk, WorkOS, entitlement, or cross-tenant admin-write
+    // module can enter this presentation-only public surface unnoticed.
+    expect(
+      walk.files
+        .filter((file) => file.startsWith("packages/org-controls/src/"))
+        .sort(),
+    ).toEqual([
+      "packages/org-controls/src/browser.ts",
+      "packages/org-controls/src/gate.ts",
+    ]);
     expect(walk.files.some((f) => f.startsWith("packages/tenancy-rls/"))).toBe(
       false,
     );
@@ -83,6 +101,7 @@ describe("`./browser` is a subset of `.`", () => {
       (name) => !Object.hasOwn(barrel, name),
     );
     expect(missing).toEqual([]);
+    expect(Object.keys(browser)).toEqual(["assertCanManageMembers"]);
     // …and strictly fewer: the transport + db-bound half is why the barrel still exists.
     expect(Object.keys(browser).length).toBeLessThan(
       Object.keys(barrel).length,
