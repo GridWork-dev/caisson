@@ -2,11 +2,12 @@
 // @caisson/agent-trajectory schema + replay primitives (both run here under bun, which is node-
 // backed, so the package's full import graph resolves fine even though it can't enter the browser
 // bundle). No __golden__ fixture directory exists for this package (checked); parity is pinned
-// directly against the real exported functions instead, same convention as audit-worm-logic.test.ts.
+// directly against the real exported functions instead, following local-sync-logic.test.ts's
+// relative-source parity convention.
 //
 // The real package exposes only its barrel (`exports["."]` = src/index.ts in package.json) and is
-// not itself a listed dependency of @caisson/site, so — matching audit-worm-logic.test.ts's own
-// precedent (it relative-imports packages/audit-worm/src/retain.ts rather than going through
+// not itself a listed dependency of @caisson/site, so — matching audit-worm-poke.test.ts's own
+// precedent (it relative-imports the audit-worm package's source rather than going through
 // "@caisson/audit-worm") — this reaches the source files directly by relative path.
 import { describe, expect, test } from "bun:test";
 import { parseStrict, ValidationError } from "@caisson/kernel";
