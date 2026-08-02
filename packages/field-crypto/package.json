@@ -13,7 +13,15 @@
       "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./browser": {
+      "bun": "./src/browser.ts",
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
     }
+  },
+  "engines": {
+    "node": ">=20.12.0"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

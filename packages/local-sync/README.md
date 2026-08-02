@@ -18,6 +18,14 @@ onto one canonical local store. A base primitive (paid, `LicenseRef-Caisson-Comm
   tombstone index so a later, incomplete batch can't resurrect a row a peer already deleted; a
   strictly-greater-stamped upsert still legitimately un-deletes it.
 
+## One entry point, browser-safe
+
+`@caisson/local-sync` has a single `.` entry and it reaches no Node builtin, so the merge, the
+clock, and the changeset types can be imported inside a client bundle as-is. The replica id is
+minted with the runtime's built-in WebCrypto `crypto.randomUUID()` (Node 20.12 or later);
+`bun:sqlite` appears only as an erased type import, so nothing pulls SQLite into a browser graph.
+`src/browser-safety.test.ts` proves this with a static source-graph walk, not a bundler exit code.
+
 ## Install
 
 ```bash

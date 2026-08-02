@@ -21,6 +21,14 @@ edition must know to wire the erasure runner correctly.
   Do not add `aws-sdk`/`pg` to this package to "properly" implement a driver — that is prod wiring,
   done by the caller composing the real client and injecting it.
 
+## Entry points
+
+`.` is the full surface. `./browser` (ADR-0396) is the same package minus `schedule.ts`'s
+`@caisson/jobs` edge — import it from client code. When you add a name, put it on `.`; add it to
+`./browser` too only if its whole value-import graph is free of node builtins
+(`src/browser-safety.test.ts` walks that statically and fails the build if not). Never add a name
+to `./browser` that is not also on `.` — the subset is one-way.
+
 ## Choosing targets
 
 - **Dev/test** — `createCaptureTarget()` (records erasures in memory) + `createCaptureAuditSink()`.
