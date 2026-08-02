@@ -28,7 +28,8 @@ import {
   usageSchema,
 } from "./pricebook.ts";
 import type { CreditConversion, PriceBook, Usage } from "./pricebook.ts";
-import { assertBreakerClosed, DEFAULT_SCOPE, tripBreaker } from "./breaker.ts";
+import { assertBreakerClosed, tripBreaker } from "./breaker.ts";
+import { DEFAULT_SCOPE } from "./contracts.ts";
 import {
   SPEND_POLICY_TABLE,
   TENANT_SPEND_WINDOW_TABLE,
