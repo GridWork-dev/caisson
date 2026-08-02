@@ -136,6 +136,9 @@ export function resolveRef(
   ref: string,
 ): PromptVersionRow {
   const parsed = parsePromptRef(ref);
+  if (parsed.name !== SAMPLE_NAME) {
+    throw new NotFoundError("Prompt not found", { name: parsed.name });
+  }
   switch (parsed.kind) {
     case "current": {
       // Same derivation the real `getCurrentVersion` makes: the tip is whatever nothing
