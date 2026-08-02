@@ -17,7 +17,7 @@ import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
 import { AuthzError } from "@caisson/kernel";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import { assertCanManageMembers } from "@caisson/org-controls";
-import { hashChainLink } from "../../../../packages/kernel/src/audit-chain.ts";
+import { hashChainLink } from "@caisson/kernel/node";
 
 import {
   SAMPLE_ACCOUNT_ID,
@@ -39,9 +39,8 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     expect(walk.unresolved).toEqual([]);
   });
 
-  test("the external frontier carries neither the Clerk SDK nor the Postgres driver", () => {
-    expect(walk.external).not.toContain("@clerk/backend");
-    expect(walk.external).not.toContain("pg");
+  test("the external frontier is exactly this set — neither the Clerk SDK nor the Postgres driver", () => {
+    expect(walk.external).toEqual(["lucide-react", "radix-ui", "react", "zod"]);
   });
 
   test("the walk crossed into the browser entry and NEVER the server-only halves", () => {
