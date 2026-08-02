@@ -4,21 +4,37 @@
 // FieldKeyProvider port (derived default, documented KMS adapter). The encryption boundary EQUALS
 // the RLS tenant boundary (ADR-0005).
 
-export { deriveTenantKey, deriveInfo, TENANT_KEY_BYTES } from "./derive.ts";
+// The `…Async` / `…Bytes` names are the browser-runtime half of this surface (ADR-0396) — the same
+// vocabulary and the same wire format over WebCrypto and `Uint8Array` instead of `node:crypto` and
+// `Buffer`. They are ALSO reachable on their own entry, `@caisson/field-crypto/browser`, which is the
+// subset a client bundle can import without dragging the KMS/Drizzle/node half in behind it.
+export {
+  deriveTenantKey,
+  deriveTenantKeyAsync,
+  deriveInfo,
+  TENANT_KEY_BYTES,
+} from "./derive.ts";
 
 export {
   type AeadCipher,
   type AeadParts,
+  type AeadBytesParts,
   AesGcmCipher,
   aesGcm,
+  aesGcmSealAsync,
+  aesGcmOpenAsync,
   cipherForAlg,
 } from "./cipher.ts";
 
 export {
   type ParsedEnvelope,
   type EnvelopeParts,
+  type ParsedEnvelopeBytes,
+  type EnvelopeBytesParts,
   serializeEnvelope,
   parseEnvelope,
+  serializeEnvelopeBytes,
+  parseEnvelopeBytes,
   FORMAT_VERSION,
   ALG_AES_256_GCM,
   NONCE_BYTES,
@@ -26,7 +42,7 @@ export {
   HEADER_BYTES,
 } from "./envelope.ts";
 
-export { buildAad } from "./aad.ts";
+export { buildAad, buildAadBytes } from "./aad.ts";
 
 export { encryptField, decryptField } from "./encrypt-field.ts";
 
@@ -42,6 +58,8 @@ export {
   type KeyVersionStore,
   InMemoryKeyVersionStore,
   KeyVersionRegistry,
+  MAX_KEY_VERSION,
+  nextKeyVersion,
 } from "./registry.ts";
 
 export { TenantFieldCrypto } from "./crypto.ts";

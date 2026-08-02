@@ -15,7 +15,16 @@ column-context`. Reuse the SAME `columnContext` string for a column on read and 
   `DerivedKeyProvider.fromEnv`; KMS plaintext DEKs exist only inside a request-scoped context. Do not
   stringify providers, SDK credentials, wrapped keys, or plaintext keys into logs/telemetry/embeddings.
 - **Nonce is internal.** The cipher generates a fresh CSPRNG nonce per encrypt; never pass or reuse
-  one. A `(key, nonce)` pair must never repeat.
+  one. A `(key, nonce)` pair must never repeat. This binds the browser twin too: `aesGcmSealAsync`'s
+  `options.nonce` exists ONLY for deterministic replay in a demo or a golden test — application code
+  takes the default.
+- **Two entry points, one format.** `.` is the full node-capable surface; `./browser` is the
+  WebCrypto/`Uint8Array` half (ADR-0396) for a client bundle or a Worker. A module joins `./browser`
+  only if its whole graph passes the package's static source-graph walk AND carries no node GLOBAL
+  (`Buffer` is not an import — a bundler substitutes `buffer/` for it silently); both are pinned in
+  `src/browser-safety.test.ts`. Every `./browser` name must also exist on `.`. Never add a THIRD
+  implementation of the vocabulary: shared logic lives in `src/portable.ts` and the node modules
+  delegate to it.
 - **Rotation is a version bump, not a re-encrypt.** `KeyVersionRegistry.rotate(tenantId)` advances
   the current version; existing envelopes keep their own `key_version` and still decrypt. Re-encrypt
   lazily on the next write.
