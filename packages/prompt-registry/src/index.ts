@@ -28,6 +28,10 @@ export type {
   VarSpec,
 } from "./render.ts";
 
+// Addressing (`name@version` / `name@alias` parsing — no database, no driver).
+export { parsePromptRef } from "./refs.ts";
+export type { PromptRef } from "./refs.ts";
+
 // Registry API.
 export {
   registerPromptInput,
@@ -38,7 +42,6 @@ export {
   listVersions,
   setAlias,
   getAlias,
-  parsePromptRef,
   resolvePrompt,
   renderVersion,
 } from "./registry.ts";
@@ -46,5 +49,4 @@ export type {
   RegisterPromptInput,
   SetAliasInput,
   PromptVersion,
-  PromptRef,
 } from "./registry.ts";
