@@ -47,7 +47,7 @@ const GOLDEN_TOMBSTONE = JSON.parse(
     ),
     "utf8",
   ),
-) as readonly ReconciledRow[];
+) as ReconciledRow[];
 
 /** Both replicas' full offline queues applied — the poke's round-1 terminal state. */
 const FULL_ROUND_1 = {
