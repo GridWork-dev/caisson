@@ -268,29 +268,43 @@ export default function AlertingPoke() {
     initAlertSession(),
   );
   const [verdict, setVerdict] = useState<VerdictLine>(IDLE_VERDICT);
+  // Every control drives the real (async) processAlert, so a step's setSession
+  // lands in a .then() continuation outside the click event. `busy` blocks a
+  // second click from starting a step against a stale closure of `session`
+  // while one is still in flight (rapid double-click / key auto-repeat).
+  const [busy, setBusy] = useState(false);
 
   const handleSendOnce = useCallback(() => {
+    if (busy) return;
+    setBusy(true);
     void sendOnceStep(session).then(({ session: next, result }) => {
       setSession(next);
       setVerdict(verdictFor(result));
+      setBusy(false);
     });
-  }, [session]);
+  }, [session, busy]);
 
   const handleSendDuplicate = useCallback(() => {
+    if (busy) return;
+    setBusy(true);
     void sendDuplicateStep(session).then((outcome) => {
       if (outcome === null) {
         setVerdict({
           state: "neutral",
           message: "Send once first, then duplicate it.",
         });
+        setBusy(false);
         return;
       }
       setSession(outcome.session);
       setVerdict(verdictFor(outcome.result));
+      setBusy(false);
     });
-  }, [session]);
+  }, [session, busy]);
 
   const handleFlood = useCallback(() => {
+    if (busy) return;
+    setBusy(true);
     void floodStep(session).then(
       ({ session: next, results, trippedAtSend }) => {
         setSession(next);
@@ -301,22 +315,27 @@ export default function AlertingPoke() {
               ? `Flooded ${results.length} alerts. Rate cap held.`
               : `Flooded ${results.length} alerts. Rate cap tripped at send ${trippedAtSend}, now digesting.`,
         });
+        setBusy(false);
       },
     );
-  }, [session]);
+  }, [session, busy]);
 
   const handleToggleQuiet = useCallback(() => {
+    if (busy) return;
+    setBusy(true);
     void toggleQuietStep(session).then(({ session: next, result }) => {
       setSession(next);
       const modeLabel =
         next.quietMode === "quiet" ? "quiet hours" : "business hours";
       setVerdict(verdictFor(result, `Sample clock set to ${modeLabel}. `));
+      setBusy(false);
     });
-  }, [session]);
+  }, [session, busy]);
 
   const handleReset = useCallback(() => {
     setSession(resetSession());
     setVerdict(IDLE_VERDICT);
+    setBusy(false);
   }, []);
 
   const clockNow =
@@ -361,6 +380,7 @@ export default function AlertingPoke() {
           type="button"
           className={styles.button}
           onClick={handleSendOnce}
+          disabled={busy}
         >
           Send once
         </button>
@@ -368,17 +388,23 @@ export default function AlertingPoke() {
           type="button"
           className={styles.button}
           onClick={handleSendDuplicate}
-          disabled={session.lastEvent === null}
+          disabled={busy || session.lastEvent === null}
         >
           Send duplicate
         </button>
-        <button type="button" className={styles.button} onClick={handleFlood}>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={handleFlood}
+          disabled={busy}
+        >
           Flood
         </button>
         <button
           type="button"
           className={styles.button}
           onClick={handleToggleQuiet}
+          disabled={busy}
         >
           Toggle quiet hours
         </button>
@@ -386,6 +412,7 @@ export default function AlertingPoke() {
           type="button"
           className={styles.buttonGhost}
           onClick={handleReset}
+          disabled={busy}
         >
           Reset
         </button>

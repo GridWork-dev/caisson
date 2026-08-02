@@ -7,10 +7,14 @@
 // The walk follows the `bun` (src) condition of each package's exports map; Next resolves
 // `exports.default -> dist`. tscn is a per-file emit (no bundling, no re-export rewriting), so the
 // dist module graph is the src module graph — CI builds packages before the site consumes them.
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { DEFAULT_EVENT_TYPE_REGISTRY } from "@caisson/alerting/browser";
+import {
+  AlertEventSchema,
+  DEFAULT_EVENT_TYPE_REGISTRY,
+} from "@caisson/alerting/browser";
 
 import {
   FLOOD_BURST_COUNT,
@@ -77,6 +81,20 @@ describe("the sample policy is the package's own registry entry, not a restated 
 
   test("the sample severity is subject to quiet hours (a critical event would override it)", () => {
     expect(SAMPLE_SEVERITY).not.toBe("critical");
+  });
+
+  test("the poke's built sample event validates against the real AlertEventSchema", async () => {
+    const { session } = await sendOnceStep(initAlertSession());
+    expect(() => AlertEventSchema.parse(session.lastEvent)).not.toThrow();
+  });
+});
+
+describe("the async controls are single-flight", () => {
+  test("every pipeline action is guarded and disabled while one step is in flight", () => {
+    const source = readFileSync(POKE_ENTRY, "utf8");
+    expect(source.match(/if \(busy\) return;/g)).toHaveLength(4);
+    expect(source).toContain("disabled={busy || session.lastEvent === null}");
+    expect(source.match(/disabled=\{busy\}/g)).toHaveLength(4);
   });
 });
 

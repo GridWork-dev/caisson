@@ -7,6 +7,7 @@
 // The walk follows the `bun` (src) condition of each package's exports map; Next resolves
 // `exports.default -> dist`. tscn is a per-file emit (no bundling, no re-export rewriting), so the
 // dist module graph is the src module graph — CI builds packages before the site consumes them.
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
@@ -28,6 +29,12 @@ import type { FailingState } from "./retention-runner-poke";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../../..");
 const POKE_ENTRY = join(import.meta.dir, "retention-runner-poke.tsx");
+
+test("the async erasure control is single-flight", () => {
+  const source = readFileSync(POKE_ENTRY, "utf8");
+  expect(source).toContain("if (busy) return;");
+  expect(source).toContain("disabled={busy}");
+});
 
 const SAMPLE_REQUEST = {
   subjectId: SAMPLE_SUBJECT_ID,

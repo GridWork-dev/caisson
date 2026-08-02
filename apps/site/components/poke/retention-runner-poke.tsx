@@ -109,11 +109,17 @@ export default function RetentionRunnerPoke() {
   const [tick, setTick] = useState(0);
   const [latest, setLatest] = useState<RetentionRunResult | null>(null);
   const [rowsWritten, setRowsWritten] = useState(0);
+  // runErasure is async, so its outcome lands in a .then() continuation
+  // outside the click event. `busy` blocks a second click from reading the
+  // same stale `tick` closure while a run is still in flight.
+  const [busy, setBusy] = useState(false);
 
   const rows = useMemo(() => referenceTargets(failing), [failing]);
   const failingCount = TARGET_KINDS.filter((kind) => failing[kind]).length;
 
   function run() {
+    if (busy) return;
+    setBusy(true);
     const sink = createCaptureAuditSink();
     const nextTick = tick + 1;
     void runErasure(
@@ -125,6 +131,7 @@ export default function RetentionRunnerPoke() {
       setTick(nextTick);
       setLatest(row);
       setRowsWritten((n) => n + sink.rows.length);
+      setBusy(false);
     });
   }
 
@@ -181,7 +188,7 @@ export default function RetentionRunnerPoke() {
           </div>
         </fieldset>
 
-        <Button onClick={run} className={styles.runButton}>
+        <Button onClick={run} disabled={busy} className={styles.runButton}>
           Run erasure{failingCount > 0 ? ` (${failingCount} set to fail)` : ""}
         </Button>
 
