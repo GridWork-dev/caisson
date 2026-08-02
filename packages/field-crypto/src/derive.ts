@@ -3,26 +3,19 @@
 // info="caisson-field-crypto:v"||key_version||":"||tenant_id)`. Deterministic (no key storage/backup
 // surface), per-tenant isolated (tenant_id bound into `info`), rotation-aware (key_version in `info`).
 // Native `crypto.hkdfSync` — no added dependency. The master key is read once and NEVER logged.
+//
+// The `info` construction and the 32-byte length live in portable.ts (ADR-0396) so the browser twin
+// `deriveTenantKeyAsync` derives from the SAME vocabulary, not a second copy of it; both names are
+// re-exported here unchanged.
 import { hkdfSync } from "node:crypto";
 import { ValidationError } from "@caisson/kernel";
+import { TENANT_KEY_BYTES, deriveInfo } from "./portable.ts";
 
-/** AES-256 needs a 32-byte key; HKDF-SHA256 expands the master key to exactly this length. */
-export const TENANT_KEY_BYTES = 32;
-
-/** The HKDF `info` domain-separation string — EXACTLY per ADR-0043. Tenant + key-version live here. */
-export function deriveInfo(keyVersion: number, tenantId: string): string {
-  if (!Number.isInteger(keyVersion) || keyVersion < 1 || keyVersion > 0xffff) {
-    throw new ValidationError(
-      `field-crypto: keyVersion must be an integer in [1, 65535], got ${String(keyVersion)}`,
-    );
-  }
-  if (tenantId.length === 0) {
-    throw new ValidationError(
-      "field-crypto: refusing to derive a key for an empty tenantId",
-    );
-  }
-  return `caisson-field-crypto:v${keyVersion}:${tenantId}`;
-}
+export {
+  TENANT_KEY_BYTES,
+  deriveInfo,
+  deriveTenantKeyAsync,
+} from "./portable.ts";
 
 /**
  * Derive a tenant's 32-byte data-encryption key. `masterKey` (32B IKM) and `salt` (32B
