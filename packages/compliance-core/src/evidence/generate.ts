@@ -15,6 +15,8 @@
 //      carrying the BLOCKED-case report — and NO partial pack is produced (the throw precedes all
 //      assembly, and this module touches no filesystem, so a partial write is structurally
 //      impossible). A `flagged` item without a recorded reason is likewise rejected fail-closed.
+//      That scan and the whole canonical-body assembly live in the node-free `assemble.ts`
+//      (ADR-0396) and are COMPOSED here, never duplicated — this module owns only phase 3.
 //
 //   2. CLOCK AT THE EDGE. The wall-clock instant is INJECTED (`now`), never read here, and is
 //      surfaced only on the result envelope (`generatedAt`) for the outer signing/timestamp layer.
@@ -27,26 +29,12 @@
 //      changes the output.
 import { deflateRawSync } from "node:zlib";
 import { createHash } from "node:crypto";
-import type { z } from "zod";
+import { canonicalize, type JsonValue } from "@caisson/kernel";
 import {
-  canonicalize,
-  CaissonError,
-  ValidationError,
-  type JsonValue,
-} from "@caisson/kernel";
-import type { CrosswalkReference } from "@caisson/frameworks-pack";
-import type { CollectorResult } from "./collector.ts";
-import type { CrosswalkRollup } from "./crosswalk-rollup.ts";
-import {
-  EVIDENCE_PACK_FORMAT_VERSION,
-  type evidencePackManifestSchema,
-  parseEvidencePackBlocked,
-  parseEvidencePackManifest,
-  type EvidencePackBlocked,
-  type EvidencePackChainAnchor,
-  type EvidencePackFramework,
-  type EvidencePackManifest,
-} from "./pack-format.ts";
+  assembleEvidenceManifest,
+  type AssembleEvidenceManifestInput,
+} from "./assemble.ts";
+import type { EvidencePackManifest } from "./pack-format.ts";
 import {
   anchorGradePhrase,
   buildExternalAnchorEntry,
@@ -54,45 +42,10 @@ import {
   type ExternalAnchorAttachment,
 } from "./external-anchor.ts";
 
-// The Zod INPUT shapes of the canonical body — the generator assembles into these and lets
-// `parseEvidencePackManifest` validate + normalize (key order follows the schema, not construction).
-type ManifestInput = z.input<typeof evidencePackManifestSchema>;
-type ControlInput = ManifestInput["controls"][number];
-type ItemInput = ControlInput["evidence"][number];
-
-/**
- * One control's assembly plan: its registry metadata (from `defineControl`) plus the
- * collector results gathered for it at the edge (each `EvidenceCollector.collect(fact)`). The
- * generator derives readiness, summary counts, and posture from these — none is asserted by the caller.
- */
-export interface EvidenceControlPlan {
-  /** The canonical control id (registry namespace). */
-  readonly controlId: string;
-  readonly title: string;
-  readonly family: string;
-  readonly statement: string;
-  readonly crosswalk: readonly CrosswalkReference[];
-  /** The collector results for this control. At least one (a control with none fails closed). */
-  readonly evidence: readonly CollectorResult[];
-  /** Manual-attachment slot ids that have been filled out-of-band (default: none filled). */
-  readonly filledSlotIds?: readonly string[];
-}
-
 /** The full generator input. `now` is the injected clock — it never enters the body or the archive. */
-export interface GenerateEvidencePackInput {
-  readonly tenantId: string;
-  readonly framework: EvidencePackFramework;
-  readonly chainAnchor: EvidencePackChainAnchor;
-  readonly controls: readonly EvidenceControlPlan[];
+export interface GenerateEvidencePackInput extends AssembleEvidenceManifestInput {
   /** Injected wall-clock instant; surfaced only on `generatedAt`, never hashed (clock at the edge). */
   readonly now: Date;
-  /**
-   * The cross-framework evidence rollup (ADR-0333/ADR-0347, v2) — CALLER-computed via
-   * `computeCrosswalkRollup`. Keeps the generator pure and free of any concrete-catalog import
-   * (the "facts injected at the edge" ethos `collector.ts` already follows); assembled into the
-   * manifest unchanged, like `summary`.
-   */
-  readonly crosswalkRollup: CrosswalkRollup;
   /**
    * Optionally, the newest external-anchor receipt for this tenant (SPEC external-anchoring §6). It
    * is attached DETACHED — an extra archive entry + an envelope grade tag — NEVER a field in the
@@ -132,25 +85,6 @@ export interface EvidencePack {
   readonly externalAnchorGrade?: AnchorGrade;
 }
 
-/**
- * Thrown when any control's evidence is `unresolved` — the pack is refused with the BLOCKED-case
- * report and nothing is produced (flag-never-guess, ADR-0058). 422: the request is
- * well-formed but cannot be fulfilled until the missing evidence is supplied.
- */
-export class EvidencePackBlockedError extends CaissonError {
-  readonly code = "evidence_pack_blocked";
-  readonly httpStatus = 422;
-  /** The structured refusal: every unresolved control/collector with its recorded reason. */
-  readonly report: EvidencePackBlocked;
-
-  constructor(report: EvidencePackBlocked) {
-    super("evidence pack blocked: unresolved evidence (flag-never-guess)", {
-      unresolvedCount: report.unresolved.length,
-    });
-    this.report = report;
-  }
-}
-
 /** Stable lexicographic comparator (locale-independent — determinism must not depend on locale). */
 function cmp(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -159,73 +93,6 @@ function cmp(a: string, b: string): number {
 /** Round-trip to a genuine `JsonValue` (drops `undefined`) so `canonicalize` accepts the value. */
 function toJson(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value)) as JsonValue;
-}
-
-/** Map one (pass|flagged) collector result to a manifest evidence item; fail closed on a bad shape. */
-function buildItem(
-  result: CollectorResult,
-  filled: ReadonlySet<string>,
-): ItemInput {
-  if (result.status === "unresolved") {
-    // Unreachable: unresolved results are caught and thrown before any assembly runs.
-    throw new ValidationError(
-      "unresolved evidence reached pack assembly (flag-never-guess invariant violated)",
-    );
-  }
-  const manualSlots = result.item.manualSlots.map((s) => ({
-    id: s.id,
-    label: s.label,
-    required: s.required,
-    filled: filled.has(s.id),
-  }));
-  const head = {
-    collectorId: result.item.collectorId,
-    title: result.item.title,
-    summary: result.item.summary,
-  };
-  const facts: Record<string, JsonValue> = { ...result.item.facts };
-  if (result.status === "flagged") {
-    const reason = result.reason;
-    if (reason === undefined || reason.trim().length === 0) {
-      throw new ValidationError(
-        "a flagged evidence item requires a recorded reason (flag-never-guess, ADR-0058)",
-      );
-    }
-    return { ...head, status: "flagged", reason, facts, manualSlots };
-  }
-  return { ...head, status: "pass", facts, manualSlots };
-}
-
-/** Assemble one control: map + sort its evidence and DERIVE readiness (gap iff any item flagged). */
-function buildControl(plan: EvidenceControlPlan): ControlInput {
-  const filled = new Set(plan.filledSlotIds ?? []);
-  const evidence = plan.evidence
-    .map((r) => buildItem(r, filled))
-    .sort((a, b) => cmp(a.collectorId, b.collectorId));
-  const readiness = evidence.some((e) => e.status === "flagged")
-    ? "gap"
-    : "ready";
-  return {
-    controlId: plan.controlId,
-    title: plan.title,
-    family: plan.family,
-    statement: plan.statement,
-    crosswalk: [...plan.crosswalk],
-    evidence,
-    readiness,
-  };
-}
-
-/**
- * Derive the auditor posture line — readiness language ONLY. Never "compliant"/"certified" (the
- * format's `postureCopy` refine re-rejects those at parse time; this template keeps clear of them).
- */
-function posturePhrase(total: number, ready: number, gaps: number): string {
-  const head = `${String(ready)} of ${String(total)} controls evidence-ready`;
-  if (gaps === 0) return `${head}; no gaps recorded.`;
-  const gapWord = gaps === 1 ? "gap" : "gaps";
-  const tail = gaps === 1 ? "a remediation item" : "remediation items";
-  return `${head}; ${String(gaps)} ${gapWord} recorded as ${tail}.`;
 }
 
 /** Render the human-readable auditor summary. Derived from the body; carries no clock → byte-stable
@@ -417,67 +284,10 @@ function buildArchiveEntries(
 export function generateEvidencePack(
   input: GenerateEvidencePackInput,
 ): EvidencePack {
-  // PHASE 1 — flag-never-guess. Scan EVERY control for unresolved evidence before assembling
-  // anything; refuse the whole pack if any is found. No filesystem touch here → no partial pack.
-  const unresolved: Array<{
-    controlId: string;
-    collectorId: string;
-    reason: string | undefined;
-  }> = [];
-  for (const control of input.controls) {
-    for (const result of control.evidence) {
-      if (result.status === "unresolved") {
-        unresolved.push({
-          controlId: control.controlId,
-          collectorId: result.item.collectorId,
-          reason: result.reason,
-        });
-      }
-    }
-  }
-  if (unresolved.length > 0) {
-    const sortedUnresolved = [...unresolved].sort(
-      (a, b) =>
-        cmp(a.controlId, b.controlId) || cmp(a.collectorId, b.collectorId),
-    );
-    const report = parseEvidencePackBlocked({
-      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,
-      tenantId: input.tenantId,
-      framework: input.framework,
-      blocked: true,
-      unresolved: sortedUnresolved,
-    });
-    throw new EvidencePackBlockedError(report);
-  }
-
-  // PHASE 2 — assemble + validate the canonical body. Controls are id-sorted so input order never
-  // changes the bytes; the format schema re-enforces every honesty invariant (counts, readiness,
-  // posture copy, no timestamp/signature), so a regression here cannot produce a valid pack.
-  const controls = input.controls
-    .map(buildControl)
-    .sort((a, b) => cmp(a.controlId, b.controlId));
-  const controlsReady = controls.filter((c) => c.readiness === "ready").length;
-  const controlsWithGaps = controls.filter((c) => c.readiness === "gap").length;
-  const totalEvidenceItems = controls.reduce(
-    (n, c) => n + c.evidence.length,
-    0,
-  );
-  const rawManifest: ManifestInput = {
-    formatVersion: EVIDENCE_PACK_FORMAT_VERSION,
-    tenantId: input.tenantId,
-    framework: input.framework,
-    chainAnchor: input.chainAnchor,
-    controls,
-    crosswalkRollup: input.crosswalkRollup,
-    summary: {
-      totalControls: controls.length,
-      controlsReady,
-      controlsWithGaps,
-      totalEvidenceItems,
-      posture: posturePhrase(controls.length, controlsReady, controlsWithGaps),
-    },
-  };
-  const manifest = parseEvidencePackManifest(rawManifest);
+  // PHASES 1 + 2 — flag-never-guess refusal, then the derived, schema-validated canonical body.
+  // Both live in `assemble.ts` (node-free) so the browser entry and this generator run the SAME
+  // implementation; `EvidencePackBlockedError` propagates unchanged.
+  const manifest = assembleEvidenceManifest(input);
 
   // PHASE 3 — canonical bytes + deterministic archive + byte-stable digest. The clock is stamped
   // ONLY on the envelope, never into the hashed contents. The external-anchor receipt (when present)

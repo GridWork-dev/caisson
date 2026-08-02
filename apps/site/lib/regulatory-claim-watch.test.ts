@@ -9,6 +9,7 @@ import {
   assertKnownPositive,
   createPublicSourceFetcher,
   discoverRegulatoryClaims,
+  extractVisibleHtmlText,
   runRegulatoryClaimWatch,
   type RegulatoryClaimTarget,
   type SourceFetcher,
@@ -117,6 +118,53 @@ describe("regulatory-claim watch discovery", () => {
   });
 });
 
+describe("regulatory-claim visible HTML extraction", () => {
+  test.each([
+    [
+      "entities",
+      "<p>Rights &amp; duties &#65;rticle&nbsp;50</p>",
+      " Rights & duties Article\u00a050 ",
+    ],
+    [
+      "iframe",
+      "<iframe><p>ignored</p></iframe><p>Article 50</p>",
+      "  ignored   Article 50 ",
+    ],
+    [
+      "xmp",
+      "<xmp><b>ignored</b></xmp><p>Article 50</p>",
+      "  ignored   Article 50 ",
+    ],
+    [
+      "noembed",
+      "<noembed><b>ignored</b></noembed><p>Article 50</p>",
+      "  ignored   Article 50 ",
+    ],
+    [
+      "noframes",
+      "<noframes><b>ignored</b></noframes><p>Article 50</p>",
+      "  ignored   Article 50 ",
+    ],
+    [
+      "plaintext",
+      "<plaintext>ignored</plaintext><p>Article 50</p>",
+      " ignored  Article 50 ",
+    ],
+    [
+      "a self-closed iframe followed by visible content",
+      '<iframe src="https://example.com/embed"/><main><p>Article <strong>50</strong></p></main>',
+      "   Article  50    ",
+    ],
+    [
+      "ordinary implied-close markup",
+      "<ul><li>one<li>two</ul><p>tail</p>",
+      "  one  two   tail ",
+    ],
+  ])("pins exact text for %s", (_label, markup, expected) => {
+    expect(extractVisibleHtmlText(markup)).toBe(expected);
+  });
+});
+
 describe("regulatory-claim source checks", () => {
   test("reports a reachable source whose locator is still present", async () => {
     const fetcher: SourceFetcher = async () =>
@@ -145,6 +193,35 @@ describe("regulatory-claim source checks", () => {
     expect(report.findings).toHaveLength(1);
     expect(report.findings[0]?.kind).toBe("locator-missing");
     expect(report.markdown).toContain("Article 50");
+  });
+
+  test("checks visible text after a self-closed iframe", async () => {
+    const fetcher: SourceFetcher = async () =>
+      new Response(
+        '<iframe src="https://example.com/embed"/><main><p>Article 50</p></main>',
+        {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        },
+      );
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+    expect(report.findings).toEqual([]);
+  });
+
+  test("reports locator drift when non-empty HTML has no visible text", async () => {
+    const fetcher: SourceFetcher = async () =>
+      new Response("<script>const marker = 'Article 50';</script>", {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
+    expect(report.findings).toEqual([
+      expect.objectContaining({ kind: "locator-missing" }),
+    ]);
   });
 
   test("keeps a precise locator while reporting a declared reachability-only source as green", async () => {

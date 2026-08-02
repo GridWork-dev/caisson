@@ -18,7 +18,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 import {
   BUNDLED_PRICE_BOOK,
   CREDIT_CONVERSION,
@@ -57,6 +60,12 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     expect(walk.unresolved).toEqual([]);
   });
 
+  test("no package or poke module introduces an untracked node global", () => {
+    expect(
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
+    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
+  });
+
   test("the walk really crossed into the package, past the first hop", () => {
     // Guard the guard: files.length alone proves nothing. These two are reachable ONLY through
     // @caisson/ai-meter/browser's own imports — first hop (the package), then a second hop across
@@ -75,6 +84,16 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     expect(walk.files.some((f) => f.startsWith("packages/credits/"))).toBe(
       false,
     );
+    expect(
+      walk.files
+        .filter((file) => file.startsWith("packages/ai-meter/src/"))
+        .sort(),
+    ).toEqual([
+      "packages/ai-meter/src/browser.ts",
+      "packages/ai-meter/src/contracts.ts",
+      "packages/ai-meter/src/estimate.ts",
+      "packages/ai-meter/src/pricebook.ts",
+    ]);
   });
 
   test("the poke imports the ./browser entry, never the node-capable barrel", () => {
