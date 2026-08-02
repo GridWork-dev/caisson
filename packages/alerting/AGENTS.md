@@ -23,6 +23,14 @@ edition must know to wire alerting correctly.
   `processAlert` takes an explicit `ratePolicy`/`recipientTz`/`quietPolicy` — resolve those from the
   registry (or your own policy source) before calling.
 
+## Entry points
+
+`.` is the full surface. `./browser` (ADR-0396) is the same pipeline minus `channels.ts`'s five
+network drivers — import it from client code. When you add a name, put it on `.`; add it to
+`./browser` too only if its whole value-import graph is free of node builtins
+(`src/browser-safety.test.ts` walks that statically and fails the build if not). Never add a name
+to `./browser` that is not also on `.` — the subset is one-way.
+
 ## Choosing channels
 
 - **`createCaptureChannel`** — tests only; records deliveries in memory, no network.
