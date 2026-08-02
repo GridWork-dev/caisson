@@ -49,16 +49,15 @@ export {
 } from "./estimate.ts";
 export type { EstimateMessage } from "./estimate.ts";
 
-// Circuit breaker.
+// Circuit breaker: the pure decision vocabulary, then the store-bound operations.
+export { DEFAULT_SCOPE, SpendCapError } from "./contracts.ts";
+export type { BreakerState, BreakerStatus } from "./contracts.ts";
 export {
-  DEFAULT_SCOPE,
-  SpendCapError,
   readBreaker,
   assertBreakerClosed,
   tripBreaker,
   resetBreaker,
 } from "./breaker.ts";
-export type { BreakerState, BreakerStatus } from "./breaker.ts";
 
 // The reserve/reconcile meter.
 export { reserve, reconcile } from "./meter.ts";
