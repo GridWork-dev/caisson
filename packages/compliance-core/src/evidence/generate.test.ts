@@ -17,8 +17,10 @@ import {
 import { chainVerifyCollector } from "./collectors/chain-verify.ts";
 import {
   EvidencePackBlockedError,
-  generateEvidencePack,
   type EvidenceControlPlan,
+} from "./assemble.ts";
+import {
+  generateEvidencePack,
   type GenerateEvidencePackInput,
 } from "./generate.ts";
 import type { CrosswalkRollup } from "./crosswalk-rollup.ts";

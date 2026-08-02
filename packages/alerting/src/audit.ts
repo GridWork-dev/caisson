@@ -3,7 +3,7 @@
 // Postgres shape lives in `src/migrations/0001_alert_audit.sql`; this file ships the port + the
 // in-memory driver (the `@caisson/jobs` in-memory-queue idiom: real assertions, no daemon).
 import type { AlertSeverity } from "./types.ts";
-import type { DeliveryResult } from "./channels.ts";
+import type { DeliveryResult } from "./delivery.ts";
 
 export type AlertOutcome = "delivered" | "suppressed" | "held" | "digested";
 

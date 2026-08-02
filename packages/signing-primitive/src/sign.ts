@@ -23,69 +23,48 @@
 //      only un-exercised path (un-wired seam, ADR-0047 ethos).
 //   5. Buyer-supplied AWS KMS Sign and DSSE/in-toto + Sigstore/Rekor are documented UN-WIRED seams,
 //      reachable behind the `Signer` / premium-provenance boundary — not the v1 base path.
+//
+// THE BROWSER SPLIT (ADR-0396): the contracts, the shared `@noble/ed25519` verify path, the signable
+// payload, and the RFC-3161 test double live in `./portable.ts` — they were never node-bound, and the
+// `node:crypto` import below tainted the whole module for a bundler. They are re-exported here
+// verbatim, so this file and the `.` barrel are unchanged for buyers. What stays: the signing identity
+// (a tenant secret), and the two constant-time compares that need `node:crypto`'s `timingSafeEqual`.
 import { createHash } from "node:crypto";
 import * as ed from "@noble/ed25519";
+import { safeEqualFixed, ValidationError } from "@caisson/kernel/node";
 import {
-  canonicalize,
-  safeEqualFixed,
-  ValidationError,
-  type JsonValue,
-} from "@caisson/kernel/node";
+  ED25519_PUBLIC_BYTES,
+  ED25519_SIGNATURE_BYTES,
+  bytesToHex,
+  evidenceSignablePayload,
+  hexToBytes,
+} from "./portable.ts";
+import type {
+  EvidenceSignature,
+  SignableManifest,
+  SignatureAlgorithm,
+  TimestampAuthority,
+  TimestampToken,
+} from "./portable.ts";
 
-/**
- * The minimal structural shape this module signs: any JSON-serializable, byte-stable manifest body
- * carrying the WORM audit-chain anchor whose tip hash gets bound into the signed payload. The
- * evidence-pack manifest (@caisson/compliance-core) satisfies this shape structurally; the signer
- * deliberately does not depend on that package, so the signing surface stands alone.
- */
-export interface SignableManifest {
-  readonly chainAnchor: { readonly tipHash: string };
-}
-
-/**
- * The signature schemes this surface produces. `ed25519` is the base-tier evidence-pack scheme (pure
- * EdDSA over the full message). `ed25519ph` is the external-anchoring prehash variant (RFC-8032 §5.1,
- * SHA-512 prehash) required by Rekor v2 `hashedrekord` — pure Ed25519 is rejected there (it re-hashes
- * the message it is only given the digest of). A buyer-KMS asymmetric scheme would extend this behind
- * the port.
- */
-export type SignatureAlgorithm = "ed25519" | "ed25519ph";
+export {
+  ED25519_PUBLIC_BYTES,
+  ED25519_SIGNATURE_BYTES,
+  StubTimestampAuthority,
+  evidenceSignablePayload,
+  hexToBytes,
+  timestampCountersignsSignatureAsync,
+  verifyEvidenceSignature,
+} from "./portable.ts";
+export type {
+  EvidenceSignature,
+  SignableManifest,
+  SignatureAlgorithm,
+  TimestampAuthority,
+  TimestampToken,
+} from "./portable.ts";
 
 const ED25519_SECRET_BYTES = 32;
-const ED25519_PUBLIC_BYTES = 32;
-const ED25519_SIGNATURE_BYTES = 64;
-
-// --- hex helpers (strict; no silent truncation) ------------------------------------------------
-
-function toHex(bytes: Uint8Array): string {
-  return Buffer.from(bytes).toString("hex");
-}
-
-/** Decode lowercase/uppercase hex, throwing on odd length or a non-hex char (Buffer would truncate). */
-function fromHex(hex: string): Uint8Array {
-  if (hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) {
-    throw new ValidationError("invalid hex string");
-  }
-  return Uint8Array.from(Buffer.from(hex, "hex"));
-}
-
-/** Round-trip to a genuine `JsonValue` (drops `undefined`) so `canonicalize` accepts the manifest. */
-function toJsonValue(value: unknown): JsonValue {
-  return JSON.parse(JSON.stringify(value)) as JsonValue;
-}
-
-/**
- * The exact bytes that get signed: the canonicalized manifest body concatenated with the WORM
- * audit-chain tip hash (ADR-0056). The JSON body ends in `}` and the tip is a fixed-width 64-char
- * hex digest, so the `∥` boundary is unambiguous. Byte-identical to the generator's
- * `pack.canonicalManifest ∥ pack.manifest.chainAnchor.tipHash`.
- */
-export function evidenceSignablePayload(
-  manifest: SignableManifest,
-): Uint8Array {
-  const canonical = canonicalize(toJsonValue(manifest));
-  return new TextEncoder().encode(canonical + manifest.chainAnchor.tipHash);
-}
 
 // --- signer port + Ed25519 implementation ------------------------------------------------------
 
@@ -138,80 +117,7 @@ export class Ed25519Signer implements Signer {
   }
 }
 
-// --- RFC-3161 timestamp countersignature -------------------------------------------------------
-
-/** The trusted-timestamp countersignature over a detached signature (RFC-3161). */
-export interface TimestampToken {
-  readonly authority: string;
-  readonly algorithm: "rfc3161";
-  readonly hashAlgorithm: "sha256";
-  /** `sha256(detached signature)` — the RFC-3161 messageImprint the TSA attests to (lowercase hex). */
-  readonly messageImprint: string;
-  /** Opaque TSA token. Test double = deterministic base64; a live TSA returns a DER `TimeStampToken`. */
-  readonly token: string;
-  /** The instant the TSA attests the signature existed at (ISO-8601). */
-  readonly timestampedAt: string;
-}
-
-/**
- * The RFC-3161 authority port. `countersign` attests that a signature existed at a point in time.
- *
- * UN-WIRED LIVE SEAM (ADR-0056, ADR-0047 ethos): a live TSA implementation of this
- * port POSTs a DER `TimeStampReq` (messageImprint = `sha256(signature)`) to the authority over
- * `fetchWithTimeout(tsaUrl, init, ms)` — NEVER the native `AbortSignal.timeout` helper — and parses
- * the DER `TimeStampResp`. It is intentionally NOT wired in v1: no live network call runs on the CI
- * path, leaving the live transport as the only un-exercised path.
- */
-export interface TimestampAuthority {
-  countersign(signature: Uint8Array): Promise<TimestampToken>;
-}
-
-/**
- * A deterministic, network-free RFC-3161 test double. It reproduces the messageImprint a real
- * TSA would attest (`sha256(signature)`) and stamps an injected clock, so countersigning is fully
- * exercised in CI without a live authority. NOT for production use.
- */
-export class StubTimestampAuthority implements TimestampAuthority {
-  readonly #authority: string;
-  readonly #clock: Date;
-
-  constructor(options?: { readonly authority?: string; readonly now?: Date }) {
-    this.#authority = options?.authority ?? "urn:caisson:test-tsa";
-    this.#clock = options?.now ?? new Date(0);
-  }
-
-  countersign(signature: Uint8Array): Promise<TimestampToken> {
-    const messageImprint = createHash("sha256").update(signature).digest("hex");
-    const timestampedAt = this.#clock.toISOString();
-    const token = Buffer.from(
-      `rfc3161|${this.#authority}|${messageImprint}|${timestampedAt}`,
-      "utf8",
-    ).toString("base64");
-    return Promise.resolve({
-      authority: this.#authority,
-      algorithm: "rfc3161",
-      hashAlgorithm: "sha256",
-      messageImprint,
-      token,
-      timestampedAt,
-    });
-  }
-}
-
 // --- the detached evidence signature -----------------------------------------------------------
-
-/** A detached evidence-pack signature — sits BESIDE the pack, never inside the canonical body. */
-export interface EvidenceSignature {
-  readonly algorithm: SignatureAlgorithm;
-  /** The per-tenant signing-key id (provenance / rotation lookup). */
-  readonly keyId: string;
-  /** The Ed25519 public key, lowercase hex (64 chars). */
-  readonly publicKey: string;
-  /** The detached Ed25519 signature over `evidenceSignablePayload`, lowercase hex (128 chars). */
-  readonly signature: string;
-  /** The optional RFC-3161 countersignature (present iff a `TimestampAuthority` was supplied). */
-  readonly timestamp?: TimestampToken;
-}
 
 export interface SignEvidencePackOptions {
   /** RFC-3161 authority to countersign the signature. Test-doubled in CI; live TSA is an un-wired seam. */
@@ -246,39 +152,13 @@ export async function signEvidencePack(
   const base: EvidenceSignature = {
     algorithm: signer.algorithm,
     keyId: signer.keyId,
-    publicKey: toHex(publicKeyBytes),
-    signature: toHex(signatureBytes),
+    publicKey: bytesToHex(publicKeyBytes),
+    signature: bytesToHex(signatureBytes),
   };
   if (options?.timestampAuthority === undefined) return base;
   const timestamp =
     await options.timestampAuthority.countersign(signatureBytes);
   return { ...base, timestamp };
-}
-
-/**
- * Verify a detached evidence signature against the manifest, reusing the one shared `@noble/ed25519`
- * primitive. Fails CLOSED: an unknown algorithm, malformed hex, wrong-length key/signature, or any
- * verification error returns `false` rather than throwing — a forgery must not pass as valid.
- */
-export async function verifyEvidenceSignature(
-  manifest: SignableManifest,
-  signature: EvidenceSignature,
-): Promise<boolean> {
-  if (signature.algorithm !== "ed25519") return false;
-  try {
-    const payload = evidenceSignablePayload(manifest);
-    const signatureBytes = fromHex(signature.signature);
-    const publicKeyBytes = fromHex(signature.publicKey);
-    if (
-      signatureBytes.length !== ED25519_SIGNATURE_BYTES ||
-      publicKeyBytes.length !== ED25519_PUBLIC_BYTES
-    ) {
-      return false;
-    }
-    return await ed.verifyAsync(signatureBytes, payload, publicKeyBytes);
-  } catch {
-    return false;
-  }
 }
 
 /**
@@ -293,6 +173,8 @@ export function signaturesEqual(a: string, b: string): boolean {
 /**
  * Confirm an RFC-3161 token actually countersigns THIS signature — recompute the messageImprint
  * (`sha256(signature)`) and constant-time compare it to the token's. Fails closed on malformed hex.
+ * The browser twin is `timestampCountersignsSignatureAsync` (portable.ts); their verdicts are pinned
+ * equal in sign.test.ts.
  */
 export function timestampCountersignsSignature(
   token: TimestampToken,
@@ -300,7 +182,7 @@ export function timestampCountersignsSignature(
 ): boolean {
   try {
     const expected = createHash("sha256")
-      .update(fromHex(signature.signature))
+      .update(hexToBytes(signature.signature))
       .digest("hex");
     return safeEqualFixed(token.messageImprint, expected);
   } catch {
