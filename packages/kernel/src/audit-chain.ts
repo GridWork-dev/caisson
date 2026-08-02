@@ -18,12 +18,14 @@
 // secret comparison (the hashes are public integrity tags), so plain equality is correct here; the
 // `crypto.timingSafeEqual` discipline applies to secrets/tokens/HMACs, not content hashes.
 //
-// The pure serialization + value TYPES were extracted to the node-free `canonical.ts` (T-K1) so the
-// browser per-row verify path can reach them without pulling this module's `node:crypto`. They are
-// re-exported below so the `.` barrel API stays byte-identical (index.ts + migration-assembly.ts
-// import them FROM here).
+// Everything here that does NOT hash lives in the node-free `canonical.ts` so the browser verify
+// path can reach it without pulling this module's `node:crypto`: the serialization, the value TYPES
+// (T-K1), and — since the whole-chain WebCrypto twins landed — `anchorChain` (it reads hashes the
+// chain already committed) plus the `checkAnchor` root/length/tip rules `verifyChain` applies below.
+// They are re-exported here so the `.` barrel and `/node` stay byte-identical (index.ts +
+// migration-assembly.ts import them FROM here).
 import { createHash } from "node:crypto";
-import { canonicalize } from "./canonical.ts";
+import { canonicalize, anchorChain, checkAnchor } from "./canonical.ts";
 import type {
   JsonValue,
   AuditChainEntry,
@@ -31,7 +33,7 @@ import type {
   AuditChainAnchor,
 } from "./canonical.ts";
 
-export { canonicalize };
+export { canonicalize, anchorChain };
 export type { JsonValue, AuditChainEntry, ChainVerification, AuditChainAnchor };
 
 /**
@@ -83,21 +85,6 @@ export function buildChain(payloads: readonly JsonValue[]): AuditChainEntry[] {
   return entries;
 }
 
-/** Mint the trusted anchor for a chain: its length, tip hash, and genesis hash. */
-export function anchorChain(
-  entries: readonly AuditChainEntry[],
-): AuditChainAnchor {
-  if (entries.length === 0) {
-    throw new Error("audit-chain: cannot anchor an empty chain");
-  }
-  const tip = entries[entries.length - 1] as AuditChainEntry;
-  return {
-    length: entries.length,
-    tipHash: tip.hash,
-    genesisHash: (entries[0] as AuditChainEntry).hash,
-  };
-}
-
 /**
  * Verify a chain end to end. An entry is intact iff its `seq` equals its position, its `prevHash`
  * equals the predecessor's `hash` (or `null` at genesis), and its `hash` recomputes from
@@ -124,26 +111,10 @@ export function verifyChain(
     }
   }
   if (anchor !== undefined) {
-    // Genesis mismatch → the chain has the wrong root (a rewrite from entry 0).
-    if (
-      anchor.genesisHash !== undefined &&
-      (entries.length === 0 ||
-        (entries[0] as AuditChainEntry).hash !== anchor.genesisHash)
-    ) {
-      return { valid: false, brokenAt: 0 };
-    }
-    // Length mismatch → truncation (or extension). Point at the first divergent index.
-    if (entries.length !== anchor.length) {
-      return {
-        valid: false,
-        brokenAt: Math.min(entries.length, anchor.length),
-      };
-    }
-    // Tip mismatch on an equal-length, internally-consistent chain → wholesale rewrite.
-    const tip = entries[entries.length - 1] as AuditChainEntry;
-    if (tip.hash !== anchor.tipHash) {
-      return { valid: false, brokenAt: entries.length - 1 };
-    }
+    // The anchor rules (root / length / tip) live in `canonical.ts` so this sync verifier and the
+    // WebCrypto `verifyChainAsync` share exactly one implementation of them.
+    const anchorFailure = checkAnchor(entries, anchor);
+    if (anchorFailure !== null) return anchorFailure;
   }
   return { valid: true, brokenAt: null };
 }
