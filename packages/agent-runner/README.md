@@ -8,6 +8,14 @@ security posture — **zero secret leak by construction** — is the product: th
 from scratch (never spread from `process.env`), with a fixed non-secret passthrough allowlist,
 only the target provider's key, and an isolated `HOME`/config dir.
 
+## Entry points
+
+- `.` — the full surface, node-capable (detached spawn, the on-disk run registry, transcript
+  parsing, trajectory hashing).
+- `./browser` — the browser-safe subset: the `ProviderConfig` model, `CLAUDE_CLI_PROFILE`,
+  `PASSTHROUGH_KEYS`, and `buildEngineEnv`, so the env scrub can be run and shown inside a client
+  bundle. Every name on `./browser` is also on `.`.
+
 ## Usage
 
 ```ts

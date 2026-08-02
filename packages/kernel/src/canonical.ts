@@ -1,8 +1,11 @@
 // Pure, node-free canonicalization + audit-chain value types — extracted from audit-chain.ts (T-K1).
-// This module holds ONLY the deterministic serialization and the JSON value/entry/anchor/verification
-// TYPES; it imports no node builtin, so it is browser/edge-safe and can be pulled into a client
-// bundle. The per-row WebCrypto verify path (`audit-verify.ts`) imports THIS, never the node-tainted
-// `audit-chain.ts` (whose `createHash` from the node crypto builtin taints the `.` barrel).
+// This module holds every part of the chain algebra that does NOT hash: the deterministic
+// serialization, the JSON value/entry/anchor/verification TYPES, and the two anchor operations
+// (`anchorChain` mints a commitment from hashes the chain already holds; `checkAnchor` compares
+// them). It imports no node builtin, so it is browser/edge-safe and can be pulled into a client
+// bundle. The WebCrypto verify path (`audit-verify.ts`) imports THIS, never the node-tainted
+// `audit-chain.ts` (whose `createHash` from the node crypto builtin taints the `.` barrel), and
+// `audit-chain.ts` re-exports what belongs on the node surface so that surface is unchanged.
 //
 // Canonicalization is load-bearing: the hash is taken over a DETERMINISTIC serialization (recursive
 // key sorting), so two semantically-equal payloads that differ only in key order produce the same
@@ -64,6 +67,62 @@ export interface ChainVerification {
   readonly valid: boolean;
   /** The index of the first broken entry, or `null` when the whole chain verifies. */
   readonly brokenAt: number | null;
+}
+
+/**
+ * Mint the trusted anchor for a chain: its length, tip hash, and genesis hash.
+ *
+ * Pure — it READS hashes the chain already committed and never computes one — so it lives here with
+ * the value types rather than in the node-only `audit-chain.ts`, and the node chain builder and the
+ * WebCrypto browser/offline verifier mint anchors through ONE implementation. `audit-chain.ts`
+ * re-exports it, so `@caisson/kernel/node`'s surface is unchanged.
+ */
+export function anchorChain(
+  entries: readonly AuditChainEntry[],
+): AuditChainAnchor {
+  if (entries.length === 0) {
+    throw new Error("audit-chain: cannot anchor an empty chain");
+  }
+  const tip = entries[entries.length - 1] as AuditChainEntry;
+  return {
+    length: entries.length,
+    tipHash: tip.hash,
+    genesisHash: (entries[0] as AuditChainEntry).hash,
+  };
+}
+
+/**
+ * The ANCHOR half of chain verification: committed root, committed length, committed tip. Returns
+ * the failing verdict, or `null` when the anchor holds.
+ *
+ * Pure for the same reason as {@link anchorChain} — it compares hashes the caller already has — so
+ * the sync node `verifyChain` and the async WebCrypto `verifyChainAsync` share one implementation
+ * of these fail-closed rules and can never drift into disagreeing about the same chain. Callers run
+ * the per-link consistency pass FIRST; these checks are what additionally catch tail truncation and
+ * wholesale rewrite, which internal consistency alone cannot.
+ */
+export function checkAnchor(
+  entries: readonly AuditChainEntry[],
+  anchor: AuditChainAnchor,
+): ChainVerification | null {
+  // Genesis mismatch → the chain has the wrong root (a rewrite from entry 0).
+  if (
+    anchor.genesisHash !== undefined &&
+    (entries.length === 0 ||
+      (entries[0] as AuditChainEntry).hash !== anchor.genesisHash)
+  ) {
+    return { valid: false, brokenAt: 0 };
+  }
+  // Length mismatch → truncation (or extension). Point at the first divergent index.
+  if (entries.length !== anchor.length) {
+    return { valid: false, brokenAt: Math.min(entries.length, anchor.length) };
+  }
+  // Tip mismatch on an equal-length, internally-consistent chain → wholesale rewrite.
+  const tip = entries[entries.length - 1] as AuditChainEntry;
+  if (tip.hash !== anchor.tipHash) {
+    return { valid: false, brokenAt: entries.length - 1 };
+  }
+  return null;
 }
 
 /**

@@ -13,7 +13,6 @@
 // `schema_version` ledger (the sync-metadata columns are migration-versioned + irreversible — no
 // rollback past them).
 import type { Database } from "bun:sqlite";
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   type JsonValue,
@@ -197,7 +196,10 @@ export class ChangesetLog implements ChangesetCapture {
 
     let replicaId: string;
     if (existing === null) {
-      replicaId = randomUUID();
+      // The WebCrypto global, not node:crypto — same UUIDv4 contract, and it keeps this module's
+      // value-import graph free of node builtins so the whole `.` barrel stays browser-importable
+      // (ADR-0396; `engines.node >= 20.12.0` is the floor that guarantees the global).
+      replicaId = crypto.randomUUID();
       db.transaction(() => {
         const insert = db.prepare("INSERT INTO sync_meta(k, v) VALUES (?, ?)");
         insert.run("tenant_id", tenantId);

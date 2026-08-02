@@ -148,6 +148,7 @@ describe("MODULE_PAGES (depth-page records)", () => {
       MODULE_PRICES.map((m) => `$${m.amount.toLocaleString("en-US")}`),
     );
     for (const b of BUNDLE_PRICES) {
+      if (b.amount === null) continue;
       catalogAmounts.add(`$${b.amount.toLocaleString("en-US")}`);
     }
     for (const r of MODULE_PAGES) {

@@ -1,36 +1,41 @@
 "use client";
 
 // The ai-evals module's poke (ADR-0378 lock 2, kimi CANDIDATES §B baseline gate). A live,
-// deterministic run of the package's regression-vs-committed-baseline comparator
-// (packages/ai-evals/src/baseline.ts, ADR-0072) against a sample eval run you can drag off course.
-// Every function driving this component is the pure mirror in `ai-evals-logic.ts` (see that file's
-// header for why the real package isn't imported directly into a client bundle). Nothing here
-// fetches, persists, or measures the visitor: "blessing" the baseline only updates local state.
+// deterministic run of the package's regression-vs-committed-baseline comparator (ADR-0072)
+// against a sample eval run you can drag off course.
+//
+// This component drives the REAL @caisson/ai-evals: the hand-ported mirror (ai-evals-logic.ts) is
+// deleted. The gate's pure half — the boundary schema, `compareToBaseline`, the pre-BLESS
+// eligibility check, and the BLESS merge — lives in the package's own node-free
+// `baseline-compare.ts` and is imported here through its public `./browser` entry point; the
+// node:fs load/save transport stays behind the main entry. Browser-safety is proven by the static
+// source-graph walk in ai-evals-poke.test.ts — NOT by a build; a bundler substitutes node builtins
+// instead of failing on them. Sample data and layout below are poke-local; no ported logic is.
+// Nothing here fetches, persists, or measures the visitor: "blessing" only updates local state.
 import { useId, useMemo, useState } from "react";
 import { Checkbox, StatusChip } from "@caisson/ui/components";
-
-import { PokeShell, Verdict } from "./poke-rig";
 import {
-  assertRunEligibleForBaseline,
-  blessBaseline,
   compareToBaseline,
-} from "./ai-evals-logic";
+  mergeIntoBaseline,
+} from "@caisson/ai-evals/browser";
 import type {
   BaselineFile,
-  EvalScoreRun,
+  EvalRun,
   RegressionKind,
-} from "./ai-evals-logic";
+} from "@caisson/ai-evals/browser";
+
+import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./ai-evals-poke.module.css";
 
 // A sample committed baseline (schemaVersion 1), the JSON shape `BLESS=1 bun run eval` writes,
 // reviewed and checked in like any other golden fixture. Labeled as a sample below.
-const EVAL_NAME = "assistant-response-quality";
-const SAMPLE_PROMPT_VERSION_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-const SAMPLE_THRESHOLD = 0.75;
-const COMMITTED_CASES = 40;
-const SHRUNK_CASES = 32;
+export const EVAL_NAME = "assistant-response-quality";
+export const SAMPLE_PROMPT_VERSION_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
+export const SAMPLE_THRESHOLD = 0.75;
+export const COMMITTED_CASES = 40;
+export const SHRUNK_CASES = 32;
 
-const INITIAL_BASELINE: BaselineFile = {
+export const INITIAL_BASELINE: BaselineFile = {
   schemaVersion: 1,
   evals: {
     [EVAL_NAME]: {
@@ -42,6 +47,33 @@ const INITIAL_BASELINE: BaselineFile = {
     },
   },
 };
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/**
+ * The sample run the sliders author, in the package's real `EvalRun` shape. `scoredCases` is
+ * empty on purpose: `compareToBaseline` reads it only inside the opt-in `wilsonFloor` branch, which
+ * this demo never sets, and fabricating 40 per-case rows would be inventing evidence to look busy.
+ */
+export function sampleRun(input: {
+  accuracy: number;
+  tone: number;
+  cases: number;
+}): EvalRun {
+  const score = round2((input.accuracy + input.tone) / 2);
+  return {
+    name: EVAL_NAME,
+    promptVersionId: SAMPLE_PROMPT_VERSION_ID,
+    threshold: SAMPLE_THRESHOLD,
+    cases: input.cases,
+    score,
+    scorers: { accuracy: input.accuracy, tone: input.tone },
+    passed: score >= SAMPLE_THRESHOLD,
+    scoredCases: [],
+  };
+}
 
 const REACHABLE_KINDS: readonly RegressionKind[] = [
   "below-threshold",
@@ -59,10 +91,6 @@ const KIND_LABEL: Record<RegressionKind, string> = {
   "wilson-below-floor": "wilson-below-floor",
 };
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
 export default function AiEvalsPoke() {
   const uid = useId();
   const [accuracy, setAccuracy] = useState(0.85);
@@ -73,19 +101,12 @@ export default function AiEvalsPoke() {
   const [justBlessed, setJustBlessed] = useState(false);
 
   const cases = shrinkCases ? SHRUNK_CASES : COMMITTED_CASES;
-  const score = round2((accuracy + tone) / 2);
 
-  const run: EvalScoreRun = useMemo(
-    () => ({
-      name: EVAL_NAME,
-      promptVersionId: SAMPLE_PROMPT_VERSION_ID,
-      threshold: SAMPLE_THRESHOLD,
-      cases,
-      score,
-      scorers: { accuracy, tone },
-    }),
-    [cases, score, accuracy, tone],
+  const run = useMemo(
+    () => sampleRun({ accuracy, tone, cases }),
+    [accuracy, tone, cases],
   );
+  const score = run.score;
 
   const comparison = useMemo(
     () => compareToBaseline(run, baseline),
@@ -102,9 +123,11 @@ export default function AiEvalsPoke() {
   }
 
   function handleBless() {
+    // mergeIntoBaseline runs assertRunEligibleForBaseline itself (WR-01), so a below-threshold run
+    // throws before anything merges — computed OUTSIDE the state updater so the throw is catchable.
     try {
-      assertRunEligibleForBaseline(run);
-      setBaseline((prev) => blessBaseline(prev, [run]));
+      const next = mergeIntoBaseline(baseline, [run]);
+      setBaseline(next);
       setBlessError(null);
       setJustBlessed(true);
     } catch (e) {
@@ -214,10 +237,12 @@ export default function AiEvalsPoke() {
           ))}
         </div>
         <p className={styles.note}>
-          RegressionKind. Reachable in this demo: below-threshold,
-          score-regression, scorer-regression, fewer-cases. missing-baseline
-          needs an eval name absent from the baseline (not exposed here), and
-          wilson-below-floor needs an opted-in wilsonFloor this demo never sets.
+          RegressionKind, the shipped union. Reachable in this demo:
+          below-threshold, score-regression, scorer-regression, fewer-cases.
+          missing-baseline needs an eval name absent from the baseline (not
+          exposed here), and wilson-below-floor needs an opted-in wilsonFloor
+          this demo never sets. The comparator running above is the shipped one,
+          both branches included.
         </p>
 
         <div className={styles.bless}>

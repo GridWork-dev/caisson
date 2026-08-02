@@ -5,9 +5,14 @@
 // — it runs on every buyer login (apps/site getSession), so it must never sit behind the org-controls
 // entitlement. `AccountMembership` + `Role` are re-used from @caisson/auth (their canonical home);
 // this package composes DOWN onto the open auth + tenancy-rls substrates (commercial → open, allowed).
-import { AuthzError, ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson/kernel";
 import { withTenant, type Transactor } from "@caisson/tenancy-rls";
 import type { AccountMembership, Role } from "@caisson/auth";
+import { assertCanManageMembers } from "./gate.ts";
+
+// The gate itself lives in gate.ts (ADR-0396) so the browser entry can carry it without this
+// module's `pg`-bound writes; re-exported here so `.` and every existing import path are unchanged.
+export { assertCanManageMembers };
 
 interface MemberRow {
   account_id: string;
@@ -20,13 +25,6 @@ interface MemberRow {
 // the cast is sound.
 function toMembership(r: MemberRow): AccountMembership {
   return { accountId: r.account_id, userId: r.user_id, role: r.role as Role };
-}
-
-/** Owner-only gate for member/billing management (ADR-0176 — seats cannot manage). */
-export function assertCanManageMembers(role: Role): void {
-  if (role !== "owner") {
-    throw new AuthzError("Only an account owner can manage members or billing");
-  }
 }
 
 /** List the members of an account (member-management path — tenant-scoped via `withTenant`). */
