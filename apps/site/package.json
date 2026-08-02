@@ -75,7 +75,7 @@
     "fumadocs-core": "^16.12.1",
     "fumadocs-mdx": "^15.0.13",
     "fumadocs-ui": "^16.12.1",
-    "htmlparser2": "^8.0.2",
+    "htmlparser2": "^12.0.0",
     "kysely": "0.29.4",
     "lucide-react": "catalog:",
     "motion": "^12.42.2",
