@@ -201,6 +201,7 @@
         "@better-auth/kysely-adapter": "1.6.23",
         "@caisson/access-review": "workspace:*",
         "@caisson/agent-kernel": "workspace:*",
+        "@caisson/agent-runner": "workspace:*",
         "@caisson/agent-trajectory": "workspace:*",
         "@caisson/ai-evals": "workspace:*",
         "@caisson/ai-kit": "workspace:*",

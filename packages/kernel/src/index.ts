@@ -37,8 +37,9 @@ export { loadConfig } from "./config.ts";
 export type { EnvSource } from "./config.ts";
 
 // The pure serialization + the chain value types come straight from the node-free `canonical.ts`;
-// the hashing half (`contentHash`/`hashChainLink`/`chainEntry`/`buildChain`/`verifyChain`/
-// `anchorChain`) needs `node:crypto` and therefore lives on "@caisson/kernel/node".
+// the hashing half (`contentHash`/`hashChainLink`/`chainEntry`/`buildChain`/`verifyChain`) needs
+// `node:crypto` and therefore lives on "@caisson/kernel/node". `anchorChain` is pure (no hashing)
+// and is reachable browser-safe on "@caisson/kernel/audit-verify".
 export { canonicalize } from "./canonical.ts";
 export type {
   JsonValue,

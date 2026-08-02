@@ -8,9 +8,7 @@ import { Database } from "bun:sqlite";
 import { existsSync } from "node:fs";
 import * as sqliteVec from "sqlite-vec";
 import { ValidationError } from "@caisson/kernel";
-
-/** RRF constant — standard 60; dampens the weight of any single ranking. */
-export const RRF_K = 60;
+import { fuseByRrf } from "./rrf.ts";
 
 /**
  * macOS ships a system SQLite with extension loading DISABLED (the Apple build), so a bare
@@ -167,6 +165,8 @@ export class LocalStore {
     const limit = opts.limit ?? 10;
     const legLimit = Math.max(limit * 8, 50);
     const ftsWeight = opts.ftsWeight ?? 1;
+    // The option's own boundary guard, kept HERE (not delegated to `fuseByRrf`'s leg-weight floor)
+    // so a bad caller value still throws under its own name BEFORE either leg queries the database.
     if (!Number.isFinite(ftsWeight) || ftsWeight <= 0) {
       throw new ValidationError("ftsWeight must be a positive finite number", {
         received: ftsWeight,
@@ -176,21 +176,19 @@ export class LocalStore {
     const vecRanks = this.vecLeg(opts.queryVector, legLimit);
     const ftsRanks = this.ftsLeg(opts.queryText, legLimit);
 
-    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs. The
-    // FTS contribution is scaled by `ftsWeight` (default 1 — the symmetric classic form).
-    const fused = new Map<number, number>();
-    for (const [rowid, rank] of vecRanks)
-      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));
-    for (const [rowid, rank] of ftsRanks)
-      fused.set(rowid, (fused.get(rowid) ?? 0) + ftsWeight / (RRF_K + rank));
-
-    const ranked = [...fused.entries()]
-      // score descending; deterministic tie-break by rowid ascending (stable, env-free).
-      .sort((a, b) => b[1] - a[1] || a[0] - b[0])
-      .slice(0, limit);
+    // RRF fusion (rrf.ts — the ONE implementation): every leg a doc appears in contributes
+    // weight/(RRF_K + rank); sum across legs, score descending, rowid-ascending tie-break. The FTS
+    // contribution is scaled by `ftsWeight` (default 1 — the symmetric classic form).
+    const ranked = fuseByRrf(
+      [
+        { ranks: vecRanks, weight: 1 },
+        { ranks: ftsRanks, weight: ftsWeight },
+      ],
+      { limit },
+    );
     if (ranked.length === 0) return [];
 
-    return ranked.map(([rowid, score]) => ({ id: this.docId(rowid), score }));
+    return ranked.map(({ key, score }) => ({ id: this.docId(key), score }));
   }
 
   /**

@@ -53,23 +53,24 @@ export type {
   CassetteSink,
 } from "./judge.ts";
 
-// Regression gate.
+// Regression gate — the pure rules (also on the `./browser` entry) …
 export {
   baselineEntrySchema,
   baselineFileSchema,
   compareToBaseline,
-  loadBaseline,
-  gateAgainstBaseline,
   assertRunEligibleForBaseline,
-} from "./baseline.ts";
+  mergeIntoBaseline,
+} from "./baseline-compare.ts";
 export type {
   BaselineEntry,
   BaselineFile,
   BaselineComparison,
-  BaselineGateResult,
   RegressionFinding,
   RegressionKind,
-} from "./baseline.ts";
+} from "./baseline-compare.ts";
+// … and the committed-file transport around them (node-only).
+export { loadBaseline, gateAgainstBaseline } from "./baseline.ts";
+export type { BaselineGateResult } from "./baseline.ts";
 
 // Exit classifier (ADR-0214) — WHY a run exited, not whether it scored well.
 export {
