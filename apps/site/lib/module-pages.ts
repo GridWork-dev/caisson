@@ -1495,6 +1495,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         body: "processEvent claims a sourceEventId once via an INSERT ... ON CONFLICT DO NOTHING on billing_processed_event; a re-delivery finds the claim and skips the grant function entirely, and with it the detached post-commit Discord role push, which is gated on that same outer claim. withIdempotentSideEffect claims a composite ${sourceEventId}:${sideEffect} key so a named transactional side effect fires at most once across retries, on top of the credit ledger's own UNIQUE(source_event_id, event_type) constraint.",
       },
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/billing-orchestration/browser inside a client bundle for the pure claim-key half, assertValidSourceEventId and sideEffectEventKey, the same guards processEvent and withIdempotentSideEffect delegate to. The claim itself stays on the main entry, because it runs as an INSERT inside your tenant transaction; the main entry keeps the complete surface, and every browser-entry export is also on it.",
+      },
+      {
         title: "The claim table is tenant-scoped, not just event-scoped",
         body: "billing_processed_event binds account_id from the tenant GUC on insert and runs under buildTenantPolicySql's force-RLS policy; a CHECK (account_id <> '') rejects a claim attempted outside withTenant rather than letting it land under a shared blank tenant.",
       },
