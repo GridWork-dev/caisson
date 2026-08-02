@@ -1353,6 +1353,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         body: "generateEvidencePack scans every control for an unresolved collector result before assembling anything; if any exist it throws EvidencePackBlockedError (HTTP 422) carrying the full BLOCKED-case report. The throw runs before any assembly and the module touches no filesystem, so a partial pack is structurally impossible, not just policy.",
       },
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/compliance-core/browser inside a client bundle for the collector contract with its result constructors, the four pure collectors (FORCE-RLS, WORM retention, risk register, impersonation dual trail), the pack format, the crosswalk rollup, and assembleEvidenceManifest, the same flag-never-guess refusal and derived-readiness assembly generateEvidencePack composes. The archive and digest phase, the chain-verify collector, and the field-crypto collector stay on the main entry: each needs Node. Every browser-entry export is also on the main entry.",
+      },
+      {
         title: "Deterministic, byte-stable archive",
         body: "buildDeterministicZip fixes every entry to the 1980-epoch DOS mtime, name-sorts entries, and pins the deflate level over canonicalize()'d contents, so identical evidence always serializes to the identical SHA-256 on EvidencePack.sha256, regardless of when or by whom it was generated. The injected now clock is stamped only on the generatedAt envelope field, never hashed into the body.",
       },
@@ -1375,10 +1379,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     artifact: {
       label:
-        "generateEvidencePack, the flag-never-guess scan, before any assembly runs",
+        "assembleEvidenceManifest, the flag-never-guess scan, before any assembly runs",
       lang: "ts",
-      file: "packages/compliance-core/src/evidence/generate.ts",
-      code: 'export function generateEvidencePack(\n  input: GenerateEvidencePackInput,\n): EvidencePack {\n  // PHASE 1 — flag-never-guess. Scan EVERY control for unresolved evidence before assembling\n  // anything; refuse the whole pack if any is found. No filesystem touch here → no partial pack.\n  const unresolved: Array<{\n    controlId: string;\n    collectorId: string;\n    reason: string | undefined;\n  }> = [];\n  for (const control of input.controls) {\n    for (const result of control.evidence) {\n      if (result.status === "unresolved") {\n        unresolved.push({\n          controlId: control.controlId,\n          collectorId: result.item.collectorId,\n          reason: result.reason,\n        });\n      }\n    }\n  }\n  if (unresolved.length > 0) {\n    const sortedUnresolved = [...unresolved].sort(\n      (a, b) =>\n        cmp(a.controlId, b.controlId) || cmp(a.collectorId, b.collectorId),\n    );\n    const report = parseEvidencePackBlocked({\n      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,\n      tenantId: input.tenantId,\n      framework: input.framework,\n      blocked: true,\n      unresolved: sortedUnresolved,\n    });\n    throw new EvidencePackBlockedError(report);\n  }',
+      file: "packages/compliance-core/src/evidence/assemble.ts",
+      code: 'export function assembleEvidenceManifest(\n  input: AssembleEvidenceManifestInput,\n): EvidencePackManifest {\n  // PHASE 1 — flag-never-guess. Scan EVERY control for unresolved evidence before assembling\n  // anything; refuse the whole pack if any is found. No filesystem touch here → no partial pack.\n  const unresolved: Array<{\n    controlId: string;\n    collectorId: string;\n    reason: string | undefined;\n  }> = [];\n  for (const control of input.controls) {\n    for (const result of control.evidence) {\n      if (result.status === "unresolved") {\n        unresolved.push({\n          controlId: control.controlId,\n          collectorId: result.item.collectorId,\n          reason: result.reason,\n        });\n      }\n    }\n  }\n  if (unresolved.length > 0) {\n    const sortedUnresolved = [...unresolved].sort(\n      (a, b) =>\n        cmp(a.controlId, b.controlId) || cmp(a.collectorId, b.collectorId),\n    );\n    const report = parseEvidencePackBlocked({\n      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,\n      tenantId: input.tenantId,\n      framework: input.framework,\n      blocked: true,\n      unresolved: sortedUnresolved,\n    });\n    throw new EvidencePackBlockedError(report);\n  }',
       annotations: [
         "The scan over input.controls runs BEFORE any assembly starts, every control is checked for an unresolved result first, so a partial pack is never even started.",
         "EvidencePackBlockedError carries the full sorted report (every unresolved controlId + collectorId), not just a boolean, the caller sees exactly what's missing.",
