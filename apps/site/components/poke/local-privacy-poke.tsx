@@ -17,6 +17,7 @@
 import { Fragment, useId, useMemo, useState } from "react";
 import { Radio, StatusChip } from "@caisson/ui/components";
 import { InternalError, isCaissonError } from "@caisson/kernel";
+import { DEFAULT_ONNX_MODEL } from "@caisson/local-inference/browser";
 import {
   SANCTIONED_SINK_KINDS,
   ZERO_EGRESS_POLICY,
@@ -31,10 +32,10 @@ import styles from "./local-privacy-poke.module.css";
 /**
  * The real sanctioned model-fetch host (@caisson/local-inference's `DEFAULT_ONNX_MODEL.modelHost`)
  * — the actual first-run download host the on-device backend allowlists, not a fabricated example.
- * Restated here as poke sample data because the inference package's barrel is node-bound; the poke
- * test pins it against the real constant so a drift fails.
+ * Imported through the narrow browser entry so product config has one owner without admitting the
+ * inference package's node-bound main barrel.
  */
-export const MODEL_FETCH_HOST = "huggingface.co";
+export const MODEL_FETCH_HOST = DEFAULT_ONNX_MODEL.modelHost;
 
 /** A real host from the module's own test suite — the external host the allowlist keeps out. */
 export const SAMPLE_BLOCKED_HOST = "evil.example.com";
@@ -110,7 +111,7 @@ export function egressVerdict(
 
 export default function LocalPrivacyPoke() {
   const uid = useId();
-  const [host, setHost] = useState(MODEL_FETCH_HOST);
+  const [host, setHost] = useState<string>(MODEL_FETCH_HOST);
   const [scheme, setScheme] = useState<"https" | "http">("https");
   const [policyKey, setPolicyKey] = useState<PolicyKey>("zero");
 

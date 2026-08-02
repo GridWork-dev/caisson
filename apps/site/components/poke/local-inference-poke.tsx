@@ -1,29 +1,62 @@
 "use client";
 
 // The local-inference module's poke (ADR-0378 lock 2, kimi CANDIDATES section B "On-device
-// inference") — stay on the box: run the package's real deterministic embedding algorithm against a
-// sample prompt, watch the egress meter hold at zero, then opt a rented backend in and watch it
-// flip. Every function driving this component is the pure mirror in `local-inference-logic.ts` (see
-// that file's header for why the real package isn't imported directly into a client bundle).
-// Nothing here fetches, persists, or measures the visitor — the "rented" path is a fully local
-// simulation of the boundary crossing, never a real network call.
+// inference") — stay on the box: run the package's real deterministic StubInferenceBackend against
+// a sample prompt, watch the egress meter hold at zero, then opt a rented backend in and watch it
+// flip. The stub and model coordinates come from the package's deliberately narrow `./browser`
+// entry; presentation helpers and fixtures stay local to this component. Nothing here fetches,
+// persists, or measures the visitor — the "rented" path is a fully local simulation driven by the
+// real local-privacy guard, never a provider transport or network call.
 import { useEffect, useId, useMemo, useState } from "react";
+import { isCaissonError } from "@caisson/kernel";
+import {
+  DEFAULT_ONNX_MODEL,
+  EMBEDDING_DIM,
+  StubInferenceBackend,
+} from "@caisson/local-inference/browser";
+import { createEgressGuard, localOnlyPolicy } from "@caisson/local-privacy";
 import { Checkbox, Radio, StatusChip } from "@caisson/ui/components";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import type { VerdictState } from "./poke-rig";
-import {
-  DEFAULT_ONNX_MODEL,
-  EMBEDDING_DIM,
-  SAMPLE_PROMPT,
-  SAMPLE_RENTED_HOST,
-  evaluateEgress,
-  normalizeBars,
-  sampleEmbed,
-  sparkBars,
-} from "./local-inference-logic";
-import type { BackendChoice } from "./local-inference-logic";
 import styles from "./local-inference-poke.module.css";
+
+type BackendChoice = "on-device" | "rented";
+type EgressReading =
+  | {
+      readonly outcome: "local";
+      readonly host: null;
+      readonly sinkKind: null;
+      readonly requests: 0;
+      readonly usage: null;
+    }
+  | {
+      readonly outcome: "blocked";
+      readonly host: string;
+      readonly sinkKind: "rented-backend";
+      readonly requests: 0;
+      readonly usage: null;
+    }
+  | {
+      readonly outcome: "egressed";
+      readonly host: string;
+      readonly sinkKind: "rented-backend";
+      readonly requests: 1;
+      readonly usage: { readonly unit: "token"; readonly quantity: number };
+    };
+
+const SAMPLE_PROMPT =
+  "Summarize the buyer's renewal risk from this support thread.";
+const SAMPLE_RENTED_HOST = "api.rented-inference.example";
+const SAMPLE_USAGE = { unit: "token", quantity: 128 } as const;
+const STUB_BACKEND = new StubInferenceBackend();
+const RENTED_ENDPOINT = `https://${SAMPLE_RENTED_HOST}/embed`;
+const RENTED_GUARDS = {
+  blocked: createEgressGuard(localOnlyPolicy([])),
+  allowed: createEgressGuard(
+    localOnlyPolicy([{ host: SAMPLE_RENTED_HOST, kind: "rented-backend" }]),
+  ),
+} as const;
 
 const BACKENDS: readonly BackendChoice[] = ["on-device", "rented"];
 const BACKEND_LABEL: Record<BackendChoice, string> = {
@@ -40,7 +73,7 @@ export default function LocalInferencePoke() {
 
   useEffect(() => {
     let live = true;
-    void sampleEmbed(prompt).then((v) => {
+    void STUB_BACKEND.embed(prompt).then((v) => {
       if (live) setVector(v);
     });
     return () => {
@@ -173,10 +206,7 @@ export default function LocalInferencePoke() {
         </div>
 
         <div className={styles.chipsRow}>
-          <StatusChip
-            label="model-fetch"
-            tone={reading.sinkKind === "model-fetch" ? "accent" : "muted"}
-          />
+          <StatusChip label="model-fetch" tone="muted" />
           <StatusChip
             label="rented-backend"
             tone={reading.sinkKind === "rented-backend" ? "accent" : "muted"}
@@ -185,6 +215,65 @@ export default function LocalInferencePoke() {
       </div>
     </PokeShell>
   );
+}
+
+/** Chunk-average a vector for the compact presentation strip; not package API. */
+function sparkBars(vec: Float32Array, bars: number): number[] {
+  if (vec.length === 0) return [];
+  const chunk = Math.ceil(vec.length / bars);
+  const output: number[] = [];
+  for (let i = 0; i < vec.length; i += chunk) {
+    const slice = vec.subarray(i, i + chunk);
+    let sum = 0;
+    for (const value of slice) sum += value;
+    output.push(sum / slice.length);
+  }
+  return output;
+}
+
+/** Min-max normalize presentation bars to percentages; a flat strip stays visibly centered. */
+function normalizeBars(values: readonly number[]): number[] {
+  if (values.length === 0) return [];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (max === min) return values.map(() => 50);
+  return values.map((value) => ((value - min) / (max - min)) * 100);
+}
+
+/** Drive the sample rented boundary through the real purpose-bound local-privacy guard. */
+function evaluateEgress(
+  backend: BackendChoice,
+  hostAllowlisted: boolean,
+): EgressReading {
+  if (backend === "on-device") {
+    return {
+      outcome: "local",
+      host: null,
+      sinkKind: null,
+      requests: 0,
+      usage: null,
+    };
+  }
+  const guard = hostAllowlisted ? RENTED_GUARDS.allowed : RENTED_GUARDS.blocked;
+  try {
+    guard.assertAllowedFor(RENTED_ENDPOINT, "rented-backend");
+  } catch (error) {
+    if (!isCaissonError(error)) throw error;
+    return {
+      outcome: "blocked",
+      host: SAMPLE_RENTED_HOST,
+      sinkKind: "rented-backend",
+      requests: 0,
+      usage: null,
+    };
+  }
+  return {
+    outcome: "egressed",
+    host: SAMPLE_RENTED_HOST,
+    sinkKind: "rented-backend",
+    requests: 1,
+    usage: SAMPLE_USAGE,
+  };
 }
 
 function verdictMessage(reading: ReturnType<typeof evaluateEgress>): string {
