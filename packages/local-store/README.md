@@ -23,6 +23,16 @@ package never imports an edition or another edition's package.
   query is not even expressible. The resolver rejects `..` / null-byte / absolute ids and asserts the
   resolved path stays under the tenant-data root (ADR-0073).
 
+## Entry points
+
+- `.` — the full surface: the store, the tenant-file resolver, the embedder port, the egress guard,
+  and retention GC.
+- `./browser` — the browser-safe subset: `fuseByRrf` and `RRF_K`, the fusion arithmetic with no
+  database attached. Fuse leg rankings a server or worker already produced, inside a client bundle.
+  Retrieval itself cannot come along — the `vec0` KNN and FTS5 legs need `bun:sqlite` plus the
+  `sqlite-vec` native extension. Every name on `./browser` is also on `.`.
+- `./ui` — the React search component.
+
 ## Engine-neutral (binding)
 
 No vendor SDK import. Does NOT run an LLM or compute an embedding. The package contributes the
