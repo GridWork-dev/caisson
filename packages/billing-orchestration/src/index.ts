@@ -21,3 +21,5 @@ export {
   withIdempotentSideEffect,
 } from "./idempotency.ts";
 export type { ProcessResult } from "./idempotency.ts";
+// Also the whole of `./browser` — the subset direction is one-way and pinned in browser-safety.test.ts.
+export { assertValidSourceEventId, sideEffectEventKey } from "./event-keys.ts";
