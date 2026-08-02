@@ -1,70 +1,80 @@
-// Golden + live parity for the local-store poke's mirror (ADR-0378 lock 2): the fusion formula in
-// local-store-logic.ts must reproduce, bit for bit, both (a) the real @caisson/local-store package's
-// LocalStore.hybridSearch() output for this poke's own 8-doc sample corpus, and (b) the package's OWN
-// committed golden fixture (packages/local-store/src/__golden__/rrf-ranking.json). This test imports
-// the real package directly. It runs under bun (bun:sqlite + sqlite-vec resolve fine here), unlike
-// the browser bundle the poke component ships in.
-import { describe, expect, test } from "bun:test";
+// The local-store poke's checkable claims, now that it drives the REAL @caisson/local-store through
+// its `./browser` entry and the hand-ported mirror (local-store-logic.ts) is deleted:
+//
+//   1. The poke's client graph is browser-safe — a STATIC SOURCE-GRAPH WALK, never a build (a
+//      bundler does not fail on a node builtin, it SUBSTITUTES a ~428KB polyfill, exit 0). This is
+//      the package where that matters most: `bun:sqlite` is not `node:`-prefixed, so the walk's
+//      external frontier, not its offender list, is what proves the SQLite half stayed out.
+//   2. The fusion is the SHIPPED `fuseByRrf` — the same function `LocalStore.hybridSearch` calls —
+//      so the poke's fused output is byte-for-byte a real hybrid run's, not a lookalike. This test
+//      runs under bun (bun:sqlite + sqlite-vec resolve fine here) and opens a real store to say so.
+//   3. What CANNOT come along stays honest: the two per-leg rankings are precomputed SAMPLE data,
+//      and they are re-derived here against that real store, so a drifted capture fails.
+//   4. The ftsWeight guard is the package's real ValidationError, not a client-side copy of one.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { describe, expect, test } from "bun:test";
 import { z } from "zod";
+import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
 import { ValidationError } from "@caisson/kernel";
 import { LocalStore, RRF_K as REAL_RRF_K } from "@caisson/local-store";
 import type { StoreDoc } from "@caisson/local-store";
 
 import {
-  RRF_K,
   SAMPLE_DOCS,
   SAMPLE_QUERY_TEXT,
-  ValidationErrorMirror,
-  fuseRrf,
-} from "./local-store-logic";
-import type { SampleDoc } from "./local-store-logic";
+  fuseSample,
+  type SampleDoc,
+} from "./local-store-poke";
 
-test("RRF_K matches the real package's exported constant", () => {
-  expect(RRF_K).toBe(REAL_RRF_K);
-  expect(RRF_K).toBe(60);
-});
+const WORKSPACE_ROOT = join(import.meta.dir, "../../../..");
+const POKE_ENTRY = join(import.meta.dir, "local-store-poke.tsx");
 
-describe("ValidationErrorMirror parity vs the real ValidationError", () => {
-  test("code, httpStatus, and the ftsWeight message match", () => {
-    const store = LocalStore.open({ dim: 3 });
-    try {
-      store.upsert({ id: "x", text: "x" });
-      let real: unknown;
-      try {
-        store.hybridSearch({ queryText: "x", ftsWeight: 0 });
-      } catch (err) {
-        real = err;
-      }
-      expect(real).toBeInstanceOf(ValidationError);
-      const mirror = new ValidationErrorMirror(
-        "ftsWeight must be a positive finite number",
-      );
-      expect(mirror.code).toBe((real as ValidationError).code);
-      expect(mirror.httpStatus).toBe((real as ValidationError).httpStatus);
-      expect(mirror.message).toBe((real as ValidationError).message);
-    } finally {
-      store.close();
-    }
+describe("the poke's client graph is browser-safe (static source walk, NOT a build)", () => {
+  const walk = nodeBuiltinTaint(POKE_ENTRY, { workspaceRoot: WORKSPACE_ROOT });
+
+  test("no module reachable from the client entry imports a node builtin (transitive)", () => {
+    expect(walk.offenders).toEqual([]);
   });
 
-  test("fuseRrf fails closed on every non-positive or non-finite ftsWeight, mirroring the real throw", () => {
-    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(() =>
-        fuseRrf(SAMPLE_DOCS, {
-          rrfK: RRF_K,
-          ftsWeight: bad,
-          includeVector: true,
-        }),
-      ).toThrow(ValidationErrorMirror);
-    }
+  test("no edge was silently skipped — every declined edge would land in `unresolved`", () => {
+    expect(walk.unresolved).toEqual([]);
+  });
+
+  test("the walk really crossed into the package, past its browser entry", () => {
+    expect(walk.files).toContain("packages/local-store/src/browser.ts");
+    expect(walk.files).toContain("packages/local-store/src/rrf.ts");
+    // …and never the SQLite half, which has no browser form at all.
+    expect(walk.files).not.toContain("packages/local-store/src/store.ts");
+    expect(walk.files).not.toContain("packages/local-store/src/tenant-db.ts");
+  });
+
+  test("`bun:sqlite` never reaches the client graph — the offender channel cannot catch it", () => {
+    // A `bun:`-prefixed specifier is not `node:`-prefixed, so it lands on the external frontier
+    // rather than in `offenders`. Asserting the frontier is what closes that hole.
+    expect(walk.external).not.toContain("bun:sqlite");
+    expect(walk.external).not.toContain("sqlite-vec");
+  });
+
+  test("positive control: the walker is not blind — the `.` barrel DOES report offenders", () => {
+    const barrel = nodeBuiltinTaint(
+      join(WORKSPACE_ROOT, "packages/local-store/src/index.ts"),
+      { workspaceRoot: WORKSPACE_ROOT },
+    );
+    expect(barrel.offenders.some((o) => o.file.endsWith("src/store.ts"))).toBe(
+      true,
+    );
+    expect(barrel.external).toContain("bun:sqlite");
   });
 });
 
-describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8-doc corpus)", () => {
-  // The exact corpus + query local-store-logic.ts's SAMPLE_DOCS/SAMPLE_QUERY_TEXT were captured
-  // from. dim 3, hand-picked embeddings, never a live embedder call.
+test("the poke's RRF_K slider is anchored on the package's real exported constant", () => {
+  expect(REAL_RRF_K).toBe(60);
+});
+
+describe("fuseSample parity vs a live real-package run (this poke's 8-doc corpus)", () => {
+  // The exact corpus + query SAMPLE_DOCS/SAMPLE_QUERY_TEXT were captured from. dim 3, hand-picked
+  // embeddings, never a live embedder call.
   const REAL_DOCS: StoreDoc[] = [
     {
       id: "billing-refund",
@@ -109,6 +119,13 @@ describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8
   ];
   const QUERY_VECTOR = [1, 0, 0];
 
+  test("the sample corpus is the real one, in the real upsert order (the fused key IS the rowid)", () => {
+    expect(SAMPLE_DOCS.map((d) => d.id)).toEqual(REAL_DOCS.map((d) => d.id));
+    expect(SAMPLE_DOCS.map((d) => d.snippet)).toEqual(
+      REAL_DOCS.map((d) => d.text),
+    );
+  });
+
   function seeded(): LocalStore {
     const store = LocalStore.open({ dim: 3 });
     for (const doc of REAL_DOCS) store.upsert(doc);
@@ -124,12 +141,13 @@ describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8
   test("SAMPLE_DOCS.vecRank matches the real vec-only leg order (blank queryText)", () => {
     const store = seeded();
     try {
-      const vecOnly = store.hybridSearch({
-        queryText: "",
-        queryVector: QUERY_VECTOR,
-        limit: 10,
-      });
-      const ranks = rankMap(vecOnly);
+      const ranks = rankMap(
+        store.hybridSearch({
+          queryText: "",
+          queryVector: QUERY_VECTOR,
+          limit: 10,
+        }),
+      );
       for (const doc of SAMPLE_DOCS) {
         expect(doc.vecRank).toBe(ranks.get(doc.id) ?? null);
       }
@@ -141,11 +159,9 @@ describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8
   test("SAMPLE_DOCS.ftsRank matches the real FTS-only leg order (omitted queryVector)", () => {
     const store = seeded();
     try {
-      const ftsOnly = store.hybridSearch({
-        queryText: SAMPLE_QUERY_TEXT,
-        limit: 10,
-      });
-      const ranks = rankMap(ftsOnly);
+      const ranks = rankMap(
+        store.hybridSearch({ queryText: SAMPLE_QUERY_TEXT, limit: 10 }),
+      );
       for (const doc of SAMPLE_DOCS) {
         expect(doc.ftsRank).toBe(ranks.get(doc.id) ?? null);
       }
@@ -154,7 +170,7 @@ describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8
     }
   });
 
-  test("fuseRrf(rrfK=RRF_K, ftsWeight=1, includeVector=true) matches the real hybrid fused output exactly", () => {
+  test("fuseSample at the defaults matches the real hybrid fused output exactly", () => {
     const store = seeded();
     try {
       const real = store.hybridSearch({
@@ -162,25 +178,25 @@ describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8
         queryVector: QUERY_VECTOR,
         limit: 10,
       });
-      const mirrored = fuseRrf(SAMPLE_DOCS, {
-        rrfK: RRF_K,
+      const poke = fuseSample(SAMPLE_DOCS, {
+        rrfK: REAL_RRF_K,
         ftsWeight: 1,
         includeVector: true,
       });
-      expect(mirrored.map((h) => h.id)).toEqual(real.map((h) => h.id));
+      expect(poke.map((h) => h.id)).toEqual(real.map((h) => h.id));
       real.forEach((hit, i) => {
-        expect(mirrored[i]?.score).toBe(hit.score);
+        expect(poke[i]?.score).toBe(hit.score);
       });
       // The narrative this poke exists to show: a doc weak in the vector leg (rank 7) but with an
       // exact keyword hit gets pulled up to rank 2 by fusion, never merely echoing one leg's order.
-      expect(mirrored[0]?.id).toBe("billing-refund");
-      expect(mirrored[1]?.id).toBe("support-ticket");
+      expect(poke[0]?.id).toBe("billing-refund");
+      expect(poke[1]?.id).toBe("support-ticket");
     } finally {
       store.close();
     }
   });
 
-  test("fuseRrf with ftsWeight=3 matches the real package's weighted fusion (CAISSON-83 lever)", () => {
+  test("fuseSample with ftsWeight=3 matches the real package's weighted fusion", () => {
     const store = seeded();
     try {
       const real = store.hybridSearch({
@@ -189,14 +205,14 @@ describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8
         limit: 10,
         ftsWeight: 3,
       });
-      const mirrored = fuseRrf(SAMPLE_DOCS, {
-        rrfK: RRF_K,
+      const poke = fuseSample(SAMPLE_DOCS, {
+        rrfK: REAL_RRF_K,
         ftsWeight: 3,
         includeVector: true,
       });
-      expect(mirrored.map((h) => h.id)).toEqual(real.map((h) => h.id));
+      expect(poke.map((h) => h.id)).toEqual(real.map((h) => h.id));
       real.forEach((hit, i) => {
-        expect(mirrored[i]?.score).toBe(hit.score);
+        expect(poke[i]?.score).toBe(hit.score);
       });
     } finally {
       store.close();
@@ -210,13 +226,13 @@ describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8
         queryText: SAMPLE_QUERY_TEXT,
         limit: 10,
       });
-      const mirrored = fuseRrf(SAMPLE_DOCS, {
-        rrfK: RRF_K,
+      const poke = fuseSample(SAMPLE_DOCS, {
+        rrfK: REAL_RRF_K,
         ftsWeight: 1,
         includeVector: false,
       });
-      expect(mirrored.map((h) => h.id)).toEqual(real.map((h) => h.id));
-      expect(mirrored.map((h) => h.id)).toEqual([
+      expect(poke.map((h) => h.id)).toEqual(real.map((h) => h.id));
+      expect(poke.map((h) => h.id)).toEqual([
         "billing-refund",
         "support-ticket",
       ]);
@@ -225,18 +241,17 @@ describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8
     }
   });
 
-  test("a different rrfK still fuses in real-formula shape (higher K compresses every leg toward equal weight)", () => {
-    const lowK = fuseRrf(SAMPLE_DOCS, {
+  test("a different rrfK still fuses in real-formula shape (higher K compresses the legs together)", () => {
+    const lowK = fuseSample(SAMPLE_DOCS, {
       rrfK: 1,
       ftsWeight: 1,
       includeVector: true,
     });
-    const highK = fuseRrf(SAMPLE_DOCS, {
+    const highK = fuseSample(SAMPLE_DOCS, {
       rrfK: 1000,
       ftsWeight: 1,
       includeVector: true,
     });
-    // Both stay sorted score-descending and both still surface every doc reachable by some leg.
     expect(lowK.length).toBe(SAMPLE_DOCS.length);
     expect(highK.length).toBe(SAMPLE_DOCS.length);
     for (const hits of [lowK, highK]) {
@@ -245,11 +260,44 @@ describe("SAMPLE_DOCS + fuseRrf parity vs a live real-package run (this poke's 8
       }
     }
   });
+
+  test("a bad ftsWeight throws the package's REAL ValidationError, matching the store's own refusal", () => {
+    const store = LocalStore.open({ dim: 3 });
+    try {
+      store.upsert({ id: "x", text: "x" });
+      for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+        let storeErr: unknown;
+        try {
+          store.hybridSearch({ queryText: "x", ftsWeight: bad });
+        } catch (err) {
+          storeErr = err;
+        }
+        expect(storeErr).toBeInstanceOf(ValidationError);
+
+        let pokeErr: unknown;
+        try {
+          fuseSample(SAMPLE_DOCS, {
+            rrfK: REAL_RRF_K,
+            ftsWeight: bad,
+            includeVector: true,
+          });
+        } catch (err) {
+          pokeErr = err;
+        }
+        expect(pokeErr).toBeInstanceOf(ValidationError);
+        expect((pokeErr as ValidationError).message).toBe(
+          (storeErr as ValidationError).message,
+        );
+      }
+    } finally {
+      store.close();
+    }
+  });
 });
 
-describe("golden parity vs the package's own committed fixture (packages/local-store/src/__golden__/rrf-ranking.json)", () => {
+describe("golden parity vs the package's own committed fixture", () => {
   // Reproduces golden.ts's RRF_FIXTURE corpus + query byte for byte (ADR-0013 golden-first, the
-  // committed fixture is this package's spec; local-store-logic.ts never invents its own numbers).
+  // committed fixture is this package's spec; the poke never invents its own numbers).
   const goldenDocs: StoreDoc[] = [
     { id: "fox", text: "fox", embedding: [1, 0, 0] },
     { id: "fox-quick", text: "fox fox fox quick", embedding: [0, 1, 0] },
@@ -272,11 +320,7 @@ describe("golden parity vs the package's own committed fixture (packages/local-s
         // packages/local-store/src/__golden__/rrf-ranking.json, resolved from this file's own
         // directory (apps/site/components/poke/) so a glob-guessed path can never silently drift.
         join(
-          import.meta.dir,
-          "..",
-          "..",
-          "..",
-          "..",
+          WORKSPACE_ROOT,
           "packages",
           "local-store",
           "src",
@@ -314,7 +358,7 @@ describe("golden parity vs the package's own committed fixture (packages/local-s
     }
   });
 
-  test("fuseRrf reproduces the committed golden when fed the golden fixture's own leg ranks", () => {
+  test("the poke's projection reproduces the committed golden from the fixture's own leg ranks", () => {
     const store = seededGolden();
     let vecRanks: Map<string, number>;
     let ftsRanks: Map<string, number>;
@@ -341,13 +385,13 @@ describe("golden parity vs the package's own committed fixture (packages/local-s
       ftsRank: ftsRanks.get(d.id) ?? null,
     }));
 
-    const mirrored = fuseRrf(docs, {
-      rrfK: RRF_K,
+    const poke = fuseSample(docs, {
+      rrfK: REAL_RRF_K,
       ftsWeight: 1,
       includeVector: true,
     });
     expect(
-      mirrored.map((h, i) => ({
+      poke.map((h, i) => ({
         rank: i + 1,
         id: h.id,
         score: Number(h.score.toFixed(6)),

@@ -45,3 +45,11 @@ the leak-guard pattern.
 Multi-agent orchestration, hosted run UI, SDK (non-CLI) backends, and cost metering
 (`@caisson/ai-meter` wiring) are deferred. Transcript parsing expects the stream-json shape (one
 JSON object per line, `assistant`/`result` events); a provider CLI must emit that contract.
+
+## Entry points
+
+Two: `.` is the full node-capable surface; `./browser` is the browser-safe subset (`ProviderConfig`,
+`CLAUDE_CLI_PROFILE`, `PASSTHROUGH_KEYS`, `buildEngineEnv` — `src/engine-env.ts`, which is also the
+ONE implementation the runner itself imports). A client bundle imports `./browser`, never `.`; a
+module joins `./browser` only if its whole graph passes the package's static source-graph walk
+(`src/browser-safety.test.ts`), and every `./browser` name must also exist on `.`.

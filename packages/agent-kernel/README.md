@@ -18,6 +18,15 @@ import an edition (ADR-0022 down-only), so the shared layer sits below the editi
 - **Hooks dispatcher.** Register handlers at `${'before'|'after'}:${act}` points; `dispatch` runs them
   in registration order and awaits each. An unregistered point is a no-op (0 handlers), never a throw.
 
+## Entry points
+
+- `.` — the full surface, node-capable (the hooks dispatcher's `execFile` command handler and the
+  audited lifecycle's hash-chain recorder).
+- `./browser` — the browser-safe subset: the artifact schema and its authoring helpers, the
+  lifecycle act FSM, the governance decision algebra, and the redacting logger. Every name on
+  `./browser` is also on `.`; a module joins it only once its whole value-import graph passes the
+  package's static source-graph walk (`src/browser-safety.test.ts`).
+
 ## Engine-neutral (binding)
 
 No vendor SDK import. Does NOT run an LLM. The kernel contributes the schema/FSM/hooks **mechanism**;
