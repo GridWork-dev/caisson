@@ -10,4 +10,6 @@ your server or worker already produced and it returns the fused ranking — the 
 than a formula restated per call site, and it runs inside a client bundle. Retrieval itself stays
 on the main entry: the vec0 KNN and FTS5 legs need SQLite and its vector extension. Ranking,
 scores, and tie-breaks are unchanged. The site's local-store interactive demo now runs that real
-fusion instead of a hand-maintained copy.
+fusion instead of a hand-maintained copy. Invalid limits now fail closed: `fuseByRrf` rejects
+negative, non-integer, and non-finite values instead of letting `Array.slice` turn them into a
+plausible truncated or empty ranking.

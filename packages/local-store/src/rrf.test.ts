@@ -52,4 +52,10 @@ describe("fuseByRrf", () => {
       ).toThrow(ValidationError);
     }
   });
+
+  test("a negative, non-integer, or non-finite limit throws instead of silently truncating", () => {
+    for (const bad of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => fuseByRrf([vec], { limit: bad })).toThrow(ValidationError);
+    }
+  });
 });

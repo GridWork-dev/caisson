@@ -266,16 +266,28 @@ describe("fuseSample parity vs a live real-package run (this poke's 8-doc corpus
     try {
       store.upsert({ id: "x", text: "x" });
       for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
-        expect(() =>
-          store.hybridSearch({ queryText: "x", ftsWeight: bad }),
-        ).toThrow(ValidationError);
-        expect(() =>
+        let storeErr: unknown;
+        try {
+          store.hybridSearch({ queryText: "x", ftsWeight: bad });
+        } catch (err) {
+          storeErr = err;
+        }
+        expect(storeErr).toBeInstanceOf(ValidationError);
+
+        let pokeErr: unknown;
+        try {
           fuseSample(SAMPLE_DOCS, {
             rrfK: REAL_RRF_K,
             ftsWeight: bad,
             includeVector: true,
-          }),
-        ).toThrow(ValidationError);
+          });
+        } catch (err) {
+          pokeErr = err;
+        }
+        expect(pokeErr).toBeInstanceOf(ValidationError);
+        expect((pokeErr as ValidationError).message).toBe(
+          (storeErr as ValidationError).message,
+        );
       }
     } finally {
       store.close();

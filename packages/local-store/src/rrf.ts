@@ -53,6 +53,14 @@ export function fuseByRrf(
 ): RrfRow[] {
   const rrfK = opts.rrfK ?? RRF_K;
   assertPositive(rrfK, "rrfK");
+  if (
+    opts.limit !== undefined &&
+    !(Number.isInteger(opts.limit) && opts.limit >= 0)
+  ) {
+    throw new ValidationError("limit must be a non-negative integer", {
+      received: opts.limit,
+    });
+  }
   const fused = new Map<number, number>();
   for (const leg of legs) {
     assertPositive(leg.weight, "RRF leg weight");

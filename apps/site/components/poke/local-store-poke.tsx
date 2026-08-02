@@ -137,6 +137,15 @@ export function fuseSample(
   docs: readonly SampleDoc[],
   opts: { rrfK: number; ftsWeight: number; includeVector: boolean },
 ): FusedHit[] {
+  // Guarded here under its OWN name, the same shape @caisson/local-store's `hybridSearch`
+  // validates ftsWeight before it ever reaches `fuseByRrf` (store.ts) — so a bad value in this
+  // demo throws the exact same message a real caller would see, not `fuseByRrf`'s internal
+  // "RRF leg weight" wording.
+  if (!Number.isFinite(opts.ftsWeight) || opts.ftsWeight <= 0) {
+    throw new ValidationError("ftsWeight must be a positive finite number", {
+      received: opts.ftsWeight,
+    });
+  }
   const leg = (key: "vecRank" | "ftsRank", weight: number): RrfLeg => {
     const ranks = new Map<number, number>();
     docs.forEach((doc, i) => {
