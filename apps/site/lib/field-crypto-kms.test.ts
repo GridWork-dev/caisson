@@ -446,7 +446,9 @@ describe("site KMS request context", () => {
         100,
       ),
     ).rejects.toThrow(/proving query shape/);
-    const config = queries.findLast(({ sql }) => sql.includes("set_config"));
+    const config = [...queries]
+      .reverse()
+      .find(({ sql }) => sql.includes("set_config"));
     const configured = Number.parseInt(
       String(config?.params?.[0]).replace("ms", ""),
       10,
