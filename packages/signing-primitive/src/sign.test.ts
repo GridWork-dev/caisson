@@ -24,10 +24,12 @@ import {
 import {
   Ed25519Signer,
   StubTimestampAuthority,
+  type EvidenceSignature,
   evidenceSignablePayload,
   signEvidencePack,
   signaturesEqual,
   timestampCountersignsSignature,
+  timestampCountersignsSignatureAsync,
   verifyEvidenceSignature,
 } from "./sign.ts";
 
@@ -265,6 +267,43 @@ describe("RFC-3161 countersignature — test-doubled, no live CI call (TM-M)", (
       manifest,
     );
     expect(timestampCountersignsSignature(token, other)).toBe(false);
+  });
+
+  // The ./browser entry (ADR-0396) cannot use the sync node:crypto path, so portable.ts adds an
+  // async WebCrypto twin. Two implementations of one rule only stay honest if their verdicts are
+  // pinned equal — including on the fail-closed branches, where a twin that threw instead of
+  // returning false would hand a client a crash where the node path hands it a `false`.
+  test("the async browser twin returns the same verdict as the node path, every branch", async () => {
+    const manifest = goldenManifest();
+    const sig = await signEvidencePack(
+      new Ed25519Signer(TENANT_KEY_ID, TENANT_SEED),
+      manifest,
+      {
+        timestampAuthority: new StubTimestampAuthority({
+          now: new Date("2026-06-27T12:00:00.000Z"),
+        }),
+      },
+    );
+    const token = sig.timestamp;
+    if (token === undefined) throw new Error("expected a timestamp token");
+    const other = await signEvidencePack(
+      new Ed25519Signer("tenant-b/v1", OTHER_SEED),
+      manifest,
+    );
+    const cases: readonly EvidenceSignature[] = [
+      sig,
+      other,
+      { ...sig, signature: "zz" },
+      { ...sig, signature: "abc" },
+      { ...sig, signature: "" },
+    ];
+    for (const candidate of cases) {
+      expect(await timestampCountersignsSignatureAsync(token, candidate)).toBe(
+        timestampCountersignsSignature(token, candidate),
+      );
+    }
+    // …and the shared verdict is not uniformly false, which would make the loop vacuous.
+    expect(timestampCountersignsSignature(token, sig)).toBe(true);
   });
 });
 
