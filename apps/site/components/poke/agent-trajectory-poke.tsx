@@ -327,7 +327,7 @@ export function verdictLine(r: ReplayResult, state: PokeState): VerdictLine {
 
 // --- Display helpers (poke-local presentation) ---------------------------------------------------
 
-/** Short display form of a digest (mirrors audit-worm-logic.ts's `shortHash`). */
+/** Short display form of a digest (matches audit-worm-poke.tsx's presentation helper). */
 export function shortDigest(digest: string): string {
   return `${digest.slice(0, 6)}…${digest.slice(-4)}`;
 }
