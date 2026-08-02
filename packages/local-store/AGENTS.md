@@ -32,6 +32,13 @@ skipped when no `queryVector` is given and is caught-and-skipped on a backend fa
 whenever `queryText` is non-empty. The canonical fused ordering is golden-pinned at
 `src/__golden__/rrf-ranking.json`.
 
+The fusion arithmetic itself lives in `src/rrf.ts` (`fuseByRrf`) — pure, database-free, and the ONE
+implementation `hybridSearch` fuses its two legs through. Never re-derive the formula at a call
+site. It is also the whole of the `./browser` entry point: a client bundle imports `./browser` for
+`fuseByRrf`/`RRF_K` and never `.`. A module joins `./browser` only if its whole value graph passes
+the package's static source-graph walk (`src/browser-safety.test.ts`) — which no module touching
+`bun:sqlite` or `sqlite-vec` ever will — and every `./browser` name must also exist on `.`.
+
 ## Isolation (ADR-0073)
 
 One SQLite DB file per tenant — the resolved path is the boundary, so a cross-tenant read is not even

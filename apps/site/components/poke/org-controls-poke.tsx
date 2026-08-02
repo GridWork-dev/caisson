@@ -1,30 +1,105 @@
 "use client";
 
-// The org-controls module's poke (ADR-0378 lock 2, kimi CANDIDATES §B "org-controls") — a live,
-// deterministic run of the package's owner-only membership gate. Every function driving this
-// component is the pure mirror in `org-controls-logic.ts` (see that file's header for why the real
-// package isn't imported directly into a client bundle, and for the one function that IS a real
-// import). Nothing here fetches, persists, or measures the visitor.
+// The org-controls module's poke (ADR-0378 lock 2) — a live run of the package's REAL owner-only
+// membership gate. The hand-ported mirror (org-controls-logic.ts) is deleted (ADR-0396):
+// `assertCanManageMembers` is imported from `@caisson/org-controls/browser`, the entry point that
+// exists precisely so a client bundle can hold the gate without the package's `pg`-bound member
+// writes or its `@clerk/backend` verifier. The audit hash is likewise the real
+// `hashChainLinkAsync`. What stays local below is sample data and presentation composition only —
+// nothing here fetches, persists, measures the visitor, or reads the clock in a rendered path.
 import { useEffect, useId, useMemo, useState } from "react";
 import { Radio, StatusChip } from "@caisson/ui/components";
+import { AuthzError } from "@caisson/kernel";
+import { hashChainLinkAsync } from "@caisson/kernel/audit-verify";
+import { assertCanManageMembers } from "@caisson/org-controls/browser";
+import type { Role } from "@caisson/auth";
 
 import { PokeShell, Verdict } from "./poke-rig";
-import {
-  SAMPLE_ACCOUNT_ID,
-  SAMPLE_NEW_USER_ID,
-  buildAuditEntry,
-  buildMemberRow,
-  checkManageMembers,
-} from "./org-controls-logic";
-import type { AuditChainRow, Role } from "./org-controls-logic";
 import styles from "./org-controls-poke.module.css";
 
 const ROLES: readonly Role[] = ["owner", "seat"];
 
+export type RoleGateVerdict =
+  | { readonly allowed: true }
+  | { readonly allowed: false; readonly error: AuthzError };
+
+/**
+ * Presentation adapter: run the REAL gate and turn its throw into something renderable. Every
+ * `addAccountMember` / `removeAccountMember` call runs this same function first, unconditionally —
+ * the code/httpStatus/message shown are the thrown `AuthzError`'s own, not a transcription. A
+ * non-authz throw is re-raised rather than rendered as a denial.
+ */
+export function runGate(actorRole: Role): RoleGateVerdict {
+  try {
+    assertCanManageMembers(actorRole);
+    return { allowed: true };
+  } catch (err) {
+    if (!(err instanceof AuthzError)) throw err;
+    return { allowed: false, error: err };
+  }
+}
+
+/** The shape `account_member` (packages/auth/src/schema.ts `ACCOUNT_MEMBER_SCHEMA_SQL`) carries. */
+export interface AccountMemberRow {
+  readonly account_id: string;
+  readonly user_id: string;
+  readonly role: Role;
+  readonly created_at: string;
+}
+
+/** Sample account this demo adds a seat to. Labeled as a sample in the UI, never a real account. */
+export const SAMPLE_ACCOUNT_ID = "acct_sample";
+/** Sample user id an owner is adding as a seat. */
+export const SAMPLE_NEW_USER_ID = "user_sample_new";
+/**
+ * A FIXED stand-in for the real INSERT's `created_at timestamptz NOT NULL DEFAULT now()` — this demo
+ * never calls the clock, so the row shown is reproducible on every render.
+ */
+export const SAMPLE_CREATED_AT = "2026-01-01T00:00:00.000Z";
+/** Matches `addAccountMember`'s own default for its `role` parameter. */
+const DEFAULT_ADDED_ROLE: Role = "seat";
+
+/**
+ * Sample data, not package logic: the row `addAccountMember`'s `INSERT INTO account_member
+ * (account_id, user_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING` would write over the
+ * sample inputs above. The real function needs a `Transactor` — a database session a static site
+ * does not have — so the poke shows its input row rather than pretending to run the write.
+ */
+export function buildMemberRow(): AccountMemberRow {
+  return {
+    account_id: SAMPLE_ACCOUNT_ID,
+    user_id: SAMPLE_NEW_USER_ID,
+    role: DEFAULT_ADDED_ROLE,
+    created_at: SAMPLE_CREATED_AT,
+  };
+}
+
+/** One link of a kernel audit chain (kernel/canonical.ts `AuditChainEntry`'s public shape). */
+export interface AuditChainRow {
+  readonly seq: number;
+  readonly prevHash: string | null;
+  readonly payload: AccountMemberRow;
+  readonly hash: string;
+}
+
+/**
+ * This demo's own first (genesis) chain entry over `row` — real `hashChainLinkAsync` (WebCrypto
+ * SHA-256). `seq`/`prevHash` follow kernel `chainEntry`'s genesis case (`prev === null` → `seq: 0`,
+ * `prevHash: null`); that arithmetic is the only part not imported (`chainEntry` itself lives in
+ * the node-tainted `audit-chain.ts`, unreachable here).
+ */
+export async function buildAuditEntry(
+  row: AccountMemberRow,
+): Promise<AuditChainRow> {
+  const prevHash: string | null = null;
+  const hash = await hashChainLinkAsync(prevHash, { ...row });
+  return { seq: 0, prevHash, payload: row, hash };
+}
+
 export default function OrgControlsPoke() {
   const uid = useId();
   const [role, setRole] = useState<Role>("owner");
-  const verdict = useMemo(() => checkManageMembers(role), [role]);
+  const verdict = useMemo(() => runGate(role), [role]);
   const memberRow = useMemo(() => buildMemberRow(), []);
   const [auditRow, setAuditRow] = useState<AuditChainRow | null>(null);
 

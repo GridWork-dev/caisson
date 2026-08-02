@@ -1,50 +1,122 @@
 "use client";
 
 // The local-privacy module's poke (ADR-0378 lock 2) — a live, deterministic run of the package's
-// fail-closed egress decision (`EgressGuard.assertAllowed`) against the two real policy shapes the
-// module ships: the air-gap default (`ZERO_EGRESS_POLICY`) and a policy with the real on-device
-// model-fetch host allowlisted. Every function driving this component is the pure mirror in
-// `local-privacy-logic.ts` (see that file's header for why the real package isn't imported directly
-// into a client bundle). Nothing here fetches, persists, or measures the visitor.
+// fail-closed egress decision against the two real policy shapes the module ships: the air-gap
+// default (`ZERO_EGRESS_POLICY`) and a policy with the on-device model-fetch host allowlisted.
+//
+// This component drives the REAL @caisson/local-privacy (ADR-0396): the hand-ported mirror
+// (local-privacy-logic.ts) is deleted, and `EgressGuard.assertAllowed` / `sinkKindFor` make every
+// decision rendered below. The mirror's justifying header — that the package's `@caisson/kernel`
+// import drags node builtins into a client bundle — is retracted: that barrel has been browser-safe
+// since the ./node split, so the package's whole `.` barrel walks clean and needs no `./browser`
+// entry. Proven by the STATIC SOURCE-GRAPH WALK in local-privacy-poke.test.ts, never by a build —
+// a bundler does not fail on a node builtin, it substitutes a polyfill and exits 0.
+//
+// What stays poke-local: the sample hosts, the two policy choices, and the render-shape adapter
+// around a THROWING guard. Nothing here fetches, persists, or measures the visitor.
 import { Fragment, useId, useMemo, useState } from "react";
 import { Radio, StatusChip } from "@caisson/ui/components";
-
-import { PokeShell, Verdict } from "./poke-rig";
+import { InternalError, isCaissonError } from "@caisson/kernel";
 import {
-  MODEL_FETCH_HOST,
-  MODEL_FETCH_POLICY,
   SANCTIONED_SINK_KINDS,
   ZERO_EGRESS_POLICY,
-  evaluateEgress,
-} from "./local-privacy-logic";
-import type { PrivacyPolicy } from "./local-privacy-logic";
+  createEgressGuard,
+  localOnlyPolicy,
+} from "@caisson/local-privacy";
+import type { EgressGuard, SanctionedSinkKind } from "@caisson/local-privacy";
+
+import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./local-privacy-poke.module.css";
 
-// A real host from the module's own test suite (egress-guard.test.ts), labeled as a sample below —
-// the external host the allowlist is meant to keep out.
-const SAMPLE_BLOCKED_HOST = "evil.example.com";
+/**
+ * The real sanctioned model-fetch host (@caisson/local-inference's `DEFAULT_ONNX_MODEL.modelHost`)
+ * — the actual first-run download host the on-device backend allowlists, not a fabricated example.
+ * Restated here as poke sample data because the inference package's barrel is node-bound; the poke
+ * test pins it against the real constant so a drift fails.
+ */
+export const MODEL_FETCH_HOST = "huggingface.co";
 
-type PolicyKey = "zero" | "model-fetch";
-type Scheme = "https" | "http";
+/** A real host from the module's own test suite — the external host the allowlist keeps out. */
+export const SAMPLE_BLOCKED_HOST = "evil.example.com";
 
-const POLICIES: Record<PolicyKey, PrivacyPolicy> = {
-  zero: ZERO_EGRESS_POLICY,
-  "model-fetch": MODEL_FETCH_POLICY,
+export type PolicyKey = "zero" | "model-fetch";
+
+/** The two sample policies, each behind a REAL guard (constructed once; it re-parses the policy). */
+export const POKE_GUARDS: Readonly<Record<PolicyKey, EgressGuard>> = {
+  zero: createEgressGuard(ZERO_EGRESS_POLICY),
+  "model-fetch": createEgressGuard(
+    localOnlyPolicy([{ host: MODEL_FETCH_HOST, kind: "model-fetch" }]),
+  ),
 };
+
 const POLICY_LABELS: Record<PolicyKey, string> = {
   zero: "ZERO_EGRESS_POLICY (allowlist empty)",
   "model-fetch": `localOnlyPolicy([{ host: "${MODEL_FETCH_HOST}", kind: "model-fetch" }])`,
 };
 
+export type EgressVerdict =
+  | {
+      readonly outcome: "allowed";
+      readonly url: string;
+      readonly host: string;
+      readonly kind: SanctionedSinkKind;
+    }
+  | {
+      readonly outcome: "blocked";
+      readonly error: {
+        readonly code: string;
+        readonly httpStatus: number;
+        readonly message: string;
+        readonly details?: Record<string, unknown>;
+      };
+    };
+
+/**
+ * Presentation adapter only: `assertAllowed` THROWS a fail-closed `CaissonError`, and React renders
+ * values. Every decision below belongs to the guard — the scheme check, the allowlist lookup, and
+ * the sanctioned-kind naming (`sinkKindFor`). A non-Caisson throw is re-raised rather than rendered
+ * as a block, so a real bug can never masquerade as the fail-closed path.
+ */
+export function egressVerdict(
+  guard: EgressGuard,
+  input: string,
+): EgressVerdict {
+  let url: URL;
+  try {
+    url = guard.assertAllowed(input);
+  } catch (err) {
+    if (!isCaissonError(err)) throw err;
+    return {
+      outcome: "blocked",
+      error: {
+        code: err.code,
+        httpStatus: err.httpStatus,
+        message: err.message,
+        ...(err.details === undefined ? {} : { details: err.details }),
+      },
+    };
+  }
+  const host = url.hostname.toLowerCase();
+  const kind = guard.sinkKindFor(host);
+  if (kind === undefined) {
+    // Unreachable: assertAllowed only returns for a host already on the guard's map. Fail loud
+    // rather than render an allowed verdict with no sanctioned reason attached.
+    throw new InternalError(
+      "egress guard allowed a host with no sanctioned kind",
+    );
+  }
+  return { outcome: "allowed", url: url.href, host, kind };
+}
+
 export default function LocalPrivacyPoke() {
   const uid = useId();
   const [host, setHost] = useState(MODEL_FETCH_HOST);
-  const [scheme, setScheme] = useState<Scheme>("https");
+  const [scheme, setScheme] = useState<"https" | "http">("https");
   const [policyKey, setPolicyKey] = useState<PolicyKey>("zero");
 
   const testedUrl = `${scheme}://${host.trim()}/model.onnx`;
   const verdict = useMemo(
-    () => evaluateEgress(testedUrl, POLICIES[policyKey]),
+    () => egressVerdict(POKE_GUARDS[policyKey], testedUrl),
     [testedUrl, policyKey],
   );
 
@@ -106,7 +178,7 @@ export default function LocalPrivacyPoke() {
             Privacy policy (PrivacyPolicy)
           </legend>
           <div className={styles.optionRow}>
-            {(Object.keys(POLICIES) as PolicyKey[]).map((key) => (
+            {(Object.keys(POKE_GUARDS) as PolicyKey[]).map((key) => (
               <Radio
                 key={key}
                 name={`${uid}-policy`}

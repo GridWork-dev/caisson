@@ -7,6 +7,7 @@ import {
   mapBuyerCrosswalk,
   parseTenantEvidenceProxyConfig,
   TenantEvidenceProxyError,
+  type TenantProofResponse,
 } from "./tenant-evidence.ts";
 import {
   assertTenantEvidenceScope,
@@ -45,7 +46,7 @@ const PROOF = {
   redacted: true,
   redactedPaths: ["token"],
   chainLength: 5,
-} as const;
+} satisfies TenantProofResponse;
 
 function realManifest() {
   return parseEvidencePackManifest({

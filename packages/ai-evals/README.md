@@ -50,6 +50,16 @@ const gate = gateAgainstBaseline("__evals__/baseline.json", [run]);
 if (!gate.passed) throw new Error("eval regressed past its committed baseline");
 ```
 
+## Entry points
+
+- `.` — the full surface, node-capable (the harness, the graders, and the baseline file's
+  load/save transport).
+- `./browser` — the browser-safe subset: the gate's rules with no file I/O. The baseline boundary
+  schema, `compareToBaseline`, `assertRunEligibleForBaseline`, the BLESS merge
+  (`mergeIntoBaseline`), and `wilsonLowerBound`. Import it to show or check a comparison in a
+  client bundle; `gateAgainstBaseline` stays on `.` because it reads and writes the committed file.
+  Every name on `./browser` is also on `.`.
+
 ## Test
 
 ```sh

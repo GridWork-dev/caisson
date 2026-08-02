@@ -16,6 +16,15 @@ agent run must know to wire tool execution correctly.
 - **`reason` is caller intent, not a diagnostic.** It is carried through unmodified onto the
   provenance record; it never affects allowlist or schema decisions.
 
+## Entry points
+
+Two: `.` is the full node-capable surface; `./browser` is the browser-safe subset —
+`createToolProposer` (`src/propose.ts`), the default-deny lookup + `parseStrict` validation with no
+spawn seam. `createToolExec` delegates to that same module, so there is exactly one implementation
+of the gate. A client bundle imports `./browser`, never `.`; a module joins `./browser` only if its
+whole graph passes the package's static source-graph walk (`src/browser-safety.test.ts`), and every
+`./browser` name must also exist on `.`.
+
 ## Choosing an allowlist entry
 
 Each `CommandSpec` binds one logical `name` to exactly one real `command` (an absolute path or a
