@@ -165,8 +165,12 @@ describe("the poke reproduces the package's shipped cost golden", () => {
     ),
   );
 
+  // `expect<number>(...)` on every branded receiver, the same widening @caisson/kernel's own
+  // money.test.ts uses: the package's money values carry MicroUsd/Credits/MicroUsdPerCredit brands,
+  // the golden fixture is plain parsed JSON, and bun:test infers the matcher's type from the
+  // receiver. Without the widening this file is six tsc errors that `bun test` cannot see.
   test("the conversion the poke meters through is the shipped one", () => {
-    expect(CREDIT_CONVERSION.microUsdPerCredit).toBe(
+    expect<number>(CREDIT_CONVERSION.microUsdPerCredit).toBe(
       golden.creditConversion.microUsdPerCredit,
     );
   });
@@ -179,11 +183,11 @@ describe("the poke reproduces the package's shipped cost golden", () => {
         entryFor(priceKey(c.provider, c.model)),
         CREDIT_CONVERSION,
       );
-      expect(cost.costMicroUsd).toBe(c.expected.costMicroUsd);
-      expect(cost.credits).toBe(c.expected.credits);
-      expect(creditsForMicroUsd(cost.costMicroUsd, CREDIT_CONVERSION)).toBe(
-        c.expected.credits,
-      );
+      expect<number>(cost.costMicroUsd).toBe(c.expected.costMicroUsd);
+      expect<number>(cost.credits).toBe(c.expected.credits);
+      expect<number>(
+        creditsForMicroUsd(cost.costMicroUsd, CREDIT_CONVERSION),
+      ).toBe(c.expected.credits);
     },
   );
 
@@ -197,8 +201,8 @@ describe("the poke reproduces the package's shipped cost golden", () => {
       entryFor(SAMPLE_MODEL),
       CREDIT_CONVERSION,
     );
-    expect(cost.costMicroUsd).toBe(1680);
-    expect(cost.credits).toBe(2);
+    expect<number>(cost.costMicroUsd).toBe(1680);
+    expect<number>(cost.credits).toBe(2);
   });
 
   test("the poke's chrome label carries the package's own price-book version", () => {

@@ -14,6 +14,42 @@
 //   - dedup.ts — pure and it WOULD pass the walk, but no browser consumer needs it; ADR-0396's
 //     admission rule is need-plus-walk, not walk alone.
 // ponytail: dedup stays off until a consumer needs it browser-side — the walk is one line away.
-export * from "./contracts.ts";
-export * from "./pricebook.ts";
-export * from "./estimate.ts";
+// Keep this list explicit, matching the `.` barrel: `export *` would silently admit a new type-only
+// name here while the runtime subset test stayed green (types disappear from `Object.keys`).
+export { DEFAULT_SCOPE, SpendCapError } from "./contracts.ts";
+export type { BreakerState, BreakerStatus } from "./contracts.ts";
+
+export {
+  BUNDLED_PRICE_BOOK,
+  CREDIT_CONVERSION,
+  PRICE_BOOK_VERSION,
+  priceBookEntrySchema,
+  priceBookSchema,
+  creditConversionSchema,
+  usageSchema,
+  priceKey,
+  resolvePriceEntry,
+  computeCost,
+  creditsForMicroUsd,
+  parsePriceBook,
+  parseCreditConversion,
+} from "./pricebook.ts";
+export type {
+  PriceBook,
+  PriceBookEntry,
+  CreditConversion,
+  Usage,
+  CostBreakdown,
+} from "./pricebook.ts";
+
+export {
+  CHARS_PER_TOKEN,
+  DEFAULT_OUTPUT_TOKENS,
+  estimateMessageSchema,
+  estimateMessagesSchema,
+  estimateTokens,
+  estimateInputTokens,
+  estimateUsage,
+  estimateCost,
+} from "./estimate.ts";
+export type { EstimateMessage } from "./estimate.ts";
