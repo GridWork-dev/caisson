@@ -19,9 +19,17 @@ export {
   expiringSoon,
   sweepExpiredGrants,
   sweepExpiryNotices,
-  GRANT_EVENT_TYPES,
-  DEBIT_EVENT_TYPES,
 } from "./credits.ts";
+// The pure half, also published as `@caisson/credits/browser` (ADR-0396) — same names, same
+// values; `.` keeps the complete surface.
+export { GRANT_EVENT_TYPES, DEBIT_EVENT_TYPES, planFifoDebit } from "./fifo.ts";
+export type {
+  GrantEventType,
+  DebitEventType,
+  GrantRemainder,
+  FifoDraw,
+  FifoDebitPlan,
+} from "./fifo.ts";
 export type {
   GrantInput,
   DebitInput,
@@ -29,8 +37,6 @@ export type {
   ClawbackInput,
   ClawbackResult,
   LineCreditLedger,
-  GrantEventType,
-  DebitEventType,
   LedgerEntry,
   ExpiringSoon,
   ExpirySweepResult,
