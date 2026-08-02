@@ -1,12 +1,12 @@
 // Deterministic client-side mirror of @caisson/prompt-registry's alias-move mechanic (ADR-0061,
 // ADR-0378 lock 2) for the "Alias mover" poke. The real registerPrompt()/getVersion()/setAlias()
 // (packages/prompt-registry/src/registry.ts) all take a @caisson/tenancy-rls `TenantExecutor` and
-// run SQL against prompt_version / prompt_alias; they also import from the `@caisson/kernel` barrel
-// (NotFoundError, currentVersions, versionChain) which itself pulls node:crypto (crypto.ts) and
-// node:dns (ssrf.ts) — none of that resolves in a browser bundle, exactly the constraint
-// audit-worm-logic.ts documents for its own kernel barrel dependency. So the pure alias-move
-// semantics are mirrored here by hand and pinned in prompt-registry-logic.test.ts, which imports the
-// REAL @caisson/prompt-registry + @caisson/kernel packages under bun and runs the real DB-bound
+// run SQL against prompt_version / prompt_alias. The package barrel also exports schema.ts, whose
+// value edge into @caisson/tenancy-rls reaches the Postgres driver, so that barrel cannot enter a
+// browser bundle — the same barrel-versus-safe-entry constraint documented by audit-worm-poke.tsx.
+// The pure alias-move semantics are mirrored here by hand and pinned in
+// prompt-registry-logic.test.ts, which imports the REAL @caisson/prompt-registry + @caisson/kernel
+// packages under bun and runs the real DB-bound
 // registerPrompt()/setAlias()/getVersion() on PGlite (@caisson/testing), asserting this mirror's
 // observable outcomes are identical.
 //

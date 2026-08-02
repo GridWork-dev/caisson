@@ -33,7 +33,10 @@ import {
   type CrosswalkVerification,
   type Framework,
   type RegimeCrosswalk,
-} from "@caisson/frameworks-pack";
+  // The browser entry, not the `.` barrel (ADR-0396): `isVerificationStale` is the one VALUE
+  // import here, and the specifier is what keeps this module (and everything that imports it)
+  // free of frameworks-pack's node-only half. Same module behind both specifiers.
+} from "@caisson/frameworks-pack/browser";
 import type { CollectorResult } from "./collector.ts";
 
 /** Per-control coverage status for a single pack run — mirrors the manifest's readiness derivation

@@ -19,6 +19,10 @@ export * from "./evidence/crosswalk-rollup.ts";
 
 // --- Canonical pack format + deterministic generator. -------------------------------------------
 export * from "./evidence/pack-format.ts";
+// The node-free assembly half (flag-never-guess refusal + derived canonical body, ADR-0396) —
+// `EvidencePackBlockedError` and `EvidenceControlPlan` keep their names here; `generate.ts` composes
+// this module and owns only the archive/digest phase.
+export * from "./evidence/assemble.ts";
 export * from "./evidence/generate.ts";
 // External-anchor grade tag + detached-receipt attachment (SPEC external-anchoring §6).
 export * from "./evidence/external-anchor.ts";
