@@ -225,13 +225,20 @@ function normalizeText(value: string): string {
   return value.replace(/\s+/gu, " ").trim().toLocaleLowerCase("en-US");
 }
 
+// htmlparser2 v12 tokenizes these legacy elements as raw text. Their contents are not evidence for
+// the surrounding page, and exposing their literal nested markup would corrupt phrase matching.
 const NON_VISIBLE_HTML_TAGS = new Set([
   "head",
+  "iframe",
   "input",
+  "noembed",
+  "noframes",
   "noscript",
+  "plaintext",
   "script",
   "style",
   "template",
+  "xmp",
 ]);
 
 function hasHiddenStyle(style: string | undefined): boolean {
@@ -256,7 +263,8 @@ function isNonVisibleElement(
   );
 }
 
-function extractVisibleHtmlText(markup: string): string {
+/** Exported so parser-major behavior can be pinned against exact extracted text. */
+export function extractVisibleHtmlText(markup: string): string {
   const chunks: string[] = [];
   let nonVisibleDepth = 0;
   const parser = new Parser(
@@ -644,11 +652,27 @@ export async function runRegulatoryClaimWatch(
         }
 
         const decodedBody = new TextDecoder().decode(snapshot.body);
-        const body =
+        const isHtml =
           contentType.includes("text/html") ||
-          contentType.includes("application/xhtml+xml")
-            ? extractVisibleHtmlText(decodedBody)
-            : decodedBody;
+          contentType.includes("application/xhtml+xml");
+        const body = isHtml ? extractVisibleHtmlText(decodedBody) : decodedBody;
+        // A malformed raw-text element can consume the remainder of the document before the
+        // handler sees any later tags. Classify that parser limitation explicitly instead of
+        // misreporting every declared anchor as missing.
+        if (
+          isHtml &&
+          decodedBody.trim().length > 0 &&
+          normalizeText(body) === ""
+        ) {
+          findings.push({
+            kind: "manual-review",
+            targetId: target.id,
+            route: target.route,
+            sourceUrl: source.url,
+            detail: `Source returned ${String(snapshot.body.length)} bytes of HTML but no visible text could be extracted, so no watch text could be checked; confirm locator "${source.locator}" manually.`,
+          });
+          continue;
+        }
         const watchTexts =
           source.watch?.mode === "text" ? source.watch.texts : [source.locator];
         // A degenerate watch list asserts NOTHING while still incrementing `checkedSources`, so the
