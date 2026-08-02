@@ -174,6 +174,13 @@ describe("the deny path fails closed with the kernel's real error", () => {
     );
   });
 
+  test.each(["other-prompt", "other-prompt@prod", "other-prompt@3"])(
+    "an unknown prompt name is a 404 for every selector kind: %s",
+    (ref) => {
+      expect(() => resolveRef(initialState(), ref)).toThrow(NotFoundError);
+    },
+  );
+
   test("a denied move leaves the pointer untouched but still logs the attempt", () => {
     const s = moveAlias(initialState(), NEVER_MINTED_VERSION);
     expect(aliasVersion(s)).toBe(aliasVersion(initialState()));
