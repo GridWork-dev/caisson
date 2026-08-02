@@ -800,6 +800,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "Prompt registry is a package that stores prompt templates as append-only versions and resolves them by name@version or name@alias. Every edit mints a new row instead of mutating one (the database revokes UPDATE and DELETE outright) and a mutable alias pointer (prod, canary) lets you promote a prompt to production without a redeploy or touching a version row.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/prompt-registry/browser inside a client bundle for name@version addressing and the injection-safe render boundary with its strict variable schemas. The registry functions and the schema stay off that entry on purpose, each takes a TenantExecutor and runs SQL, so tenant isolation stays on the server. The main entry keeps the full surface, and every browser-entry export is also on it.",
+      },
+      {
         title: "Append-only versioning, not a mutable prompts table",
         body: "registerPrompt derives the current tip from the kernel's versioning chain and supersedes it, the first call to a name is v1, each later call is tip.version + 1. A concurrent mint of the same (name, version) hits the unique index and throws ConflictError instead of silently overwriting.",
       },
