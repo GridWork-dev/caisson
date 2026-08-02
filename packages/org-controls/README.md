@@ -22,3 +22,11 @@ Apache-2.0 substrate stays as small as the org features allow:
   surfaces (e.g. `/dashboard/members`).
 
 Composes DOWN onto `@caisson/auth`, `@caisson/tenancy-rls`, and `@caisson/kernel` (commercial → open).
+
+## Entry points
+
+- `.` — the full surface, server-side (the SSO/Clerk transports and the tenant-scoped member
+  writes all need a network or a database session).
+- `./browser` — `assertCanManageMembers` alone, safe inside a client bundle, so a UI can render the
+  same owner gate the server enforces instead of re-implementing it. Every name on `./browser` is
+  also on `.`.
