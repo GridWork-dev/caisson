@@ -11,9 +11,9 @@
 //      `EvidencePackBlockedError` with a Zod-validated report, and a clean board yields a manifest
 //      the real pack-format schema accepted, with readiness DERIVED per control.
 //   4. The two poke-local cards (chain-verify, field-crypto-policy — both excluded from the browser
-//      entry for a node dependency) are pinned against the real primitives they stand in for: the
-//      sample envelope round-trips through the REAL `parseEnvelope`, and the sample chain's link
-//      hashes are the real WebCrypto ones.
+//      entry for a node dependency) are pinned against the real collectors they stand in for,
+//      including card identity and complete evidence output. The lower-level envelope and link-hash
+//      pins remain as positive controls for the browser-safe primitives used to build the same facts.
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
@@ -21,20 +21,28 @@ import { ALG_AES_256_GCM, parseEnvelope } from "@caisson/field-crypto";
 import { hashChainLink } from "@caisson/kernel/node";
 import { soc2Tsc } from "@caisson/frameworks-pack/browser";
 import {
+  chainVerifyCollector,
+  fieldCryptoPolicyCollector,
+} from "@caisson/compliance-core";
+import {
   EvidencePackBlockedError,
   rlsForceCollector,
 } from "@caisson/compliance-core/browser";
 
 import {
   CARDS,
+  FIELD_CRYPTO_PRESETS,
   PRESET_ORDER,
   SAMPLE_ENCRYPTED_ENVELOPE,
   SAMPLE_TENANT_ID,
   buildControlPlans,
   buildEvidencePack,
   buildSampleChain,
+  chainAnchorFor,
   collectChainVerify,
+  collectFieldCryptoPolicy,
   collectSync,
+  generateFailureOutcome,
   looksEncryptedAtRest,
   manifestChainAnchor,
   type PresetKind,
@@ -113,6 +121,22 @@ describe("the cards are the real collectors, on real controls", () => {
     expect(CARDS.rlsForce.title).toBe(real.title);
   });
 
+  test("the two poke-local card identities track their real node collectors", () => {
+    const chain = chainVerifyCollector({
+      controlId: CARDS.chainVerify.controlId,
+    });
+    expect(CARDS.chainVerify.id).toBe(chain.id);
+    expect(CARDS.chainVerify.controlId).toBe(chain.controlId);
+    expect(CARDS.chainVerify.title).toBe(chain.title);
+
+    const fieldCrypto = fieldCryptoPolicyCollector({
+      controlId: CARDS.fieldCryptoPolicy.controlId,
+    });
+    expect(CARDS.fieldCryptoPolicy.id).toBe(fieldCrypto.id);
+    expect(CARDS.fieldCryptoPolicy.controlId).toBe(fieldCrypto.controlId);
+    expect(CARDS.fieldCryptoPolicy.title).toBe(fieldCrypto.title);
+  });
+
   test("every card evidences a control that really exists in the SOC 2 pack", () => {
     const packIds = new Set(soc2Tsc.controls.map((c) => c.id));
     for (const card of Object.values(CARDS)) {
@@ -138,9 +162,12 @@ describe("the cards are the real collectors, on real controls", () => {
     expect(logical?.evidence).toHaveLength(2);
     for (const plan of plans) {
       const control = soc2Tsc.controls.find((c) => c.id === plan.controlId);
-      expect(plan.title).toBe(control?.title ?? "");
-      expect(plan.statement).toBe(control?.statement ?? "");
-      expect(plan.crosswalk).toBe(control?.crosswalk);
+      if (control === undefined) {
+        throw new Error(`no such control: ${plan.controlId}`);
+      }
+      expect(plan.title).toBe(control.title);
+      expect(plan.statement).toBe(control.statement);
+      expect(plan.crosswalk).toBe(control.crosswalk);
     }
   });
 });
@@ -164,6 +191,21 @@ describe("generate runs the package's real assembly", () => {
     for (const u of blocked.report.unresolved) {
       expect(u.reason.length).toBeGreaterThan(0);
     }
+    expect(generateFailureOutcome(blocked)).toEqual({
+      state: "fail",
+      pack: null,
+      blocked,
+    });
+  });
+
+  test("an unexpected assembly error becomes a generic visible failure outcome", () => {
+    expect(
+      generateFailureOutcome(new Error("internal control-map detail")),
+    ).toEqual({
+      state: "fail",
+      pack: null,
+      blocked: null,
+    });
   });
 
   test("one unresolved collector blocks the WHOLE pack, not just its control", async () => {
@@ -219,6 +261,29 @@ describe("generate runs the package's real assembly", () => {
 });
 
 describe("the two poke-local cards are pinned to the real primitives", () => {
+  test("field-crypto output is identical to the real collector for every preset", () => {
+    const real = fieldCryptoPolicyCollector({
+      controlId: CARDS.fieldCryptoPolicy.controlId,
+    });
+    for (const preset of PRESET_ORDER) {
+      expect(collectFieldCryptoPolicy(preset)).toEqual(
+        real.collect({ fields: FIELD_CRYPTO_PRESETS[preset] }),
+      );
+    }
+  });
+
+  test("chain-verify output is identical to the real collector for every preset", async () => {
+    const real = chainVerifyCollector({
+      controlId: CARDS.chainVerify.controlId,
+    });
+    const entries = await buildSampleChain();
+    for (const preset of PRESET_ORDER) {
+      expect(await collectChainVerify(preset)).toEqual(
+        real.collect({ entries, anchor: await chainAnchorFor(preset) }),
+      );
+    }
+  });
+
   test("the sample envelope is a real AES-256-GCM field-crypto envelope", () => {
     const parsed = parseEnvelope(SAMPLE_ENCRYPTED_ENVELOPE);
     expect(parsed.algId).toBe(ALG_AES_256_GCM);
@@ -236,9 +301,14 @@ describe("the two poke-local cards are pinned to the real primitives", () => {
       expect(entry.hash).toBe(hashChainLink(entry.prevHash, entry.payload));
     }
     const anchor = await manifestChainAnchor();
+    const tip = entries.at(-1);
+    const genesis = entries[0];
+    if (tip === undefined || genesis === undefined) {
+      throw new Error("empty sample chain");
+    }
     expect(anchor.length).toBe(entries.length);
-    expect(anchor.tipHash).toBe(entries[entries.length - 1]?.hash);
-    expect(anchor.genesisHash).toBe(entries[0]?.hash);
+    expect(anchor.tipHash).toBe(tip.hash);
+    expect(anchor.genesisHash).toBe(genesis.hash);
   });
 
   test("a forged anchor tip is caught by the recompute, not waved through", async () => {

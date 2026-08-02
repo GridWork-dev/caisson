@@ -280,8 +280,9 @@ function chainTip(entries: readonly SampleChainEntry[]): SampleChainEntry {
 }
 
 /** The trusted anchor the sample chain is verified against. `flagged` deliberately pins a wrong tip
- *  (a stale or forged anchor); the entries themselves are always the real, consistent sample chain. */
-async function chainAnchorFor(
+ *  (a stale or forged anchor); the entries themselves are always the real, consistent sample chain.
+ *  Exported so the test can feed the SAME fact to the real `chainVerifyCollector`. */
+export async function chainAnchorFor(
   preset: PresetKind,
 ): Promise<SampleAnchor | null> {
   const entries = await buildSampleChain();
@@ -378,7 +379,7 @@ export async function collectChainVerify(
   return flaggedResult(
     {
       ...head,
-      summary: "audit chain failed verification against its anchor",
+      summary: "audit chain failed verification against its trusted anchor",
       facts,
     },
     `chain verification failed at index ${String(verification.brokenAt)}`,
@@ -395,6 +396,15 @@ const FIELD_CRYPTO_POLICY_ID = "substrate.field-crypto-policy";
 const FIELD_CRYPTO_POLICY_CONTROL_ID = "DATA-PROTECTION.ENCRYPTION";
 const FIELD_CRYPTO_POLICY_TITLE =
   "PHI fields encrypted at rest (per-tenant field-crypto)";
+/** The real collector invites a manual key-management attestation on every item; the card carries the
+ *  same slot, so what this feeds into the assembly is the real collector's output. Pinned in the test. */
+const FIELD_CRYPTO_POLICY_MANUAL_SLOTS = [
+  {
+    id: "encryption-key-management-policy",
+    label: "Encryption key-management / HSM custody policy",
+    required: false,
+  },
+];
 
 /** Envelope header layout: format-version(1) + alg-id(1) + key_version(2) + nonce(12) + ct + tag(16). */
 const ENVELOPE_FORMAT_VERSION = 0x01;
@@ -425,7 +435,8 @@ const PHI_FIELDS = [
   "patient.ssn",
 ] as const;
 
-const FIELD_CRYPTO_PRESETS: Readonly<
+/** Exported so the test can feed the SAME fact to the real `fieldCryptoPolicyCollector`. */
+export const FIELD_CRYPTO_PRESETS: Readonly<
   Record<PresetKind, readonly { field: string; storedValue: string | null }[]>
 > = {
   unresolved: [
@@ -450,7 +461,7 @@ export function collectFieldCryptoPolicy(preset: PresetKind): CollectorResult {
     collectorId: FIELD_CRYPTO_POLICY_ID,
     controlId: FIELD_CRYPTO_POLICY_CONTROL_ID,
     title: FIELD_CRYPTO_POLICY_TITLE,
-    manualSlots: [],
+    manualSlots: FIELD_CRYPTO_POLICY_MANUAL_SLOTS,
   };
   const byName = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
   const plaintextFields = fields
@@ -638,6 +649,14 @@ interface GenerateOutcome {
   readonly blocked: EvidencePackBlockedError | null;
 }
 
+/** Convert every rejected assembly into UI state. Unexpected details stay out of buyer-facing copy. */
+export function generateFailureOutcome(error: unknown): GenerateOutcome {
+  if (error instanceof EvidencePackBlockedError) {
+    return { state: "fail", pack: null, blocked: error };
+  }
+  return { state: "fail", pack: null, blocked: null };
+}
+
 function statusDotClass(status: CollectorResult["status"] | "loading"): string {
   if (status === "pass") return styles.dotPass ?? "";
   if (status === "flagged") return styles.dotFlagged ?? "";
@@ -736,11 +755,7 @@ export default function ComplianceCorePoke() {
         setOutcome({ state: "ok", pack, blocked: null });
       })
       .catch((err: unknown) => {
-        if (err instanceof EvidencePackBlockedError) {
-          setOutcome({ state: "fail", pack: null, blocked: err });
-          return;
-        }
-        throw err;
+        setOutcome(generateFailureOutcome(err));
       });
   };
 
@@ -755,10 +770,12 @@ export default function ComplianceCorePoke() {
             state: "ok",
             message: `Pack generated. ${outcome.pack.summary.posture}`,
           }
-        : {
-            state: "fail",
-            message: `Blocked. ${outcome.blocked?.message ?? ""}`,
-          };
+        : outcome.blocked !== null
+          ? { state: "fail", message: `Blocked. ${outcome.blocked.message}` }
+          : {
+              state: "fail",
+              message: "Could not generate the pack. Try again.",
+            };
 
   return (
     <PokeShell
