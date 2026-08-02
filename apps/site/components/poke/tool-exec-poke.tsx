@@ -1,22 +1,75 @@
 "use client";
 
-// The tool-exec module's poke (ADR-0378 lock 2, kimi CANDIDATES §B build baseline) — a live,
-// deterministic run of the package's default-deny allowlist gate against a caller-typed argv.
-// Every function driving this component is the pure mirror in `tool-exec-logic.ts` (see that
-// file's header for why the real package isn't imported directly into a client bundle). Nothing
-// here fetches, persists, measures the visitor, or spawns a process.
+// The tool-exec module's poke (ADR-0378 lock 2) — a live, deterministic run of the REAL
+// @caisson/tool-exec default-deny gate against a caller-typed argv. The hand-ported mirror
+// (tool-exec-logic.ts) is retired per ADR-0396: `createToolProposer` is the same implementation
+// `createToolExec.propose()` runs, imported through the package's browser-safe `./browser` entry
+// (the spawn seam and its node:child_process import stay behind `.`). Only the sample allowlist and
+// the render-shaping below are poke-local. Nothing here fetches, persists, measures the visitor, or
+// spawns a process — a browser has no process to spawn, and this gate is the phase-1 boundary
+// `propose()` itself stops at.
 import { useId, useMemo, useState } from "react";
+import { z } from "zod";
+import type { ZodType } from "zod";
 import { Button, Radio, StatusChip } from "@caisson/ui/components";
+import { createToolProposer } from "@caisson/tool-exec/browser";
+import type { CommandSpec, ProposedToolCall } from "@caisson/tool-exec/browser";
+import { isCaissonError } from "@caisson/kernel";
+import type { CaissonError } from "@caisson/kernel";
 
 import { PokeShell, Verdict } from "./poke-rig";
-import {
-  SAMPLE_ALLOWED,
-  SAMPLE_ALLOWLIST,
-  SAMPLE_DENIED,
-  proposeToolCall,
-} from "./tool-exec-logic";
-import type { CommandSpec } from "./tool-exec-logic";
 import styles from "./tool-exec-poke.module.css";
+
+// ---- Sample allowlist (poke-local illustration — the package itself ships none; an empty/absent
+// allowlist refuses every call, fail-closed, per tool-exec's `ToolExecConfig.allowlist`) ---------
+
+/** Loose schema — any argv of strings passes, same pattern as the package's own `echoSpec` fixture. */
+const ECHO_ARGS: ZodType<string[]> = z.array(z.string());
+
+/** Strict schema — exactly `["status", "--short"]`, demonstrating the schema actually gating. */
+const GIT_STATUS_ARGS: ZodType<string[]> = z
+  .array(z.string())
+  .length(2)
+  .refine((a) => a[0] === "status" && a[1] === "--short", {
+    message: 'must be exactly ["status", "--short"]',
+  });
+
+export const SAMPLE_ALLOWLIST: readonly CommandSpec[] = [
+  { name: "echo", command: "/bin/echo", argsSchema: ECHO_ARGS },
+  { name: "git-status", command: "/usr/bin/git", argsSchema: GIT_STATUS_ARGS },
+];
+
+/** The allowed sample: a registered command with argv its schema accepts. */
+export const SAMPLE_ALLOWED = { name: "echo", argv: "hello world" } as const;
+
+/**
+ * The denied sample: verbatim from the package's own test suite (tool-exec.test.ts, "an
+ * unregistered command name is refused") — `run("rm", ["-rf", "/"])` throws `NotFoundError`.
+ */
+export const SAMPLE_DENIED = { name: "rm", argv: "-rf /" } as const;
+
+/** The real gate, built once over the sample allowlist. */
+const GATE = createToolProposer(SAMPLE_ALLOWLIST);
+
+export type SampleVerdict =
+  | { readonly outcome: "proposed"; readonly proposed: ProposedToolCall }
+  | { readonly outcome: "denied"; readonly error: CaissonError };
+
+/**
+ * Poke-local presentation shaping ONLY: the gate throws (that is its contract), and a React render
+ * wants a value. Every code/status/message/detail rendered below comes off the real kernel error.
+ */
+export function proposeSample(
+  name: string,
+  args: readonly string[],
+): SampleVerdict {
+  try {
+    return { outcome: "proposed", proposed: GATE.propose(name, [...args]) };
+  } catch (err) {
+    if (isCaissonError(err)) return { outcome: "denied", error: err };
+    throw err;
+  }
+}
 
 const COMMAND_NOTE: Record<string, string> = {
   echo: "registered, argsSchema z.array(z.string()), any argv of strings passes",
@@ -27,6 +80,14 @@ const COMMAND_NOTE: Record<string, string> = {
 
 function parseArgv(text: string): string[] {
   return text.split(/\s+/).filter((a) => a.length > 0);
+}
+
+/** One `parseStrict` issue, rendered without re-declaring the shape kernel already owns. */
+function issueLine(issue: unknown): string {
+  const rec = issue as Record<string, unknown>;
+  const path = typeof rec["path"] === "string" ? rec["path"] : "";
+  const message = typeof rec["message"] === "string" ? rec["message"] : "";
+  return `${path || "(argv)"}: ${message}`;
 }
 
 /** Renders the argv as the real execFile call would see it: a command plus an array, never a string. */
@@ -66,10 +127,12 @@ export default function ToolExecPoke() {
   );
 
   const args = useMemo(() => parseArgv(argvText), [argvText]);
-  const verdict = useMemo(
-    () => proposeToolCall(SAMPLE_ALLOWLIST, name, args),
-    [name, args],
-  );
+  const verdict = useMemo(() => proposeSample(name, args), [name, args]);
+  const issues =
+    verdict.outcome === "denied" &&
+    Array.isArray(verdict.error.details?.["issues"])
+      ? (verdict.error.details["issues"] as readonly unknown[])
+      : undefined;
 
   return (
     <PokeShell
@@ -163,19 +226,15 @@ export default function ToolExecPoke() {
                 <dd>{verdict.error.httpStatus}</dd>
                 <dt>message</dt>
                 <dd>{verdict.error.message}</dd>
-                {verdict.error.code === "validation_error" ? (
+                {issues !== undefined ? (
                   <>
                     <dt>issues</dt>
-                    <dd>
-                      {verdict.error.details.issues
-                        .map((i) => `${i.path || "(argv)"}: ${i.message}`)
-                        .join("; ")}
-                    </dd>
+                    <dd>{issues.map(issueLine).join("; ")}</dd>
                   </>
                 ) : (
                   <>
                     <dt>details.command</dt>
-                    <dd>{verdict.error.details.command}</dd>
+                    <dd>{String(verdict.error.details?.["command"] ?? "")}</dd>
                   </>
                 )}
               </dl>
