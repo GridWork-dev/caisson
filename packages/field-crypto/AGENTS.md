@@ -15,9 +15,8 @@ column-context`. Reuse the SAME `columnContext` string for a column on read and 
   `DerivedKeyProvider.fromEnv`; KMS plaintext DEKs exist only inside a request-scoped context. Do not
   stringify providers, SDK credentials, wrapped keys, or plaintext keys into logs/telemetry/embeddings.
 - **Nonce is internal.** The cipher generates a fresh CSPRNG nonce per encrypt; never pass or reuse
-  one. A `(key, nonce)` pair must never repeat. This binds the browser twin too: `aesGcmSealAsync`'s
-  `options.nonce` exists ONLY for deterministic replay in a demo or a golden test — application code
-  takes the default.
+  one. A `(key, nonce)` pair must never repeat. This binds the browser twin too:
+  `aesGcmSealAsync` exposes no caller-supplied nonce seam.
 - **Two entry points, one format.** `.` is the full node-capable surface; `./browser` is the
   WebCrypto/`Uint8Array` half (ADR-0396) for a client bundle or a Worker. A module joins `./browser`
   only if its whole graph passes the package's static source-graph walk AND carries no node GLOBAL

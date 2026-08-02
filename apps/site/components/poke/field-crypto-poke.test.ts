@@ -11,7 +11,10 @@
 //   3. The seal/open/rotate behaviors the UI narrates are true.
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 import {
   DerivedKeyProvider,
   decryptField,
@@ -31,7 +34,6 @@ import {
   DEMO_MASTER_KEY,
   DEMO_ROW_ID,
   DEMO_SALT,
-  GOLDEN_NONCE,
   bytesToHex,
   envelopeSegments,
   openEnvelope,
@@ -47,6 +49,14 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   test("no module reachable from the client entry imports a node builtin (transitive)", () => {
     expect(walk.offenders).toEqual([]);
     expect(walk.unresolved).toEqual([]);
+  });
+
+  test("no app module in the walked client graph uses a node global", () => {
+    expect(
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }).filter(
+        (offender) => offender.file.startsWith("apps/site/"),
+      ),
+    ).toEqual([]);
   });
 
   test("the walk really crossed into the package's browser entry, never its node half", () => {
@@ -84,7 +94,6 @@ describe("the demo composition runs the shipped row-bound path, not a lookalike"
       tenant: "tenant-a",
       keyVersion: 1,
       plaintext: "123-45-6789",
-      goldenReplay: true,
     });
     expect(
       decryptField(tenantA, DEMO_COLUMN_CONTEXT, DEMO_ROW_ID, sealed.wire),
@@ -116,22 +125,19 @@ describe("the demo composition runs the shipped row-bound path, not a lookalike"
 });
 
 describe("the seal / open / rotate behaviors the UI narrates", () => {
-  test("golden replay is deterministic and pins the fixed nonce; fresh mode is not", async () => {
+  test("every seal draws a fresh package-owned nonce", async () => {
     const input = {
       tenant: "tenant-a",
       keyVersion: 1,
       plaintext: "same",
     } as const;
-    const a = await sealEnvelope({ ...input, goldenReplay: true });
-    const b = await sealEnvelope({ ...input, goldenReplay: true });
-    expect(a.wire).toBe(b.wire);
-    expect(bytesToHex(parseEnvelope(a.wire).nonce)).toBe(
-      bytesToHex(GOLDEN_NONCE),
+    const first = await sealEnvelope(input);
+    const second = await sealEnvelope(input);
+    expect(first.wire).not.toBe(second.wire);
+    expect(parseEnvelope(first.wire).nonce).toHaveLength(NONCE_BYTES);
+    expect(bytesToHex(parseEnvelope(first.wire).nonce)).not.toBe(
+      bytesToHex(parseEnvelope(second.wire).nonce),
     );
-
-    const fresh1 = await sealEnvelope({ ...input, goldenReplay: false });
-    const fresh2 = await sealEnvelope({ ...input, goldenReplay: false });
-    expect(fresh1.wire).not.toBe(fresh2.wire);
   });
 
   test("an envelope sealed under an old key version still opens after a rotate", async () => {
@@ -139,14 +145,12 @@ describe("the seal / open / rotate behaviors the UI narrates", () => {
       tenant: "tenant-a",
       keyVersion: 1,
       plaintext: "old",
-      goldenReplay: true,
     });
     expect(nextKeyVersion(1)).toBe(2);
     const v2 = await sealEnvelope({
       tenant: "tenant-a",
       keyVersion: nextKeyVersion(1),
       plaintext: "new",
-      goldenReplay: true,
     });
     expect(parseEnvelope(v2.wire).keyVersion).toBe(2);
 
@@ -176,7 +180,6 @@ describe("the seal / open / rotate behaviors the UI narrates", () => {
       tenant: "tenant-a",
       keyVersion: 1,
       plaintext: "seg",
-      goldenReplay: true,
     });
     const segments = envelopeSegments(sealed.wire);
     expect(segments.map((s) => s.label)).toEqual([

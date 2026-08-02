@@ -1,7 +1,7 @@
 "use client";
 
 // Flagship F1 — the @caisson/field-crypto "envelope bench" poke (ADR-0378 lock 2, kimi spec F1).
-// A self-contained, deterministic, in-browser run of the SHIPPED field-crypto primitive: HKDF-SHA256
+// A self-contained, in-browser run of the SHIPPED field-crypto primitive: HKDF-SHA256
 // per-tenant key derivation feeding AES-256-GCM with the real row-bound AAD 4-tuple, rendered as the
 // real self-describing envelope byte layout. Seal a value as one tenant; every other tenant fails to
 // open it (the cross-tenant isolation claim, proven under the cursor).
@@ -46,9 +46,6 @@ export const DEMO_SALT: Uint8Array = new Uint8Array(TENANT_KEY_BYTES).fill(
 export const DEMO_COLUMN_CONTEXT = "patient.ssn";
 /** A sample stable row PK — the row-bound 4-tuple AAD path (encrypt-field.ts). */
 export const DEMO_ROW_ID = "00000000-0000-4000-8000-000000000001";
-/** The golden-replay nonce: the exact fixed nonce from __golden__/envelope.json (0xab x 12). */
-export const GOLDEN_NONCE: Uint8Array = new Uint8Array(NONCE_BYTES).fill(0xab);
-
 export const TENANTS = ["tenant-a", "tenant-b"] as const;
 export type TenantId = (typeof TENANTS)[number];
 
@@ -86,14 +83,13 @@ export type OpenResult =
 /**
  * Seal `plaintext` for `tenant` under `keyVersion` as a row-bound envelope — the same four package
  * calls `encryptField` makes on the server (derive → 4-tuple AAD → AES-256-GCM → envelope).
- * `goldenReplay` pins the fixed golden nonce for byte-identical deterministic output; otherwise the
- * package's own default draws a fresh CSPRNG nonce per seal, exactly like the shipped cipher.
+ * The package draws a fresh CSPRNG nonce per seal, exactly like the shipped node cipher. Callers do
+ * not get a nonce override: the demo models the safe production surface rather than a KAT seam.
  */
 export async function sealEnvelope(input: {
   tenant: TenantId;
   keyVersion: number;
   plaintext: string;
-  goldenReplay: boolean;
 }): Promise<SealResult> {
   const key = await deriveTenantKeyAsync(
     DEMO_MASTER_KEY,
@@ -111,7 +107,6 @@ export async function sealEnvelope(input: {
     key,
     textEncoder.encode(input.plaintext),
     aad,
-    input.goldenReplay ? { nonce: GOLDEN_NONCE } : undefined,
   );
   const wire = serializeEnvelopeBytes({
     algId: ALG_AES_256_GCM,
@@ -243,13 +238,11 @@ export default function FieldCryptoPoke() {
   const [sealTenant, setSealTenant] = useState<TenantId>("tenant-a");
   const [keyVersion, setKeyVersion] = useState(1);
   const [plaintext, setPlaintext] = useState(SAMPLE_PLAINTEXT);
-  const [goldenReplay, setGoldenReplay] = useState(true);
   const [sealed, setSealed] = useState<SealResult | null>(null);
   const [openAs, setOpenAs] = useState<TenantId>("tenant-a");
   const [openResult, setOpenResult] = useState<OpenResult | null>(null);
 
   const plaintextId = useId();
-  const replayId = useId();
 
   // The registry's CURRENT version drives the NEXT write's key version, but rotating it must NOT
   // rewrite the standing envelope (lazy re-encrypt: rotation is a version bump for new writes only,
@@ -259,21 +252,20 @@ export default function FieldCryptoPoke() {
   const keyVersionRef = useRef(keyVersion);
   keyVersionRef.current = keyVersion;
 
-  // Seal reactively when who/what/how changes (a "write"). Deterministic in golden-replay mode.
+  // Seal reactively when who/what changes (a "write"), always with a fresh package-generated nonce.
   useEffect(() => {
     let ignore = false;
     void sealEnvelope({
       tenant: sealTenant,
       keyVersion: keyVersionRef.current,
       plaintext,
-      goldenReplay,
     }).then((result) => {
       if (!ignore) setSealed(result);
     });
     return () => {
       ignore = true;
     };
-  }, [sealTenant, plaintext, goldenReplay]);
+  }, [sealTenant, plaintext]);
 
   // Open reactively whenever the envelope or the opening identity changes (the tamper affordance:
   // opening as the other tenant derives a different key and the GCM tag fails).
@@ -368,16 +360,10 @@ export default function FieldCryptoPoke() {
               <span className={styles.sampleTag}>sample</span>
             </div>
           </div>
-          <label className={styles.toggle} htmlFor={replayId}>
-            <input
-              id={replayId}
-              type="checkbox"
-              checked={goldenReplay}
-              onChange={(e) => setGoldenReplay(e.target.checked)}
-            />
-            Golden replay (fixed nonce). Off draws a fresh CSPRNG nonce per
-            seal.
-          </label>
+          <p className={styles.toggle}>
+            Every seal draws a fresh CSPRNG nonce inside the package; callers
+            cannot supply or reuse one.
+          </p>
         </div>
 
         <div className={styles.zone}>

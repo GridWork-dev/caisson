@@ -131,6 +131,15 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
   return bytesToHex(new Uint8Array(digest));
 }
 
+/** Fixed-work comparison for a SHA-256 hex digest without importing node:crypto into the browser. */
+function safeEqualSha256Hex(actual: string, expected: string): boolean {
+  let difference = actual.length ^ expected.length;
+  for (let i = 0; i < expected.length; i += 1) {
+    difference |= (actual.charCodeAt(i) || 0) ^ (expected.charCodeAt(i) || 0);
+  }
+  return difference === 0;
+}
+
 /** Round-trip to a genuine `JsonValue` (drops `undefined`) so `canonicalize` accepts the manifest. */
 function toJsonValue(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value)) as JsonValue;
@@ -214,10 +223,9 @@ export class StubTimestampAuthority implements TimestampAuthority {
  * name rather than a signature change to the sync one — a browser has only the async
  * `crypto.subtle.digest`, and the sync function's `boolean` contract is published.
  *
- * Both imprints are PUBLIC integrity tags derived from a PUBLIC signature, not secrets, so the
- * length-then-value comparison below leaks nothing an attacker does not already hold; the node twin's
- * constant-time compare is belt-and-braces on the same public values. Verdict parity between the two
- * is pinned in sign.test.ts.
+ * Both imprints are fixed-length SHA-256 hex digests. The comparison does the same amount of work for
+ * every candidate of the expected length, matching the node twin's fail-closed comparison without
+ * importing node:crypto. Verdict parity between the two paths is pinned in sign.test.ts.
  */
 export async function timestampCountersignsSignatureAsync(
   token: TimestampToken,
@@ -225,10 +233,7 @@ export async function timestampCountersignsSignatureAsync(
 ): Promise<boolean> {
   try {
     const expected = await sha256Hex(hexToBytes(signature.signature));
-    return (
-      token.messageImprint.length === expected.length &&
-      token.messageImprint === expected
-    );
+    return safeEqualSha256Hex(token.messageImprint, expected);
   } catch {
     return false;
   }

@@ -15,7 +15,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 import {
   Ed25519Signer,
   StubTimestampAuthority,
@@ -67,6 +70,14 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   test("no module reachable from the client entry imports a node builtin (transitive)", () => {
     expect(walk.offenders).toEqual([]);
     expect(walk.unresolved).toEqual([]);
+  });
+
+  test("no app module in the walked client graph uses a node global", () => {
+    expect(
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }).filter(
+        (offender) => offender.file.startsWith("apps/site/"),
+      ),
+    ).toEqual([]);
   });
 
   test("the walk really crossed into the package's browser entry, never sign.ts", () => {

@@ -17,9 +17,9 @@ the shipped fixtures. The new names sit alongside the existing ones rather than 
 `deriveTenantKeyAsync`, `aesGcmSealAsync`, `aesGcmOpenAsync`, `buildAadBytes`,
 `serializeEnvelopeBytes`, `parseEnvelopeBytes`, plus `nextKeyVersion` and `MAX_KEY_VERSION` for the
 rotation bound the key-version registry already enforced. One behavior note: parsing an envelope
-whose base64 contains a character outside the alphabet now fails as a malformed envelope instead of
-decoding the valid prefix and failing a length check a step later. Both paths refuse the value;
-whitespace is still tolerated.
+accepts both standard and URL-safe base64, preserving values the previous Node decoder could read;
+whitespace is still tolerated and malformed values fail closed. The public seal operation always
+generates its own fresh nonce, matching the Node cipher without exposing a caller override.
 
 signing-primitive's browser entry carries the verify half: the signable-payload construction,
 `verifyEvidenceSignature`, and the RFC-3161 test-double authority, so a relying party can check an
@@ -29,7 +29,7 @@ primitive never needed Node in the first place. The signing identity stays off t
 deliberately: a tenant seed does not belong in a bundle end users download. Two additions on both
 entries: `hexToBytes` for decoding a signature or key, and
 `timestampCountersignsSignatureAsync`, the WebCrypto twin of the existing timestamp check, which
-keeps its synchronous form and its constant-time compare unchanged.
+keeps its synchronous form and uses a fixed-work digest comparison without importing Node crypto.
 
 Both packages now declare a Node 20.12 minimum, and every export the main entry offered before is
 still there with the same name and shape. The site's field-crypto and signing-primitive interactive

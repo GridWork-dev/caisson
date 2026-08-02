@@ -58,8 +58,15 @@ export function deriveInfo(keyVersion: number, tenantId: string): string {
  * overflow message; the arithmetic is tenant-independent.
  */
 export function nextKeyVersion(current: number, tenantId?: string): number {
+  if (!Number.isInteger(current) || current < 1 || current > MAX_KEY_VERSION) {
+    throw new ValidationError(
+      `field-crypto: key version must be an integer in [1, ${MAX_KEY_VERSION}], got ${String(current)}`,
+    );
+  }
+  // Negated form on purpose: `next > MAX` reads `false` for a NaN that slipped the guard above, which
+  // would skip the very bound this function exists to enforce.
   const next = current + 1;
-  if (next > MAX_KEY_VERSION) {
+  if (!(next <= MAX_KEY_VERSION)) {
     throw new ValidationError(
       tenantId === undefined
         ? `field-crypto: key version overflow (max ${MAX_KEY_VERSION})`
@@ -109,18 +116,16 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-/**
- * Decode base64. Divergence from `Buffer.from(s, "base64")`, stated rather than hidden: `atob` REJECTS
- * a non-alphabet character where `Buffer` silently decodes the valid prefix and drops the rest. Both
- * paths fail closed (this one throws a `ValidationError` naming the envelope as malformed, the other
- * hit the minimum-length check a line later), and the stricter one is the right default on a parse
- * that feeds an AEAD open. Whitespace is tolerated first, which is the one lenient case a stored
- * column value realistically hits.
- */
+/** Decode the standard or URL-safe base64 alphabets accepted by the previous Buffer-backed path. */
 function base64ToBytes(b64: string): Uint8Array {
   let binary: string;
   try {
-    binary = atob(b64.replace(/\s+/g, ""));
+    const normalized = b64
+      .replace(/\s+/g, "")
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    binary = atob(padded);
   } catch {
     throw new ValidationError(
       "field-crypto: malformed envelope — not valid base64",
@@ -310,21 +315,36 @@ function assertAesKey(key: Uint8Array): void {
  * encrypted. WebCrypto returns ciphertext WITH the 16-byte tag appended where node returns them
  * split; splitting the last `TAG_BYTES` off recovers the node-identical `(ciphertext, tag)` pair.
  *
- * NONCE DISCIPLINE — the default draws a fresh 96-bit CSPRNG nonce per message, exactly as the node
- * cipher does, and that default is what production callers must use. `options.nonce` exists ONLY for
- * deterministic replay in a demo or a golden test: reusing a (key, nonce) pair across two messages
- * breaks GCM catastrophically (it leaks the XOR of the plaintexts AND the authentication key). If you
- * are passing this option in application code, you are holding it wrong.
+ * NONCE DISCIPLINE — always draws a fresh 96-bit CSPRNG nonce per message, exactly as the node cipher
+ * does. The public API deliberately has no caller-supplied nonce seam: reusing a (key, nonce) pair
+ * across two messages breaks GCM catastrophically.
  */
 export async function aesGcmSealAsync(
   key: Uint8Array,
   plaintext: Uint8Array,
   aad: Uint8Array,
-  options?: { readonly nonce?: Uint8Array },
+): Promise<AeadBytesParts> {
+  return aesGcmSealWithNonceForTest(
+    key,
+    plaintext,
+    aad,
+    crypto.getRandomValues(new Uint8Array(NONCE_BYTES)),
+  );
+}
+
+/**
+ * Deterministic KAT seam for this package's relative-import parity suite. It is intentionally absent
+ * from both public barrels and package export conditions; application and demo code cannot select a
+ * nonce. Keeping the runtime-bound primitive here avoids a third AES-GCM implementation in tests.
+ * @internal
+ */
+export async function aesGcmSealWithNonceForTest(
+  key: Uint8Array,
+  plaintext: Uint8Array,
+  aad: Uint8Array,
+  nonce: Uint8Array,
 ): Promise<AeadBytesParts> {
   assertAesKey(key);
-  const nonce =
-    options?.nonce ?? crypto.getRandomValues(new Uint8Array(NONCE_BYTES));
   if (nonce.length !== NONCE_BYTES) {
     throw new ValidationError(
       `field-crypto: nonce must be ${NONCE_BYTES} bytes, got ${nonce.length}`,

@@ -19,13 +19,16 @@ import { parseEnvelope, serializeEnvelope } from "./envelope.ts";
 import { DerivedKeyProvider } from "./provider.ts";
 import {
   ALG_AES_256_GCM,
+  MAX_KEY_VERSION,
   NONCE_BYTES,
   TAG_BYTES,
   TENANT_KEY_BYTES,
   aesGcmOpenAsync,
   aesGcmSealAsync,
+  aesGcmSealWithNonceForTest,
   buildAadBytes,
   deriveTenantKeyAsync,
+  nextKeyVersion,
   parseEnvelopeBytes,
   serializeEnvelopeBytes,
 } from "./portable.ts";
@@ -136,6 +139,38 @@ describe("buildAadBytes / the envelope codec — one implementation, two faces",
     expect(hex(bytes.tag)).toBe(buffers.tag.toString("hex"));
   });
 
+  test("preserves the previous node path's base64url accept-set", () => {
+    const standard = serializeEnvelopeBytes({
+      algId: ALG_AES_256_GCM,
+      keyVersion: 1,
+      nonce: new Uint8Array(NONCE_BYTES).fill(0xfb),
+      ciphertext: new Uint8Array([0xff, 0xbf, 0x01, 0x02, 0x03]),
+      tag: new Uint8Array(TAG_BYTES).fill(0xfd),
+    });
+    const base64url = standard
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+    expect(base64url).not.toBe(standard);
+    expect(parseEnvelopeBytes(base64url)).toEqual(parseEnvelopeBytes(standard));
+    expect(parseEnvelope(base64url)).toEqual(parseEnvelope(standard));
+  });
+
+  test("nextKeyVersion validates the public rotation bound fail-closed", () => {
+    expect(nextKeyVersion(1)).toBe(2);
+    for (const invalid of [
+      Number.NaN,
+      Infinity,
+      -1,
+      0,
+      1.5,
+      MAX_KEY_VERSION + 1,
+    ]) {
+      expect(() => nextKeyVersion(invalid)).toThrow();
+    }
+    expect(() => nextKeyVersion(MAX_KEY_VERSION)).toThrow();
+  });
+
   test("both faces reject the same malformed inputs (fail-closed, either runtime)", () => {
     for (const bad of [
       Buffer.alloc(8).toString("base64"), // too short
@@ -170,11 +205,11 @@ describe("AES-256-GCM — the crypto.subtle twin of AesGcmCipher", () => {
       reference.final(),
     ]);
 
-    const sealed = await aesGcmSealAsync(
+    const sealed = await aesGcmSealWithNonceForTest(
       key,
       new TextEncoder().encode(plaintext),
       aad,
-      { nonce: FIXED_NONCE },
+      FIXED_NONCE,
     );
     expect(hex(sealed.ciphertext)).toBe(referenceCiphertext.toString("hex"));
     expect(hex(sealed.tag)).toBe(reference.getAuthTag().toString("hex"));
