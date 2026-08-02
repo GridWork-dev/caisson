@@ -1100,6 +1100,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "agent-trajectory is the append-only event contract a governed agent run writes into: eleven event kinds spanning run, step, model call, tool proposal/approval/result, and checkpoint, each Zod-`.strict()`-validated. Sensitive bodies (prompts, tool args, tool results) never inline; they're carried only as a sha256 `DigestRef`. A deterministic `project()` folds any event order into one byte-identical projection, and a park/approve/deny state machine holds paused runs with their snapshot encrypted at rest.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/agent-trajectory/browser inside a client bundle for the strict event schema, the in-memory append-only store, the run-state port, both deterministic projections, and the Claude-transcript adapter, so a dashboard can replay and validate a trajectory client-side. The main entry keeps the full node-capable surface including the two Postgres-backed stores, and every browser-entry export is also on it.",
+      },
+      {
         title: "Eleven-kind closed event vocabulary",
         body: "EVENT_KINDS fixes the whole vocabulary, run.started/finished, step.started/finished, model.call, model.usage, tool.proposed/approved/denied/result, checkpoint. TrajectoryEvent is a Zod discriminatedUnion keyed on kind, each variant .strict(), so an unknown field or a made-up kind is rejected at the boundary, not silently stored.",
       },
