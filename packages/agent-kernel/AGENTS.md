@@ -19,6 +19,12 @@ edition must know to wire the agent kernel correctly.
   sorted `"<name>-><dep>"` edges; a ref naming nothing in the set is a GHOST — it THROWS a
   redaction-safe `ValidationError`, never silently drops or guesses. Author artifacts through
   `defineAgent` / `defineSkill` / `defineRule` (each validates `.strict()` at module load).
+- **Two entry points.** `.` is the full node-capable surface; `./browser` is the browser-safe subset
+  (schema + authoring helpers, lifecycle FSM, governance, redacting logger). A client bundle imports
+  `./browser`, never `.` — the barrel reaches `node:child_process` through `hooks.ts` and
+  `node:crypto` through `audit-lifecycle.ts`'s `@caisson/kernel/node` edge. A module joins
+  `./browser` only if its whole graph passes the package's static source-graph walk
+  (`src/browser-safety.test.ts`), and every `./browser` name must also exist on `.`.
 - **Flag-never-guess transitions.** The lifecycle FSM exposes only the legal-transition adjacency. An
   illegal transition THROWS — do not catch-and-continue to "guess" a next act. `verify → plan` (re-plan
   on a failed goal-backward verify) and `sweep → ship` (untagged skip-eval) are the only branch edges;

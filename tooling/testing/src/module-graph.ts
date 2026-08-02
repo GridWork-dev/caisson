@@ -63,6 +63,38 @@ export interface TaintWalk {
   readonly unresolved: readonly string[];
 }
 
+/**
+ * Node-only GLOBALS. These are not imports, so {@link nodeBuiltinTaint} is structurally blind to
+ * them — and a bundler is worse than blind: `Buffer` in a browser graph silently pulls in the
+ * `buffer/` polyfill, exit 0, same failure mode as `node:crypto` → crypto-browserify. Any module
+ * admitted to a `./browser` entry must therefore pass {@link nodeGlobalTaint} too.
+ */
+const NODE_GLOBAL = /\b(?:Buffer|process|__dirname|__filename|require)\b/;
+
+/** A line that is entirely comment — prose naming `Buffer` is documentation, not a bundle edge. */
+const COMMENT_LINE = /^[ \t]*(?:\/\/|\/\*|\*)/;
+
+/**
+ * Scan already-walked source files for node-only globals. Takes {@link TaintWalk.files} so the scan
+ * covers exactly the graph the walk proved import-clean, never the whole package. Line-level, so an
+ * inline `// Buffer` note on a code line is a (deliberate) false positive — rewrite the comment.
+ */
+export function nodeGlobalTaint(
+  files: readonly string[],
+  opts: { readonly workspaceRoot: string },
+): readonly TaintOffender[] {
+  const offenders: TaintOffender[] = [];
+  for (const file of files) {
+    const source = readFileSync(join(opts.workspaceRoot, file), "utf8");
+    for (const line of source.split("\n")) {
+      if (COMMENT_LINE.test(line)) continue;
+      const hit = NODE_GLOBAL.exec(line);
+      if (hit !== null) offenders.push({ file, spec: hit[0] });
+    }
+  }
+  return offenders;
+}
+
 function refsOf(source: string): Ref[] {
   const refs: Ref[] = [];
   for (const m of source.matchAll(FROM_STATEMENT)) {

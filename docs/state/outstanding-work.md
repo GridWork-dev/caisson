@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-01
+updated: 2026-08-02
 status: live
 grounds:
   - knowledge/decisions/ADR-0379-full-state-completion-program-locks.md

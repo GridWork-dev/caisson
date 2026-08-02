@@ -4,10 +4,20 @@
 // column, or provider. AEAD discipline: a fresh CSPRNG nonce per encrypt; the caller binds
 // `tenant_id || key_version || column-context` as AAD; decrypt authenticates (tamper + AAD-mismatch
 // throw); a (key, nonce) pair is never reused.
+//
+// The browser twins of this seam are `aesGcmSealAsync` / `aesGcmOpenAsync` (portable.ts, ADR-0396):
+// the same AES-256-GCM over `crypto.subtle`, byte-parity-pinned against this implementation.
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { ValidationError } from "@caisson/kernel";
-import { ALG_AES_256_GCM, NONCE_BYTES, TAG_BYTES } from "./envelope.ts";
-import { TENANT_KEY_BYTES } from "./derive.ts";
+import {
+  ALG_AES_256_GCM,
+  NONCE_BYTES,
+  TAG_BYTES,
+  TENANT_KEY_BYTES,
+} from "./portable.ts";
+
+export { aesGcmOpenAsync, aesGcmSealAsync } from "./portable.ts";
+export type { AeadBytesParts } from "./portable.ts";
 
 export interface AeadParts {
   readonly nonce: Buffer;
