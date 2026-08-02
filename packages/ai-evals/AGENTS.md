@@ -22,6 +22,12 @@ Production Kit must know to wire and gate evals correctly.
   dataset fails. The baseline is rewritten ONLY through `BLESS` (the same discipline as
   `@caisson/testing` `matchGolden`). This runs as a DISTINCT turbo `eval` task in the monorepo —
   **never** a required CI job inside a generated buyer repo.
+- **Two entry points.** `.` is the full node-capable surface; `./browser` is the browser-safe
+  subset — the gate's rules only (`baseline-compare.ts` + `wilsonLowerBound`), no file I/O. Those
+  rules have exactly ONE implementation: `baseline.ts` is the load/save transport around them. A
+  client bundle imports `./browser`, never `.`; a module joins `./browser` only if its whole value
+  graph passes the package's static source-graph walk (`src/browser-safety.test.ts`), and every
+  `./browser` name must also exist on `.`.
 
 ## Grader taxonomy
 

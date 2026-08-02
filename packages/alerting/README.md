@@ -21,6 +21,15 @@ notification" control primitive. ADR-0135 (pipeline) · ADR-0151 (transport).
   `src/migrations/0001_alert_audit.sql`. `@caisson/audit-worm` owns tamper-evidence; this owns
   "what happened and why", one row per outcome.
 
+## Entry points
+
+- `.` — the full surface, including the five network delivery drivers (node-capable).
+- `./browser` — the event contract, all three decision stages, the delivery port with its isolation
+  wrapper and capture driver, the audit port with its in-memory driver, and `processAlert` itself:
+  safe inside a client bundle. The network drivers are deliberately absent (a browser cannot hold a
+  webhook signing secret, and the SSRF re-check resolves DNS). Every name on `./browser` is also
+  on `.`.
+
 ## Use
 
 ```ts
