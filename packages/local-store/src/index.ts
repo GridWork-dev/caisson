@@ -4,7 +4,7 @@
 // No vendor SDK, no LLM call: the embedding that produces a query/doc vector is an injected SEAM the
 // consuming edition wires; this package only stores and fuses.
 //
-export { LocalStore, RRF_K } from "./store.ts";
+export { LocalStore } from "./store.ts";
 export type {
   StoreDoc,
   HybridSearchOptions,
@@ -12,6 +12,11 @@ export type {
   ListOptions,
   ListedDoc,
 } from "./store.ts";
+
+// The fusion arithmetic itself (also the whole of the `./browser` entry): pure, database-free, and
+// the ONE implementation `hybridSearch` fuses its two legs through.
+export { RRF_K, fuseByRrf } from "./rrf.ts";
+export type { RrfLeg, RrfOptions, RrfRow } from "./rrf.ts";
 
 // The file-per-tenant isolation floor (ADR-0073): the resolved path IS the tenant boundary.
 export { tenantDbPath, openTenantDb } from "./tenant-db.ts";
