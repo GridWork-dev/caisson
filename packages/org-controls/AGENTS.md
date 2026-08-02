@@ -20,3 +20,12 @@ Commercial org/operator module (ADR-0257 §1.3). Import surface:
 
 **Boundary:** buyer session resolution stays in `@caisson/auth`; buyer tenant isolation
 (`withTenant`/`withUser`) stays in `@caisson/tenancy-rls`. Never move those into this package.
+
+**Entry points:** `.` is the full server-side surface; `./browser` (ADR-0396) is the browser-safe
+subset — `assertCanManageMembers` from `src/gate.ts`, and nothing else. A client bundle imports
+`./browser`, never `.`. A module joins `./browser` only if its whole graph passes the static
+source-graph walk in `src/browser-safety.test.ts`, and every `./browser` name must also exist on
+`.`. Note what the walk is checking for here: this package reaches **zero** `node:` builtins, so
+the blocker is the EXTERNAL frontier — `@clerk/backend` (clerk.ts) and `pg` (via
+`@caisson/tenancy-rls` in membership.ts). `Role` comes from `@caisson/auth` as a statement-level
+`import type`; making it a value import would taint the entry through that package's `jwt.ts`.

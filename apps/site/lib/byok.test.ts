@@ -30,7 +30,7 @@ beforeAll(() => {
 afterAll(async () => {
   const g = globalThis as unknown as {
     caissonTransactor?: unknown;
-    caissonPglite?: { close(): Promise<void> };
+    caissonPglite?: { close(): Promise<void> } | undefined;
   };
   await g.caissonPglite?.close();
   g.caissonTransactor = undefined;

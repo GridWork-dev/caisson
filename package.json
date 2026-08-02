@@ -31,7 +31,7 @@
       "@types/bun": "^1.1.14",
       "@aws-sdk/client-s3": "^3.1075.0",
       "culori": "^4.0.1",
-      "@types/culori": "^2.1.1",
+      "@types/culori": "^4.0.1",
       "sqlite-vec": "^0.1.9",
       "drizzle-orm": "^0.45.0"
     }
@@ -45,7 +45,7 @@
     "test:live:all": "turbo run test:live --no-daemon --env-mode=loose",
     "eval": "turbo run eval --no-daemon",
     "gate": "bun packages/kernel/src/gate.ts",
-    "check": "turbo run build lint test --no-daemon && bun run gate",
+    "check": "turbo run build lint typecheck test --no-daemon && bun run gate",
     "sot": "bun tooling/scripts/sot-check.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
@@ -60,12 +60,12 @@
     "@eslint/js": "^10.0.0",
     "@types/bun": "^1.1.14",
     "dependency-cruiser": "^18.0.0",
-    "eslint": "^10.0.0",
+    "eslint": "^10.8.0",
     "knip": "^6.24.0",
-    "prettier": "^3.3.3",
+    "prettier": "^3.9.6",
     "turbo": "~2.10.0",
     "typescript": "catalog:",
-    "typescript-eslint": "^8.10.0",
+    "typescript-eslint": "^8.65.0",
     "zod": "catalog:",
     "zod-to-json-schema": "^3.24.1"
   },

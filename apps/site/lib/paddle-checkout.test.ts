@@ -11,7 +11,7 @@ let initCalls = 0;
 let shouldReject = false;
 let capturedEventCallback: ((event: { name?: string }) => void) | undefined;
 
-const fakeCheckoutOpen = mock(() => undefined);
+const fakeCheckoutOpen = mock((_opts: Record<string, unknown>) => undefined);
 
 mock.module("@paddle/paddle-js", () => ({
   CheckoutEventNames: { CHECKOUT_COMPLETED: "checkout.completed" },

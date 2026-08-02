@@ -17,10 +17,17 @@
 // omitted (the element is not appended, never serialized as `null`), so existing ciphertexts and the
 // transparent column are unchanged.
 
+import { buildAadBytes } from "./portable.ts";
+
+export { buildAadBytes } from "./portable.ts";
+
 /**
  * Build the canonical AAD for a field. `columnContext` is the column's stable identity (e.g. "ssn").
  * Pass `rowId` (the row's stable PK) for row-bound SEC/HIPAA fields → a 4-tuple; omit it for the
  * transparent low-sensitivity column → the unchanged 3-tuple.
+ *
+ * The tuple construction itself lives in portable.ts (ADR-0396) so the browser entry binds the SAME
+ * bytes; this is its `Buffer`-typed node face.
  */
 export function buildAad(
   tenantId: string,
@@ -28,11 +35,5 @@ export function buildAad(
   columnContext: string,
   rowId?: string,
 ): Buffer {
-  // Conditional construction: omitting `rowId` must yield the SAME bytes as the legacy 3-tuple —
-  // pushing `undefined` would serialize as `null` and break every existing ciphertext + golden.
-  const tuple =
-    rowId === undefined
-      ? [tenantId, keyVersion, columnContext]
-      : [tenantId, keyVersion, columnContext, rowId];
-  return Buffer.from(JSON.stringify(tuple), "utf8");
+  return Buffer.from(buildAadBytes(tenantId, keyVersion, columnContext, rowId));
 }

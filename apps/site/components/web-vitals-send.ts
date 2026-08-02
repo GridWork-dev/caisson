@@ -3,8 +3,10 @@
 // Web-vitals field capture (Kickoff-S task 7 — no field data existed; ADR-0334 §7 evidence).
 // Lazy-loaded HALF of the pair: components/web-vitals-report.tsx mounts a ~0.3 KiB shim in first
 // load and dynamic-imports this module after the window `load` event, so the `web-vitals`
-// library (already in the lockfile via posthog-js) stays OUT of first-load JS — the library
-// reads buffered PerformanceObserver entries, so late registration still sees LCP/FCP/TTFB.
+// library stays OUT of first-load JS — the library reads buffered PerformanceObserver entries,
+// so late registration still sees LCP/FCP/TTFB. Soft-navigation reporting (new in v6) is left
+// at its default off — this sender batches once per document and flushes at hide, so per-soft-nav
+// metrics would collapse into one batch under a single id rather than being attributed per route.
 //
 // Marketing stays cookieless (ADR-0118): no posthog-js SDK here, no storage, no cookies — one
 // anonymous fire-and-forget beacon per metric batch to the PostHog capture endpoint the CSP

@@ -1,6 +1,9 @@
-// Stage 4 of the alerting pipeline (ADR-0135 + ADR-0151): multi-channel delivery behind ONE
-// `AlertChannel` port. Five network drivers (email/webhook/Slack/Telegram/Discord) plus a capture
-// driver for tests. Every network driver reads its endpoint/token from injected config (never a module
+// Stage 4 of the alerting pipeline (ADR-0135 + ADR-0151): the five NETWORK delivery drivers
+// (email/webhook/Slack/Telegram/Discord). The `AlertChannel` port itself, the isolation wrapper
+// `deliverAll`, and the in-memory capture driver live in `./delivery.ts` — node-clean, so the
+// orchestrator can reach them without dragging this file's `node:crypto` + DNS-resolving SSRF
+// guard into a browser graph (ADR-0396). Every name is still on `.` exactly as before.
+// Every network driver reads its endpoint/token from injected config (never a module
 // constant), routes through `fetchWithTimeout`, and on a non-ok response throws a `@caisson/kernel`
 // typed error WITHOUT the response body (the same no-body-leak rule `@caisson/email`'s drivers follow) — then CATCHES that
 // itself so one channel failing never aborts the others (per-channel isolation). `deliverAll` adds
@@ -17,63 +20,9 @@ import {
 } from "@caisson/kernel/node";
 import { z } from "zod";
 import type { Emailer } from "@caisson/email";
+import { toErrorMessage } from "./delivery.ts";
+import type { AlertChannel, DeliveryResult } from "./delivery.ts";
 import type { AlertEvent, AlertSeverity } from "./types.ts";
-
-export interface DeliveryResult {
-  channel: string;
-  ok: boolean;
-  error?: string;
-}
-
-/** The port: one method, transport-agnostic, the only seam `deliverAll` depends on. */
-export interface AlertChannel {
-  name: string;
-  deliver(event: AlertEvent): Promise<DeliveryResult>;
-}
-
-function toErrorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
-
-/** Runs `channel.deliver`, catching any throw/rejection into a failed `DeliveryResult` — the
- * isolation boundary `deliverAll` relies on regardless of whether a driver self-catches. */
-async function attemptDeliver(
-  channel: AlertChannel,
-  event: AlertEvent,
-): Promise<DeliveryResult> {
-  try {
-    return await channel.deliver(event);
-  } catch (err) {
-    return { channel: channel.name, ok: false, error: toErrorMessage(err) };
-  }
-}
-
-/** Delivers `event` to every channel; one failing channel never prevents the rest from running. */
-export async function deliverAll(
-  event: AlertEvent,
-  channels: readonly AlertChannel[],
-): Promise<DeliveryResult[]> {
-  return Promise.all(channels.map((channel) => attemptDeliver(channel, event)));
-}
-
-/** A test driver that records every delivered event in memory; never touches the network. */
-export interface CaptureChannel extends AlertChannel {
-  readonly delivered: readonly AlertEvent[];
-}
-
-export function createCaptureChannel(name = "capture"): CaptureChannel {
-  const delivered: AlertEvent[] = [];
-  return {
-    name,
-    async deliver(event: AlertEvent): Promise<DeliveryResult> {
-      delivered.push(event);
-      return { channel: name, ok: true };
-    },
-    get delivered(): readonly AlertEvent[] {
-      return delivered;
-    },
-  };
-}
 
 /** Maps an `AlertEvent` onto an `EmailMessage` and delegates to the injected `Emailer` port —
  * reuses `@caisson/email` rather than a second email path. */
