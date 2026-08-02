@@ -379,7 +379,10 @@ export async function debit(
       amount: draw.taken,
     });
   }
-  if (plan.shortfall > 0) {
+  // Negated form: this is the 402 floor, so anything that is not provably "covered in full" must
+  // take the throw. A bare `shortfall > 0` reads false for NaN and would fall through to the
+  // wallet UPDATE.
+  if (!(plan.shortfall <= 0)) {
     // Unexpired remaining can't cover it — 402 with the SPENDABLE total (not the raw wallet
     // aggregate, which may still carry not-yet-swept expired residue). Throwing rolls back the
     // event + consumption inserts above — a failed debit leaves no trace.
