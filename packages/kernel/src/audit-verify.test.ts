@@ -4,15 +4,21 @@ import { generateKeyPairSync, sign as nodeSign } from "node:crypto";
 import {
   anchorChain,
   buildChain,
+  chainEntry,
   hashChainLink,
+  verifyChain,
   type AuditChainAnchor,
 } from "./audit-chain.ts";
 import {
+  anchorChain as anchorChainFromVerify,
+  buildChainAsync,
   buildRowReceipt,
   anchorSignatureEnvelopeBytes,
+  chainEntryAsync,
   classifyRowState,
   hashChainLinkAsync,
   verifyAnchorSignature,
+  verifyChainAsync,
   verifyEntryAgainstAnchor,
   type PinnedAnchorKey,
   type VerifyLegs,
@@ -42,6 +48,66 @@ describe("hashChainLinkAsync (WebCrypto twin)", () => {
         entry.hash,
       );
     }
+  });
+});
+
+describe("the whole-chain WebCrypto twins agree with the node originals", () => {
+  test("anchorChain on `/audit-verify` is the SAME function, not a second copy", () => {
+    // The browser entry re-exports the one pure implementation; a re-implementation would pass a
+    // deep-equal check but fails this reference identity.
+    expect(anchorChainFromVerify).toBe(anchorChain);
+  });
+
+  test("chainEntryAsync matches chainEntry (genesis and linked)", async () => {
+    const genesis = await chainEntryAsync(null, PAYLOADS[0]);
+    expect(genesis).toEqual(chainEntry(null, PAYLOADS[0]));
+    expect(await chainEntryAsync(genesis, PAYLOADS[1])).toEqual(
+      chainEntry(genesis, PAYLOADS[1]),
+    );
+  });
+
+  test("buildChainAsync is byte-identical to buildChain", async () => {
+    expect(await buildChainAsync(PAYLOADS)).toEqual(CHAIN);
+  });
+
+  test.each([
+    ["clean, no anchor", CHAIN, undefined],
+    ["clean, anchored", CHAIN, anchorChain(CHAIN)],
+    [
+      "interior tamper",
+      [CHAIN[0]!, { ...CHAIN[1]!, payload: { event: "forged" } }, CHAIN[2]!],
+      anchorChain(CHAIN),
+    ],
+    ["tail truncation", CHAIN.slice(0, 2), anchorChain(CHAIN)],
+    [
+      "rewritten root",
+      CHAIN,
+      { ...anchorChain(CHAIN), genesisHash: "0".repeat(64) },
+    ],
+    [
+      "rewritten tip",
+      CHAIN,
+      { ...anchorChain(CHAIN), tipHash: "0".repeat(64) },
+    ],
+    ["reordered", [CHAIN[1]!, CHAIN[0]!, CHAIN[2]!], undefined],
+  ])(
+    "verifyChainAsync returns the node verdict on %s",
+    async (_name, entries, anchor) => {
+      expect(await verifyChainAsync(entries, anchor)).toEqual(
+        verifyChain(entries, anchor),
+      );
+    },
+  );
+
+  test("the truncation verdict is really a failure — the parity check is not comparing two passes", async () => {
+    expect(
+      await verifyChainAsync(CHAIN.slice(0, 2), anchorChain(CHAIN)),
+    ).toEqual({ valid: false, brokenAt: 2 });
+    // ...and the surviving prefix on its own still hashes clean, which is why the anchor is needed.
+    expect(await verifyChainAsync(CHAIN.slice(0, 2))).toEqual({
+      valid: true,
+      brokenAt: null,
+    });
   });
 });
 

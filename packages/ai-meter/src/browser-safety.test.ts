@@ -9,7 +9,10 @@
 // breaker, the DDL — on the far side of the entry, permanently.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import {
+  nodeBuiltinTaint,
+  nodeGlobalTaint,
+} from "@caisson/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -26,6 +29,12 @@ describe("`./browser` is browser-safe", () => {
 
   test("no edge was silently skipped — every declined edge would land in `unresolved`", () => {
     expect(walk.unresolved).toEqual([]);
+  });
+
+  test("no package module introduces an untracked node global", () => {
+    expect(
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
+    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
   });
 
   test("guard the guard: the walk really crossed into @caisson/kernel, not just this package", () => {
@@ -56,6 +65,16 @@ describe("`./browser` is browser-safe", () => {
     expect(walk.files.some((f) => f.startsWith("packages/credits/"))).toBe(
       false,
     );
+    expect(
+      walk.files
+        .filter((file) => file.startsWith("packages/ai-meter/src/"))
+        .sort(),
+    ).toEqual([
+      "packages/ai-meter/src/browser.ts",
+      "packages/ai-meter/src/contracts.ts",
+      "packages/ai-meter/src/estimate.ts",
+      "packages/ai-meter/src/pricebook.ts",
+    ]);
   });
 
   test("positive control: the `.` barrel DOES report the node builtin the server half carries", () => {

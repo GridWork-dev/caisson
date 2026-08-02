@@ -137,14 +137,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: format (prettier)
         run: bun run format:check
-      - name: build · lint · test (unit + PGlite integration + golden-file)
-        # `turbo build/lint/test` + the standards gate (== `bun run check`, run inline so CI can cap
+      - name: build · lint · typecheck · test (unit + PGlite integration + golden-file)
+        # `turbo build/lint/typecheck/test` + the standards gate (== `bun run check`, run inline so CI can cap
         # concurrency). Golden fixtures are compared with BLESS unset, so any drift fails here.
         # --concurrency=50%: the integrated tree is 38 packages incl. 5 Next.js builds + many in-process
         # PGlite instances; at turbo's default fan-out they contend on the runner and a PGlite `beforeAll`
         # can exceed its hook timeout. Halving peak concurrency removes the starvation (local `bun run
         # check` stays full-speed). Tunable if the job runs long.
-        run: bunx turbo run build lint test --no-daemon --concurrency=50% --continue=dependencies-successful && bun run gate
+        run: bunx turbo run build lint typecheck test --no-daemon --concurrency=50% --continue=dependencies-successful && bun run gate
       - name: public-surface + Paddle catalog guards (tools/ sits outside the workspace)
         # The excerpt secret-scan + source-drift test, preview reader contract, and production
         # Paddle marker-map validator are load-bearing gates outside turbo — same class as the
