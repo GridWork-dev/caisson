@@ -12,6 +12,14 @@ Real src + tests: `createStripeBilling` / `createPaddleBilling` / `createLemonSq
 `processEvent` / `withIdempotentSideEffect` / `PROCESSED_EVENT_SCHEMA_SQL` (exactly-once webhook
 side-effects).
 
+## Entry points
+
+- `@caisson/billing-orchestration` — the full node-capable surface, unchanged.
+- `@caisson/billing-orchestration/browser` — browser-safe (ADR-0396): the pure claim-key half,
+  `assertValidSourceEventId` + `sideEffectEventKey`. Every name on it is also on the main entry (the
+  subset direction is one-way). The claim itself stays server-only: it is an `INSERT … ON CONFLICT`
+  against a `TenantExecutor` inside your tenant transaction.
+
 ## Boundary
 
 `@caisson/billing` (open, Apache-2.0) owns signature verification (`verifyStripeWebhook`,

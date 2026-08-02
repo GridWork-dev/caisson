@@ -17,12 +17,12 @@
 // Both run INSIDE the caller's `withTenant` tx, so the claim commits atomically with the grant `fn`
 // performs: if `fn` throws, the whole tx (claim included) rolls back and the next delivery retries
 // cleanly — the claim only persists once the work it guards has durably committed.
-import { ValidationError } from "@caisson/kernel";
 import {
   TENANT_GUC,
   buildTenantPolicySql,
   type TenantExecutor,
 } from "@caisson/tenancy-rls";
+import { assertValidSourceEventId, sideEffectEventKey } from "./event-keys.ts";
 
 /**
  * The outer webhook-event dedup table (ADR-0006 append-only). Ships as a checksum-pinned platform
@@ -47,23 +47,6 @@ ${buildTenantPolicySql("billing_processed_event")}
 export interface ProcessResult {
   /** True when this event was already claimed by a prior delivery — `fn` was NOT run this call. */
   alreadyProcessed: boolean;
-}
-
-/**
- * The outer `sourceEventId` key and the per-effect composite `${sourceEventId}:${sideEffect}`
- * share this one table's namespace. A `sourceEventId` containing `:` could therefore alias a
- * side-effect key (e.g. outer id `"abc:x"` collides with the composite of outer id `"abc"` +
- * side-effect `"x"`) — reject it outright so the two key shapes can never overlap.
- */
-function assertValidSourceEventId(sourceEventId: string, caller: string): void {
-  if (sourceEventId.length === 0) {
-    throw new ValidationError(`${caller} requires a non-empty sourceEventId`);
-  }
-  if (sourceEventId.includes(":")) {
-    throw new ValidationError(
-      `${caller} requires a sourceEventId without ':' — it would alias the composite side-effect key namespace`,
-    );
-  }
 }
 
 /**
@@ -121,13 +104,9 @@ export async function withIdempotentSideEffect(
   sideEffect: string,
   fn: () => Promise<void>,
 ): Promise<boolean> {
-  assertValidSourceEventId(sourceEventId, "withIdempotentSideEffect");
-  if (sideEffect.length === 0) {
-    throw new ValidationError(
-      "withIdempotentSideEffect requires a non-empty sideEffect",
-    );
-  }
-  const fresh = await claim(tx, `${sourceEventId}:${sideEffect}`);
+  // Guards + composition live in event-keys.ts (the pure half), so the key shape this table's
+  // namespace depends on has exactly one implementation.
+  const fresh = await claim(tx, sideEffectEventKey(sourceEventId, sideEffect));
   if (!fresh) return false;
   await fn();
   return true;
