@@ -960,6 +960,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "Agent kernel is the engine-neutral base for governed AI agent work: a Zod schema for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship), allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident audit-chain recorder. It imports no vendor SDK and runs no LLM: composition only, consumed by both the base CLI and the Agentic-Dev bundle.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/agent-kernel/browser inside a client bundle for the artifact schema and its authoring helpers, the lifecycle act FSM, the governance decision algebra, and the redacting logger. The main entry keeps the complete node-capable surface (the execFile command handler and the audited hash-chain lifecycle), and every browser-entry export is also on it.",
+      },
+      {
         title: "Typed agent/skill/rule schema",
         body: "AgentArtifact, SkillArtifact, and RuleArtifact are a Zod discriminatedUnion on kind, built on @caisson/kernel's strictObject: an unknown field is rejected outright, not silently dropped. A bad artifact fails through parseArtifact as a redaction-safe ValidationError, never the rejected values.",
       },
@@ -1034,6 +1038,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "Agent Runner spawns a headless coding-agent CLI as a detached subprocess in a caller-supplied worktree, building its environment from scratch instead of inheriting the caller's. It streams the run's stream-json output to a durable .jsonl file and parses that transcript into a structured report of tool calls, files touched, and outcome.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/agent-runner/browser inside a client bundle for the ProviderConfig model, CLAUDE_CLI_PROFILE, PASSTHROUGH_KEYS, and buildEngineEnv, the same module the runner itself imports, so you can run and show the env scrub anywhere. The main entry keeps the full node-capable surface (detached spawn, run registry, transcript parsing), and every browser-entry export is also on it.",
+      },
+      {
         title: "Env built from scratch, not inherited",
         body: "buildEngineEnv() never spreads process.env. It starts from an empty object, copies only the PASSTHROUGH_KEYS allowlist (PATH, LANG, LC_ALL, LC_CTYPE, TERM, TZ, TMPDIR), then adds the target provider's routing vars and the one auth key the caller passed in, nothing else reaches the child.",
       },
@@ -1062,7 +1070,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       label:
         "buildEngineEnv, the child env built from scratch, never spread from process.env",
       lang: "ts",
-      file: "packages/agent-runner/src/agent-runner.ts",
+      file: "packages/agent-runner/src/engine-env.ts",
       code: '  const env: Record<string, string> = {};\n  for (const key of PASSTHROUGH_KEYS) {\n    const value = parentEnv[key];\n    if (typeof value === "string" && value.length > 0) env[key] = value;\n  }\n  // Isolation + provider routing only — no secret beyond the one provider key.\n  env["HOME"] = opts.home;\n  env[opts.provider.baseUrlEnv] = opts.baseUrl;\n  env[opts.provider.authEnv] = opts.authKey;\n  if (opts.provider.configDirEnv !== undefined) {\n    env[opts.provider.configDirEnv] = opts.configDir;\n  }\n  if (opts.provider.modelEnv !== undefined) {\n    env[opts.provider.modelEnv] = opts.provider.model;\n  }\n  // Hygiene for CLIs that honor these conventions: no self-update, no telemetry from the sandbox.\n  env["DISABLE_AUTOUPDATER"] = "1";\n  env["DISABLE_TELEMETRY"] = "1";\n  env["DISABLE_ERROR_REPORTING"] = "1";\n  return env;',
       annotations: [
         "The env object starts empty, PASSTHROUGH_KEYS is the only thing ever copied from the parent process, never a blanket process.env spread.",
@@ -1109,6 +1117,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     definition:
       "agent-trajectory is the append-only event contract a governed agent run writes into: eleven event kinds spanning run, step, model call, tool proposal/approval/result, and checkpoint, each Zod-`.strict()`-validated. Sensitive bodies (prompts, tool args, tool results) never inline; they're carried only as a sha256 `DigestRef`. A deterministic `project()` folds any event order into one byte-identical projection, and a park/approve/deny state machine holds paused runs with their snapshot encrypted at rest.",
     included: [
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/agent-trajectory/browser inside a client bundle for the strict event schema, the in-memory append-only store, the run-state port, both deterministic projections, and the Claude-transcript adapter, so a dashboard can replay and validate a trajectory client-side. The main entry keeps the full node-capable surface including the two Postgres-backed stores, and every browser-entry export is also on it.",
+      },
       {
         title: "Eleven-kind closed event vocabulary",
         body: "EVENT_KINDS fixes the whole vocabulary, run.started/finished, step.started/finished, model.call, model.usage, tool.proposed/approved/denied/result, checkpoint. TrajectoryEvent is a Zod discriminatedUnion keyed on kind, each variant .strict(), so an unknown field or a made-up kind is rejected at the boundary, not silently stored.",
@@ -1193,8 +1205,12 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "tool-exec is Caisson's governed tool-call gate, composed live into the Agentic-Dev edition surface: a default-deny allowlist maps a logical command name to a real executable and a Zod-`.strict()` argv schema, validated with parseStrict before spawn and passed to execFile as an array, never a shell string. A two-phase propose/execute split lets an external approval step run between validation and the actual spawn.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/tool-exec/browser inside a client bundle for createToolProposer, the default-deny lookup and Zod argv validation with no spawn seam attached. It is the same gate createToolExec runs, so a UI can decide whether a call is permitted without the process boundary. The main entry keeps the full node-capable surface, and every browser-entry export is also on it.",
+      },
+      {
         title: "Default-deny allowlist, fail-closed",
-        body: "createToolExec builds its registry from config.allowlist, a name not registered there throws NotFoundError before anything spawns. An empty allowlist refuses every call; there's no wildcard escape hatch.",
+        body: "createToolProposer builds its registry from the allowlist it is handed (createToolExec passes config.allowlist straight through), a name not registered there throws NotFoundError before anything spawns. An empty allowlist refuses every call; there's no wildcard escape hatch.",
       },
       {
         title: "Argv arrays, never a shell",
@@ -1215,14 +1231,14 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     artifact: {
       label:
-        "createToolExec, run(): allowlist lookup, Zod validation, spawn (no exec on failure)",
+        "createToolProposer, propose(): the one allowlist lookup + Zod validation run() and propose() both go through",
       lang: "ts",
-      file: "packages/tool-exec/src/tool-exec.ts",
-      code: '    async run(\n      name: string,\n      args: unknown,\n      reason?: string,\n    ): Promise<ExecResult> {\n      const spec = registry.get(name);\n      if (spec === undefined) {\n        throw new NotFoundError(`No command registered for "${name}"`, {\n          command: name,\n        });\n      }\n      const validatedArgs = parseStrict(spec.argsSchema, args);\n      return spawn(spec.command, validatedArgs, reason);\n    },',
+      file: "packages/tool-exec/src/propose.ts",
+      code: '    propose(name: string, args: unknown, reason?: string): ProposedToolCall {\n      const spec = registry.get(name);\n      if (spec === undefined) {\n        throw new NotFoundError(`No command registered for "${name}"`, {\n          command: name,\n        });\n      }\n      const validatedArgs = parseStrict(spec.argsSchema, args);\n      const proposed: ProposedToolCall = {\n        name,\n        command: spec.command,\n        args: validatedArgs,\n      };\n      return reason === undefined ? proposed : { ...proposed, reason };\n    },',
       annotations: [
-        "registry.get(name) is the default-deny lookup, a name not in config.allowlist throws NotFoundError before parseStrict or spawn ever run.",
+        "registry.get(name) is the default-deny lookup, a name not in config.allowlist throws NotFoundError before parseStrict or any spawn path runs.",
         "parseStrict validates args against the allowlisted CommandSpec's own argsSchema, a bad shape throws ValidationError, still before anything spawns.",
-        "spawn() only ever receives validatedArgs, the Zod-checked argv array, never the caller's raw args and never a shell string.",
+        "run() spawns exactly the validated argv this returns and never re-derives it, so the single-phase and two-phase paths cannot drift, and this module reaches no node builtin, which is why it is also the browser entry.",
       ],
     },
     faq: [
@@ -1359,6 +1375,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         body: "generateEvidencePack scans every control for an unresolved collector result before assembling anything; if any exist it throws EvidencePackBlockedError (HTTP 422) carrying the full BLOCKED-case report. The throw runs before any assembly and the module touches no filesystem, so a partial pack is structurally impossible, not just policy.",
       },
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/compliance-core/browser inside a client bundle for the collector contract with its result constructors, the four pure collectors (FORCE-RLS, WORM retention, risk register, impersonation dual trail), the pack format, the crosswalk rollup, and assembleEvidenceManifest, the same flag-never-guess refusal and derived-readiness assembly generateEvidencePack composes. The archive and digest phase, the chain-verify collector, and the field-crypto collector stay on the main entry: each needs Node. Every browser-entry export is also on the main entry.",
+      },
+      {
         title: "Deterministic, byte-stable archive",
         body: "buildDeterministicZip fixes every entry to the 1980-epoch DOS mtime, name-sorts entries, and pins the deflate level over canonicalize()'d contents, so identical evidence always serializes to the identical SHA-256 on EvidencePack.sha256, regardless of when or by whom it was generated. The injected now clock is stamped only on the generatedAt envelope field, never hashed into the body.",
       },
@@ -1381,10 +1401,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     artifact: {
       label:
-        "generateEvidencePack, the flag-never-guess scan, before any assembly runs",
+        "assembleEvidenceManifest, the flag-never-guess scan, before any assembly runs",
       lang: "ts",
-      file: "packages/compliance-core/src/evidence/generate.ts",
-      code: 'export function generateEvidencePack(\n  input: GenerateEvidencePackInput,\n): EvidencePack {\n  // PHASE 1 — flag-never-guess. Scan EVERY control for unresolved evidence before assembling\n  // anything; refuse the whole pack if any is found. No filesystem touch here → no partial pack.\n  const unresolved: Array<{\n    controlId: string;\n    collectorId: string;\n    reason: string | undefined;\n  }> = [];\n  for (const control of input.controls) {\n    for (const result of control.evidence) {\n      if (result.status === "unresolved") {\n        unresolved.push({\n          controlId: control.controlId,\n          collectorId: result.item.collectorId,\n          reason: result.reason,\n        });\n      }\n    }\n  }\n  if (unresolved.length > 0) {\n    const sortedUnresolved = [...unresolved].sort(\n      (a, b) =>\n        cmp(a.controlId, b.controlId) || cmp(a.collectorId, b.collectorId),\n    );\n    const report = parseEvidencePackBlocked({\n      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,\n      tenantId: input.tenantId,\n      framework: input.framework,\n      blocked: true,\n      unresolved: sortedUnresolved,\n    });\n    throw new EvidencePackBlockedError(report);\n  }',
+      file: "packages/compliance-core/src/evidence/assemble.ts",
+      code: 'export function assembleEvidenceManifest(\n  input: AssembleEvidenceManifestInput,\n): EvidencePackManifest {\n  // PHASE 1 — flag-never-guess. Scan EVERY control for unresolved evidence before assembling\n  // anything; refuse the whole pack if any is found. No filesystem touch here → no partial pack.\n  const unresolved: Array<{\n    controlId: string;\n    collectorId: string;\n    reason: string | undefined;\n  }> = [];\n  for (const control of input.controls) {\n    for (const result of control.evidence) {\n      if (result.status === "unresolved") {\n        unresolved.push({\n          controlId: control.controlId,\n          collectorId: result.item.collectorId,\n          reason: result.reason,\n        });\n      }\n    }\n  }\n  if (unresolved.length > 0) {\n    const sortedUnresolved = [...unresolved].sort(\n      (a, b) =>\n        cmp(a.controlId, b.controlId) || cmp(a.collectorId, b.collectorId),\n    );\n    const report = parseEvidencePackBlocked({\n      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,\n      tenantId: input.tenantId,\n      framework: input.framework,\n      blocked: true,\n      unresolved: sortedUnresolved,\n    });\n    throw new EvidencePackBlockedError(report);\n  }',
       annotations: [
         "The scan over input.controls runs BEFORE any assembly starts, every control is checked for an unresolved result first, so a partial pack is never even started.",
         "EvidencePackBlockedError carries the full sorted report (every unresolved controlId + collectorId), not just a boolean, the caller sees exactly what's missing.",
