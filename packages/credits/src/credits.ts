@@ -13,31 +13,11 @@ import {
 } from "@caisson/kernel";
 import { type FeatureTag, FeatureTagSchema } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
-
-// `feature_grant` / `feature_debit` are the generic feature-meter envelopes (ADR-0074): an edition
-// meters a NEW action through these carrying a registered `feature` tag, never by extending this
-// base-owned, base-closed event-type set. The legacy specifics stay immutable + are not retrofitted.
-export const GRANT_EVENT_TYPES = [
-  "purchase",
-  "sub_allotment",
-  "topup",
-  "feature_grant",
-] as const;
-export const DEBIT_EVENT_TYPES = [
-  "codegen_debit",
-  "ai_feature_debit",
-  "feature_debit",
-  // The compensating debit a refund writes to claw back UNSPENT credits granted by the refunded
-  // purchase (ADR-0113). It is NOT a spendable-balance debit (no 402 floor): the amount is bounded to
-  // the current balance so the wallet never goes negative. Written only via `clawback`, never `debit`.
-  "refund_clawback",
-  // The residue burn the expiry sweep writes when a grant passes its `expires_at` with credits left
-  // (ADR-0245/0252). Like refund_clawback it is NOT a spendable-balance debit (bounded to the current
-  // balance, wallet never negative). Written only via `sweepExpiredGrants`, never `debit`.
-  "expiry_debit",
-] as const;
-export type GrantEventType = (typeof GRANT_EVENT_TYPES)[number];
-export type DebitEventType = (typeof DEBIT_EVENT_TYPES)[number];
+// The pure half (ADR-0396): the event-type vocabulary, the positive-integer money rule, and the
+// FIFO waterfall this file's `debit` walks. It lives in its own database-free module so a client
+// surface can import it (`@caisson/credits/browser`) without the FIFO rule being reimplemented.
+import { assertPositiveInt, planFifoDebit } from "./fifo.ts";
+import type { DebitEventType, GrantEventType } from "./fifo.ts";
 
 interface IdempotencySource {
   /** A provider event id (Stripe etc). Mutually exclusive with `idempotencyKey`. */
@@ -99,14 +79,6 @@ export interface CreditResult {
   balance: number;
   /** True when this call was a no-op replay of an already-applied event. */
   idempotent: boolean;
-}
-
-function assertPositiveInt(amount: number): void {
-  if (!Number.isInteger(amount) || amount <= 0) {
-    throw new ValidationError("amount must be a positive integer", {
-      field: "amount",
-    });
-  }
 }
 
 function idemColumns({ sourceEventId, idempotencyKey }: IdempotencySource): {
@@ -398,23 +370,20 @@ export async function debit(
   );
 
   const grants = await unexpiredGrantsFifo(tx, input.accountId);
-  let toCover: number = input.amount;
-  for (const g of grants) {
-    if (toCover === 0) break;
-    const take = Math.min(g.remaining, toCover);
+  const plan = planFifoDebit(grants, input.amount);
+  for (const draw of plan.draws) {
     await insertConsumption(tx, {
       accountId: input.accountId,
-      grantEventId: g.id,
+      grantEventId: draw.grantId,
       debitEventId: fresh,
-      amount: take,
+      amount: draw.taken,
     });
-    toCover -= take;
   }
-  if (toCover > 0) {
+  if (plan.shortfall > 0) {
     // Unexpired remaining can't cover it — 402 with the SPENDABLE total (not the raw wallet
     // aggregate, which may still carry not-yet-swept expired residue). Throwing rolls back the
     // event + consumption inserts above — a failed debit leaves no trace.
-    throw new InsufficientCreditsError(input.amount, input.amount - toCover);
+    throw new InsufficientCreditsError(input.amount, plan.covered);
   }
 
   const updated = await tx.query<{ balance: number }>(
