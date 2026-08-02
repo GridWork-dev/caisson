@@ -32,7 +32,7 @@ const ENV = {
 
 const globalDb = globalThis as unknown as {
   caissonTransactor?: unknown;
-  caissonPglite?: { close(): Promise<void> };
+  caissonPglite?: { close(): Promise<void> } | undefined;
 };
 let hadDatabaseUrl: boolean;
 let priorDatabaseUrl: string | undefined;
@@ -370,7 +370,7 @@ describe("site KMS request context", () => {
     }> = [];
     const lockedTx: TenantExecutor = {
       async query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }> {
-        lockQueries.push({ sql, params });
+        lockQueries.push(params !== undefined ? { sql, params } : { sql });
         if (sql.includes("pg_try_advisory_xact_lock")) {
           throw new Error("stop after first lock attempt");
         }
@@ -424,7 +424,7 @@ describe("site KMS request context", () => {
     const queries: Array<{ sql: string; params?: unknown[] }> = [];
     const tx: TenantExecutor = {
       async query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }> {
-        queries.push({ sql, params });
+        queries.push(params !== undefined ? { sql, params } : { sql });
         if (sql.includes("set_config")) {
           await new Promise((resolve) => setTimeout(resolve, 5));
           return { rows: [] };
@@ -685,8 +685,8 @@ describe("site KMS request context", () => {
     });
     const deps: SiteAzureKmsDependencies = {
       ...runtime.deps,
-      createCryptographyClient(keyId) {
-        const base = runtime.deps.createCryptographyClient(keyId);
+      createCryptographyClient(keyId, credential) {
+        const base = runtime.deps.createCryptographyClient(keyId, credential);
         return {
           wrapKey: base.wrapKey.bind(base),
           async unwrapKey() {
