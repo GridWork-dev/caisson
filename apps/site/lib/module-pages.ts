@@ -64,6 +64,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "field-crypto seals values under a distinct AES-256-GCM key per tenant, using HKDF-SHA256 for dev/self-hosted deployments or request-scoped KMS envelope encryption in hosted production. Its self-describing envelope always binds tenant and column identity into the AEAD's additional authenticated data; explicit row-bound fields bind row identity too.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/field-crypto/browser inside a client bundle, a Cloudflare Worker, or any other WebCrypto-only runtime for the same HKDF derivation, AES-256-GCM seal and open, row-bound AAD, and envelope codec the server runs, over crypto.subtle and Uint8Array instead of node:crypto and Buffer (Node 20.12 or later). The main entry keeps the full surface including the KMS and Drizzle halves, every browser-entry export is also on it, and both directions of the interop are pinned byte-for-byte against the same fixtures.",
+      },
+      {
         title: "Fail-closed on every read and write",
         body: "encryptedColumn() wires a Drizzle customType whose toDriver/fromDriver only run inside withFieldCryptoContext. Reach an encrypted column with no bound tenant context and currentFieldCryptoContext() throws InternalError instead of returning a partial or unscoped result.",
       },
@@ -216,6 +220,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "Retention runner is Caisson's CCPA/GDPR right-to-erasure module: `runErasure` fans one subject's erasure out across every registered store (object storage, cascade DB, orphan sweep), isolates each target's failure so one broken store never blocks the others, and writes exactly one reason-tagged audit row per run.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/retention-runner/browser inside a client bundle for the request contract, the ErasureTarget port with all three reference drivers, the audit-sink port with its in-memory driver, and runErasure itself. The scheduling half stays on the main entry, which keeps the complete node-capable surface, and every browser-entry export is also on it.",
+      },
+      {
         title: "Three reference erasure targets",
         body: "createObjectStorageTarget, createCascadeDbTarget, and createOrphanSweepTarget each take an injected minimal client (purge / cascadeDelete / sweep), the real S3 or Postgres client is a documented seam, never a package dependency. No aws-sdk or pg import ships in retention-runner itself.",
       },
@@ -288,6 +296,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     definition:
       "The alerting module is Caisson's SOC 2 CC7.2 alert-delivery control: a five-stage pipeline (dedup, rate-cap-to-digest, IANA-timezone quiet hours with a critical override, multi-channel delivery (email, webhook, Slack, Telegram), then a structured audit row) that runs deterministically because every dependency, including the clock, is injected.",
     included: [
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/alerting/browser inside a client bundle for the event contract, all three decision stages, the delivery port with its isolation wrapper and capture driver, the audit port with its in-memory driver, and processAlert itself. The five network drivers stay on the main entry, which keeps the complete node-capable surface, and every browser-entry export is also on it.",
+      },
       {
         title: "Dedup on an open incident's key",
         body: "dedup() suppresses a repeat event while an incident sharing its dedupeKey is still open, so a flapping check doesn't re-fire an alert that already has a live incident.",
@@ -672,11 +684,15 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         title: "Reflexivity queue for judge/human disagreement",
         body: "captureDisagreement() enqueues a case only when the model verdict and a human verdict disagree; consolidateReflexivityQueue() dedupes and caps the list for operator review. Nothing here auto-writes a committed dataset, merging a candidate back in stays a human act.",
       },
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/ai-evals/browser inside a client bundle for the gate's rules with no file I/O: the baseline boundary schema, compareToBaseline, the pre-bless eligibility check, the bless merge, and wilsonLowerBound. gateAgainstBaseline stays on the main entry because it reads and writes the committed baseline file, and every browser-entry export is also on the main entry.",
+      },
     ],
     artifact: {
       label: "The fail-closed regression compare",
       lang: "ts",
-      file: "packages/ai-evals/src/baseline.ts",
+      file: "packages/ai-evals/src/baseline-compare.ts",
       code: 'export function compareToBaseline(\n  run: EvalRun,\n  baseline: BaselineFile,\n): BaselineComparison {\n  const findings: RegressionFinding[] = [];\n\n  if (run.score + EPS < run.threshold) {\n    findings.push({\n      kind: "below-threshold",\n      actual: run.score,\n      baseline: run.threshold,\n      detail: `score ${run.score} < threshold ${run.threshold}`,\n    });\n  }\n\n  const prior = baseline.evals[run.name];\n  if (prior === undefined) {\n    findings.push({\n      kind: "missing-baseline",\n      actual: run.score,\n      detail: `no committed baseline for eval "${run.name}" — bless to record it`,\n    });\n    return { eval: run.name, passed: false, findings, blessed: false };\n  }',
       annotations: [
         "The EPS tolerance on the threshold compare (run.score + EPS < run.threshold) avoids a false regression from float rounding noise, not just a strict less-than.",
@@ -900,15 +916,21 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         title: "Validated memory-item boundary",
         body: "MemoryItemSchema is a Zod .strict() boundary: UUID ids, bounded text (100k chars) and scope (256 chars), optional string-to-string metadata. Unknown keys are rejected, not silently dropped.",
       },
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/local-store/browser inside a client bundle for fuseByRrf and RRF_K, the fusion arithmetic with no database attached, to merge leg rankings your server or worker already produced. Retrieval itself stays on the main entry: the vec0 KNN and FTS5 legs need bun:sqlite and the sqlite-vec native extension. Every browser-entry export is also on the main entry.",
+      },
     ],
     artifact: {
-      label: "LocalStore.hybridSearch, vec0 KNN + FTS5 fused by RRF (RRF_K=60)",
+      label:
+        "fuseByRrf, the Reciprocal Rank Fusion hybridSearch merges both legs through (RRF_K=60)",
       lang: "ts",
-      file: "packages/local-store/src/store.ts",
-      code: "  hybridSearch(opts: HybridSearchOptions): SearchHit[] {\n    const limit = opts.limit ?? 10;\n    const legLimit = Math.max(limit * 8, 50);\n\n    const vecRanks = this.vecLeg(opts.queryVector, legLimit);\n    const ftsRanks = this.ftsLeg(opts.queryText, legLimit);\n\n    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs.\n    const fused = new Map<number, number>();\n    for (const [rowid, rank] of vecRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n    for (const [rowid, rank] of ftsRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n\n    const ranked = [...fused.entries()]\n      // score descending; deterministic tie-break by rowid ascending (stable, env-free).\n      .sort((a, b) => b[1] - a[1] || a[0] - b[0])\n      .slice(0, limit);\n    if (ranked.length === 0) return [];\n\n    return ranked.map(([rowid, score]) => ({ id: this.docId(rowid), score }));\n  }",
+      file: "packages/local-store/src/rrf.ts",
+      code: 'export function fuseByRrf(\n  legs: readonly RrfLeg[],\n  opts: RrfOptions = {},\n): RrfRow[] {\n  const rrfK = opts.rrfK ?? RRF_K;\n  assertPositive(rrfK, "rrfK");\n  const fused = new Map<number, number>();\n  for (const leg of legs) {\n    assertPositive(leg.weight, "RRF leg weight");\n    for (const [key, rank] of leg.ranks) {\n      fused.set(key, (fused.get(key) ?? 0) + leg.weight / (rrfK + rank));\n    }\n  }\n  const ranked = [...fused.entries()].sort(\n    (a, b) => b[1] - a[1] || a[0] - b[0],\n  );\n  const rows = opts.limit === undefined ? ranked : ranked.slice(0, opts.limit);\n  return rows.map(([key, score]) => ({ key, score }));\n}',
       annotations: [
-        "The fused map sums 1/(RRF_K + rank) across both legs, a doc that only hits in the vector leg or only the FTS5 leg still scores, it isn't dropped for missing the other.",
-        "The sort's tie-break is a.rowid - b.rowid, deterministic ranking with no dependence on wall-clock time or run-to-run ordering.",
+        "fuseByRrf sums weight/(RRF_K + rank) across every leg a document appears in, a doc that only hits in the vector leg or only the FTS5 leg still scores, it isn't dropped for missing the other.",
+        "The sort's tie-break is key ascending, which is rowid order for hybridSearch, deterministic ranking with no dependence on wall-clock time or run-to-run ordering.",
+        "The fusion has no database attached, which is why it is also the whole of the browser entry point while the vec0 and FTS5 legs stay server-side.",
       ],
     },
     faq: [
@@ -949,6 +971,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     definition:
       "Agent kernel is the engine-neutral base for governed AI agent work: a Zod schema for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship), allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident audit-chain recorder. It imports no vendor SDK and runs no LLM: composition only, consumed by both the base CLI and the Agentic-Dev bundle.",
     included: [
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/agent-kernel/browser inside a client bundle for the artifact schema and its authoring helpers, the lifecycle act FSM, the governance decision algebra, and the redacting logger. The main entry keeps the complete node-capable surface (the execFile command handler and the audited hash-chain lifecycle), and every browser-entry export is also on it.",
+      },
       {
         title: "Typed agent/skill/rule schema",
         body: "AgentArtifact, SkillArtifact, and RuleArtifact are a Zod discriminatedUnion on kind, built on @caisson/kernel's strictObject: an unknown field is rejected outright, not silently dropped. A bad artifact fails through parseArtifact as a redaction-safe ValidationError, never the rejected values.",
@@ -1024,6 +1050,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "Agent Runner spawns a headless coding-agent CLI as a detached subprocess in a caller-supplied worktree, building its environment from scratch instead of inheriting the caller's. It streams the run's stream-json output to a durable .jsonl file and parses that transcript into a structured report of tool calls, files touched, and outcome.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/agent-runner/browser inside a client bundle for the ProviderConfig model, CLAUDE_CLI_PROFILE, PASSTHROUGH_KEYS, and buildEngineEnv, the same module the runner itself imports, so you can run and show the env scrub anywhere. The main entry keeps the full node-capable surface (detached spawn, run registry, transcript parsing), and every browser-entry export is also on it.",
+      },
+      {
         title: "Env built from scratch, not inherited",
         body: "buildEngineEnv() never spreads process.env. It starts from an empty object, copies only the PASSTHROUGH_KEYS allowlist (PATH, LANG, LC_ALL, LC_CTYPE, TERM, TZ, TMPDIR), then adds the target provider's routing vars and the one auth key the caller passed in, nothing else reaches the child.",
       },
@@ -1052,7 +1082,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       label:
         "buildEngineEnv, the child env built from scratch, never spread from process.env",
       lang: "ts",
-      file: "packages/agent-runner/src/agent-runner.ts",
+      file: "packages/agent-runner/src/engine-env.ts",
       code: '  const env: Record<string, string> = {};\n  for (const key of PASSTHROUGH_KEYS) {\n    const value = parentEnv[key];\n    if (typeof value === "string" && value.length > 0) env[key] = value;\n  }\n  // Isolation + provider routing only — no secret beyond the one provider key.\n  env["HOME"] = opts.home;\n  env[opts.provider.baseUrlEnv] = opts.baseUrl;\n  env[opts.provider.authEnv] = opts.authKey;\n  if (opts.provider.configDirEnv !== undefined) {\n    env[opts.provider.configDirEnv] = opts.configDir;\n  }\n  if (opts.provider.modelEnv !== undefined) {\n    env[opts.provider.modelEnv] = opts.provider.model;\n  }\n  // Hygiene for CLIs that honor these conventions: no self-update, no telemetry from the sandbox.\n  env["DISABLE_AUTOUPDATER"] = "1";\n  env["DISABLE_TELEMETRY"] = "1";\n  env["DISABLE_ERROR_REPORTING"] = "1";\n  return env;',
       annotations: [
         "The env object starts empty, PASSTHROUGH_KEYS is the only thing ever copied from the parent process, never a blanket process.env spread.",
@@ -1099,6 +1129,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     definition:
       "agent-trajectory is the append-only event contract a governed agent run writes into: eleven event kinds spanning run, step, model call, tool proposal/approval/result, and checkpoint, each Zod-`.strict()`-validated. Sensitive bodies (prompts, tool args, tool results) never inline; they're carried only as a sha256 `DigestRef`. A deterministic `project()` folds any event order into one byte-identical projection, and a park/approve/deny state machine holds paused runs with their snapshot encrypted at rest.",
     included: [
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/agent-trajectory/browser inside a client bundle for the strict event schema, the in-memory append-only store, the run-state port, both deterministic projections, and the Claude-transcript adapter, so a dashboard can replay and validate a trajectory client-side. The main entry keeps the full node-capable surface including the two Postgres-backed stores, and every browser-entry export is also on it.",
+      },
       {
         title: "Eleven-kind closed event vocabulary",
         body: "EVENT_KINDS fixes the whole vocabulary, run.started/finished, step.started/finished, model.call, model.usage, tool.proposed/approved/denied/result, checkpoint. TrajectoryEvent is a Zod discriminatedUnion keyed on kind, each variant .strict(), so an unknown field or a made-up kind is rejected at the boundary, not silently stored.",
@@ -1183,8 +1217,12 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "tool-exec is Caisson's governed tool-call gate, composed live into the Agentic-Dev edition surface: a default-deny allowlist maps a logical command name to a real executable and a Zod-`.strict()` argv schema, validated with parseStrict before spawn and passed to execFile as an array, never a shell string. A two-phase propose/execute split lets an external approval step run between validation and the actual spawn.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/tool-exec/browser inside a client bundle for createToolProposer, the default-deny lookup and Zod argv validation with no spawn seam attached. It is the same gate createToolExec runs, so a UI can decide whether a call is permitted without the process boundary. The main entry keeps the full node-capable surface, and every browser-entry export is also on it.",
+      },
+      {
         title: "Default-deny allowlist, fail-closed",
-        body: "createToolExec builds its registry from config.allowlist, a name not registered there throws NotFoundError before anything spawns. An empty allowlist refuses every call; there's no wildcard escape hatch.",
+        body: "createToolProposer builds its registry from the allowlist it is handed (createToolExec passes config.allowlist straight through), a name not registered there throws NotFoundError before anything spawns. An empty allowlist refuses every call; there's no wildcard escape hatch.",
       },
       {
         title: "Argv arrays, never a shell",
@@ -1205,14 +1243,14 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     artifact: {
       label:
-        "createToolExec, run(): allowlist lookup, Zod validation, spawn (no exec on failure)",
+        "createToolProposer, propose(): the one allowlist lookup + Zod validation run() and propose() both go through",
       lang: "ts",
-      file: "packages/tool-exec/src/tool-exec.ts",
-      code: '    async run(\n      name: string,\n      args: unknown,\n      reason?: string,\n    ): Promise<ExecResult> {\n      const spec = registry.get(name);\n      if (spec === undefined) {\n        throw new NotFoundError(`No command registered for "${name}"`, {\n          command: name,\n        });\n      }\n      const validatedArgs = parseStrict(spec.argsSchema, args);\n      return spawn(spec.command, validatedArgs, reason);\n    },',
+      file: "packages/tool-exec/src/propose.ts",
+      code: '    propose(name: string, args: unknown, reason?: string): ProposedToolCall {\n      const spec = registry.get(name);\n      if (spec === undefined) {\n        throw new NotFoundError(`No command registered for "${name}"`, {\n          command: name,\n        });\n      }\n      const validatedArgs = parseStrict(spec.argsSchema, args);\n      const proposed: ProposedToolCall = {\n        name,\n        command: spec.command,\n        args: validatedArgs,\n      };\n      return reason === undefined ? proposed : { ...proposed, reason };\n    },',
       annotations: [
-        "registry.get(name) is the default-deny lookup, a name not in config.allowlist throws NotFoundError before parseStrict or spawn ever run.",
+        "registry.get(name) is the default-deny lookup, a name not in config.allowlist throws NotFoundError before parseStrict or any spawn path runs.",
         "parseStrict validates args against the allowlisted CommandSpec's own argsSchema, a bad shape throws ValidationError, still before anything spawns.",
-        "spawn() only ever receives validatedArgs, the Zod-checked argv array, never the caller's raw args and never a shell string.",
+        "run() spawns exactly the validated argv this returns and never re-derives it, so the single-phase and two-phase paths cannot drift, and this module reaches no node builtin, which is why it is also the browser entry.",
       ],
     },
     faq: [
@@ -1261,6 +1299,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     definition:
       "org-controls is the cross-tenant admin-write RLS layer carved out of the open tenancy-rls floor, plus the org-plan surfaces around it: WorkOS SSO sign-in, a Clerk session-verification driver, and the owner-gated multi-user membership surface. The free tenancy-rls package still enforces the buyer app role's fail-closed single-tenant isolation; this paid layer adds the separate admin_write role your own operator control plane mutates through.",
     included: [
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/org-controls/browser inside a client bundle for assertCanManageMembers, so your UI can show and hide owner-only controls using the exact gate the server enforces rather than a second copy of the rule. The main entry keeps the full surface, and every browser-entry export is also on it.",
+      },
       {
         title: "Cross-tenant write policy, DB-separated on purpose",
         body: "buildAdminWritePolicySql grants SELECT/INSERT/UPDATE (no DELETE) to admin_write and adds a role-scoped TO admin_write USING (true) WITH CHECK (true) permissive policy alongside the table's existing app tenant-isolation policy, RLS OR-combines them by role, so admin_write reaches every tenant while app never matches this policy. buildAdminSelectPolicySql is the narrower read-only twin for tables the control plane only ever reads.",
@@ -1349,6 +1391,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         body: "generateEvidencePack scans every control for an unresolved collector result before assembling anything; if any exist it throws EvidencePackBlockedError (HTTP 422) carrying the full BLOCKED-case report. The throw runs before any assembly and the module touches no filesystem, so a partial pack is structurally impossible, not just policy.",
       },
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/compliance-core/browser inside a client bundle for the collector contract with its result constructors, the four pure collectors (FORCE-RLS, WORM retention, risk register, impersonation dual trail), the pack format, the crosswalk rollup, and assembleEvidenceManifest, the same flag-never-guess refusal and derived-readiness assembly generateEvidencePack composes. The archive and digest phase, the chain-verify collector, and the field-crypto collector stay on the main entry: each needs Node. Every browser-entry export is also on the main entry.",
+      },
+      {
         title: "Deterministic, byte-stable archive",
         body: "buildDeterministicZip fixes every entry to the 1980-epoch DOS mtime, name-sorts entries, and pins the deflate level over canonicalize()'d contents, so identical evidence always serializes to the identical SHA-256 on EvidencePack.sha256, regardless of when or by whom it was generated. The injected now clock is stamped only on the generatedAt envelope field, never hashed into the body.",
       },
@@ -1371,10 +1417,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     artifact: {
       label:
-        "generateEvidencePack, the flag-never-guess scan, before any assembly runs",
+        "assembleEvidenceManifest, the flag-never-guess scan, before any assembly runs",
       lang: "ts",
-      file: "packages/compliance-core/src/evidence/generate.ts",
-      code: 'export function generateEvidencePack(\n  input: GenerateEvidencePackInput,\n): EvidencePack {\n  // PHASE 1 — flag-never-guess. Scan EVERY control for unresolved evidence before assembling\n  // anything; refuse the whole pack if any is found. No filesystem touch here → no partial pack.\n  const unresolved: Array<{\n    controlId: string;\n    collectorId: string;\n    reason: string | undefined;\n  }> = [];\n  for (const control of input.controls) {\n    for (const result of control.evidence) {\n      if (result.status === "unresolved") {\n        unresolved.push({\n          controlId: control.controlId,\n          collectorId: result.item.collectorId,\n          reason: result.reason,\n        });\n      }\n    }\n  }\n  if (unresolved.length > 0) {\n    const sortedUnresolved = [...unresolved].sort(\n      (a, b) =>\n        cmp(a.controlId, b.controlId) || cmp(a.collectorId, b.collectorId),\n    );\n    const report = parseEvidencePackBlocked({\n      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,\n      tenantId: input.tenantId,\n      framework: input.framework,\n      blocked: true,\n      unresolved: sortedUnresolved,\n    });\n    throw new EvidencePackBlockedError(report);\n  }',
+      file: "packages/compliance-core/src/evidence/assemble.ts",
+      code: 'export function assembleEvidenceManifest(\n  input: AssembleEvidenceManifestInput,\n): EvidencePackManifest {\n  // PHASE 1 — flag-never-guess. Scan EVERY control for unresolved evidence before assembling\n  // anything; refuse the whole pack if any is found. No filesystem touch here → no partial pack.\n  const unresolved: Array<{\n    controlId: string;\n    collectorId: string;\n    reason: string | undefined;\n  }> = [];\n  for (const control of input.controls) {\n    for (const result of control.evidence) {\n      if (result.status === "unresolved") {\n        unresolved.push({\n          controlId: control.controlId,\n          collectorId: result.item.collectorId,\n          reason: result.reason,\n        });\n      }\n    }\n  }\n  if (unresolved.length > 0) {\n    const sortedUnresolved = [...unresolved].sort(\n      (a, b) =>\n        cmp(a.controlId, b.controlId) || cmp(a.collectorId, b.collectorId),\n    );\n    const report = parseEvidencePackBlocked({\n      formatVersion: EVIDENCE_PACK_FORMAT_VERSION,\n      tenantId: input.tenantId,\n      framework: input.framework,\n      blocked: true,\n      unresolved: sortedUnresolved,\n    });\n    throw new EvidencePackBlockedError(report);\n  }',
       annotations: [
         "The scan over input.controls runs BEFORE any assembly starts, every control is checked for an unresolved result first, so a partial pack is never even started.",
         "EvidencePackBlockedError carries the full sorted report (every unresolved controlId + collectorId), not just a boolean, the caller sees exactly what's missing.",
@@ -1981,6 +2027,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     definition:
       "signing-primitive produces a detached Ed25519 signature over a canonical, chain-anchored evidence manifest, bound to the WORM audit chain's tip hash and signed under a per-tenant key that is deliberately distinct from the Caisson license-issuer key. An optional RFC-3161 timestamp countersigns the signature, and a separate deployment-level Ed25519ph signer anchors receipts into Sigstore Rekor's public transparency log.",
     included: [
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/signing-primitive/browser inside a client bundle for the verify half: the signable-payload construction, verifyEvidenceSignature over the same @noble/ed25519 primitive the server signs with, and the RFC-3161 test double (Node 20.12 or later). A relying party can check your evidence pack entirely in their own browser. The signing identity stays off that entry on purpose, a tenant seed does not belong in a bundle users download, and every browser-entry export is also on the main entry.",
+      },
       {
         title: "Per-tenant Ed25519Signer, never the license key",
         body: "Ed25519Signer holds a 32-byte tenant seed in a private #secretKey field, never logged or serialized; construction throws ValidationError on an empty keyId or a wrong-length key. It is deliberately distinct from Caisson's own license-issuer key, a buyer proves provenance of their own evidence with their own identity.",

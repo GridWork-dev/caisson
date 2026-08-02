@@ -76,7 +76,7 @@ try {
         />
         {/* Speculation Rules (ADR-0334 moment 3): hover-eager prerender of marketing nav
             targets — Chromium-only, ignored elsewhere. Never the authed/commerce/API surface;
-            analytics are prerender-safe (plausible-init defers to activation, web-vitals v5 is
+            analytics are prerender-safe (plausible-init defers to activation, web-vitals is
             activation-aware natively). Static JSON, no user input. */}
         <script
           type="speculationrules"

@@ -33,7 +33,7 @@ afterEach(() => {
 
 describe("OwnedItemsProvider", () => {
   test("hint cookie present: fetches /api/cart/owned on mount and fills owned from the response (signed-in marking works even though the real session cookie is HttpOnly and never visible to document.cookie)", async () => {
-    const fetchSpy = mock(() =>
+    const fetchSpy = mock((_input?: RequestInfo | URL, _init?: RequestInit) =>
       Promise.resolve(
         new Response(JSON.stringify({ owned: ["module:audit-worm"] }), {
           status: 200,

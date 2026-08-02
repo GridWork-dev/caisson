@@ -89,15 +89,13 @@ test("PRIVACY: never emits prompt or completion text keys", async () => {
 
 test("failure path carries $ai_is_error + $ai_error and omits $ai_http_status", async () => {
   const { impl, seen } = capturingFetch();
-  await captureAiGeneration(
-    CONFIG,
-    successGen({
-      isError: true,
-      error: "generation_failed",
-      httpStatus: undefined,
-    }),
-    impl,
-  );
+  // `httpStatus` must be genuinely absent, not `undefined`-valued, to match
+  // exactOptionalPropertyTypes — destructure it off rather than overriding to undefined.
+  const { httpStatus: _omitted, ...genWithoutStatus } = successGen({
+    isError: true,
+    error: "generation_failed",
+  });
+  await captureAiGeneration(CONFIG, genWithoutStatus, impl);
   const props = (seen[0]?.body.properties ?? {}) as Record<string, unknown>;
   expect(props.$ai_is_error).toBe(true);
   expect(props.$ai_error).toBe("generation_failed");
