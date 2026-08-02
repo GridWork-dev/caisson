@@ -2,25 +2,52 @@
 
 // The agent-kernel module's flagship "poke" (ADR-0378 lock 2, kimi spec: "agent-kernel: click
 // transitions across ACTS, canTransition verdicts, a failed VERIFY reopens PLAN, an illegal skip
-// throws"). A deterministic in-browser replay of the lifecycle act FSM
-// (packages/agent-kernel/src/lifecycle.ts), running on the package's REAL transition table
-// (mirrored in ./agent-kernel-logic.ts, golden-pinned against the real package in
-// ./agent-kernel-logic.test.ts - see that file's header for why the mirror exists instead of a
-// direct import). Nothing here fetches, persists, or measures the visitor.
+// throws"). A deterministic in-browser replay of the REAL lifecycle act FSM: `ACTS`,
+// `canTransition`, `isTerminal`, and `transition` all come from `@caisson/agent-kernel/browser`,
+// the package's browser-safe entry (ADR-0396), and an illegal click surfaces the package's own
+// `ValidationError`. The hand-ported mirror this poke used to drive is deleted.
+//
+// Poke-local below the imports: only the click SESSION (which act we are on, which steps have been
+// taken) — presentation state the package has no opinion about. No transition rule is restated
+// here. Nothing fetches, persists, or measures the visitor.
 import { useCallback, useState } from "react";
-
-import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
+import { ValidationError } from "@caisson/kernel";
 import {
   ACTS,
-  ValidationErrorMirror,
-  attemptTransition,
   canTransition,
-  initLifecycleSession,
   isTerminal,
+  transition,
   type Act,
-  type LifecycleSession,
-} from "./agent-kernel-logic";
+  type LifecycleStep,
+} from "@caisson/agent-kernel/browser";
+
+import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 import styles from "./agent-kernel-poke.module.css";
+
+/** One click session: the current act plus every legal transition taken so far. */
+export interface LifecycleSession {
+  readonly current: Act;
+  readonly trace: readonly LifecycleStep[];
+}
+
+/** The sample starting point — always `spec`, the real FSM's only entry act. */
+export function initLifecycleSession(): LifecycleSession {
+  return { current: ACTS[0], trace: [] };
+}
+
+/**
+ * Attempt one click through the REAL `transition()`: it validates the edge and throws before this
+ * function builds anything, so an illegal target never leaves a half-applied step behind.
+ */
+export function attemptTransition(
+  session: LifecycleSession,
+  to: Act,
+): { session: LifecycleSession; step: LifecycleStep } {
+  const from = session.current;
+  transition(from, to);
+  const step: LifecycleStep = { seq: session.trace.length, from, to };
+  return { session: { current: to, trace: [...session.trace, step] }, step };
+}
 
 interface VerdictLine {
   state: VerdictState;
@@ -48,7 +75,7 @@ export default function AgentKernelPoke() {
           message: `Legal transition. ${step.from} → ${step.to}.`,
         });
       } catch (err) {
-        if (err instanceof ValidationErrorMirror) {
+        if (err instanceof ValidationError) {
           setVerdict({
             state: "fail",
             message: `${err.httpStatus} ${err.code}. ${err.message}`,

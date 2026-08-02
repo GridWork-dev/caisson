@@ -119,12 +119,15 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 });
 
 describe("every move addresses a real ref through the package's own parser", () => {
-  test.each([
+  type PromptRefKind = ReturnType<typeof realParsePromptRef>["kind"];
+  const refCases: [string, PromptRefKind][] = [
     [promptRefFor(SAMPLE_ALIAS), "alias"],
     [promptRefFor(2), "version"],
     [promptRefFor(NEVER_MINTED_VERSION), "version"],
     [SAMPLE_NAME, "current"],
-  ])("%s parses as a %s reference", (ref, kind) => {
+  ];
+
+  test.each(refCases)("%s parses as a %s reference", (ref, kind) => {
     expect(realParsePromptRef(ref).kind).toBe(kind);
     expect(realParsePromptRef(ref).name).toBe(SAMPLE_NAME);
   });

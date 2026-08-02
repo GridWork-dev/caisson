@@ -234,6 +234,16 @@ const NON_VISIBLE_HTML_TAGS = new Set([
   "template",
 ]);
 
+// htmlparser2 v12 promotes these legacy HTML names to raw-text elements, while v8 emitted ordinary
+// open/text/close events for them. Neutralize only their tag tokens before parsing so the maintained
+// parser preserves the old extractor event stream without switching the whole document to XML mode.
+const LEGACY_RAW_TEXT_TAG_PATTERN =
+  /<(\/?)(iframe|xmp|plaintext|noembed|noframes)(?=[\t\n\f\r />])/giu;
+
+function neutralizeLegacyRawTextTags(markup: string): string {
+  return markup.replace(LEGACY_RAW_TEXT_TAG_PATTERN, "<$1caisson-legacy-$2");
+}
+
 function hasHiddenStyle(style: string | undefined): boolean {
   if (style === undefined) return false;
   const declarations = style.toLocaleLowerCase("en-US").replace(/\s+/gu, "");
@@ -256,7 +266,8 @@ function isNonVisibleElement(
   );
 }
 
-function extractVisibleHtmlText(markup: string): string {
+/** Exported so parser-major behavior can be pinned against exact extracted text. */
+export function extractVisibleHtmlText(markup: string): string {
   const chunks: string[] = [];
   let nonVisibleDepth = 0;
   const parser = new Parser(
@@ -285,7 +296,7 @@ function extractVisibleHtmlText(markup: string): string {
     },
     { decodeEntities: true },
   );
-  parser.end(markup);
+  parser.end(neutralizeLegacyRawTextTags(markup));
   return chunks.join("");
 }
 
@@ -644,11 +655,10 @@ export async function runRegulatoryClaimWatch(
         }
 
         const decodedBody = new TextDecoder().decode(snapshot.body);
-        const body =
+        const isHtml =
           contentType.includes("text/html") ||
-          contentType.includes("application/xhtml+xml")
-            ? extractVisibleHtmlText(decodedBody)
-            : decodedBody;
+          contentType.includes("application/xhtml+xml");
+        const body = isHtml ? extractVisibleHtmlText(decodedBody) : decodedBody;
         const watchTexts =
           source.watch?.mode === "text" ? source.watch.texts : [source.locator];
         // A degenerate watch list asserts NOTHING while still incrementing `checkedSources`, so the
