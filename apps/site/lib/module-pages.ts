@@ -216,6 +216,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "Retention runner is Caisson's CCPA/GDPR right-to-erasure module: `runErasure` fans one subject's erasure out across every registered store (object storage, cascade DB, orphan sweep), isolates each target's failure so one broken store never blocks the others, and writes exactly one reason-tagged audit row per run.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/retention-runner/browser inside a client bundle for the request contract, the ErasureTarget port with all three reference drivers, the audit-sink port with its in-memory driver, and runErasure itself. The scheduling half stays on the main entry, which keeps the complete node-capable surface, and every browser-entry export is also on it.",
+      },
+      {
         title: "Three reference erasure targets",
         body: "createObjectStorageTarget, createCascadeDbTarget, and createOrphanSweepTarget each take an injected minimal client (purge / cascadeDelete / sweep), the real S3 or Postgres client is a documented seam, never a package dependency. No aws-sdk or pg import ships in retention-runner itself.",
       },
@@ -288,6 +292,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     definition:
       "The alerting module is Caisson's SOC 2 CC7.2 alert-delivery control: a five-stage pipeline (dedup, rate-cap-to-digest, IANA-timezone quiet hours with a critical override, multi-channel delivery (email, webhook, Slack, Telegram), then a structured audit row) that runs deterministically because every dependency, including the clock, is injected.",
     included: [
+      {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/alerting/browser inside a client bundle for the event contract, all three decision stages, the delivery port with its isolation wrapper and capture driver, the audit port with its in-memory driver, and processAlert itself. The five network drivers stay on the main entry, which keeps the complete node-capable surface, and every browser-entry export is also on it.",
+      },
       {
         title: "Dedup on an open incident's key",
         body: "dedup() suppresses a repeat event while an incident sharing its dedupeKey is still open, so a flapping check doesn't re-fire an alert that already has a live incident.",
