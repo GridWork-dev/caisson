@@ -578,6 +578,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "ai-meter is the metered-inference money path: estimate a call's cost, reserve integer credits against it before the provider answers, then reconcile to the provider's actual reported usage. A per-tenant spend window and circuit breaker sit on top, so a crossed hard cap blocks the next reservation before a provider call ever fires; the block is checked against real usage, never assumed.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/ai-meter/browser inside a client bundle for the pure half: BUNDLED_PRICE_BOOK with computeCost and creditsForMicroUsd, the estimateTokens/estimateUsage estimator, and the spend vocabulary including SpendCapError. The main entry keeps the full surface, every browser-entry export is also on it, and nothing that moves a credit or takes a database handle is reachable from it.",
+      },
+      {
         title: "Pre-call estimate",
         body: "estimateCost sizes the reservation before the provider responds: a chars/4 heuristic (estimateTokens) against the message array, deliberately rounded up (a full output budget assumed, no cache) so reconcile() trues a shortfall down rather than an under-reservation slipping past a cap.",
       },
