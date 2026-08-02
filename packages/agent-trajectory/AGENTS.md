@@ -19,6 +19,13 @@ correctly.
   when there is no validated usage contract (no token claims).
 - **Replay is a pure projection.** `project` sorts by seq and folds; the same log always yields a
   byte-identical `RunProjection`. Do not fold in wall-clock or iteration-order dependence.
+- **Two entry points.** `.` is the full node-capable surface; `./browser` is the browser-safe
+  subset (contract, in-memory stores, projections, transcript adapter). A client bundle imports
+  `./browser`, never `.` — the barrel carries the two Postgres stores. `src/browser.ts` is the
+  single list of the shared half and `src/index.ts` re-exports it, so a name added there lands on
+  both; a module joins `./browser` only if its whole graph passes the package's static
+  source-graph walk (`src/browser-safety.test.ts`), and every `./browser` name must also exist on
+  `.`.
 
 ## Producing events
 
