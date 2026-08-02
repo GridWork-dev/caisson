@@ -1300,6 +1300,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       "org-controls is the cross-tenant admin-write RLS layer carved out of the open tenancy-rls floor, plus the org-plan surfaces around it: WorkOS SSO sign-in, a Clerk session-verification driver, and the owner-gated multi-user membership surface. The free tenancy-rls package still enforces the buyer app role's fail-closed single-tenant isolation; this paid layer adds the separate admin_write role your own operator control plane mutates through.",
     included: [
       {
+        title: "Browser-safe entry point",
+        body: "Import @caisson/org-controls/browser inside a client bundle for assertCanManageMembers, so your UI can show and hide owner-only controls using the exact gate the server enforces rather than a second copy of the rule. The main entry keeps the full surface, and every browser-entry export is also on it.",
+      },
+      {
         title: "Cross-tenant write policy, DB-separated on purpose",
         body: "buildAdminWritePolicySql grants SELECT/INSERT/UPDATE (no DELETE) to admin_write and adds a role-scoped TO admin_write USING (true) WITH CHECK (true) permissive policy alongside the table's existing app tenant-isolation policy, RLS OR-combines them by role, so admin_write reaches every tenant while app never matches this policy. buildAdminSelectPolicySql is the narrower read-only twin for tables the control plane only ever reads.",
       },
