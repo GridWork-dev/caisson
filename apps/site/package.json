@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start -p 3030",
     "lint": "eslint .",
+    "typecheck": "tscn -p tsconfig.json",
     "test": "fumadocs-mdx && bun test --timeout 60000 ./lib ./emails ./components",
     "eval": "bun test ./lib/ask-ai/grounding.eval.test.ts",
     "test:e2e": "bun test ./e2e",
