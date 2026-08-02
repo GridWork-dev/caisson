@@ -9,12 +9,17 @@
 // from a receipt's `checks` block, which is derived/untrusted display material (CR-06, M3). Any leg
 // that cannot be recomputed (redacted payload, WebCrypto unavailable) resolves away from "verified",
 // never into it (L4): redaction → the explicit anchor-confirmed state, everything else → unverifiable.
-import { canonicalize } from "./canonical.ts";
+import { canonicalize, checkAnchor } from "./canonical.ts";
 import type {
   AuditChainAnchor,
   AuditChainEntry,
+  ChainVerification,
   JsonValue,
 } from "./canonical.ts";
+
+// Minting an anchor reads hashes the chain already committed — no hashing, so the ONE
+// implementation in `canonical.ts` serves the node builder and the browser verifier alike.
+export { anchorChain } from "./canonical.ts";
 
 /** Lowercase hex of a byte array — matches the kernel's `createHash(...).digest("hex")` encoding. */
 function toHex(bytes: Uint8Array): string {
@@ -36,6 +41,71 @@ export async function hashChainLinkAsync(
   const bytes = new TextEncoder().encode(canonicalize([prevHash, payload]));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return toHex(new Uint8Array(digest));
+}
+
+/**
+ * The async WebCrypto twin of the sync `chainEntry`: `prev = null` mints genesis (seq 0, prevHash
+ * null); otherwise this entry binds `prev.hash` and takes `prev.seq + 1`. Same 2-tuple link hash,
+ * pinned byte-for-byte against the node implementation by a cross-impl test.
+ */
+export async function chainEntryAsync(
+  prev: AuditChainEntry | null,
+  payload: JsonValue,
+): Promise<AuditChainEntry> {
+  const prevHash = prev === null ? null : prev.hash;
+  const seq = prev === null ? 0 : prev.seq + 1;
+  return {
+    seq,
+    prevHash,
+    payload,
+    hash: await hashChainLinkAsync(prevHash, payload),
+  };
+}
+
+/** The async twin of `buildChain`: fold a list of payloads into a complete chain, oldest first. */
+export async function buildChainAsync(
+  payloads: readonly JsonValue[],
+): Promise<AuditChainEntry[]> {
+  const entries: AuditChainEntry[] = [];
+  let prev: AuditChainEntry | null = null;
+  for (const payload of payloads) {
+    prev = await chainEntryAsync(prev, payload);
+    entries.push(prev);
+  }
+  return entries;
+}
+
+/**
+ * The async twin of `verifyChain` — WHOLE-CHAIN verification for a client or an offline pack, where
+ * only `crypto.subtle` is available. {@link verifyEntryAgainstAnchor} answers "is THIS row intact
+ * against its own per-length anchor"; this answers "are these entries the complete, original chain",
+ * which is a different question and the one a tail truncation turns on.
+ *
+ * Identical semantics to the node version: returns the FIRST broken index; WITHOUT an `anchor` it
+ * proves only mutual consistency (a truncation or a wholesale rewrite still reads valid), WITH one
+ * the committed root/length/tip are asserted through the shared `checkAnchor`.
+ */
+export async function verifyChainAsync(
+  entries: readonly AuditChainEntry[],
+  anchor?: AuditChainAnchor,
+): Promise<ChainVerification> {
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i] as AuditChainEntry;
+    const expectedPrev =
+      i === 0 ? null : (entries[i - 1] as AuditChainEntry).hash;
+    if (entry.seq !== i) return { valid: false, brokenAt: i };
+    if (entry.prevHash !== expectedPrev) return { valid: false, brokenAt: i };
+    if (
+      entry.hash !== (await hashChainLinkAsync(entry.prevHash, entry.payload))
+    ) {
+      return { valid: false, brokenAt: i };
+    }
+  }
+  if (anchor !== undefined) {
+    const anchorFailure = checkAnchor(entries, anchor);
+    if (anchorFailure !== null) return anchorFailure;
+  }
+  return { valid: true, brokenAt: null };
 }
 
 /** A single verification leg. `na` = not applicable (a redacted row cannot recompute its link hash). */
