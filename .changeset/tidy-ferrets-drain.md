@@ -13,4 +13,6 @@ on the main entry, which is unchanged and still carries every browser-entry expo
 are integers as before and no wallet, ledger, or 402 behavior changes: the server now calls the
 same shared waterfall instead of its own copy, so a balance or a shortfall shown by a client is the
 one a real debit computes. The site's credits interactive demo runs that shared logic directly
-instead of a hand-maintained copy.
+instead of a hand-maintained copy. The planner validates every supplied remainder before doing
+money arithmetic, so malformed or fractional values fail closed instead of poisoning the reported
+coverage, while drained and negative lines contribute no draw.

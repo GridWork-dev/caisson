@@ -87,19 +87,38 @@ export interface FifoDebitPlan {
  * is the guard that keeps a zero-credit draw, which `grant_consumption_amount_positive` forbids,
  * from being planned at all when a caller passes a fully drained line.
  *
- * Throws `ValidationError` when `amount` is not a positive integer (ADR-0007).
+ * Throws `ValidationError` when `amount` is not a positive integer, or when any remainder is not
+ * an integer (ADR-0007). The remainders are the other half of the money input and this is a
+ * PUBLISHED entry a client reaches with numbers parsed out of an API response, where a missing,
+ * null, or string-typed field is ordinary — the server's `::int` cast covers only the database
+ * path. Validating them here is what keeps `covered`/`shortfall` real numbers: an unchecked NaN
+ * remainder makes `Math.min` NaN, poisons the accumulator, and returns `shortfall: NaN`, which
+ * every `shortfall > 0` gate — the 402 in `debit()` included — reads as fully funded.
  */
 export function planFifoDebit(
   grants: readonly GrantRemainder[],
   amount: number,
 ): FifoDebitPlan {
   assertPositiveInt(amount);
+  // Every remainder is checked, not only the ones the walk below reaches, so the same input is
+  // accepted or refused whichever grant happens to cover the charge.
+  for (const g of grants) {
+    if (!Number.isInteger(g.remaining)) {
+      throw new ValidationError("grant remaining must be an integer", {
+        field: "remaining",
+        grantId: g.id,
+      });
+    }
+  }
   let toCover = amount;
   const draws: FifoDraw[] = [];
   for (const g of grants) {
     if (toCover === 0) break;
     const take = Math.min(g.remaining, toCover);
-    if (take <= 0) continue;
+    // Negated on purpose: `take <= 0` is FALSE for NaN, so the plain form would push a
+    // `{taken: NaN}` draw and fail open. The check above already rules NaN out; the guard stays
+    // NaN-closed so it cannot become the hole again if that check ever moves.
+    if (!(take > 0)) continue;
     draws.push({ grantId: g.id, taken: take });
     toCover -= take;
   }

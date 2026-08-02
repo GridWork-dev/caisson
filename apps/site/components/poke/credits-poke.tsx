@@ -119,7 +119,9 @@ export function applyDebit(
     wallet.grants.map((g) => ({ id: g.id, remaining: remaining(g) })),
     amount,
   );
-  if (plan.shortfall > 0) {
+  // Negated form, matching the server's own 402 gate: anything not provably covered in full fails
+  // the debit (`shortfall > 0` would read false for a NaN shortfall and render it as succeeded).
+  if (!(plan.shortfall <= 0)) {
     return {
       wallet,
       ok: false,
