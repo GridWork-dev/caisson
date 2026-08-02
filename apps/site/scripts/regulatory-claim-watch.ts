@@ -225,21 +225,24 @@ function normalizeText(value: string): string {
   return value.replace(/\s+/gu, " ").trim().toLocaleLowerCase("en-US");
 }
 
-// htmlparser2 v12 tokenizes these legacy elements as raw text. Their contents are not evidence for
-// the surrounding page, and exposing their literal nested markup would corrupt phrase matching.
 const NON_VISIBLE_HTML_TAGS = new Set([
   "head",
-  "iframe",
   "input",
-  "noembed",
-  "noframes",
   "noscript",
-  "plaintext",
   "script",
   "style",
   "template",
-  "xmp",
 ]);
+
+// htmlparser2 v12 promotes these legacy HTML names to raw-text elements, while v8 emitted ordinary
+// open/text/close events for them. Neutralize only their tag tokens before parsing so the maintained
+// parser preserves the old extractor event stream without switching the whole document to XML mode.
+const LEGACY_RAW_TEXT_TAG_PATTERN =
+  /<(\/?)(iframe|xmp|plaintext|noembed|noframes)(?=[\t\n\f\r />])/giu;
+
+function neutralizeLegacyRawTextTags(markup: string): string {
+  return markup.replace(LEGACY_RAW_TEXT_TAG_PATTERN, "<$1caisson-legacy-$2");
+}
 
 function hasHiddenStyle(style: string | undefined): boolean {
   if (style === undefined) return false;
@@ -293,7 +296,7 @@ export function extractVisibleHtmlText(markup: string): string {
     },
     { decodeEntities: true },
   );
-  parser.end(markup);
+  parser.end(neutralizeLegacyRawTextTags(markup));
   return chunks.join("");
 }
 
@@ -656,23 +659,6 @@ export async function runRegulatoryClaimWatch(
           contentType.includes("text/html") ||
           contentType.includes("application/xhtml+xml");
         const body = isHtml ? extractVisibleHtmlText(decodedBody) : decodedBody;
-        // A malformed raw-text element can consume the remainder of the document before the
-        // handler sees any later tags. Classify that parser limitation explicitly instead of
-        // misreporting every declared anchor as missing.
-        if (
-          isHtml &&
-          decodedBody.trim().length > 0 &&
-          normalizeText(body) === ""
-        ) {
-          findings.push({
-            kind: "manual-review",
-            targetId: target.id,
-            route: target.route,
-            sourceUrl: source.url,
-            detail: `Source returned ${String(snapshot.body.length)} bytes of HTML but no visible text could be extracted, so no watch text could be checked; confirm locator "${source.locator}" manually.`,
-          });
-          continue;
-        }
         const watchTexts =
           source.watch?.mode === "text" ? source.watch.texts : [source.locator];
         // A degenerate watch list asserts NOTHING while still incrementing `checkedSources`, so the

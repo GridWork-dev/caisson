@@ -128,24 +128,37 @@ describe("regulatory-claim visible HTML extraction", () => {
     [
       "iframe",
       "<iframe><p>ignored</p></iframe><p>Article 50</p>",
-      " Article 50 ",
+      "  ignored   Article 50 ",
     ],
-    ["xmp", "<xmp><b>ignored</b></xmp><p>Article 50</p>", " Article 50 "],
+    [
+      "xmp",
+      "<xmp><b>ignored</b></xmp><p>Article 50</p>",
+      "  ignored   Article 50 ",
+    ],
     [
       "noembed",
       "<noembed><b>ignored</b></noembed><p>Article 50</p>",
-      " Article 50 ",
+      "  ignored   Article 50 ",
     ],
     [
       "noframes",
       "<noframes><b>ignored</b></noframes><p>Article 50</p>",
-      " Article 50 ",
+      "  ignored   Article 50 ",
     ],
-    ["plaintext", "<plaintext>ignored</plaintext><p>Article 50</p>", ""],
     [
-      "a self-closed iframe that consumes the remaining markup",
+      "plaintext",
+      "<plaintext>ignored</plaintext><p>Article 50</p>",
+      " ignored  Article 50 ",
+    ],
+    [
+      "a self-closed iframe followed by visible content",
       '<iframe src="https://example.com/embed"/><main><p>Article <strong>50</strong></p></main>',
-      "",
+      "   Article  50    ",
+    ],
+    [
+      "ordinary implied-close markup",
+      "<ul><li>one<li>two</ul><p>tail</p>",
+      "  one  two   tail ",
     ],
   ])("pins exact text for %s", (_label, markup, expected) => {
     expect(extractVisibleHtmlText(markup)).toBe(expected);
@@ -182,7 +195,7 @@ describe("regulatory-claim source checks", () => {
     expect(report.markdown).toContain("Article 50");
   });
 
-  test("reports malformed raw-text markup as manual review instead of locator drift", async () => {
+  test("checks visible text after a self-closed iframe", async () => {
     const fetcher: SourceFetcher = async () =>
       new Response(
         '<iframe src="https://example.com/embed"/><main><p>Article 50</p></main>',
@@ -194,11 +207,20 @@ describe("regulatory-claim source checks", () => {
 
     const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
 
+    expect(report.findings).toEqual([]);
+  });
+
+  test("reports locator drift when non-empty HTML has no visible text", async () => {
+    const fetcher: SourceFetcher = async () =>
+      new Response("<script>const marker = 'Article 50';</script>", {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+
+    const report = await runRegulatoryClaimWatch([KNOWN_TARGET], fetcher);
+
     expect(report.findings).toEqual([
-      expect.objectContaining({
-        kind: "manual-review",
-        detail: expect.stringContaining("no visible text could be extracted"),
-      }),
+      expect.objectContaining({ kind: "locator-missing" }),
     ]);
   });
 

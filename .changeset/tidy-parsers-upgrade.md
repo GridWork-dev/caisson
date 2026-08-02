@@ -2,9 +2,10 @@
 "@caisson/site": patch
 ---
 
-The HTML parser behind the weekly regulatory-claim watch moves to its current major line, so the
-watch stays on a maintained parser. Entity decoding, comments, and hidden and implicitly closed
-subtrees retain the previous extraction behavior. The parser now treats iframe, xmp, plaintext,
-noembed, and noframes as raw text; the watch excludes those element bodies from evidence and routes
-malformed raw-text pages with no extractable text to manual review. Golden fixtures pin the new
-behavior. The watch reads the same sources and stays advisory-only.
+The HTML parser behind the weekly regulatory-claim watch moves to its current major line. Because
+the new parser classifies iframe, xmp, plaintext, noembed, and noframes as raw text, the extractor
+neutralizes only those tag names before parsing and retains the previous open, text, and close event
+behavior for their bodies and following content. Exact fixtures cover those five elements, a
+self-closed iframe, entity decoding, hidden content, and implied closes. HTML with no visible anchor
+remains locator drift instead of becoming a generic manual-review result. The watch reads the same
+sources and stays advisory-only.
