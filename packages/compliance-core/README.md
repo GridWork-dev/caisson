@@ -15,6 +15,18 @@ import {
 } from "@caisson/compliance-core";
 ```
 
+## Entry points
+
+- `.` — the full surface, node-capable (the deterministic ZIP archive + SHA-256 digest, the
+  chain-verify and field-crypto collectors, the drift monitor, and the complete
+  `@caisson/oscal-spine` re-export).
+- `./browser` — the browser-safe subset, importable from a client bundle: the collector contract
+  and its `passResult`/`flaggedResult`/`unresolvedResult` constructors, the four pure collectors
+  (FORCE-RLS, WORM retention, risk register, impersonation dual trail), the pack format, the
+  crosswalk rollup, and `assembleEvidenceManifest` — the flag-never-guess refusal plus the derived,
+  schema-validated canonical body that `generateEvidencePack` itself composes. Every name on
+  `./browser` is also on `.`.
+
 Commercial module. Consumes `@caisson/kernel`, the framework catalogs in `@caisson/frameworks-pack`,
 `@caisson/field-crypto`, and `@caisson/risk-register` (the generalized model the EU-AI-Act
 risk-register collector runs on) — down-only, composed by the Compliance edition, never the reverse.

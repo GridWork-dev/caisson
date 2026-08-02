@@ -7,6 +7,16 @@ emit into; the bounded tool loop that produces the events rides a later slice.
 
 This README is the contract RFC. The rules below are binding on every producer and consumer.
 
+## Entry points
+
+- `.` — the full surface, node-capable: everything below plus the two Postgres-backed stores
+  (`createPgTrajectoryStore`, `createPgRunStateStore`), which reach a `pg` driver, tenant RLS, and
+  field encryption.
+- `./browser` — the browser-safe subset, importable inside a client bundle: the strict event
+  schema, the in-memory append-only store, the run-state port with its in-memory implementation,
+  both deterministic projections, and the Claude-transcript adapter. Every name on `./browser` is
+  also on `.`.
+
 ## The event envelope
 
 Every event is a strict object:

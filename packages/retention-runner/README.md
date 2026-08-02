@@ -21,6 +21,14 @@ and a reason-tagged audit row. ADR-0135 (module lock) · ADR-0152 (scheduling).
   `ccpa_request`/`operator_manual` are one-shot, operator/subject-triggered calls straight into
   `runErasure` — no queue.
 
+## Entry points
+
+- `.` — the full surface, including the `@caisson/jobs` scheduling half (node-capable).
+- `./browser` — the request/result contract, the `ErasureTarget` port with its three reference
+  drivers, the audit-sink port with its in-memory driver, and `runErasure` itself: safe inside a
+  client bundle. The `auto_90d` scheduling exports are deliberately absent. Every name on
+  `./browser` is also on `.`.
+
 ## Use
 
 ```ts
