@@ -2,7 +2,8 @@
 "@caisson/site": patch
 ---
 
-The HTML parser behind the weekly regulatory-claim watch is upgraded to its current major line,
-which brings the visible-text extraction in line with the modern HTML specification for raw-text
-elements, comments, and implicitly closed tags. The watch reads the same sources, reports the
-same findings, and stays advisory-only.
+The HTML parser behind the weekly regulatory-claim watch moves to its current major line, so the
+watch stays on a maintained parser. The visible-text extraction was checked against the previous
+parser across raw-text elements, comments, entities, hidden and implicitly closed tags, and
+malformed markup, and produces identical text in every case. The watch reads the same sources,
+reports the same findings, and stays advisory-only.
