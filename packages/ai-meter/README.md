@@ -26,6 +26,16 @@ model` price book and debits the wallet BEFORE the provider is ever called — a
   book ever prices it, so a caller can choose to skip or reuse the earlier result. Detection only —
   it never auto-skips a call or moves a credit itself.
 
+## Entry points
+
+- `.` — the full surface: the price book, the estimator, and the database-bound
+  `reserve()`/`reconcile()` money path with its stored circuit breaker. Server-only.
+- `./browser` — the pure half, safe inside a client bundle: the versioned price book and its
+  integer cost normalizer, the pre-call estimator, and the spend-policy vocabulary
+  (`DEFAULT_SCOPE`, `BreakerState`, `SpendCapError`). Every name on `./browser` is also on `.`.
+  Nothing that moves a credit or takes a `TenantExecutor` is reachable from it.
+- `./ui` — the `<UsageChart>` React component.
+
 ## Usage
 
 ```ts
