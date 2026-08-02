@@ -7,8 +7,13 @@
 //      through @caisson/billing's signature verifiers and `pg` through @caisson/tenancy-rls, so the
 //      `/browser` subpath is load-bearing and the specifier itself is pinned below.
 //   2. The claim-key decision is the package's, not a copy: the poke's step function rejects a blank
-//      and a colon-bearing key by throwing the shipped @caisson/kernel ValidationError, message
-//      verbatim against the shipped assertValidSourceEventId.
+//      and a colon-bearing key by throwing the shipped @caisson/kernel ValidationError. Be honest
+//      about how that is proven — comparing the thrown message to the shipped guard's own output
+//      cannot fail while the poke delegates, so it catches only a REWORDED re-inline; the re-inline
+//      that copy-pastes a message byte for byte is caught instead by the source bans below, which
+//      cover both of the guard's messages and constructing the error at all. What the poke DOES
+//      author is the em-dash normalization those words pass through on the way to the screen
+//      (`verdictProse`, ADR-0375 lock 1), pinned here too.
 //   3. The chip vocabulary is presentation, pinned against @caisson/billing's real
 //      DomainBillingEventSchema (this test runs under bun, so it may import the node-capable barrel).
 //   4. The in-memory claim table is a PORT, not a second implementation: it is replayed against the
@@ -45,6 +50,7 @@ import {
   dedupedCount,
   initConsole,
   processEventStep,
+  verdictProse,
   type ConsoleState,
   type Delivery,
   type DomainBillingEventType,
@@ -209,9 +215,32 @@ describe("the claim-key decision is the package's, not a copy", () => {
       }
       expect(err.code).toBe("validation_error");
       expect(err.httpStatus).toBe(400);
+      // Equality against the guard's own output cannot fail while the poke delegates — it is the
+      // reworded-re-inline tripwire, not the whole proof. The byte-identical re-inline is banned in
+      // source below.
       expect(err.message).toBe(packageMessage(id));
     },
   );
+
+  test("the rendered verdict keeps the package's words but drops the em-dash clause break", () => {
+    // ADR-0375 lock 1 binds buyer-facing shipped prose, and both composite-key providers seed a
+    // colon-bearing sample id, so this is the FIRST click on the LemonSqueezy and Polar tabs, not an
+    // edge path. The positive control is the point: it proves verdictProse is doing work rather than
+    // passing a string that never had a dash in it.
+    const colon = packageMessage("orders:2481");
+    expect(colon).toContain("—");
+
+    const rendered = verdictProse(colon);
+    expect(rendered).not.toContain("—");
+    expect(rendered).toContain("requires a sourceEventId without ':'");
+    expect(rendered).toContain(
+      "it would alias the composite side-effect key namespace",
+    );
+
+    // A message with no clause break passes through untouched.
+    const blank = packageMessage("");
+    expect(verdictProse(blank)).toBe(blank);
+  });
 
   test("a rejected delivery leaves the console the component still holds untouched", () => {
     // The rejected calls get THIS state object, so a step that claimed or counted in place before
@@ -229,9 +258,16 @@ describe("the claim-key decision is the package's, not a copy", () => {
   });
 
   test("the poke does not restate the guard's rules", () => {
-    // A future edit that re-inlines the colon/blank checks in the component fails here.
+    // A future edit that re-inlines the colon/blank checks in the component fails here. BOTH of the
+    // guard's messages are banned, not just the blank one: the colon rule is the load-bearing half
+    // (it governs the LemonSqueezy/Polar composite-key shape), and a byte-identical copy of its
+    // message is the one re-inline the message-equality assertion above cannot see. Minting the
+    // error is banned outright too — the component only ever CATCHES a ValidationError.
     const src = readFileSync(POKE_ENTRY, "utf8");
     expect(src).not.toMatch(/requires a non-empty sourceEventId/);
+    expect(src).not.toMatch(/requires a sourceEventId without/);
+    expect(src).not.toMatch(/alias the composite side-effect key namespace/);
+    expect(src).not.toMatch(/new ValidationError\(/);
     expect(src).not.toMatch(/class \w*ValidationError/);
   });
 });
