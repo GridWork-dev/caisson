@@ -31,7 +31,7 @@ started · `ROADMAP` = post-v1, no code.
   `.dependency-cruiser.cjs` (graph reach + base→edition); plus the module golden-fixture contract
   `testing/golden-module.ts` against the ADR-0013 runner. Fix the workspace install first (empty
   `services/*`/`apps/*` members + missing lockfile block `bun install` today).
-- T0.3 `kernel`: typed config/schema + validator (← gridwork-core).
+- T0.3 `kernel`: typed config/schema + validator (← a private GridWork repo).
 - T0.4 CI: build + lint + test + the standards gate; the golden-file harness skeleton. The gate
   job runs `caisson-gate` + eslint + the golden run; the registry-index update job runs only after a
   green gate and stamps a `gateAttestation` (ADR-0021).
@@ -45,10 +45,10 @@ started · `ROADMAP` = post-v1, no code.
 > `jobs`/`email` are real but minimal; the core (auth/tenancy-rls/billing/credits) is substantial.
 > Owners: ADR-0005/0007/0008/0011/0014–0019, ADR-0024.
 
-- T1.1 `auth` (← gridwork) · T1.2 `tenancy-rls` fail-closed (← gwdigital, ADR-0005) ·
+- T1.1 `auth` (← a private GridWork repo) · T1.2 `tenancy-rls` fail-closed (← a private GridWork repo, ADR-0005) ·
   T1.3 `billing` (MoR/Stripe) · T1.4 `credits` integer wallet + append-only ledger + 402 (ADR-0007) ·
   T1.5 `ai-config` provider-agnostic (ADR-0011) · T1.6 `mcp-server` auth-gated (ADR-0008) ·
-  T1.7 `ui` token floor (← tessera) · T1.8 `jobs` + `email`.
+  T1.7 `ui` token floor (← a private GridWork repo) · T1.8 `jobs` + `email`.
 - T1.9 `apps/base`: runnable reference wiring all base packages.
 - **Exit:** base app runs; RLS fails closed under a missing filter (test proves it); a credit
   debit is atomic + idempotent; the buyer MCP answers an authed query.
@@ -93,8 +93,8 @@ started · `ROADMAP` = post-v1, no code.
 > the ADR-0082 §4 roadmap label was retired by ADR-0237 rider 2).
 
 - T4.1 `local-ai`: compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license
-  (← tessera) · T4.2 local canonical store (← health-service) · T4.3 `agent-dev`: typed
-  agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks (← gridwork-core).
+  (← a private GridWork repo) · T4.2 local canonical store (← a private GridWork repo) · T4.3 `agent-dev`: typed
+  agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks (← a private GridWork repo).
 - **Exit:** local-first reference app runs fully offline (FTS fallback when no embeddings);
   license verifies offline; the kernel drives one lifecycle act.
 

@@ -450,7 +450,7 @@ dimension = "D6"
 subject = "docs/build-state.md:397"
 title = "Per-package truth table understates ai-evals' test coverage by 6x, contradicting the same doc's own prose"
 severity = "warn"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "0d9364dbd96a67d7"
@@ -2007,7 +2007,7 @@ dimension = "D6"
 subject = "docs/build-state.md:404"
 title = "Per-package truth table's test-file count for agent-dev is stale"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "3ab2955def2ae12e"
@@ -7614,7 +7614,7 @@ dimension = "D4"
 subject = "SUMMARY.md:40-41,55-59; plan.md:34,48,51,95-96"
 title = "Root planning docs name every sibling private repo (gridwork, gridwork-core, tessera, health-service, prospector, Wardfile, gwdigital, media-pipeline), but confirmed no shipped or public surface ingests them"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "e422269c362eb949"
@@ -8190,7 +8190,7 @@ dimension = "D6"
 subject = "docs/build-state.md:396"
 title = "Per-package truth table's file/loc counts for ai-meter are stale relative to the shipped dedup module"
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "f5f0d6ae1829b389"
@@ -8199,7 +8199,7 @@ dimension = "D2"
 subject = "CLAUDE.md:81"
 title = "Root CLAUDE.md names the operator's private secrets-file convention and path (~/.gridwork/caisson.env, ~/.gridwork/env) in checked-in prose."
 severity = "info"
-status = "accepted"
+status = "fixed"
 
 [[finding]]
 id = "f601b09d48be33bf"

@@ -35,13 +35,13 @@ Per-package built-vs-stub truth → `docs/build-state.md`.
 
 ## What we did (research gates 1–5)
 
-| Gate                  | Output                                                                                                                                                                      | Result                                                                                                                         |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| 1 — Capability mining | mined 15 repos (14 lab + cloned media-pipeline) → `outputs/archive/research/capability-corpus.md`                                                                           | portfolio clusters into 5 capability areas; strongest = compliance (Wardfile) + local-first AI (tessera)                       |
-| 2 — Market research   | DataForSEO demand (reused prospector adapters) + Exa scan + 5 spine deep-dives + support research → `outputs/research/{market-research,demand-signals,support-strategy}.md` | compliance CPC 10–50× everything at low KD; generic boilerplate saturated; recurring revenue = compliance-updates + AI-credits |
-| 3 — Scope (picker)    | locks → `outputs/archive/research/decisions-log.md` D13                                                                                                                     | monorepo · Option C · all-4-editions · compliance/SOC2-HIPAA lead · custom support-bot                                         |
-| 4 — Options           | 3 architectures → `outputs/research/options.md`                                                                                                                             | **Option C** picked (composable packages + generator/registry)                                                                 |
-| 5 — Specs             | `specs/` + `plan.md` + ADR-0001..0012                                                                                                                                       | features/architecture **locked** (Gate 4)                                                                                      |
+| Gate                  | Output                                                                                                                                                                                        | Result                                                                                                                                  |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Capability mining | mined 15 repos (14 lab + a cloned private GridWork repo) → `outputs/archive/research/capability-corpus.md`                                                                                    | portfolio clusters into 5 capability areas; strongest = compliance (a private GridWork repo) + local-first AI (a private GridWork repo) |
+| 2 — Market research   | DataForSEO demand (reused adapters from a private GridWork repo) + Exa scan + 5 spine deep-dives + support research → `outputs/research/{market-research,demand-signals,support-strategy}.md` | compliance CPC 10–50× everything at low KD; generic boilerplate saturated; recurring revenue = compliance-updates + AI-credits          |
+| 3 — Scope (picker)    | locks → `outputs/archive/research/decisions-log.md` D13                                                                                                                                       | monorepo · Option C · all-4-editions · compliance/SOC2-HIPAA lead · custom support-bot                                                  |
+| 4 — Options           | 3 architectures → `outputs/research/options.md`                                                                                                                                               | **Option C** picked (composable packages + generator/registry)                                                                          |
+| 5 — Specs             | `specs/` + `plan.md` + ADR-0001..0012                                                                                                                                                         | features/architecture **locked** (Gate 4)                                                                                               |
 
 ## LOCKED (features + architecture)
 
@@ -52,11 +52,11 @@ editions (one-time) + bundle + **per-module à-la-carte** + **subscription/credi
 **Editions (all v1), each rebuilt clean from a proven repo — all merged via Wave-1 (PR #11), partial
 vs exit gates per the caveat above:**
 
-- **Compliance** (hero) ← Wardfile — RLS + WORM + audit-chain + field-crypto + SOC2/HIPAA evidence pack
-- **AI Production Kit** ← gridwork + prospector + gridwork-core — provider-agnostic AI config + metering (PG-atomic) + spend-caps/circuit-breaker + eval/CI gate + guardrails + agent-assisted setup
-- **Local-first AI** ← tessera + health-service — compute seam + sqlite-vec + offline license. **Now fully commercial (ADR-0050/0083) — the AGPL open-core flank was killed.**
-- **Agentic-Dev** ← gridwork-core — governed-agent kernel (also powers the generator + buyer MCP). **Roadmap edition (most skeletal).**
-- **Base** ← gridwork + gwdigital + tessera — auth + fail-closed RLS + billing + credits + design floor + **buyer MCP (auth)** + AGENTS.md
+- **Compliance** (hero) ← a private GridWork repo — RLS + WORM + audit-chain + field-crypto + SOC2/HIPAA evidence pack
+- **AI Production Kit** ← private GridWork repos — provider-agnostic AI config + metering (PG-atomic) + spend-caps/circuit-breaker + eval/CI gate + guardrails + agent-assisted setup
+- **Local-first AI** ← private GridWork repos — compute seam + sqlite-vec + offline license. **Now fully commercial (ADR-0050/0083) — the AGPL open-core flank was killed.**
+- **Agentic-Dev** ← a private GridWork repo — governed-agent kernel (also powers the generator + buyer MCP). **Roadmap edition (most skeletal).**
+- **Base** ← private GridWork repos — auth + fail-closed RLS + billing + credits + design floor + **buyer MCP (auth)** + AGENTS.md
 
 **Canonical decisions:** ADRs `0001–0238` (gaps exist — `0025–0039` unused, `0119–0128` proposed-only; live catalog: `docs/adr-index.md`) in `knowledge/decisions/`. The full
 numbering map + supersession chain is owned by `docs/state/decisions-and-forks.md` (do not duplicate
