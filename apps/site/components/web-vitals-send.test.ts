@@ -47,6 +47,7 @@ function metric(
 interface Browser {
   beacons: { url: string; body: string }[];
   fire: (type: string) => void;
+  hide: () => void;
 }
 
 const GLOBAL_KEYS = ["document", "window", "navigator"] as const;
@@ -61,8 +62,9 @@ function stubBrowser(): Browser {
     listeners.set(type, [...(listeners.get(type) ?? []), fn]);
   };
 
+  const documentStub = { addEventListener, visibilityState: "visible" };
   const values: Record<string, unknown> = {
-    document: { addEventListener, visibilityState: "visible" },
+    document: documentStub,
     window: {
       addEventListener,
       location: {
@@ -91,6 +93,9 @@ function stubBrowser(): Browser {
   return {
     beacons,
     fire: (type) => (listeners.get(type) ?? []).forEach((f) => f()),
+    hide: () => {
+      documentStub.visibilityState = "hidden";
+    },
   };
 }
 
@@ -141,11 +146,26 @@ test("registers all five reporters and beacons the batch once at pagehide", () =
     $pathname: "/pricing",
     $lib: "caisson-web-vitals",
   });
+});
 
-  // Both lifecycle hooks are wired, so hidden-then-pagehide must not double-send.
+test("flushes on visibilitychange->hidden, and a later pagehide does not double-send", () => {
+  process.env[KEY_VAR] = "phc_test";
+  process.env[HOST_VAR] = "https://ph.example";
+  const browser = stubBrowser();
+
+  startWebVitals();
+  reporters[0]!(metric("LCP", 1234.5, "good"));
+
+  // visibilityState stays "visible" here, so the handler must not flush yet.
   browser.fire("visibilitychange");
+  expect(browser.beacons).toHaveLength(0);
+
+  browser.hide();
+  browser.fire("visibilitychange");
+  expect(browser.beacons).toHaveLength(1); // hidden path actually flushed
+
   browser.fire("pagehide");
-  expect(browser.beacons).toHaveLength(1);
+  expect(browser.beacons).toHaveLength(1); // no double-send
 });
 
 test("sends nothing when no metric was ever recorded", () => {
