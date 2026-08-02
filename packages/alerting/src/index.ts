@@ -14,9 +14,14 @@ export type {
 export { dedup, rateCap, quietHours } from "./pipeline.ts";
 export type { OpenIncident, QuietHoursPolicy } from "./pipeline.ts";
 
+export { deliverAll, createCaptureChannel } from "./delivery.ts";
+export type {
+  DeliveryResult,
+  AlertChannel,
+  CaptureChannel,
+} from "./delivery.ts";
+
 export {
-  deliverAll,
-  createCaptureChannel,
   createEmailChannel,
   createWebhookChannel,
   createSlackChannel,
@@ -28,9 +33,6 @@ export {
   DiscordConfigSchema,
 } from "./channels.ts";
 export type {
-  DeliveryResult,
-  AlertChannel,
-  CaptureChannel,
   WebhookConfig,
   SlackConfig,
   TelegramConfig,
