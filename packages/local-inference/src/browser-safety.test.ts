@@ -39,10 +39,17 @@ describe("`./browser` is the exact browser-safe inference subset", () => {
     expect(walk.unresolved).toEqual([]);
   });
 
-  test("the only tolerated node global is kernel's existing guarded process read", () => {
+  test("has no Node global or network-capable kernel path", () => {
     expect(
       nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
-    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
+    ).toEqual([]);
+    for (const excluded of [
+      "packages/kernel/src/config.ts",
+      "packages/kernel/src/event-sink.ts",
+      "packages/kernel/src/fetch.ts",
+    ]) {
+      expect(walk.files).not.toContain(excluded);
+    }
   });
 
   test("the external frontier is exactly the known browser-safe allowlist", () => {
