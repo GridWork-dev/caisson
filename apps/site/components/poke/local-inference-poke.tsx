@@ -73,7 +73,7 @@ export default function LocalInferencePoke() {
 
   useEffect(() => {
     let live = true;
-    void STUB_BACKEND.embed(prompt).then((v) => {
+    void computeSampleEmbedding(prompt).then((v) => {
       if (live) setVector(v);
     });
     return () => {
@@ -217,6 +217,11 @@ export default function LocalInferencePoke() {
   );
 }
 
+/** Execute the same real package stub used by the component's async prompt effect. */
+export function computeSampleEmbedding(prompt: string): Promise<Float32Array> {
+  return STUB_BACKEND.embed(prompt);
+}
+
 /** Chunk-average a vector for the compact presentation strip; not package API. */
 function sparkBars(vec: Float32Array, bars: number): number[] {
   if (vec.length === 0) return [];
@@ -241,7 +246,7 @@ function normalizeBars(values: readonly number[]): number[] {
 }
 
 /** Drive the sample rented boundary through the real purpose-bound local-privacy guard. */
-function evaluateEgress(
+export function evaluateEgress(
   backend: BackendChoice,
   hostAllowlisted: boolean,
 ): EgressReading {

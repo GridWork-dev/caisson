@@ -11,6 +11,8 @@ import {
   StubInferenceBackend,
 } from "@caisson/local-inference/browser";
 
+import { computeSampleEmbedding, evaluateEgress } from "./local-inference-poke";
+
 const WORKSPACE_ROOT = join(import.meta.dir, "../../../..");
 const POKE_ENTRY = join(import.meta.dir, "local-inference-poke.tsx");
 const RETIRED_MIRROR = join(import.meta.dir, "local-inference-logic.ts");
@@ -60,5 +62,29 @@ describe("the local-inference poke runs the package's browser-safe stub", () => 
       -0.30705133080482483, -0.25519251823425293, -0.04712666571140289,
       0.3809182941913605, -0.3599577844142914,
     ]);
+  });
+
+  test("the component adapters execute the real async stub and privacy guard", async () => {
+    expect((await computeSampleEmbedding("offline-first")).length).toBe(
+      EMBEDDING_DIM,
+    );
+    expect(evaluateEgress("on-device", false)).toEqual({
+      outcome: "local",
+      host: null,
+      sinkKind: null,
+      requests: 0,
+      usage: null,
+    });
+    expect(evaluateEgress("rented", false)).toMatchObject({
+      outcome: "blocked",
+      requests: 0,
+    });
+    expect(evaluateEgress("rented", true)).toEqual({
+      outcome: "egressed",
+      host: "api.rented-inference.example",
+      sinkKind: "rented-backend",
+      requests: 1,
+      usage: { unit: "token", quantity: 128 },
+    });
   });
 });
