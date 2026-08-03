@@ -5,10 +5,10 @@ status: live
 
 # Build state & roadmap
 
-## Current state (2026-07-30)
+## Current state (2026-08-02)
 
-**ADR ceiling is `0395`; `origin/main` is at `d7f7d834`; the latest immutable release tag is
-`v2026.07.27.1`, released 2026-07-28 and fully propagated.** `main` carries the validated
+**ADR ceiling is `0396`; `origin/main` is at `42f69edf`; the latest immutable release tag is
+`v2026.07.30`, released 2026-07-30 and fully propagated.** `main` carries the validated
 writing, OSCAL, Ask AI evidence, and supply-chain pin work cataloged in the
 [2026-07-27 reconciliation](../outputs/executions/2026-07-27-project-reconciliation.md).
 The ADR-0379 full-state completion program is active on
@@ -54,9 +54,9 @@ sandbox purchase/renewal rows. The parallel field-crypto KMS wave has since merg
   dependency-patch audit ownership (`3e384bc5`).
 - **Catalog:** six bundles and 27 modules; Compliance is $1,649 and Everything is $2,259;
   production recreation is 36 products and 68 prices.
-- **Release queue:** 11 changeset files currently resolve to 68 patch package releases, with no
-  minor and no major bumps queued. The 54-file backlog this line used to name was drained by the
-  version PR (#359) and shipped in `v2026.07.27.1`.
+- **Release queue:** 29 changeset files currently resolve to 73 package releases: 23 minor, 46
+  patch, four dependency-only (`none`), and no major bumps. The prior backlog was drained by the
+  version PR (#359); this queue is the single post-clean-main release train.
 - **Reconciled verification:** 224/224 repository tasks and 76 package gates passed uncached
   (`bun run check --force`, 75 suites actually run, zero timeouts) on `db4c693a`.
 - **Fleet parity OK:** admin, site and license run the `v2026.07.30` release commit `d9ae893e`;
