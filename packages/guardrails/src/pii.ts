@@ -11,124 +11,27 @@
 import { createHash } from "node:crypto";
 import type { FieldCryptoContext } from "@caisson/field-crypto";
 import { sealField, openField } from "@caisson/field-crypto";
+import {
+  PII_COLUMN_CONTEXT,
+  detectPii,
+  maskPii,
+  rewritePii,
+} from "./pii-core.ts";
+import type { PiiMatch, PiiToken, RedactMode } from "./pii-core.ts";
 
-export const PII_KINDS = ["email", "ssn", "credit_card", "phone"] as const;
-export type PiiKind = (typeof PII_KINDS)[number];
-
-/** The AAD-bound column identity the PII tokenizer seals under (binds the ciphertext to this use). */
-export const PII_COLUMN_CONTEXT = "guardrails.pii";
-
-export type RedactMode = "mask" | "hash";
-export type PiiMode = RedactMode | "tokenize";
-
-/** A located PII hit. `value` is held only in-process for sealing/redaction — never emitted. */
-export interface PiiMatch {
-  readonly kind: PiiKind;
-  readonly value: string;
-  readonly start: number;
-  readonly end: number;
-}
-
-/** A reversible token: the opaque placeholder left in the text + the field-crypto envelope for it. */
-export interface PiiToken {
-  readonly placeholder: string;
-  readonly kind: PiiKind;
-  /** The field-crypto envelope (base64) — opening it requires the same tenant context. */
-  readonly sealed: string;
-}
-
-/** Luhn check over the digits of a candidate card number (13–19 digits). */
-function luhnValid(candidate: string): boolean {
-  const digits = candidate.replace(/\D/g, "");
-  if (digits.length < 13 || digits.length > 19) return false;
-  let sum = 0;
-  let double = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let n = digits.charCodeAt(i) - 48;
-    if (double) {
-      n *= 2;
-      if (n > 9) n -= 9;
-    }
-    sum += n;
-    double = !double;
-  }
-  return sum % 10 === 0;
-}
-
-interface Detector {
-  readonly kind: PiiKind;
-  readonly re: RegExp;
-  readonly validate?: (value: string) => boolean;
-}
-
-// Order is informational only — overlaps are resolved deterministically below. Each `re` is global.
-const DETECTORS: readonly Detector[] = [
-  { kind: "email", re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
-  { kind: "ssn", re: /\b\d{3}-\d{2}-\d{4}\b/g },
-  {
-    // 3-3-4 with a separator — distinct from SSN's 3-2-4 middle group, so the two never collide.
-    kind: "phone",
-    re: /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/g,
-  },
-  {
-    // 13–19 digits with optional single separators; only accepted when Luhn-valid.
-    kind: "credit_card",
-    re: /\d(?:[ -]?\d){12,18}/g,
-    validate: luhnValid,
-  },
-];
-
-/**
- * Detect PII in `text`. Runs every detector, then resolves overlaps deterministically: earliest
- * start wins, ties broken by longest span (a 16-digit card beats a phone-shaped substring inside
- * it), then by kind name — so the same input always redacts identically (golden-stable).
- */
-export function detectPii(text: string): PiiMatch[] {
-  const all: PiiMatch[] = [];
-  for (const det of DETECTORS) {
-    for (const m of text.matchAll(det.re)) {
-      if (m.index === undefined) continue;
-      const value = m[0];
-      if (det.validate !== undefined && !det.validate(value)) continue;
-      all.push({
-        kind: det.kind,
-        value,
-        start: m.index,
-        end: m.index + value.length,
-      });
-    }
-  }
-  all.sort(
-    (a, b) =>
-      a.start - b.start ||
-      b.end - b.start - (a.end - a.start) ||
-      a.kind.localeCompare(b.kind),
-  );
-  const resolved: PiiMatch[] = [];
-  let lastEnd = -1;
-  for (const m of all) {
-    if (m.start >= lastEnd) {
-      resolved.push(m);
-      lastEnd = m.end;
-    }
-  }
-  return resolved;
-}
-
-/** Rebuild `text`, replacing each resolved match span via `replace(match)`. */
-function rewrite(
-  text: string,
-  matches: readonly PiiMatch[],
-  replace: (m: PiiMatch) => string,
-): string {
-  let out = "";
-  let last = 0;
-  for (const m of matches) {
-    out += text.slice(last, m.start) + replace(m);
-    last = m.end;
-  }
-  return out + text.slice(last);
-}
+export {
+  PII_KINDS,
+  PII_COLUMN_CONTEXT,
+  detectPii,
+  maskPii,
+} from "./pii-core.ts";
+export type {
+  PiiKind,
+  PiiMatch,
+  PiiToken,
+  PiiMode,
+  RedactMode,
+} from "./pii-core.ts";
 
 function sha256Hex(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -148,7 +51,13 @@ export function redactPii(
       ? (m: PiiMatch): string => `[${m.kind.toUpperCase()}]`
       : (m: PiiMatch): string =>
           `[${m.kind.toUpperCase()}:${sha256Hex(m.value).slice(0, 12)}]`;
-  return { redacted: rewrite(text, matches, replace), matches };
+  return {
+    redacted:
+      mode === "mask"
+        ? maskPii(text, matches)
+        : rewritePii(text, matches, replace),
+    matches,
+  };
 }
 
 /**
@@ -163,7 +72,7 @@ export function tokenizePii(
   const matches = detectPii(text);
   const tokens: PiiToken[] = [];
   let i = 0;
-  const redacted = rewrite(text, matches, (m) => {
+  const redacted = rewritePii(text, matches, (m) => {
     const placeholder = `[[PII:${m.kind}:${i}]]`;
     tokens.push({
       placeholder,
