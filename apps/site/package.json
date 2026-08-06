@@ -19,7 +19,7 @@
   "dependencies": {
     "@azure/identity": "^4",
     "@azure/keyvault-keys": "^4",
-    "@better-auth/kysely-adapter": "1.6.26",
+    "@better-auth/kysely-adapter": "1.6.25",
     "@caisson/access-review": "workspace:*",
     "@caisson/agent-kernel": "workspace:*",
     "@caisson/agent-runner": "workspace:*",
@@ -70,7 +70,7 @@
     "@orama/orama": "^3.1.18",
     "@paddle/paddle-js": "^1.4.2",
     "@plausible-analytics/tracker": "^0.4.2",
-    "better-auth": "1.6.26",
+    "better-auth": "1.6.25",
     "culori": "catalog:",
     "drizzle-orm": "catalog:",
     "fumadocs-core": "^16.12.1",
