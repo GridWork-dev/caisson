@@ -1,5 +1,12 @@
 # @caisson/registry-schema
 
+## 0.5.10
+
+### Patch Changes
+
+- Repack against this release's refreshed dependency resolutions so the recorded tarball bytes
+  match a fresh pack from the tree. No API or behavior change.
+
 ## 0.5.9
 
 ### Patch Changes

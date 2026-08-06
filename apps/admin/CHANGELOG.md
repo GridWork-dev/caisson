@@ -1,5 +1,47 @@
 # @caisson/admin
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @caisson/registry-schema@0.5.10
+  - @caisson/credits@0.6.1
+  - @caisson/service-license@0.1.3
+  - @caisson/platform-migrations@0.3.3
+  - @caisson/platform-reads@0.2.11
+  - @caisson/demo-registry@0.2.14
+
+## 0.1.2
+
+### Patch Changes
+
+- 0497277: The internal evidence proxy now accepts only time-bounded service credentials. The older unbounded credential form, kept temporarily so the two halves could roll out one after the other, is no longer honored.
+- Updated dependencies [74f0756]
+- Updated dependencies [98bf1f3]
+- Updated dependencies [dff76d9]
+- Updated dependencies [2caec56]
+- Updated dependencies [68df709]
+- Updated dependencies [7d74f8f]
+- Updated dependencies [f3c62cc]
+  - @caisson/compliance-core@0.7.0
+  - @caisson/observability@0.3.7
+  - @caisson/ui@0.6.5
+  - @caisson/org-controls@0.4.0
+  - @caisson/kernel@0.8.0
+  - @caisson/credits@0.6.0
+  - @caisson/service-license@0.1.2
+  - @caisson/audit-worm@2.2.2
+  - @caisson/brand@0.1.5
+  - @caisson/demo-registry@0.2.13
+  - @caisson/auth@0.4.3
+  - @caisson/email@0.5.6
+  - @caisson/platform-migrations@0.3.2
+  - @caisson/platform-reads@0.2.11
+  - @caisson/rate-limit@0.1.10
+  - @caisson/registry-schema@0.5.9
+  - @caisson/tenancy-rls@0.5.8
+
 ## 0.1.1
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @caisson/local-inference
 
+## 0.1.9
+
+### Patch Changes
+
+- Updated dependencies [7d74f8f]
+  - @caisson/kernel@0.8.0
+  - @caisson/local-privacy@0.1.9
+
 ## 0.1.8
 
 ### Patch Changes

@@ -1,5 +1,34 @@
 # @caisson/ai-kit-app
 
+## 0.0.23
+
+### Patch Changes
+
+- @caisson/ai-kit@0.6.3
+- @caisson/credits@0.6.1
+- @caisson/mcp-server@0.6.9
+- @caisson/ai-meter@1.1.1
+
+## 0.0.22
+
+### Patch Changes
+
+- 54bbeae: The ai-kit app's @types/node pin moves to v26, matching the workspace catalog every other package
+  already resolves. Types-only; no runtime change.
+- Updated dependencies [5d1f295]
+- Updated dependencies [e19da1d]
+- Updated dependencies [7d74f8f]
+- Updated dependencies [f3c62cc]
+  - @caisson/prompt-registry@1.1.0
+  - @caisson/ai-meter@1.1.0
+  - @caisson/kernel@0.8.0
+  - @caisson/credits@0.6.0
+  - @caisson/mcp-server@0.6.8
+  - @caisson/ai-kit@0.6.2
+  - @caisson/guardrails@0.4.12
+  - @caisson/ai-config@0.3.8
+  - @caisson/tenancy-rls@0.5.8
+
 ## 0.0.21
 
 ### Patch Changes

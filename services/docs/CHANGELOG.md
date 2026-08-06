@@ -1,5 +1,17 @@
 # @caisson/service-docs
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [98bf1f3]
+- Updated dependencies [42d9710]
+- Updated dependencies [7d74f8f]
+  - @caisson/observability@0.3.7
+  - @caisson/local-store@1.1.0
+  - @caisson/kernel@0.8.0
+  - @caisson/rate-limit@0.1.10
+
 ## 0.0.13
 
 ### Patch Changes

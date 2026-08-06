@@ -1,5 +1,16 @@
 # @caisson/observability
 
+## 0.3.7
+
+### Patch Changes
+
+- 98bf1f3: Routine non-major dependency refresh: the OpenTelemetry SDK/instrumentation line moves to its
+  current minor, Playwright takes a patch, and the Storybook, Vite, wrangler, noble-curves, and
+  better-auth pins stay at their prior versions because the newer releases have not yet cleared the
+  seven-day release-age floor. No API or behavior changes in any package.
+- Updated dependencies [7d74f8f]
+  - @caisson/kernel@0.8.0
+
 ## 0.3.6
 
 ### Patch Changes

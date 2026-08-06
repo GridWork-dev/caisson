@@ -1,5 +1,12 @@
 # @caisson/email
 
+## 0.5.6
+
+### Patch Changes
+
+- Updated dependencies [7d74f8f]
+  - @caisson/kernel@0.8.0
+
 ## 0.5.5
 
 ### Patch Changes

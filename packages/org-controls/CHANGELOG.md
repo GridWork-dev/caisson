@@ -1,5 +1,23 @@
 # @caisson/org-controls
 
+## 0.4.0
+
+### Minor Changes
+
+- dff76d9: The package gains a browser-safe `./browser` entry point carrying `assertCanManageMembers`, so a
+  client bundle can render the owner-only gate using the exact function the server enforces instead
+  of a second copy of the rule. The gate now lives in its own internal module with no database, SSO,
+  or Node dependencies; the main entry is unchanged and keeps the full surface, every public export
+  keeps its name and shape, and every browser-entry export is also available on the main entry. The
+  site's org-controls interactive demo now runs that real gate instead of a hand-maintained copy.
+
+### Patch Changes
+
+- Updated dependencies [7d74f8f]
+  - @caisson/kernel@0.8.0
+  - @caisson/auth@0.4.3
+  - @caisson/tenancy-rls@0.5.8
+
 ## 0.3.6
 
 ### Patch Changes

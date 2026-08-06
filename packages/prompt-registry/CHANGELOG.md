@@ -1,5 +1,26 @@
 # @caisson/prompt-registry
 
+## 1.1.0
+
+### Minor Changes
+
+- 5d1f295: The prompt registry gains a browser-safe `./browser` entry point: `name@version` and `name@alias`
+  addressing plus the injection-safe render boundary and its strict variable schemas can now be
+  imported inside a client bundle. The registry functions and the schema stay off that entry
+  deliberately, each one takes a tenant executor and runs SQL, so fail-closed tenant isolation stays
+  on the server. The main entry is unchanged and keeps the full surface; every browser-entry export
+  is also available there. The site's prompt-registry interactive demo now runs that real addressing
+  and versioning logic instead of a hand-maintained copy.
+
+### Patch Changes
+
+- Updated dependencies [98bf1f3]
+- Updated dependencies [68df709]
+- Updated dependencies [7d74f8f]
+  - @caisson/ui@0.6.5
+  - @caisson/kernel@0.8.0
+  - @caisson/tenancy-rls@0.5.8
+
 ## 1.0.6
 
 ### Patch Changes

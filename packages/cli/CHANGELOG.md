@@ -1,5 +1,26 @@
 # @caisson/cli
 
+## 0.7.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @caisson/registry-schema@0.5.10
+
+## 0.7.8
+
+### Patch Changes
+
+- Updated dependencies [fab7a0d]
+- Updated dependencies [7d74f8f]
+- Updated dependencies [742c979]
+  - @caisson/ds-manifest@0.3.2
+  - @caisson/kernel@0.8.0
+  - @caisson/jobs@0.7.2
+  - @caisson/migrate@0.2.12
+  - @caisson/registry-schema@0.5.9
+  - @caisson/tenancy-rls@0.5.8
+
 ## 0.7.7
 
 ### Patch Changes

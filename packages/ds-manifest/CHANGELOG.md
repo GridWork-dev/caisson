@@ -1,5 +1,11 @@
 # @caisson/ds-manifest
 
+## 0.3.2
+
+### Patch Changes
+
+- fab7a0d: Repack the design-system manifest with the upgraded `@types/culori` catalog range so its published archive metadata stays synchronized with the root catalog.
+
 ## 0.3.1
 
 ### Patch Changes

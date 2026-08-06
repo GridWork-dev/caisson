@@ -1,5 +1,12 @@
 # @caisson/ai-config
 
+## 0.3.8
+
+### Patch Changes
+
+- Updated dependencies [7d74f8f]
+  - @caisson/kernel@0.8.0
+
 ## 0.3.7
 
 ### Patch Changes

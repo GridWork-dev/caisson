@@ -1,5 +1,34 @@
 # @caisson/ai-kit
 
+## 0.6.3
+
+### Patch Changes
+
+- @caisson/credits@0.6.1
+- @caisson/ai-meter@1.1.1
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [e1226f6]
+- Updated dependencies [8875592]
+- Updated dependencies [5d1f295]
+- Updated dependencies [e19da1d]
+- Updated dependencies [7d74f8f]
+- Updated dependencies [f3c62cc]
+- Updated dependencies [742c979]
+  - @caisson/agent-trajectory@0.5.0
+  - @caisson/field-crypto@1.1.0
+  - @caisson/prompt-registry@1.1.0
+  - @caisson/ai-meter@1.1.0
+  - @caisson/kernel@0.8.0
+  - @caisson/credits@0.6.0
+  - @caisson/jobs@0.7.2
+  - @caisson/guardrails@0.4.12
+  - @caisson/ai-config@0.3.8
+  - @caisson/tenancy-rls@0.5.8
+
 ## 0.6.1
 
 ### Patch Changes

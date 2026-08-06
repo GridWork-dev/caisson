@@ -1,5 +1,16 @@
 # @caisson/trust-page
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [74f0756]
+- Updated dependencies [2caec56]
+- Updated dependencies [7d74f8f]
+  - @caisson/compliance-core@0.7.0
+  - @caisson/kernel@0.8.0
+  - @caisson/artifact-render@0.2.3
+
 ## 0.3.2
 
 ### Patch Changes

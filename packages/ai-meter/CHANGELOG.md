@@ -1,5 +1,35 @@
 # @caisson/ai-meter
 
+## 1.1.1
+
+### Patch Changes
+
+- @caisson/credits@0.6.1
+
+## 1.1.0
+
+### Minor Changes
+
+- e19da1d: ai-meter gains a browser-safe `./browser` entry point: the versioned price book with its integer
+  cost normalizer, the pre-call token estimator, and the spend vocabulary — the default scope, the
+  breaker's state shape, and the `SpendCapError` a capped tenant raises — can now be imported inside
+  a client bundle. The database-bound half is deliberately absent from it: `reserve()`,
+  `reconcile()`, the stored circuit breaker and the schema all stay on the main entry, which is
+  otherwise unchanged and still carries the complete surface. Every name on the browser entry is also
+  available there, and no existing import moves or changes behavior. The site's ai-meter interactive
+  demo now prices its sample calls through that real code instead of a hand-maintained copy.
+
+### Patch Changes
+
+- Updated dependencies [98bf1f3]
+- Updated dependencies [68df709]
+- Updated dependencies [7d74f8f]
+- Updated dependencies [f3c62cc]
+  - @caisson/ui@0.6.5
+  - @caisson/kernel@0.8.0
+  - @caisson/credits@0.6.0
+  - @caisson/tenancy-rls@0.5.8
+
 ## 1.0.11
 
 ### Patch Changes

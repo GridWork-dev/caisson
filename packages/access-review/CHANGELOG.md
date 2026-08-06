@@ -1,5 +1,21 @@
 # @caisson/access-review
 
+## 0.3.3
+
+### Patch Changes
+
+- 74f0756: The pure half of the access-review campaign kernel — the decision vocabulary, chain record kinds,
+  the decision scan, and the close guard — now lives in its own internal module with no database or
+  Node dependencies, and the campaign lifecycle delegates to it, so there is exactly one
+  implementation of the close rules. Every public export keeps its name and shape. The site's
+  access-review interactive demo now runs that real logic end to end instead of a hand-maintained
+  copy.
+- Updated dependencies [7d74f8f]
+- Updated dependencies [742c979]
+  - @caisson/kernel@0.8.0
+  - @caisson/jobs@0.7.2
+  - @caisson/tenancy-rls@0.5.8
+
 ## 0.3.2
 
 ### Patch Changes

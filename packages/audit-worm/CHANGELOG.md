@@ -1,5 +1,19 @@
 # @caisson/audit-worm
 
+## 2.2.2
+
+### Patch Changes
+
+- Updated dependencies [98bf1f3]
+- Updated dependencies [68df709]
+- Updated dependencies [7d74f8f]
+- Updated dependencies [742c979]
+  - @caisson/ui@0.6.5
+  - @caisson/kernel@0.8.0
+  - @caisson/jobs@0.7.2
+  - @caisson/ui-pro@0.3.6
+  - @caisson/tenancy-rls@0.5.8
+
 ## 2.2.1
 
 ### Patch Changes
