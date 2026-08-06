@@ -90,7 +90,13 @@ secrets_trufflehog() {
   have trufflehog || { skip "trufflehog"; return; }
   hr "Secrets · trufflehog (verified-only — live-confirmed creds)"
   # --fail is mandatory: without it trufflehog exits 0 even WITH verified secrets found.
+  # --exclude-detectors=lob: the Lob detector "verifies" arbitrary test_-prefixed identifiers
+  # (Python test function names like test_welcome_... in services/support-bot/tests match Lob's
+  # key format and Lob's verification endpoint accepts them — observed 2026-08-06). This repo has
+  # no Lob account or integration, so a real Lob credential cannot be ours; excluding the detector
+  # is the root-cause fix rather than path-excluding every test directory.
   trufflehog git "file://$REPO" --results=verified --fail --no-update \
+    --exclude-detectors=lob \
     --json > "$OUT_DIR/trufflehog.json" 2>/dev/null \
     && ok "trufflehog: no verified secrets" || { RC=1; warn "trufflehog verified secret(s) → $OUT_DIR/trufflehog.json"; }
 }
