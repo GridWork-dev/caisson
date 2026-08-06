@@ -22,6 +22,13 @@
 #   js-yaml 5.x        GHSA-pm4m-ph32-ghv5 (flow-collection DoS) — 5.2.1 re-resolved off the
 #                      tree (fumadocs range) / 3.x-4.x copies unaffected                    -> >=5.2.2
 #   brace-expansion 5.x GHSA-mh99-v99m-4gvg                                                  -> >=5.0.8
+#   undici             GHSA-4cwx-7wf7-3272 / GHSA-8xcm-r25x-g524 / GHSA-jr45-8vmc-qm54 /
+#                      GHSA-m8rv-5g2x-5cg5 / GHSA-v3r7-h72x-cjcm (2026-08-03 cache/CRLF/cookie
+#                      batch), dev-only via jsdom + miniflare's exact 7.28.0 pin             -> >=7.29.0
+#   ip-address         GHSA-mwp4-54f8-5fhr / GHSA-22jq-vg5j-6vgg / GHSA-4xrf-jv44-h6hh (SSRF /
+#                      trust-boundary parse bypasses), runtime via express-rate-limit        -> >=10.3.1
+#   aiohttp            GHSA-cq5v-8q36-5273 + smuggling/deflate pair — support-bot uv.lock
+#                      (no release-age floor on the uv lane)                                 -> >=3.14.3
 #
 # Every id below has a matching dated row in docs/security/tooling-playbook.md (Accepted findings).
 
@@ -35,4 +42,20 @@ reason = "@opentelemetry/core 2.0.1, transitive under @trigger.dev/core's pinned
 
 [[IgnoredVulns]]
 id = "GHSA-mh99-v99m-4gvg"
-reason = "brace-expansion DoS via unbounded expansion (OOM). Remaining copies after the 2026-07-25 bump wave are 1.1.16 (minimatch@3 chains under eslint tooling) and 2.1.2 (minimatch@5-9 chains) — NO patched 1.x/2.x release exists (fix only in 5.0.8, which the 5.x copy already runs). Forcing 5.x into minimatch@<10 parents is a cross-major breakage risk for a dev/build-time-only surface whose expansion inputs are first-party glob patterns, never attacker-controlled. Revisit when upstream publishes patched 1.x/2.x or parents bump minimatch. Accepted 2026-07-25 (resident, clean-state sweep — flagged for operator retro-veto)."
+reason = "brace-expansion DoS via unbounded expansion (OOM). Remaining copies after the 2026-07-25 bump wave are 1.1.16 (minimatch@3 chains under eslint tooling) and 2.1.2 (minimatch@5-9 chains) — NO patched 1.x/2.x release exists (fix only in 5.0.8, which the 5.x copy already runs). Forcing 5.x into minimatch@<10 parents is a cross-major breakage risk for a dev/build-time-only surface whose expansion inputs are first-party glob patterns, never attacker-controlled. Revisit when upstream publishes patched 1.x/2.x or parents bump minimatch. Accepted 2026-07-25 (resident, clean-state sweep — flagged for operator retro-veto). Amendment 2026-08-06: patched 1.1.18/2.1.4 now exist (published 2026-07-30) — bump rides the 2026-08-11 wave with GHSA-rgw5-rvv9-x895 below."
+
+[[IgnoredVulns]]
+id = "GHSA-rgw5-rvv9-x895"
+reason = "brace-expansion DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation — hits all three locked copies (1.1.16 / 2.1.2 / 5.0.8, minimatch chains under eslint/glob tooling). In-range patched releases (1.1.18 / 2.1.4 / 5.0.9, published 2026-07-30) cleared the 7-day release-age floor 2026-08-06, but an isolated nested-lock refresh is not expressible today: bun overrides are top-level-only (a global 5.x force into minimatch@<10 parents is the cross-major risk rejected 2026-07-25), and invalidating the lock entries triggers a broad re-resolve that trips the age floor on unrelated young deps (nanoid ^3.3.17). Same exposure as GHSA-mh99: dev/build-time-only, first-party glob patterns, never attacker-controlled. Bump lands in the 2026-08-11 dep wave (CAISSON follow-up filed). Accepted 2026-08-06 (scan-baseline remediation — flagged for operator retro-veto)."
+
+[[IgnoredVulns]]
+id = "GHSA-7p8r-x3mc-p8w7"
+reason = "fast-uri host confusion via backslash authority introducer. Locked copy 3.1.4 via the root override (consumer: ajv@8.x, build/validation tooling — never handed attacker-controlled URLs in this repo; runtime URL parsing uses WHATWG new URL() per the security floor). Fix 3.1.5 published 2026-07-31 clears the 7-day release-age floor 2026-08-07 — bump the root override then (2026-08-11 dep wave or sooner). Accepted 2026-08-06 (scan-baseline remediation — flagged for operator retro-veto)."
+
+[[IgnoredVulns]]
+id = "GHSA-8j4g-w8fx-2239"
+reason = "hono ReDoS in CORS middleware via Access-Control-Request-Headers. hono@4.12.30 is transitive DEV tooling only (wrangler/miniflare chain for the registry Worker harness) — the deployed Worker is hand-rolled and does not use hono, and no production service imports it, so no request path reaches the vulnerable middleware. Fix 4.12.34 published 2026-08-03 clears the release-age floor 2026-08-10 — bump in the 2026-08-11 dep wave. Accepted 2026-08-06 (scan-baseline remediation — flagged for operator retro-veto)."
+
+[[IgnoredVulns]]
+id = "GHSA-5p4m-2wfm-xmqj"
+reason = "js-yaml quadratic CPU in !!omap resolution, 3.x/4.x (the CVE-2026-59870 fix not backported until now). Advisory published 2026-08-06T20:27Z — mid-merge-queue; the same copies were scan-green an hour earlier. Locked copies 3.15.0 + 4.3.0 are dev/build tooling only (changesets CLI, eslint config loading, cosmiconfig) parsing first-party YAML — the quadratic path needs attacker-controlled !!omap documents, which never reach these consumers. Backported fixes 3.15.1 / 4.3.1 published 2026-07-31 clear the 7-day release-age floor 2026-08-07 — bump then (rides the fast-uri follow-up). Accepted 2026-08-06 (flagged for operator retro-veto)."

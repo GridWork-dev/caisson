@@ -3,7 +3,21 @@
 # accept, never a blanket mute. Vulnerability CVEs are NOT listed here: systeminformation + ws are
 # fixed by real version bumps (root package.json overrides), so trivy stops reporting them once
 # bun.lock updates. Dependency CVEs with no safe bump are accepted in osv-scanner.toml instead
-# (trivy at CRITICAL,HIGH does not surface them).
+# (trivy at CRITICAL,HIGH does not surface them) — except when trivy itself rates one HIGH, which
+# needs a mirrored entry below (trivy does not read osv-scanner.toml); give it an `expired_at` so
+# the accept self-revokes at the planned bump date.
+
+vulnerabilities:
+  - id: CVE-2026-69152
+    expired_at: 2026-08-12
+    statement: >-
+      brace-expansion DoS via unbounded intermediate arrays (GHSA-rgw5-rvv9-x895), all three
+      locked copies, minimatch chains under eslint/glob dev tooling — first-party glob patterns
+      only, never attacker-controlled. In-range fixes (1.1.18/2.1.4/5.0.9) cleared the release-age
+      floor 2026-08-06 but an isolated nested-lock refresh is not expressible (bun overrides are
+      top-level-only; a full re-resolve trips the age floor on unrelated young deps). Bump lands
+      in the 2026-08-11 dep wave; this accept expires the day after. Mirrors the osv-scanner.toml
+      entry. Accepted 2026-08-06 — flagged for operator retro-veto.
 
 secrets:
   - id: github-pat
