@@ -21,10 +21,10 @@ describe("`./browser` is browser-safe", () => {
     expect(walk.unresolved).toEqual([]);
   });
 
-  test("adds no Node global and names the exact inherited kernel config hit", () => {
+  test("adds no Node global", () => {
     expect(
       nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
-    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
+    ).toEqual([]);
   });
 
   test("has an exact package-module allowlist and browser-safe external frontier", () => {
@@ -44,6 +44,13 @@ describe("`./browser` is browser-safe", () => {
     expect(
       walk.files.some((file) => file.startsWith("packages/kernel/src/")),
     ).toBe(true);
+    for (const excluded of [
+      "packages/kernel/src/config.ts",
+      "packages/kernel/src/event-sink.ts",
+      "packages/kernel/src/fetch.ts",
+    ]) {
+      expect(walk.files).not.toContain(excluded);
+    }
     expect(walk.external).toEqual(["zod"]);
   });
 

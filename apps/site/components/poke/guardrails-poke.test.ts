@@ -31,13 +31,11 @@ function chooseRadio(
 describe("the poke client graph uses the supported browser entry", () => {
   const walk = nodeBuiltinTaint(POKE_ENTRY, { workspaceRoot: WORKSPACE_ROOT });
 
-  test("has no transitive Node builtin, unresolved import, or app Node global", () => {
+  test("has no transitive Node builtin, unresolved import, or Node global", () => {
     expect(walk.offenders).toEqual([]);
     expect(walk.unresolved).toEqual([]);
     expect(
-      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }).filter(
-        (offender) => offender.file.startsWith("apps/site/"),
-      ),
+      nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
     ).toEqual([]);
   });
 

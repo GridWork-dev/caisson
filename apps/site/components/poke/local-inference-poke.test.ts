@@ -79,7 +79,7 @@ describe("the local-inference poke runs the package's browser-safe stub", () => 
     expect(walk.files).toContain("packages/local-inference/src/stub.ts");
     expect(
       nodeGlobalTaint(walk.files, { workspaceRoot: WORKSPACE_ROOT }),
-    ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
+    ).toEqual([]);
     expect(walk.external).toEqual(["lucide-react", "radix-ui", "react", "zod"]);
   });
 
@@ -106,6 +106,9 @@ describe("the local-inference poke runs the package's browser-safe stub", () => 
         `packages/local-inference/src/${excluded}`,
       );
     }
+    expect(walk.files).not.toContain(
+      "packages/local-privacy/src/egress-guard.ts",
+    );
   });
 
   test("the real stub preserves the package geometry, model coordinates, and golden", async () => {

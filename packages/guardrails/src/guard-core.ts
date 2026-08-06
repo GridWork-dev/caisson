@@ -5,7 +5,7 @@ import {
   GuardrailError,
   guardrailBlockSchema,
   looksLikeSecret,
-} from "@caisson/kernel";
+} from "@caisson/kernel/browser";
 import type {
   GuardCategory,
   ModerationResult,

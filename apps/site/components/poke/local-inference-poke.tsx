@@ -8,13 +8,16 @@
 // persists, or measures the visitor — the "rented" path is a fully local simulation driven by the
 // real local-privacy guard, never a provider transport or network call.
 import { useEffect, useId, useMemo, useState } from "react";
-import { isCaissonError } from "@caisson/kernel";
+import { isCaissonError } from "@caisson/kernel/browser";
 import {
   DEFAULT_ONNX_MODEL,
   EMBEDDING_DIM,
   StubInferenceBackend,
 } from "@caisson/local-inference/browser";
-import { createEgressGuard, localOnlyPolicy } from "@caisson/local-privacy";
+import {
+  createPrivacyDecisionGuard,
+  localOnlyPolicy,
+} from "@caisson/local-privacy/browser";
 import { Checkbox, Radio, StatusChip } from "@caisson/ui/components";
 
 import { PokeShell, Verdict } from "./poke-rig";
@@ -55,8 +58,8 @@ const SAMPLE_RENTED_HOST = "api.rented-inference.example";
 const STUB_BACKEND = new StubInferenceBackend();
 const RENTED_ENDPOINT = `https://${SAMPLE_RENTED_HOST}/embed`;
 const RENTED_GUARDS = {
-  blocked: createEgressGuard(localOnlyPolicy([])),
-  allowed: createEgressGuard(
+  blocked: createPrivacyDecisionGuard(localOnlyPolicy([])),
+  allowed: createPrivacyDecisionGuard(
     localOnlyPolicy([{ host: SAMPLE_RENTED_HOST, kind: "rented-backend" }]),
   ),
 } as const;

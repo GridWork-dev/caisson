@@ -5,7 +5,7 @@
 // per the kernel floor), and a `custom` hook. The `forge.config` policy block is the serializable
 // selection (`.strict()` — unknown keys rejected); the live `Moderator` instance is built from it.
 import { z } from "zod";
-import { strictObject, ValidationError } from "@caisson/kernel";
+import { strictObject, ValidationError } from "@caisson/kernel/browser";
 
 /**
  * The violation class a block is charted by. Mirrors `kernel/observability`

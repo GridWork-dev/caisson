@@ -88,7 +88,7 @@ export interface OnnxBackendConfig {
   modelId: string;
   /** Model revision/commit selecting the bytes (the SHA-256 pins below are the real integrity gate). */
   revision: string;
-  /** Embedding width — MUST equal the local-store vec0 `dim` (default {@link EMBEDDING_DIM}). */
+  /** Embedding width — MUST equal the local-store vec0 `dim` (default `EMBEDDING_DIM`). */
   dim: number;
   /** The ONE sanctioned egress host (the model-integrity allowlist entry); the only host a model may load from. */
   modelHost: string;
