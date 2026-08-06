@@ -25,8 +25,9 @@
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "@trigger.dev/sdk": "^4.4.6",
-    "bullmq": "^5.60.0",
+    "bullmq": "^6.0.0",
     "inngest": "^4.13.0",
+    "ioredis": "^5.11.1",
     "pg-boss": "^12.18.3",
     "zod": "catalog:"
   },
