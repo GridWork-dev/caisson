@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { GuardrailError, InMemoryEventSink } from "@caisson/kernel";
-import { guardInputAsync } from "./guard-browser.ts";
+import { ConfigError } from "@caisson/kernel";
+import { guardInputAsync, guardOutput } from "./browser.ts";
 import type { BrowserGuardPolicy } from "./guard-browser.ts";
 import type { BrowserPiiCryptoContext } from "./pii-browser.ts";
 import { localModerator } from "./moderator.ts";
@@ -83,5 +84,41 @@ describe("browser guard", () => {
       details: { stage: "input", category: "secret" },
     });
     expect(called).toBe(false);
+  });
+
+  test("rejects a runtime/PII-context tenant mismatch before moderation or telemetry", async () => {
+    let moderatorCalls = 0;
+    const { policy, runtime, sink } = setup({
+      moderator: {
+        moderate() {
+          moderatorCalls += 1;
+          return { flagged: false, category: "moderation" };
+        },
+      },
+      pii: {
+        mode: "tokenize",
+        ctx: { ...fieldContext, tenantId: "acct_b" },
+      },
+    });
+    await expect(
+      guardInputAsync("mail a@b.com", policy, runtime),
+    ).rejects.toBeInstanceOf(ConfigError);
+    expect(moderatorCalls).toBe(0);
+    expect(sink.events).toEqual([]);
+  });
+
+  test("public browser guardOutput accepts an inline PII-bearing browser policy", async () => {
+    const { runtime } = setup();
+    await expect(
+      guardOutput(
+        "clean output",
+        {
+          policyName: "inline-browser",
+          moderator: localModerator([]),
+          pii: { mode: "hash" },
+        },
+        runtime,
+      ),
+    ).resolves.toBeUndefined();
   });
 });

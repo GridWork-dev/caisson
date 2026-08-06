@@ -48,6 +48,21 @@ describe("browser PII redaction", () => {
     expect(maskPii("mail a@b.com")).toBe("mail [EMAIL]");
     expect(await hashPiiAsync("mail a@b.com")).not.toContain("a@b.com");
   });
+
+  test("bounds text and caller-supplied matches before WebCrypto Promise work", async () => {
+    await expect(hashPiiAsync("x".repeat(100_001))).rejects.toThrow(
+      /text exceeds 100000 code units/u,
+    );
+    const matches = Array.from({ length: 1_025 }, () => ({
+      kind: "email" as const,
+      value: "a@b.com",
+      start: 0,
+      end: 1,
+    }));
+    await expect(hashPiiAsync("x", matches)).rejects.toThrow(
+      /PII match count exceeds 1024/u,
+    );
+  });
 });
 
 describe("browser PII tokenization", () => {
@@ -146,5 +161,27 @@ describe("browser PII tokenization", () => {
         tokenizePiiAsync("mail a@b.com", browserContext("acct_a", invalid)),
       ).rejects.toThrow(/keyVersion/u);
     }
+  });
+
+  test("bounds token count and envelope text before atob or crypto work", async () => {
+    const token = {
+      placeholder: "[[PII:email:0]]",
+      kind: "email" as const,
+      sealed: "not-an-envelope",
+    };
+    await expect(
+      detokenizePiiAsync(
+        token.placeholder,
+        Array(1_025).fill(token),
+        browserContext(),
+      ),
+    ).rejects.toThrow(/PII token count exceeds 1024/u);
+    await expect(
+      detokenizePiiAsync(
+        token.placeholder,
+        [{ ...token, sealed: "A".repeat(262_145) }],
+        browserContext(),
+      ),
+    ).rejects.toThrow(/PII envelope exceeds 262144 code units/u);
   });
 });
