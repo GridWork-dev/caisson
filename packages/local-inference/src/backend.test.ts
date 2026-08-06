@@ -3,10 +3,38 @@
 // integration leg proves the produced vector feeds @caisson/local-store's vec0 dim-guard without a
 // dimension mismatch — i.e. the port emits exactly the locked DIM the store is opened with.
 import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
 import { ValidationError } from "@caisson/kernel";
 import { LocalStore } from "@caisson/local-store";
+import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
 import { EMBEDDING_DIM } from "./backend.ts";
 import { StubInferenceBackend } from "./stub.ts";
+
+const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
+const STUB_ENTRY = join(import.meta.dir, "stub.ts");
+
+describe("StubInferenceBackend browser contract", () => {
+  test("its runtime graph reaches no node builtin", () => {
+    const walk = nodeBuiltinTaint(STUB_ENTRY, {
+      workspaceRoot: WORKSPACE_ROOT,
+    });
+    expect(walk.unresolved).toEqual([]);
+    expect(walk.offenders).toEqual([]);
+  });
+
+  test("the WebCrypto swap preserves the existing deterministic golden", async () => {
+    const stub = new StubInferenceBackend({ dim: 8 });
+    expect(Array.from(await stub.embed("offline-first"))).toEqual([
+      0.13572371006011963, 0.40440019965171814, -0.6178563833236694,
+      -0.30705133080482483, -0.25519251823425293, -0.04712666571140289,
+      0.3809182941913605, -0.3599577844142914,
+    ]);
+    expect(await stub.complete({ prompt: "summarize this" })).toEqual({
+      text: "stub:de6da4a2 summarize this",
+      model: "caisson-stub-embed",
+    });
+  });
+});
 
 describe("StubInferenceBackend.embed (ADR-0064 deterministic CI stub)", () => {
   test("emits a Float32Array of exactly the locked DIM", async () => {

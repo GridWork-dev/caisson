@@ -1,8 +1,5 @@
-export {
-  EgressGuard,
-  createEgressGuard,
-  type GuardedFetch,
-} from "./egress-guard.ts";
+// Decision-only browser entry: strict policy parsing plus URL/purpose admission. The fetch-capable
+// EgressGuard stays on `.` so a client demo cannot acquire a network path through this subpath.
 export {
   PrivacyDecisionGuard,
   createPrivacyDecisionGuard,
@@ -17,8 +14,10 @@ export {
   privacyModeSchema,
   SANCTIONED_SINK_KINDS,
   PRIVACY_MODES,
-  type PrivacyPolicy,
-  type EgressSink,
-  type SanctionedSinkKind,
-  type PrivacyMode,
+} from "./policy.ts";
+export type {
+  PrivacyPolicy,
+  EgressSink,
+  SanctionedSinkKind,
+  PrivacyMode,
 } from "./policy.ts";

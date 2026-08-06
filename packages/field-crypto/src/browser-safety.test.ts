@@ -37,12 +37,14 @@ describe("`./browser` is browser-safe", () => {
     expect(
       globals.filter((o) => o.file.startsWith("packages/field-crypto/")),
     ).toEqual([]);
-    // The single pre-existing hit in the wider graph, NAMED rather than filtered away blind:
-    // @caisson/kernel's `loadConfig(schema, source = process.env)` default parameter, which has been
-    // on the kernel `.` barrel since its ./node split. A bundler substitutes a static object for it.
-    expect(globals).toEqual([
-      { file: "packages/kernel/src/config.ts", spec: "process" },
-    ]);
+    expect(globals).toEqual([]);
+    for (const excluded of [
+      "packages/kernel/src/config.ts",
+      "packages/kernel/src/event-sink.ts",
+      "packages/kernel/src/fetch.ts",
+    ]) {
+      expect(walk.files).not.toContain(excluded);
+    }
   });
 
   test("guard the guard: the walk really resolved a graph, including across packages", () => {
