@@ -55,3 +55,7 @@ reason = "fast-uri host confusion via backslash authority introducer. Locked cop
 [[IgnoredVulns]]
 id = "GHSA-8j4g-w8fx-2239"
 reason = "hono ReDoS in CORS middleware via Access-Control-Request-Headers. hono@4.12.30 is transitive DEV tooling only (wrangler/miniflare chain for the registry Worker harness) — the deployed Worker is hand-rolled and does not use hono, and no production service imports it, so no request path reaches the vulnerable middleware. Fix 4.12.34 published 2026-08-03 clears the release-age floor 2026-08-10 — bump in the 2026-08-11 dep wave. Accepted 2026-08-06 (scan-baseline remediation — flagged for operator retro-veto)."
+
+[[IgnoredVulns]]
+id = "GHSA-5p4m-2wfm-xmqj"
+reason = "js-yaml quadratic CPU in !!omap resolution, 3.x/4.x (the CVE-2026-59870 fix not backported until now). Advisory published 2026-08-06T20:27Z — mid-merge-queue; the same copies were scan-green an hour earlier. Locked copies 3.15.0 + 4.3.0 are dev/build tooling only (changesets CLI, eslint config loading, cosmiconfig) parsing first-party YAML — the quadratic path needs attacker-controlled !!omap documents, which never reach these consumers. Backported fixes 3.15.1 / 4.3.1 published 2026-07-31 clear the 7-day release-age floor 2026-08-07 — bump then (rides the fast-uri follow-up). Accepted 2026-08-06 (flagged for operator retro-veto)."
