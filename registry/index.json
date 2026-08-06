@@ -4298,8 +4298,8 @@
             "stability": "alpha",
             "description": "create-caisson generator: registry-allowlist-gated repo composition + codegen-credit debit-before-spend seam."
           },
-          "publishedAt": "2026-08-06T20:47:23.000Z",
-          "gateAttestation": "local-20260806@04cf1ff4291270108bdcb163ac9e04c465c53214"
+          "publishedAt": "2026-08-06T21:26:09.000Z",
+          "gateAttestation": "local-20260806-repair@aa6f4f1708b413fe6bfc55ded3927c5092a2cb36"
         }
       ]
     },
@@ -6707,8 +6707,8 @@
             "stability": "alpha",
             "description": "Per-tenant authenticated field encryption (HKDF + AES-256-GCM + versioned envelope + Drizzle column + AWS/GCP/Azure KMS providers with deletion-state receipts)."
           },
-          "publishedAt": "2026-08-06T20:47:23.000Z",
-          "gateAttestation": "local-20260806@04cf1ff4291270108bdcb163ac9e04c465c53214"
+          "publishedAt": "2026-08-06T21:31:15.000Z",
+          "gateAttestation": "local-20260806-repair@aa6f4f1708b413fe6bfc55ded3927c5092a2cb36"
         }
       ]
     },
@@ -7218,8 +7218,8 @@
             "stability": "alpha",
             "description": "Content-safety layer: swappable Moderator port (local | provider | custom) + TS-native PII engine (mask / hash / reversible-tokenize via field-crypto) behind a fail-closed input/output guard that throws GuardrailError 422 and emits to the EventSink (ADR-0063)."
           },
-          "publishedAt": "2026-08-06T20:47:23.000Z",
-          "gateAttestation": "local-20260806@04cf1ff4291270108bdcb163ac9e04c465c53214"
+          "publishedAt": "2026-08-06T21:31:15.000Z",
+          "gateAttestation": "local-20260806-repair@aa6f4f1708b413fe6bfc55ded3927c5092a2cb36"
         }
       ]
     },
@@ -7767,8 +7767,8 @@
             "stability": "alpha",
             "description": "Governance kernel: typed config loader, CaissonError hierarchy (ADR-0019), security primitives (timingSafeEqual/randomUUID), and the standards gate (ADR-0016)."
           },
-          "publishedAt": "2026-08-06T20:47:23.000Z",
-          "gateAttestation": "local-20260806@04cf1ff4291270108bdcb163ac9e04c465c53214"
+          "publishedAt": "2026-08-06T21:31:15.000Z",
+          "gateAttestation": "local-20260806-repair@aa6f4f1708b413fe6bfc55ded3927c5092a2cb36"
         }
       ]
     },
@@ -8289,8 +8289,8 @@
             "stability": "alpha",
             "description": "Local-first inference seam: deterministic stub, guarded ONNX embeddings, and rented transport drivers sharing the local privacy gate."
           },
-          "publishedAt": "2026-08-06T20:47:23.000Z",
-          "gateAttestation": "local-20260806@04cf1ff4291270108bdcb163ac9e04c465c53214"
+          "publishedAt": "2026-08-06T21:31:15.000Z",
+          "gateAttestation": "local-20260806-repair@aa6f4f1708b413fe6bfc55ded3927c5092a2cb36"
         }
       ]
     },
@@ -8456,8 +8456,8 @@
             "stability": "alpha",
             "description": "Local-first privacy gate: strict zero-egress policy parsing plus EgressGuard over the kernel fetchWithTimeout chokepoint."
           },
-          "publishedAt": "2026-08-06T20:47:23.000Z",
-          "gateAttestation": "local-20260806@04cf1ff4291270108bdcb163ac9e04c465c53214"
+          "publishedAt": "2026-08-06T21:31:15.000Z",
+          "gateAttestation": "local-20260806-repair@aa6f4f1708b413fe6bfc55ded3927c5092a2cb36"
         }
       ]
     },
