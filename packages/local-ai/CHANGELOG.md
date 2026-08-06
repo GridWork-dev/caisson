@@ -1,5 +1,37 @@
 # @caisson/local-ai
 
+## 0.2.13
+
+### Patch Changes
+
+- f368318: Agent kernel gains a browser-safe `./browser` entry point: the agent/skill/rule schema and its
+  authoring helpers, the seven-act lifecycle FSM, the allow/deny/mutate governance algebra, and the
+  redacting logger can now be imported inside a client bundle. The main entry is unchanged and keeps
+  the full surface, including the shell-command hook handler and the audited hash-chain lifecycle;
+  every browser-entry export is also available there.
+
+  Local sync needs no second entry point, because its single entry is now browser-safe end to end:
+  the changeset types, the hybrid logical clock, and the tombstone-aware merge all import cleanly
+  into a client bundle. As part of that, the replica id minted when a change log is first opened now
+  uses the runtime's built-in WebCrypto `crypto.randomUUID()` instead of the Node crypto module —
+  the same UUID format, and the id is still persisted and reused on every later open — and the
+  package now declares a Node 20.12 minimum.
+
+  The site's agent-kernel and local-sync interactive demos run the shipped packages end to end
+  instead of hand-maintained copies of their logic.
+
+- Updated dependencies [8875592]
+- Updated dependencies [42d9710]
+- Updated dependencies [f368318]
+- Updated dependencies [7d74f8f]
+  - @caisson/field-crypto@1.1.0
+  - @caisson/local-store@1.1.0
+  - @caisson/local-sync@0.2.0
+  - @caisson/kernel@0.8.0
+  - @caisson/license-verify@0.3.8
+  - @caisson/local-inference@0.1.9
+  - @caisson/local-privacy@0.1.9
+
 ## 0.2.12
 
 ### Patch Changes

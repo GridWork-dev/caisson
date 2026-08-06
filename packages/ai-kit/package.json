@@ -1,6 +1,6 @@
 {
   "name": "@caisson/ai-kit",
-  "version": "0.6.1",
+  "version": "0.6.3",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

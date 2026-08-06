@@ -1,5 +1,19 @@
 # @caisson/standards-gate
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @caisson/registry-schema@0.5.10
+
+## 0.1.2
+
+### Patch Changes
+
+- @caisson/registry-schema@0.5.9
+- @caisson/tenancy-rls@0.5.8
+
 ## 0.1.1
 
 ### Patch Changes

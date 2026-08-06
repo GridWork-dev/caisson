@@ -1,5 +1,16 @@
 # @caisson/license-issue
 
+## 1.0.7
+
+### Patch Changes
+
+- Updated dependencies [98bf1f3]
+- Updated dependencies [68df709]
+- Updated dependencies [7d74f8f]
+  - @caisson/ui@0.6.5
+  - @caisson/kernel@0.8.0
+  - @caisson/license-verify@0.3.8
+
 ## 1.0.6
 
 ### Patch Changes

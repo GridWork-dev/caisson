@@ -1,5 +1,13 @@
 # @caisson/auth
 
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies [7d74f8f]
+  - @caisson/kernel@0.8.0
+  - @caisson/tenancy-rls@0.5.8
+
 ## 0.4.2
 
 ### Patch Changes

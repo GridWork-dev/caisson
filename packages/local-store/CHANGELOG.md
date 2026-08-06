@@ -1,5 +1,28 @@
 # @caisson/local-store
 
+## 1.1.0
+
+### Minor Changes
+
+- 42d9710: The Reciprocal Rank Fusion arithmetic is now a public function, `fuseByRrf`, exported from the main
+  entry alongside `RRF_K` and from a new browser-safe `./browser` entry point. Hand it leg rankings
+  your server or worker already produced and it returns the fused ranking — the same function
+  `hybridSearch` merges its vector and keyword legs through, so there is one implementation rather
+  than a formula restated per call site, and it runs inside a client bundle. Retrieval itself stays
+  on the main entry: the vec0 KNN and FTS5 legs need SQLite and its vector extension. Ranking,
+  scores, and tie-breaks are unchanged. The site's local-store interactive demo now runs that real
+  fusion instead of a hand-maintained copy. Invalid limits now fail closed: `fuseByRrf` rejects
+  negative, non-integer, and non-finite values instead of letting `Array.slice` turn them into a
+  plausible truncated or empty ranking.
+
+### Patch Changes
+
+- Updated dependencies [98bf1f3]
+- Updated dependencies [68df709]
+- Updated dependencies [7d74f8f]
+  - @caisson/ui@0.6.5
+  - @caisson/kernel@0.8.0
+
 ## 1.0.6
 
 ### Patch Changes

@@ -1,5 +1,30 @@
 # @caisson/demo-registry
 
+## 0.2.14
+
+### Patch Changes
+
+- @caisson/license-issue@1.0.7
+- @caisson/ai-meter@1.1.1
+
+## 0.2.13
+
+### Patch Changes
+
+- Updated dependencies [98bf1f3]
+- Updated dependencies [5d1f295]
+- Updated dependencies [42d9710]
+- Updated dependencies [e19da1d]
+- Updated dependencies [68df709]
+  - @caisson/ui@0.6.5
+  - @caisson/prompt-registry@1.1.0
+  - @caisson/local-store@1.1.0
+  - @caisson/ai-meter@1.1.0
+  - @caisson/audit-harness@1.0.1
+  - @caisson/audit-worm@2.2.2
+  - @caisson/license-issue@1.0.7
+  - @caisson/ui-pro@0.3.6
+
 ## 0.2.12
 
 ### Patch Changes

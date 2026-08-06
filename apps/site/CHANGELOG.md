@@ -1,5 +1,315 @@
 # @caisson/site
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @caisson/registry-schema@0.5.10
+  - @caisson/ai-kit@0.6.3
+  - @caisson/cli@0.7.9
+  - @caisson/credits@0.6.1
+  - @caisson/pricebook@0.8.3
+  - @caisson/service-license@0.1.3
+  - @caisson/ai-meter@1.1.1
+  - @caisson/platform-migrations@0.3.3
+  - @caisson/platform-reads@0.2.11
+  - @caisson/demo-registry@0.2.14
+
+## 0.3.2
+
+### Patch Changes
+
+- 74f0756: Both packages gain a browser-safe `./browser` entry point: the contracts and vocabulary, the
+  crosswalk model, the catalog pin, the control model with all three framework packs, and the pure
+  catalog and assessment-plan exporters can now be imported inside a client bundle. The main entry
+  is unchanged and keeps the full node-capable surface; every browser-entry export is also
+  available there. As part of this, the catalog and assessment-plan exporters' default id generator
+  now uses the runtime's built-in WebCrypto `crypto.randomUUID()` instead of the Node crypto
+  module — the same UUID format, and any injected `newId` seam behaves exactly as before — and
+  both packages now declare a Node 20.12 minimum. Consumers of the compliance-core re-export
+  receive the same default-id change.
+- 8d77377: The site now generates its content and route types before running the TypeScript gate, and app
+  directory unit tests run as part of the normal test suite. Existing test fixtures were repaired so
+  the stricter gate checks the complete site surface without widening its browser API baseline.
+- 98bf1f3: Routine non-major dependency refresh: the OpenTelemetry SDK/instrumentation line moves to its
+  current minor, Playwright takes a patch, and the Storybook, Vite, wrangler, noble-curves, and
+  better-auth pins stay at their prior versions because the newer releases have not yet cleared the
+  seven-day release-age floor. No API or behavior changes in any package.
+- 42d9710: The eval package gains a browser-safe `./browser` entry point: the regression gate's rules with no
+  file access at all — the baseline boundary schema, `compareToBaseline`, the pre-bless eligibility
+  check, the new `mergeIntoBaseline`, and `wilsonLowerBound` — can now be imported inside a client
+  bundle to show or check a comparison. `gateAgainstBaseline` and `loadBaseline` stay on the main
+  entry, because they read and write the committed baseline file. The main entry is unchanged and
+  keeps the full surface; every browser-entry export is also available there. Internally the rules
+  moved into their own module and the file transport now delegates to them, so the bless merge has
+  exactly one implementation instead of two. The site's eval interactive demo now runs that real
+  code end to end instead of a hand-maintained copy.
+- 649be32: The local-privacy interactive demo on the site now runs the shipped egress guard itself — the
+  policy parse, the https-scheme check, the exact-host allowlist lookup, and the sanctioned sink
+  kind on every verdict come from the real package instead of a hand-maintained copy kept in the
+  site. The demo's blocked verdicts are the guard's own fail-closed errors, so what a visitor sees
+  is exactly what the module does. No package behavior changed.
+- 49f26a4: Both packages gain a browser-safe `./browser` entry point. For alerting that is the event contract,
+  dedup, rate-cap, quiet hours, the delivery port with its isolation wrapper and capture driver, the
+  audit port with its in-memory driver, and `processAlert` itself — everything except the five
+  network delivery drivers, which stay on the main entry because a browser cannot hold a webhook
+  signing secret. For retention runner it is the request contract, the erasure-target port with all
+  three reference drivers, the audit-sink port with its in-memory driver, and `runErasure` itself —
+  everything except the recurring-sweep scheduling helpers. The main entry of each package is
+  unchanged and keeps the full surface, and every browser-entry export is also available there.
+
+  Internally, alerting's delivery port, its per-channel isolation wrapper, and the capture driver move
+  into their own module so the orchestrator no longer pulls the network drivers in behind it. Every
+  public export keeps its name and shape.
+
+  The alerting and retention-runner interactive demos on the site now run the shipped packages end to
+  end instead of hand-maintained copies, so what the demo does is what the code does — including the
+  erasure request validation the copy left out.
+
+- e1226f6: agent-trajectory gains a browser-safe `./browser` entry point: the strict event schema, the
+  in-memory append-only store, the run-state port with its in-memory implementation, both
+  deterministic projections, and the Claude transcript adapter can now be imported inside a client
+  bundle, so a dashboard can replay and validate a trajectory in the browser. The main entry is
+  unchanged and keeps the full surface, including the two Postgres-backed stores, and every
+  browser-entry export is also available there. The site's replay interactive demo now runs that
+  real code end to end instead of a hand-maintained copy.
+- 8875592: Both crypto packages gain a browser-safe `./browser` entry point, so the same primitives the server
+  runs can now run inside a client bundle, a Cloudflare Worker, or any other WebCrypto-only runtime.
+
+  field-crypto's browser entry carries per-tenant HKDF key derivation, AES-256-GCM seal and open, the
+  row-bound additional-authenticated-data tuple, and the self-describing envelope codec, working over
+  `Uint8Array` and WebCrypto instead of Buffer and the Node crypto module. It is the same wire format,
+  not a parallel one: a value sealed in a browser opens under the server's `decryptField`, a value
+  written by `encryptField` opens in a browser, and both directions are pinned byte-for-byte against
+  the shipped fixtures. The new names sit alongside the existing ones rather than replacing them —
+  `deriveTenantKeyAsync`, `aesGcmSealAsync`, `aesGcmOpenAsync`, `buildAadBytes`,
+  `serializeEnvelopeBytes`, `parseEnvelopeBytes`, plus `nextKeyVersion` and `MAX_KEY_VERSION` for the
+  rotation bound the key-version registry already enforced. One behavior note: parsing an envelope
+  accepts both standard and URL-safe base64, preserving values the previous Node decoder could read;
+  whitespace is still tolerated and malformed values fail closed. The public seal operation always
+  generates its own fresh nonce, matching the Node cipher without exposing a caller override.
+
+  signing-primitive's browser entry carries the verify half: the signable-payload construction,
+  `verifyEvidenceSignature`, and the RFC-3161 test-double authority, so a relying party can check an
+  evidence pack's provenance entirely in their own browser. Nothing about the signature scheme
+  changed — the browser path runs the very same Ed25519 primitive the signer does, because that
+  primitive never needed Node in the first place. The signing identity stays off the browser entry
+  deliberately: a tenant seed does not belong in a bundle end users download. Two additions on both
+  entries: `hexToBytes` for decoding a signature or key, and
+  `timestampCountersignsSignatureAsync`, the WebCrypto twin of the existing timestamp check, which
+  keeps its synchronous form and uses a fixed-work digest comparison without importing Node crypto.
+
+  Both packages now declare a Node 20.12 minimum, and every export the main entry offered before is
+  still there with the same name and shape. The site's field-crypto and signing-primitive interactive
+  demos now run those shipped packages directly instead of hand-maintained copies of them, and the
+  shared test harness gained a scan for Node-only globals to go with its existing module-graph walk.
+
+- b2c8c24: Billing orchestration gains a browser-safe `./browser` entry point carrying the pure claim-key half
+  of the webhook idempotency layer: the fail-closed source event id guard and the per-effect composite
+  key derivation, which now live in their own module with no database or Node dependencies. The claim
+  itself is unchanged and stays on the main entry, since it runs as an insert inside your tenant
+  transaction. Both guards are also exported from the main entry, which keeps the complete surface, and
+  `processEvent` and `withIdempotentSideEffect` delegate to them, so the key rules have exactly one
+  implementation and every thrown message is what it always was. The site's billing-orchestration
+  interactive demo now runs those shipped guards instead of a hand-maintained copy.
+- 03ca530: Both packages gain a browser-safe `./browser` entry point, so the parts of each that are pure
+  validation can now be imported inside a client bundle.
+
+  `@caisson/agent-runner/browser` carries the provider profile model, `CLAUDE_CLI_PROFILE`,
+  `PASSTHROUGH_KEYS`, and `buildEngineEnv` — the env scrub, exactly as the runner itself runs it.
+  `buildEngineEnv`'s first parameter is now typed structurally instead of as Node's process-env type,
+  so it no longer requires Node's ambient types; `process.env` still satisfies it and existing callers
+  are unchanged.
+
+  `@caisson/tool-exec/browser` carries `createToolProposer`, the default-deny allowlist lookup plus
+  Zod argv validation with no spawn seam attached — the same gate `createToolExec` runs, now also
+  available on the main entry, so a UI can show whether a call is permitted without a process
+  boundary anywhere near it.
+
+  The main entry of each package is unchanged and keeps the full Node-capable surface, and every
+  browser-entry export is also available there. The site's agent-runner and tool-exec interactive
+  demos now run that real logic instead of a hand-maintained copy.
+
+- 5d1f295: The prompt registry gains a browser-safe `./browser` entry point: `name@version` and `name@alias`
+  addressing plus the injection-safe render boundary and its strict variable schemas can now be
+  imported inside a client bundle. The registry functions and the schema stay off that entry
+  deliberately, each one takes a tenant executor and runs SQL, so fail-closed tenant isolation stays
+  on the server. The main entry is unchanged and keeps the full surface; every browser-entry export
+  is also available there. The site's prompt-registry interactive demo now runs that real addressing
+  and versioning logic instead of a hand-maintained copy.
+- dff76d9: The package gains a browser-safe `./browser` entry point carrying `assertCanManageMembers`, so a
+  client bundle can render the owner-only gate using the exact function the server enforces instead
+  of a second copy of the rule. The gate now lives in its own internal module with no database, SSO,
+  or Node dependencies; the main entry is unchanged and keeps the full surface, every public export
+  keeps its name and shape, and every browser-entry export is also available on the main entry. The
+  site's org-controls interactive demo now runs that real gate instead of a hand-maintained copy.
+- e1fbaf5: The site's page-speed measurement now runs on the current major release of the Web Vitals
+  library, including reliable reporting while the page is busy and a compatibility fix for browsers
+  that disable PerformanceObserver. What the site collects is unchanged — the same five anonymous
+  speed metrics, still loaded after the page has finished rendering so measurement never slows the
+  page down, and still cookieless with no visitor profile created. Per-route soft-navigation
+  reporting remains off so each document still produces at most one batch.
+- 74f0756: The risk-register interactive demo on the site now drives the real risk-register package end to
+  end — authoring, residual computation, treatment-plan assembly, and the audited override flow all
+  run the shipped code instead of a hand-maintained copy. The shared test harness gains a
+  module-graph walker that statically proves a browser entry never reaches a Node builtin, so this
+  class of demo is verified by source analysis rather than trusting a bundler.
+- 42d9710: The Reciprocal Rank Fusion arithmetic is now a public function, `fuseByRrf`, exported from the main
+  entry alongside `RRF_K` and from a new browser-safe `./browser` entry point. Hand it leg rankings
+  your server or worker already produced and it returns the fused ranking — the same function
+  `hybridSearch` merges its vector and keyword legs through, so there is one implementation rather
+  than a formula restated per call site, and it runs inside a client bundle. Retrieval itself stays
+  on the main entry: the vec0 KNN and FTS5 legs need SQLite and its vector extension. Ranking,
+  scores, and tie-breaks are unchanged. The site's local-store interactive demo now runs that real
+  fusion instead of a hand-maintained copy. Invalid limits now fail closed: `fuseByRrf` rejects
+  negative, non-integer, and non-finite values instead of letting `Array.slice` turn them into a
+  plausible truncated or empty ranking.
+- f368318: Agent kernel gains a browser-safe `./browser` entry point: the agent/skill/rule schema and its
+  authoring helpers, the seven-act lifecycle FSM, the allow/deny/mutate governance algebra, and the
+  redacting logger can now be imported inside a client bundle. The main entry is unchanged and keeps
+  the full surface, including the shell-command hook handler and the audited hash-chain lifecycle;
+  every browser-entry export is also available there.
+
+  Local sync needs no second entry point, because its single entry is now browser-safe end to end:
+  the changeset types, the hybrid logical clock, and the tombstone-aware merge all import cleanly
+  into a client bundle. As part of that, the replica id minted when a change log is first opened now
+  uses the runtime's built-in WebCrypto `crypto.randomUUID()` instead of the Node crypto module —
+  the same UUID format, and the id is still persisted and reused on every later open — and the
+  package now declares a Node 20.12 minimum.
+
+  The site's agent-kernel and local-sync interactive demos run the shipped packages end to end
+  instead of hand-maintained copies of their logic.
+
+- 2caec56: `@caisson/compliance-core` gains a browser-safe `./browser` entry point: the evidence-collector
+  contract with its pass, flagged, and unresolved result constructors, four pure collectors (FORCE
+  row-level security, WORM retention, risk register, and the impersonation dual trail), the pack
+  format, the cross-framework crosswalk rollup, and the newly exported `assembleEvidenceManifest` can
+  now be imported inside a client bundle. The main entry is unchanged and keeps the full surface;
+  every browser-entry export is also available there.
+
+  `assembleEvidenceManifest` is the flag-never-guess refusal plus the derived, schema-validated
+  canonical manifest body, lifted out of `generateEvidencePack` so there is one implementation for
+  both callers — `generateEvidencePack` now composes it and keeps sole ownership of the deterministic
+  archive and its digest. Behaviour, the blocked-pack error type, and the output bytes are unchanged.
+  The archive phase, the audit-chain-integrity collector, and the PHI-encryption collector each need
+  Node and remain on the main entry only.
+
+  The site's compliance interactive demo now runs that real assembly and those real collectors end to
+  end instead of a hand-maintained copy.
+
+- 0497277: The internal evidence proxy now accepts only time-bounded service credentials. The older unbounded credential form, kept temporarily so the two halves could roll out one after the other, is no longer honored.
+- e19da1d: ai-meter gains a browser-safe `./browser` entry point: the versioned price book with its integer
+  cost normalizer, the pre-call token estimator, and the spend vocabulary — the default scope, the
+  breaker's state shape, and the `SpendCapError` a capped tenant raises — can now be imported inside
+  a client bundle. The database-bound half is deliberately absent from it: `reserve()`,
+  `reconcile()`, the stored circuit breaker and the schema all stay on the main entry, which is
+  otherwise unchanged and still carries the complete surface. Every name on the browser entry is also
+  available there, and no existing import moves or changes behavior. The site's ai-meter interactive
+  demo now prices its sample calls through that real code instead of a hand-maintained copy.
+- 04cf1ff: The anti-slop static-HTML detector's CSS-cascade engine now actually runs: css-select, css-tree,
+  and domutils are declared dependencies instead of unresolved dynamic imports that silently fell
+  back to the weaker text-only detector in CI. The gate output is unchanged — all existing findings
+  remain allowlisted.
+- 7d74f8f: The browser-safe `@caisson/kernel/audit-verify` entry point now covers whole-chain verification,
+  not just single rows: `buildChainAsync`, `chainEntryAsync`, and `verifyChainAsync` are WebCrypto
+  twins of the Node chain builders, and `anchorChain` is available there as the same function the
+  Node side already calls. A client or an offline pack verifier can now check that a chain is the
+  complete original one, which is the check a cut tail turns on, without pulling the Node crypto
+  module. The main entry and the Node entry are unchanged in name, shape, and behaviour, and the
+  twins are pinned byte for byte against the originals. The site's audit chain interactive demo now
+  runs those real functions end to end instead of a hand-maintained copy.
+- f3c62cc: Credits gains a browser-safe `./browser` entry point: the grant and debit event vocabulary and
+  `planFifoDebit`, the FIFO waterfall the wallet's own `debit()` walks, can now be imported inside a
+  client bundle. Given a list of grant remainders and an amount it returns which grant each credit
+  comes off, plus how much the remainders cover and how much they fall short. It reads and writes no
+  wallet, so nothing that touches a database or a tenant connection is on the new entry: `grant`,
+  `debit`, `clawback`, the balance and ledger reads, the expiry sweeps, and the schema SQL all stay
+  on the main entry, which is unchanged and still carries every browser-entry export. Credit amounts
+  are integers as before and no wallet, ledger, or 402 behavior changes: the server now calls the
+  same shared waterfall instead of its own copy, so a balance or a shortfall shown by a client is the
+  one a real debit computes. The site's credits interactive demo runs that shared logic directly
+  instead of a hand-maintained copy. The planner validates every supplied remainder before doing
+  money arithmetic, so malformed or fractional values fail closed instead of poisoning the reported
+  coverage, while drained and negative lines contribute no draw.
+- 0d88328: The HTML parser behind the weekly regulatory-claim watch moves to its current major line. Because
+  the new parser classifies iframe, xmp, plaintext, noembed, and noframes as raw text, the extractor
+  neutralizes only those tag names before parsing and retains the previous open, text, and close event
+  behavior for their bodies and following content. Exact fixtures cover those five elements, a
+  self-closed iframe, entity decoding, hidden content, and implied closes. HTML with no visible anchor
+  remains locator drift instead of becoming a generic manual-review result. The watch reads the same
+  sources and stays advisory-only.
+- 74f0756: The pure half of the access-review campaign kernel — the decision vocabulary, chain record kinds,
+  the decision scan, and the close guard — now lives in its own internal module with no database or
+  Node dependencies, and the campaign lifecycle delegates to it, so there is exactly one
+  implementation of the close rules. Every public export keeps its name and shape. The site's
+  access-review interactive demo now runs that real logic end to end instead of a hand-maintained
+  copy.
+- Updated dependencies [74f0756]
+- Updated dependencies [98bf1f3]
+- Updated dependencies [42d9710]
+- Updated dependencies [49f26a4]
+- Updated dependencies [e1226f6]
+- Updated dependencies [8875592]
+- Updated dependencies [b2c8c24]
+- Updated dependencies [03ca530]
+- Updated dependencies [5d1f295]
+- Updated dependencies [dff76d9]
+- Updated dependencies [42d9710]
+- Updated dependencies [f368318]
+- Updated dependencies [2caec56]
+- Updated dependencies [e19da1d]
+- Updated dependencies [68df709]
+- Updated dependencies [7d74f8f]
+- Updated dependencies [f3c62cc]
+- Updated dependencies [74f0756]
+  - @caisson/oscal-spine@0.2.0
+  - @caisson/frameworks-pack@0.8.0
+  - @caisson/compliance-core@0.7.0
+  - @caisson/observability@0.3.7
+  - @caisson/signing-primitive@0.4.0
+  - @caisson/ui@0.6.5
+  - @caisson/ai-evals@0.5.0
+  - @caisson/alerting@0.3.0
+  - @caisson/retention-runner@0.2.0
+  - @caisson/agent-trajectory@0.5.0
+  - @caisson/field-crypto@1.1.0
+  - @caisson/billing-orchestration@0.4.0
+  - @caisson/agent-runner@0.3.0
+  - @caisson/tool-exec@0.3.0
+  - @caisson/prompt-registry@1.1.0
+  - @caisson/org-controls@0.4.0
+  - @caisson/local-store@1.1.0
+  - @caisson/agent-kernel@0.7.0
+  - @caisson/local-sync@0.2.0
+  - @caisson/ai-meter@1.1.0
+  - @caisson/kernel@0.8.0
+  - @caisson/credits@0.6.0
+  - @caisson/access-review@0.3.3
+  - @caisson/risk-register@0.3.3
+  - @caisson/trust-page@0.3.3
+  - @caisson/cli@0.7.8
+  - @caisson/service-license@0.1.2
+  - @caisson/audit-worm@2.2.2
+  - @caisson/brand@0.1.5
+  - @caisson/demo-registry@0.2.13
+  - @caisson/ui-pro@0.3.6
+  - @caisson/ai-kit@0.6.2
+  - @caisson/guardrails@0.4.12
+  - @caisson/artifact-render@0.2.3
+  - @caisson/auth@0.4.3
+  - @caisson/billing@0.6.7
+  - @caisson/email@0.5.6
+  - @caisson/local-inference@0.1.9
+  - @caisson/local-privacy@0.1.9
+  - @caisson/migrate@0.2.12
+  - @caisson/platform-migrations@0.3.2
+  - @caisson/platform-reads@0.2.11
+  - @caisson/pricebook@0.8.2
+  - @caisson/rate-limit@0.1.10
+  - @caisson/registry-schema@0.5.9
+  - @caisson/tenancy-rls@0.5.8
+
 ## 0.3.1
 
 ### Patch Changes

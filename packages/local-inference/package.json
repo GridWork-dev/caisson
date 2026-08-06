@@ -1,6 +1,6 @@
 {
   "name": "@caisson/local-inference",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "publishConfig": {
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"

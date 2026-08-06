@@ -1,5 +1,26 @@
 # @caisson/mcp-server
 
+## 0.6.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @caisson/registry-schema@0.5.10
+
+## 0.6.8
+
+### Patch Changes
+
+- Updated dependencies [fab7a0d]
+- Updated dependencies [98bf1f3]
+- Updated dependencies [68df709]
+- Updated dependencies [7d74f8f]
+  - @caisson/ds-manifest@0.3.2
+  - @caisson/ui@0.6.5
+  - @caisson/kernel@0.8.0
+  - @caisson/ai-config@0.3.8
+  - @caisson/registry-schema@0.5.9
+
 ## 0.6.7
 
 ### Patch Changes

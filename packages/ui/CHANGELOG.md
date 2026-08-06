@@ -1,5 +1,16 @@
 # @caisson/ui
 
+## 0.6.5
+
+### Patch Changes
+
+- 98bf1f3: Routine non-major dependency refresh: the OpenTelemetry SDK/instrumentation line moves to its
+  current minor, Playwright takes a patch, and the Storybook, Vite, wrangler, noble-curves, and
+  better-auth pins stay at their prior versions because the newer releases have not yet cleared the
+  seven-day release-age floor. No API or behavior changes in any package.
+- 68df709: Bumped the Playwright test-runner dependency used for the component test suite from 1.61 to 1.62.
+  No change to any published export or component behavior.
+
 ## 0.6.4
 
 ### Patch Changes
