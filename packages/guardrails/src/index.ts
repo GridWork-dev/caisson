@@ -29,6 +29,7 @@ export {
   PII_KINDS,
   PII_COLUMN_CONTEXT,
   detectPii,
+  maskPii,
   redactPii,
   tokenizePii,
   detokenizePii,
@@ -41,6 +42,14 @@ export type {
   RedactMode,
 } from "./pii.ts";
 
+// Additive WebCrypto/browser twins. These names also form the supported `./browser` subset.
+export {
+  hashPiiAsync,
+  tokenizePiiAsync,
+  detokenizePiiAsync,
+} from "./pii-browser.ts";
+export type { BrowserPiiCryptoContext } from "./pii-browser.ts";
+
 // The fail-closed input/output guard.
 export { guardInput, guardOutput } from "./guard.ts";
 export type {
@@ -49,6 +58,13 @@ export type {
   GuardOutcome,
   PiiPolicy,
 } from "./guard.ts";
+export { guardInputAsync } from "./guard-browser.ts";
+export type {
+  BrowserGuardOutcome,
+  BrowserGuardPolicy,
+  BrowserPiiPolicy,
+} from "./guard-browser.ts";
+export type { GuardPolicyBase } from "./guard-core.ts";
 
 // FTC "4 Ps" dark-pattern presentation guardrail (ADR-0215) — scores static marketing/UI copy;
 // optionally wrappable as a Moderator via `ftc4pModerator`, but not wired into `guard.ts` itself.

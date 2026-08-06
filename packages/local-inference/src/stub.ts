@@ -5,8 +5,7 @@
 // the ONLY inference backend exercised in CI — the real on-device and rented backends share the
 // same port and are never called in tests, leaving the live model fetch / remote call the single
 // un-exercised path. Determinism keeps any embedding-derived fixture golden-stable across runs/hosts.
-import { createHash } from "node:crypto";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson/kernel/browser";
 import { EMBEDDING_DIM } from "./backend.ts";
 import type {
   CompletionRequest,
@@ -25,9 +24,20 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+/** Hash text with the browser-native WebCrypto primitive shared by Bun and modern browsers. */
+async function sha256(text: string): Promise<Uint8Array> {
+  const bytes = new TextEncoder().encode(text);
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+}
+
 /** Derive a deterministic 32-bit seed from text (SHA-256 → first 4 bytes, big-endian). */
-function seedFromText(text: string): number {
-  return createHash("sha256").update(text, "utf8").digest().readUInt32BE(0);
+async function seedFromText(text: string): Promise<number> {
+  const digest = await sha256(text);
+  return new DataView(
+    digest.buffer,
+    digest.byteOffset,
+    digest.byteLength,
+  ).getUint32(0, false);
 }
 
 /**
@@ -51,8 +61,8 @@ export class StubInferenceBackend implements InferenceBackend {
   }
 
   /** Pure text → unit-norm vector. Same text ⇒ byte-identical result; no model, no socket. */
-  embed(text: string): Promise<Float32Array> {
-    const rand = mulberry32(seedFromText(text));
+  async embed(text: string): Promise<Float32Array> {
+    const rand = mulberry32(await seedFromText(text));
     const raw = new Array<number>(this.dim);
     let sumSq = 0;
     for (let i = 0; i < this.dim; i++) {
@@ -62,17 +72,16 @@ export class StubInferenceBackend implements InferenceBackend {
     }
     // L2-normalize to a unit vector (embedding-space convention); never divide by zero.
     const inv = sumSq > 0 ? 1 / Math.sqrt(sumSq) : 0;
-    return Promise.resolve(Float32Array.from(raw, (v) => v * inv));
+    return Float32Array.from(raw, (v) => v * inv);
   }
 
   /** Deterministic offline echo — a stable transform of the prompt, never a model/network call. */
-  complete(req: CompletionRequest): Promise<CompletionResult> {
-    const digest = createHash("sha256")
-      .update(req.prompt, "utf8")
-      .digest("hex")
-      .slice(0, 8);
+  async complete(req: CompletionRequest): Promise<CompletionResult> {
+    const digest = Array.from((await sha256(req.prompt)).subarray(0, 4), (b) =>
+      b.toString(16).padStart(2, "0"),
+    ).join("");
     const max = req.maxTokens ?? 64;
     const text = `stub:${digest} ${req.prompt}`.slice(0, Math.max(0, max));
-    return Promise.resolve({ text, model: this.model });
+    return { text, model: this.model };
   }
 }

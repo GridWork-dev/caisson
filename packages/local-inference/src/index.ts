@@ -4,10 +4,10 @@ export type {
   CompletionRequest,
   CompletionResult,
 } from "./backend.ts";
+export { DEFAULT_ONNX_MODEL } from "./model.ts";
 export { StubInferenceBackend } from "./stub.ts";
 export {
   OnnxEmbeddingBackend,
-  DEFAULT_ONNX_MODEL,
   type OnnxBackendConfig,
 } from "./onnx-backend.ts";
 export {

@@ -19,7 +19,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
 import { AuthzError, ValidationError } from "@caisson/kernel";
-import { DEFAULT_ONNX_MODEL } from "@caisson/local-inference";
+import { DEFAULT_ONNX_MODEL } from "@caisson/local-inference/browser";
 import { ZERO_EGRESS_POLICY, localOnlyPolicy } from "@caisson/local-privacy";
 
 import {
@@ -81,6 +81,19 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 });
 
 describe("the poke's sample host is the real product config, not a fabricated example", () => {
+  test("the component imports the safe constant instead of restating its host", () => {
+    const source = readFileSync(POKE_ENTRY, "utf8");
+    expect(source).toMatch(
+      /^import \{ DEFAULT_ONNX_MODEL \} from "@caisson\/local-inference\/browser";$/m,
+    );
+    expect(source).toMatch(
+      /^export const MODEL_FETCH_HOST = DEFAULT_ONNX_MODEL\.modelHost;$/m,
+    );
+    expect(source).not.toMatch(
+      /^export const MODEL_FETCH_HOST = "huggingface\.co";$/m,
+    );
+  });
+
   test("MODEL_FETCH_HOST matches @caisson/local-inference's DEFAULT_ONNX_MODEL.modelHost", () => {
     expect(MODEL_FETCH_HOST).toBe(DEFAULT_ONNX_MODEL.modelHost);
   });
