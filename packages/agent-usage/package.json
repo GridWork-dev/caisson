@@ -1,6 +1,6 @@
 {
   "name": "@caisson/agent-usage",
-  "version": "0.2.7",
+  "version": "0.2.9",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

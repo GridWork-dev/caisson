@@ -1,5 +1,16 @@
 # @caisson/jobs
 
+## 0.7.2
+
+### Patch Changes
+
+- 742c979: The BullMQ driver moves to bullmq v6, and ioredis becomes a direct dependency of the jobs package
+  because bullmq v6 demoted it to an optional peer. No public API or behavior change: the driver
+  already used job schedulers and deduplication ids, so none of the v6 removals apply to it.
+- Updated dependencies [7d74f8f]
+  - @caisson/kernel@0.8.0
+  - @caisson/tenancy-rls@0.5.8
+
 ## 0.7.1
 
 ### Patch Changes

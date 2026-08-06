@@ -1,5 +1,15 @@
 # @caisson/ui-pro
 
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies [98bf1f3]
+- Updated dependencies [68df709]
+- Updated dependencies [7d74f8f]
+  - @caisson/ui@0.6.5
+  - @caisson/kernel@0.8.0
+
 ## 0.3.5
 
 ### Patch Changes

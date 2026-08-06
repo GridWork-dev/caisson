@@ -1,5 +1,46 @@
 # @caisson/compliance-core
 
+## 0.7.0
+
+### Minor Changes
+
+- 2caec56: `@caisson/compliance-core` gains a browser-safe `./browser` entry point: the evidence-collector
+  contract with its pass, flagged, and unresolved result constructors, four pure collectors (FORCE
+  row-level security, WORM retention, risk register, and the impersonation dual trail), the pack
+  format, the cross-framework crosswalk rollup, and the newly exported `assembleEvidenceManifest` can
+  now be imported inside a client bundle. The main entry is unchanged and keeps the full surface;
+  every browser-entry export is also available there.
+
+  `assembleEvidenceManifest` is the flag-never-guess refusal plus the derived, schema-validated
+  canonical manifest body, lifted out of `generateEvidencePack` so there is one implementation for
+  both callers — `generateEvidencePack` now composes it and keeps sole ownership of the deterministic
+  archive and its digest. Behaviour, the blocked-pack error type, and the output bytes are unchanged.
+  The archive phase, the audit-chain-integrity collector, and the PHI-encryption collector each need
+  Node and remain on the main entry only.
+
+  The site's compliance interactive demo now runs that real assembly and those real collectors end to
+  end instead of a hand-maintained copy.
+
+### Patch Changes
+
+- 74f0756: Both packages gain a browser-safe `./browser` entry point: the contracts and vocabulary, the
+  crosswalk model, the catalog pin, the control model with all three framework packs, and the pure
+  catalog and assessment-plan exporters can now be imported inside a client bundle. The main entry
+  is unchanged and keeps the full node-capable surface; every browser-entry export is also
+  available there. As part of this, the catalog and assessment-plan exporters' default id generator
+  now uses the runtime's built-in WebCrypto `crypto.randomUUID()` instead of the Node crypto
+  module — the same UUID format, and any injected `newId` seam behaves exactly as before — and
+  both packages now declare a Node 20.12 minimum. Consumers of the compliance-core re-export
+  receive the same default-id change.
+- Updated dependencies [74f0756]
+- Updated dependencies [8875592]
+- Updated dependencies [7d74f8f]
+  - @caisson/oscal-spine@0.2.0
+  - @caisson/frameworks-pack@0.8.0
+  - @caisson/field-crypto@1.1.0
+  - @caisson/kernel@0.8.0
+  - @caisson/risk-register@0.3.3
+
 ## 0.6.3
 
 ### Patch Changes

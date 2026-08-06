@@ -1,5 +1,26 @@
 # @caisson/registry
 
+## 0.0.24
+
+### Patch Changes
+
+- Updated dependencies
+  - @caisson/registry-schema@0.5.10
+  - @caisson/pricebook@0.8.3
+
+## 0.0.23
+
+### Patch Changes
+
+- 98bf1f3: Routine non-major dependency refresh: the OpenTelemetry SDK/instrumentation line moves to its
+  current minor, Playwright takes a patch, and the Storybook, Vite, wrangler, noble-curves, and
+  better-auth pins stay at their prior versions because the newer releases have not yet cleared the
+  seven-day release-age floor. No API or behavior changes in any package.
+- 0497277: Publishing a release now redeploys the module registry edge as part of the same run and verifies it against the released catalog, so a newly published version is installable the moment the release completes instead of after a separate manual step.
+  - @caisson/license-verify@0.3.8
+  - @caisson/pricebook@0.8.2
+  - @caisson/registry-schema@0.5.9
+
 ## 0.0.22
 
 ### Patch Changes
