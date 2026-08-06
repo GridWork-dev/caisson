@@ -1,18 +1,28 @@
 ---
-updated: 2026-08-02
+updated: 2026-08-06
 status: live
 ---
 
 # Build state & roadmap
 
-## Current state (2026-08-02)
+## Current state (2026-08-06)
 
-**ADR ceiling is `0396`; `origin/main` is at `42f69edf`; the latest immutable release tag is
-`v2026.07.30`, released 2026-07-30 and fully propagated.** `main` carries the validated
+**ADR ceiling is `0396`; the latest release tag is `v2026.08.06.1`, signed and cut 2026-08-06 on
+the repair/attestation commit atop `aa6f4f17` (the version-PR merge) — the clean-main
+wave: ADR-0396 Wave B browser entries (guardrails / local-inference / local-privacy over the
+kernel/browser strict subset) with the poke retirement and demo-truthfulness fix (#402), the
+dependency wave (#398–#401), the anti-slop engine repair (#403), the deterministic-scan baseline
+remediation (#404), and the changeset consume (#405). The whole wave shipped during a GitHub
+Actions major outage with all five required checks run locally per PR. `v2026.08.06` is a dud
+tag — its consume recorded six sidecar rows over bytes that were not the tag tree's; the R4
+audit + byte gate caught it pre-ride and the rows were re-recorded and re-proven in the wrap PR
+(`outputs/audit/release-audit-v2026.08.06.1.md` §3). Propagation legs ride `v2026.08.06.1`
+(see [deploy state](deploy/STATE.md)).** `main` carries the validated
 writing, OSCAL, Ask AI evidence, and supply-chain pin work cataloged in the
 [2026-07-27 reconciliation](../outputs/executions/2026-07-27-project-reconciliation.md).
-The ADR-0379 full-state completion program is active on
-`feature/full-state-completion`; ADR-0380 closed its six fork rows and split the remaining build
+The ADR-0379 full-state completion program ran on
+`feature/full-state-completion` (complete — T0–T7 in the tracker's state matrix, branches since
+removed); ADR-0380 closed its six fork rows and split the remaining build
 into two parallel worktree lanes — `feature/completion-lane-a` (code residuals plus the adapter
 wave) and `feature/module-depth-pages` (the module-depth design slice, shipped as PR #332).
 ADR-0381 then closed the two remaining product fork rows from a verified launch-gate sweep and

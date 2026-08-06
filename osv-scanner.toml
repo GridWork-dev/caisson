@@ -46,16 +46,20 @@ reason = "brace-expansion DoS via unbounded expansion (OOM). Remaining copies af
 
 [[IgnoredVulns]]
 id = "GHSA-rgw5-rvv9-x895"
+ignoreUntil = 2026-08-12
 reason = "brace-expansion DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation — hits all three locked copies (1.1.16 / 2.1.2 / 5.0.8, minimatch chains under eslint/glob tooling). In-range patched releases (1.1.18 / 2.1.4 / 5.0.9, published 2026-07-30) cleared the 7-day release-age floor 2026-08-06, but an isolated nested-lock refresh is not expressible today: bun overrides are top-level-only (a global 5.x force into minimatch@<10 parents is the cross-major risk rejected 2026-07-25), and invalidating the lock entries triggers a broad re-resolve that trips the age floor on unrelated young deps (nanoid ^3.3.17). Same exposure as GHSA-mh99: dev/build-time-only, first-party glob patterns, never attacker-controlled. Bump lands in the 2026-08-11 dep wave (CAISSON follow-up filed). Accepted 2026-08-06 (scan-baseline remediation — flagged for operator retro-veto)."
 
 [[IgnoredVulns]]
 id = "GHSA-7p8r-x3mc-p8w7"
+ignoreUntil = 2026-08-12
 reason = "fast-uri host confusion via backslash authority introducer. Locked copy 3.1.4 via the root override (consumer: ajv@8.x, build/validation tooling — never handed attacker-controlled URLs in this repo; runtime URL parsing uses WHATWG new URL() per the security floor). Fix 3.1.5 published 2026-07-31 clears the 7-day release-age floor 2026-08-07 — bump the root override then (2026-08-11 dep wave or sooner). Accepted 2026-08-06 (scan-baseline remediation — flagged for operator retro-veto)."
 
 [[IgnoredVulns]]
 id = "GHSA-8j4g-w8fx-2239"
+ignoreUntil = 2026-08-12
 reason = "hono ReDoS in CORS middleware via Access-Control-Request-Headers. hono@4.12.30 is transitive DEV tooling only (wrangler/miniflare chain for the registry Worker harness) — the deployed Worker is hand-rolled and does not use hono, and no production service imports it, so no request path reaches the vulnerable middleware. Fix 4.12.34 published 2026-08-03 clears the release-age floor 2026-08-10 — bump in the 2026-08-11 dep wave. Accepted 2026-08-06 (scan-baseline remediation — flagged for operator retro-veto)."
 
 [[IgnoredVulns]]
 id = "GHSA-5p4m-2wfm-xmqj"
+ignoreUntil = 2026-08-12
 reason = "js-yaml quadratic CPU in !!omap resolution, 3.x/4.x (the CVE-2026-59870 fix not backported until now). Advisory published 2026-08-06T20:27Z — mid-merge-queue; the same copies were scan-green an hour earlier. Locked copies 3.15.0 + 4.3.0 are dev/build tooling only (changesets CLI, eslint config loading, cosmiconfig) parsing first-party YAML — the quadratic path needs attacker-controlled !!omap documents, which never reach these consumers. Backported fixes 3.15.1 / 4.3.1 published 2026-07-31 clear the 7-day release-age floor 2026-08-07 — bump then (rides the fast-uri follow-up). Accepted 2026-08-06 (flagged for operator retro-veto)."
