@@ -70,6 +70,11 @@ export type GuardVerdict =
       readonly error: GuardrailErrorLike;
     };
 
+type GuardRun =
+  | { readonly status: "loading" }
+  | { readonly status: "success"; readonly verdict: GuardVerdict }
+  | { readonly status: "error" };
+
 function isGuardrailErrorLike(error: unknown): error is GuardrailErrorLike {
   if (typeof error !== "object" || error === null) return false;
   const candidate = error as Partial<GuardrailErrorLike>;
@@ -162,18 +167,24 @@ export default function GuardrailsPoke() {
   const [stage, setStage] = useState<GuardStage>("input");
   const [mode, setMode] = useState<PiiMode>("mask");
   const [outageOn, setOutageOn] = useState(false);
-  const [verdict, setVerdict] = useState<GuardVerdict | null>(null);
+  const [run, setRun] = useState<GuardRun>({ status: "loading" });
 
   const matches = useMemo(() => detectPii(text), [text]);
+  const verdict = run.status === "success" ? run.verdict : null;
 
   // WebCrypto hash/tokenization and the moderator port are async. Ignore stale completions when a
   // visitor edits again before the previous run settles.
   useEffect(() => {
     let live = true;
-    setVerdict(null);
-    void evaluateGuard(text, stage, { outageOn, mode }).then((next) => {
-      if (live) setVerdict(next);
-    });
+    setRun({ status: "loading" });
+    void evaluateGuard(text, stage, { outageOn, mode }).then(
+      (next) => {
+        if (live) setRun({ status: "success", verdict: next });
+      },
+      () => {
+        if (live) setRun({ status: "error" });
+      },
+    );
     return () => {
       live = false;
     };
@@ -272,10 +283,14 @@ export default function GuardrailsPoke() {
         </p>
 
         <div className={styles.outputPanel}>
-          {verdict === null ? (
+          {run.status === "loading" ? (
             <p className={styles.result}>Guarding…</p>
-          ) : verdict.outcome === "blocked" ? (
-            <BlockedPanel verdict={verdict} />
+          ) : run.status === "error" ? (
+            <Verdict state="fail">
+              Guard unavailable. Edit the sample or settings to retry.
+            </Verdict>
+          ) : run.verdict.outcome === "blocked" ? (
+            <BlockedPanel verdict={run.verdict} />
           ) : (
             <>
               <Verdict state="ok">
@@ -283,7 +298,7 @@ export default function GuardrailsPoke() {
                   ? "guardOutput() passed. The output leg never touches PII."
                   : `guardInputAsync() passed. ${matches.length} span${matches.length === 1 ? "" : "s"} redacted (${mode}).`}
               </Verdict>
-              <p className={styles.result}>{verdict.text}</p>
+              <p className={styles.result}>{run.verdict.text}</p>
               {stage === "input" && mode === "tokenize" ? (
                 <p className={styles.note}>
                   Each placeholder maps to a field-crypto envelope sealed under

@@ -1,15 +1,32 @@
 // The guardrails poke now drives `@caisson/guardrails/browser`; there is no mirror left to compare.
 // Pin the client graph and the presentation adapter's checkable claims over the shipped primitive.
-import { describe, expect, test } from "bun:test";
+import { createElement } from "react";
+import { describe, expect, mock, test } from "bun:test";
 import { join } from "node:path";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
 } from "@caisson/testing/module-graph";
-import { evaluateGuard } from "./guardrails-poke";
+import { renderIntoJsdom } from "@caisson/testing";
+import GuardrailsPoke, { evaluateGuard } from "./guardrails-poke";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../../..");
 const POKE_ENTRY = join(import.meta.dir, "guardrails-poke.tsx");
+
+function chooseRadio(
+  document: Document,
+  act: (fn: () => void) => void,
+  labelText: string,
+): void {
+  const label = Array.from(document.querySelectorAll("label")).find(
+    (candidate) => candidate.textContent?.includes(labelText),
+  );
+  const input = label?.querySelector('input[type="radio"]');
+  if (!(input instanceof document.defaultView!.HTMLInputElement)) {
+    throw new Error(`guardrails poke radio not found: ${labelText}`);
+  }
+  act(() => input.click());
+}
 
 describe("the poke client graph uses the supported browser entry", () => {
   const walk = nodeBuiltinTaint(POKE_ENTRY, { workspaceRoot: WORKSPACE_ROOT });
@@ -110,5 +127,30 @@ describe("the poke's adapter runs the real browser guard", () => {
       category: "moderation",
       failClosed: false,
     });
+  });
+
+  test("renders a bounded error when the async WebCrypto guard rejects", async () => {
+    const originalDigest = crypto.subtle.digest;
+    const rendered = renderIntoJsdom(createElement(GuardrailsPoke));
+    try {
+      await rendered.act(
+        () => new Promise((resolve) => setTimeout(resolve, 0)),
+      );
+      crypto.subtle.digest = mock(() =>
+        Promise.reject(new Error("WebCrypto unavailable")),
+      ) as typeof crypto.subtle.digest;
+
+      chooseRadio(rendered.document, rendered.act, "Hash");
+      expect(rendered.container.textContent).toContain("Guarding…");
+      await rendered.act(
+        () => new Promise((resolve) => setTimeout(resolve, 0)),
+      );
+
+      expect(rendered.container.textContent).toContain("Guard unavailable");
+      expect(rendered.container.textContent).not.toContain("Guarding…");
+    } finally {
+      crypto.subtle.digest = originalDigest;
+      rendered.unmount();
+    }
   });
 });

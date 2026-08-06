@@ -2,8 +2,8 @@
 
 // The local-inference module's poke (ADR-0378 lock 2, kimi CANDIDATES section B "On-device
 // inference") — stay on the box: run the package's real deterministic StubInferenceBackend against
-// a sample prompt, watch the egress meter hold at zero, then opt a rented backend in and watch it
-// flip. The stub and model coordinates come from the package's deliberately narrow `./browser`
+// a sample prompt, watch the egress meter hold at zero, then test whether policy would permit a
+// rented backend. The stub and model coordinates come from the package's deliberately narrow `./browser`
 // entry; presentation helpers and fixtures stay local to this component. Nothing here fetches,
 // persists, or measures the visitor — the "rented" path is a fully local simulation driven by the
 // real local-privacy guard, never a provider transport or network call.
@@ -22,6 +22,10 @@ import type { VerdictState } from "./poke-rig";
 import styles from "./local-inference-poke.module.css";
 
 type BackendChoice = "on-device" | "rented";
+type EmbeddingRun =
+  | { readonly status: "loading" }
+  | { readonly status: "success"; readonly vector: Float32Array }
+  | { readonly status: "error" };
 type EgressReading =
   | {
       readonly outcome: "local";
@@ -38,17 +42,16 @@ type EgressReading =
       readonly usage: null;
     }
   | {
-      readonly outcome: "egressed";
+      readonly outcome: "allowed";
       readonly host: string;
       readonly sinkKind: "rented-backend";
-      readonly requests: 1;
-      readonly usage: { readonly unit: "token"; readonly quantity: number };
+      readonly requests: 0;
+      readonly usage: null;
     };
 
 const SAMPLE_PROMPT =
   "Summarize the buyer's renewal risk from this support thread.";
 const SAMPLE_RENTED_HOST = "api.rented-inference.example";
-const SAMPLE_USAGE = { unit: "token", quantity: 128 } as const;
 const STUB_BACKEND = new StubInferenceBackend();
 const RENTED_ENDPOINT = `https://${SAMPLE_RENTED_HOST}/embed`;
 const RENTED_GUARDS = {
@@ -69,18 +72,27 @@ export default function LocalInferencePoke() {
   const [prompt, setPrompt] = useState(SAMPLE_PROMPT);
   const [backend, setBackend] = useState<BackendChoice>("on-device");
   const [hostAllowlisted, setHostAllowlisted] = useState(false);
-  const [vector, setVector] = useState<Float32Array | null>(null);
+  const [embedding, setEmbedding] = useState<EmbeddingRun>({
+    status: "loading",
+  });
 
   useEffect(() => {
     let live = true;
-    void computeSampleEmbedding(prompt).then((v) => {
-      if (live) setVector(v);
-    });
+    setEmbedding({ status: "loading" });
+    void computeSampleEmbedding(prompt).then(
+      (vector) => {
+        if (live) setEmbedding({ status: "success", vector });
+      },
+      () => {
+        if (live) setEmbedding({ status: "error" });
+      },
+    );
     return () => {
       live = false;
     };
   }, [prompt]);
 
+  const vector = embedding.status === "success" ? embedding.vector : null;
   const bars = useMemo(
     () => (vector ? normalizeBars(sparkBars(vector, 48)) : []),
     [vector],
@@ -125,7 +137,10 @@ export default function LocalInferencePoke() {
           id={`${uid}-prompt`}
           className={styles.textarea}
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onInput={(e) => {
+            setEmbedding({ status: "loading" });
+            setPrompt(e.currentTarget.value);
+          }}
           rows={2}
           spellCheck={false}
         />
@@ -143,9 +158,18 @@ export default function LocalInferencePoke() {
               />
             ))}
           </div>
-          <p className={styles.srOnly} role="status" aria-live="polite">
-            Sample embedding computed for the current prompt, {EMBEDDING_DIM}{" "}
-            dimensions, rendered as {bars.length} bars.
+          <p
+            className={
+              embedding.status === "success" ? styles.srOnly : styles.note
+            }
+            role="status"
+            aria-live="polite"
+          >
+            {embedding.status === "loading"
+              ? "Computing sample embedding…"
+              : embedding.status === "error"
+                ? "Sample embedding unavailable. Edit the prompt to retry."
+                : `Sample embedding computed for the current prompt, ${EMBEDDING_DIM} dimensions, rendered as ${bars.length} bars.`}
           </p>
           <p className={styles.note}>
             A fixed, deterministic placeholder vector, the real on-device model
@@ -179,9 +203,8 @@ export default function LocalInferencePoke() {
           />
         </div>
         <p className={styles.note}>
-          RentedInferenceBackend is off by default. Its constructor refuses to
-          run unless this exact host is opted into the privacy allowlist for the
-          rented-backend sink kind, fail-closed-to-offline.
+          This demo evaluates the same purpose-bound privacy policy without
+          constructing RentedInferenceBackend or sending a provider request.
         </p>
 
         <div className={styles.outputPanel}>
@@ -193,15 +216,8 @@ export default function LocalInferencePoke() {
             <dd>{reading.host ?? "none"}</dd>
             <dt>sinkKind</dt>
             <dd>{reading.sinkKind ?? "none"}</dd>
-            {reading.usage ? (
-              <>
-                <dt>metered</dt>
-                <dd>
-                  {reading.usage.quantity} {reading.usage.unit}
-                  {reading.usage.quantity === 1 ? "" : "s"}
-                </dd>
-              </>
-            ) : null}
+            <dt>metered</dt>
+            <dd>none</dd>
           </dl>
         </div>
 
@@ -273,20 +289,20 @@ export function evaluateEgress(
     };
   }
   return {
-    outcome: "egressed",
+    outcome: "allowed",
     host: SAMPLE_RENTED_HOST,
     sinkKind: "rented-backend",
-    requests: 1,
-    usage: SAMPLE_USAGE,
+    requests: 0,
+    usage: null,
   };
 }
 
 function verdictMessage(reading: ReturnType<typeof evaluateEgress>): string {
   if (reading.outcome === "local") {
-    return "0 requests left the device. embed() never calls out once the model is cached.";
+    return "0 requests left the page. This demo ran only the deterministic browser stub.";
   }
   if (reading.outcome === "blocked") {
-    return `Blocked. ${reading.host} is not on the privacy allowlist yet, RentedInferenceBackend refuses to construct.`;
+    return `Policy blocks ${reading.host}. The demo sent 0 requests and recorded no usage.`;
   }
-  return `Crossed the boundary. 1 request to ${reading.host ?? "the endpoint"}, metered.`;
+  return `Policy would allow ${reading.host}, but this demo sent 0 requests and recorded no usage.`;
 }
