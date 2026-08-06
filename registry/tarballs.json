@@ -2174,9 +2174,9 @@
     },
     "@caisson/cli@0.7.9": {
       "key": "cli/cli-0.7.9.tgz",
-      "shasum": "0a85d5c814a9ec85cef6f972dc9946c46a2d98b7",
-      "integrity": "sha512-/71XxPtfTmJXrZVSPSBHamn0uE3t/cGfYOn5OJYY3Scs+VroHQtIy9Liz6Lw0yFvwcbKar02BoJJ5yOnagU28w==",
-      "size": 24664,
+      "shasum": "f083dcbd11bb484e3292694a0cac8d8e00c5c887",
+      "integrity": "sha512-FvgCeOjYI/IGh9BpaxlbN5pcaHnF1WztU3yADvRM211OFfFVT32ckLU1eVZRXujEQ/rHgPubmNgDcWCRH5NgDg==",
+      "size": 24665,
       "meta": {
         "dependencies": {
           "@caisson/ds-manifest": "0.3.2",
@@ -3209,9 +3209,9 @@
     },
     "@caisson/field-crypto@1.1.0": {
       "key": "field-crypto/field-crypto-1.1.0.tgz",
-      "shasum": "4065d3c4a461238b6ed288d60335f0f496c49e51",
-      "integrity": "sha512-8MKxVBjL85aoEltDs0kp/9wfLjAJOcj0waxdOSPDwGgS9vL96f/W8ktG+PgiXPPTDDS7lnmDZzIIJAKC5s24Cw==",
-      "size": 101136,
+      "shasum": "eb2580f4d7c638c4ecade5b5ba502d8a12c38150",
+      "integrity": "sha512-FvE//hamCzLD6Yl2zlAMR0D5ixJmBLjeajEcUuwN7dLaXSbsxVRVRq2FaDz9Ybh+ADyARyPl/CKLtAiqbQYC/Q==",
+      "size": 101001,
       "meta": {
         "dependencies": {
           "@aws-sdk/client-kms": "^3.1075.0",
@@ -3390,14 +3390,17 @@
     },
     "@caisson/guardrails@0.4.12": {
       "key": "guardrails/guardrails-0.4.12.tgz",
-      "shasum": "69705414ae34dc0edba439b0614c314425dfa379",
-      "integrity": "sha512-Wz5vLmD3kqpqO7ktGzJpYUU+SN1rcXaq7Now25rKxRb3CJCYYUWF3OHKDJW9HqRgNSaoE7xQSV2c8oANyDafUA==",
-      "size": 27276,
+      "shasum": "3e125ed9e4a012fc60f19309fab42eb81e36f318",
+      "integrity": "sha512-oUKZoIDJHWYJ9Lo9aD6PUKF5rQBmX+CafArrb4JRxdvS94aPbl3BaXv/KJ69W16HtK8lo1U42gyguWiO831URQ==",
+      "size": 31908,
       "meta": {
         "dependencies": {
           "@caisson/field-crypto": "1.1.0",
           "@caisson/kernel": "0.8.0",
           "zod": "^4.0.0"
+        },
+        "engines": {
+          "node": ">=20.12.0"
         }
       },
       "lockHash": "a1246e590f6dcfb238314c46a290c4e8b792d23d96f7feca5544dff5ba9df3ca"
@@ -3736,9 +3739,9 @@
     },
     "@caisson/kernel@0.8.0": {
       "key": "kernel/kernel-0.8.0.tgz",
-      "shasum": "c653c43ee0ed4e68ce08dbf64f35e709ed9e7f13",
-      "integrity": "sha512-iTlCChuubt49QcmZOc4Y5ATSl1R8I1syRNMqp+J2GroyYEyD3y44IZhjPU9twg+qkMcRB9KkLyZxLgXMhu2+0A==",
-      "size": 78430,
+      "shasum": "8a7d41cf56ba9f94a612f8a75e718284aa0b11d6",
+      "integrity": "sha512-/iARnETOkeIMGDzK++IyEdhNauRCBwXKDtKOOftE+mfwixNuizI1DEkEpgHuJm1KWit+4O1R3YwYc5vvMLq5ug==",
+      "size": 79329,
       "meta": {
         "dependencies": {
           "zod": "^4.0.0"
@@ -3984,14 +3987,17 @@
     },
     "@caisson/local-inference@0.1.9": {
       "key": "local-inference/local-inference-0.1.9.tgz",
-      "shasum": "6f312309cc39ced5380aae706c22fa288ea4b39a",
-      "integrity": "sha512-Muxk9mWFJ5VaQe+nC6dHScoE8xnTRGjKp+sIU6V+hzkqWelta5zBkD8VXft52kRvye5kL+pbJ+dszTpw8adx4Q==",
-      "size": 42897,
+      "shasum": "66c51fe39ea24c71b5d73283d4a2105d923c6272",
+      "integrity": "sha512-yfIxgbCcVrYNnTFvXhi+5NH9wSCi2o0/OD3ApfbwBN5wjv4nCYuBp2MtGK84+p9Tj9GADcklFaGVl/+GqsbS2A==",
+      "size": 44909,
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.8.0",
           "@caisson/local-privacy": "0.1.9",
           "zod": "^4.0.0"
+        },
+        "engines": {
+          "node": ">=20.12.0"
         }
       },
       "lockHash": "a1246e590f6dcfb238314c46a290c4e8b792d23d96f7feca5544dff5ba9df3ca"
@@ -4073,9 +4079,9 @@
     },
     "@caisson/local-privacy@0.1.9": {
       "key": "local-privacy/local-privacy-0.1.9.tgz",
-      "shasum": "a335fd0115da8f568f4b2ade8ee6b0bf8ae8e6fa",
-      "integrity": "sha512-v8/nmRkKq68cnF+xX6PJk4I8JDjp0yVJUHAP01kyy2tcHnwIDGSDE4CT/dpaVADOMDfh/8FpZ/5HdTufNq1gPw==",
-      "size": 9123,
+      "shasum": "8821b02e10d8f741f4fef84449626af648683350",
+      "integrity": "sha512-jIDcwU1Rl8y3/XBi0SGCwSRqFpzyrB2ifth9kaeLqz4DeMWi0RTkEisxxPRADo92hfWVk0dnKjD9g5e1HhnjyA==",
+      "size": 9886,
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.8.0",
