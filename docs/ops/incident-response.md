@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-02
+updated: 2026-08-06
 status: live
 grounds:
   - docs/ops/db-restore.md
