@@ -18,5 +18,10 @@
     "sha": "d9ae893e657a0a94d7c0616edbe0d099ee69b85c",
     "deployedAt": "2026-07-30T19:24:27.448Z",
     "deployedBy": "github-actions (release-train leg 4)"
+  },
+  {
+    "sha": "d9a56601d76ddab566c05d13318f03722c6ef34c",
+    "deployedAt": "2026-08-07T00:50:49.029Z",
+    "deployedBy": "Liam (GridWork)"
   }
 ]
