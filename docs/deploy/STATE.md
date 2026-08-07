@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-02
+updated: 2026-08-06
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,44 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-08-06 — release train `v2026.08.06.1` off `d9a56601`, driven locally; first full five-service leg 4
+
+The DEPLOY act for the `v2026.08.06.1` release (the successor tag to the dud `v2026.08.06` — six
+stale sidecar rows re-recorded, see the tagged tree's
+[release checklist](../releases/v2026.08.06.1-checklist.md) and
+[release audit](../../outputs/audit/release-audit-v2026.08.06.1.md)). Every leg was driven from the
+operator's box during the 2026-08-06 GitHub Actions outage, per the same standing lock that merged
+the release on local gates.
+
+**Legs 1–3:**
+
+- **Leg 1 (R2):** 49 tarballs uploaded, 5 already present, 0 overwrites — head-object-first per
+  object, byte-verified against `registry/tarballs.json` before upload.
+- **Leg 1b (Worker):** version `d7176705-a786-435f-be4c-2b7c6a2f1d42` live at `registry.caisson.sh`,
+  serving the release index.
+- **Leg 2 (mirror):** `caisson-oss` advanced `9785695..b434a8b`, one appended commit, never forced.
+- **Leg 3 (npm):** skipped — operator-gated (CAISSON-179), unchanged.
+
+**Leg 4 deployed all five Railway services** at the tag via
+`bun tooling/scripts/railway-deploy.ts --service <name> --ref v2026.08.06.1`, serially, each verdict
+read from Railway's own deployment ledger (UTC times are 2026-08-07 00:45–00:56Z, late 08-06
+US-Eastern): caisson-admin 00:45:26Z → caisson-license 00:49:19Z → caisson-site 00:52:20Z →
+caisson-docs 00:54:49Z → caisson-support-bot 00:56:18Z, all SUCCESS, receipts appended for all five.
+This is the first ride where leg 4 covered docs and support-bot — the train's workflow still deploys
+only admin/license/site; the two extra services were part of the operator's full-fleet lock for this
+release.
+
+**A stale CI backfill was superseded in passing.** When Actions recovered it drained a queued push
+run for `04cf1ff4` — a pre-Wave-B, pre-repair commit — and its `deploy-railway` job deployed admin
+(22:22Z) and site (22:23Z) from those stale bytes, reporting green. Those two deployments briefly put
+the live site _behind_ the tag (missing the Wave B poke-mirror retirement); the five deploys above
+replaced them ~2.5h later. The CI run's receipts were appended in its own checkout and are lost —
+the receipts committed here are the local run's, which is also the fleet's live state.
+
+Post-deploy `bun registry/scripts/index-parity-probe.ts`: all four legs `d2948ee2b5a8` · 54 entries,
+**`RESULT: PARITY OK`** — and `caisson.sh`, `admin.caisson.sh/healthz`, `license.caisson.sh/health`,
+`registry.caisson.sh/health` all 200.
 
 ## 2026-08-01 — caisson-license redeployed at the release SHA; fleet parity restored
 
