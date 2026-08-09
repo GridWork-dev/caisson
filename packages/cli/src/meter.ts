@@ -44,8 +44,8 @@ export interface MeterInput {
 /**
  * Structural injection port for the credits debit (ADR-0249 G5): matches `@caisson/credits`'
  * `debit` for the codegen event WITHOUT importing it — the open (Apache-2.0) cli must not
- * runtime-depend on the commercial credits package. The host (apps/base's composition root)
- * supplies the concrete `debit` when wiring `runGeneration`.
+ * runtime-depend on the commercial credits package. A consuming host must supply the concrete
+ * `debit` when wiring `runGeneration`; the package-owned integration fixture proves this seam.
  */
 export type DebitFn = (
   tx: TenantExecutor,

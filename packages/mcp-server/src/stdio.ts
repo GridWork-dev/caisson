@@ -4,7 +4,7 @@
 // local client, e.g. Claude Desktop / Claude Code, never exposed to the network).
 //
 // MCP-over-stdio carries no per-request headers, so there is no protocol-level slot for a Bearer on
-// every call the way the in-memory `apps/base` HTTP-shaped `mcpQuery` has one. The idiomatic mapping
+// every call the way an HTTP-shaped `mcpQuery` host does. The idiomatic mapping
 // (mirrors how stdio MCP clients configure one server process per credential, e.g. an env var in the
 // client's server config) is: ONE stdio CONNECTION == ONE buyer session. `bearer` is authenticated
 // ONCE, before the transport is ever constructed — an invalid token throws `AuthnError` synchronously

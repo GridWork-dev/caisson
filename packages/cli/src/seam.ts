@@ -1,5 +1,5 @@
 // The generator CONTRACT (ADR-0048/0068) — the leaf seam shared by `generate.ts` (the core) and
-// every engine implementation (`engine-templates.ts`, the `defaultEngine` skeleton). It owns the
+// every engine implementation (`engine-templates.ts` and test-injected engines). It owns the
 // buyer `Selection` schema + type and the engine seam type (`GeneratorEngine`). Kept free of a
 // back-edge into `generate.ts` (the core — that would be a build cycle); the only import is `zod` plus
 // the base file-emit primitive. `generate.ts` re-exports every symbol here, so external importers keep

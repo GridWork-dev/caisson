@@ -11,7 +11,7 @@ import {
   CREDIT_CONVERSION,
   centsToCredits,
   centsToCreditsProvenance,
-} from "./conversion.ts";
+} from "@caisson/kernel";
 import { PLAN_BOOK, PRICEBOOK_VERSION, resolvePlan } from "./plans.ts";
 
 const goldenSchema = z.object({

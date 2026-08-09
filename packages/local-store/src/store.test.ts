@@ -126,7 +126,7 @@ describe("LocalStore hybrid retrieval (ADR-0067)", () => {
   });
 });
 
-describe("LocalStore.list (read-only paging, agent-dev inspector Fork B)", () => {
+describe("LocalStore.list (read-only agent-memory paging)", () => {
   test("pages documents newest-first, bounded by limit + offset", () => {
     const store = LocalStore.open({ dim: 3 });
     try {

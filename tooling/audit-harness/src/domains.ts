@@ -182,11 +182,15 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     class: "internal-only",
   });
 
-  // The .github/workflows CI surface — one domain over every workflow.
+  // The .github CI execution surface — one domain over every workflow and local action.
   domains.push({
     id: "workflows",
-    roots: [".github/workflows"],
-    globs: [".github/workflows/*.yml", ".github/workflows/*.yaml"],
+    roots: [".github/workflows", ".github/actions"],
+    globs: [
+      ".github/workflows/*.yml",
+      ".github/workflows/*.yaml",
+      ".github/actions/**",
+    ],
     class: "internal-only",
   });
 

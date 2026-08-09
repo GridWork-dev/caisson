@@ -5,7 +5,7 @@
 // so swapping in `InMemoryTransport` here exercises the exact same wiring `runStdioServer` connects
 // to a real `StdioServerTransport`). The host (`onGenerate`) stays an in-memory fixture, mirroring
 // the rest of this DB-free package (`rate-limit.test.ts`) — a real PGlite/Postgres `Transactor` is
-// the deploying app's job (`apps/base`), not this package's.
+// the deploying host's job, not this package's.
 import { afterEach, describe, expect, test } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";

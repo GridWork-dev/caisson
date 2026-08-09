@@ -24,10 +24,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: lighthouse-ci
+  cancel-in-progress: true
+
 jobs:
   lighthouse:
-    # STAYS GitHub-hosted (sole exception to the ADR-0365 fleet-only sweep): needs a headless Chrome (the fleet runner image ships no
-    # browser). Collection hits the live origin, so no site build is needed here.
+    # Blacksmith's runner supplies the headless browser needed for collection against the live
+    # origin, so no site build is needed here.
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     steps:

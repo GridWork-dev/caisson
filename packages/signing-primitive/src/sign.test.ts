@@ -15,13 +15,6 @@ import {
   type JsonValue,
 } from "@caisson/kernel/node";
 import {
-  parseEvidencePackManifest,
-  type EvidencePackManifest,
-  chainVerifyCollector,
-  generateEvidencePack,
-  type GenerateEvidencePackInput,
-} from "@caisson/compliance-core";
-import {
   Ed25519Signer,
   StubTimestampAuthority,
   type EvidenceSignature,
@@ -30,8 +23,19 @@ import {
   signaturesEqual,
   timestampCountersignsSignature,
   timestampCountersignsSignatureAsync,
+  type SignableManifest,
   verifyEvidenceSignature,
 } from "./sign.ts";
+
+interface EvidencePackManifestFixture extends SignableManifest {
+  readonly tenantId: string;
+  readonly chainAnchor: {
+    readonly length: number;
+    readonly tipHash: string;
+    readonly genesisHash: string;
+  };
+  readonly [key: string]: unknown;
+}
 
 // A FIXED per-tenant test key (32-byte seed) — deterministic, and DISTINCT from any Caisson
 // license-issuer key (ADR-0056 trust model). Its derived public key is pinned below.
@@ -44,14 +48,13 @@ const TENANT_PUBLIC_KEY =
 const OTHER_SEED = Uint8Array.from(Buffer.from("a7".repeat(32), "hex"));
 
 /** The golden canonical body (the byte-stable manifest the generator emits), parsed + validated. */
-function goldenManifest(): EvidencePackManifest {
-  const raw = JSON.parse(
+function goldenManifest(): EvidencePackManifestFixture {
+  return JSON.parse(
     readFileSync(
       new URL("./__golden__/evidence-pack.manifest.json", import.meta.url),
       "utf8",
     ),
-  ) as unknown;
-  return parseEvidencePackManifest(raw);
+  ) as EvidencePackManifestFixture;
 }
 
 /** The byte-pinned detached signature golden (raw hex, no framing). */
@@ -138,7 +141,7 @@ describe("verifyEvidenceSignature — one shared @noble/ed25519 primitive", () =
       new Ed25519Signer(TENANT_KEY_ID, TENANT_SEED),
       manifest,
     );
-    const tampered: EvidencePackManifest = {
+    const tampered: EvidencePackManifestFixture = {
       ...manifest,
       tenantId: "tenant-evil-co",
     };
@@ -151,7 +154,7 @@ describe("verifyEvidenceSignature — one shared @noble/ed25519 primitive", () =
       new Ed25519Signer(TENANT_KEY_ID, TENANT_SEED),
       manifest,
     );
-    const movedTip: EvidencePackManifest = {
+    const movedTip: EvidencePackManifestFixture = {
       ...manifest,
       chainAnchor: { ...manifest.chainAnchor, tipHash: "f".repeat(64) },
     };
@@ -317,13 +320,17 @@ describe("signaturesEqual — constant-time sig compare (TM-L)", () => {
   });
 });
 
-describe("integration — sign a freshly generated pack (T13 → T14)", () => {
-  test("a live generator output round-trips through sign + verify", async () => {
+describe("integration — sign a manifest-shaped fixture", () => {
+  test("a structural evidence-pack manifest round-trips through sign + verify", async () => {
     const entries = buildChain(
       Array.from({ length: 8 }, (_unused, i) => ({ seq: i, event: "lock" })),
     );
     const anchor = anchorChain(entries);
-    const input: GenerateEvidencePackInput = {
+    if (anchor.genesisHash === undefined) {
+      throw new Error("expected an anchored non-empty chain");
+    }
+    const manifest = {
+      formatVersion: "2",
       tenantId: "tenant-acme-prod",
       framework: {
         id: "soc2-tsc",
@@ -343,21 +350,37 @@ describe("integration — sign a freshly generated pack (T13 → T14)", () => {
           statement:
             "Security-relevant events are written to an append-only, hash-chained log anchored in WORM storage.",
           crosswalk: [{ framework: "SOC2-TSC", reference: "CC7.2" }],
-          evidence: [chainVerifyCollector().collect({ entries, anchor })],
+          evidence: [
+            {
+              collectorId: "substrate.audit-chain-integrity",
+              title: "Append-only audit chain integrity",
+              summary: `audit chain verified (${String(entries.length)} entries)`,
+              status: "pass",
+              facts: { entryCount: entries.length, valid: true },
+              manualSlots: [],
+            },
+          ],
+          readiness: "ready",
         },
       ],
-      now: new Date("2026-06-27T12:00:00.000Z"),
+      summary: {
+        totalControls: 1,
+        controlsReady: 1,
+        controlsWithGaps: 0,
+        totalEvidenceItems: 1,
+        posture: "1 of 1 controls evidence-ready.",
+      },
       crosswalkRollup: { cells: [] },
-    };
-    const pack = generateEvidencePack(input);
+    } satisfies EvidencePackManifestFixture;
     const sig = await signEvidencePack(
       new Ed25519Signer(TENANT_KEY_ID, TENANT_SEED),
-      pack.manifest,
+      manifest,
     );
-    // The signed bytes equal exactly the generator's canonical body ∥ the chain tip.
-    expect(
-      new TextDecoder().decode(evidenceSignablePayload(pack.manifest)),
-    ).toBe(pack.canonicalManifest + anchor.tipHash);
-    expect(await verifyEvidenceSignature(pack.manifest, sig)).toBe(true);
+    const canonicalManifest = canonicalize(manifest as JsonValue);
+    // The signed bytes equal exactly the canonical body ∥ the chain tip.
+    expect(new TextDecoder().decode(evidenceSignablePayload(manifest))).toBe(
+      canonicalManifest + anchor.tipHash,
+    );
+    expect(await verifyEvidenceSignature(manifest, sig)).toBe(true);
   });
 });

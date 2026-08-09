@@ -10,3 +10,5 @@ bun.lock
 # Generated, drift-guarded by the source repo's gen-tokens-css.ts (not re-run in the mirror) — same
 # exemption as the source monorepo's own .prettierignore.
 packages/ui/styles/tokens.css
+# Generated, drift-guarded by packages/ui/scripts/gen-manifest.ts.
+packages/ds-manifest/src/base-manifest.json

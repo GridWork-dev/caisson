@@ -21,6 +21,7 @@
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -35,13 +36,17 @@ import {
   createPublicKey,
   verify as cryptoVerify,
 } from "node:crypto";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 const APACHE = "Apache-2.0";
 const COMMERCIAL = "LicenseRef-Caisson-Commercial";
 const SOURCE_REPO = "caisson-sh/caisson";
 const OLD_SCOPE = "@caisson/";
 const NEW_SCOPE = "@caisson-sh/";
+
+export const MIRROR_WORKSPACES = {
+  packages: ["packages/*", "tooling/*"],
+} as const;
 
 /** Tooling packages the Apache set needs to install / build / test / lint standalone. Restamped
  *  Apache-2.0 in the mirror — internal scaffolding with no commercial IP (a strict tsconfig base,
@@ -55,7 +60,7 @@ const BUILD_SUPPORT = new Set([
 
 /** Test files that cannot pass in the open mirror. Repo-relative source paths, excluded from copy.
  *  Each with the reason it is inherently coupled to the private monorepo. */
-const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
+export const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
   [
     "packages/cli/scripts/bundle-migrations.test.ts",
     "bundles COMMERCIAL modules' migrations (field-crypto, audit-worm) — those packages are excluded from the open mirror",
@@ -75,6 +80,14 @@ const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
   [
     "packages/cli/src/meter.integration.test.ts",
     "exercises the debit-before-spend seam against the real COMMERCIAL @caisson/credits ledger (a dev-only fixture behind the DebitFn injection port); credits is excluded from the open mirror",
+  ],
+  [
+    "packages/cli/src/generate.integration.test.ts",
+    "exercises the buyer-MCP generation drive against the real COMMERCIAL @caisson/credits ledger; credits is excluded from the open mirror",
+  ],
+  [
+    "packages/mcp-server/src/base-composition.integration.test.ts",
+    "exercises the relocated base composition against COMMERCIAL @caisson/credits and @caisson/billing-orchestration fixtures; both packages are excluded from the open mirror",
   ],
   [
     "packages/cli/src/run.test.ts",
@@ -105,11 +118,15 @@ const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
 /** Commercial devDependencies stripped from a mirrored package.json (keyed by ORIGINAL @caisson
  *  name). The dep's only consumers are test files excluded above, so the mirrored package is
  *  self-contained without it — the self-containment gate below skips exactly these pairs. */
-const DROP_COMMERCIAL_DEV_DEPS: ReadonlyMap<
+export const DROP_COMMERCIAL_DEV_DEPS: ReadonlyMap<
   string,
   ReadonlySet<string>
 > = new Map([
   ["@caisson/cli", new Set(["@caisson/credits", "@caisson/agent-trajectory"])],
+  [
+    "@caisson/mcp-server",
+    new Set(["@caisson/billing-orchestration", "@caisson/credits"]),
+  ],
 ]);
 
 /** Packages whose `test` script is dropped in the mirror (their only test is excluded above, so
@@ -201,6 +218,40 @@ function parseArgs(argv: readonly string[]): {
     process.exit(1);
   }
   return { out, generatedAt, allowMissingExcludes };
+}
+
+export function resolveMirrorOutDir(repoRoot: string, output: string): string {
+  const allowedRoot = resolve(repoRoot, "mirror-out");
+  const outDir = resolve(repoRoot, output);
+  if (
+    output.includes("\0") ||
+    isAbsolute(output) ||
+    output.split(/[\\/]/).includes("..") ||
+    (outDir !== allowedRoot && !outDir.startsWith(`${allowedRoot}${sep}`))
+  ) {
+    throw new Error(
+      "mirror output must stay inside the dedicated mirror-out directory",
+    );
+  }
+  return outDir;
+}
+
+export function assertMirrorOutDirHasNoSymlinkAncestors(
+  allowedRoot: string,
+  outDir: string,
+): void {
+  let current = outDir;
+  while (true) {
+    if (lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink()) {
+      throw new Error("mirror output path must not contain symlinks");
+    }
+    if (current === allowedRoot) return;
+    const parent = dirname(current);
+    if (parent === current) {
+      throw new Error("mirror output path must stay inside the allowed root");
+    }
+    current = parent;
+  }
 }
 
 function readJson(path: string): PkgJson {
@@ -477,10 +528,10 @@ export function sanitizeAdrCitations(text: string): string {
 export function sanitizeSourceComments(code: string): string {
   return code.replace(
     /`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\/\*[\s\S]*?\*\/|(?<!:)\/\/[^\n]*/g,
-    (token) =>
-      token.startsWith("/*") || token.startsWith("//")
-        ? sanitizeAdrCitations(token)
-        : token,
+    (token) => {
+      if (!token.startsWith("/*") && !token.startsWith("//")) return token;
+      return sanitizeAdrCitations(token).replace(/\n([ \t]*\*)\./g, ".\n$1");
+    },
   );
 }
 
@@ -495,6 +546,17 @@ function rewriteProseFiles(
     const after = sanitizeAdrCitations(rewriteProseMentions(before, openSlugs));
     if (after !== before) writeFileSync(abs, after);
   }
+}
+
+function sanitizeComponentManifest(outDir: string): void {
+  const manifestPath = join(
+    outDir,
+    "packages/ds-manifest/src/base-manifest.json",
+  );
+  if (!existsSync(manifestPath)) return;
+  const before = readFileSync(manifestPath, "utf8");
+  const after = sanitizeAdrCitations(before);
+  if (after !== before) writeFileSync(manifestPath, after);
 }
 
 /** Task 1.1 (root cause 7533e88d886e6812): the eu-ai-act-sample template ships inside the public
@@ -616,7 +678,7 @@ function main(): void {
   const { out, generatedAt, allowMissingExcludes } = parseArgs(
     Bun.argv.slice(2),
   );
-  const outDir = resolve(repoRoot, out);
+  const outDir = resolveMirrorOutDir(repoRoot, out);
 
   const sourceRootPkg = readJson(join(repoRoot, "package.json")) as PkgJson & {
     workspaces?: {
@@ -688,6 +750,10 @@ function main(): void {
   }
 
   // --- write the mirror ---
+  assertMirrorOutDirHasNoSymlinkAncestors(
+    resolve(repoRoot, "mirror-out"),
+    outDir,
+  );
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
 
@@ -748,6 +814,8 @@ function main(): void {
     });
   }
   manifestPkgs.sort((a, b) => a.npmName.localeCompare(b.npmName));
+  // UI source comments lose private ADR citations above; keep their generated manifest in lockstep.
+  sanitizeComponentManifest(outDir);
 
   const missedExcludes = [...EXCLUDE_TEST_FILES.keys()].filter(
     (rel) => !excludedApplied.some((e) => e.file === rel),
@@ -780,7 +848,7 @@ function main(): void {
     license: APACHE,
     description:
       "Caisson — open (Apache-2.0) base packages, published to npm as @caisson-sh/*. Public mirror of the Caisson monorepo.",
-    workspaces: ["packages/*", "tooling/*"],
+    workspaces: MIRROR_WORKSPACES,
     scripts: {
       build: "turbo run build --no-daemon",
       test: "turbo run test --no-daemon",

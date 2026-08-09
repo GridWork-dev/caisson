@@ -6,6 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 
 import { PreviewSchema } from "../../apps/site/components/demo/preview-schema";
+import { previewOutput } from "./generate";
 
 const DIR = join(import.meta.dir, "../../apps/site/public/demo-preview");
 
@@ -13,27 +14,18 @@ async function readJson(name: string): Promise<unknown> {
   return JSON.parse(await Bun.file(join(DIR, name)).text());
 }
 
-interface Transcript {
-  command: string;
-  exitCode: number | null;
-  durationMs: number;
-  stdout: string;
-  stderr: string;
-  stdoutTruncated: boolean;
-  stderrTruncated: boolean;
-}
-
-function assertTranscriptShape(t: unknown): asserts t is Transcript {
-  const x = t as Transcript;
-  expect(typeof x.command).toBe("string");
-  expect(x.command.length).toBeGreaterThan(0);
-  expect(typeof x.exitCode === "number" || x.exitCode === null).toBe(true);
-  expect(typeof x.durationMs).toBe("number");
-  expect(typeof x.stdout).toBe("string");
-  expect(typeof x.stderr).toBe("string");
-}
-
 describe("demo-preview committed artifacts", () => {
+  test("failed steps retain stderr before bounded stdout", () => {
+    const stderr = "terminal failure";
+    const output = previewOutput({
+      exitCode: 1,
+      stderr,
+      stdout: "x".repeat(20_000),
+    });
+    expect(output.startsWith(stderr)).toBe(true);
+    expect(output.length).toBe(20_000);
+  });
+
   test("manifest.json parses and carries a nonempty tree + step results", async () => {
     const manifest = (await readJson("manifest.json")) as {
       projectName: string;
@@ -70,37 +62,10 @@ describe("demo-preview committed artifacts", () => {
     expect(preview.fileManifest.length).toBeGreaterThan(0);
   });
 
-  test("no committed transcript leaks an absolute /home or /Users path", async () => {
-    for (const name of [
-      "preview.json",
-      "transcript-install.json",
-      "transcript-build.json",
-      "transcript-test.json",
-    ]) {
+  test("no committed artifact leaks an absolute /home or /Users path", async () => {
+    for (const name of ["preview.json", "manifest.json"]) {
       const raw = await Bun.file(join(DIR, name)).text();
       expect(raw).not.toMatch(/\/(?:home|Users)\/[^/\s"]+/);
-    }
-  });
-
-  test.each([
-    "transcript-install.json",
-    "transcript-build.json",
-    "transcript-test.json",
-  ])("%s parses to the expected transcript shape", async (name) => {
-    const t = await readJson(name);
-    assertTranscriptShape(t);
-  });
-
-  test("walkthrough.json parses — either a transcript or an honest absence marker", async () => {
-    const w = (await readJson("walkthrough.json")) as {
-      present?: boolean;
-      reason?: string;
-    };
-    if (w.present === false) {
-      expect(typeof w.reason).toBe("string");
-      expect((w.reason ?? "").length).toBeGreaterThan(0);
-    } else {
-      assertTranscriptShape(w);
     }
   });
 });

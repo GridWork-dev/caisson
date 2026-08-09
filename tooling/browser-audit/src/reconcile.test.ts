@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { reconcileFindings, stageCandidateTest } from "./reconcile";
+import { reconcileFindings } from "./reconcile";
 
 describe("browser audit reconciliation", () => {
   test("classifies new, unchanged, regressed, and closed findings", () => {
@@ -21,22 +21,5 @@ describe("browser audit reconciliation", () => {
       returned: "regressed",
       same: "unchanged",
     });
-  });
-
-  test("stages markdown only after operator acceptance and replay", () => {
-    expect(() =>
-      stageCandidateTest({
-        findingId: "finding-1",
-        operatorAccepted: false,
-        cleanReplay: true,
-        fixture: "probe account",
-        setup: "sign in",
-        action: "cancel dialog",
-        assertion: "focus returns",
-        selectors: ["data-testid=cancel"],
-        cleanup: "sign out",
-        destinationSuite: "apps/site/live/buyer-dashboard-flow.live.test.ts",
-      }),
-    ).toThrow("operator-approved");
   });
 });

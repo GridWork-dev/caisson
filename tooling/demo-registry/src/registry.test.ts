@@ -1,12 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import {
-  CATALOG_ENTRIES,
-  entriesByPackage,
-  entriesByTier,
-  getCatalogEntry,
-  listPackages,
-} from "./registry.ts";
+import { CATALOG_ENTRIES, entriesByTier, listPackages } from "./registry.ts";
 
 describe("CATALOG_ENTRIES", () => {
   test("loads without throwing and every id is unique", () => {
@@ -20,11 +14,6 @@ describe("CATALOG_ENTRIES", () => {
     expect(entriesByTier("apache-base").length).toBeGreaterThanOrEqual(30);
     expect(entriesByTier("ui-pro").length).toBe(11);
     expect(entriesByTier("per-package-ui").length).toBe(6);
-  });
-
-  test("getCatalogEntry resolves a known id and misses cleanly", () => {
-    expect(getCatalogEntry("ui.button")?.name).toBe("Button");
-    expect(getCatalogEntry("does.not-exist")).toBeUndefined();
   });
 
   test("listPackages enumerates every owning package once", () => {
@@ -42,15 +31,13 @@ describe("CATALOG_ENTRIES", () => {
     }
   });
 
-  test("entriesByPackage filters correctly", () => {
-    const uiEntries = entriesByPackage("@caisson/ui");
-    expect(uiEntries.every((e) => e.package === "@caisson/ui")).toBe(true);
-    expect(uiEntries.length).toBeGreaterThanOrEqual(30);
-  });
-
   test("pins the current Compliance price in rendered buyer demos", () => {
-    const mobileBuyBar = getCatalogEntry("ui.mobile-buy-bar")?.render?.();
-    const moneyCell = getCatalogEntry("ui.money-cell")?.render?.();
+    const mobileBuyBar = CATALOG_ENTRIES.find(
+      (entry) => entry.id === "ui.mobile-buy-bar",
+    )?.render?.();
+    const moneyCell = CATALOG_ENTRIES.find(
+      (entry) => entry.id === "ui.money-cell",
+    )?.render?.();
 
     expect(renderToStaticMarkup(mobileBuyBar)).toContain("$1,649");
     expect(renderToStaticMarkup(moneyCell)).toContain("$1,649.00");

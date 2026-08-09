@@ -19,6 +19,9 @@ const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const demosOrigin = demosOriginUrl(process.env.DEMOS_ORIGIN_URL);
 
 const config: NextConfig = {
+  // Keep static generation below the build host's memory ceiling. Next otherwise derives this
+  // from host CPUs and can fan out dozens of workers for this documentation-heavy app.
+  experimental: { cpus: 2 },
   // Node standalone server on Railway (ADR-0114, supersedes the static-export deploy mode of
   // ADR-0084). Marketing + docs routes still render statically (SSG / generateStaticParams) —
   // this only swaps the OUTPUT MODE so `/dashboard` can exist as a dynamic, authed route group.

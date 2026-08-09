@@ -1,7 +1,7 @@
 // Prebuilt preview artifact generator (ADR-0350 T4). NOT run in per-PR CI — run manually / at
 // release. It exercises the REAL `create-caisson --demo` path (packages/cli/src/cli.ts, the same
 // binary a visitor's generator would run) into a throwaway temp dir, then does the same
-// install/build/test/walkthrough a real consumer would, and freezes the real transcripts + file
+// install/build/test/walkthrough a real consumer would, and freezes the bounded step output + file
 // manifest as JSON under apps/site/public/demo-preview/ — the /demo page's "shared prebuilt
 // preview pane" (PLAN T2 §b) renders these directly, never live-generates them per request.
 //
@@ -32,6 +32,19 @@ interface StepTranscript {
   readonly stderr: string;
   readonly stdoutTruncated: boolean;
   readonly stderrTruncated: boolean;
+}
+
+export function previewOutput(
+  transcript: Pick<StepTranscript, "exitCode" | "stdout" | "stderr">,
+): string {
+  const streams =
+    transcript.exitCode === 0
+      ? [transcript.stdout, transcript.stderr]
+      : [transcript.stderr, transcript.stdout];
+  return streams
+    .filter((stream) => stream.length > 0)
+    .join("\n")
+    .slice(0, 20_000);
 }
 
 /** Strip the temp dir's absolute path and the invoking OS username from captured output — the
@@ -215,34 +228,9 @@ async function main(): Promise<void> {
       join(OUT_DIR, "manifest.json"),
       JSON.stringify(manifest, null, 2) + "\n",
     );
-    await writeFile(
-      join(OUT_DIR, "transcript-install.json"),
-      JSON.stringify(install, null, 2) + "\n",
-    );
-    await writeFile(
-      join(OUT_DIR, "transcript-build.json"),
-      JSON.stringify(build, null, 2) + "\n",
-    );
-    await writeFile(
-      join(OUT_DIR, "transcript-test.json"),
-      JSON.stringify(test, null, 2) + "\n",
-    );
-    await writeFile(
-      join(OUT_DIR, "walkthrough.json"),
-      JSON.stringify(
-        walkthrough ?? {
-          present: false,
-          reason: "scaffold has no `demo` script",
-        },
-        null,
-        2,
-      ) + "\n",
-    );
-
     // The T2 reader contract: ONE preview.json shaped exactly like PreviewSchema
     // (apps/site/components/demo/preview-schema.ts) — the file the /demo page's PreviewPane
-    // actually loads. The raw manifest/transcript files above stay as the full-fidelity record;
-    // artifacts.test.ts asserts this committed file parses against the reader's schema, so the
+    // actually loads. artifacts.test.ts asserts this committed file parses against the reader's schema, so the
     // writer↔reader seam can never silently drift again.
     const previewStep = (
       label: string,
@@ -250,9 +238,7 @@ async function main(): Promise<void> {
     ): { label: string; command: string; output: string; ok: boolean } => ({
       label,
       command: t.command.slice(0, 500),
-      output: (
-        t.stdout + (t.stderr ? (t.stdout ? "\n" : "") + t.stderr : "")
-      ).slice(0, 20_000),
+      output: previewOutput(t),
       ok: t.exitCode === 0,
     });
     const preview = {
@@ -275,8 +261,8 @@ async function main(): Promise<void> {
     process.stdout.write(`[demo-preview] wrote artifacts to ${OUT_DIR}\n`);
     if (install.exitCode !== 0 || build.exitCode !== 0 || test.exitCode !== 0) {
       process.stdout.write(
-        "[demo-preview] WARNING: one or more real steps failed — see the committed " +
-          "transcripts. This is a genuine product finding, not a script bug.\n",
+        "[demo-preview] WARNING: one or more real steps failed — see preview.json. " +
+          "This is a genuine product finding, not a script bug.\n",
       );
     }
   } finally {
@@ -284,4 +270,4 @@ async function main(): Promise<void> {
   }
 }
 
-await main();
+if (import.meta.main) await main();

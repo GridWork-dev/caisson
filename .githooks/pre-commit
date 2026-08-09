@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# stack pre-commit — fast slice of the CI `check` gate: prettier + eslint on staged
-# files, then a project-wide tsc. The slow golden-file / testcontainers matrices stay
+# stack pre-commit — fast slice of the CI `check` gate: prettier on staged files, then a
+# project-wide tsc. The slow golden-file / testcontainers matrices stay
 # CI-only (see .github/workflows/ci.yml). Bypass with: git commit --no-verify.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -21,7 +21,7 @@ if [ ${#fmt[@]} -gt 0 ] && command -v bunx >/dev/null 2>&1; then
     echo "pre-commit: prettier check failed (run: bunx prettier --write)"; exit 1; }
 fi
 
-# eslint + tsc run once packages have code + tooling/ is wired; guarded until then.
+# tsc runs once packages have code + tooling/ is wired; guarded until then.
 if [ -f tooling/eslint-config/package.json ] && command -v bunx >/dev/null 2>&1 && \
    bunx tsc --version >/dev/null 2>&1; then
   ts=(); for f in "${fmt[@]}"; do case "$f" in *.ts|*.tsx) ts+=("$f");; esac; done

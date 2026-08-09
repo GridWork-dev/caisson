@@ -62,5 +62,5 @@ export {
   centsToCreditsProvenance,
   creditConversionSchema,
   parseCreditConversion,
-} from "./conversion.ts";
-export type { CreditConversion } from "./conversion.ts";
+} from "@caisson/kernel";
+export type { CreditConversion } from "@caisson/kernel";

@@ -35,7 +35,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/compliance-core": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",

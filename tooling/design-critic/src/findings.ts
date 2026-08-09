@@ -12,6 +12,10 @@
  * informs the next pass; nothing here exits non-zero.
  */
 import { createHash } from "node:crypto";
+import {
+  reconcileLedger,
+  type ReconcileClass as SharedReconcileClass,
+} from "@caisson/testing";
 
 export type FindingStatus = "open" | "accepted" | "fixed";
 export type FindingSeverity = "info" | "warn" | "high";
@@ -34,7 +38,7 @@ export type RawFinding = Omit<Finding, "id" | "status"> & {
   status?: FindingStatus;
 };
 
-export type ReconcileClass = "new" | "unchanged" | "regressed" | "closed";
+export type ReconcileClass = SharedReconcileClass;
 
 export interface ReconcileResult {
   /** the merged ledger to persist (sorted by id). */
@@ -85,37 +89,14 @@ export function reconcile(
   previous: Finding[],
   current: RawFinding[],
 ): ReconcileResult {
-  const prev = new Map(previous.map((f) => [f.id, f]));
-  const seen = new Set<string>();
-  const ledger: Finding[] = [];
-  const classes: Record<string, ReconcileClass> = {};
-
-  for (const raw of current) {
-    const f = withId(raw);
-    seen.add(f.id);
-    const p = prev.get(f.id);
-    if (!p) {
-      classes[f.id] = "new";
-      ledger.push({ ...f, status: "open" });
-    } else if (p.status === "fixed") {
-      classes[f.id] = "regressed";
-      ledger.push({ ...f, status: "open" });
-    } else {
-      classes[f.id] = "unchanged";
-      ledger.push({ ...f, status: p.status });
-    }
-  }
-  for (const p of previous) {
-    if (seen.has(p.id)) continue;
-    if (p.status === "fixed") {
-      ledger.push(p);
-    } else {
-      classes[p.id] = "closed";
-      ledger.push({ ...p, status: "fixed" });
-    }
-  }
-  ledger.sort((a, b) => a.id.localeCompare(b.id));
-  return { ledger, classes };
+  return reconcileLedger<FindingStatus, Finding>(
+    previous,
+    current.map(withId),
+    {
+      openStatus: "open",
+      terminalStatus: "fixed",
+    },
+  );
 }
 
 // ── minimal TOML round-trip for the constrained `[[finding]]` array-of-tables schema ──────────────

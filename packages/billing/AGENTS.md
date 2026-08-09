@@ -12,8 +12,8 @@ webhook idempotency live in the commercial `@caisson/billing-orchestration` (car
 - Webhook handlers MUST pass the raw request body (not parsed JSON) to the HMAC verifier.
 - The `BillingProvider` interface is the only surface bundles touch; no provider-specific type
   escapes the seam — every driver maps onto the same `DomainBillingEvent` union.
-- The port + config types + `DomainBillingEvent` are OPEN contracts so the free-floor demo (apps/base)
-  typechecks against open code only; the drivers that construct them are commercial.
+- The port + config types + `DomainBillingEvent` are OPEN contracts so generated buyer hosts
+  typecheck against open code only; the drivers that construct them are commercial.
 - Never log provider metadata that could contain card or PII data (`console.log` is banned in
   product code).
 

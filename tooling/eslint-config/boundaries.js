@@ -56,18 +56,14 @@ const restrictedPatterns = PROVIDER_SDKS.map((name) => ({
 }));
 
 /** Packages exempt from the provider-SDK ban (the AI config seam itself). */
-const PROVIDER_EXEMPT = [
-  "packages/ai-config/**",
-  "packages/ai-kit/**",
-  "apps/ai-kit/**",
-];
+const PROVIDER_EXEMPT = ["packages/ai-config/**", "packages/ai-kit/**"];
 
 // Repo root, computed from THIS file's location (tooling/eslint-config/boundaries.js → ../../).
 // PROVIDER_EXEMPT globs are repo-root-relative, but `eslint src` runs per-package with cwd inside
 // the package (turbo / `bun run check` / CI) — there basePath is the package dir, so a repo-root
 // glob never matches and the exemption silently dies (root `eslint .` masks it). Pinning the
 // exempt block's basePath to the real repo root makes the same three globs match identically from
-// both the repo-root cwd and any per-package cwd. SCOPE stays exactly ai-config|ai-kit|apps/ai-kit.
+// both the repo-root cwd and any per-package cwd. SCOPE stays exactly ai-config|ai-kit.
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 /** @type {import("eslint").Linter.Config[]} */

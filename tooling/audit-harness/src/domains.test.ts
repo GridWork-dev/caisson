@@ -68,6 +68,12 @@ describe("domainForPath — every path resolves to exactly one owner (longest-ro
     );
   });
 
+  test("a repository-local CI action resolves with the workflow execution surface", () => {
+    expect(
+      domainForPath(".github/actions/setup-bun/action.yml", domains)?.id,
+    ).toBe("workflows");
+  });
+
   test("the generator-templates carve-out beats its parent cli domain", () => {
     expect(
       domainForPath("packages/cli/templates/base/package.json", domains)?.id,

@@ -6,10 +6,4 @@ export {
   LICENSE_TIERS,
 } from "./schema.ts";
 export type { LicenseTier, CatalogEntryMeta, CatalogEntry } from "./schema.ts";
-export {
-  CATALOG_ENTRIES,
-  getCatalogEntry,
-  entriesByTier,
-  entriesByPackage,
-  listPackages,
-} from "./registry.ts";
+export { CATALOG_ENTRIES, entriesByTier, listPackages } from "./registry.ts";

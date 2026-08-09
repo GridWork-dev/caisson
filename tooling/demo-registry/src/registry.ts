@@ -39,19 +39,9 @@ function validate(entries: readonly CatalogEntry[]): CatalogEntry[] {
 /** The full, validated catalog (stable order: base kit, then ui-pro, then per-package surfaces). */
 export const CATALOG_ENTRIES: readonly CatalogEntry[] = validate(ALL_ENTRIES);
 
-/** One entry by id, or `undefined`. */
-export function getCatalogEntry(id: string): CatalogEntry | undefined {
-  return CATALOG_ENTRIES.find((e) => e.id === id);
-}
-
 /** Entries for one license tier, in catalog order. */
 export function entriesByTier(tier: LicenseTier): CatalogEntry[] {
   return CATALOG_ENTRIES.filter((e) => e.tier === tier);
-}
-
-/** Entries for one owning package (e.g. "@caisson/ui"), in catalog order. */
-export function entriesByPackage(pkg: string): CatalogEntry[] {
-  return CATALOG_ENTRIES.filter((e) => e.package === pkg);
 }
 
 /** The distinct owning packages represented in the catalog, in first-seen order. */

@@ -65,13 +65,16 @@ jobs:
               - 'packages/**'
               - 'apps/**'
               - 'services/intel/**'
+              - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
             ui:
               - 'packages/ui/**'
               - 'packages/ds-manifest/src/base-manifest.json'
+              - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
             local-store:
               - 'packages/local-store/**'
+              - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
             site:
               - 'apps/site/**'
@@ -79,6 +82,7 @@ jobs:
               - 'packages/ui-pro/**'
               - 'tooling/audit-harness/**'
               - 'tooling/demo-registry/**'
+              - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
 
   # The deterministic eval gate (ADR-0062). A DISTINCT turbo `eval` task — separate from `test` —
@@ -99,15 +103,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: "1.3.14"
-      - name: cache bun install
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
+      - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
       - name: deterministic eval gate (BLESS unset — intel live lane excluded)
         run: bunx turbo run eval --no-daemon --filter='!@caisson/service-intel'
@@ -125,15 +121,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: "1.3.14"
-      - name: cache bun install
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
+      - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
       - name: intel replay + live brief quality gate (BLESS unset)
         env:
@@ -154,15 +142,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: "1.3.14"
-      - name: cache bun install
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
+      - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
       - name: tokens.css is a byte-identical rebuild from the TS tokens (ADR-0101 #1)
         run: |
@@ -183,15 +163,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: "1.3.14"
-      - name: cache bun install
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
+      - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
       - name: knip unused-dep / unused-export report (advisory, never blocks)
         run: bun run knip -- --no-exit-code
@@ -223,16 +195,6 @@ jobs:
   # ubuntu only, so the macOS native binary path would otherwise ship unexercised. This matrix runs
   # the local-store suite (vec0 + FTS5 + RRF hybrid retrieval) on BOTH runners; a missing/broken
   # platform extension fails CI here. `fail-fast: false` so a break on one OS never masks the other.
-  # Linux leg → the fleet's amd64 scale set (exercises the sqlite-vec `.so`). macOS leg →
-  # GitHub-hosted `macos-15` (Apple Silicon — ADR-0395 decision 3, 2026-07-30): moved OFF the
-  # self-hosted Mac mini (`[self-hosted, <host>]`) because a single offline machine could
-  # wedge every `main` push indefinitely while reporting nothing distinguishable from "still
-  # running" — exactly what happened to d7f7d834's quality run, `queued` 18 hours while every other
-  # job in it passed. `macos-15` is pinned (not `macos-latest`, which floats to whatever image is
-  # current) to match this file's pinning style elsewhere. The sqlite step below is check-first and
-  # now does the real work on every run: a hosted runner starts clean each time, so it never
-  # inherits a host-wide Homebrew SQLite the way the fleet box did.
-  #
   # NOT a required check → safe to path-skip on PRs when packages/local-store/** is untouched;
   # always runs on main pushes.
   native-ext:
@@ -258,15 +220,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: "1.3.14"
-      - name: cache bun install
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
+      - uses: ./.github/actions/setup-bun
       # Workspace deps (@caisson/kernel, @caisson/testing) must be linked before bun test resolves
       # them. This step was missing since the job landed: the self-hosted linux leg masked it with a
       # persistent workspace's stale node_modules, and the hosted macOS leg had simply never fired
@@ -301,15 +255,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: "1.3.14"
-      - name: cache bun install
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
+      - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
       - name: install playwright chromium
         # Run from the workspace so bunx resolves apps/site's pinned playwright
@@ -337,15 +283,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: "1.3.14"
-      - name: cache bun install
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
+      - uses: ./.github/actions/setup-bun
       # Post-install: the standards-gate CLI's external-AGPL + manifest-agreement layers need node_modules.
       - run: bun install --frozen-lockfile
       - name: assemble the build-evidence pack (runs the cheap producers + writes the manifest)
