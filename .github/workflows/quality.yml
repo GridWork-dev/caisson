@@ -65,18 +65,22 @@ jobs:
               - 'packages/**'
               - 'apps/**'
               - 'services/intel/**'
+              - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
             ui:
               - 'packages/ui/**'
               - 'packages/ds-manifest/src/base-manifest.json'
+              - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
             local-store:
               - 'packages/local-store/**'
+              - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
             site:
               - 'apps/site/**'
               - 'packages/ui/**'
               - 'packages/ui-pro/**'
+              - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
 
   # The deterministic eval gate (ADR-0062). A DISTINCT turbo `eval` task — separate from `test` —

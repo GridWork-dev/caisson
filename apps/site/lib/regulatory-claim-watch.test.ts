@@ -830,8 +830,14 @@ describe("regulatory-claim-watch workflow posture", () => {
     expect(workflow).toContain("- name: install workspace deps");
     expect(workflow).toContain("persist-credentials: false");
     expect(workflow).toContain("retention-days: 30");
+    expect(workflow).toContain(
+      "public-source-check:\n    # The watch is advisory. A bootstrap outage must not turn this report-only workflow red.\n    continue-on-error: true",
+    );
+    expect(workflow).toContain(
+      "Watch did not reach the report step. No PASS is implied.",
+    );
+    expect(workflow.match(/continue-on-error: true/g)).toHaveLength(1);
     expect(workflow).not.toContain("initialize advisory report");
-    expect(workflow).not.toContain("continue-on-error: true");
     expect(workflow).not.toContain("INSTALL_OUTCOME");
     expect(workflow).not.toContain("bash -c 'bun install");
     expect(workflow).not.toContain("| tee");

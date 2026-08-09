@@ -22,6 +22,8 @@ concurrency:
 
 jobs:
   public-source-check:
+    # The watch is advisory. A bootstrap outage must not turn this report-only workflow red.
+    continue-on-error: true
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 10
     steps:
@@ -43,7 +45,15 @@ jobs:
       - name: publish report to the job summary
         if: always()
         shell: bash
-        run: cat regulatory-claim-watch-report.md >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          if [[ ! -s regulatory-claim-watch-report.md ]]; then
+            printf '%s\n' \
+              '## Regulatory claim watch — report-only' \
+              '' \
+              'Watch did not reach the report step. No PASS is implied.' \
+              > regulatory-claim-watch-report.md
+          fi
+          cat regulatory-claim-watch-report.md >> "$GITHUB_STEP_SUMMARY"
       - name: upload the report artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
