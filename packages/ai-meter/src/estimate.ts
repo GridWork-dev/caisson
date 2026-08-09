@@ -5,13 +5,13 @@
 // rounds the reservation UP (no cache assumed) rather than risk under-reserving.
 import { z } from "zod";
 import { parseStrict, strictObject } from "@caisson/kernel";
-import { computeCost } from "./pricebook.ts";
+import { computeCost } from "./token-rates.ts";
 import type {
   CostBreakdown,
   CreditConversion,
   PriceBookEntry,
   Usage,
-} from "./pricebook.ts";
+} from "./token-rates.ts";
 
 /** The heuristic divisor: ~4 characters per token across common tokenizers. */
 export const CHARS_PER_TOKEN = 4;

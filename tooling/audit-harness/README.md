@@ -75,7 +75,7 @@ const survives = await validateHighRisk(finding, myPalChallenger);
 
 ```bash
 # reconcile CLI — pipe a JSON array of {domain, subject, title, severity, status?}
-bun run packages/audit-harness/src/cli.ts run.json
+bun run tooling/audit-harness/src/cli.ts run.json
 # → rewrites audit-ledger.toml, prints: "audit-harness: N in ledger · … (advisory — never blocks)"
 ```
 
@@ -85,10 +85,10 @@ with a fake challenger and free of any network call.
 
 ## Tests
 
-`bun test packages/audit-harness/src` — reconcile round-trip (new → closed → regressed), TOML
+`bun test tooling/audit-harness/src` — reconcile round-trip (new → closed → regressed), TOML
 round-trip, the scope guard (flags out-of-domain, passes in-domain), and the `majorityKills` truth
 table. No live network.
 
 > Rebuild-clean, generalized from the local `tooling/design-critic` pattern (ADR-0101). Does not
-> touch or import `design-critic` — a standalone copy. Adopting the harness into `tooling/`/
-> `packages/ui` is an integration follow-up (ADR-0134), not in this package.
+> touch or import `design-critic` — a standalone copy. Adopting the harness in place of
+> `design-critic` is an integration follow-up (ADR-0134), not part of this package.

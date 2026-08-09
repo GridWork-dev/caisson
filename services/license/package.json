@@ -33,6 +33,7 @@
     "@caisson/license-verify": "workspace:*",
     "@caisson/observability": "workspace:*",
     "@caisson/org-controls": "workspace:*",
+    "@caisson/platform-reads": "workspace:*",
     "@caisson/pricebook": "workspace:*",
     "@caisson/rate-limit": "workspace:*",
     "@caisson/registry-schema": "workspace:*",

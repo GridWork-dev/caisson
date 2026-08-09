@@ -91,7 +91,7 @@ export function dimension(id: DimensionId): Dimension {
  *                                copy (D3) or internal-leak (D4) lens — there is no shipped surface.
  *                                D5 (license-tier correctness — SPDX header/LICENSE/no-depend-up)
  *                                only re-applies when the domain IS a package (`domainId` starts
- *                                with "packages/", e.g. the four INTERNAL_COMMERCIAL_PKGS): a
+ *                                with "packages/", e.g. the reviewed INTERNAL_COMMERCIAL_PKGS): a
  *                                workflow yaml or a root doc has no license tier to be wrong about,
  *                                so D5 stays a dead cell there (SPEC "Applies to: all packages +
  *                                oss-mirror" — never a bare non-package internal-only domain).

@@ -12,7 +12,7 @@ import {
   computeCost,
   priceKey,
   resolvePriceEntry,
-} from "./pricebook.ts";
+} from "./token-rates.ts";
 
 const entrySchema = z.object({
   inputPerMTok: z.number().int(),

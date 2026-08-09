@@ -313,12 +313,8 @@ export function checkDownOnly(pkgs: Pkg[]): Finding[] {
 const NEVER_PUBLISHED = new Set([
   // The private brand layer (glyphs/wordmark) — apps consume it directly, never a registry SKU.
   "@caisson/brand",
-  // Internal cross-package component-demo catalog for apps/admin + the site's /ui gallery.
-  "@caisson/demo-registry",
   // The ordered platform migration chain — internal engineering plumbing, not a buyer module.
   "@caisson/platform-migrations",
-  // Internal audit/validate harness (ADR-0134) — non-blocking engineering tooling, not sellable.
-  "@caisson/audit-harness",
 ]);
 
 /**
@@ -1475,15 +1471,14 @@ export async function checkRlsEquivalence(
  * a `packages/*` README/AGENTS/CHANGELOG, a `package.json` description, or a `.ts` comment must
  * see buyer-readable prose — no internal vocabulary, no bare ADR/issue-tracker citations. Only the
  * `oss-source`/`sold-source`/`buyer-runtime` surface is scanned; `tooling/`, `infra/`,
- * `apps/admin`, `registry/`, `packages/audit-harness`, `docs/`, `.github/`, `.changeset/`, and
+ * `apps/admin`, `registry/`, `tooling/`, `docs/`, `.github/`, `.changeset/`, and
  * `outputs/` are internal-only and exempt per the rubric.
  */
 const PROSE_SCAN_DOC_FILES = ["README.md", "AGENTS.md", "CHANGELOG.md"];
 
 /** True for a package/app dir this gate scans — the rubric's oss-source/sold-source/buyer-runtime class. */
 function isProseScanTarget(relDir: string): boolean {
-  if (relDir.startsWith("packages/"))
-    return relDir !== "packages/audit-harness";
+  if (relDir.startsWith("packages/")) return true;
   return (
     relDir === "apps/site" ||
     relDir === "apps/base" ||

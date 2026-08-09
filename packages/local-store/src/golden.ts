@@ -4,7 +4,7 @@
 // `BLESS=1` only when the output legitimately changes. Golden-first: the fixture is authored, and its
 // assertions land, before the retrieval logic that turns them green.
 import { defineModuleGolden } from "@caisson/testing/golden-module";
-import { scrubForEgress } from "./egress-guard.ts";
+import { scrubForEgress } from "./embed-scrub-guard.ts";
 import { LocalStore } from "./store.ts";
 import type { HybridSearchOptions, StoreDoc } from "./store.ts";
 
@@ -46,7 +46,7 @@ const RRF_FIXTURE: RrfFixture = {
 // exact `scrubbed` output the guard must produce — and lands BEFORE the logic (ADR-0013 golden-first).
 //
 // Why this case `produce` echoes the authored contract instead of calling the guard: at authoring
-// time the guard (`src/egress-guard.ts`) did not exist yet, so importing it would have made the suite
+// time the guard (`src/embed-scrub-guard.ts`) did not exist yet, so importing it would have made the suite
 // fail to RESOLVE (a broken tree), not assert a contract. The fixture committed green first
 // ("passes-on-fixture"); the guard implementation then rewrote this `produce` body to
 // `scrubForEgress(c.raw)`, and the committed `scrub.json` enforces — BLESS unset — that the real guard
