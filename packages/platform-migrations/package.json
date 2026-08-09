@@ -33,7 +33,6 @@
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
-    "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@electric-sql/pglite": "catalog:",
     "eslint": "catalog:",
