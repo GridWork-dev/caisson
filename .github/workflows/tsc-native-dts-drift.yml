@@ -87,6 +87,7 @@ jobs:
           echo "head tsc-native bin: $BIN"
           echo "path=$BIN" >> "$GITHUB_OUTPUT"
       - name: run the drift check (fails the job on any .d.ts byte drift)
+        shell: bash
         env:
           TSC_BASE: ${{ runner.temp }}/base-native/node_modules/.bin/tsc
           TSC_HEAD: ${{ steps.head-bin.outputs.path }}
