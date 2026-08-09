@@ -34,11 +34,6 @@ import {
   retainUntilFrom,
 } from "../../../../packages/audit-worm/src/retain.ts";
 import goldenAnchor from "../../../../packages/audit-worm/src/__golden__/anchor.json";
-import {
-  CHAIN_ENTRIES,
-  eventName,
-  shortHash,
-} from "../../lib/audit-chain-sample.ts";
 
 import {
   APPEND_EVENTS,
@@ -48,8 +43,10 @@ import {
   appendEntry,
   cutTail,
   evaluate,
+  eventName,
   formatDate,
   initialState,
+  shortHash,
   tamperRow,
   verdictLine,
 } from "./audit-worm-poke";
@@ -239,10 +236,10 @@ describe("the poke-local presentation reads the verdict honestly", () => {
   });
 
   test("display helpers", () => {
-    expect(shortHash("a".repeat(60) + "bcde")).toBe("aaaa…bcde");
-    expect(eventName(CHAIN_ENTRIES[0]!)).toBe("license.issued");
-    expect(eventName({ ...CHAIN_ENTRIES[0]!, payload: [1, 2] })).toBe("—");
-    expect(eventName({ ...CHAIN_ENTRIES[0]!, payload: null })).toBe("—");
+    expect(shortHash("a".repeat(60) + "bcde")).toBe("aaaaaa…bcde");
+    expect(eventName({ event: "license.issued" })).toBe("license.issued");
+    expect(eventName([1, 2])).toBe("entry");
+    expect(eventName(null)).toBe("entry");
     expect(formatDate(SEALED_AT)).toBe("2026-07-22");
   });
 });

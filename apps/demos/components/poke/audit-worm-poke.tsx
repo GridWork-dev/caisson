@@ -39,7 +39,6 @@ import {
   MIN_RETENTION_YEARS,
   retainUntilFrom,
 } from "../../../../packages/audit-worm/src/retain.ts";
-import { eventName, shortHash } from "../../lib/audit-chain-sample.ts";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./audit-worm-poke.module.css";
@@ -178,6 +177,24 @@ export function verdictLine(
   return { state: "ok", text: "Chain verified. Anchor holds." };
 }
 
+/** Short display form of a 64-hex hash. */
+export function shortHash(hash: string): string {
+  return `${hash.slice(0, 6)}…${hash.slice(-4)}`;
+}
+
+/** The payload's `event` name for display (payload is nullable JSON). */
+export function eventName(payload: JsonValue): string {
+  if (
+    payload !== null &&
+    typeof payload === "object" &&
+    !Array.isArray(payload)
+  ) {
+    const event = (payload as { readonly [key: string]: JsonValue }).event;
+    if (typeof event === "string") return event;
+  }
+  return "entry";
+}
+
 /** ISO date (YYYY-MM-DD) for the retain-until display. */
 export function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -254,7 +271,7 @@ export default function AuditWormPoke() {
               data-tone={ROW_TONE[label]}
             >
               <span className={styles.seq}>#{entry.seq}</span>
-              <span className={styles.event}>{eventName(entry)}</span>
+              <span className={styles.event}>{eventName(entry.payload)}</span>
               <code className={styles.hash}>{shortHash(entry.hash)}</code>
               <span className={styles.rowState} data-tone={ROW_TONE[label]}>
                 {label}
