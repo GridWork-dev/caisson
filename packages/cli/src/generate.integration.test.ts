@@ -32,7 +32,11 @@ import {
   grant,
 } from "@caisson/credits";
 import { loadRegistryIndex } from "@caisson/registry-schema";
-import { GENERATION_SCHEMA_SQL, defaultEngine, runGeneration } from "./index.ts";
+import {
+  GENERATION_SCHEMA_SQL,
+  runGeneration,
+  type GeneratorEngine,
+} from "./index.ts";
 import { createMcpServer, type GenerateContext } from "@caisson/mcp-server";
 import { InsufficientCreditsError, asCredits } from "@caisson/kernel";
 
@@ -47,9 +51,7 @@ const INITIAL_CREDITS = 5;
 // Fixed valid UUID v4 used as the idempotency key across the success path + retry (assertions 1-4).
 const IDEM_KEY = "11111111-1111-4111-a111-111111111111";
 
-// Minimal two-module index: both base modules, paid tier, no edition scope. The defaultEngine
-// materializes a deterministic 3-file set (package.json + .npmrc + README.md) for any selection
-// against these modules — no template files on disk required (stable across environments).
+// Minimal two-module index: both base modules, paid tier, no edition scope.
 const INDEX = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
@@ -95,6 +97,17 @@ const INDEX = loadRegistryIndex({
     },
   ],
 });
+
+const ENGINE: GeneratorEngine = {
+  materialize(selection) {
+    return [
+      {
+        path: "package.json",
+        content: `${JSON.stringify({ name: selection.projectName })}\n`,
+      },
+    ];
+  },
+};
 
 // One PGlite instance for the entire file. Both accounts (buyer + broke) are RLS-isolated by
 // account_id so their assertions never bleed into each other.
@@ -144,7 +157,7 @@ function onGenerate(ctx: GenerateContext): Promise<{ generationId: string }> {
     const out = await runGeneration(
       tx,
       // The host supplies the concrete credits debit through the DebitFn port (ADR-0249 G5).
-      { index: INDEX, engine: defaultEngine, debit },
+      { index: INDEX, engine: ENGINE, debit },
       ctx.selection,
       { accountId: ctx.accountId, idempotencyKey: ctx.idempotencyKey },
     );

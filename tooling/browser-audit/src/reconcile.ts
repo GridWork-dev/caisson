@@ -45,30 +45,3 @@ export function reconcileFindings(
   ) as Record<string, ReconcileClass>;
   return { ledger, classes: sortedClasses, advisory: true as const };
 }
-
-export interface CandidateTest {
-  findingId: string;
-  operatorAccepted: boolean;
-  cleanReplay: boolean;
-  fixture: string;
-  setup: string;
-  action: string;
-  assertion: string;
-  selectors: string[];
-  cleanup: string;
-  destinationSuite: string;
-}
-
-export function stageCandidateTest(candidate: CandidateTest): string {
-  if (!candidate.operatorAccepted || !candidate.cleanReplay) {
-    throw new Error(
-      "candidate tests require an operator-approved, clean-session replay",
-    );
-  }
-  if (!candidate.destinationSuite.endsWith(".test.ts")) {
-    throw new Error(
-      "candidate destination must name an existing deterministic test suite",
-    );
-  }
-  return `# Candidate deterministic test: ${candidate.findingId}\n\n- Fixture: ${candidate.fixture}\n- Setup: ${candidate.setup}\n- Action: ${candidate.action}\n- Assertion: ${candidate.assertion}\n- Stable selectors: ${candidate.selectors.join(", ")}\n- Cleanup: ${candidate.cleanup}\n- Destination suite: ${candidate.destinationSuite}\n\nAdvisory only. Author and review the Playwright test separately.\n`;
-}

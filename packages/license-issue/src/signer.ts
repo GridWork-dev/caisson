@@ -165,15 +165,3 @@ export class Ed25519Signer implements Signer {
     return { signer: "Ed25519Signer", keyId: this.keyId, key: "[redacted]" };
   }
 }
-
-/**
- * UN-WIRED SEAM (ADR-0110 / ADR-0047 ethos): a buyer-supplied AWS KMS asymmetric signer. It implements
- * the same {@link Signer} port — `sign` issues a `Sign` call to KMS (the private key never leaves the
- * HSM) and `publicKey` a `GetPublicKey` — so the issuer service swaps it in by configuration alone,
- * with NO change to `issueLicense`. It is intentionally NOT wired in v1: there is no AWS SDK dependency
- * and no live KMS call on any path. The interface documents the contract a future P7 KMS adapter fills.
- */
-export interface KmsSigner extends Signer {
-  /** The KMS key ARN/alias the asymmetric Sign/GetPublicKey calls target (provenance / rotation). */
-  readonly kmsKeyId: string;
-}

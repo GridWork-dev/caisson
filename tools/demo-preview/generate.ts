@@ -215,34 +215,9 @@ async function main(): Promise<void> {
       join(OUT_DIR, "manifest.json"),
       JSON.stringify(manifest, null, 2) + "\n",
     );
-    await writeFile(
-      join(OUT_DIR, "transcript-install.json"),
-      JSON.stringify(install, null, 2) + "\n",
-    );
-    await writeFile(
-      join(OUT_DIR, "transcript-build.json"),
-      JSON.stringify(build, null, 2) + "\n",
-    );
-    await writeFile(
-      join(OUT_DIR, "transcript-test.json"),
-      JSON.stringify(test, null, 2) + "\n",
-    );
-    await writeFile(
-      join(OUT_DIR, "walkthrough.json"),
-      JSON.stringify(
-        walkthrough ?? {
-          present: false,
-          reason: "scaffold has no `demo` script",
-        },
-        null,
-        2,
-      ) + "\n",
-    );
-
     // The T2 reader contract: ONE preview.json shaped exactly like PreviewSchema
     // (apps/site/components/demo/preview-schema.ts) — the file the /demo page's PreviewPane
-    // actually loads. The raw manifest/transcript files above stay as the full-fidelity record;
-    // artifacts.test.ts asserts this committed file parses against the reader's schema, so the
+    // actually loads. artifacts.test.ts asserts this committed file parses against the reader's schema, so the
     // writer↔reader seam can never silently drift again.
     const previewStep = (
       label: string,
