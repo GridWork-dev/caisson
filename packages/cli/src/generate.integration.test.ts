@@ -31,12 +31,8 @@ import {
   debit,
   grant,
 } from "@caisson/credits";
-import { loadRegistryIndex } from "@caisson/registry";
-import {
-  GENERATION_SCHEMA_SQL,
-  defaultEngine,
-  runGeneration,
-} from "@caisson/cli";
+import { loadRegistryIndex } from "@caisson/registry-schema";
+import { GENERATION_SCHEMA_SQL, defaultEngine, runGeneration } from "./index.ts";
 import { createMcpServer, type GenerateContext } from "@caisson/mcp-server";
 import { InsufficientCreditsError, asCredits } from "@caisson/kernel";
 

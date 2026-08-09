@@ -1,27 +1,20 @@
-// ADR-0112: the served composition (this reference app) wires the per-account MCP rate-limit hook
-// BY DEFAULT, so an embedding buyer gets abuse throttling with zero extra wiring. There is NO
-// first-party served MCP instance in this repo — the buyer MCP ships for buyers to embed (the base
-// mcp-server is the transport-agnostic core; this `createBaseApp` is the canonical wiring) — so the
-// strongest available fix is making the default wiring fire here. These tests prove the DEFAULT path
-// actually reaches the rate-limit store, blocks on a deny, fails OPEN on a store fault, and yields to
-// a caller-supplied override. They use a fake Transactor (no PGlite) so they are fast and flake-free.
+// Proves the documented @caisson/rate-limit → @caisson/mcp-server composition: the hook reaches the
+// store, blocks on a deny, fails OPEN on a store fault, and yields to a caller-supplied override.
+// A fake Transactor keeps the package-seam proof fast and flake-free.
 import { describe, expect, test } from "bun:test";
 import { RateLimitError } from "@caisson/kernel";
 import type { Transactor, TenantExecutor } from "@caisson/tenancy-rls";
-import { createStripeBilling } from "@caisson/billing-orchestration";
-import { loadRegistryIndex } from "@caisson/registry";
-import type { McpServerOptions, RateLimitHook } from "@caisson/mcp-server";
-import { createBaseApp } from "./app.ts";
+import { loadRegistryIndex } from "@caisson/registry-schema";
+import {
+  createMcpServer,
+  type McpServerOptions,
+  type RateLimitHook,
+} from "@caisson/mcp-server";
+import { createRateLimitHook } from "./account-hook.ts";
 
 const TOKEN = "mcp_tok_acct_a_000000";
 const ACCOUNT = "acct_a";
 const EMPTY_INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });
-
-// Billing is unused by the MCP read path; a real provider keeps the types honest.
-const billing = createStripeBilling({
-  webhookSecret: "whsec_test",
-  apiKey: "sk_test",
-});
 
 const mcpOptions = (extra?: Partial<McpServerOptions>): McpServerOptions => ({
   tokens: [{ token: TOKEN, accountId: ACCOUNT, entitlements: ["compliance"] }],
@@ -29,6 +22,28 @@ const mcpOptions = (extra?: Partial<McpServerOptions>): McpServerOptions => ({
   onGenerate: async () => ({ generationId: "gen_x" }),
   ...extra,
 });
+
+function createRateLimitedServer(
+  db: Transactor,
+  extra?: Partial<McpServerOptions>,
+  onStoreError?: (err: unknown, accountId: string) => void,
+): ReturnType<typeof createMcpServer> {
+  const options = mcpOptions(extra);
+  const checkRateLimit =
+    options.checkRateLimit ??
+    createRateLimitHook({
+      db,
+      ...(onStoreError !== undefined ? { onStoreError } : {}),
+    });
+  return createMcpServer({ ...options, checkRateLimit });
+}
+
+async function listModules(
+  server: ReturnType<typeof createMcpServer>,
+): Promise<unknown> {
+  const session = server.authenticate(TOKEN);
+  return server.handleToolCall(session, "list_modules", {});
+}
 
 // A fake Transactor mimicking the rate_limit token-bucket store via SQL-keyword matching: `allow`
 // returns a consumed token, `deny` returns an empty bucket (the UPDATE matches 0 rows), `throw`
@@ -63,18 +78,16 @@ function fakeStore(mode: StoreMode, onTransaction?: () => void): Transactor {
   };
 }
 
-describe("createBaseApp default MCP rate-limit wiring (ADR-0112)", () => {
+describe("MCP rate-limit wiring", () => {
   test("default path reaches the throttle store and allows under budget", async () => {
     let reached = false;
-    const app = createBaseApp({
-      db: fakeStore("allow", () => {
+    const server = createRateLimitedServer(
+      fakeStore("allow", () => {
         reached = true;
       }),
-      billing,
-      mcp: mcpOptions(),
-    });
+    );
 
-    const result = await app.mcpQuery(TOKEN, "list_modules", {});
+    const result = await listModules(server);
 
     // The store was reached inside withTenant (proves the hook was wired by default, not skipped)…
     expect(reached).toBe(true);
@@ -83,30 +96,23 @@ describe("createBaseApp default MCP rate-limit wiring (ADR-0112)", () => {
   });
 
   test("default path BLOCKS with RateLimitError when the bucket is empty", async () => {
-    const app = createBaseApp({
-      db: fakeStore("deny"),
-      billing,
-      mcp: mcpOptions(),
-    });
+    const server = createRateLimitedServer(fakeStore("deny"));
 
-    await expect(
-      app.mcpQuery(TOKEN, "list_modules", {}),
-    ).rejects.toBeInstanceOf(RateLimitError);
+    await expect(listModules(server)).rejects.toBeInstanceOf(RateLimitError);
   });
 
   test("default path FAILS OPEN on a store fault and alerts onRateLimitStoreError", async () => {
     let alerted: { err: unknown; accountId: string } | null = null;
-    const app = createBaseApp({
-      db: fakeStore("throw"),
-      billing,
-      mcp: mcpOptions(),
-      onRateLimitStoreError: (err, accountId) => {
+    const server = createRateLimitedServer(
+      fakeStore("throw"),
+      undefined,
+      (err, accountId) => {
         alerted = { err, accountId };
       },
-    });
+    );
 
     // Fail-OPEN (lock 5): a store fault must NOT lock out a paying buyer.
-    const result = await app.mcpQuery(TOKEN, "list_modules", {});
+    const result = await listModules(server);
     expect(result).toEqual({ modules: ["compliance"] });
     // The fault was surfaced to the telemetry sink, not swallowed.
     expect(alerted).not.toBeNull();
@@ -119,19 +125,18 @@ describe("createBaseApp default MCP rate-limit wiring (ADR-0112)", () => {
     const override: RateLimitHook = async () => {
       overrideCalls += 1;
     };
-    const app = createBaseApp({
-      db: fakeStore("deny", () => {
+    const server = createRateLimitedServer(
+      fakeStore("deny", () => {
         storeReached = true;
       }),
-      billing,
-      mcp: mcpOptions({ checkRateLimit: override }),
-    });
+      { checkRateLimit: override },
+    );
 
-    const result = await app.mcpQuery(TOKEN, "list_modules", {});
+    const result = await listModules(server);
 
     expect(result).toEqual({ modules: ["compliance"] });
     expect(overrideCalls).toBe(1);
-    // The default services/license store was never constructed/reached.
+    // The rate-limit store was never constructed/reached.
     expect(storeReached).toBe(false);
   });
 });
