@@ -11,6 +11,33 @@ grounds:
 
 # Deploy log
 
+## 2026-08-09 — audit-remediation wave: demos zone armed (ADR-0400 flip), demos+site deploys
+
+The ADR-0400 two-variable arming executed end to end from the reconcile session (operator lock
+"Go — run it end to end"): the `caisson-demos` Railway service created via CLI/API (project
+caisson-prod, sfo, `railwayConfigFile: apps/demos/railway.toml`, no public domain), the site's
+`DEMOS_ORIGIN_URL` build var set to `http://caisson-demos.railway.internal:3040`, and the
+`CAISSON_DEMOS_ARMED` repo variable flipped after the in-flight deploy run settled. Receipts:
+[caisson-demos.json](receipts/caisson-demos.json) (first row) and
+[caisson-site.json](receipts/caisson-site.json) (rows at `0f3f5e2a`); recorded shas are the
+deploy-time branch base — the demos image itself carries the PR #411 Dockerfile fix.
+
+Two production root causes found and fixed at first flip, both now pinned in the tree:
+
+- **Railway's private mesh is IPv6-only:** the standalone server's `HOSTNAME=0.0.0.0` bind
+  refused every rewrite connection (public 500 on `/demos/*`); `HOSTNAME=::` binds dual-stack
+  (PR #411, comment in `apps/demos/Dockerfile`).
+- **Railway injects `PORT` (8080) at runtime over the image ENV:** the container healthcheck
+  self-consistently passed on the injected port while the mesh dialed the documented 3040
+  (ECONNREFUSED); fixed by pinning `PORT=3040` as a service variable
+  (comment in `apps/demos/railway.toml`).
+
+Proven live in-browser after the fixes: `/demos/healthz` 200 under the demos CSP,
+`/demos/embed/audit-worm` 200, and the marketplace module page mounting an interactive
+same-origin iframe. Pending DEPLOY act recorded here: the registry Worker redeploy that serves
+the ADR-0402 post-delist 53-module index (the Worker bakes `index.json` at build time), to run
+once the reconcile PR merges.
+
 ## 2026-08-06 — release train `v2026.08.06.1` off `d9a56601`, driven locally; first full five-service leg 4
 
 The DEPLOY act for the `v2026.08.06.1` release (the successor tag to the dud `v2026.08.06` — six
