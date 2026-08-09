@@ -28,9 +28,6 @@ const EMBED_MARKER = "pokeEmbed";
 
 type LoadState = "pending" | "ready" | "unavailable";
 
-/** How long to wait for a `load` that may never come before showing the fallback text. */
-const LOAD_DEADLINE_MS = 10_000;
-
 /** The current theme as the site records it, or null when the reader has never chosen one. */
 function currentTheme(): string | null {
   return document.documentElement.getAttribute("data-theme");
@@ -99,6 +96,13 @@ export function PokeEmbed({ module }: { module: PokeKey }) {
   // The `about:blank` exclusion is the whole trick: a fresh iframe's document reports `complete`
   // BEFORE the real navigation commits, so `readyState` alone would fire this immediately, find no
   // marker, and latch `unavailable` on a poke that was about to load fine.
+  //
+  // NO TIMEOUT here, deliberately. A deadline is the obvious companion for "the load never fires
+  // at all", and it is wrong on this component: `loading="lazy"` means a below-the-fold frame has
+  // not started navigating yet and reports exactly the same not-settled state as a hung one, so a
+  // timer would show the fallback for a demo that works and that the reader simply had not
+  // scrolled to. Distinguishing the two needs viewport observation, which is a lot of machinery
+  // for a case the fallback already covers the moment a real `load` or error lands.
   useEffect(() => {
     let settled: boolean;
     try {
@@ -111,14 +115,6 @@ export function PokeEmbed({ module }: { module: PokeKey }) {
       settled = true;
     }
     if (settled) onLoad();
-
-    // And if the load never lands at all — a hung request to the demos service — say so rather
-    // than leaving a placeholder up indefinitely.
-    const timer = setTimeout(
-      () => setState((s) => (s === "pending" ? "unavailable" : s)),
-      LOAD_DEADLINE_MS,
-    );
-    return () => clearTimeout(timer);
   }, [onLoad]);
 
   // A poke changes height as you drive it (a verdict line appears, a rotation note comes and
