@@ -194,7 +194,7 @@ export default function AiKitPage() {
       {/* ===== What it composes ===== */}
       <Section
         title="One package, four other Caisson packages behind it."
-        lede="The AI-Production bundle ships @caisson/ai-kit, one package wired around four other Caisson packages: prompt-registry resolves and renders the versioned prompt, ai-meter reserves against the tenant's cap before the call and reconciles the real usage after, guardrails runs the input and output through a Zod-typed schema and policy check, and ai-config maps the call's lane to a provider. The pipeline is fixed and fail-closed (resolve, render, input-guard, reserve, provider call, record usage, output-guard, reconcile), and it is the only Caisson package that imports a provider SDK (ai / @ai-sdk/*), keeping that dependency behind one boundary instead of scattered across your route handlers."
+        lede="The AI-Production bundle composes @caisson/ai-config, @caisson/ai-meter, @caisson/credits, @caisson/field-crypto, @caisson/guardrails, @caisson/kernel, @caisson/prompt-registry, @caisson/tenancy-rls, and @caisson/ai-evals. Together they resolve and render versioned prompts, map lanes to providers, validate inputs and outputs, reserve and reconcile integer credits, isolate tenant data, encrypt sensitive fields, and run the same eval checks in CI—the production safeguards stay in explicit package boundaries instead of being scattered through route handlers."
         band="tint"
       />
 

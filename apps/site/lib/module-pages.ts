@@ -1294,7 +1294,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "agentic-dev",
-      note: `Sold standalone at ${modulePrice("tool-exec")}, or composed directly into @caisson/agent-dev inside the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel, agent-runner, and the local hybrid-memory store.`,
+      note: `Sold standalone at ${modulePrice("tool-exec")}, or included as @caisson/tool-exec in the ${bundlePrice("agentic-dev")} Agentic-Dev bundle with @caisson/agent-kernel, @caisson/agent-runner, @caisson/agent-trajectory, @caisson/ai-config, @caisson/kernel, and @caisson/local-store.`,
     },
   },
   {
