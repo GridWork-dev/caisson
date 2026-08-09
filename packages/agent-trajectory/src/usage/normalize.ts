@@ -20,7 +20,7 @@ import {
   type Usage,
 } from "@caisson/ai-meter";
 import { parseStrict } from "@caisson/kernel";
-import { TrajectoryEvent } from "@caisson/agent-trajectory";
+import { TrajectoryEvent } from "../browser.ts";
 import { resolveModelAlias } from "./alias-map.ts";
 
 export interface PriceUsageOptions {

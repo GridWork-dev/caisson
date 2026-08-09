@@ -22,7 +22,7 @@ in [knowledge/decisions](../knowledge/decisions), and per-package depth in
 
 | Tree        | Count | Purpose                                                                                          |
 | ----------- | ----: | ------------------------------------------------------------------------------------------------ |
-| `packages/` |    60 | framework-free capability units: 17 Apache-2.0 and 43 commercial                                 |
+| `packages/` |    59 | framework-free capability units: 17 Apache-2.0 and 42 commercial                                 |
 | `apps/`     |     3 | site, admin, and demos                                                                           |
 | `services/` |     5 | four Bun services plus Python support-bot                                                        |
 | `registry/` |     1 | registry service, append-only ledger/index, and Cloudflare Worker                                |

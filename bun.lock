@@ -271,26 +271,11 @@
       "name": "@caisson/agent-trajectory",
       "version": "0.5.0",
       "dependencies": {
+        "@caisson/ai-meter": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "zod": "catalog:",
-      },
-      "devDependencies": {
-        "@caisson/eslint-config": "workspace:*",
-        "@caisson/testing": "workspace:*",
-        "@caisson/tsconfig": "workspace:*",
-        "eslint": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
-    "packages/agent-usage": {
-      "name": "@caisson/agent-usage",
-      "version": "0.2.9",
-      "dependencies": {
-        "@caisson/agent-trajectory": "workspace:*",
-        "@caisson/ai-meter": "workspace:*",
-        "@caisson/kernel": "workspace:*",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
@@ -1817,8 +1802,6 @@
     "@caisson/agent-runner": ["@caisson/agent-runner@workspace:packages/agent-runner"],
 
     "@caisson/agent-trajectory": ["@caisson/agent-trajectory@workspace:packages/agent-trajectory"],
-
-    "@caisson/agent-usage": ["@caisson/agent-usage@workspace:packages/agent-usage"],
 
     "@caisson/agentic-dev": ["@caisson/agentic-dev@workspace:packages/agentic-dev"],
 

@@ -393,7 +393,9 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
   test("the everything bundle delivers every module except intentionally unbundled non-sellable modules", async () => {
     // This allowlist describes current product state, not publication state. A newly missing module
     // still fails, and an allowlisted module becoming sellable forces this exception to be removed.
-    const UNBUNDLED_NONSELLABLE = new Set(["@caisson/agent-usage"]);
+    // Empty since ADR-0402 delisted @caisson/agent-usage (folded into @caisson/agent-trajectory
+    // ./usage); the next intentionally unbundled non-sellable module re-adds its id here.
+    const UNBUNDLED_NONSELLABLE = new Set<string>([]);
     const everything = realIndex.modules.find(
       (m) => m.id === "@caisson/everything",
     );

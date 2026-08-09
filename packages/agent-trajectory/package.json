@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Engine-neutral trajectory contract: an append-only, replayable event log (runs, steps, model calls, tool proposals/approvals, usage, checkpoints) with digest-ref payload discipline — the observation substrate the governed agent runtime records into.",
+  "description": "Engine-neutral trajectory contract: an append-only, replayable event log (runs, steps, model calls, tool proposals/approvals, usage, checkpoints) with digest-ref payload discipline \u2014 the observation substrate the governed agent runtime records into.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -18,6 +18,11 @@
       "bun": "./src/browser.ts",
       "types": "./dist/browser.d.ts",
       "default": "./dist/browser.js"
+    },
+    "./usage": {
+      "bun": "./src/usage/index.ts",
+      "types": "./dist/usage/index.d.ts",
+      "default": "./dist/usage/index.js"
     }
   },
   "scripts": {
@@ -26,6 +31,7 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
+    "@caisson/ai-meter": "workspace:*",
     "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",

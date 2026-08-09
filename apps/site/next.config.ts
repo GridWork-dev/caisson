@@ -14,8 +14,8 @@ const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 // The ADR-0400 demo zone's two config inputs. Both live in lib/security-headers.ts, with their
 // full rationale, so a test can drive them without importing this file (and the MDX pipeline it
-// pulls in) — the CSP builder emits a byte-identical policy to the hand-written string it
-// replaced when asked for `frame-ancestors 'none'`, and that is pinned there.
+// pulls in) — asked for `frame-ancestors 'none'`, the CSP builder emits the pre-split policy
+// plus `frame-src 'self'` (the demos iframes), and that exact shape is pinned there.
 const demosOrigin = demosOriginUrl(process.env.DEMOS_ORIGIN_URL);
 
 const config: NextConfig = {

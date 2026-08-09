@@ -26,10 +26,15 @@ const AI_KIT = "@caisson/ai-kit";
 // explicitly requires field-crypto's OWN key/tenancy conventions, not a new key-material shape) —
 // field-crypto is itself a Base-kernel-only primitive (see its own manifest.ts), so this widening is
 // still a lateral primitive→primitive dependency, never "up" onto a runner/edition/ai-kit.
+// ai-meter joined the set with the ./usage fold (ADR-0402): priceUsage upgrades estimated
+// model.usage events to pricebook-computed credits via ai-meter's BUNDLED_PRICE_BOOK — ai-meter is
+// itself a primitive on Base primitives only (credits/kernel/tenancy-rls), so this too is lateral;
+// the engine-neutral core stays clean because usage adapters live behind the subpath, off the barrel.
 const KERNEL_LEVEL = new Set([
   "@caisson/kernel",
   "@caisson/tenancy-rls",
   "@caisson/field-crypto",
+  "@caisson/ai-meter",
 ]);
 
 describe("agent-runtime slice-1 dependency boundary (ADR-0349/0351)", () => {

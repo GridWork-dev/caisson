@@ -87,7 +87,9 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * the change that acknowledges those entries. Index presence is not sellability: the three SKUs
  * stay `sellable: false` until the post-publish membership PR flips them, and artifact-render
  * is never sold.
- * `agent-usage` graduated at the 2026-07-18 full-catalog consume (its first index entry).
+ * `agent-usage` graduated at the 2026-07-18 full-catalog consume (its first index entry),
+ * then left the index for good: ADR-0402 delisted it (published-never-sold) and folded the
+ * code into `@caisson/agent-trajectory` `./usage`.
  * Prior graduations: `agent-trajectory` graduated 2026-07-17 — the slice-1 changeset
  * consume auto-ledgered/indexed `@caisson/agent-trajectory@0.2.0`, so per the rule above its
  * reservation left in the change that acknowledged that first index entry. Index presence is NOT
@@ -114,9 +116,8 @@ export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
  */
 export const RESERVED_MODULE_ENTITLEMENT_VERSIONS: ReadonlyMap<string, string> =
   new Map<string, string>([]);
-// agent-usage graduated 2026-07-18: indexed (sellable:false) by the agent-runtime consume,
-// so grants resolve via the index; it stays unsellable and in no bundle until its own
-// publish gate (operator lock). agent-trajectory graduated earlier, at its first index entry.
+// agent-usage graduated 2026-07-18 (indexed sellable:false), then was delisted by ADR-0402 —
+// published-never-sold, folded into @caisson/agent-trajectory ./usage; no grant ever named it. agent-trajectory graduated earlier, at its first index entry.
 
 /**
  * Bare-slug entitlement ids that are SOLD and stored as purchased grants for their OWN routing
