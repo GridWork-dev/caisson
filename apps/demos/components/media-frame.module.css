@@ -1,0 +1,57 @@
+/* MediaFrame — the ONE standardized slide chrome (ADR-0290): a chrome bar + body. Mirrors
+ * .cs-terminal (packages/ui/src/components/terminal.css) so every diagram/component slide reads
+ * as the same homepage-terminal artifact a framed <CodeBlock> already renders — the two can't be
+ * literally the same component (Terminal's body is a `<pre>`, correct only for code text; a
+ * diagram/component slide's body is an SVG or a live kit component), so this mirrors the chrome
+ * instead of reusing the packages/ui BEM classes directly (the same pattern
+ * marketplace-hero-artifact.module.css already used for the one prior composed artifact). Token-only
+ * color (no raw hex, DESIGN.md §2); theme-aware by cascade. */
+
+.frame {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  box-shadow: var(--cs-shadow-lg);
+  overflow: hidden;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-2) var(--cs-space-3);
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border-bottom: 1px solid var(--cs-border);
+  background: var(--cs-surface-2);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.barLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  flex: none;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--cs-accent);
+}
+
+/* No padding here on purpose — a diagram wants its own aspect-ratio box, a composed artifact wants
+ * its own gap-6 grid, and the ui-pro slide wants its own stacked gap. Each body owns its spacing. */
+.body {
+  min-width: 0;
+}

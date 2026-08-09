@@ -318,7 +318,7 @@ describe("golden parity vs the package's own committed fixture", () => {
     JSON.parse(
       readFileSync(
         // packages/local-store/src/__golden__/rrf-ranking.json, resolved from this file's own
-        // directory (apps/site/components/poke/) so a glob-guessed path can never silently drift.
+        // directory (apps/demos/components/poke/) so a glob-guessed path can never silently drift.
         join(
           WORKSPACE_ROOT,
           "packages",
