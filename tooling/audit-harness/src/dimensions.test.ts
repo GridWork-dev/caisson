@@ -66,12 +66,15 @@ describe("applicableDimensions — the sparse class → lens matrix", () => {
   });
 
   test("D5 (license-tier) applies only to internal-only PACKAGES, never a bare internal-only domain — no dead cells", () => {
-    // The four INTERNAL_COMMERCIAL_PKGS (domains.ts) are still real packages with a license/
+    // INTERNAL_COMMERCIAL_PKGS (domains.ts) are still real packages with a license/
     // no-depend-up surface to check.
     expect(
-      applicableDimensions("internal-only", "packages/audit-harness"),
+      applicableDimensions("internal-only", "packages/license-issue"),
     ).toContain("D5");
-    // A workflow yaml, a tooling dir, or a root doc has no license tier to be wrong about.
+    // A workflow yaml, a tooling package, or a root doc has no sold-package tier to be wrong about.
+    expect(
+      applicableDimensions("internal-only", "tooling/audit-harness"),
+    ).not.toContain("D5");
     expect(applicableDimensions("internal-only", "workflows")).not.toContain(
       "D5",
     );

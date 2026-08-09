@@ -497,8 +497,8 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
     expect(checkShippedProse([p], root)).toEqual([]);
   });
 
-  test("packages/audit-harness is exempt even with a leak", () => {
-    const p = fixturePkg("@caisson/audit-harness", "packages/audit-harness");
+  test("tooling/audit-harness is exempt even with a leak", () => {
+    const p = fixturePkg("@caisson/audit-harness", "tooling/audit-harness");
     writeFileSync(
       join(p.dir, "README.md"),
       "gridwork-core CAISSON-99 Wave-0\n",

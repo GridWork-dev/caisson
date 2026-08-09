@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-06
+updated: 2026-08-09
 status: live
 grounds:
   - package.json
@@ -21,15 +21,15 @@ and the standards gate are the executable sources. Build depth remains in
 
 ## Workspace inventory
 
-| Surface              |  Count | Members                                                            |
-| -------------------- | -----: | ------------------------------------------------------------------ |
-| Packages             |     63 | 17 Apache-2.0; 46 commercial                                       |
-| Apps                 |      7 | `admin`, `site`, and five reference/demo apps                      |
-| Bun services         |      4 | `betterstack-adapter`, `docs`, `intel`, `license`                  |
-| Registry             |      1 | `@caisson/registry` plus its Worker                                |
-| Tooling workspaces   |      6 | browser audit, design critic, eslint, standards, testing, tsconfig |
-| Python projects      |      2 | `services/support-bot`, `tools/assert-lane` — frozen at two        |
-| Bun workspaces total | **81** | root `workspaces` discovery                                        |
+| Surface              |  Count | Members                                                                                          |
+| -------------------- | -----: | ------------------------------------------------------------------------------------------------ |
+| Packages             |     61 | 17 Apache-2.0; 44 commercial                                                                     |
+| Apps                 |      7 | `admin`, `site`, and five reference/demo apps                                                    |
+| Bun services         |      4 | `betterstack-adapter`, `docs`, `intel`, `license`                                                |
+| Registry             |      1 | `@caisson/registry` plus its Worker                                                              |
+| Tooling workspaces   |      8 | audit harness, browser audit, demo registry, design critic, eslint, standards, testing, tsconfig |
+| Python projects      |      2 | `services/support-bot`, `tools/assert-lane` — frozen at two                                      |
+| Bun workspaces total | **81** | root `workspaces` discovery                                                                      |
 
 ## Open Base — 17 Apache-2.0 packages
 
@@ -110,11 +110,11 @@ two legitimate $49 modules have no special exemption.
 
 ### Commercial packages outside the à-la-carte module table
 
-| Class                          | Packages                                                                                                                                                                                  |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sellable bundle SKUs           | `compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`, `everything`                                                                                                   |
-| Retired aliases                | `ai-kit`, `agent-dev`, `local-ai` — explicitly `sellable: false`, retained in price authority for historical resolution                                                                   |
-| Runtime and delivery substrate | `agent-usage`, `artifact-render`, `audit-harness`, `brand`, `demo-registry`, `license-issue`, `platform-migrations`, `platform-reads`, `pricebook`, `verify-pack` — never separately sold |
+| Class                          | Packages                                                                                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sellable bundle SKUs           | `compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`, `everything`                                                                 |
+| Retired aliases                | `ai-kit`, `agent-dev`, `local-ai` — explicitly `sellable: false`, retained in price authority for historical resolution                                 |
+| Runtime and delivery substrate | `agent-usage`, `artifact-render`, `brand`, `license-issue`, `platform-migrations`, `platform-reads`, `pricebook`, `verify-pack` — never separately sold |
 
 The six bundle packages are products, but not à-la-carte modules. The remaining packages stay
 commercial where their code is proprietary and are not independently purchasable.
@@ -122,13 +122,13 @@ commercial where their code is proprietary and are not independently purchasable
 
 ## Applications, services, registry, and tooling
 
-| Surface      | Members                                                                                    | Sale posture                                        |
-| ------------ | ------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| Apps         | `site`, `admin`, `base`, `compliance`, `ai-kit`, `local-ai`, `agent-dev`                   | storefront/control-plane/reference apps; never SKUs |
-| Bun services | `license`, `docs`, `intel`, `betterstack-adapter`                                          | operator infrastructure; never SKUs                 |
-| Python       | `support-bot`, `assert-lane`                                                               | one service and one verification tool; no expansion |
-| Registry     | `@caisson/registry` and Worker                                                             | commercial fulfillment infrastructure               |
-| Tooling      | `browser-audit`, `design-critic`, `eslint-config`, `standards-gate`, `testing`, `tsconfig` | private build-time infrastructure                   |
+| Surface      | Members                                                                                                                      | Sale posture                                        |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Apps         | `site`, `admin`, `base`, `compliance`, `ai-kit`, `local-ai`, `agent-dev`                                                     | storefront/control-plane/reference apps; never SKUs |
+| Bun services | `license`, `docs`, `intel`, `betterstack-adapter`                                                                            | operator infrastructure; never SKUs                 |
+| Python       | `support-bot`, `assert-lane`                                                                                                 | one service and one verification tool; no expansion |
+| Registry     | `@caisson/registry` and Worker                                                                                               | commercial fulfillment infrastructure               |
+| Tooling      | `audit-harness`, `browser-audit`, `demo-registry`, `design-critic`, `eslint-config`, `standards-gate`, `testing`, `tsconfig` | private build-time infrastructure                   |
 
 ## Enforced invariants
 

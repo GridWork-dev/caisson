@@ -12,7 +12,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-/** Repo root — three levels up from packages/audit-harness/src. */
+/** Repo root — three levels up from tooling/audit-harness/src. */
 const REPO_ROOT = join(import.meta.dir, "..", "..", "..");
 
 /**
@@ -42,14 +42,13 @@ export interface Domain {
 }
 
 /**
- * The four COMMERCIAL packages a buyer never receives (public-surface.md §2 "Internal-only"). Every
+ * The COMMERCIAL packages a buyer never receives (public-surface.md §2 "Internal-only"). Every
  * other commercial package is edition-delivered or à-la-carte, so the buyer reads its source.
  */
 const INTERNAL_COMMERCIAL_PKGS = new Set([
   "platform-reads",
   "pricebook",
   "license-issue",
-  "audit-harness",
 ]);
 
 /**
