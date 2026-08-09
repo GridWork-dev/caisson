@@ -425,11 +425,8 @@ export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   "@caisson/provenance": { cents: 39900, adr: "ADR-0260" },
   "@caisson/everything": { cents: 225900, adr: "ADR-0386" },
   "@caisson/audit-worm": { cents: 14900, adr: "ADR-0129" },
-  // Local-first bundle repriced to the 3-way-carve sum-anchored $629 (was $349/ADR-0240).
-  "@caisson/local-ai": { cents: 62900, adr: "ADR-0258" },
-  // Retired-alias metas trued to their alias-target bundle prices (the local-ai convention).
+  // The surviving retired-alias meta stays trued to its alias-target bundle price.
   "@caisson/ai-kit": { cents: 73900, adr: "ADR-0258" },
-  "@caisson/agent-dev": { cents: 32900, adr: "ADR-0258" },
   "@caisson/credits": { cents: 14900, adr: "ADR-0260" },
   "@caisson/field-crypto": { cents: 19900, adr: "ADR-0129" },
   "@caisson/retention-runner": { cents: 19900, adr: "ADR-0137" },
@@ -1486,7 +1483,6 @@ function isProseScanTarget(relDir: string): boolean {
     return relDir !== "packages/audit-harness";
   return (
     relDir === "apps/site" ||
-    relDir === "apps/base" ||
     relDir === "services/license" ||
     relDir === "services/docs"
   );

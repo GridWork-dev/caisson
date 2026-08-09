@@ -88,9 +88,8 @@ const MAX_BODY_BYTES = 256 * 1024;
 
 const BEARER_PATTERN = /^Bearer +(.+)$/;
 
-/** The security-floor response headers (`identity/security.md` Headers clause) — same three
- *  lines as `apps/base/src/server.ts`'s `json()` helper. TLS termination is upstream of this
- *  plain `node:http` listener; HSTS is what the terminating proxy forwards. */
+/** The security-floor response headers (`identity/security.md` Headers clause). TLS termination is
+ *  upstream of this plain `node:http` listener; HSTS is what the terminating proxy forwards. */
 const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",

@@ -1,6 +1,6 @@
 // The provider-agnostic domain event (ADR-0017) — the OPEN billing contract. No provider type escapes
-// the seam: the rest of the base consumes only DomainBillingEvent, and the free-floor demo (apps/base)
-// typechecks against this open schema alone. The provider->DomainBillingEvent mappers themselves are the
+// the seam: the rest of the base consumes only DomainBillingEvent, and generated buyer hosts typecheck
+// against this open schema alone. The provider->DomainBillingEvent mappers themselves are the
 // commercial half (@caisson/billing-orchestration, ADR-0249 G3); the CONTRACT stays here, open.
 // `sourceEventId` is the provider event id — it flows straight into the credit wallet's idempotency key
 // (ADR-0007/0023) so a replayed webhook grants exactly once. `accountId` is resolved from the

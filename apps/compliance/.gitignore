@@ -1,9 +1,0 @@
-# Next.js
-/.next/
-/out/
-
-# Next.js auto-generates this on build; it references the gitignored .next/ types.
-next-env.d.ts
-
-# misc
-*.tsbuildinfo

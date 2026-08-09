@@ -84,7 +84,7 @@ describe("checkOpenCoreLicensing (ADR-0094/0097)", () => {
   test("a non-packages/ candidate (apps/, registry service) is skipped", () => {
     const app: Pkg = {
       ...pkg({ name: "@caisson/base-app", license: COMMERCIAL }),
-      dir: "/repo/apps/base",
+      dir: "/repo/apps/example",
     };
     const service: Pkg = {
       ...pkg({ name: "@caisson/registry", license: COMMERCIAL }),
