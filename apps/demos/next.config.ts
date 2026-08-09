@@ -1,6 +1,8 @@
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
+import { CONTENT_SECURITY_POLICY } from "./lib/security-headers";
+
 // The monorepo root (two levels up from apps/demos) — pinned explicitly because Turbopack's
 // auto-detected workspace root walks up to the FIRST ancestor carrying a lockfile, which
 // silently picks the wrong root when this checkout lives nested inside another lockfile-bearing
@@ -34,10 +36,7 @@ const config: NextConfig = {
   // Security-floor response headers (identity/security.md). Two deliberate differences from
   // apps/site's floor, both forced by this app's ONE job — being embedded by the site:
   //
-  // 1. `frame-ancestors 'self'` instead of 'none'. A same-origin iframe is still an iframe:
-  //    'none' blocks the parent page too. 'self' is evaluated against the DOCUMENT's origin, so
-  //    proxied through apps/site the ancestor must be caisson.sh, and hit directly on the
-  //    Railway URL the ancestor must be that Railway host — nobody else can frame either one.
+  // 1. `frame-ancestors 'self'` instead of 'none' — see lib/security-headers.ts.
   //
   // 2. No `X-Frame-Options` at all. apps/site sets it on the proxied response, and two
   //    X-Frame-Options headers with different values is a case browsers resolve inconsistently
@@ -45,14 +44,20 @@ const config: NextConfig = {
   //    X-Frame-Options wherever both are present, so stating the rule once, in the header that
   //    wins, is both simpler and stricter than stating it twice.
   //
-  // `connect-src 'self'` is not boilerplate here: every poke prints "Runs entirely in your
-  // browser. Nothing leaves this page." — this is that sentence enforced by the browser rather
-  // than asserted by the copy. 'unsafe-inline' on script-src covers Next's hydration bootstrap
-  // (no per-request nonce under App Router) and the no-flash theme script in layout.tsx.
+  // The policy itself lives in lib/security-headers.ts, pinned by a test — see that file for why
+  // this one string carries origin-level weight for caisson.sh.
+  //
+  // `basePath: false` is NOT boilerplate. Next prefixes a header rule's `source` with `basePath`
+  // unless the rule opts out (load-custom-routes.js: `config.basePath && r.basePath !== false`),
+  // so a bare `/:path*` here would compile to `/demos/:path*` and leave every OTHER path this
+  // service answers — `/`, `/favicon.ico`, any 404 — with no HSTS, no nosniff, and no CSP at all.
+  // Opting out makes the one rule cover the whole service, which is the floor identity/security.md
+  // actually asks for.
   async headers() {
     return [
       {
         source: "/:path*",
+        basePath: false,
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           {
@@ -66,8 +71,7 @@ const config: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value:
-              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'",
+            value: CONTENT_SECURITY_POLICY,
           },
         ],
       },
