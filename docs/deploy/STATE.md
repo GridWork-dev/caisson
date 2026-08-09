@@ -34,9 +34,18 @@ Two production root causes found and fixed at first flip, both now pinned in the
 
 Proven live in-browser after the fixes: `/demos/healthz` 200 under the demos CSP,
 `/demos/embed/audit-worm` 200, and the marketplace module page mounting an interactive
-same-origin iframe. Pending DEPLOY act recorded here: the registry Worker redeploy that serves
-the ADR-0402 post-delist 53-module index (the Worker bakes `index.json` at build time), to run
-once the reconcile PR merges.
+same-origin iframe.
+
+**Registry Worker redeployed** after the reconcile PR (#413) merged: version `b5a09cc0` off
+`c10e3b64`, run locally via `registry/worker/deploy.sh` — the ADR-0402 post-delist 53-module
+index is live, `index-parity-probe --only worker` **PARITY OK** on the first attempt (17
+anonymously-probeable open entries match repo latest; commercial entries are not anonymously
+probeable, per the probe's documented scope). Open follow-up: the `deploy-worker.yml` CI lane
+died silently (~35ms, exit 1, no output) at the `bunx wrangler deploy` capture line on the same
+tree that deploys cleanly by hand — `deploy.sh`'s `deploy_out="$(… 2>&1)"` swallows the error
+under `set -e`, so the lane needs an un-swallowed failure path before it can be trusted again;
+also note a bare sha is not a valid `ref` input for the workflow's checkout (use a branch/tag or
+blank-for-main).
 
 ## 2026-08-06 — release train `v2026.08.06.1` off `d9a56601`, driven locally; first full five-service leg 4
 
