@@ -1,10 +1,12 @@
 ---
+"@caisson/agent-kernel": patch
 "@caisson/audit-harness": patch
 "@caisson/billing": patch
 "@caisson/cli": minor
 "@caisson/demo-registry": patch
 "@caisson/jobs": patch
 "@caisson/license-issue": patch
+"@caisson/local-store": patch
 "@caisson/mcp-server": patch
 "@caisson/pricebook": patch
 "@caisson/rate-limit": patch

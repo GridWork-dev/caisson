@@ -1,6 +1,7 @@
 // @caisson/local-store — local hybrid retrieval (sqlite-vec vec0 + FTS5 + RRF, RRF_K=60) plus the
-// file-per-tenant isolation floor (ADR-0067 / ADR-0073). A `kind: base` primitive both the local-ai
-// and agent-dev editions compose DOWN-ONLY — it never imports an edition (ADR-0022 / ADR-0003).
+// file-per-tenant isolation floor (ADR-0067 / ADR-0073). A `kind: base` primitive both the
+// Local-first and Agentic-Dev bundles compose DOWN-ONLY — it never imports a bundle
+// (ADR-0022 / ADR-0003).
 // No vendor SDK, no LLM call: the embedding that produces a query/doc vector is an injected SEAM the
 // consuming edition wires; this package only stores and fuses.
 //

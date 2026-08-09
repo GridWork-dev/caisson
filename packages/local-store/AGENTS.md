@@ -9,8 +9,8 @@ edition must know to wire the local store correctly.
   store / fuse / isolation **mechanism** only. The embedding that produces a query/doc vector is an
   **injected seam** the consuming edition wires — pass the vector in; never compute it here.
 - **Down-only (ADR-0022).** `@caisson/local-store` is `kind: base`; it may be consumed by the
-  local-ai and agent-dev editions (and base), but it MUST NEVER import an edition. Each edition is a
-  composition over this store, never the owner of the primitive.
+  Local-first and Agentic-Dev bundles (and base), but it MUST NEVER import a bundle. Each bundle
+  composes this store as a pinned primitive.
 - **Dimension is fixed at table creation.** `LocalStore.open({ dim })` creates `vec0(... FLOAT[dim])`.
   Indexing an embedding whose length ≠ `dim` THROWS — do not silently pad/truncate (flag-never-guess).
 - **FTS5 is the always-available floor.** Retrieval never hard-depends on the vector leg: with no query

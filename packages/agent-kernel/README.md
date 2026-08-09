@@ -1,7 +1,7 @@
 # @caisson/agent-kernel
 
 The engine-neutral agent kernel — the shared base layer both the base packages (`cli`, `mcp-server`)
-and the **agent-dev edition** compose down-only.
+and the **Agentic-Dev bundle** compose down-only.
 
 Shared at the base layer because the agent/skill/rule schema, the lifecycle FSM, and the hooks
 dispatcher are needed by **both** the edition AND base `cli`/`mcp-server`; a base package may never
