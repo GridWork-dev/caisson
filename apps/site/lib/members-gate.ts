@@ -10,8 +10,8 @@
 // deny and render the upsell, never a silent allow.
 import { holdsOrgControls } from "@caisson/org-controls";
 import { normalizeEntitlementId } from "@caisson/registry-schema";
-import { withTenant, type Transactor } from "@caisson/tenancy-rls";
-import { readEntitlementGrants } from "./dashboard-reads.ts";
+import type { Transactor } from "@caisson/tenancy-rls";
+import { activeEntitlementIds } from "./active-entitlements.ts";
 
 /**
  * True only when `accountId` holds an ACTIVE entitlement covering org-controls: the module itself,
@@ -31,12 +31,7 @@ export async function accountHoldsOrgControls(
   db: Transactor,
   accountId: string,
 ): Promise<boolean> {
-  const grants = await withTenant(db, accountId, (tx) =>
-    readEntitlementGrants(tx, accountId),
-  );
-  const activeIds = grants
-    .filter((g) => g.status === "active")
-    .map((g) => g.entitlementId);
+  const activeIds = await activeEntitlementIds(db, accountId);
   return (
     holdsOrgControls(activeIds) ||
     activeIds.some((id) => normalizeEntitlementId(id) === "everything")

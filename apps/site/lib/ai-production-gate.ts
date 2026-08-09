@@ -18,8 +18,8 @@
 // FAIL-CLOSED: a read error THROWS — the caller (the page/route) must treat any non-true / thrown
 // result as deny and render the upsell / 403, never a silent allow.
 import { normalizeEntitlementId } from "@caisson/registry-schema";
-import { withTenant, type Transactor } from "@caisson/tenancy-rls";
-import { readEntitlementGrants } from "./dashboard-reads.ts";
+import type { Transactor } from "@caisson/tenancy-rls";
+import { activeEntitlementIds } from "./active-entitlements.ts";
 
 const AI_PRODUCTION_BUNDLE_ID = "ai-production";
 
@@ -27,12 +27,7 @@ export async function accountHoldsAiProduction(
   db: Transactor,
   accountId: string,
 ): Promise<boolean> {
-  const grants = await withTenant(db, accountId, (tx) =>
-    readEntitlementGrants(tx, accountId),
-  );
-  const activeIds = grants
-    .filter((g) => g.status === "active")
-    .map((g) => g.entitlementId);
+  const activeIds = await activeEntitlementIds(db, accountId);
   return activeIds.some((id) => {
     if (id === AI_PRODUCTION_BUNDLE_ID) return true;
     return normalizeEntitlementId(id) === "everything";

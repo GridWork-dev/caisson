@@ -9,6 +9,9 @@
     "lint": "eslint src",
     "test": "bun test --timeout 60000 ./src"
   },
+  "dependencies": {
+    "@caisson/testing": "workspace:*"
+  },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/tsconfig": "workspace:*",

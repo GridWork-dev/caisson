@@ -11,7 +11,6 @@ import {
 import { matchGolden } from "@caisson/testing";
 import {
   type GeneratorEngine,
-  defaultEngine,
   generate,
   validateSelection,
 } from "./generate.ts";
@@ -76,9 +75,9 @@ const VALID = {
 function spyEngine(): GeneratorEngine & { called: boolean } {
   return {
     called: false,
-    materialize(selection) {
+    materialize() {
       this.called = true;
-      return defaultEngine.materialize(selection);
+      return [];
     },
   };
 }

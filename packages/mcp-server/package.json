@@ -30,8 +30,13 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@caisson/auth": "workspace:*",
+    "@caisson/billing": "workspace:*",
+    "@caisson/billing-orchestration": "workspace:*",
+    "@caisson/credits": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "typescript": "catalog:"

@@ -8,9 +8,8 @@ edition must know to wire the agent kernel correctly.
 - **Engine-neutral.** This package imports NO vendor SDK and runs NO LLM. It is the schema/FSM/hooks
   **mechanism** only. The model/engine wiring belongs to the consuming edition, never here.
 - **Down-only (ADR-0022).** `@caisson/agent-kernel` is `kind: base`; it may be consumed by base
-  (`cli`, `mcp-server`) and by the agent-dev edition, but it MUST NEVER import an edition. The agent-dev
-  edition is a composition over this kernel (kernel + content + reference app), never the owner of the
-  primitives.
+  (`cli`, `mcp-server`) and by the Agentic-Dev bundle, but it MUST NEVER import a bundle. Agentic-Dev
+  pins this kernel alongside the runner, tool-exec, memory, and AI-config primitives.
 - **`.strict()` at the boundary.** Every artifact is parsed through the Zod `.strict()` union — unknown
   fields are rejected, not dropped. Validate external/authoring input with `parseArtifact`; it throws a
   redaction-safe `ValidationError` (never the rejected values).
@@ -92,5 +91,4 @@ only via `BLESS=1 bun test`, landing as a reviewable diff.
 ## Out of scope
 
 No engine/model registry, no LLM call, no agent EXECUTION loop. This kernel is the primitive the
-agent-dev edition (and base `cli`/`mcp-server`) compose; the curated agent/skill/rule content and the
-reference app live in the edition.
+Agentic-Dev bundle (and base `cli`/`mcp-server`) composes alongside the runtime packages.

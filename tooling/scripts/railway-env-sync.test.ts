@@ -389,15 +389,6 @@ describe("fleet configured probe", () => {
       optionalReason:
         "Operator-only test delivery; buyer email delivery does not depend on it.",
     },
-    {
-      id: "local-ai.field-crypto",
-      service: null,
-      environment: null,
-      variables: ["MASTER_FIELD_KEY", "FIELD_CRYPTO_SALT"],
-      requirement: "optional",
-      optionalReason:
-        "apps/local-ai is not deployed; development and test intentionally use the deterministic demo vector.",
-    },
   ];
 
   const expectedTargets: readonly ConfiguredProbeTarget[] =
@@ -413,7 +404,7 @@ describe("fleet configured probe", () => {
       }));
     });
 
-  test("enumerates all nine verified fail-soft seams, including intentional optional cases", () => {
+  test("enumerates all eight verified fail-soft seams, including intentional optional cases", () => {
     expect(FLEET_CONFIGURATION_SEAMS).toEqual(expectedSeams);
     expect(buildConfiguredProbeTargets()).toEqual(expectedTargets);
   });
@@ -454,7 +445,7 @@ describe("fleet configured probe", () => {
     );
   });
 
-  test("fails only for missing required targets and still reports optional/not-deployed seams", () => {
+  test("fails only for missing required targets and still reports optional seams", () => {
     const report: readonly ConfiguredPresenceResult[] = checkConfiguredPresence(
       (args) =>
         !args.at(-1)?.includes("DOCS_QUERY_URL") &&
@@ -472,9 +463,6 @@ describe("fleet configured probe", () => {
     });
     expect(output).toContain(
       "caisson-admin CATALOG_TEST_EMAIL_TO: MISSING (OPTIONAL)",
-    );
-    expect(output).toContain(
-      "local-ai.field-crypto: NOT PROBED (OPTIONAL — apps/local-ai is not deployed;",
     );
     expect(output).not.toContain("secret-shaped-fixture-value");
   });
@@ -529,9 +517,8 @@ describe("fleet configured probe", () => {
       "utf8",
     );
     // Bind each variable to its OWN seam's row, not to the document as a whole. Global containment
-    // could not catch the 2026-07-27 drift: this seam still probed MASTER_FIELD_KEY/FIELD_CRYPTO_SALT
-    // after ADR-0387 moved the site to Azure Key Vault, and both names passed because the separate
-    // local-ai row legitimately mentions them.
+    // could not catch the 2026-07-27 drift: a seam still probed retired derived-provider names
+    // after the site moved to Azure Key Vault.
     const rows = runbook.split("\n");
     for (const seam of expectedSeams) {
       const row = rows.find((line) => line.includes(`\`${seam.id}\``));
@@ -543,7 +530,6 @@ describe("fleet configured probe", () => {
       }
     }
     expect(runbook).toContain("OPTIONAL — operator-only test delivery");
-    expect(runbook).toContain("OPTIONAL — not deployed");
   });
 });
 

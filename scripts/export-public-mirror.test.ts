@@ -1,8 +1,21 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  assertMirrorOutDirHasNoSymlinkAncestors,
+  DROP_COMMERCIAL_DEV_DEPS,
+  EXCLUDE_TEST_FILES,
   MIRROR_ASSET_FILES,
+  MIRROR_WORKSPACES,
+  resolveMirrorOutDir,
   resolveCatalogSpec,
   rewriteProseMentions,
   sanitizeAdrCitations,
@@ -10,6 +23,88 @@ import {
 } from "./export-public-mirror.ts";
 
 const MIRROR_ASSETS_DIR = join(import.meta.dir, "mirror-assets");
+
+describe("resolveMirrorOutDir", () => {
+  const repoRoot = "/workspace/caisson";
+
+  test("allows only the dedicated mirror-out tree", () => {
+    expect(resolveMirrorOutDir(repoRoot, "mirror-out")).toBe(
+      join(repoRoot, "mirror-out"),
+    );
+    expect(resolveMirrorOutDir(repoRoot, "mirror-out/probe")).toBe(
+      join(repoRoot, "mirror-out/probe"),
+    );
+    expect(() =>
+      assertMirrorOutDirHasNoSymlinkAncestors(
+        join(repoRoot, "mirror-out"),
+        join(repoRoot, "mirror-out/probe"),
+      ),
+    ).not.toThrow();
+  });
+
+  test("rejects destructive or out-of-root destinations", () => {
+    for (const output of [
+      ".",
+      "..",
+      "packages/kernel",
+      "mirror-outside",
+      "/tmp/caisson-mirror",
+      "mirror-out/../mirror-out",
+      "mirror-out/../../packages/kernel",
+      "mirror-out/\0bad",
+    ]) {
+      expect(() => resolveMirrorOutDir(repoRoot, output)).toThrow(
+        /inside the dedicated mirror-out directory/,
+      );
+    }
+  });
+
+  test("rejects a symlinked ancestor immediately before deletion", () => {
+    const realRepoRoot = mkdtempSync(join(tmpdir(), "caisson-mirror-root-"));
+    const externalDir = mkdtempSync(join(tmpdir(), "caisson-mirror-external-"));
+    const allowedRoot = join(realRepoRoot, "mirror-out");
+    mkdirSync(allowedRoot);
+    symlinkSync(externalDir, join(allowedRoot, "linked"), "dir");
+
+    try {
+      expect(() =>
+        assertMirrorOutDirHasNoSymlinkAncestors(
+          allowedRoot,
+          join(allowedRoot, "linked", "victim"),
+        ),
+      ).toThrow(/must not contain symlinks/);
+    } finally {
+      rmSync(realRepoRoot, { recursive: true, force: true });
+      rmSync(externalDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test("the mirror root exposes workspace globs to its module-graph tooling", () => {
+  expect(MIRROR_WORKSPACES.packages).toEqual(["packages/*", "tooling/*"]);
+});
+
+describe("commercial integration fixture exclusions", () => {
+  test("relocated commercial fixtures stay out of the Apache mirror", () => {
+    expect(
+      EXCLUDE_TEST_FILES.has("packages/cli/src/generate.integration.test.ts"),
+    ).toBe(true);
+    expect(
+      EXCLUDE_TEST_FILES.has(
+        "packages/mcp-server/src/base-composition.integration.test.ts",
+      ),
+    ).toBe(true);
+  });
+
+  test("their commercial-only dev dependencies are stripped", () => {
+    expect(
+      DROP_COMMERCIAL_DEV_DEPS.get("@caisson/cli")?.has("@caisson/credits"),
+    ).toBe(true);
+    expect(DROP_COMMERCIAL_DEV_DEPS.get("@caisson/mcp-server")).toEqual(
+      new Set(["@caisson/billing-orchestration", "@caisson/credits"]),
+    );
+  });
+});
 
 describe("rewriteProseMentions", () => {
   const open = new Set(["kernel", "ai-config", "license-verify"]);
@@ -189,6 +284,18 @@ describe("sanitizeSourceComments", () => {
     expect(after).toContain("export function run(): void {}");
   });
 
+  test("moves punctuation left by a citation-only JSDoc line onto the prior line", () => {
+    const code = [
+      "/**",
+      " * Computes one value",
+      " * (ADR-0007). Then renders it.",
+      " */",
+    ].join("\n");
+    expect(sanitizeSourceComments(code)).toContain(
+      " * Computes one value.\n * Then renders it.",
+    );
+  });
+
   test("never mistakes a https:// URL string for a line comment", () => {
     const code = 'const DOCS_URL = "https://caisson.sh/docs"; // stable link';
     expect(sanitizeSourceComments(code)).toBe(code);
@@ -230,5 +337,15 @@ describe("MIRROR_ASSET_FILES", () => {
     expect(dests).toContain("SUPPORT.md");
     expect(dests).toContain("CODE_OF_CONDUCT.md");
     expect(dests).toContain(".github/ISSUE_TEMPLATE/bug_report.md");
+  });
+
+  test("keeps generator-owned artifacts out of mirror Prettier", () => {
+    const prettierIgnore = readFileSync(
+      join(MIRROR_ASSETS_DIR, ".prettierignore"),
+      "utf8",
+    );
+    expect(prettierIgnore).toContain(
+      "packages/ds-manifest/src/base-manifest.json",
+    );
   });
 });

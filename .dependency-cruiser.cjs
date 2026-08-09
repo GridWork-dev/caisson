@@ -43,7 +43,7 @@ module.exports = {
       comment:
         "Only @caisson/ai-config + @caisson/ai-kit may reach a provider SDK (ADR-0011) — incl. dynamic/transitive.",
       severity: "error",
-      from: { pathNot: "packages/(ai-config|ai-kit)|apps/ai-kit" },
+      from: { pathNot: "packages/(ai-config|ai-kit)" },
       to: { path: PROVIDER_SDK_RE },
     },
     {

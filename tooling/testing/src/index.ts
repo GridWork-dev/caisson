@@ -11,3 +11,5 @@ export {
 export type { Result as AxeResult } from "axe-core";
 export { renderIntoJsdom } from "./render.ts";
 export type { JsdomRender } from "./render.ts";
+export { reconcileLedger } from "./reconcile.ts";
+export type { ReconcileClass, ReconcileLedgerItem } from "./reconcile.ts";

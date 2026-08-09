@@ -111,6 +111,11 @@ test("denySetPublisher is unprovisioned (undefined) until CAISSON_REVOCATIONS_PU
   expect(denySetPublisher()).toBeUndefined();
 });
 
+test("denySetPublisher rejects a non-HTTPS destination before exposing its bearer", () => {
+  process.env.CAISSON_REVOCATIONS_PUT_URL = "http://example.test/revocations";
+  expect(() => denySetPublisher()).toThrow(/HTTPS URL/);
+});
+
 // G38 (buyer-lifecycle audit 2026-07-07): serializePublish is the actual fix for the deny-set
 // last-write-wins race — pin its two load-bearing properties directly rather than a real R2 PUT
 // round trip (irrelevant to what changed).

@@ -13,6 +13,11 @@ on:
   pull_request:
     paths:
       - "tooling/tsconfig/package.json"
+      - "tooling/scripts/dts-drift-check.ts"
+      - "tooling/scripts/dts-drift-check.test.ts"
+      - "tooling/scripts/tsgo-agreement.ts"
+      - "tooling/scripts/tsgo-agreement.test.ts"
+      - ".github/workflows/tsc-native-dts-drift.yml"
 
 permissions:
   contents: read
@@ -38,6 +43,8 @@ jobs:
         with:
           bun-version: "1.3.14"
       - run: bun install --frozen-lockfile
+      - name: test the declaration-drift helpers
+        run: bun test tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts
       - name: resolve the base branch's tsc-native pin
         id: base-pin
         run: |
@@ -80,6 +87,7 @@ jobs:
           echo "head tsc-native bin: $BIN"
           echo "path=$BIN" >> "$GITHUB_OUTPUT"
       - name: run the drift check (fails the job on any .d.ts byte drift)
+        shell: bash
         env:
           TSC_BASE: ${{ runner.temp }}/base-native/node_modules/.bin/tsc
           TSC_HEAD: ${{ steps.head-bin.outputs.path }}
@@ -91,3 +99,4 @@ jobs:
           name: dts-drift-report
           path: dts-drift-report.md
           if-no-files-found: warn
+          retention-days: 30

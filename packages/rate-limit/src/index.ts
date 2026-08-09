@@ -20,4 +20,8 @@ export {
   type RateLimitDecision,
 } from "./account-store.ts";
 
-export { createRateLimitHook, type RateLimitHookDeps } from "./account-hook.ts";
+export {
+  createRateLimitedMcpServer,
+  createRateLimitHook,
+  type RateLimitHookDeps,
+} from "./account-hook.ts";

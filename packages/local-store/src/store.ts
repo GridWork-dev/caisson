@@ -194,7 +194,7 @@ export class LocalStore {
   /**
    * Page recent documents newest-first (by insertion `rowid`) — a plain enumeration companion to
    * {@link hybridSearch}, for a read-only consumer that wants "what's in here" rather than a ranked
-   * query (e.g. the agent-dev inspector's `/memory` view). `limit`/`offset` are clamped, never
+   * query (e.g. an agent-memory inspector's `/memory` view). `limit`/`offset` are clamped, never
    * thrown on — a bad page request degrades to the default page rather than erroring a dev tool.
    */
   list(opts: ListOptions = {}): ListedDoc[] {

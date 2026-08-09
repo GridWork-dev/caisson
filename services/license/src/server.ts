@@ -5,8 +5,8 @@
 // non-Ed25519 `CAISSON_LICENSE_SIGNING_KEY`) — an unconfigured issuer must never serve an open or
 // unsigned /issue.
 //
-// The tenant Transactor is INJECTED (the repo wires `db: Transactor` everywhere — apps/base, the billing
-// webhook — and uses PGlite in tests; there is no in-repo production Postgres pool). The deploy entrypoint
+// The tenant Transactor is INJECTED (the repo wires `db: Transactor` at each billing/runtime seam and
+// uses PGlite in tests; there is no in-repo production Postgres pool). The deploy entrypoint
 // supplies a Neon-backed Transactor; the signing key → KMS swap (un-wired Signer seam) is the same
 // operator-gated DEPLOY concern as the docs-service real-embedder seam.
 import { createHash } from "node:crypto";

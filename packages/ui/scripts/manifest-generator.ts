@@ -353,11 +353,12 @@ function readPackageIdentity(uiRoot: string): {
   if (typeof input !== "object" || input === null)
     fail("package.json is not an object");
   const record = input as Record<string, unknown>;
-  if (record.name !== "@caisson/ui")
-    fail("package.json name is not @caisson/ui");
+  if (record.name !== "@caisson/ui" && record.name !== "@caisson-sh/ui")
+    fail("package.json name is not @caisson/ui or @caisson-sh/ui");
   if (typeof record.version !== "string" || record.version.length === 0)
     fail("package.json version is missing");
-  return { pkg: record.name, version: record.version };
+  // The public mirror renames the npm scope, but manifests retain the canonical product id.
+  return { pkg: "@caisson/ui", version: record.version };
 }
 
 export function discoverPrimaryComponentExports(

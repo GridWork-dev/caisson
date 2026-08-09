@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-30
+updated: 2026-08-09
 status: live
 ---
 
@@ -80,13 +80,14 @@ _(Real lock: **ADR-0170**, not the `0119` pencil in this heading — see
   or inject. Round-trip: send→capture conformance test across all drivers.
 - Unblocks: any buyer with an existing mail stack or data-residency rule (Resend-only blocks them).
 
-### 1B. KMS wiring — `KmsClient` + license `KmsSigner` → **ADR-0120**
+### 1B. KMS wiring — `KmsClient` + license `Signer` port → **ADR-0120**
 
 - **SHIPPED:** AWS KMS, GCP KMS, and Azure Key Vault implement the envelope-encryption port. The
   hosted site uses Azure through an explicit `ClientSecretCredential`, purge protection, version-pinned wrapped
   DEKs, bounded provider calls, an append-only Postgres wrapped-DEK store, and disposable request
   contexts.
-- `KmsSigner` remains the separate asymmetric signing seam; HashiCorp Vault is the remaining
+- License issuance retains the general `Signer` port for a buyer-supplied asymmetric KMS adapter;
+  the unused specialized `KmsSigner` interface was retired. HashiCorp Vault is the remaining
   on-demand field-crypto backend.
 
 ### 1C. Enterprise auth / SSO — `SessionProvider` → **ADR-0121** (WorkOS) / **ADR-0287** (Clerk)

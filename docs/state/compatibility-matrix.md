@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-06
+updated: 2026-08-09
 status: live
 grounds:
   - packages/tenancy-rls/src/drizzle.ts
@@ -12,7 +12,6 @@ grounds:
   - packages/jobs/src/bullmq.ts
   - packages/analytics/src/index.ts
   - services/support-bot/src/caisson_support_bot/chat_slack.py
-  - packages/agent-dev/src/emitter.ts
   - docs/state/adapter-expansion.md
 ---
 
@@ -30,7 +29,7 @@ via `apps/site/lib/stack-fit.ts` `MODULE_DB_POSTURE`, drift-pinned by test — s
 
 | Dimension         | Supported today                                                                                                                                                                                                                                                                                                                                                                                                                       | Not yet                                                                                                                                                                                                                                                             |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Web framework** | Framework-agnostic. No template ships next/react/hono/express (`packages/cli/templates/*/package.json`); reference wiring is raw `Bun.serve` (`apps/base/src/server.ts`)                                                                                                                                                                                                                                                              | n/a — bring your own                                                                                                                                                                                                                                                |
+| **Web framework** | Framework-agnostic. No template ships next/react/hono/express (`packages/cli/templates/*/package.json`); buyers bring their own HTTP host                                                                                                                                                                                                                                                                                             | n/a — bring your own                                                                                                                                                                                                                                                |
 | **Database**      | Postgres, raw SQL + RLS (`packages/tenancy-rls`, `@caisson/migrate`) + **Drizzle and Prisma bridges over the TenantExecutor port** (`tenancy-rls/src/{drizzle,prisma}.ts`, ADR-0266 — added 2026-07-06). Alternate driver: Supabase session-mode pooler (`tenancy-rls/src/supabase.ts`)                                                                                                                                               | **MySQL: no lane, LOCKED** (ADR-0281 — DB-enforced RLS isolation is the product; Postgres required, revisit is demand-driven + must name the weaker posture); SQLite-server/Mongo not supported; RLS DDL stays raw-SQL canonical (drizzle-kit can't emit FORCE RLS) |
 | **Auth**          | Provider-agnostic core — EdDSA-JWT + session + membership, zero vendor deps (`packages/auth`). Optional WorkOS SSO transport (SAML/SCIM, `packages/org-controls/src/workos.ts` — carved out of auth by the ADR-0257 W1 org-controls extraction) + **Clerk session-verification driver** (JWT v2 against Clerk's JWKS, networkless when a public key is configured — `packages/org-controls/src/clerk.ts`, ADR-0287, added 2026-07-07) | Auth0/Okta as a first-class driver                                                                                                                                                                                                                                  |
 | **Billing**       | One `BillingProvider` port, four drivers coded: Stripe, Paddle, LemonSqueezy, Polar (`packages/billing/src/provider.ts`; the optional `createDiscount` mint method is Paddle-only — the other drivers simply omit it, ADR-0320)                                                                                                                                                                                                       | n/a — all four majors already coded                                                                                                                                                                                                                                 |
@@ -50,13 +49,12 @@ via `apps/site/lib/stack-fit.ts` `MODULE_DB_POSTURE`, drift-pinned by test — s
 
 ## 3. Local-first AI edition
 
-- **On-device:** ONNX embedding backend (`packages/local-ai/src/inference/onnx-backend.ts`, dynamic `@huggingface/transformers` import) — real code, never exercised in CI.
+- **On-device:** ONNX embedding backend (`packages/local-inference/src/onnx-backend.ts`, dynamic `@huggingface/transformers` import) — real code, never exercised in CI.
 - **Rented fallback transports:** OpenRouter, AWS Bedrock, Azure OpenAI.
 - **Not supported:** Ollama as a _rented_ transport is deliberately excluded — Ollama is the self-host target, not a rented backend.
 
 ## 4. Agentic-Dev edition
 
-- **Multi-harness emitter** (`packages/agent-dev/src/emitter.ts`) fans one typed schema to 7 targets (ADR-0264, expanded 2026-07-06; Agent Skills directory model ADR-0354, 2026-07-17): **Claude Code** (`.claude/{agents,rules}/*.md` + `.claude/skills/<name>/SKILL.md` directories + `hooks.json`), the **universal `.agents/skills/<name>/SKILL.md` skills surface** (Codex/Cursor home; byte-identical SKILL.md twins, spec-pure agentskills.io frontmatter), the **universal `AGENTS.md` base** (read natively by Codex, Cursor, Devin, Zed, Gemini CLI, Copilot coding agent), **Cursor** (`.cursor/rules/*.mdc`, activation-derived `alwaysApply`), **Devin Desktop** (`.devin/rules/` + `.windsurf/rules/` legacy mirror), **GitHub Copilot** (`.github/copilot-instructions.md` + path-scoped `.instructions.md`), **Cline** (`.clinerules/`). Rules/skills carry optional `activation`/`paths`; unrepresentable choices emit fidelity warnings, never silent degradation.
 - **Sandboxed execution** (`packages/agent-runner`) is provider-agnostic by profile shape, but the only wired profile today is a headless Claude CLI (`CLAUDE_CLI_PROFILE`).
 - **Not supported:** JetBrains Junie, Amazon Q, Aider — no emitter target yet (JetBrains/Amazon Q are named near-zero-LOC follow-ups in ADR-0264).
 
@@ -89,10 +87,10 @@ Four S-effort drivers landed same-day, per the compat-research picker (`outputs/
 
 ## Sources
 
-Recon dated 2026-07-06 against `main`: `packages/cli/templates/*/package.json`, `apps/base/src/server.ts`,
+Recon dated 2026-07-06 against `main`, updated for the 2026-08-09 reference-app retirement: `packages/cli/templates/*/package.json`,
 `packages/tenancy-rls/src/{rls,supabase}.ts`, `packages/auth/src/{session,workos}.ts`,
 `packages/billing/src/provider.ts`, `packages/ai-config/src/config.ts`, `packages/ai-kit/src/providers.ts`,
-`packages/local-ai/src/inference/*.ts`, `packages/agent-dev/src/emitter.ts`, `packages/agent-runner/src/agent-runner.ts`,
+`packages/local-inference/src/*.ts`, `packages/agent-runner/src/agent-runner.ts`,
 `packages/mcp-server/src/{stdio,http}.ts`, `packages/observability/src/observability.ts`,
 `docs/state/adapter-expansion.md`, `docs/build-state.md` (2026-07-02 live-proof banner). ADR-0287 wave
 (2026-07-07): `packages/org-controls/src/clerk.ts`, `packages/jobs/src/bullmq.ts`,

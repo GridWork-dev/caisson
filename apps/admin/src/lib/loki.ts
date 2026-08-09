@@ -25,7 +25,8 @@
 
 import { z } from "zod";
 
-import { fetchWithTimeout } from "@caisson/kernel";
+import { proxyGet } from "./grafana-proxy.ts";
+import { normalizeHttpsUrl } from "./https-url.ts";
 
 const QUERY_TIMEOUT_MS = 10_000;
 const WINDOW_MS = 30 * 60_000; // last 30 minutes — matches the /ops trace window
@@ -36,11 +37,11 @@ const LINE_LIMIT = 100; // cap per log-tail read; Loki returns the most-recent `
 
 /** Reads env fresh each call so the gate reflects the live process env (and tests can toggle it). */
 function lokiEnv(): { base: string; token: string; uid: string } | null {
-  const url = process.env.GRAFANA_URL?.trim();
+  const url = normalizeHttpsUrl(process.env.GRAFANA_URL);
   const token = process.env.GRAFANA_QUERY_TOKEN?.trim();
   const uid = process.env.GRAFANA_LOKI_DATASOURCE_UID?.trim();
-  if (!url || !token || !uid) return null;
-  return { base: url.replace(/\/+$/, ""), token, uid };
+  if (url === null || !token || !uid) return null;
+  return { base: url, token, uid };
 }
 
 /** All three query envs present → the client can reach the Grafana Cloud Loki proxy. */
@@ -202,32 +203,6 @@ export function mapServiceLabels(raw: unknown): string[] {
 
 // ---- query ----------------------------------------------------------------
 
-/** GET through the datasource proxy. Dormant env / network error / non-2xx all resolve to null. */
-async function proxyGet(
-  path: string,
-  params: URLSearchParams,
-): Promise<unknown | null> {
-  const env = lokiEnv();
-  if (!env) return null;
-  try {
-    const url = `${env.base}/api/datasources/proxy/uid/${encodeURIComponent(env.uid)}${path}?${params.toString()}`;
-    const res = await fetchWithTimeout(
-      url,
-      {
-        headers: {
-          Authorization: `Bearer ${env.token}`,
-          Accept: "application/json",
-        },
-      },
-      { timeoutMs: QUERY_TIMEOUT_MS },
-    );
-    if (!res.ok) return null;
-    return (await res.json()) as unknown;
-  } catch {
-    return null; // never throws to the page; the widget shows its empty state
-  }
-}
-
 interface WindowNs {
   startNs: string;
   endNs: string;
@@ -248,13 +223,20 @@ async function queryRange(logql: string, w: WindowNs): Promise<LogLine[]> {
     limit: String(p.limit),
     direction: p.direction,
   });
-  const raw = await proxyGet("/loki/api/v1/query_range", params);
+  const raw = await proxyGet(lokiEnv(), "/loki/api/v1/query_range", params, {
+    timeoutMs: QUERY_TIMEOUT_MS,
+  });
   return raw === null ? [] : mapLogLines(raw);
 }
 
 async function listServices(w: WindowNs): Promise<string[]> {
   const params = new URLSearchParams({ start: w.startNs, end: w.endNs });
-  const raw = await proxyGet("/loki/api/v1/label/service_name/values", params);
+  const raw = await proxyGet(
+    lokiEnv(),
+    "/loki/api/v1/label/service_name/values",
+    params,
+    { timeoutMs: QUERY_TIMEOUT_MS },
+  );
   return raw === null ? [] : mapServiceLabels(raw);
 }
 
