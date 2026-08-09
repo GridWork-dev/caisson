@@ -109,7 +109,7 @@ jobs:
     # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    # The heaviest job (38-pkg turbo tree incl. 5 Next.js builds + many in-process PGlite instances);
+    # The heaviest job (38-pkg turbo tree incl. 6 Next.js builds + many in-process PGlite instances);
     # generous ceiling so a hung PGlite hook frees the runner rather than holding it to the 6h default.
     timeout-minutes: 30
     env:
@@ -140,7 +140,7 @@ jobs:
       - name: build · lint · typecheck · test (unit + PGlite integration + golden-file)
         # `turbo build/lint/typecheck/test` + the standards gate (== `bun run check`, run inline so CI can cap
         # concurrency). Golden fixtures are compared with BLESS unset, so any drift fails here.
-        # --concurrency=50%: the integrated tree is 38 packages incl. 5 Next.js builds + many in-process
+        # --concurrency=50%: the integrated tree is 38 packages incl. 6 Next.js builds + many in-process
         # PGlite instances; at turbo's default fan-out they contend on the runner and a PGlite `beforeAll`
         # can exceed its hook timeout. Halving peak concurrency removes the starvation (local `bun run
         # check` stays full-speed). Tunable if the job runs long.
