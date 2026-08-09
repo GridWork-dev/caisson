@@ -26,8 +26,8 @@ import {
   CREDIT_CONVERSION,
   resolvePriceEntry,
   usageSchema,
-} from "./pricebook.ts";
-import type { CreditConversion, PriceBook, Usage } from "./pricebook.ts";
+} from "./token-rates.ts";
+import type { CreditConversion, PriceBook, Usage } from "./token-rates.ts";
 import { assertBreakerClosed, tripBreaker } from "./breaker.ts";
 import { DEFAULT_SCOPE } from "./contracts.ts";
 import {
