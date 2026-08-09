@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@types/nodemailer": "^8.0.1",
     "@types/react": "catalog:",

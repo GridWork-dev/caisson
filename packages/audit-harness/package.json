@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@caisson/ui": "workspace:*",
     "@types/react": "catalog:",

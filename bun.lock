@@ -242,6 +242,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -260,6 +261,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -378,6 +380,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -392,6 +395,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -405,6 +409,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@caisson/ui": "workspace:*",
         "@types/react": "catalog:",
@@ -488,6 +493,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -515,6 +521,7 @@
       "version": "0.1.5",
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@caisson/ui": "workspace:*",
         "@types/react": "catalog:",
@@ -645,6 +652,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
@@ -667,6 +675,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@types/culori": "catalog:",
         "eslint": "catalog:",
@@ -685,6 +694,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@types/nodemailer": "^8.0.1",
         "@types/react": "catalog:",
@@ -984,6 +994,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -1037,6 +1048,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@electric-sql/pglite": "catalog:",
         "eslint": "catalog:",
@@ -1074,6 +1086,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -1322,6 +1335,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -1339,6 +1353,7 @@
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
         "@caisson/license-issue": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -1354,6 +1369,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
@@ -1372,6 +1388,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "@types/bun": "catalog:",
         "eslint": "catalog:",
