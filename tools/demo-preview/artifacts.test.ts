@@ -6,6 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 
 import { PreviewSchema } from "../../apps/site/components/demo/preview-schema";
+import { previewOutput } from "./generate";
 
 const DIR = join(import.meta.dir, "../../apps/site/public/demo-preview");
 
@@ -14,6 +15,17 @@ async function readJson(name: string): Promise<unknown> {
 }
 
 describe("demo-preview committed artifacts", () => {
+  test("failed steps retain stderr before bounded stdout", () => {
+    const stderr = "terminal failure";
+    const output = previewOutput({
+      exitCode: 1,
+      stderr,
+      stdout: "x".repeat(20_000),
+    });
+    expect(output.startsWith(stderr)).toBe(true);
+    expect(output.length).toBe(20_000);
+  });
+
   test("manifest.json parses and carries a nonempty tree + step results", async () => {
     const manifest = (await readJson("manifest.json")) as {
       projectName: string;
