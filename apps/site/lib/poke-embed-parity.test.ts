@@ -10,6 +10,11 @@
 // This test reads both sides as real data — the manifest through its public `mediaSlides` API,
 // the routes through the list the embed route's `generateStaticParams` is built from — rather than
 // restating either list here, which would just be a third copy to drift.
+//
+// The `../../demos/...` import below is the ONE place anything in apps/site reaches into apps/demos,
+// and it is deliberate: a parity test that imported a local copy of the id list would pass while
+// production was broken. It is a test-only edge — no product code crosses it — so a future "apps
+// must not reference each other" sweep should leave this line alone rather than 'fix' it.
 import { describe, expect, test } from "bun:test";
 
 import { POKE_IDS } from "../../demos/components/poke/ids";

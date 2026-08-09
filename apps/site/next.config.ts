@@ -178,8 +178,14 @@ const config: NextConfig = {
   // THIS origin. apps/demos sets `basePath: "/demos"`, which prefixes its routes AND its
   // `_next/*` assets, so this one source covers pages and chunks alike — no second
   // `/demos-static/*` rule. Returning an empty array when the variable is unset is the fail-safe
-  // state (see demosOriginUrl above): this app then has no /demos route whatsoever and builds and
-  // serves byte-for-byte as it did before the split.
+  // state (see demosOriginUrl above): this app then has no /demos ROUTE whatsoever and every page
+  // renders exactly as it did before the split.
+  //
+  // Precisely, because "unchanged" is easy to overclaim: routing and page output are unchanged,
+  // but the header floor is NOT conditional on this variable. `frame-src` gains 'self' on every
+  // response and the /demos rule below ships armed or not — both additive, both necessary before
+  // the flip rather than after it (the module pages frame /demos from the day this merges). What
+  // the variable gates is where those requests GO, not what the headers say.
   async rewrites() {
     if (!demosOrigin) return [];
     return [

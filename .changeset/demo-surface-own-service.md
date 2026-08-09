@@ -5,8 +5,12 @@
 
 The interactive module demos now ship as their own application instead of being compiled into the
 marketing site. They are served from the same address as before — a module page still shows its
-demo inline, and nothing about the page's address, security headers, or analytics changes — but the
-demos are now built and deployed independently of the site.
+demo inline, and nothing about the page's address or analytics changes — but the demos are now
+built and deployed independently of the site.
+
+The response headers pick up one narrow change to allow this. Pages may now embed a frame from
+caisson.sh itself, and the demo surface may be framed by caisson.sh itself. Every other page is
+still refused to every framer, including this one, and no third-party origin was added anywhere.
 
 The practical effect is that changing a module no longer rebuilds and redeploys the storefront: the
 site's internal dependency list drops from 46 workspace packages to 27, and the packages that exist

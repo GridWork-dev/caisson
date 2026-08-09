@@ -9,9 +9,10 @@
  * `ssr: false`), and the embed route's `generateStaticParams` runs on the server. Splitting the
  * list out is what lets both read it without the server pulling a client module.
  *
- * Kept in lockstep with the site by `registry.test.ts` in this directory — that test reads
+ * Kept in lockstep with the site by `apps/site/lib/poke-embed-parity.test.ts` — that test reads
  * apps/site's manifest and fails on either direction of drift (a poke the site renders with no
- * route here, or a route here the site never asks for).
+ * route here, or a route here the site never asks for). It lives on the site side because that is
+ * where the manifest is; this list is the half it checks against.
  */
 export const POKE_IDS = [
   "access-review",
