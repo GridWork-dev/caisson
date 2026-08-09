@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { TrajectoryEvent, TRAJECTORY_VERSION } from "@caisson/agent-trajectory";
+import { TrajectoryEvent, TRAJECTORY_VERSION } from "../browser.ts";
 import { PRICE_BOOK_VERSION } from "@caisson/ai-meter";
 import { priceUsage } from "./normalize.ts";
 

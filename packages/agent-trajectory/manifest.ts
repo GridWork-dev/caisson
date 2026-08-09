@@ -41,6 +41,7 @@ export default defineModule({
   priceCents: 4900,
   license: pkg.license,
   dependencies: [
+    "@caisson/ai-meter",
     "@caisson/field-crypto",
     "@caisson/kernel",
     "@caisson/tenancy-rls",

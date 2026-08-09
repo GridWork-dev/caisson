@@ -23,13 +23,13 @@ and the standards gate are the executable sources. Build depth remains in
 
 | Surface              |  Count | Members                                                                                          |
 | -------------------- | -----: | ------------------------------------------------------------------------------------------------ |
-| Packages             |     60 | 17 Apache-2.0; 43 commercial                                                                     |
+| Packages             |     59 | 17 Apache-2.0; 42 commercial                                                                     |
 | Apps                 |      3 | `admin`, `demos`, and `site`                                                                     |
 | Bun services         |      4 | `betterstack-adapter`, `docs`, `intel`, `license`                                                |
 | Registry             |      1 | `@caisson/registry` plus its Worker                                                              |
 | Tooling workspaces   |      8 | audit harness, browser audit, demo registry, design critic, eslint, standards, testing, tsconfig |
 | Python projects      |      2 | `services/support-bot`, `tools/assert-lane` — frozen at two                                      |
-| Bun workspaces total | **76** | root `workspaces` discovery                                                                      |
+| Bun workspaces total | **75** | root `workspaces` discovery                                                                      |
 
 ## Open Base — 17 Apache-2.0 packages
 
@@ -115,7 +115,7 @@ legitimate $49 modules have no special exemption.
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Sellable bundle SKUs           | `compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`, `everything`                                                                                                                                                    |
 | Retired source metas           | `ai-kit` — `sellable: false`, retained in price authority for historical resolution; `agent-dev` — delisted and non-sellable, source retained only because it owns the sole multi-harness emitter pending a separate architecture decision |
-| Runtime and delivery substrate | `agent-usage`, `artifact-render`, `brand`, `license-issue`, `platform-migrations`, `platform-reads`, `pricebook`, `verify-pack` — never separately sold                                                                                    |
+| Runtime and delivery substrate | `artifact-render`, `brand`, `license-issue`, `platform-migrations`, `platform-reads`, `pricebook`, `verify-pack` — never separately sold                                                                                                   |
 
 The six bundle packages are products, but not à-la-carte modules. The remaining packages stay
 commercial where their code is proprietary and are not independently purchasable.
