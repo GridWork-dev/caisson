@@ -22,7 +22,7 @@
 //
 // Robustness contract (binding, matches the Claude adapter): a malformed line — invalid JSON, or a
 // `token_count` event with no usable usage shape — is SKIPPED and COUNTED, never thrown.
-import { TrajectoryEvent, TRAJECTORY_VERSION } from "@caisson/agent-trajectory";
+import { TrajectoryEvent, TRAJECTORY_VERSION } from "../../browser.ts";
 
 export interface ParseCodexRolloutOptions {
   readonly runId: string;

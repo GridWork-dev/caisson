@@ -42,8 +42,8 @@ export default defineModule({
     "@caisson/agent-runner": "0.2.0",
     // agent-trajectory pins an encRef-bearing version — same rule as the agentic-dev pin: never
     // the pre-encRef 0.2.0. Repointed 0.3.0 -> 0.3.4 (2026-07-20) so the stranded 0.3.0 tarball
-    // row can retire at the follow-up registry prune. agent-usage stays OUT (indexed
-    // sellable:false, rider-3 unpublished — no bundle carries it until its own publish gate).
+    // row can retire at the follow-up registry prune. agent-usage is GONE — delisted by
+    // ADR-0402 (published-never-sold) and folded into agent-trajectory's ./usage surface.
     "@caisson/agent-trajectory": "0.3.4",
     // The five sibling persona-bundle metas are themselves sellable SKUs and are IN — the
     // description sells them by name, and an Everything buyer must be entitled to install them.
