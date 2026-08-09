@@ -80,6 +80,8 @@ jobs:
               - 'apps/site/**'
               - 'packages/ui/**'
               - 'packages/ui-pro/**'
+              - 'tooling/audit-harness/**'
+              - 'tooling/demo-registry/**'
               - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
 

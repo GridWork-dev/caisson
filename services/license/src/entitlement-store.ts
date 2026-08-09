@@ -18,6 +18,7 @@
 import { randomUUID } from "node:crypto";
 import { withAdvisoryXactLock } from "@caisson/jobs";
 import { ConfigError } from "@caisson/kernel";
+import { UPDATES_WINDOWS_READ_SQL } from "@caisson/platform-reads";
 import { entitlementIdAliasGroup } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
@@ -230,13 +231,7 @@ ALTER TABLE entitlement_grant ADD CONSTRAINT entitlement_grant_refunded_amount_n
  * This is the ONLY supported way to turn the two columns into a paid amount; read them raw and the
  * refund is what you forget.
  */
-export function netCharged(
-  chargedAmount: number | null,
-  refundedAmount: number | null,
-): number | null {
-  if (chargedAmount === null) return null;
-  return Math.max(chargedAmount - (refundedAmount ?? 0), 0);
-}
+export { netCharged } from "@caisson/platform-reads";
 
 export interface RecordLineRefundInput {
   /** The buyer account — MUST equal the `withTenant` scope. */
@@ -919,14 +914,7 @@ export async function computeUpdatesWindows(
   const r = await tx.query<{
     entitlement_id: string;
     bound: string | Date;
-  }>(
-    `SELECT entitlement_id,
-            max(COALESCE(updates_expires_at, granted_at + interval '12 months')) AS bound
-       FROM entitlement_grant
-      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
-      GROUP BY entitlement_id`,
-    [accountId],
-  );
+  }>(UPDATES_WINDOWS_READ_SQL, [accountId]);
   const horizons = await subscriptionCoverageHorizons(tx, accountId);
   const windows: Record<string, string> = {};
   for (const row of r.rows) {

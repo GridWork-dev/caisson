@@ -171,9 +171,9 @@ CI map, do not extend it here.
 | `oscal-conformance` | NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180), JSON->XML->schema-validate round-trip via oscal-cli | installs its own JDK + oscal-cli per-run; the `check` job (same Blacksmith runner class, ADR-0326) skips that install and doesn't run oscal-cli |
 
 Separate workflows: `quality.yml` (eval/native-ext/token-drift/knip/evidence-pack),
-`publish.yml` (registry publish, ADR-0223), `.github/workflows/deploy-railway.yml` (`apps/site`
--> Railway, ADR-0114/0115), `lighthouse.yml`, `mirror-sync.yml`, `aeo-probe.yml`, and
-`support-bot.yml`.
+`publish.yml` (registry publish, ADR-0223), `.github/workflows/deploy-railway.yml` (admin + site on
+matching main pushes, license on dispatch; ADR-0114/0115), `lighthouse.yml`, `mirror-sync.yml`,
+`aeo-probe.yml`, and `support-bot.yml`.
 
 ## Commit conventions
 

@@ -1,4 +1,4 @@
-// src/egress-guard.ts — the cloud-egress secret-scrub guard (ADR-0067, security-critical). The
+// src/embed-scrub-guard.ts — the cloud-embed secret-scrub guard (ADR-0067, security-critical). The
 // Embedder PORT is the ONE path that can carry buyer content OFF the box (to a cloud embedder).
 // Before any such egress, credential-bearing spans MUST be scrubbed, and the embed transport stays a
 // TEST-DOUBLED seam — no live cloud call ever runs in CI (the live transport is the only

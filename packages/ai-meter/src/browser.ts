@@ -33,14 +33,14 @@ export {
   creditsForMicroUsd,
   parsePriceBook,
   parseCreditConversion,
-} from "./pricebook.ts";
+} from "./token-rates.ts";
 export type {
   PriceBook,
   PriceBookEntry,
   CreditConversion,
   Usage,
   CostBreakdown,
-} from "./pricebook.ts";
+} from "./token-rates.ts";
 
 export {
   CHARS_PER_TOKEN,

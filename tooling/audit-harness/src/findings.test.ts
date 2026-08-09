@@ -122,8 +122,7 @@ describe("reconcile — run-to-run classification across all domains", () => {
 
   test("fail-loud: a domain outside the derived universe THROWS (mislabeled domain)", () => {
     const universe = new Set(["packages/auth", "packages/audit-worm"]);
-    // "packages/audit-harness" typed where "packages/audit-worm" was meant — in scope, but flagged
-    // by the universe guard as... actually it IS in the universe here, so use a truly unknown one.
+    // A typo can still be in the requested scope; the universe guard must reject it as unknown.
     expect(() =>
       reconcile(
         [],

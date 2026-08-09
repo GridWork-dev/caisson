@@ -6,7 +6,7 @@ import { join } from "node:path";
 import type { Domain } from "./domains.ts";
 import type { Finding, FindingSeverity, FindingStatus } from "./findings.ts";
 
-/** Repo root — three levels up from packages/audit-harness/src. */
+/** Repo root — three levels up from tooling/audit-harness/src. */
 const REPO_ROOT = join(import.meta.dir, "..", "..", "..");
 
 // Vendor / build output dirs never belong in an audit surface even when a domain glob would reach

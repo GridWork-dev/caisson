@@ -1,0 +1,40 @@
+# Railway service config — apps/demos (@caisson/demos), the interactive demo surface split out of
+# apps/site by ADR-0400. Served to the public at caisson.sh/demos/* through apps/site's multi-zone
+# rewrite, never on a hostname of its own — no DNS record, no Cloudflare change, no new CSP origin.
+#
+# THE SERVICE DOES NOT EXIST YET. Creating it is an external-system act and is operator-gated
+# (ADR-0400 decision 4): the service must exist and answer its health route BEFORE apps/site's
+# rewrite is armed, so the split is fail-safe in both directions. Until then this file, the
+# Dockerfile beside it, and the deploy-railway.yml entry are inert code.
+#
+# Dashboard settings for THIS service (the build context must be the repo root, see the Dockerfile):
+#   Root Directory       = /                      (repo root — the Docker build context)
+#   Config-as-code path  = apps/demos/railway.toml (this file)
+#   Public networking    = NONE — do not generate a domain. The service is reached only through
+#                          apps/site's rewrite over the Railway private network. Generating a
+#                          public domain would put this app's bare-404 responses on a hostname of
+#                          their own, and would give the embed surface a second, unproxied address.
+#
+# ARMING TAKES TWO VARIABLES IN TWO DIFFERENT SYSTEMS, and missing either one fails quietly:
+#   1. DEMOS_ORIGIN_URL      — a RAILWAY build variable on the caisson-site service. Points the
+#                              rewrite here. Must be a build ARG, not a runtime var: Next bakes
+#                              rewrites into routes-manifest.json at build time.
+#   2. CAISSON_DEMOS_ARMED   — a GITHUB repo variable ("true"). Un-gates the demos deploy step in
+#                              .github/workflows/deploy-railway.yml.
+# Set 1 without 2 and the site keeps rewriting to a service CI never redeploys again — it serves
+# stale embeds indefinitely, and because the site itself keeps working, nothing pages.
+#
+# Service env vars: NONE. Every poke runs in the browser against in-page sample data; the app
+# reads no secret, opens no socket, and talks to no database. PORT is set by the Dockerfile.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/demos/Dockerfile"
+
+[deploy]
+# /demos/healthz, not /healthz: next.config.ts sets `basePath: "/demos"`, which prefixes every
+# route in this app. This is also the path the site rewrite exposes publicly, so the same URL
+# proves the zone end-to-end once the rewrite is armed.
+healthcheckPath = "/demos/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+numReplicas = 1

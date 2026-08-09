@@ -36,12 +36,12 @@ describe("buildCorpus (real repo)", () => {
     expect(JSON.stringify(buildCorpus())).toBe(JSON.stringify(corpus));
   });
 
-  // Regression for audit finding 69177803de41c5ad: a `"private": true` package's README is internal
-  // engineering tooling (e.g. @caisson/audit-harness, @caisson/license-issue) and must never reach the
-  // buyer-facing corpus or the llms-full.txt it's rendered into.
-  test("excludes private:true packages' READMEs from the corpus and llms-full", () => {
+  // Regression for audit finding 69177803de41c5ad: private package and tooling READMEs are internal
+  // engineering material and must never reach the buyer-facing corpus or rendered llms-full.txt.
+  test("excludes private package and tooling READMEs from the corpus and llms-full", () => {
     const sources = corpus.pages.map((p) => p.source);
-    expect(sources).not.toContain("packages/audit-harness/README.md");
+    expect(sources).not.toContain("packages/license-issue/README.md");
+    expect(sources).not.toContain("tooling/audit-harness/README.md");
 
     const full = renderLlmsFull(corpus);
     expect(full).not.toContain("@caisson/audit-harness");

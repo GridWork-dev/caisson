@@ -3,8 +3,7 @@
 // usage adapters (price normalization + the Codex rollout scanner) that upgrade agent-trajectory's
 // `estimated` model.usage events to pricebook-computed `priced` credits (ADR-0360 U-4). A primitive
 // does not self-declare edition membership; a bundle would add it to its `members` pin map at
-// integration — it deliberately is NOT added to any bundle member map yet (reserved-id/unpublished;
-// publish rides LAST behind the loop slice, exactly as agent-trajectory did).
+// integration. It is published but deliberately absent from every bundle member map.
 //
 // Commercial under open-core (ADR-0094/0097): the runtime observation layer is NOT among the
 // enumerated open Base packages, so it ships LicenseRef-Caisson-Commercial and the license<->tier
@@ -23,8 +22,8 @@ export default defineModule({
   kind: "primitive",
   tier: "paid",
   priceCents: 4900,
-  // Runtime substrate, not sold on its own yet — reserved/unpublished until the loop slice lands.
-  // Exempts it from the price-coverage locked-price requirement.
+  // Published runtime substrate, intentionally not sold on its own or bundled. Exempts it from the
+  // price-coverage locked-price requirement until an operator-owned product decision changes that.
   sellable: false,
   license: pkg.license,
   dependencies: [

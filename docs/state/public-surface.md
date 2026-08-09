@@ -121,7 +121,7 @@ module ↔ bundle membership table (all 27 à la carte SKUs — including moves 
 `publishConfig`. Other commercial packages are either internal-only or entitlement-gated; the
 package catalog owns that complete inventory and sale posture.
 
-`apps/*` (site and admin) and `tooling/*` (6 workspaces) are all `private: true` with no
+`apps/*` (site, admin, and demos) and `tooling/*` (8 workspaces) are all `private: true` with no
 `publishConfig` — internal-only by construction, out of scope for this doc.
 
 ---

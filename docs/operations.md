@@ -5,7 +5,7 @@ and deploy Caisson. This file OWNS the synthesized ops map; the canonical source
 `specs/` + `knowledge/decisions/`. Deploy specifics route to
 [`infra/terraform/README.md`](../infra/terraform/README.md) as canonical.
 
-Verified against the filesystem on 2026-07-13. Anything not directly checked is marked `(unverified)`.
+Verified against the filesystem on 2026-08-09. Anything not directly checked is marked `(unverified)`.
 
 ---
 
@@ -154,9 +154,9 @@ writing anything. Each deploy appends a row to `docs/deploy/receipts/<service>.j
 suggested `git add`/`git commit`.
 
 - `.github/workflows/deploy-railway.yml` runs the same `railway-deploy.ts` on every push to `main`
-  touching `apps/site/**`/`packages/**`, but **stays an inert no-op today** -- the `RAILWAY_TOKEN`
-  repo secret is not set, so deploys are the operator running the script manually. It self-arms
-  the moment that secret is added (no other change needed).
+  touching either deployed app, `packages/**`, or the two tooling workspaces they compile
+  (`audit-harness` and `demo-registry`). The armed automatic path deploys admin then site; license
+  remains dispatch-only because it carries production migrations.
 - Secrets: a Railway project token (`RAILWAY_TOKEN`), scoped to `caisson-prod`. No Cloudflare
   deploy credential is needed for the site anymore.
 
@@ -341,13 +341,13 @@ macOS minutes. Manual fallback if the mini is down: flip the leg back to `runs-o
 
 ### `deploy-railway.yml` (DEPLOY -- operator-gated)
 
-- Triggers: **push to `main`** filtered to `apps/site/**`, `packages/**`, the workflow file --
-  plus `workflow_dispatch`. **Never on a pull_request**, so opening/merging a feature PR never
-  deploys.
+- Triggers: **push to `main`** filtered to both deployed apps, `packages/**`, the two compiled
+  tooling workspaces, and the workflow file -- plus `workflow_dispatch`. **Never on a
+  pull_request**, so opening a feature PR never deploys; merging a matching PR does.
 - Steps: an arm-check gates on the `RAILWAY_TOKEN` secret (absent -> every real step SKIPS and the
-  job succeeds as a no-op); when armed, installs the Railway CLI and runs
-  `bun tooling/scripts/railway-deploy.ts --service caisson-site --ref <sha>` (build-on-Railway via
-  `apps/site/Dockerfile`, from a clean `git archive` staging dir, receipt-gated -- see §5 above).
+  job succeeds as a no-op); when armed, installs the Railway CLI and deploys admin then site from a
+  clean `git archive` staging dir. Dispatches insert the license migration carrier between them;
+  every service remains receipt-gated through `railway-deploy.ts` (see §5 above).
 - Least privilege: `permissions: contents: read`; uses the Railway project token, not
   `GITHUB_TOKEN`. `concurrency: deploy-railway`, `cancel-in-progress: false`, `timeout-minutes: 25`.
 - **Stays GitHub-hosted (not on the fleet):** a production deploy token does not belong on the

@@ -1,6 +1,6 @@
 // @caisson/pricebook — the single COMMERCE price-book (ADR-0089, provider rename ADR-0108): plan-book
 // (providerPriceId -> creditsPerCycle), action-book (per-action credit cost), and the shared
-// cents->credits GRANT conversion. Distinct from @caisson/ai-meter's per-ai-call COST book; both share
+// cents->credits GRANT conversion. Distinct from @caisson/ai-meter's per-call token-rate book; both share
 // kernel's one credit denomination (ADR-0098). Versioned, append-only, fail-closed, integer-only.
 // Commercial base package; depends only on @caisson/kernel — never "up" on an edition (ADR-0003).
 export {

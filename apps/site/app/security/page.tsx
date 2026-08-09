@@ -15,6 +15,7 @@ import {
   type IconName,
 } from "@/components";
 import { buildMetadata } from "@/lib/metadata";
+import { contentSecurityPolicy } from "@/lib/security-headers";
 import {
   breadcrumb,
   faqPage,
@@ -87,7 +88,7 @@ const SITE_POSTURE: ReadonlyArray<{
   {
     icon: "gauge",
     title: "Hardened response headers",
-    body: "Every response carries HSTS with preload, X-Content-Type-Options: nosniff, X-Frame-Options: DENY, a strict Referrer-Policy, a closed Permissions-Policy, and a tightened Content-Security-Policy.",
+    body: "Every response carries HSTS with preload, X-Content-Type-Options: nosniff, a strict Referrer-Policy, a closed Permissions-Policy, and a tightened Content-Security-Policy. Framing is denied outright on every page, with one exception: the /demos/* embed surface, which a module page frames on this same origin and which no other site can frame.",
   },
   {
     icon: "lock",
@@ -138,16 +139,13 @@ const FAQ: ReadonlyArray<{ question: string; answer: string }> = [
   },
 ];
 
+// GENERATED from the policy this app actually sends, never hand-written. A displayed `curl`
+// transcript is a claim about live behaviour under ADR-0080, and hand-maintaining this block is
+// exactly how it drifted from the real header twice — first missing the PostHog origins, then
+// missing ADR-0400's `frame-src 'self'`. Composing it from the builder makes that class of drift
+// impossible. One directive per line for readability; the real header is a single line.
 const SHIPPED_CSP = `$ curl -sI https://caisson.sh | grep -i '^content-security-policy'
-content-security-policy: default-src 'self'; base-uri 'self';
-  object-src 'none'; frame-ancestors 'none'; form-action 'self';
-  img-src 'self' data: https://*.paddle.com; font-src 'self';
-  style-src 'self' 'unsafe-inline' https://*.paddle.com;
-  script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com
-    https://challenges.cloudflare.com;
-  frame-src https://*.paddle.com https://challenges.cloudflare.com;
-  connect-src 'self' https://plausible.io https://*.paddle.com
-    https://challenges.cloudflare.com`;
+content-security-policy: ${contentSecurityPolicy("'none'").split("; ").join(";\n  ")}`;
 
 export default function SecurityPage() {
   const jsonLd = [
