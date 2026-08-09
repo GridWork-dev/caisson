@@ -39,8 +39,8 @@ export {
   looksLikeSecret,
   guardEmbedder,
   createCloudEmbedder,
-} from "./egress-guard.ts";
-export type { CloudEmbedConfig, EmbedFetch } from "./egress-guard.ts";
+} from "./embed-scrub-guard.ts";
+export type { CloudEmbedConfig, EmbedFetch } from "./embed-scrub-guard.ts";
 
 // The retention policy (ADR-0067): dedup-on-write (a near-duplicate fact is REINFORCED, not
 // copied) + a default sliding TTL + a GC pass (expired / decayed / over-cap) — pure, deterministic,

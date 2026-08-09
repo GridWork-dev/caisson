@@ -16,7 +16,7 @@ describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", (
 
   test("every packages/* dir is a domain (one each)", () => {
     const pkgDomains = domains.filter((d) => d.id.startsWith("packages/"));
-    // 35 packages minus none (generator-templates is a separate id, not a packages/* dir).
+    // The exact count is tree-derived; generator-templates is a separate id, not a packages/* dir.
     expect(pkgDomains.length).toBeGreaterThanOrEqual(30);
     expect(domainIds(REPO_ROOT).has("packages/kernel")).toBe(true);
     expect(domainIds(REPO_ROOT).has("packages/audit-worm")).toBe(true);
@@ -43,7 +43,8 @@ describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", (
     const byId = new Map(domains.map((d) => [d.id, d]));
     expect(byId.get("packages/kernel")?.class).toBe("oss-source"); // Apache-2.0
     expect(byId.get("packages/compliance")?.class).toBe("sold-source"); // edition, buyer reads it
-    expect(byId.get("packages/audit-harness")?.class).toBe("internal-only"); // never sold
+    expect(byId.get("tooling/audit-harness")?.class).toBe("internal-only");
+    expect(byId.get("tooling/demo-registry")?.class).toBe("internal-only");
     expect(byId.get("apps/admin")?.class).toBe("internal-only");
     expect(byId.get("apps/site")?.class).toBe("buyer-runtime");
     expect(byId.get("oss-mirror")?.class).toBe("oss-source");

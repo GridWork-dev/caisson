@@ -225,7 +225,7 @@ export default function LocalFirstPage() {
       {/* ===== The compute seam ===== */}
       <Section
         title="On-device by default, hosted by opt-in."
-        lede="The Local-first bundle ships @caisson/local-ai, which composes local-store, license-verify, field-crypto, and kernel, then adds an InferenceBackend port on top. The default backend runs on-device: a MiniLM-class ONNX model via transformers.js, first-run-fetched and SHA-256 hash-verified before it touches your data. Want hosted inference sometimes? The same interface has opt-in rented transports for OpenRouter, Azure OpenAI, and AWS Bedrock, each metered and egress-guarded, each off until you turn it on."
+        lede="The Local-first bundle composes @caisson/kernel, @caisson/local-store, @caisson/license-verify, @caisson/field-crypto, @caisson/local-privacy, @caisson/local-inference, and @caisson/local-sync. @caisson/local-inference provides the InferenceBackend port and runs on-device by default: a MiniLM-class ONNX model via transformers.js, fetched on first use and SHA-256 hash-verified before it touches your data. Hosted inference is explicit opt-in. The same interface offers metered, egress-guarded transports for OpenRouter, Azure OpenAI, and AWS Bedrock, all disabled until configured."
         band="tint"
       />
 

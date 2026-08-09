@@ -4,7 +4,7 @@
 // (@caisson/demo-registry) so site and admin (apps/admin/src/app/catalog/components/page.tsx)
 // render the exact same UI Pro catalog off the exact same data, instead of two hand-rolled demo
 // implementations that could silently drift apart. A CLIENT component: `entry.render` closures are
-// exported from a "use client" registry module (packages/demo-registry/src/entries/ui-pro.tsx) —
+// exported from a "use client" registry module (tooling/demo-registry/src/entries/ui-pro.tsx) —
 // admin's catalog page already proves calling them client-side is the safe pattern; a Server
 // Component invoking a closure captured in a "use client" file's data is not a pattern this repo
 // has tested elsewhere, so this stays a client island the server page.tsx (which needs `metadata`,

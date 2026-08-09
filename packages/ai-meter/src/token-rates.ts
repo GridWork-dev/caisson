@@ -1,4 +1,4 @@
-// Provider-cost normalization (ADR-0060/0007). A bundled, versioned price book maps a
+// Provider token-rate normalization (ADR-0060/0007). A bundled, versioned price book maps a
 // `provider/model` to its per-million-token rates in INTEGER micro-USD, and `computeCost` folds a
 // usage shape into an integer micro-USD cost + integer credit units. The whole path is integer-only
 // (BigInt internally, never a float) so a metered charge is reproducible to the unit — the rounding
@@ -24,7 +24,7 @@ import {
 } from "@caisson/kernel";
 
 // The credit denomination moved to @caisson/kernel (ADR-0098, SD-3): exactly ONE definition across
-// the codebase, shared by this COST book (rounds up) and @caisson/pricebook's COMMERCE book (rounds
+// the codebase, shared by this token-rate COST book (rounds up) and @caisson/pricebook's COMMERCE book (rounds
 // down). The schema + parser keep their names on the re-export; the constant was intentionally renamed
 // DEFAULT_CREDIT_CONVERSION -> CREDIT_CONVERSION to match the kernel home (pre-launch, no consumers).
 export { CREDIT_CONVERSION, creditConversionSchema, parseCreditConversion };

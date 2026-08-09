@@ -77,6 +77,8 @@ jobs:
               - 'apps/site/**'
               - 'packages/ui/**'
               - 'packages/ui-pro/**'
+              - 'tooling/audit-harness/**'
+              - 'tooling/demo-registry/**'
               - '.github/workflows/quality.yml'
 
   # The deterministic eval gate (ADR-0062). A DISTINCT turbo `eval` task — separate from `test` —

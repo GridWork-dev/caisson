@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-30
+updated: 2026-08-09
 status: live
 ---
 
@@ -119,7 +119,7 @@ all — they are structurally unpublishable, distinct from the 18 other commerci
 carry a real (GH-Packages-restricted) `publishConfig` and are gated by entitlement rather than by
 `private:true`.
 
-`apps/*` (7 reference apps) and `tooling/*` (5 workspaces) are all `private: true` with no
+`apps/*` (7 reference apps) and `tooling/*` (8 workspaces) are all `private: true` with no
 `publishConfig` — internal-only by construction, out of scope for this doc.
 
 ---
