@@ -19,14 +19,15 @@ Two independent limiters for two different trust levels:
 
 ## Public API
 
-| Symbol                  | Use                                                                              |
-| ----------------------- | -------------------------------------------------------------------------------- |
-| `TokenBucketLimiter<B>` | The generic in-memory per-IP limiter; `B` is the caller's own bucket-name union. |
-| `clientIp(req)`         | Derive the client IP from `X-Real-IP` only — no other forwarded-for header.      |
-| `RATE_LIMIT_SCHEMA_SQL` | The `rate_limit` table DDL + its tenant RLS policy.                              |
-| `checkRateLimit`        | Lazily provision + atomically consume one token from an account's bucket.        |
-| `setAccountRateLimit`   | Set a per-account override of the bucket parameters.                             |
-| `createRateLimitHook`   | Build the `(accountId) => Promise<void>` hook the MCP server awaits.             |
+| Symbol                       | Use                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| `TokenBucketLimiter<B>`      | The generic in-memory per-IP limiter; `B` is the caller's own bucket-name union. |
+| `clientIp(req)`              | Derive the client IP from `X-Real-IP` only — no other forwarded-for header.      |
+| `RATE_LIMIT_SCHEMA_SQL`      | The `rate_limit` table DDL + its tenant RLS policy.                              |
+| `checkRateLimit`             | Lazily provision + atomically consume one token from an account's bucket.        |
+| `setAccountRateLimit`        | Set a per-account override of the bucket parameters.                             |
+| `createRateLimitHook`        | Build the `(accountId) => Promise<void>` hook the MCP server awaits.             |
+| `createRateLimitedMcpServer` | Build the buyer MCP with that hook installed by default.                         |
 
 ## Invariants
 

@@ -557,7 +557,11 @@
       },
       "devDependencies": {
         "@caisson/agent-trajectory": "workspace:*",
+        "@caisson/ai-config": "workspace:*",
+        "@caisson/auth": "workspace:*",
+        "@caisson/billing": "workspace:*",
         "@caisson/credits": "workspace:*",
+        "@caisson/email": "workspace:*",
         "@caisson/eslint-config": "workspace:*",
         "@caisson/mcp-server": "workspace:*",
         "@caisson/testing": "workspace:*",
@@ -568,6 +572,7 @@
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "eslint": "catalog:",
+        "next": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
         "typescript": "catalog:",
@@ -1133,11 +1138,11 @@
       "version": "0.1.10",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
+        "@caisson/mcp-server": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
-        "@caisson/mcp-server": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",

@@ -22,11 +22,11 @@
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
+    "@caisson/mcp-server": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
-    "@caisson/mcp-server": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",

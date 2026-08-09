@@ -12,6 +12,11 @@
 //                                    must never lock out a paying buyer. The alert sink is the
 //                                    caller's telemetry/error surface, never `console.log`.
 import { RateLimitError } from "@caisson/kernel";
+import {
+  createMcpServer,
+  type McpServer,
+  type McpServerOptions,
+} from "@caisson/mcp-server";
 import { withTenant, type Transactor } from "@caisson/tenancy-rls";
 import {
   checkRateLimit,
@@ -66,4 +71,13 @@ export function createRateLimitHook(
       });
     }
   };
+}
+
+/** Build the buyer MCP with the Postgres-backed account throttle installed by default. */
+export function createRateLimitedMcpServer(
+  options: McpServerOptions,
+  deps: RateLimitHookDeps,
+): McpServer {
+  const checkRateLimit = options.checkRateLimit ?? createRateLimitHook(deps);
+  return createMcpServer({ ...options, checkRateLimit });
 }

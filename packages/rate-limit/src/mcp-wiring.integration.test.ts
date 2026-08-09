@@ -6,11 +6,11 @@ import { RateLimitError } from "@caisson/kernel";
 import type { Transactor, TenantExecutor } from "@caisson/tenancy-rls";
 import { loadRegistryIndex } from "@caisson/registry-schema";
 import {
-  createMcpServer,
+  type McpServer,
   type McpServerOptions,
   type RateLimitHook,
 } from "@caisson/mcp-server";
-import { createRateLimitHook } from "./account-hook.ts";
+import { createRateLimitedMcpServer } from "./account-hook.ts";
 
 const TOKEN = "mcp_tok_acct_a_000000";
 const ACCOUNT = "acct_a";
@@ -27,20 +27,14 @@ function createRateLimitedServer(
   db: Transactor,
   extra?: Partial<McpServerOptions>,
   onStoreError?: (err: unknown, accountId: string) => void,
-): ReturnType<typeof createMcpServer> {
-  const options = mcpOptions(extra);
-  const checkRateLimit =
-    options.checkRateLimit ??
-    createRateLimitHook({
-      db,
-      ...(onStoreError !== undefined ? { onStoreError } : {}),
-    });
-  return createMcpServer({ ...options, checkRateLimit });
+): McpServer {
+  return createRateLimitedMcpServer(mcpOptions(extra), {
+    db,
+    ...(onStoreError !== undefined ? { onStoreError } : {}),
+  });
 }
 
-async function listModules(
-  server: ReturnType<typeof createMcpServer>,
-): Promise<unknown> {
+async function listModules(server: McpServer): Promise<unknown> {
   const session = server.authenticate(TOKEN);
   return server.handleToolCall(session, "list_modules", {});
 }

@@ -3,9 +3,9 @@
 // composition may wire in, not an edition or a compliance primitive.
 //
 // Open Base ships free: tier `oss`, no priceCents. Dependencies are DOWN-ONLY and open-only: this
-// package depends on @caisson/kernel (the RateLimitError type) and @caisson/tenancy-rls (the
-// fail-closed RLS transaction wrapper the per-account store runs inside), both open Base — never on
-// an edition or a commercial service.
+// package depends on @caisson/kernel (the RateLimitError type), @caisson/mcp-server (the buyer-MCP
+// composition), and @caisson/tenancy-rls (the fail-closed RLS transaction wrapper the per-account
+// store runs inside), all open Base — never on an edition or a commercial service.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -16,7 +16,11 @@ export default defineModule({
   tier: "oss",
   priceCents: null,
   license: pkg.license,
-  dependencies: ["@caisson/kernel", "@caisson/tenancy-rls"],
+  dependencies: [
+    "@caisson/kernel",
+    "@caisson/mcp-server",
+    "@caisson/tenancy-rls",
+  ],
   description:
     "Shared abuse-throttle primitives: an in-memory per-IP token-bucket limiter for unauthenticated surfaces, and a Postgres-backed per-account token-bucket store for authenticated ones.",
 });
