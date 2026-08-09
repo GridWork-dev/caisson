@@ -28,6 +28,9 @@ const EMBED_MARKER = "pokeEmbed";
 
 type LoadState = "pending" | "ready" | "unavailable";
 
+/** How long to wait for a `load` that may never come before showing the fallback text. */
+const LOAD_DEADLINE_MS = 10_000;
+
 /** The current theme as the site records it, or null when the reader has never chosen one. */
 function currentTheme(): string | null {
   return document.documentElement.getAttribute("data-theme");
@@ -84,6 +87,39 @@ export function PokeEmbed({ module }: { module: PokeKey }) {
     setHeight(contentHeight(doc));
     setState("ready");
   }, [embedDoc, contentHeight]);
+
+  // The load event can land BEFORE React attaches `onLoad`. This component is server-rendered (a
+  // client component, not `ssr: false`), so the HTML parser creates the iframe and starts its
+  // navigation while the site bundle is still parsing — a warm cache reliably wins that race, and
+  // `load` does not bubble, so the event fires into no listener and is gone. Nothing would ever
+  // leave `pending`, which CSS renders as an INVISIBLE frame under a placeholder: the embed would
+  // be loaded and interactive at `opacity: 0` with the reader looking at a grey box, and not even
+  // the fallback text. An already-complete document is the same verdict, just observed late.
+  //
+  // The `about:blank` exclusion is the whole trick: a fresh iframe's document reports `complete`
+  // BEFORE the real navigation commits, so `readyState` alone would fire this immediately, find no
+  // marker, and latch `unavailable` on a poke that was about to load fine.
+  useEffect(() => {
+    let settled: boolean;
+    try {
+      const doc = frameRef.current?.contentDocument;
+      settled =
+        !!doc && doc.readyState === "complete" && doc.URL !== "about:blank";
+    } catch {
+      // Cross-origin: the navigation has committed and `onLoad` would reach the same "not ours"
+      // conclusion, so treat it as settled rather than waiting out the deadline.
+      settled = true;
+    }
+    if (settled) onLoad();
+
+    // And if the load never lands at all — a hung request to the demos service — say so rather
+    // than leaving a placeholder up indefinitely.
+    const timer = setTimeout(
+      () => setState((s) => (s === "pending" ? "unavailable" : s)),
+      LOAD_DEADLINE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [onLoad]);
 
   // A poke changes height as you drive it (a verdict line appears, a rotation note comes and
   // goes), so the frame tracks the embed's own box for as long as it is mounted — in both

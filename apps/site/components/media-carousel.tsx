@@ -57,7 +57,16 @@ function Slide({ slide }: { slide: MediaSlide }) {
       }
       return slide.diagram ? <MarketplaceDiagram name={slide.diagram} /> : null;
     case "poke":
-      return slide.poke ? <PokeEmbed module={slide.poke} /> : null;
+      // `key` is load-bearing, not cosmetic. PokeEmbed owns iframe state — the load verdict, the
+      // measured height, and a ResizeObserver bound to THAT document's <body>. The card viewer
+      // keeps one dialog subtree mounted across entries (preview-dialog.tsx heldVm), so without a
+      // key React reuses the instance and only swaps `src`: the observer stays attached to the
+      // destroyed document (the next poke never re-measures and gets clipped by `overflow:
+      // hidden`), and a terminal `unavailable` from one module would name a module that was never
+      // requested. A different module is a different document, never the same one re-pointed.
+      return slide.poke ? (
+        <PokeEmbed key={slide.poke} module={slide.poke} />
+      ) : null;
     case "component": {
       if (!slide.component) return null;
       const ComponentSlide = COMPONENT_SLIDES[slide.component];
