@@ -72,6 +72,22 @@ describe("demosOriginUrl", () => {
     );
   });
 
+  // The realistic operator error: Railway's dashboard shows a service URL with a trailing path,
+  // and pasting it verbatim would compose `…/demos` + `/demos/:path*` into a destination where
+  // every embed 404s while the variable looks correctly armed. Normalizing to the origin is what
+  // makes that paste work instead of failing silently.
+  test("keeps only the origin — path, query, fragment, and credentials are dropped", () => {
+    expect(demosOriginUrl("https://demos.example.com/demos")).toBe(
+      "https://demos.example.com",
+    );
+    expect(demosOriginUrl("https://demos.example.com/x?a=b#c")).toBe(
+      "https://demos.example.com",
+    );
+    expect(demosOriginUrl("http://user:pass@demos.example.com:3040")).toBe(
+      "http://demos.example.com:3040",
+    );
+  });
+
   test("a non-network scheme is refused, not silently proxied to", () => {
     expect(() => demosOriginUrl("javascript:alert(1)")).toThrow(
       /must be an http\(s\) URL/,

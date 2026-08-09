@@ -48,8 +48,11 @@ export function contentSecurityPolicy(frameAncestors: string): string {
  * plain http by design and is the better target here: service-to-service traffic that never leaves
  * the project. What the scheme check is really for is refusing a non-network scheme.
  *
- * The returned value has any trailing slashes stripped, so composing it with a `/demos/...` path
- * can never produce a doubled separator.
+ * The return is the parsed ORIGIN, not the raw input. Everything after the host is dropped: a path,
+ * a query, a fragment, and any embedded credentials. That is not tidiness — Railway's dashboard
+ * shows a service's URL with a trailing path, and pasting it verbatim would compose
+ * `https://host/demos` + `/demos/:path*` into a destination where every embed 404s while the
+ * variable sits there looking correctly armed. Normalizing here is what makes that paste work.
  */
 export function demosOriginUrl(raw: string | undefined): string | null {
   const value = raw?.trim();
@@ -67,5 +70,5 @@ export function demosOriginUrl(raw: string | undefined): string | null {
       `DEMOS_ORIGIN_URL must be an http(s) URL, got ${parsed.protocol}`,
     );
   }
-  return value.replace(/\/+$/, "");
+  return parsed.origin;
 }
