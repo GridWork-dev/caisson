@@ -22,11 +22,15 @@ on:
     # admin-only change previously did not trigger it at all, so admin could drift behind main
     # until some other tree changed. `apps/demos/**` is present for the same reason (ADR-0400):
     # the demo surface is its own deploy unit now, and a demos-only change must reach it.
+    # Keep every deployed app and its non-package runtime workspaces in this filter: site and
+    # admin compile the demo registry, which in turn imports the audit harness.
     paths:
       - "apps/site/**"
       - "apps/admin/**"
       - "apps/demos/**"
       - "packages/**"
+      - "tooling/audit-harness/**"
+      - "tooling/demo-registry/**"
       - ".github/workflows/deploy-railway.yml"
   workflow_dispatch:
     inputs:

@@ -8,7 +8,7 @@ prose-only; this file is the source-code companion. If the two ever disagree, AD
 marketing copy and this file wins on in-source text — keep them reconciled.
 
 **Scope — where these rules apply.** Any domain whose surface class is `oss-source`, `sold-source`,
-or `buyer-runtime` (per `packages/audit-harness/src/domains.ts`). Internal-only surfaces (`tooling/`,
+or `buyer-runtime` (per `tooling/audit-harness/src/domains.ts`). Internal-only surfaces (`tooling/`,
 `infra/`, `apps/admin`, the registry service, `audit-harness` itself, `docs/`, `.github/`) are
 **exempt** — gridwork-isms, ADR shorthand, and operator names are fine there.
 

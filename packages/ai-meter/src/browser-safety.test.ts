@@ -73,7 +73,7 @@ describe("`./browser` is browser-safe", () => {
       "packages/ai-meter/src/browser.ts",
       "packages/ai-meter/src/contracts.ts",
       "packages/ai-meter/src/estimate.ts",
-      "packages/ai-meter/src/pricebook.ts",
+      "packages/ai-meter/src/token-rates.ts",
     ]);
   });
 

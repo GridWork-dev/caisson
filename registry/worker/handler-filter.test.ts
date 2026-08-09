@@ -390,29 +390,10 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
     expect(served).not.toContain("@caisson/audit-worm"); // no edition-sibling bleed
   });
 
-  test("the everything bundle delivers every module in the real index except the rider-3 unpublished set", async () => {
-    // Indexed-but-unpublished modules (ADR-0351 rider 3) sit in the index with sellable:false and
-    // deliberately join NO bundle members map — not even everything — until their publish gate.
-    // Explicit allowlist on purpose: a future module missing from everything's members that is NOT
-    // named here still fails, so the completeness guard survives the exception.
-    // Named allowlist, filtered against everything's REAL index members so the two-phase
-    // graduation holds: a source-manifest membership only realizes in the index at the next
-    // consume (ADR-0178 lesson) — the `!everythingMembers.has` term makes a graduated name a
-    // no-op, and a graduated name is then PRUNED from the allowlist (agent-trajectory rode
-    // this path at its encRef first-publish; the three compliance-gap SKUs — access-review,
-    // risk-register, trust-page — completed the same two-consume arming 2026-07-20).
-    // agent-usage stays indexed sellable:false with no membership until its own publish gate
-    // (2026-07-18 operator lock).
-    //
-    // artifact-render LEFT this allowlist when oscal-spine graduated in the 2026-07-27 cut. It is
-    // still published-never-sold and still appears in no members map anywhere — but it is now
-    // DELIVERED to an everything buyer, because the spine names it in INTERNAL_RUNTIME_ENTITLEMENTS
-    // and everything names the spine. Delivered is not sold: sellable:false is unchanged, and no
-    // price or bundle-membership row exists for it. Excepting it here would now under-count the
-    // served set and mask a real regression in the spine's renderer edge.
-    //
-    // Any OTHER module missing from everything's members and NOT named here still fails the guard.
-    const RIDER3_UNPUBLISHED = new Set(["@caisson/agent-usage"]);
+  test("the everything bundle delivers every module except intentionally unbundled non-sellable modules", async () => {
+    // This allowlist describes current product state, not publication state. A newly missing module
+    // still fails, and an allowlisted module becoming sellable forces this exception to be removed.
+    const UNBUNDLED_NONSELLABLE = new Set(["@caisson/agent-usage"]);
     const everything = realIndex.modules.find(
       (m) => m.id === "@caisson/everything",
     );
@@ -422,11 +403,19 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
           ?.manifest.members ?? {},
       ),
     );
+    for (const id of UNBUNDLED_NONSELLABLE) {
+      const module = realIndex.modules.find((candidate) => candidate.id === id);
+      const manifest = module?.versions.find(
+        (version) => version.version === module.latest,
+      )?.manifest;
+      expect(manifest?.sellable).toBe(false);
+      expect(everythingMembers.has(id)).toBe(false);
+    }
     const served = await ids(realHandlerFor(["everything"])(req("/")));
     const expected = realIndex.modules
       .map((m) => m.id)
       .filter(
-        (id) => !(RIDER3_UNPUBLISHED.has(id) && !everythingMembers.has(id)),
+        (id) => !(UNBUNDLED_NONSELLABLE.has(id) && !everythingMembers.has(id)),
       );
     expect(served.sort()).toEqual(expected.sort());
   });

@@ -1,7 +1,7 @@
 // readNetPaidByItem on PGlite + real withTenant RLS. Two things are under test and only one of them
-// is the query: the SQL netting expression must agree with `@caisson/service-license`'s own
-// `netCharged` on every case, because the money lives in one place and the arithmetic now lives in
-// two. `charged_amount` / `refunded_amount` arrive by ALTER TABLE, so the columns-contract test's
+// is the query: the SQL netting expression must agree with the canonical `netCharged` export on every
+// case. The license service re-exports that same function, so this import also pins its public API.
+// `charged_amount` / `refunded_amount` arrive by ALTER TABLE, so the columns-contract test's
 // CREATE-TABLE parser cannot see them — this file exercises them against live columns instead.
 //
 // Fixtures go through the real `@caisson/service-license` write path (a devDependency here, same as
@@ -261,8 +261,7 @@ describe("readNetPaidByItem — the paidByItem producer (ADR-0382 lock 2 / ADR-0
 
   test("the SQL netting agrees with netCharged on every case", async () => {
     // The drift guard. GREATEST(charged − COALESCE(refunded,0), 0) in the query and
-    // Math.max(charged − (refunded ?? 0), 0) in the service are the same money rule written twice;
-    // this is what fails if either side is edited alone.
+    // Math.max(charged − (refunded ?? 0), 0) are the SQL and in-memory forms of one money rule.
     const cases: { charged: number | null; refunds: number[] }[] = [
       { charged: 164_900, refunds: [] },
       { charged: 164_900, refunds: [40_000] },

@@ -70,7 +70,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     // Guard the guard: files.length alone proves nothing. These two are reachable ONLY through
     // @caisson/ai-meter/browser's own imports — first hop (the package), then a second hop across
     // the kernel seam — so a resolver gone blind inside a workspace package fails here.
-    expect(walk.files).toContain("packages/ai-meter/src/pricebook.ts");
+    expect(walk.files).toContain("packages/ai-meter/src/token-rates.ts");
     expect(walk.files).toContain("packages/kernel/src/schema.ts");
   });
 
@@ -92,7 +92,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
       "packages/ai-meter/src/browser.ts",
       "packages/ai-meter/src/contracts.ts",
       "packages/ai-meter/src/estimate.ts",
-      "packages/ai-meter/src/pricebook.ts",
+      "packages/ai-meter/src/token-rates.ts",
     ]);
   });
 

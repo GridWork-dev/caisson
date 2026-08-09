@@ -10,7 +10,7 @@ import {
   looksLikeSecret,
   scrubForEgress,
   type EmbedFetch,
-} from "./egress-guard.ts";
+} from "./embed-scrub-guard.ts";
 import type { Embedder } from "./embedder.ts";
 
 describe("scrubForEgress (secret-scrub contract)", () => {

@@ -18,6 +18,10 @@
 // Both tenant-owned + fail-closed RLS via @caisson/tenancy-rls (ADR-0005), written inside the SAME
 // withTenant transaction apply-billing-event.ts already runs its grants in.
 import { randomUUID } from "node:crypto";
+import {
+  ORDER_RECORDS_READ_SQL,
+  SUBSCRIPTION_STATUSES_READ_SQL,
+} from "@caisson/platform-reads";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 
@@ -158,13 +162,7 @@ export async function readSubscriptionStatuses(
     plan_tag: string;
     status: "active" | "canceled";
     updated_at: unknown;
-  }>(
-    `SELECT subscription_id, price_id, plan_tag, status, updated_at
-       FROM subscription_status
-      WHERE account_id = $1
-      ORDER BY updated_at DESC`,
-    [accountId],
-  );
+  }>(SUBSCRIPTION_STATUSES_READ_SQL, [accountId]);
   return r.rows.map((row) => ({
     subscriptionId: row.subscription_id,
     priceId: row.price_id,
@@ -382,13 +380,7 @@ export async function readOrderRecords(
     currency: string;
     status: "paid" | "refunded";
     created_at: unknown;
-  }>(
-    `SELECT source_event_id, kind, price_id, label, amount, currency, status, created_at
-       FROM order_record
-      WHERE account_id = $1
-      ORDER BY created_at DESC`,
-    [accountId],
-  );
+  }>(ORDER_RECORDS_READ_SQL, [accountId]);
   return r.rows.map((row) => ({
     sourceEventId: row.source_event_id,
     kind: row.kind,

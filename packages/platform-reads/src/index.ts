@@ -6,9 +6,9 @@
 // independently deployable surfaces.
 //
 // THE FIX (extracted from apps/site/lib/dashboard-reads.ts): the raw SELECT SQL used to be
-// hand-copied in apps/site, so a column rename in `services/license`'s schema silently desynced the
-// app's queries with no compiler signal. Now the SELECT column lists live here as exported constants
-// (`ENTITLEMENT_GRANT_READ_COLUMNS` / `LICENSE_GRANT_READ_COLUMNS`) and the columns-contract test
+// hand-copied across consumers, so a column rename in `services/license`'s schema silently desynced
+// queries with no compiler signal. Now shared read expressions and SELECT column lists live here as
+// exported constants, and the columns-contract test
 // (`columns-contract.test.ts`) parses the column identifiers out of the shared DDL
 // (`ENTITLEMENT_SCHEMA_SQL` / `LICENSE_GRANT_SCHEMA_SQL` from `@caisson/service-license`) and asserts
 // every column these readers touch is present — so a schema rename is now a TEST failure here, not a
@@ -16,7 +16,8 @@
 //
 // Leaf by design: depends only on `@caisson/tenancy-rls` for the `TenantExecutor` type (every read
 // runs inside `withTenant`, ADR-0005 fail-closed RLS). It does NOT import the service's query
-// functions or runtime — only the table shape, expressed as typed reads + the column contract.
+// functions or runtime — only the table shape, expressed as typed reads + the column contract. The
+// license service imports the shared expressions from this package so those reads have one owner.
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 
 /** `timestamptz` columns come back as a driver-native `Date` instance on both PGlite and
@@ -92,8 +93,16 @@ export const UPDATES_WINDOW_READ_COLUMNS = [
   "updates_expires_at",
 ] as const;
 
+/** Canonical active one-time updates-window read, shared with the license issuer. */
+export const UPDATES_WINDOWS_READ_SQL = `SELECT entitlement_id,
+            max(COALESCE(updates_expires_at, granted_at + interval '12 months')) AS bound
+       FROM entitlement_grant
+      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
+      GROUP BY entitlement_id`;
+
 /**
- * Mirrors `services/license`'s `computeUpdatesWindows` EXACTLY (ADR-0244/0255: same table, same
+ * Supplies the canonical read used by `services/license`'s `computeUpdatesWindows` (ADR-0244/0255:
+ * same table, same
  * one_time-only sourcing, same purchased-id keying, same most-favorable/max-bound fold) — the LIVE
  * read the buyer dashboard uses in place of decoding the last-issued license token, which goes
  * stale after a renewal extends the DB row without a re-issue. Returns a `purchasedEntitlementId ->
@@ -101,20 +110,15 @@ export const UPDATES_WINDOW_READ_COLUMNS = [
  * entitlements never get a key — their own license expiry governs, ADR-0244 §4). Run inside
  * `withTenant`.
  *
- * Deliberately does NOT import `@caisson/service-license`'s query function — the read is
- * re-expressed as raw SQL against the known table shape so this package stays a leaf (schema
- * coupling only, never the service's runtime).
+ * Deliberately does NOT import `@caisson/service-license`'s query function, so this package stays a
+ * leaf (schema coupling only, never the service's runtime); the service imports the SQL constant.
  */
 export async function readUpdatesWindows(
   tx: TenantExecutor,
   accountId: string,
 ): Promise<Record<string, string>> {
   const r = await tx.query<{ entitlement_id: string; bound: unknown }>(
-    `SELECT entitlement_id,
-            max(COALESCE(updates_expires_at, granted_at + interval '12 months')) AS bound
-       FROM entitlement_grant
-      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
-      GROUP BY entitlement_id`,
+    UPDATES_WINDOWS_READ_SQL,
     [accountId],
   );
   const windows: Record<string, string> = {};
@@ -138,6 +142,19 @@ export interface NetPaidAmount {
   readonly currency: string;
 }
 
+/** Canonical SQL expression for charged minor units net of refunds, floored at zero. */
+export const NET_CHARGED_SQL_EXPRESSION =
+  "GREATEST(charged_amount - COALESCE(refunded_amount, 0), 0)";
+
+/** Canonical in-memory twin of {@link NET_CHARGED_SQL_EXPRESSION}. */
+export function netCharged(
+  chargedAmount: number | null,
+  refundedAmount: number | null,
+): number | null {
+  if (chargedAmount === null) return null;
+  return Math.max(chargedAmount - (refundedAmount ?? 0), 0);
+}
+
 /**
  * What the account has actually paid, per owned entitlement id, net of refunds (ADR-0382 lock 2 for
  * the charge, ADR-0394 for the netting) — the `paidByItem` producer for `@caisson/pricebook`'s
@@ -147,8 +164,8 @@ export interface NetPaidAmount {
  * Netting happens HERE, in SQL, because the alternative is a caller reading `charged_amount` raw and
  * crediting a buyer for money that went back to their card. `charged_amount` is stamped once and
  * never mutates; refunds accumulate in `refunded_amount`; the difference is what they are out of
- * pocket, floored at 0. `net-paid.integration.test.ts` pins this expression against
- * `@caisson/service-license`'s own `netCharged` so the two can never drift.
+ * pocket, floored at 0. `net-paid.integration.test.ts` pins the SQL expression against the canonical
+ * in-memory `netCharged` twin, which `@caisson/service-license` re-exports.
  *
  * ACTIVE grants only — a revoked grant is not owned, so it can never reach a quote. A NULL
  * `charged_amount` (the charge could not be attributed to a single SKU) yields NO key rather than a
@@ -178,7 +195,7 @@ export async function readNetPaidByItem(
   }>(
     `SELECT DISTINCT ON (entitlement_id)
             entitlement_id,
-            GREATEST(charged_amount - COALESCE(refunded_amount, 0), 0) AS net_paid,
+            ${NET_CHARGED_SQL_EXPRESSION} AS net_paid,
             charged_currency
        FROM entitlement_grant
       WHERE account_id = $1
@@ -218,6 +235,12 @@ export const SUBSCRIPTION_STATUS_READ_COLUMNS = [
   ...SUBSCRIPTION_STATUS_SELECT_COLUMNS,
 ] as const;
 
+/** Canonical account subscription-status history read, newest first. */
+export const SUBSCRIPTION_STATUSES_READ_SQL = `SELECT ${SUBSCRIPTION_STATUS_SELECT_COLUMNS.join(", ")}
+       FROM subscription_status
+      WHERE account_id = $1
+      ORDER BY updated_at DESC`;
+
 export interface SubscriptionStatusRow {
   subscriptionId: string;
   priceId: string;
@@ -230,8 +253,8 @@ export interface SubscriptionStatusRow {
  * Every subscription-status row for the account, newest-updated first (ADR-0293) — the buyer
  * dashboard's G13 "owned" read for a zero-entitlement plan (Developer), and the G14 cancel route's
  * ownership + Paddle-subscription-id lookup. Deliberately does NOT import
- * `@caisson/service-license`'s query function — re-expressed as raw SQL against the known table
- * shape so this package stays a leaf. Run inside `withTenant`.
+ * `@caisson/service-license`'s query function; the service imports this package's SQL constant
+ * instead. Run inside `withTenant`.
  */
 export async function readSubscriptionStatuses(
   tx: TenantExecutor,
@@ -243,13 +266,7 @@ export async function readSubscriptionStatuses(
     plan_tag: string;
     status: "active" | "canceled";
     updated_at: unknown;
-  }>(
-    `SELECT ${SUBSCRIPTION_STATUS_SELECT_COLUMNS.join(", ")}
-       FROM subscription_status
-      WHERE account_id = $1
-      ORDER BY updated_at DESC`,
-    [accountId],
-  );
+  }>(SUBSCRIPTION_STATUSES_READ_SQL, [accountId]);
   return r.rows.map((row) => ({
     subscriptionId: row.subscription_id,
     priceId: row.price_id,
@@ -279,6 +296,12 @@ export const ORDER_RECORD_READ_COLUMNS = [
   ...ORDER_RECORD_SELECT_COLUMNS,
 ] as const;
 
+/** Canonical account order/invoice history read, newest first. */
+export const ORDER_RECORDS_READ_SQL = `SELECT ${ORDER_RECORD_SELECT_COLUMNS.join(", ")}
+       FROM order_record
+      WHERE account_id = $1
+      ORDER BY created_at DESC`;
+
 export interface OrderRecordRow {
   sourceEventId: string;
   kind: "subscription" | "purchase";
@@ -305,13 +328,7 @@ export async function readOrderRecords(
     currency: string;
     status: "paid" | "refunded";
     created_at: unknown;
-  }>(
-    `SELECT ${ORDER_RECORD_SELECT_COLUMNS.join(", ")}
-       FROM order_record
-      WHERE account_id = $1
-      ORDER BY created_at DESC`,
-    [accountId],
-  );
+  }>(ORDER_RECORDS_READ_SQL, [accountId]);
   return r.rows.map((row) => ({
     sourceEventId: row.source_event_id,
     kind: row.kind,
@@ -329,7 +346,7 @@ export async function readOrderRecords(
  * scope predicate). Exported so the columns-contract test can assert every one is present in
  * `@caisson/service-license`'s `LICENSE_GRANT_SCHEMA_SQL`.
  */
-const LICENSE_GRANT_SELECT_COLUMNS = [
+export const LICENSE_GRANT_SELECT_COLUMNS = [
   "major",
   "license_id",
   "tier",

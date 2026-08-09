@@ -1,5 +1,5 @@
 // src/secret-scrub.ts — the shared credential-shape scrub predicate (ADR-0215, moved from
-// `local-store/src/egress-guard.ts` where it was originally introduced for the T8 cloud-egress
+// `local-store/src/embed-scrub-guard.ts` where it was originally introduced for the T8 cloud-embed
 // guard, ADR-0067). Lives in `kernel` — the lowest-license, zero-dep home both `local-store`
 // (cloud-egress) and `guardrails` (the `guard.ts` cheap pre-screen) already depend on — so the
 // predicate has exactly ONE implementation instead of a second/third re-derivation per consumer.
