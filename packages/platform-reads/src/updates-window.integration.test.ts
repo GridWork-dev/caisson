@@ -1,5 +1,5 @@
-// readUpdatesWindows on PGlite + real withTenant RLS — proves the platform-reads mirror matches
-// services/license's computeUpdatesWindows (ADR-0244/0255) bound-for-bound: this is the read the
+// readUpdatesWindows on PGlite + real withTenant RLS — proves the shared query used by
+// services/license's computeUpdatesWindows (ADR-0244/0255) stays correct bound-for-bound: this is the read the
 // buyer dashboard now uses instead of decoding the last-issued license token (which goes stale
 // after a renewal extends the DB row without a re-issue). Fixtures are built through the real
 // `@caisson/service-license` grant/extend functions (a devDependency here, same as

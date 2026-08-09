@@ -21,6 +21,7 @@
 // the policy WITH CHECK rejects a cross-tenant write, and a read that forgets its WHERE still sees
 // only the caller's rows.
 import { randomUUID } from "node:crypto";
+import { LICENSE_GRANT_SELECT_COLUMNS } from "@caisson/platform-reads";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 
@@ -156,7 +157,7 @@ export async function readLicenseGrant(
     token: string;
     issued_at: string;
   }>(
-    `SELECT id, account_id, major, license_id, tier, expiry, token, issued_at
+    `SELECT id, account_id, ${LICENSE_GRANT_SELECT_COLUMNS.join(", ")}
      FROM license_grant
      WHERE account_id = $1 AND major = $2`,
     [accountId, major],

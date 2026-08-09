@@ -16,9 +16,9 @@
     }
   },
   "scripts": {
-    "build": "tscn -p tsconfig.json",
+    "build": "tscn -p tsconfig.build.json",
     "lint": "eslint src",
-    "test": "bun test --timeout 60000 ./src"
+    "test": "tscn -p tsconfig.json --noEmit && bun test --timeout 60000 ./src"
   },
   "dependencies": {
     "@caisson/tenancy-rls": "workspace:*"
