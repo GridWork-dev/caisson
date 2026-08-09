@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-08-09
 status: live
 grounds:
   - knowledge/decisions/ADR-0079-seo-strategy.md
@@ -48,7 +48,7 @@ not this audit.
 
 1. **`app/robots.ts`** — added the explicit AI-crawler allow group (check #2). Low-risk, auditable-intent, and a hedge against a managed edge rule that default-blocks AI bots (a common silent AEO blocker). The wildcard already admitted them; this makes the welcome explicit and future-proof.
 2. **`app/(marketing)/agentic-dev/page.tsx`** — added `faqPage(FAQS)` JSON-LD (check #12), closing the one bundle that had a visible FAQ but no schema.
-3. **`lib/glossary.ts`** — three long-tail explainer terms (check #13, deliverable 4), each auto-covered by the existing sitemap + llms.txt + JSON-LD surfaces.
+3. **`lib/glossary.tsx`** — three long-tail explainer terms (check #13, deliverable 4), each auto-covered by the existing sitemap + llms.txt + JSON-LD surfaces.
 
 ## Blocking (historical — CLEARED 2026-07-10)
 
