@@ -2,8 +2,6 @@
 // PageSpec; the shared route renders every record through <PageSections>, matching the glossary
 // and module-page registry pattern. `verifiedOn` + `sources` are machine-readable first: the
 // report-only regulatory-claim watch imports this registry directly.
-import { createElement } from "react";
-
 import {
   ARTICLE_50_PRIMARY_SOURCES,
   ARTICLE_50_VERIFIED_ON,
@@ -230,50 +228,44 @@ export function findWritingPiece(slug: string): WritingPiece | undefined {
 }
 
 function breadcrumbNav(piece: WritingPiece) {
-  return createElement(
-    "nav",
-    { "aria-label": "Breadcrumb", className: "cs-footnote" },
-    createElement("a", { href: "/writing", className: "cs-link" }, "Writing"),
-    " / ",
-    createElement("span", { "aria-current": "page" }, piece.title),
+  return (
+    <nav aria-label="Breadcrumb" className="cs-footnote">
+      <a href="/writing" className="cs-link">
+        Writing
+      </a>
+      {" / "}
+      <span aria-current="page">{piece.title}</span>
+    </nav>
   );
 }
 
 function publicationStamp(piece: WritingPiece) {
-  return createElement(
-    "span",
-    { className: "cs-footnote" },
-    `Published ${piece.publishedOn} · sources verified ${piece.verifiedOn}`,
+  return (
+    <span className="cs-footnote">
+      {`Published ${piece.publishedOn} · sources verified ${piece.verifiedOn}`}
+    </span>
   );
 }
 
 function sourceList(piece: WritingPiece) {
-  return createElement(
-    "ul",
-    {
-      className: "cs-lede",
-      style: {
+  return (
+    <ul
+      className="cs-lede"
+      style={{
         paddingLeft: "var(--cs-space-5)",
         display: "grid",
         gap: "var(--cs-space-2)",
-      },
-    },
-    piece.sources.map((source) =>
-      createElement(
-        "li",
-        { key: `${source.url}#${source.locator}` },
-        createElement(
-          "a",
-          {
-            href: source.url,
-            className: "cs-link",
-            rel: "noreferrer",
-          },
-          source.label,
-        ),
-        ` — ${source.locator}`,
-      ),
-    ),
+      }}
+    >
+      {piece.sources.map((source) => (
+        <li key={`${source.url}#${source.locator}`}>
+          <a href={source.url} className="cs-link" rel="noreferrer">
+            {source.label}
+          </a>
+          {` — ${source.locator}`}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -282,25 +274,25 @@ function relatedLinks(piece: WritingPiece): PageSection | undefined {
   return {
     kind: "section",
     title: "Related reading",
-    children: createElement(
-      "ul",
-      {
-        style: {
+    children: (
+      <ul
+        style={{
           listStyle: "none",
           padding: 0,
           margin: 0,
           display: "flex",
           flexWrap: "wrap",
           gap: "var(--cs-space-3)",
-        },
-      },
-      piece.related.map((path) =>
-        createElement(
-          "li",
-          { key: path },
-          createElement("a", { href: path, className: "cs-link" }, path),
-        ),
-      ),
+        }}
+      >
+        {piece.related.map((path) => (
+          <li key={path}>
+            <a href={path} className="cs-link">
+              {path}
+            </a>
+          </li>
+        ))}
+      </ul>
     ),
   };
 }

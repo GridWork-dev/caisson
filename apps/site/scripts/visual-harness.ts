@@ -38,7 +38,7 @@ import {
 import { signInProbeAccount } from "../live/probe-session.ts";
 import { BUNDLE_PAGES } from "../lib/bundle-pages.ts";
 import { COMPARISONS } from "../lib/comparisons.ts";
-import { GLOSSARY_TERMS } from "../lib/glossary.ts";
+import { GLOSSARY_TERMS } from "../lib/glossary.tsx";
 import { LEGAL_ROUTES } from "../lib/routes.ts";
 import { MODULE_PAGES } from "../lib/module-pages.ts";
 

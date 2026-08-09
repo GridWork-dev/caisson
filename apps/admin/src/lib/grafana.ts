@@ -19,7 +19,7 @@
 
 import { z } from "zod";
 
-import { fetchWithTimeout } from "@caisson/kernel";
+import { proxyGet } from "./grafana-proxy.ts";
 
 const QUERY_TIMEOUT_MS = 10_000;
 const WINDOW_MS = 30 * 60_000; // last 30 minutes
@@ -155,32 +155,6 @@ export function mapServiceNames(raw: unknown): string[] {
 
 // ---- query ----------------------------------------------------------------
 
-/** GET through the datasource proxy. Dormant env / network error / non-2xx all resolve to null. */
-async function proxyGet(
-  path: string,
-  params: URLSearchParams,
-): Promise<unknown | null> {
-  const env = grafanaEnv();
-  if (!env) return null;
-  try {
-    const url = `${env.base}/api/datasources/proxy/uid/${encodeURIComponent(env.uid)}${path}?${params.toString()}`;
-    const res = await fetchWithTimeout(
-      url,
-      {
-        headers: {
-          Authorization: `Bearer ${env.token}`,
-          Accept: "application/json",
-        },
-      },
-      { timeoutMs: QUERY_TIMEOUT_MS },
-    );
-    if (!res.ok) return null;
-    return (await res.json()) as unknown;
-  } catch {
-    return null; // never throws to the page; the widget shows its empty state
-  }
-}
-
 interface WindowSec {
   startS: number;
   endS: number;
@@ -202,7 +176,9 @@ async function searchTraces(
     start: String(p.start),
     end: String(p.end),
   });
-  const raw = await proxyGet("/api/search", params);
+  const raw = await proxyGet(grafanaEnv(), "/api/search", params, {
+    timeoutMs: QUERY_TIMEOUT_MS,
+  });
   return raw === null ? [] : mapTraces(raw);
 }
 
@@ -211,7 +187,12 @@ async function listServiceNames(w: WindowSec): Promise<string[]> {
     start: String(w.startS),
     end: String(w.endS),
   });
-  const raw = await proxyGet("/api/search/tag/service.name/values", params);
+  const raw = await proxyGet(
+    grafanaEnv(),
+    "/api/search/tag/service.name/values",
+    params,
+    { timeoutMs: QUERY_TIMEOUT_MS },
+  );
   return raw === null ? [] : mapServiceNames(raw);
 }
 

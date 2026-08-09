@@ -59,6 +59,41 @@ export function wormStore(): ArtifactStore {
   return new LocalArtifactStore(dir);
 }
 
+type LicenseProxyPath = "/issue" | "/admin/affiliate/mint";
+
+async function licenseServiceProxy<T>(
+  path: LicenseProxyPath,
+  body: unknown,
+  { timeoutMs }: { timeoutMs: number },
+): Promise<T> {
+  const base = process.env.CAISSON_LICENSE_ISSUE_URL?.trim() ?? "";
+  const token = process.env.ADMIN_ISSUE_TOKEN?.trim() ?? "";
+  if (base === "" || token === "") {
+    throw new Error(
+      path === "/issue"
+        ? "license reissue is not configured (set CAISSON_LICENSE_ISSUE_URL + ADMIN_ISSUE_TOKEN)"
+        : "affiliate minting is not configured (set CAISSON_LICENSE_ISSUE_URL + ADMIN_ISSUE_TOKEN)",
+    );
+  }
+  const res = await fetchWithTimeout(
+    `${base.replace(/\/$/, "")}${path}`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    },
+    { timeoutMs },
+  );
+  if (!res.ok) {
+    const operation = path === "/issue" ? "license /issue" : "affiliate mint";
+    throw new Error(`${operation} proxy returned ${String(res.status)}`);
+  }
+  return (await res.json()) as T;
+}
+
 /** Server-side `/issue` reissue proxy (Fork AM-5). Throws on any non-2xx so a failed reissue writes
  *  no audit rows (the orchestration only logs after this resolves). The bearer never leaves here.
  *  `rotate: true` (the rotation lever) rides through to `/issue`'s forced re-mint; omitted, the
@@ -70,29 +105,10 @@ async function issueProxy(req: {
   expiry: string | null;
   rotate?: boolean;
 }): Promise<ReissueProxyResult> {
-  const base = process.env.CAISSON_LICENSE_ISSUE_URL?.trim() ?? "";
-  const token = process.env.ADMIN_ISSUE_TOKEN?.trim() ?? "";
-  if (base === "" || token === "") {
-    throw new Error(
-      "license reissue is not configured (set CAISSON_LICENSE_ISSUE_URL + ADMIN_ISSUE_TOKEN)",
-    );
-  }
-  const res = await fetchWithTimeout(
-    `${base.replace(/\/$/, "")}/issue`,
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(req),
-    },
-    { timeoutMs: 10_000 },
-  );
-  if (!res.ok) {
-    throw new Error(`license /issue proxy returned ${String(res.status)}`);
-  }
-  const body = (await res.json()) as { token?: unknown; licenseId?: unknown };
+  const body = await licenseServiceProxy<{
+    token?: unknown;
+    licenseId?: unknown;
+  }>("/issue", req, { timeoutMs: 10_000 });
   if (typeof body.token !== "string" || typeof body.licenseId !== "string") {
     throw new Error("license /issue proxy returned an unexpected body");
   }
@@ -109,32 +125,10 @@ async function mintDiscountProxy(input: {
   code: string;
   description: string;
 }): Promise<{ discountId: string; code: string }> {
-  const base = process.env.CAISSON_LICENSE_ISSUE_URL?.trim() ?? "";
-  const token = process.env.ADMIN_ISSUE_TOKEN?.trim() ?? "";
-  if (base === "" || token === "") {
-    throw new Error(
-      "affiliate minting is not configured (set CAISSON_LICENSE_ISSUE_URL + ADMIN_ISSUE_TOKEN)",
-    );
-  }
-  const res = await fetchWithTimeout(
-    `${base.replace(/\/$/, "")}/admin/affiliate/mint`,
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(input),
-    },
-    { timeoutMs: 15_000 },
-  );
-  if (!res.ok) {
-    throw new Error(`affiliate mint proxy returned ${String(res.status)}`);
-  }
-  const body = (await res.json()) as {
+  const body = await licenseServiceProxy<{
     discountId?: unknown;
     code?: unknown;
-  };
+  }>("/admin/affiliate/mint", input, { timeoutMs: 15_000 });
   if (typeof body.discountId !== "string" || typeof body.code !== "string") {
     throw new Error("affiliate mint proxy returned an unexpected body");
   }

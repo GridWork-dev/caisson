@@ -1,5 +1,10 @@
+import {
+  reconcileLedger,
+  type ReconcileClass as SharedReconcileClass,
+} from "@caisson/testing";
+
 export type FindingStatus = "open" | "accepted" | "closed";
-export type ReconcileClass = "new" | "unchanged" | "regressed" | "closed";
+export type ReconcileClass = SharedReconcileClass;
 
 export interface LedgerFinding {
   id: string;
@@ -16,32 +21,19 @@ export function reconcileFindings(
   previous: LedgerFinding[],
   current: CurrentFinding[],
 ) {
-  const previousById = new Map(
-    previous.map((finding) => [finding.id, finding]),
-  );
-  const currentIds = new Set(current.map((finding) => finding.id));
-  const classes: Record<string, ReconcileClass> = {};
-  const ledger: LedgerFinding[] = current.map((finding) => {
-    const prior = previousById.get(finding.id);
-    if (!prior) {
-      classes[finding.id] = "new";
-      return { ...finding, status: "open" };
-    }
-    if (prior.status === "closed") {
-      classes[finding.id] = "regressed";
-      return { ...finding, status: "open" };
-    }
-    classes[finding.id] = "unchanged";
-    return { ...finding, status: prior.status };
-  });
-  for (const prior of previous) {
-    if (currentIds.has(prior.id)) continue;
-    if (prior.status !== "closed") classes[prior.id] = "closed";
-    ledger.push({ ...prior, status: "closed" });
-  }
-  ledger.sort((a, b) => a.id.localeCompare(b.id));
-  const sortedClasses = Object.fromEntries(
-    Object.entries(classes).sort(([a], [b]) => a.localeCompare(b)),
-  ) as Record<string, ReconcileClass>;
-  return { ledger, classes: sortedClasses, advisory: true as const };
+  const normalizedCurrent: LedgerFinding[] = current.map((finding) => ({
+    ...finding,
+    status: "open",
+  }));
+  return {
+    ...reconcileLedger<FindingStatus, LedgerFinding>(
+      previous,
+      normalizedCurrent,
+      {
+        openStatus: "open",
+        terminalStatus: "closed",
+      },
+    ),
+    advisory: true as const,
+  };
 }

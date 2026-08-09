@@ -1437,6 +1437,9 @@
     "tooling/browser-audit": {
       "name": "@caisson/browser-audit",
       "version": "0.0.2",
+      "dependencies": {
+        "@caisson/testing": "workspace:*",
+      },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
@@ -1449,6 +1452,9 @@
       "version": "0.0.3",
       "bin": {
         "design-critic-reconcile": "./src/cli.ts",
+      },
+      "dependencies": {
+        "@caisson/testing": "workspace:*",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",

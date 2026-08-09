@@ -5,7 +5,7 @@
 //
 // `GLOSSARY_TERMS` is compile-time-static in-repo source (ADR-0002 carve-out, renderer SPEC §4) —
 // no Zod parse layer; every term is type-checked at build, not validated at runtime.
-import { createElement, Fragment, type ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import {
   ARTICLE_50_PRIMARY_SOURCES,
@@ -25,14 +25,18 @@ import type { RegulatorySource } from "./regulatory-source";
 export function renderInlineCode(text: string): ReactNode {
   const parts = text.split(/`([^`]+)`/);
   if (parts.length === 1) return text;
-  return createElement(
-    Fragment,
-    null,
-    ...parts.map((seg, i) =>
-      i % 2 === 1
-        ? createElement("code", { key: i, className: "cs-code-inline" }, seg)
-        : seg,
-    ),
+  return (
+    <Fragment>
+      {parts.map((seg, i) =>
+        i % 2 === 1 ? (
+          <code key={i} className="cs-code-inline">
+            {seg}
+          </code>
+        ) : (
+          seg
+        ),
+      )}
+    </Fragment>
   );
 }
 
@@ -3307,49 +3311,38 @@ function relatedTermsSection(term: GlossaryTerm): PageSection | undefined {
   return {
     kind: "section",
     title: "See also",
-    children: createElement(
-      "ul",
-      {
-        style: {
+    children: (
+      <ul
+        style={{
           listStyle: "none",
           padding: 0,
           margin: 0,
           display: "flex",
           flexWrap: "wrap",
           gap: "var(--cs-space-3)",
-        },
-      },
-      related.map((t, i) =>
-        createElement(
-          "li",
-          {
-            key: t.slug,
-            style: {
+        }}
+      >
+        {related.map((t, i) => (
+          <li
+            key={t.slug}
+            style={{
               display: "flex",
               alignItems: "center",
               gap: "var(--cs-space-3)",
-            },
-          },
-          i > 0 &&
-            createElement(
-              "span",
-              { "aria-hidden": true, className: "cs-muted" },
-              "·",
-            ),
-          createElement(
-            "a",
-            // `.cs-link` (packages/ui base.css, visual-audit remediation) - accent color +
-            // underline, never color-alone, so the link reads as clickable at a glance (ids
-            // 12b142a42cc26ae0, 250763cdc31a690a). A middot separates adjacent terms so a
-            // flex-wrap line break never reads as ambiguous run-on text (id 5bdfaa87d40e655e).
-            {
-              href: `/glossary/${t.slug}`,
-              className: "cs-link",
-            },
-            t.term,
-          ),
-        ),
-      ),
+            }}
+          >
+            {i > 0 && (
+              <span aria-hidden={true} className="cs-muted">
+                ·
+              </span>
+            )}
+            {/* `.cs-link` keeps links distinguishable without relying on color alone. */}
+            <a href={`/glossary/${t.slug}`} className="cs-link">
+              {t.term}
+            </a>
+          </li>
+        ))}
+      </ul>
     ),
   };
 }
@@ -3366,32 +3359,24 @@ function primarySourcesSection(term: GlossaryTerm): PageSection | undefined {
     kind: "section",
     title: "Primary sources",
     lede: `Sources verified ${term.verifiedOn}.`,
-    children: createElement(
-      "ul",
-      {
-        className: "cs-lede",
-        style: {
+    children: (
+      <ul
+        className="cs-lede"
+        style={{
           paddingLeft: "var(--cs-space-5)",
           display: "grid",
           gap: "var(--cs-space-2)",
-        },
-      },
-      term.sources.map((source) =>
-        createElement(
-          "li",
-          { key: `${source.url}#${source.locator}` },
-          createElement(
-            "a",
-            {
-              href: source.url,
-              className: "cs-link",
-              rel: "noreferrer",
-            },
-            source.label,
-          ),
-          ` — ${source.locator}`,
-        ),
-      ),
+        }}
+      >
+        {term.sources.map((source) => (
+          <li key={`${source.url}#${source.locator}`}>
+            <a href={source.url} className="cs-link" rel="noreferrer">
+              {source.label}
+            </a>
+            {` — ${source.locator}`}
+          </li>
+        ))}
+      </ul>
     ),
   };
 }
@@ -3401,12 +3386,14 @@ function primarySourcesSection(term: GlossaryTerm): PageSection | undefined {
  *  breadcrumb does (marketplace/modules/[slug]/page.tsx), with `cs-link` (not a bare `<a>`) so
  *  the link reads as interactive under the `a { color: inherit }` reset (base.css). */
 function breadcrumbNav(term: GlossaryTerm) {
-  return createElement(
-    "nav",
-    { "aria-label": "Breadcrumb", className: "cs-footnote" },
-    createElement("a", { href: "/glossary", className: "cs-link" }, "Glossary"),
-    " / ",
-    createElement("span", { "aria-current": "page" }, term.term),
+  return (
+    <nav aria-label="Breadcrumb" className="cs-footnote">
+      <a href="/glossary" className="cs-link">
+        Glossary
+      </a>
+      {" / "}
+      <span aria-current="page">{term.term}</span>
+    </nav>
   );
 }
 
