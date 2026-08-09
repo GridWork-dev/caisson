@@ -277,17 +277,34 @@ describe("ci-publish-step (ADR-0021/0069)", () => {
   });
 
   test("dry-run: delisted ids (ADR-0271) count separately from skippedExisting", async () => {
-    // The real committed ledger carries delist lines for @caisson/ai-kit/local-ai/agent-dev, and
-    // their manifest.ts files still exist on disk (append-only — a delist removes only the index
-    // entry, never the workspace package). Scanning the REAL packagesDir against the REAL ledger
-    // exercises the split without any synthetic fixture.
+    // The real committed ledger carries delist lines for @caisson/ai-kit/local-ai/agent-dev. Their
+    // retired source workspaces no longer exist, so synthetic manifests exercise the scan while the
+    // real append-only ledger remains the authority for whether each id is delisted.
     const dir = tmpDir("skip-delisted");
     const ledgerPath = join(dir, "ledger.jsonl");
     const indexPath = join(dir, "index.json");
+    const packagesDir = join(dir, "packages");
     try {
       const committedLedger = readFileSync(LEDGER_PATH, "utf8");
       writeFileSync(ledgerPath, committedLedger);
       writeFileSync(indexPath, readFileSync(INDEX_PATH, "utf8"));
+      for (const [slug, version] of [
+        ["ai-kit", "0.4.0"],
+        ["local-ai", "0.2.5"],
+        ["agent-dev", "0.4.0"],
+      ] as const) {
+        const packageDir = join(packagesDir, slug);
+        const id = `@caisson/${slug}`;
+        mkdirSync(packageDir, { recursive: true });
+        writeFileSync(
+          join(packageDir, "package.json"),
+          JSON.stringify({ name: id, version }),
+        );
+        writeFileSync(
+          join(packageDir, "manifest.ts"),
+          `export default ${JSON.stringify(mkManifest(id, version))};\n`,
+        );
+      }
 
       const result = await runPublishStep({
         runId: "ci-test-skip-delisted",
@@ -296,6 +313,7 @@ describe("ci-publish-step (ADR-0021/0069)", () => {
         dryRun: true,
         ledgerPath,
         indexPath,
+        packagesDir,
       });
 
       // The 3 dissolved edition metas are delisted, not "already published".
