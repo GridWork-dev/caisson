@@ -17,12 +17,14 @@ on:
     branches: [main]
     # These paths gate the AUTOMATIC path only, which deploys admin + site. `services/license/**`
     # is deliberately absent: the license step is dispatch-only (it runs migrations — see the step).
-    # `apps/admin/**` is present because this job deploys admin and an admin-only change previously
-    # did not trigger it at all, so admin could drift behind main until some other tree changed.
+    # Keep every deployed app and its non-package runtime workspaces in this filter. Both site and
+    # admin compile the demo registry, which in turn imports the audit harness.
     paths:
       - "apps/site/**"
       - "apps/admin/**"
       - "packages/**"
+      - "tooling/audit-harness/**"
+      - "tooling/demo-registry/**"
       - ".github/workflows/deploy-railway.yml"
   workflow_dispatch:
     inputs:
