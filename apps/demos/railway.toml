@@ -24,8 +24,11 @@
 # Set 1 without 2 and the site keeps rewriting to a service CI never redeploys again — it serves
 # stale embeds indefinitely, and because the site itself keeps working, nothing pages.
 #
-# Service env vars: NONE. Every poke runs in the browser against in-page sample data; the app
-# reads no secret, opens no socket, and talks to no database. PORT is set by the Dockerfile.
+# Service env vars: exactly ONE — PORT=3040, pinned as a Railway service variable because Railway
+# injects its own PORT (8080) at runtime, which overrides the Dockerfile ENV and leaves the mesh
+# dialing the documented 3040 against a server bound elsewhere (observed as ECONNREFUSED at first
+# flip). Every poke runs in the browser against in-page sample data; the app reads no secret,
+# opens no socket, and talks to no database.
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/demos/Dockerfile"
