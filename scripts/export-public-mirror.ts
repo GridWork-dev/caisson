@@ -21,6 +21,7 @@
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -233,6 +234,24 @@ export function resolveMirrorOutDir(repoRoot: string, output: string): string {
     );
   }
   return outDir;
+}
+
+export function assertMirrorOutDirHasNoSymlinkAncestors(
+  allowedRoot: string,
+  outDir: string,
+): void {
+  let current = outDir;
+  while (true) {
+    if (lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink()) {
+      throw new Error("mirror output path must not contain symlinks");
+    }
+    if (current === allowedRoot) return;
+    const parent = dirname(current);
+    if (parent === current) {
+      throw new Error("mirror output path must stay inside the allowed root");
+    }
+    current = parent;
+  }
 }
 
 function readJson(path: string): PkgJson {
@@ -731,6 +750,10 @@ function main(): void {
   }
 
   // --- write the mirror ---
+  assertMirrorOutDirHasNoSymlinkAncestors(
+    resolve(repoRoot, "mirror-out"),
+    outDir,
+  );
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
 

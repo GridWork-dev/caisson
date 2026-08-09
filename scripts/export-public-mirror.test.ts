@@ -1,7 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  assertMirrorOutDirHasNoSymlinkAncestors,
   DROP_COMMERCIAL_DEV_DEPS,
   EXCLUDE_TEST_FILES,
   MIRROR_ASSET_FILES,
@@ -25,6 +34,12 @@ describe("resolveMirrorOutDir", () => {
     expect(resolveMirrorOutDir(repoRoot, "mirror-out/probe")).toBe(
       join(repoRoot, "mirror-out/probe"),
     );
+    expect(() =>
+      assertMirrorOutDirHasNoSymlinkAncestors(
+        join(repoRoot, "mirror-out"),
+        join(repoRoot, "mirror-out/probe"),
+      ),
+    ).not.toThrow();
   });
 
   test("rejects destructive or out-of-root destinations", () => {
@@ -41,6 +56,26 @@ describe("resolveMirrorOutDir", () => {
       expect(() => resolveMirrorOutDir(repoRoot, output)).toThrow(
         /inside the dedicated mirror-out directory/,
       );
+    }
+  });
+
+  test("rejects a symlinked ancestor immediately before deletion", () => {
+    const realRepoRoot = mkdtempSync(join(tmpdir(), "caisson-mirror-root-"));
+    const externalDir = mkdtempSync(join(tmpdir(), "caisson-mirror-external-"));
+    const allowedRoot = join(realRepoRoot, "mirror-out");
+    mkdirSync(allowedRoot);
+    symlinkSync(externalDir, join(allowedRoot, "linked"), "dir");
+
+    try {
+      expect(() =>
+        assertMirrorOutDirHasNoSymlinkAncestors(
+          allowedRoot,
+          join(allowedRoot, "linked", "victim"),
+        ),
+      ).toThrow(/must not contain symlinks/);
+    } finally {
+      rmSync(realRepoRoot, { recursive: true, force: true });
+      rmSync(externalDir, { recursive: true, force: true });
     }
   });
 });
