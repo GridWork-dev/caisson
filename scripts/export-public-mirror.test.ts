@@ -6,6 +6,7 @@ import {
   EXCLUDE_TEST_FILES,
   MIRROR_ASSET_FILES,
   MIRROR_WORKSPACES,
+  resolveMirrorOutDir,
   resolveCatalogSpec,
   rewriteProseMentions,
   sanitizeAdrCitations,
@@ -13,6 +14,36 @@ import {
 } from "./export-public-mirror.ts";
 
 const MIRROR_ASSETS_DIR = join(import.meta.dir, "mirror-assets");
+
+describe("resolveMirrorOutDir", () => {
+  const repoRoot = "/workspace/caisson";
+
+  test("allows only the dedicated mirror-out tree", () => {
+    expect(resolveMirrorOutDir(repoRoot, "mirror-out")).toBe(
+      join(repoRoot, "mirror-out"),
+    );
+    expect(resolveMirrorOutDir(repoRoot, "mirror-out/probe")).toBe(
+      join(repoRoot, "mirror-out/probe"),
+    );
+  });
+
+  test("rejects destructive or out-of-root destinations", () => {
+    for (const output of [
+      ".",
+      "..",
+      "packages/kernel",
+      "mirror-outside",
+      "/tmp/caisson-mirror",
+      "mirror-out/../mirror-out",
+      "mirror-out/../../packages/kernel",
+      "mirror-out/\0bad",
+    ]) {
+      expect(() => resolveMirrorOutDir(repoRoot, output)).toThrow(
+        /inside the dedicated mirror-out directory/,
+      );
+    }
+  });
+});
 
 test("the mirror root exposes workspace globs to its module-graph tooling", () => {
   expect(MIRROR_WORKSPACES.packages).toEqual(["packages/*", "tooling/*"]);

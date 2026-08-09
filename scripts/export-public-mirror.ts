@@ -35,7 +35,7 @@ import {
   createPublicKey,
   verify as cryptoVerify,
 } from "node:crypto";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 const APACHE = "Apache-2.0";
 const COMMERCIAL = "LicenseRef-Caisson-Commercial";
@@ -217,6 +217,22 @@ function parseArgs(argv: readonly string[]): {
     process.exit(1);
   }
   return { out, generatedAt, allowMissingExcludes };
+}
+
+export function resolveMirrorOutDir(repoRoot: string, output: string): string {
+  const allowedRoot = resolve(repoRoot, "mirror-out");
+  const outDir = resolve(repoRoot, output);
+  if (
+    output.includes("\0") ||
+    isAbsolute(output) ||
+    output.split(/[\\/]/).includes("..") ||
+    (outDir !== allowedRoot && !outDir.startsWith(`${allowedRoot}${sep}`))
+  ) {
+    throw new Error(
+      "mirror output must stay inside the dedicated mirror-out directory",
+    );
+  }
+  return outDir;
 }
 
 function readJson(path: string): PkgJson {
@@ -643,7 +659,7 @@ function main(): void {
   const { out, generatedAt, allowMissingExcludes } = parseArgs(
     Bun.argv.slice(2),
   );
-  const outDir = resolve(repoRoot, out);
+  const outDir = resolveMirrorOutDir(repoRoot, out);
 
   const sourceRootPkg = readJson(join(repoRoot, "package.json")) as PkgJson & {
     workspaces?: {
