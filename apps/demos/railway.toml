@@ -1,0 +1,27 @@
+# Railway service config — apps/demos (@caisson/demos), the interactive demo surface split out of
+# apps/site by ADR-0400. Served to the public at caisson.sh/demos/* through apps/site's multi-zone
+# rewrite, never on a hostname of its own — no DNS record, no Cloudflare change, no new CSP origin.
+#
+# THE SERVICE DOES NOT EXIST YET. Creating it is an external-system act and is operator-gated
+# (ADR-0400 decision 4): the service must exist and answer its health route BEFORE apps/site's
+# rewrite is armed, so the split is fail-safe in both directions. Until then this file, the
+# Dockerfile beside it, and the deploy-railway.yml entry are inert code.
+#
+# Dashboard settings for THIS service (the build context must be the repo root, see the Dockerfile):
+#   Root Directory       = /                      (repo root — the Docker build context)
+#   Config-as-code path  = apps/demos/railway.toml (this file)
+#
+# Service env vars: NONE. Every poke runs in the browser against in-page sample data; the app
+# reads no secret, opens no socket, and talks to no database. PORT is set by the Dockerfile.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/demos/Dockerfile"
+
+[deploy]
+# /demos/healthz, not /healthz: next.config.ts sets `basePath: "/demos"`, which prefixes every
+# route in this app. This is also the path the site rewrite exposes publicly, so the same URL
+# proves the zone end-to-end once the rewrite is armed.
+healthcheckPath = "/demos/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+numReplicas = 1
