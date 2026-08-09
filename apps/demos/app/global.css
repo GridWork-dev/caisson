@@ -1,0 +1,36 @@
+/* apps/demos stylesheet — kit-first (ADR-0099), same as apps/site: the reset, layout primitives,
+ * type utilities and elevation live in `@caisson/ui/styles/base.css` (imported in layout.tsx
+ * before this file), and every kit component ships its own co-located CSS. This file holds only
+ * what an EMBED document needs that a full page does not. All values are --cs-* tokens. */
+
+/* The embed document is measured by its parent, which reads THIS element's box and sizes the
+ * iframe to it (apps/site/components/poke-embed.tsx). base.css's `min-height: 100dvh` would make
+ * that measurement a one-way ratchet: inside an iframe 100dvh IS the current iframe height, so
+ * the measured box could only ever grow, and a poke that gets shorter when you drive it would
+ * leave the frame stuck at its tallest past size with dead space under it. Releasing the floor
+ * here is what lets the measurement track content in both directions. */
+body {
+  min-height: 0;
+}
+
+/* Hubot Sans ships ONLY a barred zero, and in prose it reads as Greek theta ("v1Θ", "2Θ26").
+ * This single-glyph face — Mona Sans, Hubot's sibling family, subset to just U+0030 (~4KB,
+ * public/fonts, OFL text alongside) — is composed IN FRONT of the Hubot stack on <html>
+ * (lib/fonts.ts fontSansZeroPatch), so every sans-serif "0" resolves to Mona's plain oval and
+ * every other character falls through to Hubot untouched. Carried here as well as in apps/site
+ * because the embed renders INSIDE a site page: a different zero glyph a few pixels from the
+ * site's own is exactly the kind of seam an iframe is supposed to hide. */
+@font-face {
+  font-family: "Mona Zero";
+  src: url("/demos/fonts/mona-zero.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: swap;
+  unicode-range: U+0030;
+}
+
+/* One poke per document, flush to the frame: the parent sizes the iframe to this box, so any
+ * padding here would double the padding the slot already applies around it. */
+.embed {
+  display: block;
+  min-width: 0;
+}

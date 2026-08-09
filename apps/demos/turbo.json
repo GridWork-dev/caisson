@@ -4,8 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["DEMOS_ORIGIN_URL"]
+      "outputs": [".next/**", "!.next/cache/**"]
     }
   }
 }

@@ -1,5 +1,6 @@
 name: deploy-railway
-# Automated redeploy of the unified apps/site Next app (marketing + docs + /dashboard) to Railway.
+# Automated redeploy of the apps/site Next app (marketing + docs + /dashboard) and, since
+# ADR-0400, the apps/demos service it rewrites /demos/* to — to Railway.
 # Build-on-Railway via the service's RAILWAY_DOCKERFILE_PATH=apps/site/Dockerfile env var (set on the
 # Railway service, not here). Touches NO DNS and NO CF Access.
 #
@@ -15,13 +16,18 @@ name: deploy-railway
 on:
   push:
     branches: [main]
-    # These paths gate the AUTOMATIC path only, which deploys admin + site. `services/license/**`
-    # is deliberately absent: the license step is dispatch-only (it runs migrations — see the step).
-    # Keep every deployed app and its non-package runtime workspaces in this filter. Both site and
+    # These paths gate the AUTOMATIC path only, which deploys admin + demos + site.
+    # `services/license/**` is deliberately absent: the license step is dispatch-only (it runs
+    # migrations — see the step). `apps/admin/**` is present because this job deploys admin and an
+    # admin-only change previously did not trigger it at all, so admin could drift behind main
+    # until some other tree changed. `apps/demos/**` is present for the same reason (ADR-0400):
+    # the demo surface is its own deploy unit now, and a demos-only change must reach it.
+    # Keep every deployed app and its non-package runtime workspaces in this filter: site and
     # admin compile the demo registry, which in turn imports the audit harness.
     paths:
       - "apps/site/**"
       - "apps/admin/**"
+      - "apps/demos/**"
       - "packages/**"
       - "tooling/audit-harness/**"
       - "tooling/demo-registry/**"
@@ -129,11 +135,12 @@ jobs:
       #    created in prod and /dashboard/ai-keys crashed for every account). So license, the
       #    migration carrier, deploys before site. railway.toml states the same rule.
       #
-      # admin -> license -> site satisfies both: admin (verifier of both credentials) leads,
-      # license follows its verifiers and applies the schema, site lands last on the schema it
-      # needs. The launch runbook's "license issuer last" was only safe because its step 5 applies
-      # the migration chain BY HAND before step 6 — this workflow has no hand-applied step 5, so
-      # the migration carrier cannot go last here.
+      # admin -> license -> demos -> site satisfies both: admin (verifier of both credentials)
+      # leads, license follows its verifiers and applies the schema, demos lands before the image
+      # whose rewrite points at it (ADR-0400), and site lands last on the schema it needs. The
+      # launch runbook's "license issuer last" was only safe because its step 5 applies the
+      # migration chain BY HAND before step 6 — this workflow has no hand-applied step 5, so the
+      # migration carrier cannot go last here.
       - name: deploy apps/admin to Railway (verifier — MUST precede both issuers)
         if: steps.guard.outputs.armed == 'true'
         env:
@@ -164,6 +171,29 @@ jobs:
         run: |
           bun tooling/scripts/railway-deploy.ts \
             --service caisson-license \
+            --ref "$DEPLOY_REF"
+      # apps/demos (ADR-0400) — the demo surface apps/site rewrites /demos/* to. It deploys BEFORE
+      # site for the same reason license does: site's image points at it, so the target must
+      # already be serving the release the pointer is shipped with. Deploying site first would put
+      # a new set of embed URLs live against the previous demos image.
+      #
+      # SECOND GUARD, ON PURPOSE. Creating the Railway service is an external-system act the
+      # operator performs (ADR-0400 decision 4), and this workflow merges before that happens —
+      # `railway up --service caisson-demos` against a service that does not exist is a hard
+      # failure, which on an ARMED token would redden this job and skip the site deploy below it.
+      # A missing entry would have been the safer failure, so the entry gates itself: the repo
+      # variable CAISSON_DEMOS_ARMED must read exactly "true". `vars` (unlike `secrets`) is
+      # readable in an `if:`, so this needs no guard step of its own. The operator sets it in the
+      # same sitting they create the service; until then this step skips and the fleet deploys
+      # exactly as it did before the split.
+      - name: deploy apps/demos to Railway (rewrite target — MUST precede site)
+        if: steps.guard.outputs.armed == 'true' && vars.CAISSON_DEMOS_ARMED == 'true'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DEPLOY_REF: ${{ steps.resolve-ref.outputs.ref }}
+        run: |
+          bun tooling/scripts/railway-deploy.ts \
+            --service caisson-demos \
             --ref "$DEPLOY_REF"
       - name: deploy apps/site to Railway (immutable-input, receipt-gated)
         if: steps.guard.outputs.armed == 'true'

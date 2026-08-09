@@ -1,0 +1,61 @@
+/* PokeEmbed (ADR-0400) — the same-origin iframe that replaced the in-page poke slide. Token-only,
+ * theme-aware by cascade; the frame chrome itself is drawn INSIDE the embed document (apps/demos
+ * renders the same MediaFrame the in-page poke did), so there is no border or surface here that
+ * would double it. */
+
+.wrap {
+  position: relative;
+  min-width: 0;
+}
+
+/* The placeholder occupies the slot until the embed reports itself loaded, so the carousel's
+ * stage does not collapse and then jump. Sized to the shortest poke — the frame takes over the
+ * moment a real height is measured. */
+.pending {
+  min-height: 20rem;
+}
+
+.frame {
+  display: block;
+  width: 100%;
+  /* No measured height yet: hold the same box the placeholder holds. Once the embed is measured
+   * the inline `height` wins, and the content sizes the frame from then on. */
+  height: 20rem;
+  border: 0;
+  /* Content-sized, so the frame never scrolls internally — a nested scroll region inside the
+   * carousel's own scrolling stage is the trap this avoids. */
+  overflow: hidden;
+  color-scheme: normal;
+}
+
+/* Stacked under the placeholder while pending: the embed still has to LOAD to be measured, so it
+ * cannot be `display: none` — it is present and transparent instead. */
+.frame[data-state="pending"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fallback {
+  display: grid;
+  align-content: center;
+  min-height: 8rem;
+  padding: var(--cs-space-6);
+  border: 1px dashed var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+}
+
+.fallbackText {
+  margin: 0;
+  font-size: var(--cs-text-sm);
+  line-height: var(--cs-leading-snug);
+  color: var(--cs-fg-muted);
+}
+
+.fallbackText code {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg);
+}
