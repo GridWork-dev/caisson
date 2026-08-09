@@ -63,3 +63,33 @@ reason = "hono ReDoS in CORS middleware via Access-Control-Request-Headers. hono
 id = "GHSA-5p4m-2wfm-xmqj"
 ignoreUntil = 2026-08-12
 reason = "js-yaml quadratic CPU in !!omap resolution, 3.x/4.x (the CVE-2026-59870 fix not backported until now). Advisory published 2026-08-06T20:27Z — mid-merge-queue; the same copies were scan-green an hour earlier. Locked copies 3.15.0 + 4.3.0 are dev/build tooling only (changesets CLI, eslint config loading, cosmiconfig) parsing first-party YAML — the quadratic path needs attacker-controlled !!omap documents, which never reach these consumers. Backported fixes 3.15.1 / 4.3.1 published 2026-07-31 clear the 7-day release-age floor 2026-08-07 — bump then (rides the fast-uri follow-up). Accepted 2026-08-06 (flagged for operator retro-veto)."
+
+[[IgnoredVulns]]
+id = "CVE-2026-67213"
+ignoreUntil = 2026-08-12
+reason = "nanoid <3.3.17/<5.1.6 infinite loop when customAlphabet/customRandom get size 0. Locked copies 3.3.16 (postcss chain — build-time, internal fixed-size calls) and 3.3.8 (@trigger.dev/core pin); no first-party code calls nanoid, and our IDs are crypto.randomUUID per the security floor, so the attacker-controlled size argument the loop needs never exists here. Fix 3.3.17 published 2026-08-03 clears the release-age floor 2026-08-10 — bump in the 2026-08-11 dep wave. Accepted 2026-08-09 (scan-baseline remediation, operator-locked in-session — flagged for retro-veto). Trivy rates it HIGH — mirrored in .trivyignore.yaml."
+
+[[IgnoredVulns]]
+id = "CVE-2026-67214"
+ignoreUntil = 2026-08-12
+reason = "nanoid <5.1.16 (3.x <3.3.17) infinite loop in the non-secure module on a NEGATIVE size. Same exposure story as CVE-2026-67213: only postcss/@trigger.dev internals call nanoid, with fixed positive sizes; nanoid/non-secure is never imported first-party. Fix ages past the release floor 2026-08-10 — 2026-08-11 dep wave. Accepted 2026-08-09 (scan-baseline remediation, operator-locked in-session — flagged for retro-veto)."
+
+[[IgnoredVulns]]
+id = "CVE-2026-71848"
+ignoreUntil = 2026-08-12
+reason = "hono languageDetector middleware algorithmic-complexity DoS (4.12.0-4.12.33). Same posture as the accepted GHSA-8j4g-w8fx-2239: hono@4.12.30 is transitive DEV tooling only (wrangler/miniflare chain for the registry Worker harness); the deployed Worker is hand-rolled without hono and no production service imports it, so the middleware is never mounted. Fix 4.12.34 (2026-08-03) ages past the release floor 2026-08-10 — 2026-08-11 dep wave. Accepted 2026-08-09 (scan-baseline remediation, operator-locked in-session — flagged for retro-veto)."
+
+[[IgnoredVulns]]
+id = "CVE-2026-71849"
+ignoreUntil = 2026-08-12
+reason = "hono proxy() fails to strip response headers named by the origin's Connection header (4.7.0-4.12.33). Dev-only wrangler/miniflare chain, hono/proxy never imported first-party, no request path exists (same posture as GHSA-8j4g-w8fx-2239). Fix 4.12.34 ages 2026-08-10 — 2026-08-11 dep wave. Accepted 2026-08-09 (scan-baseline remediation, operator-locked in-session — flagged for retro-veto)."
+
+[[IgnoredVulns]]
+id = "CVE-2026-71850"
+ignoreUntil = 2026-08-12
+reason = "hono/jsx memo() retains SSR output across requests -> cross-user disclosure (3.8.0-4.12.33). Dev-only wrangler/miniflare chain; hono/jsx is never imported and nothing server-renders through hono in this repo (same posture as GHSA-8j4g-w8fx-2239). Fix 4.12.34 ages 2026-08-10 — 2026-08-11 dep wave. Accepted 2026-08-09 (scan-baseline remediation, operator-locked in-session — flagged for retro-veto)."
+
+[[IgnoredVulns]]
+id = "GHSA-55q2-fjhq-7xh7"
+ignoreUntil = 2026-08-12
+reason = "DOMPurify <3.4.13: an IN_PLACE-mode hook that removes an element can leave detached descendants executable (XSS). dompurify@3.4.12 enters the tree ONLY via posthog-js in the site browser bundle (its surveys/toolbar renderer); first-party sanitization never uses dompurify, and the survey HTML posthog sanitizes comes from our own operator-controlled PostHog project, not third parties — the attacker-controlled-HTML + IN_PLACE + removing-hook combination has no path here. PROD-ADJACENT accept, deliberately short: fix 3.4.13 (2026-08-03) ages past the release floor 2026-08-10 — bump lands 2026-08-11 dep wave and this accept self-expires the day after. Accepted 2026-08-09 (scan-baseline remediation, operator-locked in-session — flagged for retro-veto)."
