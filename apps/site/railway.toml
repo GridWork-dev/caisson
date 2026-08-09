@@ -33,6 +33,14 @@
 #   NEXT_PUBLIC_DISCORD_INVITE_URL      (footer Discord link, G12; MUST be a build ARG, see Dockerfile —
 #                                        static pages bake the footer at build, so a runtime-only var
 #                                        leaves every prerendered footer without the link)
+#   DEMOS_ORIGIN_URL                    (ADR-0400 — the caisson-demos service origin this app rewrites
+#                                        /demos/* to, e.g. http://caisson-demos.railway.internal:3040.
+#                                        MUST be a build ARG, see Dockerfile: Next bakes rewrites into
+#                                        routes-manifest.json at build, so a runtime-only value arms
+#                                        nothing. UNSET is the fail-safe state — no rewrite, no /demos
+#                                        route, module pages show the demo fallback text. Set it ONLY
+#                                        after the caisson-demos service answers /demos/healthz; a
+#                                        malformed value fails the build rather than degrading quietly.)
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/site/Dockerfile"
