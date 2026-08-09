@@ -29,6 +29,7 @@ import type {
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { getAdminDb, readAdmin } from "./admin-db.ts";
 import { adminAuditAnchorTrustFromEnv } from "./audit-anchor-trust.ts";
+import { normalizeHttpsUrl } from "./https-url.ts";
 
 /**
  * The WORM object store for the mutation service's audit chain (Fork AM-4 provisioning).
@@ -66,9 +67,9 @@ async function licenseServiceProxy<T>(
   body: unknown,
   { timeoutMs }: { timeoutMs: number },
 ): Promise<T> {
-  const base = process.env.CAISSON_LICENSE_ISSUE_URL?.trim() ?? "";
+  const base = normalizeHttpsUrl(process.env.CAISSON_LICENSE_ISSUE_URL);
   const token = process.env.ADMIN_ISSUE_TOKEN?.trim() ?? "";
-  if (base === "" || token === "") {
+  if (base === null || token === "") {
     throw new Error(
       path === "/issue"
         ? "license reissue is not configured (set CAISSON_LICENSE_ISSUE_URL + ADMIN_ISSUE_TOKEN)"
@@ -76,7 +77,7 @@ async function licenseServiceProxy<T>(
     );
   }
   const res = await fetchWithTimeout(
-    `${base.replace(/\/$/, "")}${path}`,
+    `${base}${path}`,
     {
       method: "POST",
       headers: {
@@ -182,8 +183,14 @@ export function serializePublish(fn: () => Promise<void>): Promise<void> {
  * // a direct R2 S3 PutObject if the operator prefers a long-lived credential over a managed URL.
  */
 export function denySetPublisher(): AdminMutationDeps["publishDenySet"] {
-  const url = process.env.CAISSON_REVOCATIONS_PUT_URL?.trim() ?? "";
-  if (url === "") return undefined;
+  const configuredUrl = process.env.CAISSON_REVOCATIONS_PUT_URL?.trim() ?? "";
+  if (configuredUrl === "") return undefined;
+  const url = normalizeHttpsUrl(configuredUrl);
+  if (url === null) {
+    throw new ConfigError("CAISSON_REVOCATIONS_PUT_URL must be an HTTPS URL", {
+      keys: ["CAISSON_REVOCATIONS_PUT_URL"],
+    });
+  }
   const token = process.env.CAISSON_REVOCATIONS_PUT_TOKEN?.trim() ?? "";
   return (revokedLicenseIds: string[]): Promise<void> =>
     serializePublish(async () => {

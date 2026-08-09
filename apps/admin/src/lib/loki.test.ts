@@ -85,6 +85,21 @@ test("lokiConfigured needs all three envs", () => {
   expect(lokiConfigured()).toBe(true);
 });
 
+test("a non-HTTPS Grafana URL keeps the Loki client dormant", async () => {
+  clearEnv();
+  process.env.GRAFANA_URL = "http://caisson.grafana.net";
+  process.env.GRAFANA_QUERY_TOKEN = "glsa_test";
+  process.env.GRAFANA_LOKI_DATASOURCE_UID = "loki-uid";
+  const fetchSpy = mock(() => {
+    throw new Error("network must not be called for an invalid destination");
+  });
+  globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch;
+
+  expect(lokiConfigured()).toBe(false);
+  expect((await fetchLogsSnapshot()).configured).toBe(false);
+  expect(fetchSpy).not.toHaveBeenCalled();
+});
+
 // (c) LogQL builder: all-services vs one service vs error toggle, and quote-escaping the value.
 test("buildLogQl composes selector + level filter and escapes the service value", () => {
   expect(buildLogQl({})).toBe('{service_name=~".+"}');

@@ -20,6 +20,7 @@
 import { z } from "zod";
 
 import { proxyGet } from "./grafana-proxy.ts";
+import { normalizeHttpsUrl } from "./https-url.ts";
 
 const QUERY_TIMEOUT_MS = 10_000;
 const WINDOW_MS = 30 * 60_000; // last 30 minutes
@@ -29,11 +30,11 @@ const TRACE_LIMIT = 20; // cap per trace-list widget; Tempo search returns a bou
 
 /** Reads env fresh each call so the gate reflects the live process env (and tests can toggle it). */
 function grafanaEnv(): { base: string; token: string; uid: string } | null {
-  const url = process.env.GRAFANA_URL?.trim();
+  const url = normalizeHttpsUrl(process.env.GRAFANA_URL);
   const token = process.env.GRAFANA_QUERY_TOKEN?.trim();
   const uid = process.env.GRAFANA_TEMPO_DATASOURCE_UID?.trim();
-  if (!url || !token || !uid) return null;
-  return { base: url.replace(/\/+$/, ""), token, uid };
+  if (url === null || !token || !uid) return null;
+  return { base: url, token, uid };
 }
 
 /** All three query envs present → the client can reach the Grafana Cloud query proxy. */

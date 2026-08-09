@@ -65,6 +65,21 @@ test("grafanaConfigured needs all three envs", () => {
   expect(grafanaConfigured()).toBe(true);
 });
 
+test("a non-HTTPS Grafana URL keeps the client dormant", async () => {
+  clearEnv();
+  process.env.GRAFANA_URL = "http://caisson.grafana.net";
+  process.env.GRAFANA_QUERY_TOKEN = "glsa_test";
+  process.env.GRAFANA_TEMPO_DATASOURCE_UID = "tempo-uid";
+  const fetchSpy = mock(() => {
+    throw new Error("network must not be called for an invalid destination");
+  });
+  globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch;
+
+  expect(grafanaConfigured()).toBe(false);
+  expect((await fetchOpsSnapshot()).configured).toBe(false);
+  expect(fetchSpy).not.toHaveBeenCalled();
+});
+
 // (c) Explore deep-link: pure builder embeds datasource + TraceQL query in the `left` state.
 test("buildExploreUrl embeds datasource + traceql query in Explore left state", () => {
   const url = buildExploreUrl(
