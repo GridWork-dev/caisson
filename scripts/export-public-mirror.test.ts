@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  DROP_COMMERCIAL_DEV_DEPS,
+  EXCLUDE_TEST_FILES,
   MIRROR_ASSET_FILES,
+  MIRROR_WORKSPACES,
   resolveCatalogSpec,
   rewriteProseMentions,
   sanitizeAdrCitations,
@@ -10,6 +13,32 @@ import {
 } from "./export-public-mirror.ts";
 
 const MIRROR_ASSETS_DIR = join(import.meta.dir, "mirror-assets");
+
+test("the mirror root exposes workspace globs to its module-graph tooling", () => {
+  expect(MIRROR_WORKSPACES.packages).toEqual(["packages/*", "tooling/*"]);
+});
+
+describe("commercial integration fixture exclusions", () => {
+  test("relocated commercial fixtures stay out of the Apache mirror", () => {
+    expect(
+      EXCLUDE_TEST_FILES.has("packages/cli/src/generate.integration.test.ts"),
+    ).toBe(true);
+    expect(
+      EXCLUDE_TEST_FILES.has(
+        "packages/mcp-server/src/base-composition.integration.test.ts",
+      ),
+    ).toBe(true);
+  });
+
+  test("their commercial-only dev dependencies are stripped", () => {
+    expect(
+      DROP_COMMERCIAL_DEV_DEPS.get("@caisson/cli")?.has("@caisson/credits"),
+    ).toBe(true);
+    expect(DROP_COMMERCIAL_DEV_DEPS.get("@caisson/mcp-server")).toEqual(
+      new Set(["@caisson/billing-orchestration", "@caisson/credits"]),
+    );
+  });
+});
 
 describe("rewriteProseMentions", () => {
   const open = new Set(["kernel", "ai-config", "license-verify"]);
@@ -189,6 +218,18 @@ describe("sanitizeSourceComments", () => {
     expect(after).toContain("export function run(): void {}");
   });
 
+  test("moves punctuation left by a citation-only JSDoc line onto the prior line", () => {
+    const code = [
+      "/**",
+      " * Computes one value",
+      " * (ADR-0007). Then renders it.",
+      " */",
+    ].join("\n");
+    expect(sanitizeSourceComments(code)).toContain(
+      " * Computes one value.\n * Then renders it.",
+    );
+  });
+
   test("never mistakes a https:// URL string for a line comment", () => {
     const code = 'const DOCS_URL = "https://caisson.sh/docs"; // stable link';
     expect(sanitizeSourceComments(code)).toBe(code);
@@ -230,5 +271,15 @@ describe("MIRROR_ASSET_FILES", () => {
     expect(dests).toContain("SUPPORT.md");
     expect(dests).toContain("CODE_OF_CONDUCT.md");
     expect(dests).toContain(".github/ISSUE_TEMPLATE/bug_report.md");
+  });
+
+  test("keeps generator-owned artifacts out of mirror Prettier", () => {
+    const prettierIgnore = readFileSync(
+      join(MIRROR_ASSETS_DIR, ".prettierignore"),
+      "utf8",
+    );
+    expect(prettierIgnore).toContain(
+      "packages/ds-manifest/src/base-manifest.json",
+    );
   });
 });
