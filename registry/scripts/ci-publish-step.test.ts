@@ -277,9 +277,9 @@ describe("ci-publish-step (ADR-0021/0069)", () => {
   });
 
   test("dry-run: delisted ids (ADR-0271) count separately from skippedExisting", async () => {
-    // The real committed ledger carries delist lines for @caisson/ai-kit/local-ai/agent-dev. Their
-    // retired source workspaces no longer exist, so synthetic manifests exercise the scan while the
-    // real append-only ledger remains the authority for whether each id is delisted.
+    // The real committed ledger carries delist lines for @caisson/ai-kit/local-ai/agent-dev. The
+    // local-ai workspace is retired and agent-dev is retained source-only, so synthetic manifests
+    // exercise the scan while the append-only ledger remains the authority for delist state.
     const dir = tmpDir("skip-delisted");
     const ledgerPath = join(dir, "ledger.jsonl");
     const indexPath = join(dir, "index.json");

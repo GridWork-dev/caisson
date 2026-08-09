@@ -1,8 +1,8 @@
 // The base mcp-server's `checkRateLimit` port needs a concrete backing store to actually throttle
 // anything — @caisson/mcp-server declares the port but ships DB-free on purpose (no Postgres
 // dependency added to that package). This hook backs the port with the RLS-scoped token-bucket store
-// in account-store.ts, so any composition that owns a tenant-scoped Postgres connection (the base
-// reference app, or a commercial service) gains a per-account abuse throttle just by wiring this in.
+// in account-store.ts, so any authenticated host that owns a tenant-scoped Postgres connection gains
+// a per-account abuse throttle just by wiring this in.
 //
 // Two outcomes only:
 //   - DENY (out of tokens)        → throw RateLimitError (kernel, HTTP 429) with a retry-after.

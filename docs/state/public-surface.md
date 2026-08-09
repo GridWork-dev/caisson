@@ -103,7 +103,7 @@ decoupled `legacyEditionNamesFor`/`EDITION_BUNDLE_ID` relation
 Distribution mechanics are unchanged from the edition era: every member/primitive package is
 delivered bundled with its parent bundle purchase(s), or à la carte on its own purchase, through
 the same purchase → entitlement → delivery path as the bundle meta-packages above. The full priced
-module ↔ bundle membership table (all 22 à la carte SKUs — including moves the rework made, e.g.
+module ↔ bundle membership table (all 27 à la carte SKUs — including moves the rework made, e.g.
 `@caisson/ai-evals` joining the AI-Production bundle where it was previously standalone-only) is
 `docs/state/package-catalog.md` §2b; not restated here.
 
