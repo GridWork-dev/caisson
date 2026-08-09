@@ -116,6 +116,7 @@ Conventional commits, atomic, one logical change each. Scopes: `scaffold` `specs
 `kickoffs` `tooling` `kernel` — plus the per-package scopes: `auth` `tenancy-rls`
 `billing` `credits` `ai-config` `mcp` `ui` `audit-worm` `field-crypto` `compliance` `ai-kit`
 `local-ai` `agent-dev` `cli` `support-bot` `license` `docs` `site` (the `apps/site` marketing+docs app)
+`demos` (the `apps/demos` interactive demo surface, ADR-0400)
 — plus the Stage-2 additions: `admin` (`apps/admin` control-plane) `alerting` `retention-runner`
 `tool-exec` `audit-harness` `observability` `platform-reads` `migrate` `pricebook` — plus `security`
 (the repo-local `tools/security/` + `docs/security/` stack, ADR-0314).
