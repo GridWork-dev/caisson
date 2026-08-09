@@ -520,8 +520,14 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
         // a single slide, fail with THIS message instead of an opaque arrow-locator timeout —
         // the fix is to point the test at another multi-slide entry. Scoped to the carousel:
         // the marketplace filter toolbar carries its own (collapsed-on-mobile) role="group".
+        //
+        // COMPOUND, not descendant: media-carousel puts role="group" and aria-roledescription on
+        // the SAME element. The descendant form this replaces only ever matched because slide 1
+        // was a poke that carried its own role="group" — so it was passing on the poke's markup
+        // while claiming to check the carousel's. ADR-0400 moved that markup into an iframe
+        // document and the accident stopped working.
         await page
-          .locator('[aria-roledescription="carousel"] [role="group"]')
+          .locator('[aria-roledescription="carousel"][role="group"]')
           .first()
           .waitFor({ state: "visible", timeout: 10_000 })
           .catch(() => {
