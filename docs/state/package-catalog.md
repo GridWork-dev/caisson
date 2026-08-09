@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-06
+updated: 2026-08-09
 status: live
 grounds:
   - package.json
@@ -15,7 +15,7 @@ grounds:
 
 # Package catalog — license, sale posture, and price
 
-The 2026-07-30 disk-truth view. This document owns the catalog summary; manifests, price authority,
+The 2026-08-09 disk-truth view. This document owns the catalog summary; manifests, price authority,
 and the standards gate are the executable sources. Build depth remains in
 [build-state](../build-state.md).
 
@@ -23,13 +23,13 @@ and the standards gate are the executable sources. Build depth remains in
 
 | Surface              |  Count | Members                                                            |
 | -------------------- | -----: | ------------------------------------------------------------------ |
-| Packages             |     63 | 17 Apache-2.0; 46 commercial                                       |
-| Apps                 |      7 | `admin`, `site`, and five reference/demo apps                      |
+| Packages             |     61 | 17 Apache-2.0; 44 commercial                                       |
+| Apps                 |      2 | `admin` and `site`                                                 |
 | Bun services         |      4 | `betterstack-adapter`, `docs`, `intel`, `license`                  |
 | Registry             |      1 | `@caisson/registry` plus its Worker                                |
 | Tooling workspaces   |      6 | browser audit, design critic, eslint, standards, testing, tsconfig |
 | Python projects      |      2 | `services/support-bot`, `tools/assert-lane` — frozen at two        |
-| Bun workspaces total | **81** | root `workspaces` discovery                                        |
+| Bun workspaces total | **74** | root `workspaces` discovery                                        |
 
 ## Open Base — 17 Apache-2.0 packages
 
@@ -124,7 +124,7 @@ commercial where their code is proprietary and are not independently purchasable
 
 | Surface      | Members                                                                                    | Sale posture                                        |
 | ------------ | ------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| Apps         | `site`, `admin`, `base`, `compliance`, `ai-kit`, `local-ai`, `agent-dev`                   | storefront/control-plane/reference apps; never SKUs |
+| Apps         | `site`, `admin`                                                                            | storefront and control-plane apps; never SKUs       |
 | Bun services | `license`, `docs`, `intel`, `betterstack-adapter`                                          | operator infrastructure; never SKUs                 |
 | Python       | `support-bot`, `assert-lane`                                                               | one service and one verification tool; no expansion |
 | Registry     | `@caisson/registry` and Worker                                                             | commercial fulfillment infrastructure               |

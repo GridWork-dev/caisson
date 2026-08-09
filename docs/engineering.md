@@ -196,9 +196,7 @@ listed as a stub now has live-transport-proven code (`ADR-0201`) with real tests
 per-package table is machine-regenerated off disk truth (`ADR-0253`) - it is the live source, this
 section is not.
 
-**Apps** (`apps/`): `base` `compliance` `ai-kit` `local-ai` `agent-dev` are bundle reference apps
-(consumers ABOVE the package tower - exempt from the down-only rule, never registry-published);
-`site` is the marketing + docs + buyer-dashboard app (Next, standalone Node app on Railway,
+**Apps** (`apps/`): `site` is the marketing + docs + buyer-dashboard app (Next, standalone Node app on Railway,
 ADR-0114/0115); `admin` is the operator control-plane (absorbed the design-system studio,
 ADR-0140). **Services** (`services/`): `docs` `intel` `license` `support-bot`.
 

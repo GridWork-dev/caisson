@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-06
+updated: 2026-08-09
 status: live
 grounds:
   - packages/tenancy-rls/src/drizzle.ts
@@ -12,7 +12,6 @@ grounds:
   - packages/jobs/src/bullmq.ts
   - packages/analytics/src/index.ts
   - services/support-bot/src/caisson_support_bot/chat_slack.py
-  - packages/agent-dev/src/emitter.ts
   - docs/state/adapter-expansion.md
 ---
 
