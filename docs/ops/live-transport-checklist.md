@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-13
+updated: 2026-08-09
 status: live
 adr: ADR-0265
 ---

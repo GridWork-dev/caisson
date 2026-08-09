@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { z } from "zod";
 import {
   ConfigError,
@@ -84,6 +86,13 @@ function createFakeQueue(): BullMqQueueClient & {
 const grantCreditsTasks = [
   defineTask("grant-credits", grantCreditsSchema, async () => {}),
 ];
+
+test("BullMQ v6's optional peer remains a direct runtime dependency", () => {
+  const packageJson = JSON.parse(
+    readFileSync(join(import.meta.dir, "../package.json"), "utf8"),
+  ) as { dependencies?: Record<string, string> };
+  expect(packageJson.dependencies?.ioredis).toBe("^5.11.1");
+});
 
 describe("BullMQ job queue", () => {
   test("enqueue maps to queue.add with the given name and payload", async () => {

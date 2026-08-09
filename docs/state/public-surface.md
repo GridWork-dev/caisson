@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-30
+updated: 2026-08-09
 status: live
 ---
 
@@ -85,10 +85,10 @@ spellings were purged by ADR-0270 (2026-07-07) and are rejected; the flag name p
 vocabulary.)
 
 **Retired edition ids** — `@caisson/ai-kit` (superseded by AI-Production), `@caisson/agent-dev`
-(superseded by Agentic-Dev), `@caisson/local-ai` (superseded by Local-first) — are never sold new;
-all three keep their `kind:"edition"` manifests (prices trued to their bundle targets —
-$739/$329/$629 — per the local-ai convention, 2026-07-06). Per ADR-0257 §1, every pre-rework
-`kind:"edition"` registry manifest and ledger entry **stays valid forever** (never migrated). The
+(superseded by Agentic-Dev), `@caisson/local-ai` (superseded by Local-first) — are never sold new.
+`@caisson/ai-kit` keeps its `kind:"edition"` source manifest, trued to its $739 bundle target;
+the `agent-dev` and `local-ai` source metas are retired. Their append-only registry ledger and
+tarball history remain untouched, so every pre-rework published version stays valid forever. The
 legacy purchase ids themselves no longer resolve — ADR-0270 emptied the alias map
 (`packages/registry-schema/src/bundle-vocabulary.ts`), gated on zero real buyers with live grants
 drained to canonical ids at deploy; the edition→bundle fold for index expansion runs through the
@@ -119,7 +119,7 @@ all — they are structurally unpublishable, distinct from the 18 other commerci
 carry a real (GH-Packages-restricted) `publishConfig` and are gated by entitlement rather than by
 `private:true`.
 
-`apps/*` (7 reference apps) and `tooling/*` (5 workspaces) are all `private: true` with no
+`apps/*` (site and admin) and `tooling/*` (6 workspaces) are all `private: true` with no
 `publishConfig` — internal-only by construction, out of scope for this doc.
 
 ---

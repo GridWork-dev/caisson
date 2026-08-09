@@ -103,8 +103,8 @@ entries retain their then-current values and are not rewritten.
 | `trust-page`            |  $149 | Compliance                                         |
 | `ui-pro`                |  $129 | Everything only                                    |
 
-`PRICE_AUTHORITY` covers every row in this table. Its 36 entries also include the six bundle SKUs
-and three retired legacy aliases retained for historical resolution. The standards gate rejects
+`PRICE_AUTHORITY` covers every row in this table. Its 34 entries also include the six bundle SKUs
+and the one surviving retired meta, `ai-kit`. The standards gate rejects
 every current sellable commercial module missing from price authority or the site catalog; the
 two legitimate $49 modules have no special exemption.
 
@@ -113,7 +113,7 @@ two legitimate $49 modules have no special exemption.
 | Class                          | Packages                                                                                                                                                                                  |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sellable bundle SKUs           | `compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`, `everything`                                                                                                   |
-| Retired aliases                | `ai-kit`, `agent-dev`, `local-ai` — explicitly `sellable: false`, retained in price authority for historical resolution                                                                   |
+| Retired source meta            | `ai-kit` — explicitly `sellable: false`, retained in price authority for historical resolution                                                                                            |
 | Runtime and delivery substrate | `agent-usage`, `artifact-render`, `audit-harness`, `brand`, `demo-registry`, `license-issue`, `platform-migrations`, `platform-reads`, `pricebook`, `verify-pack` — never separately sold |
 
 The six bundle packages are products, but not à-la-carte modules. The remaining packages stay
