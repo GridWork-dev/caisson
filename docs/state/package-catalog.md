@@ -23,13 +23,13 @@ and the standards gate are the executable sources. Build depth remains in
 
 | Surface              |  Count | Members                                                            |
 | -------------------- | -----: | ------------------------------------------------------------------ |
-| Packages             |     61 | 17 Apache-2.0; 44 commercial                                       |
+| Packages             |     62 | 17 Apache-2.0; 45 commercial                                       |
 | Apps                 |      2 | `admin` and `site`                                                 |
 | Bun services         |      4 | `betterstack-adapter`, `docs`, `intel`, `license`                  |
 | Registry             |      1 | `@caisson/registry` plus its Worker                                |
 | Tooling workspaces   |      6 | browser audit, design critic, eslint, standards, testing, tsconfig |
 | Python projects      |      2 | `services/support-bot`, `tools/assert-lane` — frozen at two        |
-| Bun workspaces total | **74** | root `workspaces` discovery                                        |
+| Bun workspaces total | **75** | root `workspaces` discovery                                        |
 
 ## Open Base — 17 Apache-2.0 packages
 
@@ -104,17 +104,18 @@ entries retain their then-current values and are not rewritten.
 | `ui-pro`                |  $129 | Everything only                                    |
 
 `PRICE_AUTHORITY` covers every row in this table. Its 34 entries also include the six bundle SKUs
-and the one surviving retired meta, `ai-kit`. The standards gate rejects
-every current sellable commercial module missing from price authority or the site catalog; the
-two legitimate $49 modules have no special exemption.
+and the one priced retired meta, `ai-kit`. The retained `agent-dev` source meta is delisted,
+`sellable: false`, and deliberately absent from price authority. The standards gate rejects every
+current sellable commercial module missing from price authority or the site catalog; the two
+legitimate $49 modules have no special exemption.
 
 ### Commercial packages outside the à-la-carte module table
 
-| Class                          | Packages                                                                                                                                                                                  |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sellable bundle SKUs           | `compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`, `everything`                                                                                                   |
-| Retired source meta            | `ai-kit` — explicitly `sellable: false`, retained in price authority for historical resolution                                                                                            |
-| Runtime and delivery substrate | `agent-usage`, `artifact-render`, `audit-harness`, `brand`, `demo-registry`, `license-issue`, `platform-migrations`, `platform-reads`, `pricebook`, `verify-pack` — never separately sold |
+| Class                          | Packages                                                                                                                                                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sellable bundle SKUs           | `compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`, `everything`                                                                                                                                                    |
+| Retired source metas           | `ai-kit` — `sellable: false`, retained in price authority for historical resolution; `agent-dev` — delisted and non-sellable, source retained only because it owns the sole multi-harness emitter pending a separate architecture decision |
+| Runtime and delivery substrate | `agent-usage`, `artifact-render`, `audit-harness`, `brand`, `demo-registry`, `license-issue`, `platform-migrations`, `platform-reads`, `pricebook`, `verify-pack` — never separately sold                                                  |
 
 The six bundle packages are products, but not à-la-carte modules. The remaining packages stay
 commercial where their code is proprietary and are not independently purchasable.

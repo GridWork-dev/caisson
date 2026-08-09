@@ -54,12 +54,12 @@ Composition: the ADR-0094 original ten (`kernel` through `mcp-server`), plus `re
 `cli`/`migrate`/`license-verify` (ADR-0136), plus `rate-limit` (the R1+R2 hygiene extraction,
 PR #119), plus `ds-manifest` (ADR-0330/ADR-0345). Total: 17.
 
-## 2. COMMERCIAL / private set (20 `packages/*` + the registry service)
+## 2. COMMERCIAL / private set (45 `packages/*` + the registry service)
 
-Every row below carries `license: "LicenseRef-Caisson-Commercial"`. Bundle membership and pricing
-are `docs/state/package-catalog.md`'s job (§2b, the "Sellable catalog" tables) — cited here, not
-restated. Internal-only rows say so plainly — carrying the commercial license does not by itself
-mean a buyer ever receives the code.
+Every commercial package carries `license: "LicenseRef-Caisson-Commercial"`. The complete inventory,
+bundle membership, and pricing are `docs/state/package-catalog.md`'s job; the rows below explain the
+bundle metas and distribution exceptions rather than restating all 45 packages. Carrying the
+commercial license does not by itself mean a buyer ever receives the code.
 
 ### Bundle meta-packages (six-bundle catalog rework, ADR-0257/0258, 2026-07-06)
 
@@ -87,7 +87,10 @@ vocabulary.)
 **Retired edition ids** — `@caisson/ai-kit` (superseded by AI-Production), `@caisson/agent-dev`
 (superseded by Agentic-Dev), `@caisson/local-ai` (superseded by Local-first) — are never sold new.
 `@caisson/ai-kit` keeps its `kind:"edition"` source manifest, trued to its $739 bundle target;
-the `agent-dev` and `local-ai` source metas are retired. Their append-only registry ledger and
+the `local-ai` source meta is retired. `@caisson/agent-dev` remains delisted and non-sellable, but
+its source is retained because it owns the only multi-harness emitter implementation still named by
+the live site. That retention neither relists the legacy edition nor adds it to the Agentic-Dev
+bundle; its final architecture is a separate decision. Their append-only registry ledger and
 tarball history remain untouched, so every pre-rework published version stays valid forever. The
 legacy purchase ids themselves no longer resolve — ADR-0270 emptied the alias map
 (`packages/registry-schema/src/bundle-vocabulary.ts`), gated on zero real buyers with live grants
@@ -114,10 +117,9 @@ module ↔ bundle membership table (all 22 à la carte SKUs — including moves 
 | `@caisson/audit-harness`                                  | Cross-domain internal audit/validate harness (ADR-0134)                                             | `private: true`, `publishConfig: null` — explicitly "not a sellable module" per its own manifest description                       |
 | `registry` (repo root `registry/`, not under `packages/`) | The registry SERVICE — CI index builder, gated publish flow, the Worker itself                      | `private: true`, never published; re-exports `@caisson/registry-schema` (the open contract) but the service code stays internal    |
 
-Two packages (`license-issue`, `audit-harness`) are `private: true` with no `publishConfig` at
-all — they are structurally unpublishable, distinct from the 18 other commercial packages which
-carry a real (GH-Packages-restricted) `publishConfig` and are gated by entitlement rather than by
-`private:true`.
+`license-issue` and `audit-harness` are structurally unpublishable examples: `private: true` with no
+`publishConfig`. Other commercial packages are either internal-only or entitlement-gated; the
+package catalog owns that complete inventory and sale posture.
 
 `apps/*` (site and admin) and `tooling/*` (6 workspaces) are all `private: true` with no
 `publishConfig` — internal-only by construction, out of scope for this doc.

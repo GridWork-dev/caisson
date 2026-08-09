@@ -184,6 +184,25 @@
         "typescript": "catalog:",
       },
     },
+    "packages/agent-dev": {
+      "name": "@caisson/agent-dev",
+      "version": "0.6.8",
+      "dependencies": {
+        "@caisson/agent-kernel": "workspace:*",
+        "@caisson/agent-runner": "workspace:*",
+        "@caisson/ai-config": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/local-store": "workspace:*",
+        "@caisson/tool-exec": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/agent-kernel": {
       "name": "@caisson/agent-kernel",
       "version": "0.7.0",
@@ -1756,6 +1775,8 @@
     "@caisson/access-review": ["@caisson/access-review@workspace:packages/access-review"],
 
     "@caisson/admin": ["@caisson/admin@workspace:apps/admin"],
+
+    "@caisson/agent-dev": ["@caisson/agent-dev@workspace:packages/agent-dev"],
 
     "@caisson/agent-kernel": ["@caisson/agent-kernel@workspace:packages/agent-kernel"],
 
