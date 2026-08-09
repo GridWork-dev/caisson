@@ -9,7 +9,6 @@
 "@caisson/local-store": patch
 "@caisson/mcp-server": patch
 "@caisson/pricebook": patch
-"@caisson/rate-limit": patch
 "@caisson/signing-primitive": patch
 "@caisson/ui": patch
 "@caisson/ui-pro": patch
