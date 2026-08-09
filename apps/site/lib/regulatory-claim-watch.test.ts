@@ -825,13 +825,14 @@ describe("regulatory-claim-watch workflow posture", () => {
     expect(workflow).toContain("report-only");
     expect(workflow).toContain("shell: bash");
     expect(workflow).toContain("run-regulatory-claim-watch.sh");
-    expect(workflow).toContain("initialize advisory report");
-    expect(workflow).toContain("continue-on-error: true");
     expect(workflow).toContain("if: always()");
     expect(workflow).toContain("timeout --kill-after=15s 8m");
     expect(workflow).toContain("- name: install workspace deps");
-    expect(workflow).toContain("INSTALL_OUTCOME");
     expect(workflow).toContain("persist-credentials: false");
+    expect(workflow).toContain("retention-days: 30");
+    expect(workflow).not.toContain("initialize advisory report");
+    expect(workflow).not.toContain("continue-on-error: true");
+    expect(workflow).not.toContain("INSTALL_OUTCOME");
     expect(workflow).not.toContain("bash -c 'bun install");
     expect(workflow).not.toContain("| tee");
     expect(workflow).not.toContain("secrets.");

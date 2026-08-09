@@ -45,3 +45,4 @@ jobs:
           name: nist-catalog-watch-report
           path: packages/oscal-spine/nist-catalog-watch-report.md
           if-no-files-found: warn
+          retention-days: 30

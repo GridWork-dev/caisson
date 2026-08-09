@@ -77,15 +77,7 @@ jobs:
             exit 1
           fi
           echo "[publish-and-index] tag ${RELEASE_TAG} -> $(git rev-parse HEAD) (on main)"
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: "1.3.14"
-      - name: cache bun install
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
+      - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
       # Zero-mutation verify + stage (ADR-0325): every workspace version must be ledgered +
       # sidecar'd, index.json must be a byte-identical ledger rebuild, and every re-packed

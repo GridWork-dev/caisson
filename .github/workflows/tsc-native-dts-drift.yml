@@ -91,3 +91,4 @@ jobs:
           name: dts-drift-report
           path: dts-drift-report.md
           if-no-files-found: warn
+          retention-days: 30
