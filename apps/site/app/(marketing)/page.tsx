@@ -37,7 +37,7 @@ import {
 
 export const metadata = buildMetadata({
   description:
-    "One audited Postgres base for regulated and production SaaS: fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, and six composable bundles you compose, never fork.",
+    "One audited Postgres base for regulated and production SaaS: fail-closed RLS, S3 Object-Lock WORM, and an append-only audit chain, mapped to SOC 2, HIPAA, ISO 27001, and NIST 800-53, in six composable bundles you compose, never fork.",
   path: "/",
 });
 
