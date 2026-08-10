@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-09
+updated: 2026-08-10
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,37 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-08-10 — four-lane wave: three fleet rides + the deploy-worker lane proven
+
+The 2026-08-09/10 four-lane worktree wave (copy #420 · consolidation audit #423 · queued-eng #417
+
+- Node-22 follow-up #424 · dep wave #425, coordinator-merged on pinned-head full rollups) produced
+  three fleet rides, all receipted in the per-service JSON ledgers:
+
+* **`581cb2d8`** (copy merge, auto path): admin + demos + site, 03:05–03:08Z — the D12
+  message-match copy live.
+* **`e6866e55`** (queued-eng merge, auto path, run 31410239876): admin landed first attempt (CLI
+  log-stream drop, ledger-adjudicated SUCCESS); **demos hit a real Railway platform 500 on code
+  upload** — deployment `6951ce53` FAILED in the ledger, the honest-fail class, not the
+  stream-drop class — which also blocked the site leg behind it. A `--failed` rerun healed both
+  (admin redeployed same-bytes in passing), 16:54–17:04Z.
+* **`6f326503`** (dep wave merge): the root-only diff (package.json override + bun.lock) matched
+  **no auto-deploy path** — the security bumps (dompurify site-bundle XSS fix among them) would
+  have sat undeployed; caught at the wave close, deployed via manual dispatch run 31415468919
+  (admin + **license** + demos + site — the dispatch path carries the license leg the auto path
+  skips), 17:48–18:06Z, all four ledger-adjudicated. The filter gap is closed in #426
+  (root `package.json`/`bun.lock` added to the auto paths).
+
+**The `deploy-worker.yml` lane is proven and the 2026-08-09 open follow-up closes.** The
+queued-eng PR made the swallowed `bunx wrangler deploy` capture loud and pinned the shim; the
+first coordinator proof dispatch (run 31410273428) then failed LOUD with the real cause the
+silent 35ms deaths had hidden: wrangler 4.x requires Node >= 22 and the Blacksmith image ships
+v20.20.0 (local deploys worked because the operator box is >= 22; `setup-bun` provides no node).
+#424 (`cd8e3593`) added the pinned `actions/setup-node` at 22, and the second proof dispatch
+(run 31410887694, blank ref = main) went **green end-to-end** — ancestry check, build, wrangler
+deploy, live-edge `index-parity-probe --only worker` PARITY OK. The lane is usable as the
+release train's leg 1b again.
 
 ## 2026-08-09 — audit-remediation wave: demos zone armed (ADR-0400 flip), demos+site deploys
 
