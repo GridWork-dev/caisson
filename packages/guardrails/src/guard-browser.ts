@@ -29,7 +29,7 @@ export async function guardInputAsync(
   runtime: GuardRuntime,
 ): Promise<BrowserGuardOutcome> {
   // A PII context bound to another tenant is a wiring error — reject before moderation or any
-  // telemetry so a cross-tenant seal can never be reached (CAISSON-176).
+  // telemetry so a cross-tenant seal can never be reached.
   if (
     policy.pii?.ctx !== undefined &&
     policy.pii.ctx.tenantId !== runtime.tenantId
@@ -58,7 +58,7 @@ export async function guardInputAsync(
 
 /**
  * Guard browser-held output. Moderation only — accepts the same PII-bearing policy shape as
- * `guardInputAsync` for source compatibility; output text is never rewritten (CAISSON-176).
+ * `guardInputAsync` for source compatibility; output text is never rewritten.
  */
 export async function guardOutput(
   text: string,

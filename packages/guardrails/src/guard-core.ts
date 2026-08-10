@@ -70,7 +70,7 @@ function emitBlock(
     void Promise.resolve(runtime.sink.emit(event)).catch(() => {});
   } catch {
     // A synchronously-throwing sink must never replace the block verdict — telemetry is
-    // best-effort, the GuardrailError is the contract (CAISSON-176).
+    // best-effort, the GuardrailError is the contract.
   }
 }
 
@@ -92,7 +92,7 @@ export async function moderateGuard(
   policy: GuardPolicyBase,
   runtime: GuardRuntime,
 ): Promise<void> {
-  // DoS ceilings run before ANY per-character work (CAISSON-176): an oversized text or an
+  // DoS ceilings run before ANY per-character work: an oversized text or an
   // unsafe caller-configured pattern is a caller error (plain throw, no block event), never a
   // moderation verdict.
   assertBoundedGuardText(text);
@@ -111,7 +111,7 @@ export async function moderateGuard(
   let result: ModerationResult;
   try {
     // The strict parse is INSIDE the fail-closed try: a malformed driver verdict is an outage,
-    // not a pass — unknown fields, wrong types, or a stray category all block (CAISSON-176).
+    // not a pass — unknown fields, wrong types, or a stray category all block.
     result = parseModerationResult(
       await moderateWithDeadline(
         policy.moderator,
