@@ -30,7 +30,12 @@ import {
 } from "@/lib/jsonld";
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
-import { bundlePrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
+import {
+  bundlePrice,
+  formatUsd,
+  MODULE_PRICES,
+  RENEWAL_RATE_PERCENT,
+} from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts),
@@ -578,13 +583,32 @@ export default function CompliancePage() {
               </Button>
             </div>
           </Card>
-          {/* CAISSON-98: the buyers'-own-estimate ROI frame beside the price (Cookiy study
-              019f4a11), attributed to the interviews, never asserted as a benchmark. */}
+          {/* D12 item 2 (PRD-4/T3): the month-13 answer belongs AT the decision point, not three
+              clicks away on the plans tab. Terms are unchanged — this restates the already-published
+              /marketplace/plans#after-twelve-months answer beside the price and the buy button. */}
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
-            Buyers we interviewed put building these foundations in-house at
-            four to eight engineering-weeks, the translation most sign-offs
-            actually run on. The license price is a one-time number against that
-            build.
+            After month 12: the source stays yours. A perpetual license does not
+            expire, stop working, or phone home — checks verify offline. Only
+            new updates lapse, and you renew a single entitlement for another 12
+            months at {RENEWAL_RATE_PERCENT}% of the then-current list, or let
+            it lapse and keep every version already delivered.{" "}
+            <Link
+              href="/marketplace/plans#after-twelve-months"
+              className="cs-link"
+            >
+              The month-13 terms in full
+            </Link>
+          </p>
+          {/* CAISSON-98 + D12 item 3 (PRD-3): the buyers'-own-estimate ROI frame beside the price
+              (Cookiy study 019f4a11), attributed to the interviews, never asserted as a benchmark —
+              and never as validation OF the price, which the prior ordering read as. The price is
+              stated as committed, per the D4 lock. */}
+          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-3)" }}>
+            {bundlePrice("compliance")} is the committed one-time price. Buyers
+            we interviewed put building these foundations in-house at four to
+            eight engineering-weeks, the translation most sign-offs actually run
+            on; that estimate is theirs, and it is of the build, not of the
+            price.
           </p>
         </Section>
       </Reveal>

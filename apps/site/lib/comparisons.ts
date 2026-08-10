@@ -11,7 +11,9 @@
 // can't drift. Six-bundle vocabulary only; V1-live posture (no roadmap/"coming soon").
 //
 // SCOPE: all targets of docs/gtm/comparison-targets.md (the original 20 + auditkit, added
-// 2026-07-10 off the CAISSON-76 parity research), in three honest frames.
+// 2026-07-10 off the CAISSON-76 parity research, + probo and sentrik, added 2026-08-09 off the
+// 2026-07 board audit's D12 lock — both were named absences in the compare set), in four honest
+// frames.
 //  • Group A — SaaS boilerplates / starter kits (+ the free create-t3-app scaffold): they ship auth +
 //    billing + a landing page fast; Caisson ships the compliance and tenant-isolation substrate they
 //    leave to you (fail-closed RLS with isolation tests, a WORM + hash-chained audit trail, evidence
@@ -20,6 +22,9 @@
 //    / Thoropass / Delve / Comp AI): NOT head-to-head. They MONITOR your stack and run the audit
 //    workflow; Caisson is the CODE that implements the controls they inspect. The page draws the
 //    honest own-vs-rent line and says the two compose — it never declares a winner.
+//  • Group D — AI-code compliance scanners / agent-governance layers (Sentrik): static analysis and
+//    a CI gate over the repository, plus rules for what an AI agent may write. The honest line is
+//    scanner vs substrate — a gate a commit passed is not a control the database enforces.
 //  • Group C — build it in-house: the build-vs-buy math, sourced from Caisson's own committed
 //    /build-vs-buy analysis (no vendor to scrape); the $80k / 6-9-month figure is the industry cost of
 //    a first SOC 2, labeled as such (ADR-0080 §4), never a Caisson quote.
@@ -1900,6 +1905,234 @@ export const COMPARISONS: readonly Comparison[] = [
         question: "Does Caisson monitor my stack like Comp AI?",
         answer:
           "No. Caisson is not a monitoring platform: it is the controls as code you own, and it emits OSCAL-exportable evidence from your own app. Continuous monitoring, integrations, and the Trust Center are Comp AI's job. If you want a self-hosted program to watch your stack, run Comp AI; if you want the controls implemented in the app it watches, use Caisson.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  {
+    slug: "probo",
+    accessed: "2026-08-09",
+    competitor: "Probo",
+    competitorUrl: "https://www.probo.com",
+    category: "Open-source GRC platform (MIT) + managed compliance service",
+    metaTitle: "Caisson vs Probo",
+    metaDescription:
+      "Probo is an MIT-licensed GRC platform you self-host, plus compliance officers who run the program for you; Caisson is the code that implements the controls a program tracks: fail-closed RLS, a WORM audit trail, and OSCAL evidence packs. An honest, dated comparison.",
+    answer:
+      "Pick Probo to run a compliance program: an MIT-licensed, self-hostable GRC platform (risk register, control library with a Statement of Applicability, vendor risk, access reviews, audit programs, 270+ MCP tools) or its 'Compliance, Done For You' service, where dedicated compliance officers run the program and manage your auditor. Pick Caisson for the other half: the technical controls inside your application, owned one-time — fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and OSCAL evidence packs. Probo tracks that a control exists; Caisson is the control.",
+    heroLede:
+      "Probo runs the compliance program — as open-source software you host, or as a service its officers run. Caisson is the code inside your product that the program tracks. Here is the honest line.",
+    competitorPrice:
+      "Self-host: free, no license fee (MIT) · managed Compliance Officer Service: quote-based, no published price",
+    competitorLicense:
+      "MIT — the whole platform, with no open-core /ee split (github.com/getprobo/probo); the managed service is commercial.",
+    competitorFacts: [
+      "An MIT-licensed, self-hostable GRC platform: Go + PostgreSQL backend, React/TypeScript console, deployed with Docker (github.com/getprobo/probo, 1.3k stars and 188 forks, read 2026-08-09).",
+      "Full GRC lifecycle: risk register with inherent/residual scoring, a control library with a Statement of Applicability, vendor/third-party risk (automated website assessment, DPA/BAA tracking), DPIA and transfer impact assessments, access-review campaigns, audit programs, and versioned documents with approval quorums and e-signatures (github.com/getprobo/probo, read 2026-08-09).",
+      "Automation surfaces: 270+ Model Context Protocol tools, a prb CLI over 44+ resource types, a GraphQL API, an n8n community node, and webhooks (github.com/getprobo/probo, read 2026-08-09).",
+      "Its headline offer is 'Compliance, Done For You' — dedicated compliance officers who run the program end to end and handle auditor communication. Managed frameworks listed: SOC 2 (Type 1 and Type 2), SOC 3, ISO 27001, ISO 27701, ISO 42001, HIPAA, GDPR, CCPA, and FERPA, and the page says the list is not exhaustive.",
+      "Y Combinator-backed; the managed service is quote-based ('Talk to an expert') and probo.com publishes no pricing page (checked 2026-08-09).",
+    ],
+    competitorStrengths: [
+      {
+        title: "A complete GRC platform, MIT, with no copyleft catch",
+        body: "Probo is the whole program in open source: risk, controls, vendor risk, privacy assessments, access reviews, audit programs, and a public compliance page, self-hostable for free under MIT with no /ee split — plus an unusually strong automation surface (270+ MCP tools, a full CLI, GraphQL). Caisson ships none of that program layer and does not try to.",
+      },
+      {
+        title: "Humans who actually run the program",
+        body: "The Compliance Officer Service covers the organizational half of compliance — policies, risk assessments, evidence chasing, auditor coordination — which no library can do and Caisson explicitly does not sell. For a team without a compliance owner, that is the constraint being solved, and it is a real answer.",
+      },
+    ],
+    caissonLine: [
+      {
+        title:
+          "A tracked control and an enforced control are different artifacts",
+        body: "Probo records that a control exists: an SoA row, an implementation state, an evidence file someone attached. Caisson is the enforcement — a Postgres FORCE RLS policy, an isolation test that attempts a cross-tenant read and asserts it returns nothing, a hash-chained audit row, an evidence pack generated from the live system. One is an assertion about the app; the other is the app.",
+      },
+      {
+        title: "No services, by design",
+        body: "Caisson sells software, not a compliance-officer role. There is no managed program, no auditor liaison, and no claim to make you certified: the audit and your organizational controls stay yours. If what you need is someone to run the program, that is Probo's offer, not ours.",
+      },
+    ],
+    rows: [
+      {
+        label: "Form factor",
+        caisson: "Library composed into your app",
+        competitor: "Platform you deploy, plus a managed service",
+      },
+      {
+        label: GRC.monitor,
+        caisson: "from your own app code",
+        competitor: true,
+      },
+      { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      {
+        label: GRC.trustCenter,
+        caisson: "trust-page module you host",
+        competitor: true,
+      },
+      { label: GRC.tprm, caisson: false, competitor: true },
+      {
+        label: "Compliance officers who run the program",
+        caisson: false,
+        competitor: true,
+      },
+      {
+        label: "Open-source license",
+        caisson: "Apache-2.0 base (permissive)",
+        competitor: "MIT (whole platform)",
+      },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+    ],
+    whenPickCompetitor:
+      "You need a compliance program — risk register, vendor risk, access reviews, policies, auditor coordination — either self-hosted free under MIT or run for you by compliance officers.",
+    whenPickCaisson:
+      "You need the technical controls implemented and provable inside your own application, one-time and owned, with the program run by your team or by someone else.",
+    whenBoth:
+      "Run Probo as the program of record and Caisson as the controls in the product it tracks: the SoA row asserting tenant isolation points at an isolation test running in your CI, and the evidence attached to it is generated from the live system rather than screenshotted.",
+    faq: [
+      {
+        question: "Is Caisson a Probo alternative?",
+        answer:
+          "Not really — they sit on either side of the same audit. Probo runs the compliance program (risk, controls, vendor risk, access reviews, auditor coordination) as a platform or a managed service. Caisson is the code inside your application that implements the technical controls the program tracks: fail-closed RLS, a WORM audit trail, field encryption, and evidence packs. Neither replaces the other, and a team can honestly use both.",
+      },
+      {
+        question: "Probo is MIT and free to self-host. Why pay for Caisson?",
+        answer:
+          "Probo's price is a genuine strength and the platform is fully open under MIT — no copyleft, no /ee split (verified 2026-08-09). What it does not contain is your application's controls: nothing in a GRC platform writes fail-closed Postgres RLS with isolation tests, a hash-chained audit trail on S3 Object-Lock, or per-tenant field encryption into your product. Caisson is paid because that layer is the product; its Base substrate is Apache-2.0 and you get the source either way.",
+      },
+      {
+        question:
+          "Does Caisson run my compliance program or talk to my auditor?",
+        answer:
+          "No. Caisson ships no services: no compliance officers, no managed program, no auditor liaison, and no certification claim. It ships the technical controls and generates the evidence from your live system; the audit and your organizational controls stay with you. Probo's Compliance Officer Service is built for exactly the part Caisson leaves to you.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  // Group D — AI-code compliance scanners / agent-governance layers. Neither a launch kit nor a GRC
+  // platform: these read your repository in CI, score it against framework rule packs, and govern
+  // what an AI agent is allowed to write. The honest line is static analysis of code vs controls
+  // that run in production — a gate a commit passed is not an invariant the database enforces.
+  {
+    slug: "sentrik",
+    accessed: "2026-08-09",
+    competitor: "Sentrik",
+    competitorUrl: "https://sentrik.dev",
+    category: "AI-code compliance scanner + agent-governance layer",
+    metaTitle: "Caisson vs Sentrik",
+    metaDescription:
+      "Sentrik scans commits against 26 framework rule packs and governs what AI agents may write; Caisson is the runtime substrate those frameworks ask for: fail-closed RLS, a WORM audit trail, and OSCAL evidence packs. An honest, dated comparison.",
+    answer:
+      "Pick Sentrik to govern how code gets written: a language-agnostic CLI and CI gate that scans commits against 632 rules in 26 framework packs, binds an AI agent to a declared file scope and blocks it when it writes outside, and emits HMAC-signed per-commit attestations. Pick Caisson for what the code has to do at runtime: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and evidence packs generated from the live system. Sentrik inspects the diff; Caisson is the control that holds in production. They stack rather than compete.",
+    heroLede:
+      "Sentrik gates what gets written and governs the agent writing it. Caisson is the control that runs in production once it is written. Here is the honest line between a scanner and a substrate.",
+    competitorPrice:
+      "Free tier (6 packs / 193 rules); Team, Organization, and Enterprise are contact-gated with no published price",
+    competitorLicense:
+      "Commercial, contact-gated tiers, labelled Early Access; offline/air-gapped license validation via HMAC.",
+    competitorFacts: [
+      "A CLI and CI gate (sentrik scan, sentrik gate, sentrik attest) distributed via PyPI, pip, and Docker, with a VS Code extension, a GitHub Action, and an MCP server for Claude Code, Cursor, and Cline (sentrik.dev, read 2026-08-09).",
+      "632 rules across 26 standards packs on the top tier — SOC 2, HIPAA, PCI DSS, ISO 27001, GDPR, EU AI Act, NIST 800-53, NIST AI RMF, CMMC 2.0, IEC 62304, DO-178C, ISO 26262, MISRA C/C++, 21 CFR Part 11 and more; the free tier is 6 packs / 193 rules.",
+      "AI-agent governance: sentrik task-bind binds an agent's declared intent to a file glob, then flags and blocks writes outside that scope, with a signed incident record and one-click rollback.",
+      "HMAC-SHA256-signed per-commit attestations, a token-gated read-only auditor portal, SBOM generation and CVE scanning against OSV.dev, SARIF/JUnit/CycloneDX output, and air-gapped offline license validation.",
+      "Labelled 'Early Access'; the paid Team, Organization, and Enterprise tiers are contact-gated with no published numbers (checked 2026-08-09).",
+    ],
+    competitorStrengths: [
+      {
+        title: "Framework breadth no application library matches",
+        body: "26 packs reaching into safety-critical regimes — IEC 62304, DO-178C, ISO 26262, MISRA C/C++, 21 CFR Part 11 — across multiple languages. Caisson covers a deliberately narrow set of regimes for TypeScript on Postgres; if you build medical-device, avionics, or automotive software, Sentrik is addressing a surface Caisson does not touch.",
+      },
+      {
+        title: "It governs the agent, not just the output",
+        body: "Task-scope binding with a signed incident record when an agent writes outside its declared globs is real AI-governance machinery, and it drops into an existing pipeline with no application changes — pip or Docker, a GitHub Action, and an MCP server the coding agent itself calls. That acquisition path is genuinely lighter than adopting a substrate.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "A gate a commit passed is not a control your database enforces",
+        body: "Static analysis reports on code; it cannot make a query fail closed. Caisson's isolation is a Postgres FORCE RLS policy with a test that attempts a cross-tenant read and asserts it returns nothing, on every run; its audit trail is hash-chained rows anchored in S3 Object-Lock WORM. Those hold at 3am against a bug a scanner had no rule for.",
+      },
+      {
+        title:
+          "Attestation mechanisms differ, and the difference is who can verify",
+        body: "Sentrik signs attestations with HMAC-SHA256, a shared-secret MAC: verification needs the same key that signed it. Caisson's evidence packs carry detached Ed25519 signatures plus RFC-3161 timestamps over WORM-retained objects, so a third party — an auditor, a customer, you after the vendor is gone — verifies them with a public key and no cooperation from us. Both are real signing; only one is externally verifiable.",
+      },
+      {
+        title: "A committed price, and the source",
+        body: "Sentrik's paid tiers are contact-gated with no published number, and its free tier is a scanner subscription, not source you own. Caisson publishes a committed one-time price, ships an Apache-2.0 base, and hands you the code: nothing to renew for the controls to keep working.",
+      },
+    ],
+    rows: [
+      {
+        label: "Form factor",
+        caisson: "Library composed into your app",
+        competitor: "CLI + CI scanner over your repository",
+      },
+      {
+        label: "Scans commits against framework rule packs",
+        caisson: false,
+        competitor: true,
+      },
+      {
+        label: "Blocks non-compliant code in CI",
+        caisson: false,
+        competitor: true,
+      },
+      {
+        label: "AI-agent task-scope binding + rollback",
+        caisson: false,
+        competitor: true,
+      },
+      {
+        label: "Languages other than TypeScript",
+        caisson: false,
+        competitor: true,
+      },
+      {
+        label: "Evidence signing",
+        caisson: "Ed25519 + RFC-3161 (public verification)",
+        competitor: "HMAC-SHA256 (shared secret)",
+      },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+      {
+        label: "Published price · one-time perpetual, own the source",
+        caisson: true,
+        competitor: "Free tier; paid tiers contact-gated",
+      },
+    ],
+    whenPickCompetitor:
+      "You want language-agnostic rule coverage over AI-written code in CI — especially safety-critical regimes like IEC 62304, DO-178C, or MISRA — and a gate that blocks merges without changing your application.",
+    whenPickCaisson:
+      "You need the controls themselves to exist at runtime — fail-closed tenant isolation the database enforces, a WORM-anchored audit trail, and evidence generated from the live system — in TypeScript on Postgres, owned one-time.",
+    whenBoth:
+      "They stack in the obvious order: Sentrik gates what gets written, Caisson is what runs. A scanner has less to find in a codebase whose controls are already implemented and tested, and the runtime evidence is the part an assessor actually tests.",
+    faq: [
+      {
+        question: "Is Caisson a Sentrik alternative?",
+        answer:
+          "They operate at different layers. Sentrik is static analysis and an agent-governance gate in CI: it reads your repository, scores it against framework rule packs, and can block a merge. Caisson is the runtime substrate — RLS the database enforces, a hash-chained audit trail on WORM storage, field encryption, and evidence generated from the live system. A team can run both, and the honest sequence is Sentrik on the way in, Caisson underneath what ships.",
+      },
+      {
+        question: "Both produce signed attestations. What's the difference?",
+        answer:
+          "The verification model. Sentrik signs with HMAC-SHA256 (sentrik.dev, 2026-08-09), a symmetric MAC — whoever verifies needs the same secret that signed it. Caisson's evidence packs use detached Ed25519 signatures with RFC-3161 trusted timestamps over objects retained under S3 Object-Lock, so an auditor or customer verifies with a public key, independently of Caisson and independently of your CI. Both are genuine signing; they answer different questions about who has to be trusted.",
+      },
+      {
+        question: "What does Sentrik cost?",
+        answer:
+          "As of 2026-08-09 its site advertises a free tier (6 standards packs, 193 rules) and three paid tiers — Team, Organization, and Enterprise — all contact-gated with no published price, under an 'Early Access' label. Caisson publishes a committed one-time price per bundle or module (see the licensing section below), with 12 months of updates included and the source yours perpetually.",
+      },
+      {
+        question: "Does Caisson govern AI agents the way Sentrik does?",
+        answer:
+          "Not in CI, no. Sentrik's task-scope binding — an agent declaring its authorized globs and being blocked when it writes outside them — is its own capability and Caisson ships nothing equivalent as a commit gate. Caisson's Agentic-Dev bundle is a runtime concern: a typed agent/skill/rule kernel, a lifecycle state machine, and a hooks dispatcher for agents running inside your product. Different problem, same word.",
       },
     ],
   },

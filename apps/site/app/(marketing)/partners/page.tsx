@@ -1,4 +1,8 @@
 import { Button, Card, Faq, Icon, Reveal, Section } from "@/components";
+import {
+  PartnersApplyButton,
+  PartnersApplyLink,
+} from "@/components/partners-apply";
 import { breadcrumb, faqPage, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
 
@@ -185,16 +189,10 @@ export default function PartnersPage() {
       {/* ===== How to apply ===== */}
       <Section band="tint" eyebrow="How to apply" title="Apply by email.">
         <p className="cs-lede">
-          Email{" "}
-          <a
-            href="mailto:support@caisson.sh?subject=Caisson%20design-partner%20application"
-            className="cs-link"
-          >
-            support@caisson.sh
-          </a>{" "}
-          with what you&rsquo;re building, the stack you&rsquo;re on, and the
-          bundle or modules you&rsquo;d use. We review every application and
-          follow up directly.
+          Email <PartnersApplyLink>support@caisson.sh</PartnersApplyLink> with
+          what you&rsquo;re building, the stack you&rsquo;re on, and the bundle
+          or modules you&rsquo;d use. We review every application and follow up
+          directly.
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
           Not ready to commit to a reference? Prove the fit first &mdash;
@@ -209,13 +207,7 @@ export default function PartnersPage() {
             flexWrap: "wrap",
           }}
         >
-          <Button
-            href="mailto:support@caisson.sh?subject=Caisson%20design-partner%20application"
-            external
-            variant="primary"
-          >
-            Apply by email
-          </Button>
+          <PartnersApplyButton>Apply by email</PartnersApplyButton>
           <Button href="/stack-fit" variant="ghost">
             Check the stack fit
           </Button>
