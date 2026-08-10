@@ -38,11 +38,18 @@ export function CartLineItem({
   item: CartItem;
   density?: "compact" | "comfortable";
 }) {
-  const { removeItem } = useCart();
+  const { removeItem, closeDrawer } = useCart();
   return (
     <li className={styles.line} data-density={density}>
       <div className={styles.lineMain}>
-        <Link href={itemHref(item)} className={styles.lineLabel}>
+        {/* closeDrawer on navigate: the drawer is a native `showModal()` dialog mounted once in the
+            layout, so a soft nav leaves it open over the destination with the page inert behind the
+            backdrop. Every other way out of the drawer already closes it; these links did not. */}
+        <Link
+          href={itemHref(item)}
+          className={styles.lineLabel}
+          onClick={closeDrawer}
+        >
           {item.label}
         </Link>
         {density === "comfortable" && (
@@ -145,13 +152,32 @@ export function CartPrunedNotice() {
 /** The one-time-license reassurance line + the verbatim Paddle MoR disclosure, shared so the
  *  drawer, /cart, and the checkout panel all say them identically. */
 export function CartTrustNote() {
+  const { closeDrawer } = useCart();
   return (
-    <>
+    // Grouped, not a Fragment: /cart wraps this in a plain div so the lines pack tight, but the
+    // drawer drops them straight into `.panel` (flex, gap: space-4), which spends a full
+    // section-sized gap between each line. Adding the month-12 line made that mismatch expensive
+    // — one container gives both surfaces the same tight spacing at any line count.
+    <div style={{ display: "grid", gap: "var(--cs-space-2)" }}>
       <p className={styles.trust}>
         One-time perpetual license per organization, billed once — your whole
         team, no seat count, no forced renewal.
       </p>
+      {/* D12 item 2 (PRD-4/T3): the month-13 answer at the checkout itself. Both purchase surfaces
+          (drawer + /cart) render this note, so every buy path carries it, not just one page. Terms
+          unchanged — the full version lives at /marketplace/plans#after-twelve-months. */}
+      <p className={styles.trust}>
+        Includes 12 months of updates. After that the code stays yours forever —
+        only new updates lapse, renewable per entitlement.{" "}
+        <Link
+          href="/marketplace/plans#after-twelve-months"
+          className="cs-link"
+          onClick={closeDrawer}
+        >
+          What happens after 12 months →
+        </Link>
+      </p>
       <p className={styles.trust}>{PADDLE_MOR_DISCLOSURE}</p>
-    </>
+    </div>
   );
 }

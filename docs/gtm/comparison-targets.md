@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-08-09
 status: live
 grounds:
   - outputs/research/prelaunch-fanout-2026-07/SYNTHESIS.md
@@ -17,7 +17,7 @@ verified target list. Every product below was confirmed real and current via web
 (2026-07); the honesty rule (ADR-0080) is binding — a comparison page that overclaims
 against a real competitor is worse than no page.
 
-**Status: all 21 pages shipped** (`apps/site/lib/comparisons.ts` carries all 21 slugs live, PR #134 "20-page compare family" + the Kickoff-J AuditKit/Delve additions, 2026-07-10). **Build discipline (for any future addition):** `gw-gtm-copywriter` drafts each page (claims scraped + dated, PAL-challenged) and stops at a committed branch; the operator publishes. Do not invent a number a competitor doesn't publish. Where Caisson and the competitor solve different problems (the compliance platforms), the page's job is to draw the honest line, not to declare a winner.
+**Status: all 23 pages shipped** (`apps/site/lib/comparisons.ts` carries all 23 slugs live, PR #134 "20-page compare family" + the Kickoff-J AuditKit/Delve additions, 2026-07-10, + Probo and Sentrik from the 2026-07 board audit's D12 lock, 2026-08-09 — both were named absences in the compare set, facts read live on that date). **Build discipline (for any future addition):** `gw-gtm-copywriter` drafts each page (claims scraped + dated, PAL-challenged) and stops at a committed branch; the operator publishes. Do not invent a number a competitor doesn't publish. Where Caisson and the competitor solve different problems (the compliance platforms), the page's job is to draw the honest line, not to declare a winner.
 
 ## Group A — SaaS boilerplates / starter kits (position: the compliance-first alternative)
 
@@ -57,7 +57,18 @@ subscription that watches whatever you built. Many buyers use both.
 | **Thoropass**   | Yes (software + audit under one roof)   | Compliance + the auditor bundled. Frame: outsourced audit path vs own-the-evidence-pipeline.                                                                                                                                                                                                                                |
 | **Delve**       | Yes (AI-native newcomer)                | AI agents gather evidence. Frame (updated 2026-07-10): own-vs-verify — the 2026 fabricated-reports allegations (TechCrunch 2026-03-22, cited + dated, labeled as allegations) made "can you verify evidence without trusting the collector" the buying question; deterministic, externally anchored evidence is the answer. |
 | **AuditKit**    | Yes (added 2026-07-10, CAISSON-76)      | The closest wedge-to-wedge target: subscription audit-log SDK + SOC 2 prep ($99–999+/mo, AGPLv3 core + commercial /ee). Frame: rent the audit-log service vs own the audit infrastructure (external WORM anchor, field-crypto, deterministic OSCAL). Parity research: `outputs/research/auditkit-parity-2026-07-10.md`.     |
+| **Probo**       | Yes (added 2026-08-09, D12)             | MIT GRC platform (Go/Postgres, 1.3k★, 270+ MCP tools) whose headline offer is now the managed "Compliance, Done For You" officer service. Frame: the program (tracked controls, run by a platform or by people) vs the controls themselves in your app — and Caisson's named no-services boundary.                          |
 | **Comp AI**     | Yes (open-source, AGPLv3, Bun/Postgres) | The closest philosophical comparable — open-source, self-host, dev-owned compliance. Frame: AGPLv3 GRC _platform_ to run vs an Apache-2.0 _infrastructure library_ you compose into your app. The most nuanced page; write it carefully and fairly.                                                                         |
+
+## Group D — AI-code compliance scanners / agent-governance layers
+
+Added 2026-08-09 (D12). Neither a launch kit nor a GRC platform: these read the repository in CI,
+score it against framework rule packs, and govern what an AI coding agent may write. The honest
+frame is scanner vs substrate — static analysis reports on code, it cannot make a query fail closed.
+
+| Target      | Real?                             | Angle                                                                                                                                                                                                                                                                                                                                                 |
+| ----------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sentrik** | Yes (Early Access, contact-gated) | The closest positioning mirror found in the 2026-07 board audit (E-C1): 632 rules / 26 framework packs, agent task-scope binding, HMAC-signed attestations. Frame: the CI gate vs the runtime control, and symmetric HMAC attestation vs publicly verifiable Ed25519 + RFC-3161 over WORM. Cede the breadth and the safety-critical regimes honestly. |
 
 ## Group C — Build in-house
 
@@ -65,12 +76,12 @@ subscription that watches whatever you built. Many buyers use both.
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Build it yourself** | The real default competitor. Frame: the build-vs-buy math — the person-months to wire fail-closed RLS + WORM + a hash-chained audit log + OSCAL export correctly, against a one-time perpetual license where you still own and can read every line. Caisson already ships a `/build-vs-buy` page; the comparison page is its long-form, table-heavy sibling. |
 
-## The 21 targets, slug list
+## The 23 targets, slug list
 
 `shipfast` · `makerkit` · `supastarter` · `saas-pegasus` · `turbostarter` · `open-saas` ·
 `bedrock` · `shipixen` · `saasrock` · `divjoy` · `vanta` · `drata` · `secureframe` ·
-`sprinto` · `scytale` · `thoropass` · `delve` · `auditkit` · `comp-ai` · `create-t3-app` ·
-`build-in-house`
+`sprinto` · `scytale` · `thoropass` · `delve` · `auditkit` · `comp-ai` · `probo` · `sentrik` ·
+`create-t3-app` · `build-in-house`
 
 > `create-t3-app` (the free T3 scaffold) is included as a "vs a free stack scaffold" contrast
 > — real and current, dev-audience relevant. Synthesis-named `compliance.tf` and `Clynova`
