@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { localModerator } from "./moderator.ts";
-import { guardOutput as nodeGuardOutput } from "./guard.ts";
-import { guardOutput as browserGuardOutput } from "./browser.ts";
+import type { guardOutput as nodeGuardOutput } from "./guard.ts";
+import type { guardOutput as browserGuardOutput } from "./browser.ts";
 
 const nodeInlinePolicy = {
   policyName: "inline-node",
