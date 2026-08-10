@@ -37,7 +37,7 @@ import {
 
 export const metadata = buildMetadata({
   description:
-    "One audited Postgres base for regulated and production SaaS: fail-closed RLS, S3 Object-Lock WORM, and an append-only audit chain, mapped to SOC 2, HIPAA, ISO 27001, and NIST 800-53, in six composable bundles you compose, never fork.",
+    "One audited Postgres base mapped to SOC 2, HIPAA, ISO 27001, and NIST 800-53: fail-closed RLS, S3 Object-Lock WORM, and an append-only audit chain, in six composable bundles you compose, never fork.",
   path: "/",
 });
 
@@ -376,10 +376,10 @@ export default function HomePage() {
             explicitly of the BUILD: leading with the buyers read as buyer-validated pricing. */}
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-3)" }}>
           {bundlePrice("compliance")} one-time is the committed price for the
-          Compliance bundle — what you pay at checkout. For the sign-off
-          conversation: buyers we interviewed put the in-house build of that
-          bundle&rsquo;s foundations at four to eight engineering-weeks. That
-          estimate is theirs, and it is of the build, not of the price.
+          Compliance bundle. For the sign-off conversation: buyers we
+          interviewed put the in-house build of that bundle&rsquo;s foundations
+          at four to eight engineering-weeks. That estimate is theirs, and it is
+          of the build, not of the price.
         </p>
       </Section>
 

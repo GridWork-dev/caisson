@@ -11,7 +11,7 @@ import { buildMetadata } from "@/lib/metadata";
 export const metadata = buildMetadata({
   title: "Caisson vs the alternatives",
   description:
-    "Honest, dated comparisons of Caisson against the SaaS boilerplates, the compliance-automation (GRC) platforms, and building it in-house — what each does, what it doesn't, and when to pick which.",
+    "Honest, dated comparisons of Caisson against the SaaS boilerplates, the compliance-automation (GRC) platforms, the AI-code compliance scanners, and building it in-house — what each does, what it doesn't, and when to pick which.",
   path: "/compare",
 });
 
@@ -31,7 +31,7 @@ export default function CompareHubPage() {
       <Hero
         eyebrow="Comparisons"
         title="Caisson vs the alternatives"
-        lede="Three honest frames. The SaaS boilerplates ship auth, billing, and a landing page fast but leave the compliance and tenant-isolation substrate to you. The compliance-automation (GRC) platforms monitor your stack and run the audit — Caisson is the code that implements the controls they inspect. And building it in-house is months of load-bearing work. Each page below draws the honest, dated line."
+        lede="Four honest frames. The SaaS boilerplates ship auth, billing, and a landing page fast but leave the compliance and tenant-isolation substrate to you. The compliance-automation (GRC) platforms monitor your stack and run the audit — Caisson is the code that implements the controls they inspect. The AI-code scanners read your repository in CI and govern what an agent may write, which is not the same as a control the database enforces. And building it in-house is months of load-bearing work. Each page below draws the honest, dated line."
         ctas={
           <Button href="/compliance" variant="primary">
             Explore the Compliance bundle

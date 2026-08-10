@@ -1,47 +1,81 @@
-import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { renderIntoJsdom } from "@caisson/testing";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import PartnersPage from "../app/(marketing)/partners/page";
-import { PartnersApplyButton, PartnersApplyLink } from "./partners-apply";
 
-// D12 item 4: instrumenting /partners must not cost the no-JS path. The tracked components carry
-// the real `mailto:` in their markup, so a visitor with JS off (or with the Plausible env unset)
-// still gets a working application link — the event is additive, never the mechanism.
+// Two properties, and the click test is the load-bearing one: a markup assertion cannot see an
+// onClick, so without a real DOM click, deleting both handlers from partners-apply.tsx would leave
+// every other assertion here green. The `source` split is the whole reason to fire an event rather
+// than read pageviews, so it is asserted per surface.
+const trackEvent = mock((_name: string, _props?: Record<string, string>) => {
+  /* recorded, never sent */
+});
+mock.module("@/lib/analytics", () => ({ trackEvent }));
+
+const { PartnersApplyButton, PartnersApplyLink } =
+  await import("./partners-apply");
+
 const APPLY_HREF =
   "mailto:support@caisson.sh?subject=Caisson%20design-partner%20application";
 
-const PAGE_SOURCE = readFileSync(
-  fileURLToPath(
-    new URL("../app/(marketing)/partners/page.tsx", import.meta.url),
-  ),
-  "utf8",
-);
+/** Click the component's anchor, swallowing the navigation jsdom cannot perform. */
+function clickAnchor(root: ReturnType<typeof renderIntoJsdom>): void {
+  const anchor = root.document.querySelector("a");
+  expect(anchor?.getAttribute("href")).toBe(APPLY_HREF);
+  root.document.addEventListener("click", (e) => {
+    e.preventDefault();
+  });
+  root.act(() => {
+    anchor?.dispatchEvent(
+      new root.document.defaultView!.MouseEvent("click", { bubbles: true }),
+    );
+  });
+}
+
+beforeEach(() => {
+  trackEvent.mockClear();
+});
 
 describe("/partners application links", () => {
-  test("both tracked components render the real mailto href", () => {
-    expect(
-      renderToStaticMarkup(<PartnersApplyLink>email us</PartnersApplyLink>),
-    ).toContain(`href="${APPLY_HREF}"`);
-    expect(
-      renderToStaticMarkup(<PartnersApplyButton>Apply</PartnersApplyButton>),
-    ).toContain(`href="${APPLY_HREF}"`);
+  test("the CTA fires one partners_apply_click tagged cta", () => {
+    const root = renderIntoJsdom(
+      <PartnersApplyButton>Apply by email</PartnersApplyButton>,
+    );
+    try {
+      clickAnchor(root);
+      expect(trackEvent).toHaveBeenCalledTimes(1);
+      expect(trackEvent.mock.calls[0]).toEqual([
+        "partners_apply_click",
+        { source: "cta" },
+      ]);
+    } finally {
+      root.unmount();
+    }
   });
 
+  test("the prose link fires one partners_apply_click tagged prose", () => {
+    const root = renderIntoJsdom(
+      <PartnersApplyLink>support@caisson.sh</PartnersApplyLink>,
+    );
+    try {
+      clickAnchor(root);
+      expect(trackEvent).toHaveBeenCalledTimes(1);
+      expect(trackEvent.mock.calls[0]).toEqual([
+        "partners_apply_click",
+        { source: "prose" },
+      ]);
+    } finally {
+      root.unmount();
+    }
+  });
+
+  // Instrumenting the page must not cost the no-JS path: the href is a real mailto in the static
+  // markup, so a visitor with JS off (or with the Plausible env unset) still gets a working
+  // application link. The event is additive, never the mechanism.
   test("the server-rendered page keeps both mailto fallbacks", () => {
     const html = renderToStaticMarkup(<PartnersPage />);
-    const hrefs = html.split(`href="${APPLY_HREF}"`).length - 1;
 
-    expect(hrefs).toBe(2);
-  });
-
-  test("the page routes every application link through the tracked components", () => {
-    // The regression this guards: re-adding a bare `<a href="mailto:…">` silently drops the
-    // signal again (zero sends stayed indistinguishable from zero page traffic). A rendered-markup
-    // assertion cannot see it — renderToStaticMarkup drops onClick — so check the source shape.
-    expect(PAGE_SOURCE).not.toContain('href="mailto:');
-    expect(PAGE_SOURCE).toContain("<PartnersApplyLink>");
-    expect(PAGE_SOURCE).toContain("<PartnersApplyButton>");
+    expect(html.split(`href="${APPLY_HREF}"`).length - 1).toBe(2);
   });
 });

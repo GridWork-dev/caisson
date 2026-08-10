@@ -604,11 +604,11 @@ export default function CompliancePage() {
               and never as validation OF the price, which the prior ordering read as. The price is
               stated as committed, per the D4 lock. */}
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-3)" }}>
-            {bundlePrice("compliance")} is the committed one-time price — the
-            number at checkout. Buyers we interviewed put building these
-            foundations in-house at four to eight engineering-weeks, the
-            translation most sign-offs actually run on; that estimate is theirs,
-            and it is of the build, not of the price.
+            {bundlePrice("compliance")} is the committed one-time price. Buyers
+            we interviewed put building these foundations in-house at four to
+            eight engineering-weeks, the translation most sign-offs actually run
+            on; that estimate is theirs, and it is of the build, not of the
+            price.
           </p>
         </Section>
       </Reveal>

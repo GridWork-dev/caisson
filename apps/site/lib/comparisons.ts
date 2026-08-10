@@ -1925,12 +1925,12 @@ export const COMPARISONS: readonly Comparison[] = [
     competitorPrice:
       "Self-host: free, no license fee (MIT) · managed Compliance Officer Service: quote-based, no published price",
     competitorLicense:
-      "MIT — the whole platform, with no open-core /ee split; the managed service is commercial.",
+      "MIT — the whole platform, with no open-core /ee split (github.com/getprobo/probo); the managed service is commercial.",
     competitorFacts: [
       "An MIT-licensed, self-hostable GRC platform: Go + PostgreSQL backend, React/TypeScript console, deployed with Docker (github.com/getprobo/probo, 1.3k stars and 188 forks, read 2026-08-09).",
-      "Full GRC lifecycle: risk register with inherent/residual scoring, a control library with a Statement of Applicability, vendor/third-party risk (automated website assessment, DPA/BAA tracking), DPIA and transfer impact assessments, access-review campaigns, audit programs, and versioned documents with approval quorums and e-signatures.",
-      "Automation surfaces: 270+ Model Context Protocol tools, a `prb` CLI over 44+ resource types, a GraphQL API, an n8n community node, and webhooks.",
-      "Its headline offer is 'Compliance, Done For You' — dedicated compliance officers who run the program end to end and handle auditor communication. Managed frameworks listed: SOC 2 (Type 1 and Type 2), SOC 3, ISO 27001, ISO 27701, ISO 42001, HIPAA, and FERPA.",
+      "Full GRC lifecycle: risk register with inherent/residual scoring, a control library with a Statement of Applicability, vendor/third-party risk (automated website assessment, DPA/BAA tracking), DPIA and transfer impact assessments, access-review campaigns, audit programs, and versioned documents with approval quorums and e-signatures (github.com/getprobo/probo, read 2026-08-09).",
+      "Automation surfaces: 270+ Model Context Protocol tools, a prb CLI over 44+ resource types, a GraphQL API, an n8n community node, and webhooks (github.com/getprobo/probo, read 2026-08-09).",
+      "Its headline offer is 'Compliance, Done For You' — dedicated compliance officers who run the program end to end and handle auditor communication. Managed frameworks listed: SOC 2 (Type 1 and Type 2), SOC 3, ISO 27001, ISO 27701, ISO 42001, HIPAA, GDPR, CCPA, and FERPA, and the page says the list is not exhaustive.",
       "Y Combinator-backed; the managed service is quote-based ('Talk to an expert') and probo.com publishes no pricing page (checked 2026-08-09).",
     ],
     competitorStrengths: [
@@ -2035,9 +2035,9 @@ export const COMPARISONS: readonly Comparison[] = [
     competitorLicense:
       "Commercial, contact-gated tiers, labelled Early Access; offline/air-gapped license validation via HMAC.",
     competitorFacts: [
-      "A CLI and CI gate (`sentrik scan`, `sentrik gate`, `sentrik attest`) distributed via PyPI, pip, and Docker, with a VS Code extension, a GitHub Action, and an MCP server for Claude Code, Cursor, and Cline (sentrik.dev, read 2026-08-09).",
+      "A CLI and CI gate (sentrik scan, sentrik gate, sentrik attest) distributed via PyPI, pip, and Docker, with a VS Code extension, a GitHub Action, and an MCP server for Claude Code, Cursor, and Cline (sentrik.dev, read 2026-08-09).",
       "632 rules across 26 standards packs on the top tier — SOC 2, HIPAA, PCI DSS, ISO 27001, GDPR, EU AI Act, NIST 800-53, NIST AI RMF, CMMC 2.0, IEC 62304, DO-178C, ISO 26262, MISRA C/C++, 21 CFR Part 11 and more; the free tier is 6 packs / 193 rules.",
-      "AI-agent governance: `sentrik task-bind` binds an agent's declared intent to a file glob, then flags and blocks writes outside that scope, with a signed incident record and one-click rollback.",
+      "AI-agent governance: sentrik task-bind binds an agent's declared intent to a file glob, then flags and blocks writes outside that scope, with a signed incident record and one-click rollback.",
       "HMAC-SHA256-signed per-commit attestations, a token-gated read-only auditor portal, SBOM generation and CVE scanning against OSV.dev, SARIF/JUnit/CycloneDX output, and air-gapped offline license validation.",
       "Labelled 'Early Access'; the paid Team, Organization, and Enterprise tiers are contact-gated with no published numbers (checked 2026-08-09).",
     ],
