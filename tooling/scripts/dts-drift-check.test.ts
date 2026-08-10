@@ -38,7 +38,7 @@ describe("summarizeDrift", () => {
     expect(summarizeDrift(results).anyDrift).toBe(true);
   });
 
-  test("a skipped package (compiler failed to emit) is reported, never counted as drift", () => {
+  test("a skipped package (compiler failed to emit) fails the gate without masquerading as drift", () => {
     const results: PackageDriftResult[] = [
       {
         pkg: "packages/kernel",
@@ -46,14 +46,23 @@ describe("summarizeDrift", () => {
         reason: "base tsc failed to emit: boom",
       },
     ];
-    const { anyDrift, table } = summarizeDrift(results);
-    expect(anyDrift).toBe(false);
-    expect(table[2]).toBe(
+    const summary = summarizeDrift(results);
+    expect(summary).toMatchObject({ anyDrift: false, failed: true });
+    expect(summary.table[2]).toBe(
       "| packages/kernel | skipped (base tsc failed to emit: boom) |",
     );
   });
 
-  test("an empty result set is not drift", () => {
-    expect(summarizeDrift([]).anyDrift).toBe(false);
+  test("an empty result set fails the gate", () => {
+    expect(summarizeDrift([])).toMatchObject({
+      anyDrift: false,
+      failed: true,
+    });
+  });
+
+  test("an all-identical sweep passes the gate", () => {
+    expect(
+      summarizeDrift([{ pkg: "packages/kernel", status: "identical" }]),
+    ).toMatchObject({ anyDrift: false, failed: false });
   });
 });

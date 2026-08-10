@@ -10,6 +10,12 @@
 // duplicating them.
 //
 // Usage: TSC_BASE=/path/to/base/tsc TSC_HEAD=/path/to/head/tsc bun tooling/scripts/dts-drift-check.ts
+//
+// The gate is FAIL-CLOSED (re-landed from PR #412's lane A): an emit failure, a skipped package,
+// or an empty discovery set fails the run — only an all-identical sweep passes. To make that
+// honest, main() first builds the packages/* dependency closure (workspace imports resolve via
+// built .d.ts; in a fresh checkout ~50 of the candidates cannot emit unbuilt, which is the
+// harness incapability that made lane A's first flip red-by-construction).
 import { appendFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -58,8 +64,8 @@ function emitDeclarations(
 }
 
 /** Emit + byte-compare one package's declarations under both compilers. Never throws — a
- *  compiler that fails to emit for either side is recorded as "skipped" (not a drift verdict),
- *  so one broken package can't hide a real drift finding in the rest of the run. */
+ *  compiler that fails to emit for either side is recorded as "skipped" so the run can report
+ *  every package before failing the final gate. */
 export function checkPackageDrift(
   pkgDir: string,
   tsconfigPath: string,
@@ -106,8 +112,10 @@ export function checkPackageDrift(
  *  spawning a real compiler. */
 export function summarizeDrift(results: readonly PackageDriftResult[]): {
   anyDrift: boolean;
+  failed: boolean;
   table: string[];
 } {
+  const anyDrift = results.some((result) => result.status === "differing");
   const table = [
     "| package | status |",
     "|---|---|",
@@ -115,7 +123,27 @@ export function summarizeDrift(results: readonly PackageDriftResult[]): {
       (r) => `| ${r.pkg} | ${r.status}${r.reason ? ` (${r.reason})` : ""} |`,
     ),
   ];
-  return { anyDrift: results.some((r) => r.status === "differing"), table };
+  return {
+    anyDrift,
+    failed:
+      results.length === 0 ||
+      results.some((result) => result.status !== "identical"),
+    table,
+  };
+}
+
+/** Build the packages/* dependency closure so workspace imports resolve via built .d.ts. Under
+ *  the fail-closed gate an emit-incapable harness would be indistinguishable from real drift
+ *  (the class that burned lane A, PR #412) — so a build failure is its own loud FAIL up front,
+ *  never a skip and never a drift verdict. */
+function buildDeclarationDeps(): { ok: boolean; output: string } {
+  const proc = Bun.spawnSync(
+    ["bunx", "turbo", "run", "build", "--filter", "{./packages/*}..."],
+    { cwd: REPO_ROOT, stdout: "pipe", stderr: "pipe" },
+  );
+  const output =
+    `${proc.stdout.toString("utf8")}\n${proc.stderr.toString("utf8")}`.trim();
+  return { ok: proc.exitCode === 0, output };
 }
 
 async function main(): Promise<void> {
@@ -136,6 +164,18 @@ async function main(): Promise<void> {
     return;
   }
 
+  const deps = buildDeclarationDeps();
+  if (!deps.ok) {
+    process.stderr.write(
+      `dts-drift-check: FAIL - the workspace dependency build failed; the gate cannot emit declarations without built deps:\n${deps.output}\n`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+  process.stderr.write(
+    "dts-drift-check: workspace dependency build OK ({./packages/*}... closure)\n",
+  );
+
   const candidates = discoverTscPackages(REPO_ROOT).filter((c) =>
     c.dir.startsWith("packages/"),
   );
@@ -143,7 +183,7 @@ async function main(): Promise<void> {
     checkPackageDrift(c.dir, c.tsconfigPath, tscBase, tscHead, REPO_ROOT),
   );
 
-  const { anyDrift, table } = summarizeDrift(results);
+  const { anyDrift, failed, table } = summarizeDrift(results);
   const lines = [
     "## tsc-native .d.ts drift — base branch pin vs this PR's pin",
     "",
@@ -155,17 +195,37 @@ async function main(): Promise<void> {
   const summaryPath = process.env.GITHUB_STEP_SUMMARY;
   if (summaryPath) appendFileSync(summaryPath, `${report}\n`);
 
-  if (anyDrift) {
-    process.stderr.write(
-      "\ndts-drift-check: FAIL — one or more packages/* emit different .d.ts bytes under the " +
-        "bumped tsc-native pin. This is the buyer-era .d.ts stability gate: a maintainer accepts " +
-        "the drift by regenerating baselines (and re-versioning any affected sold packages) in " +
-        "this PR, not by silencing this check. Differing files:\n",
-    );
-    for (const r of results.filter((x) => x.status === "differing")) {
+  if (failed) {
+    if (results.length === 0) {
       process.stderr.write(
-        `  ${r.pkg}: ${(r.diff?.differing ?? []).join(", ")}\n`,
+        "\ndts-drift-check: FAIL - package discovery returned no packages/* declaration candidates.\n",
       );
+    }
+    const skipped = results.filter((result) => result.status === "skipped");
+    if (skipped.length > 0) {
+      process.stderr.write(
+        "\ndts-drift-check: FAIL - one or more packages failed declaration emission:\n",
+      );
+      for (const result of skipped) {
+        process.stderr.write(
+          `  ${result.pkg}: ${result.reason ?? "unknown emission failure"}\n`,
+        );
+      }
+    }
+    if (anyDrift) {
+      process.stderr.write(
+        "\ndts-drift-check: FAIL - one or more packages/* emit different .d.ts bytes under the " +
+          "bumped tsc-native pin. This is the buyer-era .d.ts stability gate: a maintainer accepts " +
+          "the drift by regenerating baselines (and re-versioning any affected sold packages) in " +
+          "this PR, not by silencing this check. Differing files:\n",
+      );
+      for (const result of results.filter(
+        (candidate) => candidate.status === "differing",
+      )) {
+        process.stderr.write(
+          `  ${result.pkg}: ${(result.diff?.differing ?? []).join(", ")}\n`,
+        );
+      }
     }
     process.exitCode = 1;
     return;
