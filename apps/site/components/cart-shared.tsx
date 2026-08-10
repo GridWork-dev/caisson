@@ -151,6 +151,16 @@ export function CartTrustNote() {
         One-time perpetual license per organization, billed once — your whole
         team, no seat count, no forced renewal.
       </p>
+      {/* D12 item 2 (PRD-4/T3): the month-13 answer at the checkout itself. Both purchase surfaces
+          (drawer + /cart) render this note, so every buy path carries it, not just one page. Terms
+          unchanged — the full version lives at /marketplace/plans#after-twelve-months. */}
+      <p className={styles.trust}>
+        Includes 12 months of updates. After that the code stays yours forever —
+        only new updates lapse, renewable per entitlement.{" "}
+        <Link href="/marketplace/plans#after-twelve-months">
+          What happens after 12 months →
+        </Link>
+      </p>
       <p className={styles.trust}>{PADDLE_MOR_DISCLOSURE}</p>
     </>
   );

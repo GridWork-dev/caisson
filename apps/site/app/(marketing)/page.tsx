@@ -369,14 +369,17 @@ export default function HomePage() {
           </Link>
           .
         </p>
-        {/* CAISSON-98: the weeks-saved translation finance sign-off runs on. The 4–8-week range
-            is the interviewed buyers' OWN in-house build estimate (Cookiy study 019f4a11, 12
-            real-ICP interviews) — attributed, never asserted as a Caisson benchmark (ADR-0080). */}
+        {/* CAISSON-98 + D12 item 3 (PRD-3): the weeks-saved translation finance sign-off runs on.
+            The 4–8-week range is the interviewed buyers' OWN in-house build estimate (Cookiy study
+            019f4a11, 12 real-ICP interviews) — attributed, never asserted as a Caisson benchmark
+            (ADR-0080). Price first and stated as committed (D4 lock), with the interview estimate
+            explicitly of the BUILD: leading with the buyers read as buyer-validated pricing. */}
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-3)" }}>
-          The sign-off math, in buyers&rsquo; own numbers: buyers we interviewed
-          put the in-house build of the Compliance bundle&rsquo;s foundations at
-          four to eight engineering-weeks. {bundlePrice("compliance")},
-          one-time, against that build.
+          {bundlePrice("compliance")} one-time is the committed price for the
+          Compliance bundle — what you pay at checkout. For the sign-off
+          conversation: buyers we interviewed put the in-house build of that
+          bundle&rsquo;s foundations at four to eight engineering-weeks. That
+          estimate is theirs, and it is of the build, not of the price.
         </p>
       </Section>
 
