@@ -167,6 +167,29 @@ describe("fail-closed semantics", () => {
     );
   });
 
+  test("failOpen does NOT cover a malformed-but-flagged verdict", async () => {
+    // failOpen is for outages/timeouts ONLY. A driver that DID answer — flagged, but with an
+    // extra key the strict schema rejects (the natural shape of a real vendor adapter) — must
+    // still block; letting it ride the failOpen branch would silently pass flagged content.
+    const { rt, sink } = runtime();
+    const moderator = providerModerator(
+      async () =>
+        ({
+          flagged: true,
+          category: "moderation",
+          providerRequestId: "req_1",
+        }) as unknown as ModerationResult,
+    );
+    await expect(
+      guardInput(
+        "clearly abusive content",
+        policy({ moderator, failOpen: true }),
+        rt,
+      ),
+    ).rejects.toBeInstanceOf(GuardrailError);
+    expect(sink.events).toHaveLength(1);
+  });
+
   test.each([
     {},
     { flagged: "false", category: "moderation" },

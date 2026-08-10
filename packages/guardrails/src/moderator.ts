@@ -77,7 +77,7 @@ function unsafeRegex(): never {
 function braceQuantifier(
   source: string,
   start: number,
-): { end: number; unbounded: boolean } | undefined {
+): { end: number; unbounded: boolean; maximum: number } | undefined {
   const end = source.indexOf("}", start + 1);
   if (end === -1) return undefined;
   const body = source.slice(start + 1, end);
@@ -100,20 +100,28 @@ function braceQuantifier(
       : maximumText.length === 0
         ? Number.POSITIVE_INFINITY
         : Number(maximumText);
+  // `{n,}` (maximum Infinity) is NOT excessive repetition — it is the same shape as `+` and is
+  // budgeted by the unbounded-wide-atom rule below, exactly like `*`/`+`. Only a bounded maximum
+  // trips the ceiling; the minimum needs its own explicit bound now that Infinity is exempt.
+  const bounded = maximum !== Number.POSITIVE_INFINITY;
   if (
     !Number.isSafeInteger(minimum) ||
     maximum < minimum ||
-    maximum > MAX_MODERATOR_REPETITION
+    minimum > MAX_MODERATOR_REPETITION ||
+    (bounded && maximum > MAX_MODERATOR_REPETITION)
   ) {
     unsafeRegex();
   }
-  return { end, unbounded: maximum === Number.POSITIVE_INFINITY };
+  return { end, unbounded: !bounded, maximum };
 }
 
 /**
  * Conservative, allocation-bounded safety screen for caller-configured patterns. It rejects
- * backreferences, lookarounds, nested quantifiers, quantified alternations, repeated unbounded
- * wildcards, and excessive repetition. Static package detectors do not pass through this seam.
+ * backreferences, lookarounds, nested quantifiers (at any nesting depth), alternation groups
+ * quantified to repeat more than once, more than one unbounded wide-atom quantifier
+ * (`.`/character classes/`\w`-style escapes under `*`, `+`, or `{n,}`), and excessive bounded
+ * repetition. `?`/`{0,1}` on a group is allowed — one repetition cannot multiply backtracking
+ * paths. Static package detectors do not pass through this seam.
  */
 export function assertSafeModeratorPattern(source: string): void {
   if (source.length > MAX_MODERATOR_PATTERN_CODE_UNITS) {
@@ -125,7 +133,7 @@ export function assertSafeModeratorPattern(source: string): void {
     { hasAlternation: false, hasQuantifier: false },
   ];
   let lastClosedGroup: RegexGroupState | undefined;
-  let lastAtom: "dot" | "group" | "other" | undefined;
+  let lastAtom: "wide" | "group" | "other" | undefined;
   let previousWasQuantifier = false;
   let quantifiers = 0;
   let unboundedWildcards = 0;
@@ -138,7 +146,10 @@ export function assertSafeModeratorPattern(source: string): void {
         unsafeRegex();
       }
       index += escaped === undefined ? 0 : 1;
-      lastAtom = "other";
+      // `\w`/`\d`/`\s` classes match wide — an unbounded quantifier on one is budget-counted
+      // exactly like `.` (repeated `\w*\s*…` runs are a measured polynomial burn).
+      lastAtom =
+        escaped !== undefined && "wWdDsS".includes(escaped) ? "wide" : "other";
       lastClosedGroup = undefined;
       previousWasQuantifier = false;
       continue;
@@ -154,7 +165,8 @@ export function assertSafeModeratorPattern(source: string): void {
           escaped = false;
         }
       }
-      lastAtom = "other";
+      // A character class is a wide atom: `[a-z]*[a-z]*…` backtracks like `.*.*`.
+      lastAtom = "wide";
       lastClosedGroup = undefined;
       previousWasQuantifier = false;
       continue;
@@ -181,7 +193,10 @@ export function assertSafeModeratorPattern(source: string): void {
       continue;
     }
     if (char === "|") {
-      groups[groups.length - 1]!.hasAlternation = true;
+      // Propagate to every OPEN group (as the quantifier flag already does): recording only the
+      // innermost group let one extra nesting level hide the alternation from the quantified
+      // group's check — `((a|a))+` was accepted while `(a|a)+` was rejected.
+      for (const group of groups) group.hasAlternation = true;
       lastAtom = undefined;
       lastClosedGroup = undefined;
       previousWasQuantifier = false;
@@ -190,6 +205,10 @@ export function assertSafeModeratorPattern(source: string): void {
 
     let quantifierEnd = index;
     let unbounded = char === "*" || char === "+";
+    // `?`/`{0,1}`/`{1}` repeat at most once and cannot multiply backtracking paths — only a
+    // quantifier that can repeat a group MORE than once makes an alternation/quantifier inside
+    // it dangerous.
+    let repeatsMoreThanOnce = unbounded;
     let isQuantifier = char === "*" || char === "+" || char === "?";
     if (char === "{") {
       const brace = braceQuantifier(source, index);
@@ -197,6 +216,7 @@ export function assertSafeModeratorPattern(source: string): void {
         isQuantifier = true;
         quantifierEnd = brace.end;
         unbounded = brace.unbounded;
+        repeatsMoreThanOnce = brace.unbounded || brace.maximum > 1;
       }
     }
     if (isQuantifier) {
@@ -208,13 +228,14 @@ export function assertSafeModeratorPattern(source: string): void {
       quantifiers += 1;
       if (quantifiers > MAX_MODERATOR_QUANTIFIERS) unsafeRegex();
       if (
+        repeatsMoreThanOnce &&
         lastAtom === "group" &&
         (lastClosedGroup?.hasAlternation === true ||
           lastClosedGroup?.hasQuantifier === true)
       ) {
         unsafeRegex();
       }
-      if (lastAtom === "dot" && unbounded) {
+      if (lastAtom === "wide" && unbounded) {
         unboundedWildcards += 1;
         if (unboundedWildcards > 1) unsafeRegex();
       }
@@ -225,7 +246,7 @@ export function assertSafeModeratorPattern(source: string): void {
       continue;
     }
 
-    lastAtom = char === "." ? "dot" : "other";
+    lastAtom = char === "." ? "wide" : "other";
     lastClosedGroup = undefined;
     previousWasQuantifier = false;
   }

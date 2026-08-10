@@ -108,19 +108,24 @@ export async function moderateGuard(
   if (looksLikeSecret(text)) {
     block(stage, "secret", false, policy, runtime);
   }
-  let result: ModerationResult;
+  let raw: unknown;
   try {
-    // The strict parse is INSIDE the fail-closed try: a malformed driver verdict is an outage,
-    // not a pass — unknown fields, wrong types, or a stray category all block.
-    result = parseModerationResult(
-      await moderateWithDeadline(
-        policy.moderator,
-        text,
-        policy.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      ),
+    raw = await moderateWithDeadline(
+      policy.moderator,
+      text,
+      policy.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     );
   } catch {
+    // Outage/timeout — the ONLY class `failOpen` covers.
     if (policy.failOpen === true) return;
+    block(stage, "moderation", true, policy, runtime);
+  }
+  let result: ModerationResult;
+  try {
+    result = parseModerationResult(raw);
+  } catch {
+    // A malformed verdict is a driver defect, never an outage: `failOpen` must not cover it,
+    // or a `flagged: true` verdict carrying an extra key would silently pass.
     block(stage, "moderation", true, policy, runtime);
   }
   if (result.flagged) {
