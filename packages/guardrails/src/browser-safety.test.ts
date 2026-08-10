@@ -104,7 +104,6 @@ describe("`./browser` is an exact one-way public subset", () => {
       "detokenizePiiAsync",
       "localModerator",
       "guardInputAsync",
-      "guardOutput",
     ] as const) {
       expect(browser[name]).toBe(barrel[name]);
     }

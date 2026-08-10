@@ -86,7 +86,14 @@ jobs:
           fi
           echo "head tsc-native bin: $BIN"
           echo "path=$BIN" >> "$GITHUB_OUTPUT"
-      - name: run the drift check (fails the job on any .d.ts byte drift)
+      # Declaration emit needs BUILT workspace deps (~50 of the candidates cannot emit in a fresh
+      # checkout — the harness incapability that made lane A's first fail-closed flip
+      # red-by-construction, PR #412). The script runs this same closure build itself; this
+      # explicit step exists so a dep-build failure gets its own step-level attribution and the
+      # in-script run becomes a turbo cache no-op.
+      - name: build the packages/* dependency closure (declaration emit needs built deps)
+        run: bunx turbo run build --filter "{./packages/*}..."
+      - name: run the drift check (fails the job on any .d.ts byte drift or emit failure)
         shell: bash
         env:
           TSC_BASE: ${{ runner.temp }}/base-native/node_modules/.bin/tsc

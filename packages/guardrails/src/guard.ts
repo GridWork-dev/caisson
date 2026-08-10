@@ -13,7 +13,6 @@ import { redactPii, tokenizePii } from "./pii.ts";
 import type { GuardPolicyBase, GuardRuntime } from "./guard-core.ts";
 import { moderateGuard } from "./guard-core.ts";
 
-export { guardOutput } from "./guard-core.ts";
 export type { GuardRuntime } from "./guard-core.ts";
 
 /** How PII is handled on the input leg. `tokenize` requires a bound field-crypto context. */
@@ -49,6 +48,16 @@ export async function guardInput(
   policy: GuardPolicy,
   rt: GuardRuntime,
 ): Promise<GuardOutcome> {
+  // A PII context bound to another tenant is a wiring error — reject before moderation or any
+  // telemetry so a cross-tenant seal can never be reached.
+  if (
+    policy.pii?.ctx !== undefined &&
+    policy.pii.ctx.tenantId !== rt.tenantId
+  ) {
+    throw new ConfigError(
+      "guardrails: PII field-crypto context is bound to a different tenant than the guard runtime",
+    );
+  }
   await moderateGuard("input", text, policy, rt);
   const pii = policy.pii;
   if (pii === undefined || pii === null) return { text, tokens: [] };
@@ -62,4 +71,17 @@ export async function guardInput(
     return { text: redacted, tokens };
   }
   return { text: redactPii(text, pii.mode).redacted, tokens: [] };
+}
+
+/**
+ * Guard an OUTPUT before it reaches the caller. Moderation only — the `pii` field is accepted so
+ * an input policy object stays source-compatible on the output leg, but output text is never
+ * rewritten.
+ */
+export async function guardOutput(
+  text: string,
+  policy: GuardPolicy,
+  rt: GuardRuntime,
+): Promise<void> {
+  await moderateGuard("output", text, policy, rt);
 }
