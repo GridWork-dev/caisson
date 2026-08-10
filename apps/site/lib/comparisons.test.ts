@@ -6,8 +6,9 @@ import { ACCESSED, COMPARISONS, findComparison } from "./comparisons";
 // from them). These invariants guard the honesty floor (ADR-0080) and the spoke wiring: a typo'd
 // slug is a 404, a missing accessed date is an unstamped claim, an empty faq is a missing FAQPage.
 
-// The full 20-target slug list from docs/gtm/comparison-targets.md: Group A boilerplates + the free
-// create-t3-app scaffold, Group B compliance-automation (GRC) platforms, and Group C build-in-house.
+// The full target slug list from docs/gtm/comparison-targets.md: Group A boilerplates + the free
+// create-t3-app scaffold, Group B compliance-automation (GRC) platforms, Group D AI-code scanners,
+// and Group C build-in-house.
 const EXPECTED_SLUGS = [
   // Group A — SaaS boilerplates / starter kits
   "shipfast",
@@ -31,6 +32,9 @@ const EXPECTED_SLUGS = [
   "delve",
   "auditkit",
   "comp-ai",
+  "probo",
+  // Group D — AI-code compliance scanners / agent-governance layers
+  "sentrik",
   // Group C — build in-house
   "build-in-house",
 ] as const;
