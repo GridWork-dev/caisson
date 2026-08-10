@@ -10,6 +10,7 @@ export type MarketingEvent =
   | "nav_panel_open"
   | "search_open"
   | "docs_cta_click"
+  | "partners_apply_click"
   | "signup_complete";
 
 export function trackEvent(
