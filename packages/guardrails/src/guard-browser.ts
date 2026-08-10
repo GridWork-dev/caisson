@@ -28,6 +28,16 @@ export async function guardInputAsync(
   policy: BrowserGuardPolicy,
   runtime: GuardRuntime,
 ): Promise<BrowserGuardOutcome> {
+  // A PII context bound to another tenant is a wiring error — reject before moderation or any
+  // telemetry so a cross-tenant seal can never be reached (CAISSON-176).
+  if (
+    policy.pii?.ctx !== undefined &&
+    policy.pii.ctx.tenantId !== runtime.tenantId
+  ) {
+    throw new ConfigError(
+      "guardrails: PII field-crypto context is bound to a different tenant than the guard runtime",
+    );
+  }
   await moderateGuard("input", text, policy, runtime);
   const pii = policy.pii;
   if (pii === undefined || pii === null) return { text, tokens: [] };
@@ -44,4 +54,16 @@ export async function guardInputAsync(
   }
   const tokenized = await tokenizePiiAsync(text, pii.ctx);
   return { text: tokenized.redacted, tokens: tokenized.tokens };
+}
+
+/**
+ * Guard browser-held output. Moderation only — accepts the same PII-bearing policy shape as
+ * `guardInputAsync` for source compatibility; output text is never rewritten (CAISSON-176).
+ */
+export async function guardOutput(
+  text: string,
+  policy: BrowserGuardPolicy,
+  runtime: GuardRuntime,
+): Promise<void> {
+  await moderateGuard("output", text, policy, runtime);
 }

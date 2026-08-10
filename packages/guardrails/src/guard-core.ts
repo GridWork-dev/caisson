@@ -11,7 +11,12 @@ import type {
   ModerationResult,
   Moderator,
 } from "./moderator.ts";
-import { moderateWithDeadline } from "./moderator.ts";
+import {
+  assertSafeModeratorRegexes,
+  moderateWithDeadline,
+  parseModerationResult,
+} from "./moderator.ts";
+import { assertBoundedGuardText } from "./pii-core.ts";
 
 const DEFAULT_TIMEOUT_MS = 2_000;
 
@@ -61,7 +66,12 @@ function emitBlock(
       failClosed: block.failClosed,
     },
   };
-  void Promise.resolve(runtime.sink.emit(event)).catch(() => {});
+  try {
+    void Promise.resolve(runtime.sink.emit(event)).catch(() => {});
+  } catch {
+    // A synchronously-throwing sink must never replace the block verdict — telemetry is
+    // best-effort, the GuardrailError is the contract (CAISSON-176).
+  }
 }
 
 function block(
@@ -82,7 +92,12 @@ export async function moderateGuard(
   policy: GuardPolicyBase,
   runtime: GuardRuntime,
 ): Promise<void> {
+  // DoS ceilings run before ANY per-character work (CAISSON-176): an oversized text or an
+  // unsafe caller-configured pattern is a caller error (plain throw, no block event), never a
+  // moderation verdict.
+  assertBoundedGuardText(text);
   if (policy.cheapDeny !== undefined) {
+    assertSafeModeratorRegexes(policy.cheapDeny);
     for (const pattern of policy.cheapDeny) {
       pattern.lastIndex = 0;
       if (pattern.test(text)) {
@@ -95,10 +110,14 @@ export async function moderateGuard(
   }
   let result: ModerationResult;
   try {
-    result = await moderateWithDeadline(
-      policy.moderator,
-      text,
-      policy.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    // The strict parse is INSIDE the fail-closed try: a malformed driver verdict is an outage,
+    // not a pass — unknown fields, wrong types, or a stray category all block (CAISSON-176).
+    result = parseModerationResult(
+      await moderateWithDeadline(
+        policy.moderator,
+        text,
+        policy.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      ),
     );
   } catch {
     if (policy.failOpen === true) return;
