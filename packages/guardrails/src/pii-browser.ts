@@ -9,7 +9,15 @@ import {
   parseEnvelopeBytes,
   serializeEnvelopeBytes,
 } from "@caisson/field-crypto/browser";
-import { PII_COLUMN_CONTEXT, detectPii, rewritePii } from "./pii-core.ts";
+import {
+  PII_COLUMN_CONTEXT,
+  assertBoundedGuardText,
+  assertBoundedPiiMatches,
+  assertBoundedPiiTokens,
+  detectPii,
+  replacePiiPlaceholderBounded,
+  rewritePii,
+} from "./pii-core.ts";
 import type { PiiMatch, PiiToken } from "./pii-core.ts";
 
 const textEncoder = new TextEncoder();
@@ -43,6 +51,7 @@ export async function hashPiiAsync(
   text: string,
   matches: readonly PiiMatch[] = detectPii(text),
 ): Promise<string> {
+  assertBoundedPiiMatches(text, matches);
   const digests = await Promise.all(
     matches.map((match) => sha256Hex(match.value)),
   );
@@ -114,6 +123,8 @@ export async function detokenizePiiAsync(
   tokens: readonly PiiToken[],
   ctx: BrowserPiiCryptoContext,
 ): Promise<string> {
+  assertBoundedGuardText(text);
+  assertBoundedPiiTokens(tokens);
   let output = text;
   for (const token of tokens) {
     if (!output.includes(token.placeholder)) continue;
@@ -131,9 +142,11 @@ export async function detokenizePiiAsync(
         PII_COLUMN_CONTEXT,
       );
       const plaintext = await aesGcmOpenAsync(key, envelope, aad);
-      output = output
-        .split(token.placeholder)
-        .join(textDecoder.decode(plaintext));
+      output = replacePiiPlaceholderBounded(
+        output,
+        token.placeholder,
+        textDecoder.decode(plaintext),
+      );
     } finally {
       key.fill(0);
     }

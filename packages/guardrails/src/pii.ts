@@ -13,8 +13,11 @@ import type { FieldCryptoContext } from "@caisson/field-crypto";
 import { sealField, openField } from "@caisson/field-crypto";
 import {
   PII_COLUMN_CONTEXT,
+  assertBoundedGuardText,
+  assertBoundedPiiTokens,
   detectPii,
   maskPii,
+  replacePiiPlaceholderBounded,
   rewritePii,
 } from "./pii-core.ts";
 import type { PiiMatch, PiiToken, RedactMode } from "./pii-core.ts";
@@ -95,11 +98,13 @@ export function detokenizePii(
   tokens: readonly PiiToken[],
   ctx: FieldCryptoContext,
 ): string {
+  assertBoundedGuardText(text);
+  assertBoundedPiiTokens(tokens);
   let out = text;
   for (const token of tokens) {
     if (!out.includes(token.placeholder)) continue;
     const original = openField(ctx, PII_COLUMN_CONTEXT, token.sealed);
-    out = out.split(token.placeholder).join(original);
+    out = replacePiiPlaceholderBounded(out, token.placeholder, original);
   }
   return out;
 }

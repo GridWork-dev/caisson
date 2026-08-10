@@ -10,8 +10,11 @@ import {
   PII_KINDS,
   detectPii,
   detokenizePii,
+  maskPii,
   redactPii,
   tokenizePii,
+  type PiiMatch,
+  type PiiToken,
 } from "./pii.ts";
 
 const MASTER = Buffer.alloc(32, 0x11);
@@ -45,6 +48,12 @@ describe("detectPii", () => {
     );
     expect(kinds).toContain("ssn");
     expect(kinds).toContain("phone");
+  });
+
+  test("rejects oversized text before detector regexes run", () => {
+    expect(() => detectPii("x".repeat(100_001))).toThrow(
+      /text exceeds 100000 code units/u,
+    );
   });
 });
 
@@ -80,6 +89,18 @@ describe("redactPii — mask / hash (irreversible)", () => {
       detected,
     });
   });
+
+  test("bounds caller-supplied match work before rewriting", () => {
+    const matches: PiiMatch[] = Array.from({ length: 1_025 }, () => ({
+      kind: "email",
+      value: "a@b.com",
+      start: 0,
+      end: 1,
+    }));
+    expect(() => maskPii("x", matches)).toThrow(
+      /PII match count exceeds 1024/u,
+    );
+  });
 });
 
 describe("tokenizePii — reversible round-trip via field-crypto", () => {
@@ -112,5 +133,24 @@ describe("tokenizePii — reversible round-trip via field-crypto", () => {
     const b = ctxFor("acct_b");
     const { redacted, tokens } = tokenizePii("ssn 123-45-6789", a);
     expect(() => detokenizePii(redacted, tokens, b)).toThrow();
+  });
+
+  test("bounds token count and envelope text before decoding", () => {
+    const ctx = ctxFor("acct_a");
+    const token: PiiToken = {
+      placeholder: "[[PII:email:0]]",
+      kind: "email",
+      sealed: "not-an-envelope",
+    };
+    expect(() =>
+      detokenizePii(token.placeholder, Array(1_025).fill(token), ctx),
+    ).toThrow(/PII token count exceeds 1024/u);
+    expect(() =>
+      detokenizePii(
+        token.placeholder,
+        [{ ...token, sealed: "A".repeat(262_145) }],
+        ctx,
+      ),
+    ).toThrow(/PII envelope exceeds 262144 code units/u);
   });
 });

@@ -29,11 +29,10 @@ export type {
   Moderator,
 } from "./moderator.ts";
 
-export { guardInputAsync } from "./guard-browser.ts";
+export { guardInputAsync, guardOutput } from "./guard-browser.ts";
 export type {
   BrowserGuardOutcome,
   BrowserGuardPolicy,
   BrowserPiiPolicy,
 } from "./guard-browser.ts";
-export { guardOutput } from "./guard-core.ts";
 export type { GuardPolicyBase, GuardRuntime } from "./guard-core.ts";

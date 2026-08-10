@@ -3,7 +3,13 @@
 // blocks, the cheap pre-screen short-circuits before the (expensive) moderator, and every block
 // throws `GuardrailError` 422 + emits a metadata-only event to the `EventSink`.
 import { describe, expect, test } from "bun:test";
-import { GuardrailError, InMemoryEventSink } from "@caisson/kernel";
+import {
+  ConfigError,
+  GuardrailError,
+  InMemoryEventSink,
+  ValidationError,
+} from "@caisson/kernel";
+import { DerivedKeyProvider, derivedContext } from "@caisson/field-crypto";
 import {
   guardInput,
   guardOutput,
@@ -14,6 +20,7 @@ import {
   customModerator,
   localModerator,
   providerModerator,
+  type ModerationResult,
   type Moderator,
 } from "./moderator.ts";
 
@@ -47,6 +54,32 @@ describe("guardInput — pass + PII redact", () => {
     expect(out.text).toBe("email [EMAIL] please");
     expect(out.tokens).toHaveLength(0);
     expect(sink.events).toHaveLength(0);
+  });
+
+  test("rejects a runtime/PII-context tenant mismatch before moderation or telemetry", async () => {
+    const { rt, sink } = runtime();
+    let moderatorCalls = 0;
+    const ctx = derivedContext(
+      new DerivedKeyProvider(Buffer.alloc(32, 0x11), Buffer.alloc(32, 0x22)),
+      "acct_b",
+    );
+    await expect(
+      guardInput(
+        "mail a@b.com",
+        policy({
+          moderator: {
+            moderate() {
+              moderatorCalls += 1;
+              return { flagged: false, category: "moderation" };
+            },
+          },
+          pii: { mode: "tokenize", ctx },
+        }),
+        rt,
+      ),
+    ).rejects.toBeInstanceOf(ConfigError);
+    expect(moderatorCalls).toBe(0);
+    expect(sink.events).toEqual([]);
   });
 });
 
@@ -133,6 +166,47 @@ describe("fail-closed semantics", () => {
       GuardrailError,
     );
   });
+
+  test("failOpen does NOT cover a malformed-but-flagged verdict", async () => {
+    // failOpen is for outages/timeouts ONLY. A driver that DID answer — flagged, but with an
+    // extra key the strict schema rejects (the natural shape of a real vendor adapter) — must
+    // still block; letting it ride the failOpen branch would silently pass flagged content.
+    const { rt, sink } = runtime();
+    const moderator = providerModerator(
+      async () =>
+        ({
+          flagged: true,
+          category: "moderation",
+          providerRequestId: "req_1",
+        }) as unknown as ModerationResult,
+    );
+    await expect(
+      guardInput(
+        "clearly abusive content",
+        policy({ moderator, failOpen: true }),
+        rt,
+      ),
+    ).rejects.toBeInstanceOf(GuardrailError);
+    expect(sink.events).toHaveLength(1);
+  });
+
+  test.each([
+    {},
+    { flagged: "false", category: "moderation" },
+    { flagged: false, category: "not-a-category" },
+    { flagged: false, category: "moderation", extra: true },
+  ])("malformed moderator result fails closed: %j", async (malformed) => {
+    const { rt, sink } = runtime();
+    const moderator: Moderator = {
+      moderate() {
+        return malformed as unknown as ModerationResult;
+      },
+    };
+    await expect(
+      guardInput("hello", policy({ moderator }), rt),
+    ).rejects.toBeInstanceOf(GuardrailError);
+    expect(sink.events[0]?.attributes.failClosed).toBe(true);
+  });
 });
 
 describe("cheap pre-screen", () => {
@@ -164,6 +238,51 @@ describe("cheap pre-screen", () => {
     await expect(
       guardInput("please do not leak this", p, rt),
     ).rejects.toBeInstanceOf(GuardrailError);
+  });
+
+  test("rejects an unsafe configured regex before testing it or calling the moderator", async () => {
+    const { rt, sink } = runtime();
+    let moderatorCalls = 0;
+    await expect(
+      guardInput(
+        "aaaa!",
+        policy({
+          cheapDeny: [/(a+)+$/],
+          moderator: {
+            moderate() {
+              moderatorCalls += 1;
+              return { flagged: false, category: "moderation" };
+            },
+          },
+        }),
+        rt,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(moderatorCalls).toBe(0);
+    expect(sink.events).toEqual([]);
+  });
+});
+
+describe("bounded guard work", () => {
+  test("rejects oversized text before any regex or moderator work", async () => {
+    const { rt, sink } = runtime();
+    let moderatorCalls = 0;
+    await expect(
+      guardInput(
+        "x".repeat(100_001),
+        policy({
+          moderator: {
+            moderate() {
+              moderatorCalls += 1;
+              return { flagged: false, category: "moderation" };
+            },
+          },
+        }),
+        rt,
+      ),
+    ).rejects.toThrow(/text exceeds 100000 code units/u);
+    expect(moderatorCalls).toBe(0);
+    expect(sink.events).toEqual([]);
   });
 });
 
@@ -252,5 +371,26 @@ describe("guardOutput", () => {
     await expect(
       guardOutput("all good", policy(), rt),
     ).resolves.toBeUndefined();
+  });
+
+  test("a synchronously throwing sink never replaces GuardrailError", async () => {
+    const rt: GuardRuntime = {
+      tenantId: "acct_a",
+      sink: {
+        emit() {
+          throw new Error("telemetry unavailable");
+        },
+      },
+      now: () => FIXED_NOW,
+      newId: () => "00000000-0000-4000-8000-000000000000",
+    };
+    await expect(
+      guardOutput(
+        "forbidden",
+        policy({ moderator: localModerator(["forbidden"]) }),
+        rt,
+      ),
+    ).rejects.toBeInstanceOf(GuardrailError);
+    await Promise.resolve();
   });
 });

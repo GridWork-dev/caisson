@@ -11,7 +11,12 @@ import type {
   ModerationResult,
   Moderator,
 } from "./moderator.ts";
-import { moderateWithDeadline } from "./moderator.ts";
+import {
+  assertSafeModeratorRegexes,
+  moderateWithDeadline,
+  parseModerationResult,
+} from "./moderator.ts";
+import { assertBoundedGuardText } from "./pii-core.ts";
 
 const DEFAULT_TIMEOUT_MS = 2_000;
 
@@ -61,7 +66,12 @@ function emitBlock(
       failClosed: block.failClosed,
     },
   };
-  void Promise.resolve(runtime.sink.emit(event)).catch(() => {});
+  try {
+    void Promise.resolve(runtime.sink.emit(event)).catch(() => {});
+  } catch {
+    // A synchronously-throwing sink must never replace the block verdict — telemetry is
+    // best-effort, the GuardrailError is the contract.
+  }
 }
 
 function block(
@@ -82,7 +92,12 @@ export async function moderateGuard(
   policy: GuardPolicyBase,
   runtime: GuardRuntime,
 ): Promise<void> {
+  // DoS ceilings run before ANY per-character work: an oversized text or an
+  // unsafe caller-configured pattern is a caller error (plain throw, no block event), never a
+  // moderation verdict.
+  assertBoundedGuardText(text);
   if (policy.cheapDeny !== undefined) {
+    assertSafeModeratorRegexes(policy.cheapDeny);
     for (const pattern of policy.cheapDeny) {
       pattern.lastIndex = 0;
       if (pattern.test(text)) {
@@ -93,15 +108,24 @@ export async function moderateGuard(
   if (looksLikeSecret(text)) {
     block(stage, "secret", false, policy, runtime);
   }
-  let result: ModerationResult;
+  let raw: unknown;
   try {
-    result = await moderateWithDeadline(
+    raw = await moderateWithDeadline(
       policy.moderator,
       text,
       policy.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     );
   } catch {
+    // Outage/timeout — the ONLY class `failOpen` covers.
     if (policy.failOpen === true) return;
+    block(stage, "moderation", true, policy, runtime);
+  }
+  let result: ModerationResult;
+  try {
+    result = parseModerationResult(raw);
+  } catch {
+    // A malformed verdict is a driver defect, never an outage: `failOpen` must not cover it,
+    // or a `flagged: true` verdict carrying an extra key would silently pass.
     block(stage, "moderation", true, policy, runtime);
   }
   if (result.flagged) {
