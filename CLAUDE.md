@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0402** (0335-0339 reserved unused; 0334 = Kickoff-S motion language v2). The full
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0406** (0335-0339 reserved unused; 0334 = Kickoff-S motion language v2). The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate
    it here. The per-sitting lock narratives formerly inlined in this clause are archived verbatim
    in `docs/archive/build-history.md`.
@@ -99,9 +99,10 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
 
 ## Still open (do NOT pre-bind)
 
-- **Pricing FINAL adjustments** (anchors in ADR-0012, displayed point-values committed by ADR-0082) —
-  the operator may still adjust a number before checkout goes live, but the site no longer **says** so;
-  grandfathering policy stays operator-owned. The display fork is closed.
+- _Nothing._ The last standing item — **Pricing FINAL adjustments** — closed 2026-08-09:
+  **ADR-0403 locks Compliance at $1,649 FINAL** (the operative ADR-0386 number) and closes the
+  adjustment window; any future price change is a superseding ADR, not an adjustment.
+  Grandfathering would ride that future ADR.
 
 _Closed since: **app framework** → Next.js App Router (ADR-0044); **hosting/site deploy mode** →
 one dynamic Next 16 `standalone` app (marketing + docs + buyer dashboard, Fumadocs MDX kept) on
