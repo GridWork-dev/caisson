@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-09
+updated: 2026-08-10
 status: live
 grounds:
   - package.json
@@ -15,7 +15,7 @@ grounds:
 
 # Package catalog — license, sale posture, and price
 
-The 2026-08-09 disk-truth view. This document owns the catalog summary; manifests, price authority,
+The 2026-08-10 disk-truth view. This document owns the catalog summary; manifests, price authority,
 and the standards gate are the executable sources. Build depth remains in
 [build-state](../build-state.md).
 
