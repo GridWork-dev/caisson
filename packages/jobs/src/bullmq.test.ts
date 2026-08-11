@@ -91,7 +91,9 @@ test("BullMQ v6's optional peer remains a direct runtime dependency", () => {
   const packageJson = JSON.parse(
     readFileSync(join(import.meta.dir, "../package.json"), "utf8"),
   ) as { dependencies?: Record<string, string> };
-  expect(packageJson.dependencies?.ioredis).toBe("^5.11.1");
+  // ^6.0.0 reviewed 2026-08-10: bullmq@6.0.0 declares ioredis ">=5.0.0" (optional peer), the
+  // driver passes the caller's connection through unchanged, and nothing in-repo imports ioredis.
+  expect(packageJson.dependencies?.ioredis).toBe("^6.0.0");
 });
 
 describe("BullMQ job queue", () => {
