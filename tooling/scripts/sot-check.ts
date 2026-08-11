@@ -1037,6 +1037,7 @@ export const STATE_MD_ALLOWLIST = [
   "decisions-and-forks.md",
   "go-live-legal-and-entity.md",
   "linear-integration.md",
+  "operator-surface.md",
   "outstanding-work.md",
   "package-catalog.md",
   "production-readiness.md",

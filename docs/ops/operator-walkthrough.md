@@ -25,8 +25,10 @@ Use the repository hierarchy, not an external artifact:
 
 - [ ] GitHub private-repository access is authorized (has been since 2026-06-30); branch
       protection stays discipline-only on the Free plan (ADR-0327) and org 2FA is declined,
-      re-raise at launch — both accepted residuals. Remaining: fix the two open-PR CI defects
-      found in [2026-07-25 GitHub certification](../../outputs/executions/2026-07-25-github-certification.md).
+      re-raise at launch — both accepted residuals. The two open-PR CI defects the
+      [2026-07-25 GitHub certification](../../outputs/executions/2026-07-25-github-certification.md)
+      named have since merged green (#332–#340); what remains is authorizing + attaching the
+      current PR/Actions/release/branch/2FA evidence bundle at launch.
 - [ ] Produce COMPLIANCE-WORM, deployed-pooler RLS, split-brain recovery, and KMS-signing receipts.
 - [ ] Obtain two or three working-auditor acceptance reviews.
 - [ ] Resolve or explicitly defer all 14 counsel, 8 CPA, and 9 operator questions.
