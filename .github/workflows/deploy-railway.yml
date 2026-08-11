@@ -32,6 +32,12 @@ on:
       - "tooling/audit-harness/**"
       - "tooling/demo-registry/**"
       - ".github/workflows/deploy-railway.yml"
+      # Root dep manifests: a root-only dependency bump (override/lockfile) changes every
+      # service's built bytes but matched nothing above — the 2026-08-10 dep wave (#425,
+      # dompurify XSS fix in the site bundle) shipped with no auto-deploy and needed a
+      # manual dispatch.
+      - "package.json"
+      - "bun.lock"
   workflow_dispatch:
     inputs:
       ref:
