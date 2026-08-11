@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-09
+updated: 2026-08-10
 status: live
 grounds:
   - knowledge/decisions/ADR-0328-three-session-closeout-program-train-timing-research-budget.md

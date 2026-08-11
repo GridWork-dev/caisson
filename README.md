@@ -26,9 +26,9 @@ AI agent drives + a custom AI support service. Sold as whole bundles (one-time),
 | **Everything**        | every bundle + every à-la-carte module, one purchase                                      | $2,259 | commercial                           |
 | **Base**              | auth + fail-closed RLS + billing + design floor + buyer MCP (auth) + AGENTS.md            | free   | Apache-2.0 core + commercial modules |
 
-Licensing is **open-core**: the Base set is 16 Apache-2.0 packages (kernel, auth, tenancy-rls, ui,
+Licensing is **open-core**: the Base set is 17 Apache-2.0 packages (kernel, auth, tenancy-rls, ui,
 billing, jobs, email, ai-config, mcp-server, registry-schema, observability, cli, migrate,
-rate-limit, analytics, license-verify); bundles + à-la-carte modules + pricebook stay commercial
+rate-limit, analytics, license-verify, ds-manifest); bundles + à-la-carte modules + pricebook stay commercial
 (`LicenseRef-Caisson-Commercial`). The AGPL Local-first flank was removed (ADR-0083, reaffirms
 ADR-0050); the permissive open tier is Apache-2.0, not copyleft. Full catalog + pricing detail:
 `docs/state/package-catalog.md`.
@@ -68,13 +68,14 @@ Bun + Turborepo + changesets. `bun run check` (build + lint + test). Live build/
 ## Locked vs open
 
 **Locked:** name **Caisson** + hero (compliance wedge) + design foundation · module
-production-standards pipeline + open-core licensing (16-package Apache-2.0 base substrate +
+production-standards pipeline + open-core licensing (17-package Apache-2.0 base substrate +
 commercial bundles/modules, ADR-0136/0287) · **app framework = Next.js** (ADR-0044) ·
 **pricing display** = committed anchors, no "subject to change" (ADR-0082) · Railway hosting
 on `caisson.sh` (ADR-0114/0115, superseding the original Cloudflare Pages plan) · docs = single Next
-site + MDX. **Open (operator-owned):** the **final pricing-number
-adjustment** + grandfathering policy before checkout goes live (X-2 wiring is built — B1, ADR-0089;
-open = the numbers + a Paddle production account). See `docs/state/decisions-and-forks.md`.
+site + MDX · **pricing FINAL** — the adjustment window closed 2026-08-09 (ADR-0403 locks Compliance
+at $1,649). **Open (operator-owned):** no product forks — what remains is the launch ladder itself
+(Paddle production account, legal instruments, launch gates), consolidated in
+`docs/state/operator-surface.md`. See `docs/state/decisions-and-forks.md` for the fork board.
 
 ---
 

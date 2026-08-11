@@ -11,6 +11,32 @@ grounds:
 
 # Deploy log
 
+## 2026-08-10 — Renovate close: two auto rides prove the root-dep path filter
+
+The operator's clean-state directive lifted the Renovate hold; three of five PRs merged on
+pinned-head full rollups, and both bun.lock merges auto-triggered deploy-railway — the first real
+exercises of the #426 path-filter fix, which the 2026-08-10 dep wave had needed a manual dispatch
+for:
+
+- `358cebe1` (#419 fast-uri v4, a root-only pin with no import sites): run 31454521083 —
+  caisson-admin 03:10:28Z → caisson-demos 03:11:23Z → caisson-site 03:13:14Z, all SUCCESS,
+  ci/quality/security-scan green.
+- `8993cf75` (#421 ioredis v6 in `@caisson/jobs`): run 31455136863 — caisson-admin 03:22:47Z →
+  caisson-demos 03:23:48Z → caisson-site 03:25:35Z, all SUCCESS, full green rollup. The bump was
+  coordinator-completed on the Renovate branch (merge-from-main, lockfile regen, pin test moved to
+  `^6.0.0` after verifying bullmq's `>=5.0.0` optional-peer range, changeset) — no force-push.
+- `ab8d89a4` (#415 python:3.14-slim digest for support-bot): no fleet ride by design — support-bot
+  deploys only via the release train, so the digest reaches prod on the next train. Its
+  support-bot workflow run (test) passed; the superseded ci/quality/security-scan cancellations on
+  this sha are the benign concurrency-group class (the tip's runs are green).
+- Held, not merged: #418 (non-major batch) + #422 (jsdom 30) are red only on the bun 7-day
+  `minimumReleaseAge` floor and self-heal as versions age; hold comments on both PRs.
+  `renovate.json` now pins `minimumReleaseAge: "7 days"` so future batches arrive pre-aged.
+  #418 carries a rider: the better-auth 1.6.26 inside it needs the session-adapter lockstep
+  review (CAISSON-175) before merge even on green.
+
+Receipts appended for admin/demos/site on both rides.
+
 ## 2026-08-10 — four-lane wave: three fleet rides + the deploy-worker lane proven
 
 The 2026-08-09/10 four-lane worktree wave (copy #420 · consolidation audit #423 · queued-eng #417
