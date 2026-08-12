@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Wordmark } from "@caisson/brand";
 
 import { discordInviteUrl } from "@/lib/discord-grant";
+import { PARENT_ORG_URL } from "@/lib/metadata";
 import { footerRoutes, type FooterCol } from "@/lib/routes";
 import { UpdatesFormLazy } from "./waitlist-form-lazy";
 
@@ -84,6 +85,20 @@ export function SiteFooter() {
               Apache-2.0
             </Link>
             , free to use. Bundles and modules are commercial.
+          </p>
+          {/* Entity backlink to the parent org (matches the `parentOrganization` edge in
+              lib/jsonld.ts and the hub's `subOrganization` edge) — the human-readable half of
+              the same claim, so the graph edge is verifiable without reading the markup. */}
+          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-2)" }}>
+            A{" "}
+            <Link
+              href={PARENT_ORG_URL}
+              className="cs-link"
+              prefetch={FOOTER_PREFETCH}
+            >
+              GridWork Digital
+            </Link>{" "}
+            product.
           </p>
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <div className="cs-footer-heading">Product updates</div>

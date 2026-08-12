@@ -20,7 +20,7 @@ import { RepoArtifact } from "@/components/repo-artifact";
 import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
-import { buildMetadata, SITE_URL } from "@/lib/metadata";
+import { buildMetadata, PARENT_ORG_URL, SITE_URL } from "@/lib/metadata";
 import {
   bundlePrice,
   BUNDLE_PRICES,
@@ -557,9 +557,12 @@ export default function HomePage() {
                 maxWidth: "60ch",
               }}
             >
-              Caisson is a software product, built and backed by Liam at
-              GridWork Digital (a named engineer, not a ticket queue). Buy a
-              license and you get a direct line to the engineer who builds it.
+              Caisson is a software product, built and backed by Liam at{" "}
+              <Link href={PARENT_ORG_URL} className="cs-link">
+                GridWork Digital
+              </Link>{" "}
+              (a named engineer, not a ticket queue). Buy a license and you get
+              a direct line to the engineer who builds it.
             </p>
             <p
               className="cs-muted"

@@ -6,6 +6,12 @@ import type { Metadata } from "next";
 
 export const SITE_URL = "https://caisson.sh";
 export const SITE_NAME = "Caisson";
+/**
+ * Parent organization. Caisson is a GridWork Digital product, and the hub declares Caisson as its
+ * `subOrganization` — this const is the one place that URL lives, so the footer backlink and the
+ * `parentOrganization` edge in lib/jsonld.ts can never point at different origins.
+ */
+export const PARENT_ORG_URL = "https://gridworkdigital.com";
 // Mirrors the root layout's title.default — used for OG/twitter on the home page, which omits a
 // per-page title so the root <title> default inherits (setting title:undefined would suppress it).
 export const DEFAULT_TITLE =
