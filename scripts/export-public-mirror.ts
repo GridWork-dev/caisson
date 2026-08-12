@@ -388,6 +388,74 @@ function scanForEntitlementTokens(dir: string, hits: string[]): void {
   }
 }
 
+/**
+ * Internal references that must never reach the public mirror, each paired with what a public
+ * reader actually experiences when they hit one. These are NOT secrets — the entitlement-token
+ * gate above covers that class. These are dead ends: strings that were meaningful inside a private
+ * monorepo and become unresolvable noise the moment the tree is published.
+ *
+ * The ADR rule is the reason this gate exists at all. `sanitizeAdrCitations` strips only a
+ * parenthetical whose ENTIRE content is ADR ids, which left 862 citations across 231 files in the
+ * export — "(ADR-0021 §golden)", "the ADR-0013 harness", "(ADR-0042 design foundation)" — every one
+ * of them pointing at a decision log the reader cannot open. Stripping is `stripAdrIds`; this gate
+ * is what proves the stripping was COMPLETE, on every future sync, rather than trusting a regex
+ * pass to have caught every shape.
+ */
+const INTERNAL_REFERENCE_RULES: ReadonlyArray<{
+  re: RegExp;
+  why: string;
+}> = [
+  {
+    re: /\bADR-\d{3,4}\b/g,
+    why: "internal decision-log id — the corpus is private, so the citation resolves to nothing",
+  },
+  {
+    re: /\b(?:outputs|knowledge)\/(?:specs|plans|decisions)\//g,
+    why: "internal doc tree — that path does not exist in the mirror",
+  },
+  {
+    re: /\bdocs\/state\//g,
+    why: "internal state-doc tree — that path does not exist in the mirror",
+  },
+  {
+    re: /\bcaisson-sh\/caisson\b(?!-oss)/g,
+    why: "the PRIVATE development repo — 404s for every anonymous reader",
+  },
+];
+
+/**
+ * Scan every text file in the mirror out-dir for internal references; FATAL on any hit.
+ *
+ * MIRROR-MANIFEST.json is exempt from the private-repo rule only: it records the source repo and
+ * commit the export was cut from, which is provenance a mirror consumer legitimately wants (and
+ * the repo being private is not itself a secret). Every other rule still applies to it.
+ */
+function scanForInternalReferences(dir: string, hits: string[]): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const abs = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "node_modules" && entry.name !== ".git")
+        scanForInternalReferences(abs, hits);
+      continue;
+    }
+    if (entry.name === "bun.lock") continue;
+    const isManifest = entry.name === "MIRROR-MANIFEST.json";
+    let content: string;
+    try {
+      content = readFileSync(abs, "utf8");
+    } catch {
+      continue; // binary / unreadable — nothing to match
+    }
+    for (const rule of INTERNAL_REFERENCE_RULES) {
+      if (isManifest && rule.why.startsWith("the PRIVATE development repo"))
+        continue;
+      for (const match of content.match(rule.re) ?? []) {
+        hits.push(`${abs}: ${match} — ${rule.why}`);
+      }
+    }
+  }
+}
+
 function rewriteImportsInTree(dir: string): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const abs = join(dir, entry.name);
@@ -510,6 +578,260 @@ export function sanitizeAdrCitations(text: string): string {
   );
 }
 
+/**
+ * Removes EVERY remaining ADR id, in any shape, from a chunk of text. Runs after
+ * `sanitizeAdrCitations` has taken the bare parentheticals; what is left is the harder half — ids
+ * fused into prose ("the ADR-0013 harness"), ids leading a parenthetical that also carries real
+ * words ("(ADR-0042 design foundation)"), and ids trailing a citation verb ("see ADR-0072 for
+ * details"). The `scanForInternalReferences` gate is what proves this ran to completion; this
+ * function only has to leave READABLE prose behind.
+ *
+ * Grammar is the whole difficulty. Deleting the id alone is right when the next word can absorb
+ * the slot ("per ADR-0161 decision 1" → "per decision 1"), and wrong when a verb follows ("as
+ * ADR-0005 requires" → "as requires"), so the verb case takes the citation phrase with it. Rules
+ * run in order, most specific first.
+ *
+ * WHITESPACE IS ALWAYS REPAIRED INSIDE THE CALLBACK, never by a document-wide pass. A blanket
+ * `/\(\s*\)/g` + `/[ \t]+([.,;:])/g` cleanup lived here once and silently rewrote real code
+ * anywhere in the file — `z.object().strict()` became `z.object.strict` — because those patterns
+ * match things that have nothing to do with a citation. Every repair below is scoped to the span
+ * that actually matched.
+ */
+const ADR_IDS = String.raw`ADR-\d{3,4}(?:[ \t]*[/,][ \t]*(?:ADR-)?\d{3,4})*`;
+/** An internal doc path, optionally carrying its "SPEC "/"PLAN " label — the same class of dead
+ *  citation as an ADR id (`(SPEC outputs/specs/…/SPEC-foo.md, operator-locked 2026-07-10)`), so it
+ *  rides the same paren-unit and inline machinery rather than getting its own bespoke pass. */
+const INTERNAL_PATH = String.raw`(?:(?:SPEC|PLAN|ADR)\s+)?(?:outputs|knowledge)/(?:specs|plans|decisions)/\S+?\.md|(?:(?:SPEC|PLAN)\s+)?docs/state/\S+?\.md`;
+/** Either flavour of dead citation, so both get the same verb absorption and gap repair. */
+const CITATION = `${ADR_IDS}|${INTERNAL_PATH}`;
+/** A citation carrying its own title as a trailing gloss: `ADR-0043 (per-tenant keys)`. */
+const GLOSSED = String.raw`(?:${CITATION})[ \t]+\([^()\n]*\)`;
+const HAS_ADR =
+  /\bADR-\d{3,4}\b|(?:outputs|knowledge)\/(?:specs|plans|decisions)\/|docs\/state\//;
+
+/**
+ * True when a citation OPENED its line — only indentation and an optional comment marker precede
+ * it. Such a citation is a label or a sentence of its own, so a `.`/`:` directly after it is the
+ * citation's own punctuation and must go with it: "// ADR-0257: the bundle model" would otherwise
+ * export as "//: the bundle model". Anywhere else the punctuation belongs to the host sentence.
+ */
+function ownsTrailingPunctuation(
+  punctuation: string,
+  full: string,
+  offset: number,
+): boolean {
+  if (punctuation === "") return false;
+  const lineHead = full.slice(full.lastIndexOf("\n", offset - 1) + 1, offset);
+  return /^\s*(?:\/\/|\*|--|#)?\s*$/.test(lineHead);
+}
+
+/**
+ * Whitespace repair for one removed citation span, decided ONLY from that span's own immediate
+ * neighbours. Never leaves a stranded space before punctuation, at either end of the text, or
+ * inside parens/brackets the removal just emptied — and collapses to exactly one space between two
+ * words no matter how the citation was padded.
+ */
+function repairGap(
+  before: string,
+  after: string,
+  prev: string | undefined,
+  next: string | undefined,
+): string {
+  if (prev === undefined || prev === "(" || prev === "[") return "";
+  // A newline or a closing quote is an end-of-text boundary too: a citation closing a line must not
+  // leave the line with trailing whitespace (32 files in this corpus end a line on one), and one
+  // closing a string literal must not leave a space inside the quotes. That second case is
+  // load-bearing for `packages/ds-manifest/src/base-manifest.json`, whose summaries are generated
+  // from the very JSDoc comments this function also rewrites: the generator collapses whitespace,
+  // so a trailing space kept on the JSON side alone breaks its byte-identical golden test.
+  if (next === undefined || /[.,;:)\]\r\n"'`]/.test(next)) return "";
+  return before.length > 0 || after.length > 0 ? " " : "";
+}
+
+/** The rules below applied to a run of text, with no knowledge of enclosing parentheses. */
+function stripAdrIdsInline(text: string): string {
+  let out = text;
+  // 0. A lock/date note that only made sense next to an internal doc path goes with it
+  //    ("SPEC outputs/specs/x/SPEC-y.md, operator-locked 2026-07-10"). The path itself is left
+  //    for rules 1 and 5 so it gets the same verb absorption and gap repair an ADR id gets.
+  out = out.replace(
+    new RegExp(
+      String.raw`(${INTERNAL_PATH}),?[ \t]*operator-locked[ \t]+\d{4}-\d{2}-\d{2}`,
+      "g",
+    ),
+    "$1",
+  );
+  // 0b. A parenthetical immediately after a citation is that citation's own gloss — the ADR's
+  //     title, not a fact about the code — and these travel in `·`-separated runs as a README's
+  //     closing provenance sentence ("stand on. ADR-0043 (per-tenant keys) · ADR-0046 (envelope)").
+  //     Take the whole run, or the removal strands the titles as a sentence of their own. The run's
+  //     period goes with it only when the run IS the sentence (it follows one, or opens the line).
+  out = out.replace(
+    new RegExp(
+      String.raw`([ \t]*)(?:[-—,;·][ \t]*)?${GLOSSED}(?:[ \t]*[·,;][ \t]*${GLOSSED})*([.:]?)([ \t]*)`,
+      "g",
+    ),
+    (
+      whole: string,
+      before: string,
+      punctuation: string,
+      after: string,
+      offset: number,
+      full: string,
+    ) => {
+      const prev = full[offset - 1];
+      const owns =
+        punctuation !== "" &&
+        (prev === undefined ||
+          prev === "." ||
+          prev === "\n" ||
+          ownsTrailingPunctuation(punctuation, full, offset));
+      if (punctuation !== "" && !owns) return `${punctuation}${after}`;
+      return repairGap(before, after, prev, full[offset + whole.length]);
+    },
+  );
+  // 1. A citation verb owning the citation — the verb is meaningless once the citation goes.
+  //    "(see ADR-0072 for details)" → "(for details)"; "Blacksmith per ADR-0365," → "Blacksmith,"
+  out = out.replace(
+    new RegExp(
+      String.raw`([ \t]*)\b(?:see|per|cf\.?|ref\.?|refs?\.?)[ \t]+(?:${CITATION})([.:]?)([ \t]*)`,
+      "gi",
+    ),
+    (
+      whole: string,
+      before: string,
+      punctuation: string,
+      after: string,
+      offset: number,
+      full: string,
+    ) => {
+      if (
+        punctuation !== "" &&
+        !ownsTrailingPunctuation(punctuation, full, offset)
+      )
+        return `${punctuation}${after}`;
+      return repairGap(
+        before,
+        after,
+        full[offset - 1],
+        full[offset + whole.length],
+      );
+    },
+  );
+  // 2. A verb FOLLOWS the id, so the id is the sentence's subject: take the whole phrase and
+  //    restore the passive the sentence was reaching for. "as ADR-0005 requires" → "as required".
+  out = out.replace(
+    new RegExp(
+      String.raw`\bas[ \t]+${ADR_IDS}[ \t]+(?:requires|mandates|demands)\b`,
+      "g",
+    ),
+    "as required",
+  );
+  out = out.replace(
+    new RegExp(
+      String.raw`\b${ADR_IDS}[ \t]+(?:requires|mandates|forbids|states|defines)\b`,
+      "g",
+    ),
+    (m) =>
+      m.includes("forbids") ? "the standard forbids" : "the standard requires",
+  );
+  // 3. Id leading a parenthetical that carries real prose: "(ADR-0042 design foundation)" →
+  //    "(design foundation)". Also covers a short internal phase code riding with it ("ADR-0249 G3").
+  out = out.replace(
+    new RegExp(
+      String.raw`\((${ADR_IDS})(?:[ \t]+[A-Z]\d{1,3}| §\S+)?[ \t]+(?=[^)\s])`,
+      "g",
+    ),
+    "(",
+  );
+  // 4. Id fused into a noun phrase — the following word absorbs the slot.
+  //    "the ADR-0013 harness" → "the harness"; "per ADR-0161 decision 1" → "per decision 1".
+  out = out.replace(
+    new RegExp(
+      String.raw`\b${ADR_IDS}(?:[ \t]+[A-Z]\d{1,3}| §\S+)?[ \t]+(?=[a-z])`,
+      "g",
+    ),
+    "",
+  );
+  // 5. Whatever is left is a standalone citation. Remove it and repair only its own immediate
+  //    surroundings: a stranded separator before it, and the space it leaves behind.
+  out = out.replace(
+    new RegExp(
+      String.raw`([ \t]*)(?:[-—,;·][ \t]*)?(?:${CITATION})(?:[ \t]+[A-Z]\d{1,3}| §\S+)?([.:]?)([ \t]*)`,
+      "g",
+    ),
+    (
+      whole: string,
+      before: string,
+      punctuation: string,
+      after: string,
+      offset: number,
+      full: string,
+    ) => {
+      if (
+        punctuation !== "" &&
+        !ownsTrailingPunctuation(punctuation, full, offset)
+      )
+        return `${punctuation}${after}`;
+      return repairGap(
+        before,
+        after,
+        full[offset - 1],
+        full[offset + whole.length],
+      );
+    },
+  );
+  return out;
+}
+
+/**
+ * Strips every ADR id from `text`, parenthesised or not.
+ *
+ * Parentheticals are handled FIRST and as whole units: each `(…)` whose interior mentions an ADR
+ * is stripped, and the parens themselves are dropped only when their interior stripped to nothing.
+ * That unit-matching is the entire safety property — the empty-parens case is decided from the
+ * interior this function just emptied, never by scanning the document for `()`. A document-wide
+ * `/\(\s*\)/g` pass is what previously turned `z.object().strict()` into `z.object.strict`; a real
+ * empty call is untouchable here because it never contains an ADR id to begin with.
+ */
+export function stripAdrIds(text: string): string {
+  const parensHandled = text.replace(
+    // The interior deliberately cannot cross a newline. `[^()]*` did, and re-emitting a stripped
+    // multi-line interior on one line JOINED the two source lines — in a wrapped `//` comment that
+    // silently welds a comment fragment onto the next line ("lock (ADR-0229\n// row 57)" exported as
+    // "lock (// row 57), composing…"). A citation split across a line break is left to the inline
+    // rules instead, which never move text between lines.
+    /([ \t]*)\(([^()\n]*)\)([.:]?)([ \t]*)/g,
+    (
+      whole: string,
+      before: string,
+      interior: string,
+      punctuation: string,
+      after: string,
+      offset: number,
+      full: string,
+    ) => {
+      if (!HAS_ADR.test(interior)) return whole;
+      const stripped = stripAdrIdsInline(interior).trim();
+      if (stripped.length > 0)
+        return `${before}(${stripped})${punctuation}${after}`;
+      // Interior held nothing but the citation — drop the parens with it, repairing only this span.
+      if (
+        punctuation !== "" &&
+        !ownsTrailingPunctuation(punctuation, full, offset)
+      )
+        return `${punctuation}${after}`;
+      return repairGap(
+        before,
+        after,
+        full[offset - 1],
+        full[offset + whole.length],
+      );
+    },
+  );
+  return stripAdrIdsInline(parensHandled);
+}
+
 /** Applies `sanitizeAdrCitations` only inside `//` line comments and `/* … *\/` block comments —
  *  code outside a comment is never touched. The `(?<!:)` guard keeps a `https://`-style URL
  *  string from being misread as the start of a line comment. String/template literals are matched
@@ -578,6 +900,44 @@ function rewriteCliTemplates(
   const sampleDir = join(outDir, "packages/cli/templates/eu-ai-act-sample");
   if (!existsSync(sampleDir)) return;
   rewriteTreeBlanket(sampleDir, openSlugs);
+}
+
+/**
+ * Applies `stripAdrIds` to EVERY text file in the export — source, markdown, JSON, CSS alike.
+ *
+ * Uniform application is load-bearing, not laziness. Several `__golden__` fixtures are byte-compared
+ * against output produced by generators and templates that carry ADR ids of their own; stripping
+ * one side and not the other would turn a green golden test red. Because the same transformation
+ * runs over the generator, the template, and the fixture, the comparison still holds. The same
+ * argument covers a thrown error message asserted by a test: both the `throw` and the `expect` are
+ * rewritten identically. The mirror-sync verification gate is what proves that claim on every sync
+ * rather than on this one reading of the tree.
+ *
+ * KNOWN CEILING — the one case that gate cannot see. A test whose FIXTURE is itself a citation
+ * ("this input contains an ADR id, so the checker must flag it") is rewritten like any other text.
+ * If the assertion depends on the citation, the test goes red and the gate catches it; if the
+ * assertion is that nothing is flagged, the test goes VACUOUS and stays green for the wrong reason.
+ * No such fixture is in the open set today — the two in `tooling/standards-gate` are commercial and
+ * never exported — but a future Apache-2.0 package could add one. The fix if it happens is an
+ * `EXCLUDE_TEST_FILES` entry, not a cleverer regex.
+ */
+function stripAdrIdsInTree(dir: string): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const abs = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "node_modules") stripAdrIdsInTree(abs);
+      continue;
+    }
+    let before: string;
+    try {
+      before = readFileSync(abs, "utf8");
+    } catch {
+      continue;
+    }
+    if (!HAS_ADR.test(before)) continue;
+    const after = stripAdrIds(before);
+    if (after !== before) writeFileSync(abs, after);
+  }
 }
 
 function rewriteTreeBlanket(dir: string, openSlugs: ReadonlySet<string>): void {
@@ -987,6 +1347,11 @@ function main(): void {
     ) + "\n",
   );
 
+  // Strip internal decision-log ids from the whole tree. Runs BEFORE prettier so that the residue
+  // a removal leaves in a wrapped comment — a short line, an orphaned continuation — gets reflowed
+  // in the same pass that formats everything else, instead of shipping as ragged prose.
+  stripAdrIdsInTree(outDir);
+
   // Reformat the exported tree with the SOURCE repo's own installed prettier (`.prettierignore`
   // above exempts golden fixtures + the drift-guarded tokens.css, same as the source repo's own
   // ignore file). The npm scope rename (`@caisson/` → `@caisson-sh/`, 3 chars longer) sometimes
@@ -1008,6 +1373,21 @@ function main(): void {
       "FATAL: entitlement-token-shaped string(s) in the mirror output that do NOT verify against the dev test keypair (a real token is the entitlement itself — never ship one):",
     );
     for (const h of tokenHits) console.error(`  ${h}`);
+    process.exit(1);
+  }
+
+  // --- internal-reference gate: no unresolvable internal breadcrumb ships to the public repo ---
+  const leaks: string[] = [];
+  scanForInternalReferences(outDir, leaks);
+  if (leaks.length) {
+    console.error(
+      "FATAL: internal reference(s) in the mirror output — these resolve to nothing for a public reader (a private-repo path, an internal decision-log id, or an internal doc tree):",
+    );
+    for (const h of leaks.slice(0, 40)) console.error(`  ${h}`);
+    if (leaks.length > 40)
+      console.error(
+        `  … and ${leaks.length - 40} more (${leaks.length} total)`,
+      );
     process.exit(1);
   }
 

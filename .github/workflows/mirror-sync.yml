@@ -41,7 +41,9 @@ jobs:
     # Blacksmith per ADR-0365 (fleet-only sweep; the cross-repo push token accepted on VM-per-job runners) → a write cred to
     # an external repo stays off the fleet, same posture as deploy-railway.yml's RAILWAY_TOKEN.
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 20
+    # Raised from 20 when the pre-push verification gate landed: the job now installs, builds, tests,
+    # lints and format-checks the exported artifact on top of exporting it (~10 min locally).
+    timeout-minutes: 30
     environment: release # ADR-0327 rider 2 parity — this job reads MIRROR_PUSH_TOKEN (a release-propagation leg)
     steps:
       # Inert-until-armed guard (mirrors deploy-railway.yml): `secrets` can't be read in a job/step
@@ -77,6 +79,49 @@ jobs:
           bun scripts/export-public-mirror.ts \
             --out mirror-out \
             --generated-at "$(git log -1 --format=%cs)"
+      # PRE-PUSH VERIFICATION GATE. Everything below this comment runs against the EXPORTED
+      # ARTIFACT, in `mirror-out`, before a single byte reaches the public repo — the mirror's own
+      # ci.yml (scripts/mirror-assets/ci.yml) runs the same five legs, but only AFTER the push, so
+      # on its own it can only ever tell us the mirror is already publicly broken. The exporter's
+      # internal gates (self-containment, entitlement tokens, leakage) prove the SELECTION is
+      # right; these prove the RESULT actually works standalone under the renamed @caisson-sh/*
+      # scope. `bun install` here is deliberately NOT --frozen-lockfile: the mirror ships no
+      # lockfile (it is a generated tree), so this resolves fresh exactly as a stranger cloning
+      # the public repo would. A failure here fails the job with nothing pushed.
+      - name: verify export — install
+        if: steps.guard.outputs.armed == 'true'
+        working-directory: mirror-out
+        run: bun install
+      - name: verify export — typecheck + build
+        if: steps.guard.outputs.armed == 'true'
+        working-directory: mirror-out
+        run: bun run build
+      - name: verify export — test
+        if: steps.guard.outputs.armed == 'true'
+        working-directory: mirror-out
+        run: bun test
+      - name: verify export — lint
+        if: steps.guard.outputs.armed == 'true'
+        working-directory: mirror-out
+        run: bunx eslint .
+      - name: verify export — format
+        if: steps.guard.outputs.armed == 'true'
+        working-directory: mirror-out
+        run: bunx prettier --check "**/*.{ts,tsx,js,mjs,json,md,css}"
+      # Remove what the five verification steps just built, so the tree copied below is the tree
+      # the exporter produced and nothing more. The mirror's own shipped .gitignore already lists
+      # all five of these, so they could not be COMMITTED either way — what this actually prevents
+      # is `cp -r` duplicating a ~1900-package node_modules across 17 workspaces into the clone on
+      # every sync. Belt-and-braces on the .gitignore, and cheap.
+      - name: verify export — strip verification artifacts
+        if: steps.guard.outputs.armed == 'true'
+        run: |
+          set -e
+          find mirror-out -name node_modules -type d -prune -exec rm -rf {} +
+          find mirror-out -name dist -type d -prune -exec rm -rf {} +
+          find mirror-out -name '.turbo' -type d -prune -exec rm -rf {} +
+          find mirror-out -name '*.tsbuildinfo' -delete
+          rm -f mirror-out/bun.lock
       - name: append sync commit to caisson-sh/caisson-oss (never force)
         if: steps.guard.outputs.armed == 'true'
         env:

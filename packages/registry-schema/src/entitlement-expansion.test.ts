@@ -1,5 +1,5 @@
 // ADR-0071 entitlement-expansion resolver — golden-first (ADR-0013). Originally RED-until-resolver;
-// the golden fixture + expectations precede the logic. ADR-0270 (edition-trace purge) re-baselined the
+// the golden fixture + expectations precede the logic. The edition-trace purge (ADR-0270) re-baselined the
 // golden onto the canonical six-bundle vocabulary: the dissolved edition ids (`ai-kit`/`local-ai`/
 // `agent-dev`) and the `bundle` sentinel are no longer purchasable/normalizable ids, so every case buys
 // a canonical bundle id (they resolve to the SAME member sets via the decoupled EDITION_BUNDLE_ID index
