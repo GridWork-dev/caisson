@@ -912,6 +912,14 @@ function rewriteCliTemplates(
  * argument covers a thrown error message asserted by a test: both the `throw` and the `expect` are
  * rewritten identically. The mirror-sync verification gate is what proves that claim on every sync
  * rather than on this one reading of the tree.
+ *
+ * KNOWN CEILING — the one case that gate cannot see. A test whose FIXTURE is itself a citation
+ * ("this input contains an ADR id, so the checker must flag it") is rewritten like any other text.
+ * If the assertion depends on the citation, the test goes red and the gate catches it; if the
+ * assertion is that nothing is flagged, the test goes VACUOUS and stays green for the wrong reason.
+ * No such fixture is in the open set today — the two in `tooling/standards-gate` are commercial and
+ * never exported — but a future Apache-2.0 package could add one. The fix if it happens is an
+ * `EXCLUDE_TEST_FILES` entry, not a cleverer regex.
  */
 function stripAdrIdsInTree(dir: string): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
