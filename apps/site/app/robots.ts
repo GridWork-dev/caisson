@@ -37,8 +37,9 @@ const AI_CRAWLERS = [
 // (ADR-0114) plus the checkout and account-recovery dead-ends. /cart and /dashboard currently
 // redirect to a Cloudflare Access team login, so an allowed crawl indexes an auth wall under a
 // caisson.sh URL. Disallowed rather than `noindex` on purpose — these carry no ranking signal
-// worth crawling to collect, and it matches the pre-existing /dashboard rule. This is the same set
-// the root layout excludes from its speculation rules; keep the two in step.
+// worth crawling to collect, and it matches the pre-existing /dashboard rule. The root layout
+// excludes these same paths from its speculation rules (plus /api/*, which is a prerender concern
+// rather than a crawl one) — a route added to one list usually belongs in the other.
 const NO_CRAWL = [
   "/dashboard",
   "/cart",
