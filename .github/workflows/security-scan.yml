@@ -58,6 +58,11 @@ jobs:
           # `command -v || install` guards would have silently accepted ANY preinstalled version.
           # Installs are now unconditional (deterministic on a throwaway VM) and fail loud:
           # pipefail + sha256sum -c mean a bad download or tampered artifact reddens the job.
+          # Every download retries (2026-08-12): a single transient 503 from GitHub's release CDN
+          # reddened this job twice in a row on PR #431, five minutes apart, while all three URLs
+          # served 200 from the operator box — runner-side egress, not the pins. Retrying costs
+          # nothing in integrity: `sha256sum -c` still verifies each artifact against versions.env,
+          # so a retry can only turn a transport failure into the same verified bytes or a red job.
           set -eo pipefail
           source tools/security/versions.env
           export PATH="$HOME/.local/bin:$PATH"
@@ -65,15 +70,15 @@ jobs:
           uv tool install "semgrep==${SEMGREP_VERSION}"
           uv tool install "ruff==${RUFF_VERSION}"
           tmp="$(mktemp -d)"
-          curl -sSfL -o "$tmp/trivy.tgz" "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o "$tmp/trivy.tgz" "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
           echo "${TRIVY_SHA256}  $tmp/trivy.tgz" | sha256sum -c -
           tar -C "$tmp" -xzf "$tmp/trivy.tgz" trivy
           install -m755 "$tmp/trivy" "$HOME/.local/bin/trivy"
-          curl -sSfL -o "$tmp/trufflehog.tgz" "https://github.com/trufflesecurity/trufflehog/releases/download/v${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION}_linux_amd64.tar.gz"
+          curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o "$tmp/trufflehog.tgz" "https://github.com/trufflesecurity/trufflehog/releases/download/v${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION}_linux_amd64.tar.gz"
           echo "${TRUFFLEHOG_SHA256}  $tmp/trufflehog.tgz" | sha256sum -c -
           tar -C "$tmp" -xzf "$tmp/trufflehog.tgz" trufflehog
           install -m755 "$tmp/trufflehog" "$HOME/.local/bin/trufflehog"
-          curl -sSfL -o "$tmp/osv-scanner" "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o "$tmp/osv-scanner" "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
           echo "${OSV_SCANNER_SHA256}  $tmp/osv-scanner" | sha256sum -c -
           install -m755 "$tmp/osv-scanner" "$HOME/.local/bin/osv-scanner"
           rm -rf "$tmp"
@@ -173,7 +178,7 @@ jobs:
           source tools/security/versions.env
           mkdir -p "$HOME/.local/bin"
           tmp="$(mktemp -d)"
-          curl -sSfL -o "$tmp/zizmor.tgz" "https://github.com/zizmorcore/zizmor/releases/download/v${ZIZMOR_VERSION}/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o "$tmp/zizmor.tgz" "https://github.com/zizmorcore/zizmor/releases/download/v${ZIZMOR_VERSION}/zizmor-x86_64-unknown-linux-gnu.tar.gz"
           echo "${ZIZMOR_SHA256}  $tmp/zizmor.tgz" | sha256sum -c -
           tar -C "$tmp" -xzf "$tmp/zizmor.tgz"
           find "$tmp" -name zizmor -type f -exec install -m755 {} "$HOME/.local/bin/zizmor" \;
