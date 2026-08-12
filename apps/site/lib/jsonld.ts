@@ -3,7 +3,7 @@
 // BreadcrumbList / FAQPage) reference those @ids by `@id` instead of re-declaring the publisher.
 // Replaces the duplicated anonymous SoftwareApplication block. Serialization escapes `<` so a
 // stray "</script>" in any field cannot break out of the <script> tag.
-import { SITE_NAME, SITE_URL } from "./metadata";
+import { PARENT_ORG_URL, SITE_NAME, SITE_URL } from "./metadata";
 import {
   bundlePriceById,
   formatPrice,
@@ -14,6 +14,21 @@ import {
 
 export const ORG_ID = `${SITE_URL}/#organization`;
 export const SITE_ID = `${SITE_URL}/#website`;
+/**
+ * The parent org's node in ITS OWN graph (gridworkdigital.com), which declares Caisson as a
+ * `subOrganization` keyed on ORG_ID. Both halves must use these exact IRIs or the two graphs
+ * describe four entities instead of two.
+ */
+export const PARENT_ORG_ID = `${PARENT_ORG_URL}/#organization`;
+
+/**
+ * Public identity surfaces for `sameAs`. Every entry must resolve for an ANONYMOUS crawler — a
+ * sameAs pointing at a 404 is a broken identity claim, not a weak one. The development repo
+ * (caisson-sh/caisson) is private and 404s when logged out, so only the org page is listed; the
+ * `caisson` names on npm and crates.io belong to unrelated projects and must never be claimed.
+ * Add the public mirror + the npm scope here once they actually publish.
+ */
+const SAME_AS = ["https://github.com/caisson-sh"];
 
 /** XSS-safe serialize for a dangerouslySetInnerHTML JSON-LD payload. */
 export function serializeJsonLd(data: unknown): string {
@@ -32,7 +47,10 @@ export const rootGraph = {
       url: SITE_URL,
       description:
         "Compliance-grade infrastructure for regulated SaaS — fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain.",
-      sameAs: ["https://github.com/caisson-sh/caisson"],
+      sameAs: SAME_AS,
+      // Caisson is a GridWork Digital product; the hub's graph carries the matching
+      // `subOrganization` edge back to ORG_ID.
+      parentOrganization: { "@id": PARENT_ORG_ID },
     },
     {
       "@type": "WebSite",

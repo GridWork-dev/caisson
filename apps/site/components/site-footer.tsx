@@ -31,7 +31,9 @@ const EXTRAS: Record<FooterCol, { href: string; label: string }[]> = {
   ],
   resources: [
     { href: "/llms.txt", label: "llms.txt" },
-    { href: "https://github.com/caisson-sh/caisson", label: "GitHub" },
+    // The org, not caisson-sh/caisson: the development repo is private, so that URL 404s for
+    // every logged-out visitor and every crawler. Point at the public mirror once it ships.
+    { href: "https://github.com/caisson-sh", label: "GitHub" },
     ...(DISCORD_INVITE_URL
       ? [{ href: DISCORD_INVITE_URL, label: "Discord" }]
       : []),
