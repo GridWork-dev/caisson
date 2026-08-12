@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-11
+updated: 2026-08-12
 status: live
 grounds:
   - apps/site/live/probe-session.ts
@@ -197,7 +197,9 @@ Create (or designate) a GitHub account that is NOT the operator's personal accou
 profiles for the distinct admin operator profile requirement. This is a real GitHub
 account with its own credentials (and ideally 2FA); it needs no repo/org access, only
 the ability to complete an OAuth consent screen for the "Caisson Admin" GitHub OAuth
-app (client id `Ov23li2yV6PG6Ll3oepd`, `docs/deploy/STATE.md:587`).
+app (client id `Ov23li2yV6PG6Ll3oepd`, recorded in the **2026-07-07 — EXECUTED: ninth-sitting
+seven-PR wave deploy + admin OAuth flip** entry of [deploy state](../deploy/STATE.md)). Cited by
+heading, not line: `STATE.md` is prepend-only, so line numbers drift with every new entry.
 
 ### 3.2 Get its numeric GitHub user id
 
