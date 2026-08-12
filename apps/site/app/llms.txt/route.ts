@@ -1,6 +1,7 @@
 import { llms } from "fumadocs-core/source";
 
 import { source } from "@/lib/source";
+import { BASE_PACKAGES, basePackagesScoped } from "@/lib/base-substrate";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { MODULE_PAGES } from "@/lib/module-pages";
 
@@ -15,12 +16,37 @@ export const dynamic = "force-static";
 const PREAMBLE = [
   "# Caisson",
   "",
-  "> Compliance-grade infrastructure for regulated SaaS. A composable Apache-2.0 base plus six bundles, sold one-time with per-module and bundle options.",
+  "> Compliance-grade infrastructure for regulated SaaS: fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain, shipped as a composable open-core base plus six commercial bundles.",
+  "",
+  "Caisson is a GridWork Digital product (https://gridworkdigital.com).",
+  "",
+  "## Licensing",
+  "",
+  // Counted and named from lib/base-substrate.ts, the same const the /legal/license page and the
+  // marketing copy read, so this can never claim a package set the site contradicts. Note the
+  // distinction the license page draws: a couple of packages outside the named Base substrate are
+  // Apache-2.0 too, so this says "the Base substrate is N packages", not "N packages are Apache".
+  `Open-core. The ${BASE_PACKAGES.length}-package Base substrate is Apache-2.0 — free to use, read, and redistribute under those terms: ${basePackagesScoped()}. The six bundles and the à-la-carte modules built on top of it are commercial, sold as a perpetual license with a 12-month updates window.`,
+  "",
+  "- [License terms](/legal/license): which packages are Apache-2.0, which are commercial, and what each grant allows.",
+  "- [Licensing, updates and renewals](/docs/licensing): what a perpetual license includes and what renewing costs.",
+  "",
+  "## Documentation",
+  "",
+  "- [Documentation](/docs): the full docs tree, indexed below.",
+  "- [Getting started](/docs/getting-started): install and first run.",
+  "",
+  "## Buying",
+  "",
+  // CONTENT TRUTH: /cart and /dashboard sit behind a Cloudflare Access team login (verified live
+  // 2026-08-12), so no visitor outside the team can complete a purchase. Prices ARE published and
+  // committed (ADR-0403), so this states both facts rather than implying a self-serve path.
+  "Prices are published and committed on the marketplace pages below. Checkout on caisson.sh is currently restricted to the Caisson team, so there is no public self-serve purchase path today — purchase, licensing, and delivery questions go to support@caisson.sh (see /support).",
   "",
   "## Marketplace",
   "",
-  "- [Marketplace](/marketplace): Every bundle and module on one surface — filter, compare, build a stack, and check out in a single purchase.",
-  "- [Plans and pricing](/marketplace/plans): Subscription plans on top of the one-time bundles and modules.",
+  "- [Marketplace](/marketplace): Every bundle and module on one surface — filter, compare, and build a stack.",
+  "- [Plans and pricing](/marketplace/plans): Subscription plans alongside the one-time bundles and modules.",
   "",
   "## Modules",
   "",
