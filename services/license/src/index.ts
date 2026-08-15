@@ -4,8 +4,7 @@
 // `invoice.paid` grants cycle credits + the plan's subscription entitlement grants; a one-time
 // `purchase.completed` grants its credits + one_time entitlement grants; `subscription.canceled`
 // immediately soft-revokes that subscription's grants; `refund.completed` soft-revokes the purchase's
-// grants and claws back ONLY unspent credits. `resolveAccountEntitlements` expands an account's ACTIVE
-// purchased ids to member slugs against the registry index; the lazy, bearer-gated `POST /issue`
+// grants and claws back ONLY unspent credits. The lazy, bearer-gated `POST /issue`
 // (createApp/startServer) resolves an account's entitlements and signs them into a license token via
 // `@caisson/license-issue`, then PERSISTS it via `license-grant-store.ts` — `POST /issue` is idempotent
 // per (accountId, major): a later call re-serves the stored token rather than re-minting.
@@ -212,7 +211,6 @@ export {
   capturePostHogAbandonedCheckoutEmailSent,
   capturePostHogAbandonedCheckoutConverted,
 } from "./posthog-capture.ts";
-export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 export {
   LICENSE_GRANT_SCHEMA_SQL,
   readLicenseGrant,
