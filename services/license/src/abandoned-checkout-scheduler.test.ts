@@ -24,6 +24,10 @@ import type {
   JobQueue,
 } from "@caisson/jobs";
 import {
+  createFakeQueue,
+  createFakeQueueFactory,
+} from "./scheduler-test-fixtures.ts";
+import {
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   buildAdminSelectPolicySql,
 } from "@caisson/org-controls";
@@ -71,73 +75,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await tp.close();
 });
-
-function createFakeQueue(): JobQueue & {
-  readonly calls: ReadonlyArray<{
-    name: string;
-    payload: unknown;
-    options: EnqueueOptions | undefined;
-  }>;
-} {
-  const calls: Array<{
-    name: string;
-    payload: unknown;
-    options: EnqueueOptions | undefined;
-  }> = [];
-  return {
-    async enqueue(name, payload, options) {
-      calls.push({ name, payload, options });
-    },
-    get calls() {
-      return calls;
-    },
-  };
-}
-
-function createFakeQueueFactory(): {
-  factory: typeof createPgBossJobQueue;
-  registeredTaskNames: string[];
-  registeredTasks: Array<{
-    name: string;
-    handler: (payload: unknown) => Promise<void>;
-  }>;
-  workCalls: string[];
-  scheduleCalls: Array<{ name: string; cron: string; data: unknown }>;
-} {
-  const registeredTaskNames: string[] = [];
-  const registeredTasks: Array<{
-    name: string;
-    handler: (payload: unknown) => Promise<void>;
-  }> = [];
-  const workCalls: string[] = [];
-  const scheduleCalls: Array<{ name: string; cron: string; data: unknown }> =
-    [];
-  const factory: typeof createPgBossJobQueue = (tasks, _config) => {
-    registeredTaskNames.push(...tasks.map((t) => t.name));
-    registeredTasks.push(...tasks);
-    return {
-      async enqueue() {},
-      async work(name: string) {
-        workCalls.push(name);
-        return { async stop() {} };
-      },
-      async getQueueState() {
-        return { queuedCount: 0, activeCount: 0, failedCount: 0 };
-      },
-      async schedule(name: string, cron: string, data?: object | null) {
-        scheduleCalls.push({ name, cron, data: data ?? null });
-      },
-      async stop() {},
-    };
-  };
-  return {
-    factory,
-    registeredTaskNames,
-    registeredTasks,
-    workCalls,
-    scheduleCalls,
-  };
-}
 
 describe("loadAbandonedCheckoutScheduleConfig", () => {
   test("unset env → null (inert)", () => {

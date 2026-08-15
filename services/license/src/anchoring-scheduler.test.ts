@@ -15,6 +15,10 @@ import type {
   JobQueue,
 } from "@caisson/jobs";
 import {
+  createFakeQueue,
+  createFakeQueueFactory,
+} from "./scheduler-test-fixtures.ts";
+import {
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   buildAdminWritePolicySql,
 } from "@caisson/org-controls";
@@ -92,67 +96,6 @@ afterAll(async () => {
 });
 
 /** A fake `JobQueue` recording every `enqueue` call instead of touching a driver. */
-function createFakeQueue(): JobQueue & {
-  readonly calls: ReadonlyArray<{
-    name: string;
-    payload: unknown;
-    options: EnqueueOptions | undefined;
-  }>;
-} {
-  const calls: Array<{
-    name: string;
-    payload: unknown;
-    options: EnqueueOptions | undefined;
-  }> = [];
-  return {
-    async enqueue(name, payload, options) {
-      calls.push({ name, payload, options });
-    },
-    get calls() {
-      return calls;
-    },
-  };
-}
-
-/** A fake `createPgBossJobQueue`-shaped factory recording task/work/schedule calls (no pg-boss). */
-function createFakeQueueFactory(): {
-  factory: typeof createPgBossJobQueue;
-  registeredTaskNames: string[];
-  workCalls: string[];
-  scheduleCalls: Array<{ name: string; cron: string; data: unknown }>;
-  configCalls: Parameters<typeof createPgBossJobQueue>[1][];
-} {
-  const registeredTaskNames: string[] = [];
-  const workCalls: string[] = [];
-  const scheduleCalls: Array<{ name: string; cron: string; data: unknown }> =
-    [];
-  const configCalls: Parameters<typeof createPgBossJobQueue>[1][] = [];
-  const factory: typeof createPgBossJobQueue = (tasks, config) => {
-    registeredTaskNames.push(...tasks.map((t) => t.name));
-    configCalls.push(config);
-    return {
-      async enqueue() {},
-      async work(name: string) {
-        workCalls.push(name);
-        return { async stop() {} };
-      },
-      async getQueueState() {
-        return { queuedCount: 0, activeCount: 0, failedCount: 0 };
-      },
-      async schedule(name: string, cron: string, data?: object | null) {
-        scheduleCalls.push({ name, cron, data: data ?? null });
-      },
-      async stop() {},
-    };
-  };
-  return {
-    factory,
-    registeredTaskNames,
-    workCalls,
-    scheduleCalls,
-    configCalls,
-  };
-}
 
 describe("loadAnchorCheckpointScheduleConfig", () => {
   test("unset env → null (inert)", () => {
