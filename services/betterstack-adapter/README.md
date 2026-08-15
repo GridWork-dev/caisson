@@ -32,8 +32,8 @@ bunx wrangler deploy
 
 **Fails closed:** a deployed Worker with `BETTERSTACK_WEBHOOK_SECRET` unset rejects every request
 (401) — a public `workers_dev` endpoint with no secret configured must refuse traffic, not accept
-it silently. For local testing only, set `ALLOW_UNAUTHENTICATED` (any non-empty value) to opt out
-of the check; never set it on a real deploy.
+it silently. There is no unauthenticated mode; for local testing set a throwaway secret and send
+the matching `X-Betterstack-Secret` header.
 
 ## Payload
 

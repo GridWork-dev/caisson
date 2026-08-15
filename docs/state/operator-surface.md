@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-12
+updated: 2026-08-15
 status: live
 grounds:
   - docs/state/production-readiness.md
@@ -88,11 +88,11 @@ parity (interactive `op signin` + personal Railway login). Detail + evidence for
 
 ## 6. Decision rounds waiting
 
-| Decision                                    | Shape                                                                                                                                                                                                                                            | Source                                                             |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| Consolidation picker round                  | 18 verified cuts (~1.6k LOC net) to approve/schedule + 6 gated rows: C01 analytics retirement and C04 design-critic fold need superseding ADRs; C10 waits for `field-crypto@2.0.0`; C13/C25 conditional; C16 high-risk (release-byte validation) | `outputs/audit/2026-08-consolidation/PICKER-TABLE.md`              |
-| auth session-token-hashing precondition ADR | future-trigger spec — do not build until the trigger fires; opening the ADR also fixes the spec's stale lift-sweep pointer                                                                                                                       | `outputs/specs/deferred-respec/SPEC-auth-session-token-hashing.md` |
-| Railway PITR                                | standing declined (2026-07-11, reconfirmed twice) — reopens only if real commerce data raises the recovery-point bar                                                                                                                             | `docs/state/decisions-and-forks.md`                                |
+| Decision                                    | Shape                                                                                                                                                                                                                                                                                | Source                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Consolidation picker — 6 deferred rows only | The 18 verified cuts are DISPOSED (ADR-0407, executed in PR #437, 2026-08-15). Remaining operator-owned: C01 analytics retirement and C04 design-critic fold need superseding ADRs; C10 waits for `field-crypto@2.0.0`; C13/C25 conditional; C16 high-risk (release-byte validation) | `outputs/audit/2026-08-consolidation/PICKER-TABLE.md` · ADR-0407   |
+| auth session-token-hashing precondition ADR | future-trigger spec — do not build until the trigger fires; opening the ADR also fixes the spec's stale lift-sweep pointer                                                                                                                                                           | `outputs/specs/deferred-respec/SPEC-auth-session-token-hashing.md` |
+| Railway PITR                                | standing declined (2026-07-11, reconfirmed twice) — reopens only if real commerce data raises the recovery-point bar                                                                                                                                                                 | `docs/state/decisions-and-forks.md`                                |
 
 Every other fork is locked — the fork board's open table has exactly one row (PITR), and
 `CLAUDE.md` §Still-open reads "Nothing."

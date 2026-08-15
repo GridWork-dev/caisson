@@ -9,7 +9,7 @@
 // `subscription_id` (purchase_id NULL); a one-time grant carries `purchase_id` — the PaymentIntent id —
 // (subscription_id NULL). The single ACTIVE-refcount truth still stores PURCHASED IDS (editions/bundle/
 // modules), never the expanded member-slug leaf set — the registry index expands at gate time
-// (`expandEntitlements`, resolve-entitlements.ts), so a module added to an edition reaches existing
+// (`expandEntitlements`), so a module added to an edition reaches existing
 // buyers with no store rewrite.
 //
 // Tenant-owned + fail-closed RLS via @caisson/tenancy-rls (ADR-0005): every read/write/revoke runs

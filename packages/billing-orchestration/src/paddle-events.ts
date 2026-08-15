@@ -33,6 +33,7 @@
 // `Record<string, unknown>` — the `read*` helpers below are ALREADY the
 // defensive/fail-closed-to-safe-default layer for it.
 import { z } from "zod";
+import { readString } from "./event-readers.ts";
 import { ValidationError } from "@caisson/kernel";
 import type { DomainBillingEvent } from "@caisson/billing";
 
@@ -43,10 +44,6 @@ export const PaddleEventSchema = z.object({
 });
 
 export type PaddleEvent = z.infer<typeof PaddleEventSchema>;
-
-function readString(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
-}
 
 /** Paddle money fields are decimal STRINGS of the smallest currency unit (e.g. "4900" = $49.00). */
 function readMoneyMinorUnits(value: unknown): number {

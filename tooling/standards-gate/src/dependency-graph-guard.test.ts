@@ -112,9 +112,9 @@ x .tsx
     ).toThrow("missing TypeScript sentinels");
 
     graph.modules.push(
-      { source: "packages/kernel/src/index.ts" },
-      { source: "apps/site/app/layout.tsx" },
-      { source: "tooling/standards-gate/src/cli.ts" },
+      { source: "packages/kernel/src/index.ts", dependencies: [] },
+      { source: "apps/site/app/layout.tsx", dependencies: [] },
+      { source: "tooling/standards-gate/src/cli.ts", dependencies: [] },
     );
 
     expect(() =>

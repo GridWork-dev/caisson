@@ -7,6 +7,7 @@
 // (ADR-0089). This file (parse + envelope) is the commercial half of the billing carve (ADR-0249 G3);
 // the DomainBillingEvent contract itself stays open in @caisson/billing.
 import { z } from "zod";
+import { readInt, readString } from "./event-readers.ts";
 import type { DomainBillingEvent } from "@caisson/billing";
 
 // The envelope (id/type/data.object) is Zod-validated at the boundary (mirrors PaddleEventSchema /
@@ -33,10 +34,6 @@ export const StripeEventSchema = z.object({
 
 export type StripeEvent = z.infer<typeof StripeEventSchema>;
 
-function readString(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
-}
-
 /** Read `metadata.<key>` from a `{ metadata: { … } }` shape, or "" if absent. */
 function readMetadataString(value: unknown, key: string): string {
   if (typeof value !== "object" || value === null) return "";
@@ -62,10 +59,6 @@ function readAccountId(object: Record<string, unknown>): string {
   const fromTopLevel = readMetadataAccountId(object);
   if (fromTopLevel !== "") return fromTopLevel;
   return readString(object.client_reference_id);
-}
-
-function readInt(value: unknown): number {
-  return typeof value === "number" && Number.isInteger(value) ? value : 0;
 }
 
 /** The subscription line's price id from `invoice.lines.data[0].price.id`, or "" if absent. */

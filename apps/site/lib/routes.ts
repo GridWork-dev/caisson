@@ -3,12 +3,13 @@ import type { MetadataRoute } from "next";
 // Single source of truth for the marketing route surface (kickoff Phase-2: "MARKETING_ROUTES →
 // sitemap 1:1"). Before this, the route list was hand-duplicated across sitemap.ts (4 inline
 // arrays), site-nav (NAV_LINKS), and site-footer (COLS) — editions alone appeared in four places,
-// free to drift. Now sitemap, the primary nav, and the footer columns all derive from this one
-// list. Docs routes are NOT here (they come from Fumadocs `source.getPages()`).
+// free to drift. Now the sitemap and the footer columns derive from this one list; the primary
+// nav is hand-shaped in site-nav.tsx over BUNDLE_ROUTES. Docs routes are NOT here (they come
+// from Fumadocs `source.getPages()`).
 //
 // ADR-0237 F1: the three commerce routes (/pricing, /modules, /build) are UNIFIED into the
 // /marketplace hub (tabs: Editions · Modules · Build · Plans). The old paths 301 permanently in
-// next.config.ts `redirects()` — they are gone from this registry so the sitemap, nav, and footer
+// next.config.ts `redirects()` — they are gone from this registry so the sitemap and footer
 // only ever emit the canonical hub routes.
 
 export type RouteGroup =
@@ -32,10 +33,8 @@ export interface MarketingRoute {
   priority: number;
   /** sitemap changeFrequency. */
   changeFrequency: ChangeFrequency;
-  /** Grouping for nav derivation + sitemap ordering. */
+  /** Grouping for sitemap ordering + the derived slices below. */
   group: RouteGroup;
-  /** Appears in the primary desktop/mobile nav. */
-  nav?: boolean;
   /** Footer column this route renders in; omitted = not in the footer. */
   footer?: FooterCol;
 }
@@ -43,12 +42,12 @@ export interface MarketingRoute {
 // Order matters: it is the sitemap emission order (core → trust → framework → legal).
 export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "", label: "Home", priority: 1.0, changeFrequency: "weekly", group: "home" }, // prettier-ignore
-  { path: "/compliance", label: "Compliance", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
-  { path: "/ai-kit", label: "AI-Production", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
-  { path: "/local-first", label: "Local-first AI", navLabel: "Local-first", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
-  { path: "/agentic-dev", label: "Agentic-Dev", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
+  { path: "/compliance", label: "Compliance", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
+  { path: "/ai-kit", label: "AI-Production", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
+  { path: "/local-first", label: "Local-first AI", navLabel: "Local-first", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
+  { path: "/agentic-dev", label: "Agentic-Dev", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
   { path: "/provenance", label: "Provenance", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
-  { path: "/marketplace", label: "Marketplace", priority: 0.9, changeFrequency: "weekly", group: "product", nav: true, footer: "product" }, // prettier-ignore
+  { path: "/marketplace", label: "Marketplace", priority: 0.9, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore
   { path: "/marketplace/plans", label: "Plans", priority: 0.85, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore
   { path: "/glossary", label: "Glossary", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/writing", label: "Writing", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
@@ -78,9 +77,6 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
 export const BUNDLE_ROUTES = MARKETING_ROUTES.filter(
   (r) => r.group === "edition",
 );
-
-/** Marketing routes that appear in the primary nav (in declared order). */
-export const NAV_ROUTES = MARKETING_ROUTES.filter((r) => r.nav);
 
 /** Legal page routes (the footer appends `.well-known/security.txt`, which is not a page route). */
 export const LEGAL_ROUTES = MARKETING_ROUTES.filter((r) => r.group === "legal");

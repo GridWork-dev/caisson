@@ -27,12 +27,14 @@
 // it on your server." This Worker expects the operator to configure a custom header
 // (`X-Betterstack-Secret: <value>`, via Better Stack's outgoing-webhook "Headers" advanced
 // setting) carrying the same value as `BETTERSTACK_WEBHOOK_SECRET`. FAIL CLOSED: a public
-// `workers_dev` endpoint with `BETTERSTACK_WEBHOOK_SECRET` unset rejects every request (401)
-// unless `ALLOW_UNAUTHENTICATED` is explicitly set — a local-dev-only opt-out, never set on a
-// real deploy (see README.md).
-import { createHash, timingSafeEqual } from "node:crypto";
+// `workers_dev` endpoint with `BETTERSTACK_WEBHOOK_SECRET` unset rejects every request (401) —
+// there is no unauthenticated mode; local dev sets a throwaway secret.
 import { z } from "zod";
 import { fetchWithTimeout } from "@caisson/kernel";
+// The narrow `./crypto` subpath, NOT `./node`: the wide node barrel re-exports ssrf.ts and pulls
+// `node:dns/promises` (and whatever lands on it next) into this Worker's bundle, which has no CI
+// build leg to catch a builtin nodejs_compat doesn't ship. crypto.ts's graph is node:crypto only.
+import { safeEqualVariable } from "@caisson/kernel/crypto";
 
 export type Fetcher = typeof fetchWithTimeout;
 
@@ -43,17 +45,10 @@ function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
 }
 
-/**
- * SHA-256-then-`timingSafeEqual` — the variable-length-secret posture (`identity/security.md`):
- * a raw variable-length `timingSafeEqual` throws on a length mismatch, which leaks a boolean side
- * channel through caught-exception control flow. The operator-set header value is arbitrary
- * length, so hash both sides to a fixed 32-byte digest first.
- */
-export function secretsMatch(provided: string, expected: string): boolean {
-  const a = createHash("sha256").update(provided).digest();
-  const b = createHash("sha256").update(expected).digest();
-  return timingSafeEqual(a, b);
-}
+// Secret comparison is the kernel's `safeEqualVariable` (SHA-256-then-`timingSafeEqual`, the
+// variable-length-secret posture in `identity/security.md`) — the operator-set header value is
+// arbitrary length. The non-empty `secret` guard in `handleRequest` stays load-bearing:
+// `safeEqualVariable("", "")` is true by construction.
 
 // Not `.strict()` — see the module doc. Only the fields this adapter reads are declared.
 const IncidentAttributesSchema = z.object({
@@ -148,13 +143,9 @@ export interface Env {
   /** The operator's Discord ops-channel webhook. Required — a 500 with no delivery attempted
    *  while unset (never silently drop an incident). */
   DISCORD_OPS_WEBHOOK_URL?: string;
-  /** The shared secret — see the module doc's Auth section. Required on a real deploy; a public
-   *  `workers_dev` endpoint with no secret configured fails closed (401) rather than accepting
-   *  unauthenticated POSTs. */
+  /** The shared secret — see the module doc's Auth section. Required: an endpoint with no
+   *  secret configured fails closed (401) rather than accepting unauthenticated POSTs. */
   BETTERSTACK_WEBHOOK_SECRET?: string;
-  /** Local-dev-only escape hatch: any non-empty value lets a request through when
-   *  `BETTERSTACK_WEBHOOK_SECRET` is unset. Never set this on a real deploy. */
-  ALLOW_UNAUTHENTICATED?: string;
 }
 
 /**
@@ -178,16 +169,12 @@ export async function handleRequest(
   if (secret === undefined || secret.length === 0) {
     // Fail closed: a public workers_dev endpoint with no shared secret must refuse traffic, not
     // silently accept it — mirrors services/license/src/deploy.ts's fail-closed posture on a
-    // missing DATABASE_URL. ALLOW_UNAUTHENTICATED is the explicit local-dev opt-out.
-    const devOverride = env.ALLOW_UNAUTHENTICATED;
-    if (devOverride === undefined || devOverride.length === 0) {
-      return jsonResponse({ error: "unauthorized" }, 401);
-    }
-  } else {
-    const provided = request.headers.get(HEADER_NAME) ?? "";
-    if (provided === "" || !secretsMatch(provided, secret)) {
-      return jsonResponse({ error: "unauthorized" }, 401);
-    }
+    // missing DATABASE_URL. There is no unauthenticated mode.
+    return jsonResponse({ error: "unauthorized" }, 401);
+  }
+  const provided = request.headers.get(HEADER_NAME) ?? "";
+  if (provided === "" || !safeEqualVariable(provided, secret)) {
+    return jsonResponse({ error: "unauthorized" }, 401);
   }
 
   let raw: unknown;

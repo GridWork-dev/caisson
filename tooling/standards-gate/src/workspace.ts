@@ -12,8 +12,6 @@ export interface Pkg {
   license: string | null;
   /** workspace deps (entries whose name starts with @caisson/). */
   workspaceDeps: string[];
-  /** external (non-@caisson/) deps — the surface the AGPL external-tree scan must cover. */
-  externalDeps: string[];
   manifestPath: string | null;
   /** true once the package ships real code (src/ beyond .gitkeep, OR an entry/main/exports). */
   hasCode: boolean;
@@ -88,7 +86,6 @@ export function readWorkspace(root = findRoot()): Pkg[] {
       version: typeof pj.version === "string" ? pj.version : null,
       license: typeof pj.license === "string" ? pj.license : null,
       workspaceDeps: deps.filter((d) => d.startsWith("@caisson/")),
-      externalDeps: deps.filter((d) => !d.startsWith("@caisson/")),
       manifestPath: existsSync(manifest) ? manifest : null,
       hasCode: shipsCode(dir, pj),
     });

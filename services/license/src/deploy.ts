@@ -18,8 +18,8 @@ import {
   TsaAnchorLog,
   type AnchorCheckpointDeps,
 } from "@caisson/audit-worm";
-import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
-import { Pool, type PoolClient } from "pg";
+import { createPgTransactor } from "@caisson/tenancy-rls";
+import { Pool } from "pg";
 import {
   loadAbandonedCheckoutScheduleConfig,
   startAbandonedCheckoutScheduler,
@@ -37,44 +37,6 @@ import { recipientFor, resolveEmailer } from "./email-notify.ts";
 import { loadPostHogCaptureConfig } from "./posthog-capture.ts";
 import { startServer } from "./server.ts";
 
-function nodePgExecutor(client: PoolClient): TenantExecutor {
-  return {
-    // `pg`'s `query<T>` constrains `T extends QueryResultRow`; the shared `TenantExecutor.query` has
-    // no such bound (PGlite satisfies it too), so call untyped and cast rather than narrow the
-    // interface to a pg-specific constraint every other driver would then have to satisfy.
-    async query<T = Record<string, unknown>>(sql: string, params?: unknown[]) {
-      const res = await client.query(sql, params);
-      return { rows: res.rows as T[] };
-    },
-    async exec(sql: string) {
-      return client.query(sql);
-    },
-  };
-}
-
-function nodePgTransactor(pool: Pool): Transactor {
-  return {
-    async transaction<T>(fn: (tx: TenantExecutor) => Promise<T>): Promise<T> {
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-        const result = await fn(nodePgExecutor(client));
-        await client.query("COMMIT");
-        return result;
-      } catch (err) {
-        try {
-          await client.query("ROLLBACK");
-        } catch {
-          // Best-effort — the connection may already be unusable; the original error wins below.
-        }
-        throw err;
-      } finally {
-        client.release();
-      }
-    },
-  };
-}
-
 if (import.meta.main) {
   // Fail closed: a production issuer must NEVER fall back to an in-memory PGlite double the way
   // apps/site's dev-only getDb does. An unset DATABASE_URL aborts startup before the socket binds,
@@ -86,7 +48,7 @@ if (import.meta.main) {
     );
   }
   const pool = new Pool({ connectionString: url });
-  const db = nodePgTransactor(pool);
+  const db = createPgTransactor(pool);
   // Bun.serve inside startServer holds the event loop open — the process stays up serving.
   startServer(db);
 

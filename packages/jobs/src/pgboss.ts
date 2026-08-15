@@ -34,7 +34,8 @@
 // the same way. See `JobAlertingDeps`'s doc for why this stays dependency-free of `@caisson/alerting`.
 import { PgBoss } from "pg-boss";
 import { createHash } from "node:crypto";
-import { ConfigError, NotFoundError, parseStrict } from "@caisson/kernel";
+import { ConfigError, parseStrict } from "@caisson/kernel";
+import { createTaskRegistry, requireRegisteredTask } from "./task-registry.ts";
 import type {
   EnqueueOptions,
   JobConsumer,
@@ -206,9 +207,7 @@ export function createPgBossJobQueue(
   tasks: readonly TaskDefinition<unknown>[],
   config: PgBossJobQueueConfig,
 ): JobQueue & JobConsumer & JobLedger & PgBossSchedule & PgBossStoppable {
-  const registry = new Map<string, TaskDefinition<unknown>>(
-    tasks.map((task) => [task.name, task]),
-  );
+  const registry = createTaskRegistry(tasks);
 
   if (
     (config.connectionString === undefined ||
@@ -249,12 +248,7 @@ export function createPgBossJobQueue(
       payload: unknown,
       options?: EnqueueOptions,
     ): Promise<void> {
-      const task = registry.get(name);
-      if (task === undefined) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      const task = requireRegisteredTask(registry, name);
       const validated = parseStrict(task.schema, payload);
 
       const client = await getClient();
@@ -279,12 +273,7 @@ export function createPgBossJobQueue(
     },
 
     async work(name: string): Promise<WorkHandle> {
-      const task = registry.get(name);
-      if (task === undefined) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      const task = requireRegisteredTask(registry, name);
       const client = await getClient();
       await ensureQueue(client, name);
       const workerId = await client.work(name, async (jobs) => {
@@ -334,12 +323,7 @@ export function createPgBossJobQueue(
       data?: object | null,
       options?: { tz?: string },
     ): Promise<void> {
-      const task = registry.get(name);
-      if (task === undefined) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      requireRegisteredTask(registry, name);
       const client = await getClient();
       await ensureQueue(client, name);
       await client.schedule(name, cron, data ?? null, options);

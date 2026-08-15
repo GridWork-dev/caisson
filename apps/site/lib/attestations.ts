@@ -67,10 +67,6 @@ export const COMPLIANCE_FRAMEWORKS: readonly ComplianceFramework[] = [
   },
 ];
 
-export function frameworkById(id: string): ComplianceFramework | undefined {
-  return COMPLIANCE_FRAMEWORKS.find((f) => f.id === id);
-}
-
 const FRAMEWORK_IDS = COMPLIANCE_FRAMEWORKS.map((f) => f.id) as [
   string,
   ...string[],

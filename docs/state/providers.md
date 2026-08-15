@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-09
+updated: 2026-08-15
 status: live
 grounds:
   - infra/terraform/
@@ -133,7 +133,7 @@ OpenRouter / Plausible / SigNoz / Exa / Discord have **no standalone CLI** — d
 
 **Live stack**
 
-- **Railway** — CLI `railway up -s <svc>` deploys (services are **CLI-deployed, not GitHub-connected** → merging `main` does _not_ redeploy). Env per service via `railway variables`. Config: per-service `railway.toml` + `RAILWAY_DOCKERFILE_PATH`. **State: ✅** 11 services live (caisson-prod, US-West `sfo`).
+- **Railway** — CLI-deployed, not GitHub-connected, via the receipted `tooling/scripts/railway-deploy.ts` path — but since 2026-07-29 `deploy-railway.yml` self-arms on path-triggered `main` pushes (`apps/site/**`, `apps/admin/**`, `packages/**` and the #426 root-dep filter), so a matching merge DOES auto-deploy the covered services (site/admin; license is dispatch-only, docs/support-bot are not covered). Env per service via `railway variables`. Config: per-service `railway.toml` + `RAILWAY_DOCKERFILE_PATH`. **State: ✅** 11 services live (caisson-prod, US-West `sfo`).
 - **Cloudflare** — DNS + registry Worker + CF-Access, driven by `infra/terraform/` (apply) and `wrangler deploy` (Worker). Token `CLOUDFLARE_API_TOKEN` (SET). **State: ✅** DNS cut over to Railway, Pages torn down, Worker live (46-module index). Edge rate-limit on the docs-api `/query` path terraformed + 429-proven 2026-07-03 (ADR-0219, CAISSON-15); registry edge revocation deny-set live (ADR-0225 R-4).
 - **Paddle** (MoR) — Paddle dashboard + REST API; client token `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` + `NEXT_PUBLIC_PADDLE_ENV` on `caisson-site`; server `PADDLE_API_KEY`/`PADDLE_WEBHOOK_SECRET` (SET local). **State: ⚠ sandbox** — 7 prices + webhook configured in sandbox; **production Paddle account + live prices are the go-live fast-follow**.
 - **Stripe** — buyer billing driver behind the `BillingProvider` port; `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`. **State: ⛔ dormant** — no keys on `caisson-site` (Paddle is the live checkout). Configure only if the Stripe path is activated.

@@ -5,13 +5,12 @@ import {
   MARKETPLACE_TAB_ROUTES,
   BUNDLE_ROUTES,
   footerRoutes,
-  NAV_ROUTES,
   LEGAL_ROUTES,
 } from "./routes";
 
-// The marketing route registry is the single source of truth that sitemap.ts, site-nav, and
-// site-footer all derive from (kickoff Phase-2). These invariants guard that derivation against
-// drift — a regression here is a silently-wrong sitemap or a missing nav/footer link.
+// The marketing route registry is the single source of truth that sitemap.ts and site-footer
+// derive from (kickoff Phase-2). These invariants guard that derivation against drift — a
+// regression here is a silently-wrong sitemap or a missing footer link.
 
 describe("MARKETING_ROUTES registry", () => {
   test("paths are unique", () => {
@@ -71,19 +70,6 @@ describe("derived route slices", () => {
       "/local-first",
       "/agentic-dev",
       "/provenance",
-    ]);
-  });
-
-  test("NAV_ROUTES are the nav-flagged routes; the four core personas plus the hub are navigable", () => {
-    // Provenance is a footer + hub route, not a top-nav item (it's a subset of Compliance, discovered
-    // from the marketplace and the Compliance page, not a primary nav destination).
-    const navPaths = NAV_ROUTES.map((r) => r.path);
-    expect(navPaths).toEqual([
-      "/compliance",
-      "/ai-kit",
-      "/local-first",
-      "/agentic-dev",
-      "/marketplace",
     ]);
   });
 
@@ -149,7 +135,7 @@ describe("derived route slices", () => {
 
   test("derived slices are all subsets of the registry", () => {
     const all = new Set(MARKETING_ROUTES);
-    for (const slice of [BUNDLE_ROUTES, NAV_ROUTES, LEGAL_ROUTES]) {
+    for (const slice of [BUNDLE_ROUTES, LEGAL_ROUTES]) {
       for (const r of slice) expect(all.has(r)).toBe(true);
     }
   });

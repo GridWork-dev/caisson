@@ -120,7 +120,7 @@ export interface AdminMutationDeps {
   db: Transactor;
   /**
    * The built registry index (ADR-0071/0278 F1) — the SAME membership truth
-   * `expandEntitlements`/`resolveAccountEntitlements` read at every entitlement expansion. The
+   * `expandEntitlements` reads at every entitlement expansion. The
    * comp-grant boundary (`grantEntitlementAdmin`) validates every operator-supplied id against it
    * BEFORE writing a row: `expandEntitlements` is fail-closed-THROWS on an unknown purchased id, so
    * an un-vetted typo written to `entitlement_grant` would brick every future `/issue` and dashboard

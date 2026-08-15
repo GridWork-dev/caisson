@@ -4,15 +4,11 @@
 // composition seam fails closed so the live eval lane cannot mistake an unstructured reply for a
 // useful brief. This is the single production place tokens are ever spent.
 import { z } from "zod";
-import { fetchJson } from "./http.ts";
 import type { Fetcher } from "./http.ts";
+import { openRouterChatContent, parseJsonObject } from "./openrouter.ts";
 import type { Config } from "./config.ts";
 import type { Finding } from "./finding.ts";
 
-const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
-// OpenRouter completions routinely exceed the shared http.ts default (10s); this is the one
-// off-by-default outbound call slow enough to need its own longer budget.
-const LLM_TIMEOUT_MS = 60_000;
 // The finding's own strict boundary (finding.ts) caps body at 10,000 chars — bound the analysis
 // well under that so `${analysis}\n\n${finding.body}` can never itself exceed the cap (an
 // oversized composed body would make parseFinding throw and silently DROP the finding it was
@@ -20,37 +16,6 @@ const LLM_TIMEOUT_MS = 60_000;
 const MAX_SECTION_CHARS = 1_200;
 const MAX_FINDING_BODY_CHARS = 10_000;
 const MAX_PROMPT_PAYLOAD_CHARS = 8_000;
-
-const ChatMessage = z
-  .object({
-    role: z.string().optional(),
-    content: z.string(),
-    refusal: z.string().nullable().optional(),
-    reasoning: z.string().nullable().optional(),
-  })
-  .strict();
-const ChatChoice = z
-  .object({
-    index: z.number().int().optional(),
-    finish_reason: z.string().nullable().optional(),
-    native_finish_reason: z.string().nullable().optional(),
-    logprobs: z.unknown().optional(),
-    message: ChatMessage,
-  })
-  .strict();
-const ChatResponse = z
-  .object({
-    id: z.string().optional(),
-    provider: z.string().optional(),
-    model: z.string().optional(),
-    object: z.string().optional(),
-    created: z.number().optional(),
-    system_fingerprint: z.string().nullable().optional(),
-    service_tier: z.string().nullable().optional(),
-    usage: z.unknown().optional(),
-    choices: z.array(ChatChoice).min(1),
-  })
-  .strict();
 
 const BriefSections = z
   .object({
@@ -166,20 +131,6 @@ export function buildEnrichPrompt(
   ].join("\n");
 }
 
-function parseJsonObject(content: string): unknown {
-  const trimmed = content.trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const start = trimmed.indexOf("{");
-    const end = trimmed.lastIndexOf("}");
-    if (start === -1 || end <= start) {
-      throw new Error("model returned no JSON object");
-    }
-    return JSON.parse(trimmed.slice(start, end + 1));
-  }
-}
-
 function renderBrief(sections: BriefSections, sourceDetail: string): string {
   return [
     "WHAT CHANGED",
@@ -204,40 +155,24 @@ export async function composeFindingBrief(
   options: ComposeBriefOptions,
   fetchImpl: Fetcher,
 ): Promise<Finding> {
-  const raw = await fetchJson<unknown>(
+  const content = await openRouterChatContent(
     fetchImpl,
-    OPENROUTER_ENDPOINT,
-    {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${options.apiKey}`,
-        "content-type": "application/json",
+    options.apiKey,
+    options.model,
+    [
+      { role: "system", content: ENRICH_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: buildEnrichPrompt(finding, options.knownSecrets),
       },
-      body: JSON.stringify({
-        model: options.model,
-        temperature: 0,
-        messages: [
-          { role: "system", content: ENRICH_SYSTEM_PROMPT },
-          {
-            role: "user",
-            content: buildEnrichPrompt(finding, options.knownSecrets),
-          },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    },
-    LLM_TIMEOUT_MS,
+    ],
   );
-  const parsedResponse = ChatResponse.safeParse(raw);
-  const content = parsedResponse.success
-    ? parsedResponse.data.choices[0]?.message.content
-    : undefined;
-  if (content === undefined || content.trim().length === 0) {
+  if (content === null) {
     throw new Error("model returned no content for the structured brief");
   }
   let candidate: unknown;
   try {
-    candidate = parseJsonObject(content);
+    candidate = parseJsonObject(content, "model");
   } catch {
     throw new Error("model returned an invalid structured brief");
   }

@@ -5,6 +5,7 @@
 // hand-rolled over Polar's REST API, mirroring the Stripe/Paddle drivers' no-SDK posture. Dormant: only
 // constructed when the buyer supplies credentials. Platform MoR stays Paddle (ADR-0116).
 import { z } from "zod";
+import { readIdString, readInt, readString } from "./event-readers.ts";
 import {
   ConfigError,
   InternalError,
@@ -36,20 +37,6 @@ export const PolarEventSchema = strictObject({
 });
 
 export type PolarEvent = z.infer<typeof PolarEventSchema>;
-
-function readString(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
-}
-
-function readIdString(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-  return "";
-}
-
-function readInt(value: unknown): number {
-  return typeof value === "number" && Number.isInteger(value) ? value : 0;
-}
 
 /** `data.metadata.account_id` — the ONLY field Polar natively propagates from checkout onto the
  * resulting order/subscription (ADR-0175, "Metadata set on the checkout will be copied to the

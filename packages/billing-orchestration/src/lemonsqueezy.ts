@@ -6,6 +6,7 @@
 // no-SDK posture. Dormant: only constructed when the buyer supplies credentials (call-site env-gating,
 // same discipline as every other driver) — the platform MoR stays Paddle (ADR-0116).
 import { z } from "zod";
+import { readIdString, readString } from "./event-readers.ts";
 import {
   ConfigError,
   InternalError,
@@ -33,17 +34,6 @@ export const LemonSqueezyEventSchema = strictObject({
 });
 
 export type LemonSqueezyEvent = z.infer<typeof LemonSqueezyEventSchema>;
-
-function readString(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
-}
-
-/** Handles both a numeric id (LemonSqueezy's raw API ids are numbers) and a string id. */
-function readIdString(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-  return "";
-}
 
 /** LemonSqueezy money fields are numeric MINOR units but can carry sub-cent fractional artifacts from
  * currency-rate conversion (e.g. `1499.985`) — round to the nearest integer minor unit (ADR-0007:

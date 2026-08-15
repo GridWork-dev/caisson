@@ -26,7 +26,6 @@ function pkg(over: Partial<Pkg> & Pick<Pkg, "name" | "license">): Pkg {
     dir: `/repo/packages/${over.name.replace("@caisson/", "")}`,
     version: "0.0.0",
     workspaceDeps: [],
-    externalDeps: [],
     manifestPath: null,
     hasCode: true,
     ...over,

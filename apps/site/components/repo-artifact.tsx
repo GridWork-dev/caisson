@@ -11,9 +11,9 @@ import styles from "./repo-artifact.module.css";
 // two (audit-worm, field-crypto) reuse the single-sourced depth-page artifact so they can't drift.
 //
 // A1 (ADR-0310): pure-CSS radio reveal — no "use client", no island. All four code cards are
-// server-rendered; a native <input type=radio> per card + `:has()` sibling rules (already the
-// codebase's checkbox-tab convention, see marketplace.module.css `.pickerRow:has(input:checked)`)
-// swap which one shows. One tab stop (the radio group) + arrow-key selection, which is MORE
+// server-rendered; a native <input type=radio> per card + `:has()` sibling rules (the codebase's
+// checkbox-tab convention) swap which one shows. One tab stop (the radio group) + arrow-key
+// selection, which is MORE
 // standard keyboard behaviour than the four individually-tabbable buttons this replaces.
 
 type Area = "app" | "pkg" | "tooling" | "svc" | "reg";

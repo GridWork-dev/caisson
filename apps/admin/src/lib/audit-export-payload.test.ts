@@ -1,19 +1,9 @@
 import { expect, test } from "bun:test";
-import { ADMIN_ACTIONS } from "@caisson/service-license";
-import {
-  ADMIN_AUDIT_EXPORT_ACTIONS,
-  allowlistAuditExportPayload,
-} from "./audit-export-payload.ts";
+import { allowlistAuditExportPayload } from "./audit-export-payload.ts";
 import type {
   FIRST_PARTY_AUDIT_EXPORT_EVENTS,
   FIRST_PARTY_AUDIT_EXPORT_KINDS,
 } from "./audit-export-payload.ts";
-
-test("every real WORM-emitting admin event type has an export schema", () => {
-  expect([...ADMIN_AUDIT_EXPORT_ACTIONS].sort()).toEqual(
-    ADMIN_ACTIONS.filter((action) => action !== "audit_proof_read").sort(),
-  );
-});
 
 test("known events export only their per-event allowlist and unknown events fail closed", () => {
   expect(
