@@ -8,9 +8,6 @@
 // (createApp/startServer) resolves an account's entitlements and signs them into a license token via
 // `@caisson/license-issue`, then PERSISTS it via `license-grant-store.ts` — `POST /issue` is idempotent
 // per (accountId, major): a later call re-serves the stored token rather than re-minting.
-export { applyBillingEvent } from "./apply-billing-event.ts";
-export { handleBillingWebhook } from "./webhook.ts";
-export type { BillingWebhookResult } from "./webhook.ts";
 export {
   ENTITLEMENT_SCHEMA_SQL,
   ENTITLEMENT_GRANT_MIGRATION_SQL,
@@ -22,34 +19,10 @@ export {
   RENEWAL_EXTENSION_SCHEMA_SQL,
   RENEWAL_EXTENSION_MONTHS_MIGRATION_SQL,
   grantEntitlements,
-  readEntitlements,
-  readOneTimeEntitlements,
-  upsertSubscriptionGrants,
-  reconcileCoverageGrants,
-  COVERAGE_MIRROR_LINE_ITEM,
-  revokeSubscriptionGrants,
   revokePurchaseGrants,
-  revokePurchaseLineGrants,
-  grantAdminComp,
-  revokeAdminComp,
-  computeUpdatesWindows,
   extendUpdatesWindow,
-  reverseRenewalExtensions,
   recordLineRefund,
   netCharged,
-} from "./entitlement-store.ts";
-export type {
-  GrantEntitlementsInput,
-  GrantSource,
-  UpsertSubscriptionGrantsInput,
-  RevokeSubscriptionInput,
-  RevokePurchaseInput,
-  RevokePurchaseLineInput,
-  GrantAdminCompInput,
-  RevokeAdminCompInput,
-  ExtendUpdatesWindowInput,
-  ReverseRenewalExtensionsInput,
-  RecordLineRefundInput,
 } from "./entitlement-store.ts";
 
 // ADR-0293 — subscription-lifecycle status (G13/G14) + append-only order/invoice history (G26).
@@ -61,30 +34,16 @@ export {
   ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   upsertSubscriptionStatus,
   cancelSubscriptionStatus,
-  readSubscriptionStatuses,
   insertOrderRecord,
   refundOrderRecord,
-  readOrderRecords,
-} from "./subscription-history-store.ts";
-export type {
-  UpsertSubscriptionStatusInput,
-  SubscriptionStatusRow,
-  InsertOrderRecordInput,
-  OrderRecordRow,
 } from "./subscription-history-store.ts";
 
 // ADR-0315 — the affiliate program store: minted-code registry + commission report.
 export {
   AFFILIATE_CODE_SCHEMA_SQL,
-  AFFILIATE_COMMISSION_BPS,
-  AFFILIATE_DISCOUNT_PCT,
-  insertAffiliateCode,
-  readAffiliateCodes,
   readAffiliateReport,
 } from "./affiliate-store.ts";
 export type {
-  InsertAffiliateCodeInput,
-  AffiliateCodeRow,
   AffiliateReport,
   AffiliateReportEntry,
   AffiliateReportOrder,
@@ -96,33 +55,10 @@ export {
   ADMIN_ACTION_LOG_SCHEMA_SQL,
   ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL,
   ADMIN_ACTIONS,
-  AdminActionSchema,
   insertAdminActionLog,
   readAdminActionLog,
 } from "./admin-audit-log.ts";
-export type {
-  AdminAction,
-  AdminActionLogInput,
-  AdminActionLogRow,
-} from "./admin-audit-log.ts";
-export {
-  LICENSE_REVOCATION_SCHEMA_SQL,
-  recordLicenseRevocation,
-  recordLicenseRevocations,
-  readDenySet,
-} from "./license-revocation-store.ts";
-export type {
-  RecordLicenseRevocationInput,
-  RecordLicenseRevocationsInput,
-} from "./license-revocation-store.ts";
-// The eval-application table (ADR-0274/0280 verified time-boxed eval licenses). Schema ONLY — the
-// operator-gated DEPLOY provisioning path (mirroring how LICENSE_GRANT_SCHEMA_SQL /
-// LICENSE_REVOCATION_SCHEMA_SQL are consumed) applies this; the store functions stay internal
-// because nothing outside this service writes eval_application rows.
-export { EVAL_APPLICATION_SCHEMA_SQL } from "./eval-store.ts";
-// The anchor-outbox table (ADR-0332/0346 external anchoring). Schema ONLY, same consumption
-// path as the schema constants above; the scheduler trio stays unarmed until the operator gate.
-export { ANCHOR_OUTBOX_SCHEMA_SQL } from "@caisson/audit-worm";
+export type { AdminAction, AdminActionLogRow } from "./admin-audit-log.ts";
 export {
   ADMIN_MUTATION_PROVISION_SQL,
   GrantEntitlementBody,
@@ -151,96 +87,14 @@ export {
 export type {
   AdminMutationDeps,
   ReissueProxyResult,
-  GrantEntitlementInput,
-  RevokeEntitlementInput,
-  AdjustCreditsInput,
-  ReissueLicenseInput,
-  PurchaseRevokeInput,
-  FirstMintLicenseInput,
-  ResendPurchaseEmailInput,
-  RotateLicenseInput,
-  SetSystemModeInput,
-  MintAffiliateCodeInput,
-  EntitlementMutationResult,
-  CreditAdjustResult,
-  ReissueResult,
-  PurchaseRevokeResult,
-  FirstMintResult,
-  ResendPurchaseEmailResult,
-  RotateLicenseResult,
-  SystemModeResult,
-  MintAffiliateResult,
   WormStatus,
 } from "./admin-mutations.ts";
-export {
-  resolveEmailer,
-  notifyPurchaseEmail,
-  notifyAbandonedCheckout,
-  resolveAbandonedCheckoutDiscount,
-} from "./email-notify.ts";
-export type {
-  PurchaseEmailNotice,
-  PurchaseEmailLine,
-  AbandonedCheckoutDiscount,
-  AbandonedCheckoutEmailLine,
-  AbandonedCheckoutNotice,
-} from "./email-notify.ts";
 export {
   CHECKOUT_ABANDONMENT_SCHEMA_SQL,
   CHECKOUT_ABANDONMENT_NOTICE_SCHEMA_SQL,
   recordCheckoutAbandonment,
-  listAbandonedCheckoutAccountIds,
-  sweepEligibleAbandonedCheckout,
-  hasRecentAbandonedCheckoutNotice,
 } from "./checkout-abandonment-store.ts";
-export type {
-  CheckoutAbandonmentLine,
-  RecordCheckoutAbandonmentInput,
-  SweepAbandonedCheckoutResult,
-} from "./checkout-abandonment-store.ts";
-export {
-  ABANDONED_CHECKOUT_DELAY_HOURS,
-  ABANDONED_CHECKOUT_TICK_TASK,
-  ABANDONED_CHECKOUT_NOTICE_TASK,
-  loadAbandonedCheckoutScheduleConfig,
-  runAbandonedCheckoutTick,
-  startAbandonedCheckoutScheduler,
-} from "./abandoned-checkout-scheduler.ts";
-export type { AbandonedCheckoutSchedulerDeps } from "./abandoned-checkout-scheduler.ts";
-export {
-  capturePostHogAbandonedCheckoutEmailSent,
-  capturePostHogAbandonedCheckoutConverted,
-} from "./posthog-capture.ts";
 export {
   LICENSE_GRANT_SCHEMA_SQL,
-  readLicenseGrant,
   storeLicenseGrant,
-  updateLicenseGrantToken,
 } from "./license-grant-store.ts";
-export type {
-  LicenseGrantRecord,
-  StoreLicenseGrantInput,
-} from "./license-grant-store.ts";
-export { createApp, type IssueAppDeps } from "./app.ts";
-export { startServer, type StartServerOptions } from "./server.ts";
-export {
-  findDiscordUserIds,
-  loadDiscordNotifyConfig,
-  notifyDiscordGrant,
-} from "./discord-notify.ts";
-export type {
-  DiscordGrantPush,
-  DiscordNotifyConfig,
-} from "./discord-notify.ts";
-export {
-  RATE_LIMIT_SCHEMA_SQL,
-  DEFAULT_RATE_LIMIT,
-  checkRateLimit,
-  setAccountRateLimit,
-  createRateLimitHook,
-} from "@caisson/rate-limit";
-export type {
-  RateLimitConfig,
-  RateLimitDecision,
-  RateLimitHookDeps,
-} from "@caisson/rate-limit";
