@@ -35,5 +35,6 @@ The registry index is **rebuilt from the published registry by a CI-only job**, 
 
 ## Schema source
 
-The manifest + index Zod schemas are canonical in `registry/schema/`, re-exported from
-`src/index.ts`. (They import `zod` via this package's dependency — hoisted to the workspace root.)
+The manifest + index Zod schemas are canonical in `registry/schema/`; the gate imports them
+from `@caisson/registry-schema` directly. (They import `zod` via this package's dependency —
+hoisted to the workspace root.)
