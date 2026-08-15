@@ -1,7 +1,7 @@
 ---
-updated: 2026-08-10
+updated: 2026-08-15
 status: live
-adr_ceiling: 0406
+adr_ceiling: 0408
 ---
 
 # Decisions & Forks — live board
@@ -191,6 +191,10 @@ additional active queue.
 | Fork         | Why it remains open                                                                                                                                                                                                                                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Railway PITR | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18 and again at the 2026-07-29 forks picker — nothing has changed the input: commerce is still sandbox, so there is no production transaction data to lose. |
+
+_Closed 2026-08-15 → **ADR-0407**: the consolidation-audit picker round pending since 2026-08-10 — the 18 refutation-verified cuts executed as one worktree wave (each evidence card re-verified against current main first); the six decision-gated rows (C01 · C04 · C10 · C13 · C16 · C25) stay parked and re-enter only through a fresh operator decision._
+
+_Closed 2026-08-15 → **ADR-0408**: Lane C — FULL oxc adoption (oxlint + oxfmt in one dedicated post-consolidation wave, silent-failure canary mandatory for the alpha jsPlugins seam), the operator pick over the spike's split-lane recommendation._
 
 _Closed 2026-07-29 → **ADR-0394**: what to do about release-audit F2, the `charged_amount` that no refund path ever adjusted. The operator picked the netting column over a per-adjustment table and over accepting the over-credit: refunds accumulate in `refunded_amount`, the stamped charge stays immutable, and the applied-adjustment set on the same row supplies the idempotency anchor the clawback ledger could not (it writes no row at all for a zero-credit line). The in-place decrement stays forbidden — it was written, proven non-idempotent against PGlite, and reverted._
 

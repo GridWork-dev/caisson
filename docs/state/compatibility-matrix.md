@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-09
+updated: 2026-08-15
 status: live
 grounds:
   - packages/tenancy-rls/src/drizzle.ts
