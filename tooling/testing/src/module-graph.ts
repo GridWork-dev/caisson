@@ -5,11 +5,11 @@
 // SUBSTITUTES one. `import { createHash } from "node:crypto"` in a browser graph makes turbopack
 // swap in crypto-browserify and the client chunk silently grows by ~428KB of polyfill, exit 0,
 // no warning. "The site build would catch it" is false — the taint has to be caught in the
-// source graph, before a bundler papers over it. (Same contract as packages/kernel's own
-// browser-safety.test.ts, which keeps its package-local copy of this walk; this module adds the
-// one capability that copy lacks: resolving workspace `@caisson/*` specifiers through each
-// package's exports map, so a walk can start at an apps/site client component and follow the
-// graph INTO the packages it drives.)
+// source graph, before a bundler papers over it. (packages/kernel's browser-safety.test.ts —
+// whose package-local copy this walk absorbed — asserts the same contract through this module;
+// beyond that copy it resolves workspace `@caisson/*` specifiers through each package's exports
+// map, so a walk can start at an apps/site client component and follow the graph INTO the
+// packages it drives.)
 //
 // KNOWN BLIND SPOTS (static regex walk): `require()`, `await import(...)`, and computed
 // specifiers are invisible; a `Buffer`/`process` global is not an import at all. Consumers pin
