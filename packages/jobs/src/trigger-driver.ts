@@ -28,7 +28,8 @@ import {
   task as defineTriggerTask,
   tasks as triggerTasks,
 } from "@trigger.dev/sdk";
-import { ConfigError, NotFoundError, parseStrict } from "@caisson/kernel";
+import { ConfigError, parseStrict } from "@caisson/kernel";
+import { createTaskRegistry, requireRegisteredTask } from "./task-registry.ts";
 import type {
   EnqueueOptions,
   JobConsumer,
@@ -72,9 +73,7 @@ export function createTriggerJobQueue(
   tasks: readonly TaskDefinition<unknown>[],
   config: TriggerJobQueueConfig,
 ): JobQueue & JobConsumer {
-  const registry = new Map<string, TaskDefinition<unknown>>(
-    tasks.map((task) => [task.name, task]),
-  );
+  const registry = createTaskRegistry(tasks);
 
   for (const task of tasks) {
     defineTriggerTask({
@@ -93,12 +92,7 @@ export function createTriggerJobQueue(
       payload: unknown,
       options?: EnqueueOptions,
     ): Promise<void> {
-      const task = registry.get(name);
-      if (task === undefined) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      const task = requireRegisteredTask(registry, name);
       const validated = parseStrict(task.schema, payload);
       // `options.singletonKey` (overlap-suppression, ADR-0229) is intentionally NOT mapped here —
       // Trigger.dev's HOSTED scheduler owns overlap for scheduled tasks (`trigger()` exposes no
@@ -112,11 +106,7 @@ export function createTriggerJobQueue(
     },
 
     async work(name: string): Promise<WorkHandle> {
-      if (!registry.has(name)) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      requireRegisteredTask(registry, name);
       // Trigger.dev's real consumer is `defineTriggerTask` above, registered at construction —
       // there's no local "start consuming" call in the SDK, so work() is a no-op here for port
       // symmetry only.

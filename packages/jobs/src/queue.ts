@@ -10,7 +10,8 @@
 // documented here, wired in a later phase. It implements the same `JobQueue` port, so enqueuing
 // callers never change when the driver is swapped.
 import type { ZodType } from "zod";
-import { NotFoundError, parseStrict } from "@caisson/kernel";
+import { parseStrict } from "@caisson/kernel";
+import { createTaskRegistry, requireRegisteredTask } from "./task-registry.ts";
 
 /** A typed task: a name, the `.strict()` payload schema, and the handler that runs the work. */
 export interface TaskDefinition<T> {
@@ -110,9 +111,7 @@ export function defineTask<T>(
 export function createInMemoryQueue(
   tasks: readonly TaskDefinition<unknown>[],
 ): JobQueue & JobConsumer & JobLedger {
-  const registry = new Map<string, TaskDefinition<unknown>>(
-    tasks.map((task) => [task.name, task]),
-  );
+  const registry = createTaskRegistry(tasks);
   const seenIdempotencyKeys = new Set<string>();
   const inFlightSingletonKeys = new Set<string>();
   const failureCounts = new Map<string, number>();
@@ -123,12 +122,7 @@ export function createInMemoryQueue(
       payload: unknown,
       options?: EnqueueOptions,
     ): Promise<void> {
-      const task = registry.get(name);
-      if (task === undefined) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      const task = requireRegisteredTask(registry, name);
       const validated = parseStrict(task.schema, payload);
 
       // Overlap suppression FIRST — a run already in flight for this singletonKey drops this enqueue
@@ -161,11 +155,7 @@ export function createInMemoryQueue(
     },
 
     async work(name: string): Promise<WorkHandle> {
-      if (!registry.has(name)) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      requireRegisteredTask(registry, name);
       // No backlog to poll in-memory — work() exists for port symmetry with the durable drivers.
       return {
         async stop(): Promise<void> {},

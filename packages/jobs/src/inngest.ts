@@ -1,12 +1,7 @@
 import { createHash } from "node:crypto";
 import type { Inngest } from "inngest";
 import { z } from "zod";
-import {
-  NotFoundError,
-  parseStrict,
-  strictObject,
-  ValidationError,
-} from "@caisson/kernel";
+import { parseStrict, strictObject, ValidationError } from "@caisson/kernel";
 import {
   type EnqueueOptions,
   type JobConsumer,
@@ -14,6 +9,7 @@ import {
   type TaskDefinition,
   type WorkHandle,
 } from "./queue.ts";
+import { createTaskRegistry, requireRegisteredTask } from "./task-registry.ts";
 
 export type InngestClient = Pick<Inngest, "createFunction" | "send">;
 
@@ -54,9 +50,7 @@ export function createInngestJobQueue(
 ): JobQueue & JobConsumer {
   const validatedConfig = parseStrict(inngestJobQueueConfigSchema, config);
 
-  const registry = new Map<string, TaskDefinition<unknown>>(
-    tasks.map((task) => [task.name, task]),
-  );
+  const registry = createTaskRegistry(tasks);
   for (const task of tasks) {
     validatedConfig.client.createFunction(
       {
@@ -76,12 +70,7 @@ export function createInngestJobQueue(
       payload: unknown,
       options?: EnqueueOptions,
     ): Promise<void> {
-      const task = registry.get(name);
-      if (task === undefined) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      const task = requireRegisteredTask(registry, name);
       if (options?.singletonKey !== undefined) {
         throw new ValidationError(
           "Inngest v4 cannot honor the JobQueue queued-or-active singletonKey contract",
@@ -99,14 +88,10 @@ export function createInngestJobQueue(
     },
 
     async work(name: string): Promise<WorkHandle> {
-      if (registry.has(name)) {
-        return {
-          async stop(): Promise<void> {},
-        };
-      }
-      throw new NotFoundError(`No task registered for "${name}"`, {
-        task: name,
-      });
+      requireRegisteredTask(registry, name);
+      return {
+        async stop(): Promise<void> {},
+      };
     },
   };
 }
