@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-10
+updated: 2026-08-12
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,35 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-08-12 — mirror pre-push gate merged; full fleet ride incl. the license leg
+
+`886e1e7c` (#431 — the mirror-sync pre-push verification gate + the internal-citation strip) touched
+`packages/**`, so the path filter fired an auto ride, and the operator then approved a dispatch to
+carry the **dispatch-only license leg**. Both runs deployed the same sha; every service is on
+`886e1e7c`.
+
+- **Auto**, run 31632456581: caisson-admin 19:25:39Z → caisson-demos 19:26:45Z → caisson-site
+  19:28:41Z, all SUCCESS. `services/license` skipped as designed (dispatch-only).
+- **Dispatch**, run 31632874787 (`require_armed=true`): caisson-admin 19:32:32Z →
+  **caisson-license 19:34:52Z** → caisson-demos 19:35:16Z → caisson-site 19:37:16Z, all SUCCESS.
+  Because CI never commits receipts, the dispatch's fresh checkout saw no receipt for this sha and
+  so redeployed admin/demos/site too — a second restart of the same bytes, recorded honestly as its
+  own receipt row rather than suppressed. `workflow_dispatch` has no service selector, so a
+  license-only ride is not expressible today.
+
+Probed live after both rides, all 200: `caisson.sh`, `www`, `/docs`, `/demos/healthz`,
+`/demos/embed/audit-worm`, `admin`, `license/health`, `docs-api/health`, `registry/index.json`.
+(`/demos` and `/demos/` are 404 by design — apps/demos has no index route at its basePath root.)
+
+**Runner egress to GitHub's release CDN was degraded for roughly 20 minutes** and reddened three
+separate workflows on artifact download, never on repo content: `deterministic` twice (503 on the
+trivy tarball), `zizmor` once (six retried 503s), and this deploy's `install Railway CLI` once
+(ECONNRESET from `@railway/cli`'s postinstall). GitHub reported all systems operational and every
+URL served 200 from the operator box throughout, so it was runner-side. #431 hardened the four
+security-scan downloads with `--retry 5 --retry-delay 3 --retry-all-errors` (integrity unchanged —
+`sha256sum -c` still verifies each artifact); the Railway CLI install is an npm postinstall and has
+no equivalent retry, which is the remaining exposure in this class.
 
 ## 2026-08-10 — Renovate close: two auto rides prove the root-dep path filter
 

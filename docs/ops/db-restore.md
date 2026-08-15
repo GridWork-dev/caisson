@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-10
+updated: 2026-08-12
 status: live
 grounds:
   - docs/deploy/STATE.md

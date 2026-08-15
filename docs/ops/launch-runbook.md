@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-10
+updated: 2026-08-12
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -89,7 +89,10 @@ outside this presence inventory.
 
 `SESSION_TOKEN_HMAC_KEY` remains a separate **fail-hard** `caisson-site` prerequisite. Its absence
 throws during auth runtime construction instead of degrading silently
-(`apps/site/lib/auth-server.ts:151,265`; armed receipt: `docs/deploy/STATE.md:281`).
+(`apps/site/lib/auth-server.ts:151,265`; armed receipt: the **2026-07-19 (late PM) — Full fleet
+redeploy at `655bb26a`: hash-at-rest live** entry in [deploy state](../deploy/STATE.md)). Cited by
+heading, not line: `STATE.md` is a reverse-chronological prepend-only log, so every new entry shifts
+every line number below it — this reference had already drifted onto a table separator.
 
 #### BLOCKING preflight — `tenant_ai_credential` must be empty before Azure KMS is armed
 
