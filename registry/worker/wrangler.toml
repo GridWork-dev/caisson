@@ -21,16 +21,16 @@ compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
 # Custom domain (ADR-0223 Fork 2.1): registry.caisson.sh fronts the Worker so a buyer's generated
-# .npmrc points at a stable host (`@caisson:registry=https://registry.caisson.sh`). INERT UNTIL
-# DEPLOY — the DNS record + zone binding are provisioned operator-side (Task 1/5); this entry only
-# tells wrangler to attach the custom domain at deploy time. Committing it opens no surface.
+# .npmrc points at a stable host (`@caisson:registry=https://registry.caisson.sh`). LIVE — the DNS
+# record and zone binding are provisioned and the host answers; this entry is what tells wrangler to
+# keep the custom domain attached on each deploy.
 routes = [
   { pattern = "registry.caisson.sh", custom_domain = true }
 ]
 
 # R2 tarball store (ADR-0223 H1/G1, Fork 2.1): tarball bytes served same-origin (A1) via env.TARBALLS.
-# INERT UNTIL DEPLOY — the bucket `caisson-registry-tarballs` is created operator-side (Task 1) and
-# populated by CI (Task 3, gated on CAISSON_PUBLISH_DRY_RUN=false); the binding is dormant until then.
+# LIVE — the bucket `caisson-registry-tarballs` exists (created 2026-07-03), the binding is attached
+# to the deployed Worker, and CI populates it.
 [[r2_buckets]]
 binding = "TARBALLS"
 bucket_name = "caisson-registry-tarballs"
@@ -52,7 +52,7 @@ bucket_name = "caisson-registry-revocations"
 # they ever collide with another Worker's binding on this account. Budgets are operator-tunable by
 # editing `limit`/`period` here and redeploying — rate-limit.ts (registry/worker/rate-limit.ts) reads
 # them from these bindings at runtime, it does not hardcode numbers. Fail-open on a missing/erroring
-# binding (see rate-limit.ts) — INERT UNTIL DEPLOY, same posture as the R2 bindings above.
+# binding (see rate-limit.ts). LIVE — all three namespaces are attached to the deployed Worker.
 [[ratelimits]]
 name = "RATE_LIMIT_CATALOG"
 namespace_id = "5501"
@@ -91,14 +91,16 @@ head_sampling_rate = 1
 # wrangler syntax below is the documented form
 # (developers.cloudflare.com/workers/observability/exporting-opentelemetry-data).
 #
-# INERT UNTIL DEPLOY — committing these blocks does NOT open any surface:
-#   1. `destinations` names must match typed destinations REGISTERED IN THE CF DASHBOARD at deploy
-#      time (Workers Observability → Add destination → one Traces + one Logs, each pointing at the
-#      Grafana Cloud OTLP endpoint with its auth header). Until then there is nothing to export to.
-#   2. Export requires a Workers Paid subscription; the account is on the free plan pre-cutover.
-#   3. `deploy.sh`/`bunx wrangler deploy` is operator-gated + separate from SHIP.
-# The blocks keep wrangler parsing valid regardless; `persist` is left at its default (true) so the
-# existing CF-dashboard leg above is unchanged and Grafana Cloud gets a copy.
+# DEPLOYED BUT NOT YET EXPORTING. These blocks ARE live on the Worker (they read back off the
+# deployed script settings), so this is no longer "inert until deploy" — but nothing is reaching
+# Grafana Cloud, because the two names below resolve to nothing:
+#   `GET /accounts/<id>/workers/observability/destinations` returns `result: []` (measured
+#   2026-08-15). `destinations` names must match typed destinations REGISTERED IN THE CF DASHBOARD
+#   (Workers Observability → Add destination → one Traces + one Logs, each pointing at the Grafana
+#   Cloud OTLP endpoint with its auth header). Registering them is the one remaining operator act.
+# The blocks are harmless in this state — an unresolvable destination drops the export, it does not
+# fail the Worker — and `persist` is left at its default (true), so the CF-dashboard observability
+# leg above keeps working regardless and Grafana Cloud simply gets no copy yet.
 [observability.traces]
 enabled = true
 head_sampling_rate = 1
