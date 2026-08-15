@@ -4,7 +4,7 @@ status: live
 grounds:
   - package.json
   - tooling/standards-gate/src/checks.ts
-  - tooling/scripts/dependency-graph-guard.ts
+  - tooling/standards-gate/src/dependency-graph-guard.ts
   - .github/workflows/ci.yml
   - infra/terraform/access.tf
   - docs/state/package-catalog.md

@@ -76,7 +76,7 @@ jobs:
         run: bunx eslint .
       # Layer 3 — real module graph: dynamic/transitive provider reach + base↔edition direction.
       - name: dependency-cruiser graph boundaries (ADR-0022)
-        run: bun tooling/scripts/dependency-graph-guard.ts
+        run: bun tooling/standards-gate/src/dependency-graph-guard.ts
       # Changeset-presence gate (ADR-0021/0111). Now that the packages are PUBLIC (0.1.0, ADR-0111),
       # every PR that changes a publishable package must carry a changeset, or the release/version
       # history drifts from the published versions. `changeset status --since=origin/main` exits 1
