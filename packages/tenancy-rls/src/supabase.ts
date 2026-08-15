@@ -1,6 +1,5 @@
 // Supabase `Transactor` driver for the `withTenant` seam (rls.ts:21,31) — ADR-0174. A thin
-// node-postgres `Pool` wiring, shaped the same as `apps/site/lib/db.ts`'s `nodePgTransactor` (the
-// repo's other production node-postgres `Transactor`).
+// `Pool` wiring over the canonical node-postgres adapter (`createPgTransactor`, node-pg.ts).
 //
 // BINDING CONSTRAINT: `withTenant` does `SET LOCAL ROLE app` + `set_config(..., true)` and needs
 // BOTH to hold for the life of ONE real transaction on ONE real TCP connection. Supabase's
@@ -12,9 +11,10 @@
 // ONLY a session-mode pooler or a direct connection (both default to port 5432) and fails closed
 // at CONSTRUCTION — never at the first silently-unscoped query — when the connection string is
 // shaped like the transaction-mode pooler.
-import { Pool, type PoolClient } from "pg";
+import { Pool } from "pg";
 import { ConfigError } from "@caisson/kernel";
-import type { TenantExecutor, Transactor } from "./rls.ts";
+import { createPgTransactor } from "./node-pg.ts";
+import type { Transactor } from "./rls.ts";
 
 /** Supavisor's transaction-mode pooler defaults to this port; `SET LOCAL` cannot survive it. */
 const TRANSACTION_MODE_POOLER_PORT = "6543";
@@ -53,45 +53,6 @@ function assertSessionModeConnection(connectionString: string): void {
   }
 }
 
-function nodePgExecutor(client: PoolClient): TenantExecutor {
-  return {
-    // `pg`'s `query<T>` constrains `T extends QueryResultRow`; `TenantExecutor.query`'s `T` has
-    // no such constraint (PGlite, the other driver behind this same port, carries no bound
-    // either) — call untyped and cast the rows rather than narrow the shared port to a
-    // `pg`-specific generic every other driver would then have to satisfy too.
-    async query<T = Record<string, unknown>>(sql: string, params?: unknown[]) {
-      const res = await client.query(sql, params);
-      return { rows: res.rows as T[] };
-    },
-    async exec(sql: string) {
-      await client.query(sql);
-    },
-  };
-}
-
-function nodePgTransactor(pool: Pool): Transactor {
-  return {
-    async transaction<T>(fn: (tx: TenantExecutor) => Promise<T>): Promise<T> {
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-        const result = await fn(nodePgExecutor(client));
-        await client.query("COMMIT");
-        return result;
-      } catch (err) {
-        try {
-          await client.query("ROLLBACK");
-        } catch {
-          // Best-effort — the connection may already be unusable; the original error wins below.
-        }
-        throw err;
-      } finally {
-        client.release();
-      }
-    },
-  };
-}
-
 /**
  * The Supabase `Transactor` driver. Fails closed at construction (`ConfigError`) when
  * `connectionString` is empty, unparseable, or shaped like Supabase's transaction-mode pooler —
@@ -116,5 +77,5 @@ export function createSupabaseTransactor(
       `[tenancy-rls] idle pooled connection error (survived): ${err.message}\n`,
     );
   });
-  return nodePgTransactor(pool);
+  return createPgTransactor(pool);
 }

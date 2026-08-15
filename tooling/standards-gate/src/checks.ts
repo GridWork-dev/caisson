@@ -46,7 +46,7 @@ import type { buildTenantPolicySql as BuildTenantPolicySqlFn } from "@caisson/te
  * index/ledger machinery). This check runs in the pre-install fs-only pass, so it cannot value-import the
  * workspace constant; keep this set in sync with the shipped edition + bundle meta-packages.
  */
-const EDITION_NAMES = new Set([
+export const EDITION_NAMES = new Set([
   // Legacy edition names (historical kind:"edition" entries stay valid forever, ADR-0257).
   "@caisson/compliance",
   "@caisson/ai-kit",

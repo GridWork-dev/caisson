@@ -144,7 +144,7 @@ const okIssue: AdminMutationDeps["issue"] = async (req) => ({
   licenseId: `lic-${req.major}`,
 });
 
-// A minimal indexed base module entry (mirrors resolve-entitlements.integration.test.ts's `entry`).
+// A minimal indexed base module entry.
 // Untyped (flows into `loadRegistryIndex`'s Zod `.parse`, which takes `unknown` and fills every
 // defaulted field) — no `as RegistryIndex[...]` cast fighting the assertion's overlap check.
 function entry(id: string) {

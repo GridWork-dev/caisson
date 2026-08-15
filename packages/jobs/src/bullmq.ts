@@ -29,7 +29,8 @@
 // the Redis connections). Each `work()` handle's `stop()` closes only its own Worker.
 import { Queue, Worker } from "bullmq";
 import type { ConnectionOptions, Job, JobType } from "bullmq";
-import { ConfigError, NotFoundError, parseStrict } from "@caisson/kernel";
+import { ConfigError, parseStrict } from "@caisson/kernel";
+import { createTaskRegistry, requireRegisteredTask } from "./task-registry.ts";
 import { deriveIdempotentJobId } from "./pgboss.ts";
 import type {
   EnqueueOptions,
@@ -155,9 +156,7 @@ export function createBullMqJobQueue(
   tasks: readonly TaskDefinition<unknown>[],
   config: BullMqJobQueueConfig,
 ): JobQueue & JobConsumer & JobLedger & BullMqSchedule & BullMqShutdown {
-  const registry = new Map<string, TaskDefinition<unknown>>(
-    tasks.map((task) => [task.name, task]),
-  );
+  const registry = createTaskRegistry(tasks);
 
   if (config.connection === undefined && config.queueFactory === undefined) {
     throw new ConfigError(
@@ -213,12 +212,7 @@ export function createBullMqJobQueue(
       payload: unknown,
       options?: EnqueueOptions,
     ): Promise<void> {
-      const task = registry.get(name);
-      if (task === undefined) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      const task = requireRegisteredTask(registry, name);
       const validated = parseStrict(task.schema, payload);
 
       const addOptions: BullMqAddOptions = {};
@@ -237,12 +231,7 @@ export function createBullMqJobQueue(
     },
 
     async work(name: string): Promise<WorkHandle> {
-      const task = registry.get(name);
-      if (task === undefined) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      const task = requireRegisteredTask(registry, name);
       const worker = getWorkerFactory()(name, async (job) => {
         await task.handler(parseStrict(task.schema, job.data));
       });
@@ -274,12 +263,7 @@ export function createBullMqJobQueue(
       data?: object | null,
       options?: { tz?: string },
     ): Promise<void> {
-      const task = registry.get(name);
-      if (task === undefined) {
-        throw new NotFoundError(`No task registered for "${name}"`, {
-          task: name,
-        });
-      }
+      requireRegisteredTask(registry, name);
       const repeat =
         options?.tz !== undefined
           ? { pattern: cron, tz: options.tz }

@@ -7,7 +7,6 @@ import {
   cartSubtotal,
   cartUpgrade,
   type CartItem,
-  isInCart,
   parseStoredCart,
   pruneCart,
   prunedLines,
@@ -65,11 +64,6 @@ describe("cart item operations", () => {
 
   test("cartSubtotal of an empty cart is 0", () => {
     expect(cartSubtotal([])).toBe(0);
-  });
-
-  test("isInCart reflects membership", () => {
-    expect(isInCart([compliance], "compliance")).toBe(true);
-    expect(isInCart([compliance], "bundle")).toBe(false);
   });
 });
 

@@ -126,9 +126,8 @@ export const RESERVED_MODULE_ENTITLEMENT_VERSIONS: ReadonlyMap<string, string> =
  * that graduates the moment its package is indexed), an id here has no package to graduate to and
  * stays fail-soft-to-nothing PERMANENTLY. Never throws (the same TM-E carve-out rationale): a
  * stray non-software purchased id must never fail-closed-brick the rest of a buyer's software
- * entitlement expansion — the risk `resolveAccountEntitlements`/the `/issue` validation/the
- * registry Worker all share this one function, so one bad id here would 500 every OTHER
- * entitlement the account holds too.
+ * entitlement expansion — the `/issue` validation and the registry Worker share this one
+ * function, so one bad id here would 500 every OTHER entitlement the account holds too.
  *
  * Currently: `priority-support` (ADR-0278/0288) — a subscription that grants a Discord role +
  * a response-time support lane (`services/support-bot`), never registry/module access.
@@ -231,7 +230,7 @@ function addNamedEntitlementClosure(
       // FAIL SOFT, per edge (release audit v2026.07.27.1, F1). This used to throw, which
       // rejected the buyer's ENTIRE purchased-id set over one unresolvable compatibility edge —
       // an under-grant outage for a paying customer, since every caller (the Worker's gate, the
-      // license `/issue` path, `resolveAccountEntitlements`) shares this one function and would
+      // license `/issue` path) shares this one function and would
       // fall back to the free base floor.
       //
       // The reserved-id branch above used to be the safety net, but it is a TEMPORARY publishing
@@ -478,7 +477,7 @@ export function expandEntitlements(
  * Convenience over `expandEntitlements` for callers that hold the index on DISK (e.g. CLI / build
  * tooling): load the built registry index through the single sanctioned read path
  * (`loadRegistryIndexFromFile`, ADR-0047), then expand. NOTE: the live entitlement paths do NOT route
- * through this — the server resolver (`resolveAccountEntitlements`) and the registry Worker both
+ * through this — the license service's `/issue` path and the registry Worker both
  * expand against an in-memory `RegistryIndex` via `expandEntitlements`. Exported as part of the
  * @caisson/registry-schema public surface (ADR-0097).
  */

@@ -28,55 +28,17 @@ import { PGlite } from "@electric-sql/pglite";
 import { applyAll } from "@caisson/platform-migrations";
 import { pgliteMigrationApplier } from "@caisson/platform-migrations/pglite";
 import {
+  createPgTransactor,
   type TenantExecutor,
   type Transactor,
   withTenant,
 } from "@caisson/tenancy-rls";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool, type PoolClient } from "pg";
+import { Pool } from "pg";
 import { SITE_LOCAL_MIGRATIONS } from "./site-migrations.ts";
 
 export type { TenantExecutor, Transactor };
 export { withTenant };
-
-function nodePgExecutor(client: PoolClient): TenantExecutor {
-  return {
-    // `pg`'s `query<T>` constrains `T extends QueryResultRow`; `TenantExecutor.query`'s `T` has
-    // no such constraint (it's satisfied identically by PGlite, which carries no such generic
-    // bound either) — call untyped and cast the rows, rather than narrow the shared interface to
-    // a `pg`-specific constraint every other driver (PGlite) would then have to satisfy too.
-    async query<T = Record<string, unknown>>(sql: string, params?: unknown[]) {
-      const res = await client.query(sql, params);
-      return { rows: res.rows as T[] };
-    },
-    async exec(sql: string) {
-      return client.query(sql);
-    },
-  };
-}
-
-function nodePgTransactor(pool: Pool): Transactor {
-  return {
-    async transaction<T>(fn: (tx: TenantExecutor) => Promise<T>): Promise<T> {
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-        const result = await fn(nodePgExecutor(client));
-        await client.query("COMMIT");
-        return result;
-      } catch (err) {
-        try {
-          await client.query("ROLLBACK");
-        } catch {
-          // Best-effort — the connection may already be unusable; the original error wins below.
-        }
-        throw err;
-      } finally {
-        client.release();
-      }
-    },
-  };
-}
 
 // HMR-safe module singletons (Next dev re-evaluates this module on every edit; stashing on
 // `globalThis` keeps one pool / one in-memory PGlite across reloads instead of leaking a fresh
@@ -117,7 +79,7 @@ export async function getDb(): Promise<Transactor> {
     // below, kept as the forward seam for a future schema-based read. Constructing it eagerly
     // also fails fast on a malformed `DATABASE_URL` shape at boot rather than at first query.
     drizzle(pool);
-    globalDb.caissonTransactor = nodePgTransactor(pool);
+    globalDb.caissonTransactor = createPgTransactor(pool);
     return globalDb.caissonTransactor;
   }
   process.stderr.write(

@@ -23,8 +23,12 @@ import {
   ADMIN_MUTATION_PROVISION_SQL,
 } from "@caisson/service-license";
 import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
-import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
-import { Pool, type PoolClient } from "pg";
+import {
+  createPgTransactor,
+  type TenantExecutor,
+  type Transactor,
+} from "@caisson/tenancy-rls";
+import { Pool } from "pg";
 
 import {
   ADMIN_ROLE_BOOTSTRAP_SQL,
@@ -147,41 +151,6 @@ const ADMIN_READ_TABLES = [
   "grant_consumption",
 ] as const;
 
-function nodePgExecutor(client: PoolClient): TenantExecutor {
-  return {
-    async query<T = Record<string, unknown>>(sql: string, params?: unknown[]) {
-      const res = await client.query(sql, params);
-      return { rows: res.rows as T[] };
-    },
-    async exec(sql: string) {
-      return client.query(sql);
-    },
-  };
-}
-
-function nodePgTransactor(pool: Pool): Transactor {
-  return {
-    async transaction<T>(fn: (tx: TenantExecutor) => Promise<T>): Promise<T> {
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-        const result = await fn(nodePgExecutor(client));
-        await client.query("COMMIT");
-        return result;
-      } catch (err) {
-        try {
-          await client.query("ROLLBACK");
-        } catch {
-          // Best-effort — the connection may already be unusable; the original error wins.
-        }
-        throw err;
-      } finally {
-        client.release();
-      }
-    },
-  };
-}
-
 interface AdminDbGlobal {
   caissonAdminTransactor?: Transactor;
   caissonAdminPglite?: PGlite;
@@ -235,7 +204,7 @@ export async function getAdminDb(): Promise<Transactor> {
         `[apps/admin] idle pg client error: ${err.message}\n`,
       );
     });
-    globalDb.caissonAdminTransactor = nodePgTransactor(pool);
+    globalDb.caissonAdminTransactor = createPgTransactor(pool);
     return globalDb.caissonAdminTransactor;
   }
   process.stderr.write(

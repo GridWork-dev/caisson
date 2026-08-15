@@ -1,10 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  classifyEvent,
-  handleRequest,
-  secretsMatch,
-  toDiscordEmbed,
-} from "./handler.ts";
+import { classifyEvent, handleRequest, toDiscordEmbed } from "./handler.ts";
 import type { Env, Fetcher, IncidentWebhookBody } from "./handler.ts";
 
 // The confirmed default `incident_change` webhook body (Better Stack docs, see handler.ts's
@@ -125,28 +120,19 @@ describe("toDiscordEmbed", () => {
   });
 });
 
-describe("secretsMatch", () => {
-  test("equal values match", () => {
-    expect(secretsMatch("s3cr3t", "s3cr3t")).toBe(true);
-  });
-
-  test("different values don't match", () => {
-    expect(secretsMatch("s3cr3t", "wrong")).toBe(false);
-  });
-
-  test("different-length values don't throw and don't match", () => {
-    expect(secretsMatch("short", "a-much-longer-value")).toBe(false);
-  });
-});
+// Timing-safe comparison behavior is canonically tested in packages/kernel/src/crypto.test.ts
+// (safeEqualVariable) — the route-level 401/200 tests below cover this Worker's use of it.
 
 describe("handleRequest", () => {
-  // BETTERSTACK_WEBHOOK_SECRET fails closed when unset (see the dedicated describe block below);
-  // every test in THIS block is exercising something else, so it opts out via the explicit
-  // local-dev override rather than re-proving the auth gate each time.
+  // Auth is mandatory (no unauthenticated mode); every test in this block is exercising
+  // something else, so it authenticates with a real local fixture secret + header.
+  const FIXTURE_SECRET = "test-fixture-secret";
+  const AUTH_HEADER = { "x-betterstack-secret": FIXTURE_SECRET };
   const okEnv: Env = {
     DISCORD_OPS_WEBHOOK_URL: "https://discord.com/api/webhooks/1/abc",
-    ALLOW_UNAUTHENTICATED: "1",
+    BETTERSTACK_WEBHOOK_SECRET: FIXTURE_SECRET,
   };
+  const authedPost = (body: unknown): Request => postRequest(body, AUTH_HEADER);
 
   test("rejects a non-POST method", async () => {
     const { fetcher } = fakeFetch(200);
@@ -162,6 +148,7 @@ describe("handleRequest", () => {
     const { fetcher } = fakeFetch(200);
     const req = new Request("https://adapter.example.com/", {
       method: "POST",
+      headers: AUTH_HEADER,
       body: "not json",
     });
     const res = await handleRequest(req, okEnv, fetcher);
@@ -171,7 +158,7 @@ describe("handleRequest", () => {
   test("rejects a payload that doesn't match the expected shape", async () => {
     const { fetcher } = fakeFetch(200);
     const res = await handleRequest(
-      postRequest({ hello: "world" }),
+      authedPost({ hello: "world" }),
       okEnv,
       fetcher,
     );
@@ -180,7 +167,7 @@ describe("handleRequest", () => {
 
   test("an unrecognized field inside attributes is ignored, not rejected (non-.strict())", async () => {
     const { fetcher, calls } = fakeFetch(200);
-    const res = await handleRequest(postRequest(INCIDENT_BODY), okEnv, fetcher);
+    const res = await handleRequest(authedPost(INCIDENT_BODY), okEnv, fetcher);
     expect(res.status).toBe(200);
     expect(calls).toHaveLength(1);
   });
@@ -188,8 +175,8 @@ describe("handleRequest", () => {
   test("500 when DISCORD_OPS_WEBHOOK_URL is not configured — no delivery attempted", async () => {
     const { fetcher, calls } = fakeFetch(200);
     const res = await handleRequest(
-      postRequest(INCIDENT_BODY),
-      { ALLOW_UNAUTHENTICATED: "1" },
+      authedPost(INCIDENT_BODY),
+      { BETTERSTACK_WEBHOOK_SECRET: FIXTURE_SECRET },
       fetcher,
     );
     expect(res.status).toBe(500);
@@ -198,7 +185,7 @@ describe("handleRequest", () => {
 
   test("502 when the Discord POST fails (non-2xx)", async () => {
     const { fetcher } = fakeFetch(500);
-    const res = await handleRequest(postRequest(INCIDENT_BODY), okEnv, fetcher);
+    const res = await handleRequest(authedPost(INCIDENT_BODY), okEnv, fetcher);
     expect(res.status).toBe(502);
   });
 
@@ -206,7 +193,7 @@ describe("handleRequest", () => {
     const throwingFetch = (() =>
       Promise.reject(new Error("ECONNREFUSED"))) as unknown as Fetcher;
     const res = await handleRequest(
-      postRequest(INCIDENT_BODY),
+      authedPost(INCIDENT_BODY),
       okEnv,
       throwingFetch,
     );
@@ -226,14 +213,14 @@ describe("handleRequest", () => {
         },
       },
     };
-    const res = await handleRequest(postRequest(overCap), okEnv, fetcher);
+    const res = await handleRequest(authedPost(overCap), okEnv, fetcher);
     expect(res.status).toBe(200);
     expect(calls).toHaveLength(1);
   });
 
   test("posts the reshaped embed body to the configured Discord webhook", async () => {
     const { fetcher, calls } = fakeFetch(200);
-    const res = await handleRequest(postRequest(INCIDENT_BODY), okEnv, fetcher);
+    const res = await handleRequest(authedPost(INCIDENT_BODY), okEnv, fetcher);
     expect(res.status).toBe(200);
     expect(calls[0]?.url).toBe(okEnv.DISCORD_OPS_WEBHOOK_URL);
     const body = JSON.parse(calls[0]?.body ?? "{}") as {
@@ -243,15 +230,10 @@ describe("handleRequest", () => {
   });
 
   describe("BETTERSTACK_WEBHOOK_SECRET gating", () => {
-    const secretEnv: Env = {
-      ...okEnv,
-      BETTERSTACK_WEBHOOK_SECRET: "shh-its-a-secret",
-    };
-
-    test("no secret configured, no dev override → 401 (fail closed)", async () => {
+    test("no secret configured → 401 (fail closed, no unauthenticated mode)", async () => {
       const { fetcher, calls } = fakeFetch(200);
       const res = await handleRequest(
-        postRequest(INCIDENT_BODY),
+        authedPost(INCIDENT_BODY),
         { DISCORD_OPS_WEBHOOK_URL: "https://discord.com/api/webhooks/1/abc" },
         fetcher,
       );
@@ -259,21 +241,11 @@ describe("handleRequest", () => {
       expect(calls).toHaveLength(0);
     });
 
-    test("no secret configured, ALLOW_UNAUTHENTICATED set → 200 (explicit dev opt-out)", async () => {
-      const { fetcher } = fakeFetch(200);
-      const res = await handleRequest(
-        postRequest(INCIDENT_BODY),
-        okEnv, // no BETTERSTACK_WEBHOOK_SECRET, ALLOW_UNAUTHENTICATED: "1"
-        fetcher,
-      );
-      expect(res.status).toBe(200);
-    });
-
     test("secret configured, header missing → 401, no delivery attempted", async () => {
       const { fetcher, calls } = fakeFetch(200);
       const res = await handleRequest(
         postRequest(INCIDENT_BODY),
-        secretEnv,
+        okEnv,
         fetcher,
       );
       expect(res.status).toBe(401);
@@ -284,7 +256,7 @@ describe("handleRequest", () => {
       const { fetcher } = fakeFetch(200);
       const res = await handleRequest(
         postRequest(INCIDENT_BODY, { "x-betterstack-secret": "nope" }),
-        secretEnv,
+        okEnv,
         fetcher,
       );
       expect(res.status).toBe(401);
@@ -293,10 +265,8 @@ describe("handleRequest", () => {
     test("secret configured, header matches → 200, delivered", async () => {
       const { fetcher, calls } = fakeFetch(200);
       const res = await handleRequest(
-        postRequest(INCIDENT_BODY, {
-          "x-betterstack-secret": "shh-its-a-secret",
-        }),
-        secretEnv,
+        authedPost(INCIDENT_BODY),
+        okEnv,
         fetcher,
       );
       expect(res.status).toBe(200);

@@ -24,7 +24,6 @@ function pkg(over: Partial<Pkg> & Pick<Pkg, "name" | "license">): Pkg {
     dir: `/repo/packages/${over.name.replace("@caisson/", "")}`,
     version: "0.0.0",
     workspaceDeps: [],
-    externalDeps: [],
     manifestPath: null,
     hasCode: true,
     ...over,
@@ -62,7 +61,6 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
     const consumer = pkg({
       name: "@caisson/x",
       license: APACHE,
-      externalDeps: ["foo"],
     });
     expect(checkExternalAgpl([consumer], root)).toEqual([]);
   });
@@ -77,8 +75,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
     );
     const consumer = pkg({
       name: "@caisson/x",
-      license: APACHE,
-      externalDeps: ["foo"], // bad-lib is a dep of foo, never declared directly
+      license: APACHE, // bad-lib is a dep of foo, never declared directly
     });
     const findings = checkExternalAgpl([consumer], root);
     expect(findings).toHaveLength(1);
@@ -93,7 +90,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
   test("legacy object-form license ({ type: ... }) is parsed and flagged", () => {
     writePackageJson(root, "bad-obj", "bad-obj", { type: "AGPL-3.0" });
     const findings = checkExternalAgpl(
-      [pkg({ name: "@caisson/x", license: APACHE, externalDeps: ["bad-obj"] })],
+      [pkg({ name: "@caisson/x", license: APACHE })],
       root,
     );
     expect(findings).toHaveLength(1);
@@ -112,7 +109,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
       }),
     );
     const findings = checkExternalAgpl(
-      [pkg({ name: "@caisson/x", license: APACHE, externalDeps: ["bad-arr"] })],
+      [pkg({ name: "@caisson/x", license: APACHE })],
       root,
     );
     expect(findings).toHaveLength(1);
@@ -126,7 +123,6 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
         pkg({
           name: "@caisson/x",
           license: APACHE,
-          externalDeps: ["@scope/bad"],
         }),
       ],
       root,
@@ -142,7 +138,6 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
         pkg({
           name: "@caisson/x",
           license: APACHE,
-          externalDeps: ["mystery"],
         }),
       ],
       root,
@@ -162,7 +157,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
       "dir",
     );
     const findings = checkExternalAgpl(
-      [pkg({ name: "@caisson/x", license: APACHE, externalDeps: ["foo"] })],
+      [pkg({ name: "@caisson/x", license: APACHE })],
       root,
     );
     expect(findings).toEqual([]);

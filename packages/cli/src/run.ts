@@ -30,7 +30,11 @@ import { z } from "zod";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { ConfigError, ValidationError, parseStrict } from "@caisson/kernel";
-import { withTenant, type TenantExecutor } from "@caisson/tenancy-rls";
+import {
+  createPgTransactor,
+  withTenant,
+  type TenantExecutor,
+} from "@caisson/tenancy-rls";
 import { createPgBossJobQueue, type PgBossJobQueueConfig } from "@caisson/jobs";
 import { buyerMcpTransport } from "./doctor.ts";
 
@@ -378,43 +382,6 @@ function resolveConfig(): z.infer<typeof EnvConfig> {
   });
 }
 
-/** A `Transactor` over a Pool THIS function owns (so `close()` can cleanly `.end()` it) — the same
- *  shape as tenancy-rls's own `nodePgTransactor`, kept local because that helper isn't exported
- *  standalone (only wrapped inside `createSupabaseTransactor`, which manages its own internal pool
- *  with no way to close it — wrong for a short-lived CLI process that must exit promptly). */
-function poolTransactor(pool: Pool): {
-  transaction<T>(fn: (tx: TenantExecutor) => Promise<T>): Promise<T>;
-} {
-  return {
-    async transaction<T>(fn: (tx: TenantExecutor) => Promise<T>): Promise<T> {
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-        const result = await fn({
-          query: async (sql, params) => {
-            const res = await client.query(sql, params);
-            return { rows: res.rows };
-          },
-          exec: async (sql) => {
-            await client.query(sql);
-          },
-        });
-        await client.query("COMMIT");
-        return result;
-      } catch (err) {
-        try {
-          await client.query("ROLLBACK");
-        } catch {
-          // Best-effort — the connection may already be unusable; the original error wins.
-        }
-        throw err;
-      } finally {
-        client.release();
-      }
-    },
-  };
-}
-
 function buildDeps(config: z.infer<typeof EnvConfig>): {
   deps: RunServiceDeps;
   close: () => Promise<void>;
@@ -425,7 +392,9 @@ function buildDeps(config: z.infer<typeof EnvConfig>): {
       `caisson run: idle pooled connection error (survived): ${err.message}\n`,
     );
   });
-  const tx = poolTransactor(pool);
+  // The Pool stays owned HERE (so `close()` can cleanly `.end()` it — a short-lived CLI process
+  // must exit promptly); only the transaction adapter is the shared tenancy-rls one.
+  const tx = createPgTransactor(pool);
   const jobsConfig: PgBossJobQueueConfig = {
     connectionString: config.databaseUrl,
   };

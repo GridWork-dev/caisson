@@ -24,6 +24,11 @@
       "types": "./dist/node.d.ts",
       "default": "./dist/node.js"
     },
+    "./crypto": {
+      "bun": "./src/crypto.ts",
+      "types": "./dist/crypto.d.ts",
+      "default": "./dist/crypto.js"
+    },
     "./fetch": {
       "bun": "./src/fetch.ts",
       "types": "./dist/fetch.d.ts",

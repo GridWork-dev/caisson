@@ -17,10 +17,6 @@ function paddleApiBase(env: string | undefined): string {
     : "https://sandbox-api.paddle.com";
 }
 
-export function isPaddleCancelConfigured(): boolean {
-  return (process.env.PADDLE_API_KEY?.length ?? 0) > 0;
-}
-
 export type CancelResult =
   | { ok: true; status: string; effectiveAt: string | null }
   | { ok: false; reason: string };

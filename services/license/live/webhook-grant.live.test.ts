@@ -18,13 +18,9 @@
 // proof tenant + a per-run txn id so concurrent runs never collide on the ledger idempotency key.
 import { afterAll, describe, expect, test } from "bun:test";
 import { createHmac, randomUUID } from "node:crypto";
-import { Pool, type PoolClient } from "pg";
+import { Pool } from "pg";
 import { fetchWithTimeout } from "@caisson/kernel";
-import {
-  type TenantExecutor,
-  type Transactor,
-  withTenant,
-} from "@caisson/tenancy-rls";
+import { createPgTransactor, withTenant } from "@caisson/tenancy-rls";
 
 const WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET ?? "";
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
@@ -48,41 +44,10 @@ const PROOF_ACCOUNT_ID = "00000000-0000-4000-8000-00000000c0de";
 const RUN = randomUUID();
 const PAYMENT_ID = `txn_proof_${RUN}`;
 
-// A ~15-line node-postgres Pool→Transactor twin of services/license/src/deploy.ts's INLINED factory
-// (that one is module-private under import.meta.main). ponytail: duplicated in one test rather than
-// exported from a production entrypoint just for a live proof — the security-critical SET LOCAL ROLE
-// stays inside the shared withTenant, so the copies can only diverge on transaction plumbing.
-function nodePgTransactor(pool: Pool): Transactor {
-  const executor = (client: PoolClient): TenantExecutor => ({
-    async query<T = Record<string, unknown>>(sql: string, params?: unknown[]) {
-      const res = await client.query(sql, params);
-      return { rows: res.rows as T[] };
-    },
-    async exec(sql: string) {
-      return client.query(sql);
-    },
-  });
-  return {
-    async transaction<T>(fn: (tx: TenantExecutor) => Promise<T>): Promise<T> {
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-        const result = await fn(executor(client));
-        await client.query("COMMIT");
-        return result;
-      } catch (err) {
-        await client.query("ROLLBACK").catch(() => {});
-        throw err;
-      } finally {
-        client.release();
-      }
-    },
-  };
-}
-
 // Only build the pool when creds are present — the credential-less skip run has zero side effects.
+// The Pool→Transactor adapter is tenancy-rls's canonical `createPgTransactor` (C05).
 const pool = HAVE_CREDS ? new Pool({ connectionString: DATABASE_URL }) : null;
-const db = pool ? nodePgTransactor(pool) : null;
+const db = pool ? createPgTransactor(pool) : null;
 
 /** A minimal but valid one-time `transaction.completed` for the proof account + proof price. */
 function proofPayload(): string {

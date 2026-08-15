@@ -7,11 +7,11 @@ import {
 } from "@caisson/pricebook";
 
 import {
-  buildStackSummary,
   BUNDLE_IDS,
   type BundleId,
   BUNDLE_PRICES,
   bundlePriceById,
+  everythingSavings,
   formatPrice,
   formatUsd,
   MODULE_PRICES,
@@ -25,6 +25,28 @@ import {
   prioritySupportResponseTimeCopy,
   renewalAmount,
 } from "./pricing";
+
+describe("moduleCatalogSubtotal / everythingSavings (live homepage money copy)", () => {
+  // These two render committed prices on the homepage hero and the preview dialog
+  // ("save $X vs $Y"). They lost their only coverage when the /build configurator tests
+  // were deleted; these pins keep a MODULE_PRICES edit from shipping wrong savings copy.
+  test("subtotal is the integer sum of the whole catalog and sits above the Everything price", () => {
+    const subtotal = moduleCatalogSubtotal();
+    expect(Number.isInteger(subtotal)).toBe(true);
+    expect(subtotal).toBe(MODULE_PRICES.reduce((sum, m) => sum + m.amount, 0));
+    const everything = bundlePriceById("everything");
+    expect(everything?.amount).not.toBeNull();
+    expect(subtotal).toBeGreaterThan(everything?.amount ?? Infinity);
+  });
+
+  test("everythingSavings is exactly subtotal minus the committed Everything price", () => {
+    const everything = bundlePriceById("everything");
+    expect(everythingSavings()).toBe(
+      moduleCatalogSubtotal() - (everything?.amount ?? Number.NaN),
+    );
+    expect(everythingSavings()).toBeGreaterThan(0);
+  });
+});
 
 describe("MODULE_PRICES", () => {
   test("covers exactly the sellable SKU set (ADR-0246 F1b) at the pricebook SKU_RETAIL price", () => {
@@ -223,83 +245,6 @@ describe("prioritySupportResponseTimeCopy (ADR-0278 response-time copy surface)"
     const copy = prioritySupportResponseTimeCopy();
     expect(copy.toLowerCase()).not.toContain("sla");
     expect(copy).toBe("Response-time commitment: unset.");
-  });
-});
-
-describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
-  test("a full single-bundle member selection nudges to that bundle (below-sum arithmetic)", () => {
-    // The six ai-production members sum to $994; the bundle is $739 — the nudge is the honest
-    // arithmetic, saving $255.
-    const ids = modulesByBundle("ai-production").map((m) => m.id);
-    const s = buildStackSummary(ids);
-    expect(s.total).toBe(994);
-    expect(s.upgrade?.target).toBe("ai-production");
-    expect(s.upgrade?.price).toBe(739);
-    expect(s.upgrade?.saves).toBe(994 - 739);
-  });
-
-  test("the compliance member set nudges to the compliance bundle, never Everything", () => {
-    // Eleven compliance members sum to $2,319 vs the $1,649 bundle (saves $670); Everything at
-    // $2,259 is dearer than the $1,649 persona bundle, so the persona bundle wins.
-    const ids = modulesByBundle("compliance").map((m) => m.id);
-    const s = buildStackSummary(ids);
-    expect(s.total).toBe(2319);
-    expect(s.upgrade?.target).toBe("compliance");
-    expect(s.upgrade?.saves).toBe(2319 - 1649);
-  });
-
-  test("no offer when a la carte is already the cheapest path", () => {
-    // Three ai-production members: 199 + 149 + 99 = 447 < the $739 bundle — cheaper a la carte.
-    const s = buildStackSummary(["ai-meter", "guardrails", "prompt-registry"]);
-    expect(s.total).toBe(447);
-    expect(s.upgrade).toBeUndefined();
-  });
-
-  test("a cross-bundle selection below the Everything price gets no offer (coverage-honest)", () => {
-    // audit-worm (compliance) + agent-kernel (agentic-dev): no persona bundle covers both, and
-    // Everything costs more than the $348 selection — an offer would be a fabricated saving.
-    const s = buildStackSummary(["audit-worm", "agent-kernel"]);
-    expect(s.total).toBe(348);
-    expect(s.upgrade).toBeUndefined();
-  });
-
-  test("a standalone SKU is covered only by Everything", () => {
-    // org-controls belongs to no persona bundle; alone it is far below the Everything price.
-    const s = buildStackSummary(["org-controls"]);
-    expect(s.upgrade).toBeUndefined();
-  });
-
-  test("the whole catalog nudges to Everything (the explicit full-catalog rule)", () => {
-    const s = buildStackSummary(MODULE_PRICES.map((m) => m.id));
-    expect(s.total).toBe(moduleCatalogSubtotal());
-    expect(s.upgrade?.target).toBe("everything");
-    expect(s.upgrade?.price).toBe(2259);
-    expect(s.upgrade?.saves).toBe(moduleCatalogSubtotal() - 2259);
-  });
-
-  test("an owned covering bundle suppresses the nudge (never stack a second covering bundle)", () => {
-    // Everything covers any selection by construction; the ai-production bundle covers its own
-    // members — in both cases nudging again would be pure overpay on top of the owned bundle.
-    const ids = modulesByBundle("ai-production").map((m) => m.id);
-    expect(buildStackSummary(ids, ["everything"]).upgrade).toBeUndefined();
-    expect(buildStackSummary(ids, ["ai-production"]).upgrade).toBeUndefined();
-  });
-
-  test("an owned NON-covering bundle leaves the nudge intact", () => {
-    const ids = modulesByBundle("ai-production").map((m) => m.id);
-    const s = buildStackSummary(ids, ["local-first"]);
-    expect(s.upgrade?.target).toBe("ai-production");
-  });
-
-  test("empty and unknown ids are ignored", () => {
-    expect(buildStackSummary([]).total).toBe(0);
-    expect(buildStackSummary([]).upgrade).toBeUndefined();
-    expect(buildStackSummary(["not-a-real-module"]).moduleCount).toBe(0);
-  });
-
-  test("the running total is always an integer (money is never a float, ADR-0007)", () => {
-    const ids = modulesByBundle("ai-production").map((m) => m.id);
-    expect(Number.isInteger(buildStackSummary(ids).total)).toBe(true);
   });
 });
 
