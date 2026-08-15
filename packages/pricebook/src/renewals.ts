@@ -48,8 +48,8 @@ export function renewalYears(entry: RenewalBookEntry): number {
  * NOTHING and the webhook 500s for a retry).
  */
 export const RENEWAL_BOOK: Record<string, RenewalBookEntry> = {
-  // The five original bundle rows (the ADR-0246 catalog). ADR-0270 (edition-trace purge) REPOINTED the
-  // four archived-edition + bundle-sentinel rows from the dissolved edition ids to canonical bundle ids —
+  // The five original bundle rows (the ADR-0246 catalog). The edition-trace purge (ADR-0270) REPOINTED
+  // the four archived-edition + bundle-sentinel rows from the dissolved edition ids to canonical bundle ids —
   // so every row now stores the canonical id directly and resolveRenewal no longer normalizes.
   pri_01kwvz6kzh4h43aec3r5rs5je4: { renewsEntitlement: "compliance" },
   pri_01kwvz6m46s5tj4k2a09kcaf9s: { renewsEntitlement: "ai-production" },

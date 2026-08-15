@@ -20,6 +20,7 @@ import {
   rewriteProseMentions,
   sanitizeAdrCitations,
   sanitizeSourceComments,
+  stripAdrIds,
 } from "./export-public-mirror.ts";
 
 const MIRROR_ASSETS_DIR = join(import.meta.dir, "mirror-assets");
@@ -347,5 +348,108 @@ describe("MIRROR_ASSET_FILES", () => {
     expect(prettierIgnore).toContain(
       "packages/ds-manifest/src/base-manifest.json",
     );
+  });
+});
+
+describe("stripAdrIds", () => {
+  // The safety property this function exists to hold. An earlier draft ran a document-wide
+  // `/\(\s*\)/g` cleanup and turned `z.object().strict()` into `z.object.strict` — real empty
+  // calls are only safe because paren collapsing is decided from the interior that was just
+  // emptied, never by scanning for `()`.
+  test("never touches code that has no citation in it", () => {
+    const code = [
+      "const schema = z.object().strict();",
+      "expect(stub).toBeDefined();",
+      "const empty = foo();",
+      "if (a) return bar(); // no citation here",
+    ].join("\n");
+    expect(stripAdrIds(code)).toBe(code);
+  });
+
+  test.each([
+    // rule 3 — id leads a parenthetical that carries real prose
+    [
+      "design foundation (ADR-0042 palette+type)",
+      "design foundation (palette+type)",
+    ],
+    // a phase code rides with the id
+    ["the seam (ADR-0249 G3 rider 2) holds", "the seam (rider 2) holds"],
+    // rule 1 — the citation verb is meaningless once the id goes
+    ["fail-closed (see ADR-0072 for details)", "fail-closed (for details)"],
+    // rule 2 — the id was the sentence's subject
+    ["integer units as ADR-0007 requires", "integer units as required"],
+    ["ADR-0005 forbids a float here", "the standard forbids a float here"],
+    // rule 4 — id fused into a noun phrase
+    ["the ADR-0013 harness runs first", "the harness runs first"],
+    // rule 5 — standalone id, repaired against its own surroundings only
+    ["Blacksmith per ADR-0365, fleet-only.", "Blacksmith, fleet-only."],
+    ["one dynamic app (ADR-0114/0115)", "one dynamic app"],
+    ["locked ADR-0100 F3", "locked"],
+    // rule 0 — internal doc paths are the same class of dead citation
+    ["see outputs/specs/gw-v4/SPEC.md for the rest", "for the rest"],
+    ["tracked in docs/state/outstanding-work.md", "tracked in"],
+  ])("strips %j", (input, expected) => {
+    expect(stripAdrIds(input)).toBe(expected);
+  });
+
+  test("leaves no residue the export gate would flag, and is idempotent", () => {
+    const corpus = [
+      "Blacksmith per ADR-0365 (fleet-only sweep; the push token accepted here).",
+      "// ADR-0318 F2/F3 — the mirror APPENDS; never force-push.",
+      "Full convention: docs/ops/parallel-session-waves.md (ADR-0328 D6).",
+      "* ThemeToggle — an ICON control, single button. (ADR-0100 F3)",
+    ].join("\n");
+    const once = stripAdrIds(corpus);
+    expect(once).not.toContain("ADR-");
+    expect(once).not.toContain("docs/state/");
+    expect(stripAdrIds(once)).toBe(once);
+  });
+});
+
+describe("stripAdrIds — punctuation and line structure", () => {
+  test.each([
+    // A citation that OPENS a line owns the punctuation right after it.
+    ["// ADR-0257: the bundle model.", "// the bundle model."],
+    [
+      "// per ADR-0201: transformers stays UNINSTALLED",
+      "// transformers stays UNINSTALLED",
+    ],
+    ["// (ADR-0371). Schema cases run first", "// Schema cases run first"],
+    [
+      " * (ADR-0011): only `ai-config` may import",
+      " * only `ai-config` may import",
+    ],
+    // Mid-sentence, the punctuation is the host sentence's own and stays put.
+    ["spawned (ADR-0021). Next sentence.", "spawned. Next sentence."],
+    // A `·`-separated run of citation-plus-title IS the sentence it sits in.
+    [
+      "stand on. ADR-0043 (per-tenant keys) · ADR-0046 (envelope).",
+      "stand on.",
+    ],
+    // Closing a string literal: no space may survive inside the quotes. This is what keeps
+    // base-manifest.json byte-identical to what its generator produces from the same JSDoc.
+    ['"pinned loads. (ADR-0100 F3)",', '"pinned loads.",'],
+  ])("strips %j", (input, expected) => {
+    expect(stripAdrIds(input)).toBe(expected);
+  });
+
+  // Regression: `\(([^()]*)\)` matched across a newline, so re-emitting the stripped interior on one
+  // line WELDED two source lines together — in a wrapped `//` comment that produced
+  // "lock (// row 57), composing…". No rule may move text between lines.
+  test("never joins two lines, even when a citation spans the break", () => {
+    const wrapped = [
+      "// producer-side dedup via a transaction-scoped advisory lock (ADR-0229",
+      "// row 57), composing the SKIP-LOCKED consumer of ADR-0211. Next.",
+      "const x = 1;",
+    ].join("\n");
+    const out = stripAdrIds(wrapped);
+    expect(out.split("\n")).toHaveLength(3);
+    expect(out.split("\n")[2]).toBe("const x = 1;");
+    expect(out).not.toContain("ADR-");
+  });
+
+  test("leaves no trailing whitespace on a line a citation used to end", () => {
+    const out = stripAdrIds("## Golden (ADR-0013)\n\nbody text\n");
+    expect(out).toBe("## Golden\n\nbody text\n");
   });
 });

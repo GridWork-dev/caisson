@@ -28,5 +28,10 @@
     "sha": "6f3265039391cd4d24bbf0ca052ee72750b16694",
     "deployedAt": "2026-08-10T17:54:14Z",
     "deployedBy": "deploy-railway CI run 31415468919 (dispatch)"
+  },
+  {
+    "sha": "886e1e7ccad1378d63ebea5b24b30ae9e455d6b1",
+    "deployedAt": "2026-08-12T19:34:52Z",
+    "deployedBy": "deploy-railway CI run 31632874787 (dispatch: license leg)"
   }
 ]
