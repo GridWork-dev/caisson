@@ -104,8 +104,6 @@ export const magicLinkRequestSchema = z
   })
   .strict();
 
-export type MagicLinkRequest = z.infer<typeof magicLinkRequestSchema>;
-
 /** Password sign-in boundary — no length floor on the password (that's a sign-up-time concern). */
 export const passwordSignInSchema = z
   .object({
@@ -114,8 +112,6 @@ export const passwordSignInSchema = z
     callbackURL: callbackPathField.optional(),
   })
   .strict();
-
-export type PasswordSignInRequest = z.infer<typeof passwordSignInSchema>;
 
 /** Password sign-up boundary — `name` is required by better-auth's base user schema. */
 export const passwordSignUpSchema = z
@@ -127,16 +123,12 @@ export const passwordSignUpSchema = z
   })
   .strict();
 
-export type PasswordSignUpRequest = z.infer<typeof passwordSignUpSchema>;
-
 /** Forgot-password boundary — just the email; better-auth no-ops silently for an unknown one. */
 export const forgotPasswordSchema = z
   .object({
     email: emailField,
   })
   .strict();
-
-export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
 
 /** Reset-password boundary — the one-time token plus the new password. */
 export const resetPasswordSchema = z
@@ -145,5 +137,3 @@ export const resetPasswordSchema = z
     newPassword: newPasswordField,
   })
   .strict();
-
-export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;

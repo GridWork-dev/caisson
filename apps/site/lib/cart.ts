@@ -50,10 +50,6 @@ export function cartSubtotal(items: readonly CartItem[]): number {
   return items.reduce((sum, i) => sum + i.amount, 0);
 }
 
-export function isInCart(items: readonly CartItem[], id: string): boolean {
-  return items.some((i) => i.id === id);
-}
-
 /**
  * Parse a JSON blob read from `localStorage`. Fail-closed: `null`, malformed JSON, or a payload
  * that fails the strict per-item schema (e.g. a tampered/legacy shape) all collapse to an empty

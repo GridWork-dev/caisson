@@ -2,27 +2,13 @@ import { z } from "zod";
 import type { JsonValue } from "@caisson/kernel";
 import type { AdminAction } from "@caisson/service-license";
 
-type AdminWormAction = Exclude<AdminAction, "audit_proof_read">;
-
 /**
  * The real `source:"admin_action"` WORM events emitted by services/license and intel-triage.
  * `audit_proof_read` is intentionally absent: its source declaration records a DB-only read log and
- * explicitly appends no WORM event.
+ * explicitly appends no WORM event. `adminAuditExportSchemas` below is `satisfies`-pinned to this
+ * union, so a new admin action cannot ship without an export schema.
  */
-export const ADMIN_AUDIT_EXPORT_ACTIONS = [
-  "entitlement_grant",
-  "entitlement_revoke",
-  "credit_adjust",
-  "license_reissue",
-  "purchase_revoke",
-  "license_first_mint",
-  "email_resend",
-  "system_mode",
-  "license_rotate",
-  "intel_review",
-  "intel_dismiss",
-  "affiliate_mint",
-] as const satisfies readonly AdminWormAction[];
+type AdminWormAction = Exclude<AdminAction, "audit_proof_read">;
 
 /**
  * Every non-admin first-party WORM `kind` discriminator emitted by production code. Sources:

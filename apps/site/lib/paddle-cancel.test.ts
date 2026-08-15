@@ -3,10 +3,7 @@
 // no monkeypatched global.
 import { afterEach, expect, test } from "bun:test";
 import type { fetchWithTimeout } from "@caisson/kernel";
-import {
-  cancelPaddleSubscription,
-  isPaddleCancelConfigured,
-} from "./paddle-cancel.ts";
+import { cancelPaddleSubscription } from "./paddle-cancel.ts";
 
 type FetchImpl = typeof fetchWithTimeout;
 
@@ -14,13 +11,6 @@ const realEnv = { ...process.env };
 afterEach(() => {
   process.env.PADDLE_API_KEY = realEnv.PADDLE_API_KEY;
   process.env.PADDLE_ENV = realEnv.PADDLE_ENV;
-});
-
-test("isPaddleCancelConfigured reflects PADDLE_API_KEY presence", () => {
-  delete process.env.PADDLE_API_KEY;
-  expect(isPaddleCancelConfigured()).toBe(false);
-  process.env.PADDLE_API_KEY = "pdl_test_key";
-  expect(isPaddleCancelConfigured()).toBe(true);
 });
 
 test("unconfigured (no API key) fails closed without calling fetch", async () => {
