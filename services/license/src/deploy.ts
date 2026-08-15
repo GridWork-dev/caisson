@@ -18,7 +18,7 @@ import {
   TsaAnchorLog,
   type AnchorCheckpointDeps,
 } from "@caisson/audit-worm";
-import { createPgTransactor, type Transactor } from "@caisson/tenancy-rls";
+import { createPgTransactor } from "@caisson/tenancy-rls";
 import { Pool } from "pg";
 import {
   loadAbandonedCheckoutScheduleConfig,

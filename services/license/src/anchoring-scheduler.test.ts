@@ -9,11 +9,7 @@
 //   4. when armed, it registers the checkpoint + tick tasks, consumes each, and schedules the tick —
 //      proven with a FAKE `createPgBossJobQueue`-shaped factory; a start failure logs and never throws.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import type {
-  createPgBossJobQueue,
-  EnqueueOptions,
-  JobQueue,
-} from "@caisson/jobs";
+import type { createPgBossJobQueue } from "@caisson/jobs";
 import {
   createFakeQueue,
   createFakeQueueFactory,

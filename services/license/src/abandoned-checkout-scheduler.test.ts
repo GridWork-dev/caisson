@@ -18,11 +18,7 @@ import {
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
-import type {
-  createPgBossJobQueue,
-  EnqueueOptions,
-  JobQueue,
-} from "@caisson/jobs";
+import type { createPgBossJobQueue } from "@caisson/jobs";
 import {
   createFakeQueue,
   createFakeQueueFactory,

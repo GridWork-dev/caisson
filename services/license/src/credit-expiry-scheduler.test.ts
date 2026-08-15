@@ -16,11 +16,7 @@ import {
   CREDIT_EXPIRY_SWEEP_TASK,
   CREDIT_SCHEMA_SQL,
 } from "@caisson/credits";
-import type {
-  createPgBossJobQueue,
-  EnqueueOptions,
-  JobQueue,
-} from "@caisson/jobs";
+import type { createPgBossJobQueue } from "@caisson/jobs";
 import {
   createFakeQueue,
   createFakeQueueFactory,

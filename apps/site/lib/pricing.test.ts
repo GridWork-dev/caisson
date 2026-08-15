@@ -14,7 +14,6 @@ import {
   formatPrice,
   formatUsd,
   MODULE_PRICES,
-  moduleCatalogSubtotal,
   modulesByBundle,
   multiYearRenewalAmount,
   PERSONA_BUNDLE_IDS,

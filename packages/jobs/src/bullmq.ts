@@ -263,7 +263,7 @@ export function createBullMqJobQueue(
       data?: object | null,
       options?: { tz?: string },
     ): Promise<void> {
-      const task = requireRegisteredTask(registry, name);
+      requireRegisteredTask(registry, name);
       const repeat =
         options?.tz !== undefined
           ? { pattern: cron, tz: options.tz }

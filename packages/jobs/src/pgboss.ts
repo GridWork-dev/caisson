@@ -323,7 +323,7 @@ export function createPgBossJobQueue(
       data?: object | null,
       options?: { tz?: string },
     ): Promise<void> {
-      const task = requireRegisteredTask(registry, name);
+      requireRegisteredTask(registry, name);
       const client = await getClient();
       await ensureQueue(client, name);
       await client.schedule(name, cron, data ?? null, options);
