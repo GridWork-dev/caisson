@@ -19,9 +19,9 @@ workers_dev = true
 #   DISCORD_OPS_WEBHOOK_URL     — the operator's Discord ops channel webhook (required; a 500
 #                                  response with no Discord POST attempted while unset).
 #   BETTERSTACK_WEBHOOK_SECRET  — the shared value Better Stack's outgoing-webhook custom
-#                                  `X-Betterstack-Secret` header carries. REQUIRED on a real
-#                                  deploy — unset fails closed (401 on every request). Local-dev-
-#                                  only opt-out: set ALLOW_UNAUTHENTICATED (any non-empty value).
+#                                  `X-Betterstack-Secret` header carries. REQUIRED — unset fails
+#                                  closed (401 on every request); no unauthenticated mode. Local
+#                                  dev uses a throwaway secret.
 
 [observability]
 enabled = true
