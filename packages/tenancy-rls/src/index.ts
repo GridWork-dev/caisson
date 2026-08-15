@@ -7,6 +7,7 @@ export {
   buildTenantPolicySql,
 } from "./rls.ts";
 export type { TenantExecutor, Transactor, TenantPolicyOptions } from "./rls.ts";
+export { createPgTransactor } from "./node-pg.ts";
 export { createSupabaseTransactor } from "./supabase.ts";
 export type { SupabaseTransactorConfig } from "./supabase.ts";
 export { queryDrizzle, execDrizzle } from "./drizzle.ts";
