@@ -2,12 +2,10 @@ import { z } from "zod";
 import { fetchWithTimeout } from "@caisson/kernel";
 import { judgeRequestSchema, judgeVerdictSchema } from "@caisson/ai-evals";
 import type { Judge, JudgeVerdict } from "@caisson/ai-evals";
-import { fetchJson } from "../http.ts";
 import type { Fetcher } from "../http.ts";
+import { openRouterChatContent, parseJsonObject } from "../openrouter.ts";
 import { redactModelInput } from "../llm.ts";
 
-const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
-const JUDGE_TIMEOUT_MS = 60_000;
 const DEFAULT_COMPOSE_MODEL = "anthropic/claude-sonnet-4.5";
 const DEFAULT_JUDGE_MODEL = "anthropic/claude-sonnet-4.5";
 
@@ -35,51 +33,6 @@ export function loadLiveEvalConfig(
     composeModel: env.INTEL_EVAL_COMPOSE_MODEL ?? DEFAULT_COMPOSE_MODEL,
     judgeModel: env.INTEL_EVAL_JUDGE_MODEL ?? DEFAULT_JUDGE_MODEL,
   });
-}
-
-const ChatMessage = z
-  .object({
-    role: z.string().optional(),
-    content: z.string(),
-    refusal: z.string().nullable().optional(),
-    reasoning: z.string().nullable().optional(),
-  })
-  .strict();
-const ChatChoice = z
-  .object({
-    index: z.number().int().optional(),
-    finish_reason: z.string().nullable().optional(),
-    native_finish_reason: z.string().nullable().optional(),
-    logprobs: z.unknown().optional(),
-    message: ChatMessage,
-  })
-  .strict();
-const ChatResponse = z
-  .object({
-    id: z.string().optional(),
-    provider: z.string().optional(),
-    model: z.string().optional(),
-    object: z.string().optional(),
-    created: z.number().optional(),
-    system_fingerprint: z.string().nullable().optional(),
-    service_tier: z.string().nullable().optional(),
-    usage: z.unknown().optional(),
-    choices: z.array(ChatChoice).min(1),
-  })
-  .strict();
-
-function parseJsonObject(content: string): unknown {
-  const trimmed = content.trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const start = trimmed.indexOf("{");
-    const end = trimmed.lastIndexOf("}");
-    if (start === -1 || end <= start) {
-      throw new Error("judge returned no JSON object");
-    }
-    return JSON.parse(trimmed.slice(start, end + 1));
-  }
 }
 
 function judgeVisibleBrief(output: string): string {
@@ -110,37 +63,16 @@ export function createOpenRouterJudge(
         caseId: req.caseId,
         brief: judgeVisibleBrief(req.output),
       });
-      const raw = await fetchJson<unknown>(
-        fetchImpl,
-        OPENROUTER_ENDPOINT,
-        {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${apiKey}`,
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            temperature: 0,
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: caseData },
-            ],
-            response_format: { type: "json_object" },
-          }),
-        },
-        JUDGE_TIMEOUT_MS,
-      );
-      const parsedResponse = ChatResponse.safeParse(raw);
-      const content = parsedResponse.success
-        ? parsedResponse.data.choices[0]?.message.content
-        : undefined;
-      if (content === undefined || content.trim().length === 0) {
+      const content = await openRouterChatContent(fetchImpl, apiKey, model, [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: caseData },
+      ]);
+      if (content === null) {
         throw new Error("judge returned no message content");
       }
       let candidate: unknown;
       try {
-        candidate = parseJsonObject(content);
+        candidate = parseJsonObject(content, "judge");
       } catch {
         throw new Error("judge returned an invalid verdict");
       }
