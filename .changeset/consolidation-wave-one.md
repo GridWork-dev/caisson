@@ -1,12 +1,12 @@
 ---
 "@caisson/tenancy-rls": minor
+"@caisson/kernel": minor
 "@caisson/admin": patch
 "@caisson/site": patch
 "@caisson/billing-orchestration": patch
 "@caisson/cli": patch
 "@caisson/compliance": patch
 "@caisson/jobs": patch
-"@caisson/kernel": patch
 "@caisson/registry-schema": patch
 "@caisson/trust-page": patch
 "@caisson/service-betterstack-adapter": patch
@@ -19,7 +19,9 @@
 
 Consolidation wave one: the eighteen refutation-verified cuts from the August consolidation audit.
 
-New public API: `@caisson/tenancy-rls` exports `createPgTransactor(pool)` — the canonical
+New public API: `@caisson/kernel` gains the narrow `./crypto` subpath (node:crypto-only graph,
+so a Cloudflare Worker can import the timing-safe compare without the wide `./node` barrel's
+`node:dns` reach), and `@caisson/tenancy-rls` exports `createPgTransactor(pool)` — the canonical
 node-postgres BEGIN/COMMIT/best-effort-ROLLBACK/release adapter previously copy-pasted across the
 site, admin, the license deploy entry, the CLI, and the generated Next starter (which also gains
 the best-effort rollback it lacked). Everything else is deletion or internal consolidation with

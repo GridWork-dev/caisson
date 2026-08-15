@@ -22,10 +22,10 @@ const {
   BUNDLE_META_DIRS,
 } = require("./tooling/eslint-config/boundary-policy.cjs");
 
-const BASE_PKGS =
-  "packages/(auth|tenancy-rls|billing|credits|ai-config|mcp-server|ui|jobs|email|kernel|registry-schema|migrate|pricebook|audit-worm|field-crypto|cli|agent-kernel|local-store|prompt-registry|ai-meter|guardrails|ai-evals|license-verify|rate-limit|ds-manifest)";
 const EDITIONS = BUNDLE_META_DIRS;
-const EDITION_PKGS = `packages/(${EDITIONS.join("|")})`;
+// Trailing slash is load-bearing: without it `packages/compliance` also matches
+// `packages/compliance-core` (a commercial MODULE, not a bundle) and the rules misfire.
+const EDITION_PKGS = `packages/(${EDITIONS.join("|")})/`;
 
 // One rule per edition forbidding the OTHER editions from importing it (catches dynamic/transitive
 // edition→edition the Bun gate's static-dep check misses). Per-edition phrasing avoids a self-match
@@ -52,9 +52,11 @@ module.exports = {
     {
       name: "down-only-no-base-to-edition",
       comment:
-        "A base/primitive package may not depend on an edition (ADR-0003).",
+        "No non-bundle package may depend on a bundle/edition meta-package (ADR-0003). Coverage " +
+        "is every packages/* dir EXCEPT the bundles themselves, so a NEW package is guarded by " +
+        "default — the former hand-list of 25 base dirs silently omitted 26 packages from this rule.",
       severity: "error",
-      from: { path: BASE_PKGS },
+      from: { path: "^packages/", pathNot: EDITION_PKGS },
       to: { path: EDITION_PKGS },
     },
     ...editionIsolation,

@@ -11,9 +11,11 @@ import {
   type BundleId,
   BUNDLE_PRICES,
   bundlePriceById,
+  everythingSavings,
   formatPrice,
   formatUsd,
   MODULE_PRICES,
+  moduleCatalogSubtotal,
   modulesByBundle,
   multiYearRenewalAmount,
   PERSONA_BUNDLE_IDS,
@@ -23,6 +25,28 @@ import {
   prioritySupportResponseTimeCopy,
   renewalAmount,
 } from "./pricing";
+
+describe("moduleCatalogSubtotal / everythingSavings (live homepage money copy)", () => {
+  // These two render committed prices on the homepage hero and the preview dialog
+  // ("save $X vs $Y"). They lost their only coverage when the /build configurator tests
+  // were deleted; these pins keep a MODULE_PRICES edit from shipping wrong savings copy.
+  test("subtotal is the integer sum of the whole catalog and sits above the Everything price", () => {
+    const subtotal = moduleCatalogSubtotal();
+    expect(Number.isInteger(subtotal)).toBe(true);
+    expect(subtotal).toBe(MODULE_PRICES.reduce((sum, m) => sum + m.amount, 0));
+    const everything = bundlePriceById("everything");
+    expect(everything?.amount).not.toBeNull();
+    expect(subtotal).toBeGreaterThan(everything?.amount ?? Infinity);
+  });
+
+  test("everythingSavings is exactly subtotal minus the committed Everything price", () => {
+    const everything = bundlePriceById("everything");
+    expect(everythingSavings()).toBe(
+      moduleCatalogSubtotal() - (everything?.amount ?? Number.NaN),
+    );
+    expect(everythingSavings()).toBeGreaterThan(0);
+  });
+});
 
 describe("MODULE_PRICES", () => {
   test("covers exactly the sellable SKU set (ADR-0246 F1b) at the pricebook SKU_RETAIL price", () => {

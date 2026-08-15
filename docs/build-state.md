@@ -636,8 +636,8 @@ ADR-0397 retired `apps/base`, `apps/ai-kit`, `apps/agent-dev`, `apps/local-ai`, 
   granting `subscription_create`/`subscription_cycle`; `subscription_charge` mid-cycle is non-granting)
   and a 5-second default signature tolerance. **Entitlement
   resolver + registry-Worker filtering DONE** (code-wiring B2, `ADR-0071`/`0047`): a gated `invoice.paid`
-  now also grants the plan's entitlements into an RLS store; `resolveAccountEntitlements` expands stored
-  purchased ids against the index; the live Worker verifies an offline Ed25519 license at the edge and
+  now also grants the plan's entitlements into an RLS store; the `/issue` path expands stored
+  purchased ids against the index via `expandEntitlements`; the live Worker verifies an offline Ed25519 license at the edge and
   serves a per-account entitlement-filtered index (base ∪ entitled, non-entitled = 404, fail-safe to
   base). **P6 code-track DONE** (2026-06-30 integration, `ADR-0110`–`0113`): the offline-license
   **issuer** (`@caisson/license-issue` + baked verify-key + lazy bearer-gated `POST /issue`, `ADR-0110`),

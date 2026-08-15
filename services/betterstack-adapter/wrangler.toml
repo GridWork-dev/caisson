@@ -7,8 +7,10 @@
 name = "caisson-betterstack-adapter"
 main = "handler.ts"
 compatibility_date = "2026-06-27"
-# node:crypto's timingSafeEqual (the webhook-secret header check, handler.ts) needs the Node
-# compat shim — the SAME reason registry/worker/wrangler.toml enables it, there for node:fs.
+# node:crypto (the @caisson/kernel/crypto timing-safe webhook-secret compare, handler.ts) needs
+# the Node compat shim — the SAME reason registry/worker/wrangler.toml enables it, there for
+# node:fs. handler.ts deliberately imports the narrow ./crypto subpath so the bundle's only
+# builtins stay node:crypto — the wide ./node barrel would add node:dns/promises via ssrf.ts.
 compatibility_flags = ["nodejs_compat"]
 
 # Publish to the account's workers.dev subdomain; point Better Stack's outgoing-webhook URL at it

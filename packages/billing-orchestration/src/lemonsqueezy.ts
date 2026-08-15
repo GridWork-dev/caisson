@@ -35,7 +35,6 @@ export const LemonSqueezyEventSchema = strictObject({
 
 export type LemonSqueezyEvent = z.infer<typeof LemonSqueezyEventSchema>;
 
-/** Handles both a numeric id (LemonSqueezy's raw API ids are numbers) and a string id. */
 /** LemonSqueezy money fields are numeric MINOR units but can carry sub-cent fractional artifacts from
  * currency-rate conversion (e.g. `1499.985`) — round to the nearest integer minor unit (ADR-0007:
  * credits/money are integer units, never floats). */

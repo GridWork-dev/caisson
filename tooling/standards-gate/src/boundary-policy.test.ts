@@ -10,7 +10,7 @@ import { BUNDLE_IDS } from "@caisson/registry-schema";
 import { EDITION_NAMES } from "./checks.ts";
 
 const req = createRequire(import.meta.url);
-const policy = req("../../eslint-config/boundary-policy.cjs") as {
+const policy = req("@caisson/eslint-config/boundary-policy.cjs") as {
   PROVIDER_SDKS: readonly string[];
   PROVIDER_SDK_RE: string;
   BUNDLE_META_DIRS: readonly string[];
@@ -80,11 +80,18 @@ describe("boundary-policy parity (C24)", () => {
     }
     const downOnly = cruiser.forbidden.find(
       (r) => r.name === "down-only-no-base-to-edition",
-    );
+    ) as
+      | { from?: { path?: string; pathNot?: string }; to?: { path?: string } }
+      | undefined;
     expect(downOnly).toBeDefined();
     for (const dir of policy.BUNDLE_META_DIRS) {
       expect(downOnly?.to?.path ?? "").toContain(dir);
+      // Coverage is derived, not hand-listed: from = every packages/* dir EXCEPT the bundles.
+      expect(downOnly?.from?.pathNot ?? "").toContain(dir);
     }
+    expect(downOnly?.from?.path).toBe("^packages/");
+    // The trailing-slash boundary keeps `compliance` from matching `compliance-core`.
+    expect((downOnly?.to?.path ?? "").endsWith(")/")).toBe(true);
     const providerRule = cruiser.forbidden.find(
       (r) => r.name === "no-provider-sdk-outside-ai",
     );

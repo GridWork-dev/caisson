@@ -18,7 +18,10 @@ function nodePgExecutor(client: PoolClient): TenantExecutor {
       return { rows: res.rows as T[] };
     },
     async exec(sql: string) {
-      await client.query(sql);
+      // Return the driver result (typed `Promise<unknown>` on the port): five of the seven folded
+      // copies did, and PGlite — the test-double driver behind the same port — does too. Resolving
+      // `undefined` only in production would be an invisible divergence behind `unknown`.
+      return client.query(sql);
     },
   };
 }

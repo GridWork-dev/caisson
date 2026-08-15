@@ -54,7 +54,6 @@ export type {
 export {
   ADMIN_ACTION_LOG_SCHEMA_SQL,
   ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL,
-  ADMIN_ACTIONS,
   insertAdminActionLog,
   readAdminActionLog,
 } from "./admin-audit-log.ts";

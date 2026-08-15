@@ -31,7 +31,10 @@
 // there is no unauthenticated mode; local dev sets a throwaway secret.
 import { z } from "zod";
 import { fetchWithTimeout } from "@caisson/kernel";
-import { safeEqualVariable } from "@caisson/kernel/node";
+// The narrow `./crypto` subpath, NOT `./node`: the wide node barrel re-exports ssrf.ts and pulls
+// `node:dns/promises` (and whatever lands on it next) into this Worker's bundle, which has no CI
+// build leg to catch a builtin nodejs_compat doesn't ship. crypto.ts's graph is node:crypto only.
+import { safeEqualVariable } from "@caisson/kernel/crypto";
 
 export type Fetcher = typeof fetchWithTimeout;
 
