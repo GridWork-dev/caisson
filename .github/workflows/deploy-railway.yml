@@ -4,11 +4,11 @@ name: deploy-railway
 # Build-on-Railway via the service's RAILWAY_DOCKERFILE_PATH=apps/site/Dockerfile env var (set on the
 # Railway service, not here). Touches NO DNS and NO CF Access.
 #
-# STAYS INERT UNTIL ARMED: the project token RAILWAY_TOKEN (scoped to caisson-prod) is not yet a repo
-# secret. The guard step below reads it and SKIPS every real step when it is absent, so a push-triggered
-# run is a GREEN no-op — it never attempts a deploy and never reddens main. The operator ARMS it by
-# adding the RAILWAY_TOKEN secret at the cutover (deploy-runbook C2); it then self-enables on the next
-# push. ONE EXCEPTION: a caller that passes `require_armed=true` (the release train's leg 4) gets a hard
+# ARMED since 2026-07-29: RAILWAY_TOKEN (a project token scoped to caisson-prod) is a repo secret and
+# this workflow deploys for real. The arm guard below stays, because it is what keeps the workflow
+# honest if the secret is ever rotated out or revoked: the guard step reads the token and SKIPS every
+# real step when it is absent, so a push-triggered run degrades to a GREEN no-op rather than reddening
+# main. ONE EXCEPTION: a caller that passes `require_armed=true` (the release train's leg 4) gets a hard
 # FAILURE instead of the green skip, because a train that reports a deploy it never performed is worse
 # than a red leg.
 # The static-export deploy-site.yml (Cloudflare Pages) it once coexisted with is already retired (its
@@ -183,15 +183,16 @@ jobs:
       # already be serving the release the pointer is shipped with. Deploying site first would put
       # a new set of embed URLs live against the previous demos image.
       #
-      # SECOND GUARD, ON PURPOSE. Creating the Railway service is an external-system act the
-      # operator performs (ADR-0400 decision 4), and this workflow merges before that happens —
+      # SECOND GUARD, ON PURPOSE. Creating the Railway service was an external-system act the
+      # operator performed (ADR-0400 decision 4), and this workflow merged before that happened —
       # `railway up --service caisson-demos` against a service that does not exist is a hard
       # failure, which on an ARMED token would redden this job and skip the site deploy below it.
       # A missing entry would have been the safer failure, so the entry gates itself: the repo
       # variable CAISSON_DEMOS_ARMED must read exactly "true". `vars` (unlike `secrets`) is
-      # readable in an `if:`, so this needs no guard step of its own. The operator sets it in the
-      # same sitting they create the service; until then this step skips and the fleet deploys
-      # exactly as it did before the split.
+      # readable in an `if:`, so this needs no guard step of its own. That variable has read "true"
+      # since 2026-08-09, so the step now runs on every armed deploy; the gate stays because
+      # clearing the variable is the documented way to take the demos surface out of the fleet
+      # without editing this file.
       - name: deploy apps/demos to Railway (rewrite target — MUST precede site)
         if: steps.guard.outputs.armed == 'true' && vars.CAISSON_DEMOS_ARMED == 'true'
         env:

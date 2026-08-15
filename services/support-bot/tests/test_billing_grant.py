@@ -389,6 +389,58 @@ async def test_health_contract_kept(path: str) -> None:
         await client.close()
 
 
+# --- the house security-header floor (identity/security.md, CLOUD-AUDIT F-10) ----------------------
+
+
+async def test_health_carries_the_security_header_floor() -> None:
+    """The finding as filed: /health answered 200 with none of the three headers."""
+    guild, _ = _guild_with_member()
+    client = await _client(_bot(guild), _settings(billing_grant_token=None))
+    try:
+        res = await client.get("/health")
+        assert res.status == 200
+        assert res.headers["X-Content-Type-Options"] == "nosniff"
+        assert res.headers["X-Frame-Options"] == "DENY"
+        assert res.headers["Strict-Transport-Security"] == "max-age=63072000; includeSubDomains"
+    finally:
+        await client.close()
+
+
+async def test_authed_route_responses_carry_the_security_header_floor() -> None:
+    """A 401 is still a production response — the floor is not scoped to the happy path."""
+    guild, _ = _guild_with_member()
+    client = await _client(_bot(guild), _settings())
+    try:
+        res = await client.post("/billing-grant", json={})
+        assert res.status == 401
+        assert res.headers["X-Content-Type-Options"] == "nosniff"
+        assert res.headers["X-Frame-Options"] == "DENY"
+        assert res.headers["Strict-Transport-Security"] == "max-age=63072000; includeSubDomains"
+    finally:
+        await client.close()
+
+
+async def test_framework_raised_404_carries_the_security_header_floor() -> None:
+    """The arm a return-only middleware silently misses.
+
+    aiohttp RAISES ``web.HTTPException`` for a router miss rather than returning it, so a middleware
+    that only decorates ``await handler(request)``'s return value leaves every 404 bare — and with
+    both POST tokens unset, a 404 is what an unauthenticated scanner actually receives here.
+    """
+    guild, _ = _guild_with_member()
+    client = await _client(
+        _bot(guild), _settings(billing_grant_token=None, site_escalate_token=None)
+    )
+    try:
+        res = await client.post("/billing-grant", json={})
+        assert res.status == 404
+        assert res.headers["X-Content-Type-Options"] == "nosniff"
+        assert res.headers["X-Frame-Options"] == "DENY"
+        assert res.headers["Strict-Transport-Security"] == "max-age=63072000; includeSubDomains"
+    finally:
+        await client.close()
+
+
 # --- POST /escalate (apps/site Ask-AI parity — reuses the same Escalator/Linear sink) --------------
 
 

@@ -51,6 +51,12 @@ from .member_mgmt import (
 if TYPE_CHECKING:  # pragma: no cover - typing only (avoids a real import cycle at module load)
     import httpx
 
+    # `aiohttp.web.Handler` does NOT exist at runtime (checked against the pinned 3.14.3) — the
+    # canonical export is `aiohttp.typedefs.Handler`. Under `from __future__ import annotations` a
+    # wrong name here is a silent no-op rather than an ImportError, so pyright is the only thing
+    # that catches it; keep this import here rather than inlining a Callable alias.
+    from aiohttp.typedefs import Handler
+
 
 class BillingGrantRequest(BaseModel):
     """POST /billing-grant body — purchased entitlement ids, verbatim from the caller's grant."""
@@ -130,6 +136,38 @@ class _Deps:
 
 
 _DEPS: web.AppKey[_Deps] = web.AppKey("caisson_billing_grant_deps")
+
+# The house production-response header floor (identity/security.md, Headers). Byte-identical to the
+# TypeScript services' own SECURITY_HEADERS consts (services/docs/src/app.ts, services/license/src/
+# app.ts, packages/mcp-server/src/http.ts) — this service was the only surface in the fleet missing
+# them (CLOUD-AUDIT F-10: /health answered 200 with none of the three).
+#
+# Applied in the app's response path, NOT at the edge, because this origin is reachable directly on
+# caisson-support-bot-production.up.railway.app — the same shape as the F-03 bypass, where an edge
+# gate bound a hostname and the Railway origin answered around it.
+SECURITY_HEADERS: dict[str, str] = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+}
+
+
+@web.middleware
+async def _security_headers(request: web.Request, handler: Handler) -> web.StreamResponse:
+    """Set the header floor on every response, including aiohttp's own generated errors.
+
+    aiohttp surfaces a router miss (404 — the state both POST routes sit in when their token is
+    unset), a method mismatch (405), and a ``client_max_size`` overflow (413) by RAISING
+    ``web.HTTPException`` rather than returning it, so a middleware that only decorates the returned
+    response would leave exactly the responses an unauthenticated scanner sees bare.
+    """
+    try:
+        response = await handler(request)
+    except web.HTTPException as exc:
+        exc.headers.update(SECURITY_HEADERS)
+        raise
+    response.headers.update(SECURITY_HEADERS)
+    return response
 
 
 async def _handle_health(request: web.Request) -> web.Response:
@@ -231,7 +269,7 @@ def build_app(
     (as every existing test does) degrades /escalate to "accepts the push, files nothing durable" —
     never a 500.
     """
-    app = web.Application(client_max_size=64 * 1024)
+    app = web.Application(client_max_size=64 * 1024, middlewares=[_security_headers])
     app[_DEPS] = _Deps(
         bot=bot,
         settings=settings,
