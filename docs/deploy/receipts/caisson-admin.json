@@ -58,5 +58,11 @@
     "sha": "886e1e7ccad1378d63ebea5b24b30ae9e455d6b1",
     "deployedAt": "2026-08-12T19:32:32Z",
     "deployedBy": "deploy-railway CI run 31632874787 (dispatch: license leg; admin/demos/site redeployed same sha)"
+  },
+  {
+    "sha": "886e1e7ccad1378d63ebea5b24b30ae9e455d6b1",
+    "deployedAt": "2026-08-15T00:32:17.961Z",
+    "deployedBy": "Liam (GridWork)",
+    "forced": true
   }
 ]
