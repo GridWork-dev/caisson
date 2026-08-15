@@ -1234,7 +1234,6 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
-        "@caisson/frameworks-pack": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
