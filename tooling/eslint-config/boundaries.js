@@ -10,44 +10,16 @@
  * transitive reachability) is the authoritative provider-SDK layer; this catches the obvious case
  * fast, in-editor.
  */
+import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// The SDK denylist lives in the shared boundary-policy data file (consolidation C24 — one data
+// source, three enforcement engines). Re-exported here so consumers keep their existing import.
+const boundaryPolicy = createRequire(import.meta.url)("./boundary-policy.cjs");
+
 /** Prohibited provider SDKs. Keep current — a stale denylist is a hole (ADR-0022). */
-export const PROVIDER_SDKS = [
-  // OpenAI + Azure
-  "openai",
-  "@azure/openai",
-  // Anthropic (incl. cloud-vendor SDKs)
-  "@anthropic-ai/sdk",
-  "@anthropic-ai/bedrock",
-  "@anthropic-ai/vertex-sdk",
-  // Google Gemini — @google/genai is the current GA SDK; generative-ai is deprecated (both banned)
-  "@google/genai",
-  "@google/generative-ai",
-  // AWS Bedrock
-  "@aws-sdk/client-bedrock-runtime",
-  // Others
-  "@mistralai/mistralai",
-  "cohere-ai",
-  "groq-sdk",
-  "replicate",
-  "together-ai",
-  "ollama",
-  // Vercel AI SDK family (Apache-2.0 — license-clean, so it passes Gate 1/1b; confined here
-  // PURELY by composition, ADR-0011/0022 Gate 2): the `ai` core + the first-party provider
-  // adapters are the gateway's inference path and live behind @caisson/ai-kit's `infer()`. Only
-  // @caisson/ai-config + @caisson/ai-kit may import them; every other package routes through the
-  // gateway so the backing SDK stays swappable.
-  "ai",
-  "@ai-sdk/openai",
-  "@ai-sdk/openai-compatible",
-  "@ai-sdk/anthropic",
-  "@ai-sdk/google",
-  "@ai-sdk/openrouter",
-  "@ai-sdk/amazon-bedrock",
-  "@ai-sdk/azure",
-];
+export const PROVIDER_SDKS = boundaryPolicy.PROVIDER_SDKS;
 
 const restrictedPatterns = PROVIDER_SDKS.map((name) => ({
   group: [name, `${name}/*`],

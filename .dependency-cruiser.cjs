@@ -12,16 +12,19 @@
  * Bun gate's job; here we cover provider-SDK reachability + composition direction + cycles.
  */
 
-// Mirrors PROVIDER_SDKS in tooling/eslint-config/boundaries.js (one denylist, two enforcement
-// layers — this is the authoritative dynamic/transitive graph layer, ADR-0022 Gate 2). The Vercel
-// AI SDK family (`ai` core + `@ai-sdk/*`, Apache-2.0) is the gateway's inference path: `ai/` is
-// trailing-slash-anchored so it matches `node_modules/ai/…` but not `airtable`/`ai-*` siblings.
-const PROVIDER_SDK_RE =
-  "node_modules/(openai|@azure/openai|@anthropic-ai/(sdk|bedrock|vertex-sdk)|@google/(genai|generative-ai)|@aws-sdk/client-bedrock-runtime|@mistralai/mistralai|cohere-ai|groq-sdk|replicate|together-ai|ollama|ai/|@ai-sdk/(openai|openai-compatible|anthropic|google|openrouter|amazon-bedrock|azure))";
+// One boundary-policy data source (consolidation C24): the provider denylist regex and the
+// bundle/edition meta-package dir list come from tooling/eslint-config/boundary-policy.cjs —
+// this stays the authoritative dynamic/transitive graph layer (ADR-0022 Gate 2), it just no
+// longer hand-mirrors the data. (The previous hand-copy had drifted: it still named the deleted
+// `local-ai` and missed the five ADR-0257 bundle roots entirely — a live false-green class.)
+const {
+  PROVIDER_SDK_RE,
+  BUNDLE_META_DIRS,
+} = require("./tooling/eslint-config/boundary-policy.cjs");
 
 const BASE_PKGS =
   "packages/(auth|tenancy-rls|billing|credits|ai-config|mcp-server|ui|jobs|email|kernel|registry-schema|migrate|pricebook|audit-worm|field-crypto|cli|agent-kernel|local-store|prompt-registry|ai-meter|guardrails|ai-evals|license-verify|rate-limit|ds-manifest)";
-const EDITIONS = ["compliance", "ai-kit", "local-ai", "agent-dev"];
+const EDITIONS = BUNDLE_META_DIRS;
 const EDITION_PKGS = `packages/(${EDITIONS.join("|")})`;
 
 // One rule per edition forbidding the OTHER editions from importing it (catches dynamic/transitive
