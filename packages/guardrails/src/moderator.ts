@@ -19,7 +19,11 @@ const MAX_MODERATOR_REPETITION = 1_000;
  * `guard.ts` — it never comes from a `Moderator` verdict.
  */
 export type GuardCategory =
-  "moderation" | "pii" | "injection" | "secret" | "custom";
+  | "moderation"
+  | "pii"
+  | "injection"
+  | "secret"
+  | "custom";
 
 /**
  * A moderation verdict. **Metadata only** — `category` is the class the dashboard charts by, never

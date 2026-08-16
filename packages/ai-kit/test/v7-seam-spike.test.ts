@@ -204,7 +204,8 @@ describe("v7 seam spike (d): an explicit generateText-loop can interpose reserve
     const messages: ModelMessage[] = [{ role: "user", content: "start" }];
     let step = 0;
     let last:
-      Awaited<ReturnType<typeof generateText<typeof tools>>> | undefined;
+      | Awaited<ReturnType<typeof generateText<typeof tools>>>
+      | undefined;
     const MAX_STEPS = 10; // safety bound for the spike harness itself, never hit in this test
     do {
       step += 1;

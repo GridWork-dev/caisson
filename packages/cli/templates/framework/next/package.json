@@ -5,23 +5,23 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "^16.2.9",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "pg": "^8.16.0",
-    "@caisson/kernel": "^0.8.0",
+    "@caisson/ai-config": "^0.3.8",
     "@caisson/auth": "^0.4.3",
-    "@caisson/tenancy-rls": "^0.5.8",
     "@caisson/billing": "^0.6.7",
-    "@caisson/jobs": "^0.7.2",
     "@caisson/email": "^0.5.6",
-    "@caisson/ai-config": "^0.3.8"
+    "@caisson/jobs": "^0.7.2",
+    "@caisson/kernel": "^0.8.0",
+    "@caisson/tenancy-rls": "^0.5.8",
+    "next": "^16.2.9",
+    "pg": "^8.16.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/bun": "^1.1.14",
     "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
     "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "@types/pg": "^8.11.10"
+    "@types/react-dom": "^19.2.0"
   }
 }

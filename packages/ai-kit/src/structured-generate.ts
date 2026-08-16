@@ -11,7 +11,9 @@ import type { InferInput, InferOptions, InferResult } from "./gateway.ts";
 
 /** Why structuredGenerate() couldn't produce a value. */
 export type StructuredGenerateReason =
-  "refusal" | "invalid_json" | "schema_mismatch";
+  | "refusal"
+  | "invalid_json"
+  | "schema_mismatch";
 
 /** Thrown instead of returning a null/empty result — a refusal or a malformed completion is a
  *  caller-visible failure, not a silent no-op. `details.callId` ties it back to the meter event. */

@@ -21,7 +21,8 @@ import { isAuthMigrationHealthy } from "../../lib/admin-boot-state.ts";
 export const dynamic = "force-dynamic";
 
 function registryIndexDigest():
-  { indexDigest: string; indexEntries: number } | undefined {
+  | { indexDigest: string; indexEntries: number }
+  | undefined {
   try {
     const path =
       process.env.CAISSON_REGISTRY_INDEX_PATH?.trim() ||

@@ -379,7 +379,8 @@ describe("resolveLicensed — ADR-0262/ADR-0268 arming rule (licensed path)", ()
 
   test("--framework alone (ADR-0287) arms a non-pure-run gap-fill and is forwarded to the wizard", async () => {
     let seenFlags:
-      { pureRun: boolean; framework?: string; modules: unknown[] } | undefined;
+      | { pureRun: boolean; framework?: string; modules: unknown[] }
+      | undefined;
     const fakeLoad = mock(async () => ({
       promptSampleProjectName: async () => {
         throw new Error("not exercised in this test");

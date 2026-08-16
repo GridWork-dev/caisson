@@ -13,7 +13,12 @@ import type { MetadataRoute } from "next";
 // only ever emit the canonical hub routes.
 
 export type RouteGroup =
-  "home" | "edition" | "product" | "trust" | "framework" | "legal";
+  | "home"
+  | "edition"
+  | "product"
+  | "trust"
+  | "framework"
+  | "legal";
 
 /** Footer column a route renders in (ADR-0237: footer derives from this registry). */
 export type FooterCol = "editions" | "product" | "resources" | "legal";

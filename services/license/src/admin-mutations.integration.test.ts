@@ -347,7 +347,8 @@ describe("entitlement grant/revoke (admin_comp, dual-logged)", () => {
     expect(entries).toHaveLength(1);
     // Auditability preserved: the RAW account id lives inside the WORM payload, not just the key.
     const payload = entries[0]?.payload as
-      { targetAccountId?: string } | undefined;
+      | { targetAccountId?: string }
+      | undefined;
     expect(payload?.targetAccountId).toBe(acct);
     const v = await worm.verify(anchor);
     expect(v.valid).toBe(true);

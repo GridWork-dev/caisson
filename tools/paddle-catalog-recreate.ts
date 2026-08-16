@@ -78,7 +78,10 @@ async function fetchWithTimeout(
 // ---- Plan model ---------------------------------------------------------------------------------
 
 export type ProductKind =
-  "bundle" | "module" | "subscription" | "renewal-parent";
+  | "bundle"
+  | "module"
+  | "subscription"
+  | "renewal-parent";
 
 export interface PlanPrice {
   /** Stable marker written to the Paddle price's custom_data.caisson_key for idempotent re-lookup. */
