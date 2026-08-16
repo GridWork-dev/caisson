@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-15
+updated: 2026-08-16
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,30 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-08-15 — consolidation wave 1: auto ride + the two hand-deployed post-merge obligations
+
+`26092936` (#437 — the 18 verified consolidation cuts, ADR-0407/0408) touched `packages/**`, so the
+path filter fired an auto ride at 21:59:21Z (run on `26092936e191`, success): **caisson-admin
+21:59:37Z → caisson-site 22:01:52Z**, both SUCCESS. Two services the auto ride does not cover were
+deployed by hand, each closing an obligation the merge created:
+
+- **Better Stack Worker** (Cloudflare, outside the Railway path filter) — `bunx wrangler@4.106.0
+deploy`, version `c6c93b44-dd6e-4865-b861-a97b5438912e`. The wave deleted its
+  `ALLOW_UNAUTHENTICATED` bypass and made a missing secret a fail-closed 401, so the auth smoke is
+  the proof the bypass is actually gone from the running edge, not just from the source tree:
+  no-header POST → **401**, wrong-secret POST → **401**, correct `X-Betterstack-Secret` +
+  a `resolved` incident body → **200 `{"ok":true}`**.
+- **caisson-support-bot** (dispatch-only, never on the auto path) — `railway-deploy.ts --service
+caisson-support-bot --ref 26092936`, receipt appended. This is the deploy that finally serves
+  **#435's F-10 fix**: the 2026-08-15 F-02 pass had redeployed the bot at the sha it already had
+  live (`d9a56601`) precisely so it applied the config and nothing else, which left the
+  security-header middleware merged but unserved for a day. Read back live on `/health` 200:
+  `strict-transport-security: max-age=63072000; includeSubDomains`, `x-content-type-options:
+nosniff`, `x-frame-options: DENY` — all three, where the pre-fix probe had none.
+
+Probed live after the ride, all 200: `caisson.sh/healthz`, `admin/healthz`, `license/health`,
+`docs-api/health` (`{"ok":true,"chunks":576}`), `caisson.sh/demos/healthz`, `registry/index.json`.
 
 ## 2026-08-12 — mirror pre-push gate merged; full fleet ride incl. the license leg
 
