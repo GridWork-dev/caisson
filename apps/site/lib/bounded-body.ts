@@ -7,7 +7,8 @@
 // Shared by the demo-run and ask-ai handlers (the ask-ai/registry precheck idiom this replaces).
 
 export type BoundedBody =
-  { readonly ok: true; readonly text: string } | { readonly ok: false };
+  | { readonly ok: true; readonly text: string }
+  | { readonly ok: false };
 
 /** Read at most `maxBytes` of the request body as UTF-8. `{ok:false}` = over the cap (413 it). */
 export async function readBodyBounded(

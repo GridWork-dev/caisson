@@ -21,7 +21,11 @@ import { MODULE_PAGES } from "./module-pages";
 import { type BundleId, BUNDLE_PRICES, isBundleId } from "./pricing";
 
 export type SlideKind =
-  "diagram" | "poke" | "component" | "code-artifact" | "image";
+  | "diagram"
+  | "poke"
+  | "component"
+  | "code-artifact"
+  | "image";
 
 /** The interactive "poke" slides (ADR-0378 lock 2) — the one slide kind that genuinely owns
  *  interactive state: a deterministic in-browser run of the module's shipped mechanism (real

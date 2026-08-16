@@ -48,7 +48,11 @@ export type FetchOutcome =
   | { readonly outcome: "unreachable"; readonly detail: string };
 
 export type R2RowStatus =
-  "ok" | "hash-mismatch" | "size-mismatch" | "missing" | "unreachable";
+  | "ok"
+  | "hash-mismatch"
+  | "size-mismatch"
+  | "missing"
+  | "unreachable";
 
 export interface R2RowResult {
   readonly key: string;

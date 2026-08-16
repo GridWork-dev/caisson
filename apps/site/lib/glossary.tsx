@@ -41,7 +41,10 @@ export function renderInlineCode(text: string): ReactNode {
 }
 
 export type GlossaryCluster =
-  "compliance" | "security" | "licensing" | "ai-infra";
+  | "compliance"
+  | "security"
+  | "licensing"
+  | "ai-infra";
 
 export interface GlossaryTermArtifact {
   label: string;

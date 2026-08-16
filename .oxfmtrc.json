@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  // Formatter config for the oxc swap (ADR-0408/0409). The repo never carried a .prettierrc, so
+  // Prettier ran on ITS defaults — printWidth 80 above all. oxfmt's own default is wider, which
+  // would rewrap essentially every file and smuggle a style change into what is supposed to be a
+  // tool change. Pinning the Prettier defaults keeps the reformat a formatter swap and nothing
+  // more: the diff is whitespace oxfmt disagrees with Prettier about, not a new house style.
+  //
+  // oxfmt reads `.prettierignore` natively, so the byte-exact protected set (golden fixtures, the
+  // generated tokens.css, the vendored NIST catalog, the byte-faithful legal/finance docs) needs
+  // no second ignore file. `// prettier-ignore` spans are honored too — both verified on a probe
+  // before the reformat commit (ADR-0408 constraint 5).
+  // SCOPE, held to Prettier's: the old `format` script globbed
+  // `**/*.{ts,tsx,js,mjs,json,md,css}` and nothing else, while a bare `oxfmt .` walks every
+  // language it supports. Left alone it newly reformatted 6 generated Lighthouse HTML reports and
+  // 3 pyproject.toml files — real churn in file types no gate had ever formatted. Widening the
+  // formatter's reach is a separate decision from swapping the formatter, so the types Prettier
+  // never touched are ignored here — including `.mdx`, which is doubly worth leaving alone: it is
+  // JSX inside Markdown, and letting a pre-1.0 formatter reflow it risks the docs-site build for
+  // no gain this wave needs. Adding `.mdx` (or any of the others) is a one-line change plus its
+  // own reformat commit, whenever someone actually wants the coverage.
+  "ignorePatterns": [
+    "**/*.mdx",
+    "**/*.html",
+    "**/*.htm",
+    "**/*.yml",
+    "**/*.yaml",
+    "**/*.toml",
+    "**/*.graphql",
+    "**/*.gql",
+    "**/*.vue",
+    "**/*.svelte",
+    "**/*.hbs",
+    // Generated session artifacts — never hand-edited, and formatting them would churn a
+    // point-in-time record.
+    "outputs/browser-audit/**"
+  ],
+  "printWidth": 80,
+  "tabWidth": 2,
+  "semi": true,
+  "singleQuote": false,
+  "trailingComma": "all",
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "proseWrap": "preserve",
+  "endOfLine": "lf"
+}
